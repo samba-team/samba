@@ -87,6 +87,51 @@ struct tar tar_ctx = {
     .mode.dry         = False,
 };
 
+#define XSET(v)      [v] = #v
+#define XTABLE(v, t) DEBUG(2, ("DUMP:%-20.20s = %s\n", #v, t[v]))
+#define XBOOL(v)     DEBUG(2, ("DUMP:%-20.20s = %d\n", #v, v ? 1 : 0))
+#define XSTR(v)      DEBUG(2, ("DUMP:%-20.20s = %s\n", #v, v ? v : "NULL"))
+#define XINT(v)      DEBUG(2, ("DUMP:%-20.20s = %d\n", #v, v))
+static void tar_dump(struct tar *t)
+{
+    int i;
+    const char* op[] = {
+        XSET(TAR_NO_OPERATION),
+        XSET(TAR_CREATE),
+        XSET(TAR_EXTRACT),
+    };
+
+    const char* sel[] = {
+        XSET(TAR_NO_SELECTION),
+        XSET(TAR_INCLUDE),
+        XSET(TAR_INCLUDE_LIST),
+        XSET(TAR_EXCLUDE),
+    };
+
+    XTABLE(t->mode.operation, op);
+    XTABLE(t->mode.selection, sel);
+    XINT(t->mode.blocksize);
+    XBOOL(t->mode.hidden);
+    XBOOL(t->mode.system);
+    XBOOL(t->mode.incremental);
+    XBOOL(t->mode.reset);
+    XBOOL(t->mode.dry);
+    XBOOL(t->mode.verbose);
+    XSTR(t->tar_path);
+    XINT(t->tar_fd);
+
+    for(i = 0; t->path_list && t->path_list[i]; i++) {
+        DEBUG(2, ("DUMP: t->path_list[%2d] = %s\n", i, t->path_list[i]));
+    }
+
+    DEBUG(2, ("DUMP:t->path_list @ %p (%d elem)\n", t->path_list, i));
+}
+#undef XSET
+#undef XTABLE
+#undef XBOOL
+#undef XSTR
+#undef XINT
+
 static int tar_set_blocksize(struct tar *t, int size)
 {
     if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
@@ -98,7 +143,7 @@ static int tar_set_blocksize(struct tar *t, int size)
     return 1;
 }
 
-static bool tar_set_newer_than(struct tar *t, char *filename)
+static bool tar_set_newer_than(struct tar *t, const char *filename)
 {
     extern time_t newer_than;
     SMB_STRUCT_STAT stbuf;
@@ -116,7 +161,7 @@ static bool tar_set_newer_than(struct tar *t, char *filename)
 static bool tar_read_inclusion_file (struct tar *t, const char* filename)
 {
     char *line;
-    const char **list;
+    char **list;
     TALLOC_CTX *ctx = talloc_tos();
     int fd = open(filename, O_RDONLY);
 
@@ -128,7 +173,7 @@ static bool tar_read_inclusion_file (struct tar *t, const char* filename)
     list = str_list_make_empty(ctx);
 
     while ((line = afdgets(fd, ctx, 0))) {
-        list = str_list_add(list, line);
+        list = str_list_add((const char **)list, line);
     }
 
     close(fd);
@@ -374,8 +419,8 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
 
     /*
      * Reset back some options - could be from interactive version
-	 * all other modes are left as they are
-	 */
+     * all other modes are left as they are
+     */
     t->mode.operation = TAR_NO_OPERATION;
     t->mode.selection = TAR_NO_SELECTION;
     t->mode.dry = False;
@@ -395,7 +440,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
                 printf("Tar must be followed by only one of c or x.\n");
                 return 0;
             }
-            t->mode.operation = TAR_CREATE;
+            t->mode.operation = TAR_EXTRACT;
             break;
 
         /* selection  */
@@ -488,9 +533,9 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
         }
     }
 
-    /* no operation given? default operation is include */
-    if (t->mode.operation == TAR_NO_OPERATION) {
-        t->mode.operation = TAR_INCLUDE;
+    /* no selection given? default selection is include */
+    if (t->mode.selection == TAR_NO_SELECTION) {
+        t->mode.selection = TAR_INCLUDE;
     }
 
     if (valsize - ival < 1) {
@@ -512,7 +557,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
             return 0;
         }
 
-        if(!tar_read_inclusion_file(t, val[ival])) {
+        if (!tar_read_inclusion_file(t, val[ival])) {
             return 0;
         }
         ival++;
@@ -522,9 +567,10 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
     else {
         int i;
         for (i = ival; i < valsize; i++) {
-            t->path_list = str_list_add(t->path_list, val[i]);
+            t->path_list = str_list_add((const char**)t->path_list, val[i]);
         }
     }
 
+    tar_dump(t);
     return 1;
 }
