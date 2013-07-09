@@ -170,6 +170,9 @@ struct dcesrv_connection_context {
 
 /* the state associated with a dcerpc server connection */
 struct dcesrv_connection {
+	/* for the broken_connections DLIST */
+	struct dcesrv_connection *prev, *next;
+
 	/* the top level context for this server */
 	struct dcesrv_context *dce_ctx;
 
@@ -208,7 +211,8 @@ struct dcesrv_connection {
 	/* the transport level session key */
 	DATA_BLOB transport_session_key;
 
-	bool processing;
+	/* is this connection pending termination?  If so, why? */
+	const char *terminate;
 
 	const char *packet_log_dir;
 
@@ -288,6 +292,8 @@ struct dcesrv_context {
 	struct loadparm_context *lp_ctx;
 
 	struct idr_context *assoc_groups_idr;
+
+	struct dcesrv_connection *broken_connections;
 };
 
 /* this structure is used by modules to determine the size of some critical types */
