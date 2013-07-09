@@ -283,13 +283,29 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 
 	Ucrit_addPid(session->pid);
 
-	fstr_sprintf(uid_str, "%u", (unsigned int)session->uid);
-	fstr_sprintf(gid_str, "%u", (unsigned int)session->gid);
+	fstrcpy(uid_str, "-1");
+
+	if (session->uid != -1) {
+		if (numeric_only) {
+			fstr_sprintf(uid_str, "%u", (unsigned int)session->uid);
+		} else {
+			fstrcpy(uid_str, uidtoname(session->uid));
+		}
+	}
+
+	fstrcpy(gid_str, "-1");
+
+	if (session->gid != -1) {
+		if (numeric_only) {
+			fstr_sprintf(gid_str, "%u", (unsigned int)session->gid);
+		} else {
+			fstrcpy(gid_str, gidtoname(session->gid));
+		}
+	}
 
 	d_printf("%-7s   %-12s  %-12s  %-12s (%s)\n",
 		 procid_str_static(&session->pid),
-		 numeric_only ? uid_str : uidtoname(session->uid),
-		 numeric_only ? gid_str : gidtoname(session->gid),
+		 uid_str, gid_str,
 		 session->remote_machine, session->hostname);
 
 	return 0;
