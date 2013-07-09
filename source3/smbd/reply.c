@@ -1906,11 +1906,20 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
+	if (!map_open_params_to_ntcreate(fname, deny_mode,
+					 OPENX_FILE_EXISTS_OPEN, &access_mask,
+					 &share_mode, &create_disposition,
+					 &create_options, &private_flags)) {
+		reply_force_doserror(req, ERRDOS, ERRbadaccess);
+		goto out;
+	}
+
 	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				0,
+				(create_disposition == FILE_CREATE)
+				  ? UCF_CREATING_FILE : 0,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1921,14 +1930,6 @@ void reply_open(struct smb_request *req)
 			goto out;
 		}
 		reply_nterror(req, status);
-		goto out;
-	}
-
-	if (!map_open_params_to_ntcreate(smb_fname->base_name, deny_mode,
-					 OPENX_FILE_EXISTS_OPEN, &access_mask,
-					 &share_mode, &create_disposition,
-					 &create_options, &private_flags)) {
-		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
 
@@ -2081,11 +2082,22 @@ void reply_open_and_X(struct smb_request *req)
 		goto out;
 	}
 
+	if (!map_open_params_to_ntcreate(fname, deny_mode,
+					 smb_ofun,
+					 &access_mask, &share_mode,
+					 &create_disposition,
+					 &create_options,
+					 &private_flags)) {
+		reply_force_doserror(req, ERRDOS, ERRbadaccess);
+		goto out;
+	}
+
 	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				0,
+				(create_disposition == FILE_CREATE)
+				  ? UCF_CREATING_FILE : 0,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2096,16 +2108,6 @@ void reply_open_and_X(struct smb_request *req)
 			goto out;
 		}
 		reply_nterror(req, status);
-		goto out;
-	}
-
-	if (!map_open_params_to_ntcreate(smb_fname->base_name, deny_mode,
-					 smb_ofun,
-					 &access_mask, &share_mode,
-					 &create_disposition,
-					 &create_options,
-					 &private_flags)) {
-		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
 
@@ -2328,7 +2330,7 @@ void reply_mknew(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				0,
+				UCF_CREATING_FILE,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2469,7 +2471,7 @@ void reply_ctemp(struct smb_request *req)
 		status = filename_convert(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				0,
+				UCF_CREATING_FILE,
 				NULL,
 				&smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -5828,7 +5830,7 @@ void reply_mkdir(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
-				 0,
+				 UCF_CREATING_FILE,
 				 NULL,
 				 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {

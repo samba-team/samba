@@ -723,7 +723,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * can only put stuff with permission -wx.
 				 */
 				if ((errno != 0) && (errno != ENOENT)
-				    && (errno != EACCES)) {
+				    && ((ucf_flags & UCF_CREATING_FILE) &&
+					(errno != EACCES))) {
 					/*
 					 * ENOTDIR and ELOOP both map to
 					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
