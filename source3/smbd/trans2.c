@@ -896,6 +896,7 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
 
 void send_trans2_replies(connection_struct *conn,
 			struct smb_request *req,
+			NTSTATUS status,
 			 const char *params,
 			 int paramsize,
 			 const char *pdata,
@@ -936,6 +937,14 @@ void send_trans2_replies(connection_struct *conn,
 
 	if(params_to_send == 0 && data_to_send == 0) {
 		reply_outbuf(req, 10, 0);
+		if (NT_STATUS_V(status)) {
+			uint8_t eclass;
+			uint32_t ecode;
+			ntstatus_to_dos(status, &eclass, &ecode);
+			error_packet_set((char *)req->outbuf,
+					eclass, ecode, status,
+					__LINE__,__FILE__);
+		}
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(sconn,
 				(char *)req->outbuf,
@@ -1066,6 +1075,13 @@ void send_trans2_replies(connection_struct *conn,
 					 ERRDOS,ERRbufferoverflow,
 					 STATUS_BUFFER_OVERFLOW,
 					 __LINE__,__FILE__);
+		} else if (NT_STATUS_V(status)) {
+			uint8_t eclass;
+			uint32_t ecode;
+			ntstatus_to_dos(status, &eclass, &ecode);
+			error_packet_set((char *)req->outbuf,
+					eclass, ecode, status,
+					__LINE__,__FILE__);
 		}
 
 		/* Send the packet */
@@ -1312,7 +1328,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	/* Send the required number of replies */
-	send_trans2_replies(conn, req, params, 30, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 30, *ppdata, 0, max_data_bytes);
  out:
 	TALLOC_FREE(smb_fname);
 }
@@ -2676,7 +2692,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,6,0); /* Never an EA error */
 	SSVAL(params,8,last_entry_off);
 
-	send_trans2_replies(conn, req, params, 10, pdata, PTR_DIFF(p,pdata),
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 10, pdata, PTR_DIFF(p,pdata),
 			    max_data_bytes);
 
 	if ((! *directory) && dptr_path(sconn, dptr_num)) {
@@ -3027,7 +3043,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,4,0); /* Never an EA error */
 	SSVAL(params,6,last_entry_off);
 
-	send_trans2_replies(conn, req, params, 8, pdata, PTR_DIFF(p,pdata),
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 8, pdata, PTR_DIFF(p,pdata),
 			    max_data_bytes);
 
 	return;
@@ -3671,7 +3687,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 		return;
 	}
 
-	send_trans2_replies(conn, req, params, 0, *ppdata, data_len,
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 0, *ppdata, data_len,
 			    max_data_bytes);
 
 	DEBUG( 4, ( "%s info_level = %d\n",
@@ -3827,6 +3843,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				}
 
 				send_trans2_replies(conn, req,
+						NT_STATUS_OK,
 						*pparams,
 						param_len,
 						*ppdata,
@@ -4359,7 +4376,7 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 			return;
 	}
 
-	send_trans2_replies(conn, req, params, param_size, *ppdata, data_size,
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, param_size, *ppdata, data_size,
 			    max_data_bytes);
 
 	return;
@@ -5561,7 +5578,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		return;
 	}
 
-	send_trans2_replies(conn, req, params, param_size, *ppdata, data_size,
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, param_size, *ppdata, data_size,
 			    max_data_bytes);
 
 	return;
@@ -8124,7 +8141,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 					 fsp_str_dbg(fsp)));
 
 				SSVAL(params,0,0);
-				send_trans2_replies(conn, req, params, 2,
+				send_trans2_replies(conn, req, NT_STATUS_OK, params, 2,
 						    *ppdata, 0,
 						    max_data_bytes);
 				return;
@@ -8251,7 +8268,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		return;
 	}
 
-	send_trans2_replies(conn, req, params, 2, *ppdata, data_return_size,
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 2, *ppdata, data_return_size,
 			    max_data_bytes);
 
 	return;
@@ -8376,7 +8393,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	SSVAL(params,0,0);
 
-	send_trans2_replies(conn, req, params, 2, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 2, *ppdata, 0, max_data_bytes);
 
  out:
 	TALLOC_FREE(smb_dname);
@@ -8431,7 +8448,7 @@ static void call_trans2findnotifyfirst(connection_struct *conn,
 	if(fnf_handle == 0)
 		fnf_handle = 257;
 
-	send_trans2_replies(conn, req, params, 6, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 6, *ppdata, 0, max_data_bytes);
 
 	return;
 }
@@ -8462,7 +8479,7 @@ static void call_trans2findnotifynext(connection_struct *conn,
 	SSVAL(params,0,0); /* No changes */
 	SSVAL(params,2,0); /* No EA errors */
 
-	send_trans2_replies(conn, req, params, 4, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, NT_STATUS_OK, params, 4, *ppdata, 0, max_data_bytes);
 
 	return;
 }
@@ -8512,7 +8529,7 @@ static void call_trans2getdfsreferral(connection_struct *conn,
 
 	SSVAL((discard_const_p(uint8_t, req->inbuf)), smb_flg2,
 	      SVAL(req->inbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
-	send_trans2_replies(conn, req,0,0,*ppdata,reply_size, max_data_bytes);
+	send_trans2_replies(conn, req, NT_STATUS_OK, 0,0,*ppdata,reply_size, max_data_bytes);
 
 	return;
 }
@@ -8561,7 +8578,7 @@ static void call_trans2ioctl(connection_struct *conn,
 		srvstr_push(pdata, req->flags2, pdata+18,
 			    lp_servicename(talloc_tos(), SNUM(conn)), 13,
 			    STR_ASCII|STR_TERMINATE); /* Service name */
-		send_trans2_replies(conn, req, *pparams, 0, *ppdata, 32,
+		send_trans2_replies(conn, req, NT_STATUS_OK, *pparams, 0, *ppdata, 32,
 				    max_data_bytes);
 		return;
 	}
