@@ -59,7 +59,7 @@ WRAPPER=
 endif
 
 ifeq ($(CC),gcc)
-EXTRA_CFLAGS=-Wno-format-zero-length -fPIC
+EXTRA_CFLAGS=-Wno-format-zero-length -Wno-deprecated-declarations -fPIC
 endif
 
 CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
