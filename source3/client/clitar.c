@@ -429,7 +429,119 @@ int cmd_setmode(void)
     return 0;
 }
 
-/* static int send_file(struct archive_entry *entry, */
+static int make_remote_path(const char *full_path)
+{
+    /*
+      a. strrchr() to get last occ of \\ => NULL to get path without
+         filename
+      b. strtok to split on \\
+      c. accumulate each token to concat the whole path little by little
+      d. use cli_chkpath + cli_mkdir
+    */
+    extern struct cli_state *cli;
+    TALLOC_CTX *ctx = talloc_tos();
+    char *path;
+    char *subpath;
+    char *state;
+    char *last_backslash;
+    char *p;
+    int len;
+    NTSTATUS status;
+
+    subpath = talloc_strdup(ctx, full_path);
+    path = talloc_strdup(ctx, full_path);
+    len = talloc_get_size(path) - 1;
+
+    last_backslash = strrchr_m(path, '\\');
+
+    if (!last_backslash) {
+        return 0;
+    }
+
+    *last_backslash = 0;
+
+    subpath[0] = 0;
+    p = strtok_r(path, "\\", &state);
+
+    while (p) {
+        strlcat(subpath, p, len);
+        status = cli_chkpath(cli, subpath);
+        if (!NT_STATUS_IS_OK(status)) {
+            status = cli_mkdir(cli, subpath);
+            if (!NT_STATUS_IS_OK(status)) {
+                DEBUG(0, ("Can't mkdir %s: %s\n", subpath, nt_errstr(status)) );
+                return 1;
+            }
+            DEBUG(3, ("mkdir %s\n", subpath));
+        }
+
+        strlcat(subpath, "\\", len);
+        p = strtok_r(NULL, "/\\", &state);
+
+    }
+
+    return 0;
+}
+
+static int tar_send_file(struct tar *t, struct archive_entry *entry)
+{
+    extern struct cli_state *cli;
+    TALLOC_CTX *ctx = talloc_tos();
+    char *dos_path;
+    char *full_path;
+    const void *buf;
+    size_t len;
+    off_t off;
+    int r;
+    NTSTATUS status;
+    uint16_t remote_fd = (uint16_t) -1;
+    int err = 0;
+
+    dos_path = talloc_strdup(ctx, archive_entry_pathname(entry));
+    fix_unix_path(dos_path, true);
+
+    full_path = talloc_strdup(ctx, client_get_cur_dir());
+    full_path = talloc_strdup_append(full_path, dos_path);
+
+    make_remote_path(full_path);
+
+    status = cli_open(cli, full_path, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &remote_fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("abandoning restore\n"));
+		return False;
+	}
+
+    for (;;) {
+        r = archive_read_data_block(t->archive, &buf, &len, &off);
+        if (r == ARCHIVE_EOF) {
+            break;
+        }
+        if (r == ARCHIVE_WARN) {
+            DEBUG(0, ("Warning: %s\n", archive_error_string(t->archive)));
+        }
+        if (r == ARCHIVE_FATAL) {
+            DEBUG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+            err = 1;
+            goto out;
+        }
+
+        status = cli_writeall(cli, remote_fd, 0, buf, off, len, NULL);
+        if (!NT_STATUS_IS_OK(status)) {
+            DEBUG(0, ("Error writing remote file %s: %s\n",
+                      full_path, nt_errstr(status)));
+        }
+    }
+
+ out:
+    status = cli_close(cli, remote_fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Error losing remote file %s: %s\n",
+                  full_path, nt_errstr(status)));
+        err = 1;
+	}
+
+    return err;
+}
 
 /**
  * cmd_tar - interactive command to start a tar backup/restoration
@@ -461,7 +573,8 @@ static int tar_extract(struct tar *t)
     if (r != ARCHIVE_OK) {
         DEBUG(0, ("Can't open %s : %s\n", t->tar_path,
                   archive_error_string(t->archive)));
-        return 1;
+        err = 1;
+        goto out;
     }
 
     for (;;) {
@@ -479,6 +592,10 @@ static int tar_extract(struct tar *t)
         }
 
         DEBUG(0, ("Processing %s...\n", archive_entry_pathname(entry)));
+        if (tar_send_file(t, entry)) {
+            err = 1;
+            goto out;
+        }
     }
 
  out:
