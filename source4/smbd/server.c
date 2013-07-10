@@ -43,6 +43,7 @@
 #include "cluster/cluster.h"
 #include "dynconfig/dynconfig.h"
 #include "lib/util/samba_modules.h"
+#include "nsswitch/winbind_client.h"
 
 /*
   recursively delete a directory tree
@@ -400,6 +401,12 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
 			exit(1);
 		}
+	}
+
+	/* make sure we won't go through nss_winbind */
+	if (!winbind_off()) {
+		DEBUG(0,("Failed to disable recusive winbindd calls.  Exiting.\n"));
+		exit(1);
 	}
 
 	gensec_init(); /* FIXME: */
