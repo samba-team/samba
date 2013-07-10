@@ -28,6 +28,7 @@
 #include "source4/smbd/process_model.h"
 #include "file_server/file_server.h"
 #include "dynconfig.h"
+#include "nsswitch/winbind_client.h"
 
 /*
   called if smbd exits
@@ -64,6 +65,8 @@ static void s3fs_task_init(struct task_server *task)
 	smbd_path = talloc_asprintf(task, "%s/smbd", dyn_SBINDIR);
 	smbd_cmd[0] = smbd_path;
 
+	/* the child should be able to call through nss_winbind */
+	(void)winbind_on();
 	/* start it as a child process */
 	subreq = samba_runcmd_send(task, task->event_ctx, timeval_zero(), 1, 0,
 				smbd_cmd,
@@ -72,6 +75,12 @@ static void s3fs_task_init(struct task_server *task)
 				"--foreground",
 				debug_get_output_is_stdout()?"--log-stdout":NULL,
 				NULL);
+	/* the parent should not be able to call through nss_winbind */
+	if (!winbind_off()) {
+		DEBUG(0,("Failed to re-disable recursive winbindd calls after forking smbd\n"));
+		task_server_terminate(task, "Failed to re-disable recursive winbindd calls", true);
+		return;
+	}
 	if (subreq == NULL) {
 		DEBUG(0, ("Failed to start smbd as child daemon\n"));
 		task_server_terminate(task, "Failed to startup s3fs smb task", true);
