@@ -3261,6 +3261,12 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 					  STR_UNICODE);
 			SIVAL(pdata,8,len);
 			data_len = 12 + len;
+			if (max_data_bytes >= 16 && data_len > max_data_bytes) {
+				/* the client only requested a portion of the
+				   file system name */
+				data_len = max_data_bytes;
+				status = STATUS_BUFFER_OVERFLOW;
+			}
 			break;
 
 		case SMB_QUERY_FS_LABEL_INFO:
