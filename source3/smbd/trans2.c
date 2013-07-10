@@ -3291,6 +3291,12 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n",
 				(int)strlen(vname),vname,
 				lp_servicename(talloc_tos(), snum)));
+			if (max_data_bytes >= 24 && data_len > max_data_bytes) {
+				/* the client only requested a portion of the
+				   volume label */
+				data_len = max_data_bytes;
+				status = STATUS_BUFFER_OVERFLOW;
+			}
 			break;
 
 		case SMB_QUERY_FS_SIZE_INFO:
