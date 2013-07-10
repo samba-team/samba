@@ -563,7 +563,7 @@ static bool process_trans2(struct blocking_lock_record *blr)
 
 	SSVAL(params,0,0);
 	/* Fake up max_data_bytes here - we know it fits. */
-	send_trans2_replies(blr->fsp->conn, blr->req, params, 2, NULL, 0, 0xffff);
+	send_trans2_replies(blr->fsp->conn, blr->req, NT_STATUS_OK, params, 2, NULL, 0, 0xffff);
 	return True;
 }
 

@@ -1061,6 +1061,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t data_size, size_t *pbytes_used);
 void send_trans2_replies(connection_struct *conn,
 			struct smb_request *req,
+			NTSTATUS status,
 			 const char *params,
 			 int paramsize,
 			 const char *pdata,
