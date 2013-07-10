@@ -11,6 +11,21 @@ User-visible changes
 
   See ctdb.sysconfig for details.
 
+* Removed DeadlockTimeout tunable.  To enable debug of locking issues set
+
+   CTDB_DEBUG_LOCKS=/etc/ctdb/debug_locks.sh
+
+* In overall statistics and database statistics, lock buckets have been
+  updated to use following timings:
+
+   < 1ms, < 10ms, < 100ms, < 1s, < 2s, < 4s, < 8s, < 16s, < 32s, < 64s, >= 64s
+
+* Initscript is now simplified with most CTDB-specific functionality
+  split out to ctdbd_wrapper, which is used to start and stop ctdbd.
+
+* CTDB subprocesses are now given informative names to allow them to
+  be easily distinguished when using programs like "top" or "perf".
+
 Important bug fixes
 -------------------
 
@@ -24,11 +39,31 @@ Important bug fixes
 * The recovery daemon will not ban other nodes if the current node
   is banned.
 
+* ctdb dbstatistics command now correctly outputs database statistics.
+
+* Fixed a panic with overlapping shutdowns (regression in 2.2).
+
+* Fixed 60.ganesha "monitor" event (regression in 2.2).
+
+* Fixed a buffer overflow in the "reloadips" implementation.
+
+* Fixed segmentation faults in ping_pong (called with incorrect
+  argument) and test binaries (called when ctdbd not running).
+
 Important internal changes
 --------------------------
 
 * The recovery daemon on stopped or banned node will stop participating in any
   cluster activity.
+
+* Improve cluster wide database traverse by sending the records directly from
+  traverse child process to requesting node.
+
+* TDB checking and dropping of all IPs moved from initscript to "init"
+  event in 00.ctdb.
+
+* To avoid "rogue IPs" the release IP callback now fails if the
+  released IP is still present on an interface.
 
 
 Changes in CTDB 2.2
