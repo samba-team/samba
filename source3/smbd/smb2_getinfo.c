@@ -498,6 +498,11 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (state->out_output_buffer.length > in_output_buffer_length) {
+		tevent_req_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
+		return tevent_req_post(req, ev);
+	}
+
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
