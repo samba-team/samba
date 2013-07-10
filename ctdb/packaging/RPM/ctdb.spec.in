@@ -1,3 +1,4 @@
+%define with_systemd  %{?_with_systemd: 1} %{?!_with_systemd: 0}
 %define initdir %{_sysconfdir}/init.d
 Name: ctdb
 Summary: Clustered TDB
@@ -16,8 +17,6 @@ Source: ctdb-%{version}.tar.gz
 Requires: coreutils, sed, gawk, iptables, iproute, procps, ethtool, sudo
 # Commands - package name might vary
 Requires: /usr/bin/killall, /bin/kill, /bin/netstat
-# Directories
-Requires: /etc/init.d
 
 Provides: ctdb = %{version}
 
@@ -55,6 +54,10 @@ Requires: libtevent >= %{libtevent_version}
 %define with_pcp_pmda  %{?_with_pmda: 1} %{?!_with_pmda: 0}
 %if %with_pcp_pmda
 BuildRequires: pcp-libs-devel
+%endif
+
+%if %{with_systemd}
+BuildRequires: systemd-units
 %endif
 
 %description
@@ -110,13 +113,19 @@ rm -rf $RPM_BUILD_ROOT
 
 # Create the target build directory hierarchy
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sudoers.d
 
 make DESTDIR=$RPM_BUILD_ROOT docdir=%{_docdir} install install_tests
 
 install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
+
+%if %{with_systemd}
+mkdir -p $RPM_BUILD_ROOT%{_unitdir}
+install -m 755 config/ctdb.service $RPM_BUILD_ROOT%{_unitdir}
+%else
+mkdir -p $RPM_BUILD_ROOT%{initdir}
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
+%endif
 
 cp config/events.d/README README.eventscripts
 cp config/notify.d.README README.notify.d
@@ -140,7 +149,13 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/debug-hung-script.sh
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
 %config(noreplace) %{_sysconfdir}/ctdb/gcore_trace.sh
+
+%if %{with_systemd}
+%{_unitdir}/ctdb.service
+%else
 %attr(755,root,root) %{initdir}/ctdb
+%endif
+
 %attr(755,root,root) %{_sysconfdir}/ctdb/notify.d
 
 %doc README COPYING NEWS
