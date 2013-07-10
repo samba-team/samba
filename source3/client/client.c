@@ -5319,7 +5319,7 @@ static int do_host_query(const char *query_host)
 static int do_tar_op(const char *base_directory)
 {
 	extern struct tar tar_ctx;
-	int ret;
+	int ret = 0;
 
 	/* do we already have a connection? */
 	if (!cli) {
@@ -5330,26 +5330,27 @@ static int do_tar_op(const char *base_directory)
 				     service, auth_info, true, smb_encrypt,
 				     max_protocol, port, name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
-			return 1;
+            ret = 1;
+            goto out;
 		}
 		cli_set_timeout(cli, io_timeout*1000);
 	}
 
-	recurse=true;
+	recurse = true;
 
 	if (base_directory && *base_directory)  {
 		ret = do_cd(base_directory);
 		if (ret) {
-			cli_shutdown(cli);
-			return ret;
+            goto out_cli;
 		}
 	}
 
 	ret = tar_process(&tar_ctx);
 
+ out_cli:
 	cli_shutdown(cli);
-
-	return(ret);
+ out:
+	return ret;
 }
 
 /****************************************************************************

@@ -44,6 +44,12 @@
  */
 #define TAR_DEFAULT_BLOCK_SIZE 20
 
+#define TAR_CLI_READ_SIZE 0xff00
+
+#define TAR_DO_LIST_ATTRIBUTE (FILE_ATTRIBUTE_DIRECTORY \
+                               | FILE_ATTRIBUTE_SYSTEM  \
+                               | FILE_ATTRIBUTE_HIDDEN)
+
 enum tar_operation {
     TAR_NO_OPERATION,
     TAR_CREATE,    /* c flag */
@@ -512,12 +518,12 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
     }
 
     status = cli_open(cli, full_path, flags, DENY_NONE, &remote_fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Error opening remote file %s: %s\n",
+    if (!NT_STATUS_IS_OK(status)) {
+        DEBUG(0, ("Error opening remote file %s: %s\n",
                   full_path, nt_errstr(status)));
-		err = 1;
+        err = 1;
         goto out;
-	}
+    }
 
     for (;;) {
         const void *buf;
@@ -549,13 +555,175 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
 
  close_out:
     status = cli_close(cli, remote_fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Error losing remote file %s: %s\n",
+    if (!NT_STATUS_IS_OK(status)) {
+        DEBUG(0, ("Error losing remote file %s: %s\n",
                   full_path, nt_errstr(status)));
         err = 1;
-	}
+    }
 
  out:
+    return err;
+}
+
+static int tar_get_file(struct tar *t, const char *full_dos_path,
+                        struct file_info *finfo)
+{
+    extern struct cli_state *cli;
+    TALLOC_CTX *ctx = talloc_tos();
+    NTSTATUS status;
+    struct archive_entry *entry;
+    char *full_unix_path;
+    char buf[TAR_CLI_READ_SIZE];
+    size_t len;
+    uint64_t off = 0;
+    uint16_t remote_fd = (uint16_t)-1;
+    int err = 0, r;
+
+    bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
+    struct stat st = {
+        .st_mode = (isdir ? AE_IFDIR : AE_IFREG) | 0755,
+        .st_atime = finfo->atime_ts.tv_sec,
+        .st_mtime = finfo->mtime_ts.tv_sec,
+        .st_ctime = finfo->ctime_ts.tv_sec,
+    };
+
+    full_unix_path = talloc_asprintf(ctx, ".%s", full_dos_path);
+    string_replace(full_unix_path, '\\', '/');
+
+    entry = archive_entry_new();
+    archive_entry_copy_pathname(entry, full_unix_path);
+    archive_entry_copy_stat(entry, &st);
+
+    r = archive_write_header(t->archive, entry);
+    if (r != ARCHIVE_OK) {
+        DEBUG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+        err = 1;
+        goto out_entry;
+    }
+
+    if (isdir) {
+        goto out_entry;
+    }
+
+    status = cli_open(cli, full_dos_path, O_RDONLY, DENY_NONE, &remote_fd);
+    if (!NT_STATUS_IS_OK(status)) {
+        DEBUG(0,("%s opening remote file %s\n",
+                 nt_errstr(status), full_dos_path));
+        goto out_entry;
+    }
+
+    do {
+        status = cli_read(cli, remote_fd, buf, off, sizeof(buf), &len);
+        if (!NT_STATUS_IS_OK(status)) {
+            DEBUG(0,("Error reading file %s : %s\n",
+                     full_dos_path, nt_errstr(status)));
+            err = 1;
+            goto out_close;
+        }
+
+        off += len;
+
+        r = archive_write_data(t->archive, buf, len);
+        if (r != ARCHIVE_OK) {
+            DEBUG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+            err = 1;
+        }
+
+    } while (off < finfo->size);
+
+ out_close:
+    cli_close(cli, remote_fd);
+
+ out_entry:
+    archive_entry_free(entry);
+
+    return err;
+}
+
+static NTSTATUS get_file_callback(struct cli_state *cli,
+                                  struct file_info *finfo,
+                                  const char *dir)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    NTSTATUS err = NT_STATUS_OK;
+    char *remote_name;
+
+    remote_name = talloc_asprintf(ctx, "%s%s",
+                                  client_get_cur_dir(), finfo->name);
+
+
+    if (strequal(finfo->name, "..") || strequal(finfo->name, ".")) {
+        err = NT_STATUS_OK;
+        goto out;
+    }
+
+    if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+        char *old_dir;
+        char *new_dir;
+        char *mask;
+
+        old_dir = talloc_strdup(ctx, client_get_cur_dir());
+        new_dir = talloc_asprintf(ctx, "%s%s\\", client_get_cur_dir(), finfo->name);
+        mask = talloc_asprintf(ctx, "%s*", new_dir);
+
+        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
+            err = NT_STATUS_UNSUCCESSFUL;
+            goto out;
+        }
+
+        client_set_cur_dir(new_dir);
+        do_list(mask, TAR_DO_LIST_ATTRIBUTE, get_file_callback, false, true);
+        client_set_cur_dir(old_dir);
+    }
+
+    else {
+        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
+            err = NT_STATUS_UNSUCCESSFUL;
+            goto out;
+        }
+    }
+
+ out:
+    return err;
+}
+
+static int tar_create(struct tar* t)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    char *mask = talloc_asprintf(ctx, "%s\\*", client_get_cur_dir());
+    int r;
+    int err = 0;
+    NTSTATUS status;
+
+    t->archive = archive_write_new();
+
+    r = archive_write_set_format_pax_restricted(t->archive);
+    if (r != ARCHIVE_OK) {
+        DEBUG(0, ("Can't open %s: %s", t->tar_path, archive_error_string(t->archive)));
+    }
+
+    if (strequal(t->tar_path, "-")) {
+        r = archive_write_open_fd(t->archive, STDOUT_FILENO);
+    } else {
+        r = archive_write_open_filename(t->archive, t->tar_path);
+    }
+
+    if (r != ARCHIVE_OK) {
+        DEBUG(0, ("Can't open %s: %s", t->tar_path, archive_error_string(t->archive)));
+        err = 1;
+        goto out;
+    }
+
+    DEBUG(5, ("tar_process do_list with mask: %s\n", mask));
+    status = do_list(mask, TAR_DO_LIST_ATTRIBUTE, get_file_callback, false, true);
+    if(!NT_STATUS_IS_OK(status)) {
+        DEBUG(0, ("do_list fail %s\n", nt_errstr(status)));
+        err = 1;
+        goto out;
+    }
+
+ out:
+    archive_write_free(t->archive);
     return err;
 }
 
@@ -599,10 +767,10 @@ static int tar_extract(struct tar *t)
             break;
         }
         if (r == ARCHIVE_WARN) {
-            DEBUG(0, ("Warning: %s", archive_error_string(t->archive)));
+            DEBUG(0, ("Warning: %s\n", archive_error_string(t->archive)));
         }
         if (r == ARCHIVE_FATAL) {
-            DEBUG(0, ("Fatal: %s", archive_error_string(t->archive)));
+            DEBUG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
             err = 1;
             goto out;
         }
@@ -633,12 +801,14 @@ int tar_process(struct tar *t)
         rc = tar_extract(t);
         break;
     case TAR_CREATE:
-        /* tar_create(t); */
+        rc = tar_create(t);
         break;
     default:
         DEBUG(0, ("Invalid tar state\n"));
         rc = 1;
     }
+
+    DEBUG(5, ("tar_process done, err = %d\n", rc));
     return rc;
 }
 
@@ -805,6 +975,16 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
     /* handle TARFILE */
     t->tar_path = talloc_strdup(ctx, val[ival]);
     ival++;
+
+    /*
+     * Make sure that dbf points to stderr if we are using stdout for
+     * tar output
+     */
+    if (t->mode.operation == TAR_CREATE && strequal(t->tar_path, "-")) {
+        setup_logging("smbclient", DEBUG_STDERR);
+    }
+
+
 
     /* handle PATHs... */
 
