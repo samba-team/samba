@@ -23,6 +23,8 @@ User-visible changes
 * Initscript is now simplified with most CTDB-specific functionality
   split out to ctdbd_wrapper, which is used to start and stop ctdbd.
 
+* Add systemd support.
+
 * CTDB subprocesses are now given informative names to allow them to
   be easily distinguished when using programs like "top" or "perf".
 
