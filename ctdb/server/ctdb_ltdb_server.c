@@ -996,8 +996,9 @@ again:
 	}
 
 
-	DEBUG(DEBUG_INFO,("Attached to database '%s'\n", ctdb_db->db_path));
-	
+	DEBUG(DEBUG_NOTICE,("Attached to database '%s' with flags 0x%x\n",
+			    ctdb_db->db_path, tdb_flags));
+
 	/* success */
 	return 0;
 }
