@@ -67,7 +67,7 @@ CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) 
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DLOGDIR=\"$(logdir)\" -DBINDIR=\"$(bindir)\" \
 	-DSOCKPATH=\"$(sockpath)\" \
-	-DUSE_MMAP=1 -DTEVENT_DEPRECATED_QUIET=1 @CFLAGS@ $(POPT_CFLAGS) \
+	-DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS) \
 	$(EXTRA_CFLAGS)
 
 LDSHFLAGS=-fPIC -shared
