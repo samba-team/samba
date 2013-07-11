@@ -934,7 +934,19 @@ struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t 
 		if (next_offset == 0) {
 			break;
 		}
+
+		/* Integer wrap protection for the increment. */
+		if (offset + next_offset < offset) {
+			break;
+		}
+
 		offset += next_offset;
+
+		/* Integer wrap protection for while loop. */
+		if (offset + 4 < offset) {
+			break;
+		}
+
 	}
 
 	return ea_list_head;
