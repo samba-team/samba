@@ -668,6 +668,14 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 
 failed:
+	/*
+	 * Do not delete an existing valid credential cache, if the user
+	 * e.g. enters a wrong password
+	 */
+	if ((strequal(krb5_cc_type, "FILE") || strequal(krb5_cc_type, "WRFILE"))
+	    && user_ccache_file != NULL) {
+		return result;
+	}
 
 	/* we could have created a new credential cache with a valid tgt in it
 	 * but we werent able to get or verify the service ticket for this
