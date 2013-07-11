@@ -23,10 +23,7 @@ A clustered Samba install must set some specific configuration parameters
 <pre>
   clustering = yes
   idmap backend = tdb2
-  private dir = /a/directory/on/your/cluster/filesystem
 </pre>
-
-It is vital that the private directory is on shared storage. 
 
 <h2>Using smbcontrol</h2>
 
@@ -37,12 +34,9 @@ You can check for connectivity to the smbd daemons on each node using smbcontrol
 
 <h2>Using Samba4 smbtorture</h2>
 
-The Samba4 version of smbtorture has several tests that can be used to benchmark a CIFS cluster.<br>
-You can download Samba4 like this:
-<pre>
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0
-</pre>
-Then configure and compile it as usual.<br>
+The Samba4 version of smbtorture has several tests that can be used to
+benchmark a CIFS cluster. You can download Samba 4 from Samba website.
+
 The particular tests that are helpful for cluster benchmarking are the RAW-BENCH-OPEN, RAW-BENCH-LOCK and BENCH-NBENCH tests.<br>
 These tests take a unclist that allows you to spread the workload out over more than one node. For example:
 
