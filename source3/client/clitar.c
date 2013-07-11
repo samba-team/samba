@@ -26,7 +26,7 @@
 #include <archive_entry.h>
 
 #define LEN(x) (sizeof(x)/sizeof((x)[0]))
-#define DBG(a, b) (DEBUG(a, ("tar: ")), DEBUG(a, b))
+#define DBG(a, b) (DEBUG(a, ("tar:%-3d ", __LINE__)), DEBUG(a, b))
 
 /**
  * Maximum value for the blocksize field
