@@ -88,6 +88,9 @@ struct tar {
         bool verbose;
     } mode;
 
+    /* nb of bytes received */
+    uint64_t total_size;
+
     /* path to tar archive name */
     char *tar_path;
 
@@ -150,6 +153,7 @@ static char *fix_unix_path (char *path, bool removeprefix)
 #define XBOOL(v)     DBG(2, ("DUMP:%-20.20s = %d\n", #v, v ? 1 : 0))
 #define XSTR(v)      DBG(2, ("DUMP:%-20.20s = %s\n", #v, v ? v : "NULL"))
 #define XINT(v)      DBG(2, ("DUMP:%-20.20s = %d\n", #v, v))
+#define XUINT64(v)   DBG(2, ("DUMP:%-20.20s = %" PRIu64  "\n", #v, v))
 static void tar_dump(struct tar *t)
 {
     int i;
@@ -176,6 +180,7 @@ static void tar_dump(struct tar *t)
     XBOOL(t->mode.reset);
     XBOOL(t->mode.dry);
     XBOOL(t->mode.verbose);
+    XUINT64(t->total_size);
     XSTR(t->tar_path);
     XINT(t->path_list_size);
 
@@ -686,23 +691,41 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
     uint64_t off = 0;
     uint16_t remote_fd = (uint16_t)-1;
     int err = 0, r;
+    const bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
 
     DBG(5, ("+++ %s\n", full_dos_path));
 
-    bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
-    struct stat st = {
-        .st_mode = (isdir ? AE_IFDIR : AE_IFREG) | 0755,
-        .st_atime = finfo->atime_ts.tv_sec,
-        .st_mtime = finfo->mtime_ts.tv_sec,
-        .st_ctime = finfo->ctime_ts.tv_sec,
-    };
+    t->total_size += finfo->size;
+
+    if (t->mode.dry) {
+        goto out;
+    }
 
     full_unix_path = talloc_asprintf(ctx, ".%s", full_dos_path);
     string_replace(full_unix_path, '\\', '/');
-
     entry = archive_entry_new();
     archive_entry_copy_pathname(entry, full_unix_path);
-    archive_entry_copy_stat(entry, &st);
+    archive_entry_set_filetype(entry, isdir ? AE_IFDIR : AE_IFREG);
+    archive_entry_set_atime(entry,
+                            finfo->atime_ts.tv_sec,
+                            finfo->atime_ts.tv_nsec);
+    archive_entry_set_mtime(entry,
+                            finfo->mtime_ts.tv_sec,
+                            finfo->mtime_ts.tv_nsec);
+    archive_entry_set_ctime(entry,
+                            finfo->ctime_ts.tv_sec,
+                            finfo->ctime_ts.tv_nsec);
+    archive_entry_set_perm(entry, isdir ? 0755 : 0644);
+    /*
+     * check if we can safely cast unsigned file size to libarchive
+     * signed size. Very unlikely problem (>9 exabyte file)
+     */
+    if (finfo->size > INT64_MAX) {
+        DBG(0, ("Remote file %s too big\n", full_dos_path));
+        goto out_entry;
+    }
+
+    archive_entry_set_size(entry, (int64_t)finfo->size);
 
     r = archive_write_header(t->archive, entry);
     if (r != ARCHIVE_OK) {
@@ -712,6 +735,7 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
     }
 
     if (isdir) {
+        DBG(5, ("get_file skip dir %s\n", full_dos_path));
         goto out_entry;
     }
 
@@ -734,9 +758,10 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
         off += len;
 
         r = archive_write_data(t->archive, buf, len);
-        if (r != ARCHIVE_OK) {
+        if (r < 0) {
             DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
             err = 1;
+            goto out_close;
         }
 
     } while (off < finfo->size);
@@ -747,6 +772,7 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
  out_entry:
     archive_entry_free(entry);
 
+ out:
     return err;
 }
 
@@ -810,27 +836,38 @@ static int tar_create(struct tar* t)
 
     t->archive = archive_write_new();
 
-    r = archive_write_set_format_pax_restricted(t->archive);
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Can't open %s: %s\n", t->tar_path, archive_error_string(t->archive)));
-    }
+    if (!t->mode.dry) {
+        r = archive_write_set_format_pax_restricted(t->archive);
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Can't open %s: %s\n", t->tar_path, archive_error_string(t->archive)));
+        }
 
-    if (strequal(t->tar_path, "-")) {
-        r = archive_write_open_fd(t->archive, STDOUT_FILENO);
-    } else {
-        r = archive_write_open_filename(t->archive, t->tar_path);
-    }
+        if (strequal(t->tar_path, "-")) {
+            r = archive_write_open_fd(t->archive, STDOUT_FILENO);
+        } else {
+            r = archive_write_open_filename(t->archive, t->tar_path);
+        }
 
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Can't open %s: %s\n", t->tar_path, archive_error_string(t->archive)));
-        err = 1;
-        goto out;
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Can't open %s: %s\n", t->tar_path, archive_error_string(t->archive)));
+            err = 1;
+            goto out_close;
+        }
     }
 
     DBG(5, ("tar_process do_list with mask: %s\n", mask));
     status = do_list(mask, TAR_DO_LIST_ATTRIBUTE, get_file_callback, false, true);
     if(!NT_STATUS_IS_OK(status)) {
         DBG(0, ("do_list fail %s\n", nt_errstr(status)));
+        err = 1;
+        goto out_close;
+    }
+
+ out_close:
+    DBG(0, ("Total bytes received: %" PRIu64 "\n", t->total_size));
+    r = archive_write_close(t->archive);
+    if (r != ARCHIVE_OK) {
+        DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
         err = 1;
         goto out;
     }
@@ -966,6 +1003,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
     t->mode.selection = TAR_NO_SELECTION;
     t->mode.dry = false;
     t->to_process = false;
+    t->total_size = 0;
 
     while (*flag) {
         switch(*flag++) {
