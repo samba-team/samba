@@ -31,7 +31,7 @@ static void update_once(struct ctdb_context *ctdb, struct event_context *ev, str
 	TDB_DATA key, data, olddata;
 	struct ctdb_ltdb_header header;
 
-	memset(&header, sizeof(header), 0);
+	memset(&header, 0, sizeof(header));
 
 	key.dptr  = (uint8_t *)record;
 	key.dsize = strlen(record);
