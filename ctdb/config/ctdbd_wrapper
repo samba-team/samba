@@ -182,6 +182,14 @@ start()
 	CTDB_OPTIONS="${CTDB_OPTIONS} --valgrinding"
     fi
 
+    # This is ugly but will improve when we get rid of $CTDB_OPTIONS
+    # and use only $CTDB_SYSLOG.
+    case "$CTDB_OPTIONS" in
+	*--syslog*) : ;;
+	*)
+	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGFILE:-/var/log/log.ctdb}"
+    esac
+
     eval "$ctdbd" "$CTDB_OPTIONS" || return 1
 
     # Wait until ctdbd has started and is ready to respond to clients.
