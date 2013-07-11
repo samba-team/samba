@@ -640,9 +640,12 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		while (fsp->num_aio_requests != 0) {
 			/*
 			 * The destructor of the req will remove
-			 * itself from the fsp
+			 * itself from the fsp.
+			 * Don't use TALLOC_FREE here, this will overwrite
+			 * what the destructor just wrote into
+			 * aio_requests[0].
 			 */
-			TALLOC_FREE(fsp->aio_requests[0]);
+			talloc_free(fsp->aio_requests[0]);
 		}
 	}
 
