@@ -836,7 +836,7 @@ static NTSTATUS idmap_autorid_preallocate_wellknown(struct idmap_domain *dom)
 
 	num = ARRAY_SIZE(groups);
 
-	maps = talloc_zero_array(talloc_tos(), struct id_map*, num+1);
+	maps = talloc_array(talloc_tos(), struct id_map*, num+1);
 	if (!maps) {
 		return NT_STATUS_NO_MEMORY;
 	}
