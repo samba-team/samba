@@ -707,6 +707,8 @@ int32_t ctdb_control_traverse_start_ext(struct ctdb_context *ctdb,
 	state->ctdb = ctdb;
 	state->withemptyrecords = d->withemptyrecords;
 
+	DEBUG(DEBUG_NOTICE,("Stating traverse on DB %s\n", ctdb_db->db_name));
+
 	state->h = ctdb_daemon_traverse_all(ctdb_db, traverse_start_callback, state);
 	if (state->h == NULL) {
 		talloc_free(state);
