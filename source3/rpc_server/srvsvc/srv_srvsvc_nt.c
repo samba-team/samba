@@ -301,7 +301,12 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 	r->name		= net_name;
 	r->type		= get_share_type(snum);
 	r->comment	= remark ? remark : "";
-	r->csc_policy	= (lp_csc_policy(snum) << 4);
+
+	/*
+	 * According to [MS-SRVS] 2.2.4.25, the flags field is the same as in
+	 * level 1005.
+	 */
+	r->csc_policy	= (lp_csc_policy(snum) << SHARE_1005_CSC_POLICY_SHIFT);
 }
 
 /*******************************************************************
