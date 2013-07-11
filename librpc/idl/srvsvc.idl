@@ -491,9 +491,22 @@ import "misc.idl", "security.idl", "svcctl.idl";
 		[size_is(count)] srvsvc_NetShareInfo1004 *array;
 	} srvsvc_NetShareCtr1004;
 
+	const uint32 SHARE_1005_CSC_CACHE_MANUAL_REINT = 0x00000000;
+
 	typedef bitmap {
-		SHARE_1005_IN_DFS               = 0x00000001,
-		SHARE_1005_DFS_ROOT             = 0x00000002
+		SHARE_1005_IN_DFS                      = 0x00000001,
+		SHARE_1005_DFS_ROOT                    = 0x00000002,
+		SHARE_1005_CSC_CACHE_AUTO_REINT        = 0x00000010,
+		SHARE_1005_CSC_CACHE_VDO               = 0x00000020,
+		SHARE_1005_CSC_CACHE_NONE              = 0x00000030,
+		SHARE_1005_RESTRICT_EXCLUSIVE_OPENS    = 0x00000100,
+		SHARE_1005_FORCE_SHARED_DELETE         = 0x00000200,
+		SHARE_1005_ALLOW_NAMESPACE_CACHING     = 0x00000400,
+		SHARE_1005_ACCESS_BASED_DIRECTORY_ENUM = 0x00000800,
+		SHARE_1005_FORCE_LEVELII_OPLOCK        = 0x00001000,
+		SHARE_1005_ENABLE_HASH                 = 0x00002000,
+		SHARE_1005_ENABLE_CA                   = 0x00004000,
+		SHARE_1005_ENCRYPT_DATA                = 0x00008000
 	} NetShareInfo1005Flags;
 
 	const uint32 SHARE_1005_CSC_POLICY_MASK = 0x00000030;
