@@ -16,11 +16,6 @@ If you are upgrading, or looking to develop, test or deploy Samba 4.1
 releases candidates, you should backup all configuration and data.
 
 
-UPGRADING
-=========
-
-
-
 NEW FEATURES
 ============
 
@@ -81,14 +76,13 @@ smb.conf changes
    use ntdb				New		No
 
 
-CHANGES SINCE 4.0.7
-===================
+COMMIT HIGHLIGHTS
+=================
 
-o   Michael Adam <obnox@samba.org>
-
-
-KNOWN ISSUES
-============
+o   David Disseldorp <ddiss@samba.org>
+    * Add vfs_btrfs module.
+    * Add support for server-side copy operations via the
+      SMB2 FSCTL_SRV_COPYCHUNK request.
 
 
 RUNNING Samba 4.1 as an AD DC
@@ -97,6 +91,7 @@ RUNNING Samba 4.1 as an AD DC
 A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
 
   http://wiki.samba.org/index.php/Samba4/HOWTO
+
 
 #######################################
 Reporting bugs & Development Discussion
