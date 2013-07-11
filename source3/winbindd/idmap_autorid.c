@@ -843,6 +843,10 @@ static NTSTATUS idmap_autorid_preallocate_wellknown(struct idmap_domain *dom)
 
 	for (i = 0; i < num; i++) {
 		maps[i] = talloc(maps, struct id_map);
+		if (maps[i] == NULL) {
+			talloc_free(maps);
+			return NT_STATUS_NO_MEMORY;
+		}
 		maps[i]->xid.type = ID_TYPE_GID;
 		maps[i]->sid = dom_sid_parse_talloc(maps, groups[i]);
 	}
