@@ -65,8 +65,9 @@ monitor_interfaces()
 	# problem with an interface then set fail=true and continue.
 	for iface in $all_interfaces ; do
 
-	    ip addr show $iface 2>/dev/null >/dev/null || {
-		echo "WARNING: Interface $iface does not exist but it is used by public addresses."
+	    ip link show $iface 2>/dev/null >/dev/null || {
+		echo "ERROR: Interface $iface does not exist but it is used by public addresses."
+		mark_down $iface
 		continue
 	    }
 
