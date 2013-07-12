@@ -658,7 +658,7 @@ ctdb_defer_pinned_down_request(struct ctdb_context *ctdb, struct ctdb_db_context
 static void
 ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int hopcount)
 {
-	int i;
+	int i, id;
 
 	/* smallest value is always at index 0 */
 	if (hopcount <= ctdb_db->statistics.hot_keys[0].count) {
@@ -681,16 +681,22 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int 
 		goto sort_keys;
 	}
 
-	if (ctdb_db->statistics.hot_keys[0].key.dptr != NULL) {
-		talloc_free(ctdb_db->statistics.hot_keys[0].key.dptr);
+	if (ctdb_db->statistics.num_hot_keys < MAX_HOT_KEYS) {
+		id = ctdb_db->statistics.num_hot_keys;
+		ctdb_db->statistics.num_hot_keys++;
+	} else {
+		id = 0;
 	}
-	ctdb_db->statistics.hot_keys[0].key.dsize = key.dsize;
-	ctdb_db->statistics.hot_keys[0].key.dptr  = talloc_memdup(ctdb_db, key.dptr, key.dsize);
-	ctdb_db->statistics.hot_keys[0].count = hopcount;
 
+	if (ctdb_db->statistics.hot_keys[id].key.dptr != NULL) {
+		talloc_free(ctdb_db->statistics.hot_keys[id].key.dptr);
+	}
+	ctdb_db->statistics.hot_keys[id].key.dsize = key.dsize;
+	ctdb_db->statistics.hot_keys[id].key.dptr  = talloc_memdup(ctdb_db, key.dptr, key.dsize);
+	ctdb_db->statistics.hot_keys[id].count = hopcount;
 
 sort_keys:
-	for (i = 2; i < MAX_HOT_KEYS; i++) {
+	for (i = 1; i < MAX_HOT_KEYS; i++) {
 		if (ctdb_db->statistics.hot_keys[i].count < ctdb_db->statistics.hot_keys[0].count) {
 			hopcount = ctdb_db->statistics.hot_keys[i].count;
 			ctdb_db->statistics.hot_keys[i].count = ctdb_db->statistics.hot_keys[0].count;
