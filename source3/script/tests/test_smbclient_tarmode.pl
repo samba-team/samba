@@ -188,7 +188,7 @@ else {
 
 =item * Create a function C<test_yourtest>
 
-=item * Usa the File module, documented below
+=item * Use the File module, documented below
 
 =item * Use C<smb_tar>, C<smb_client>, C<check_tar> or C<check_remote>
 
@@ -239,7 +239,7 @@ sub test_creation_attr {
     my $f = File->new_remote("file-n.txt");
     push @all, $f;
 
-    # combinaisions of attributes
+    # combinations of attributes
     for my $n (1..@attr) {
         for(combine(\@attr, $n)) {
             my @t = @$_;
@@ -320,7 +320,7 @@ sub test_creation_incremental {
     for(1..$n) {
         my $f = File->new_remote("file-$_");
 
-        # set achive bit on ~half of them
+        # set archive bit on ~half of them
         if($_ < $n/2) {
             $f->set_attr('a');
             push @files, $f;
@@ -623,7 +623,7 @@ sub print_res {
 
 =head3 C<combine ( ['a', 'b', 'c'], 2 )>
 
-Return a list of all possible I<n>-uplet (or combinaison of C<$n> element) of C<@set>.
+Return a list of all possible I<n>-uplet (or combination of C<$n> element) of C<@set>.
 
 =cut
 sub combine {
@@ -907,7 +907,7 @@ sub smb_tar {
 
 =head3 C<random( $min, $max )>
 
-Return integer in C<[ $min ; $max [>
+Return integer in C<[ $min ; $max ]>
 
 =cut
 sub random {
@@ -1220,7 +1220,7 @@ sub DESTROY {
 
 Iterate on file hierachy in C<@files> and return accumulated results.
 
-Use C<$_ in> the sub to access the current C<File>.
+Use C<$_> in the sub to access the current C<File>.
 
 The C<@files> must come from a call to the C<File::tree> function.
 
@@ -1266,7 +1266,7 @@ sub list {
             'size'   => int($size),
             'date'   => $date,
             'attr'   => {
-                # list context returns somehting different than the
+                # list context returns something different than the
                 # boolean matching result => force scalar context
                 'a' => scalar ($attr =~ /A/),
                 'h' => scalar ($attr =~ /H/),
