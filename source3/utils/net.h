@@ -182,6 +182,7 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 #define NET_FLAGS_SIGN				0x00000040	/* sign RPC connection */
 #define NET_FLAGS_SEAL				0x00000080	/* seal RPC connection */
 #define NET_FLAGS_TCP				0x00000100	/* use ncacn_ip_tcp */
+#define NET_FLAGS_EXPECT_FALLBACK		0x00000200	/* the caller will fallback */
 
 /* net share operation modes */
 #define NET_MODE_SHARE_MIGRATE 1

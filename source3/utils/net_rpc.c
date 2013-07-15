@@ -427,11 +427,16 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 	return 0;
 
 fail:
+	if (c->opt_flags & NET_FLAGS_EXPECT_FALLBACK) {
+		goto cleanup;
+	}
+
 	/* issue an overall failure message at the end. */
 	d_fprintf(stderr, _("Failed to join domain: %s\n"),
 		r && r->out.error_string ? r->out.error_string :
 		get_friendly_werror_msg(werr));
 
+cleanup:
 	TALLOC_FREE(mem_ctx);
 
 	return -1;
@@ -513,7 +518,7 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
  *
  **/
 
-int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
+static int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 {
 	struct libnet_JoinCtx *r = NULL;
 	TALLOC_CTX *mem_ctx;
@@ -623,6 +628,8 @@ fail:
 
 int net_rpc_join(struct net_context *c, int argc, const char **argv)
 {
+	int ret;
+
 	if (c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
@@ -650,8 +657,12 @@ int net_rpc_join(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if ((net_rpc_oldjoin(c, argc, argv) == 0))
+	c->opt_flags |= NET_FLAGS_EXPECT_FALLBACK;
+	ret = net_rpc_oldjoin(c, argc, argv);
+	c->opt_flags &= ~NET_FLAGS_EXPECT_FALLBACK;
+	if (ret == 0) {
 		return 0;
+	}
 
 	return net_rpc_join_newstyle(c, argc, argv);
 }
