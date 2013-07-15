@@ -697,6 +697,9 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int 
 
 sort_keys:
 	for (i = 1; i < MAX_HOT_KEYS; i++) {
+		if (ctdb_db->statistics.hot_keys[i].count == 0) {
+			continue;
+		}
 		if (ctdb_db->statistics.hot_keys[i].count < ctdb_db->statistics.hot_keys[0].count) {
 			hopcount = ctdb_db->statistics.hot_keys[i].count;
 			ctdb_db->statistics.hot_keys[i].count = ctdb_db->statistics.hot_keys[0].count;
