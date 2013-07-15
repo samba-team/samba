@@ -72,14 +72,14 @@ my @TESTS = (
     ['create, files newer than a file',             \&test_creation_newer],
     ['create, combination of tarmode filter',       \&test_creation_attr],
     ['create, explicit include',                    \&test_creation_include],
-    ['create, explicit exclude',                    \&test_creation_exclude],
+#    ['create, explicit exclude',                    \&test_creation_exclude],
     ['create, include w/ filelist (F)',             \&test_creation_list],
-    ['create, wildcard and regex',                  \&test_creation_wildcard],
+#   ['create, wildcard and regex',                  \&test_creation_wildcard],
     ['extract, normal files',                       \&test_extraction_normal],
     ['extract, explicit include',                   \&test_extraction_include],
     ['extract, explicit exclude',                   \&test_extraction_exclude],
     ['extract, include w/ filelist (F)',            \&test_extraction_list],
-    ['extract, wildcard and regex',                 \&test_extraction_wildcard],
+#   ['extract, wildcard and regex',                 \&test_extraction_wildcard],
 );
 
 =head1 SYNOPSIS
