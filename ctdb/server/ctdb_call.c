@@ -131,12 +131,12 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 	}
 	c->hopcount++;
 
-	if (c->hopcount%100 == 99) {
-		DEBUG(DEBUG_WARNING,("High hopcount %d dbid:0x%08x "
-			"key:0x%08x pnn:%d src:%d lmaster:%d "
+	if (c->hopcount%100 > 95) {
+		DEBUG(DEBUG_WARNING,("High hopcount %d dbid:%s "
+			"key:0x%08x reqid=%08x pnn:%d src:%d lmaster:%d "
 			"header->dmaster:%d dst:%d\n",
-			c->hopcount, ctdb_db->db_id, ctdb_hash(&key),
-			ctdb->pnn, c->hdr.srcnode, lmaster,
+			c->hopcount, ctdb_db->db_name, ctdb_hash(&key),
+			c->hdr.reqid, ctdb->pnn, c->hdr.srcnode, lmaster,
 			header->dmaster, c->hdr.destnode));
 	}
 
