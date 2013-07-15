@@ -604,6 +604,7 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 	struct ctdb_db_statistics *dbstat;
 	int i;
 	uint32_t db_id;
+	int num_hot_keys;
 
 	if (argc < 1) {
 		usage();
@@ -651,6 +652,14 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 		 0.0),
 		dbstat->locks.latency.max,
 		dbstat->locks.latency.num);
+	num_hot_keys = 0;
+	for (i=0; i<dbstat->num_hot_keys; i++) {
+		if (dbstat->hot_keys[i].count > 0) {
+			num_hot_keys++;
+		}
+	}
+	dbstat->num_hot_keys = num_hot_keys;
+
 	printf(" Num Hot Keys:     %d\n", dbstat->num_hot_keys);
 	for (i = 0; i < dbstat->num_hot_keys; i++) {
 		int j;
