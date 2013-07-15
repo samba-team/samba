@@ -26,7 +26,7 @@ C<test_smbclient_tarmode.pl> - Test for smbclient tar backup feature
 # x F      DONE
 # x F r    DONE
 
-use v5.16;
+use v5.14;
 use strict;
 use warnings;
 
@@ -36,7 +36,7 @@ use File::Path qw/make_path remove_tree/;
 use Getopt::Long;
 use Pod::Usage;
 use Term::ANSIColor;
-
+use Digest::MD5 qw/md5_hex/;
 sub d {print Dumper @_;}
 
 # DEFAULTS
@@ -806,7 +806,12 @@ sub check_tar {
             $done{$p}++;
 
             # different file
+
             my $md5 = $f->data;
+            if($^V lt v5.16) {
+                $md5 = md5_hex($md5);
+            }
+
             if($md5 ne $h{$p}->md5) {
                 say " !    $p ($md5)";
                 push @diff, $p;
