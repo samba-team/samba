@@ -696,6 +696,8 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int 
 	ctdb_db->statistics.hot_keys[id].key.dsize = key.dsize;
 	ctdb_db->statistics.hot_keys[id].key.dptr  = talloc_memdup(ctdb_db, key.dptr, key.dsize);
 	ctdb_db->statistics.hot_keys[id].count = hopcount;
+	DEBUG(DEBUG_NOTICE,("Updated hot key database=%s key=0x%08x id=%d hop_count=%d\n",
+			    ctdb_db->db_name, ctdb_hash(&key), id, hopcount));
 
 sort_keys:
 	for (i = 1; i < MAX_HOT_KEYS; i++) {
