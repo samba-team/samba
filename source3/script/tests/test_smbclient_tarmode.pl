@@ -1260,7 +1260,7 @@ sub list {
     my $out = main::smb_client('-D', $path, '-c', 'ls');
 
     for(split /\n/, $out) {
-        next if !/^  (.+?)\s+([AHSRDN]+)\s+(\d+)\s+(.+)/o;
+        next if !/^  (.+?)\s+([AHSRDN]*)\s+(\d+)\s+(.+)/o;
         my ($fn, $attr, $size, $date) = ($1, $2, $3, $4);
         next if $fn =~ /^\.{1,2}$/;
 
