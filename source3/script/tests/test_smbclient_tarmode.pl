@@ -49,11 +49,13 @@ use warnings;
 
 use Archive::Tar;
 use Data::Dumper;
+use Digest::MD5 qw/md5_hex/;
 use File::Path qw/make_path remove_tree/;
+use File::Temp;
 use Getopt::Long;
 use Pod::Usage;
 use Term::ANSIColor;
-use Digest::MD5 qw/md5_hex/;
+
 sub d {print Dumper @_;}
 
 # DEFAULTS
@@ -65,7 +67,7 @@ our $IP        = '';
 our $SHARE     = 'public';
 our $DIR       = 'tar_test_dir';
 our $LOCALPATH = '/media/data/smb-test';
-our $TMP       = '/tmp/smb-tmp';
+our $TMP       = File::Temp->newdir();
 our $BIN       = 'smbclient';
 
 my $SINGLE_TEST = -1;
@@ -119,9 +121,6 @@ my @TESTS = (
     -l, --local-path  PATH
         path to the root of the samba share on the machine.
 
-    -t, --tmp  PATH
-        temporary dir to use
-
     -b, --bin  BIN
         path to the smbclient binary to use
 
@@ -141,7 +140,6 @@ GetOptions('u|user=s'       => \$USER,
            's|share=s'      => \$SHARE,
            'd|dir=s'        => \$DIR,
            'l|local-path=s' => \$LOCALPATH,
-           't|tmp=s'        => \$TMP,
            'b|bin=s'        => \$BIN,
 
            'test=i'         => \$SINGLE_TEST,
@@ -175,6 +173,20 @@ push @SMBARGS, @ARGV;
 
 # path to store the downloaded tarball
 my $TAR = "$TMP/tarmode.tar";
+
+#####
+
+# SANITIZATION
+
+# remove all final slashes from input paths
+$LOCALPATH =~ s{[/\\]+$}{}g;
+$SHARE =~ s{[/\\]+$}{}g;
+$HOST =~ s{[/\\]+$}{}g;
+$DIR =~ s{[/\\]+$}{}g;
+
+if (!-d $LOCALPATH) {
+    die "Local path '$LOCALPATH' is not a directory.\n";
+}
 
 if ($CLEAN) {
     # clean the whole root first
@@ -675,8 +687,7 @@ Remove all files in the temp directory C<$TMP>
 
 =cut
 sub reset_tmp {
-    remove_tree($TMP);
-    make_path($TMP);
+    remove_tree($TMP, { keep_root => 1 });
 }
 
 
