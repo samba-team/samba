@@ -323,9 +323,25 @@ static bool tar_path_in_list(struct tar *t, const char *path)
     return false;
 }
 
-static bool tar_selection_skip_path(struct tar* t,
-                                    const char *fullpath,
-                                    const struct file_info *finfo)
+static bool tar_extract_skip_path(struct tar *t,
+                                  struct archive_entry *entry)
+{
+    const bool skip = true;
+    const char *fullpath = archive_entry_pathname(entry);
+    bool in;
+
+    in = t->path_list_size > 0 ? tar_path_in_list(t, fullpath) : true;
+
+    if (t->mode.selection == TAR_EXCLUDE) {
+        in = !in;
+    }
+
+    return in ? !skip : skip;
+}
+
+static bool tar_create_skip_path(struct tar *t,
+                                 const char *fullpath,
+                                 const struct file_info *finfo)
 {
     /* syntaxic sugar */
     const bool skip = true;
@@ -791,7 +807,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
         goto out;
     }
 
-    if (tar_selection_skip_path(&tar_ctx, remote_name, finfo)) {
+    if (tar_create_skip_path(&tar_ctx, remote_name, finfo)) {
         DBG(5, ("--- %s\n", remote_name));
         goto out;
     }
@@ -925,7 +941,13 @@ static int tar_extract(struct tar *t)
             goto out;
         }
 
-        DBG(0, ("Processing %s...\n", archive_entry_pathname(entry)));
+        if (tar_extract_skip_path(t, entry)) {
+            DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
+            continue;
+        }
+
+        DBG(5, ("+++ %s\n", archive_entry_pathname(entry)));
+
         if (tar_send_file(t, entry)) {
             err = 1;
             goto out;
