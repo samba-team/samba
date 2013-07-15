@@ -1561,6 +1561,10 @@ int ctdb_fetch_func(struct ctdb_call_info *call);
 
 int ctdb_fetch_with_header_func(struct ctdb_call_info *call);
 
+int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
+				uint32_t db_id,
+				TDB_DATA *outdata);
+
 int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
 
 /*

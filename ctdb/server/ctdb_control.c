@@ -651,18 +651,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(size);
 		return ctdb_control_schedule_for_deletion(ctdb, indata);
 	}
-	case CTDB_CONTROL_GET_DB_STATISTICS: {
-		uint32_t db_id;
-		struct ctdb_db_context *ctdb_db;
-
-		CHECK_CONTROL_DATA_SIZE(sizeof(db_id));
-		db_id = *(uint32_t *)indata.dptr;
-		ctdb_db = find_ctdb_db(ctdb, db_id);
-		if (ctdb_db == NULL) return -1;
-		outdata->dptr = (uint8_t *)&ctdb_db->statistics;
-		outdata->dsize = sizeof(ctdb_db->statistics);
-		return 0;
-	}
+	case CTDB_CONTROL_GET_DB_STATISTICS:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_get_db_statistics(ctdb, *(uint32_t *)indata.dptr, outdata);
 
 	case CTDB_CONTROL_RELOAD_PUBLIC_IPS:
 		CHECK_CONTROL_DATA_SIZE(0);
