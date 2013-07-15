@@ -1508,7 +1508,7 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 				TDB_DATA *outdata)
 {
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_db_statistics_wire *stats;
+	struct ctdb_db_statistics *stats;
 	int i;
 	int len;
 	char *ptr;
@@ -1519,33 +1519,25 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	len = offsetof(struct ctdb_db_statistics_wire, hot_keys);
+	len = offsetof(struct ctdb_db_statistics, hot_keys_wire);
 	for (i = 0; i < MAX_HOT_KEYS; i++) {
-		len += 8 + ctdb_db->statistics.hot_keys[i].key.dsize;
+		len += ctdb_db->statistics.hot_keys[i].key.dsize;
 	}
 
 	stats = talloc_size(outdata, len);
 	if (stats == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to allocate db statistics wire structure\n"));
+		DEBUG(DEBUG_ERR,("Failed to allocate db statistics structure\n"));
 		return -1;
 	}
 
-	stats->db_ro_delegations = ctdb_db->statistics.db_ro_delegations;
-	stats->db_ro_revokes     = ctdb_db->statistics.db_ro_revokes;
-	for (i = 0; i < MAX_COUNT_BUCKETS; i++) {
-		stats->hop_count_bucket[i] = ctdb_db->statistics.hop_count_bucket[i];
-	}
+	*stats = ctdb_db->statistics;
+
 	stats->num_hot_keys = MAX_HOT_KEYS;
 
-	ptr = &stats->hot_keys[0];
+	ptr = &stats->hot_keys_wire[0];
 	for (i = 0; i < MAX_HOT_KEYS; i++) {
-		*(uint32_t *)ptr = ctdb_db->statistics.hot_keys[i].count;
-		ptr += 4;
-
-		*(uint32_t *)ptr = ctdb_db->statistics.hot_keys[i].key.dsize;
-		ptr += 4;
-
-		memcpy(ptr, ctdb_db->statistics.hot_keys[i].key.dptr, ctdb_db->statistics.hot_keys[i].key.dsize);
+		memcpy(ptr, ctdb_db->statistics.hot_keys[i].key.dptr,
+		       ctdb_db->statistics.hot_keys[i].key.dsize);
 		ptr += ctdb_db->statistics.hot_keys[i].key.dsize;
 	}
 
