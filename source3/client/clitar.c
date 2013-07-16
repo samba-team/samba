@@ -910,13 +910,74 @@ static int tar_create(struct tar* t)
 }
 
 /**
+ * Return upper limit for the number of token in @str.
+ *
+ * The result is not exact, the actual number of token might be less
+ * than what is returned.
+ */
+static int max_token (const char *str)
+{
+    const char *s = str;
+    int nb = 0;
+
+    if (!str) {
+        return 0;
+    }
+
+    while (*s) {
+        if (isspace(*s)) {
+            nb++;
+        }
+        s++;
+    }
+
+    nb++;
+
+    return nb;
+}
+
+/**
  * cmd_tar - interactive command to start a tar backup/restoration
  *
  * Check presence of argument, parse them and handle the request.
  */
 int cmd_tar(void)
 {
-    return 0;
+    TALLOC_CTX *ctx = talloc_tos();
+    const extern char *cmd_ptr;
+    const char *flag;
+    const char **val;
+	char *buf;
+    int maxtok = max_token(cmd_ptr);
+    int i = 0;
+    int err = 0;
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
+		return 1;
+	}
+
+    flag = buf;
+    val = talloc_array(ctx, const char*, maxtok);
+
+    while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+        val[i++] = buf;
+    }
+
+    if (!tar_parse_args(&tar_ctx, flag, val, i)) {
+        DBG(0, ("parse_args failed\n"));
+        err = 1;
+        goto out;
+    }
+
+    if (tar_process(&tar_ctx)) {
+        DBG(0, ("tar_process failed\n"));
+        err = 1;
+        goto out;
+    }
+
+ out:
+    return err;
 }
 
 static int tar_extract(struct tar *t)
