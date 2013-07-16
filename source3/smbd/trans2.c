@@ -8282,7 +8282,16 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		reply_nterror(req, status);
+		/*
+		 * Invalid EA name needs to return 2 param bytes,
+		 * not a zero-length error packet.
+		 */
+		if (NT_STATUS_EQUAL(status, STATUS_INVALID_EA_NAME)) {
+			send_trans2_replies(conn, req, status, params, 2, NULL, 0,
+					max_data_bytes);
+		} else {
+			reply_nterror(req, status);
+		}
 		return;
 	}
 
