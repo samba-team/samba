@@ -352,7 +352,8 @@ static bool tar_create_skip_path(struct tar *t,
     const bool skip = true;
     const mode_t mode = finfo->mode;
     const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
-    bool in;
+    const bool exclude = t->mode.selection == TAR_EXCLUDE;
+    bool in = true;
 
     if (!isdir) {
 
@@ -374,10 +375,12 @@ static bool tar_create_skip_path(struct tar *t,
 
     /* 3. is it in the selection list? */
 
-    in = t->path_list_size > 0 ? tar_path_in_list(t, fullpath, isdir) : true;
+    if (t->path_list_size > 0) {
+        in = tar_path_in_list(t, fullpath, isdir && !exclude);
+    }
 
     /* inverse result if in exclude mode */
-    if (t->mode.selection == TAR_EXCLUDE) {
+    if (exclude) {
         in = !in;
     }
 
