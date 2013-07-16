@@ -1098,6 +1098,43 @@ static void call_nt_transact_create(connection_struct *conn,
 	 */
 	create_options &= ~NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
 
+	srvstr_get_path(ctx, params, req->flags2, &fname,
+			params+53, parameter_count-53,
+			STR_TERMINATE, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(ctx, conn);
+		if (!case_state) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+	}
+
+	status = filename_convert(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				0,
+				NULL,
+				&smb_fname);
+
+	TALLOC_FREE(case_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+				NT_STATUS_PATH_NOT_COVERED,
+				ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
+	}
+
 	/* Ensure the data_len is correct for the sd and ea values given. */
 	if ((ea_len + sd_len > data_count)
 	    || (ea_len > data_count) || (sd_len > data_count)
@@ -1168,43 +1205,6 @@ static void call_nt_transact_create(connection_struct *conn,
 				params, param_len, NULL, 0);
 			goto out;
 		}
-	}
-
-	srvstr_get_path(ctx, params, req->flags2, &fname,
-			params+53, parameter_count-53,
-			STR_TERMINATE, &status);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
-		case_state = set_posix_case_semantics(ctx, conn);
-		if (!case_state) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-	}
-
-	status = filename_convert(ctx,
-				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				fname,
-				0,
-				NULL,
-				&smb_fname);
-
-	TALLOC_FREE(case_state);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req,
-				NT_STATUS_PATH_NOT_COVERED,
-				ERRSRV, ERRbadpath);
-			goto out;
-		}
-		reply_nterror(req, status);
-		goto out;
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
