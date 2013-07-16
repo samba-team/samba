@@ -385,6 +385,7 @@ struct auth_schannel_state {
 	struct loadparm_context *lp_ctx;
 	uint8_t auth_level;
 	struct netlogon_creds_CredentialState *creds_state;
+	struct netlogon_creds_CredentialState save_creds_state;
 	struct netr_Authenticator auth;
 	struct netr_Authenticator return_auth;
 	union netr_Capabilities capabilities;
@@ -449,7 +450,8 @@ static void continue_bind_auth(struct composite_context *ctx)
 		s->creds_state = cli_credentials_get_netlogon_creds(s->credentials);
 		if (composite_nomem(s->creds_state, c)) return;
 
-		netlogon_creds_client_authenticator(s->creds_state, &s->auth);
+		s->save_creds_state = *s->creds_state;
+		netlogon_creds_client_authenticator(&s->save_creds_state, &s->auth);
 
 		s->c.in.server_name = talloc_asprintf(c,
 						      "\\\\%s",
@@ -519,11 +521,13 @@ static void continue_get_capabilities(struct tevent_req *subreq)
 	}
 
 	/* verify credentials */
-	if (!netlogon_creds_client_check(s->creds_state,
+	if (!netlogon_creds_client_check(&s->save_creds_state,
 					 &s->c.out.return_authenticator->cred)) {
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
+
+	*s->creds_state = s->save_creds_state;
 
 	if (!NT_STATUS_IS_OK(s->c.out.result)) {
 		composite_error(c, s->c.out.result);
