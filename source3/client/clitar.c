@@ -60,8 +60,7 @@ enum tar_operation {
 
 enum tar_selection {
     TAR_NO_SELECTION,
-    TAR_INCLUDE,       /* I flag, default */
-    TAR_INCLUDE_LIST,  /* F flag */
+    TAR_INCLUDE,       /* I and F flag, default */
     TAR_EXCLUDE,       /* X flag */
 };
 
@@ -166,7 +165,6 @@ static void tar_dump(struct tar *t)
     const char* sel[] = {
         XSET(TAR_NO_SELECTION),
         XSET(TAR_INCLUDE),
-        XSET(TAR_INCLUDE_LIST),
         XSET(TAR_EXCLUDE),
     };
 
@@ -1028,6 +1026,7 @@ int tar_process(struct tar *t)
 int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsize)
 {
     TALLOC_CTX *ctx = talloc_tos();
+    bool list = false;
 
     /* index of next value to use */
     int ival = 0;
@@ -1080,7 +1079,8 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
                 DBG(0,("Only one of I,X,F must be specified\n"));
                 return 0;
             }
-            t->mode.selection = TAR_INCLUDE_LIST;
+            t->mode.selection = TAR_INCLUDE;
+            list = true;
             break;
 
         /* blocksize */
@@ -1175,7 +1175,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
     /* handle PATHs... */
 
     /* flag F -> read file list */
-    if (t->mode.selection == TAR_INCLUDE_LIST) {
+    if (list) {
         if (valsize - ival != 1) {
             DBG(0,("Option F must be followed by exactly one filename.\n"));
             return 0;
