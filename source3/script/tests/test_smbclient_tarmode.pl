@@ -70,7 +70,7 @@ our $LOCALPATH = '/media/data/smb-test';
 our $TMP       = File::Temp->newdir();
 our $BIN       = 'smbclient';
 
-my $SINGLE_TEST = -1;
+my $SELECTED_TEST = '';
 my $LIST_TEST = 0;
 
 my @SMBARGS   = ();
@@ -129,7 +129,10 @@ my @TESTS = (
        list tests
 
     --test N
-       only run test number N
+    --test A-B
+    --test A,B,D-F
+
+       only run certain tests (accept list and intervals of numbers)
 
 =cut
 
@@ -142,7 +145,7 @@ GetOptions('u|user=s'       => \$USER,
            'l|local-path=s' => \$LOCALPATH,
            'b|bin=s'        => \$BIN,
 
-           'test=i'         => \$SINGLE_TEST,
+           'test=s'         => \$SELECTED_TEST,
            'list'           => \$LIST_TEST,
 
            'clean'          => \$CLEAN,
@@ -197,12 +200,14 @@ if ($CLEAN) {
 
 # RUN TESTS
 
-if ($SINGLE_TEST == -1) {
+my @selection = parse_test_string($SELECTED_TEST);
+
+if ($SELECTED_TEST eq '') {
     run_test(@TESTS);
-} elsif (0 <= $SINGLE_TEST && $SINGLE_TEST < @TESTS) {
-    run_test($TESTS[$SINGLE_TEST]);
+} elsif (@selection > 0) {
+    run_test(@selection);
 } else {
-    die "Test number is invalid\n";
+    die "Test selection '$SELECTED_TEST' is invalid\n";
 }
 
 #################################
@@ -635,6 +640,39 @@ sub run_test {
         print "\n";
     }
     reset_env();
+}
+
+sub parse_test_string {
+    my $s = shift;
+    my @tests = ();
+
+    if (!length($s)) {
+        return ();
+    }
+
+    for (split /,/, $s) {
+        when (/^\d+$/) {
+            if ($_ >= @TESTS) {
+                return ();
+            }
+            push @tests, $TESTS[$_];
+        }
+        when (/^(\d+)-(\d+)$/) {
+            my ($min, $max) = sort ($1, $2);
+            if ($max >= @TESTS) {
+                return ();
+            }
+
+            for ($min..$max) {
+                push @tests, $TESTS[$_];
+            }
+        }
+        default {
+            return ();
+        }
+    }
+
+    return @tests;
 }
 
 sub print_res {
