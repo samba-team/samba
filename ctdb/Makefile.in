@@ -393,6 +393,7 @@ install: all manpages $(PMDA_INSTALL)
 	${INSTALLCMD} -m 755 config/debug-hung-script.sh $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/ctdb-crash-cleanup.sh $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/gcore_trace.sh $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 755 config/debug_locks.sh $(DESTDIR)$(etcdir)/ctdb
 
 install_pmda:
 	$(INSTALLCMD) -m 755 -d $(DESTDIR)$(PMDA_DEST_DIR)

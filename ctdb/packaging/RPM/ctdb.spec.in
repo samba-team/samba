@@ -149,6 +149,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/debug-hung-script.sh
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
 %config(noreplace) %{_sysconfdir}/ctdb/gcore_trace.sh
+%config(noreplace) %{_sysconfdir}/ctdb/debug_locks.sh
 
 %if %{with_systemd}
 %{_unitdir}/ctdb.service
