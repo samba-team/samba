@@ -302,11 +302,12 @@ static bool is_subpath(const char *sub, const char *full)
     return *full == *sub;
 }
 
-static bool tar_path_in_list(struct tar *t, const char *path)
+static bool tar_path_in_list(struct tar *t, const char *path, bool reverse)
 {
     int i;
     const char *p = path;
     const char *pattern;
+    bool res;
 
     if (!p || !p[0])
         return false;
@@ -315,7 +316,11 @@ static bool tar_path_in_list(struct tar *t, const char *path)
 
     for (i = 0; i < t->path_list_size; i++) {
         pattern = skip_useless_char_in_path(t->path_list[i]);
-        if (is_subpath(p, pattern)) {
+        res = is_subpath(p, pattern);
+        if (reverse) {
+            res = res || is_subpath(pattern, p);
+        }
+        if (res) {
             return true;
         }
     }
@@ -330,7 +335,7 @@ static bool tar_extract_skip_path(struct tar *t,
     const char *fullpath = archive_entry_pathname(entry);
     bool in;
 
-    in = t->path_list_size > 0 ? tar_path_in_list(t, fullpath) : true;
+    in = t->path_list_size > 0 ? tar_path_in_list(t, fullpath, false) : true;
 
     if (t->mode.selection == TAR_EXCLUDE) {
         in = !in;
@@ -345,28 +350,31 @@ static bool tar_create_skip_path(struct tar *t,
 {
     /* syntaxic sugar */
     const bool skip = true;
-    mode_t mode = finfo->mode;
+    const mode_t mode = finfo->mode;
+    const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
     bool in;
 
-    /* 1. if we dont want X and we have X, skip */
+    if (!isdir) {
 
-    if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
-        return skip;
-    }
+        /* 1. if we dont want X and we have X, skip */
+        if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
+            return skip;
+        }
 
-    if (!t->mode.hidden && (mode & FILE_ATTRIBUTE_HIDDEN)) {
-        return skip;
-    }
+        if (!t->mode.hidden && (mode & FILE_ATTRIBUTE_HIDDEN)) {
+            return skip;
+        }
 
-    /* 2. if we only want archive and it's not, skip */
+        /* 2. if we only want archive and it's not, skip */
 
-    if (t->mode.incremental && !(mode & FILE_ATTRIBUTE_ARCHIVE)) {
-        return skip;
+        if (t->mode.incremental && !(mode & FILE_ATTRIBUTE_ARCHIVE)) {
+            return skip;
+        }
     }
 
     /* 3. is it in the selection list? */
 
-    in = t->path_list_size > 0 ? tar_path_in_list(t, fullpath) : true;
+    in = t->path_list_size > 0 ? tar_path_in_list(t, fullpath, isdir) : true;
 
     /* inverse result if in exclude mode */
     if (t->mode.selection == TAR_EXCLUDE) {
