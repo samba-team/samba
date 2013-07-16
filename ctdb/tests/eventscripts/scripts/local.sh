@@ -304,6 +304,8 @@ setup_ctdb ()
     export FAKE_CTDB_SCRIPTSTATUS="$FAKE_CTDB_STATE/scriptstatus"
     mkdir -p "$FAKE_CTDB_SCRIPTSTATUS"
     rm -f "$FAKE_CTDB_SCRIPTSTATUS"/*
+
+    export CTDB_PARTIALLY_ONLINE_INTERFACES
 }
 
 ctdb_get_interfaces ()

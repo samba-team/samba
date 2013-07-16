@@ -10,28 +10,64 @@ not_implemented ()
 
 ip_link ()
 {
-    case "$2" in
+    case "$1" in
 	set)
-	    # iface="$3"
-	    case "$4" in
-		up)   ip_link_set_up "$@"  ;;
-		down) ip_link_down_up "$@" ;;
-		*)    not_implemented "$*" ;;
+	    shift
+	    # iface="$1"
+	    case "$2" in
+		up)   ip_link_set_up "$1"  ;;
+		down) ip_link_down_up "$1" ;;
+		*)    not_implemented "\"$2\" in \"$orig_args\"" ;;
 	    esac
 	    ;;
+	show) shift ; ip_link_show "$@" ;;
+	del*) shift ; ip_link_delete "$@" ;;
 	*) not_implemented "$*" ;;
     esac
 }
 
+ip_link_delete ()
+{
+    mkdir -p "${FAKE_IP_STATE}/interfaces-deleted"
+    touch "${FAKE_IP_STATE}/interfaces-deleted/$1"
+}
+
 ip_link_set_up ()
 {
-    rm -f "${FAKE_IP_STATE}/interfaces-down/$3"
+    rm -f "${FAKE_IP_STATE}/interfaces-down/$1"
+    rm -f "${FAKE_IP_STATE}/interfaces-deleted/$1"
 }
 
 ip_link_set_down ()
 {
+    rm -f "${FAKE_IP_STATE}/interfaces-deleted/$1"
     mkdir -p "${FAKE_IP_STATE}/interfaces-down"
-    touch "${FAKE_IP_STATE}/interfaces-down/$3"
+    touch "${FAKE_IP_STATE}/interfaces-down/$1"
+}
+
+ip_link_show ()
+{
+    dev="$1"
+    if [ "$dev" = "dev" -a -n "$2" ] ; then
+	dev="$2"
+    fi
+
+    if [ -e "${FAKE_IP_STATE}/interfaces-deleted/$dev" ] ; then
+	echo "Device \"${dev}\" does not exist." >&2
+	exit 255
+    fi
+
+    mac=$(echo $dev | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
+    _state="UP"
+    _flags=",UP,LOWER_UP"
+    if [ -e "${FAKE_IP_STATE}/interfaces-down/$dev" ] ; then
+	_state="DOWN"
+	_flags=""
+    fi
+    cat <<EOF
+${n}: ${dev}: <BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000
+    link/ether ${mac} brd ff:ff:ff:ff:ff:ff
+EOF
 }
 
 # This is incomplete because it doesn't actually look up table ids in
@@ -63,7 +99,7 @@ ip_check_table ()
 		exit 255
 	    fi
 	    ;;
-	*) not_implemented "table=${_table} in ${_args}" ;;
+	*) not_implemented "table=${_table} ${orig_args}" ;;
     esac
 }
 
@@ -71,19 +107,16 @@ ip_check_table ()
 
 ip_addr ()
 {
-    case "$2" in
-	show|list|"") ip_addr_show "$@" ;;
-	add*)      ip_addr_add  "$@" ;;
-	del*)      ip_addr_del  "$@" ;;
-	*) not_implemented "$*" ;;
+    case "$1" in
+	show|list|"") shift ; ip_addr_show "$@" ;;
+	add*)         shift ; ip_addr_add  "$@" ;;
+	del*)         shift ; ip_addr_del  "$@" ;;
+	*) not_implemented "\"$1\" in \"$orig_args\"" ;;
     esac
 }
 
 ip_addr_show ()
 {
-    _args="$*"
-
-    shift 2
     dev=""
     primary=true
     secondary=true
@@ -128,11 +161,7 @@ ip_addr_show ()
     {
 	pf="${FAKE_IP_STATE}/addresses/${dev}-primary"
 	sf="${FAKE_IP_STATE}/addresses/${dev}-secondary"
-	mac=$(echo $dev | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
-	cat <<EOF
-${n}: ${dev}: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
-    link/ether ${mac} brd ff:ff:ff:ff:ff:ff
-EOF
+	ip_link_show "$dev"
 	if $primary && [ -r "$pf" ] ; then
 	    read local <"$pf"
 	    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
@@ -170,9 +199,6 @@ EOF
 
 ip_addr_add ()
 {
-    _args="$*"
-
-    shift 2
     local=""
     dev=""
     brd=""
@@ -221,7 +247,6 @@ ip_addr_add ()
 
 ip_addr_del ()
 {
-    shift 2
     local=""
     dev=""
     while [ -n "$1" ] ; do
@@ -266,11 +291,11 @@ ip_addr_del ()
 
 ip_rule ()
 {
-    case "$2" in
-	show|list|"") ip_rule_show "$@" ;;
-	add*)         ip_rule_add  "$@" ;;
-	del*)         ip_rule_del  "$@" ;;
-	*) not_implemented "$2 in \"$*\"" ;;
+    case "$1" in
+	show|list|"") shift ; ip_rule_show "$@" ;;
+	add)          shift ; ip_rule_add  "$@" ;;
+	del*)         shift ; ip_rule_del  "$@" ;;
+	*) not_implemented "$1 in \"$orig_args\"" ;;
     esac
 
 }
@@ -318,9 +343,6 @@ ip_rule_show ()
 
 ip_rule_common ()
 {
-    _args="$*"
-
-    shift 2
     _from=""
     _pre=""
     _table=""
@@ -329,7 +351,7 @@ ip_rule_common ()
 	    from)  _from="$2"  ; shift 2 ;;
 	    pref)  _pre="$2"   ; shift 2 ;;
 	    table) _table="$2" ; shift 2 ;;
-	    *) not_implemented "$1 in \"$_args\"" ;;
+	    *) not_implemented "$1 in \"$orig_args\"" ;;
 	esac
     done
 
@@ -387,19 +409,17 @@ ip_rule_del ()
 
 ip_route ()
 {
-    case "$2" in
-	show|list)    ip_route_show  "$@" ;;
-	flush)        ip_route_flush "$@" ;;
-	add)          ip_route_add   "$@" ;;
-	*) not_implemented "$2 in \"$*\"" ;;
+    case "$1" in
+	show|list)    shift ; ip_route_show  "$@" ;;
+	flush)        shift ; ip_route_flush "$@" ;;
+	add)          shift ; ip_route_add   "$@" ;;
+	*) not_implemented "$1 in \"ip route\"" ;;
     esac
 }
 
 ip_route_common ()
 {
-    _args="$*"
-    shift 2
-    [ "$1" = table ] || not_implemented "$1 in \"$_args\""
+    [ "$1" = table ] || not_implemented "$1 in \"$orig_args\""
     _table="$2"
 
     ip_check_table "route"
@@ -427,10 +447,6 @@ ip_route_flush ()
 
 ip_route_add ()
 {
-    _args="$*"
-
-    shift 2
-
     _prefix=""
     _dev=""
     _gw=""
@@ -443,13 +459,13 @@ ip_route_add ()
 	    dev)   _dev="$2"   ; shift 2 ;;
 	    via)   _gw="$2"    ; shift 2 ;;
 	    table) _table="$2" ; shift 2 ;;
-	    *) not_implemented "$1 in \"$_args\"" ;;
+	    *) not_implemented "$1 in \"$orig_args\"" ;;
 	esac
     done
 
     ip_check_table "route"
-    [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$_args\""
-    [ -n "$_dev" ] || not_implemented "ip route without \"dev\" in \"$_args\""
+    [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$orig_args\""
+    [ -n "$_dev" ] || not_implemented "ip route without \"dev\" in \"$orig_args\""
 
     # Alias or add missing bits
     case "$_prefix" in
@@ -476,11 +492,13 @@ ip_route_add ()
 
 ######################################################################
 
+orig_args="$*"
+
 case "$1" in
-    link)   ip_link  "$@" ;;
-    addr*)  ip_addr  "$@" ;;
-    rule)   ip_rule  "$@" ;;
-    route)  ip_route "$@" ;;
+    link)   shift ; ip_link  "$@" ;;
+    addr*)  shift ; ip_addr  "$@" ;;
+    rule)   shift ; ip_rule  "$@" ;;
+    route)  shift ; ip_route "$@" ;;
     *) not_implemented "$1" ;;
 esac
 
