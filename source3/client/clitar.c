@@ -471,7 +471,7 @@ int cmd_tarmode(void)
  *
  * Update the file attributes with the one provided.
  */
-static void set_remote_attr(char *filename, uint16 new_attr, int mode)
+static void set_remote_attr(const char *filename, uint16 new_attr, int mode)
 {
     extern struct cli_state *cli;
     uint16 old_attr;
@@ -715,6 +715,10 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
 
     if (t->mode.dry) {
         goto out;
+    }
+
+    if (t->mode.reset) {
+        set_remote_attr(full_dos_path, FILE_ATTRIBUTE_ARCHIVE, ATTR_UNSET);
     }
 
     full_unix_path = talloc_asprintf(ctx, ".%s", full_dos_path);
