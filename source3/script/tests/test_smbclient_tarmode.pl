@@ -131,7 +131,6 @@ my @TESTS = (
     --test N
     --test A-B
     --test A,B,D-F
-
        only run certain tests (accept list and intervals of numbers)
 
 =cut
