@@ -246,6 +246,9 @@ bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpc
 		PyObject *ret;
 		struct wrapperbase *wb = (struct wrapperbase *)calloc(sizeof(struct wrapperbase), 1);
 
+		if (wb == NULL) {
+			return false;
+		}
 		wb->name = discard_const_p(char, mds[i].name);
 		wb->flags = PyWrapperFlag_KEYWORDS;
 		wb->wrapper = (wrapperfunc)py_dcerpc_call_wrapper;

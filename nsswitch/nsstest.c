@@ -371,6 +371,10 @@ static void nss_test_initgroups(char *name, gid_t gid)
 	NSS_STATUS status;
 
 	groups = (gid_t *)malloc(sizeof(gid_t) * size);
+	if (groups == NULL) {
+		printf("Unable to allocate memory for groups\n");
+		return;
+	}
 	groups[0] = gid;
 
 	status = nss_initgroups(name, gid, &groups, &start, &size);

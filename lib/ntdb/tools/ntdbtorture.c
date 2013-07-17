@@ -96,6 +96,10 @@ static char *randbuf(int len)
 	char *buf;
 	int i;
 	buf = (char *)malloc(len+1);
+	if (buf == NULL) {
+		perror("randbuf: unable to allocate memory for buffer.\n");
+		exit(1);
+	}
 
 	for (i=0;i<len;i++) {
 		buf[i] = 'a' + (rand() % 26);

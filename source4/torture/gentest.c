@@ -3068,9 +3068,17 @@ static bool start_gentest(struct tevent_context *ev,
 
 	/* allocate the open_handles array */
 	open_handles = calloc(options.max_open_handles, sizeof(open_handles[0]));
+	if (open_handles == NULL) {
+		printf("Unable to allocate memory for open_handles array.\n");
+		exit(1);
+	}
 
 	srandom(options.seed);
 	op_parms = calloc(options.numops, sizeof(op_parms[0]));
+	if (op_parms == NULL) {
+		printf("Unable to allocate memory for op_parms.\n");
+		exit(1);
+	}
 
 	/* generate the seeds - after this everything is deterministic */
 	if (options.use_preset_seeds) {

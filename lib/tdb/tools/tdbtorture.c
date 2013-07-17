@@ -342,7 +342,15 @@ int main(int argc, char * const *argv)
 	}
 
 	pids = (pid_t *)calloc(sizeof(pid_t), num_procs);
+	if (pids == NULL) {
+		perror("Unable to allocate memory for pids");
+		exit(1);
+	}
 	done = (int *)calloc(sizeof(int), num_procs);
+	if (done == NULL) {
+		perror("Unable to allocate memory for done");
+		exit(1);
+	}
 
 	if (pipe(pfds) != 0) {
 		perror("Creating pipe");

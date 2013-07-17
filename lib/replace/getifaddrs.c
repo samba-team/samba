@@ -113,11 +113,23 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	for (i=n-1; i>=0; i--) {
 		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) == -1) {
 			freeifaddrs(*ifap);
+			close(fd);
 			return -1;
 		}
 
 		curif = calloc(1, sizeof(struct ifaddrs));
+		if (curif == NULL) {
+			freeifaddrs(*ifap);
+			close(fd);
+			return -1;
+		}
 		curif->ifa_name = strdup(ifr[i].ifr_name);
+		if (curif->ifa_name == NULL) {
+			free(curif);
+			freeifaddrs(*ifap);
+			close(fd);
+			return -1;
+		}
 		curif->ifa_flags = ifr[i].ifr_flags;
 		curif->ifa_dstaddr = NULL;
 		curif->ifa_data = NULL;
@@ -126,11 +138,28 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		curif->ifa_addr = NULL;
 		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != -1) {
 			curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
+			if (curif->ifa_addr == NULL) {
+				free(curif->ifa_name);
+				free(curif);
+				freeifaddrs(*ifap);
+				close(fd);
+				return -1;
+			}
 		}
 
 		curif->ifa_netmask = NULL;
 		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != -1) {
 			curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
+			if (curif->ifa_netmask == NULL) {
+				if (curif->ifa_addr != NULL) {
+					free(curif->ifa_addr);
+				}
+				free(curif->ifa_name);
+				free(curif);
+				freeifaddrs(*ifap);
+				close(fd);
+				return -1;
+			}
 		}
 
 		if (lastif == NULL) {

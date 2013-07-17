@@ -48,12 +48,24 @@ int main(int argc, char *argv[])
 	idxkey.dsize = strlen("User index");
 	idxdata.dsize = 51;
 	idxdata.dptr = calloc(idxdata.dsize, 1);
+	if (idxdata.dptr == NULL) {
+		fprintf(stderr, "Unable to allocate memory for idxdata.dptr\n");
+		return -1;
+	}
 
 	/* Create users. */
 	k.dsize = 48;
 	k.dptr = calloc(k.dsize, 1);
+	if (k.dptr == NULL) {
+		fprintf(stderr, "Unable to allocate memory for k.dptr\n");
+		return -1;
+	}
 	d.dsize = 64;
 	d.dptr = calloc(d.dsize, 1);
+	if (d.dptr == NULL) {
+		fprintf(stderr, "Unable to allocate memory for d.dptr\n");
+		return -1;
+	}
 
 	ntdb_transaction_start(ntdb);
 	for (i = 0; i < users; i++) {
@@ -79,6 +91,10 @@ int main(int argc, char *argv[])
 	 * a group. */
 	gk.dsize = 48;
 	gk.dptr = calloc(k.dsize, 1);
+	if (gk.dptr == NULL) {
+		fprintf(stderr, "Unable to allocate memory for gk.dptr\n");
+		return -1;
+	}
 	gk.dptr[gk.dsize-1] = 1;
 
 	d.dsize = 32;

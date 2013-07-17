@@ -73,6 +73,11 @@ int main(int argc, char *argv[])
 
 	data.dsize = 0;
 	data.dptr = calloc(1000, getpagesize());
+	if (data.dptr == NULL) {
+		diag("Unable to allocate memory for data.dptr");
+		tdb_close(tdb);
+		exit(1);
+	}
 
 	/* Simulate a slowly growing record. */
 	for (i = 0; i < 1000; i++)
