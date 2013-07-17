@@ -84,7 +84,7 @@ my $CLEAN = 0;
 my @TESTS = (
     ['create, normal files (no attributes)',        \&test_creation_normal,      'normal'],
     ['create, normal nested files (no attributes)', \&test_creation_normal,      'nested'],
-    ['create, normal files (interactive)',          \&test_creation_normal, 'inter'],
+    ['create, normal files (interactive)',          \&test_creation_normal,      'inter'],
     ['create, incremental with -g',                 \&test_creation_incremental, '-g'],
     ['create, incremental with tarmode',            \&test_creation_incremental, 'tarmode inc'],
     ['create, reset archived files with -a',        \&test_creation_reset,       '-a'],
@@ -94,7 +94,8 @@ my @TESTS = (
     ['create, explicit include',                    \&test_creation_include],
 #    ['create, explicit exclude',                    \&test_creation_exclude],
     ['create, include w/ filelist (F)',             \&test_creation_list],
-#   ['create, wildcard and regex',                  \&test_creation_wildcard],
+#   ['create, wildcard',                            \&test_creation_wildcard],
+    ['create, wildcard simple',                     \&test_creation_wildcard_simple],
     ['extract, normal files',                       \&test_extraction_normal],
     ['extract, explicit include',                   \&test_extraction_include],
     ['extract, explicit exclude',                   \&test_extraction_exclude],
@@ -475,6 +476,26 @@ sub test_creation_list {
     return check_tar($TAR, \@inc_files);
 }
 
+sub test_creation_wildcard_simple {
+    my @exts = qw(jpg exe);
+    my @dirs = ('', "$DIR/");
+    my @all = make_env(\@exts, \@dirs);
+    my $nb;
+    my @inc;
+    my $err = 0;
+
+    @inc = grep { $_->remotepath =~ m{^[^/]+exe$} } @all;
+    smb_tar('', '-Tc', $TAR, "*.exe");
+    $err += check_tar($TAR, \@inc);
+
+    @inc = grep { $_->remotepath =~ m{$DIR/.+exe$} } @all;
+    smb_tar('', '-Tc', $TAR, "$DIR/*.exe");
+    $err += check_tar($TAR, \@inc);
+
+    $err;
+}
+
+# NOT USED
 sub test_creation_wildcard {
     my @exts = qw(txt jpg exe);
     my @dirs = ('', "$DIR/", "$DIR/dir/");
@@ -492,6 +513,11 @@ sub test_creation_wildcard {
             $nb++;
         }
     }
+
+
+    smb_tar('', '-Tcr', $TAR, "file2.exe", "file2.exe");
+    check_tar($TAR, \@all);
+    return 0;
 
     $nb = 0;
     for my $dir (@dirs) {
@@ -687,6 +713,23 @@ sub print_res {
     } else {
         printf " RES: %sOK%s\n", color('bold green'), color 'reset';
     }
+}
+
+sub make_env {
+    my ($exts, $dirs) = @_;
+    my @all;
+    my $nb = 0;
+    for my $dir (@$dirs) {
+        for (@$exts) {
+            my $fn = $dir . "file$nb." . $_;
+            my $f = File->new_remote($fn, 'ABSPATH');
+            $f->delete_on_destruction(1);
+            push @all, $f;
+            $nb++;
+        }
+    }
+
+    @all;
 }
 
 =head3 C<combine ( \@set, $n )>
@@ -895,7 +938,7 @@ sub check_tar {
 
     # file that should have been in tar
     @less = grep { $done{$_} == 0 } keys %done;
-    for (@less) {
+    for (sort @less) {
         say " -    $_";
     }
 
