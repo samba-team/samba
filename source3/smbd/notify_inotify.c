@@ -398,6 +398,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	if (w->path == NULL) {
 		inotify_rm_watch(in->fd, wd);
 		*filter = orig_filter;
+		TALLOC_FREE(w);
 		return NT_STATUS_NO_MEMORY;
 	}
 
