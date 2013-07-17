@@ -47,6 +47,9 @@ static void print_exit_message(void)
 		DEBUG(DEBUG_NOTICE,("CTDB %s shutting down\n", debug_extra));
 	} else {
 		DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
+
+		/* Wait a second to allow pending log messages to be flushed */
+		sleep(1);
 	}
 }
 
@@ -1180,6 +1183,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 			  CTDB_VERSION_STRING, ctdbd_pid));
 	ctdb_create_pidfile(ctdb->ctdbd_pid);
 
+	/* Make sure we log something when the daemon terminates.
+	 * This must be the first exit handler to run (so the last to
+	 * be registered.
+	 */
+	atexit(print_exit_message);
+
 	if (ctdb->do_setsched) {
 		/* try to set us up as realtime */
 		ctdb_set_scheduler(ctdb);
@@ -1291,10 +1300,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	if (ctdb->tunable.disable_ip_failover == 0) {
 		ctdb_release_all_ips(ctdb);
 	}
-
-
-	/* Make sure we log something when the daemon terminates */
-	atexit(print_exit_message);
 
 	/* Start the transport */
 	if (ctdb->methods->start(ctdb) != 0) {
