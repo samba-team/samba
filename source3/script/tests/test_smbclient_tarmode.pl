@@ -85,6 +85,8 @@ my @TESTS = (
     ['create, normal files (no attributes)',        \&test_creation_normal,      'normal'],
     ['create, normal nested files (no attributes)', \&test_creation_normal,      'nested'],
     ['create, normal files (interactive)',          \&test_creation_normal,      'inter'],
+    ['create, large file',                          \&test_creation_large_file],
+    ['create, long path',                           \&test_creation_long_path],
     ['create, incremental with -g',                 \&test_creation_incremental, '-g'],
     ['create, incremental with tarmode',            \&test_creation_incremental, 'tarmode inc'],
     ['create, reset archived files with -a',        \&test_creation_reset,       '-a'],
@@ -329,6 +331,26 @@ sub test_creation_reset {
         }
     }
     return $err;
+}
+
+sub test_creation_large_file {
+    my $size = int(15e6); # 15MB
+    my $f = File->new_remote("fat.jpg", 0, $size);
+
+    smb_tar('', '-Tc', $TAR, $DIR);
+    return check_tar($TAR, [$f]);
+}
+
+sub test_creation_long_path {
+    my $d = "a"x130;
+    my @all;
+
+    for(qw( foo/a bar/b )) {
+        push @all, File->new_remote("$d/$_");
+    }
+
+    smb_tar('', '-Tc', $TAR, $DIR);
+    return check_tar($TAR, \@all);
 }
 
 sub test_creation_normal {
@@ -898,7 +920,7 @@ sub check_tar {
     while (my $f = $i->()) {
         if ($f->has_content) {
             $total++;
-            my $p = $f->full_path;
+            my $p = $f->full_path =~ s{^\./+}{}r;
 
             # file that shouldn't be there
             if (!exists $done{$p}) {
@@ -1064,10 +1086,12 @@ use Scalar::Util 'blessed';
 
 =head3 Constructors
 
-=head4 C<< File->new_remote($path [, $abs]) >>
+=head4 C<< File->new_remote($path [, $abs, $size]) >>
 
 Creates a file accessible on the server at C<$DIR/$path> ie. not at the
-root of the share.
+root of the share and write C<$size> random bytes.
+
+If no size is provided, a random size is chosen.
 
 If you want to remove the automatic prefix C<$DIR>, set C<$abs> to 1.
 
@@ -1078,7 +1102,7 @@ created.
 
 =cut
 sub new_remote {
-    my ($class, $path, $abs) = @_;
+    my ($class, $path, $abs, $size) = @_;
     my ($file, $dir) = fileparse($path);
 
     $dir = '' if $dir eq './';
@@ -1097,7 +1121,7 @@ sub new_remote {
         'attr' => {qw/r 0 s 0 h 0 a 0 d 0 n 0/},
         'dir'  => $dir,
         'name' => $file,
-        'md5'  => create_file($loc.'/'.$file),
+        'md5'  => create_file($loc.'/'.$file, $size),
         'remote' => 1,
     }, $class;
 
@@ -1194,7 +1218,7 @@ Like C<< $f->remotepath >> but prefixed with F<./>
 sub tarpath {
     my $s = shift;
     return undef if !$s->{remote};
-    cleanpath('./'.$s->remotepath);
+    $s->remotepath =~ s{^\./+}{}r;
 }
 
 =head4 C<< $f->delete_on_destruction( 0 ) >>
@@ -1437,18 +1461,29 @@ sub cleanpath {
 
 # create random file at path local path $fn
 sub create_file {
-    my $fn = shift;
+    my ($fn, $size) = @_;
     my $buf = '';
     unlink $fn if -e $fn;
-    my $size = main::random(512, 1024);
-    open my $out, '>', $fn or die "can't open $fn: $!\n";
-    binmode $out;
-    for (1..$size) {
-        $buf .= pack('C', main::random(0, 256));
+    $size ||= main::random(512, 1024);
+    $size = int($size);
+    my $md5;
+
+    # try /dev/urandom, faster
+    if (-e '/dev/urandom') {
+        my $cmd = sprintf('head -c %d /dev/urandom | tee %s | md5sum',
+                          $size, quotemeta($fn));
+        $md5 = (split / /, `$cmd`)[0];
+    } else {
+        open my $out, '>', $fn or die "can't open $fn: $!\n";
+        binmode $out;
+        for (1..$size) {
+            $buf .= pack('C', main::random(0, 256));
+        }
+        print $out $buf;
+        close $out;
+        $md5 = md5_hex($buf);
     }
-    print $out $buf;
-    close $out;
-    return md5_hex($buf);
+    return $md5;
 }
 
 
