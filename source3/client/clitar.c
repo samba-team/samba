@@ -43,7 +43,7 @@
  *
  * The actual choice is made by libarchive.
  */
-#define TAR_DEFAULT_BLOCK_SIZE 20
+#define TAR_DEFAULT_BLOCK_SIZE (20*512)
 
 #define TAR_CLI_READ_SIZE 0xff00
 
