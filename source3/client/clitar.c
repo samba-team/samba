@@ -26,7 +26,7 @@
 #include <archive_entry.h>
 
 #define LEN(x) (sizeof(x)/sizeof((x)[0]))
-#define DBG(a, b) (DEBUG(a, ("tar:%-3d ", __LINE__)), DEBUG(a, b))
+#define DBG(a, b) (DEBUG(a, ("tar:%-4d ", __LINE__)), DEBUG(a, b))
 
 /**
  * Maximum value for the blocksize field
@@ -145,6 +145,27 @@ static char *fix_unix_path (char *path, bool removeprefix)
     *to = 0;
 
     return path;
+}
+
+static char *path_base_name (const char *path)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    char *base = NULL;
+    int last = -1;
+    int i;
+
+    for (i = 0; path[i]; i++) {
+        if (path[i] == '\\' || path[i] == '/') {
+            last = i;
+        }
+    }
+
+    if (last >= 0) {
+        base = talloc_strdup(ctx, path);
+        base[last] = 0;
+    }
+
+    return base;
 }
 
 #define XSET(v)      [v] = #v
@@ -374,16 +395,20 @@ static bool tar_create_skip_path(struct tar *t,
 
     /* 3. is it in the selection list? */
 
+    /*
+     * tar_create_from_list() use the include list as a starting
+     * point, no need to check
+     */
+    if (!exclude) {
+        return !skip;
+    }
+
+    /* we are now in exclude mode */
     if (t->path_list_size > 0) {
         in = tar_path_in_list(t, fullpath, isdir && !exclude);
     }
 
-    /* inverse result if in exclude mode */
-    if (exclude) {
-        in = !in;
-    }
-
-    return in ? !skip : skip;
+    return in ? skip : !skip;
 }
 
 bool tar_to_process (struct tar *t)
@@ -568,7 +593,7 @@ int cmd_setmode(void)
         return 1;
     }
 
-    DBG(2, ("\nperm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
+    DBG(2, ("perm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
     set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
     set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
     return 0;
@@ -856,13 +881,52 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
     return err;
 }
 
+static int tar_create_from_list(struct tar *t)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    int err = 0;
+    NTSTATUS status;
+    const char *path, *mask, *base, *start_dir;
+    int i;
+
+    start_dir = talloc_strdup(ctx, client_get_cur_dir());
+
+    for (i = 0; i < t->path_list_size; i++) {
+        path = t->path_list[i];
+        base = path_base_name(path);
+        mask = talloc_asprintf(ctx, "%s\\%s", client_get_cur_dir(), path);
+
+        DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
+                path, base ? base : "NULL", mask));
+
+        if (base) {
+            base = talloc_asprintf(ctx, "%s%s\\",
+                                   client_get_cur_dir(), path_base_name(path));
+            DBG(5, ("cd '%s' before do_list\n", base));
+            client_set_cur_dir(base);
+        }
+        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+        if (base) {
+            client_set_cur_dir(start_dir);
+        }
+        if (!NT_STATUS_IS_OK(status)) {
+            DBG(0, ("do_list failed on %s (%s)\n", path, nt_errstr(status)));
+            err = 1;
+            goto out;
+        }
+    }
+
+ out:
+    return err;
+}
+
 static int tar_create(struct tar* t)
 {
     TALLOC_CTX *ctx = talloc_tos();
-    char *mask = talloc_asprintf(ctx, "%s\\*", client_get_cur_dir());
     int r;
     int err = 0;
     NTSTATUS status;
+    const char *mask;
 
     t->archive = archive_write_new();
 
@@ -887,23 +951,36 @@ static int tar_create(struct tar* t)
         }
     }
 
-    DBG(5, ("tar_process do_list with mask: %s\n", mask));
-    status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0, ("do_list fail %s\n", nt_errstr(status)));
-        err = 1;
-        goto out_close;
+    /*
+     * In inclusion mode, iterate on the inclusion list
+     */
+    if (t->mode.selection == TAR_INCLUDE && t->path_list_size > 0) {
+        if (tar_create_from_list(t)) {
+            err = 1;
+            goto out_close;
+        }
+    } else {
+        mask = talloc_asprintf(ctx, "%s\\*", client_get_cur_dir());
+        DBG(5, ("tar_process do_list with mask: %s\n", mask));
+        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+        if (!NT_STATUS_IS_OK(status)) {
+            DBG(0, ("do_list fail %s\n", nt_errstr(status)));
+            err = 1;
+            goto out_close;
+        }
     }
 
  out_close:
     DBG(0, ("Total bytes received: %" PRIu64 "\n", t->total_size));
-    r = archive_write_close(t->archive);
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-        err = 1;
-        goto out;
-    }
 
+    if (!t->mode.dry) {
+        r = archive_write_close(t->archive);
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+            err = 1;
+            goto out;
+        }
+    }
  out:
     archive_write_free(t->archive);
     return err;
