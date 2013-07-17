@@ -146,8 +146,9 @@
 		<listitem><para>This parameter sets the domain on which any specified
 		operations will performed.  If special domain name '.' is used to represent
 		the current domain to which <citerefentry><refentrytitle>winbindd</refentrytitle>
-		<manvolnum>8</manvolnum></citerefentry> belongs.  Currently only the
-		<option>-u</option>, and <option>-g</option> options honor this parameter.
+		<manvolnum>8</manvolnum></citerefentry> belongs. A '*' as the domain name
+		means to enumerate over all domains (NOTE: This can take a long time and use
+		a lot of memory).
 		</para></listitem>
 		</varlistentry>
 
@@ -181,7 +182,7 @@
 		<listitem><para>This option will list all groups available
 		in the Windows NT domain for which the <citerefentry><refentrytitle>samba</refentrytitle>
 		<manvolnum>7</manvolnum></citerefentry> daemon is operating in. Groups in all trusted domains
-		will also be listed.  Note that this operation does not assign
+		can be listed with the --domain='*' option.  Note that this operation does not assign
 		group ids to any groups that have not already been
 		seen by <citerefentry><refentrytitle>winbindd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry>. </para></listitem>
@@ -390,7 +391,7 @@
 		<listitem><para>This option will list all users available
 		in the Windows NT domain for which the <citerefentry><refentrytitle>winbindd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> daemon is operating in. Users in all trusted domains
-		will also be listed.  Note that this operation does not assign
+		can be listed with the --domain='*' option.  Note that this operation does not assign
 		user ids to any users that have not already been seen by <citerefentry>
 		<refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum></citerefentry>
 		.</para></listitem>

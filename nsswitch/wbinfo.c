@@ -1926,9 +1926,16 @@ static bool print_domain_users(const char *domain)
 
 	/* Send request to winbind daemon */
 
-	/* '.' is the special sign for our own domain */
-	if (domain && strcmp(domain, ".") == 0) {
+	if (domain == NULL) {
 		domain = get_winbind_domain();
+	} else {
+		/* '.' is the special sign for our own domain */
+		if ((domain[0] == '\0') || strcmp(domain, ".") == 0) {
+			domain = get_winbind_domain();
+		/* '*' is the special sign for all domains */
+		} else if (strcmp(domain, "*") == 0) {
+			domain = NULL;
+		}
 	}
 
 	wbc_status = wbcListUsers(domain, &num_users, &users);
@@ -1956,9 +1963,16 @@ static bool print_domain_groups(const char *domain)
 
 	/* Send request to winbind daemon */
 
-	/* '.' is the special sign for our own domain */
-	if (domain && strcmp(domain, ".") == 0) {
+	if (domain == NULL) {
 		domain = get_winbind_domain();
+	} else {
+		/* '.' is the special sign for our own domain */
+		if ((domain[0] == '\0') || strcmp(domain, ".") == 0) {
+			domain = get_winbind_domain();
+		/* '*' is the special sign for all domains */
+		} else if (strcmp(domain, "*") == 0) {
+			domain = NULL;
+		}
 	}
 
 	wbc_status = wbcListGroups(domain, &num_groups, &groups);
