@@ -231,30 +231,30 @@ static void tar_add_selection_path(struct tar *t, const char *path)
 static int tar_set_blocksize(struct tar *t, int size)
 {
     if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
-        return 0;
+        return 1;
     }
 
     t->mode.blocksize = size;
 
-    return 1;
+    return 0;
 }
 
-static bool tar_set_newer_than(struct tar *t, const char *filename)
+static int tar_set_newer_than(struct tar *t, const char *filename)
 {
     extern time_t newer_than;
     SMB_STRUCT_STAT stbuf;
 
     if (sys_stat(filename, &stbuf, false) != 0) {
         DBG(0, ("Error setting newer-than time\n"));
-        return 0;
+        return 1;
     }
 
     newer_than = convert_timespec_to_time_t(stbuf.st_ex_mtime);
     DBG(1, ("Getting files newer than %s\n", time_to_asc(newer_than)));
-    return 1;
+    return 0;
 }
 
-static bool tar_read_inclusion_file (struct tar *t, const char* filename)
+static int tar_read_inclusion_file (struct tar *t, const char* filename)
 {
     char *line;
     TALLOC_CTX *ctx = talloc_tos();
@@ -262,7 +262,7 @@ static bool tar_read_inclusion_file (struct tar *t, const char* filename)
 
     if (fd < 0) {
         DBG(0, ("Can't open inclusion file '%s': %s\n", filename, strerror(errno)));
-        return 0;
+        return 1;
     }
 
     while ((line = afdgets(fd, ctx, 0))) {
@@ -270,7 +270,7 @@ static bool tar_read_inclusion_file (struct tar *t, const char* filename)
     }
 
     close(fd);
-    return 1;
+    return 0;
 }
 
 /* skip leading slashes or dots */
@@ -434,7 +434,7 @@ int cmd_block(void)
         return 1;
     }
 
-    if (!tar_set_blocksize(&tar_ctx, atoi(buf))) {
+    if (tar_set_blocksize(&tar_ctx, atoi(buf))) {
         DBG(0, ("invalid blocksize\n"));
     }
 
@@ -506,15 +506,16 @@ int cmd_tarmode(void)
  *
  * Update the file attributes with the one provided.
  */
-static void set_remote_attr(const char *filename, uint16 new_attr, int mode)
+static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
 {
     extern struct cli_state *cli;
     uint16 old_attr;
     NTSTATUS status;
 
-    if (!NT_STATUS_IS_OK(cli_getatr(cli, filename, &old_attr, NULL, NULL))) {
-        /* XXX: debug message */
-        return;
+    status = cli_getatr(cli, filename, &old_attr, NULL, NULL);
+    if (!NT_STATUS_IS_OK(status)) {
+        DBG(0, ("cli_getatr failed: %s\n", nt_errstr(status)));
+        return 1;
     }
 
     if (mode == ATTR_SET) {
@@ -525,8 +526,11 @@ static void set_remote_attr(const char *filename, uint16 new_attr, int mode)
 
     status = cli_setatr(cli, filename, new_attr, 0);
     if (!NT_STATUS_IS_OK(status)) {
-        DBG(1, ("setatr failed: %s\n", nt_errstr(status)));
+        DBG(1, ("cli_setatr failed: %s\n", nt_errstr(status)));
+        return 1;
     }
+
+    return 0;
 }
 
 /**
@@ -594,6 +598,8 @@ int cmd_setmode(void)
     }
 
     DBG(2, ("perm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
+
+    /* ignore return value: server might not store DOS attributes */
     set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
     set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
     return 0;
@@ -753,6 +759,7 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
     }
 
     if (t->mode.reset) {
+        /* ignore return value: server might not store DOS attributes */
         set_remote_attr(full_dos_path, FILE_ATTRIBUTE_ARCHIVE, ATTR_UNSET);
     }
 
@@ -1024,15 +1031,15 @@ int cmd_tar(void)
     const extern char *cmd_ptr;
     const char *flag;
     const char **val;
-	char *buf;
+    char *buf;
     int maxtok = max_token(cmd_ptr);
     int i = 0;
     int err = 0;
 
-	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-		DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
-		return 1;
-	}
+    if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+        DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
+        return 1;
+    }
 
     flag = buf;
     val = talloc_array(ctx, const char*, maxtok);
@@ -1041,7 +1048,7 @@ int cmd_tar(void)
         val[i++] = buf;
     }
 
-    if (!tar_parse_args(&tar_ctx, flag, val, i)) {
+    if (tar_parse_args(&tar_ctx, flag, val, i)) {
         DBG(0, ("parse_args failed\n"));
         err = 1;
         goto out;
@@ -1189,14 +1196,14 @@ int tar_parse_args(struct tar* t, const char *flag,
         case 'c':
             if (t->mode.operation != TAR_NO_OPERATION) {
                 printf("Tar must be followed by only one of c or x.\n");
-                return 0;
+                return 1;
             }
             t->mode.operation = TAR_CREATE;
             break;
         case 'x':
             if (t->mode.operation != TAR_NO_OPERATION) {
                 printf("Tar must be followed by only one of c or x.\n");
-                return 0;
+                return 1;
             }
             t->mode.operation = TAR_EXTRACT;
             break;
@@ -1205,21 +1212,21 @@ int tar_parse_args(struct tar* t, const char *flag,
         case 'I':
             if (t->mode.selection != TAR_NO_SELECTION) {
                 DBG(0,("Only one of I,X,F must be specified\n"));
-                return 0;
+                return 1;
             }
             t->mode.selection = TAR_INCLUDE;
             break;
         case 'X':
             if (t->mode.selection != TAR_NO_SELECTION) {
                 DBG(0,("Only one of I,X,F must be specified\n"));
-                return 0;
+                return 1;
             }
             t->mode.selection = TAR_EXCLUDE;
             break;
         case 'F':
             if (t->mode.selection != TAR_NO_SELECTION) {
                 DBG(0,("Only one of I,X,F must be specified\n"));
-                return 0;
+                return 1;
             }
             t->mode.selection = TAR_INCLUDE;
             list = true;
@@ -1229,12 +1236,12 @@ int tar_parse_args(struct tar* t, const char *flag,
         case 'b':
             if (ival >= valsize) {
                 DBG(0, ("Option b must be followed by a blocksize\n"));
-                return 0;
+                return 1;
             }
 
-            if (!tar_set_blocksize(t, atoi(val[ival]))) {
+            if (tar_set_blocksize(t, atoi(val[ival]))) {
                 DBG(0, ("Option b must be followed by a valid blocksize\n"));
-                return 0;
+                return 1;
             }
 
             ival++;
@@ -1249,12 +1256,12 @@ int tar_parse_args(struct tar* t, const char *flag,
         case 'N':
             if (ival >= valsize) {
                 DBG(0, ("Option N must be followed by valid file name\n"));
-                return 0;
+                return 1;
             }
 
-            if (!tar_set_newer_than(t, val[ival])) {
+            if (tar_set_newer_than(t, val[ival])) {
                 DBG(0,("Error setting newer-than time\n"));
-                return 0;
+                return 1;
             }
 
             ival++;
@@ -1279,7 +1286,7 @@ int tar_parse_args(struct tar* t, const char *flag,
         case 'n':
             if (t->mode.operation != TAR_CREATE) {
                 DBG(0, ("n is only meaningful when creating a tar-file\n"));
-                return 0;
+                return 1;
             }
 
             t->mode.dry = true;
@@ -1288,7 +1295,7 @@ int tar_parse_args(struct tar* t, const char *flag,
 
         default:
             DBG(0,("Unknown tar option\n"));
-            return 0;
+            return 1;
         }
     }
 
@@ -1299,7 +1306,7 @@ int tar_parse_args(struct tar* t, const char *flag,
 
     if (valsize - ival < 1) {
         DBG(0, ("No tar file given.\n"));
-        return 0;
+        return 1;
     }
 
     /* handle TARFILE */
@@ -1320,11 +1327,11 @@ int tar_parse_args(struct tar* t, const char *flag,
     if (list) {
         if (valsize - ival != 1) {
             DBG(0,("Option F must be followed by exactly one filename.\n"));
-            return 0;
+            return 1;
         }
 
-        if (!tar_read_inclusion_file(t, val[ival])) {
-            return 0;
+        if (tar_read_inclusion_file(t, val[ival])) {
+            return 1;
         }
         ival++;
     }
@@ -1339,5 +1346,5 @@ int tar_parse_args(struct tar* t, const char *flag,
 
     t->to_process = true;
     tar_dump(t);
-    return 1;
+    return 0;
 }

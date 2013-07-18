@@ -5517,7 +5517,7 @@ int main(int argc,char *argv[])
 						break;
 				}
 				i++;
-				if (!tar_parse_args(&tar_ctx, poptGetOptArg(pc), argv + i, argc - i)) {
+				if (tar_parse_args(&tar_ctx, poptGetOptArg(pc), argv + i, argc - i)) {
 					poptPrintUsage(pc, stderr, 0);
 					exit(1);
 				}
