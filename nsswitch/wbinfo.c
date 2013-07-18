@@ -2083,6 +2083,7 @@ int main(int argc, char **argv, char **envp)
 	bool use_lanman = false;
 	char *logoff_user = getenv("USER");
 	int logoff_uid = geteuid();
+	const char *opt_krb5ccname = "FILE";
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -2164,6 +2165,7 @@ int main(int argc, char **argv, char **envp)
 		{ "krb5auth", 'K', POPT_ARG_STRING, &string_arg, 'K', "authenticate user using Kerberos", "user%password" },
 			/* destroys wbinfo --help output */
 			/* "user%password,DOM\\user%password,user@EXAMPLE.COM,EXAMPLE.COM\\user%password" }, */
+		{ "krb5ccname", 0, POPT_ARG_STRING, &opt_krb5ccname, '0', "authenticate user using Kerberos and specific credential cache type", "krb5ccname" },
 #endif
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
 		{ "verbose", 0, POPT_ARG_NONE, 0, OPT_VERBOSE, "Print additional information per command", NULL },
@@ -2533,13 +2535,13 @@ int main(int argc, char **argv, char **envp)
 						 WBFLAG_PAM_INFO3_TEXT |
 						 WBFLAG_PAM_CONTACT_TRUSTDOM;
 
-				if (!wbinfo_auth_krb5(string_arg, "FILE",
+				if (!wbinfo_auth_krb5(string_arg, opt_krb5ccname,
 						      flags)) {
 					d_fprintf(stderr,
 						"Could not authenticate user "
 						"[%s] with Kerberos "
 						"(ccache: %s)\n", string_arg,
-						"FILE");
+						opt_krb5ccname);
 					goto done;
 				}
 				break;
