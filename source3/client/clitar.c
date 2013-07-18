@@ -29,22 +29,23 @@
 #define DBG(a, b) (DEBUG(a, ("tar:%-4d ", __LINE__)), DEBUG(a, b))
 
 /**
+ * Number of byte in a block unit.
+ */
+#define TAR_BLOCK_UNIT 512
+
+/**
+ * Default tar block size in TAR_BLOCK_UNIT.
+ */
+#define TAR_DEFAULT_BLOCK_SIZE 20
+
+/**
  * Maximum value for the blocksize field
  */
 #define TAR_MAX_BLOCK_SIZE 0xffff
 
 /**
- * Default tar block size in bytes. Hasn't changed since the first
- * commit in 1996...
- *
- * A more adequate size will be used for better performance unless
- * we're dealing with a tape device with a fixed read/write block
- * size.
- *
- * The actual choice is made by libarchive.
+ * Size of the buffer used when downloading a file
  */
-#define TAR_DEFAULT_BLOCK_SIZE (20*512)
-
 #define TAR_CLI_READ_SIZE 0xff00
 
 #define TAR_DO_LIST_ATTR (FILE_ATTRIBUTE_DIRECTORY \
@@ -938,10 +939,20 @@ static int tar_create(struct tar* t)
     t->archive = archive_write_new();
 
     if (!t->mode.dry) {
+        const int bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
+        r = archive_write_set_bytes_per_block(t->archive, bsize);
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Can't use a block size of %d bytes", bsize));
+            err = 1;
+            goto out;
+        }
+
         r = archive_write_set_format_pax_restricted(t->archive);
         if (r != ARCHIVE_OK) {
-            DBG(0, ("Can't open %s: %s\n", t->tar_path,
+            DBG(0, ("Can't use pax restricted format: %s\n",
                     archive_error_string(t->archive)));
+            err = 1;
+            goto out;
         }
 
         if (strequal(t->tar_path, "-")) {
@@ -1069,16 +1080,16 @@ static int tar_extract(struct tar *t)
     int err = 0;
     int r;
     struct archive_entry *entry;
+    const size_t bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
 
     t->archive = archive_read_new();
     archive_read_support_format_all(t->archive);
     archive_read_support_filter_all(t->archive);
 
     if (strequal(t->tar_path, "-")) {
-        r = archive_read_open_fd(t->archive, STDIN_FILENO, t->mode.blocksize);
+        r = archive_read_open_fd(t->archive, STDIN_FILENO, bsize);
     } else {
-        r = archive_read_open_filename(t->archive, t->tar_path,
-                                       t->mode.blocksize);
+        r = archive_read_open_filename(t->archive, t->tar_path, bsize);
     }
 
     if (r != ARCHIVE_OK) {
