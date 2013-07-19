@@ -417,6 +417,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	ADS_STATUS ads_rc;
 	ADS_STRUCT *ads = NULL;
 	WERROR win_rc;
+	char *old_krb5ccname = NULL;
 
 	sinfo2 = talloc_zero(mem_ctx, struct spoolss_SetPrinterInfo2);
 	if (!sinfo2) {
@@ -454,6 +455,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 		win_rc = WERR_SERVER_UNAVAILABLE;
 		goto done;
 	}
+	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
@@ -479,6 +481,11 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 done:
 	ads_destroy(&ads);
+	ads_kdestroy("MEMORY:prtpub_cache");
+	unsetenv(KRB5_ENV_CCNAME);
+	if (old_krb5ccname) {
+		setenv(KRB5_ENV_CCNAME, old_krb5ccname, 0);
+	}
 	return win_rc;
 }
 
@@ -493,6 +500,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	struct spoolss_PrinterInfo2 *pinfo2;
 	NTSTATUS status;
 	WERROR result;
+	char *old_krb5ccname = NULL;
 
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) return WERR_NOMEM;
@@ -502,6 +510,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
 	}
+	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
@@ -546,6 +555,10 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 done:
 	ads_destroy(&ads);
 	ads_kdestroy("MEMORY:prtpub_cache");
+	unsetenv(KRB5_ENV_CCNAME);
+	if (old_krb5ccname) {
+		setenv(KRB5_ENV_CCNAME, old_krb5ccname, 0);
+	}
 	talloc_free(tmp_ctx);
 	return result;
 }
