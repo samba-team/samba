@@ -354,9 +354,17 @@ static bool tar_extract_skip_path(struct tar *t,
 {
     const bool skip = true;
     const char *fullpath = archive_entry_pathname(entry);
-    bool in;
+    bool in = true;
 
-    in = t->path_list_size > 0 ? tar_path_in_list(t, fullpath, false) : true;
+    if (t->path_list_size <= 0) {
+        return !skip;
+    }
+
+    if (t->mode.regex) {
+        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
+    } else {
+        in = tar_path_in_list(t, fullpath, false);
+    }
 
     if (t->mode.selection == TAR_EXCLUDE) {
         in = !in;
@@ -405,7 +413,15 @@ static bool tar_create_skip_path(struct tar *t,
     }
 
     /* we are now in exclude mode */
-    if (t->path_list_size > 0) {
+
+    /* no matter the selection, no list => include everything */
+    if (t->path_list_size <= 0) {
+        return !skip;
+    }
+
+    if (t->mode.regex) {
+        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
+    } else {
         in = tar_path_in_list(t, fullpath, isdir && !exclude);
     }
 
