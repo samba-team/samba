@@ -976,23 +976,35 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	set_close_on_exec(ctdb->daemon.sd);
-	set_nonblocking(ctdb->daemon.sd);
-
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
 
+	/* First check if an old ctdbd might be running */
+	if (connect(ctdb->daemon.sd,
+		    (struct sockaddr *)&addr, sizeof(addr)) == 0) {
+		DEBUG(DEBUG_CRIT,
+		      ("Something is already listening on ctdb socket '%s'\n",
+		       ctdb->daemon.name));
+		goto failed;
+	}
+
+	/* Remove any old socket */
+	unlink(ctdb->daemon.name);
+
+	set_close_on_exec(ctdb->daemon.sd);
+	set_nonblocking(ctdb->daemon.sd);
+
 	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		DEBUG(DEBUG_CRIT,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
-	}	
+	}
 
 	if (chown(ctdb->daemon.name, geteuid(), getegid()) != 0 ||
 	    chmod(ctdb->daemon.name, 0700) != 0) {
 		DEBUG(DEBUG_CRIT,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n", ctdb->daemon.name));
 		goto failed;
-	} 
+	}
 
 
 	if (listen(ctdb->daemon.sd, 100) != 0) {
@@ -1139,13 +1151,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	struct fd_event *fde;
 	const char *domain_socket_name;
 
-	/* get rid of any old sockets */
-	unlink(ctdb->daemon.name);
-
 	/* create a unix domain stream socket to listen to */
 	res = ux_socket_bind(ctdb);
 	if (res!=0) {
-		DEBUG(DEBUG_ALERT,(__location__ " Failed to open CTDB unix domain socket\n"));
+		DEBUG(DEBUG_ALERT,("Cannot continue.  Exiting!\n"));
 		exit(10);
 	}
 
