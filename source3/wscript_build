@@ -1615,7 +1615,7 @@ bld.SAMBA3_PYTHON('pylibsmb',
                   realname='samba/samba3/libsmb_samba_internal.so'
                   )
 
-bld.SAMBA3_BINARY('regedit',
+bld.SAMBA3_BINARY('samba-regedit',
                   source="""utils/regedit.c utils/regedit_samba3.c
                             utils/regedit_wrap.c utils/regedit_treeview.c
                             utils/regedit_valuelist.c utils/regedit_dialog.c
