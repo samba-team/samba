@@ -26,7 +26,7 @@ ctdb_test_init "$@"
 # 
 
 echo "Checking connectivity between nodes..."
-onnode all onnode all true
+onnode all onnode -p all hostname
 
 # We're seeing some weirdness with CTDB controls timing out.  We're
 # wondering if time is jumping forward, so this creates a time log on
