@@ -261,10 +261,10 @@ else
     echo "Not cleaning up TEST_VAR_DIR=$TEST_VAR_DIR"
 fi
 
-if [ $tests_failed -gt 0 ] ; then
-    if $no_header || $exit_on_fail ; then
-	exit $status
-    else
-	exit 1
-    fi
+if $no_header || $exit_on_fail ; then
+    exit $status
+elif [ $tests_failed -gt 0 ] ; then
+    exit 1
+else
+    exit 0
 fi
