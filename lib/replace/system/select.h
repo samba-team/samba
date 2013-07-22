@@ -34,6 +34,10 @@
 #include <sys/epoll.h>
 #endif
 
+#ifdef HAVE_SOLARIS_PORTS
+#include <port.h>
+#endif
+
 #ifndef SELECT_CAST
 #define SELECT_CAST
 #endif
