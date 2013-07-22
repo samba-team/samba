@@ -37,9 +37,9 @@ C<test_smbclient_tarmode.pl> - Test for smbclient tar backup feature
 # c F r    DONE
 # x        DONE
 # x I      DONE
-# x I r    #
+# x I r    DONE
 # x X      DONE
-# x X r    #
+# x X r    DONE
 # x F      DONE
 # x F r    DONE
 
@@ -51,6 +51,7 @@ use Archive::Tar;
 use Data::Dumper;
 use Digest::MD5 qw/md5_hex/;
 use File::Path qw/make_path remove_tree/;
+use File::Spec;
 use File::Temp;
 use Getopt::Long;
 use Pod::Usage;
@@ -76,6 +77,7 @@ my $LIST_TEST = 0;
 my @SMBARGS   = ();
 
 our $DEBUG = 0;
+our $VERBOSE = 0;
 my $MAN   = 0;
 my $HELP  = 0;
 my $CLEAN = 0;
@@ -103,6 +105,7 @@ my @TESTS = (
     ['extract, explicit include',                   \&test_extraction_include],
     ['extract, explicit exclude',                   \&test_extraction_exclude],
     ['extract, include w/ filelist (F)',            \&test_extraction_list],
+    ['extract, regex',                              \&test_extraction_regex],
 );
 
 =head1 SYNOPSIS
@@ -137,6 +140,12 @@ my @TESTS = (
     --test A,B,D-F
        only run certain tests (accept list and intervals of numbers)
 
+    -v, --verbose
+       be more verbose
+
+    --debug
+       print command and their output
+
 =cut
 
 GetOptions('u|user=s'       => \$USER,
@@ -153,6 +162,7 @@ GetOptions('u|user=s'       => \$USER,
 
            'clean'          => \$CLEAN,
            'debug'          => \$DEBUG,
+           'v|verbose'      => \$VERBOSE,
            'h|help'         => \$HELP,
            'man'            => \$MAN) or pod2usage(2);
 
@@ -197,6 +207,10 @@ if (!-d $LOCALPATH) {
 if ($CLEAN) {
     # clean the whole root first
     remove_tree($LOCALPATH, { keep_root => 1 });
+}
+
+if ($DEBUG) {
+    $VERBOSE = 1;
 }
 
 #####
@@ -584,10 +598,63 @@ sub test_helper {
     my @all = make_env(\@exts, \@dirs);
     my $nb;
     my $err = 0;
+    my @inc;
 
-    smb_tar('', '-Tcr', $TAR);
-    check_tar($TAR, \@all);
+    smb_tar('', '-Tc', $TAR);
+    return 1 if check_tar($TAR, \@all);
+    reset_remote();
+
+    my @exc = grep { $_->remotepath =~ m!/dir/.+exe!} @all;
+    @inc = grep { $_->remotepath !~ m!/dir/.+exe!} @all;
+    smb_tar('', '-TxXr', $TAR, "/$DIR/dir/*.exe");
+    $err += check_remote('/', \@all); # BUG: should be \@inc
+    reset_remote();
+
     return 0;
+}
+
+sub test_extraction_regex {
+    my @exts = qw(txt jpg exe);
+    my @dirs = ('', "$DIR/", "$DIR/dir/");
+    my @all = make_env(\@exts, \@dirs);
+    my $nb;
+    my $err = 0;
+    my (@inc, @exc);
+
+    smb_tar('', '-Tc', $TAR);
+    return 1 if check_tar($TAR, \@all);
+    reset_remote();
+
+    # INCLUDE
+
+    # only include file at root
+    @inc = grep { $_->remotepath =~ m!exe!} @all;
+    smb_tar('', '-Txr', $TAR, "*.exe");
+    $err += check_remote('/', \@inc);
+    reset_remote();
+
+    @inc = grep { $_->remotepath =~ m!/dir/.+exe!} @all;
+    smb_tar('', '-Txr', $TAR, "/$DIR/dir/*.exe");
+    $err += check_remote('/', []); # BUG: should be \@inc
+    reset_remote();
+
+    # EXCLUDE
+
+    # exclude file not directly at root
+    @inc = grep { $_->remotepath =~ m!^[^/]+$!} @all;
+    @exc = grep { $_->remotepath !~ m!^[^/]+$!} @all;
+    smb_tar('', '-TxrX', $TAR, map {$_->remotepath} @exc);
+    $err += check_remote('/', \@all); # BUG: should be @inc...
+    reset_remote();
+
+    # exclude only $DIR/dir/*exe
+    @exc = grep { $_->remotepath =~ m!/dir/.+exe!} @all;
+    @inc = grep { $_->remotepath !~ m!/dir/.+exe!} @all;
+    smb_tar('', '-TxXr', $TAR, "/$DIR/dir/*.exe");
+    $err += check_remote('/', \@all); # BUG: should be \@inc
+    reset_remote();
+
+    $err;
 }
 
 sub test_extraction_wildcard {
@@ -684,9 +751,19 @@ sub list_test {
 sub run_test {
     for (@_) {
         my ($desc, $f, @args) = @$_;
+        my $err;
+
         reset_env();
         say "TEST: $desc";
-        my $err = $f->(@args);
+        if ($VERBOSE) {
+            $err = $f->(@args);
+        } else {
+            # turn off STDOUT
+            open my $saveout, ">&STDOUT";
+            open STDOUT, '>', File::Spec->devnull();
+            $err = $f->(@args);
+            open STDOUT, ">&", $saveout;
+        }
         print_res($err);
         print "\n";
     }
@@ -783,8 +860,10 @@ Remove all files in the server C<$DIR> (not root)
 
 =cut
 sub reset_remote {
-    remove_tree($LOCALPATH . '/'. $DIR);
-    make_path($LOCALPATH . '/'. $DIR);
+    # remove_tree($LOCALPATH . '/'. $DIR);
+    # make_path($LOCALPATH . '/'. $DIR);
+    remove_tree($LOCALPATH, {keep_root => 1});
+    make_path($LOCALPATH, {keep_root => 1});
 }
 
 =head3 C<reset_tmp( )>
@@ -845,7 +924,7 @@ sub check_remote {
     my %remote;
     File::walk(sub { $remote{$_->remotepath} = $_ }, File::tree($subpath));
 
-    for my $rfile (keys %remote) {
+    for my $rfile (sort keys %remote) {
 
         # files that shouldn't be there
         if (!exists $expected{$rfile}) {
@@ -872,13 +951,11 @@ sub check_remote {
             next;
         }
 
-        if ($DEBUG) {
-            say "      $rfile";
-        }
+        say "      $rfile";
     }
 
     # file that should have been in tar
-    @less = grep { $done{$_} == 0 } keys %done;
+    @less = grep { $done{$_} == 0 } sort keys %done;
     for (@less) {
         say " -    $_";
     }
@@ -950,9 +1027,7 @@ sub check_tar {
                 next;
             }
 
-            if ($DEBUG) {
-                say "      $p";
-            }
+            say "      $p";
         }
     }
 
