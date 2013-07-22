@@ -175,13 +175,16 @@ run_one_test ()
 
     ctdb_test_run "$_f" | tee "$tf" | show_progress
     status=$?
+    if [ $status -eq 0 ] ; then
+	tests_passed=$(($tests_passed + 1))
+    else
+	tests_failed=$(($tests_failed + 1))
+    fi
     if $with_summary ; then
 	if [ $status -eq 0 ] ; then
-	    tests_passed=$(($tests_passed + 1))
 	    _t=" PASSED "
 	else
 	    _t="*FAILED*"
-	    tests_failed=$(($tests_failed + 1))
 	fi
 	if $with_desc ; then
 	    desc=$(tail -n +4 $tf | head -n 1)
