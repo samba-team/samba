@@ -49,22 +49,11 @@ cluster_is_healthy
 # Reset configuration
 ctdb_restart_when_done
 
-select_test_node_and_ips
-
-first_export=$(showmount -e $test_ip | sed -n -e '2s/ .*//p')
-mnt_d=$(mktemp -d)
-test_file="${mnt_d}/$RANDOM"
-
-ctdb_test_exit_hook_add rm -f "$test_file"
-ctdb_test_exit_hook_add umount -f "$mnt_d"
-ctdb_test_exit_hook_add rmdir "$mnt_d"
-
-echo "Mounting ${test_ip}:${first_export} on ${mnt_d} ..."
-mount -o timeo=1,hard,intr,vers=3 ${test_ip}:${first_export} ${mnt_d}
+nfs_test_setup
 
 echo "Create file containing random data..."
-dd if=/dev/urandom of=$test_file bs=1k count=1
-original_sum=$(sum $test_file)
+dd if=/dev/urandom of=$nfs_local_file bs=1k count=1
+original_sum=$(sum $nfs_local_file)
 [ $? -eq 0 ]
 
 gratarp_sniff_start
@@ -75,7 +64,7 @@ wait_until_node_has_status $test_node disabled
 
 gratarp_sniff_wait_show
 
-new_sum=$(sum $test_file)
+new_sum=$(sum $nfs_local_file)
 [ $? -eq 0 ]
 
 if [ "$original_md5" = "$new_md5" ] ; then

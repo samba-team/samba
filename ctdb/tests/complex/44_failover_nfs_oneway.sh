@@ -51,31 +51,18 @@ cluster_is_healthy
 # Reset configuration
 ctdb_restart_when_done
 
-select_test_node_and_ips
-
-first_export=$(showmount -e $test_ip | sed -n -e '2s/ .*//p')
-local_f=$(mktemp)
-mnt_d=$(mktemp -d)
-nfs_f="${mnt_d}/$RANDOM"
-remote_f="${test_ip}:${first_export}/$(basename $nfs_f)"
-
-ctdb_test_exit_hook_add rm -f "$local_f"
-ctdb_test_exit_hook_add rm -f "$nfs_f"
-ctdb_test_exit_hook_add umount -f "$mnt_d"
-ctdb_test_exit_hook_add rmdir "$mnt_d"
+nfs_test_setup
 
 echo "Create file containing random data..."
+local_f=$(mktemp)
+ctdb_test_exit_hook_add rm -f "$local_f"
 dd if=/dev/urandom of=$local_f bs=1k count=1
-chmod 644 "$local_f" # needed for *_squash?
 local_sum=$(sum $local_f)
-[ $? -eq 0 ]
 
-scp -p "$local_f" "$remote_f"
+scp -p "$local_f" "${test_ip}:${nfs_remote_file}"
+try_command_on_node $test_node "chmod 644 $nfs_remote_file"
 
-echo "Mounting ${test_ip}:${first_export} on ${mnt_d} ..."
-mount -o timeo=1,hard,intr,vers=3 ${test_ip}:${first_export} ${mnt_d}
-
-nfs_sum=$(sum $nfs_f)
+nfs_sum=$(sum $nfs_local_file)
 
 if [ "$local_sum" = "$nfs_sum" ] ; then
     echo "GOOD: file contents read correctly via NFS"
@@ -94,7 +81,7 @@ wait_until_node_has_status $test_node disabled
 
 gratarp_sniff_wait_show
 
-new_sum=$(sum $nfs_f)
+new_sum=$(sum $nfs_local_file)
 [ $? -eq 0 ]
 
 if [ "$nfs_sum" = "$new_sum" ] ; then
