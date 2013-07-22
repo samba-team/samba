@@ -194,7 +194,7 @@ out:
 	SMB_PERFCOUNT_END(pcd);
 
 	smbd_unlock_socket(sconn);
-	return true;
+	return (ret > 0);
 }
 
 /*******************************************************************
