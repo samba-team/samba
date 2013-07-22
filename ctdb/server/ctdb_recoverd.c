@@ -3716,6 +3716,23 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 				return;
 			}
 		}
+	}
+
+	/*
+	 * Update node flags obtained from each active node. This ensure we have
+	 * up-to-date information for all the nodes.
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		nodemap->nodes[j].flags = remote_nodemaps[j]->nodes[j].flags;
+	}
+
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
 
 		/* verify the flags are consistent
 		*/
