@@ -548,8 +548,9 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct ctdb_ev
 			debug_hung_script = getenv("CTDB_DEBUG_HUNG_SCRIPT");
 		}
 
-		buf = talloc_asprintf(NULL, "%s %d",
-				      debug_hung_script, state->child);
+		buf = talloc_asprintf(NULL, "%s %d %s",
+				      debug_hung_script, state->child,
+				      ctdb_eventscript_call_names[state->call]);
 		system(buf);
 		talloc_free(buf);
 
