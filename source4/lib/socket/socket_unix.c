@@ -323,7 +323,7 @@ static char *unixdom_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_
 
 static struct socket_address *unixdom_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	struct sockaddr_in *peer_addr;
+	struct sockaddr_un *peer_addr;
 	socklen_t len = sizeof(*peer_addr);
 	struct socket_address *peer;
 	int ret;
@@ -334,7 +334,7 @@ static struct socket_address *unixdom_get_peer_addr(struct socket_context *sock,
 	}
 	
 	peer->family = sock->backend_name;
-	peer_addr = talloc(peer, struct sockaddr_in);
+	peer_addr = talloc(peer, struct sockaddr_un);
 	if (!peer_addr) {
 		talloc_free(peer);
 		return NULL;
