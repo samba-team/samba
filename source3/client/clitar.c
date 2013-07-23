@@ -17,6 +17,55 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/**
+ * # General overview of the tar extension
+ *
+ * All tar_xxx() functions work on a `struct tar` which store most of
+ * the context of the backup process.
+ *
+ * The current tar context can be accessed via the global variable
+ * `tar_ctx`. It's not static but you should avoid accessing it
+ * directly.
+ *
+ * A tar context is first configured through tar_parse_args() which
+ * can be called from either the CLI (in client.c) or the interactive
+ * session (via the cmd_tar() callback).
+ *
+ * Once the configuration is done (successfully), the context is ready
+ * for processing and tar_to_process() returns true.
+ *
+ * The next step is to call tar_process() which dispatch the
+ * processing to either tar_create() or tar_extract(), depending on
+ * the context.
+ *
+ * ## Archive creation
+ *
+ * tar_create() creates an archive using the libarchive API then
+ *
+ * - iterates on the requested paths if the context is in inclusion
+ *   mode with tar_create_from_list()
+ *
+ * - or iterates on the whole share (starting from the current dir) if
+ *   in exclusion mode or if no specific path were requested
+ *
+ * The do_list() function from client.c is used to list recursively
+ * the share. In particular it takes a DOS path mask (eg. \mydir\*)
+ * and a callback function which will be called with each file name
+ * and attributes. The tar callback function is get_file_callback().
+ *
+ * The callback function checks whether the file should be skipped
+ * according the the configuration via tar_create_skip_path(). If it's
+ * not skipped it's downloaded and written to the archive in
+ * tar_get_file().
+ *
+ * ## Archive extraction
+ *
+ * tar_extract() opens the archive and iterates on each file in
+ * it. For each file tar_extract_skip_path() checks whether it should
+ * be skipped according to the config. If it's not skipped it's
+ * uploaded on the server in tar_send_file().
+ */
+
 #include "includes.h"
 #include "system/filesys.h"
 #include "client/client_proto.h"
@@ -77,15 +126,15 @@ struct tar {
     /* flags */
     struct tar_mode {
         enum tar_operation operation; /* create, extract */
-        enum tar_selection selection; /* inc, inc from file, exclude */
-        int blocksize;    /* size in bytes of a block in the tar file */
+        enum tar_selection selection; /* include, exclude */
+        int blocksize;    /* size in TAR_BLOCK_UNIT of a tar file block */
         bool hidden;      /* backup hidden file? */
         bool system;      /* backup system file? */
         bool incremental; /* backup _only_ archived file? */
         bool reset;       /* unset archive bit? */
         bool dry;         /* don't write tar file? */
         bool regex;       /* XXX: never actually using regex... */
-        bool verbose;
+        bool verbose;     /* XXX: ignored */
     } mode;
 
     /* nb of bytes received */
@@ -102,15 +151,29 @@ struct tar {
     struct archive *archive;
 };
 
+/**
+ * Global context imported in client.c when needed.
+ *
+ * Default options.
+ */
 struct tar tar_ctx = {
     .mode.selection   = TAR_INCLUDE,
     .mode.blocksize   = TAR_DEFAULT_BLOCK_SIZE,
     .mode.hidden      = true,
     .mode.system      = true,
     .mode.incremental = false,
+    .mode.reset       = false,
     .mode.dry         = false,
+    .mode.regex       = false,
+    .mode.verbose     = false,
 };
 
+
+/**
+ * fix_unix_path - convert @path to a DOS path
+ * @path: path to convert
+ * @removeprefix: if true, remove leading ./ or /.
+ */
 static char *fix_unix_path (char *path, bool removeprefix)
 {
     char *from = path, *to = path;
@@ -148,6 +211,11 @@ static char *fix_unix_path (char *path, bool removeprefix)
     return path;
 }
 
+/**
+ * path_base_name - return @path basename
+ *
+ * If @path doesn't contain any directory separator return NULL.
+ */
 static char *path_base_name (const char *path)
 {
     TALLOC_CTX *ctx = talloc_tos();
@@ -175,6 +243,10 @@ static char *path_base_name (const char *path)
 #define XSTR(v)      DBG(2, ("DUMP:%-20.20s = %s\n", #v, v ? v : "NULL"))
 #define XINT(v)      DBG(2, ("DUMP:%-20.20s = %d\n", #v, v))
 #define XUINT64(v)   DBG(2, ("DUMP:%-20.20s = %" PRIu64  "\n", #v, v))
+
+/**
+ * tar_dump - dump tar structure on stdout
+ */
 static void tar_dump(struct tar *t)
 {
     int i;
@@ -216,6 +288,10 @@ static void tar_dump(struct tar *t)
 #undef XSTR
 #undef XINT
 
+/**
+ * tar_add_selection_path - add a path to the path list
+ * @path: path to add
+ */
 static void tar_add_selection_path(struct tar *t, const char *path)
 {
     TALLOC_CTX *ctx = talloc_tos();
@@ -229,6 +305,9 @@ static void tar_add_selection_path(struct tar *t, const char *path)
     fix_unix_path(t->path_list[t->path_list_size - 1], true);
 }
 
+/**
+ * tar_set_blocksize - set block size in TAR_BLOCK_UNIT
+ */
 static int tar_set_blocksize(struct tar *t, int size)
 {
     if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
@@ -240,6 +319,17 @@ static int tar_set_blocksize(struct tar *t, int size)
     return 0;
 }
 
+/**
+ * tar_set_newer_than - set date threshold of saved files
+ * @filename: local path to a file
+ *
+ * Only files newer than the modification time of @filename will be
+ * saved.
+ *
+ * Note: this function set the global variable newer_than from
+ * client.c. Thus the time is not a field of the tar structure. See
+ * cmd_newer() to change its value from an interactive session.
+ */
 static int tar_set_newer_than(struct tar *t, const char *filename)
 {
     extern time_t newer_than;
@@ -255,6 +345,12 @@ static int tar_set_newer_than(struct tar *t, const char *filename)
     return 0;
 }
 
+/**
+ * tar_read_inclusion_file - set path list from file
+ * @filename: path to the list file
+ *
+ * Read and add each line of @filename to the path list.
+ */
 static int tar_read_inclusion_file (struct tar *t, const char* filename)
 {
     char *line;
@@ -274,7 +370,11 @@ static int tar_read_inclusion_file (struct tar *t, const char* filename)
     return 0;
 }
 
-/* skip leading slashes or dots */
+/**
+ * skip_useless_char_in_path - skip leading slashes/dots
+ *
+ * Skip leading slashes, backslashes and dot-slashes.
+ */
 static const char* skip_useless_char_in_path(const char *p)
 {
     while (p) {
@@ -290,11 +390,14 @@ static const char* skip_useless_char_in_path(const char *p)
     return p;
 }
 
-
 /**
- * return true if the path @sub is a subpath of @full.
+ * is_subpath - return true if the path @sub is a subpath of @full.
+ * @sub: path to test
+ * @full: container path
  *
- * case-insensitive, true if @sub = @full
+ * String comparaison is case-insensitive.
+ *
+ * Return true if @sub = @full
  */
 static bool is_subpath(const char *sub, const char *full)
 {
@@ -323,6 +426,17 @@ static bool is_subpath(const char *sub, const char *full)
     return *full == *sub;
 }
 
+/**
+ * tar_path_in_list - return true if @path is in the path list
+ * @path: path to find
+ * @reverse: when true also try to find path list element in @path
+ *
+ * Look at each path of the path list and return true if @path is a
+ * subpath of one of them.
+ *
+ * If you want /path to be in the path list (path/a/, path/b/) set
+ * @reverse to true to try to match the other way around.
+ */
 static bool tar_path_in_list(struct tar *t, const char *path, bool reverse)
 {
     int i;
@@ -349,6 +463,12 @@ static bool tar_path_in_list(struct tar *t, const char *path, bool reverse)
     return false;
 }
 
+/**
+ * tar_extract_skip_path - return true if @entry should be skipped
+ * @entry: current tar entry
+ *
+ * Skip predicate for tar extraction (archive to server) only.
+ */
 static bool tar_extract_skip_path(struct tar *t,
                                   struct archive_entry *entry)
 {
@@ -373,6 +493,13 @@ static bool tar_extract_skip_path(struct tar *t,
     return in ? !skip : skip;
 }
 
+/**
+ * tar_create_skip_path - return true if @fullpath shoud be skipped
+ * @fullpath: full remote path of the current file
+ * @finfo: remote file attributes
+ *
+ * Skip predicate for tar creation (server to archive) only.
+ */
 static bool tar_create_skip_path(struct tar *t,
                                  const char *fullpath,
                                  const struct file_info *finfo)
@@ -428,6 +555,11 @@ static bool tar_create_skip_path(struct tar *t,
     return in ? skip : !skip;
 }
 
+/**
+ * tar_to_process - return true if @t is ready to be processed
+ *
+ * @t is ready if it properly parsed command line arguments.
+ */
 bool tar_to_process (struct tar *t)
 {
     return t->to_process;
@@ -622,6 +754,12 @@ int cmd_setmode(void)
     return 0;
 }
 
+/**
+ * make_remote_path - recursively make remote dirs
+ * @full_path: full hierarchy to create
+ *
+ * Create @full_path and each parent directories as needed.
+ */
 static int make_remote_path(const char *full_path)
 {
     extern struct cli_state *cli;
@@ -672,6 +810,13 @@ static int make_remote_path(const char *full_path)
     return err;
 }
 
+/**
+ * tar_send_file - send @entry to the remote server
+ * @entry: current archive entry
+ *
+ * Handle the creation of the parent directories and transfer the
+ * entry to a new remote file.
+ */
 static int tar_send_file(struct tar *t, struct archive_entry *entry)
 {
     extern struct cli_state *cli;
@@ -752,6 +897,11 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
     return err;
 }
 
+/**
+ * tar_get_file - fetch a remote file to the local archive
+ * @full_dos_path: path to the file to fetch
+ * @finfo: attributes of the file to fetch
+ */
 static int tar_get_file(struct tar *t, const char *full_dos_path,
                         struct file_info *finfo)
 {
@@ -855,6 +1005,13 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
     return err;
 }
 
+/**
+ * get_file_callback - do_list callback
+ *
+ * Callback for client.c do_list(). Called for each file found on the
+ * share matching do_list mask. Recursively call do_list() with itself
+ * as callback when the current file is a directory.
+ */
 static NTSTATUS get_file_callback(struct cli_state *cli,
                                   struct file_info *finfo,
                                   const char *dir)
@@ -905,6 +1062,9 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
     return err;
 }
 
+/**
+ * tar_create_from_list - fetch from path list in include mode
+ */
 static int tar_create_from_list(struct tar *t)
 {
     TALLOC_CTX *ctx = talloc_tos();
@@ -944,6 +1104,9 @@ static int tar_create_from_list(struct tar *t)
     return err;
 }
 
+/**
+ * tar_create - create archive and fetch files
+ */
 static int tar_create(struct tar* t)
 {
     TALLOC_CTX *ctx = talloc_tos();
@@ -963,6 +1126,11 @@ static int tar_create(struct tar* t)
             goto out;
         }
 
+        /*
+         * Use PAX restricted format which is not the most
+         * conservative choice but has useful extensions and is widely
+         * supported
+         */
         r = archive_write_set_format_pax_restricted(t->archive);
         if (r != ARCHIVE_OK) {
             DBG(0, ("Can't use pax restricted format: %s\n",
@@ -1021,7 +1189,7 @@ static int tar_create(struct tar* t)
 }
 
 /**
- * Return upper limit for the number of token in @str.
+ * max_token - return upper limit for the number of token in @str
  *
  * The result is not exact, the actual number of token might be less
  * than what is returned.
@@ -1091,6 +1259,9 @@ int cmd_tar(void)
     return err;
 }
 
+/**
+ * tar_extract - open archive and send files.
+ */
 static int tar_extract(struct tar *t)
 {
     int err = 0;
@@ -1152,6 +1323,9 @@ static int tar_extract(struct tar *t)
     return err;
 }
 
+/**
+ * tar_process - start processing archive
+ */
 int tar_process(struct tar *t)
 {
     int rc = 0;
@@ -1187,7 +1361,7 @@ int tar_process(struct tar *t)
  * in the interactive session:
  *   tar f1f2f3 v1 v2 v3 TARFILE PATHS...
  *
- * opt has only flags (eg. "f1f2f3") and val has the arguments
+ * @flag has only flags (eg. "f1f2f3") and @val has the arguments
  * (values) following them (eg. ["v1", "v2", "v3", "TARFILE", "PATH1",
  * "PATH2"]).
  *
