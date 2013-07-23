@@ -168,402 +168,56 @@ struct tar tar_ctx = {
     .mode.verbose     = false,
 };
 
+/* interactive commands, exported functions */
+int cmd_block(void);
+int cmd_setmode(void);
+int cmd_tar(void);
+int cmd_tarmode(void);
 
-/**
- * fix_unix_path - convert @path to a DOS path
- * @path: path to convert
- * @removeprefix: if true, remove leading ./ or /.
- */
-static char *fix_unix_path (char *path, bool removeprefix)
-{
-    char *from = path, *to = path;
+/* tar, exported functions */
+int tar_process(struct tar *t);
+bool tar_to_process(struct tar *t);
+int tar_parse_args(struct tar *t,
+                   const char *flag,
+                   const char **val, int valsize);
 
-    if (!path || !*path)
-        return path;
 
-    /* remove prefix:
-     * ./path => path
-     *  /path => path
-     */
-    if (removeprefix) {
-        /* /path */
-        if (path[0] == '/' || path[0] == '\\') {
-            from += 1;
-        }
-
-        /* ./path */
-        if (path[1] && path[0] == '.' && (path[1] == '/' || path[1] == '\\')) {
-            from += 2;
-        }
-    }
-
-    /* replace / with \ */
-    while (*from) {
-        if (*from == '/') {
-            *to = '\\';
-        } else {
-            *to = *from;
-        }
-        from++; to++;
-    }
-    *to = 0;
-
-    return path;
-}
-
-/**
- * path_base_name - return @path basename
- *
- * If @path doesn't contain any directory separator return NULL.
- */
-static char *path_base_name (const char *path)
-{
-    TALLOC_CTX *ctx = talloc_tos();
-    char *base = NULL;
-    int last = -1;
-    int i;
-
-    for (i = 0; path[i]; i++) {
-        if (path[i] == '\\' || path[i] == '/') {
-            last = i;
-        }
-    }
-
-    if (last >= 0) {
-        base = talloc_strdup(ctx, path);
-        base[last] = 0;
-    }
-
-    return base;
-}
-
-#define XSET(v)      [v] = #v
-#define XTABLE(v, t) DBG(2, ("DUMP:%-20.20s = %s\n", #v, t[v]))
-#define XBOOL(v)     DBG(2, ("DUMP:%-20.20s = %d\n", #v, v ? 1 : 0))
-#define XSTR(v)      DBG(2, ("DUMP:%-20.20s = %s\n", #v, v ? v : "NULL"))
-#define XINT(v)      DBG(2, ("DUMP:%-20.20s = %d\n", #v, v))
-#define XUINT64(v)   DBG(2, ("DUMP:%-20.20s = %" PRIu64  "\n", #v, v))
-
-/**
- * tar_dump - dump tar structure on stdout
- */
-static void tar_dump(struct tar *t)
-{
-    int i;
-    const char* op[] = {
-        XSET(TAR_NO_OPERATION),
-        XSET(TAR_CREATE),
-        XSET(TAR_EXTRACT),
-    };
-
-    const char* sel[] = {
-        XSET(TAR_NO_SELECTION),
-        XSET(TAR_INCLUDE),
-        XSET(TAR_EXCLUDE),
-    };
-
-    XBOOL(t->to_process);
-    XTABLE(t->mode.operation, op);
-    XTABLE(t->mode.selection, sel);
-    XINT(t->mode.blocksize);
-    XBOOL(t->mode.hidden);
-    XBOOL(t->mode.system);
-    XBOOL(t->mode.incremental);
-    XBOOL(t->mode.reset);
-    XBOOL(t->mode.dry);
-    XBOOL(t->mode.verbose);
-    XUINT64(t->total_size);
-    XSTR(t->tar_path);
-    XINT(t->path_list_size);
-
-    for (i = 0; t->path_list && t->path_list[i]; i++) {
-        DBG(2, ("DUMP: t->path_list[%2d] = %s\n", i, t->path_list[i]));
-    }
-
-    DBG(2, ("DUMP:t->path_list @ %p (%d elem)\n", t->path_list, i));
-}
-#undef XSET
-#undef XTABLE
-#undef XBOOL
-#undef XSTR
-#undef XINT
-
-/**
- * tar_add_selection_path - add a path to the path list
- * @path: path to add
- */
-static void tar_add_selection_path(struct tar *t, const char *path)
-{
-    TALLOC_CTX *ctx = talloc_tos();
-    if (!t->path_list) {
-        t->path_list = str_list_make_empty(ctx);
-        t->path_list_size = 0;
-    }
-
-    t->path_list = str_list_add((const char**)t->path_list, path);
-    t->path_list_size++;
-    fix_unix_path(t->path_list[t->path_list_size - 1], true);
-}
-
-/**
- * tar_set_blocksize - set block size in TAR_BLOCK_UNIT
- */
-static int tar_set_blocksize(struct tar *t, int size)
-{
-    if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
-        return 1;
-    }
-
-    t->mode.blocksize = size;
-
-    return 0;
-}
-
-/**
- * tar_set_newer_than - set date threshold of saved files
- * @filename: local path to a file
- *
- * Only files newer than the modification time of @filename will be
- * saved.
- *
- * Note: this function set the global variable newer_than from
- * client.c. Thus the time is not a field of the tar structure. See
- * cmd_newer() to change its value from an interactive session.
- */
-static int tar_set_newer_than(struct tar *t, const char *filename)
-{
-    extern time_t newer_than;
-    SMB_STRUCT_STAT stbuf;
-
-    if (sys_stat(filename, &stbuf, false) != 0) {
-        DBG(0, ("Error setting newer-than time\n"));
-        return 1;
-    }
-
-    newer_than = convert_timespec_to_time_t(stbuf.st_ex_mtime);
-    DBG(1, ("Getting files newer than %s\n", time_to_asc(newer_than)));
-    return 0;
-}
-
-/**
- * tar_read_inclusion_file - set path list from file
- * @filename: path to the list file
- *
- * Read and add each line of @filename to the path list.
- */
-static int tar_read_inclusion_file (struct tar *t, const char* filename)
-{
-    char *line;
-    TALLOC_CTX *ctx = talloc_tos();
-    int fd = open(filename, O_RDONLY);
-
-    if (fd < 0) {
-        DBG(0, ("Can't open inclusion file '%s': %s\n", filename, strerror(errno)));
-        return 1;
-    }
-
-    while ((line = afdgets(fd, ctx, 0))) {
-        tar_add_selection_path(t, line);
-    }
-
-    close(fd);
-    return 0;
-}
-
-/**
- * skip_useless_char_in_path - skip leading slashes/dots
- *
- * Skip leading slashes, backslashes and dot-slashes.
- */
-static const char* skip_useless_char_in_path(const char *p)
-{
-    while (p) {
-        if (*p == '/' || *p == '\\') {
-            p++;
-        }
-        else if (p[0] == '.' && (p[1] == '/' || p[1] == '\\')) {
-            p += 2;
-        }
-        else
-            return p;
-    }
-    return p;
-}
-
-/**
- * is_subpath - return true if the path @sub is a subpath of @full.
- * @sub: path to test
- * @full: container path
- *
- * String comparaison is case-insensitive.
- *
- * Return true if @sub = @full
- */
-static bool is_subpath(const char *sub, const char *full)
-{
-    const char *full_copy = full;
-
-    while (*full && *sub &&
-           (*full == *sub || tolower_m(*full) == tolower_m(*sub) ||
-            (*full == '\\' && *sub=='/') || (*full == '/' && *sub=='\\'))) {
-        full++; sub++;
-    }
-
-    /* if full has a trailing slash, it compared equal, so full is an "initial"
-       string of sub.
-    */
-    if (!*full && full != full_copy && (*(full-1) == '/' || *(full-1) == '\\'))
-        return true;
-
-    /* ignore trailing slash on full */
-    if (!*sub && (*full == '/' || *full == '\\') && !*(full+1))
-        return true;
-
-    /* check for full is an "initial" string of sub */
-    if ((*sub == '/' || *sub == '\\') && !*full)
-        return true;
-
-    return *full == *sub;
-}
-
-/**
- * tar_path_in_list - return true if @path is in the path list
- * @path: path to find
- * @reverse: when true also try to find path list element in @path
- *
- * Look at each path of the path list and return true if @path is a
- * subpath of one of them.
- *
- * If you want /path to be in the path list (path/a/, path/b/) set
- * @reverse to true to try to match the other way around.
- */
-static bool tar_path_in_list(struct tar *t, const char *path, bool reverse)
-{
-    int i;
-    const char *p = path;
-    const char *pattern;
-    bool res;
-
-    if (!p || !p[0])
-        return false;
-
-    p = skip_useless_char_in_path(p);
-
-    for (i = 0; i < t->path_list_size; i++) {
-        pattern = skip_useless_char_in_path(t->path_list[i]);
-        res = is_subpath(p, pattern);
-        if (reverse) {
-            res = res || is_subpath(pattern, p);
-        }
-        if (res) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * tar_extract_skip_path - return true if @entry should be skipped
- * @entry: current tar entry
- *
- * Skip predicate for tar extraction (archive to server) only.
- */
-static bool tar_extract_skip_path(struct tar *t,
-                                  struct archive_entry *entry)
-{
-    const bool skip = true;
-    const char *fullpath = archive_entry_pathname(entry);
-    bool in = true;
-
-    if (t->path_list_size <= 0) {
-        return !skip;
-    }
-
-    if (t->mode.regex) {
-        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
-    } else {
-        in = tar_path_in_list(t, fullpath, false);
-    }
-
-    if (t->mode.selection == TAR_EXCLUDE) {
-        in = !in;
-    }
-
-    return in ? !skip : skip;
-}
-
-/**
- * tar_create_skip_path - return true if @fullpath shoud be skipped
- * @fullpath: full remote path of the current file
- * @finfo: remote file attributes
- *
- * Skip predicate for tar creation (server to archive) only.
- */
+/* tar, local function */
+static int tar_create(struct tar* t);
+static int tar_create_from_list(struct tar *t);
+static int tar_extract(struct tar *t);
+static int tar_read_inclusion_file (struct tar *t, const char* filename);
+static int tar_send_file(struct tar *t, struct archive_entry *entry);
+static int tar_set_blocksize(struct tar *t, int size);
+static int tar_set_newer_than(struct tar *t, const char *filename);
+static void tar_add_selection_path(struct tar *t, const char *path);
+static void tar_dump(struct tar *t);
+static bool tar_extract_skip_path(struct tar *t, struct archive_entry *entry);
 static bool tar_create_skip_path(struct tar *t,
                                  const char *fullpath,
-                                 const struct file_info *finfo)
-{
-    /* syntaxic sugar */
-    const bool skip = true;
-    const mode_t mode = finfo->mode;
-    const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
-    const bool exclude = t->mode.selection == TAR_EXCLUDE;
-    bool in = true;
+                                 const struct file_info *finfo);
 
-    if (!isdir) {
+static bool tar_path_in_list(struct tar *t,
+                             const char *path,
+                             bool reverse);
 
-        /* 1. if we dont want X and we have X, skip */
-        if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
-            return skip;
-        }
+static int tar_get_file(struct tar *t,
+                        const char *full_dos_path,
+                        struct file_info *finfo);
 
-        if (!t->mode.hidden && (mode & FILE_ATTRIBUTE_HIDDEN)) {
-            return skip;
-        }
+static NTSTATUS get_file_callback(struct cli_state *cli,
+                                  struct file_info *finfo,
+                                  const char *dir);
 
-        /* 2. if we only want archive and it's not, skip */
+/* utilities */
+static char *fix_unix_path (char *path, bool removeprefix);
+static char *path_base_name (const char *path);
+static const char* skip_useless_char_in_path(const char *p);
+static int make_remote_path(const char *full_path);
+static int max_token (const char *str);
+static bool is_subpath(const char *sub, const char *full);
+static int set_remote_attr(const char *filename, uint16 new_attr, int mode);
 
-        if (t->mode.incremental && !(mode & FILE_ATTRIBUTE_ARCHIVE)) {
-            return skip;
-        }
-    }
-
-    /* 3. is it in the selection list? */
-
-    /*
-     * tar_create_from_list() use the include list as a starting
-     * point, no need to check
-     */
-    if (!exclude) {
-        return !skip;
-    }
-
-    /* we are now in exclude mode */
-
-    /* no matter the selection, no list => include everything */
-    if (t->path_list_size <= 0) {
-        return !skip;
-    }
-
-    if (t->mode.regex) {
-        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
-    } else {
-        in = tar_path_in_list(t, fullpath, isdir && !exclude);
-    }
-
-    return in ? skip : !skip;
-}
-
-/**
- * tar_to_process - return true if @t is ready to be processed
- *
- * @t is ready if it properly parsed command line arguments.
- */
-bool tar_to_process (struct tar *t)
-{
-    return t->to_process;
-}
 
 /**
  * cmd_block - interactive command to change tar blocksize
@@ -648,38 +302,47 @@ int cmd_tarmode(void)
 }
 
 /**
- * set_remote_attr - set DOS attributes of a remote file
- * @filename: path to the file name
- * @new_attr: attribute bit mask to use
- * @mode: one of ATTR_SET or ATTR_UNSET
+ * cmd_tar - interactive command to start a tar backup/restoration
  *
- * Update the file attributes with the one provided.
+ * Check presence of argument, parse them and handle the request.
  */
-static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
+int cmd_tar(void)
 {
-    extern struct cli_state *cli;
-    uint16 old_attr;
-    NTSTATUS status;
+    TALLOC_CTX *ctx = talloc_tos();
+    const extern char *cmd_ptr;
+    const char *flag;
+    const char **val;
+    char *buf;
+    int maxtok = max_token(cmd_ptr);
+    int i = 0;
+    int err = 0;
 
-    status = cli_getatr(cli, filename, &old_attr, NULL, NULL);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0, ("cli_getatr failed: %s\n", nt_errstr(status)));
+    if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+        DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
         return 1;
     }
 
-    if (mode == ATTR_SET) {
-        new_attr |= old_attr;
-    } else {
-        new_attr = old_attr & ~new_attr;
+    flag = buf;
+    val = talloc_array(ctx, const char*, maxtok);
+
+    while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+        val[i++] = buf;
     }
 
-    status = cli_setatr(cli, filename, new_attr, 0);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(1, ("cli_setatr failed: %s\n", nt_errstr(status)));
-        return 1;
+    if (tar_parse_args(&tar_ctx, flag, val, i)) {
+        DBG(0, ("parse_args failed\n"));
+        err = 1;
+        goto out;
     }
 
-    return 0;
+    if (tar_process(&tar_ctx)) {
+        DBG(0, ("tar_process failed\n"));
+        err = 1;
+        goto out;
+    }
+
+ out:
+    return err;
 }
 
 /**
@@ -752,598 +415,6 @@ int cmd_setmode(void)
     set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
     set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
     return 0;
-}
-
-/**
- * make_remote_path - recursively make remote dirs
- * @full_path: full hierarchy to create
- *
- * Create @full_path and each parent directories as needed.
- */
-static int make_remote_path(const char *full_path)
-{
-    extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_tos();
-    char *path;
-    char *subpath;
-    char *state;
-    char *last_backslash;
-    char *p;
-    int len;
-    NTSTATUS status;
-    int err = 0;
-
-    subpath = talloc_strdup(ctx, full_path);
-    path = talloc_strdup(ctx, full_path);
-    len = talloc_get_size(path) - 1;
-
-    last_backslash = strrchr_m(path, '\\');
-
-    if (!last_backslash) {
-        goto out;
-    }
-
-    *last_backslash = 0;
-
-    subpath[0] = 0;
-    p = strtok_r(path, "\\", &state);
-
-    while (p) {
-        strlcat(subpath, p, len);
-        status = cli_chkpath(cli, subpath);
-        if (!NT_STATUS_IS_OK(status)) {
-            status = cli_mkdir(cli, subpath);
-            if (!NT_STATUS_IS_OK(status)) {
-                DBG(0, ("Can't mkdir %s: %s\n", subpath, nt_errstr(status)));
-                err = 1;
-                goto out;
-            }
-            DBG(3, ("mkdir %s\n", subpath));
-        }
-
-        strlcat(subpath, "\\", len);
-        p = strtok_r(NULL, "/\\", &state);
-
-    }
-
- out:
-    return err;
-}
-
-/**
- * tar_send_file - send @entry to the remote server
- * @entry: current archive entry
- *
- * Handle the creation of the parent directories and transfer the
- * entry to a new remote file.
- */
-static int tar_send_file(struct tar *t, struct archive_entry *entry)
-{
-    extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_tos();
-    char *dos_path;
-    char *full_path;
-    NTSTATUS status;
-    uint16_t remote_fd = (uint16_t) -1;
-    int err = 0;
-    int flags = O_RDWR | O_CREAT | O_TRUNC;
-    mode_t mode = archive_entry_filetype(entry);
-
-    dos_path = talloc_strdup(ctx, archive_entry_pathname(entry));
-    fix_unix_path(dos_path, true);
-
-    full_path = talloc_strdup(ctx, client_get_cur_dir());
-    full_path = talloc_strdup_append(full_path, dos_path);
-
-    if (mode != AE_IFREG && mode != AE_IFDIR) {
-        DBG(0, ("Skipping non-dir & non-regular file %s\n", full_path));
-        goto out;
-    }
-
-    if (make_remote_path(full_path)) {
-        err = 1;
-        goto out;
-    }
-
-    if (mode == AE_IFDIR) {
-        goto out;
-    }
-
-    status = cli_open(cli, full_path, flags, DENY_NONE, &remote_fd);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0, ("Error opening remote file %s: %s\n",
-                  full_path, nt_errstr(status)));
-        err = 1;
-        goto out;
-    }
-
-    for (;;) {
-        const void *buf;
-        size_t len;
-        off_t off;
-        int r;
-
-        r = archive_read_data_block(t->archive, &buf, &len, &off);
-        if (r == ARCHIVE_EOF) {
-            break;
-        }
-        if (r == ARCHIVE_WARN) {
-            DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
-        }
-        if (r == ARCHIVE_FATAL) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto close_out;
-        }
-
-        status = cli_writeall(cli, remote_fd, 0, buf, off, len, NULL);
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0, ("Error writing remote file %s: %s\n",
-                      full_path, nt_errstr(status)));
-            err = 1;
-            goto close_out;
-        }
-    }
-
- close_out:
-    status = cli_close(cli, remote_fd);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0, ("Error losing remote file %s: %s\n",
-                  full_path, nt_errstr(status)));
-        err = 1;
-    }
-
- out:
-    return err;
-}
-
-/**
- * tar_get_file - fetch a remote file to the local archive
- * @full_dos_path: path to the file to fetch
- * @finfo: attributes of the file to fetch
- */
-static int tar_get_file(struct tar *t, const char *full_dos_path,
-                        struct file_info *finfo)
-{
-    extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_tos();
-    NTSTATUS status;
-    struct archive_entry *entry;
-    char *full_unix_path;
-    char buf[TAR_CLI_READ_SIZE];
-    size_t len;
-    uint64_t off = 0;
-    uint16_t remote_fd = (uint16_t)-1;
-    int err = 0, r;
-    const bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
-
-    DBG(5, ("+++ %s\n", full_dos_path));
-
-    t->total_size += finfo->size;
-
-    if (t->mode.dry) {
-        goto out;
-    }
-
-    if (t->mode.reset) {
-        /* ignore return value: server might not store DOS attributes */
-        set_remote_attr(full_dos_path, FILE_ATTRIBUTE_ARCHIVE, ATTR_UNSET);
-    }
-
-    full_unix_path = talloc_asprintf(ctx, ".%s", full_dos_path);
-    string_replace(full_unix_path, '\\', '/');
-    entry = archive_entry_new();
-    archive_entry_copy_pathname(entry, full_unix_path);
-    archive_entry_set_filetype(entry, isdir ? AE_IFDIR : AE_IFREG);
-    archive_entry_set_atime(entry,
-                            finfo->atime_ts.tv_sec,
-                            finfo->atime_ts.tv_nsec);
-    archive_entry_set_mtime(entry,
-                            finfo->mtime_ts.tv_sec,
-                            finfo->mtime_ts.tv_nsec);
-    archive_entry_set_ctime(entry,
-                            finfo->ctime_ts.tv_sec,
-                            finfo->ctime_ts.tv_nsec);
-    archive_entry_set_perm(entry, isdir ? 0755 : 0644);
-    /*
-     * check if we can safely cast unsigned file size to libarchive
-     * signed size. Very unlikely problem (>9 exabyte file)
-     */
-    if (finfo->size > INT64_MAX) {
-        DBG(0, ("Remote file %s too big\n", full_dos_path));
-        goto out_entry;
-    }
-
-    archive_entry_set_size(entry, (int64_t)finfo->size);
-
-    r = archive_write_header(t->archive, entry);
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-        err = 1;
-        goto out_entry;
-    }
-
-    if (isdir) {
-        DBG(5, ("get_file skip dir %s\n", full_dos_path));
-        goto out_entry;
-    }
-
-    status = cli_open(cli, full_dos_path, O_RDONLY, DENY_NONE, &remote_fd);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0,("%s opening remote file %s\n",
-                 nt_errstr(status), full_dos_path));
-        goto out_entry;
-    }
-
-    do {
-        status = cli_read(cli, remote_fd, buf, off, sizeof(buf), &len);
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0,("Error reading file %s : %s\n",
-                     full_dos_path, nt_errstr(status)));
-            err = 1;
-            goto out_close;
-        }
-
-        off += len;
-
-        r = archive_write_data(t->archive, buf, len);
-        if (r < 0) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto out_close;
-        }
-
-    } while (off < finfo->size);
-
- out_close:
-    cli_close(cli, remote_fd);
-
- out_entry:
-    archive_entry_free(entry);
-
- out:
-    return err;
-}
-
-/**
- * get_file_callback - do_list callback
- *
- * Callback for client.c do_list(). Called for each file found on the
- * share matching do_list mask. Recursively call do_list() with itself
- * as callback when the current file is a directory.
- */
-static NTSTATUS get_file_callback(struct cli_state *cli,
-                                  struct file_info *finfo,
-                                  const char *dir)
-{
-    TALLOC_CTX *ctx = talloc_tos();
-    NTSTATUS err = NT_STATUS_OK;
-    char *remote_name;
-    const char *initial_dir = client_get_cur_dir();
-
-    remote_name = talloc_asprintf(ctx, "%s%s", initial_dir, finfo->name);
-
-    if (strequal(finfo->name, "..") || strequal(finfo->name, ".")) {
-        goto out;
-    }
-
-    if (tar_create_skip_path(&tar_ctx, remote_name, finfo)) {
-        DBG(5, ("--- %s\n", remote_name));
-        goto out;
-    }
-
-    if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
-        char *old_dir;
-        char *new_dir;
-        char *mask;
-
-        old_dir = talloc_strdup(ctx, initial_dir);
-        new_dir = talloc_asprintf(ctx, "%s%s\\", initial_dir, finfo->name);
-        mask = talloc_asprintf(ctx, "%s*", new_dir);
-
-        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
-            err = NT_STATUS_UNSUCCESSFUL;
-            goto out;
-        }
-
-        client_set_cur_dir(new_dir);
-        do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-        client_set_cur_dir(old_dir);
-    }
-
-    else {
-        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
-            err = NT_STATUS_UNSUCCESSFUL;
-            goto out;
-        }
-    }
-
- out:
-    return err;
-}
-
-/**
- * tar_create_from_list - fetch from path list in include mode
- */
-static int tar_create_from_list(struct tar *t)
-{
-    TALLOC_CTX *ctx = talloc_tos();
-    int err = 0;
-    NTSTATUS status;
-    const char *path, *mask, *base, *start_dir;
-    int i;
-
-    start_dir = talloc_strdup(ctx, client_get_cur_dir());
-
-    for (i = 0; i < t->path_list_size; i++) {
-        path = t->path_list[i];
-        base = path_base_name(path);
-        mask = talloc_asprintf(ctx, "%s\\%s", client_get_cur_dir(), path);
-
-        DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
-                path, base ? base : "NULL", mask));
-
-        if (base) {
-            base = talloc_asprintf(ctx, "%s%s\\",
-                                   client_get_cur_dir(), path_base_name(path));
-            DBG(5, ("cd '%s' before do_list\n", base));
-            client_set_cur_dir(base);
-        }
-        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-        if (base) {
-            client_set_cur_dir(start_dir);
-        }
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0, ("do_list failed on %s (%s)\n", path, nt_errstr(status)));
-            err = 1;
-            goto out;
-        }
-    }
-
- out:
-    return err;
-}
-
-/**
- * tar_create - create archive and fetch files
- */
-static int tar_create(struct tar* t)
-{
-    TALLOC_CTX *ctx = talloc_tos();
-    int r;
-    int err = 0;
-    NTSTATUS status;
-    const char *mask;
-
-    t->archive = archive_write_new();
-
-    if (!t->mode.dry) {
-        const int bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
-        r = archive_write_set_bytes_per_block(t->archive, bsize);
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Can't use a block size of %d bytes", bsize));
-            err = 1;
-            goto out;
-        }
-
-        /*
-         * Use PAX restricted format which is not the most
-         * conservative choice but has useful extensions and is widely
-         * supported
-         */
-        r = archive_write_set_format_pax_restricted(t->archive);
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Can't use pax restricted format: %s\n",
-                    archive_error_string(t->archive)));
-            err = 1;
-            goto out;
-        }
-
-        if (strequal(t->tar_path, "-")) {
-            r = archive_write_open_fd(t->archive, STDOUT_FILENO);
-        } else {
-            r = archive_write_open_filename(t->archive, t->tar_path);
-        }
-
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Can't open %s: %s\n", t->tar_path,
-                    archive_error_string(t->archive)));
-            err = 1;
-            goto out_close;
-        }
-    }
-
-    /*
-     * In inclusion mode, iterate on the inclusion list
-     */
-    if (t->mode.selection == TAR_INCLUDE && t->path_list_size > 0) {
-        if (tar_create_from_list(t)) {
-            err = 1;
-            goto out_close;
-        }
-    } else {
-        mask = talloc_asprintf(ctx, "%s\\*", client_get_cur_dir());
-        DBG(5, ("tar_process do_list with mask: %s\n", mask));
-        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0, ("do_list fail %s\n", nt_errstr(status)));
-            err = 1;
-            goto out_close;
-        }
-    }
-
- out_close:
-    DBG(0, ("Total bytes received: %" PRIu64 "\n", t->total_size));
-
-    if (!t->mode.dry) {
-        r = archive_write_close(t->archive);
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto out;
-        }
-    }
- out:
-    archive_write_free(t->archive);
-    return err;
-}
-
-/**
- * max_token - return upper limit for the number of token in @str
- *
- * The result is not exact, the actual number of token might be less
- * than what is returned.
- */
-static int max_token (const char *str)
-{
-    const char *s = str;
-    int nb = 0;
-
-    if (!str) {
-        return 0;
-    }
-
-    while (*s) {
-        if (isspace(*s)) {
-            nb++;
-        }
-        s++;
-    }
-
-    nb++;
-
-    return nb;
-}
-
-/**
- * cmd_tar - interactive command to start a tar backup/restoration
- *
- * Check presence of argument, parse them and handle the request.
- */
-int cmd_tar(void)
-{
-    TALLOC_CTX *ctx = talloc_tos();
-    const extern char *cmd_ptr;
-    const char *flag;
-    const char **val;
-    char *buf;
-    int maxtok = max_token(cmd_ptr);
-    int i = 0;
-    int err = 0;
-
-    if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-        DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
-        return 1;
-    }
-
-    flag = buf;
-    val = talloc_array(ctx, const char*, maxtok);
-
-    while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-        val[i++] = buf;
-    }
-
-    if (tar_parse_args(&tar_ctx, flag, val, i)) {
-        DBG(0, ("parse_args failed\n"));
-        err = 1;
-        goto out;
-    }
-
-    if (tar_process(&tar_ctx)) {
-        DBG(0, ("tar_process failed\n"));
-        err = 1;
-        goto out;
-    }
-
- out:
-    return err;
-}
-
-/**
- * tar_extract - open archive and send files.
- */
-static int tar_extract(struct tar *t)
-{
-    int err = 0;
-    int r;
-    struct archive_entry *entry;
-    const size_t bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
-
-    t->archive = archive_read_new();
-    archive_read_support_format_all(t->archive);
-    archive_read_support_filter_all(t->archive);
-
-    if (strequal(t->tar_path, "-")) {
-        r = archive_read_open_fd(t->archive, STDIN_FILENO, bsize);
-    } else {
-        r = archive_read_open_filename(t->archive, t->tar_path, bsize);
-    }
-
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Can't open %s : %s\n", t->tar_path,
-                  archive_error_string(t->archive)));
-        err = 1;
-        goto out;
-    }
-
-    for (;;) {
-        r = archive_read_next_header(t->archive, &entry);
-        if (r == ARCHIVE_EOF) {
-            break;
-        }
-        if (r == ARCHIVE_WARN) {
-            DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
-        }
-        if (r == ARCHIVE_FATAL) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto out;
-        }
-
-        if (tar_extract_skip_path(t, entry)) {
-            DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
-            continue;
-        }
-
-        DBG(5, ("+++ %s\n", archive_entry_pathname(entry)));
-
-        if (tar_send_file(t, entry)) {
-            err = 1;
-            goto out;
-        }
-    }
-
- out:
-    r = archive_read_free(t->archive);
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Can't close %s : %s\n", t->tar_path,
-                  archive_error_string(t->archive)));
-        err = 1;
-    }
-    return err;
-}
-
-/**
- * tar_process - start processing archive
- */
-int tar_process(struct tar *t)
-{
-    int rc = 0;
-
-    switch(t->mode.operation) {
-    case TAR_EXTRACT:
-        rc = tar_extract(t);
-        break;
-    case TAR_CREATE:
-        rc = tar_create(t);
-        break;
-    default:
-        DBG(0, ("Invalid tar state\n"));
-        rc = 1;
-    }
-
-    DBG(5, ("tar_process done, err = %d\n", rc));
-    return rc;
 }
 
 /**
@@ -1548,4 +619,985 @@ int tar_parse_args(struct tar* t, const char *flag,
     t->to_process = true;
     tar_dump(t);
     return 0;
+}
+
+/**
+ * tar_process - start processing archive
+ */
+int tar_process(struct tar *t)
+{
+    int rc = 0;
+
+    switch(t->mode.operation) {
+    case TAR_EXTRACT:
+        rc = tar_extract(t);
+        break;
+    case TAR_CREATE:
+        rc = tar_create(t);
+        break;
+    default:
+        DBG(0, ("Invalid tar state\n"));
+        rc = 1;
+    }
+
+    DBG(5, ("tar_process done, err = %d\n", rc));
+    return rc;
+}
+
+/**
+ * tar_create - create archive and fetch files
+ */
+static int tar_create(struct tar* t)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    int r;
+    int err = 0;
+    NTSTATUS status;
+    const char *mask;
+
+    t->archive = archive_write_new();
+
+    if (!t->mode.dry) {
+        const int bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
+        r = archive_write_set_bytes_per_block(t->archive, bsize);
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Can't use a block size of %d bytes", bsize));
+            err = 1;
+            goto out;
+        }
+
+        /*
+         * Use PAX restricted format which is not the most
+         * conservative choice but has useful extensions and is widely
+         * supported
+         */
+        r = archive_write_set_format_pax_restricted(t->archive);
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Can't use pax restricted format: %s\n",
+                    archive_error_string(t->archive)));
+            err = 1;
+            goto out;
+        }
+
+        if (strequal(t->tar_path, "-")) {
+            r = archive_write_open_fd(t->archive, STDOUT_FILENO);
+        } else {
+            r = archive_write_open_filename(t->archive, t->tar_path);
+        }
+
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Can't open %s: %s\n", t->tar_path,
+                    archive_error_string(t->archive)));
+            err = 1;
+            goto out_close;
+        }
+    }
+
+    /*
+     * In inclusion mode, iterate on the inclusion list
+     */
+    if (t->mode.selection == TAR_INCLUDE && t->path_list_size > 0) {
+        if (tar_create_from_list(t)) {
+            err = 1;
+            goto out_close;
+        }
+    } else {
+        mask = talloc_asprintf(ctx, "%s\\*", client_get_cur_dir());
+        DBG(5, ("tar_process do_list with mask: %s\n", mask));
+        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+        if (!NT_STATUS_IS_OK(status)) {
+            DBG(0, ("do_list fail %s\n", nt_errstr(status)));
+            err = 1;
+            goto out_close;
+        }
+    }
+
+ out_close:
+    DBG(0, ("Total bytes received: %" PRIu64 "\n", t->total_size));
+
+    if (!t->mode.dry) {
+        r = archive_write_close(t->archive);
+        if (r != ARCHIVE_OK) {
+            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+            err = 1;
+            goto out;
+        }
+    }
+ out:
+    archive_write_free(t->archive);
+    return err;
+}
+
+/**
+ * tar_create_from_list - fetch from path list in include mode
+ */
+static int tar_create_from_list(struct tar *t)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    int err = 0;
+    NTSTATUS status;
+    const char *path, *mask, *base, *start_dir;
+    int i;
+
+    start_dir = talloc_strdup(ctx, client_get_cur_dir());
+
+    for (i = 0; i < t->path_list_size; i++) {
+        path = t->path_list[i];
+        base = path_base_name(path);
+        mask = talloc_asprintf(ctx, "%s\\%s", client_get_cur_dir(), path);
+
+        DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
+                path, base ? base : "NULL", mask));
+
+        if (base) {
+            base = talloc_asprintf(ctx, "%s%s\\",
+                                   client_get_cur_dir(), path_base_name(path));
+            DBG(5, ("cd '%s' before do_list\n", base));
+            client_set_cur_dir(base);
+        }
+        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+        if (base) {
+            client_set_cur_dir(start_dir);
+        }
+        if (!NT_STATUS_IS_OK(status)) {
+            DBG(0, ("do_list failed on %s (%s)\n", path, nt_errstr(status)));
+            err = 1;
+            goto out;
+        }
+    }
+
+ out:
+    return err;
+}
+
+/**
+ * get_file_callback - do_list callback
+ *
+ * Callback for client.c do_list(). Called for each file found on the
+ * share matching do_list mask. Recursively call do_list() with itself
+ * as callback when the current file is a directory.
+ */
+static NTSTATUS get_file_callback(struct cli_state *cli,
+                                  struct file_info *finfo,
+                                  const char *dir)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    NTSTATUS err = NT_STATUS_OK;
+    char *remote_name;
+    const char *initial_dir = client_get_cur_dir();
+
+    remote_name = talloc_asprintf(ctx, "%s%s", initial_dir, finfo->name);
+
+    if (strequal(finfo->name, "..") || strequal(finfo->name, ".")) {
+        goto out;
+    }
+
+    if (tar_create_skip_path(&tar_ctx, remote_name, finfo)) {
+        DBG(5, ("--- %s\n", remote_name));
+        goto out;
+    }
+
+    if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+        char *old_dir;
+        char *new_dir;
+        char *mask;
+
+        old_dir = talloc_strdup(ctx, initial_dir);
+        new_dir = talloc_asprintf(ctx, "%s%s\\", initial_dir, finfo->name);
+        mask = talloc_asprintf(ctx, "%s*", new_dir);
+
+        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
+            err = NT_STATUS_UNSUCCESSFUL;
+            goto out;
+        }
+
+        client_set_cur_dir(new_dir);
+        do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+        client_set_cur_dir(old_dir);
+    }
+
+    else {
+        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
+            err = NT_STATUS_UNSUCCESSFUL;
+            goto out;
+        }
+    }
+
+ out:
+    return err;
+}
+
+/**
+ * tar_get_file - fetch a remote file to the local archive
+ * @full_dos_path: path to the file to fetch
+ * @finfo: attributes of the file to fetch
+ */
+static int tar_get_file(struct tar *t, const char *full_dos_path,
+                        struct file_info *finfo)
+{
+    extern struct cli_state *cli;
+    TALLOC_CTX *ctx = talloc_tos();
+    NTSTATUS status;
+    struct archive_entry *entry;
+    char *full_unix_path;
+    char buf[TAR_CLI_READ_SIZE];
+    size_t len;
+    uint64_t off = 0;
+    uint16_t remote_fd = (uint16_t)-1;
+    int err = 0, r;
+    const bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
+
+    DBG(5, ("+++ %s\n", full_dos_path));
+
+    t->total_size += finfo->size;
+
+    if (t->mode.dry) {
+        goto out;
+    }
+
+    if (t->mode.reset) {
+        /* ignore return value: server might not store DOS attributes */
+        set_remote_attr(full_dos_path, FILE_ATTRIBUTE_ARCHIVE, ATTR_UNSET);
+    }
+
+    full_unix_path = talloc_asprintf(ctx, ".%s", full_dos_path);
+    string_replace(full_unix_path, '\\', '/');
+    entry = archive_entry_new();
+    archive_entry_copy_pathname(entry, full_unix_path);
+    archive_entry_set_filetype(entry, isdir ? AE_IFDIR : AE_IFREG);
+    archive_entry_set_atime(entry,
+                            finfo->atime_ts.tv_sec,
+                            finfo->atime_ts.tv_nsec);
+    archive_entry_set_mtime(entry,
+                            finfo->mtime_ts.tv_sec,
+                            finfo->mtime_ts.tv_nsec);
+    archive_entry_set_ctime(entry,
+                            finfo->ctime_ts.tv_sec,
+                            finfo->ctime_ts.tv_nsec);
+    archive_entry_set_perm(entry, isdir ? 0755 : 0644);
+    /*
+     * check if we can safely cast unsigned file size to libarchive
+     * signed size. Very unlikely problem (>9 exabyte file)
+     */
+    if (finfo->size > INT64_MAX) {
+        DBG(0, ("Remote file %s too big\n", full_dos_path));
+        goto out_entry;
+    }
+
+    archive_entry_set_size(entry, (int64_t)finfo->size);
+
+    r = archive_write_header(t->archive, entry);
+    if (r != ARCHIVE_OK) {
+        DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+        err = 1;
+        goto out_entry;
+    }
+
+    if (isdir) {
+        DBG(5, ("get_file skip dir %s\n", full_dos_path));
+        goto out_entry;
+    }
+
+    status = cli_open(cli, full_dos_path, O_RDONLY, DENY_NONE, &remote_fd);
+    if (!NT_STATUS_IS_OK(status)) {
+        DBG(0,("%s opening remote file %s\n",
+                 nt_errstr(status), full_dos_path));
+        goto out_entry;
+    }
+
+    do {
+        status = cli_read(cli, remote_fd, buf, off, sizeof(buf), &len);
+        if (!NT_STATUS_IS_OK(status)) {
+            DBG(0,("Error reading file %s : %s\n",
+                     full_dos_path, nt_errstr(status)));
+            err = 1;
+            goto out_close;
+        }
+
+        off += len;
+
+        r = archive_write_data(t->archive, buf, len);
+        if (r < 0) {
+            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+            err = 1;
+            goto out_close;
+        }
+
+    } while (off < finfo->size);
+
+ out_close:
+    cli_close(cli, remote_fd);
+
+ out_entry:
+    archive_entry_free(entry);
+
+ out:
+    return err;
+}
+
+/**
+ * tar_extract - open archive and send files.
+ */
+static int tar_extract(struct tar *t)
+{
+    int err = 0;
+    int r;
+    struct archive_entry *entry;
+    const size_t bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
+
+    t->archive = archive_read_new();
+    archive_read_support_format_all(t->archive);
+    archive_read_support_filter_all(t->archive);
+
+    if (strequal(t->tar_path, "-")) {
+        r = archive_read_open_fd(t->archive, STDIN_FILENO, bsize);
+    } else {
+        r = archive_read_open_filename(t->archive, t->tar_path, bsize);
+    }
+
+    if (r != ARCHIVE_OK) {
+        DBG(0, ("Can't open %s : %s\n", t->tar_path,
+                  archive_error_string(t->archive)));
+        err = 1;
+        goto out;
+    }
+
+    for (;;) {
+        r = archive_read_next_header(t->archive, &entry);
+        if (r == ARCHIVE_EOF) {
+            break;
+        }
+        if (r == ARCHIVE_WARN) {
+            DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
+        }
+        if (r == ARCHIVE_FATAL) {
+            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+            err = 1;
+            goto out;
+        }
+
+        if (tar_extract_skip_path(t, entry)) {
+            DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
+            continue;
+        }
+
+        DBG(5, ("+++ %s\n", archive_entry_pathname(entry)));
+
+        if (tar_send_file(t, entry)) {
+            err = 1;
+            goto out;
+        }
+    }
+
+ out:
+    r = archive_read_free(t->archive);
+    if (r != ARCHIVE_OK) {
+        DBG(0, ("Can't close %s : %s\n", t->tar_path,
+                  archive_error_string(t->archive)));
+        err = 1;
+    }
+    return err;
+}
+
+/**
+ * tar_send_file - send @entry to the remote server
+ * @entry: current archive entry
+ *
+ * Handle the creation of the parent directories and transfer the
+ * entry to a new remote file.
+ */
+static int tar_send_file(struct tar *t, struct archive_entry *entry)
+{
+    extern struct cli_state *cli;
+    TALLOC_CTX *ctx = talloc_tos();
+    char *dos_path;
+    char *full_path;
+    NTSTATUS status;
+    uint16_t remote_fd = (uint16_t) -1;
+    int err = 0;
+    int flags = O_RDWR | O_CREAT | O_TRUNC;
+    mode_t mode = archive_entry_filetype(entry);
+
+    dos_path = talloc_strdup(ctx, archive_entry_pathname(entry));
+    fix_unix_path(dos_path, true);
+
+    full_path = talloc_strdup(ctx, client_get_cur_dir());
+    full_path = talloc_strdup_append(full_path, dos_path);
+
+    if (mode != AE_IFREG && mode != AE_IFDIR) {
+        DBG(0, ("Skipping non-dir & non-regular file %s\n", full_path));
+        goto out;
+    }
+
+    if (make_remote_path(full_path)) {
+        err = 1;
+        goto out;
+    }
+
+    if (mode == AE_IFDIR) {
+        goto out;
+    }
+
+    status = cli_open(cli, full_path, flags, DENY_NONE, &remote_fd);
+    if (!NT_STATUS_IS_OK(status)) {
+        DBG(0, ("Error opening remote file %s: %s\n",
+                  full_path, nt_errstr(status)));
+        err = 1;
+        goto out;
+    }
+
+    for (;;) {
+        const void *buf;
+        size_t len;
+        off_t off;
+        int r;
+
+        r = archive_read_data_block(t->archive, &buf, &len, &off);
+        if (r == ARCHIVE_EOF) {
+            break;
+        }
+        if (r == ARCHIVE_WARN) {
+            DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
+        }
+        if (r == ARCHIVE_FATAL) {
+            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+            err = 1;
+            goto close_out;
+        }
+
+        status = cli_writeall(cli, remote_fd, 0, buf, off, len, NULL);
+        if (!NT_STATUS_IS_OK(status)) {
+            DBG(0, ("Error writing remote file %s: %s\n",
+                      full_path, nt_errstr(status)));
+            err = 1;
+            goto close_out;
+        }
+    }
+
+ close_out:
+    status = cli_close(cli, remote_fd);
+    if (!NT_STATUS_IS_OK(status)) {
+        DBG(0, ("Error losing remote file %s: %s\n",
+                  full_path, nt_errstr(status)));
+        err = 1;
+    }
+
+ out:
+    return err;
+}
+
+/**
+ * tar_add_selection_path - add a path to the path list
+ * @path: path to add
+ */
+static void tar_add_selection_path(struct tar *t, const char *path)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    if (!t->path_list) {
+        t->path_list = str_list_make_empty(ctx);
+        t->path_list_size = 0;
+    }
+
+    t->path_list = str_list_add((const char**)t->path_list, path);
+    t->path_list_size++;
+    fix_unix_path(t->path_list[t->path_list_size - 1], true);
+}
+
+/**
+ * tar_set_blocksize - set block size in TAR_BLOCK_UNIT
+ */
+static int tar_set_blocksize(struct tar *t, int size)
+{
+    if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
+        return 1;
+    }
+
+    t->mode.blocksize = size;
+
+    return 0;
+}
+
+/**
+ * tar_set_newer_than - set date threshold of saved files
+ * @filename: local path to a file
+ *
+ * Only files newer than the modification time of @filename will be
+ * saved.
+ *
+ * Note: this function set the global variable newer_than from
+ * client.c. Thus the time is not a field of the tar structure. See
+ * cmd_newer() to change its value from an interactive session.
+ */
+static int tar_set_newer_than(struct tar *t, const char *filename)
+{
+    extern time_t newer_than;
+    SMB_STRUCT_STAT stbuf;
+
+    if (sys_stat(filename, &stbuf, false) != 0) {
+        DBG(0, ("Error setting newer-than time\n"));
+        return 1;
+    }
+
+    newer_than = convert_timespec_to_time_t(stbuf.st_ex_mtime);
+    DBG(1, ("Getting files newer than %s\n", time_to_asc(newer_than)));
+    return 0;
+}
+
+/**
+ * tar_read_inclusion_file - set path list from file
+ * @filename: path to the list file
+ *
+ * Read and add each line of @filename to the path list.
+ */
+static int tar_read_inclusion_file (struct tar *t, const char* filename)
+{
+    char *line;
+    TALLOC_CTX *ctx = talloc_tos();
+    int fd = open(filename, O_RDONLY);
+
+    if (fd < 0) {
+        DBG(0, ("Can't open inclusion file '%s': %s\n", filename, strerror(errno)));
+        return 1;
+    }
+
+    while ((line = afdgets(fd, ctx, 0))) {
+        tar_add_selection_path(t, line);
+    }
+
+    close(fd);
+    return 0;
+}
+
+/**
+ * tar_path_in_list - return true if @path is in the path list
+ * @path: path to find
+ * @reverse: when true also try to find path list element in @path
+ *
+ * Look at each path of the path list and return true if @path is a
+ * subpath of one of them.
+ *
+ * If you want /path to be in the path list (path/a/, path/b/) set
+ * @reverse to true to try to match the other way around.
+ */
+static bool tar_path_in_list(struct tar *t, const char *path, bool reverse)
+{
+    int i;
+    const char *p = path;
+    const char *pattern;
+    bool res;
+
+    if (!p || !p[0])
+        return false;
+
+    p = skip_useless_char_in_path(p);
+
+    for (i = 0; i < t->path_list_size; i++) {
+        pattern = skip_useless_char_in_path(t->path_list[i]);
+        res = is_subpath(p, pattern);
+        if (reverse) {
+            res = res || is_subpath(pattern, p);
+        }
+        if (res) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * tar_extract_skip_path - return true if @entry should be skipped
+ * @entry: current tar entry
+ *
+ * Skip predicate for tar extraction (archive to server) only.
+ */
+static bool tar_extract_skip_path(struct tar *t,
+                                  struct archive_entry *entry)
+{
+    const bool skip = true;
+    const char *fullpath = archive_entry_pathname(entry);
+    bool in = true;
+
+    if (t->path_list_size <= 0) {
+        return !skip;
+    }
+
+    if (t->mode.regex) {
+        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
+    } else {
+        in = tar_path_in_list(t, fullpath, false);
+    }
+
+    if (t->mode.selection == TAR_EXCLUDE) {
+        in = !in;
+    }
+
+    return in ? !skip : skip;
+}
+
+/**
+ * tar_create_skip_path - return true if @fullpath shoud be skipped
+ * @fullpath: full remote path of the current file
+ * @finfo: remote file attributes
+ *
+ * Skip predicate for tar creation (server to archive) only.
+ */
+static bool tar_create_skip_path(struct tar *t,
+                                 const char *fullpath,
+                                 const struct file_info *finfo)
+{
+    /* syntaxic sugar */
+    const bool skip = true;
+    const mode_t mode = finfo->mode;
+    const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
+    const bool exclude = t->mode.selection == TAR_EXCLUDE;
+    bool in = true;
+
+    if (!isdir) {
+
+        /* 1. if we dont want X and we have X, skip */
+        if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
+            return skip;
+        }
+
+        if (!t->mode.hidden && (mode & FILE_ATTRIBUTE_HIDDEN)) {
+            return skip;
+        }
+
+        /* 2. if we only want archive and it's not, skip */
+
+        if (t->mode.incremental && !(mode & FILE_ATTRIBUTE_ARCHIVE)) {
+            return skip;
+        }
+    }
+
+    /* 3. is it in the selection list? */
+
+    /*
+     * tar_create_from_list() use the include list as a starting
+     * point, no need to check
+     */
+    if (!exclude) {
+        return !skip;
+    }
+
+    /* we are now in exclude mode */
+
+    /* no matter the selection, no list => include everything */
+    if (t->path_list_size <= 0) {
+        return !skip;
+    }
+
+    if (t->mode.regex) {
+        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
+    } else {
+        in = tar_path_in_list(t, fullpath, isdir && !exclude);
+    }
+
+    return in ? skip : !skip;
+}
+
+/**
+ * tar_to_process - return true if @t is ready to be processed
+ *
+ * @t is ready if it properly parsed command line arguments.
+ */
+bool tar_to_process (struct tar *t)
+{
+    return t->to_process;
+}
+
+/**
+ * skip_useless_char_in_path - skip leading slashes/dots
+ *
+ * Skip leading slashes, backslashes and dot-slashes.
+ */
+static const char* skip_useless_char_in_path(const char *p)
+{
+    while (p) {
+        if (*p == '/' || *p == '\\') {
+            p++;
+        }
+        else if (p[0] == '.' && (p[1] == '/' || p[1] == '\\')) {
+            p += 2;
+        }
+        else
+            return p;
+    }
+    return p;
+}
+
+/**
+ * is_subpath - return true if the path @sub is a subpath of @full.
+ * @sub: path to test
+ * @full: container path
+ *
+ * String comparaison is case-insensitive.
+ *
+ * Return true if @sub = @full
+ */
+static bool is_subpath(const char *sub, const char *full)
+{
+    const char *full_copy = full;
+
+    while (*full && *sub &&
+           (*full == *sub || tolower_m(*full) == tolower_m(*sub) ||
+            (*full == '\\' && *sub=='/') || (*full == '/' && *sub=='\\'))) {
+        full++; sub++;
+    }
+
+    /* if full has a trailing slash, it compared equal, so full is an "initial"
+       string of sub.
+    */
+    if (!*full && full != full_copy && (*(full-1) == '/' || *(full-1) == '\\'))
+        return true;
+
+    /* ignore trailing slash on full */
+    if (!*sub && (*full == '/' || *full == '\\') && !*(full+1))
+        return true;
+
+    /* check for full is an "initial" string of sub */
+    if ((*sub == '/' || *sub == '\\') && !*full)
+        return true;
+
+    return *full == *sub;
+}
+
+/**
+ * set_remote_attr - set DOS attributes of a remote file
+ * @filename: path to the file name
+ * @new_attr: attribute bit mask to use
+ * @mode: one of ATTR_SET or ATTR_UNSET
+ *
+ * Update the file attributes with the one provided.
+ */
+static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
+{
+    extern struct cli_state *cli;
+    uint16 old_attr;
+    NTSTATUS status;
+
+    status = cli_getatr(cli, filename, &old_attr, NULL, NULL);
+    if (!NT_STATUS_IS_OK(status)) {
+        DBG(0, ("cli_getatr failed: %s\n", nt_errstr(status)));
+        return 1;
+    }
+
+    if (mode == ATTR_SET) {
+        new_attr |= old_attr;
+    } else {
+        new_attr = old_attr & ~new_attr;
+    }
+
+    status = cli_setatr(cli, filename, new_attr, 0);
+    if (!NT_STATUS_IS_OK(status)) {
+        DBG(1, ("cli_setatr failed: %s\n", nt_errstr(status)));
+        return 1;
+    }
+
+    return 0;
+}
+
+
+/**
+ * make_remote_path - recursively make remote dirs
+ * @full_path: full hierarchy to create
+ *
+ * Create @full_path and each parent directories as needed.
+ */
+static int make_remote_path(const char *full_path)
+{
+    extern struct cli_state *cli;
+    TALLOC_CTX *ctx = talloc_tos();
+    char *path;
+    char *subpath;
+    char *state;
+    char *last_backslash;
+    char *p;
+    int len;
+    NTSTATUS status;
+    int err = 0;
+
+    subpath = talloc_strdup(ctx, full_path);
+    path = talloc_strdup(ctx, full_path);
+    len = talloc_get_size(path) - 1;
+
+    last_backslash = strrchr_m(path, '\\');
+
+    if (!last_backslash) {
+        goto out;
+    }
+
+    *last_backslash = 0;
+
+    subpath[0] = 0;
+    p = strtok_r(path, "\\", &state);
+
+    while (p) {
+        strlcat(subpath, p, len);
+        status = cli_chkpath(cli, subpath);
+        if (!NT_STATUS_IS_OK(status)) {
+            status = cli_mkdir(cli, subpath);
+            if (!NT_STATUS_IS_OK(status)) {
+                DBG(0, ("Can't mkdir %s: %s\n", subpath, nt_errstr(status)));
+                err = 1;
+                goto out;
+            }
+            DBG(3, ("mkdir %s\n", subpath));
+        }
+
+        strlcat(subpath, "\\", len);
+        p = strtok_r(NULL, "/\\", &state);
+
+    }
+
+ out:
+    return err;
+}
+
+
+#define XSET(v)      [v] = #v
+#define XTABLE(v, t) DBG(2, ("DUMP:%-20.20s = %s\n", #v, t[v]))
+#define XBOOL(v)     DBG(2, ("DUMP:%-20.20s = %d\n", #v, v ? 1 : 0))
+#define XSTR(v)      DBG(2, ("DUMP:%-20.20s = %s\n", #v, v ? v : "NULL"))
+#define XINT(v)      DBG(2, ("DUMP:%-20.20s = %d\n", #v, v))
+#define XUINT64(v)   DBG(2, ("DUMP:%-20.20s = %" PRIu64  "\n", #v, v))
+
+/**
+ * tar_dump - dump tar structure on stdout
+ */
+static void tar_dump(struct tar *t)
+{
+    int i;
+    const char* op[] = {
+        XSET(TAR_NO_OPERATION),
+        XSET(TAR_CREATE),
+        XSET(TAR_EXTRACT),
+    };
+
+    const char* sel[] = {
+        XSET(TAR_NO_SELECTION),
+        XSET(TAR_INCLUDE),
+        XSET(TAR_EXCLUDE),
+    };
+
+    XBOOL(t->to_process);
+    XTABLE(t->mode.operation, op);
+    XTABLE(t->mode.selection, sel);
+    XINT(t->mode.blocksize);
+    XBOOL(t->mode.hidden);
+    XBOOL(t->mode.system);
+    XBOOL(t->mode.incremental);
+    XBOOL(t->mode.reset);
+    XBOOL(t->mode.dry);
+    XBOOL(t->mode.verbose);
+    XUINT64(t->total_size);
+    XSTR(t->tar_path);
+    XINT(t->path_list_size);
+
+    for (i = 0; t->path_list && t->path_list[i]; i++) {
+        DBG(2, ("DUMP: t->path_list[%2d] = %s\n", i, t->path_list[i]));
+    }
+
+    DBG(2, ("DUMP:t->path_list @ %p (%d elem)\n", t->path_list, i));
+}
+#undef XSET
+#undef XTABLE
+#undef XBOOL
+#undef XSTR
+#undef XINT
+
+/**
+ * max_token - return upper limit for the number of token in @str
+ *
+ * The result is not exact, the actual number of token might be less
+ * than what is returned.
+ */
+static int max_token (const char *str)
+{
+    const char *s = str;
+    int nb = 0;
+
+    if (!str) {
+        return 0;
+    }
+
+    while (*s) {
+        if (isspace(*s)) {
+            nb++;
+        }
+        s++;
+    }
+
+    nb++;
+
+    return nb;
+}
+
+/**
+ * fix_unix_path - convert @path to a DOS path
+ * @path: path to convert
+ * @removeprefix: if true, remove leading ./ or /.
+ */
+static char *fix_unix_path (char *path, bool removeprefix)
+{
+    char *from = path, *to = path;
+
+    if (!path || !*path)
+        return path;
+
+    /* remove prefix:
+     * ./path => path
+     *  /path => path
+     */
+    if (removeprefix) {
+        /* /path */
+        if (path[0] == '/' || path[0] == '\\') {
+            from += 1;
+        }
+
+        /* ./path */
+        if (path[1] && path[0] == '.' && (path[1] == '/' || path[1] == '\\')) {
+            from += 2;
+        }
+    }
+
+    /* replace / with \ */
+    while (*from) {
+        if (*from == '/') {
+            *to = '\\';
+        } else {
+            *to = *from;
+        }
+        from++; to++;
+    }
+    *to = 0;
+
+    return path;
+}
+
+/**
+ * path_base_name - return @path basename
+ *
+ * If @path doesn't contain any directory separator return NULL.
+ */
+static char *path_base_name (const char *path)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    char *base = NULL;
+    int last = -1;
+    int i;
+
+    for (i = 0; path[i]; i++) {
+        if (path[i] == '\\' || path[i] == '/') {
+            last = i;
+        }
+    }
+
+    if (last >= 0) {
+        base = talloc_strdup(ctx, path);
+        base[last] = 0;
+    }
+
+    return base;
 }
