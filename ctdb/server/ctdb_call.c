@@ -761,7 +761,9 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	*/
 	if (ctdb_db->sticky) {
 		if (ctdb_defer_pinned_down_request(ctdb, ctdb_db, call->key, hdr) == 0) {
-		  DEBUG(DEBUG_WARNING,("Defer request for pinned down record in %s\n", ctdb_db->db_name));
+			DEBUG(DEBUG_WARNING,
+			      ("Defer request for pinned down record in %s\n", ctdb_db->db_name));
+			talloc_free(call);
 			return;
 		}
 	}
@@ -775,10 +777,12 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 					   ctdb_call_input_pkt, ctdb, false);
 	if (ret == -1) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
+		talloc_free(call);
 		return;
 	}
 	if (ret == -2) {
 		DEBUG(DEBUG_INFO,(__location__ " deferred ctdb_request_call\n"));
+		talloc_free(call);
 		return;
 	}
 
@@ -828,6 +832,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 		}
+		talloc_free(call);
 		return;
 	}
 
@@ -904,6 +909,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		CTDB_INCREMENT_DB_STAT(ctdb_db, db_ro_delegations);
 
 		talloc_free(r);
+		talloc_free(call);
 		return;
 	}
 
@@ -949,8 +955,9 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 			}
-			return;
 		}
+		talloc_free(call);
+		return;
 	}
 
 	ret = ctdb_call_local(ctdb_db, call, &header, hdr, &data, true);
@@ -979,6 +986,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
+	talloc_free(call);
 }
 
 /**
