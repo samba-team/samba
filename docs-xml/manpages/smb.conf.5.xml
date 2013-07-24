@@ -21,10 +21,8 @@
 	<para>
 	The <filename moreinfo="none">smb.conf</filename> file is a configuration  file for the Samba suite. <filename
 	moreinfo="none">smb.conf</filename> contains  runtime configuration information for the Samba programs. The
-	 <filename moreinfo="none">smb.conf</filename> file is designed to be configured and administered by the
-	 <citerefentry><refentrytitle>swat</refentrytitle> <manvolnum>8</manvolnum></citerefentry> program. The
 	complete description of the file format and possible parameters held within are here for reference purposes.
-	</para> 
+	</para>
 </refsect1>
 
 <refsect1 id="FILEFORMATSECT">
@@ -800,7 +798,6 @@ chmod 1770 /usr/local/samba/lib/usershares
 	<para>
 	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbpasswd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>swat</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>nmbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>winbindd</refentrytitle>

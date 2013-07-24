@@ -41,7 +41,6 @@ manpages='''
          manpages/smbta-util.8
          manpages/smbtar.1
          manpages/smbtree.1
-         manpages/swat.8
          manpages/testparm.1
          manpages/vfs_acl_tdb.8
          manpages/vfs_acl_xattr.8

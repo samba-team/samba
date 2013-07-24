@@ -202,14 +202,6 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><citerefentry><refentrytitle>swat</refentrytitle>
-		<manvolnum>8</manvolnum></citerefentry></term>
-		<listitem><para><command>swat</command> is a web-based
-		interface to configuring <filename>smb.conf</filename>.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term><citerefentry><refentrytitle>wbinfo</refentrytitle>
 		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para><command>wbinfo</command> is a utility

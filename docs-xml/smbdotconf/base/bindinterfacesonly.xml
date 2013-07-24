@@ -37,9 +37,8 @@
 	<para>
 	If <smbconfoption name="bind interfaces only"/> is set and the network address
 	 <emphasis>127.0.0.1</emphasis> is not added to the <smbconfoption name="interfaces"/> parameter list
-	 <citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry> and
-	 <citerefentry><refentrytitle>swat</refentrytitle> <manvolnum>8</manvolnum></citerefentry> may not work as
-	expected due to the reasons covered below.
+	 <citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry> may not
+	 work as expected due to the reasons covered below.
 	</para>
 
 	<para>
@@ -52,16 +51,6 @@
 	its <citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry>	<parameter
 	moreinfo="none">-r <replaceable>remote machine</replaceable></parameter> parameter, with <replaceable>remote
 	machine</replaceable> set to the IP name of the primary interface of the local host.
-	</para>
-
-	<para>
-	The <command moreinfo="none">swat</command> status page tries to connect with <command
-	moreinfo="none">smbd</command> and <command moreinfo="none">nmbd</command> at the address
-	<emphasis>127.0.0.1</emphasis> to determine if they are running.  Not adding <emphasis>127.0.0.1</emphasis>
-	will cause <command moreinfo="none"> smbd</command> and <command moreinfo="none">nmbd</command> to always show
-	&quot;not running&quot; even if they really are.  This can prevent <command moreinfo="none"> swat</command>
-	from starting/stopping/restarting <command moreinfo="none">smbd</command> and <command
-	moreinfo="none">nmbd</command>.
 	</para>
 
 </description>
