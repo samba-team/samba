@@ -120,6 +120,8 @@ enum {
 };
 
 struct tar {
+    TALLOC_CTX *talloc_ctx;
+
     /* in state that needs/can be processed? */
     bool to_process;
 
@@ -179,6 +181,8 @@ static int tar_set_newer_than(struct tar *t, const char *filename);
 static void tar_add_selection_path(struct tar *t, const char *path);
 static void tar_dump(struct tar *t);
 static bool tar_extract_skip_path(struct tar *t, struct archive_entry *entry);
+static TALLOC_CTX *tar_reset_mem_context(struct tar *t);
+static void tar_free_mem_context(struct tar *t);
 static bool tar_create_skip_path(struct tar *t,
                                  const char *fullpath,
                                  const struct file_info *finfo);
@@ -216,20 +220,22 @@ int cmd_block(void)
     /* XXX: from client.c */
     const extern char *cmd_ptr;
     char *buf;
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
+    int err = 0;
 
     if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
         DBG(0, ("blocksize <n>\n"));
-        return 1;
+        err = 1;
     }
 
     if (tar_set_blocksize(&tar_ctx, atoi(buf))) {
         DBG(0, ("invalid blocksize\n"));
+        err = 1;
     }
 
     DBG(2, ("blocksize is now %d\n", tar_ctx.mode.blocksize));
-
-    return 0;
+    talloc_free(ctx);
+    return err;
 }
 
 /**
@@ -243,7 +249,7 @@ int cmd_tarmode(void)
     const extern char *cmd_ptr;
     char *buf;
     int i;
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
 
     struct {
         const char *cmd;
@@ -274,8 +280,6 @@ int cmd_tarmode(void)
 
         if (i == LEN(table))
             DBG(0, ("tarmode: unrecognised option %s\n", buf));
-
-        TALLOC_FREE(buf);
     }
 
     DBG(0, ("tarmode is now %s, %s, %s, %s, %s\n",
@@ -284,6 +288,8 @@ int cmd_tarmode(void)
               tar_ctx.mode.hidden      ? "hidden"      : "nohidden",
               tar_ctx.mode.reset       ? "reset"       : "noreset",
               tar_ctx.mode.verbose     ? "verbose"     : "quiet"));
+
+    talloc_free(ctx);
     return 0;
 }
 
@@ -294,7 +300,7 @@ int cmd_tarmode(void)
  */
 int cmd_tar(void)
 {
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
     const extern char *cmd_ptr;
     const char *flag;
     const char **val;
@@ -305,7 +311,8 @@ int cmd_tar(void)
 
     if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
         DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
-        return 1;
+        err = 1;
+        goto out;
     }
 
     flag = buf;
@@ -328,6 +335,7 @@ int cmd_tar(void)
     }
 
  out:
+    talloc_free(ctx);
     return err;
 }
 
@@ -344,12 +352,14 @@ int cmd_setmode(void)
     char *fname = NULL;
     uint16 attr[2] = {0};
     int mode = ATTR_SET;
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
+    int err = 0;
 
 
     if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
         DBG(0, ("setmode <filename> <[+|-]rsha>\n"));
-        return 1;
+        err = 1;
+        goto out;
     }
 
     fname = talloc_asprintf(ctx,
@@ -357,7 +367,8 @@ int cmd_setmode(void)
                             client_get_cur_dir(),
                             buf);
     if (!fname) {
-        return 1;
+        err = 1;
+        goto out;
     }
 
     while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
@@ -385,14 +396,16 @@ int cmd_setmode(void)
                 break;
             default:
                 DBG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
-                return 1;
+                err = 1;
+                goto out;
             }
         }
     }
 
     if (attr[ATTR_SET] == 0 && attr[ATTR_UNSET] == 0) {
         DBG(0, ("setmode <filename> <[+|-]rsha>\n"));
-        return 1;
+        err = 1;
+        goto out;
     }
 
     DBG(2, ("perm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
@@ -400,7 +413,9 @@ int cmd_setmode(void)
     /* ignore return value: server might not store DOS attributes */
     set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
     set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
-    return 0;
+ out:
+    talloc_free(ctx);
+    return err;
 }
 
 /**
@@ -432,7 +447,7 @@ int cmd_setmode(void)
 int tar_parse_args(struct tar* t, const char *flag,
                    const char **val, int valsize)
 {
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = tar_reset_mem_context(t);
     bool list = false;
 
     /* index of next value to use */
@@ -609,6 +624,8 @@ int tar_parse_args(struct tar* t, const char *flag,
 
 /**
  * tar_process - start processing archive
+ *
+ * The talloc context of the fields is freed at the end of the call.
  */
 int tar_process(struct tar *t)
 {
@@ -626,6 +643,8 @@ int tar_process(struct tar *t)
         rc = 1;
     }
 
+    t->to_process = false;
+    tar_free_mem_context(t);
     DBG(5, ("tar_process done, err = %d\n", rc));
     return rc;
 }
@@ -635,7 +654,7 @@ int tar_process(struct tar *t)
  */
 static int tar_create(struct tar* t)
 {
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
     int r;
     int err = 0;
     NTSTATUS status;
@@ -711,6 +730,7 @@ static int tar_create(struct tar* t)
     }
  out:
     archive_write_free(t->archive);
+    talloc_free(ctx);
     return err;
 }
 
@@ -719,7 +739,7 @@ static int tar_create(struct tar* t)
  */
 static int tar_create_from_list(struct tar *t)
 {
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
     int err = 0;
     NTSTATUS status;
     const char *path, *mask, *base, *start_dir;
@@ -753,6 +773,7 @@ static int tar_create_from_list(struct tar *t)
     }
 
  out:
+    talloc_free(ctx);
     return err;
 }
 
@@ -767,7 +788,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
                                   struct file_info *finfo,
                                   const char *dir)
 {
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
     NTSTATUS err = NT_STATUS_OK;
     char *remote_name;
     const char *initial_dir = client_get_cur_dir();
@@ -810,6 +831,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
     }
 
  out:
+    talloc_free(ctx);
     return err;
 }
 
@@ -822,7 +844,7 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
                         struct file_info *finfo)
 {
     extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
     NTSTATUS status;
     struct archive_entry *entry;
     char *full_unix_path;
@@ -918,6 +940,7 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
     archive_entry_free(entry);
 
  out:
+    talloc_free(ctx);
     return err;
 }
 
@@ -995,7 +1018,7 @@ static int tar_extract(struct tar *t)
 static int tar_send_file(struct tar *t, struct archive_entry *entry)
 {
     extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
     char *dos_path;
     char *full_path;
     NTSTATUS status;
@@ -1069,6 +1092,7 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
     }
 
  out:
+    talloc_free(ctx);
     return err;
 }
 
@@ -1078,7 +1102,7 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
  */
 static void tar_add_selection_path(struct tar *t, const char *path)
 {
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = t->talloc_ctx;
     if (!t->path_list) {
         t->path_list = str_list_make_empty(ctx);
         t->path_list_size = 0;
@@ -1138,12 +1162,14 @@ static int tar_set_newer_than(struct tar *t, const char *filename)
 static int tar_read_inclusion_file (struct tar *t, const char* filename)
 {
     char *line;
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
+    int err = 0;
     int fd = open(filename, O_RDONLY);
 
     if (fd < 0) {
         DBG(0, ("Can't open inclusion file '%s': %s\n", filename, strerror(errno)));
-        return 1;
+        err = 1;
+        goto out;
     }
 
     while ((line = afdgets(fd, ctx, 0))) {
@@ -1151,7 +1177,10 @@ static int tar_read_inclusion_file (struct tar *t, const char* filename)
     }
 
     close(fd);
-    return 0;
+
+ out:
+    talloc_free(ctx);
+    return err;
 }
 
 /**
@@ -1394,7 +1423,7 @@ static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
 static int make_remote_path(const char *full_path)
 {
     extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = talloc_new(NULL);
     char *path;
     char *subpath;
     char *state;
@@ -1438,9 +1467,37 @@ static int make_remote_path(const char *full_path)
     }
 
  out:
+    talloc_free(ctx);
     return err;
 }
 
+/**
+ * tar_reset_mem_context - reset talloc context associated with @t
+ *
+ * At the start of the program the context is NULL so a new one is
+ * allocated. On the following runs (interactive session only), simply
+ * free the children.
+ */
+static TALLOC_CTX *tar_reset_mem_context(struct tar *t)
+{
+    tar_free_mem_context(t);
+    t->talloc_ctx = talloc_new(NULL);
+    return t->talloc_ctx;
+}
+
+/**
+ * tar_free_mem_context - free talloc context associated with @t
+ */
+static void tar_free_mem_context(struct tar *t)
+{
+    if (t->talloc_ctx) {
+        talloc_free(t->talloc_ctx);
+        t->talloc_ctx = NULL;
+        t->path_list_size = 0;
+        t->path_list = NULL;
+        t->tar_path = NULL;
+    }
+}
 
 #define XSET(v)      [v] = #v
 #define XTABLE(v, t) DBG(2, ("DUMP:%-20.20s = %s\n", #v, t[v]))
