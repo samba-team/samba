@@ -74,8 +74,29 @@
 #include <archive.h>
 #include <archive_entry.h>
 
+/* number of element in an array */
 #define LEN(x) (sizeof(x)/sizeof((x)[0]))
+
+/* prepend module name and line number to debug messages */
 #define DBG(a, b) (DEBUG(a, ("tar:%-4d ", __LINE__)), DEBUG(a, b))
+
+/* preprocessor magic to strigify __LINE__ (int) */
+#define STR1(x) #x
+#define STR2(x) STR1(x)
+
+/* helper macro to die in case of NULL pointer */
+#define PANIC_IF_NULL(x) \
+    _panic_if_null(x, __FILE__ ":" STR2(__LINE__) " (" #x ") == NULL\n")
+
+/* prototype to silent gcc warning */
+static inline void* _panic_if_null(void *p, const char *expr);
+static inline void* _panic_if_null(void *p, const char *expr)
+{
+    if (!p) {
+        smb_panic(expr);
+    }
+    return p;
+}
 
 /**
  * Number of byte in a block unit.
@@ -220,7 +241,7 @@ int cmd_block(void)
     /* XXX: from client.c */
     const extern char *cmd_ptr;
     char *buf;
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int err = 0;
 
     if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
@@ -249,7 +270,7 @@ int cmd_tarmode(void)
     const extern char *cmd_ptr;
     char *buf;
     int i;
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
 
     struct {
         const char *cmd;
@@ -300,7 +321,7 @@ int cmd_tarmode(void)
  */
 int cmd_tar(void)
 {
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     const extern char *cmd_ptr;
     const char *flag;
     const char **val;
@@ -316,7 +337,7 @@ int cmd_tar(void)
     }
 
     flag = buf;
-    val = talloc_array(ctx, const char*, maxtok);
+    val = PANIC_IF_NULL(talloc_array(ctx, const char*, maxtok));
 
     while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
         val[i++] = buf;
@@ -352,7 +373,7 @@ int cmd_setmode(void)
     char *fname = NULL;
     uint16 attr[2] = {0};
     int mode = ATTR_SET;
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int err = 0;
 
 
@@ -362,10 +383,10 @@ int cmd_setmode(void)
         goto out;
     }
 
-    fname = talloc_asprintf(ctx,
-                            "%s%s",
-                            client_get_cur_dir(),
-                            buf);
+    fname = PANIC_IF_NULL(talloc_asprintf(ctx,
+                                          "%s%s",
+                                          client_get_cur_dir(),
+                                          buf));
     if (!fname) {
         err = 1;
         goto out;
@@ -583,7 +604,7 @@ int tar_parse_args(struct tar* t, const char *flag,
     }
 
     /* handle TARFILE */
-    t->tar_path = talloc_strdup(ctx, val[ival]);
+    t->tar_path = PANIC_IF_NULL(talloc_strdup(ctx, val[ival]));
     ival++;
 
     /*
@@ -654,7 +675,7 @@ int tar_process(struct tar *t)
  */
 static int tar_create(struct tar* t)
 {
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int r;
     int err = 0;
     NTSTATUS status;
@@ -707,7 +728,8 @@ static int tar_create(struct tar* t)
             goto out_close;
         }
     } else {
-        mask = talloc_asprintf(ctx, "%s\\*", client_get_cur_dir());
+        mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s\\*",
+                                             client_get_cur_dir()));
         DBG(5, ("tar_process do_list with mask: %s\n", mask));
         status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
         if (!NT_STATUS_IS_OK(status)) {
@@ -739,7 +761,7 @@ static int tar_create(struct tar* t)
  */
 static int tar_create_from_list(struct tar *t)
 {
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int err = 0;
     NTSTATUS status;
     const char *path, *mask, *base, *start_dir;
@@ -750,7 +772,8 @@ static int tar_create_from_list(struct tar *t)
     for (i = 0; i < t->path_list_size; i++) {
         path = t->path_list[i];
         base = path_base_name(path);
-        mask = talloc_asprintf(ctx, "%s\\%s", client_get_cur_dir(), path);
+        mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s\\%s",
+                                             client_get_cur_dir(), path));
 
         DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
                 path, base ? base : "NULL", mask));
@@ -788,12 +811,13 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
                                   struct file_info *finfo,
                                   const char *dir)
 {
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     NTSTATUS err = NT_STATUS_OK;
     char *remote_name;
     const char *initial_dir = client_get_cur_dir();
 
-    remote_name = talloc_asprintf(ctx, "%s%s", initial_dir, finfo->name);
+    remote_name = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s",
+                                                initial_dir, finfo->name));
 
     if (strequal(finfo->name, "..") || strequal(finfo->name, ".")) {
         goto out;
@@ -809,9 +833,10 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
         char *new_dir;
         char *mask;
 
-        old_dir = talloc_strdup(ctx, initial_dir);
-        new_dir = talloc_asprintf(ctx, "%s%s\\", initial_dir, finfo->name);
-        mask = talloc_asprintf(ctx, "%s*", new_dir);
+        old_dir = PANIC_IF_NULL(talloc_strdup(ctx, initial_dir));
+        new_dir = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s\\",
+                                                initial_dir, finfo->name));
+        mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s*", new_dir));
 
         if (tar_get_file(&tar_ctx, remote_name, finfo)) {
             err = NT_STATUS_UNSUCCESSFUL;
@@ -844,7 +869,7 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
                         struct file_info *finfo)
 {
     extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     NTSTATUS status;
     struct archive_entry *entry;
     char *full_unix_path;
@@ -868,7 +893,7 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
         set_remote_attr(full_dos_path, FILE_ATTRIBUTE_ARCHIVE, ATTR_UNSET);
     }
 
-    full_unix_path = talloc_asprintf(ctx, ".%s", full_dos_path);
+    full_unix_path = PANIC_IF_NULL(talloc_asprintf(ctx, ".%s", full_dos_path));
     string_replace(full_unix_path, '\\', '/');
     entry = archive_entry_new();
     archive_entry_copy_pathname(entry, full_unix_path);
@@ -1018,7 +1043,7 @@ static int tar_extract(struct tar *t)
 static int tar_send_file(struct tar *t, struct archive_entry *entry)
 {
     extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     char *dos_path;
     char *full_path;
     NTSTATUS status;
@@ -1027,11 +1052,11 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
     int flags = O_RDWR | O_CREAT | O_TRUNC;
     mode_t mode = archive_entry_filetype(entry);
 
-    dos_path = talloc_strdup(ctx, archive_entry_pathname(entry));
+    dos_path = PANIC_IF_NULL(talloc_strdup(ctx, archive_entry_pathname(entry)));
     fix_unix_path(dos_path, true);
 
-    full_path = talloc_strdup(ctx, client_get_cur_dir());
-    full_path = talloc_strdup_append(full_path, dos_path);
+    full_path = PANIC_IF_NULL(talloc_strdup(ctx, client_get_cur_dir()));
+    full_path = PANIC_IF_NULL(talloc_strdup_append(full_path, dos_path));
 
     if (mode != AE_IFREG && mode != AE_IFDIR) {
         DBG(0, ("Skipping non-dir & non-regular file %s\n", full_path));
@@ -1104,11 +1129,13 @@ static void tar_add_selection_path(struct tar *t, const char *path)
 {
     TALLOC_CTX *ctx = t->talloc_ctx;
     if (!t->path_list) {
-        t->path_list = str_list_make_empty(ctx);
+        t->path_list = PANIC_IF_NULL(str_list_make_empty(ctx));
         t->path_list_size = 0;
     }
 
-    t->path_list = str_list_add((const char**)t->path_list, path);
+    /* cast to silent gcc const-qual warning */
+    t->path_list = PANIC_IF_NULL(str_list_add((void*)t->path_list,
+                                              path));
     t->path_list_size++;
     fix_unix_path(t->path_list[t->path_list_size - 1], true);
 }
@@ -1162,7 +1189,7 @@ static int tar_set_newer_than(struct tar *t, const char *filename)
 static int tar_read_inclusion_file (struct tar *t, const char* filename)
 {
     char *line;
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int err = 0;
     int fd = open(filename, O_RDONLY);
 
@@ -1423,7 +1450,7 @@ static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
 static int make_remote_path(const char *full_path)
 {
     extern struct cli_state *cli;
-    TALLOC_CTX *ctx = talloc_new(NULL);
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     char *path;
     char *subpath;
     char *state;
@@ -1433,8 +1460,8 @@ static int make_remote_path(const char *full_path)
     NTSTATUS status;
     int err = 0;
 
-    subpath = talloc_strdup(ctx, full_path);
-    path = talloc_strdup(ctx, full_path);
+    subpath = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
+    path = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
     len = talloc_get_size(path) - 1;
 
     last_backslash = strrchr_m(path, '\\');
@@ -1481,7 +1508,7 @@ static int make_remote_path(const char *full_path)
 static TALLOC_CTX *tar_reset_mem_context(struct tar *t)
 {
     tar_free_mem_context(t);
-    t->talloc_ctx = talloc_new(NULL);
+    t->talloc_ctx = PANIC_IF_NULL(talloc_new(NULL));
     return t->talloc_ctx;
 }
 
@@ -1626,7 +1653,7 @@ static char *fix_unix_path (char *path, bool removeprefix)
  */
 static char *path_base_name (const char *path)
 {
-    TALLOC_CTX *ctx = talloc_tos();
+    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_tos());
     char *base = NULL;
     int last = -1;
     int i;
@@ -1638,7 +1665,7 @@ static char *path_base_name (const char *path)
     }
 
     if (last >= 0) {
-        base = talloc_strdup(ctx, path);
+        base = PANIC_IF_NULL(talloc_strdup(ctx, path));
         base[last] = 0;
     }
 
