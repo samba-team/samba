@@ -1,4 +1,60 @@
                    ==============================
+                   Release Notes for Samba 3.5.22
+			  August 05, 2013
+                   ==============================
+
+
+This is a security release in order to address
+CVE-2013-4124 (Missing integer wrap protection in EA list reading can cause
+server to loop with DOS).
+
+o  CVE-2013-4124:
+   All current released versions of Samba are vulnerable to a denial of
+   service on an authenticated or guest connection. A malformed packet
+   can cause the smbd server to loop the CPU performing memory
+   allocations and preventing any further service.
+
+   A connection to a file share, or a local account is needed to exploit
+   this problem, either authenticated or unauthenticated if guest
+   connections are allowed.
+
+   This flaw is not exploitable beyond causing the code to loop
+   allocating memory, which may cause the machine to exceed memory
+   limits.
+
+
+Changes since 3.5.21:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10010: CVE-2013-4124: Missing integer wrap protection in EA list
+      reading can cause server to loop with DOS.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.5 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.5.21
 			 January 30, 2013
                    ==============================
@@ -61,8 +117,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.5.20
