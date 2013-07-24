@@ -23,26 +23,6 @@ C<test_smbclient_tarmode.pl> - Test for smbclient tar backup feature
 
 =cut
 
-# flags to test
-
-# c        DONE
-# c g      DONE
-# c a      DONE
-# c N      DONE
-# c I      DONE
-# c I r    DONE
-# c X      DONE
-# c X r    DONE
-# c F      DONE
-# c F r    DONE
-# x        DONE
-# x I      DONE
-# x I r    DONE
-# x X      DONE
-# x X r    DONE
-# x F      DONE
-# x F r    DONE
-
 use v5.14;
 use strict;
 use warnings;
@@ -101,6 +81,7 @@ my @TESTS = (
     ['create, include w/ filelist (F)',             \&test_creation_list],
     ['create, wildcard simple',                     \&test_creation_wildcard_simple],
     ['create, regex',                               \&test_creation_regex],
+    ['create, multiple backup in session',          \&test_creation_multiple],
     ['extract, normal files',                       \&test_extraction_normal],
     ['extract, explicit include',                   \&test_extraction_include],
     ['extract, explicit exclude',                   \&test_extraction_exclude],
@@ -613,6 +594,28 @@ sub test_helper {
     return 0;
 }
 
+sub test_creation_multiple {
+    my @exts = qw(jpg exe);
+    my @dirs = ('', "$DIR/");
+    my @all = make_env(\@exts, \@dirs);
+    my $nb;
+    my @inc;
+    my $err = 0;
+
+    my ($tarA, $tarB) = ("$TMP/a.tar", "$TMP/b.tar");
+    my @incA = grep { $_->remotepath =~ m{^[^/]+exe$} } @all;
+    my @incB = grep { $_->remotepath =~ m{^[^/]+jpg$} } @all;
+
+    my $flistA = File->new_local("$TMP/listA", file_list(@incA))->localpath;
+    my $flistB = File->new_local("$TMP/listB", file_list(@incB))->localpath;
+
+    smb_tar("tar cF $tarA $flistA ; tar cF $tarB $flistB ; quit");
+    $err += check_tar($tarA, \@incA);
+    $err += check_tar($tarB, \@incB);
+
+    $err;
+}
+
 sub test_extraction_regex {
     my @exts = qw(txt jpg exe);
     my @dirs = ('', "$DIR/", "$DIR/dir/");
@@ -984,6 +987,12 @@ sub check_tar {
     my (@less, @more, @diff);
 
     my %h;
+
+
+    if (!-f $tar) {
+        say "no tar file $tar";
+        return 1;
+    }
 
     for (@$files) {
         $h{$_->tarpath} = $_;
