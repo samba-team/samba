@@ -1014,11 +1014,13 @@ Reclock file:/gpfs/.ctdb/shared
       </para>
     </refsect2>
 
-    <refsect2><title>killtcp &lt;srcip:port&gt; &lt;dstip:port&gt;</title>
+    <refsect2><title>killtcp [&lt;srcip:port&gt; &lt;dstip:port&gt;]</title>
       <para>
-        This command will kill the specified TCP connection by issuing a
-        TCP RST to the srcip:port endpoint. This is a command used by the 
-	ctdb eventscripts.
+        This command will kill the specified TCP connections by
+        issuing a TCP RST to the srcip:port endpoint.  A single
+        connection can be specified on the command-line, otherwise
+        connections are read one-per-line from standard input.  This
+        is a command used by the ctdb eventscripts.
       </para>
     </refsect2>
 

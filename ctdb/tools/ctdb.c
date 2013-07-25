@@ -2278,6 +2278,112 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+static int kill_tcp_from_file(struct ctdb_context *ctdb,
+			      int argc, const char **argv)
+{
+	struct ctdb_control_killtcp *killtcp;
+	int max_entries, current, i;
+	struct timeval timeout;
+	char line[128], src[128], dst[128];
+	int linenum;
+	TDB_DATA data;
+	struct client_async_data *async_data;
+	struct ctdb_client_control_state *state;
+
+	if (argc != 0) {
+		usage();
+	}
+
+	if (options.pnn == CTDB_BROADCAST_ALL ||
+	    options.pnn == CTDB_MULTICAST) {
+		DEBUG(DEBUG_ERR, ("Can not use killtcp to multiple nodes\n"));
+		return -1;
+	}
+
+	linenum = 1;
+	killtcp = NULL;
+	max_entries = 0;
+	current = 0;
+	while (!feof(stdin)) {
+		if (fgets(line, sizeof(line), stdin) == NULL) {
+			continue;
+		}
+
+		/* Silently skip empty lines */
+		if (line[0] == '\n') {
+			continue;
+		}
+
+		if (sscanf(line, "%s %s\n", src, dst) != 2) {
+			DEBUG(DEBUG_ERR, ("Bad line [%d]: '%s'\n",
+					  linenum, line));
+			talloc_free(killtcp);
+			return -1;
+		}
+
+		if (current >= max_entries) {
+			max_entries += 1024;
+			killtcp = talloc_realloc(ctdb, killtcp,
+						 struct ctdb_control_killtcp,
+						 max_entries);
+			CTDB_NO_MEMORY(ctdb, killtcp);
+		}
+
+		if (!parse_ip_port(src, &killtcp[current].src_addr)) {
+			DEBUG(DEBUG_ERR, ("Bad IP:port on line [%d]: '%s'\n",
+					  linenum, src));
+			talloc_free(killtcp);
+			return -1;
+		}
+
+		if (!parse_ip_port(dst, &killtcp[current].dst_addr)) {
+			DEBUG(DEBUG_ERR, ("Bad IP:port on line [%d]: '%s'\n",
+					  linenum, dst));
+			talloc_free(killtcp);
+			return -1;
+		}
+
+		current++;
+	}
+
+	async_data = talloc_zero(ctdb, struct client_async_data);
+	if (async_data == NULL) {
+		talloc_free(killtcp);
+		return -1;
+	}
+
+	for (i = 0; i < current; i++) {
+
+		data.dsize = sizeof(struct ctdb_control_killtcp);
+		data.dptr  = (unsigned char *)&killtcp[i];
+
+		timeout = TIMELIMIT();
+		state = ctdb_control_send(ctdb, options.pnn, 0,
+					  CTDB_CONTROL_KILL_TCP, 0, data,
+					  async_data, &timeout, NULL);
+
+		if (state == NULL) {
+			DEBUG(DEBUG_ERR,
+			      ("Failed to call async killtcp control to node %u\n",
+			       options.pnn));
+			talloc_free(killtcp);
+			return -1;
+		}
+		
+		ctdb_client_async_add(async_data, state);
+	}
+
+	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
+		DEBUG(DEBUG_ERR,("killtcp failed\n"));
+		talloc_free(killtcp);
+		return -1;
+	}
+
+	talloc_free(killtcp);
+	return 0;
+}
+
+
 /*
   kill a tcp connection
  */
@@ -2285,6 +2391,10 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
 	struct ctdb_control_killtcp killtcp;
+
+	if (argc == 0) {
+		return kill_tcp_from_file(ctdb, argc, argv);
+	}
 
 	if (argc < 2) {
 		usage();
@@ -5913,7 +6023,7 @@ static const struct {
 	{ "ipreallocate",    control_ipreallocate,      true,	false,  "force the recovery daemon to perform a ip reallocation procedure" },
 	{ "thaw",            control_thaw,              true,	false,  "thaw databases", "[priority:1-3]" },
 	{ "isnotrecmaster",  control_isnotrecmaster,    false,	false,  "check if the local node is recmaster or not" },
-	{ "killtcp",         kill_tcp,                  false,	false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
+	{ "killtcp",         kill_tcp,                  false,	false, "kill a tcp connection.", "[<srcip:port> <dstip:port>]" },
 	{ "gratiousarp",     control_gratious_arp,      false,	false, "send a gratious arp", "<ip> <interface>" },
 	{ "tickle",          tickle_tcp,                false,	false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 	{ "gettickles",      control_get_tickles,       false,	false, "get the list of tickles registered for this ip", "<ip> [<port>]" },
