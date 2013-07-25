@@ -407,6 +407,15 @@ removeea setea
                 # save for dependency definitions
                 conf.env.intl_libs='iconv intl'
 
+    # did we find both prototypes and a library to link against?
+    # if not, unset the detected values (see Bug #9911)
+    if not (conf.env['HAVE_GETTEXT'] and conf.env['HAVE_DECL_GETTEXT']):
+       conf.undefine('HAVE_GETTEXT')
+       conf.undefine('HAVE_DECL_GETTEXT')
+    if not (conf.env['HAVE_DGETTEXT'] and conf.env['HAVE_DECL_DGETTEXT']):
+       conf.undefine('HAVE_DGETTEXT')
+       conf.undefine('HAVE_DECL_DGETTEXT')
+
     # did the user insist on gettext (--with-gettext)?
     if Options.options.gettext_location != 'None' and (not conf.env['HAVE_GETTEXT'] or not conf.env['HAVE_DGETTEXT']):
         conf.fatal('library gettext not found at specified location')
