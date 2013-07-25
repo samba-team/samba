@@ -648,31 +648,34 @@ kill_tcp_connections ()
 
     get_tcp_connections_for_ip "$_ip" | {
 	_killcount=0
-	_failed=false
-
-	while read dest src; do
-	    echo "Killing TCP connection $src $dest"
-	    ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=true
-	    _destport="${dest##*:}"
+	_connections=""
+	_nl="
+"
+	while read _dst _src; do
+	    _destport="${_dst##*:}"
 	    __oneway=$_oneway
 	    case $_destport in
 		# we only do one-way killtcp for CIFS
 		139|445) __oneway=true ;;
 	    esac
+
+	    echo "Killing TCP connection $_src $_dst"
+	    _connections="${_connections}${_nl}${_src} ${_dst}"
 	    if ! $__oneway ; then
-		ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=true
+		_connections="${_connections}${_nl}${_dst} ${_src}"
 	    fi
 
 	    _killcount=$(($_killcount + 1))
 	done
 
-	if $_failed ; then
-	    echo "Failed to send killtcp control"
-	    return
-	fi
 	if [ $_killcount -eq 0 ] ; then
 	    return
 	fi
+
+	echo "$_connections" | ctdb killtcp || {
+	    echo "Failed to send killtcp control"
+	    return
+	}
 
 	_count=0
 	while : ; do

@@ -123,6 +123,9 @@ setup_generic ()
     export FAKE_TDBTOOL_SUPPORTS_CHECK="yes"
     export FAKE_TDB_IS_OK
     export FAKE_DATE_OUTPUT
+
+    export FAKE_NETSTAT_TCP_ESTABLISHED FAKE_TCP_LISTEN FAKE_NETSTAT_UNIX_LISTEN
+    export FAKE_NETSTAT_TCP_ESTABLISHED_FILE=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
 }
 
 tcp_port_down ()

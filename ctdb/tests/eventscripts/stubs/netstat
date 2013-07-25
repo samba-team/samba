@@ -78,6 +78,9 @@ if $tcp ; then
 	dst="${i#*|}"
 	printf "$tcp_fmt" $src $dst "ESTABLISHED"
     done
+    while read src dst ; do
+	printf "$tcp_fmt" $src $dst "ESTABLISHED"
+    done <"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
 
     if $all || $listen ; then
 	for i in $FAKE_TCP_LISTEN ; do

@@ -53,6 +53,13 @@ setup_tickles ()
     touch "$tickles_file"
 }
 
+ctdb_killtcp ()
+{
+    while read _src _dst ; do
+	sed -i -e "/^$_dst $_src\$/d" "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+    done
+}
+
 setup_pstore ()
 {
     pstore_dir="$CTDB_VARDIR/fake-ctdb/pstore/$1"
@@ -309,6 +316,7 @@ case "$1" in
 	done
 	;;
     gratiousarp) : ;;  # Do nothing for now
+    killtcp)	 ctdb_killtcp "$@" ;;
     ip)          ctdb_ip "$@" ;;
     pnn|xpnn)    ctdb_pnn ;;
     enable)      ctdb_enable "$@";;
