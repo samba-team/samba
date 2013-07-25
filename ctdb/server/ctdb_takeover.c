@@ -861,7 +861,7 @@ static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr
 					(unsigned)client->pid,
 					ctdb_addr_to_str(addr),
 					ip->client_id));
-				ctdb_kill(ctdb, client->pid, SIGKILL);
+				kill(client->pid, SIGKILL);
 			}
 		}
 	}
