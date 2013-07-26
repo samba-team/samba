@@ -156,18 +156,22 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 
 	status = wb_sids2xids_recv(subreq, &xid);
 	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED) ||
+	    NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED))
+	{
+		status = NT_STATUS_OK;
+	}
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	if (xid.type == ID_TYPE_GID || xid.type == ID_TYPE_BOTH) {
 		state->gids[state->num_gids] = (gid_t)xid.id;
+		state->num_gids += 1;
 	} else {
 		state->gids[state->num_gids] = (uid_t)-1;
 	}
 
-	/*
-	 * In case of failure, just continue with the next gid
-	 */
-	if (NT_STATUS_IS_OK(status)) {
-		state->num_gids += 1;
-	}
 	state->next_sid += 1;
 
 	if (state->next_sid >= state->num_sids) {
