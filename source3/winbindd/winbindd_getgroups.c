@@ -124,15 +124,17 @@ static void winbindd_getgroups_gettoken_done(struct tevent_req *subreq)
 
 	/*
 	 * Convert the group SIDs to gids. state->sids[0] contains the user
-	 * sid, so start at index 1.
+	 * sid. If the idmap backend uses ID_TYPE_BOTH, we might need the
+	 * the id of the user sid in the list of group sids, so map the
+	 * complete token.
 	 */
 
-	state->gids = talloc_array(state, gid_t, state->num_sids-1);
+	state->gids = talloc_array(state, gid_t, state->num_sids);
 	if (tevent_req_nomem(state->gids, req)) {
 		return;
 	}
 	state->num_gids = 0;
-	state->next_sid = 1;
+	state->next_sid = 0;
 
 	subreq = wb_sids2xids_send(state, state->ev,
 				   &state->sids[state->next_sid], 1);
