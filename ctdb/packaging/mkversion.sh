@@ -42,10 +42,12 @@ case "$TAG" in
 	    *-*-g*) # 0.9-168-ge6cf0e8
 		# Not exactly on tag: devel version.
 		VERSION=`echo "$TAG" | sed 's/\([^-]\+\)-\([0-9]\+\)-\(g[0-9a-f]\+\)/\1.0.\2.\3.devel/'`
+		RELEASE=1
 		;;
 	    *)
 		# An actual release version
 		VERSION=$TAG
+		RELEASE=1
 		;;
 	esac
 	;;
@@ -61,4 +63,4 @@ cat > "$OUTPUT" <<EOF
 
 EOF
 
-echo $VERSION
+echo "$VERSION $RELEASE"

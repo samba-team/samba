@@ -52,12 +52,15 @@ mkdir -p `rpm --eval %_rpmdir`/noarch
 mkdir -p `rpm --eval %_rpmdir`/i386
 mkdir -p `rpm --eval %_rpmdir`/x86_64
 
-VERSION=$(${TOPDIR}/packaging/mkversion.sh ${TOPDIR}/include/ctdb_version.h)
-if [ -z "$VERSION" ]; then
+set -- $(${TOPDIR}/packaging/mkversion.sh ${TOPDIR}/include/ctdb_version.h)
+VERSION=$1
+RELEASE=$2
+if [ -z "$VERSION" -o -z "$RELEASE" ]; then
     exit 1
 fi
 
-sed -e s/@VERSION@/$VERSION/g \
+sed -e "s/@VERSION@/$VERSION/g" \
+    -e "s/@RELEASE@/$RELEASE/g" \
 	< ${DIRNAME}/${SPECFILE_IN} \
 	> ${DIRNAME}/${SPECFILE}
 

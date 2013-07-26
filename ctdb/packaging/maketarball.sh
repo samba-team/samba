@@ -53,12 +53,15 @@ if [ $RC -ne 0 ]; then
 	exit 1
 fi
 
-VERSION=$(${TOPDIR}/packaging/mkversion.sh ${VERSION_H})
-if [ -z "$VERSION" ]; then
+set -- $(${TOPDIR}/packaging/mkversion.sh ${VERSION_H})
+VERSION=$1
+RELEASE=$2
+if [ -z "$VERSION" -o -z "$RELEASE" ]; then
     exit 1
 fi
 
-sed -e s/@VERSION@/${VERSION}/g \
+sed -e "s/@VERSION@/${VERSION}/g" \
+    -e "s/@RELEASE@/$RELEASE/g" \
 	< ${SPECFILE_IN} \
 	> ${SPECFILE}
 
