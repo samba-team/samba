@@ -2078,7 +2078,8 @@ enum {
 	OPT_LOGOFF,
 	OPT_LOGOFF_USER,
 	OPT_LOGOFF_UID,
-	OPT_LANMAN
+	OPT_LANMAN,
+	OPT_KRB5CCNAME
 };
 
 int main(int argc, char **argv, char **envp)
@@ -2179,7 +2180,7 @@ int main(int argc, char **argv, char **envp)
 		{ "krb5auth", 'K', POPT_ARG_STRING, &string_arg, 'K', "authenticate user using Kerberos", "user%password" },
 			/* destroys wbinfo --help output */
 			/* "user%password,DOM\\user%password,user@EXAMPLE.COM,EXAMPLE.COM\\user%password" }, */
-		{ "krb5ccname", 0, POPT_ARG_STRING, &opt_krb5ccname, '0', "authenticate user using Kerberos and specific credential cache type", "krb5ccname" },
+		{ "krb5ccname", 0, POPT_ARG_STRING, &opt_krb5ccname, OPT_KRB5CCNAME, "authenticate user using Kerberos and specific credential cache type", "krb5ccname" },
 #endif
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
 		{ "verbose", 0, POPT_ARG_NONE, 0, OPT_VERBOSE, "Print additional information per command", NULL },
@@ -2635,6 +2636,7 @@ int main(int argc, char **argv, char **envp)
 		case OPT_LANMAN:
 		case OPT_LOGOFF_USER:
 		case OPT_LOGOFF_UID:
+		case OPT_KRB5CCNAME:
 			break;
 		default:
 			d_fprintf(stderr, "Invalid option\n");
