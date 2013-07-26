@@ -174,10 +174,16 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 
 	for (i=0; i < state->num_sids; i++) {
 		bool include_gid = false;
+		const char *debug_missing = NULL;
 
 		switch (xids[i].type) {
 		case ID_TYPE_NOT_SPECIFIED:
+			debug_missing = "not specified";
+			break;
 		case ID_TYPE_UID:
+			if (i != 0) {
+				debug_missing = "uid";
+			}
 			break;
 		case ID_TYPE_GID:
 		case ID_TYPE_BOTH:
@@ -186,6 +192,18 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 		}
 
 		if (!include_gid) {
+			if (debug_missing == NULL) {
+				continue;
+			}
+
+			DEBUG(10, ("WARNING: skipping unix id (%u) for sid %s "
+				   "from group list because the idmap type "
+				   "is %s. "
+				   "This might be a security problem when ACLs "
+				   "contain DENY ACEs!\n",
+				   (unsigned)xids[i].id,
+				   sid_string_tos(&state->sids[i]),
+				   debug_missing));
 			continue;
 		}
 
