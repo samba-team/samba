@@ -20,6 +20,8 @@ action="$2"
 . "${CTDB_BASE}/functions"
 loadconfig "ctdb"
 
+export CTDB_SOCKET
+
 ctdbd="${CTDBD:-/usr/sbin/ctdbd}"
 
 ############################################################
