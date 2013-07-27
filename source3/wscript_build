@@ -84,8 +84,8 @@ bld.SAMBA3_LIBRARY('msrpc3',
                    deps='''ndr ndr-standard
                     RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
                     LIBTSOCKET gse dcerpc-binding
-                    libsmb
-                    ndr-table''',
+                    libsmb ndr-table NETLOGON_CREDS_CLI
+                   ''',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('gpo',
@@ -763,7 +763,7 @@ bld.SAMBA3_LIBRARY('libcli_lsa3',
 
 bld.SAMBA3_LIBRARY('libcli_netlogon3',
                    source='rpc_client/cli_netlogon.c rpc_client/util_netlogon.c',
-                   deps='RPC_NDR_NETLOGON INIT_NETLOGON cliauth param',
+                   deps='msrpc3 RPC_NDR_NETLOGON INIT_NETLOGON cliauth param NETLOGON_CREDS_CLI',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('cli_spoolss',

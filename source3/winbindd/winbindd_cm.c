@@ -2049,7 +2049,6 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 				 domain->active_directory ? "" : "NOT "));
 
 			domain->can_do_ncacn_ip_tcp = domain->active_directory;
-			domain->can_do_validation6 = domain->active_directory;
 
 			domain->initialized = True;
 
@@ -2250,7 +2249,6 @@ done:
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
 	domain->can_do_ncacn_ip_tcp = domain->active_directory;
-	domain->can_do_validation6 = domain->active_directory;
 
 	TALLOC_FREE(cli);
 
@@ -2291,7 +2289,7 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 ***********************************************************************/
 
 static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
-				   struct netlogon_creds_CredentialState **ppdc)
+				   struct netlogon_creds_cli_context **ppdc)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct rpc_pipe_client *netlogon_pipe;
@@ -2308,11 +2306,11 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 	/* Return a pointer to the struct netlogon_creds_CredentialState from the
 	   netlogon pipe. */
 
-	if (!domain->conn.netlogon_pipe->dc) {
+	if (!domain->conn.netlogon_pipe->netlogon_creds) {
 		return NT_STATUS_INTERNAL_ERROR; /* This shouldn't happen. */
 	}
 
-	*ppdc = domain->conn.netlogon_pipe->dc;
+	*ppdc = domain->conn.netlogon_pipe->netlogon_creds;
 	return NT_STATUS_OK;
 }
 
@@ -2321,7 +2319,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS status, result;
-	struct netlogon_creds_CredentialState *p_creds;
+	struct netlogon_creds_cli_context *p_creds;
 	char *machine_password = NULL;
 	char *machine_account = NULL;
 	const char *domain_name = NULL;
@@ -2433,7 +2431,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	status = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_samr, NCACN_NP,
 		 DCERPC_AUTH_LEVEL_PRIVACY,
-		 domain->name, &p_creds, &conn->samr_pipe);
+		 domain->name, p_creds, &conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR pipe for "
@@ -2536,7 +2534,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 			    struct rpc_pipe_client **cli)
 {
 	struct winbindd_cm_conn *conn;
-	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_cli_context *creds;
 	NTSTATUS status;
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
@@ -2567,7 +2565,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 						     NCACN_IP_TCP,
 						     DCERPC_AUTH_LEVEL_PRIVACY,
 						     domain->name,
-						     &creds,
+						     creds,
 						     &conn->lsa_pipe_tcp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cli_rpc_pipe_open_schannel_with_key failed: %s\n",
@@ -2591,7 +2589,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct netlogon_creds_CredentialState *p_creds;
+	struct netlogon_creds_cli_context *p_creds;
 
 	result = init_dc_connection_rpc(domain);
 	if (!NT_STATUS_IS_OK(result))
@@ -2664,7 +2662,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
 		 DCERPC_AUTH_LEVEL_PRIVACY,
-		 domain->name, &p_creds, &conn->lsa_pipe);
+		 domain->name, p_creds, &conn->lsa_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
@@ -2828,10 +2826,6 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
  no_schannel:
 	if ((lp_client_schannel() == False) ||
 			((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
-		/*
-		 * NetSamLogonEx only works for schannel
-		 */
-		domain->can_do_samlogon_ex = False;
 
 		/* We're done - just keep the existing connection to NETLOGON
 		 * open */
@@ -2847,7 +2841,8 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	result = cli_rpc_pipe_open_schannel_with_key(
 		conn->cli, &ndr_table_netlogon, NCACN_NP,
-		DCERPC_AUTH_LEVEL_PRIVACY, domain->name, &netlogon_pipe->dc,
+		DCERPC_AUTH_LEVEL_PRIVACY, domain->name,
+		netlogon_pipe->netlogon_creds,
 		&conn->netlogon_pipe);
 
 	/* We can now close the initial netlogon pipe. */
@@ -2860,15 +2855,6 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		invalidate_cm_connection(conn);
 		return result;
 	}
-
-	/*
-	 * Always try netr_LogonSamLogonEx. We will fall back for NT4
-	 * which gives DCERPC_FAULT_OP_RNG_ERROR (function not
-	 * supported). We used to only try SamLogonEx for AD, but
-	 * Samba DCs can also do it. And because we don't distinguish
-	 * between Samba and NT4, always try it once.
-	 */
-	domain->can_do_samlogon_ex = true;
 
 	*cli = conn->netlogon_pipe;
 	return NT_STATUS_OK;

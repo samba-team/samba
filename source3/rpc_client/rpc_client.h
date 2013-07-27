@@ -50,7 +50,7 @@ struct rpc_pipe_client {
 	struct pipe_auth_data *auth;
 
 	/* The following is only non-null on a netlogon client pipe. */
-	struct netlogon_creds_CredentialState *dc;
+	struct netlogon_creds_cli_context *netlogon_creds;
 };
 
 #endif /* _RPC_CLIENT_H */

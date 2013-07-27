@@ -30,6 +30,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../libcli/security/security.h"
 #include "messages.h"
+#include "../libcli/auth/netlogon_creds_cli.h"
 
 /**
  * Fix up the delta, dealing with encryption issues so that the final
@@ -213,8 +214,15 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+		struct netlogon_creds_CredentialState *creds = NULL;
 
-		netlogon_creds_client_authenticator(ctx->cli->dc, &credential);
+		status = netlogon_creds_cli_lock(ctx->cli->netlogon_creds,
+						 mem_ctx, &creds);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		netlogon_creds_client_authenticator(creds, &credential);
 
 		if (ctx->single_object_replication &&
 		    !ctx->force_full_replication) {
@@ -254,28 +262,33 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(creds);
 			return status;
 		}
 
 		/* Check returned credentials. */
-		if (!netlogon_creds_client_check(ctx->cli->dc,
+		if (!netlogon_creds_client_check(creds,
 						 &return_authenticator.cred)) {
+			TALLOC_FREE(creds);
 			DEBUG(0,("credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) {
+			TALLOC_FREE(creds);
 			return result;
 		}
 
 		if (NT_STATUS_IS_ERR(result)) {
+			TALLOC_FREE(creds);
 			break;
 		}
 
 		samsync_fix_delta_array(mem_ctx,
-					ctx->cli->dc,
+					creds,
 					database_id,
 					delta_enum_array);
+		TALLOC_FREE(creds);
 
 		/* Process results */
 		callback_status = ctx->ops->process_objects(mem_ctx, database_id,

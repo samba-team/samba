@@ -1279,7 +1279,8 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 	status = cli_rpc_pipe_open_schannel_with_key(
 		cli, &ndr_table_netlogon, NCACN_NP,
 		DCERPC_AUTH_LEVEL_PRIVACY,
-		netbios_domain_name, &netlogon_pipe->dc, &pipe_hnd);
+		netbios_domain_name,
+		netlogon_pipe->netlogon_creds, &pipe_hnd);
 
 	cli_shutdown(cli);
 

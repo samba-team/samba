@@ -1228,8 +1228,6 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 	do {
 		struct rpc_pipe_client *netlogon_pipe;
-		const struct pipe_auth_data *auth;
-		uint32_t neg_flags = 0;
 
 		ZERO_STRUCTP(info3);
 		retry = false;
@@ -1278,61 +1276,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		}
 		netr_attempts = 0;
 
-		auth = netlogon_pipe->auth;
-		if (netlogon_pipe->dc) {
-			neg_flags = netlogon_pipe->dc->negotiate_flags;
-		}
-
-		/* It is really important to try SamLogonEx here,
-		 * because in a clustered environment, we want to use
-		 * one machine account from multiple physical
-		 * computers.
-		 *
-		 * With a normal SamLogon call, we must keep the
-		 * credentials chain updated and intact between all
-		 * users of the machine account (which would imply
-		 * cross-node communication for every NTLM logon).
-		 *
-		 * (The credentials chain is not per NETLOGON pipe
-		 * connection, but globally on the server/client pair
-		 * by machine name).
-		 *
-		 * When using SamLogonEx, the credentials are not
-		 * supplied, but the session key is implied by the
-		 * wrapping SamLogon context.
-		 *
-		 *  -- abartlet 21 April 2008
-		 *
-		 * It's also important to use NetlogonValidationSamInfo4 (6),
-		 * because it relies on the rpc transport encryption
-		 * and avoids using the global netlogon schannel
-		 * session key to en/decrypt secret information
-		 * like the user_session_key for network logons.
-		 *
-		 * [MS-APDS] 3.1.5.2 NTLM Network Logon
-		 * says NETLOGON_NEG_CROSS_FOREST_TRUSTS and
-		 * NETLOGON_NEG_AUTHENTICATED_RPC set together
-		 * are the indication that the server supports
-		 * NetlogonValidationSamInfo4 (6). And it must only
-		 * be used if "SealSecureChannel" is used.
-		 *
-		 * -- metze 4 February 2011
-		 */
-
-		if (auth == NULL) {
-			domain->can_do_validation6 = false;
-		} else if (auth->auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-			domain->can_do_validation6 = false;
-		} else if (auth->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
-			domain->can_do_validation6 = false;
-		} else if (!(neg_flags & NETLOGON_NEG_CROSS_FOREST_TRUSTS)) {
-			domain->can_do_validation6 = false;
-		} else if (!(neg_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
-			domain->can_do_validation6 = false;
-		}
-
-		if (domain->can_do_samlogon_ex && domain->can_do_validation6) {
-			result = rpccli_netlogon_sam_network_logon_ex(
+		result = rpccli_netlogon_sam_network_logon(
 					netlogon_pipe,
 					mem_ctx,
 					logon_parameters,
@@ -1341,62 +1285,10 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					domainname,	/* target domain */
 					workstation,	/* workstation */
 					chal,
-					6,
+					-1, /* ignored */
 					lm_response,
 					nt_response,
 					info3);
-		} else {
-			result = rpccli_netlogon_sam_network_logon(
-					netlogon_pipe,
-					mem_ctx,
-					logon_parameters,
-					server,		/* server name */
-					username,	/* user name */
-					domainname,	/* target domain */
-					workstation,	/* workstation */
-					chal,
-					domain->can_do_validation6 ? 6 : 3,
-					lm_response,
-					nt_response,
-					info3);
-		}
-
-		if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-
-			/*
-			 * It's likely that the server also does not support
-			 * validation level 6
-			 */
-			domain->can_do_validation6 = false;
-
-			if (domain->can_do_samlogon_ex) {
-				DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-					  "retrying with NetSamLogon\n"));
-				domain->can_do_samlogon_ex = false;
-				retry = true;
-				continue;
-			}
-
-
-			/* Got DCERPC_FAULT_OP_RNG_ERROR for SamLogon
-			 * (no Ex). This happens against old Samba
-			 * DCs. Drop the connection.
-			 */
-			invalidate_cm_connection(&domain->conn);
-			result = NT_STATUS_LOGON_FAILURE;
-			break;
-		}
-
-		if (domain->can_do_validation6 &&
-		    (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_INFO_CLASS) ||
-		     NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER) ||
-		     NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL))) {
-			DEBUG(3,("Got a DC that can not do validation level 6, "
-				  "retrying with level 3\n"));
-			domain->can_do_validation6 = false;
-			retry = true;
-			continue;
-		}
 
 		/*
 		 * we increment this after the "feature negotiation"
@@ -1426,6 +1318,30 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				domainname));
 			invalidate_cm_connection(&domain->conn);
 			retry = true;
+		}
+
+		if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+			/*
+			 * Got DCERPC_FAULT_OP_RNG_ERROR for SamLogon
+			 * (no Ex). This happens against old Samba
+			 * DCs, if LogonSamLogonEx() fails with an error
+			 * e.g. NT_STATUS_NO_SUCH_USER or NT_STATUS_WRONG_PASSWORD.
+			 *
+			 * The server will log something like this:
+			 * api_net_sam_logon_ex: Failed to marshall NET_R_SAM_LOGON_EX.
+			 *
+			 * This sets the whole connection into a fault_state mode
+			 * and all following request get NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE.
+			 *
+			 * This also happens to our retry with LogonSamLogonWithFlags()
+			 * and LogonSamLogon().
+			 *
+			 * In order to recover from this situation, we need to
+			 * drop the connection.
+			 */
+			invalidate_cm_connection(&domain->conn);
+			result = NT_STATUS_LOGON_FAILURE;
+			break;
 		}
 
 	} while ( (attempts < 2) && retry );

@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "../librpc/gen_ndr/ndr_dssetup.h"
 #include "../libcli/auth/schannel.h"
+#include "../libcli/auth/netlogon_creds_cli.h"
 #include "auth_generic.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
@@ -3024,21 +3025,26 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     enum dcerpc_transport_t transport,
 					     enum dcerpc_AuthLevel auth_level,
 					     const char *domain,
-					     struct netlogon_creds_CredentialState **pdc,
+					     struct netlogon_creds_cli_context *netlogon_creds,
 					     struct rpc_pipe_client **_rpccli)
 {
 	struct rpc_pipe_client *rpccli;
 	struct pipe_auth_data *rpcauth;
+	struct netlogon_creds_CredentialState *creds = NULL;
 	NTSTATUS status;
-	NTSTATUS result;
-	struct netlogon_creds_CredentialState save_creds;
-	struct netr_Authenticator auth;
-	struct netr_Authenticator return_auth;
-	union netr_Capabilities capabilities;
 	const char *target_service = table->authservices->names[0];
+	int rpc_pipe_bind_dbglvl = 0;
 
 	status = cli_rpc_pipe_open(cli, transport, table, &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = netlogon_creds_cli_lock(netlogon_creds, rpccli, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("netlogon_creds_cli_get returned %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(rpccli);
 		return status;
 	}
 
@@ -3048,10 +3054,10 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					  NULL,
 					  target_service,
 					  domain,
-					  (*pdc)->computer_name,
+					  creds->computer_name,
 					  NULL,
 					  CRED_AUTO_USE_KERBEROS,
-					  *pdc,
+					  creds,
 					  &rpcauth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
@@ -3060,120 +3066,43 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 		return status;
 	}
 
-	/*
-	 * The credentials on a new netlogon pipe are the ones we are passed
-	 * in - copy them over
-	 *
-	 * This may get overwritten... in rpc_pipe_bind()...
-	 */
-	rpccli->dc = netlogon_creds_copy(rpccli, *pdc);
-	if (rpccli->dc == NULL) {
-		TALLOC_FREE(rpccli);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	status = rpc_pipe_bind(rpccli, rpcauth);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+		rpc_pipe_bind_dbglvl = 1;
+		netlogon_creds_cli_delete(netlogon_creds, &creds);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: "
-			  "cli_rpc_pipe_bind failed with error %s\n",
-			  nt_errstr(status) ));
+		DEBUG(rpc_pipe_bind_dbglvl,
+		      ("cli_rpc_pipe_open_schannel_with_key: "
+		       "rpc_pipe_bind failed with error %s\n",
+		       nt_errstr(status)));
 		TALLOC_FREE(rpccli);
 		return status;
 	}
+
+	TALLOC_FREE(creds);
 
 	if (!ndr_syntax_id_equal(&table->syntax_id, &ndr_table_netlogon.syntax_id)) {
 		goto done;
 	}
 
-	save_creds = *rpccli->dc;
-	ZERO_STRUCT(return_auth);
-	ZERO_STRUCT(capabilities);
-
-	netlogon_creds_client_authenticator(&save_creds, &auth);
-
-	status = dcerpc_netr_LogonGetCapabilities(rpccli->binding_handle,
-						  talloc_tos(),
-						  rpccli->srv_name_slash,
-						  save_creds.computer_name,
-						  &auth, &return_auth,
-						  1, &capabilities,
-						  &result);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-		if (save_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			DEBUG(5, ("AES was negotiated and the error was %s - "
-				  "downgrade detected\n",
-				  nt_errstr(status)));
-			TALLOC_FREE(rpccli);
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-
-		/* This is probably an old Samba Version */
-		DEBUG(5, ("We are checking against an NT or old Samba - %s\n",
-			  nt_errstr(status)));
-		goto done;
-	}
-
+	status = netlogon_creds_cli_check(netlogon_creds,
+					  rpccli->binding_handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("dcerpc_netr_LogonGetCapabilities failed with %s\n",
+		DEBUG(0, ("netlogon_creds_cli_check failed with %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(rpccli);
 		return status;
 	}
 
-	if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-		if (save_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			/* This means AES isn't supported. */
-			DEBUG(5, ("AES was negotiated and the result was %s - "
-				  "downgrade detected\n",
-				  nt_errstr(result)));
-			TALLOC_FREE(rpccli);
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-
-		/* This is probably an old Windows version */
-		DEBUG(5, ("We are checking against an win2k3 or Samba - %s\n",
-			  nt_errstr(result)));
-		goto done;
-	}
-
-	/*
-	 * We need to check the credential state here, cause win2k3 and earlier
-	 * returns NT_STATUS_NOT_IMPLEMENTED
-	 */
-	if (!netlogon_creds_client_check(&save_creds, &return_auth.cred)) {
-		/*
-		 * Server replied with bad credential. Fail.
-		 */
-		DEBUG(0,("cli_rpc_pipe_open_schannel_with_key: server %s "
-			 "replied with bad credential\n",
-			 rpccli->desthost));
+	status = netlogon_creds_cli_context_copy(netlogon_creds,
+						 rpccli,
+						 &rpccli->netlogon_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("netlogon_creds_cli_context_copy failed with %s\n",
+			  nt_errstr(status)));
 		TALLOC_FREE(rpccli);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-	*rpccli->dc = save_creds;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("dcerpc_netr_LogonGetCapabilities failed with %s\n",
-			  nt_errstr(result)));
-		TALLOC_FREE(rpccli);
-		return result;
-	}
-
-	if (!(save_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
-		/* This means AES isn't supported. */
-		DEBUG(5, ("AES is not negotiated, but netr_LogonGetCapabilities "
-			  "was OK - downgrade detected\n"));
-		TALLOC_FREE(rpccli);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	if (save_creds.negotiate_flags != capabilities.server_capabilities) {
-		DEBUG(0, ("The client capabilities don't match the server "
-			  "capabilities: local[0x%08X] remote[0x%08X]\n",
-			  save_creds.negotiate_flags,
-			  capabilities.server_capabilities));
-		TALLOC_FREE(rpccli);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		return status;
 	}
 
 done:

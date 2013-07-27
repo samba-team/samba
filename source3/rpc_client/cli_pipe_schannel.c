@@ -112,7 +112,8 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	}
 
 	status = cli_rpc_pipe_open_schannel_with_key(
-		cli, table, transport, auth_level, domain, &netlogon_pipe->dc,
+		cli, table, transport, auth_level, domain,
+		netlogon_pipe->netlogon_creds,
 		&result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */

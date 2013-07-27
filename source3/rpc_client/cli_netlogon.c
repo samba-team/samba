@@ -23,11 +23,13 @@
 #include "includes.h"
 #include "rpc_client/rpc_client.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../libcli/auth/netlogon_creds_cli.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "rpc_client/cli_netlogon.h"
 #include "rpc_client/init_netlogon.h"
 #include "rpc_client/util_netlogon.h"
 #include "../libcli/security/security.h"
+#include "lib/param/param.h"
 
 /****************************************************************************
  Wrapper function that uses the auth and auth2 calls to set up a NETLOGON
@@ -44,113 +46,81 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				     enum netr_SchannelType sec_chan_type,
 				     uint32_t *neg_flags_inout)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx;
 	NTSTATUS status;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct netr_Credential clnt_chal_send;
-	struct netr_Credential srv_chal_recv;
 	struct samr_Password password;
-	bool retried = false;
 	fstring mach_acct;
-	uint32_t neg_flags = *neg_flags_inout;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	struct netlogon_creds_CredentialState *creds = NULL;
 
 	if (!ndr_syntax_id_equal(&cli->abstract_syntax,
 				 &ndr_table_netlogon.syntax_id)) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	TALLOC_FREE(cli->dc);
+	if (!strequal(lp_netbios_name(), clnt_name)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	/* Store the machine account password we're going to use. */
-	memcpy(password.hash, machine_pwd, 16);
+	TALLOC_FREE(cli->netlogon_creds);
 
 	fstr_sprintf( mach_acct, "%s$", machine_account);
 
- again:
-	/* Create the client challenge. */
-	generate_random_buffer(clnt_chal_send.data, 8);
-
-	/* Get the server challenge. */
-	status = dcerpc_netr_ServerReqChallenge(b, talloc_tos(),
-						cli->srv_name_slash,
-						clnt_name,
-						&clnt_chal_send,
-						&srv_chal_recv,
-						&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	/* Calculate the session key and client credentials */
-
-	cli->dc = netlogon_creds_client_init(cli,
-				    mach_acct,
-				    clnt_name,
-				    sec_chan_type,
-				    &clnt_chal_send,
-				    &srv_chal_recv,
-				    &password,
-				    &clnt_chal_send,
-				    neg_flags);
-
-	if (!cli->dc) {
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	/*
-	 * Send client auth-2 challenge and receive server repy.
-	 */
-
-	status = dcerpc_netr_ServerAuthenticate2(b, talloc_tos(),
-						 cli->srv_name_slash,
-						 cli->dc->account_name,
-						 sec_chan_type,
-						 cli->dc->computer_name,
-						 &clnt_chal_send, /* input. */
-						 &srv_chal_recv, /* output. */
-						 &neg_flags,
-						 &result);
+	status = netlogon_creds_cli_context_global(lp_ctx,
+						   NULL, /* msg_ctx */
+						   mach_acct,
+						   sec_chan_type,
+						   server_name,
+						   domain,
+						   cli, &cli->netlogon_creds);
+	talloc_unlink(frame, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
-	/* we might be talking to NT4, so let's downgrade in that case and retry
-	 * with the returned neg_flags - gd */
 
-	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) && !retried) {
-		retried = true;
-		TALLOC_FREE(cli->dc);
-		goto again;
+	status = netlogon_creds_cli_get(cli->netlogon_creds,
+					frame, &creds);
+	if (NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("rpccli_netlogon_setup_creds: server %s using "
+			 "cached credential\n",
+			 cli->desthost));
+		*neg_flags_inout = creds->negotiate_flags;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
 	}
 
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	/*
-	 * Check the returned value using the initial
-	 * server received challenge.
-	 */
-
-	if (!netlogon_creds_client_check(cli->dc, &srv_chal_recv)) {
-		/*
-		 * Server replied with bad credential. Fail.
-		 */
-		DEBUG(0,("rpccli_netlogon_setup_creds: server %s "
-			"replied with bad credential\n",
-			cli->desthost ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	/* Store the machine account password we're going to use. */
+	memcpy(password.hash, machine_pwd, 16);
 
 	DEBUG(5,("rpccli_netlogon_setup_creds: server %s credential "
 		"chain established.\n",
 		cli->desthost ));
 
-	cli->dc->negotiate_flags = neg_flags;
-	*neg_flags_inout = neg_flags;
+	status = netlogon_creds_cli_auth(cli->netlogon_creds, b,
+					 password, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
 
+	status = netlogon_creds_cli_get(cli->netlogon_creds,
+					frame, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	*neg_flags_inout = creds->negotiate_flags;
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -163,20 +133,16 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				   const char *username,
 				   const char *password,
 				   const char *workstation,
-				   uint16_t validation_level,
+				   uint16_t _ignored_validation_level,
 				   int logon_type)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS status;
-	struct netr_Authenticator clnt_creds;
-	struct netr_Authenticator ret_creds;
 	union netr_LogonLevel *logon;
-	union netr_Validation validation;
-	uint8_t authoritative;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
 	fstring clnt_name_slash;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
-
-	ZERO_STRUCT(ret_creds);
 
 	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
@@ -190,8 +156,6 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	}
 
 	/* Initialise input parameters */
-
-	netlogon_creds_client_authenticator(cli->dc, &clnt_creds);
 
 	switch (logon_type) {
 	case NetlogonInteractiveInformation: {
@@ -207,17 +171,6 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		}
 
 		nt_lm_owf_gen(password, ntpassword.hash, lmpassword.hash);
-
-		if (cli->dc->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_encrypt(cli->dc, lmpassword.hash, 16);
-			netlogon_creds_aes_encrypt(cli->dc, ntpassword.hash, 16);
-		} else if (cli->dc->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(cli->dc, lmpassword.hash, 16);
-			netlogon_creds_arcfour_crypt(cli->dc, ntpassword.hash, 16);
-		} else {
-			netlogon_creds_des_encrypt(cli->dc, &lmpassword);
-			netlogon_creds_des_encrypt(cli->dc, &ntpassword);
-		}
 
 		password_info->identity_info.domain_name.string		= domain;
 		password_info->identity_info.parameter_control		= logon_parameters;
@@ -281,28 +234,20 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	status = dcerpc_netr_LogonSamLogon(b, mem_ctx,
-					   cli->srv_name_slash,
-					   lp_netbios_name(),
-					   &clnt_creds,
-					   &ret_creds,
-					   logon_type,
-					   logon,
-					   validation_level,
-					   &validation,
-					   &authoritative,
-					   &result);
+	status = netlogon_creds_cli_LogonSamLogon(cli->netlogon_creds,
+						  cli->binding_handle,
+						  logon_type,
+						  logon,
+						  mem_ctx,
+						  &validation_level,
+						  &validation,
+						  &authoritative,
+						  &flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	/* Always check returned credentials */
-	if (!netlogon_creds_client_check(cli->dc, &ret_creds.cred)) {
-		DEBUG(0,("rpccli_netlogon_sam_logon: credentials chain check failed\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	return result;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
@@ -366,28 +311,23 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   const char *domain,
 					   const char *workstation,
 					   const uint8 chal[8],
-					   uint16_t validation_level,
+					   uint16_t _ignored_validation_level,
 					   DATA_BLOB lm_response,
 					   DATA_BLOB nt_response,
 					   struct netr_SamInfo3 **info3)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS status;
 	const char *workstation_name_slash;
-	const char *server_name_slash;
-	struct netr_Authenticator clnt_creds;
-	struct netr_Authenticator ret_creds;
 	union netr_LogonLevel *logon = NULL;
 	struct netr_NetworkInfo *network_info;
-	uint8_t authoritative;
-	union netr_Validation validation;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
 	struct netr_ChallengeResponse lm;
 	struct netr_ChallengeResponse nt;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	*info3 = NULL;
-
-	ZERO_STRUCT(ret_creds);
 
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
@@ -402,21 +342,13 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	netlogon_creds_client_authenticator(cli->dc, &clnt_creds);
-
-	if (server[0] != '\\' && server[1] != '\\') {
-		server_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", server);
-	} else {
-		server_name_slash = server;
-	}
-
 	if (workstation[0] != '\\' && workstation[1] != '\\') {
 		workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
 	} else {
 		workstation_name_slash = workstation;
 	}
 
-	if (!workstation_name_slash || !server_name_slash) {
+	if (!workstation_name_slash) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -443,40 +375,27 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	status = dcerpc_netr_LogonSamLogon(b, mem_ctx,
-					   server_name_slash,
-					   lp_netbios_name(),
-					   &clnt_creds,
-					   &ret_creds,
-					   NetlogonNetworkInformation,
-					   logon,
-					   validation_level,
-					   &validation,
-					   &authoritative,
-					   &result);
+	status = netlogon_creds_cli_LogonSamLogon(cli->netlogon_creds,
+						  cli->binding_handle,
+						  NetlogonNetworkInformation,
+						  logon,
+						  mem_ctx,
+						  &validation_level,
+						  &validation,
+						  &authoritative,
+						  &flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	/* Always check returned credentials. */
-	if (!netlogon_creds_client_check(cli->dc, &ret_creds.cred)) {
-		DEBUG(0,("rpccli_netlogon_sam_network_logon: credentials chain check failed\n"));
-		return NT_STATUS_ACCESS_DENIED;
+	status = map_validation_to_info3(mem_ctx,
+					 validation_level, validation,
+					 info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	netlogon_creds_decrypt_samlogon_validation(cli->dc, validation_level,
-						   &validation);
-
-	result = map_validation_to_info3(mem_ctx, validation_level, &validation, info3);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	return result;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
@@ -492,100 +411,18 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      DATA_BLOB nt_response,
 					      struct netr_SamInfo3 **info3)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	NTSTATUS status;
-	const char *workstation_name_slash;
-	const char *server_name_slash;
-	union netr_LogonLevel *logon = NULL;
-	struct netr_NetworkInfo *network_info;
-	uint8_t authoritative;
-	union netr_Validation validation;
-	struct netr_ChallengeResponse lm;
-	struct netr_ChallengeResponse nt;
-	uint32_t flags = 0;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
-
-	*info3 = NULL;
-
-	ZERO_STRUCT(lm);
-	ZERO_STRUCT(nt);
-
-	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
-	if (!logon) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	network_info = talloc_zero(mem_ctx, struct netr_NetworkInfo);
-	if (!network_info) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (server[0] != '\\' && server[1] != '\\') {
-		server_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", server);
-	} else {
-		server_name_slash = server;
-	}
-
-	if (workstation[0] != '\\' && workstation[1] != '\\') {
-		workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
-	} else {
-		workstation_name_slash = workstation;
-	}
-
-	if (!workstation_name_slash || !server_name_slash) {
-		DEBUG(0, ("talloc_asprintf failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Initialise input parameters */
-
-	lm.data = lm_response.data;
-	lm.length = lm_response.length;
-	nt.data = nt_response.data;
-	nt.length = nt_response.length;
-
-	network_info->identity_info.domain_name.string		= domain;
-	network_info->identity_info.parameter_control		= logon_parameters;
-	network_info->identity_info.logon_id_low		= 0xdead;
-	network_info->identity_info.logon_id_high		= 0xbeef;
-	network_info->identity_info.account_name.string		= username;
-	network_info->identity_info.workstation.string		= workstation_name_slash;
-
-	memcpy(network_info->challenge, chal, 8);
-	network_info->nt = nt;
-	network_info->lm = lm;
-
-	logon->network = network_info;
-
-        /* Marshall data and send request */
-
-	status = dcerpc_netr_LogonSamLogonEx(b, mem_ctx,
-					     server_name_slash,
-					     lp_netbios_name(),
-					     NetlogonNetworkInformation,
-					     logon,
-					     validation_level,
-					     &validation,
-					     &authoritative,
-					     &flags,
-					     &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	netlogon_creds_decrypt_samlogon_validation(cli->dc, validation_level,
-						   &validation);
-
-	result = map_validation_to_info3(mem_ctx, validation_level, &validation, info3);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	return result;
+	return rpccli_netlogon_sam_network_logon(cli,
+						 mem_ctx,
+						 logon_parameters,
+						 server,
+						 username,
+						 domain,
+						 workstation,
+						 chal,
+						 validation_level,
+						 lm_response,
+						 nt_response,
+						 info3);
 }
 
 /*********************************************************
@@ -605,11 +442,9 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    const unsigned char new_trust_passwd_hash[16],
 					    enum netr_SchannelType sec_channel_type)
 {
-	NTSTATUS result, status;
-	struct netr_Authenticator clnt_creds, srv_cred;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS result;
 
-	if (!cli->dc) {
+	if (cli->netlogon_creds == NULL) {
 		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
 					NETLOGON_NEG_SUPPORTS_AES;
 		result = rpccli_netlogon_setup_creds(cli,
@@ -627,77 +462,16 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 		}
 	}
 
-	netlogon_creds_client_authenticator(cli->dc, &clnt_creds);
-
-	if (cli->dc->negotiate_flags & NETLOGON_NEG_PASSWORD_SET2) {
-
-		struct netr_CryptPassword new_password;
-		uint32_t old_timeout;
-
-		init_netr_CryptPassword(new_trust_pwd_cleartext,
-					cli->dc,
-					&new_password);
-
-		old_timeout = dcerpc_binding_handle_set_timeout(b, 600000);
-
-		status = dcerpc_netr_ServerPasswordSet2(b, mem_ctx,
-							cli->srv_name_slash,
-							cli->dc->account_name,
-							sec_channel_type,
-							cli->dc->computer_name,
-							&clnt_creds,
-							&srv_cred,
-							&new_password,
-							&result);
-
-		dcerpc_binding_handle_set_timeout(b, old_timeout);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("dcerpc_netr_ServerPasswordSet2 failed: %s\n",
-				nt_errstr(status)));
-			return status;
-		}
-	} else {
-
-		struct samr_Password new_password;
-		uint32_t old_timeout;
-
-		memcpy(new_password.hash, new_trust_passwd_hash, sizeof(new_password.hash));
-		netlogon_creds_des_encrypt(cli->dc, &new_password);
-
-		old_timeout = dcerpc_binding_handle_set_timeout(b, 600000);
-
-		status = dcerpc_netr_ServerPasswordSet(b, mem_ctx,
-						       cli->srv_name_slash,
-						       cli->dc->account_name,
-						       sec_channel_type,
-						       cli->dc->computer_name,
-						       &clnt_creds,
-						       &srv_cred,
-						       &new_password,
-						       &result);
-
-		dcerpc_binding_handle_set_timeout(b, old_timeout);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("dcerpc_netr_ServerPasswordSet failed: %s\n",
-				nt_errstr(status)));
-			return status;
-		}
-	}
-
-	/* Always check returned credentials. */
-	if (!netlogon_creds_client_check(cli->dc, &srv_cred.cred)) {
-		DEBUG(0,("credentials chain check failed\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
+	result = netlogon_creds_cli_ServerPasswordSet(cli->netlogon_creds,
+						      cli->binding_handle,
+						      new_trust_pwd_cleartext,
+						      NULL); /* new_version */
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("dcerpc_netr_ServerPasswordSet{2} failed: %s\n",
+		DEBUG(0,("netlogon_creds_cli_ServerPasswordSet failed: %s\n",
 			nt_errstr(result)));
 		return result;
 	}
 
-	return result;
+	return NT_STATUS_OK;
 }
 
