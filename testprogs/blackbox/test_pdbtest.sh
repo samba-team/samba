@@ -42,6 +42,9 @@ test_smbclient() {
 	return $status
 }
 
+UID_WRAPPER_ROOT=1
+export UID_WRAPPER_ROOT
+
 testit "pdbtest" $BINDIR/pdbtest -u pdbtest || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@01%

@@ -46,6 +46,9 @@ test_smbclient() {
 	return $status
 }
 
+UID_WRAPPER_ROOT=1
+export UID_WRAPPER_ROOT
+
 CONFIG="--configfile=$PREFIX/dc/etc/smb.conf"
 export CONFIG
 
