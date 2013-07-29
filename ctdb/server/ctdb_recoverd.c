@@ -1176,7 +1176,7 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
 	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
-	tdb_flags |= TDB_DISALLOW_NESTING;
+	tdb_flags |= (TDB_INCOMPATIBLE_HASH | TDB_DISALLOW_NESTING);
 
 	recdb = tdb_wrap_open(mem_ctx, name, ctdb->tunable.database_hash_size, 
 			      tdb_flags, O_RDWR|O_CREAT|O_EXCL, 0600);
