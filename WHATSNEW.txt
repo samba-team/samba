@@ -1,19 +1,34 @@
                    ==============================
                    Release Notes for Samba 3.6.17
-                          August 14, 2013
+                          August 05, 2013
                    ==============================
 
 
-This is is the latest stable release of Samba 3.6.
+This is a security release in order to address
+CVE-2013-4124 (Missing integer wrap protection in EA list reading can cause
+server to loop with DOS).
 
-Major enhancements in Samba 3.6.17 include:
+o  CVE-2013-4124:
+   All current released versions of Samba are vulnerable to a denial of
+   service on an authenticated or guest connection. A malformed packet
+   can cause the smbd server to loop the CPU performing memory
+   allocations and preventing any further service.
 
-o  
+   A connection to a file share, or a local account is needed to exploit
+   this problem, either authenticated or unauthenticated if guest
+   connections are allowed.
+
+   This flaw is not exploitable beyond causing the code to loop
+   allocating memory, which may cause the machine to exceed memory
+   limits.
+
 
 Changes since 3.6.16:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 10010: CVE-2013-4124: Missing integer wrap protection in EA list
+      reading can cause server to loop with DOS.
 
 
 ######################################################################
