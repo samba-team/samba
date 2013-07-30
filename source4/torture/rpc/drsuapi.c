@@ -850,7 +850,6 @@ void torture_rpc_drsuapi_tcase(struct torture_suite *suite)
 {
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
 
-	struct torture_test *test;
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "drsuapi");
 
 	torture_tcase_set_fixture(tcase, torture_drsuapi_tcase_setup,
@@ -860,17 +859,17 @@ void torture_rpc_drsuapi_tcase(struct torture_suite *suite)
 	test = torture_tcase_add_simple_test(tcase, "QuerySitesByCost", (run_func)test_QuerySitesByCost);
 #endif
 
-	test = torture_tcase_add_simple_test(tcase, "DsGetDomainControllerInfo", (run_func)test_DsGetDomainControllerInfo);
+	torture_tcase_add_simple_test(tcase, "DsGetDomainControllerInfo", (run_func)test_DsGetDomainControllerInfo);
 
-	test = torture_tcase_add_simple_test(tcase, "DsCrackNames", (run_func)test_DsCrackNames);
+	torture_tcase_add_simple_test(tcase, "DsCrackNames", (run_func)test_DsCrackNames);
 
-	test = torture_tcase_add_simple_test(tcase, "DsWriteAccountSpn", (run_func)test_DsWriteAccountSpn);
+	torture_tcase_add_simple_test(tcase, "DsWriteAccountSpn", (run_func)test_DsWriteAccountSpn);
 
-	test = torture_tcase_add_simple_test(tcase, "DsReplicaGetInfo", (run_func)test_DsReplicaGetInfo);
+	torture_tcase_add_simple_test(tcase, "DsReplicaGetInfo", (run_func)test_DsReplicaGetInfo);
 
-	test = torture_tcase_add_simple_test(tcase, "DsReplicaSync", (run_func)test_DsReplicaSync);
+	torture_tcase_add_simple_test(tcase, "DsReplicaSync", (run_func)test_DsReplicaSync);
 
-	test = torture_tcase_add_simple_test(tcase, "DsReplicaUpdateRefs", (run_func)test_DsReplicaUpdateRefs);
+	torture_tcase_add_simple_test(tcase, "DsReplicaUpdateRefs", (run_func)test_DsReplicaUpdateRefs);
 
-	test = torture_tcase_add_simple_test(tcase, "DsGetNCChanges", (run_func)test_DsGetNCChanges);
+	torture_tcase_add_simple_test(tcase, "DsGetNCChanges", (run_func)test_DsGetNCChanges);
 }
