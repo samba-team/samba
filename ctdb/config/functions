@@ -861,7 +861,7 @@ startstop_nfslock() {
 			service nfsserver stop > /dev/null 2>&1
 			;;
 		restart)
-			service nfsserver stop
+			service nfsserver stop > /dev/null 2>&1
 			service nfsserver start
 			;;
 		esac
@@ -875,7 +875,7 @@ startstop_nfslock() {
 			service nfslock stop > /dev/null 2>&1
 			;;
 		restart)
-			service nfslock stop
+			service nfslock stop > /dev/null 2>&1
 			service nfslock start
 			;;
 		esac
