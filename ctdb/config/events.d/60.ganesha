@@ -199,7 +199,7 @@ case "$1" in
 	    nfs_check_rpc_service "statd" \
 		-ge 6 "verbose unhealthy" \
 		-eq 4 "verbose restart" \
-		-eq 2 "restart:bs"
+		-eq 2 "restart:b"
 
 	if [ "$CTDB_SKIP_GANESHA_NFSD_CHECK" != "yes" ] ; then
 	    monitor_ganesha_nfsd

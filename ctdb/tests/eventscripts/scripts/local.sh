@@ -702,7 +702,7 @@ program $_pn version $_ver is not available"
 				;;
 			esac
 			case "${_progname}${_action#restart}" in
-			    nfsd)
+			    nfsd*)
 				_t="\
 Trying to restart NFS service"
 
@@ -720,17 +720,13 @@ ${_t}
 Starting nfslock: OK
 Starting nfs: OK"
 				;;
-			    nfsd:bs)
+			    nfsd:b)
 				_t="Trying to restart NFS service"
 				;;
 			    lockd|lockd:b)
 				_t="\
 Trying to restart lock manager service
-Stopping nfslock: OK
 Starting nfslock: OK"
-				;;
-			    lockd:*)
-				_t="Trying to restart lock manager service"
 				;;
 			    *)
 				_t="Trying to restart $_progname [${_p}${_opts}]"
