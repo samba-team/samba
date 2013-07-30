@@ -1484,9 +1484,6 @@ int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata)
 
 int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
-
-	DEBUG(DEBUG_NOTICE,("set db sticky %s\n", ctdb_db->db_name));
-
 	if (ctdb_db->sticky) {
 		return 0;
 	}
@@ -1499,6 +1496,8 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 	ctdb_db->sticky_records = trbt_create(ctdb_db, 0);
 
 	ctdb_db->sticky = true;
+
+	DEBUG(DEBUG_NOTICE,("set db sticky %s\n", ctdb_db->db_name));
 
 	return 0;
 }
