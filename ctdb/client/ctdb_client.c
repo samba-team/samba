@@ -1781,19 +1781,21 @@ int ctdb_ctrl_getdbhealth(struct ctdb_context *ctdb,
 /*
   create a database
  */
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
-		       TALLOC_CTX *mem_ctx, const char *name, bool persistent)
+int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode,
+		       TALLOC_CTX *mem_ctx, const char *name, uint32_t tdb_flags)
 {
 	int ret;
 	int32_t res;
 	TDB_DATA data;
+	bool persistent;
 
 	data.dptr = discard_const(name);
 	data.dsize = strlen(name)+1;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH, 
-			   0, data, 
+	persistent = (tdb_flags & CTDB_DB_FLAGS_PERSISTENT);
+	ret = ctdb_control(ctdb, destnode, 0,
+			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
+			   tdb_flags, data,
 			   mem_ctx, &data, &res, &timeout, NULL);
 
 	if (ret != 0 || res != 0) {

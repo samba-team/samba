@@ -289,7 +289,7 @@ int ctdb_ctrl_getdbhealth(struct ctdb_context *ctdb,
 			  uint32_t destnode,
 			  uint32_t dbid, TALLOC_CTX *mem_ctx,
 			  const char **reason);
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, const char *name, bool persistent);
+int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, const char *name, uint32_t tdb_flags);
 
 int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
 
