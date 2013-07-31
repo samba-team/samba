@@ -75,26 +75,33 @@ int linux_set_lease_sighandler(int fd)
 int linux_setlease(int fd, int leasetype)
 {
 	int ret;
+	int saved_errno;
+
+	/*
+	 * Ensure the lease owner is root to allow
+	 * correct delivery of lease-break signals.
+	 */
+
+	become_root();
 
 	/* First set the signal handler. */
 	if (linux_set_lease_sighandler(fd) == -1) {
-		return -1;
+		saved_errno = errno;
+		ret = -1;
+		goto out;
 	}
 	ret = fcntl(fd, F_SETLEASE, leasetype);
-	if (ret == -1 && errno == EACCES) {
-		set_effective_capability(LEASE_CAPABILITY);
-		/*
-		 * Bug 8974 - work around Linux kernel bug
-		 * https://bugzilla.kernel.org/show_bug.cgi?id=43336.
-		 * "fcntl(F_SETLEASE) resets signal number when
-		 *  called multiple times"
-		 */
-		if (linux_set_lease_sighandler(fd) == -1) {
-			return -1;
-		}
-		ret = fcntl(fd, F_SETLEASE, leasetype);
+	if (ret == -1) {
+		saved_errno = errno;
 	}
 
+  out:
+
+	unbecome_root();
+
+	if (ret == -1) {
+		errno = saved_errno;
+	}
 	return ret;
 }
 
