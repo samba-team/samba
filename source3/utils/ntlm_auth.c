@@ -228,7 +228,6 @@ static const char *get_password(struct cli_credentials *credentials)
 
 	/* Ask for a password */
 	x_fprintf(x_stdout, "PW\n");
-	credentials->priv_data = NULL;
 
 	manage_squid_request(NUM_HELPER_MODES /* bogus */, NULL, NULL, manage_gensec_get_pw_request, (void **)&password);
 	talloc_steal(credentials, password);
