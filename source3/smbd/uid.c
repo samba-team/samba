@@ -445,6 +445,12 @@ bool smbd_become_authenticated_pipe_user(struct auth_session_info *session_info)
 		    session_info->unix_token->ngroups, session_info->unix_token->groups,
 		    session_info->security_token);
 
+	DEBUG(5, ("Impersonated user: uid=(%d,%d), gid=(%d,%d)\n",
+		 (int)getuid(),
+		 (int)geteuid(),
+		 (int)getgid(),
+		 (int)getegid()));
+
 	return True;
 }
 
