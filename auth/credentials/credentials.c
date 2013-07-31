@@ -669,7 +669,7 @@ _PUBLIC_ const char *cli_credentials_get_unparsed_name(struct cli_credentials *c
 	const char *name;
 
 	if (bind_dn) {
-		name = talloc_reference(mem_ctx, bind_dn);
+		name = talloc_strdup(mem_ctx, bind_dn);
 	} else {
 		cli_credentials_get_ntlm_username_domain(credentials, mem_ctx, &username, &domain);
 		if (domain && domain[0]) {
