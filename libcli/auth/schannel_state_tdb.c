@@ -284,7 +284,6 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 	struct db_context *db_sc;
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS status;
-	int ret;
 	char *name_upper = NULL;
 	char *keystr = NULL;
 	struct db_record *record;
