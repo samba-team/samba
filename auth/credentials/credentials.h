@@ -340,6 +340,9 @@ void *_cli_credentials_callback_data(struct cli_credentials *cred);
 #define cli_credentials_callback_data_void(_cred) \
 	_cli_credentials_callback_data(_cred)
 
+struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ctx,
+						struct cli_credentials *src);
+
 /**
  * Return attached NETLOGON credentials 
  */

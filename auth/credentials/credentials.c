@@ -125,6 +125,21 @@ _PUBLIC_ void *_cli_credentials_callback_data(struct cli_credentials *cred)
 	return cred->priv_data;
 }
 
+_PUBLIC_ struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ctx,
+						struct cli_credentials *src)
+{
+	struct cli_credentials *dst;
+
+	dst = talloc(mem_ctx, struct cli_credentials);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	*dst = *src;
+
+	return dst;
+}
+
 /**
  * Create a new anonymous credential
  * @param mem_ctx TALLOC_CTX parent for credentials structure 
