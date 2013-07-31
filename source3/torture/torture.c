@@ -8469,6 +8469,22 @@ static bool run_local_string_to_sid(int dummy) {
 		printf("allowing S-1-5-32-545-abc\n");
 		return false;
 	}
+	if (string_to_sid(&sid, "S-300-5-32-545")) {
+		printf("allowing S-300-5-32-545\n");
+		return false;
+	}
+	if (string_to_sid(&sid, "S-1-0xfffffffffffffe-32-545")) {
+		printf("allowing S-1-0xfffffffffffffe-32-545\n");
+		return false;
+	}
+	if (string_to_sid(&sid, "S-1-0xffffffffffff-5294967297-545")) {
+		printf("allowing S-1-0xffffffffffff-5294967297-545\n");
+		return false;
+	}
+	if (!string_to_sid(&sid, "S-1-0xfffffffffffe-32-545")) {
+		printf("could not parse S-1-0xfffffffffffe-32-545\n");
+		return false;
+	}
 	if (!string_to_sid(&sid, "S-1-5-32-545")) {
 		printf("could not parse S-1-5-32-545\n");
 		return false;
