@@ -221,7 +221,8 @@ static bool connect_servers(struct tevent_context *ev,
 
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
-			       servers[i].credentials->username, j);
+			       cli_credentials_get_username(servers[i].credentials),
+			       j);
 
 			cli_credentials_set_workstation(servers[i].credentials, 
 							"gentest", CRED_SPECIFIED);
