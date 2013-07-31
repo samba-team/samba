@@ -8497,6 +8497,35 @@ static bool run_local_string_to_sid(int dummy) {
 	return true;
 }
 
+static bool sid_to_string_test(char *expected) {
+	char *str;
+	bool res = true;
+	struct dom_sid sid;
+
+	if (!string_to_sid(&sid, expected)) {
+		printf("could not parse %s\n", expected);
+		return false;
+	}
+
+	str = dom_sid_string(NULL, &sid);
+	if (strcmp(str, expected)) {
+		printf("Comparison failed (%s != %s)\n", str, expected);
+		res = false;
+	}
+	TALLOC_FREE(str);
+	return res;
+}
+
+static bool run_local_sid_to_string(int dummy) {
+	if (!sid_to_string_test("S-1-0xffffffffffff-1-1-1-1-1-1-1-1-1-1-1-1"))
+		return false;
+	if (!sid_to_string_test("S-1-545"))
+		return false;
+	if (!sid_to_string_test("S-255-3840-1-1-1-1"))
+		return false;
+	return true;
+}
+
 static bool run_local_binary_to_sid(int dummy) {
 	struct dom_sid *sid = talloc(NULL, struct dom_sid);
 	static const char good_binary_sid[] = {
@@ -9538,6 +9567,7 @@ static struct {
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
 	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
 	{ "LOCAL-string_to_sid", run_local_string_to_sid, 0},
+	{ "LOCAL-sid_to_string", run_local_sid_to_string, 0},
 	{ "LOCAL-binary_to_sid", run_local_binary_to_sid, 0},
 	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
 	{ "LOCAL-TEVENT-SELECT", run_local_tevent_select, 0},

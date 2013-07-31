@@ -99,6 +99,7 @@ local_tests = [
     "LOCAL-STREAM-NAME",
     "LOCAL-WBCLIENT",
     "LOCAL-string_to_sid",
+    "LOCAL-sid_to_string",
     "LOCAL-binary_to_sid",
     "LOCAL-DBTRANS",
     "LOCAL-TEVENT-SELECT",
