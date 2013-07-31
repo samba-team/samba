@@ -267,7 +267,7 @@ _PUBLIC_ const char *cli_credentials_get_principal_and_obtained(struct cli_crede
 		}
 	}
 	*obtained = cred->principal_obtained;
-	return talloc_reference(mem_ctx, cred->principal);
+	return talloc_strdup(mem_ctx, cred->principal);
 }
 
 /**
