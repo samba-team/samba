@@ -80,171 +80,171 @@
 	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para><command>smbclient</command> is a client that can 
+	<para><command>smbclient</command> is a client that can
 	'talk' to an SMB/CIFS server. It offers an interface
 	similar to that of the ftp program (see <citerefentry><refentrytitle>ftp</refentrytitle>
-	<manvolnum>1</manvolnum></citerefentry>).  
-	Operations include things like getting files from the server 
-	to the local machine, putting files from the local machine to 
-	the server, retrieving directory information from the server 
+	<manvolnum>1</manvolnum></citerefentry>).
+	Operations include things like getting files from the server
+	to the local machine, putting files from the local machine to
+	the server, retrieving directory information from the server
 	and so on. </para>
 </refsect1>
 
 
 <refsect1>
 	<title>OPTIONS</title>
-	
+
 	<variablelist>
 		<varlistentry>
 		<term>servicename</term>
-		<listitem><para>servicename is the name of the service 
+		<listitem><para>servicename is the name of the service
 		you want to use on the server. A service name takes the form
 		<filename>//server/service</filename> where <parameter>server
-		</parameter> is the NetBIOS name of the SMB/CIFS server 
-		offering the desired service and <parameter>service</parameter> 
-		is the name of the service offered.  Thus to connect to 
+		</parameter> is the NetBIOS name of the SMB/CIFS server
+		offering the desired service and <parameter>service</parameter>
+		is the name of the service offered.	 Thus to connect to
 		the service "printer" on the SMB/CIFS server "smbserver",
 		you would use the servicename <filename>//smbserver/printer
 		</filename></para>
 
-		<para>Note that the server name required is NOT necessarily 
-		the IP (DNS) host name of the server !  The name required is 
+		<para>Note that the server name required is NOT necessarily
+		the IP (DNS) host name of the server !	The name required is
 		a NetBIOS server name, which may or may not be the
 		same as the IP hostname of the machine running the server.
 		</para>
 
-		<para>The server name is looked up according to either 
-		the <parameter>-R</parameter> parameter to <command>smbclient</command> or 
-		using the name resolve order parameter in 
+		<para>The server name is looked up according to either
+		the <parameter>-R</parameter> parameter to <command>smbclient</command> or
+		using the name resolve order parameter in
 		the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> file, 
-		allowing an administrator to change the order and methods 
+		<manvolnum>5</manvolnum></citerefentry> file,
+		allowing an administrator to change the order and methods
 		by which server names are looked up. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>password</term>
-		<listitem><para>The password required to access the specified 
-		service on the specified server. If this parameter is 
-		supplied, the <parameter>-N</parameter> option (suppress 
+		<listitem><para>The password required to access the specified
+		service on the specified server. If this parameter is
+		supplied, the <parameter>-N</parameter> option (suppress
 		password prompt) is assumed. </para>
 
-		<para>There is no default password. If no password is supplied 
-		on the command line (either by using this parameter or adding 
-		a password to the <parameter>-U</parameter> option (see 
-		below)) and the <parameter>-N</parameter> option is not 
-		specified, the client will prompt for a password, even if 
-		the desired service does not require one. (If no password is 
+		<para>There is no default password. If no password is supplied
+		on the command line (either by using this parameter or adding
+		a password to the <parameter>-U</parameter> option (see
+		below)) and the <parameter>-N</parameter> option is not
+		specified, the client will prompt for a password, even if
+		the desired service does not require one. (If no password is
 		required, simply press ENTER to provide a null password.)
 		</para>
 
-		<para>Note: Some servers (including OS/2 and Windows for 
-		Workgroups) insist on an uppercase password. Lowercase 
-		or mixed case passwords may be rejected by these servers. 		
+		<para>Note: Some servers (including OS/2 and Windows for
+		Workgroups) insist on an uppercase password. Lowercase
+		or mixed case passwords may be rejected by these servers.
 		</para>
 
 		<para>Be cautious about including passwords in scripts.
 		</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-R|--name-resolve &lt;name resolve order&gt;</term>
-		<listitem><para>This option is used by the programs in the Samba 
-		suite to determine what naming services and in what order to resolve 
-		host names to IP addresses. The option takes a space-separated 
+		<listitem><para>This option is used by the programs in the Samba
+		suite to determine what naming services and in what order to resolve
+		host names to IP addresses. The option takes a space-separated
 		string of different name resolution options.</para>
 
-		<para>The options are :"lmhosts", "host", "wins" and "bcast". They 
+		<para>The options are :"lmhosts", "host", "wins" and "bcast". They
 		cause names to be resolved as follows:</para>
 
 		<itemizedlist>
-			<listitem><para><constant>lmhosts</constant>: Lookup an IP 
-			address in the Samba lmhosts file. If the line in lmhosts has 
-			no name type attached to the NetBIOS name (see 
+			<listitem><para><constant>lmhosts</constant>: Lookup an IP
+			address in the Samba lmhosts file. If the line in lmhosts has
+			no name type attached to the NetBIOS name (see
 			the <citerefentry><refentrytitle>lmhosts</refentrytitle>
 			<manvolnum>5</manvolnum></citerefentry> for details) then
 			any name type matches for lookup.</para>
 			</listitem>
-			
-			<listitem><para><constant>host</constant>: Do a standard host 
+
+			<listitem><para><constant>host</constant>: Do a standard host
 			name to IP address resolution, using the system <filename>/etc/hosts
-			</filename>, NIS, or DNS lookups. This method of name resolution 
-			is operating system dependent, for instance on IRIX or Solaris this 
-			may be controlled by the <filename>/etc/nsswitch.conf</filename> 
-			file).  Note that this method is only used if the NetBIOS name 
-			type being queried is the 0x20 (server) name type, otherwise 
+			</filename>, NIS, or DNS lookups. This method of name resolution
+			is operating system dependent, for instance on IRIX or Solaris this
+			may be controlled by the <filename>/etc/nsswitch.conf</filename>
+			file).	Note that this method is only used if the NetBIOS name
+			type being queried is the 0x20 (server) name type, otherwise
 			it is ignored.</para>
 			</listitem>
-			
-			<listitem><para><constant>wins</constant>: Query a name with 
+
+			<listitem><para><constant>wins</constant>: Query a name with
 			the IP address listed in the <parameter>wins server</parameter>
-			parameter.  If no WINS server has
+			parameter.	If no WINS server has
 			been specified this method will be ignored.</para>
 			</listitem>
-			
-			<listitem><para><constant>bcast</constant>: Do a broadcast on 
-			each of the known local interfaces listed in the 
+
+			<listitem><para><constant>bcast</constant>: Do a broadcast on
+			each of the known local interfaces listed in the
 			<parameter>interfaces</parameter>
-			parameter. This is the least reliable of the name resolution 
-			methods as it depends on the target host being on a locally 
+			parameter. This is the least reliable of the name resolution
+			methods as it depends on the target host being on a locally
 			connected subnet.</para>
 			</listitem>
 		</itemizedlist>
 
-		<para>If this parameter is not set then the name resolve order 
+		<para>If this parameter is not set then the name resolve order
 		defined in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> file parameter  
+		<manvolnum>5</manvolnum></citerefentry> file parameter
 		(name resolve order) will be used. </para>
 
-		<para>The default order is lmhosts, host, wins, bcast and without 
+		<para>The default order is lmhosts, host, wins, bcast and without
 		this parameter or any entry in the <parameter>name resolve order
 		</parameter> parameter of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> file the name resolution
 		methods will be attempted in this order. </para></listitem>
 		</varlistentry>
-		
-		
+
+
 		<varlistentry>
 		<term>-M|--message NetBIOS name</term>
-		<listitem><para>This options allows you to send messages, using 
-		the "WinPopup" protocol, to another computer. Once a connection is 
-		established you then type your message, pressing ^D (control-D) to 
+		<listitem><para>This options allows you to send messages, using
+		the "WinPopup" protocol, to another computer. Once a connection is
+		established you then type your message, pressing ^D (control-D) to
 		end. </para>
 
-		<para>If the receiving computer is running WinPopup the user will 
-		receive the message and probably a beep. If they are not running 
-		WinPopup the message will be lost, and no error message will 
+		<para>If the receiving computer is running WinPopup the user will
+		receive the message and probably a beep. If they are not running
+		WinPopup the message will be lost, and no error message will
 		occur. </para>
 
-		<para>The message is also automatically truncated if the message 
-		is over 1600 bytes, as this is the limit of the protocol. 
+		<para>The message is also automatically truncated if the message
+		is over 1600 bytes, as this is the limit of the protocol.
 		</para>
 
 		<para>
-		One useful trick is to pipe the message through <command>smbclient</command>. 
-		For example: smbclient -M FRED &lt; mymessage.txt will send the 
-		message in the file <filename>mymessage.txt</filename> to the 
+		One useful trick is to pipe the message through <command>smbclient</command>.
+		For example: smbclient -M FRED &lt; mymessage.txt will send the
+		message in the file <filename>mymessage.txt</filename> to the
 		machine FRED.
 		</para>
 
-		<para>You may also find the <parameter>-U</parameter> and 
-		<parameter>-I</parameter> options useful, as they allow you to 
+		<para>You may also find the <parameter>-U</parameter> and
+		<parameter>-I</parameter> options useful, as they allow you to
 		control the FROM and TO parts of the message. </para>
 
 		<para>See the <parameter>message command</parameter> parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> for a description of how to handle incoming 
+		<manvolnum>5</manvolnum></citerefentry> for a description of how to handle incoming
 		WinPopup messages in Samba. </para>
 
-		<para><emphasis>Note</emphasis>: Copy WinPopup into the startup group 
-		on your WfWg PCs if you want them to always be able to receive 
+		<para><emphasis>Note</emphasis>: Copy WinPopup into the startup group
+		on your WfWg PCs if you want them to always be able to receive
 		messages. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>-p|--port port</term>
-		<listitem><para>This number is the TCP port number that will be used 
+		<listitem><para>This number is the TCP port number that will be used
 		when making connections to the server. The standard (well-known)
-		TCP port number for an SMB/CIFS server is 139, which is the 
+		TCP port number for an SMB/CIFS server is 139, which is the
 		default. </para></listitem>
 		</varlistentry>
 
@@ -281,40 +281,40 @@
 		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to.
 		It should be specified in standard "a.b.c.d" notation. </para>
 
-		<para>Normally the client would attempt to locate a named 
-		SMB/CIFS server by looking it up via the NetBIOS name resolution 
-		mechanism described above in the <parameter>name resolve order</parameter> 
+		<para>Normally the client would attempt to locate a named
+		SMB/CIFS server by looking it up via the NetBIOS name resolution
+		mechanism described above in the <parameter>name resolve order</parameter>
 		parameter above. Using this parameter will force the client
-		to assume that the server is on the machine with the specified IP 
-		address and the NetBIOS name component of the resource being 
+		to assume that the server is on the machine with the specified IP
+		address and the NetBIOS name component of the resource being
 		connected to will be ignored. </para>
 
-		<para>There is no default for this parameter. If not supplied, 
-		it will be determined automatically by the client as described 
+		<para>There is no default for this parameter. If not supplied,
+		it will be determined automatically by the client as described
 		above. </para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-E|--stderr</term>
-		<listitem><para>This parameter causes the client to write messages 
-		to the standard error stream (stderr) rather than to the standard 
+		<listitem><para>This parameter causes the client to write messages
+		to the standard error stream (stderr) rather than to the standard
 		output stream. </para>
-		
-		<para>By default, the client writes messages to standard output 
+
+		<para>By default, the client writes messages to standard output
 		- typically the user's tty. </para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-L|--list</term>
-		<listitem><para>This option allows you to look at what services 
-		are available on a server. You use it as <command>smbclient -L 
+		<listitem><para>This option allows you to look at what services
+		are available on a server. You use it as <command>smbclient -L
 		host</command> and a list should appear.  The <parameter>-I
-		</parameter> option may be useful if your NetBIOS names don't 
-		match your TCP/IP DNS host names or if you are trying to reach a 
+		</parameter> option may be useful if your NetBIOS names don't
+		match your TCP/IP DNS host names or if you are trying to reach a
 		host on another network. </para></listitem>
 		</varlistentry>
-		
-		<varlistentry>	
+
+		<varlistentry>
 		<term>-b|--send-buffer buffersize</term>
 		<listitem><para>
 		When sending or receiving files, smbclient uses an
@@ -328,7 +328,7 @@
 		using the <command>iosize</command> command inside smbclient.
 		</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-B|--browse</term>
 		<listitem><para>Browse SMB servers using DNS.</para>
@@ -340,7 +340,7 @@
 		&popt.common.credentials;
 		&popt.common.connection;
 		&popt.autohelp;
-		
+
 		<varlistentry>
 		<term>-t|--timeout &lt;timeout-seconds&gt;</term>
 		<listitem><para>This allows the user to tune the default
@@ -503,35 +503,35 @@
 <refsect1>
 	<title>OPERATIONS</title>
 
-	<para>Once the client is running, the user is presented with 
+	<para>Once the client is running, the user is presented with
 	a prompt : </para>
 
 	<para><prompt>smb:\&gt; </prompt></para>
 
-	<para>The backslash ("\\") indicates the current working directory 
-	on the server, and will change if the current working directory 
+	<para>The backslash ("\\") indicates the current working directory
+	on the server, and will change if the current working directory
 	is changed. </para>
 
-	<para>The prompt indicates that the client is ready and waiting to 
-	carry out a user command. Each command is a single word, optionally 
-	followed by parameters specific to that command. Command and parameters 
+	<para>The prompt indicates that the client is ready and waiting to
+	carry out a user command. Each command is a single word, optionally
+	followed by parameters specific to that command. Command and parameters
 	are space-delimited unless these notes specifically
-	state otherwise. All commands are case-insensitive.  Parameters to 
-	commands may or may not be case sensitive, depending on the command. 
+	state otherwise. All commands are case-insensitive.	 Parameters to
+	commands may or may not be case sensitive, depending on the command.
 	</para>
 
-	<para>You can specify file names which have spaces in them by quoting 
+	<para>You can specify file names which have spaces in them by quoting
 	the name with double quotes, for example "a long file name". </para>
 
-	<para>Parameters shown in square brackets (e.g., "[parameter]") are 
-	optional.  If not given, the command will use suitable defaults. Parameters 
+	<para>Parameters shown in square brackets (e.g., "[parameter]") are
+	optional.  If not given, the command will use suitable defaults. Parameters
 	shown in angle brackets (e.g., "&lt;parameter&gt;") are required.
 	</para>
 
 
-	<para>Note that all commands operating on the server are actually 
-	performed by issuing a request to the server. Thus the behavior may 
-	vary from server to server, depending on how the server was implemented. 
+	<para>Note that all commands operating on the server are actually
+	performed by issuing a request to the server. Thus the behavior may
+	vary from server to server, depending on how the server was implemented.
 	</para>
 
 	<para>The commands available are given here in alphabetical order. </para>
@@ -776,8 +776,8 @@
 		<varlistentry>
 		<term>lowercase</term>
 		<listitem><para>Toggle lowercasing of filenames for the get and
-		mget commands.		
-		</para>	
+		mget commands.
+		</para>
 
 		<para>When lowercasing is toggled ON, local filenames are converted
 		to lowercase when using the get and mget commands. This is
@@ -992,7 +992,7 @@
 
 		<varlistentry>
 		<term>rmdir &lt;directory name&gt;</term>
- 		<listitem><para>Remove the specified directory (user access
+		<listitem><para>Remove the specified directory (user access
 		privileges permitting) from the server. </para></listitem>
 		</varlistentry>
 
@@ -1148,52 +1148,52 @@
 	on a valid NetBIOS name being used, so you need to supply a valid
 	name that would be known to the server.</para>
 
-	<para>smbclient supports long file names where the server 
+	<para>smbclient supports long file names where the server
 	supports the LANMAN2 protocol or above. </para>
 </refsect1>
 
 <refsect1>
 	<title>ENVIRONMENT VARIABLES</title>
 
-	<para>The variable <envar>USER</envar> may contain the 
-	username of the person  using the client. This information is 
-	used only if the protocol  level is high enough to support 
+	<para>The variable <envar>USER</envar> may contain the
+	username of the person	using the client. This information is
+	used only if the protocol  level is high enough to support
 	session-level passwords.</para>
 
 
-	<para>The variable <envar>PASSWD</envar> may contain 
-	the password of the person using the client.  This information is 
-	used only if the protocol level is high enough to support 
+	<para>The variable <envar>PASSWD</envar> may contain
+	the password of the person using the client.  This information is
+	used only if the protocol level is high enough to support
 	session-level passwords. </para>
 
-	<para>The variable <envar>LIBSMB_PROG</envar> may contain 
-	the path, executed with system(), which the client should connect 
-        to instead of connecting to a server.  This functionality is primarily
-        intended as a development aid, and works best when using a LMHOSTS 
-        file</para>
+	<para>The variable <envar>LIBSMB_PROG</envar> may contain
+	the path, executed with system(), which the client should connect
+		to instead of connecting to a server.  This functionality is primarily
+		intended as a development aid, and works best when using a LMHOSTS
+		file</para>
 </refsect1>
 
 
 <refsect1>
 	<title>INSTALLATION</title>
 
-	<para>The location of the client program is a matter for 
+	<para>The location of the client program is a matter for
 	individual system administrators. The following are thus
 	suggestions only. </para>
 
 	<para>It is recommended that the smbclient software be installed
 	in the <filename>/usr/local/samba/bin/</filename> or <filename>
-	/usr/samba/bin/</filename> directory, this directory readable 
-	by all, writeable only by root. The client program itself should 
-	be executable by all. The client should <emphasis>NOT</emphasis> be 
+	/usr/samba/bin/</filename> directory, this directory readable
+	by all, writeable only by root. The client program itself should
+	be executable by all. The client should <emphasis>NOT</emphasis> be
 	setuid or setgid! </para>
 
-	<para>The client log files should be put in a directory readable 
+	<para>The client log files should be put in a directory readable
 	and writeable only by the user. </para>
 
-	<para>To test the client, you will need to know the name of a 
+	<para>To test the client, you will need to know the name of a
 	running SMB/CIFS server. It is possible to run <citerefentry><refentrytitle>smbd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> as an ordinary user - running that server as a daemon 
+	<manvolnum>8</manvolnum></citerefentry> as an ordinary user - running that server as a daemon
 	on a user-accessible port (typically any port number over 1024)
 	would provide a suitable test server. </para>
 </refsect1>
@@ -1202,12 +1202,12 @@
 <refsect1>
 	<title>DIAGNOSTICS</title>
 
-	<para>Most diagnostics issued by the client are logged in a 
-	specified log file. The log file name is specified at compile time, 
+	<para>Most diagnostics issued by the client are logged in a
+	specified log file. The log file name is specified at compile time,
 	but may be overridden on the command line. </para>
 
-	<para>The number and nature of diagnostics available depends 
-	on the debug level used by the client. If you have problems, 
+	<para>The number and nature of diagnostics available depends
+	on the debug level used by the client. If you have problems,
 	set the debug level to 3 and peruse the log files. </para>
 </refsect1>
 
@@ -1221,17 +1221,17 @@
 
 <refsect1>
 	<title>AUTHOR</title>
-	
-	<para>The original Samba software and related utilities 
+
+	<para>The original Samba software and related utilities
 	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
+	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
-	
-	<para>The original Samba man pages were written by Karl Auer. 
-	The man page sources were converted to YODL format (another 
+
+	<para>The original Samba man pages were written by Karl Auer.
+	The man page sources were converted to YODL format (another
 	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
-	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
-	release by Jeremy Allison.  The conversion to DocBook for 
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0
+	release by Jeremy Allison.	The conversion to DocBook for
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
 	was done by Alexander Bokovoy.</para>
 </refsect1>
