@@ -105,7 +105,7 @@ struct cli_credentials {
 	uint32_t gensec_features;
 
 	/* Number of retries left before bailing out */
-	int tries;
+	uint32_t password_tries;
 
 	/* Whether any callback is currently running */
 	bool callback_running;

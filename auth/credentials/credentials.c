@@ -104,7 +104,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->machine_account = false;
 
-	cred->tries = 3;
+	cred->password_tries = 0;
 
 	cred->callback_running = false;
 
@@ -397,6 +397,7 @@ _PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred,
 				  enum credentials_obtained obtained)
 {
 	if (obtained >= cred->password_obtained) {
+		cred->password_tries = 0;
 		cred->password = talloc_strdup(cred, val);
 		if (cred->password) {
 			/* Don't print the actual password in talloc memory dumps */
@@ -418,6 +419,7 @@ _PUBLIC_ bool cli_credentials_set_password_callback(struct cli_credentials *cred
 					   const char *(*password_cb) (struct cli_credentials *))
 {
 	if (cred->password_obtained < CRED_CALLBACK) {
+		cred->password_tries = 3;
 		cred->password_cb = password_cb;
 		cred->password_obtained = CRED_CALLBACK;
 		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
@@ -897,12 +899,19 @@ _PUBLIC_ bool cli_credentials_wrong_password(struct cli_credentials *cred)
 	if (cred->password_obtained != CRED_CALLBACK_RESULT) {
 		return false;
 	}
-	
+
+	if (cred->password_tries == 0) {
+		return false;
+	}
+
+	cred->password_tries--;
+
+	if (cred->password_tries == 0) {
+		return false;
+	}
+
 	cred->password_obtained = CRED_CALLBACK;
-
-	cred->tries--;
-
-	return (cred->tries > 0);
+	return true;
 }
 
 _PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
