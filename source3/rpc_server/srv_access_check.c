@@ -54,6 +54,21 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	uint32 saved_mask = 0;
 	bool priv_granted = false;
+	bool is_system = false;
+	bool is_root = false;
+
+	/* Check if we are are the system token */
+	if (security_token_is_system(token) &&
+	    security_token_system_privilege(token)) {
+		is_system = true;
+	}
+
+	/* Check if we are root */
+	if (geteuid() == sec_initial_uid()) {
+		is_root = true;
+	}
+
+	/* Check if we are root */
 
 	/* check privileges; certain SAM access bits should be overridden
 	   by privileges (mostly having to do with creating/modifying/deleting
@@ -71,18 +86,15 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 
 
 	/* check the security descriptor first */
-
 	status = se_access_check(psd, token, des_access, acc_granted);
 	if (NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	/* give root a free pass */
-
-	if ( geteuid() == sec_initial_uid() ) {
-
+	if (is_system || is_root) {
 		DEBUG(4,("%s: ACCESS should be DENIED  (requested: %#010x)\n", debug, des_access));
-		DEBUGADD(4,("but overritten by euid == sec_initial_uid()\n"));
+		DEBUGADD(4,("but overritten by %s\n",
+			    is_root ? "euid == initial uid" : "system token"));
 
 		priv_granted = true;
 		*acc_granted = des_access;
