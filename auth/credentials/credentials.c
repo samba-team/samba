@@ -206,8 +206,10 @@ _PUBLIC_ const char *cli_credentials_get_username(struct cli_credentials *cred)
 	    	cred->callback_running = true;
 		cred->username = cred->username_cb(cred);
 	    	cred->callback_running = false;
-		cred->username_obtained = CRED_SPECIFIED;
-		cli_credentials_invalidate_ccache(cred, cred->username_obtained);
+		if (cred->username_obtained == CRED_CALLBACK) {
+			cred->username_obtained = CRED_CALLBACK_RESULT;
+			cli_credentials_invalidate_ccache(cred, cred->username_obtained);
+		}
 	}
 
 	return cred->username;
@@ -275,8 +277,10 @@ _PUBLIC_ const char *cli_credentials_get_principal_and_obtained(struct cli_crede
 	    	cred->callback_running = true;
 		cred->principal = cred->principal_cb(cred);
 	    	cred->callback_running = false;
-		cred->principal_obtained = CRED_SPECIFIED;
-		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
+		if (cred->principal_obtained == CRED_CALLBACK) {
+			cred->principal_obtained = CRED_CALLBACK_RESULT;
+			cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
+		}
 	}
 
 	if (cred->principal_obtained < cred->username_obtained
@@ -382,8 +386,10 @@ _PUBLIC_ const char *cli_credentials_get_password(struct cli_credentials *cred)
 	    	cred->callback_running = true;
 		cred->password = cred->password_cb(cred);
 	    	cred->callback_running = false;
-		cred->password_obtained = CRED_CALLBACK_RESULT;
-		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
+		if (cred->password_obtained == CRED_CALLBACK) {
+			cred->password_obtained = CRED_CALLBACK_RESULT;
+			cli_credentials_invalidate_ccache(cred, cred->password_obtained);
+		}
 	}
 
 	return cred->password;
@@ -502,8 +508,10 @@ _PUBLIC_ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 	    	cred->callback_running = true;
 		cred->domain = cred->domain_cb(cred);
 	    	cred->callback_running = false;
-		cred->domain_obtained = CRED_SPECIFIED;
-		cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
+		if (cred->domain_obtained == CRED_CALLBACK) {
+			cred->domain_obtained = CRED_CALLBACK_RESULT;
+			cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
+		}
 	}
 
 	return cred->domain;
@@ -561,8 +569,10 @@ _PUBLIC_ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 	    	cred->callback_running = true;
 		cred->realm = cred->realm_cb(cred);
 	    	cred->callback_running = false;
-		cred->realm_obtained = CRED_SPECIFIED;
-		cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
+		if (cred->realm_obtained == CRED_CALLBACK) {
+			cred->realm_obtained = CRED_CALLBACK_RESULT;
+			cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
+		}
 	}
 
 	return cred->realm;
@@ -612,7 +622,9 @@ _PUBLIC_ const char *cli_credentials_get_workstation(struct cli_credentials *cre
 	    	cred->callback_running = true;
 		cred->workstation = cred->workstation_cb(cred);
 	    	cred->callback_running = false;
-		cred->workstation_obtained = CRED_SPECIFIED;
+		if (cred->workstation_obtained == CRED_CALLBACK) {
+			cred->workstation_obtained = CRED_CALLBACK_RESULT;
+		}
 	}
 
 	return cred->workstation;
