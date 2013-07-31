@@ -238,6 +238,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	bool secrets_tdb_password_more_recent;
 	time_t secrets_tdb_lct = 0;
 	char *secrets_tdb_password = NULL;
+	char *secrets_tdb_old_password = NULL;
 	char *keystr;
 	char *keystr_upper = NULL;
 	char *secrets_tdb;
@@ -285,6 +286,15 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 		if (NT_STATUS_IS_OK(status)) {
 			secrets_tdb_password = (char *)dbuf.dptr;
 		}
+		keystr = talloc_asprintf(tmp_ctx, "%s/%s",
+					 SECRETS_MACHINE_PASSWORD_PREV,
+					 domain);
+		keystr_upper = strupper_talloc(tmp_ctx, keystr);
+		status = dbwrap_fetch(db_ctx, tmp_ctx, string_tdb_data(keystr_upper),
+				      &dbuf);
+		if (NT_STATUS_IS_OK(status)) {
+			secrets_tdb_old_password = (char *)dbuf.dptr;
+		}
 	}
 
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
@@ -308,6 +318,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	if (secrets_tdb_password_more_recent) {
 		char *machine_account = talloc_asprintf(tmp_ctx, "%s$", lpcfg_netbios_name(lp_ctx));
 		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
+		cli_credentials_set_old_password(cred, secrets_tdb_old_password, CRED_SPECIFIED);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 	} else if (!NT_STATUS_IS_OK(status)) {
