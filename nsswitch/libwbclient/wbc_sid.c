@@ -32,7 +32,7 @@
  * result if it was long enough. */
 int wbcSidToStringBuf(const struct wbcDomainSid *sid, char *buf, int buflen)
 {
-	uint32_t id_auth;
+	uint64_t id_auth;
 	int i, ofs;
 
 	if (!sid) {
@@ -40,22 +40,25 @@ int wbcSidToStringBuf(const struct wbcDomainSid *sid, char *buf, int buflen)
 		return 10;	/* strlen("(NULL SID)") */
 	}
 
-	/*
-	 * BIG NOTE: this function only does SIDS where the identauth is not
-	 * >= ^32 in a range of 2^48.
-	 */
+	id_auth = (uint64_t)sid->id_auth[5] +
+		((uint64_t)sid->id_auth[4] << 8) +
+		((uint64_t)sid->id_auth[3] << 16) +
+		((uint64_t)sid->id_auth[2] << 24) +
+		((uint64_t)sid->id_auth[1] << 32) +
+		((uint64_t)sid->id_auth[0] << 40);
 
-	id_auth = sid->id_auth[5] +
-		(sid->id_auth[4] << 8) +
-		(sid->id_auth[3] << 16) +
-		(sid->id_auth[2] << 24);
-
-	ofs = snprintf(buf, buflen, "S-%u-%lu",
-		       (unsigned int)sid->sid_rev_num, (unsigned long)id_auth);
+	ofs = snprintf(buf, buflen, "S-%hhu-", (unsigned char)sid->sid_rev_num);
+	if (id_auth >= UINT32_MAX) {
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "0x%llx",
+				(unsigned long long)id_auth);
+	} else {
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "%llu",
+				(unsigned long long)id_auth);
+	}
 
 	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "-%lu",
-				(unsigned long)sid->sub_auths[i]);
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "-%u",
+				(unsigned int)sid->sub_auths[i]);
 	}
 	return ofs;
 }
