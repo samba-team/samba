@@ -114,6 +114,17 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	return cred;
 }
 
+_PUBLIC_ void cli_credentials_set_callback_data(struct cli_credentials *cred,
+						void *callback_data)
+{
+	cred->priv_data = callback_data;
+}
+
+_PUBLIC_ void *_cli_credentials_callback_data(struct cli_credentials *cred)
+{
+	return cred->priv_data;
+}
+
 /**
  * Create a new anonymous credential
  * @param mem_ctx TALLOC_CTX parent for credentials structure 

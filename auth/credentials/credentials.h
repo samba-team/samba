@@ -332,6 +332,14 @@ bool cli_credentials_set_realm_callback(struct cli_credentials *cred,
 bool cli_credentials_set_workstation_callback(struct cli_credentials *cred,
 					      const char *(*workstation_cb) (struct cli_credentials *));
 
+void cli_credentials_set_callback_data(struct cli_credentials *cred,
+				       void *callback_data);
+void *_cli_credentials_callback_data(struct cli_credentials *cred);
+#define cli_credentials_callback_data(_cred, _type) \
+	talloc_get_type_abort(_cli_credentials_callback_data(_cred), _type)
+#define cli_credentials_callback_data_void(_cred) \
+	_cli_credentials_callback_data(_cred)
+
 /**
  * Return attached NETLOGON credentials 
  */
