@@ -365,23 +365,31 @@ bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen)
 {
 	int i, ofs;
-	uint32_t ia;
+	uint64_t ia;
 
 	if (!sid) {
 		return strlcpy(buf, "(NULL SID)", buflen);
 	}
 
-	ia = (sid->id_auth[5]) +
-		(sid->id_auth[4] << 8 ) +
-		(sid->id_auth[3] << 16) +
-		(sid->id_auth[2] << 24);
+	ia = ((uint64_t)sid->id_auth[5]) +
+		((uint64_t)sid->id_auth[4] << 8 ) +
+		((uint64_t)sid->id_auth[3] << 16) +
+		((uint64_t)sid->id_auth[2] << 24) +
+		((uint64_t)sid->id_auth[1] << 32) +
+		((uint64_t)sid->id_auth[0] << 40);
 
-	ofs = snprintf(buf, buflen, "S-%u-%lu",
-		       (unsigned int)sid->sid_rev_num, (unsigned long)ia);
+	ofs = snprintf(buf, buflen, "S-%hhu-", (unsigned char)sid->sid_rev_num);
+	if (ia >= UINT32_MAX) {
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "0x%llx",
+				(unsigned long long)ia);
+	} else {
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "%llu",
+				(unsigned long long)ia);
+	}
 
 	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "-%lu",
-				(unsigned long)sid->sub_auths[i]);
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "-%u",
+				(unsigned int)sid->sub_auths[i]);
 	}
 	return ofs;
 }
