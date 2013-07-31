@@ -175,7 +175,19 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 			     struct tevent_common_signal_list);
 
 	if (se->event_ctx) {
-		DLIST_REMOVE(se->event_ctx->signal_events, se);
+		struct tevent_context *ev = se->event_ctx;
+
+		DLIST_REMOVE(ev->signal_events, se);
+
+		if (ev->signal_events == NULL && ev->pipe_fde != NULL) {
+			/*
+			 * This was the last signal. Destroy the pipe.
+			 */
+			TALLOC_FREE(ev->pipe_fde);
+
+			close(ev->pipe_fds[0]);
+			close(ev->pipe_fds[1]);
+		}
 	}
 
 	talloc_free(sl);
