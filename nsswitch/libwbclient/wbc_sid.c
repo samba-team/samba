@@ -88,13 +88,15 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 	return WBC_ERR_SUCCESS;
 }
 
+#define AUTHORITY_MASK	(~(0xffffffffffffULL))
+
 /* Convert a character string to a binary SID */
 wbcErr wbcStringToSid(const char *str,
 		      struct wbcDomainSid *sid)
 {
 	const char *p;
 	char *q;
-	uint32_t x;
+	uint64_t x;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
 	if (!sid) {
@@ -115,38 +117,39 @@ wbcErr wbcStringToSid(const char *str,
 	/* Get the SID revision number */
 
 	p = str+2;
-	x = (uint32_t)strtol(p, &q, 10);
-	if (x==0 || !q || *q!='-') {
+	x = (uint64_t)strtoul(p, &q, 10);
+	if (x==0 || x > UINT8_MAX || !q || *q!='-') {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 	sid->sid_rev_num = (uint8_t)x;
 
-	/* Next the Identifier Authority.  This is stored in big-endian
-	   in a 6 byte array. */
-
+	/*
+	 * Next the Identifier Authority.  This is stored big-endian in a
+	 * 6 byte array. If the authority value is >= UINT_MAX, then it should
+	 * be expressed as a hex value, according to MS-DTYP.
+	 */
 	p = q+1;
-	x = (uint32_t)strtol(p, &q, 10);
-	if (!q || *q!='-') {
+	x = strtoull(p, &q, 0);
+	if (!q || *q!='-' || (x & AUTHORITY_MASK)) {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
-	sid->id_auth[5] = (x & 0x000000ff);
-	sid->id_auth[4] = (x & 0x0000ff00) >> 8;
-	sid->id_auth[3] = (x & 0x00ff0000) >> 16;
-	sid->id_auth[2] = (x & 0xff000000) >> 24;
-	sid->id_auth[1] = 0;
-	sid->id_auth[0] = 0;
+	sid->id_auth[5] = (x & 0x0000000000ffULL);
+	sid->id_auth[4] = (x & 0x00000000ff00ULL) >> 8;
+	sid->id_auth[3] = (x & 0x000000ff0000ULL) >> 16;
+	sid->id_auth[2] = (x & 0x0000ff000000ULL) >> 24;
+	sid->id_auth[1] = (x & 0x00ff00000000ULL) >> 32;
+	sid->id_auth[0] = (x & 0xff0000000000ULL) >> 40;
 
 	/* now read the the subauthorities */
-
 	p = q +1;
 	sid->num_auths = 0;
 	while (sid->num_auths < WBC_MAXSUBAUTHS) {
-		x=(uint32_t)strtoul(p, &q, 10);
+		x = strtoull(p, &q, 10);
 		if (p == q)
 			break;
-		if (q == NULL) {
+		if (x > UINT32_MAX) {
 			wbc_status = WBC_ERR_INVALID_SID;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
