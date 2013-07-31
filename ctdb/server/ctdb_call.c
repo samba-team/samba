@@ -564,7 +564,9 @@ ctdb_make_record_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_
 	sr->ctdb_db = ctdb_db;
 	sr->pindown = NULL;
 
-	DEBUG(DEBUG_ERR,("Make record sticky in db %s\n", ctdb_db->db_name));
+	DEBUG(DEBUG_ERR,("Make record sticky for %d seconds in db %s key:0x%08x.\n",
+			 ctdb->tunable.sticky_duration,
+			 ctdb_db->db_name, ctdb_hash(&key)));
 
 	trbt_insertarray32_callback(ctdb_db->sticky_records, k[0], &k[0], ctdb_make_sticky_record_callback, sr);
 
@@ -922,7 +924,6 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   should make it sticky.
 	*/
 	if (ctdb_db->sticky && c->hopcount >= ctdb->tunable.hopcount_make_sticky) {
-		DEBUG(DEBUG_ERR, ("Hot record in database %s. Hopcount is %d. Make record sticky for %d seconds\n", ctdb_db->db_name, c->hopcount, ctdb->tunable.sticky_duration));
 		ctdb_make_record_sticky(ctdb, ctdb_db, call->key);
 	}
 
