@@ -604,9 +604,9 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	torture_assert(torture, join_ctx != NULL,
 		       "Failed to join domain with acct_flags=ACB_WSTRUST");
 
-	credentials2 = (struct cli_credentials *)talloc_memdup(torture, credentials1, sizeof(*credentials1));
-	credentials1->netlogon_creds = NULL;
-	credentials2->netlogon_creds = NULL;
+	credentials2 = cli_credentials_shallow_copy(torture, credentials1);
+	cli_credentials_set_netlogon_creds(credentials1, NULL);
+	cli_credentials_set_netlogon_creds(credentials2, NULL);
 
 	status = dcerpc_parse_binding(torture, binding, &b);
 	torture_assert_ntstatus_ok(torture, status, "Bad binding string");
@@ -624,8 +624,8 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 				       credentials2, torture->ev, torture->lp_ctx);
 	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
 
-	credentials1->netlogon_creds = NULL;
-	credentials2->netlogon_creds = NULL;
+	cli_credentials_set_netlogon_creds(credentials1, NULL);
+	cli_credentials_set_netlogon_creds(credentials2, NULL);
 
 	torture_comment(torture, "Testing logon on pipe1\n");
 	if (!test_netlogon_ex_ops(p1, torture, credentials1, NULL))
@@ -827,16 +827,12 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	s->nprocs = torture_setting_int(torture, "nprocs", 4);
 	s->conns = talloc_zero_array(s, struct torture_schannel_bench_conn, s->nprocs);
 
-	s->user1_creds = (struct cli_credentials *)talloc_memdup(s,
-								 cmdline_credentials,
-								 sizeof(*s->user1_creds));
+	s->user1_creds = cli_credentials_shallow_copy(s, cmdline_credentials);
 	tmp = torture_setting_string(s->tctx, "extra_user1", NULL);
 	if (tmp) {
 		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
 	}
-	s->user2_creds = (struct cli_credentials *)talloc_memdup(s,
-								 cmdline_credentials,
-								 sizeof(*s->user1_creds));
+	s->user2_creds = cli_credentials_shallow_copy(s, cmdline_credentials);
 	tmp = torture_setting_string(s->tctx, "extra_user2", NULL);
 	if (tmp) {
 		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
@@ -855,15 +851,16 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	cli_credentials_set_kerberos_state(s->wks_creds2, CRED_DONT_USE_KERBEROS);
 
 	for (i=0; i < s->nprocs; i++) {
+		struct cli_credentials *wks = s->wks_creds1;
+
+		if ((i % 2) && (torture_setting_bool(torture, "multijoin", false))) {
+			wks = s->wks_creds2;
+		}
+
 		s->conns[i].s = s;
 		s->conns[i].index = i;
-		s->conns[i].wks_creds = (struct cli_credentials *)talloc_memdup(
-			s->conns, s->wks_creds1,sizeof(*s->wks_creds1));
-		if ((i % 2) && (torture_setting_bool(torture, "multijoin", false))) {
-			memcpy(s->conns[i].wks_creds, s->wks_creds2,
-			       talloc_get_size(s->conns[i].wks_creds));
-		}
-		s->conns[i].wks_creds->netlogon_creds = NULL;
+		s->conns[i].wks_creds = cli_credentials_shallow_copy(s->conns, wks);
+		cli_credentials_set_netlogon_creds(s->conns[i].wks_creds, NULL);
 	}
 
 	status = dcerpc_parse_binding(s, binding, &s->b);
@@ -962,8 +959,7 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 
 		/* Just as a test, connect with the new creds */
 
-		talloc_free(s->wks_creds1->netlogon_creds);
-		s->wks_creds1->netlogon_creds = NULL;
+		cli_credentials_set_netlogon_creds(s->wks_creds1, NULL);
 
 		status = dcerpc_pipe_connect_b(s, &net_pipe, s->b,
 					       &ndr_table_netlogon,
