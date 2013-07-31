@@ -107,7 +107,13 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 	START_PROFILE(syscall_linux_setlease);
 
 	if (config->leases) {
+		/*
+		 * Ensure the lease owner is root to allow
+		 * correct delivery of lease-break signals.
+		 */
+		become_root();
 		ret = set_gpfs_lease(fsp->fh->fd,leasetype);
+		unbecome_root();
 	}
 
 	END_PROFILE(syscall_linux_setlease);
