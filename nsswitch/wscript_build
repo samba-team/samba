@@ -81,7 +81,7 @@ elif (host_os.rfind('aix') > -1):
 if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
 	bld.SAMBA_LIBRARY('pamwinbind',
 		source='pam_winbind.c',
-		deps='intl talloc wbclient winbind-client iniparser pam',
+		deps='talloc wbclient winbind-client iniparser pam samba_intl',
 		cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
 		realname='pam_winbind.so',
 		install_path='${PAMMODULESDIR}'
