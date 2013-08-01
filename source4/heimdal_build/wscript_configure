@@ -19,7 +19,7 @@ conf.CHECK_HEADERS('ifaddrs.h')
 conf.CHECK_HEADERS('''crypt.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
                   sys/file.h sys/stropts.h sys/timeb.h sys/times.h sys/uio.h sys/un.h
               sys/utsname.h time.h timezone.h ttyname.h netinet/in.h
-              netinet/in6.h netinet6/in6.h libintl.h''')
+              netinet/in6.h netinet6/in6.h''')
 
 conf.CHECK_HEADERS('curses.h term.h termcap.h', together=True)
 
@@ -41,8 +41,6 @@ conf.CHECK_FUNCS_IN('''getnameinfo sendmsg socket getipnodebyname gethostent get
                        gethostbyname_r gethostbyaddr''',
                     'socket nsl',
                     checklibc=True)
-
-conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', headers='libintl.h')
 
 conf.CHECK_FUNCS('iruserok')
 
