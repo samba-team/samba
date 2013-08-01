@@ -1287,7 +1287,7 @@ bld.SAMBA3_BINARY('net',
                  talloc
                  netapi
                  addns
-                 intl
+                 samba_intl
                  popt_samba3
                  pdb
                  libsmb
