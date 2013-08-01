@@ -85,7 +85,7 @@ struct foo bar = { .y = 'X', .x = 1 };
                           sys/sockio.h sys/un.h''', together=True)
     conf.CHECK_HEADERS('sys/uio.h ifaddrs.h direct.h dirent.h')
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
-    conf.CHECK_HEADERS('libintl.h errno.h')
+    conf.CHECK_HEADERS('errno.h')
     conf.CHECK_HEADERS('gcrypt.h getopt.h iconv.h')
     conf.CHECK_HEADERS('sys/inotify.h memory.h nss.h sasl/sasl.h')
     conf.CHECK_HEADERS('security/pam_appl.h zlib.h asm/unistd.h')
@@ -346,17 +346,41 @@ removeea setea
                         headers='netinet/in.h arpa/nameser.h resolv.h')
 
 
-    if not conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True, headers='libintl.h'):
-    # Some hosts need lib iconv for linking with lib intl
-    # So we try with flags just in case it helps.
-        oldflags = conf.env['LDFLAGS_INTL']
-        conf.env['LDFLAGS_INTL'] = "-liconv"
-        if not conf.CHECK_LIB('intl'):
-            conf.env['LDFLAGS_INTL'] = oldflags
+    conf.env.intl_libs=''
+    if not Options.options.disable_gettext:
+        conf.CHECK_HEADERS('libintl.h')
+        conf.CHECK_LIB('intl')
+        # *textdomain functions are not strictly necessary
+        conf.CHECK_FUNCS_IN('bindtextdomain textdomain bind_textdomain_codeset',
+                            '', checklibc=True, headers='libintl.h')
+        # gettext and dgettext must exist
+        # on some systems (the ones with glibc, those are in libc)
+        if conf.CHECK_FUNCS_IN('dgettext gettext', '', checklibc=True, headers='libintl.h'):
+            # save for dependency definitions
+            conf.env.intl_libs=''
+        # others (e.g. FreeBSD) have seperate libintl
+        elif conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', checklibc=False, headers='libintl.h'):
+            # save for dependency definitions
+            conf.env.intl_libs='intl'
+            # recheck with libintl
+            conf.CHECK_FUNCS_IN('bindtextdomain textdomain bind_textdomain_codeset',
+                            'intl', checklibc=False, headers='libintl.h')
         else:
-            conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True, headers='libintl.h')
+            # Some hosts need lib iconv for linking with lib intl
+            # So we try with flags just in case it helps.
+            oldflags = conf.env['EXTRA_LDFLAGS'];
+            conf.env['EXTRA_LDFLAGS'].extend("-liconv")
+            conf.CHECK_FUNCS_IN('dgettext gettext bindtextdomain textdomain bind_textdomain_codeset',
+                                'intl', checklibc=False, headers='libintl.h')
+            conf.env['EXTRA_LDFLAGS'] = oldflags
+            if conf.env['HAVE_GETTEXT'] and conf.env['HAVE_DGETTEXT']:
+                # save for dependency definitions
+                conf.env.intl_libs='iconv intl'
+            else:
+                conf.fatal('library gettext not found, try specifying the path to ' +
+                           'it with --with-gettext=</path/to/gettext> or ' +
+                           '--without-gettext to build without''')
 
-    conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', headers='libintl.h')
     conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True, headers='pthread.h')
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
@@ -621,6 +645,8 @@ def build(bld):
                         source='hdr_replace.h',
                         target='stdbool.h',
                         enabled = not bld.CONFIG_SET('HAVE_STDBOOL_H'))
+
+    bld.SAMBA_SUBSYSTEM('samba_intl', source='', use_global_deps=False,deps=bld.env.intl_libs)
 
 def dist():
     '''makes a tarball for distribution'''

@@ -94,7 +94,6 @@ def configure(conf):
     conf.CHECK_FUNCS('memalign posix_memalign hstrerror')
     conf.CHECK_FUNCS('shmget')
     conf.CHECK_FUNCS_IN('shm_open', 'rt', checklibc=True)
-    conf.CHECK_FUNCS('gettext dgettext bindtextdomain textdomain bind_textdomain_codeset')
     #FIXME: for some reason this one still fails
     conf.CHECK_FUNCS_IN('yp_get_default_domain', 'nsl')
     conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
@@ -327,8 +326,8 @@ if (0) {
 
     conf.CHECK_FUNCS('''
 _acl __acl atexit 
-bindtextdomain _chdir __chdir chflags chmod _close __close _closedir
-__closedir crypt16 devnm dgettext dirfd
+ _chdir __chdir chflags chmod _close __close _closedir
+__closedir crypt16 devnm dirfd
 DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl
 _facl __facl _fchdir
 __fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
@@ -337,7 +336,7 @@ fsetxattr _fstat __fstat fsync
 futimens futimes __fxstat getauthuid
 getcwd _getcwd __getcwd getdents __getdents getdirentries
 getgrent getgrnam getgrouplist getgrset getmntent getpagesize
-getpwanam getpwent_r getrlimit gettext
+getpwanam getpwent_r getrlimit
 glob grantpt hstrerror initgroups innetgr
 llseek _llseek __llseek _lseek __lseek
 _lstat __lstat lutimes
@@ -353,7 +352,7 @@ setmntent setpgid setpriv setsid setuidx
 shmget shm_open sigaction sigblock sigprocmask sigset
 _stat __stat statvfs
 strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctl sysctlbyname
-__sys_llseek syslog _telldir __telldir textdomain timegm
+__sys_llseek syslog _telldir __telldir timegm
 utimensat vsyslog _write __write __xstat
 ''')
 
