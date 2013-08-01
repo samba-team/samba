@@ -889,13 +889,8 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 
 	/* Ensure we have at least one thing set. */
 	if ((security_info_sent & (SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL)) == 0) {
-		if (security_info_sent & SECINFO_LABEL) {
-			/* Only consider SECINFO_LABEL if no other
-			   bits are set. Just like W2K3 we don't
-			   store this. */
-			return NT_STATUS_OK;
-		}
-		return NT_STATUS_INVALID_PARAMETER;
+		/* Just like W2K3 */
+		return NT_STATUS_OK;
 	}
 
 	/* Ensure we have the rights to do this. */
