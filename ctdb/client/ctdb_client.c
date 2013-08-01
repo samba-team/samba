@@ -1930,6 +1930,14 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	data.dptr = discard_const(name);
 	data.dsize = strlen(name)+1;
 
+	/* CTDB has switched to using jenkins hash for volatile databases.
+	 * Even if tdb_flags do not explicitly mention TDB_INCOMPATIBLE_HASH,
+	 * always set it.
+	 */
+	if (!persistent) {
+		tdb_flags |= TDB_INCOMPATIBLE_HASH;
+	}
+
 	/* tell ctdb daemon to attach */
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, tdb_flags, 
 			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
