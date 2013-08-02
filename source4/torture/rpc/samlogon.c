@@ -29,7 +29,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/torture_rpc.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/schannel.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 
@@ -1764,8 +1763,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	torture_assert_ntstatus_ok_goto(torture, status, ret, failed,
 		talloc_asprintf(torture, "RPC pipe connect as domain member failed: %s\n", nt_errstr(status)));
 
-	status = dcerpc_schannel_creds(p->conn->security_state.generic_state, mem_ctx, &creds);
-	if (!NT_STATUS_IS_OK(status)) {
+	creds = cli_credentials_get_netlogon_creds(machine_credentials);
+	if (creds == NULL) {
 		ret = false;
 		goto failed;
 	}

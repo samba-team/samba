@@ -37,7 +37,6 @@
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/schannel.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
 
@@ -2953,6 +2952,7 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_binding_handle *b,
 
 static bool test_SamLogon(struct torture_context *tctx,
 			  struct dcerpc_pipe *p,
+			  struct cli_credentials *machine_credentials,
 			  struct cli_credentials *test_credentials,
 			  NTSTATUS expected_result,
 			  bool interactive)
@@ -2972,7 +2972,7 @@ static bool test_SamLogon(struct torture_context *tctx,
 	struct netr_Authenticator a;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_schannel_creds(p->conn->security_state.generic_state, tctx, &creds), "");
+	torture_assert(tctx, (creds = cli_credentials_get_netlogon_creds(machine_credentials)), "");
 
 	if (lpcfg_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
@@ -3099,7 +3099,7 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 	torture_comment(tctx, "Testing samlogon (%s) as %s password: %s\n",
 		interactive ? "interactive" : "network", acct_name, password);
 
-	if (!test_SamLogon(tctx, p, test_credentials,
+	if (!test_SamLogon(tctx, p, machine_creds, test_credentials,
 			    expected_samlogon_result, interactive)) {
 		torture_warning(tctx, "new password did not work\n");
 		ret = false;

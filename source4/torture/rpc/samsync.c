@@ -27,7 +27,6 @@
 #include "system/time.h"
 #include "torture/rpc/torture_rpc.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/schannel.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/samsync/samsync.h"
 #include "libcli/security/security.h"
@@ -1720,9 +1719,8 @@ bool torture_rpc_samsync(struct torture_context *torture)
 	}
 	samsync_state->b = samsync_state->p->binding_handle;
 
-	status = dcerpc_schannel_creds(samsync_state->p->conn->security_state.generic_state,
-				       samsync_state, &samsync_state->creds);
-	if (!NT_STATUS_IS_OK(status)) {
+	samsync_state->creds = cli_credentials_get_netlogon_creds(credentials);
+	if (samsync_state->creds == NULL) {
 		ret = false;
 	}
 
@@ -1758,9 +1756,8 @@ bool torture_rpc_samsync(struct torture_context *torture)
 		goto failed;
 	}
 
-	status = dcerpc_schannel_creds(samsync_state->p_netlogon_wksta->conn->security_state.generic_state,
-				       samsync_state, &samsync_state->creds_netlogon_wksta);
-	if (!NT_STATUS_IS_OK(status)) {
+	samsync_state->creds_netlogon_wksta = cli_credentials_get_netlogon_creds(credentials_wksta);
+	if (samsync_state->creds_netlogon_wksta == NULL) {
 		torture_comment(torture, "Failed to obtail schanel creds!\n");
 		ret = false;
 	}

@@ -26,14 +26,12 @@
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
-#include "auth/gensec/schannel.h"
 #include "../libcli/auth/schannel.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "system/filesys.h"
 #include "param/param.h"
 #include "librpc/rpc/dcerpc_proto.h"
-#include "auth/gensec/gensec.h"
 #include "libcli/composite/composite.h"
 #include "lib/events/events.h"
 
@@ -413,8 +411,8 @@ static bool test_schannel(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, status, "bind auth");
 
-	status = dcerpc_schannel_creds(p_netlogon->conn->security_state.generic_state, tctx, &creds);
-	torture_assert_ntstatus_ok(tctx, status, "schannel creds");
+	creds = cli_credentials_get_netlogon_creds(credentials);
+	torture_assert(tctx, (creds != NULL), "schannel creds");
 
 	/* checks the capabilities */
 	torture_assert(tctx, test_netlogon_capabilities(p_netlogon, tctx, credentials, creds),
