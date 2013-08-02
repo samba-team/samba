@@ -675,7 +675,17 @@ rpc_set_service_failure_response ()
 	    \#*) continue ;;
 	esac
 
-	if [ "$_numfails" "$_op" "$_li" ] ; then
+	_hit=false
+	if [ "$_op" != "%" ] ; then
+	    if [ $_numfails $_op $_li ] ; then
+		_hit=true
+	    fi
+	else
+	    if [ $(($_numfails $_op $_li)) -eq 0 ] ; then
+		_hit=true
+	    fi
+	fi
+	if $_hit ; then
 	    _out=""
 	    _rc=0
 	    for _action in $_actions ; do

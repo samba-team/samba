@@ -1037,12 +1037,7 @@ drop_all_public_ips ()
 }
 
 ########################################################
-# some simple logic for counting events - per eventscript
-# usage: ctdb_counter_init
-#        ctdb_counter_incr
-#        ctdb_check_counter_limit <limit>
-# ctdb_check_counter_limit fails when count >= <limit>
-########################################################
+# Simple counters
 _ctdb_counter_common () {
     _service_name="${1:-${service_name:-${script_name}}}"
     _counter_file="$ctdb_fail_dir/$_service_name"
@@ -1068,7 +1063,17 @@ ctdb_check_counter () {
 
     # unary counting!
     _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
-    if [ $_size $_op $_limit ] ; then
+    _hit=false
+    if [ "$_op" != "%" ] ; then
+	if [ $_size $_op $_limit ] ; then
+	    _hit=true
+	fi
+    else
+	if [ $(($_size $_op $_limit)) -eq 0 ] ; then
+	    _hit=true
+	fi
+    fi
+    if $_hit ; then
 	if [ "$_msg" = "error" ] ; then
 	    echo "ERROR: $_limit consecutive failures for $_service_name, marking node unhealthy"
 	    exit 1		
