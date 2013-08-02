@@ -7,21 +7,19 @@
 . $CTDB_BASE/functions
 loadconfig
 
-case "$1" in 
+case "$1" in
     init)
 	ctdb_counter_init
 	;;
-    
-    monitor)
-	RECLOCKFILE=$(ctdb -Y getreclock)
 
+    monitor)
 	# Early exit if not using a reclock file
-	[ -n "$RECLOCKFILE" ] || exit 0
+	[ -n "$CTDB_RECOVERY_LOCK" ] || exit 0
 
 	# Try to stat the reclock file as a background process so that
 	# we don't block in case the cluster filesystem is unavailable
 	(
-	    if stat $RECLOCKFILE ; then
+	    if stat $CTDB_RECOVERY_LOCK ; then
 		# We could stat the file, reset the counter
 		ctdb_counter_init
 	    fi
@@ -29,7 +27,7 @@ case "$1" in
 
 	ctdb_counter_incr
 	if ! ctdb_check_counter "quiet" -ge 200 ; then
-	    echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Shutting down."
+	    echo "Reclock file \"$CTDB_RECOVERY_LOCK\" can not be accessed. Shutting down."
 	    df
 	    sleep 1
 	    ctdb shutdown
