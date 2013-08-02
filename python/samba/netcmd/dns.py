@@ -955,6 +955,9 @@ class cmd_query(Command):
             versionopts=None):
         record_type = dns_type_flag(rtype)
 
+        if name.find('*') != -1:
+            raise CommandError('Wildcard searches not supported. To dump entire zone use "@"')
+
         select_flags = 0
         if authority:
             select_flags |= dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA
