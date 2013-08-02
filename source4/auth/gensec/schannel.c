@@ -35,12 +35,11 @@ _PUBLIC_ NTSTATUS gensec_schannel_init(void);
 
 static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
-	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;
-	uint32_t sig_size;
+	struct schannel_state *state =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct schannel_state);
 
-	sig_size = netsec_outgoing_sig_size(state);
-
-	return sig_size;
+	return netsec_outgoing_sig_size(state);
 }
 
 static NTSTATUS schannel_session_key(struct gensec_security *gensec_security,
@@ -54,7 +53,9 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 				struct tevent_context *ev,
 				const DATA_BLOB in, DATA_BLOB *out)
 {
-	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;
+	struct schannel_state *state =
+		talloc_get_type(gensec_security->private_data,
+		struct schannel_state);
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	struct NL_AUTH_MESSAGE bind_schannel;
@@ -67,24 +68,22 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
-		if (state->state != SCHANNEL_STATE_START) {
+		if (state != NULL) {
 			/* we could parse the bind ack, but we don't know what it is yet */
 			return NT_STATUS_OK;
 		}
 
-		state->creds = cli_credentials_get_netlogon_creds(gensec_security->credentials);
-		if (state->creds == NULL) {
+		creds = cli_credentials_get_netlogon_creds(gensec_security->credentials);
+		if (creds == NULL) {
 			return NT_STATUS_INVALID_PARAMETER_MIX;
 		}
-		/*
-		 * We need to create a reference here or we don't get
-		 * updates performed on the credentials if we create a
-		 * copy.
-		 */
-		state->creds = talloc_reference(state, state->creds);
-		if (state->creds == NULL) {
+
+		state = netsec_create_state(gensec_security,
+					    creds, true /* initiator */);
+		if (state == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		gensec_security->private_data = state;
 
 		bind_schannel.MessageType = NL_NEGOTIATE_REQUEST;
 #if 0
@@ -117,12 +116,10 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			return status;
 		}
 
-		state->state = SCHANNEL_STATE_UPDATE_1;
-
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	case GENSEC_SERVER:
 
-		if (state->state != SCHANNEL_STATE_START) {
+		if (state != NULL) {
 			/* no third leg on this protocol */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -177,7 +174,12 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			return status;
 		}
 
-		state->creds = talloc_steal(state, creds);
+		state = netsec_create_state(gensec_security,
+					    creds, false /* not initiator */);
+		if (state == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		gensec_security->private_data = state;
 
 		bind_schannel_ack.MessageType = NL_NEGOTIATE_RESPONSE;
 		bind_schannel_ack.Flags = 0;
@@ -194,8 +196,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 				  workstation, nt_errstr(status)));
 			return status;
 		}
-
-		state->state = SCHANNEL_STATE_UPDATE_1;
 
 		return NT_STATUS_OK;
 	}
@@ -214,53 +214,15 @@ static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 	return auth_anonymous_session_info(mem_ctx, gensec_security->settings->lp_ctx, _session_info);
 }
 
-static NTSTATUS schannel_start(struct gensec_security *gensec_security)
-{
-	struct schannel_state *state;
-
-	state = talloc_zero(gensec_security, struct schannel_state);
-	if (!state) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	state->state = SCHANNEL_STATE_START;
-	gensec_security->private_data = state;
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 {
-	NTSTATUS status;
-	struct schannel_state *state;
-
-	status = schannel_start(gensec_security);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	state = (struct schannel_state *)gensec_security->private_data;
-	state->initiator = false;
-
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 {
-	NTSTATUS status;
-	struct schannel_state *state;
-
-	status = schannel_start(gensec_security);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	state = (struct schannel_state *)gensec_security->private_data;
-	state->initiator = true;
-
 	return NT_STATUS_OK;
 }
-
 
 static bool schannel_have_feature(struct gensec_security *gensec_security,
 					 uint32_t feature)
@@ -287,8 +249,8 @@ static NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 				       const DATA_BLOB *sig)
 {
 	struct schannel_state *state =
-		talloc_get_type(gensec_security->private_data,
-				struct schannel_state);
+		talloc_get_type_abort(gensec_security->private_data,
+		struct schannel_state);
 
 	return netsec_incoming_packet(state, true,
 				      discard_const_p(uint8_t, data),
@@ -304,8 +266,8 @@ static NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 				      const DATA_BLOB *sig)
 {
 	struct schannel_state *state =
-		talloc_get_type(gensec_security->private_data,
-				struct schannel_state);
+		talloc_get_type_abort(gensec_security->private_data,
+		struct schannel_state);
 
 	return netsec_incoming_packet(state, false,
 				      discard_const_p(uint8_t, data),
@@ -321,8 +283,8 @@ static NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
 				     DATA_BLOB *sig)
 {
 	struct schannel_state *state =
-		talloc_get_type(gensec_security->private_data,
-				struct schannel_state);
+		talloc_get_type_abort(gensec_security->private_data,
+		struct schannel_state);
 
 	return netsec_outgoing_packet(state, mem_ctx, true,
 				      data, length, sig);
@@ -338,8 +300,8 @@ static NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security,
 				     DATA_BLOB *sig)
 {
 	struct schannel_state *state =
-		talloc_get_type(gensec_security->private_data,
-				struct schannel_state);
+		talloc_get_type_abort(gensec_security->private_data,
+		struct schannel_state);
 
 	return netsec_outgoing_packet(state, mem_ctx, false,
 				      discard_const_p(uint8_t, data),
