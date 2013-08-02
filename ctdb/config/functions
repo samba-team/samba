@@ -281,34 +281,26 @@ _nfs_check_rpc_common ()
 	    which "rpc.${_prog_name}" >/dev/null 2>&1 || return 0
     esac
 
-    _version=1
-    _rpc_prog="$_prog_name"
-    _restart=""
-    _opts=""
     case "$_prog_name" in
 	nfsd)
 	    _rpc_prog=nfs
 	    _version=3
-	    _restart="echo 'Trying to restart NFS service'"
-	    _restart="${_restart}; startstop_nfs restart"
 	    ;;
 	mountd)
-	    _opts="${MOUNTD_PORT:+ -p }${MOUNTD_PORT}"
+	    _rpc_prog=mountd
+	    _version=1
 	    ;;
 	rquotad)
-	    _opts="${RQUOTAD_PORT:+ -p }${RQUOTAD_PORT}"
+	    _rpc_prog=rquotad
+	    _version=1
 	    ;;
 	lockd)
 	    _rpc_prog=nlockmgr
 	    _version=4
-	    _restart="echo 'Trying to restart lock manager service'"
-	    _restart="${_restart}; startstop_nfslock restart"
 	    ;;
 	statd)
 	    _rpc_prog=status
-	    _opts="${STATD_HOSTNAME:+ -n }${STATD_HOSTNAME}"
-	    _opts="${_opts}${STATD_PORT:+ -p }${STATD_PORT}"
-	    _opts="${_opts}${STATD_OUTGOING_PORT:+ -o }${STATD_OUTGOING_PORT}"
+	    _version=1
 	    ;;
 	*)
 	    echo "Internal error: unknown RPC program \"$_prog_name\"."
@@ -342,34 +334,11 @@ _nfs_check_rpc_action ()
 	    verbose)
 		echo "$ctdb_check_rpc_out"
 		;;
-	    restart|restart:*)
-		# No explicit command specified, construct rpc command.
-		if [ -z "$_restart" ] ; then
-		    _p="rpc.${_prog_name}"
-		    _restart="echo 'Trying to restart $_prog_name [${_p}${_opts}]'"
-		    _restart="${_restart}; killall -q -9 $_p"
-		    _restart="${_restart}; $_p $_opts"
-		fi
-
-		# Process restart flags...
-		_flags="${_action#restart:}"
-		# There may not have been a colon...
-		[ "$_flags" != "$_action" ] || _flags=""
-		# q=quiet - everything to /dev/null
-		if [ "${_flags#*q}" != "$_flags" ] ; then
-		    _restart="{ ${_restart} ; } >/dev/null 2>&1"
-		fi
-		# s=stealthy - last command to /dev/null
-		if [ "${_flags#*s}" != "$_flags" ] ; then
-		    _restart="${_restart} >/dev/null 2>&1"
-		fi
-		# b=background - the whole thing, easy and reliable
-		if [ "${_flags#*b}" != "$_flags" ] ; then
-		    _restart="{ ${_restart} ; } &"
-		fi
-
-		# Do it!
-		eval "${_restart}"
+	    restart)
+		_nfs_restart_rpc_service "$_prog_name"
+		;;
+	    restart:b)
+		_nfs_restart_rpc_service "$_prog_name" true
 		;;
 	    unhealthy)
 		exit 1
@@ -381,6 +350,52 @@ _nfs_check_rpc_action ()
     done
 
     return 0
+}
+
+_nfs_restart_rpc_service ()
+{
+    _prog_name="$1"
+    _background="${2:-false}"
+
+    if $_background ; then
+	_maybe_background="background_with_logging"
+    else
+	_maybe_background=""
+    fi
+
+    _p="rpc.${_prog_name}"
+
+    case "$_prog_name" in
+	nfsd)
+	    echo "Trying to restart NFS service"
+	    $_maybe_background startstop_nfs restart
+	    ;;
+	mountd)
+	    echo "Trying to restart $_prog_name [${_p}]"
+	    killall -q -9 "$_p"
+	    $_maybe_background $_p ${MOUNTD_PORT:+-p} $MOUNTD_PORT
+	    ;;
+	rquotad)
+	    echo "Trying to restart $_prog_name [${_p}]"
+	    killall -q -9 "$_p"
+	    $_maybe_background $_p ${RQUOTAD_PORT:+-p} $RQUOTAD_PORT
+	    ;;
+	lockd)
+	    echo "Trying to restart lock manager service"
+	    $_maybe_background startstop_nfslock restart
+	    ;;
+	statd)
+	    echo "Trying to restart $_prog_name [${_p}]"
+	    killall -q -9 "$_p"
+	    $_maybe_background $_p \
+		${STATD_HOSTNAME:+-n} $STATD_HOSTNAME \
+		${STATD_PORT:+-p} $STATD_PORT \
+		${STATD_OUTGOING_PORT:+-o} $STATD_OUTGOING_PORT
+	    ;;
+	*)
+	    echo "Internal error: unknown RPC program \"$_prog_name\"."
+	    exit 1
+    esac
 }
 
 ######################################################

@@ -13,7 +13,7 @@ ok_null
 simple_test || exit $?
 
 ok<<EOF
-Trying to restart statd [rpc.statd -n cluster1 -H /etc/ctdb/statd-callout ]
+Trying to restart statd [rpc.statd]
 EOF
 simple_test || exit $?
 
@@ -24,7 +24,7 @@ ok<<EOF
 ERROR: status failed RPC check:
 rpcinfo: RPC: Program not registered
 program status version 1 is not available
-Trying to restart statd [rpc.statd -n cluster1 -H /etc/ctdb/statd-callout ]
+Trying to restart statd [rpc.statd]
 EOF
 simple_test || exit $?
 

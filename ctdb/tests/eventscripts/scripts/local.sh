@@ -693,14 +693,8 @@ ERROR: $_pn failed RPC check:
 rpcinfo: RPC: Program not registered
 program $_pn version $_ver is not available"
 			;;
-		    restart|restart:*)
-			_opts=""
+		    restart*)
 			_p="rpc.${_progname}"
-			case "$_progname" in
-			    statd)
-				_opts="${STATD_HOSTNAME:+ -n }${STATD_HOSTNAME}"
-				;;
-			esac
 			case "$_action" in
 			    *:b) _bg="&" ;;
 			    *)   _bg=""  ;;
@@ -730,7 +724,7 @@ Trying to restart lock manager service
 ${_bg}Starting nfslock: OK"
 				;;
 			    *)
-				_t="Trying to restart $_progname [${_p}${_opts}]"
+				_t="Trying to restart $_progname [${_p}]"
 			esac
 			_out="${_out}${_out:+${_nl}}${_t}"
 			;;
