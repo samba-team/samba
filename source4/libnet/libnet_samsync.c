@@ -25,7 +25,6 @@
 #include "libcli/auth/libcli_auth.h"
 #include "../libcli/samsync/samsync.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/schannel.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/auth/schannel.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
@@ -183,9 +182,9 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 
 	/* get NETLOGON credentials */
 
-	nt_status = dcerpc_schannel_creds(p->conn->security_state.generic_state, samsync_ctx, &creds);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain NETLOGON credentials from DCERPC/GENSEC layer");
+	creds = cli_credentials_get_netlogon_creds(machine_account);
+	if (creds == NULL) {
+		r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain NETLOGON credentials from credentials");
 		talloc_free(samsync_ctx);
 		return nt_status;
 	}
