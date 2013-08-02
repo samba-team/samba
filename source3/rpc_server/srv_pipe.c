@@ -462,8 +462,8 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 	 */
 
 	become_root();
-	status = schannel_get_creds_state(p, lp_ctx,
-					    neg.oem_netbios_computer.a, &creds);
+	status = schannel_get_creds_state(p->mem_ctx, lp_ctx,
+					  neg.oem_netbios_computer.a, &creds);
 	unbecome_root();
 	
 	talloc_unlink(p, lp_ctx);
@@ -472,15 +472,11 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 		return False;
 	}
 
-	schannel_auth = talloc_zero(p, struct schannel_state);
+	schannel_auth = netsec_create_state(p, creds, false /* not initiator */);
+	TALLOC_FREE(creds);
 	if (!schannel_auth) {
-		TALLOC_FREE(creds);
 		return False;
 	}
-
-	schannel_auth->state = SCHANNEL_STATE_START;
-	schannel_auth->initiator = false;
-	schannel_auth->creds = creds;
 
 	/*
 	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
