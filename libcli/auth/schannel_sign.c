@@ -24,13 +24,7 @@
 #include "../libcli/auth/schannel.h"
 #include "../lib/crypto/crypto.h"
 
-enum schannel_position {
-	SCHANNEL_STATE_START = 0,
-	SCHANNEL_STATE_UPDATE_1
-};
-
 struct schannel_state {
-	enum schannel_position state;
 	uint64_t seq_num;
 	bool initiator;
 	struct netlogon_creds_CredentialState *creds;
@@ -58,7 +52,6 @@ struct schannel_state *netsec_create_state(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->state = SCHANNEL_STATE_UPDATE_1;
 	state->initiator = initiator;
 	state->seq_num = 0;
 	state->creds = netlogon_creds_copy(state, creds);
