@@ -1462,10 +1462,12 @@ char *myhostname(void)
 
 char *myhostname_upper(void)
 {
-	char *name;
 	static char *ret;
 	if (ret == NULL) {
-		name = get_myname(talloc_tos());
+		char *name = get_myname(NULL);
+		if (name == NULL) {
+			return NULL;
+		}
 		ret = strupper_talloc(NULL, name);
 		talloc_free(name);
 	}
