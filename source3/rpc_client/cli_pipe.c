@@ -2243,15 +2243,8 @@ static NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	schannel_auth = talloc_zero(result, struct schannel_state);
+	schannel_auth = netsec_create_state(result, creds, true /* initiator */);
 	if (schannel_auth == NULL) {
-		goto fail;
-	}
-
-	schannel_auth->state = SCHANNEL_STATE_START;
-	schannel_auth->initiator = true;
-	schannel_auth->creds = netlogon_creds_copy(schannel_auth, creds);
-	if (schannel_auth->creds == NULL) {
 		goto fail;
 	}
 
