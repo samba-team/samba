@@ -707,7 +707,7 @@ done:
  */
 static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 {
-	struct lock_context *lock_ctx, *next_ctx;
+	struct lock_context *lock_ctx, *next_ctx, *active_ctx;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 	const char *helper = BINDIR "/ctdb_lock_helper";
@@ -737,8 +737,8 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	/* Find a lock context with requests */
 	lock_ctx = ctdb->lock_pending;
 	while (lock_ctx != NULL) {
+		next_ctx = lock_ctx->next;
 		if (! lock_ctx->req_queue) {
-			next_ctx = lock_ctx->next;
 			DEBUG(DEBUG_INFO, ("Removing lock context without lock requests\n"));
 			DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
 			ctdb->lock_num_pending--;
@@ -747,12 +747,21 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 				CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
 			}
 			talloc_free(lock_ctx);
-			lock_ctx = next_ctx;
-			continue;
 		} else {
-			/* Found a lock context with lock requests */
-			break;
+			active_ctx = find_lock_context(ctdb->lock_current, lock_ctx->ctdb_db,
+						       lock_ctx->key, lock_ctx->priority,
+						       lock_ctx->type);
+			if (active_ctx == NULL) {
+				/* Found a lock context with lock requests */
+				break;
+			}
+
+			/* There is already a child waiting for the
+			 * same key.  So don't schedule another child
+			 * just yet.
+			 */
 		}
+		lock_ctx = next_ctx;
 	}
 
 	if (lock_ctx == NULL) {
