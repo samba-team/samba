@@ -24,6 +24,18 @@
 #include "../libcli/auth/schannel.h"
 #include "../lib/crypto/crypto.h"
 
+enum schannel_position {
+	SCHANNEL_STATE_START = 0,
+	SCHANNEL_STATE_UPDATE_1
+};
+
+struct schannel_state {
+	enum schannel_position state;
+	uint64_t seq_num;
+	bool initiator;
+	struct netlogon_creds_CredentialState *creds;
+};
+
 #define SETUP_SEQNUM(state, buf, initiator) do { \
 	uint8_t *_buf = buf; \
 	uint32_t _seq_num_low = (state)->seq_num & UINT32_MAX; \

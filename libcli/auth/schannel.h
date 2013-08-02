@@ -22,17 +22,4 @@
 
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/auth/schannel_state.h"
-
-enum schannel_position {
-	SCHANNEL_STATE_START = 0,
-	SCHANNEL_STATE_UPDATE_1
-};
-
-struct schannel_state {
-	enum schannel_position state;
-	uint64_t seq_num;
-	bool initiator;
-	struct netlogon_creds_CredentialState *creds;
-};
-
 #include "libcli/auth/schannel_proto.h"
