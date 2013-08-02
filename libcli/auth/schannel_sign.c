@@ -35,6 +35,29 @@
 	RSIVAL(_buf, 4, _seq_num_high); \
 } while(0)
 
+struct schannel_state *netsec_create_state(TALLOC_CTX *mem_ctx,
+				struct netlogon_creds_CredentialState *creds,
+				bool initiator)
+{
+	struct schannel_state *state;
+
+	state = talloc(mem_ctx, struct schannel_state);
+	if (state == NULL) {
+		return NULL;
+	}
+
+	state->state = SCHANNEL_STATE_UPDATE_1;
+	state->initiator = initiator;
+	state->seq_num = 0;
+	state->creds = netlogon_creds_copy(state, creds);
+	if (state->creds == NULL) {
+		talloc_free(state);
+		return NULL;
+	}
+
+	return state;
+}
+
 static void netsec_offset_and_sizes(struct schannel_state *state,
 				    bool do_seal,
 				    uint32_t *_min_sig_size,

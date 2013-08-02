@@ -28,6 +28,9 @@ struct schannel_state;
 struct db_context *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 					       struct loadparm_context *lp_ctx);
 
+struct schannel_state *netsec_create_state(TALLOC_CTX *mem_ctx,
+				struct netlogon_creds_CredentialState *creds,
+				bool initiator);
 NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 				bool do_unseal,
 				uint8_t *data, size_t length,
