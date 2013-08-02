@@ -48,5 +48,11 @@ get_proc ()
 # Always succeeds
 iptables () { : ; }
 
+# Do not actually background - we want to see the output
+background_with_logging ()
+{
+    "$@" 2>&1 </dev/null | sed -e 's@^@\&@'
+}
+
 CTDB_INIT_STYLE="redhat"
 PATH="${EVENTSCRIPTS_PATH}:$PATH"

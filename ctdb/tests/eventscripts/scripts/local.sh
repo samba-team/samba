@@ -701,8 +701,12 @@ program $_pn version $_ver is not available"
 				_opts="${STATD_HOSTNAME:+ -n }${STATD_HOSTNAME}"
 				;;
 			esac
-			case "${_progname}${_action#restart}" in
-			    nfsd*)
+			case "$_action" in
+			    *:b) _bg="&" ;;
+			    *)   _bg=""  ;;
+			esac
+			case "$_progname" in
+			    nfsd)
 				_t="\
 Trying to restart NFS service"
 
@@ -710,23 +714,20 @@ Trying to restart NFS service"
 				    for _pid in $FAKE_NFSD_THREAD_PIDS ; do
 					_t="\
 $_t
-Stack trace for stuck nfsd thread [${_pid}]:
-[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
+${_bg}Stack trace for stuck nfsd thread [${_pid}]:
+${_bg}[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
 				    done
 				fi
 
 				_t="\
 ${_t}
-Starting nfslock: OK
-Starting nfs: OK"
+${_bg}Starting nfslock: OK
+${_bg}Starting nfs: OK"
 				;;
-			    nfsd:b)
-				_t="Trying to restart NFS service"
-				;;
-			    lockd|lockd:b)
+			    lockd)
 				_t="\
 Trying to restart lock manager service
-Starting nfslock: OK"
+${_bg}Starting nfslock: OK"
 				;;
 			    *)
 				_t="Trying to restart $_progname [${_p}${_opts}]"
