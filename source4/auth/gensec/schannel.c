@@ -29,7 +29,6 @@
 #include "../libcli/auth/schannel.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
-#include "auth/gensec/schannel.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
 
 _PUBLIC_ NTSTATUS gensec_schannel_init(void);
@@ -202,28 +201,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 	}
 	return NT_STATUS_INVALID_PARAMETER;
 }
-
-/**
- * Return the struct netlogon_creds_CredentialState.
- *
- * Make sure not to call this unless gensec is using schannel...
- */
-
-/* TODO: make this non-public */
-
-_PUBLIC_ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
-					TALLOC_CTX *mem_ctx,
-					struct netlogon_creds_CredentialState **creds)
-{
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
-	*creds = talloc_reference(mem_ctx, state->creds);
-	if (!*creds) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 
 /**
  * Returns anonymous credentials for schannel, matching Win2k3.
