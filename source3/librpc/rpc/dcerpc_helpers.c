@@ -458,9 +458,6 @@ static NTSTATUS add_schannel_auth_footer(struct schannel_state *sas,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(10,("add_schannel_auth_footer: SCHANNEL seq_num=%llu\n",
-		  (unsigned long long)sas->seq_num));
-
 	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = netsec_outgoing_packet(sas,
