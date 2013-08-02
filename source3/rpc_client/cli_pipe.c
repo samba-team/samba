@@ -1003,13 +1003,12 @@ static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	struct NL_AUTH_MESSAGE r;
 
-	/* Use lp_workgroup() if domain not specified */
+	if (!cli->auth->user_name || !cli->auth->user_name[0]) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	if (!cli->auth->domain || !cli->auth->domain[0]) {
-		cli->auth->domain = talloc_strdup(cli, lp_workgroup());
-		if (cli->auth->domain == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	/*
@@ -1020,7 +1019,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	r.Flags				= NL_FLAG_OEM_NETBIOS_DOMAIN_NAME |
 					  NL_FLAG_OEM_NETBIOS_COMPUTER_NAME;
 	r.oem_netbios_domain.a		= cli->auth->domain;
-	r.oem_netbios_computer.a	= lp_netbios_name();
+	r.oem_netbios_computer.a	= cli->auth->user_name;
 
 	status = dcerpc_push_schannel_bind(cli, &r, auth_token);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2237,7 +2236,7 @@ static NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx,
 	result->auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 	result->auth_level = auth_level;
 
-	result->user_name = talloc_strdup(result, "");
+	result->user_name = talloc_strdup(result, creds->computer_name);
 	result->domain = talloc_strdup(result, domain);
 	if ((result->user_name == NULL) || (result->domain == NULL)) {
 		goto fail;
