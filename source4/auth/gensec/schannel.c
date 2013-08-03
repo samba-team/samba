@@ -27,7 +27,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
-#include "librpc/rpc/dcerpc.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "param/param.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
 
