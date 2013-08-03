@@ -246,6 +246,32 @@ _PUBLIC_ const struct gensec_security_ops *gensec_security_by_sasl_name(
 	return NULL;
 }
 
+_PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
+				struct gensec_security *gensec_security,
+				uint32_t auth_type)
+{
+	int i;
+	struct gensec_security_ops **backends;
+	const struct gensec_security_ops *backend;
+	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	if (!mem_ctx) {
+		return NULL;
+	}
+	backends = gensec_security_mechs(gensec_security, mem_ctx);
+	for (i=0; backends && backends[i]; i++) {
+		if (!gensec_security_ops_enabled(backends[i], gensec_security))
+		    continue;
+		if (backends[i]->auth_type == auth_type) {
+			backend = backends[i];
+			talloc_free(mem_ctx);
+			return backend;
+		}
+	}
+	talloc_free(mem_ctx);
+
+	return NULL;
+}
+
 static const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
 								 const char *name)
 {

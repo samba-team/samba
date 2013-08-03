@@ -268,6 +268,9 @@ const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security 
 							 const char *oid_string);
 const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_security *gensec_security,
 							       const char *sasl_name);
+const struct gensec_security_ops *gensec_security_by_auth_type(
+				struct gensec_security *gensec_security,
+				uint32_t auth_type);
 struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gensec_security,
 						   TALLOC_CTX *mem_ctx);
 const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
