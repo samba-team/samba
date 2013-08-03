@@ -3063,7 +3063,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct pipe_auth_data *a;
-	struct schannel_state *schannel_auth;
 	struct gensec_security *gensec_security;
 	DATA_BLOB sk = data_blob_null;
 	bool make_dup = false;
@@ -3079,12 +3078,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (cli->auth->auth_type) {
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-		schannel_auth = talloc_get_type_abort(a->auth_ctx,
-						      struct schannel_state);
-		sk = data_blob_const(schannel_auth->creds->session_key, 16);
-		make_dup = true;
-		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
