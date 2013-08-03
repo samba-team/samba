@@ -155,11 +155,12 @@ _PUBLIC_ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 				     TALLOC_CTX *mem_ctx,
 				     DATA_BLOB *session_key)
 {
-	if (!gensec_security->ops->session_key) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SESSION_KEY)) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (!gensec_security->ops->session_key) {
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	return gensec_security->ops->session_key(gensec_security, mem_ctx, session_key);
