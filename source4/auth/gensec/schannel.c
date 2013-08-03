@@ -234,9 +234,6 @@ static bool schannel_have_feature(struct gensec_security *gensec_security,
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return true;
 	}
-	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
-		return true;
-	}
 	return false;
 }
 
