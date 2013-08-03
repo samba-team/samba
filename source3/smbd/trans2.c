@@ -2564,6 +2564,11 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
+	if (max_data_bytes + DIR_ENTRY_SAFETY_MARGIN < max_data_bytes) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		goto out;
+	}
+
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL ) {
@@ -2893,6 +2898,11 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
+	if (max_data_bytes + DIR_ENTRY_SAFETY_MARGIN < max_data_bytes) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL) {
@@ -3149,6 +3159,10 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	}
 
 	st = smb_fname.st;
+
+	if (max_data_bytes + DIR_ENTRY_SAFETY_MARGIN < max_data_bytes) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
@@ -4368,6 +4382,10 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 	}
 	params = *pparams;
 	SSVAL(params,0,0);
+	if (max_data_bytes + DIR_ENTRY_SAFETY_MARGIN < max_data_bytes) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
 	*ppdata = (char *)SMB_REALLOC(*ppdata, data_size); 
 	if (*ppdata == NULL ) {
@@ -4447,6 +4465,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	if ((nlink > 0) && delete_pending) {
 		nlink -= 1;
+	}
+
+	if (max_data_bytes + DIR_ENTRY_SAFETY_MARGIN < max_data_bytes) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
