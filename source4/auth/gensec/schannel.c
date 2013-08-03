@@ -42,13 +42,6 @@ static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t 
 	return netsec_outgoing_sig_size(state);
 }
 
-static NTSTATUS schannel_session_key(struct gensec_security *gensec_security,
-				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *session_key)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
 				struct tevent_context *ev,
 				const DATA_BLOB in, DATA_BLOB *out)
@@ -315,7 +308,6 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.sign_packet   	= schannel_sign_packet,
 	.check_packet	= schannel_check_packet,
 	.unseal_packet 	= schannel_unseal_packet,
-	.session_key	= schannel_session_key,
 	.session_info	= schannel_session_info,
 	.sig_size	= schannel_sig_size,
 	.have_feature   = schannel_have_feature,
