@@ -373,7 +373,7 @@ static const struct gensec_security_ops **gensec_security_by_sasl_list(
 _PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 					struct gensec_security *gensec_security,
 					TALLOC_CTX *mem_ctx,
-					const char **oid_strings,
+					const char * const *oid_strings,
 					const char *skip)
 {
 	struct gensec_security_ops_wrapper *backends_out;

@@ -417,7 +417,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 						 struct spnego_state *spnego_state, 
 						 TALLOC_CTX *out_mem_ctx, 
 						 struct tevent_context *ev,
-						 const char **mechType,
+						 const char * const *mechType,
 						 const DATA_BLOB unwrapped_in, DATA_BLOB *unwrapped_out) 
 {
 	int i;

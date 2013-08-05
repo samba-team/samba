@@ -184,7 +184,7 @@ struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gense
 const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 					struct gensec_security *gensec_security,
 					TALLOC_CTX *mem_ctx,
-					const char **oid_strings,
+					const char * const *oid_strings,
 					const char *skip);
 const char **gensec_security_oids(struct gensec_security *gensec_security,
 				  TALLOC_CTX *mem_ctx,
