@@ -1151,7 +1151,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 			return NT_STATUS_BUFFER_TOO_SMALL;
 		}
 
-		cur_pdata = talloc_array(ctx, char, *out_len);
+		cur_pdata = talloc_zero_array(ctx, char, *out_len);
 		if (cur_pdata == NULL) {
 			TALLOC_FREE(shadow_data);
 			return NT_STATUS_NO_MEMORY;
