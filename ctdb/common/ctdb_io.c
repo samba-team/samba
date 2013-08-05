@@ -29,6 +29,9 @@
 #include "../include/ctdb_client.h"
 #include <stdarg.h>
 
+#define QUEUE_BUFFER_SIZE	(4*1024)
+#define QUEUE_BUFFER_OVERSIZE	(64*1024)
+
 /* structures for packet queueing - see common/ctdb_io.c */
 struct ctdb_buffer {
 	uint8_t *data;
@@ -122,6 +125,12 @@ static void queue_process(struct ctdb_queue *queue)
 		/* There is more data to be processed, schedule an event */
 		tevent_schedule_immediate(queue->im, queue->ctdb->ev,
 					  queue_process_event, queue);
+	} else {
+		/* Throw away large buffer when done processing requests */
+		if (queue->buffer.size > QUEUE_BUFFER_OVERSIZE) {
+			TALLOC_FREE(queue->buffer.data);
+			queue->buffer.size = 0;
+		}
 	}
 
 	/* It is the responsibility of the callback to free 'data' */
@@ -159,22 +168,29 @@ static void queue_io_read(struct ctdb_queue *queue)
 	}
 
 	if (queue->buffer.data == NULL) {
+		int n;
+
 		/* starting fresh, allocate buf to read data */
-		queue->buffer.data = talloc_size(queue, num_ready);
+		n = QUEUE_BUFFER_SIZE * (num_ready/QUEUE_BUFFER_SIZE + 1);
+		queue->buffer.data = talloc_size(queue, n);
 		if (queue->buffer.data == NULL) {
-			DEBUG(DEBUG_ERR, ("read error alloc failed for %u\n", num_ready));
+			DEBUG(DEBUG_ERR, ("read error alloc failed for %u\n", n));
 			goto failed;
 		}
-		queue->buffer.size = num_ready;
+		queue->buffer.size = n;
 	} else if (queue->buffer.length + num_ready > queue->buffer.size) {
+		int increment, n;
+
 		/* extending buffer */
-		data = talloc_realloc_size(queue, queue->buffer.data, queue->buffer.length + num_ready);
+		increment = (queue->buffer.length + num_ready) - queue->buffer.size;
+		n = queue->buffer.size + QUEUE_BUFFER_SIZE * (increment/QUEUE_BUFFER_SIZE + 1);
+		data = talloc_realloc_size(queue, queue->buffer.data, n);
 		if (data == NULL) {
-			DEBUG(DEBUG_ERR, ("read error realloc failed for %u\n", queue->buffer.length + num_ready));
+			DEBUG(DEBUG_ERR, ("read error realloc failed for %u\n", n));
 			goto failed;
 		}
 		queue->buffer.data = data;
-		queue->buffer.size = queue->buffer.length + num_ready;
+		queue->buffer.size = n;
 	}
 
 	nread = read(queue->fd, queue->buffer.data + queue->buffer.length, num_ready);
