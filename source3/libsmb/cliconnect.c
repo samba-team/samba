@@ -240,7 +240,6 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 	p = bytes;
 
 	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
-	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
 					inhdr,
@@ -448,7 +447,6 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	p = bytes;
 
 	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
-	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
 					inhdr,
@@ -613,7 +611,6 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 	p = bytes;
 
 	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
-	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
 					inhdr,
@@ -930,7 +927,6 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	p = bytes;
 
 	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
-	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
 					inhdr,
@@ -1180,7 +1176,6 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	state->inbuf = in;
 	inhdr = in + NBT_HDR_SIZE;
 	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
-	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	blob_length = SVAL(vwv+3, 0);
 	if (blob_length > num_bytes) {

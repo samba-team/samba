@@ -72,7 +72,6 @@ struct cli_state {
 	int timeout; /* in milliseconds. */
 	int initialised;
 	int win95;
-	bool is_guestlogin;
 	/* What the server offered. */
 	uint32_t server_posix_capabilities;
 	/* What the client requested. */
