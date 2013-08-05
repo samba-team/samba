@@ -80,13 +80,6 @@ _PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_
 		use_kerberos = cli_credentials_get_kerberos_state(creds);
 	}
 
-	if (use_kerberos == CRED_AUTO_USE_KERBEROS) {
-		if (!talloc_reference(mem_ctx, old_gensec_list)) {
-			return NULL;
-		}
-		return old_gensec_list;
-	}
-
 	for (num_mechs_in=0; old_gensec_list && old_gensec_list[num_mechs_in]; num_mechs_in++) {
 		/* noop */
 	}
@@ -99,35 +92,44 @@ _PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_
 	j = 0;
 	for (i=0; old_gensec_list && old_gensec_list[i]; i++) {
 		int oid_idx;
-		bool found_spnego = false;
+		bool keep = false;
+
 		for (oid_idx = 0; old_gensec_list[i]->oid && old_gensec_list[i]->oid[oid_idx]; oid_idx++) {
 			if (strcmp(old_gensec_list[i]->oid[oid_idx], GENSEC_OID_SPNEGO) == 0) {
-				new_gensec_list[j] = old_gensec_list[i];
-				j++;
-				found_spnego = true;
+				keep = true;
 				break;
 			}
 		}
-		if (found_spnego) {
-			continue;
-		}
+
 		switch (use_kerberos) {
+		case CRED_AUTO_USE_KERBEROS:
+			keep = true;
+			break;
+
 		case CRED_DONT_USE_KERBEROS:
 			if (old_gensec_list[i]->kerberos == false) {
-				new_gensec_list[j] = old_gensec_list[i];
-				j++;
+				keep = true;
 			}
+
 			break;
+
 		case CRED_MUST_USE_KERBEROS:
 			if (old_gensec_list[i]->kerberos == true) {
-				new_gensec_list[j] = old_gensec_list[i];
-				j++;
+				keep = true;
 			}
+
 			break;
 		default:
 			/* Can't happen or invalid parameter */
 			return NULL;
 		}
+
+		if (!keep) {
+			continue;
+		}
+
+		new_gensec_list[j] = old_gensec_list[i];
+		j++;
 	}
 	new_gensec_list[j] = NULL;
 
