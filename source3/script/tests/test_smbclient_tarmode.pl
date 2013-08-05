@@ -26,6 +26,7 @@ C<test_smbclient_tarmode.pl> - Test for smbclient tar backup feature
 use v5.14;
 use strict;
 use warnings;
+no warnings 'experimental::smartmatch';
 
 use Archive::Tar;
 use Data::Dumper;
@@ -50,6 +51,7 @@ our $DIR       = 'tar_test_dir';
 our $LOCALPATH = '/media/data/smb-test';
 our $TMP       = File::Temp->newdir();
 our $BIN       = 'smbclient';
+our $SUBUNIT   = 0;
 
 my $SELECTED_TEST = '';
 my $LIST_TEST = 0;
@@ -142,6 +144,7 @@ GetOptions('u|user=s'       => \$USER,
            'list'           => \$LIST_TEST,
 
            'clean'          => \$CLEAN,
+           'subunit'        => \$SUBUNIT,
            'debug'          => \$DEBUG,
            'v|verbose'      => \$VERBOSE,
            'h|help'         => \$HELP,
@@ -752,6 +755,14 @@ sub list_test {
 }
 
 sub run_test {
+    if ($SUBUNIT) {
+        run_test_subunit(@_);
+    } else {
+        run_test_normal(@_);
+    }
+}
+
+sub run_test_normal {
     for (@_) {
         my ($desc, $f, @args) = @$_;
         my $err;
@@ -769,6 +780,41 @@ sub run_test {
         }
         print_res($err);
         print "\n";
+    }
+    reset_env();
+}
+
+sub run_test_subunit {
+    for (@_) {
+        my ($desc, $f, @args) = @$_;
+        my $err;
+        my $str = '';
+
+        reset_env();
+        say "test: $desc";
+
+        # capture output in $buf
+        my $buf = '';
+        open my $handle, '>', \$buf;
+        select $handle;
+
+        # check for die() calls
+        eval {
+            $err = $f->(@args);
+        };
+        if ($@) {
+            $str = $@;
+            $err = 1;
+        }
+        close $handle;
+
+        # restore output
+        select STDOUT;
+
+        # result string is output + eventual exception message
+        $str = $buf.$str;
+
+        printf "%s: %s [\n%s]\n", ($err > 0 ? "failure" : "success"), $desc, $str;
     }
     reset_env();
 }
@@ -1084,15 +1130,16 @@ sub smb_client {
 
     my $out = `$cmd 2>&1`;
     my $err = $?;
+    my $errstr = '';
     # handle abnormal exit
     if ($err == -1) {
-        print STDERR "failed to execute $cmd: $!\n";
+        $errstr = "failed to execute $cmd: $!\n";
     }
     elsif ($err & 127) {
-        printf STDERR  "child died with signal %d (%s)\n", ($err & 127), $cmd;
+        $errstr = sprintf "child died with signal %d (%s)\n", ($err & 127), $cmd;
     }
     elsif ($err >> 8) {
-        printf STDERR "child exited with value %d (%s)\n", ($err >> 8), $cmd;
+        $errstr = sprintf "child exited with value %d (%s)\n", ($err >> 8), $cmd;
     }
 
     if ($DEBUG) {
@@ -1100,9 +1147,7 @@ sub smb_client {
     }
 
     if ($err) {
-        say "ERROR";
-        say $out;
-        exit 1;
+        die "ERROR: $errstr";
     }
     return $out;
 }
