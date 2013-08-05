@@ -955,6 +955,13 @@ sub file_list {
     return $s;
 }
 
+# remove leading "./"
+sub remove_dot {
+    my $s = shift;
+    $s =~ s{^\./}{};
+    $s;
+}
+
 =head3 C<check_remote( $remotepath, \@files )>
 
 Check if C<$remotepath> has B<exactly> all the C<@files>.
@@ -970,12 +977,13 @@ sub check_remote {
     my (@less, @more, @diff);
 
     for (@$files) {
-        $expected{$_->remotepath} = $_;
-        $done{$_->remotepath} = 0;
+        my $fn = remove_dot($_->remotepath);
+        $expected{$fn} = $_;
+        $done{$fn} = 0;
     }
 
     my %remote;
-    File::walk(sub { $remote{$_->remotepath} = $_ }, File::tree($subpath));
+    File::walk(sub { $remote{remove_dot($_->remotepath)} = $_ }, File::tree($subpath));
 
     for my $rfile (sort keys %remote) {
 
