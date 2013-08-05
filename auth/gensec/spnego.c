@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "param/param.h"
 #include "lib/util/asn1.h"
 

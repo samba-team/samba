@@ -29,6 +29,7 @@ struct auth_session_info;
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "param/param.h"
 #include "auth/ntlmssp/ntlmssp_private.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"

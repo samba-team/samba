@@ -26,6 +26,7 @@
 #include "libads/kerberos_proto.h"
 #include "auth/common_auth.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/dcerpc.h"
 

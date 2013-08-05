@@ -25,6 +25,7 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
 #include "librpc/gen_ndr/dcerpc.h"

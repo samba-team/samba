@@ -32,6 +32,7 @@
 #include "../libcli/auth/spnego.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/crypto/gse.h"
 #include "smb_krb5.h"

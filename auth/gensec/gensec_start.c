@@ -27,6 +27,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "lib/param/param.h"
 #include "lib/util/tsort.h"
 #include "lib/util/samba_modules.h"

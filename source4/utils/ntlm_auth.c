@@ -27,6 +27,7 @@
 #include <ldb.h>
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth_sam.h"

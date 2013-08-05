@@ -26,6 +26,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "librpc/rpc/dcerpc.h"
 
 /*

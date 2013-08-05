@@ -23,6 +23,7 @@
 #include "auth/ntlmssp/ntlmssp_private.h"
 #include "auth_generic.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"

@@ -31,6 +31,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/common_auth.h"
 #include "param/param.h"
 

@@ -29,6 +29,7 @@ struct auth_session_info;
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes

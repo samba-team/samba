@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/common_auth.h"
 #include "../lib/util/asn1.h"
 

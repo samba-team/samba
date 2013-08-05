@@ -27,6 +27,7 @@
 #include "libcli/ldap/ldap_client.h"
 #include "lib/tls/tls.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "auth/gensec/gensec_socket.h"
 #include "auth/credentials/credentials.h"
 #include "lib/stream/packet.h"

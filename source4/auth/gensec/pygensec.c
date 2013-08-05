@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "param/pyparam.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "auth/credentials/pycredentials.h"
 #include "libcli/util/pyerrors.h"
 #include "python/modules.h"

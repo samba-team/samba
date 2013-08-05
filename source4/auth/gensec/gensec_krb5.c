@@ -34,6 +34,7 @@
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/kerberos/kerberos_credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/gensec/gensec_proto.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
 #include "param/param.h"

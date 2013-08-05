@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "auth/ntlmssp/ntlmssp_private.h"
 
 NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
