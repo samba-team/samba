@@ -1141,7 +1141,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		if (!labels) {
 			*out_len = 16;
 		} else {
-			*out_len = 12 + labels_data_count + 4;
+			*out_len = 12 + labels_data_count;
 		}
 
 		if (max_out_len < *out_len) {
@@ -1168,7 +1168,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		}
 
 		/* needed_data_count 4 bytes */
-		SIVAL(cur_pdata, 8, labels_data_count + 4);
+		SIVAL(cur_pdata, 8, labels_data_count);
 
 		cur_pdata += 12;
 
