@@ -102,7 +102,7 @@ my @TESTS = (
   Environment:
     -u, --user      USER
     -p, --password  PW
-    -h, --host      HOST
+    -n, --name      HOST
     -i, --ip        IP
     -s, --share     SHARE
     -d, --dir       PATH
@@ -127,13 +127,16 @@ my @TESTS = (
        be more verbose
 
     --debug
-       print command and their output
+       print command and their output (also set -v)
+
+    --subunit
+       print output in subunit format
 
 =cut
 
 GetOptions('u|user=s'       => \$USER,
            'p|password=s'   => \$PW,
-           'h|host=s'       => \$HOST,
+           'n|name=s'       => \$HOST,
            'i|ip=s'         => \$IP,
            's|share=s'      => \$SHARE,
            'd|dir=s'        => \$DIR,
