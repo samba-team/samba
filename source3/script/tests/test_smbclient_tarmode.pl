@@ -185,6 +185,7 @@ my $TAR = "$TMP/tarmode.tar";
 $LOCALPATH =~ s{[/\\]+$}{}g;
 $SHARE =~ s{[/\\]+$}{}g;
 $HOST =~ s{[/\\]+$}{}g;
+$DIR =~ s{^\.[/\\]+$}{}g;
 $DIR =~ s{[/\\]+$}{}g;
 
 if (!-d $LOCALPATH) {
@@ -346,7 +347,7 @@ sub test_creation_long_path {
     my $d = "a"x130;
     my @all;
 
-    for(qw( foo/a bar/b )) {
+    for (qw( foo/a bar/b )) {
         push @all, File->new_remote("$d/$_");
     }
 
