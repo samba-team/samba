@@ -42,12 +42,14 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 
 		switch (context) {
 		/* Read mechTypes */
-		case ASN1_CONTEXT(0):
+		case ASN1_CONTEXT(0): {
+			const char **mechTypes;
+
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = talloc(mem_ctx, const char *);
-			if (token->mechTypes == NULL) {
+			mechTypes = talloc(mem_ctx, const char *);
+			if (mechTypes == NULL) {
 				asn1->has_error = true;
 				return false;
 			}
@@ -56,22 +58,25 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 				char *oid;
 				const char **p;
 				p = talloc_realloc(mem_ctx,
-						   token->mechTypes,
+						   mechTypes,
 						   const char *, i+2);
 				if (p == NULL) {
-					TALLOC_FREE(token->mechTypes);
+					talloc_free(mechTypes);
 					asn1->has_error = true;
 					return false;
 				}
-				token->mechTypes = p;
-				asn1_read_OID(asn1, token->mechTypes, &oid);
-				token->mechTypes[i] = oid;
+				mechTypes = p;
+
+				asn1_read_OID(asn1, mechTypes, &oid);
+				mechTypes[i] = oid;
 			}
-			token->mechTypes[i] = NULL;
+			mechTypes[i] = NULL;
+			token->mechTypes = mechTypes;
 
 			asn1_end_tag(asn1);
 			asn1_end_tag(asn1);
 			break;
+		}
 		/* Read reqFlags */
 		case ASN1_CONTEXT(1):
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
@@ -366,7 +371,7 @@ bool spnego_free_data(struct spnego_data *spnego)
 	switch(spnego->type) {
 	case SPNEGO_NEG_TOKEN_INIT:
 		if (spnego->negTokenInit.mechTypes) {
-			talloc_free(spnego->negTokenInit.mechTypes);
+			talloc_free(discard_const(spnego->negTokenInit.mechTypes));
 		}
 		data_blob_free(&spnego->negTokenInit.reqFlags);
 		data_blob_free(&spnego->negTokenInit.mechToken);
@@ -390,7 +395,7 @@ out:
 }
 
 bool spnego_write_mech_types(TALLOC_CTX *mem_ctx,
-			     const char **mech_types,
+			     const char * const *mech_types,
 			     DATA_BLOB *blob)
 {
 	struct asn1_data *asn1 = asn1_init(mem_ctx);

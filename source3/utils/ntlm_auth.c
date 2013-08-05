@@ -2054,7 +2054,7 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 
 		/* The server offers a list of mechanisms */
 
-		const char **mechType = (const char **)spnego.negTokenInit.mechTypes;
+		const char *const *mechType = spnego.negTokenInit.mechTypes;
 
 		while (*mechType != NULL) {
 
