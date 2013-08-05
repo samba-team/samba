@@ -46,13 +46,24 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = talloc(NULL, const char *);
+			token->mechTypes = talloc(mem_ctx, const char *);
+			if (token->mechTypes == NULL) {
+				asn1->has_error = true;
+				return false;
+			}
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
 				char *oid;
-				token->mechTypes = talloc_realloc(NULL,
-								  token->mechTypes,
-								  const char *, i+2);
+				const char **p;
+				p = talloc_realloc(mem_ctx,
+						   token->mechTypes,
+						   const char *, i+2);
+				if (p == NULL) {
+					TALLOC_FREE(token->mechTypes);
+					asn1->has_error = true;
+					return false;
+				}
+				token->mechTypes = p;
 				asn1_read_OID(asn1, token->mechTypes, &oid);
 				token->mechTypes[i] = oid;
 			}
