@@ -204,6 +204,13 @@ for env in ["s3dc"]:
     # Test smbclient/tarmode
     plantestsuite("samba3.blackbox.smbclient_tarmode (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', '$PREFIX', smbclient3, configuration])
 
+    # Test suite for new smbclient/tar with libarchive (GSoC 13)
+    plantestsuite("samba3.blackbox.smbclient_tar (%s)" % env, env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
+                   '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tmp',
+                   '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH', '-d', '$PREFIX',
+                   '-b', smbclient3, '--subunit', '--', configuration])
+
 #TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc", "s3dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
