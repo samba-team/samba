@@ -140,28 +140,19 @@ _PUBLIC_ struct gensec_security_ops **gensec_security_mechs(
 				struct gensec_security *gensec_security,
 				TALLOC_CTX *mem_ctx)
 {
-	struct gensec_security_ops **backends;
-	if (!gensec_security) {
-		backends = gensec_security_all();
-		if (!talloc_reference(mem_ctx, backends)) {
-			return NULL;
-		}
-		return backends;
-	} else {
-		struct cli_credentials *creds = gensec_get_credentials(gensec_security);
+	struct cli_credentials *creds = NULL;
+	struct gensec_security_ops **backends = gensec_security_all();
+
+	if (gensec_security != NULL) {
+		creds = gensec_get_credentials(gensec_security);
+
 		if (gensec_security->settings->backends) {
 			backends = gensec_security->settings->backends;
-		} else {
-			backends = gensec_security_all();
 		}
-		if (!creds) {
-			if (!talloc_reference(mem_ctx, backends)) {
-				return NULL;
-			}
-			return backends;
-		}
-		return gensec_use_kerberos_mechs(mem_ctx, backends, creds);
 	}
+
+	return gensec_use_kerberos_mechs(mem_ctx, backends, creds);
+
 }
 
 static const struct gensec_security_ops *gensec_security_by_authtype(struct gensec_security *gensec_security,
