@@ -192,8 +192,8 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 
 	if (conn->server_credentials) {
 		char **sasl_mechs = NULL;
-		struct gensec_security_ops **backends = gensec_security_all();
-		struct gensec_security_ops **ops
+		const struct gensec_security_ops * const *backends = gensec_security_all();
+		const struct gensec_security_ops **ops
 			= gensec_use_kerberos_mechs(conn, backends, conn->server_credentials);
 		unsigned int i, j = 0;
 		for (i = 0; ops && ops[i]; i++) {

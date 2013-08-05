@@ -111,7 +111,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	const char *cc = "MEMORY:kerberos_return_pac";
 	struct auth_session_info *session_info;
 	struct gensec_security *gensec_server_context;
-
+	const struct gensec_security_ops **backends;
 	struct gensec_settings *gensec_settings;
 	size_t idx = 0;
 	struct auth4_context *auth_context;
@@ -230,16 +230,17 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	gensec_settings->backends = talloc_zero_array(gensec_settings,
-						      struct gensec_security_ops *, 2);
-	if (gensec_settings->backends == NULL) {
+	backends = talloc_zero_array(gensec_settings,
+				     const struct gensec_security_ops *, 2);
+	if (backends == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
+	gensec_settings->backends = backends;
 
 	gensec_init();
 
-	gensec_settings->backends[idx++] = &gensec_gse_krb5_security_ops;
+	backends[idx++] = &gensec_gse_krb5_security_ops;
 
 	status = gensec_server_start(tmp_ctx, gensec_settings,
 					auth_context, &gensec_server_context);

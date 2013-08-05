@@ -352,9 +352,11 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 						  const DATA_BLOB in, DATA_BLOB *out) 
 {
 	int i,j;
-	struct gensec_security_ops **all_ops
-		= gensec_security_mechs(gensec_security, out_mem_ctx);
-	for (i=0; all_ops[i]; i++) {
+	const struct gensec_security_ops **all_ops;
+
+	all_ops = gensec_security_mechs(gensec_security, out_mem_ctx);
+
+	for (i=0; all_ops && all_ops[i]; i++) {
 		bool is_spnego;
 		NTSTATUS nt_status;
 

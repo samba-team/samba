@@ -1035,7 +1035,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 
 	TALLOC_CTX *tmp_ctx;
-
+	const struct gensec_security_ops **backends;
 	struct gensec_settings *gensec_settings;
 	size_t idx = 0;
 	struct cli_credentials *server_credentials;
@@ -1079,26 +1079,26 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	gensec_settings->server_dns_name = strlower_talloc(gensec_settings,
 							   get_mydnsfullname());
 	
-	gensec_settings->backends = talloc_zero_array(gensec_settings,
-						      struct gensec_security_ops *, 4);
+	backends = talloc_zero_array(gensec_settings,
+				     const struct gensec_security_ops *, 4);
 	
-	if (gensec_settings->backends == NULL) {
+	if (backends == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+	gensec_settings->backends = backends;
+
 	gensec_init();
 	
 	/* These need to be in priority order, krb5 before NTLMSSP */
 #if defined(HAVE_KRB5)
-	gensec_settings->backends[idx++] = &gensec_gse_krb5_security_ops;
+	backends[idx++] = &gensec_gse_krb5_security_ops;
 #endif
-	
-	gensec_settings->backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
 
-	gensec_settings->backends[idx++] = gensec_security_by_oid(NULL,
-								  GENSEC_OID_SPNEGO);
-	
+	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
+
+	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_SPNEGO);
+
 	/*
 	 * This is anonymous for now, because we just use it
 	 * to set the kerberos state at the moment

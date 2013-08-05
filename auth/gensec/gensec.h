@@ -85,7 +85,7 @@ struct gensec_settings {
 	/* this allows callers to specify a specific set of ops that
 	 * should be used, rather than those loaded by the plugin
 	 * mechanism */
-	struct gensec_security_ops **backends;
+	const struct gensec_security_ops * const *backends;
 
 	/* To fill in our own name in the NTLMSSP server */
 	const char *server_dns_domain;
@@ -179,7 +179,7 @@ const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_sec
 const struct gensec_security_ops *gensec_security_by_auth_type(
 				struct gensec_security *gensec_security,
 				uint32_t auth_type);
-struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gensec_security,
+const struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gensec_security,
 						   TALLOC_CTX *mem_ctx);
 const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 					struct gensec_security *gensec_security,
@@ -243,11 +243,11 @@ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 		     const DATA_BLOB *in,
 		     DATA_BLOB *out);
 
-struct gensec_security_ops **gensec_security_all(void);
-bool gensec_security_ops_enabled(struct gensec_security_ops *ops, struct gensec_security *security);
-struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
-						       struct gensec_security_ops **old_gensec_list,
-						       struct cli_credentials *creds);
+const struct gensec_security_ops * const *gensec_security_all(void);
+bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct gensec_security *security);
+const struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
+			const struct gensec_security_ops * const *old_gensec_list,
+			struct cli_credentials *creds);
 
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 					const char *sasl_name);
