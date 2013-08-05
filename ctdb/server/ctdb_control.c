@@ -52,7 +52,10 @@ int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	fsize = ftell(f);
 	rewind(f);
 	outdata->dptr = talloc_size(outdata, fsize);
-	CTDB_NO_MEMORY(ctdb, outdata->dptr);
+	if (outdata->dptr == NULL) {
+		fclose(f);
+		CTDB_NO_MEMORY(ctdb, outdata->dptr);
+	}
 	outdata->dsize = fread(outdata->dptr, 1, fsize, f);
 	fclose(f);
 	if (outdata->dsize != fsize) {
