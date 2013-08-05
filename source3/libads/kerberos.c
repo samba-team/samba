@@ -838,7 +838,13 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		return false;
 	}
 
-	if (!realm || !domain || !pss || !kdc_name) {
+	if (realm == NULL) {
+		DEBUG(0, ("No realm has been specified! Do you really want to "
+			  "join an Active Directory server?\n"));
+		return false;
+	}
+
+	if (domain == NULL || pss == NULL || kdc_name == NULL) {
 		return false;
 	}
 
