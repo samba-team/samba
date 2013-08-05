@@ -408,7 +408,9 @@ ctdb_check_rpc ()
     progname="$1"
     version="$2"
 
-    if ! ctdb_check_rpc_out=$(rpcinfo -u localhost $progname $version 2>&1) ; then
+    _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
+
+    if ! ctdb_check_rpc_out=$(rpcinfo -u $_localhost $progname $version 2>&1) ; then
 	ctdb_check_rpc_out="ERROR: $progname failed RPC check:
 $ctdb_check_rpc_out"
 	echo "$ctdb_check_rpc_out"

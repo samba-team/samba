@@ -148,6 +148,11 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # dump no stack traces.
 # CTDB_NFS_DUMP_STUCK_THREADS=5
 
+# Host to use for rpcinfo checks.  Using "localhost" causes
+# /etc/services to be read serveral times by rpcinfo, so this allows
+# optimisation.
+CTDB_RPCINFO_LOCALHOST="127.0.0.1"
+
 # When set to yes, the CTDB node will start in DISABLED mode and not host
 # any public ip addresses. The administrator needs to explicitely enable
 # the node with "ctdb enable"
