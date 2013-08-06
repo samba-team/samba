@@ -698,12 +698,10 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 		goto out;
 	}
 
-	become_root();
 	status = samr_find_machine_account(mem_ctx, h, mach_acct,
 					   SEC_FLAG_MAXIMUM_ALLOWED,
 					   &domain_sid, &user_rid,
 					   &user_handle);
-	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
