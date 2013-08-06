@@ -89,6 +89,16 @@ const char *sec_privilege_name_from_index(int idx);
 */
 bool security_token_has_privilege(const struct security_token *token, enum sec_privilege privilege);
 
+
+/**
+ * @brief Check if the security token has system privileges.
+ *
+ * @param[in]  token    The token to check.
+ *
+ * @return              True if the token has system privileges, false if not.
+ */
+bool security_token_system_privilege(const struct security_token *token);
+
 /*
   set a bit in the privilege mask
 */

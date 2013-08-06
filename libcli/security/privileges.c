@@ -422,6 +422,19 @@ bool security_token_has_privilege(const struct security_token *token, enum sec_p
 	return false;
 }
 
+bool security_token_system_privilege(const struct security_token *token)
+{
+	if (token == NULL) {
+		return false;
+	}
+
+	if (token->privilege_mask == (uint64_t)~0) {
+		return true;
+	}
+
+	return false;
+}
+
 /*
   set a bit in the privilege mask
 */
