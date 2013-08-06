@@ -696,7 +696,9 @@ kill_tcp_connections ()
 
 	_count=0
 	while : ; do
-	    if [ -z "$(get_tcp_connections_for_ip $_ip)" ] ; then
+	    _remaining=$(get_tcp_connections_for_ip $_ip | wc -l)
+
+	    if [ $_remaining -eq 0 ] ; then
 		echo "Killed $_killcount TCP connections to released IP $_ip"
 		return
 	    fi
@@ -707,6 +709,7 @@ kill_tcp_connections ()
 		return
 	    fi
 
+	    echo "Waiting for $_remaining connections to be killed for IP $_ip"
 	    sleep 1
 	done
     }

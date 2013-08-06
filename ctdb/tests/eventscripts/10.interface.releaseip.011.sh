@@ -31,6 +31,9 @@ while read dev ip bits ; do
     ok <<EOF
 Killing TCP connection 10.254.254.1:43210 ${ip}:445
 $out
+Waiting for 1 connections to be killed for IP ${ip}
+Waiting for 1 connections to be killed for IP ${ip}
+Waiting for 1 connections to be killed for IP ${ip}
 Timed out killing tcp connections for IP $ip
 EOF
 
