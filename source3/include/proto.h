@@ -1190,6 +1190,8 @@ int lp_deadtime(void);
 bool lp_getwd_cache(void);
 int lp_srv_maxprotocol(void);
 int lp_srv_minprotocol(void);
+int lp_cli_maxprotocol(void);
+int lp_cli_minprotocol(void);
 int lp_security(void);
 int lp__server_role(void);
 int lp__security(void);
