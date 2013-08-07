@@ -250,14 +250,18 @@ int cmd_block(void)
     if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
         DBG(0, ("blocksize <n>\n"));
         err = 1;
+        goto out;
     }
 
     if (tar_set_blocksize(&tar_ctx, atoi(buf))) {
         DBG(0, ("invalid blocksize\n"));
         err = 1;
+        goto out;
     }
 
     DBG(2, ("blocksize is now %d\n", tar_ctx.mode.blocksize));
+
+ out:
     talloc_free(ctx);
     return err;
 }
