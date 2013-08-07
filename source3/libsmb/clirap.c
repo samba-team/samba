@@ -1149,6 +1149,18 @@ NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
 	uint32_t num_rdata;
 	NTSTATUS status;
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_qfileinfo_basic(cli,
+						fnum,
+						mode,
+						size,
+						create_time,
+						access_time,
+						write_time,
+						change_time,
+						ino);
+	}
+
 	/* if its a win95 server then fail this - win95 totally screws it
 	   up */
 	if (cli->win95) {
