@@ -108,6 +108,7 @@ struct cli_state {
 	struct {
 		struct smbXcli_session *session;
 		struct smbXcli_tcon *tcon;
+		struct idr_context *open_handles;
 	} smb2;
 };
 

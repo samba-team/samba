@@ -879,11 +879,6 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
  Get the stream info
 ****************************************************************************/
 
-static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *data,
-			       size_t data_len,
-			       unsigned int *pnum_streams,
-			       struct stream_struct **pstreams);
-
 struct cli_qpathinfo_streams_state {
 	uint32_t num_data;
 	uint8_t *data;
@@ -986,7 +981,7 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 	return status;
 }
 
-static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
+bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 			       size_t data_len,
 			       unsigned int *pnum_streams,
 			       struct stream_struct **pstreams)
