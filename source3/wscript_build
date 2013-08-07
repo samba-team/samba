@@ -140,7 +140,6 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
 
 LIBMSRPC_SRC = '''
                rpc_client/cli_pipe.c
-               librpc/rpc/rpc_common.c
                rpc_client/rpc_transport_np.c
                rpc_client/rpc_transport_sock.c
                rpc_client/rpc_transport_tstream.c

@@ -85,12 +85,4 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			   DATA_BLOB *raw_pkt,
 			   size_t *pad_len);
 
-/* The following definitions come from librpc/rpc/rpc_common.c  */
-
-bool smb_register_ndr_interface(const struct ndr_interface_table *interface);
-const struct ndr_interface_table *get_iface_from_syntax(
-	const struct ndr_syntax_id *syntax);
-const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
-                                     const struct ndr_syntax_id *syntax);
-
 #endif /* __S3_DCERPC_H__ */
