@@ -4034,10 +4034,16 @@ NTSTATUS cli_dskattr_recv(struct tevent_req *req, int *bsize, int *total, int *a
 
 NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_dskattr(cli, bsize, total, avail);
+	}
+
+	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
