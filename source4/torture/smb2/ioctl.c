@@ -1530,6 +1530,88 @@ static bool test_ioctl_copy_chunk_max_output_sz(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_compress_file_flag(struct torture_context *torture,
+					    struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct compression_state cmpr_state;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
+	torture_assert(torture, ok, "setup compression file");
+
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	ioctl.smb2.in.file.handle = fh;
+	ioctl.smb2.in.function = FSCTL_GET_COMPRESSION;
+	ioctl.smb2.in.max_response_size = sizeof(struct compression_state);
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)
+	 || NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST)) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FSCTL_GET_COMPRESSION not supported\n");
+	}
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cmpr_state,
+			(ndr_pull_flags_fn_t)ndr_pull_compression_state);
+
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_compression_state");
+
+	torture_assert(torture, (cmpr_state.format == COMPRESSION_FORMAT_NONE),
+		       "initial compression state not NONE");
+
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	ioctl.smb2.in.file.handle = fh;
+	ioctl.smb2.in.function = FSCTL_SET_COMPRESSION;
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	cmpr_state.format = COMPRESSION_FORMAT_DEFAULT;
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cmpr_state,
+			(ndr_push_flags_fn_t)ndr_push_compression_state);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_compression_state");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_COMPRESSION");
+
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	ioctl.smb2.in.file.handle = fh;
+	ioctl.smb2.in.function = FSCTL_GET_COMPRESSION;
+	ioctl.smb2.in.max_response_size = sizeof(struct compression_state);
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_GET_COMPRESSION");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cmpr_state,
+			(ndr_pull_flags_fn_t)ndr_pull_compression_state);
+
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_compression_state");
+
+	torture_assert(torture, (cmpr_state.format == COMPRESSION_FORMAT_LZNT1),
+		       "invalid compression state after set");
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
    basic testing of SMB2 ioctls
 */
@@ -1573,6 +1655,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_copy_chunk_sparse_dest);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_max_output_sz",
 				     test_ioctl_copy_chunk_max_output_sz);
+	torture_suite_add_1smb2_test(suite, "compress_file_flag",
+				     test_ioctl_compress_file_flag);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
