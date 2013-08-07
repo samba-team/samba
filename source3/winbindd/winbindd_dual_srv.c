@@ -574,6 +574,7 @@ NTSTATUS _wbint_CheckMachineAccount(struct pipes_struct *p,
 
 again:
 	invalidate_cm_connection(&domain->conn);
+	domain->conn.netlogon_force_reauth = true;
 
 	{
 		struct rpc_pipe_client *netlogon_pipe;

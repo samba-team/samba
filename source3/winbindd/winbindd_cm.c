@@ -79,6 +79,7 @@
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/param/loadparm.h"
+#include "libcli/auth/netlogon_creds_cli.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1828,6 +1829,9 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 	}
 
 	conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	conn->netlogon_force_reauth = false;
+	conn->netlogon_flags = 0;
+	TALLOC_FREE(conn->netlogon_creds);
 
 	if (conn->cli) {
 		cli_shutdown(conn->cli);
@@ -2294,8 +2298,18 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct rpc_pipe_client *netlogon_pipe;
 
-	if (lp_client_schannel() == False) {
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	*ppdc = NULL;
+
+	if ((!IS_DC) && (!domain->primary)) {
+		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+	}
+
+	if (domain->conn.netlogon_creds != NULL) {
+		if (!(domain->conn.netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+			return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+		}
+		*ppdc = domain->conn.netlogon_creds;
+		return NT_STATUS_OK;
 	}
 
 	result = cm_connect_netlogon(domain, &netlogon_pipe);
@@ -2303,14 +2317,15 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 		return result;
 	}
 
-	/* Return a pointer to the struct netlogon_creds_CredentialState from the
-	   netlogon pipe. */
-
-	if (!domain->conn.netlogon_pipe->netlogon_creds) {
-		return NT_STATUS_INTERNAL_ERROR; /* This shouldn't happen. */
+	if (domain->conn.netlogon_creds == NULL) {
+		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 	}
 
-	*ppdc = domain->conn.netlogon_pipe->netlogon_creds;
+	if (!(domain->conn.netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+	}
+
+	*ppdc = domain->conn.netlogon_creds;
 	return NT_STATUS_OK;
 }
 
@@ -2749,14 +2764,16 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
 NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			     struct rpc_pipe_client **cli)
 {
+	struct messaging_context *msg_ctx = winbind_messaging_context();
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
-
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES;
-	uint8_t  mach_pwd[16];
 	enum netr_SchannelType sec_chan_type;
+	const char *_account_name;
 	const char *account_name;
-	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct samr_Password current_nt_hash;
+	struct samr_Password *previous_nt_hash = NULL;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	bool ok;
 
 	*cli = NULL;
 
@@ -2773,60 +2790,68 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	}
 
 	TALLOC_FREE(conn->netlogon_pipe);
-
-	result = cli_rpc_pipe_open_noauth(conn->cli,
-					  &ndr_table_netlogon,
-					  &netlogon_pipe);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
+	conn->netlogon_flags = 0;
+	TALLOC_FREE(conn->netlogon_creds);
 
 	if ((!IS_DC) && (!domain->primary)) {
-		/* Clear the schannel request bit and drop down */
-		neg_flags &= ~NETLOGON_NEG_SCHANNEL;		
 		goto no_schannel;
 	}
 
-	if (lp_client_schannel() != False) {
-		neg_flags |= NETLOGON_NEG_SCHANNEL;
-	}
-
-	if (!get_trust_pw_hash(domain->name, mach_pwd, &account_name,
-			       &sec_chan_type))
-	{
-		TALLOC_FREE(netlogon_pipe);
+	ok = get_trust_pw_hash(domain->name,
+			       current_nt_hash.hash,
+			       &_account_name,
+			       &sec_chan_type);
+	if (!ok) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	result = rpccli_netlogon_setup_creds(
-		 netlogon_pipe,
-		 domain->dcname, /* server name. */
-		 domain->name,   /* domain name */
-		 lp_netbios_name(), /* client name */
-		 account_name,   /* machine account */
-		 mach_pwd,       /* machine password */
-		 sec_chan_type,  /* from get_trust_pw */
-		 &neg_flags);
+	account_name = talloc_asprintf(talloc_tos(), "%s$", _account_name);
+	if (account_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
+	result = rpccli_create_netlogon_creds(domain->dcname,
+					      domain->name,
+					      account_name,
+					      sec_chan_type,
+					      msg_ctx,
+					      domain,
+					      &conn->netlogon_creds);
 	if (!NT_STATUS_IS_OK(result)) {
-		TALLOC_FREE(netlogon_pipe);
+		SAFE_FREE(previous_nt_hash);
 		return result;
 	}
 
-	if ((lp_client_schannel() == True) &&
-			((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
-		DEBUG(3, ("Server did not offer schannel\n"));
-		TALLOC_FREE(netlogon_pipe);
-		return NT_STATUS_ACCESS_DENIED;
+	result = rpccli_setup_netlogon_creds(conn->cli,
+					     conn->netlogon_creds,
+					     conn->netlogon_force_reauth,
+					     current_nt_hash,
+					     previous_nt_hash);
+	conn->netlogon_force_reauth = false;
+	SAFE_FREE(previous_nt_hash);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
- no_schannel:
-	if ((lp_client_schannel() == False) ||
-			((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
+	result = netlogon_creds_cli_get(conn->netlogon_creds,
+					talloc_tos(),
+					&creds);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+	conn->netlogon_flags = creds->negotiate_flags;
+	TALLOC_FREE(creds);
 
-		/* We're done - just keep the existing connection to NETLOGON
-		 * open */
-		conn->netlogon_pipe = netlogon_pipe;
+ no_schannel:
+	if (!(conn->netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+		result = cli_rpc_pipe_open_noauth(conn->cli,
+					&ndr_table_netlogon,
+					&conn->netlogon_pipe);
+		if (!NT_STATUS_IS_OK(result)) {
+			invalidate_cm_connection(conn);
+			return result;
+		}
+
 		*cli = conn->netlogon_pipe;
 		return NT_STATUS_OK;
 	}
@@ -2839,12 +2864,8 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	result = cli_rpc_pipe_open_schannel_with_key(
 		conn->cli, &ndr_table_netlogon, NCACN_NP,
 		domain->name,
-		netlogon_pipe->netlogon_creds,
+		conn->netlogon_creds,
 		&conn->netlogon_pipe);
-
-	/* We can now close the initial netlogon pipe. */
-	TALLOC_FREE(netlogon_pipe);
-
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
 			  "was %s\n", nt_errstr(result)));
