@@ -828,6 +828,8 @@ static void init_globals(bool reinit_globals)
 	Globals.open_files_db_hash_size = SMB_OPEN_DATABASE_TDB_HASH_SIZE;
 	Globals.srv_maxprotocol = PROTOCOL_SMB3_00;
 	Globals.srv_minprotocol = PROTOCOL_LANMAN1;
+	Globals.cli_maxprotocol = PROTOCOL_NT1;
+	Globals.cli_minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
 	Globals.bEncryptPasswords = true;
 	Globals.clientSchannel = Auto;
