@@ -195,19 +195,13 @@ main() {
             Logs.warn('no suitable FAM library found')
 
     # check for libarchive (tar command in smbclient)
-    use_libarchive = False
-    # None means autodetect
-    if Options.options.with_libarchive is None:
+    # None means autodetect, True/False means enable/disable
+    if Options.options.with_libarchive is not False:
+        libarchive_mandatory = Options.options.with_libarchive == True
         Logs.info("Checking for libarchive existence")
-        if conf.CHECK_HEADERS('archive.h') and conf.CHECK_LIB('archive'):
-            use_libarchive = True
-    elif Options.options.with_libarchive == True:
-        conf.CHECK_HEADERS('archive.h', mandatory=True)
-        conf.CHECK_LIB('archive', mandatory=True)
-        use_libarchive = True
-
-    if use_libarchive:
-        conf.DEFINE('SAMBA_LIBARCHIVE_LIBS', '-larchive')
+        conf.CHECK_LIB('archive', mandatory=libarchive_mandatory)
+        if not conf.CHECK_HEADERS('archive.h') and libarchive_mandatory:
+            conf.fatal('libarchive support requested, but no suitable header found')
 
     # check for DMAPI libs
     Logs.info("Checking for DMAPI library existence")
