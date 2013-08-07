@@ -88,3 +88,14 @@ interface copychunk
 		hyper length_written;
 	} fsctl_offload_write_output;
 }
+
+interface compression
+{
+	const uint16 COMPRESSION_FORMAT_NONE = 0x0000;
+	const uint16 COMPRESSION_FORMAT_DEFAULT = 0x0001;
+	const uint16 COMPRESSION_FORMAT_LZNT1 = 0x0002;
+
+	typedef [public] struct {
+		uint16 format;
+	} compression_state;
+}
