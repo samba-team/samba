@@ -4322,9 +4322,10 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	param = talloc_array(talloc_tos(), uint8_t, 6);
+	param = talloc_array(frame, uint8_t, 6);
 	if (!param) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 	SSVAL(param,0,SMB_INFO_SET_EA);
 	SSVAL(param,2,0);
@@ -4337,7 +4338,10 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 
 	status = cli_set_ea(cli, TRANSACT2_SETPATHINFO, param, param_len,
 			    ea_name, ea_val, ea_len);
-	talloc_free(frame);
+
+  fail:
+
+	TALLOC_FREE(frame);
 	return status;
 }
 
