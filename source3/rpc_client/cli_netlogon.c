@@ -21,15 +21,19 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "rpc_client/rpc_client.h"
+#include "rpc_client/cli_pipe.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/netlogon_creds_cli.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
+#include "../librpc/gen_ndr/schannel.h"
 #include "rpc_client/cli_netlogon.h"
 #include "rpc_client/init_netlogon.h"
 #include "rpc_client/util_netlogon.h"
 #include "../libcli/security/security.h"
 #include "lib/param/param.h"
+#include "libcli/smb/smbXcli_base.h"
 
 /****************************************************************************
  Wrapper function that uses the auth and auth2 calls to set up a NETLOGON
@@ -120,6 +124,107 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	}
 
 	*neg_flags_inout = creds->negotiate_flags;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
+				      const char *server_netbios_domain,
+				      const char *client_account,
+				      enum netr_SchannelType sec_chan_type,
+				      struct messaging_context *msg_ctx,
+				      TALLOC_CTX *mem_ctx,
+				      struct netlogon_creds_cli_context **netlogon_creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx;
+	NTSTATUS status;
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = netlogon_creds_cli_context_global(lp_ctx,
+						   msg_ctx,
+						   client_account,
+						   sec_chan_type,
+						   server_computer,
+						   server_netbios_domain,
+						   mem_ctx, netlogon_creds);
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
+				     struct netlogon_creds_cli_context *netlogon_creds,
+				     bool force_reauth,
+				     struct samr_Password current_nt_hash,
+				     const struct samr_Password *previous_nt_hash)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	NTSTATUS status;
+
+	status = netlogon_creds_cli_get(netlogon_creds,
+					frame, &creds);
+	if (NT_STATUS_IS_OK(status)) {
+		const char *action = "using";
+
+		if (force_reauth) {
+			action = "overwrite";
+		}
+
+		DEBUG(5,("%s: %s cached netlogon_creds cli[%s/%s] to %s\n",
+			 __FUNCTION__, action,
+			 creds->account_name, creds->computer_name,
+			 smbXcli_conn_remote_name(cli->conn)));
+		if (!force_reauth) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_OK;
+		}
+		TALLOC_FREE(creds);
+	}
+
+	status = cli_rpc_pipe_open_noauth(cli,
+					  &ndr_table_netlogon,
+					  &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("%s: failed to open noauth netlogon connection to %s - %s\n",
+			 __FUNCTION__,
+			 smbXcli_conn_remote_name(cli->conn),
+			 nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+	talloc_steal(frame, netlogon_pipe);
+
+	status = netlogon_creds_cli_auth(netlogon_creds,
+					 netlogon_pipe->binding_handle,
+					 current_nt_hash,
+					 previous_nt_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = netlogon_creds_cli_get(netlogon_creds,
+					frame, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	DEBUG(5,("%s: using new netlogon_creds cli[%s/%s] to %s\n",
+		 __FUNCTION__,
+		 creds->account_name, creds->computer_name,
+		 smbXcli_conn_remote_name(cli->conn)));
+
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }

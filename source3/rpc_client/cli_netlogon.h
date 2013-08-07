@@ -23,6 +23,10 @@
 #ifndef _RPC_CLIENT_CLI_NETLOGON_H_
 #define _RPC_CLIENT_CLI_NETLOGON_H_
 
+struct cli_state;
+struct messaging_context;
+struct netlogon_creds_cli_context;
+
 /* The following definitions come from rpc_client/cli_netlogon.c  */
 
 NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
@@ -33,6 +37,18 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				     const unsigned char machine_pwd[16],
 				     enum netr_SchannelType sec_chan_type,
 				     uint32_t *neg_flags_inout);
+NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
+				      const char *server_netbios_domain,
+				      const char *client_account,
+				      enum netr_SchannelType sec_chan_type,
+				      struct messaging_context *msg_ctx,
+				      TALLOC_CTX *mem_ctx,
+				      struct netlogon_creds_cli_context **netlogon_creds);
+NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
+				     struct netlogon_creds_cli_context *netlogon_creds,
+				     bool force_reauth,
+				     struct samr_Password current_nt_hash,
+				     const struct samr_Password *previous_nt_hash);
 NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   uint32 logon_parameters,
