@@ -201,15 +201,39 @@ for env in ["s3dc"]:
     # encrypted
     plantestsuite("samba3.blackbox.smbclient_s3.crypt (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "-e"])
 
-    # Test smbclient/tarmode
-    plantestsuite("samba3.blackbox.smbclient_tarmode (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', '$PREFIX', smbclient3, configuration])
 
-    # Test suite for new smbclient/tar with libarchive (GSoC 13)
-    plantestsuite("samba3.blackbox.smbclient_tar (%s)" % env, env,
-                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
-                   '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tmp',
-                   '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH', '-d', '$PREFIX',
-                   '-b', smbclient3, '--subunit', '--', configuration])
+    #
+    # tar command tests
+    #
+
+    # find config.h
+    try:
+        config_h = os.environ["CONFIG_H"]
+    except KeyError:
+        config_h = os.path.join(samba4bindir, "default/include/config.h")
+
+    # see if libarchive is supported
+    f = open(config_h, 'r')
+    try:
+        have_libarchive = ("HAVE_LIBARCHIVE 1" in f.read())
+    finally:
+        f.close()
+
+    # tar command enabled only if built with libarchive
+    if have_libarchive:
+        # Test smbclient/tarmode
+        plantestsuite("samba3.blackbox.smbclient_tarmode (%s)" % env, env,
+                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.sh"),
+                       '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD',
+                       '$LOCAL_PATH', '$PREFIX', smbclient3, configuration])
+
+        # Test suite for new smbclient/tar with libarchive (GSoC 13)
+        plantestsuite("samba3.blackbox.smbclient_tar (%s)" % env, env,
+                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
+                       '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tmp',
+                       '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH',
+                       '-d', '$PREFIX', '-b', smbclient3,
+                       '--subunit', '--', configuration])
 
 #TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc", "s3dc:local",

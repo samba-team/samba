@@ -43,6 +43,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('dmapi', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('fam', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
+    opt.SAMBA3_ADD_OPTION('libarchive', default=None)
 
     opt.SAMBA3_ADD_OPTION('cluster-support', default=None)
 
@@ -74,10 +75,6 @@ def configure(conf):
 
     if sys.platform != 'openbsd5':
         conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
-
-    # libarchive in smbclient
-    conf.CHECK_HEADERS('archive.h')
-    conf.CHECK_LIB('libarchive')
 
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h')
@@ -196,6 +193,21 @@ main() {
             conf.fatal('FAM support requested, but no suitable FAM library found')
         elif check_for_fam:
             Logs.warn('no suitable FAM library found')
+
+    # check for libarchive (tar command in smbclient)
+    use_libarchive = False
+    # None means autodetect
+    if Options.options.with_libarchive is None:
+        Logs.info("Checking for libarchive existence")
+        if conf.CHECK_HEADERS('archive.h') and conf.CHECK_LIB('archive'):
+            use_libarchive = True
+    elif Options.options.with_libarchive == True:
+        conf.CHECK_HEADERS('archive.h', mandatory=True)
+        conf.CHECK_LIB('archive', mandatory=True)
+        use_libarchive = True
+
+    if use_libarchive:
+        conf.DEFINE('SAMBA_LIBARCHIVE_LIBS', '-larchive')
 
     # check for DMAPI libs
     Logs.info("Checking for DMAPI library existence")

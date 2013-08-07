@@ -995,7 +995,6 @@ bld.SAMBA3_BINARY('client/smbclient',
                  source='''client/client.c
                  client/clitar.c
                  client/dnsbrowse.c''',
-                 ldflags='-larchive',
                  deps='''
                  talloc
                  popt_samba3
@@ -1005,7 +1004,9 @@ bld.SAMBA3_BINARY('client/smbclient',
                  libsmb
                  msrpc3
                  RPC_NDR_SRVSVC
-                 cli_smb_common''')
+                 cli_smb_common
+                 '''+
+                  ('archive' if bld.CONFIG_SET('HAVE_LIBARCHIVE') else ''))
 
 bld.SAMBA3_BINARY('net',
                  source='''utils/net.c

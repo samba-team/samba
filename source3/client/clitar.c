@@ -71,6 +71,9 @@
 #include "client/client_proto.h"
 #include "client/clitar_proto.h"
 #include "libsmb/libsmb.h"
+
+#ifdef HAVE_LIBARCHIVE
+
 #include <archive.h>
 #include <archive_entry.h>
 
@@ -1671,3 +1674,58 @@ static char *path_base_name (const char *path)
 
     return base;
 }
+
+#else
+
+#define NOT_IMPLEMENTED DEBUG(0, ("tar mode not compiled. build with --with-libarchive\n"))
+
+struct tar
+{
+    int dummy;
+};
+
+struct tar tar_ctx;
+
+int cmd_block(void)
+{
+    NOT_IMPLEMENTED;
+    return 1;
+}
+
+int cmd_tarmode(void)
+{
+    NOT_IMPLEMENTED;
+    return 1;
+}
+
+int cmd_setmode(void)
+{
+    NOT_IMPLEMENTED;
+    return 1;
+}
+
+int cmd_tar(void)
+{
+    NOT_IMPLEMENTED;
+    return 1;
+}
+
+int tar_process(struct tar* tar)
+{
+    NOT_IMPLEMENTED;
+    return 1;
+}
+
+int tar_parse_args(struct tar *tar, const char *flag, const char **val, int valsize)
+{
+    NOT_IMPLEMENTED;
+    return 1;
+}
+
+bool tar_to_process(struct tar *tar)
+{
+    NOT_IMPLEMENTED;
+    return false;
+}
+
+#endif
