@@ -28,6 +28,7 @@ struct smb_trans_enc_state;
 struct GUID;
 struct iovec;
 struct smb2_create_blobs;
+struct smb2_create_returns;
 
 struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 int fd,
@@ -353,7 +354,8 @@ struct tevent_req *smb2cli_create_send(
 	struct smb2_create_blobs *blobs);
 NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 			     uint64_t *fid_persistent,
-			     uint64_t *fid_volatile);
+			     uint64_t *fid_volatile,
+			     struct smb2_create_returns *cr);
 NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			uint32_t timeout_msec,
 			struct smbXcli_session *session,
@@ -368,7 +370,8 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			uint32_t create_options,
 			struct smb2_create_blobs *blobs,
 			uint64_t *fid_persistent,
-			uint64_t *fid_volatile);
+			uint64_t *fid_volatile,
+			struct smb2_create_returns *cr);
 
 struct tevent_req *smb2cli_close_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,

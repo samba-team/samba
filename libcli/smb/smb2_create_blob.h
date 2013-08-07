@@ -33,6 +33,18 @@ struct smb2_create_blobs {
 	struct smb2_create_blob *blobs;
 };
 
+struct smb2_create_returns {
+	uint8_t oplock_level;
+	uint32_t create_action;
+	NTTIME creation_time;
+	NTTIME last_access_time;
+	NTTIME last_write_time;
+	NTTIME change_time;
+	uint64_t allocation_size;
+	uint64_t end_of_file;
+	uint32_t file_attributes;
+};
+
 /*
   parse a set of SMB2 create blobs
 */
