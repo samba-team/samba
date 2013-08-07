@@ -38,6 +38,7 @@
 #include "smbprofile.h"
 #include "rpc_server/srv_pipe_hnd.h"
 #include "printing.h"
+#include "lib/util_ea.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -746,67 +747,6 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 	}
 
 	return ea_list_head;
-}
-
-/****************************************************************************
- Read one EA list entry from the buffer.
-****************************************************************************/
-
-struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t data_size, size_t *pbytes_used)
-{
-	struct ea_list *eal = talloc_zero(ctx, struct ea_list);
-	uint16 val_len;
-	unsigned int namelen;
-	size_t converted_size;
-
-	if (!eal) {
-		return NULL;
-	}
-
-	if (data_size < 6) {
-		return NULL;
-	}
-
-	eal->ea.flags = CVAL(pdata,0);
-	namelen = CVAL(pdata,1);
-	val_len = SVAL(pdata,2);
-
-	if (4 + namelen + 1 + val_len > data_size) {
-		return NULL;
-	}
-
-	/* Ensure the name is null terminated. */
-	if (pdata[namelen + 4] != '\0') {
-		return NULL;
-	}
-	if (!pull_ascii_talloc(ctx, &eal->ea.name, pdata + 4, &converted_size)) {
-		DEBUG(0,("read_ea_list_entry: pull_ascii_talloc failed: %s",
-			 strerror(errno)));
-	}
-	if (!eal->ea.name) {
-		return NULL;
-	}
-
-	eal->ea.value = data_blob_talloc(eal, NULL, (size_t)val_len + 1);
-	if (!eal->ea.value.data) {
-		return NULL;
-	}
-
-	memcpy(eal->ea.value.data, pdata + 4 + namelen + 1, val_len);
-
-	/* Ensure we're null terminated just in case we print the value. */
-	eal->ea.value.data[val_len] = '\0';
-	/* But don't count the null. */
-	eal->ea.value.length--;
-
-	if (pbytes_used) {
-		*pbytes_used = 4 + namelen + 1 + val_len;
-	}
-
-	DEBUG(10,("read_ea_list_entry: read ea name %s\n", eal->ea.name));
-	dump_data(10, eal->ea.value.data, eal->ea.value.length);
-
-	return eal;
 }
 
 /****************************************************************************
