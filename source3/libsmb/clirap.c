@@ -965,10 +965,20 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 			       unsigned int *pnum_streams,
 			       struct stream_struct **pstreams)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_qpathinfo_streams(cli,
+					fname,
+					mem_ctx,
+					pnum_streams,
+					pstreams);
+	}
+
+	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
