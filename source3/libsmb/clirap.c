@@ -1326,6 +1326,12 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 	size_t converted_size = 0;
 	NTSTATUS status;
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_qpathinfo_alt_name(cli,
+						fname,
+						alt_name);
+	}
+
 	status = cli_qpathinfo(talloc_tos(), cli, fname,
 			       SMB_QUERY_FILE_ALT_NAME_INFO,
 			       4, CLI_BUFFER_SIZE, &rdata, &num_rdata);
