@@ -94,6 +94,10 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 			       TALLOC_CTX *mem_ctx,
 			       unsigned int *pnum_streams,
 			       struct stream_struct **pstreams);
+bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
+				size_t data_len,
+				unsigned int *pnum_streams,
+				struct stream_struct **pstreams);
 NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 		       TALLOC_CTX *mem_ctx, char **name);
 NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,

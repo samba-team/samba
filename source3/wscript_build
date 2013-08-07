@@ -135,7 +135,8 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/cli_np_tstream.c
              libsmb/reparse_symlink.c
              libsmb/clisymlink.c
-             libsmb/smbsock_connect.c'''
+             libsmb/smbsock_connect.c
+             libsmb/cli_smb2_fnum.c'''
 
 LIBMSRPC_SRC = '''
                rpc_client/cli_pipe.c

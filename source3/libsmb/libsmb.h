@@ -26,5 +26,6 @@
 #include "client.h"
 #include "libads/ads_status.h"
 #include "libsmb/proto.h"
+#include "libsmb/cli_smb2_fnum.h"
 
 #endif /* _LIBSMB_LIBSMB_H */
