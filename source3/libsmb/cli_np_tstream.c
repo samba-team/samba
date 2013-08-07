@@ -208,7 +208,8 @@ static void tstream_cli_np_open_done(struct tevent_req *subreq)
 	} else {
 		status = smb2cli_create_recv(subreq,
 					     &state->fid_persistent,
-					     &state->fid_volatile);
+					     &state->fid_volatile,
+					     NULL);
 	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
