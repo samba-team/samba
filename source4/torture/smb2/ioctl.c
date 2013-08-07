@@ -148,6 +148,54 @@ static bool check_pattern(struct torture_context *torture,
 	return true;
 }
 
+static bool test_setup_create_fill(struct torture_context *torture,
+				   struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+				   const char *fname,
+				   struct smb2_handle *fh,
+				   uint64_t size,
+				   uint32_t desired_access)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+	uint64_t i;
+	uint8_t *buf = talloc_zero_size(mem_ctx, size);
+	torture_assert(torture, (buf != NULL), "no memory for file data buf");
+
+	smb2_util_unlink(tree, fname);
+
+	ZERO_STRUCT(io);
+	io.in.desired_access = desired_access;
+	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.fname = fname;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "file create");
+
+	*fh = io.out.file.handle;
+
+	if (size > 0) {
+		uint64_t cur_off = 0;
+		for (i = 0; i <= size - 8; i += 8) {
+			SBVAL(buf, i, patt_hash(i));
+		}
+		while (size > 0) {
+			uint64_t io_sz = MIN(1024 * 1024, size);
+			status = smb2_util_write(tree, *fh,
+						 buf + cur_off, cur_off, io_sz);
+			torture_assert_ntstatus_ok(torture, status, "file write");
+
+			size -= io_sz;
+			cur_off += io_sz;
+		}
+	}
+	return true;
+}
+
 static bool test_setup_copy_chunk(struct torture_context *torture,
 				  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 				  uint32_t nchunks,
@@ -161,77 +209,17 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 				  union smb_ioctl *ioctl)
 {
 	struct req_resume_key_rsp res_key;
-	struct smb2_create io;
+	bool ok;
 	NTSTATUS status;
 	enum ndr_err_code ndr_ret;
-	uint64_t i;
-	uint8_t *buf = talloc_zero_size(mem_ctx, MAX(src_size, dest_size));
-	torture_assert(torture, (buf != NULL), "no memory for file data buf");
 
-	smb2_util_unlink(tree, FNAME);
-	smb2_util_unlink(tree, FNAME2);
+	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME,
+				    src_h, src_size, src_desired_access);
+	torture_assert(torture, ok, "src file create fill");
 
-	ZERO_STRUCT(io);
-	io.in.desired_access = src_desired_access;
-	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
-	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
-	io.in.share_access =
-		NTCREATEX_SHARE_ACCESS_DELETE|
-		NTCREATEX_SHARE_ACCESS_READ|
-		NTCREATEX_SHARE_ACCESS_WRITE;
-	io.in.fname = FNAME;
-
-	status = smb2_create(tree, mem_ctx, &io);
-	torture_assert_ntstatus_ok(torture, status, "src create");
-
-	*src_h = io.out.file.handle;
-
-	if (src_size > 0) {
-		uint64_t cur_off = 0;
-		for (i = 0; i <= src_size - 8; i += 8) {
-			SBVAL(buf, i, patt_hash(i));
-		}
-		while (src_size > 0) {
-			uint64_t io_sz = MIN(1024 * 1024, src_size);
-			status = smb2_util_write(tree, *src_h,
-						 buf + cur_off, cur_off, io_sz);
-			torture_assert_ntstatus_ok(torture, status, "src write");
-
-			src_size -= io_sz;
-			cur_off += io_sz;
-		}
-	}
-
-	ZERO_STRUCT(io);
-	io.in.desired_access = dest_desired_access;
-	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
-	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
-	io.in.share_access =
-		NTCREATEX_SHARE_ACCESS_DELETE|
-		NTCREATEX_SHARE_ACCESS_READ|
-		NTCREATEX_SHARE_ACCESS_WRITE;
-	io.in.fname = FNAME2;
-
-	status = smb2_create(tree, mem_ctx, &io);
-	torture_assert_ntstatus_ok(torture, status, "dest create");
-
-	*dest_h = io.out.file.handle;
-
-	if (dest_size > 0) {
-		uint64_t cur_off = 0;
-		for (i = 0; i <= dest_size - 8; i += 8) {
-			SBVAL(buf, i, patt_hash(i));
-		}
-		while (dest_size > 0) {
-			uint64_t io_sz = MIN(1024 * 1024, dest_size);
-			status = smb2_util_write(tree, *dest_h,
-						 buf + cur_off, cur_off, io_sz);
-			torture_assert_ntstatus_ok(torture, status, "dest write");
-
-			dest_size -= io_sz;
-			cur_off += io_sz;
-		}
-	}
+	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME2,
+				    dest_h, dest_size, dest_desired_access);
+	torture_assert(torture, ok, "dest file create fill");
 
 	ZERO_STRUCTPN(ioctl);
 	ioctl->smb2.level = RAW_IOCTL_SMB2;
@@ -244,7 +232,6 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	status = smb2_ioctl(tree, mem_ctx, &ioctl->smb2);
 	torture_assert_ntstatus_ok(torture, status,
 				   "FSCTL_SRV_REQUEST_RESUME_KEY");
-
 
 	ndr_ret = ndr_pull_struct_blob(&ioctl->smb2.out.out, mem_ctx, &res_key,
 			(ndr_pull_flags_fn_t)ndr_pull_req_resume_key_rsp);
