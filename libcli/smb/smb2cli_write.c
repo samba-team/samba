@@ -26,6 +26,7 @@
 struct smb2cli_write_state {
 	uint8_t fixed[48];
 	uint8_t dyn_pad[1];
+	uint32_t written;
 };
 
 static void smb2cli_write_done(struct tevent_req *subreq);
@@ -94,7 +95,11 @@ static void smb2cli_write_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
+	struct smb2cli_write_state *state =
+		tevent_req_data(req,
+		struct smb2cli_write_state);
 	NTSTATUS status;
+	struct iovec *iov;
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = NT_STATUS_OK,
@@ -102,18 +107,32 @@ static void smb2cli_write_done(struct tevent_req *subreq)
 	}
 	};
 
-	status = smb2cli_req_recv(subreq, NULL, NULL,
+	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	state->written = IVAL(iov[1].iov_base, 4);
 	tevent_req_done(req);
 }
 
-NTSTATUS smb2cli_write_recv(struct tevent_req *req)
+NTSTATUS smb2cli_write_recv(struct tevent_req *req, uint32_t *written)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	struct smb2cli_write_state *state =
+		tevent_req_data(req,
+		struct smb2cli_write_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	if (written) {
+		*written = state->written;
+	}
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
@@ -126,7 +145,8 @@ NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
 		       uint64_t fid_volatile,
 		       uint32_t remaining_bytes,
 		       uint32_t flags,
-		       const uint8_t *data)
+		       const uint8_t *data,
+		       uint32_t *written)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -155,7 +175,7 @@ NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = smb2cli_write_recv(req);
+	status = smb2cli_write_recv(req, written);
  fail:
 	TALLOC_FREE(frame);
 	return status;

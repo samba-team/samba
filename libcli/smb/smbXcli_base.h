@@ -429,7 +429,8 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 				      uint32_t remaining_bytes,
 				      uint32_t flags,
 				      const uint8_t *data);
-NTSTATUS smb2cli_write_recv(struct tevent_req *req);
+NTSTATUS smb2cli_write_recv(struct tevent_req *req,
+			uint32_t *written);
 NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
 		       uint32_t timeout_msec,
 		       struct smbXcli_session *session,
@@ -440,7 +441,8 @@ NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
 		       uint64_t fid_volatile,
 		       uint32_t remaining_bytes,
 		       uint32_t flags,
-		       const uint8_t *data);
+		       const uint8_t *data,
+		       uint32_t *written);
 
 struct tevent_req *smb2cli_flush_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
