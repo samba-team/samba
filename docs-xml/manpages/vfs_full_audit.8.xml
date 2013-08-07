@@ -142,7 +142,7 @@
 	<variablelist>
 
 		<varlistentry>
-		<term>vfs_full_audit:prefix = STRING</term>
+		<term>full_audit:prefix = STRING</term>
 		<listitem>
 		<para>Prepend audit messages with STRING. STRING is
 		processed for standard substitution variables listed in
