@@ -4554,10 +4554,20 @@ NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_get_ea_list_path(cli,
+					path,
+					ctx,
+					pnum_eas,
+					pea_list);
+	}
+
+	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
