@@ -715,6 +715,11 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
 		       const char **account_name,
 		       enum netr_SchannelType *channel);
+struct cli_credentials;
+NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
+				   const char *dns_domain, /* optional */
+				   TALLOC_CTX *mem_ctx,
+				   struct cli_credentials **_creds);
 
 /* The following definitions come from passdb/pdb_compat.c  */
 

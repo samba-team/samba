@@ -162,7 +162,7 @@ bld.SAMBA3_LIBRARY('pdb',
                    passdb/pdb_interface.c
                    passdb/pdb_secrets.c
                    passdb/pdb_unixid.c''',
-                   deps='secrets3 GROUPDB SERVER_MUTEX wbclient LIBCLI_AUTH flag_mapping',
+                   deps='secrets3 GROUPDB SERVER_MUTEX wbclient LIBCLI_AUTH flag_mapping samba-credentials',
                    private_library=False,
                    pc_files=[],
                    public_headers_install=True,
@@ -172,7 +172,7 @@ bld.SAMBA3_LIBRARY('pdb',
                    passdb/lookup_sid.h''',
                    abi_match=private_pdb_match,
                    abi_directory='passdb/ABI',
-                   vnum='0.1.1')
+                   vnum='0.1.2')
 
 bld.SAMBA3_LIBRARY('smbldaphelper',
                    source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',

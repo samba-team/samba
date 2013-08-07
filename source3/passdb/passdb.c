@@ -30,6 +30,8 @@
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
 #include "util_tdb.h"
+#include "auth/credentials/credentials.h"
+#include "lib/param/param.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -2298,12 +2300,25 @@ bool is_dc_trusted_domain_situation(const char *domain_name)
  Caller must free password, but not account_name.
 *******************************************************************/
 
-bool get_trust_pw_clear(const char *domain, char **ret_pwd,
-			const char **account_name,
-			enum netr_SchannelType *channel)
+static bool get_trust_pw_clear2(const char *domain,
+				const char **account_name,
+				enum netr_SchannelType *channel,
+				char **cur_pw,
+				time_t *_last_set_time,
+				char **prev_pw)
 {
 	char *pwd;
 	time_t last_set_time;
+
+	if (cur_pw != NULL) {
+		*cur_pw = NULL;
+	}
+	if (_last_set_time != NULL) {
+		*_last_set_time = 0;
+	}
+	if (prev_pw != NULL) {
+		*prev_pw = NULL;
+	}
 
 	/* if we are a DC and this is not our domain, then lookup an account
 	 * for the domain trust */
@@ -2313,7 +2328,7 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 			return false;
 		}
 
-		if (!pdb_get_trusteddom_pw(domain, ret_pwd, NULL,
+		if (!pdb_get_trusteddom_pw(domain, cur_pw, NULL,
 					   &last_set_time))
 		{
 			DEBUG(0, ("get_trust_pw: could not fetch trust "
@@ -2328,6 +2343,10 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 
 		if (account_name != NULL) {
 			*account_name = lp_workgroup();
+		}
+
+		if (_last_set_time != NULL) {
+			*_last_set_time = last_set_time;
 		}
 
 		return true;
@@ -2353,17 +2372,53 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 	pwd = secrets_fetch_machine_password(lp_workgroup(), &last_set_time, channel);
 
 	if (pwd != NULL) {
-		*ret_pwd = pwd;
+		struct timeval expire;
+
+		*cur_pw = pwd;
+
 		if (account_name != NULL) {
 			*account_name = lp_netbios_name();
+		}
+
+		if (_last_set_time != NULL) {
+			*_last_set_time = last_set_time;
+		}
+
+		if (prev_pw == NULL) {
+			return true;
+		}
+
+		ZERO_STRUCT(expire);
+		expire.tv_sec = lp_machine_password_timeout();
+		expire.tv_sec /= 2;
+		expire.tv_sec += last_set_time;
+		if (timeval_expired(&expire)) {
+			return true;
+		}
+
+		pwd = secrets_fetch_prev_machine_password(lp_workgroup());
+		if (pwd != NULL) {
+			*prev_pw = pwd;
 		}
 
 		return true;
 	}
 
-	DEBUG(5, ("get_trust_pw_clear: could not fetch clear text trust "
+	DEBUG(5, ("get_trust_pw_clear2: could not fetch clear text trust "
 		  "account password for domain %s\n", domain));
 	return false;
+}
+
+bool get_trust_pw_clear(const char *domain, char **ret_pwd,
+			const char **account_name,
+			enum netr_SchannelType *channel)
+{
+	return get_trust_pw_clear2(domain,
+				   account_name,
+				   channel,
+				   ret_pwd,
+				   NULL,
+				   NULL);
 }
 
 /*******************************************************************
@@ -2371,16 +2426,44 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
  appropriate account name is stored in account_name.
 *******************************************************************/
 
-bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
-		       const char **account_name,
-		       enum netr_SchannelType *channel)
+static bool get_trust_pw_hash2(const char *domain,
+			       const char **account_name,
+			       enum netr_SchannelType *channel,
+			       struct samr_Password *current_nt_hash,
+			       time_t *last_set_time,
+			       struct samr_Password **_previous_nt_hash)
 {
-	char *pwd = NULL;
-	time_t last_set_time;
+	char *cur_pw = NULL;
+	char *prev_pw = NULL;
+	char **_prev_pw = NULL;
+	bool ok;
 
-	if (get_trust_pw_clear(domain, &pwd, account_name, channel)) {
-		E_md4hash(pwd, ret_pwd);
-		SAFE_FREE(pwd);
+	if (_previous_nt_hash != NULL) {
+		*_previous_nt_hash = NULL;
+		_prev_pw = &prev_pw;
+	}
+
+	ok = get_trust_pw_clear2(domain, account_name, channel,
+				 &cur_pw, last_set_time, _prev_pw);
+	if (ok) {
+		struct samr_Password *previous_nt_hash = NULL;
+
+		E_md4hash(cur_pw, current_nt_hash->hash);
+		SAFE_FREE(cur_pw);
+
+		if (prev_pw == NULL) {
+			return true;
+		}
+
+		previous_nt_hash = SMB_MALLOC_P(struct samr_Password);
+		if (previous_nt_hash == NULL) {
+			return false;
+		}
+
+		E_md4hash(prev_pw, previous_nt_hash->hash);
+		SAFE_FREE(prev_pw);
+
+		*_previous_nt_hash = previous_nt_hash;
 		return true;
 	} else if (is_dc_trusted_domain_situation(domain)) {
 		return false;
@@ -2388,8 +2471,9 @@ bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
 
 	/* as a fallback, try to get the hashed pwd directly from the tdb... */
 
-	if (secrets_fetch_trust_account_password_legacy(domain, ret_pwd,
-							&last_set_time,
+	if (secrets_fetch_trust_account_password_legacy(domain,
+							current_nt_hash->hash,
+							last_set_time,
 							channel))
 	{
 		if (account_name != NULL) {
@@ -2402,4 +2486,140 @@ bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
 	DEBUG(5, ("get_trust_pw_hash: could not fetch trust account "
 		"password for domain %s\n", domain));
 	return False;
+}
+
+bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
+		       const char **account_name,
+		       enum netr_SchannelType *channel)
+{
+	struct samr_Password current_nt_hash;
+	bool ok;
+
+	ok = get_trust_pw_hash2(domain, account_name, channel,
+				&current_nt_hash, NULL, NULL);
+	if (!ok) {
+		return false;
+	}
+
+	memcpy(ret_pwd, current_nt_hash.hash, sizeof(current_nt_hash.hash));
+	return true;
+}
+
+NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
+				   const char *dns_domain, /* optional */
+				   TALLOC_CTX *mem_ctx,
+				   struct cli_credentials **_creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+	struct loadparm_context *lp_ctx;
+	enum netr_SchannelType channel;
+	time_t last_set_time;
+	const char *_account_name;
+	const char *account_name;
+	char *cur_pw = NULL;
+	char *prev_pw = NULL;
+	struct samr_Password cur_nt_hash;
+	struct cli_credentials *creds = NULL;
+	struct pdb_get_trust_credentials_state *state = NULL;
+	bool ok;
+
+	ok = get_trust_pw_clear2(netbios_domain,
+				 &_account_name,
+				 &channel,
+				 &cur_pw,
+				 &last_set_time,
+				 &prev_pw);
+	if (!ok) {
+		ok = get_trust_pw_hash2(netbios_domain,
+					&_account_name,
+					&channel,
+					&cur_nt_hash,
+					&last_set_time,
+					NULL);
+		if (!ok) {
+			DEBUG(1, ("get_trust_pw_*2 failed for domain[%s]\n",
+				  netbios_domain));
+			status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			goto fail;
+		}
+	}
+
+	account_name = talloc_asprintf(frame, "%s$", _account_name);
+	if (account_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DEBUG(1, ("loadparm_init_s3 failed\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+
+	creds = cli_credentials_init(mem_ctx);
+	if (creds == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	cli_credentials_set_conf(creds, lp_ctx);
+
+	cli_credentials_set_secure_channel_type(creds, channel);
+	cli_credentials_set_password_last_changed_time(creds, last_set_time);
+
+	ok = cli_credentials_set_domain(creds, netbios_domain, CRED_SPECIFIED);
+	if (!ok) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (dns_domain != NULL) {
+		ok = cli_credentials_set_realm(creds, dns_domain, CRED_SPECIFIED);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	}
+
+	ok = cli_credentials_set_username(creds, account_name, CRED_SPECIFIED);
+	if (!ok) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (cur_pw == NULL) {
+		ok = cli_credentials_set_nt_hash(creds, &cur_nt_hash, CRED_SPECIFIED);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		goto done;
+	}
+
+	ok = cli_credentials_set_password(creds, cur_pw, CRED_SPECIFIED);
+	if (!ok) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (prev_pw != NULL) {
+		ok = cli_credentials_set_old_password(creds, prev_pw, CRED_SPECIFIED);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	}
+
+ done:
+	*_creds = creds;
+	creds = NULL;
+	status = NT_STATUS_OK;
+ fail:
+	TALLOC_FREE(creds);
+	SAFE_FREE(cur_pw);
+	SAFE_FREE(prev_pw);
+	TALLOC_FREE(frame);
+	return status;
 }
