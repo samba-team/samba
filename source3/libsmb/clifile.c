@@ -4320,7 +4320,17 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 	unsigned int param_len = 0;
 	uint8_t *param;
 	NTSTATUS status;
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_set_ea_path(cli,
+					path,
+					ea_name,
+					ea_val,
+					ea_len);
+	}
+
+	frame = talloc_stackframe();
 
 	param = talloc_array(frame, uint8_t, 6);
 	if (!param) {
