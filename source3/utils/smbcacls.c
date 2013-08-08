@@ -1385,6 +1385,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		},
 		{ "test-args", 't', POPT_ARG_NONE, &test_args, 1, "Test arguments"},
 		{ "domain-sid", 0, POPT_ARG_STRING, &domain_sid, 0, "Domain SID for sddl", "SID"},
+		{ "max-protocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set the max protocol level", "LEVEL" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -1454,6 +1455,9 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		case 'I':
 			owner_username = poptGetOptArg(pc);
 			change_mode = REQUEST_INHERIT;
+			break;
+		case 'm':
+			lp_set_cmdline("client max protocol", poptGetOptArg(pc));
 			break;
 		}
 	}
