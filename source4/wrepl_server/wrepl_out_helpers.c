@@ -357,8 +357,23 @@ static struct composite_context *wreplsrv_pull_table_send(TALLOC_CTX *mem_ctx, s
 	c->private_data	= state;
 
 	if (io->in.num_owners) {
+		struct wrepl_wins_owner *partners;
+		uint32_t i;
+
+		partners = talloc_array(state,
+					struct wrepl_wins_owner,
+					io->in.num_owners);
+		if (composite_nomem(partners, c)) goto failed;
+
+		for (i=0; i < io->in.num_owners; i++) {
+			partners[i] = io->in.owners[i];
+			partners[i].address = talloc_strdup(partners,
+						io->in.owners[i].address);
+			if (composite_nomem(partners[i].address, c)) goto failed;
+		}
+
 		state->table_io.out.num_partners	= io->in.num_owners;
-		state->table_io.out.partners		= io->in.owners;
+		state->table_io.out.partners		= partners;
 		state->stage				= WREPLSRV_PULL_TABLE_STAGE_DONE;
 		composite_done(c);
 		return c;
@@ -388,7 +403,7 @@ static NTSTATUS wreplsrv_pull_table_recv(struct composite_context *c, TALLOC_CTX
 		struct wreplsrv_pull_table_state *state = talloc_get_type(c->private_data,
 							  struct wreplsrv_pull_table_state);
 		io->out.num_owners	= state->table_io.out.num_partners;
-		io->out.owners		= talloc_reference(mem_ctx, state->table_io.out.partners);
+		io->out.owners		= talloc_move(mem_ctx, &state->table_io.out.partners);
 	}
 
 	talloc_free(c);
@@ -548,7 +563,7 @@ static NTSTATUS wreplsrv_pull_names_recv(struct composite_context *c, TALLOC_CTX
 		struct wreplsrv_pull_names_state *state = talloc_get_type(c->private_data,
 							  struct wreplsrv_pull_names_state);
 		io->out.num_names	= state->pull_io.out.num_names;
-		io->out.names		= talloc_reference(mem_ctx, state->pull_io.out.names);
+		io->out.names		= talloc_move(mem_ctx, &state->pull_io.out.names);
 	}
 
 	talloc_free(c);
