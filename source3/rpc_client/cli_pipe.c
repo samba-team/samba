@@ -2664,8 +2664,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 		}
 		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe "
 			    "%s failed with error %s\n",
-			    get_pipe_name_from_syntax(talloc_tos(),
-						      &table->syntax_id),
+			    table->name,
 			    nt_errstr(status) ));
 		TALLOC_FREE(result);
 		return status;
@@ -2673,7 +2672,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
 		  "%s and bound anonymously.\n",
-		  get_pipe_name_from_syntax(talloc_tos(), &table->syntax_id),
+		  table->name,
 		  result->desthost));
 
 	*presult = result;
@@ -2918,7 +2917,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 done:
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
-		  get_pipe_name_from_syntax(talloc_tos(), &table->syntax_id),
+		  table->name,
 		  rpccli->desthost, domain));
 
 	*_rpccli = rpccli;
