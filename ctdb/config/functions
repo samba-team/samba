@@ -1080,7 +1080,7 @@ ctdb_check_counter () {
     fi
     if $_hit ; then
 	if [ "$_msg" = "error" ] ; then
-	    echo "ERROR: $_limit consecutive failures for $_service_name, marking node unhealthy"
+	    echo "ERROR: $_size consecutive failures for $_service_name, marking node unhealthy"
 	    exit 1		
 	else
 	    return 1
