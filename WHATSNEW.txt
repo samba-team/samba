@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.1.  This is *not*
+This is the second release candidate of Samba 4.1.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -76,6 +76,14 @@ smb.conf changes
    use ntdb				New		No
 
 
+RUNNING Samba 4.1 as an AD DC
+=============================
+
+A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
+
+  http://wiki.samba.org/index.php/Samba4/HOWTO
+
+
 COMMIT HIGHLIGHTS
 =================
 
@@ -85,12 +93,63 @@ o   David Disseldorp <ddiss@samba.org>
       SMB2 FSCTL_SRV_COPYCHUNK request.
 
 
-RUNNING Samba 4.1 as an AD DC
-=============================
+CHANGES SINCE 4.1.0rc1
+======================
 
-A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9992: Windows error 0x800700FE when copying files with xattr names
+      containing ":".
+    * BUG 10010: Missing integer wrap protection in EA list reading can cause
+      server to loop with DOS (CVE-2013-4124).
+    * BUG 10064: Linux kernel oplock breaks can miss signals.
 
-  http://wiki.samba.org/index.php/Samba4/HOWTO
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9029: Fix replication with --domain-crictical-only to fill in
+      backlinks.
+    * BUG 9820: Fix crash of winbind after "ls -l
+      /usr/local/samba/var/locks/sysvol".
+    * BUG 10056: dsdb improvements.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 10003: Fix segfault while reading incomplete session info.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * BUG 9678: Windows 8 Roaming profiles fail.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 10043: Allow to change the default location for Kerberos credential
+      caches.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10013: Fix a 100% loop at shutdown time (smbd).
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9820: Fix crash of winbind after "ls -l
+      /usr/local/samba/var/locks/sysvol".
+    * BUG 10015: Fix/improve debug options.
+    * BUG 10042: Fix crashes in socket_get_local_addr().
+    * BUG 10056: dsdb improvements.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9994: Do not delete an existing valid credential cache (s3-winbind).
+    * BUG 10040: Rename regedit to samba-regedit.
+    * BUG 10041: Remove obsolete swat manpage and references.
+    * BUG 10048: nsswitch: Add OPT_KRB5CCNAME to avoid an error message.
+
+
+o   Alexander Werth <alexander.werth@de.ibm.com>
+    * BUG 10045: Remove a redundant inlined substitution of ACLs.
+
+
+o   Ralph Wuerthner <ralphw@de.ibm.com>
+    * BUG 10064: Linux kernel oplock breaks can miss signals.
 
 
 #######################################
