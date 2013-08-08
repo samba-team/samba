@@ -95,7 +95,7 @@ struct tevent_req *finddcs_nbt_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (domain_sid) {
-		state->domain_sid = talloc_reference(state, domain_sid);
+		state->domain_sid = dom_sid_dup(state, domain_sid);
 		if (tevent_req_nomem(state->domain_sid, req)) {
 			return tevent_req_post(req, event_ctx);
 		}
