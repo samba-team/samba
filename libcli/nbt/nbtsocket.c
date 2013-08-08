@@ -387,8 +387,8 @@ struct nbt_name_request *nbt_name_request_send(TALLOC_CTX *mem_ctx,
 	req->is_reply               = false;
 	req->timeout                = timeout;
 	req->num_retries            = retries;
-	req->dest                   = dest;
-	if (talloc_reference(req, dest) == NULL) goto failed;
+	req->dest                   = socket_address_copy(req, dest);
+	if (req->dest == NULL) goto failed;
 
 	/* we select a random transaction id unless the user supplied one */
 	if (request->name_trn_id == 0) {
@@ -446,8 +446,8 @@ _PUBLIC_ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	req->nbtsock   = nbtsock;
-	req->dest = dest;
-	if (talloc_reference(req, dest) == NULL) goto failed;
+	req->dest = socket_address_copy(req, dest);
+	if (req->dest == NULL) goto failed;
 	req->state     = NBT_REQUEST_SEND;
 	req->is_reply = true;
 
