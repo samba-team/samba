@@ -104,6 +104,13 @@ NTSTATUS cli_set_security_descriptor(struct cli_state *cli,
 	size_t len;
 	NTSTATUS status;
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_set_security_descriptor(cli,
+							fnum,
+							sec_info,
+							sd);
+	}
+
 	status = marshall_sec_desc(talloc_tos(), sd, &data, &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("marshall_sec_desc failed: %s\n",
