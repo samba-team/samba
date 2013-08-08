@@ -116,6 +116,7 @@ const struct ndr_interface_table *ndr_table_by_uuid(const struct GUID *uuid)
 */
 const struct ndr_interface_list *ndr_table_list(void)
 {
+	ndr_table_init();
 	return ndr_interfaces;
 }
 
