@@ -355,7 +355,7 @@ static bool samsync_handle_domain(struct torture_context *tctx, TALLOC_CTX *mem_
 
 	if (!samsync_state->domain_name[database_id]) {
 		samsync_state->domain_name[database_id] =
-			talloc_reference(samsync_state, domain->domain_name.string);
+			talloc_strdup(samsync_state, domain->domain_name.string);
 	} else {
 		if (strcasecmp_m(samsync_state->domain_name[database_id], domain->domain_name.string) != 0) {
 			torture_comment(tctx, "Domain has name varies!: %s != %s\n", samsync_state->domain_name[database_id],
@@ -365,14 +365,15 @@ static bool samsync_handle_domain(struct torture_context *tctx, TALLOC_CTX *mem_
 	}
 
 	if (!samsync_state->domain_handle[database_id]) {
-		samsync_state->domain_handle[database_id]
-			= talloc_reference(samsync_state,
-					   samsync_open_domain(tctx,
-							       mem_ctx, samsync_state, samsync_state->domain_name[database_id],
-							       &dom_sid));
+		samsync_state->domain_handle[database_id] =
+			samsync_open_domain(tctx,
+					    samsync_state,
+					    samsync_state,
+					    samsync_state->domain_name[database_id],
+					    &dom_sid);
 	}
 	if (samsync_state->domain_handle[database_id]) {
-		samsync_state->sid[database_id] = talloc_reference(samsync_state, dom_sid);
+		samsync_state->sid[database_id] = dom_sid_dup(samsync_state, dom_sid);
 	}
 
 	torture_comment(tctx, "\tsequence_nums[%d/%s]=%llu\n",
@@ -436,7 +437,7 @@ static bool samsync_handle_policy(struct torture_context *tctx,
 
 	if (!samsync_state->domain_name[SAM_DATABASE_DOMAIN]) {
 		samsync_state->domain_name[SAM_DATABASE_DOMAIN] =
-			talloc_reference(samsync_state, policy->primary_domain_name.string);
+			talloc_strdup(samsync_state, policy->primary_domain_name.string);
 	} else {
 		if (strcasecmp_m(samsync_state->domain_name[SAM_DATABASE_DOMAIN], policy->primary_domain_name.string) != 0) {
 			torture_comment(tctx, "PRIMARY domain has name varies between DOMAIN and POLICY!: %s != %s\n", samsync_state->domain_name[SAM_DATABASE_DOMAIN],
@@ -900,14 +901,13 @@ static bool samsync_handle_secret(struct torture_context *tctx,
 	DATA_BLOB lsa_blob1, lsa_blob_out, session_key;
 	NTSTATUS status;
 
-	nsec->name = talloc_reference(nsec, name);
+	nsec->name = talloc_strdup(nsec, name);
 	nsec->secret = data_blob_talloc(nsec, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
 	nsec->mtime = secret->current_cipher_set_time;
 
-	nsec = talloc_reference(samsync_state, nsec);
 	DLIST_ADD(samsync_state->secrets, nsec);
 
-	old->name = talloc_reference(old, name);
+	old->name = talloc_strdup(old, name);
 	old->secret = data_blob_const(secret->old_cipher.cipher_data, secret->old_cipher.maxlen);
 	old->mtime = secret->old_cipher_set_time;
 
@@ -1056,8 +1056,8 @@ static bool samsync_handle_trusted_domain(struct torture_context *tctx,
 	int levels [] = {1, 3, 8};
 	int i;
 
-	ndom->name = talloc_reference(ndom, trusted_domain->domain_name.string);
-	ndom->sid = talloc_reference(ndom, dom_sid);
+	ndom->name = talloc_strdup(ndom, trusted_domain->domain_name.string);
+	ndom->sid = dom_sid_dup(ndom, dom_sid);
 
 	t.in.handle = samsync_state->lsa_handle;
 	t.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1099,7 +1099,6 @@ static bool samsync_handle_trusted_domain(struct torture_context *tctx,
   We would like to do this, but it is NOT_SUPPORTED on win2k3
 	TEST_SEC_DESC_EQUAL(trusted_domain->sdbuf, lsa, &trustdom_handle);
 */
-	ndom = talloc_reference(samsync_state, ndom);
 	DLIST_ADD(samsync_state->trusted_domains, ndom);
 
 	return ret;
