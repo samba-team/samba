@@ -318,3 +318,58 @@ NTSTATUS dcerpc_read_ncacn_packet_recv(struct tevent_req *req,
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
+
+const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
+					      enum dcerpc_transport_t transport,
+					      const struct ndr_interface_table *table)
+{
+	NTSTATUS status;
+	const char *p = NULL;
+	const char *endpoint = NULL;
+	int i;
+	struct dcerpc_binding *default_binding = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	/* Find one of the default pipes for this interface */
+
+	for (i = 0; i < table->endpoints->count; i++) {
+
+		status = dcerpc_parse_binding(frame, table->endpoints->names[i],
+					      &default_binding);
+		if (NT_STATUS_IS_OK(status)) {
+			if (transport == NCA_UNKNOWN &&
+			    default_binding->endpoint != NULL) {
+				p = default_binding->endpoint;
+				break;
+			}
+			if (default_binding->transport == transport &&
+			    default_binding->endpoint != NULL) {
+				p = default_binding->endpoint;
+				break;
+			}
+		}
+	}
+
+	if (i == table->endpoints->count || p == NULL) {
+		goto done;
+	}
+
+	/*
+	 * extract the pipe name without \\pipe from for example
+	 * ncacn_np:[\\pipe\\epmapper]
+	 */
+	if (default_binding->transport == NCACN_NP) {
+		if (strncasecmp(p, "\\pipe\\", 6) == 0) {
+			p += 6;
+		}
+		if (strncmp(p, "\\", 1) == 0) {
+			p += 1;
+		}
+	}
+
+	endpoint = talloc_strdup(mem_ctx, p);
+
+ done:
+	talloc_free(frame);
+	return endpoint;
+}
