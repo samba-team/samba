@@ -203,8 +203,8 @@ static void continue_epm_map(struct tevent_req *subreq)
 	}
 
 	/* get received endpoint */
-	s->binding->endpoint = talloc_reference(s->binding,
-						dcerpc_floor_get_rhs_data(c, &s->twr_r->tower.floors[3]));
+	s->binding->endpoint = dcerpc_floor_get_rhs_data(s->binding,
+							 &s->twr_r->tower.floors[3]);
 	if (composite_nomem(s->binding->endpoint, c)) return;
 
 	composite_done(c);
@@ -249,6 +249,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 
 	/* anonymous credentials for rpc connection used to get endpoint mapping */
 	anon_creds = cli_credentials_init(mem_ctx);
+	if (composite_nomem(anon_creds, c)) return c;
 	cli_credentials_set_anonymous(anon_creds);
 
 	/*
@@ -266,7 +267,8 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 					binding->transport = default_binding->transport;
 				if (default_binding->transport == binding->transport && 
 					default_binding->endpoint) {
-					binding->endpoint = talloc_reference(binding, default_binding->endpoint);
+					binding->endpoint = talloc_strdup(binding, default_binding->endpoint);
+					if (composite_nomem(binding->endpoint, c)) return c;
 					talloc_free(default_binding);
 
 					composite_done(c);
@@ -284,10 +286,16 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 
 	/* basic endpoint mapping data */
 	epmapper_binding->transport		= binding->transport;
-	epmapper_binding->host			= talloc_reference(epmapper_binding, binding->host);
+	if (binding->host != NULL) {
+		epmapper_binding->host = talloc_strdup(epmapper_binding, binding->host);
+		if (composite_nomem(epmapper_binding->host, c)) return c;
+	}
 	epmapper_binding->target_hostname       = epmapper_binding->host;
 	epmapper_binding->options		= NULL;
-	epmapper_binding->localaddress          = talloc_reference(epmapper_binding, binding->localaddress);
+	if (binding->localaddress != NULL) {
+		epmapper_binding->localaddress = talloc_strdup(epmapper_binding, binding->localaddress);
+		if (composite_nomem(epmapper_binding->localaddress, c)) return c;
+	}
 	epmapper_binding->flags			= 0;
 	epmapper_binding->assoc_group_id	= 0;
 	epmapper_binding->endpoint		= NULL;

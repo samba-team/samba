@@ -327,12 +327,15 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 	s->conn      = cn;
 	s->transport = transport;
 	if (localaddr) {
-		s->localaddr = talloc_reference(c, localaddr);
+		s->localaddr = socket_address_copy(s, localaddr);
 		if (composite_nomem(s->localaddr, c)) return c;
 	}
-	s->server    = talloc_reference(c, server);
+	s->server = socket_address_copy(s, server);
 	if (composite_nomem(s->server, c)) return c;
-	s->target_hostname = talloc_reference(s, target_hostname);
+	if (target_hostname) {
+		s->target_hostname = talloc_strdup(s, target_hostname);
+		if (composite_nomem(s->target_hostname, c)) return c;
+	}
 
 	s->sock = talloc(cn, struct sock_private);
 	if (composite_nomem(s->sock, c)) return c;
@@ -342,7 +345,10 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 
 	talloc_steal(s->sock, s->socket_ctx);
 
-	s->sock->path = talloc_reference(s->sock, full_path);
+	if (full_path != NULL) {
+		s->sock->path = talloc_strdup(s->sock, full_path);
+		if (composite_nomem(s->sock->path, c)) return c;
+	}
 
 	conn_req = socket_connect_send(s->socket_ctx, s->localaddr, s->server, 0,
 				       c->event_ctx);

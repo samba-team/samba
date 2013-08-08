@@ -323,9 +323,18 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 
 	/* store input parameters in state structure */
 	s->io               = *io;
-	s->localaddr        = talloc_reference(c, io->binding->localaddress);
-	s->host             = talloc_reference(c, io->binding->host);
-	s->target_hostname  = talloc_reference(c, io->binding->target_hostname);
+	if (io->binding->localaddress != NULL) {
+		s->localaddr = talloc_strdup(s, io->binding->localaddress);
+		if (composite_nomem(s->localaddr, c)) return c;
+	}
+	if (io->binding->host != NULL) {
+		s->host = talloc_strdup(s, io->binding->host);
+		if (composite_nomem(s->host, c)) return c;
+	}
+	if (io->binding->target_hostname != NULL) {
+		s->target_hostname = talloc_strdup(s, io->binding->target_hostname);
+		if (composite_nomem(s->target_hostname, c)) return c;
+	}
                              /* port number is a binding endpoint here */
 	s->port             = atoi(io->binding->endpoint);   
 
