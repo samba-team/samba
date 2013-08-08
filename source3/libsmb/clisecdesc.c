@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "libsmb/libsmb.h"
 #include "../libcli/security/secdesc.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 NTSTATUS cli_query_security_descriptor(struct cli_state *cli,
 				       uint16_t fnum,
@@ -32,6 +33,14 @@ NTSTATUS cli_query_security_descriptor(struct cli_state *cli,
 	uint32_t rdata_count=0;
 	NTSTATUS status;
 	struct security_descriptor *lsd;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_query_security_descriptor(cli,
+							fnum,
+							sec_info,
+							mem_ctx,
+							sd);
+	}
 
 	SIVAL(param, 0, fnum);
 	SIVAL(param, 4, sec_info);
