@@ -411,8 +411,8 @@ static void wins_register_wack(struct nbt_name_socket *nbtsock,
 	s->rec			= talloc_steal(s, rec);
 	s->reg_address		= packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	s->new_type		= new_type;
-	s->src		        = src;
-	if (talloc_reference(s, src) == NULL) goto failed;
+	s->src		        = socket_address_copy(s, src);
+	if (s->src == NULL) goto failed;
 
 	s->io.in.nbtd_server	= iface->nbtsrv;
 	s->io.in.nbt_port       = lpcfg_nbt_port(iface->nbtsrv->task->lp_ctx);

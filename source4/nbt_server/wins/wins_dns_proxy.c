@@ -27,6 +27,7 @@
 #include "libcli/composite/composite.h"
 #include "smbd/service_task.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/socket/socket.h"
 
 struct wins_dns_proxy_state {
 	struct nbt_name_socket *nbtsock;
@@ -78,8 +79,8 @@ void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock,
 	if (!s) goto failed;
 	s->nbtsock	= nbtsock;
 	s->packet	= talloc_steal(s, packet);
-	s->src		= src;
-	if (!talloc_reference(s, src)) {
+	s->src		= socket_address_copy(s, src);
+	if (s->src == NULL) {
 		goto failed;
 	}
 
