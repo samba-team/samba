@@ -489,7 +489,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	union samr_UserInfo *info;
 	struct policy_handle user_handle;
 
-	struct samr_GetGroupsForUser getgroups;
+	struct samr_GetGroupsForUser getgr;
 	struct samr_RidWithAttributeArray *rids;
 
 	if (domain == NULL ||
@@ -521,13 +521,13 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	torture_assert_ntstatus_ok(tctx, q.out.result,
 		talloc_asprintf(tctx, "OpenUserInfo level %u failed", q.in.level));
 
-	getgroups.in.user_handle = &user_handle;
-	getgroups.out.rids = &rids;
+	getgr.in.user_handle = &user_handle;
+	getgr.out.rids = &rids;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_GetGroupsForUser_r(samsync_state->b_samr, mem_ctx, &getgroups),
+		dcerpc_samr_GetGroupsForUser_r(samsync_state->b_samr, mem_ctx, &getgr),
 		"GetGroupsForUser failed");
-	torture_assert_ntstatus_ok(tctx, getgroups.out.result,
+	torture_assert_ntstatus_ok(tctx, getgr.out.result,
 		"GetGroupsForUser failed");
 
 	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &user_handle)) {
