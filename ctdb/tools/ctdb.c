@@ -3041,89 +3041,46 @@ static uint32_t get_generation(struct ctdb_context *ctdb)
 	}
 }
 
-/*
-  ban a node from the cluster
- */
+/* Ban a node */
+static bool update_state_banned(struct ctdb_context *ctdb, void *data)
+{
+	struct ctdb_ban_time *bantime = (struct ctdb_ban_time *)data;
+	return ctdb_ctrl_set_ban(ctdb, TIMELIMIT(), options.pnn, bantime) == 0;
+}
+
 static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
-	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_ban_time bantime;
 
 	if (argc < 1) {
 		usage();
 	}
 	
-	/* verify the node exists */
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		return ret;
-	}
-
-	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_BANNED) {
-		DEBUG(DEBUG_ERR,("Node %u is already banned.\n", options.pnn));
-		return -1;
-	}
-
 	bantime.pnn  = options.pnn;
 	bantime.time = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_set_ban(ctdb, TIMELIMIT(), options.pnn, &bantime);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Banning node %d for %d seconds failed.\n", bantime.pnn, bantime.time));
-		return -1;
-	}	
-
-	ret = ipreallocate(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
-		return ret;
-	}
-
-	return 0;
+	return update_flags_and_ipreallocate(ctdb, &bantime,
+						  update_state_banned,
+						  NODE_FLAGS_BANNED,
+						  "banned",
+						  true /* set_flag*/);
 }
 
 
-/*
-  unban a node from the cluster
- */
+/* Unban a node */
 static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
-	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_ban_time bantime;
-
-	/* verify the node exists */
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		return ret;
-	}
-
-	if (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_BANNED)) {
-		DEBUG(DEBUG_ERR,("Node %u is not banned.\n", options.pnn));
-		return -1;
-	}
 
 	bantime.pnn  = options.pnn;
 	bantime.time = 0;
 
-	ret = ctdb_ctrl_set_ban(ctdb, TIMELIMIT(), options.pnn, &bantime);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Unbanning node %d failed.\n", bantime.pnn));
-		return -1;
-	}	
-
-	ret = ipreallocate(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
-		return ret;
-	}
-
-	return 0;
+	return update_flags_and_ipreallocate(ctdb, &bantime,
+						  update_state_banned,
+						  NODE_FLAGS_BANNED,
+						  "banned",
+						  false /* set_flag*/);
 }
-
 
 /*
   show ban information for a node
