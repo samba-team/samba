@@ -1973,21 +1973,17 @@ static void ctdb_every_second(struct event_context *ev, struct timed_event *te, 
 				ctdb_every_second, ctdb);
 }
 
-/*
-  ask the recovery daemon on the recovery master to perform a ip reallocation
+/* Send an ipreallocate to the recovery daemon on all nodes.  Only the
+ * recovery master will answer.
  */
-static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
+static int ipreallocate(struct ctdb_context *ctdb)
 {
-	int i, ret;
+	int ret;
 	TDB_DATA data;
 	struct takeover_run_reply rd;
-	struct ctdb_node_map *nodemap=NULL;
-	int count;
-	struct timeval tv = timeval_current();
+	struct timeval tv;
 
-	/* we need some events to trigger so we can timeout and restart
-	   the loop
-	*/
+	/* Time ticks to enable timeouts to be processed */
 	event_add_timed(ctdb->ev, ctdb, 
 				timeval_current_ofs(1, 0),
 				ctdb_every_second, ctdb);
@@ -1995,55 +1991,46 @@ static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char 
 	rd.pnn = ctdb_get_pnn(ctdb);
 	rd.srvid = getpid();
 
-	/* register a message port for receiveing the reply so that we
-	   can receive the reply
-	*/
+	/* Register message port for reply from recovery master */
 	ctdb_client_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
 
 	data.dptr = (uint8_t *)&rd;
 	data.dsize = sizeof(rd);
 
 again:
-	/* get the number of nodes and node flags */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		sleep(1);
-		goto again;
-	}
-
-	ipreallocate_finished = false;
-	count = 0;
-	for (i=0; i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		} else {
-			/* Send to all active nodes. Only recmaster will reply. */
-			ret = ctdb_client_send_message(ctdb, i, CTDB_SRVID_TAKEOVER_RUN, data);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
-				return -1;
-			}
-			count++;
-		}
-	}
-	if (count == 0) {
-		DEBUG(DEBUG_ERR,("No recmaster available, no need to wait for cluster convergence\n"));
-		return 0;
+	/* Send to all connected nodes. Only recmaster replies */
+	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
+				       CTDB_SRVID_TAKEOVER_RUN, data);
+	if (ret != 0) {
+		/* This can only happen if the socket is closed and
+		 * there's no way to recover from that, so don't try
+		 * again.
+		 */
+		DEBUG(DEBUG_WARNING,
+		      ("Failed to send IP reallocation request to connected nodes\n"));
+		return -1;
 	}
 
 	tv = timeval_current();
-	/* this loop will terminate when we have received the reply */
+	/* This loop terminates the reply is received */
 	while (timeval_elapsed(&tv) < 5.0 && !ipreallocate_finished) {
 		event_loop_once(ctdb->ev);
 	}
 
 	if (!ipreallocate_finished) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Still waiting for confirmation of IP reallocation\n"));
 		goto again;
 	}
 
 	return 0;
 }
 
+
+static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	return ipreallocate(ctdb);
+}
 
 /*
   add a public ip address to a node
@@ -2937,7 +2924,7 @@ static int control_disable(struct ctdb_context *ctdb, int argc, const char **arg
 		}
 
 	} while (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED));
-	ret = control_ipreallocate(ctdb, argc, argv);
+	ret = ipreallocate(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
@@ -2983,7 +2970,7 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 
 	} while (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED);
 
-	ret = control_ipreallocate(ctdb, argc, argv);
+	ret = ipreallocate(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
@@ -3014,7 +3001,7 @@ static int control_stop(struct ctdb_context *ctdb, int argc, const char **argv)
 		}
 
 	} while (nodemap == NULL || !(nodemap->nodes[options.pnn].flags & NODE_FLAGS_STOPPED));
-	ret = control_ipreallocate(ctdb, argc, argv);
+	ret = ipreallocate(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
@@ -3047,7 +3034,7 @@ static int control_continue(struct ctdb_context *ctdb, int argc, const char **ar
 		}
 
 	} while (nodemap == NULL || nodemap->nodes[options.pnn].flags & NODE_FLAGS_STOPPED);
-	ret = control_ipreallocate(ctdb, argc, argv);
+	ret = ipreallocate(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
@@ -3131,7 +3118,7 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}	
 
-	ret = control_ipreallocate(ctdb, argc, argv);
+	ret = ipreallocate(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
@@ -3171,7 +3158,7 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}	
 
-	ret = control_ipreallocate(ctdb, argc, argv);
+	ret = ipreallocate(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
