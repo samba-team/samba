@@ -471,8 +471,8 @@ _PUBLIC_ bool cli_credentials_set_old_password(struct cli_credentials *cred,
  * @param cred credentials context
  * @retval If set, the cleartext password, otherwise NULL
  */
-_PUBLIC_ const struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred, 
-							TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred,
+							   TALLOC_CTX *mem_ctx)
 {
 	const char *password = cli_credentials_get_password(cred);
 
@@ -481,13 +481,22 @@ _PUBLIC_ const struct samr_Password *cli_credentials_get_nt_hash(struct cli_cred
 		if (!nt_hash) {
 			return NULL;
 		}
-		
+
 		E_md4hash(password, nt_hash->hash);    
 
 		return nt_hash;
-	} else {
-		return cred->nt_hash;
+	} else if (cred->nt_hash != NULL) {
+		struct samr_Password *nt_hash = talloc(mem_ctx, struct samr_Password);
+		if (!nt_hash) {
+			return NULL;
+		}
+
+		*nt_hash = *cred->nt_hash;
+
+		return nt_hash;
 	}
+
+	return NULL;
 }
 
 /**

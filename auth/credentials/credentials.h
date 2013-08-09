@@ -141,8 +141,8 @@ bool cli_credentials_set_password(struct cli_credentials *cred,
 				  enum credentials_obtained obtained);
 struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx);
 void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained);
-const struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred, 
-							TALLOC_CTX *mem_ctx);
+struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred,
+						  TALLOC_CTX *mem_ctx);
 bool cli_credentials_set_realm(struct cli_credentials *cred, 
 			       const char *val, 
 			       enum credentials_obtained obtained);
