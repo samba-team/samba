@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_syncops.8">
+
+<refmeta>
+	<refentrytitle>vfs_syncops</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.1</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_syncops</refname>
+	<refpurpose>Ensure meta data operations are performed synchronously.</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = syncops</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>
+	Some filesystems (even some journaled filesystems) require that a
+	fsync() be performed on many meta data operations to ensure that the
+	operation is guaranteed to remain in the filesystem after a power
+	failure. This is particularly important for some cluster filesystems
+	which are participating in a node failover system with clustered
+	Samba. On those filesystems the <command>vfs_syncops</command> VFS module
+	provides a way to perform those	operations safely.
+	</para>
+
+	<para>This module is stackable.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>
+	Most of the performance loss with the <command>vfs_syncops</command>
+	VFS module is in fsync on close(). You can disable that with
+	<command>syncops:onclose = no</command> that can be set either globally
+	or per share.
+	</para>
+
+	<para>
+	On certain filesystems that only require the last data written to be
+	fsync()'ed, you can disable the metadata synchronization of this module with
+	<command>syncops:onmeta = no</command>. This option can be set either
+	globally or per share.
+	</para>
+
+	<para>
+	The <command>vfs_syncops</command> VFS module can also be disabled
+	completely for a share with <command>syncops:disable = true</command>.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>Add syncops functionality for [share]:</para>
+<programlisting>
+        <smbconfsection name="[share]"/>
+	<smbconfoption name="path">/data/share</smbconfoption>
+	<smbconfoption name="vfs objects">syncops</smbconfoption>
+	<smbconfoption name="syncops:onclose">no</smbconfoption>
+</programlisting>
+
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4.1.0 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
