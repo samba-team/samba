@@ -669,7 +669,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		       struct user_auth_info *auth_info,
 		       struct cmd_set *cmd_entry,
 		       struct dcerpc_binding *binding,
-		       int argc, char **argv)
+		       int argc, const char **argv)
 {
 	NTSTATUS ntresult;
 	WERROR wresult;
@@ -793,12 +793,12 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	/* Run command */
 
 	if ( cmd_entry->returntype == RPC_RTYPE_NTSTATUS ) {
-		ntresult = cmd_entry->ntfn(cmd_entry->rpc_pipe, mem_ctx, argc, (const char **) argv);
+		ntresult = cmd_entry->ntfn(cmd_entry->rpc_pipe, mem_ctx, argc, argv);
 		if (!NT_STATUS_IS_OK(ntresult)) {
 			printf("result was %s\n", nt_errstr(ntresult));
 		}
 	} else {
-		wresult = cmd_entry->wfn(cmd_entry->rpc_pipe, mem_ctx, argc, (const char **) argv);
+		wresult = cmd_entry->wfn(cmd_entry->rpc_pipe, mem_ctx, argc, argv);
 		/* print out the DOS error */
 		if (!W_ERROR_IS_OK(wresult)) {
 			printf( "result was %s\n", win_errstr(wresult));
@@ -828,9 +828,9 @@ static NTSTATUS process_cmd(struct user_auth_info *auth_info,
 	NTSTATUS result = NT_STATUS_OK;
 	int ret;
 	int argc;
-	char **argv = NULL;
+	const char **argv = NULL;
 
-	if ((ret = poptParseArgvString(cmd, &argc, (const char ***) &argv)) != 0) {
+	if ((ret = poptParseArgvString(cmd, &argc, &argv)) != 0) {
 		fprintf(stderr, "rpcclient: %s\n", poptStrerror(ret));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -882,6 +882,7 @@ out_free:
 
  int main(int argc, char *argv[])
 {
+	const char **const_argv = discard_const_p(const char *, argv);
 	int 			opt;
 	static char		*cmdstr = NULL;
 	const char *server;
@@ -930,7 +931,7 @@ out_free:
 
 	/* Parse options */
 
-	pc = poptGetContext("rpcclient", argc, (const char **) argv,
+	pc = poptGetContext("rpcclient", argc, const_argv,
 			    long_options, 0);
 
 	if (argc == 1) {
