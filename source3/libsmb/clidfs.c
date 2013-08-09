@@ -160,6 +160,11 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return status;
 	}
 
+	if (smbXcli_conn_protocol(c->conn) >= PROTOCOL_SMB2_02) {
+		/* Ensure we ask for some initial credits. */
+		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
+	}
+
 	username = get_cmdline_auth_info_username(auth_info);
 	password = get_cmdline_auth_info_password(auth_info);
 
