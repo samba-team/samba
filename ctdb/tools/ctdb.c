@@ -3107,7 +3107,8 @@ static int control_showban(struct ctdb_context *ctdb, int argc, const char **arg
 	if (bantime->time == 0) {
 		printf("Node %u is not banned\n", bantime->pnn);
 	} else {
-		printf("Node %u is banned banned for %d seconds\n", bantime->pnn, bantime->time);
+		printf("Node %u is banned, %d seconds remaining\n",
+		       bantime->pnn, bantime->time);
 	}
 
 	return 0;
