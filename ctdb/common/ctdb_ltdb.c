@@ -98,7 +98,9 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 		if (data) {
 			*data = d2;
 		}
-		ctdb_ltdb_store(ctdb_db, key, header, d2);
+		if (ctdb_db->persistent || header->dmaster == ctdb_db->ctdb->pnn) {
+			ctdb_ltdb_store(ctdb_db, key, header, d2);
+		}
 		return 0;
 	}
 
