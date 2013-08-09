@@ -2890,157 +2890,114 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
-/*
-  disable a remote node
- */
+typedef bool update_flags_handler_t(struct ctdb_context *ctdb, void *data);
+
+static int update_flags_and_ipreallocate(struct ctdb_context *ctdb,
+					      void *data,
+					      update_flags_handler_t handler,
+					      uint32_t flag,
+					      const char *desc,
+					      bool set_flag)
+{
+	struct ctdb_node_map *nodemap = NULL;
+	bool flag_is_set;
+
+	/* Check if the node is already in the desired state */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		exit(10);
+	}
+	flag_is_set = nodemap->nodes[options.pnn].flags & flag;
+	if (set_flag == flag_is_set) {
+		DEBUG(DEBUG_NOTICE, ("Node %d is %s %s\n", options.pnn,
+				     (set_flag ? "already" : "not"), desc));
+		return 0;
+	}
+
+	do {
+		if (!handler(ctdb, data)) {
+			DEBUG(DEBUG_WARNING,
+			      ("Failed to send control to set state %s on node %u, try again\n",
+			       desc, options.pnn));
+		}
+
+		sleep(1);
+
+		/* Read the nodemap and verify the change took effect.
+		 * Even if the above control/hanlder timed out then it
+		 * could still have worked!
+		 */
+		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE,
+					 ctdb, &nodemap) != 0) {
+			DEBUG(DEBUG_WARNING,
+			      ("Unable to get nodemap from local node, try again\n"));
+		}
+		flag_is_set = nodemap->nodes[options.pnn].flags & flag;
+	} while (nodemap == NULL || (set_flag != flag_is_set));
+
+	return ipreallocate(ctdb);
+}
+
+/* Administratively disable a node */
+static bool update_flags_disabled(struct ctdb_context *ctdb, void *data)
+{
+	return ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn,
+				  NODE_FLAGS_PERMANENTLY_DISABLED, 0) == 0;
+}
+
 static int control_disable(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
-	struct ctdb_node_map *nodemap=NULL;
-
-	/* check if the node is already disabled */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		exit(10);
-	}
-	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
-		DEBUG(DEBUG_ERR,("Node %d is already disabled.\n", options.pnn));
-		return 0;
-	}
-
-	do {
-		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, NODE_FLAGS_PERMANENTLY_DISABLED, 0);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to disable node %u\n", options.pnn));
-			return ret;
-		}
-
-		sleep(1);
-
-		/* read the nodemap and verify the change took effect */
-		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-			exit(10);
-		}
-
-	} while (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED));
-	ret = ipreallocate(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
-		return ret;
-	}
-
-	return 0;
+	return update_flags_and_ipreallocate(ctdb, NULL,
+						  update_flags_disabled,
+						  NODE_FLAGS_PERMANENTLY_DISABLED,
+						  "disabled",
+						  true /* set_flag*/);
 }
 
-/*
-  enable a disabled remote node
- */
-static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv)
+/* Administratively re-enable a node */
+static bool update_flags_not_disabled(struct ctdb_context *ctdb, void *data)
 {
-	int ret;
-
-	struct ctdb_node_map *nodemap=NULL;
-
-
-	/* check if the node is already enabled */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		exit(10);
-	}
-	if (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED)) {
-		DEBUG(DEBUG_ERR,("Node %d is already enabled.\n", options.pnn));
-		return 0;
-	}
-
-	do {
-		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, 0, NODE_FLAGS_PERMANENTLY_DISABLED);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to enable node %u\n", options.pnn));
-			return ret;
-		}
-
-		sleep(1);
-
-		/* read the nodemap and verify the change took effect */
-		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-			exit(10);
-		}
-
-	} while (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED);
-
-	ret = ipreallocate(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
-		return ret;
-	}
-
-	return 0;
+	return ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn,
+				  0, NODE_FLAGS_PERMANENTLY_DISABLED) == 0;
 }
 
-/*
-  stop a remote node
- */
+static int control_enable(struct ctdb_context *ctdb,  int argc, const char **argv)
+{
+	return update_flags_and_ipreallocate(ctdb, NULL,
+						  update_flags_not_disabled,
+						  NODE_FLAGS_PERMANENTLY_DISABLED,
+						  "disabled",
+						  false /* set_flag*/);
+}
+
+/* Stop a node */
+static bool update_flags_stopped(struct ctdb_context *ctdb, void *data)
+{
+	return ctdb_ctrl_stop_node(ctdb, TIMELIMIT(), options.pnn) == 0;
+}
+
 static int control_stop(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
-	struct ctdb_node_map *nodemap=NULL;
-
-	do {
-		ret = ctdb_ctrl_stop_node(ctdb, TIMELIMIT(), options.pnn);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to stop node %u   try again\n", options.pnn));
-		}
-	
-		sleep(1);
-
-		/* read the nodemap and verify the change took effect */
-		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		}
-
-	} while (nodemap == NULL || !(nodemap->nodes[options.pnn].flags & NODE_FLAGS_STOPPED));
-	ret = ipreallocate(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
-		return ret;
-	}
-
-	return 0;
+	return update_flags_and_ipreallocate(ctdb, NULL,
+						  update_flags_stopped,
+						  NODE_FLAGS_STOPPED,
+						  "stopped",
+						  true /* set_flag*/);
 }
 
-/*
-  restart a stopped remote node
- */
+/* Continue a stopped node */
+static bool update_flags_not_stopped(struct ctdb_context *ctdb, void *data)
+{
+	return ctdb_ctrl_continue_node(ctdb, TIMELIMIT(), options.pnn) == 0;
+}
+
 static int control_continue(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
-
-	struct ctdb_node_map *nodemap=NULL;
-
-	do {
-		ret = ctdb_ctrl_continue_node(ctdb, TIMELIMIT(), options.pnn);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to continue node %u\n", options.pnn));
-			return ret;
-		}
-	
-		sleep(1);
-
-		/* read the nodemap and verify the change took effect */
-		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		}
-
-	} while (nodemap == NULL || nodemap->nodes[options.pnn].flags & NODE_FLAGS_STOPPED);
-	ret = ipreallocate(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
-		return ret;
-	}
-
-	return 0;
+	return update_flags_and_ipreallocate(ctdb, NULL,
+						  update_flags_not_stopped,
+						  NODE_FLAGS_STOPPED,
+						  "stopped",
+						  false /* set_flag */);
 }
 
 static uint32_t get_generation(struct ctdb_context *ctdb)
