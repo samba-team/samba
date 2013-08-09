@@ -51,19 +51,20 @@ static PyTypeObject *get_pytype(const char *module, const char *type)
 }
 
 /*
- * We're using "const char **" for keywords,
+ * We're using "const char * const *" for keywords,
  * PyArg_ParseTupleAndKeywords expects a "char **". Confine the
  * inevitable warnings to just one place.
  */
 static int ParseTupleAndKeywords(PyObject *args, PyObject *kw,
-				 const char *format, const char **keywords,
+				 const char *format, const char * const *keywords,
 				 ...)
 {
+	char **_keywords = discard_const_p(char *, keywords);
 	va_list a;
 	int ret;
 	va_start(a, keywords);
 	ret = PyArg_VaParseTupleAndKeywords(args, kw, format,
-					    (char **)keywords, a);
+					    _keywords, a);
 	va_end(a);
 	return ret;
 }
@@ -448,7 +449,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		cli_credentials_get_password(cli_creds),
 		0, 0);
 	if (!py_tevent_req_wait_exc(self->ev, req)) {
-		return NULL;
+		return -1;
 	}
 	status = cli_full_connection_recv(req, &self->cli);
 	TALLOC_FREE(req);
