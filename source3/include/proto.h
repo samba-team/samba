@@ -401,7 +401,6 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			ssize_t *array_size);
 char *get_myname(TALLOC_CTX *ctx);
 char *get_mydnsdomname(TALLOC_CTX *ctx);
-int interpret_protocol(const char *str,int def);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 bool process_exists(const struct server_id pid);
