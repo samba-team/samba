@@ -992,13 +992,36 @@ static int vfs_gluster_set_offline(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-/* Posix ACL Operations */
+/*
+  Gluster ACL Format:
 
+  Size = 4 (header) + N * 8 (entry)
+
+  Offset  Size    Field (Little Endian)
+  -------------------------------------
+  0-3     4-byte  Version
+
+  4-5     2-byte  Entry-1 tag
+  6-7     2-byte  Entry-1 perm
+  8-11    4-byte  Entry-1 id
+
+  12-13   2-byte  Entry-2 tag
+  14-15   2-byte  Entry-2 perm
+  16-19   4-byte  Entry-2 id
+
+  ...
+
+ */
+
+/* header version */
 #define GLUSTER_ACL_VERSION 2
+
+/* perm bits */
 #define GLUSTER_ACL_READ    0x04
 #define GLUSTER_ACL_WRITE   0x02
 #define GLUSTER_ACL_EXECUTE 0x01
 
+/* tag values */
 #define GLUSTER_ACL_UNDEFINED_TAG  0x00
 #define GLUSTER_ACL_USER_OBJ       0x01
 #define GLUSTER_ACL_USER           0x02
@@ -1009,58 +1032,49 @@ static int vfs_gluster_set_offline(struct vfs_handle_struct *handle,
 
 #define GLUSTER_ACL_UNDEFINED_ID  (-1)
 
-struct gluster_ace {
-	uint16_t tag;
-	uint16_t perm;
-	uint32_t id;
-};
-
-struct gluster_acl_header {
-	uint32_t version;
-	struct gluster_ace entries[];
-};
+#define GLUSTER_ACL_HEADER_SIZE    4
+#define GLUSTER_ACL_ENTRY_SIZE     8
 
 static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 				    TALLOC_CTX *mem_ctx)
 {
 	int count;
 	size_t size;
-	struct gluster_ace *ace;
 	struct smb_acl_entry *smb_ace;
-	struct gluster_acl_header *hdr;
 	struct smb_acl_t *result;
 	int i;
+	int offset;
 	uint16_t tag;
 	uint16_t perm;
 	uint32_t id;
 
 	size = xattr_size;
 
-	if (size < sizeof(*hdr)) {
-		/* ACL should be at least as big as the header */
+	if (size < GLUSTER_ACL_HEADER_SIZE) {
+		/* ACL should be at least as big as the header (4 bytes) */
 		errno = EINVAL;
 		return NULL;
 	}
 
-	size -= sizeof(*hdr);
+	size -= GLUSTER_ACL_HEADER_SIZE; /* size of header = 4 bytes */
 
-	if (size % sizeof(*ace)) {
+	if (size % GLUSTER_ACL_ENTRY_SIZE) {
 		/* Size of entries must strictly be a multiple of
-		   size of an ACE
+		   size of an ACE (8 bytes)
 		*/
 		errno = EINVAL;
 		return NULL;
 	}
 
-	count = size / sizeof(*ace);
+	count = size / GLUSTER_ACL_ENTRY_SIZE;
 
-	hdr = (void *)buf;
-
-	if (ntohl(hdr->version) != GLUSTER_ACL_VERSION) {
+	/* Version is the first 4 bytes of the ACL */
+	if (IVAL(buf, 0) != GLUSTER_ACL_VERSION) {
 		DEBUG(0, ("Unknown gluster ACL version: %d\n",
-			  ntohl(hdr->version)));
+			  IVAL(buf, 0)));
 		return NULL;
 	}
+	offset = GLUSTER_ACL_HEADER_SIZE;
 
 	result = sys_acl_init(mem_ctx);
 	if (!result) {
@@ -1078,10 +1092,19 @@ static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 	result->count = count;
 
 	smb_ace = result->acl;
-	ace = hdr->entries;
 
 	for (i = 0; i < count; i++) {
-		tag = ntohs(ace->tag);
+		/* TAG is the first 2 bytes of an entry */
+		tag = SVAL(buf, offset);
+		offset += 2;
+
+		/* PERM is the next 2 bytes of an entry */
+		perm = SVAL(buf, offset);
+		offset += 2;
+
+		/* ID is the last 4 bytes of an entry */
+		id = IVAL(buf, offset);
+		offset += 4;
 
 		switch(tag) {
 		case GLUSTER_ACL_USER:
@@ -1107,7 +1130,6 @@ static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 			return NULL;
 		}
 
-		id = ntohl(ace->id);
 
 		switch(smb_ace->a_type) {
 		case SMB_ACL_USER:
@@ -1120,8 +1142,6 @@ static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 			break;
 		}
 
-		perm = ntohs(ace->perm);
-
 		smb_ace->a_perm = 0;
 		smb_ace->a_perm |=
 			((perm & GLUSTER_ACL_READ) ? SMB_ACL_READ : 0);
@@ -1130,7 +1150,6 @@ static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 		smb_ace->a_perm |=
 			((perm & GLUSTER_ACL_EXECUTE) ? SMB_ACL_EXECUTE : 0);
 
-		ace++;
 		smb_ace++;
 	}
 
@@ -1138,21 +1157,54 @@ static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 }
 
 
+static int gluster_ace_cmp(const void *left, const void *right)
+{
+	int ret = 0;
+	uint16_t tag_left, tag_right;
+	uint32_t id_left, id_right;
+
+	/*
+	  Sorting precedence:
+
+	   - Smaller TAG values must be earlier.
+
+	   - Within same TAG, smaller identifiers must be earlier, E.g:
+	     UID 0 entry must be earlier than UID 200
+	     GID 17 entry must be earlier than GID 19
+	*/
+
+	/* TAG is the first element in the entry */
+	tag_left = SVAL(left, 0);
+	tag_right = SVAL(right, 0);
+
+	ret = (tag_left - tag_right);
+	if (!ret) {
+		/* ID is the third element in the entry, after two short
+		   integers (tag and perm), i.e at offset 4.
+		*/
+		id_left = IVAL(left, 4);
+		id_right = IVAL(right, 4);
+		ret = id_left - id_right;
+	}
+
+	return ret;
+}
+
+
 static ssize_t smb_to_gluster_acl(SMB_ACL_T theacl, char *buf, size_t len)
 {
 	ssize_t size;
-	struct gluster_ace *ace;
 	struct smb_acl_entry *smb_ace;
-	struct gluster_acl_header *hdr;
 	int i;
 	int count;
 	uint16_t tag;
 	uint16_t perm;
 	uint32_t id;
+	int offset;
 
 	count = theacl->count;
 
-	size = sizeof(*hdr) + (count * sizeof(*ace));
+	size = GLUSTER_ACL_HEADER_SIZE + (count * GLUSTER_ACL_ENTRY_SIZE);
 	if (!buf) {
 		return size;
 	}
@@ -1162,13 +1214,14 @@ static ssize_t smb_to_gluster_acl(SMB_ACL_T theacl, char *buf, size_t len)
 		return -1;
 	}
 
-	hdr = (void *)buf;
-	ace = hdr->entries;
 	smb_ace = theacl->acl;
 
-	hdr->version = htonl(GLUSTER_ACL_VERSION);
+	/* Version is the first 4 bytes of the ACL */
+	SIVAL(buf, 0, GLUSTER_ACL_VERSION);
+	offset = GLUSTER_ACL_HEADER_SIZE;
 
 	for (i = 0; i < count; i++) {
+		/* Calculate tag */
 		switch(smb_ace->a_type) {
 		case SMB_ACL_USER:
 			tag = GLUSTER_ACL_USER;
@@ -1195,8 +1248,8 @@ static ssize_t smb_to_gluster_acl(SMB_ACL_T theacl, char *buf, size_t len)
 			return -1;
 		}
 
-		ace->tag = ntohs(tag);
 
+		/* Calculate id */
 		switch(smb_ace->a_type) {
 		case SMB_ACL_USER:
 			id = smb_ace->info.user.uid;
@@ -1209,19 +1262,35 @@ static ssize_t smb_to_gluster_acl(SMB_ACL_T theacl, char *buf, size_t len)
 			break;
 		}
 
-		ace->id = ntohl(id);
+		/* Calculate perm */
+		perm = 0;
 
-		ace->perm = 0;
-		ace->perm |=
+		perm |=
 			((smb_ace->a_perm & SMB_ACL_READ) ? GLUSTER_ACL_READ : 0);
-		ace->perm |=
+		perm |=
 			((smb_ace->a_perm & SMB_ACL_WRITE) ? GLUSTER_ACL_WRITE : 0);
-		ace->perm |=
+		perm |=
 			((smb_ace->a_perm & SMB_ACL_EXECUTE) ? GLUSTER_ACL_EXECUTE : 0);
 
-		ace++;
+
+		/* TAG is the first 2 bytes of an entry */
+		SSVAL(buf, offset, tag);
+		offset += 2;
+
+		/* PERM is the next 2 bytes of an entry */
+		SSVAL(buf, offset, perm);
+		offset += 2;
+
+		/* ID is the last 4 bytes of an entry */
+		SIVAL(buf, offset, id);
+		offset += 4;
+
 		smb_ace++;
 	}
+
+	/* Skip the header, sort @count number of 8-byte entries */
+	qsort(buf+GLUSTER_ACL_HEADER_SIZE, count, GLUSTER_ACL_ENTRY_SIZE,
+	      gluster_ace_cmp);
 
 	return size;
 }
