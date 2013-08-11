@@ -111,7 +111,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 			     server_name, "IPC$",
 			     auth_info,
 			     false, false,
-			     PROTOCOL_NT1,
+			     lp_cli_maxprotocol(),
 			     0, 0x20, &cli_ipc);
 	if (NT_STATUS_IS_OK(status)) {
 		cli_set_username(cli_ipc, ctx->username);
