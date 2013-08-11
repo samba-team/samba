@@ -449,9 +449,9 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	cli_set_timeout(c, smbc_getTimeout(context));
 
-	status = smbXcli_negprot(c->conn, c->timeout, PROTOCOL_CORE,
-				 PROTOCOL_NT1);
-
+	status = smbXcli_negprot(c->conn, c->timeout,
+				 lp_cli_minprotocol(),
+				 lp_cli_maxprotocol());
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(c);
 		errno = ETIMEDOUT;
