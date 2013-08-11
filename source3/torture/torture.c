@@ -46,7 +46,6 @@ extern char *optarg;
 extern int optind;
 
 fstring host, workgroup, share, password, username, myname;
-static int max_protocol = PROTOCOL_NT1;
 static const char *sockops="TCP_NODELAY";
 int torture_nprocs=1;
 static int port_to_use=0;
@@ -9713,7 +9712,7 @@ static void usage(void)
 			fstrcpy(workgroup,optarg);
 			break;
 		case 'm':
-			max_protocol = interpret_protocol(optarg, max_protocol);
+			lp_set_cmdline("client max protocol", optarg);
 			break;
 		case 'N':
 			torture_nprocs = atoi(optarg);

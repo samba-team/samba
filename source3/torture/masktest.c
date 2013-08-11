@@ -27,7 +27,7 @@
 static fstring password;
 static fstring username;
 static int got_pass;
-static int max_protocol = PROTOCOL_NT1;
+static int max_protocol = -1;
 static bool showall = False;
 static bool old_list = False;
 static const char *maskchars = "<>\"?*abc.";
@@ -510,7 +510,7 @@ static void usage(void)
 			verbose++;
 			break;
 		case 'M':
-			max_protocol = interpret_protocol(optarg, max_protocol);
+			lp_set_cmdline("client max protocol", optarg);
 			break;
 		case 'U':
 			fstrcpy(username,optarg);
@@ -548,6 +548,7 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
+	max_protocol = lp_cli_maxprotocol();
 
 	cli = connect_one(share);
 	if (!cli) {
