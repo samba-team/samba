@@ -559,31 +559,6 @@ char *get_mydnsdomname(TALLOC_CTX *ctx)
 	}
 }
 
-/****************************************************************************
- Interpret a protocol description string, with a default.
-****************************************************************************/
-
-int interpret_protocol(const char *str,int def)
-{
-	if (strequal(str,"NT1"))
-		return(PROTOCOL_NT1);
-	if (strequal(str,"LANMAN2"))
-		return(PROTOCOL_LANMAN2);
-	if (strequal(str,"LANMAN1"))
-		return(PROTOCOL_LANMAN1);
-	if (strequal(str,"CORE"))
-		return(PROTOCOL_CORE);
-	if (strequal(str,"COREPLUS"))
-		return(PROTOCOL_COREPLUS);
-	if (strequal(str,"CORE+"))
-		return(PROTOCOL_COREPLUS);
-
-	DEBUG(0,("Unrecognised protocol level %s\n",str));
-
-	return(def);
-}
-
-
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************
  Remove any mount options such as -rsize=2048,wsize=2048 etc.
