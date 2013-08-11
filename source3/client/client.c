@@ -58,7 +58,7 @@ const char *cmd_ptr = NULL;
 static int io_bufsize = 524288;
 
 static int name_type = 0x20;
-static int max_protocol = PROTOCOL_NT1;
+static int max_protocol = -1;
 
 static int process_tok(char *tok);
 static int cmd_help(void);
@@ -5456,7 +5456,7 @@ static int do_message_op(struct user_auth_info *a_info)
 			}
 			break;
 		case 'm':
-			max_protocol = interpret_protocol(poptGetOptArg(pc), max_protocol);
+			lp_set_cmdline("client max protocol", poptGetOptArg(pc));
 			break;
 		case 'T':
 			/* We must use old option processing for this. Find the
@@ -5573,6 +5573,8 @@ static int do_message_op(struct user_auth_info *a_info)
 
 	/* Ensure we have a password (or equivalent). */
 	set_cmdline_auth_info_getpass(auth_info);
+
+	max_protocol = lp_cli_maxprotocol();
 
 	if (tar_type) {
 		if (cmdstr)
