@@ -1127,6 +1127,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	uint32_t nt_version = NETLOGON_NT_VERSION_1;
 	NTSTATUS status;
 	const char *dc_name;
+	fstring nbtname;
 
 	ip_list.ss = *pss;
 	ip_list.port = 0;
@@ -1210,9 +1211,17 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 
 	/* try node status request */
 
-	if (name_status_find(domain->name, 0x1c, 0x20, pss, *name) ) {
+	if (name_status_find(domain->name, 0x1c, 0x20, pss, nbtname) ) {
 		namecache_store(*name, 0x20, 1, &ip_list);
-		return True;
+
+		if (name != NULL) {
+			*name = talloc_strdup(mem_ctx, nbtname);
+			if (*name == NULL) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 	return False;
 }
