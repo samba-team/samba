@@ -76,6 +76,7 @@ manpages='''
          manpages/vfs_smb_traffic_analyzer.8
          manpages/vfs_streams_depot.8
          manpages/vfs_streams_xattr.8
+         manpages/vfs_syncops.8
          manpages/vfs_time_audit.8
          manpages/vfs_tsmsm.8
          manpages/vfs_xattr_tdb.8
