@@ -6,15 +6,30 @@
 
 This is is the latest stable release of Samba 3.6.
 
-Major enhancements in Samba 3.6.18 include:
-
-o
-
 
 Changes since 3.6.17:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 9777: vfs_dirsort uses non-stackable calls, dirfd(), malloc instead
+      of talloc and doesn't cope with directories being modified whilst reading.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * BUG 9678: Windows 8 Roaming profiles fail.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 9636: Fix parsing linemarkers in preprocessor output.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 9880: Use of wrong RFC2307 primary group field.
+    * BUG 9983: Fix output of syslog-facility check.
+
+
+o   Ralph Wuerthner <ralphw@de.ibm.com>
+    * BUG 10064: Linux kernel oplock breaks can miss signals.
 
 
 ######################################################################
