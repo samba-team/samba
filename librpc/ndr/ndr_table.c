@@ -73,7 +73,7 @@ const char *ndr_interface_name(const struct GUID *uuid, uint32_t if_version)
 int ndr_interface_num_calls(const struct GUID *uuid, uint32_t if_version)
 {
 	const struct ndr_interface_list *l;
-	for (l=ndr_interfaces;l;l=l->next){
+	for (l=ndr_table_list();l;l=l->next){
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid) &&
 		    l->table->syntax_id.if_version == if_version) {
 			return l->table->num_calls;
@@ -89,7 +89,7 @@ int ndr_interface_num_calls(const struct GUID *uuid, uint32_t if_version)
 const struct ndr_interface_table *ndr_table_by_name(const char *name)
 {
 	const struct ndr_interface_list *l;
-	for (l=ndr_interfaces;l;l=l->next) {
+	for (l=ndr_table_list();l;l=l->next) {
 		if (strcasecmp(l->table->name, name) == 0) {
 			return l->table;
 		}
@@ -103,7 +103,7 @@ const struct ndr_interface_table *ndr_table_by_name(const char *name)
 const struct ndr_interface_table *ndr_table_by_uuid(const struct GUID *uuid)
 {
 	const struct ndr_interface_list *l;
-	for (l=ndr_interfaces;l;l=l->next) {
+	for (l=ndr_table_list();l;l=l->next) {
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid)) {
 			return l->table;
 		}
