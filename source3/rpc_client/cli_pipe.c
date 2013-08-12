@@ -1839,6 +1839,25 @@ static uint32_t rpccli_bh_set_timeout(struct dcerpc_binding_handle *h,
 	return rpccli_set_timeout(hs->rpc_cli, timeout);
 }
 
+static void rpccli_bh_auth_info(struct dcerpc_binding_handle *h,
+				enum dcerpc_AuthType *auth_type,
+				enum dcerpc_AuthLevel *auth_level)
+{
+	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct rpccli_bh_state);
+
+	if (hs->rpc_cli == NULL) {
+		return;
+	}
+
+	if (hs->rpc_cli->auth == NULL) {
+		return;
+	}
+
+	*auth_type = hs->rpc_cli->auth->auth_type;
+	*auth_level = hs->rpc_cli->auth->auth_level;
+}
+
 struct rpccli_bh_raw_call_state {
 	DATA_BLOB in_data;
 	DATA_BLOB out_data;
@@ -2018,6 +2037,7 @@ static const struct dcerpc_binding_handle_ops rpccli_bh_ops = {
 	.name			= "rpccli",
 	.is_connected		= rpccli_bh_is_connected,
 	.set_timeout		= rpccli_bh_set_timeout,
+	.auth_info		= rpccli_bh_auth_info,
 	.raw_call_send		= rpccli_bh_raw_call_send,
 	.raw_call_recv		= rpccli_bh_raw_call_recv,
 	.disconnect_send	= rpccli_bh_disconnect_send,
