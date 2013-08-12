@@ -553,7 +553,7 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		GLOBAL_SECTION_SNUM, "external_rpc_pipe", "socket_dir",
 		lp_ncalrpc_dir());
 	if (socket_dir == NULL) {
-		DEBUG(0, ("externan_rpc_pipe:socket_dir not set\n"));
+		DEBUG(0, ("external_rpc_pipe:socket_dir not set\n"));
 		goto fail;
 	}
 	socket_np_dir = talloc_asprintf(talloc_tos(), "%s/np", socket_dir);
