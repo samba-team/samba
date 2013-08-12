@@ -23,10 +23,9 @@ C<test_smbclient_tarmode.pl> - Test for smbclient tar backup feature
 
 =cut
 
-use v5.14;
+use v5.10;
 use strict;
 use warnings;
-no warnings 'experimental::smartmatch';
 
 use Archive::Tar;
 use Data::Dumper;
@@ -832,13 +831,13 @@ sub parse_test_string {
     }
 
     for (split /,/, $s) {
-        when (/^\d+$/) {
+        if (/^\d+$/) {
             if ($_ >= @TESTS) {
                 return ();
             }
             push @tests, $TESTS[$_];
         }
-        when (/^(\d+)-(\d+)$/) {
+        elsif (/^(\d+)-(\d+)$/) {
             my ($min, $max) = sort ($1, $2);
             if ($max >= @TESTS) {
                 return ();
@@ -848,7 +847,7 @@ sub parse_test_string {
                 push @tests, $TESTS[$_];
             }
         }
-        default {
+        else {
             return ();
         }
     }
@@ -1062,7 +1061,8 @@ sub check_tar {
     while (my $f = $i->()) {
         if ($f->has_content) {
             $total++;
-            my $p = $f->full_path =~ s{^\./+}{}r;
+            my $p = $f->full_path;
+            $p =~ s{^\./+}{};
 
             # file that shouldn't be there
             if (!exists $done{$p}) {
@@ -1137,7 +1137,9 @@ sub smb_client {
                       join(' ', map {quotemeta} (@SMBARGS, @args)));
 
     if ($DEBUG) {
-        say color('bold yellow'),$cmd =~ s{\\([./+-])}{$1}gr,color('reset');
+        my $tmp = $cmd;
+        $tmp =~ s{\\([./+-])}{$1}g;
+        say color('bold yellow'), $tmp, color('reset');
     }
 
     my $out = `$cmd 2>&1`;
@@ -1330,7 +1332,9 @@ Return C<undef> if the file is local.
 sub remotepath {
     my ($s) = @_;
     return undef if !$s->{remote};
-    cleanpath(($s->{dir}.'/'.$s->{name}) =~ s{^/}{}r);
+    my $r = $s->{dir}.'/'.$s->{name};
+    $r =~ s{^/}{};
+    return cleanpath($r);
 }
 
 
@@ -1357,7 +1361,9 @@ Like C<< $f->remotepath >> but prefixed with F<./>
 sub tarpath {
     my $s = shift;
     return undef if !$s->{remote};
-    $s->remotepath =~ s{^\./+}{}r;
+    my $r = $s->remotepath;
+    $r =~ s{^\./+}{};
+    return $r;
 }
 
 =head4 C<< $f->delete_on_destruction( 0 ) >>
@@ -1533,6 +1539,7 @@ sub list {
     $path ||= '/';
     my @files;
     my $out = main::smb_client('-D', $path, '-c', 'ls');
+    $path =~ s{^/}{};
 
     for (split /\n/, $out) {
         next if !/^  (.+?)\s+([AHSRDN]*)\s+(\d+)\s+(.+)/o;
@@ -1541,7 +1548,7 @@ sub list {
 
         push @files, bless {
             'remote' => 1,
-            'dir'    => $path =~ s{^/}{}r,
+            'dir'    => $path,
             'name'   => $fn,
             'size'   => int($size),
             'date'   => $date,
