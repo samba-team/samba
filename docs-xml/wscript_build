@@ -61,6 +61,7 @@ manpages='''
          manpages/vfs_fileid.8
          manpages/vfs_full_audit.8
          manpages/vfs_gpfs.8
+         manpages/vfs_linux_xfs_sgid.8
          manpages/vfs_media_harmony.8
          manpages/vfs_netatalk.8
          manpages/vfs_notify_fam.8
