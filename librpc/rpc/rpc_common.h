@@ -189,6 +189,10 @@ struct dcerpc_binding_handle_ops {
 	uint32_t (*set_timeout)(struct dcerpc_binding_handle *h,
 				uint32_t timeout);
 
+	void (*auth_info)(struct dcerpc_binding_handle *h,
+			  enum dcerpc_AuthType *auth_type,
+			  enum dcerpc_AuthLevel *auth_level);
+
 	struct tevent_req *(*raw_call_send)(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct dcerpc_binding_handle *h,
@@ -258,6 +262,10 @@ bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h);
 
 uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
 					   uint32_t timeout);
+
+void dcerpc_binding_handle_auth_info(struct dcerpc_binding_handle *h,
+				     enum dcerpc_AuthType *auth_type,
+				     enum dcerpc_AuthLevel *auth_level);
 
 struct tevent_req *dcerpc_binding_handle_raw_call_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,

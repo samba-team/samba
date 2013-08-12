@@ -98,6 +98,31 @@ uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
 	return h->ops->set_timeout(h, timeout);
 }
 
+void dcerpc_binding_handle_auth_info(struct dcerpc_binding_handle *h,
+				     enum dcerpc_AuthType *auth_type,
+				     enum dcerpc_AuthLevel *auth_level)
+{
+	enum dcerpc_AuthType _auth_type;
+	enum dcerpc_AuthLevel _auth_level;
+
+	if (auth_type == NULL) {
+		auth_type = &_auth_type;
+	}
+
+	if (auth_level == NULL) {
+		auth_level = &_auth_level;
+	}
+
+	*auth_type = DCERPC_AUTH_TYPE_NONE;
+	*auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	if (h->ops->auth_info == NULL) {
+		return;
+	}
+
+	h->ops->auth_info(h, auth_type, auth_level);
+}
+
 struct dcerpc_binding_handle_raw_call_state {
 	const struct dcerpc_binding_handle_ops *ops;
 	uint8_t *out_data;
