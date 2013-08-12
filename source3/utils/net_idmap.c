@@ -808,9 +808,59 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 	return net_run_function(c, argc, argv, "net idmap set", func);
 }
 
+static int net_idmap_autorid_get_config(struct net_context *c, int argc,
+					const char **argv)
+{
+	int ret = -1;
+	char *config;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	struct db_context *db = NULL;
+
+	if (argc > 0 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net idmap get config"
+			   " [--db=<inputfile>]\n"
+			   " Get CONFIG entry from autorid database\n"
+			   "	inputfile\tTDB file to read config from.\n"));
+		return c->display_usage ? 0 : -1;
+	}
+
+	mem_ctx = talloc_stackframe();
+
+	if (!net_idmap_opendb_autorid(mem_ctx, c, true, &db)) {
+		goto done;
+	}
+
+	status = idmap_autorid_getconfigstr(db, mem_ctx, &config);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "%s: %s\n",
+			  _("Error: unable to read config entry"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+	printf("CONFIG: %s\n", config);
+	ret = 0;
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+
 static int net_idmap_get(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
+		{
+			"config",
+			net_idmap_autorid_get_config,
+			NET_TRANSPORT_LOCAL,
+			N_("Get the global configuration from the autorid database"),
+			N_("net idmap get config \n"
+			   "  Get the global configuration from the autorid database ")
+		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
