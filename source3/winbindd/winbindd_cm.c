@@ -2589,11 +2589,16 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
 			invalidate_cm_connection(&domain->conn);
 			status = cm_connect_lsa_tcp(domain, mem_ctx, cli);
 		}
-		if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
-		return NT_STATUS_OK;
+		/*
+		 * we tried twice to connect via ncan_ip_tcp and schannel and
+		 * failed - maybe it is a trusted domain we can't connect to ?
+		 * do not try tcp next time - gd
+		 */
+		domain->can_do_ncacn_ip_tcp = false;
 	}
 
 	status = cm_connect_lsa(domain, mem_ctx, cli, lsa_policy);
