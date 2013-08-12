@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_linux_xfs_sgid.8">
+
+<refmeta>
+	<refentrytitle>vfs_syncops</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.1</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_linux_xfs_sgid</refname>
+	<refpurpose></refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = linux_xfs_sgid</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>
+	<command>vfs_linux_xfs_sgid</command> is a VFS module to work around an
+	old Linux XFS bug that still exists: Under certain circumstances the
+	SGID bit is not inherited (<ulink url="http://oss.sgi.com/bugzilla/show_bug.cgi?id=280">
+	http://oss.sgi.com/bugzilla/show_bug.cgi?id=280</ulink>).
+	The <command>vfs_linux_xfs_sgid</command> VFS module will work around this
+	bug by manually setting the SGID bit after a <command>mkdir</command>
+	if the parent directory had the SGID bit set.
+	</para>
+
+	<para>This module is stackable.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>Add syncops functionality for [share]:</para>
+<programlisting>
+        <smbconfsection name="[share]"/>
+	<smbconfoption name="vfs objects">linux_xfs_sgid</smbconfoption>
+</programlisting>
+
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4.1.0 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
