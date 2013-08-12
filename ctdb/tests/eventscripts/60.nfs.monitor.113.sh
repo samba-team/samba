@@ -12,7 +12,4 @@ rpc_services_down "nfs"
 CTDB_NFS_DUMP_STUCK_THREADS=5
 FAKE_NFSD_THREAD_PIDS=""
 
-iterate_test 6 'ok_null' \
-    2 'rpc_set_service_failure_response "nfsd"' \
-    4 'rpc_set_service_failure_response "nfsd"' \
-    6 'rpc_set_service_failure_response "nfsd"'
+iterate_test 10 'rpc_set_service_failure_response "nfsd"'

@@ -1,3 +1,2 @@
--ge 6 verbose unhealthy
--eq 4 verbose restart
--eq 2 restart:b
+%   10 verbose restart:b unhealthy
+-ge  2 verbose unhealthy
