@@ -200,6 +200,29 @@ static uint32_t dcerpc_bh_set_timeout(struct dcerpc_binding_handle *h,
 	return old;
 }
 
+static void dcerpc_bh_auth_info(struct dcerpc_binding_handle *h,
+				enum dcerpc_AuthType *auth_type,
+				enum dcerpc_AuthLevel *auth_level)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	if (hs->p == NULL) {
+		return;
+	}
+
+	if (hs->p->conn == NULL) {
+		return;
+	}
+
+	if (hs->p->conn->security_state.auth_info == NULL) {
+		return;
+	}
+
+	*auth_type = hs->p->conn->security_state.auth_info->auth_type;
+	*auth_level = hs->p->conn->security_state.auth_info->auth_level;
+}
+
 struct dcerpc_bh_raw_call_state {
 	struct tevent_context *ev;
 	struct dcerpc_binding_handle *h;
@@ -552,6 +575,7 @@ static const struct dcerpc_binding_handle_ops dcerpc_bh_ops = {
 	.name			= "dcerpc",
 	.is_connected		= dcerpc_bh_is_connected,
 	.set_timeout		= dcerpc_bh_set_timeout,
+	.auth_info		= dcerpc_bh_auth_info,
 	.raw_call_send		= dcerpc_bh_raw_call_send,
 	.raw_call_recv		= dcerpc_bh_raw_call_recv,
 	.disconnect_send	= dcerpc_bh_disconnect_send,
