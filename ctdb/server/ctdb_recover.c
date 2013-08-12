@@ -1153,7 +1153,7 @@ static int store_tdb_record(struct ctdb_context *ctdb,
 		goto done;
 	}
 
-	hdr2 = (struct ctdb_ltdb_header *)data.dptr;
+	hdr2 = (struct ctdb_ltdb_header *)data2.dptr;
 
 	if (hdr2->rsn > hdr->rsn) {
 		DEBUG(DEBUG_INFO, (__location__ " Skipping record with "
