@@ -2494,7 +2494,7 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 				    0, /* timeout */
 				    tcon, session,
 				    fixed, fixed_len,
-				    NULL, 0);
+				    NULL, 0, 0);
 	if (subreq == NULL) {
 		return false;
 	}
@@ -2543,7 +2543,8 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      const uint8_t *fixed,
 				      uint16_t fixed_len,
 				      const uint8_t *dyn,
-				      uint32_t dyn_len)
+				      uint32_t dyn_len,
+				      uint32_t max_dyn_len)
 {
 	struct tevent_req *req;
 	struct smbXcli_req_state *state;
@@ -2616,6 +2617,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	state->smb2.fixed_len = fixed_len;
 	state->smb2.dyn = dyn;
 	state->smb2.dyn_len = dyn_len;
+	state->smb2.max_dyn_len = max_dyn_len;
 
 	if (state->smb2.should_encrypt) {
 		SIVAL(state->smb2.transform, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
@@ -2985,12 +2987,15 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	NTSTATUS status;
+	uint32_t max_dyn_len = 0;
 
 	req = smb2cli_req_create(mem_ctx, ev, conn, cmd,
 				 additional_flags, clear_flags,
 				 timeout_msec,
 				 tcon, session,
-				 fixed, fixed_len, dyn, dyn_len);
+				 fixed, fixed_len,
+				 dyn, dyn_len,
+				 max_dyn_len);
 	if (req == NULL) {
 		return NULL;
 	}
