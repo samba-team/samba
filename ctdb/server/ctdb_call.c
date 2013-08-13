@@ -1082,9 +1082,9 @@ finished_ro:
 /*
   called when a CTDB_REPLY_DMASTER packet comes in
 
-  This packet comes in from the lmaster response to a CTDB_REQ_CALL
+  This packet comes in from the lmaster in response to a CTDB_REQ_CALL
   request packet. It means that the current dmaster wants to give us
-  the dmaster role
+  the dmaster role.
 */
 void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
