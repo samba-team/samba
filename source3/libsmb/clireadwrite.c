@@ -1066,7 +1066,13 @@ NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_writeall_send(frame, ev, cli, fnum, mode, buf, offset, size);
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		req = cli_smb2_writeall_send(frame, ev, cli, fnum, mode,
+					     buf, offset, size);
+	} else {
+		req = cli_writeall_send(frame, ev, cli, fnum, mode,
+					buf, offset, size);
+	}
 	if (req == NULL) {
 		goto fail;
 	}
@@ -1074,7 +1080,11 @@ NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
-	status = cli_writeall_recv(req, pwritten);
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_writeall_recv(req, pwritten);
+	} else {
+		status = cli_writeall_recv(req, pwritten);
+	}
  fail:
 	TALLOC_FREE(frame);
 	return status;
