@@ -37,28 +37,30 @@
 	NT_STATUS_NOT_SAME_DEVICE and the client has to move the file by
 	manual copy and delete operations. If the rename by copy is done by the
 	server this can be much more efficient. vfs_crossrename tries to do
-	this server-side cross-device rename operation. There are however
-	limitations that this module currently does not solve:
+	this server-side cross-device rename operation.
+	</para>
+
+	<para>There are however	limitations that this module currently does not
+	solve:</para>
 
 	<variablelist>
 		<varlistentry>
-		the ACLs of files are not preserved
+		<para>The ACLs of files are not preserved,</para>
 		</varlistentry>
 		<varlistentry>
-		meta data in EAs are not preserved
+		<para>meta data in EAs are not preserved,</para>
 		</varlistentry>
 		<varlistentry>
-		renames of whole subdirectories cannot be done recursively,
+		<para>renames of whole subdirectories cannot be done recursively,
 		in that case we still return STATUS_NOT_SAME_DEVICE and
-		let the client decide what to do
+		let the client decide what to do,</para>
 		</varlistentry>
 		<varlistentry>
-		rename operations of huge files can cause hangs on the
+		<para>rename operations of huge files can cause hangs on the
 		client because clients expect a rename operation to
-		return fast
+		return fast.</para>
 		</varlistentry>
 	</variablelist>
-	</para>
 
 	<para>This module is stackable.</para>
 
