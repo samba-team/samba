@@ -1698,7 +1698,7 @@ static bool test_ioctl_compress_dir_inherit(struct torture_context *torture,
 		torture_skip(torture, "FS compression not supported\n");
 	}
 
-	/* set compression on base share, then check for file inheritance */
+	/* set compression on parent dir, then check for inheritance */
 	status = test_ioctl_compress_set(torture, tmp_ctx, tree, dirh,
 					 COMPRESSION_FORMAT_LZNT1);
 	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_COMPRESSION");
@@ -1893,6 +1893,145 @@ static bool test_ioctl_compress_query_file_attr(struct torture_context *torture,
 }
 
 /*
+ * Specify FILE_ATTRIBUTE_COMPRESSED on creation, Windows does not retain this
+ * attribute.
+ */
+static bool test_ioctl_compress_create_with_attr(struct torture_context *torture,
+						 struct smb2_tree *tree)
+{
+	struct smb2_handle fh2;
+	union smb_fileinfo io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	uint16_t compression_fmt;
+	bool ok;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME2, &fh2, 0, SEC_RIGHTS_FILE_ALL,
+			(FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_COMPRESSED));
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh2,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh2);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh2,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "initial compression state not NONE");
+
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	io.generic.in.file.handle = fh2;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FILE");
+
+	torture_assert(torture,
+		((io.all_info2.out.attrib & FILE_ATTRIBUTE_COMPRESSED) == 0),
+		       "incorrect compression attr");
+
+	smb2_util_close(tree, fh2);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+static bool test_ioctl_compress_inherit_disable(struct torture_context *torture,
+						struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	struct smb2_handle dirh;
+	char path_buf[PATH_MAX];
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	uint16_t compression_fmt;
+
+	struct smb2_create io;
+
+	smb2_deltree(tree, DNAME);
+	smb2_util_mkdir(tree, DNAME);
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    DNAME, &dirh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_DIRECTORY);
+	torture_assert(torture, ok, "setup compression directory");
+
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &dirh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, dirh);
+		smb2_deltree(tree, DNAME);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
+	/* set compression on parent dir, then check for inheritance */
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, dirh,
+					 COMPRESSION_FORMAT_LZNT1);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_COMPRESSION");
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, dirh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_LZNT1),
+		       "invalid compression state after set");
+	smb2_util_close(tree, dirh);
+
+	snprintf(path_buf, PATH_MAX, "%s\\%s", DNAME, FNAME);
+	torture_comment(torture, "path is: %s\n", path_buf);
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    path_buf, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_LZNT1),
+		       "compression attr not inherited by new file");
+	smb2_util_close(tree, fh);
+
+	snprintf(path_buf, PATH_MAX, "%s\\%s", DNAME, FNAME2);
+
+	/* NO_COMPRESSION option should block inheritance */
+	ZERO_STRUCT(io);
+	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.create_options = NTCREATEX_OPTIONS_NO_COMPRESSION;
+	io.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.fname = path_buf;
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "file create");
+
+	fh = io.out.file.handle;
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "compression attr inherited by NO_COMPRESSION file");
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+
+/*
    basic testing of SMB2 ioctls
 */
 struct torture_suite *torture_smb2_ioctl_init(void)
@@ -1945,6 +2084,10 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_compress_invalid_buf);
 	torture_suite_add_1smb2_test(suite, "compress_query_file_attr",
 				     test_ioctl_compress_query_file_attr);
+	torture_suite_add_1smb2_test(suite, "compress_create_with_attr",
+				     test_ioctl_compress_create_with_attr);
+	torture_suite_add_1smb2_test(suite, "compress_inherit_disable",
+				     test_ioctl_compress_inherit_disable);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
