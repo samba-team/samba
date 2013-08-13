@@ -246,6 +246,11 @@ struct smbXcli_req_state {
 		 */
 		struct iovec *recv_iov;
 
+		/*
+		 * the expected max for the response dyn_len
+		 */
+		uint32_t max_dyn_len;
+
 		uint16_t credit_charge;
 
 		bool should_sign;
@@ -2788,7 +2793,12 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		}
 
 		if (state->conn->smb2.server.capabilities & SMB2_CAP_LARGE_MTU) {
-			charge = (MAX(state->smb2.dyn_len, 1) - 1)/ 65536 + 1;
+			uint32_t max_dyn_len = 1;
+
+			max_dyn_len = MAX(max_dyn_len, state->smb2.dyn_len);
+			max_dyn_len = MAX(max_dyn_len, state->smb2.max_dyn_len);
+
+			charge = (max_dyn_len - 1)/ 65536 + 1;
 		} else {
 			charge = 1;
 		}
