@@ -199,6 +199,7 @@ NTSTATUS smb1cli_echo_recv(struct tevent_req *req);
 NTSTATUS smb1cli_echo(struct smbXcli_conn *conn, uint32_t timeout_msec,
 		      uint16_t num_echos, DATA_BLOB data);
 
+bool smb2cli_conn_req_possible(struct smbXcli_conn *conn, uint32_t *max_dyn_len);
 uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn);
 uint16_t smb2cli_conn_server_security_mode(struct smbXcli_conn *conn);
 uint32_t smb2cli_conn_max_trans_size(struct smbXcli_conn *conn);
