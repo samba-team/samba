@@ -360,7 +360,11 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->chunk_size = cli_read_max_bufsize(cli);
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		state->chunk_size = smb2cli_conn_max_read_size(cli->conn);
+	} else {
+		state->chunk_size = cli_read_max_bufsize(cli);
+	}
 	if (state->chunk_size > page_size) {
 		state->chunk_size &= ~(page_size - 1);
 	}
@@ -519,19 +523,43 @@ static void cli_pull_chunk_ship(struct cli_pull_chunk *chunk)
 	ofs = chunk->ofs + chunk->tmp_size;
 	size = chunk->total_size - chunk->tmp_size;
 
-	ok = smb1cli_conn_req_possible(state->cli->conn);
-	if (!ok) {
-		return;
-	}
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		uint32_t max_size;
 
-	chunk->subreq = cli_read_andx_send(chunk,
-					   state->ev,
-					   state->cli,
-					   state->fnum,
-					   ofs,
-					   size);
-	if (tevent_req_nomem(chunk->subreq, req)) {
-		return;
+		ok = smb2cli_conn_req_possible(state->cli->conn, &max_size);
+		if (!ok) {
+			return;
+		}
+
+		/*
+		 * downgrade depending on the available credits
+		 */
+		size = MIN(max_size, size);
+
+		chunk->subreq = cli_smb2_read_send(chunk,
+						   state->ev,
+						   state->cli,
+						   state->fnum,
+						   ofs,
+						   size);
+		if (tevent_req_nomem(chunk->subreq, req)) {
+			return;
+		}
+	} else {
+		ok = smb1cli_conn_req_possible(state->cli->conn);
+		if (!ok) {
+			return;
+		}
+
+		chunk->subreq = cli_read_andx_send(chunk,
+						   state->ev,
+						   state->cli,
+						   state->fnum,
+						   ofs,
+						   size);
+		if (tevent_req_nomem(chunk->subreq, req)) {
+			return;
+		}
 	}
 	tevent_req_set_callback(chunk->subreq,
 				cli_pull_chunk_done,
@@ -557,7 +585,11 @@ static void cli_pull_chunk_done(struct tevent_req *subreq)
 
 	chunk->subreq = NULL;
 
-	status = cli_read_andx_recv(subreq, &received, &buf);
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_read_recv(subreq, &received, &buf);
+	} else {
+		status = cli_read_andx_recv(subreq, &received, &buf);
+	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 		received = 0;
 		status = NT_STATUS_OK;
