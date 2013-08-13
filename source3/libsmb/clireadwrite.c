@@ -1120,7 +1120,11 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->priv = priv;
 	state->next_offset = start_offset;
 
-	state->chunk_size = cli_write_max_bufsize(cli, mode, 14);
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		state->chunk_size = smb2cli_conn_max_write_size(cli->conn);
+	} else {
+		state->chunk_size = cli_write_max_bufsize(cli, mode, 14);
+	}
 	if (state->chunk_size > page_size) {
 		state->chunk_size &= ~(page_size - 1);
 	}
@@ -1257,21 +1261,47 @@ static void cli_push_chunk_ship(struct cli_push_chunk *chunk)
 	ofs = chunk->ofs + chunk->tmp_size;
 	size = chunk->total_size - chunk->tmp_size;
 
-	ok = smb1cli_conn_req_possible(state->cli->conn);
-	if (!ok) {
-		return;
-	}
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		uint32_t max_size;
 
-	chunk->subreq = cli_write_andx_send(chunk,
-					    state->ev,
-					    state->cli,
-					    state->fnum,
-					    state->mode,
-					    buf,
-					    ofs,
-					    size);
-	if (tevent_req_nomem(chunk->subreq, req)) {
-		return;
+		ok = smb2cli_conn_req_possible(state->cli->conn, &max_size);
+		if (!ok) {
+			return;
+		}
+
+		/*
+		 * downgrade depending on the available credits
+		 */
+		size = MIN(max_size, size);
+
+		chunk->subreq = cli_smb2_write_send(chunk,
+						    state->ev,
+						    state->cli,
+						    state->fnum,
+						    state->mode,
+						    buf,
+						    ofs,
+						    size);
+		if (tevent_req_nomem(chunk->subreq, req)) {
+			return;
+		}
+	} else {
+		ok = smb1cli_conn_req_possible(state->cli->conn);
+		if (!ok) {
+			return;
+		}
+
+		chunk->subreq = cli_write_andx_send(chunk,
+						    state->ev,
+						    state->cli,
+						    state->fnum,
+						    state->mode,
+						    buf,
+						    ofs,
+						    size);
+		if (tevent_req_nomem(chunk->subreq, req)) {
+			return;
+		}
 	}
 	tevent_req_set_callback(chunk->subreq,
 				cli_push_chunk_done,
@@ -1296,7 +1326,11 @@ static void cli_push_chunk_done(struct tevent_req *subreq)
 
 	chunk->subreq = NULL;
 
-	status = cli_write_andx_recv(subreq, &written);
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_write_recv(subreq, &written);
+	} else {
+		status = cli_write_andx_recv(subreq, &written);
+	}
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
