@@ -595,6 +595,23 @@ uint32_t smb1cli_conn_max_xmit(struct smbXcli_conn *conn)
 	return conn->smb1.max_xmit;
 }
 
+bool smb1cli_conn_req_possible(struct smbXcli_conn *conn)
+{
+	size_t pending;
+	uint16_t possible = conn->smb1.server.max_mux;
+
+	pending = tevent_queue_length(conn->outgoing);
+	if (pending >= possible) {
+		return false;
+	}
+	pending += talloc_array_length(conn->pending);
+	if (pending >= possible) {
+		return false;
+	}
+
+	return true;
+}
+
 uint32_t smb1cli_conn_server_session_key(struct smbXcli_conn *conn)
 {
 	return conn->smb1.server.session_key;
