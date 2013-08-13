@@ -151,7 +151,8 @@ void smb2_transport_send(struct smb2_request *req)
 					    NULL, /* body */
 					    0, /* body_fixed */
 					    NULL, /* dyn */
-					    0); /* dyn_len */
+					    0, /* dyn_len */
+					    0); /* max_dyn_len */
 		if (subreq != NULL) {
 			smbXcli_req_set_pending(subreq);
 			tevent_req_set_callback(subreq,
@@ -190,7 +191,8 @@ void smb2_transport_send(struct smb2_request *req)
 					 tcon,
 					 session,
 					 body.data, body.length,
-					 dyn.data, dyn.length);
+					 dyn.data, dyn.length,
+					 0); /* max_dyn_len */
 	if (req->subreq == NULL) {
 		req->state = SMB2_REQUEST_ERROR;
 		req->status = NT_STATUS_NO_MEMORY;
@@ -347,7 +349,8 @@ static void smb2_transport_break_handler(struct tevent_req *subreq)
 				    NULL, /* body */
 				    0, /* body_fixed */
 				    NULL, /* dyn */
-				    0); /* dyn_len */
+				    0, /* dyn_len */
+				    0); /* max_dyn_len */
 	if (subreq != NULL) {
 		smbXcli_req_set_pending(subreq);
 		tevent_req_set_callback(subreq,
