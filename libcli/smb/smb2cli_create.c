@@ -62,6 +62,7 @@ struct tevent_req *smb2cli_create_send(
 	size_t blobs_offset;
 	uint8_t *dyn;
 	size_t dyn_len;
+	size_t max_dyn_len;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_create_state);
@@ -129,13 +130,23 @@ struct tevent_req *smb2cli_create_send(
 		data_blob_free(&blob);
 	}
 
+	/*
+	 * We use max_dyn_len = 0
+	 * as we don't explicitly ask for any output length.
+	 *
+	 * But it's still possible for the server to return
+	 * large create blobs.
+	 */
+	max_dyn_len = 0;
+
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_CREATE,
 				  0, 0, /* flags */
 				  timeout_msec,
 				  tcon,
 				  session,
 				  state->fixed, sizeof(state->fixed),
-				  dyn, dyn_len);
+				  dyn, dyn_len,
+				  max_dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

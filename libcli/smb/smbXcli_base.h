@@ -242,7 +242,8 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    const uint8_t *fixed,
 				    uint16_t fixed_len,
 				    const uint8_t *dyn,
-				    uint32_t dyn_len);
+				    uint32_t dyn_len,
+				    uint32_t max_dyn_len);
 NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  struct iovec **piov,
 			  const struct smb2cli_req_expected_response *expected,

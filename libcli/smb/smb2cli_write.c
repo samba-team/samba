@@ -82,7 +82,8 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 				  tcon,
 				  session,
 				  state->fixed, sizeof(state->fixed),
-				  dyn, dyn_len);
+				  dyn, dyn_len,
+				  0); /* max_dyn_len */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

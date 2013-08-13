@@ -85,7 +85,8 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 				  NULL, /* tcon */
 				  cli->smb2.session,
 				  state->fixed, sizeof(state->fixed),
-				  dyn, dyn_len);
+				  dyn, dyn_len,
+				  0); /* max_dyn_len */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -211,7 +212,8 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 				  cli->smb2.tcon,
 				  cli->smb2.session,
 				  state->fixed, sizeof(state->fixed),
-				  NULL, 0);
+				  NULL, 0, /* dyn* */
+				  0); /* max_dyn_len */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

@@ -2983,11 +2983,11 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    const uint8_t *fixed,
 				    uint16_t fixed_len,
 				    const uint8_t *dyn,
-				    uint32_t dyn_len)
+				    uint32_t dyn_len,
+				    uint32_t max_dyn_len)
 {
 	struct tevent_req *req;
 	NTSTATUS status;
-	uint32_t max_dyn_len = 0;
 
 	req = smb2cli_req_create(mem_ctx, ev, conn, cmd,
 				 additional_flags, clear_flags,
@@ -4259,7 +4259,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 				state->timeout_msec,
 				NULL, NULL, /* tcon, session */
 				state->smb2.fixed, sizeof(state->smb2.fixed),
-				state->smb2.dyn, dialect_count*2);
+				state->smb2.dyn, dialect_count*2,
+				UINT16_MAX); /* max_dyn_len */
 }
 
 static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
