@@ -3,7 +3,7 @@
 
    test suite for SMB2 ioctl operations
 
-   Copyright (C) David Disseldorp 2011
+   Copyright (C) David Disseldorp 2011-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1531,6 +1531,31 @@ static bool test_ioctl_copy_chunk_max_output_sz(struct torture_context *torture,
 	return true;
 }
 
+static NTSTATUS test_ioctl_compress_fs_supported(struct torture_context *torture,
+						 struct smb2_tree *tree,
+						 TALLOC_CTX *mem_ctx,
+						 struct smb2_handle *fh,
+						 bool *compress_support)
+{
+	NTSTATUS status;
+	union smb_fsinfo info;
+
+	ZERO_STRUCT(info);
+	info.generic.level = RAW_QFS_ATTRIBUTE_INFORMATION;
+	info.generic.handle = *fh;
+	status = smb2_getinfo_fs(tree, tree, &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (info.attribute_info.out.fs_attr & FILE_FILE_COMPRESSION) {
+		*compress_support = true;
+	} else {
+		*compress_support = false;
+	}
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS test_ioctl_compress_get(struct torture_context *torture,
 					TALLOC_CTX *mem_ctx,
 					struct smb2_tree *tree,
@@ -1609,12 +1634,16 @@ static bool test_ioctl_compress_file_flag(struct torture_context *torture,
 				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
 	torture_assert(torture, ok, "setup compression file");
 
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
 	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
 					 &compression_fmt);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST)) {
-		smb2_util_close(tree, fh);
-		torture_skip(torture, "FSCTL_GET_COMPRESSION not supported\n");
-	}
 	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
 
 	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
@@ -1666,14 +1695,18 @@ static bool test_ioctl_compress_dir_inherit(struct torture_context *torture,
 	torture_assert_ntstatus_ok(torture, status, "dir create");
 	dirh = io.out.file.handle;
 
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &dirh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, dirh);
+		smb2_deltree(tree, DNAME);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
 	/* set compression on base share, then check for file inheritance */
 	status = test_ioctl_compress_set(torture, tmp_ctx, tree, dirh,
 					 COMPRESSION_FORMAT_LZNT1);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST)) {
-		smb2_util_close(tree, dirh);
-		smb2_deltree(tree, DNAME);
-		torture_skip(torture, "FSCTL_SET_COMPRESSION not supported\n");
-	}
 	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_COMPRESSION");
 
 	status = test_ioctl_compress_get(torture, tmp_ctx, tree, dirh,
@@ -1744,12 +1777,16 @@ static bool test_ioctl_compress_invalid_format(struct torture_context *torture,
 				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
 	torture_assert(torture, ok, "setup compression file");
 
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
 	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
 					 0x0042); /* bogus */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST)) {
-		smb2_util_close(tree, fh);
-		torture_skip(torture, "FSCTL_SET_COMPRESSION not supported\n");
-	}
 	torture_assert_ntstatus_equal(torture, status,
 				      NT_STATUS_INVALID_PARAMETER,
 				      "invalid FSCTL_SET_COMPRESSION");
@@ -1779,6 +1816,14 @@ static bool test_ioctl_compress_invalid_buf(struct torture_context *torture,
 				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
 	torture_assert(torture, ok, "setup compression file");
 
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
 	ZERO_STRUCT(ioctl);
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
@@ -1787,10 +1832,6 @@ static bool test_ioctl_compress_invalid_buf(struct torture_context *torture,
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST)) {
-		smb2_util_close(tree, fh);
-		torture_skip(torture, "FSCTL_GET_COMPRESSION not supported\n");
-	}
 	/* expect Server 2k12 response status */
 	torture_assert_ntstatus_equal(torture, status,
 				      NT_STATUS_INVALID_USER_BUFFER,
