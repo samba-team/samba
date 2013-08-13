@@ -201,7 +201,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_packet_context *result;
 	const char *sockname = lp_ctdbd_socket();
-	struct sockaddr_un addr;
+	struct sockaddr_un addr = { 0, };
 	int fd;
 	socklen_t salen;
 
@@ -211,7 +211,6 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 		return map_nt_error_from_unix(errno);
 	}
 
-	ZERO_STRUCT(addr);
 	addr.sun_family = AF_UNIX;
 	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sockname);
 
