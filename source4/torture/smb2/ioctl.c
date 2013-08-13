@@ -1842,6 +1842,57 @@ static bool test_ioctl_compress_invalid_buf(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_compress_query_file_attr(struct torture_context *torture,
+						struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	union smb_fileinfo io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	io.generic.in.file.handle = fh;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FILE");
+
+	torture_assert(torture,
+		((io.all_info2.out.attrib & FILE_ATTRIBUTE_COMPRESSED) == 0),
+		       "compression attr before set");
+
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
+					 COMPRESSION_FORMAT_DEFAULT);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_COMPRESSION");
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	io.generic.in.file.handle = fh;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FILE");
+
+	torture_assert(torture,
+		       (io.basic_info.out.attrib & FILE_ATTRIBUTE_COMPRESSED),
+		       "no compression attr after set");
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
    basic testing of SMB2 ioctls
 */
@@ -1893,6 +1944,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_compress_invalid_format);
 	torture_suite_add_1smb2_test(suite, "compress_invalid_buf",
 				     test_ioctl_compress_invalid_buf);
+	torture_suite_add_1smb2_test(suite, "compress_query_file_attr",
+				     test_ioctl_compress_query_file_attr);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
