@@ -1830,10 +1830,12 @@ static bool test_ioctl_compress_invalid_buf(struct torture_context *torture,
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
-	/* expect Server 2k12 response status */
-	torture_assert_ntstatus_equal(torture, status,
-				      NT_STATUS_INVALID_USER_BUFFER,
-				      "invalid FSCTL_SET_COMPRESSION");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_USER_BUFFER)
+	 && !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		/* neither Server 2k12 nor 2k8r2 response status */
+		torture_assert(torture, true,
+			       "invalid FSCTL_SET_COMPRESSION");
+	}
 
 	smb2_util_close(tree, fh);
 	talloc_free(tmp_ctx);
