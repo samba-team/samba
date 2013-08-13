@@ -154,7 +154,8 @@ static bool test_setup_create_fill(struct torture_context *torture,
 				   const char *fname,
 				   struct smb2_handle *fh,
 				   uint64_t size,
-				   uint32_t desired_access)
+				   uint32_t desired_access,
+				   uint32_t file_attributes)
 {
 	struct smb2_create io;
 	NTSTATUS status;
@@ -166,7 +167,7 @@ static bool test_setup_create_fill(struct torture_context *torture,
 
 	ZERO_STRUCT(io);
 	io.in.desired_access = desired_access;
-	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	io.in.file_attributes = file_attributes;
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.share_access =
 		NTCREATEX_SHARE_ACCESS_DELETE|
@@ -215,11 +216,13 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	enum ndr_err_code ndr_ret;
 
 	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME,
-				    src_h, src_size, src_desired_access);
+				    src_h, src_size, src_desired_access,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "src file create fill");
 
 	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME2,
-				    dest_h, dest_size, dest_desired_access);
+				    dest_h, dest_size, dest_desired_access,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "dest file create fill");
 
 	ZERO_STRUCTPN(ioctl);
@@ -1631,7 +1634,8 @@ static bool test_ioctl_compress_file_flag(struct torture_context *torture,
 	uint16_t compression_fmt;
 
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
-				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup compression file");
 
 	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
@@ -1671,7 +1675,6 @@ static bool test_ioctl_compress_dir_inherit(struct torture_context *torture,
 	struct smb2_handle dirh;
 	struct smb2_handle fh;
 	NTSTATUS status;
-	struct smb2_create io;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	uint16_t compression_fmt;
 	bool ok;
@@ -1681,19 +1684,10 @@ static bool test_ioctl_compress_dir_inherit(struct torture_context *torture,
 	status = smb2_util_mkdir(tree, DNAME);
 	torture_assert_ntstatus_ok(torture, status, "mkdir");
 
-	ZERO_STRUCT(io);
-	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
-	io.in.file_attributes   = FILE_ATTRIBUTE_DIRECTORY;
-	io.in.create_disposition = NTCREATEX_DISP_OPEN;
-	io.in.share_access =
-		NTCREATEX_SHARE_ACCESS_DELETE|
-		NTCREATEX_SHARE_ACCESS_READ|
-		NTCREATEX_SHARE_ACCESS_WRITE;
-	io.in.fname = DNAME;
-
-	status = smb2_create(tree, tmp_ctx, &io);
-	torture_assert_ntstatus_ok(torture, status, "dir create");
-	dirh = io.out.file.handle;
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    DNAME, &dirh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_DIRECTORY);
+	torture_assert(torture, ok, "setup compression directory");
 
 	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &dirh,
 						  &ok);
@@ -1718,7 +1712,8 @@ static bool test_ioctl_compress_dir_inherit(struct torture_context *torture,
 
 	snprintf(path_buf, PATH_MAX, "%s\\%s", DNAME, FNAME);
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
-				    path_buf, &fh, 4096, SEC_RIGHTS_FILE_ALL);
+				    path_buf, &fh, 4096, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup compression file");
 
 	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
@@ -1747,7 +1742,8 @@ static bool test_ioctl_compress_dir_inherit(struct torture_context *torture,
 	/* new files should no longer inherit compression attr */
 	snprintf(path_buf, PATH_MAX, "%s\\%s", DNAME, FNAME2);
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
-				    path_buf, &fh, 0, SEC_RIGHTS_FILE_ALL);
+				    path_buf, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
 	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
@@ -1774,7 +1770,8 @@ static bool test_ioctl_compress_invalid_format(struct torture_context *torture,
 	uint16_t compression_fmt;
 
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
-				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup compression file");
 
 	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
@@ -1813,7 +1810,8 @@ static bool test_ioctl_compress_invalid_buf(struct torture_context *torture,
 	union smb_ioctl ioctl;
 
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
-				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup compression file");
 
 	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
@@ -1852,7 +1850,8 @@ static bool test_ioctl_compress_query_file_attr(struct torture_context *torture,
 	bool ok;
 
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
-				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL);
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup compression file");
 
 	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
