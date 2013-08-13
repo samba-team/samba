@@ -69,6 +69,7 @@ bool smbXcli_req_set_pending(struct tevent_req *req);
 
 uint32_t smb1cli_conn_capabilities(struct smbXcli_conn *conn);
 uint32_t smb1cli_conn_max_xmit(struct smbXcli_conn *conn);
+bool smb1cli_conn_req_possible(struct smbXcli_conn *conn);
 uint32_t smb1cli_conn_server_session_key(struct smbXcli_conn *conn);
 const uint8_t *smb1cli_conn_server_challenge(struct smbXcli_conn *conn);
 uint16_t smb1cli_conn_server_security_mode(struct smbXcli_conn *conn);
