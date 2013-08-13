@@ -1787,11 +1787,17 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32
 	int ret;
 	int32_t res;
 	TDB_DATA data;
+	uint64_t tdb_flags = 0;
 
 	data.dptr = discard_const(name);
 	data.dsize = strlen(name)+1;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
+	/* Make sure that volatile databases use jenkins hash */
+	if (!persistent) {
+		tdb_flags = TDB_INCOMPATIBLE_HASH;
+	}
+
+	ret = ctdb_control(ctdb, destnode, tdb_flags,
 			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH, 
 			   0, data, 
 			   mem_ctx, &data, &res, &timeout, NULL);
