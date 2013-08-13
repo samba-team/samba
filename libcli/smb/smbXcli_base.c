@@ -2453,6 +2453,28 @@ bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn)
 		|| (talloc_array_length(conn->pending) != 0));
 }
 
+bool smb2cli_conn_req_possible(struct smbXcli_conn *conn, uint32_t *max_dyn_len)
+{
+	uint16_t credits = 1;
+
+	if (conn->smb2.cur_credits == 0) {
+		if (max_dyn_len != NULL) {
+			*max_dyn_len = 0;
+		}
+		return false;
+	}
+
+	if (conn->smb2.server.capabilities & SMB2_CAP_LARGE_MTU) {
+		credits = conn->smb2.cur_credits;
+	}
+
+	if (max_dyn_len != NULL) {
+		*max_dyn_len = credits * 65536;
+	}
+
+	return true;
+}
+
 uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn)
 {
 	return conn->smb2.server.capabilities;
