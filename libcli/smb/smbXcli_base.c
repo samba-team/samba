@@ -4405,9 +4405,14 @@ static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
 
 		/*
 		 * we got an SMB2 answer, which consumed sequence number 0
-		 * so we need to use 1 as the next one
+		 * so we need to use 1 as the next one.
+		 *
+		 * we also need to set the current credits to 0
+		 * as we consumed the initial one. The SMB2 answer
+		 * hopefully grant us a new credit.
 		 */
 		conn->smb2.mid = 1;
+		conn->smb2.cur_credits = 0;
 		tevent_req_set_callback(subreq, smbXcli_negprot_smb2_done, req);
 		conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
 		return smb2cli_conn_dispatch_incoming(conn, tmp_mem, inbuf);
