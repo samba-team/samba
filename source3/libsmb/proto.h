@@ -54,10 +54,6 @@ struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct cli_state *cli);
 NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req);
-struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev,
-				    struct cli_state *cli);
-NTSTATUS cli_ulogoff_recv(struct tevent_req *req);
 NTSTATUS cli_ulogoff(struct cli_state *cli);
 struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
