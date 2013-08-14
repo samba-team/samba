@@ -2245,7 +2245,7 @@ struct cli_ulogoff_state {
 
 static void cli_ulogoff_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct cli_state *cli)
 {
@@ -2288,7 +2288,7 @@ static void cli_ulogoff_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_ulogoff_recv(struct tevent_req *req)
+static NTSTATUS cli_ulogoff_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
 }
