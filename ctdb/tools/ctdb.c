@@ -69,6 +69,22 @@ static int control_version(struct ctdb_context *ctdb, int argc, const char **arg
 		abort();						\
 	}} while (0)
 
+static uint32_t getpnn(struct ctdb_context *ctdb)
+{
+	if ((options.pnn == CTDB_BROADCAST_ALL) ||
+	    (options.pnn == CTDB_MULTICAST)) {
+		DEBUG(DEBUG_ERR,
+		      ("Cannot get PNN for node %u\n", options.pnn));
+		exit(1);
+	}
+
+	if (options.pnn == CTDB_CURRENT_NODE) {
+		return ctdb_get_pnn(ctdb);
+	} else {
+		return options.pnn;
+	}
+}
+
 /* Pretty print the flags to a static buffer in human-readable format.
  * This never returns NULL!
  */
@@ -736,13 +752,8 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t mypnn;
-	bool ret;
 
-	ret = ctdb_getpnn(ctdb_connection, options.pnn, &mypnn);
-	if (!ret) {
-		DEBUG(DEBUG_ERR, ("Unable to get pnn from node."));
-		return -1;
-	}
+	mypnn = getpnn(ctdb);
 
 	printf("PNN:%d\n", mypnn);
 	return 0;
@@ -920,9 +931,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	uint32_t recmode, recmaster, mypnn;
 	int num_deleted_nodes = 0;
 
-	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
-		return -1;
-	}
+	mypnn = getpnn(ctdb);
 
 	if (!ctdb_getnodemap(ctdb_connection, options.pnn, &nodemap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
@@ -1011,10 +1020,7 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 		printf("Number of nodes:%d\n", (int) talloc_array_length(nodes));
 	}
 
-	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
-		DEBUG(DEBUG_ERR, ("Unable to get PNN from local node\n"));
-		return -1;
-	}
+	mypnn = getpnn(ctdb);
 
 	if (!ctdb_getnodemap(ctdb_connection, options.pnn, &nodemap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
@@ -1181,13 +1187,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 	/* print the pruned list of nodes belonging to this natgw list */
-	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
-		DEBUG(DEBUG_NOTICE, ("Unable to get PNN from node %u\n", options.pnn));
-		/* This is actually harmless and will only result in
-		 * the "this node" indication being missing
-		 */
-		mypnn = -1;
-	}
+	mypnn = getpnn(ctdb);
 	if (options.machinereadable) {
 		control_status_header_machine();
 	} else {
@@ -4360,11 +4360,7 @@ static int control_isnotrecmaster(struct ctdb_context *ctdb, int argc, const cha
 {
 	uint32_t mypnn, recmaster;
 
-	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (mypnn == -1) {
-		printf("Failed to get pnn of node\n");
-		return 1;
-	}
+	mypnn = getpnn(ctdb);
 
 	if (!ctdb_getrecmaster(ctdb_connection, options.pnn, &recmaster)) {
 		printf("Failed to get the recmaster\n");
