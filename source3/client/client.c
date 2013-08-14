@@ -55,7 +55,7 @@ static bool grepable = false;
 static char *cmdstr = NULL;
 const char *cmd_ptr = NULL;
 
-static int io_bufsize = 524288;
+static int io_bufsize = 0; /* we use the default size */
 
 static int name_type = 0x20;
 static int max_protocol = -1;
