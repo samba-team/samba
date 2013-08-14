@@ -5338,6 +5338,7 @@ static int do_message_op(struct user_auth_info *a_info)
 
  int main(int argc,char *argv[])
 {
+	const char **const_argv = discard_const_p(const char *, argv);
 	char *base_directory = NULL;
 	int opt;
 	char *query_host = NULL;
@@ -5388,7 +5389,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	popt_common_set_auth_info(auth_info);
 
 	/* skip argv(0) */
-	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
+	pc = poptGetContext("smbclient", argc, const_argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "service <password>");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
