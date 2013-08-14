@@ -497,6 +497,7 @@ static const struct {
 void reply_negprot(struct smb_request *req)
 {
 	int choice= -1;
+	int chosen_level = -1;
 	int protocol;
 	const char *p;
 	int arch = ARCH_ALL;
@@ -653,8 +654,10 @@ void reply_negprot(struct smb_request *req)
 		if ((supported_protocols[protocol].protocol_level <= lp_srv_maxprotocol()) &&
 				(supported_protocols[protocol].protocol_level >= lp_srv_minprotocol()))
 			while (i < num_cliprotos) {
-				if (strequal(cliprotos[i],supported_protocols[protocol].proto_name))
+				if (strequal(cliprotos[i],supported_protocols[protocol].proto_name)) {
 					choice = i;
+					chosen_level = supported_protocols[protocol].protocol_level;
+				}
 				i++;
 			}
 		if(choice != -1)
@@ -675,14 +678,14 @@ void reply_negprot(struct smb_request *req)
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
 	if ((lp_server_signing() == SMB_SIGNING_REQUIRED)
-	    && (get_Protocol() < PROTOCOL_NT1)) {
+	    && (chosen_level < PROTOCOL_NT1)) {
 		exit_server_cleanly("SMB signing is required and "
 			"client negotiated a downlevel protocol");
 	}
 
 	TALLOC_FREE(cliprotos);
 
-	if (lp_async_smb_echo_handler() && (get_Protocol() < PROTOCOL_SMB2_02) &&
+	if (lp_async_smb_echo_handler() && (chosen_level < PROTOCOL_SMB2_02) &&
 	    !fork_echo_handler(sconn)) {
 		exit_server("Failed to fork echo handler");
 	}
