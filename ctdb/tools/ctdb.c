@@ -1992,11 +1992,7 @@ static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char 
 				timeval_current_ofs(1, 0),
 				ctdb_every_second, ctdb);
 
-	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (rd.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return -1;
-	}
+	rd.pnn = ctdb_get_pnn(ctdb);
 	rd.srvid = getpid();
 
 	/* register a message port for receiveing the reply so that we
@@ -4169,15 +4165,9 @@ static int control_getlog(struct ctdb_context *ctdb, int argc, const char **argv
 	TDB_DATA data;
 	struct timeval tv;
 
-	/* Since this can fail, do it first */
-	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (log_addr.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return -1;
-	}
-
 	/* Process options */
 	main_daemon = true;
+	log_addr.pnn = ctdb_get_pnn(ctdb);
 	log_addr.level = DEBUG_NOTICE;
 	for (i = 0; i < argc; i++) {
 		if (strcmp(argv[i], "recoverd") == 0) {
@@ -4302,14 +4292,8 @@ static int reloadips_all(struct ctdb_context *ctdb)
 		}
 	}
 
-
-	rips.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (rips.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return 1;
-	}
+	rips.pnn = ctdb_get_pnn(ctdb);
 	rips.srvid = getpid();
-
 
 	/* register a message port for receiveing the reply so that we
 	   can receive the reply
@@ -5800,11 +5784,7 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 	TDB_DATA data;
 	struct rd_memdump_reply rd;
 
-	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (rd.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return -1;
-	}
+	rd.pnn = ctdb_get_pnn(ctdb);
 	rd.srvid = getpid();
 
 	/* register a message port for receiveing the reply so that we
@@ -5937,11 +5917,7 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	int mypnn;
 	struct ctdb_node_map *nodemap=NULL;
 
-	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (mypnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to read pnn of local node\n"));
-		return -1;
-	}
+	mypnn = ctdb_get_pnn(ctdb);
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
 	if (ret != 0) {
