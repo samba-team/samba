@@ -1212,7 +1212,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	/* try node status request */
 
 	if (name_status_find(domain->name, 0x1c, 0x20, pss, nbtname) ) {
-		namecache_store(*name, 0x20, 1, &ip_list);
+		namecache_store(nbtname, 0x20, 1, &ip_list);
 
 		if (name != NULL) {
 			*name = talloc_strdup(mem_ctx, nbtname);
