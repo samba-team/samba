@@ -75,10 +75,6 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		       const char *dev, const char *pass, int passlen);
 NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 			  const char *dev, const char *pass, int passlen);
-struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
-                                 struct tevent_context *ev,
-                                 struct cli_state *cli);
-NTSTATUS cli_tdis_recv(struct tevent_req *req);
 NTSTATUS cli_tdis(struct cli_state *cli);
 NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
 			uint16_t port, int name_type, const char *myname,

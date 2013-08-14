@@ -2752,7 +2752,7 @@ struct cli_tdis_state {
 
 static void cli_tdis_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct cli_state *cli)
 {
@@ -2791,7 +2791,7 @@ static void cli_tdis_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_tdis_recv(struct tevent_req *req)
+static NTSTATUS cli_tdis_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
 }
