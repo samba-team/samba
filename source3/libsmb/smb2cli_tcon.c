@@ -243,7 +243,8 @@ static void smb2cli_tdis_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	TALLOC_FREE(state->cli->smb2.tcon);
+	smb2cli_tcon_set_values(state->cli->smb2.tcon, NULL,
+				UINT32_MAX, 0, 0, 0, 0);
 	tevent_req_done(req);
 }
 
