@@ -778,7 +778,7 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 		}
 
 		if (!strupper_m(*machine_krb5_principal)) {
-			SAFE_FREE(machine_krb5_principal);
+			SAFE_FREE(*machine_krb5_principal);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
