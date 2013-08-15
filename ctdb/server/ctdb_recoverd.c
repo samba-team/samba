@@ -2911,17 +2911,30 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 
 	if (!rec->ifaces) {
 		/* We haven't been here before so things have changed */
+		DEBUG(DEBUG_NOTICE, ("Initial interface fetched\n"));
 		ret = true;
 	} else if (rec->ifaces->num != ifaces->num) {
 		/* Number of interfaces has changed */
+		DEBUG(DEBUG_NOTICE, ("Interface count changed from %d to %d\n",
+				     rec->ifaces->num, ifaces->num));
 		ret = true;
 	} else {
 		/* See if interface names or link states have changed */
 		int i;
 		for (i = 0; i < rec->ifaces->num; i++) {
 			struct ctdb_control_iface_info * iface = &rec->ifaces->ifaces[i];
-			if (strcmp(iface->name, ifaces->ifaces[i].name) != 0 ||
-			    iface->link_state != ifaces->ifaces[i].link_state) {
+			if (strcmp(iface->name, ifaces->ifaces[i].name) != 0) {
+				DEBUG(DEBUG_NOTICE,
+				      ("Interface in slot %d changed: %s => %s\n",
+				       i, iface->name, ifaces->ifaces[i].name));
+				ret = true;
+				break;
+			}
+			if (iface->link_state != ifaces->ifaces[i].link_state) {
+				DEBUG(DEBUG_NOTICE,
+				      ("Interface %s changed state: %d => %d\n",
+				       iface->name, iface->link_state,
+				       ifaces->ifaces[i].link_state));
 				ret = true;
 				break;
 			}
