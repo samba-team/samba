@@ -121,6 +121,8 @@ def configure(conf):
             Logs.warn('Disabling pyntdb as python devel libs not found')
             conf.env.disable_python = True
 
+    conf.CHECK_XSLTPROC_MANPAGES()
+
     # This make #include <ccan/...> work.
     conf.ADD_EXTRA_INCLUDES('''#lib''')
 
@@ -152,7 +154,8 @@ def build(bld):
                           public_headers='ntdb.h',
                           public_headers_install=not private_library,
                           pc_files='ntdb.pc',
-                          private_library=private_library)
+                          private_library=private_library,
+                          manpages='man/ntdb.3')
 
         bld.SAMBA_BINARY('ntdbtorture',
                          'tools/ntdbtorture.c',
@@ -161,19 +164,19 @@ def build(bld):
 
         bld.SAMBA_BINARY('ntdbtool',
                          'tools/ntdbtool.c',
-                         deps='ntdb')
+                         deps='ntdb', manpages='man/ntdbtool.8')
 
         bld.SAMBA_BINARY('ntdbdump',
                          'tools/ntdbdump.c',
-                         deps='ntdb')
+                         deps='ntdb', manpages='man/ntdbdump.8')
 
         bld.SAMBA_BINARY('ntdbrestore',
                          'tools/ntdbrestore.c',
-                         deps='ntdb')
+                         deps='ntdb', manpages='man/ntdbrestore.8')
 
         bld.SAMBA_BINARY('ntdbbackup',
                          'tools/ntdbbackup.c',
-                         deps='ntdb')
+                         deps='ntdb', manpages='man/ntdbbackup.8')
 
         if bld.env.DEVELOPER_MODE:
             # FIXME: We need CCAN for some API tests, but waf thinks it's
