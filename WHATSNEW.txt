@@ -1,4 +1,114 @@
                    =============================
+                   Release Notes for Samba 4.0.9
+                          August 20, 2013
+                   =============================
+
+
+This is is the latest stable release of Samba 4.0.
+
+Major enhancements in Samba 4.0.9 include:
+
+o  Fix crash of Winbind after "ls -l /usr/local/samba/var/locks/sysvol"
+   (bug #9820).
+o  Fix segmentation fault while reading incomplete session info (bug #10003).
+o  smbd: Fix a 100% loop at shutdown time (bug #10013).
+
+
+Changes since 4.0.8:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 9930: smbd: Cleanup disonnected durable handles.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9992: Fix Windows error 0x800700FE when copying files with xattr names
+      containing ":".
+    * BUG 10064: Linux kernel oplock breaks can miss signals.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9820: Fix crash of Winbind after "ls -l
+      /usr/local/samba/var/locks/sysvol".
+    * BUG 10014: Fix excessive RID allocation.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 10003: s3-lib: Fix segmentation fault while reading incomplete
+      session info.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * BUG 9678: Windows 8 Roaming profiles fail.
+    * BUG 9930: smbd: Cleanup disonnected durable handles.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 10015: Add debugclass for DNS server.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 9779: Add UPN enumeration to passdb internal API.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 10043: Allow to change the default location for Kerberos credential
+      caches.
+    * BUG 10073: net ads join: Fix segmentation fault in
+      create_local_private_krb5_conf_for_domain.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10013: smbd: Fix a 100% loop at shutdown time.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9820: Fix crash of Winbind after "ls -l
+      /usr/local/samba/var/locks/sysvol".
+    * BUG 10003: s3-lib: Fix segmentation fault while reading incomplete
+      session info.
+    * BUG 10015: Fix/improve debug options.
+
+
+o   Christof Schmitt <christof.schmitt@us.ibm.com>
+    * BUG 9970: vfs_streams_xattr: Do not attempt to write empty attribute
+      twice.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9994: s3-winbind: Do not delete an existing valid credential cache.
+    * BUG 10073: net ads join: Fix segmentation fault in
+      create_local_private_krb5_conf_for_domain.
+
+
+o   Ralph Wuerthner <ralphw@de.ibm.com>
+    * BUG 10064: Linux kernel oplock breaks can miss signals.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.0.8
                           August 05, 2013
                    =============================
@@ -51,8 +161,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.7
