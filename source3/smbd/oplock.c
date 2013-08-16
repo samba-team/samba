@@ -632,7 +632,9 @@ struct break_to_none_state {
 	struct smbd_server_connection *sconn;
 	struct file_id id;
 };
-static void do_break_to_none(struct tevent_req *req);
+static void do_break_to_none(struct tevent_context *ctx,
+			     struct tevent_immediate *im,
+			     void *private_data);
 
 /****************************************************************************
  This function is called on any file modification or lock request. If a file
@@ -644,7 +646,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 					      enum level2_contention_type type)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct tevent_req *req;
+	struct tevent_immediate *im;
 	struct break_to_none_state *state;
 
 	/*
@@ -673,31 +675,25 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	state->sconn = sconn;
 	state->id = fsp->file_id;
 
-	req = tevent_wakeup_send(state, sconn->ev_ctx, timeval_set(0, 0));
-	if (req == NULL) {
-		DEBUG(1, ("tevent_wakeup_send failed\n"));
+	im = tevent_create_immediate(state);
+	if (im == NULL) {
+		DEBUG(1, ("tevent_create_immediate failed\n"));
 		TALLOC_FREE(state);
 		return;
 	}
-	tevent_req_set_callback(req, do_break_to_none, state);
-	return;
+	tevent_schedule_immediate(im, sconn->ev_ctx, do_break_to_none, state);
 }
 
-static void do_break_to_none(struct tevent_req *req)
+static void do_break_to_none(struct tevent_context *ctx,
+			     struct tevent_immediate *im,
+			     void *private_data)
 {
-	struct break_to_none_state *state = tevent_req_callback_data(
-		req, struct break_to_none_state);
+	struct break_to_none_state *state = talloc_get_type_abort(
+		private_data, struct break_to_none_state);
 	struct server_id self = messaging_server_id(state->sconn->msg_ctx);
-	bool ret;
 	int i;
 	struct share_mode_lock *lck;
 
-	ret = tevent_wakeup_recv(req);
-	TALLOC_FREE(req);
-	if (!ret) {
-		DEBUG(1, ("tevent_wakeup_recv failed\n"));
-		goto done;
-	}
 	lck = get_existing_share_mode_lock(talloc_tos(), state->id);
 	if (lck == NULL) {
 		DEBUG(1, ("release_level_2_oplocks_on_change: failed to lock "
