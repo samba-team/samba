@@ -46,12 +46,9 @@ struct tevent_req *tevent_wakeup_send(TALLOC_CTX *mem_ctx,
 	state->wakeup_time = wakeup_time;
 
 	if (!tevent_req_set_endtime(req, ev, wakeup_time)) {
-		goto post;
+		return tevent_req_post(req, ev);
 	}
-
 	return req;
-post:
-	return tevent_req_post(req, ev);
 }
 
 bool tevent_wakeup_recv(struct tevent_req *req)
