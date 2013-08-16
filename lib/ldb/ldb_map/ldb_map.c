@@ -869,9 +869,9 @@ static int map_objectclass_convert_operator(struct ldb_module *module, void *mem
  * ============================== */
 
 /* Build a request to search a record by its DN. */
-struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_map_callback_t callback)
+struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, struct ldb_parse_tree *tree, void *context, ldb_map_callback_t callback)
 {
-	const struct ldb_parse_tree *search_tree;
+	struct ldb_parse_tree *search_tree;
 	struct ldb_context *ldb;
 	struct ldb_request *req;
 	int ret;

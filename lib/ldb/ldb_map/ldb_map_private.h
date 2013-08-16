@@ -75,7 +75,7 @@ struct ldb_dn *ldb_dn_map_rebase_remote(struct ldb_module *module, void *mem_ctx
 struct ldb_request *map_search_base_req(struct map_context *ac,
 					struct ldb_dn *dn,
 					const char * const *attrs,
-					const struct ldb_parse_tree *tree,
+					struct ldb_parse_tree *tree,
 					void *context,
 					ldb_map_callback_t callback);
 struct ldb_request *map_build_fixup_req(struct map_context *ac,
