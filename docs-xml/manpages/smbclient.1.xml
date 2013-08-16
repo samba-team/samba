@@ -37,6 +37,7 @@
 		<arg choice="opt">-p port</arg>
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+		<arg choice="opt">-t &lt;per-operation timeout in seconds&gt;</arg>
 		<arg choice="opt">-k</arg>
 		<arg choice="opt">-P</arg>
 		<arg choice="opt">-c &lt;command&gt;</arg>
@@ -67,6 +68,7 @@
 		<arg choice="opt">-p port</arg>
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+		<arg choice="opt">-t &lt;per-operation timeout in seconds&gt;</arg>
 		<arg choice="opt">-T&lt;c|x&gt;IXFqgbNan</arg>
 		<arg choice="opt">-k</arg>
 	</cmdsynopsis>
@@ -347,6 +349,18 @@
 		&popt.common.credentials;
 		&popt.common.connection;
 		
+		<varlistentry>
+		<term>-t|--timeout &lt;timeout-seconds&gt;</term>
+		<listitem><para>This allows the user to tune the default
+		timeout used for each SMB request. The default setting is
+		20 seconds. Increase it if requests to the server sometimes
+		time out. This can happen when SMB3 encryption is selected
+		and smbclient is overwhelming the server with requests.
+		This can also be set using the <command>timeout</command>
+		command inside smbclient.
+		</para></listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>-T|--tar tar options</term>
 		<listitem><para>smbclient may be used to create <command>tar(1)
