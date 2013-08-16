@@ -388,7 +388,7 @@ static void send_break_message_smb1(files_struct *fsp, int level)
 	TALLOC_FREE(break_msg);
 }
 
-void break_level2_to_none_async(files_struct *fsp)
+static void break_level2_to_none_async(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 
