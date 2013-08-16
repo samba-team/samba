@@ -1534,12 +1534,6 @@ void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
 
 struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handle *h);
 
-/* For unit testing ctdb_transaction.c. */
-struct ctdb_public_ip_list {
-	struct ctdb_public_ip_list *next;
-	uint32_t pnn;
-	ctdb_sock_addr addr;
-};
 int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t pnn);
 
 typedef void (*ctdb_trackingdb_cb)(struct ctdb_context *ctdb, uint32_t pnn, void *private_data);

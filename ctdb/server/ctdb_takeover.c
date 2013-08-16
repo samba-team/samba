@@ -1309,6 +1309,12 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 	return 0;
 }
 
+struct ctdb_public_ip_list {
+	struct ctdb_public_ip_list *next;
+	uint32_t pnn;
+	ctdb_sock_addr addr;
+};
+
 /* Given a physical node, return the number of
    public addresses that is currently assigned to this node.
 */
