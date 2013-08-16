@@ -764,8 +764,8 @@ static void do_break_to_none(struct tevent_req *req)
 				initial_break_processing(state->sconn,
 					share_entry->id,
 					share_entry->share_file_id);
-			wait_before_sending_break();
 			if (cur_fsp != NULL) {
+				wait_before_sending_break();
 				break_level2_to_none_async(cur_fsp);
 			} else {
 				DEBUG(3, ("release_level_2_oplocks_on_change: "
