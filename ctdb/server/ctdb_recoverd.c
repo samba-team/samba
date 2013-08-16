@@ -2425,7 +2425,6 @@ static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb_recoverd *rec)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA result;
 	int32_t ret;
 	struct ip_reallocate_list *callers;
@@ -2471,11 +2470,9 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 		}
 	}
 
-	talloc_free(tmp_ctx);
 	talloc_free(rec->ip_reallocate_ctx);
 	rec->ip_reallocate_ctx = NULL;
 	rec->reallocate_callers = NULL;
-	
 }
 
 
