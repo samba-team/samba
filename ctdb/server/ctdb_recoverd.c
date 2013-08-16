@@ -35,13 +35,92 @@
 */
 struct reloadips_all_reply *reload_all_ips_request = NULL;
 
-/* list of "ctdb ipreallocate" processes to call back when we have
-   finished the takeover run.
-*/
-struct ip_reallocate_list {
-	struct ip_reallocate_list *next;
-	struct srvid_request *rd;
+/* List of SRVID requests that need to be processed */
+struct srvid_list {
+	struct srvid_list *next, *prev;
+	struct srvid_request *request;
 };
+
+struct srvid_requests {
+	struct srvid_list *requests;
+};
+
+static void srvid_request_reply(struct ctdb_context *ctdb,
+				struct srvid_request *request,
+				TDB_DATA result)
+{
+	/* Someone that sent srvid==0 does not want a reply */
+	if (request->srvid == 0) {
+		talloc_free(request);
+		return;
+	}
+
+	if (ctdb_client_send_message(ctdb, request->pnn, request->srvid,
+				     result) == 0) {
+		DEBUG(DEBUG_INFO,("Sent SRVID reply to %u:%llu\n",
+				  (unsigned)request->pnn,
+				  (unsigned long long)request->srvid));
+	} else {
+		DEBUG(DEBUG_ERR,("Failed to send SRVID reply to %u:%llu\n",
+				 (unsigned)request->pnn,
+				 (unsigned long long)request->srvid));
+	}
+
+	talloc_free(request);
+}
+
+static void srvid_requests_reply(struct ctdb_context *ctdb,
+				 struct srvid_requests **requests,
+				 TDB_DATA result)
+{
+	struct srvid_list *r;
+
+	for (r = (*requests)->requests; r != NULL; r = r->next) {
+		srvid_request_reply(ctdb, r->request, result);
+	}
+
+	/* Free the list structure... */
+	TALLOC_FREE(*requests);
+}
+
+static void srvid_request_add(struct ctdb_context *ctdb,
+			      struct srvid_requests **requests,
+			      struct srvid_request *request)
+{
+	struct srvid_list *t;
+	int32_t ret;
+	TDB_DATA result;
+
+	if (*requests == NULL) {
+		*requests = talloc_zero(ctdb, struct srvid_requests);
+		if (*requests == NULL) {
+			goto nomem;
+		}
+	}
+
+	t = talloc_zero(*requests, struct srvid_list);
+	if (t == NULL) {
+		/* If *requests was just allocated above then free it */
+		if ((*requests)->requests == NULL) {
+			TALLOC_FREE(*requests);
+		}
+		goto nomem;
+	}
+
+	t->request = (struct srvid_request *)talloc_steal(t, request);
+	DLIST_ADD((*requests)->requests, t);
+
+	return;
+
+nomem:
+	/* Failed to add the request to the list.  Send a fail. */
+	DEBUG(DEBUG_ERR, (__location__
+			  " Out of memory, failed to queue SRVID request\n"));
+	ret = -ENOMEM;
+	result.dsize = sizeof(ret);
+	result.dptr = (uint8_t *)&ret;
+	srvid_request_reply(ctdb, request, result);
+}
 
 struct ctdb_banning_state {
 	uint32_t count;
@@ -65,8 +144,7 @@ struct ctdb_recoverd {
 	struct timed_event *send_election_te;
 	struct timed_event *election_timeout;
 	struct vacuum_info *vacuum_info;
-	TALLOC_CTX *ip_reallocate_ctx;
-	struct ip_reallocate_list *reallocate_callers;
+	struct srvid_requests *reallocate_requests;
 	bool takeover_run_in_progress;
 	TALLOC_CTX *ip_check_disable_ctx;
 	struct ctdb_control_get_ifaces *ifaces;
@@ -2445,37 +2523,28 @@ reload_all_ips(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, struct ctdb
   handle this later in the monitor_cluster loop so we do not recurse
   with other requests to takeover_run()
 */
-static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
+				  TDB_DATA data, void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
-	struct ip_reallocate_list *caller;
+	struct srvid_request *request;
+	struct ctdb_recoverd *rec = talloc_get_type(private_data,
+						    struct ctdb_recoverd);
 
 	if (data.dsize != sizeof(struct srvid_request)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
 		return;
 	}
 
-	if (rec->ip_reallocate_ctx == NULL) {
-		rec->ip_reallocate_ctx = talloc_new(rec);
-		CTDB_NO_MEMORY_FATAL(ctdb, rec->ip_reallocate_ctx);
-	}
+	request = (struct srvid_request *)data.dptr;
 
-	caller = talloc(rec->ip_reallocate_ctx, struct ip_reallocate_list);
-	CTDB_NO_MEMORY_FATAL(ctdb, caller);
-
-	caller->rd   = (struct srvid_request *)talloc_steal(caller, data.dptr);
-	caller->next = rec->reallocate_callers;
-	rec->reallocate_callers = caller;
-
-	return;
+	srvid_request_add(ctdb, &rec->reallocate_requests, request);
 }
 
-static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb_recoverd *rec)
+static void process_ipreallocate_requests(struct ctdb_context *ctdb,
+					  struct ctdb_recoverd *rec)
 {
 	TDB_DATA result;
 	int32_t ret;
-	struct ip_reallocate_list *callers;
 	uint32_t culprit;
 
 	DEBUG(DEBUG_INFO, ("recovery master forced ip reallocation\n"));
@@ -2491,7 +2560,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 	}
 	if (ret == 0) {
 		if (do_takeover_run(rec, rec->nodemap, false)) {
-			ret = 0;
+			ret = ctdb_get_pnn(ctdb);
 		} else {
 			ret = -1;
 		}
@@ -2500,27 +2569,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 	result.dsize = sizeof(int32_t);
 	result.dptr  = (uint8_t *)&ret;
 
-	for (callers=rec->reallocate_callers; callers; callers=callers->next) {
-
-		/* Someone that sent srvid==0 does not want a reply */
-		if (callers->rd->srvid == 0) {
-			continue;
-		}
-		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to "
-				  "%u:%llu\n", (unsigned)callers->rd->pnn,
-				  (unsigned long long)callers->rd->srvid));
-		ret = ctdb_client_send_message(ctdb, callers->rd->pnn, callers->rd->srvid, result);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to send ip reallocate reply "
-					 "message to %u:%llu\n",
-					 (unsigned)callers->rd->pnn,
-					 (unsigned long long)callers->rd->srvid));
-		}
-	}
-
-	talloc_free(rec->ip_reallocate_ctx);
-	rec->ip_reallocate_ctx = NULL;
-	rec->reallocate_callers = NULL;
+	srvid_requests_reply(ctdb, &rec->reallocate_requests, result);
 }
 
 
@@ -3534,11 +3583,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
 	if (rec->recmaster != pnn) {
-		if (rec->ip_reallocate_ctx != NULL) {
-			talloc_free(rec->ip_reallocate_ctx);
-			rec->ip_reallocate_ctx = NULL;
-			rec->reallocate_callers = NULL;
-		}
+		TALLOC_FREE(rec->reallocate_requests);
 	}
 
 	/* This is a special case.  When recovery daemon is started, recmaster
@@ -3724,7 +3769,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* if there are takeovers requested, perform it and notify the waiters */
-	if (rec->reallocate_callers) {
+	if (rec->reallocate_requests) {
 		process_ipreallocate_requests(ctdb, rec);
 	}
 
