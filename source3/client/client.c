@@ -56,6 +56,7 @@ static char *cmdstr = NULL;
 const char *cmd_ptr = NULL;
 
 static int io_bufsize = 0; /* we use the default size */
+static int io_timeout = (CLIENT_TIMEOUT/1000); /* Per operation timeout (in seconds). */
 
 static int name_type = 0x20;
 static int max_protocol = -1;
@@ -4565,6 +4566,31 @@ int cmd_iosize(void)
 }
 
 /****************************************************************************
+ timeout command
+***************************************************************************/
+
+static int cmd_timeout(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *buf;
+
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+		unsigned int old_timeout = cli_set_timeout(cli, 0);
+		cli_set_timeout(cli, old_timeout);
+		d_printf("timeout <n> (per-operation timeout "
+			"in seconds - currently %u).\n",
+			old_timeout/1000);
+		return 1;
+	}
+
+	io_timeout = strtol(buf,NULL,0);
+	cli_set_timeout(cli, io_timeout*1000);
+	d_printf("io_timeout per operation is now %d\n", io_timeout);
+	return 0;
+}
+
+
+/****************************************************************************
 history
 ****************************************************************************/
 static int cmd_history(void)
@@ -4672,6 +4698,7 @@ static struct {
   {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
+  {"timeout",cmd_timeout,"timeout <number> - set the per-operation timeout in seconds (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
   {"unlock",cmd_unlock,"unlock <fnum> <hex-start> <hex-len> : remove a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},
   {"volume",cmd_volume,"print the volume name",{COMPL_NONE,COMPL_NONE}},
@@ -4775,6 +4802,7 @@ static int process_command_string(const char *cmd_in)
 		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
 		}
+		cli_set_timeout(cli, io_timeout*1000);
 	}
 
 	while (cmd[0] != '\0')    {
@@ -5202,6 +5230,8 @@ static int process(const char *base_directory)
 		return 1;
 	}
 
+	cli_set_timeout(cli, io_timeout*1000);
+
 	if (base_directory && *base_directory) {
 		rc = do_cd(base_directory);
 		if (rc) {
@@ -5236,6 +5266,7 @@ static int do_host_query(const char *query_host)
 		return 1;
 	}
 
+	cli_set_timeout(cli, io_timeout*1000);
 	browse_host(true);
 
 	/* Ensure that the host can do IPv4 */
@@ -5271,6 +5302,7 @@ static int do_host_query(const char *query_host)
 		return 1;
 	}
 
+	cli_set_timeout(cli, io_timeout*1000);
 	list_servers(lp_workgroup());
 
 	cli_shutdown(cli);
@@ -5297,6 +5329,7 @@ static int do_tar_op(const char *base_directory)
 		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
 		}
+		cli_set_timeout(cli, io_timeout*1000);
 	}
 
 	recurse=true;
@@ -5332,6 +5365,7 @@ static int do_message_op(struct user_auth_info *a_info)
 		return 1;
 	}
 
+	cli_set_timeout(cli, io_timeout*1000);
 	send_message(get_cmdline_auth_info_username(a_info));
 	cli_shutdown(cli);
 
@@ -5368,6 +5402,7 @@ static int do_message_op(struct user_auth_info *a_info)
 		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
 		{ "send-buffer", 'b', POPT_ARG_INT, &io_bufsize, 'b', "Changes the transmit/send buffer", "BYTES" },
+		{ "timeout", 't', POPT_ARG_INT, &io_timeout, 'b', "Changes the per-operation timeout", "SECONDS" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
                 { "browse", 'B', POPT_ARG_NONE, NULL, 'B', "Browse SMB servers using DNS" },
