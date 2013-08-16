@@ -707,12 +707,15 @@
 
 		<varlistentry>
 		<term>iosize &lt;bytes&gt;</term>
-		<listitem><para>When sending or receiving files, smbclient uses an
-		internal memory buffer by default of size 64512 bytes. This command
-		allows this size to be set to any range between 16384 (0x4000) bytes
-		and 16776960 (0xFFFF00) bytes. Larger sizes may mean more efficient
-		data transfer as smbclient will try and use the most efficient
-		read and write calls for the connected server.
+		<listitem><para>
+		When sending or receiving files, smbclient uses an
+		internal buffer sized by the maximum number of allowed requests
+		to the connected server. This command allows this size to be set to any
+		range between 0 (which means use the default server controlled size) bytes
+		and 16776960 (0xFFFF00) bytes. Using the server controlled size is the
+		most efficient as smbclient will pipeline as many simultaneous reads or
+		writes needed to keep the server as busy as possible. Setting this to
+		any other size will slow down the transfer.
 		</para></listitem>
 		</varlistentry>
 
