@@ -1978,15 +1978,15 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 }
 
 
-static bool ipreallocate_finished;
-
 /*
   handler for receiving the response to ipreallocate
 */
 static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
-	ipreallocate_finished = true;
+	bool *done = (bool *)private_data;
+
+	*done = true;
 }
 
 static void ctdb_every_second(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
@@ -2006,6 +2006,7 @@ static int ipreallocate(struct ctdb_context *ctdb)
 	int ret;
 	TDB_DATA data;
 	struct srvid_request rd;
+	bool done;
 	struct timeval tv;
 
 	/* Time ticks to enable timeouts to be processed */
@@ -2018,12 +2019,15 @@ static int ipreallocate(struct ctdb_context *ctdb)
 	rd.data = 0;
 
 	/* Register message port for reply from recovery master */
-	ctdb_client_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
+	ctdb_client_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler,
+					&done);
 
 	data.dptr = (uint8_t *)&rd;
 	data.dsize = sizeof(rd);
 
 again:
+	done = false;
+
 	/* Send to all connected nodes. Only recmaster replies */
 	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
 				       CTDB_SRVID_TAKEOVER_RUN, data);
@@ -2039,11 +2043,11 @@ again:
 
 	tv = timeval_current();
 	/* This loop terminates the reply is received */
-	while (timeval_elapsed(&tv) < 5.0 && !ipreallocate_finished) {
+	while (timeval_elapsed(&tv) < 5.0 && !done) {
 		event_loop_once(ctdb->ev);
 	}
 
-	if (!ipreallocate_finished) {
+	if (!done == 0) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Still waiting for confirmation of IP reallocation\n"));
 		goto again;
