@@ -4949,6 +4949,27 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session)
+{
+	if (session->smb2->should_encrypt) {
+		return NT_STATUS_OK;
+	}
+
+	if (session->conn->protocol < PROTOCOL_SMB2_24) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (!(session->conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (session->smb2->signing_key.data == NULL) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	session->smb2->should_encrypt = true;
+	return NT_STATUS_OK;
+}
+
 struct smbXcli_tcon *smbXcli_tcon_create(TALLOC_CTX *mem_ctx)
 {
 	struct smbXcli_tcon *tcon;
