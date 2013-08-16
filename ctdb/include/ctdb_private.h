@@ -24,19 +24,12 @@
 #include <sys/socket.h>
 
 /*
-  recovery daemon memdump reply address
+ * Structure to support SRVID requests and replies
  */
-struct rd_memdump_reply {
+struct srvid_request {
 	uint32_t pnn;
 	uint64_t srvid;
-};
-
-/*
-  description for a TAKEOVER_RUN message reply address
- */
-struct takeover_run_reply {
-	uint32_t pnn;
-	uint64_t srvid;
+	uint32_t data;
 };
 
 /*

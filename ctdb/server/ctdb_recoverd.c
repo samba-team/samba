@@ -40,7 +40,7 @@ struct reloadips_all_reply *reload_all_ips_request = NULL;
 */
 struct ip_reallocate_list {
 	struct ip_reallocate_list *next;
-	struct rd_memdump_reply *rd;
+	struct srvid_request *rd;
 };
 
 struct ctdb_banning_state {
@@ -2162,14 +2162,14 @@ static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA *dump;
 	int ret;
-	struct rd_memdump_reply *rd;
+	struct srvid_request *rd;
 
-	if (data.dsize != sizeof(struct rd_memdump_reply)) {
+	if (data.dsize != sizeof(struct srvid_request)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
 		talloc_free(tmp_ctx);
 		return;
 	}
-	rd = (struct rd_memdump_reply *)data.dptr;
+	rd = (struct srvid_request *)data.dptr;
 
 	dump = talloc_zero(tmp_ctx, TDB_DATA);
 	if (dump == NULL) {
@@ -2441,9 +2441,9 @@ reload_all_ips(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, struct ctdb
 
 
 /*
-  handler for ip reallocate, just add it to the list of callers and 
+  handler for ip reallocate, just add it to the list of requests and 
   handle this later in the monitor_cluster loop so we do not recurse
-  with other callers to takeover_run()
+  with other requests to takeover_run()
 */
 static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
@@ -2451,7 +2451,7 @@ static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 	struct ip_reallocate_list *caller;
 
-	if (data.dsize != sizeof(struct rd_memdump_reply)) {
+	if (data.dsize != sizeof(struct srvid_request)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
 		return;
 	}
@@ -2464,7 +2464,7 @@ static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	caller = talloc(rec->ip_reallocate_ctx, struct ip_reallocate_list);
 	CTDB_NO_MEMORY_FATAL(ctdb, caller);
 
-	caller->rd   = (struct rd_memdump_reply *)talloc_steal(caller, data.dptr);
+	caller->rd   = (struct srvid_request *)talloc_steal(caller, data.dptr);
 	caller->next = rec->reallocate_callers;
 	rec->reallocate_callers = caller;
 
@@ -3112,7 +3112,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	}
 
 	if (need_takeover_run) {
-		struct takeover_run_reply rd;
+		struct srvid_request rd;
 		TDB_DATA data;
 
 		DEBUG(DEBUG_CRIT,("Trigger takeoverrun\n"));

@@ -2005,7 +2005,7 @@ static int ipreallocate(struct ctdb_context *ctdb)
 {
 	int ret;
 	TDB_DATA data;
-	struct takeover_run_reply rd;
+	struct srvid_request rd;
 	struct timeval tv;
 
 	/* Time ticks to enable timeouts to be processed */
@@ -2015,6 +2015,7 @@ static int ipreallocate(struct ctdb_context *ctdb)
 
 	rd.pnn = ctdb_get_pnn(ctdb);
 	rd.srvid = getpid();
+	rd.data = 0;
 
 	/* Register message port for reply from recovery master */
 	ctdb_client_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
@@ -5713,7 +5714,7 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 {
 	int ret;
 	TDB_DATA data;
-	struct rd_memdump_reply rd;
+	struct srvid_request rd;
 
 	rd.pnn = ctdb_get_pnn(ctdb);
 	rd.srvid = getpid();
