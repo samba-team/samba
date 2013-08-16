@@ -33,6 +33,7 @@
 		<arg choice="opt">-U username</arg>
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-d</arg>
+		<arg choice="opt">-m|--max-protocol LEVEL</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -138,6 +139,19 @@
 		and masks to a readable string format.  </para></listitem>
 		</varlistentry>
 		
+		<varlistentry>
+		<term>-m|--max-protocol PROTOCOL_NAME</term>
+		<listitem><para>This allows the user to select the
+		highest SMB protocol level that smbcacls will use to
+		connect to the server. By default this is set to
+		NT1, which is the highest available SMB1 protocol.
+		To connect using SMB2 or SMB3 protocol, use the
+		strings SMB2 or SMB3 respectively. Note that to connect
+		to a Windows 2012 server with encrypted transport selecting
+		a max-protocol of SMB3 is required.
+		</para></listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>-t|--test-args</term>
 		<listitem><para>
