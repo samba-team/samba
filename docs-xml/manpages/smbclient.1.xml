@@ -316,10 +316,16 @@
 		
 		<varlistentry>	
 		<term>-b|--send-buffer buffersize</term>
-		<listitem><para>This option changes the transmit/send buffer 
-		size when getting or putting a file from/to the server. The default 
-		is 65520 bytes. Setting this value smaller (to 1200 bytes) has been 
-		observed to speed up file transfers to and from a Win9x server. 
+		<listitem><para>
+		When sending or receiving files, smbclient uses an
+		internal buffer sized by the maximum number of allowed requests
+		to the connected server. This command allows this size to be set to any
+		range between 0 (which means use the default server controlled size) bytes
+		and 16776960 (0xFFFF00) bytes. Using the server controlled size is the
+		most efficient as smbclient will pipeline as many simultaneous reads or
+		writes needed to keep the server as busy as possible. Setting this to
+		any other size will slow down the transfer. This can also be set
+		using the <command>iosize</command> command inside smbclient.
 		</para></listitem>
 		</varlistentry>
 		
