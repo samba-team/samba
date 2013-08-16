@@ -1978,17 +1978,6 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 }
 
 
-/*
-  handler for receiving the response to ipreallocate
-*/
-static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
-{
-	bool *done = (bool *)private_data;
-
-	*done = true;
-}
-
 static void ctdb_every_second(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
@@ -1998,46 +1987,63 @@ static void ctdb_every_second(struct event_context *ev, struct timed_event *te, 
 				ctdb_every_second, ctdb);
 }
 
-/* Send an ipreallocate to the recovery daemon on all nodes.  Only the
- * recovery master will answer.
+static void srvid_broadcast_reply_handler(struct ctdb_context *ctdb,
+					 uint64_t srvid,
+					 TDB_DATA data,
+					 void *private_data)
+{
+	bool *done = (bool *)private_data;
+
+	*done = true;
+}
+
+/* Broadcast the given SRVID to all connected nodes.  Wait for 1
+ * reply.  arg is the data argument to pass in the srvid_request
+ * structure - pass 0 if this isn't needed.
  */
-static int ipreallocate(struct ctdb_context *ctdb)
+static int srvid_broadcast(struct ctdb_context *ctdb,
+			   uint64_t srvid, uint32_t arg,
+			   const char *srvid_str)
 {
 	int ret;
 	TDB_DATA data;
-	struct srvid_request rd;
+	struct srvid_request request;
 	bool done;
 	struct timeval tv;
+
+	ZERO_STRUCT(request);
 
 	/* Time ticks to enable timeouts to be processed */
 	event_add_timed(ctdb->ev, ctdb, 
 				timeval_current_ofs(1, 0),
 				ctdb_every_second, ctdb);
 
-	rd.pnn = ctdb_get_pnn(ctdb);
-	rd.srvid = getpid();
-	rd.data = 0;
+	request.pnn = ctdb_get_pnn(ctdb);
+	request.srvid = getpid();
+	request.data = arg;
 
 	/* Register message port for reply from recovery master */
-	ctdb_client_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler,
+	ctdb_client_set_message_handler(ctdb, request.srvid,
+					srvid_broadcast_reply_handler,
 					&done);
 
-	data.dptr = (uint8_t *)&rd;
-	data.dsize = sizeof(rd);
+	data.dptr = (uint8_t *)&request;
+	data.dsize = sizeof(request);
 
 again:
 	done = false;
 
 	/* Send to all connected nodes. Only recmaster replies */
 	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
-				       CTDB_SRVID_TAKEOVER_RUN, data);
+				       srvid, data);
 	if (ret != 0) {
 		/* This can only happen if the socket is closed and
 		 * there's no way to recover from that, so don't try
 		 * again.
 		 */
-		DEBUG(DEBUG_WARNING,
-		      ("Failed to send IP reallocation request to connected nodes\n"));
+		DEBUG(DEBUG_ERR,
+		      ("Failed to send %s request to connected nodes\n",
+		       srvid_str));
 		return -1;
 	}
 
@@ -2047,13 +2053,21 @@ again:
 		event_loop_once(ctdb->ev);
 	}
 
-	if (!done == 0) {
+	if (!done) {
 		DEBUG(DEBUG_NOTICE,
-		      ("Still waiting for confirmation of IP reallocation\n"));
+		      ("Still waiting for confirmation of %s\n", srvid_str));
 		goto again;
 	}
 
+	ctdb_client_remove_message_handler(ctdb, request.srvid, &done);
+
 	return 0;
+}
+
+static int ipreallocate(struct ctdb_context *ctdb)
+{
+	return srvid_broadcast(ctdb, CTDB_SRVID_TAKEOVER_RUN, 0,
+			       "IP reallocation");
 }
 
 
