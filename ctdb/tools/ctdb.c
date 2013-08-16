@@ -1987,28 +1987,69 @@ static void ctdb_every_second(struct event_context *ev, struct timed_event *te, 
 				ctdb_every_second, ctdb);
 }
 
+struct srvid_reply_handler_data {
+	bool done;
+	bool wait_for_all;
+	uint32_t *nodes;
+	const char *srvid_str;
+};
+
 static void srvid_broadcast_reply_handler(struct ctdb_context *ctdb,
 					 uint64_t srvid,
 					 TDB_DATA data,
 					 void *private_data)
 {
-	bool *done = (bool *)private_data;
+	struct srvid_reply_handler_data *d =
+		(struct srvid_reply_handler_data *)private_data;
+	int i;
+	int32_t ret;
 
-	*done = true;
+	if (data.dsize != sizeof(ret)) {
+		DEBUG(DEBUG_ERR, (__location__ " Wrong reply size\n"));
+		return;
+	}
+
+	/* ret will be a PNN (i.e. >=0) on success, or negative on error */
+	ret = *(int32_t *)data.dptr;
+	if (ret < 0) {
+		DEBUG(DEBUG_ERR,
+		      ("%s failed with result %d\n", d->srvid_str, ret));
+		return;
+	}
+
+	if (!d->wait_for_all) {
+		d->done = true;
+		return;
+	}
+
+	/* Wait for all replies */
+	d->done = true;
+	for (i = 0; i < talloc_array_length(d->nodes); i++) {
+		if (d->nodes[i] == ret) {
+			DEBUG(DEBUG_INFO,
+			      ("%s reply received from node %u\n",
+			       d->srvid_str, ret));
+			d->nodes[i] = -1;
+		}
+		if (d->nodes[i] != -1) {
+			/* Found a node that hasn't yet replied */
+			d->done = false;
+		}
+	}
 }
 
-/* Broadcast the given SRVID to all connected nodes.  Wait for 1
- * reply.  arg is the data argument to pass in the srvid_request
- * structure - pass 0 if this isn't needed.
+/* Broadcast the given SRVID to all connected nodes.  Wait for 1 reply
+ * or replies from all connected nodes.  arg is the data argument to
+ * pass in the srvid_request structure - pass 0 if this isn't needed.
  */
 static int srvid_broadcast(struct ctdb_context *ctdb,
 			   uint64_t srvid, uint32_t arg,
-			   const char *srvid_str)
+			   const char *srvid_str, bool wait_for_all)
 {
 	int ret;
 	TDB_DATA data;
 	struct srvid_request request;
-	bool done;
+	struct srvid_reply_handler_data reply_data;
 	struct timeval tv;
 
 	ZERO_STRUCT(request);
@@ -2025,13 +2066,38 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 	/* Register message port for reply from recovery master */
 	ctdb_client_set_message_handler(ctdb, request.srvid,
 					srvid_broadcast_reply_handler,
-					&done);
+					&reply_data);
 
 	data.dptr = (uint8_t *)&request;
 	data.dsize = sizeof(request);
 
+	reply_data.wait_for_all = wait_for_all;
+	reply_data.nodes = NULL;
+	reply_data.srvid_str = srvid_str;
+
 again:
-	done = false;
+	reply_data.done = false;
+
+	if (wait_for_all) {
+		struct ctdb_node_map *nodemap;
+
+		ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(),
+					   CTDB_CURRENT_NODE, ctdb, &nodemap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,
+			      ("Unable to get nodemap from current node, try again\n"));
+			sleep(1);
+			goto again;
+		}
+
+		if (reply_data.nodes != NULL) {
+			talloc_free(reply_data.nodes);
+		}
+		reply_data.nodes = list_of_connected_nodes(ctdb, nodemap,
+							   NULL, true);
+
+		talloc_free(nodemap);
+	}
 
 	/* Send to all connected nodes. Only recmaster replies */
 	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
@@ -2049,17 +2115,20 @@ again:
 
 	tv = timeval_current();
 	/* This loop terminates the reply is received */
-	while (timeval_elapsed(&tv) < 5.0 && !done) {
+	while (timeval_elapsed(&tv) < 5.0 && !reply_data.done) {
 		event_loop_once(ctdb->ev);
 	}
 
-	if (!done) {
+	if (!reply_data.done) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Still waiting for confirmation of %s\n", srvid_str));
+		sleep(1);
 		goto again;
 	}
 
-	ctdb_client_remove_message_handler(ctdb, request.srvid, &done);
+	ctdb_client_remove_message_handler(ctdb, request.srvid, &reply_data);
+
+	talloc_free(reply_data.nodes);
 
 	return 0;
 }
@@ -2067,7 +2136,7 @@ again:
 static int ipreallocate(struct ctdb_context *ctdb)
 {
 	return srvid_broadcast(ctdb, CTDB_SRVID_TAKEOVER_RUN, 0,
-			       "IP reallocation");
+			       "IP reallocation", false);
 }
 
 
