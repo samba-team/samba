@@ -1072,6 +1072,16 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>timeout &lt;per-operation timeout in seconds&gt;</term>
+		<listitem><para>This allows the user to tune the default
+		timeout used for each SMB request. The default setting is
+		20 seconds. Increase it if requests to the server sometimes
+		time out. This can happen when SMB3 encryption is selected
+		and smbclient is overwhelming the server with requests.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>unlock &lt;filenum&gt; &lt;hex-start&gt; &lt;hex-len&gt;</term>
 		<listitem><para>This command depends on the server supporting the CIFS
 		UNIX extensions and will fail if the server does not. Tries to unlock a POSIX
