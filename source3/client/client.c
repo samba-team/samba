@@ -4528,29 +4528,35 @@ int cmd_iosize(void)
 	int iosize;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		if (!smb_encrypt) {
-			d_printf("iosize <n> or iosize 0x<n>. "
-				"Minimum is 16384 (0x4000), "
-				"max is 16776960 (0xFFFF00)\n");
+		if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+			if (!smb_encrypt) {
+				d_printf("iosize <n> or iosize 0x<n>. "
+					"Minimum is 0 (default), "
+					"max is 16776960 (0xFFFF00)\n");
+			} else {
+				d_printf("iosize <n> or iosize 0x<n>. "
+					"(Encrypted connection) ,"
+					"Minimum is 0 (default), "
+					"max is 130048 (0x1FC00)\n");
+			}
 		} else {
-			d_printf("iosize <n> or iosize 0x<n>. "
-				"(Encrypted connection) ,"
-				"Minimum is 16384 (0x4000), "
-				"max is 130048 (0x1FC00)\n");
+			d_printf("iosize <n> or iosize 0x<n>.\n");
 		}
 		return 1;
 	}
 
 	iosize = strtol(buf,NULL,0);
-	if (smb_encrypt && (iosize < 0x4000 || iosize > 0xFC00)) {
-		d_printf("iosize out of range for encrypted "
-			"connection (min = 16384 (0x4000), "
-			"max = 130048 (0x1FC00)");
-		return 1;
-	} else if (!smb_encrypt && (iosize < 0x4000 || iosize > 0xFFFF00)) {
-		d_printf("iosize out of range (min = 16384 (0x4000), "
-			"max = 16776960 (0xFFFF00)");
-		return 1;
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		if (smb_encrypt && (iosize < 0 || iosize > 0xFC00)) {
+			d_printf("iosize out of range for encrypted "
+				"connection (min = 0 (default), "
+				"max = 130048 (0x1FC00)");
+			return 1;
+		} else if (!smb_encrypt && (iosize < 0 || iosize > 0xFFFF00)) {
+			d_printf("iosize out of range (min = 0 (default), "
+				"max = 16776960 (0xFFFF00)");
+			return 1;
+		}
 	}
 
 	io_bufsize = iosize;
