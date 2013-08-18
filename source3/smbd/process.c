@@ -165,6 +165,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 			DEBUG(0, ("send_smb: SMB encryption failed "
 				"on outgoing packet! Error %s\n",
 				nt_errstr(status) ));
+			ret = -1;
 			goto out;
 		}
 	}
