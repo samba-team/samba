@@ -223,12 +223,18 @@ int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *reque
 
 	case LDB_ADD:
 		msg = ldb_msg_copy_shallow(request, request->op.add.message);
+		if (msg == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		msg->dn = ldb_dn_rebase_remote(msg, data, msg->dn);
 		request->op.add.message = msg;
 		break;
 
 	case LDB_MODIFY:
 		msg = ldb_msg_copy_shallow(request, request->op.mod.message);
+		if (msg == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		msg->dn = ldb_dn_rebase_remote(msg, data, msg->dn);
 		request->op.mod.message = msg;
 		break;
