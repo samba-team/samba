@@ -324,6 +324,10 @@ static void start_test_index(struct ldb_context **ldb)
 	ldb_delete(*ldb, indexlist);
 
 	msg = ldb_msg_new(NULL);
+	if (msg == NULL) {
+		printf("ldb_msg_new failed\n");
+		exit(LDB_ERR_OPERATIONS_ERROR);
+	}
 
 	msg->dn = indexlist;
 	ldb_msg_add_string(msg, "@IDXATTR", strdup("uid"));
