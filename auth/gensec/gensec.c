@@ -273,6 +273,7 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
 
 	subreq = ops->update_send(frame, ev, gensec_security, in);
 	if (subreq == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 	ok = tevent_req_poll_ntstatus(subreq, ev, &status);
