@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Utility to extract pcap files from samba (log level 10) log files
 
@@ -154,7 +154,6 @@ static void print_hex_packet(FILE *out, unsigned char *data, long length)
 		for(i = cur; i < length && i < cur + 16; i++) {
 			fprintf(out, "%02x ", data[i]);
 		}
-	
 		cur = i;
 		fprintf(out, "\n");
 	}
@@ -162,10 +161,10 @@ static void print_hex_packet(FILE *out, unsigned char *data, long length)
 
 static void print_netbios_packet(FILE *out, unsigned char *data, long length,
 				 long actual_length)
-{	
+{
 	unsigned char *newdata; long offset = 0;
 	long newlen;
-	
+
 	newlen = length+sizeof(HDR_IP)+sizeof(HDR_TCP);
 	newdata = (unsigned char *)malloc(newlen);
 
@@ -176,7 +175,7 @@ static void print_netbios_packet(FILE *out, unsigned char *data, long length,
 	memcpy(newdata+offset, &HDR_IP, sizeof(HDR_IP));offset+=sizeof(HDR_IP);
 	memcpy(newdata+offset, &HDR_TCP, sizeof(HDR_TCP));offset+=sizeof(HDR_TCP);
 	memcpy(newdata+offset,data,length);
-	
+
 	print_pcap_packet(out, newdata, newlen, actual_length+offset);
 	free(newdata);
 }
@@ -312,12 +311,12 @@ int main (int argc, char **argv)
 		{ "hex", 'h', POPT_ARG_NONE, &hexformat, 0, "Output format readable by text2pcap" },
 		POPT_TABLEEND
 	};
-	
+
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "[<infile> [<outfile>]]");
-	
-	
+
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		}
@@ -334,13 +333,13 @@ int main (int argc, char **argv)
 			return 1;
 		}
 	} else in = stdin;
-	
+
 	outfile = poptGetArg(pc);
 
 	if(outfile) {
 		out = fopen(outfile, "w+");
-		if(!out) { 
-			perror("fopen"); 
+		if(!out) {
+			perror("fopen");
 			fprintf(stderr, "Can't find %s, using stdout...\n", outfile);
 			return 1;
 		}
@@ -359,15 +358,15 @@ int main (int argc, char **argv)
 				read_log_msg(in, &curpacket, &curpacket_len, &data_offset, &data_length);
 			} else if(in_packet && strstr(buffer, "dump_data")) {
 				data_bytes_read = read_log_data(in, curpacket+data_offset, data_length);
-			}  else { 
-				if(in_packet){ 
-					if(hexformat) print_hex_packet(out, curpacket, curpacket_len); 
+			}  else {
+				if(in_packet){
+					if(hexformat) print_hex_packet(out, curpacket, curpacket_len);
 					else print_netbios_packet(out, curpacket, curpacket_len, data_bytes_read+data_offset);
-					free(curpacket); 
+					free(curpacket);
 				}
 				in_packet = 0;
 			}
-		} 
+		}
 	}
 
 	if (in != stdin) {
