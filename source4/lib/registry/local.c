@@ -124,7 +124,7 @@ static WERROR local_open_key(TALLOC_CTX *mem_ctx,
 			break;
 		curbegin = curend + 1;
 		curend = strchr(curbegin, '\\');
-	} while (curbegin != NULL && curbegin[0] != '\0');
+	} while (curbegin[0] != '\0');
 	talloc_free(orig);
 
 	*result = reg_import_hive_key(local_parent->global.context, curkey,
