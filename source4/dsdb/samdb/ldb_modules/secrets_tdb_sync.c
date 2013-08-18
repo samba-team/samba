@@ -489,11 +489,11 @@ static int secrets_tdb_sync_init(struct ldb_module *module)
 	ldb_module_set_private(module, data);
 
 	secrets_ldb = (const char *)ldb_get_opaque(ldb, "ldb_url");
-	if (strncmp("tdb://", secrets_ldb, 6) == 0) {
-		secrets_ldb += 6;
-	}
 	if (!secrets_ldb) {
 		return ldb_operr(ldb);
+	}
+	if (strncmp("tdb://", secrets_ldb, 6) == 0) {
+		secrets_ldb += 6;
 	}
 	private_dir = talloc_strdup(data, secrets_ldb);
 	p = strrchr(private_dir, '/');
