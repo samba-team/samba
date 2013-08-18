@@ -199,12 +199,12 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 	}
 
 	sam_name = (const char *)ldb_get_opaque(ldb, "ldb_url");
-	if (strncmp("tdb://", sam_name, 6) == 0) {
-		sam_name += 6;
-	}
 	if (!sam_name) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
+	}
+	if (strncmp("tdb://", sam_name, 6) == 0) {
+		sam_name += 6;
 	}
 	filename = talloc_asprintf(tmp_ctx, "%s.d/metadata.tdb", sam_name);
 	if (!filename) {
