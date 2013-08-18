@@ -620,7 +620,7 @@ int create_tcpip_socket(const struct sockaddr_storage *ifss, uint16_t *port)
 					    0,
 					    ifss,
 					    false);
-			if (fd > 0) {
+			if (fd >= 0) {
 				*port = i;
 				break;
 			}
