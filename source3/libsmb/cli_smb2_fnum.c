@@ -493,7 +493,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 			void *state)
 {
 	NTSTATUS status;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	char *parent_dir = NULL;
 	const char *mask = NULL;
 	struct smb2_hnd *ph = NULL;
@@ -618,7 +618,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 	TALLOC_FREE(subframe);
@@ -638,7 +638,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 {
 	NTSTATUS status;
 	struct smb2_create_returns cr;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	size_t namelen = strlen(name);
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -772,7 +772,7 @@ NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 {
 	NTSTATUS status;
 	DATA_BLOB outbuf = data_blob_null;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	struct smb2_hnd *ph = NULL;
 	uint32_t altnamelen = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -865,7 +865,7 @@ NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 	TALLOC_FREE(frame);
@@ -1026,7 +1026,7 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 			time_t *write_time)
 {
 	NTSTATUS status;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1071,7 +1071,7 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
@@ -1097,7 +1097,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 {
 	NTSTATUS status;
 	struct smb2_hnd *ph = NULL;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -1141,7 +1141,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
@@ -1162,7 +1162,7 @@ NTSTATUS cli_smb2_qpathinfo_streams(struct cli_state *cli,
 {
 	NTSTATUS status;
 	struct smb2_hnd *ph = NULL;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	DATA_BLOB outbuf = data_blob_null;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1229,7 +1229,7 @@ NTSTATUS cli_smb2_qpathinfo_streams(struct cli_state *cli,
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
@@ -1248,7 +1248,7 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 			time_t mtime)
 {
 	NTSTATUS status;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	struct smb2_hnd *ph = NULL;
 	uint8_t inbuf_store[40];
 	DATA_BLOB inbuf = data_blob_null;
@@ -1311,7 +1311,7 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 				ph->fid_volatile);
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
@@ -1391,7 +1391,7 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 NTSTATUS cli_smb2_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 {
 	NTSTATUS status;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	DATA_BLOB outbuf = data_blob_null;
 	struct smb2_hnd *ph = NULL;
 	uint32_t sectors_per_unit = 0;
@@ -1482,7 +1482,7 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, int *bsize, int *total, int *av
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
@@ -1644,7 +1644,7 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 {
 	NTSTATUS status;
 	DATA_BLOB inbuf = data_blob_null;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	struct smb2_hnd *ph = NULL;
 	smb_ucs2_t *converted_str = NULL;
 	size_t converted_size_bytes = 0;
@@ -1739,7 +1739,7 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
@@ -1852,7 +1852,7 @@ NTSTATUS cli_smb2_set_ea_path(struct cli_state *cli,
 			size_t ea_len)
 {
 	NTSTATUS status;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -1887,7 +1887,7 @@ NTSTATUS cli_smb2_set_ea_path(struct cli_state *cli,
 
   fail:
 
-	if (fnum != -1) {
+	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
@@ -1906,7 +1906,7 @@ NTSTATUS cli_smb2_get_ea_list_path(struct cli_state *cli,
 				struct ea_struct **pea_array)
 {
 	NTSTATUS status;
-	uint16_t fnum = -1;
+	uint16_t fnum = 0xffff;
 	DATA_BLOB outbuf = data_blob_null;
 	struct smb2_hnd *ph = NULL;
 	struct ea_list *ea_list = NULL;
