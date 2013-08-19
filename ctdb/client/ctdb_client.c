@@ -70,7 +70,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 */
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
-		    TDB_DATA *data, bool updatetdb, uint32_t caller)
+		    TDB_DATA *data, bool updatetdb)
 {
 	struct ctdb_call_info *c;
 	struct ctdb_registered_call *fn;
@@ -105,15 +105,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 	}
 
 	/* we need to force the record to be written out if this was a remote access */
-	if (header->laccessor != caller) {
-		header->lacount = 0;
-	}
-	header->laccessor = caller;
-	header->lacount++;
-
-	/* we need to force the record to be written out if this was a remote access,
-	   so that the lacount is updated */
-	if (c->new_data == NULL && header->laccessor != ctdb->pnn) {
+	if (c->new_data == NULL) {
 		c->new_data = &c->record_data;
 	}
 
@@ -368,7 +360,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 	*(state->call) = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, true, ctdb->pnn);
+	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, true);
 	if (ret != 0) {
 		DEBUG(DEBUG_DEBUG,("ctdb_call_local() failed, ignoring return code %d\n", ret));
 	}

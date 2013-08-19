@@ -75,7 +75,6 @@ static const struct {
 	{ "RecoverPDBBySeqNum",  0, offsetof(struct ctdb_tunable, recover_pdb_by_seqnum), false },
 	{ "DeferredRebalanceOnNodeAdd", 300, offsetof(struct ctdb_tunable, deferred_rebalance_on_node_add) },
 	{ "FetchCollapse",       1, offsetof(struct ctdb_tunable, fetch_collapse) },
-	{ "MaxLACount",         20,  offsetof(struct ctdb_tunable, max_lacount) },
 	{ "HopcountMakeSticky",   50,  offsetof(struct ctdb_tunable, hopcount_make_sticky) },
 	{ "StickyDuration",      600,  offsetof(struct ctdb_tunable, sticky_duration) },
 	{ "StickyPindown",       200,  offsetof(struct ctdb_tunable, sticky_pindown) },

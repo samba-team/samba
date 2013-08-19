@@ -126,7 +126,6 @@ struct ctdb_tunable {
 	uint32_t recover_pdb_by_seqnum;
 	uint32_t deferred_rebalance_on_node_add;
 	uint32_t fetch_collapse;
-	uint32_t max_lacount;
 	uint32_t hopcount_make_sticky;
 	uint32_t sticky_duration;
 	uint32_t sticky_pindown;
@@ -872,7 +871,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
-		    TDB_DATA *data, bool updatetdb, uint32_t caller);
+		    TDB_DATA *data, bool updatetdb);
 
 #define ctdb_reqid_find(ctdb, reqid, type)	(type *)_ctdb_reqid_find(ctdb, reqid, #type, __location__)
 

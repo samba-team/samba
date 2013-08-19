@@ -524,8 +524,7 @@ enum ctdb_trans2_commit_error {
 struct ctdb_ltdb_header {
 	uint64_t rsn;
 	uint32_t dmaster;
-	uint16_t laccessor;
-	uint16_t lacount;
+	uint32_t reserved1;
 #define CTDB_REC_FLAG_DEFAULT			0x00000000
 #define CTDB_REC_FLAG_MIGRATED_WITH_DATA	0x00010000
 #define CTDB_REC_FLAG_VACUUM_MIGRATED		0x00020000
