@@ -484,6 +484,11 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 
 	result = filter_mode_by_protocol(result);
 
+	/*
+	 * Add in that it is a reparse point
+	 */
+	result |= FILE_ATTRIBUTE_REPARSE_POINT;
+
 	DEBUG(8,("dos_mode_msdfs returning "));
 
 	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
