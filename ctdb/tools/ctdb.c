@@ -85,6 +85,16 @@ static uint32_t getpnn(struct ctdb_context *ctdb)
 	}
 }
 
+static void assert_single_node_only(void)
+{
+	if ((options.pnn == CTDB_BROADCAST_ALL) ||
+	    (options.pnn == CTDB_MULTICAST)) {
+		DEBUG(DEBUG_ERR,
+		      ("This control can not be applied to multiple PNNs\n"));
+		exit(1);
+	}
+}
+
 /* Pretty print the flags to a static buffer in human-readable format.
  * This never returns NULL!
  */
@@ -589,6 +599,8 @@ static int control_stats(struct ctdb_context *ctdb, int argc, const char **argv)
 	struct ctdb_statistics_wire *stats;
 	int i, num_records = -1;
 
+	assert_single_node_only();
+
 	if (argc ==1) {
 		num_records = atoi(argv[0]) - 1;
 	}
@@ -834,6 +846,8 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct pnn_node *pnn_nodes;
 	struct pnn_node *pnn_node;
+
+	assert_single_node_only();
 
 	pnn_nodes = read_nodes_file(mem_ctx);
 	if (pnn_nodes == NULL) {
@@ -1410,6 +1424,8 @@ static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **
 	TDB_DATA data;
 	int ret;
 
+	assert_single_node_only();
+
 	if (argc < 2) {
 		usage();
 	}
@@ -1446,6 +1462,8 @@ static int control_del_tickle(struct ctdb_context *ctdb, int argc, const char **
 	struct ctdb_tcp_connection t;
 	TDB_DATA data;
 	int ret;
+
+	assert_single_node_only();
 
 	if (argc < 2) {
 		usage();
@@ -1484,6 +1502,8 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	ctdb_sock_addr addr;
 	int i, ret;
 	unsigned port = 0;
+
+	assert_single_node_only();
 
 	if (argc < 1) {
 		usage();
@@ -1703,6 +1723,8 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	uint32_t pnn;
 	ctdb_sock_addr addr;
 
+	assert_single_node_only();
+
 	if (argc < 2) {
 		usage();
 		return -1;
@@ -1820,6 +1842,8 @@ static int rebalance_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 static int control_rebalanceip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	ctdb_sock_addr addr;
+
+	assert_single_node_only();
 
 	if (argc < 1) {
 		usage();
@@ -2286,12 +2310,6 @@ static int kill_tcp_from_file(struct ctdb_context *ctdb,
 		usage();
 	}
 
-	if (options.pnn == CTDB_BROADCAST_ALL ||
-	    options.pnn == CTDB_MULTICAST) {
-		DEBUG(DEBUG_ERR, ("Can not use killtcp to multiple nodes\n"));
-		return -1;
-	}
-
 	linenum = 1;
 	killtcp = NULL;
 	max_entries = 0;
@@ -2384,6 +2402,8 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	int ret;
 	struct ctdb_control_killtcp killtcp;
 
+	assert_single_node_only();
+
 	if (argc == 0) {
 		return kill_tcp_from_file(ctdb, argc, argv);
 	}
@@ -2419,6 +2439,8 @@ static int control_gratious_arp(struct ctdb_context *ctdb, int argc, const char 
 {
 	int ret;
 	ctdb_sock_addr addr;
+
+	assert_single_node_only();
 
 	if (argc < 2) {
 		usage();
@@ -4360,6 +4382,8 @@ static int control_isnotrecmaster(struct ctdb_context *ctdb, int argc, const cha
 {
 	uint32_t mypnn, recmaster;
 
+	assert_single_node_only();
+
 	mypnn = getpnn(ctdb);
 
 	if (!ctdb_getrecmaster(ctdb_connection, options.pnn, &recmaster)) {
@@ -5083,6 +5107,8 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	uint32_t db_id;
 	uint8_t flags;
 
+	assert_single_node_only();
+
 	if (argc != 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
 		return -1;
@@ -5229,6 +5255,8 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	struct tm *tm;
 	char tbuf[100];
 	char *dbname;
+
+	assert_single_node_only();
 
 	if (argc < 1 || argc > 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
@@ -5423,6 +5451,8 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 	struct ctdb_marshall_buffer *m;
 	struct ctdb_dump_db_context c;
 
+	assert_single_node_only();
+
 	if (argc != 1) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
 		return -1;
@@ -5500,6 +5530,8 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 	uint32_t *nodes;
 	uint32_t generation;
 	uint8_t flags;
+
+	assert_single_node_only();
 
 	if (argc != 1) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
@@ -5781,6 +5813,8 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 	struct pnn_node *pnn_nodes;
 	struct pnn_node *pnn_node;
 
+	assert_single_node_only();
+
 	pnn_nodes = read_nodes_file(mem_ctx);
 	if (pnn_nodes == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
@@ -5814,6 +5848,8 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	int i, ret;
 	int mypnn;
 	struct ctdb_node_map *nodemap=NULL;
+
+	assert_single_node_only();
 
 	mypnn = ctdb_get_pnn(ctdb);
 
