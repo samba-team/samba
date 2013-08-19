@@ -376,7 +376,7 @@ void set_close_on_exec(int fd)
 {
 	unsigned v;
 	v = fcntl(fd, F_GETFD, 0);
-        fcntl(fd, F_SETFD, v | FD_CLOEXEC);
+	fcntl(fd, F_SETFD, v | FD_CLOEXEC);
 }
 
 
