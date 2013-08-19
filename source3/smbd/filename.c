@@ -718,13 +718,30 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 				/*
 				 * ENOENT/EACCESS are the only valid errors
-				 * here. EACCESS needs handling here for
-				 * "dropboxes", i.e. directories where users
-				 * can only put stuff with permission -wx.
+				 * here.
 				 */
-				if ((errno != 0) && (errno != ENOENT)
-				    && ((ucf_flags & UCF_CREATING_FILE) &&
-					(errno != EACCES))) {
+
+				if (errno == EACCES) {
+					if (ucf_flags & UCF_CREATING_FILE) {
+						/*
+						 * This is the dropbox
+						 * behaviour. A dropbox is a
+						 * directory with only -wx
+						 * permissions, so
+						 * get_real_filename fails
+						 * with EACCESS, it needs to
+						 * list the directory. We
+						 * nevertheless want to allow
+						 * users creating a file.
+						 */
+						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+					} else {
+						status = NT_STATUS_ACCESS_DENIED;
+					}
+					goto fail;
+				}
+
+				if ((errno != 0) && (errno != ENOENT)) {
 					/*
 					 * ENOTDIR and ELOOP both map to
 					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
