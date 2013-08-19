@@ -983,12 +983,12 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	talloc_free(r);
 }
 
-/*
-  called when a CTDB_REPLY_CALL packet comes in
-
-  This packet comes in response to a CTDB_REQ_CALL request packet. It
-  contains any reply data from the call
-*/
+/**
+ * called when a CTDB_REPLY_CALL packet comes in
+ *
+ * This packet comes in response to a CTDB_REQ_CALL request packet. It
+ * contains any reply data from the call
+ */
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
