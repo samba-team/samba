@@ -223,16 +223,11 @@ bool should_notify_deferred_opens(struct smbd_server_connection *sconn)
  Set up an oplock break message.
 ****************************************************************************/
 
-static char *new_break_message_smb1(TALLOC_CTX *mem_ctx,
-				   files_struct *fsp, int cmd)
+#define SMB1_BREAK_MESSAGE_LENGTH (smb_size + 8*2)
+
+static void new_break_message_smb1(files_struct *fsp, int cmd,
+				   char result[SMB1_BREAK_MESSAGE_LENGTH])
 {
-	char *result = talloc_array(mem_ctx, char, smb_size + 8*2 + 0);
-
-	if (result == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
 	memset(result,'\0',smb_size);
 	srv_set_message(result,8,0,true);
 	SCVAL(result,smb_com,SMBlockingX);
@@ -244,7 +239,6 @@ static char *new_break_message_smb1(TALLOC_CTX *mem_ctx,
 	SSVAL(result,smb_vwv2,fsp->fnum);
 	SCVAL(result,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
 	SCVAL(result,smb_vwv3+1,cmd);
-	return result;
 }
 
 /****************************************************************************
@@ -369,12 +363,9 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 
 static void send_break_message_smb1(files_struct *fsp, int level)
 {
-	char *break_msg = new_break_message_smb1(talloc_tos(),
-					fsp,
-					level);
-	if (break_msg == NULL) {
-		exit_server("Could not talloc break_msg\n");
-	}
+	char break_msg[SMB1_BREAK_MESSAGE_LENGTH];
+
+	new_break_message_smb1(fsp, level, break_msg);
 
 	show_msg(break_msg);
 	if (!srv_send_smb(fsp->conn->sconn,
@@ -384,8 +375,6 @@ static void send_break_message_smb1(files_struct *fsp, int level)
 		exit_server_cleanly("send_break_message_smb1: "
 			"srv_send_smb failed.");
 	}
-
-	TALLOC_FREE(break_msg);
 }
 
 static void break_level2_to_none_async(files_struct *fsp)
