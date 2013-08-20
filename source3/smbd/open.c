@@ -1297,19 +1297,19 @@ static void find_oplock_types(files_struct *fsp,
 	}
 }
 
-static bool delay_for_batch_oplocks(files_struct *fsp,
-					uint64_t mid,
-					int oplock_request,
-					struct share_mode_entry *batch_entry)
+static bool delay_for_oplock(files_struct *fsp,
+			     uint64_t mid,
+			     int oplock_request,
+			     struct share_mode_entry *entry)
 {
 	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		return false;
 	}
-	if (batch_entry == NULL) {
+	if (entry == NULL) {
 		return false;
 	}
 
-	if (server_id_is_disconnected(&batch_entry->pid)) {
+	if (server_id_is_disconnected(&entry->pid)) {
 		/*
 		 * TODO: clean up.
 		 * This could be achieved by sending a break message
@@ -1322,33 +1322,7 @@ static bool delay_for_batch_oplocks(files_struct *fsp,
 		return false;
 	}
 
-	/* Found a batch oplock */
-	send_break_message(fsp, batch_entry, mid, oplock_request);
-	return true;
-}
-
-static bool delay_for_exclusive_oplocks(files_struct *fsp,
-					uint64_t mid,
-					int oplock_request,
-					struct share_mode_entry *ex_entry)
-{
-	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
-		return false;
-	}
-	if (ex_entry == NULL) {
-		return false;
-	}
-
-	if (server_id_is_disconnected(&ex_entry->pid)) {
-		/*
-		 * since only durable handles can get disconnected,
-		 * and we can only get durable handles with batch oplocks,
-		 * this should actually never be reached...
-		 */
-		return false;
-	}
-
-	send_break_message(fsp, ex_entry, mid, oplock_request);
+	send_break_message(fsp, entry, mid, oplock_request);
 	return true;
 }
 
@@ -2313,9 +2287,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		find_oplock_types(fsp, 0, lck, &batch_entry, &exclusive_entry,
 				  &got_level2_oplock, &got_a_none_oplock);
 
-		if (delay_for_batch_oplocks(fsp, req->mid, 0, batch_entry) ||
-		    delay_for_exclusive_oplocks(fsp, req->mid, 0,
-						exclusive_entry)) {
+		if (delay_for_oplock(fsp, req->mid, 0, batch_entry) ||
+		    delay_for_oplock(fsp, req->mid, 0, exclusive_entry)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
@@ -2415,10 +2388,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	/* First pass - send break only on batch oplocks. */
 	if ((req != NULL) &&
-	    delay_for_batch_oplocks(fsp,
-				    req->mid,
-				    oplock_request,
-				    batch_entry)) {
+	    delay_for_oplock(fsp, req->mid, oplock_request,
+			     batch_entry)) {
 		schedule_defer_open(lck, request_time, req);
 		TALLOC_FREE(lck);
 		fd_close(fsp);
@@ -2435,11 +2406,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		/* Second pass - send break for both batch or
 		 * exclusive oplocks. */
 		if ((req != NULL) &&
-		    delay_for_exclusive_oplocks(
-			    fsp,
-			    req->mid,
-			    oplock_request,
-			    exclusive_entry)) {
+		    delay_for_oplock(fsp, req->mid, oplock_request,
+				     exclusive_entry)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
