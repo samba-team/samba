@@ -273,6 +273,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	uint32_t totalentries = 0;
+	uint32_t count = 0;
 	uint32_t resume_handle = 0;
 	uint32_t *resume_handle_p = NULL;
 	uint32 preferred_len = 0xffffffff, i;
@@ -374,15 +375,18 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 
 	switch (info_level) {
 	case 1:
-		for (i = 0; i < totalentries; i++)
+		count = info_ctr.ctr.ctr1->count;
+		for (i = 0; i < count; i++)
 			display_share_info_1(&info_ctr.ctr.ctr1->array[i]);
 		break;
 	case 2:
-		for (i = 0; i < totalentries; i++)
+		count = info_ctr.ctr.ctr2->count;
+		for (i = 0; i < count; i++)
 			display_share_info_2(&info_ctr.ctr.ctr2->array[i]);
 		break;
 	case 502:
-		for (i = 0; i < totalentries; i++)
+		count = info_ctr.ctr.ctr502->count;
+		for (i = 0; i < count; i++)
 			display_share_info_502(&info_ctr.ctr.ctr502->array[i]);
 		break;
 	default:
