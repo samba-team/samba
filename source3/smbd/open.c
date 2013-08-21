@@ -3784,6 +3784,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				     uint32_t create_options,
 				     uint32_t file_attributes,
 				     uint32_t oplock_request,
+				     struct smb2_lease *lease,
 				     uint64_t allocation_size,
 				     uint32_t private_flags,
 				     struct security_descriptor *sd,
@@ -3909,7 +3910,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					      | FILE_SHARE_WRITE
 					      | FILE_SHARE_DELETE,
 					      base_create_disposition,
-					      0, 0, 0, 0, 0, NULL, NULL,
+					      0, 0, 0, NULL, 0, 0, NULL, NULL,
 					      &base_fsp, NULL);
 		TALLOC_FREE(smb_fname_base);
 
@@ -4393,7 +4394,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	status = create_file_unixpath(
 		conn, req, smb_fname, access_mask, share_access,
 		create_disposition, create_options, file_attributes,
-		oplock_request, allocation_size, private_flags,
+		oplock_request, lease, allocation_size, private_flags,
 		sd, ea_list,
 		&fsp, &info);
 
