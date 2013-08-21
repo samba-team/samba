@@ -209,7 +209,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 		return False;
 	}
 
-	for (i=0; i<total_entries; i++) {
+	for (i=0; i < info_ctr.ctr.ctr1->count; i++) {
 		struct srvsvc_NetShareInfo1 info = info_ctr.ctr.ctr1->array[i];
 		fn(info.name, info.type, info.comment, state);
 	}
