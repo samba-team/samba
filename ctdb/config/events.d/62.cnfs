@@ -45,10 +45,7 @@ case "$1" in
         # Mark the node as UNHEALTHY which means all public addresses
         # will be migrated off the node.
         shift
-        TMPFILE=/tmp/ctdb.cnfs.$$
-        echo "$*" > $TMPFILE
-        ctdb_setstatus unhealthy $TMPFILE
-        rm $TMPFILE
+        echo "$*" | ctdb_setstatus unhealthy -
 
         # force a monitor event so we pick up immediately that this script
         # will now fail and make the node unhealthy.
