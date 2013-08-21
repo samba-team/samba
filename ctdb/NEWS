@@ -1,3 +1,81 @@
+Changes in CTDB 2.4
+===================
+
+User-visible changes
+--------------------
+
+* A missing network interface now causes monitoring to fail and the
+  node to become unhealthy.
+
+* Changed ctdb command's default control timeout from 3s to 10s.
+
+* debug-hung-script.sh now includes the output of "ctdb scriptstatus"
+  to provide more information.
+
+Important bug fixes
+-------------------
+
+* Starting CTDB daemon by running ctdbd directly should not remove
+  existing unix socket unconditionally.
+
+* ctdbd once again successfully kills client processes on releasing
+  public IPs.  It was checking for them as tracked child processes
+  and not finding them, so wasn't killing them.
+
+* ctdbd_wrapper now exports CTDB_SOCKET so that child processes of
+  ctdbd (such as uses of ctdb in eventscripts) use the correct socket.
+
+* Always use Jenkins hash when creating volatile databases.  There
+  were a few places where TDBs would be attached with the wrong flags.
+
+* Vacuuming code fixes in CTDB 2.2 introduced bugs in the new code
+  which led to header corruption for empty records.  This resulted
+  in inconsistent headers on two nodes and a request for such a record
+  keeps bouncing between nodes indefinitely and logs "High hopcount"
+  messages in the log. This also caused performance degradation.
+
+* ctdbd was losing log messages at shutdown because they weren't being
+  given time to flush.  ctdbd now sleeps for a second during shutdown
+  to allow time to flush log messages.
+
+* Improved socket handling introduced in CTDB 2.2 caused ctdbd to
+  process a large number of packets available on single FD before
+  polling other FDs.  Use fixed size queue buffers to allow fair
+  scheduling across multiple FDs.
+
+Important internal changes
+--------------------------
+
+* A node that fails to take/release multiple IPs will only incur a
+  single banning credit.  This makes a brief failure less likely to
+  cause node to be banned.
+
+* ctdb killtcp has been changed to read connections from stdin and
+  10.interface now uses this feature to improve the time taken to kill
+  connections.
+
+* Improvements to hot records statistics in ctdb dbstatistics.
+
+* Recovery daemon now assembles up-to-date node flags information
+  from remote nodes before checking if any flags are inconsistent and
+  forcing a recovery.
+
+* ctdbd no longer creates multiple lock sub-processes for the same
+  key.  This reduces the number of lock sub-processes substantially.
+
+* Changed the nfsd RPC check failure policy to failover quickly
+  instead of trying to repair a node first by restarting NFS.  Such
+  restarts would often hang if the cause of the RPC check failure was
+  the cluster filesystem or storage.
+
+* Logging improvements relating to high hopcounts and sticky records.
+
+* Make sure lower level tdb messages are logged correctly.
+
+* CTDB commands disable/enable/stop/continue are now resilient to
+  individual control failures and retry in case of failures.
+
+
 Changes in CTDB 2.3
 ===================
 
