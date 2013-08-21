@@ -1452,20 +1452,22 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
 	ret |= ((perms & UNIX_SET_UID ) ? S_ISUID : 0);
 #endif
 
-	switch (ptype) {
-	case PERM_NEW_FILE:
-	case PERM_EXISTING_FILE:
-		/* Apply mode mask */
+	if (ptype == PERM_NEW_FILE) {
+		/*
+		 * "create mask"/"force create mode" are
+		 * only applied to new files, not existing ones.
+		 */
 		ret &= lp_create_mask(SNUM(conn));
 		/* Add in force bits */
 		ret |= lp_force_create_mode(SNUM(conn));
-		break;
-	case PERM_NEW_DIR:
-	case PERM_EXISTING_DIR:
+	} else if (ptype == PERM_NEW_DIR) {
+		/*
+		 * "directory mask"/"force directory mode" are
+		 * only applied to new directories, not existing ones.
+		 */
 		ret &= lp_dir_mask(SNUM(conn));
 		/* Add in force bits */
 		ret |= lp_force_dir_mode(SNUM(conn));
-		break;
 	}
 
 	*ret_perms = ret;
