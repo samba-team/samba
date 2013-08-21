@@ -44,7 +44,8 @@ struct smb2_lease {
  * Parse a smb2 lease create context. Return -1 on error, buffer.length on
  * success. V1 and V2 differ only by length of buffer.length
  */
-ssize_t smb2_lease_pull(uint8_t *buf, size_t len, struct smb2_lease *lease);
+ssize_t smb2_lease_pull(const uint8_t *buf, size_t len,
+			struct smb2_lease *lease);
 bool smb2_lease_push(const struct smb2_lease *lease, uint8_t *buf, size_t len);
 
 #endif /* _LIBCLI_SMB_SMB2_LEASE_H_ */

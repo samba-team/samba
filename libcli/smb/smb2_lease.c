@@ -23,7 +23,8 @@
 #include "includes.h"
 #include "../libcli/smb/smb_common.h"
 
-ssize_t smb2_lease_pull(uint8_t *buf, size_t len, struct smb2_lease *lease)
+ssize_t smb2_lease_pull(const uint8_t *buf, size_t len,
+			struct smb2_lease *lease)
 {
 	int version;
 
