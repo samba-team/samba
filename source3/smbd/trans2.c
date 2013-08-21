@@ -7126,11 +7126,18 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	 */
 
 	if (raw_unixmode != SMB_MODE_NO_CHANGE) {
+		int ret;
+
 		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
 			  "setting mode 0%o for file %s\n",
 			  (unsigned int)unixmode,
 			  smb_fname_str_dbg(smb_fname)));
-		if (SMB_VFS_CHMOD(conn, smb_fname->base_name, unixmode) != 0) {
+		if (fsp && fsp->fh->fd != -1) {
+			ret = SMB_VFS_FCHMOD(fsp, unixmode);
+		} else {
+			ret = SMB_VFS_CHMOD(conn, smb_fname->base_name, unixmode);
+		}
+		if (ret != 0) {
 			return map_nt_error_from_unix(errno);
 		}
 	}
