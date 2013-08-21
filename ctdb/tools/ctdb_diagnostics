@@ -130,7 +130,7 @@ show_and_compare_files () {
 		    continue 2;
 		}
 
-		fstf=/tmp/`basename $f`.node$n
+		fstf=$tmpdir/`basename $f`.node$n
 		onnode $n cat $f > $fstf 2>&1
 
 		echo "  ================================"
@@ -141,7 +141,7 @@ show_and_compare_files () {
 		first=false
 	    else
 		echo "Testing for same config file $f on node $n"
-		tmpf=/tmp/`basename $f`.node$n
+		tmpf=$tmpdir/`basename $f`.node$n
 		onnode $n cat $f > $tmpf 2>&1
 		diff $diff_opts $fstf $tmpf >/dev/null 2>&1 || {
 		    error "File $f is different on node $n"
@@ -155,7 +155,11 @@ show_and_compare_files () {
     done
 }
 
-ERRORS="/tmp/diag_err.$$"
+if ! tmpdir=$(mktemp -d) ; then
+    echo "Unable to create a temporary directory"
+    exit 1
+fi
+ERRORS="${tmpdir}/diag_err"
 NUM_ERRORS=0
 
 cat <<EOF
@@ -323,5 +327,8 @@ echo "Diagnostics finished with $NUM_ERRORS errors"
     cat $ERRORS
     rm -f $ERRORS
 }
+
+rm -rf "$tmpdir"
+
 exit $NUM_ERRORS
 
