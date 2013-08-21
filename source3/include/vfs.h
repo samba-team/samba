@@ -156,7 +156,10 @@
 		fsp->pending_break_messages array */
 /* Leave at 31 - not yet released. add SMB_VFS_[GET/SET]_COMPRESSION() */
 
-#define SMB_VFS_INTERFACE_VERSION 31
+/* Bump to version 32 - Samba 4.2 will ship with that. */
+/* Version 32 - Add "lease" to CREATE_FILE operation */
+
+#define SMB_VFS_INTERFACE_VERSION 32
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -535,6 +538,7 @@ struct vfs_fn_pointers {
 				   uint32_t create_options,
 				   uint32_t file_attributes,
 				   uint32_t oplock_request,
+				   struct smb2_lease *lease,
 				   uint64_t allocation_size,
 				   uint32_t private_flags,
 				   struct security_descriptor *sd,
@@ -940,6 +944,7 @@ NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  uint32_t create_options,
 				  uint32_t file_attributes,
 				  uint32_t oplock_request,
+				  struct smb2_lease *lease,
 				  uint64_t allocation_size,
 				  uint32_t private_flags,
 				  struct security_descriptor *sd,

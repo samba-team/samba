@@ -1128,6 +1128,7 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 		0,                                      /* create_options */
 		0,                                      /* file_attributes */
 		INTERNAL_OPEN_ONLY,                     /* oplock_request */
+		NULL,					/* lease */
                 0,                                      /* allocation_size */
 		0,                                      /* private_flags */
 		NULL,                                   /* sd */

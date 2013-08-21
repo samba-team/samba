@@ -496,6 +496,7 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 					   uint32_t create_options,
 					   uint32_t file_attributes,
 					   uint32_t oplock_request,
+					   struct smb2_lease *lease,
 					   uint64_t allocation_size,
 					   uint32_t private_flags,
 					   struct security_descriptor *sd,
@@ -519,6 +520,7 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 		create_options,				/* create_options */
 		file_attributes,			/* file_attributes */
 		oplock_request,				/* oplock_request */
+		lease,					/* lease */
 		allocation_size,			/* allocation_size */
 		private_flags,
 		sd,					/* sd */

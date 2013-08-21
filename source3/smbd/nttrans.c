@@ -574,6 +574,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		create_options,				/* create_options */
 		file_attributes,			/* file_attributes */
 		oplock_request,				/* oplock_request */
+		NULL,					/* lease */
 		allocation_size,			/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -1180,6 +1181,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		create_options,				/* create_options */
 		file_attributes,			/* file_attributes */
 		oplock_request,				/* oplock_request */
+		NULL,					/* lease */
 		allocation_size,			/* allocation_size */
 		0,					/* private_flags */
 		sd,					/* sd */
@@ -1423,6 +1425,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		0,					/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		NO_OPLOCK,				/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -1447,6 +1450,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		0,					/* create_options */
 		fattr,					/* file_attributes */
 		NO_OPLOCK,				/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */

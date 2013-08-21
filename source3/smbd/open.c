@@ -3352,6 +3352,7 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 		FILE_DIRECTORY_FILE,			/* create_options */
 		FILE_ATTRIBUTE_DIRECTORY,		/* file_attributes */
 		0,					/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -3530,6 +3531,7 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 			 0, 			/* create_options */
 			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
 			 0,			/* oplock_request */
+			 NULL,			/* lease */
 			 0,			/* allocation_size */
 			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* private_flags */
 			 NULL,			/* sd */
@@ -4284,6 +4286,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     uint32_t create_options,
 			     uint32_t file_attributes,
 			     uint32_t oplock_request,
+			     struct smb2_lease *lease,
 			     uint64_t allocation_size,
 			     uint32_t private_flags,
 			     struct security_descriptor *sd,

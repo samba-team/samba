@@ -1222,6 +1222,7 @@ static void call_trans2open(connection_struct *conn,
 		create_options,				/* create_options */
 		open_attr,				/* file_attributes */
 		oplock_request,				/* oplock_request */
+		NULL,					/* lease */
 		open_size,				/* allocation_size */
 		private_flags,
 		NULL,					/* sd */
@@ -5889,6 +5890,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		0,					/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		0,					/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -6874,6 +6876,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		0,					/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		0,					/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -7389,6 +7392,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		FILE_DIRECTORY_FILE,			/* create_options */
 		mod_unixmode,				/* file_attributes */
 		0,					/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -7621,6 +7625,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		create_options,				/* create_options */
 		mod_unixmode,				/* file_attributes */
 		oplock_request,				/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -7751,6 +7756,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		create_options,				/* create_options */
 		FILE_FLAG_POSIX_SEMANTICS|0777,		/* file_attributes */
 		0,					/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */

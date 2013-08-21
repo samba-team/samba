@@ -32,6 +32,7 @@ static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 				     uint32_t create_options,
 				     uint32_t file_attributes,
 				     uint32_t oplock_request,
+				     struct smb2_lease *lease,
 				     uint64_t allocation_size,
 				     uint32_t private_flags,
 				     struct security_descriptor *sd,
@@ -62,7 +63,7 @@ static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 	status = SMB_VFS_NEXT_CREATE_FILE(
 		handle, req, root_dir_fid, smb_fname, access_mask,
 		share_access, create_disposition, create_options,
-		file_attributes, oplock_request, allocation_size,
+		file_attributes, oplock_request, lease, allocation_size,
 		private_flags, sd, ea_list, result, pinfo);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

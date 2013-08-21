@@ -1948,6 +1948,7 @@ void reply_open(struct smb_request *req)
 		create_options,				/* create_options */
 		dos_attr,				/* file_attributes */
 		oplock_request,				/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		private_flags,
 		NULL,					/* sd */
@@ -2116,6 +2117,7 @@ void reply_open_and_X(struct smb_request *req)
 		create_options,				/* create_options */
 		smb_attr,				/* file_attributes */
 		oplock_request,				/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		private_flags,
 		NULL,					/* sd */
@@ -2363,6 +2365,7 @@ void reply_mknew(struct smb_request *req)
 		create_options,				/* create_options */
 		fattr,					/* file_attributes */
 		oplock_request,				/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -2490,6 +2493,7 @@ void reply_ctemp(struct smb_request *req)
 			0,					/* create_options */
 			fattr,					/* file_attributes */
 			oplock_request,				/* oplock_request */
+			NULL,					/* lease */
 			0,					/* allocation_size */
 			0,					/* private_flags */
 			NULL,					/* sd */
@@ -2707,6 +2711,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 posix_paths ? FILE_FLAG_POSIX_SEMANTICS|0777 :
 				FILE_ATTRIBUTE_NORMAL,
 		 0,			/* oplock_request */
+		 NULL,			/* lease */
 		 0,			/* allocation_size */
 		 0,			/* private_flags */
 		 NULL,			/* sd */
@@ -5968,6 +5973,7 @@ void reply_rmdir(struct smb_request *req)
 		FILE_DIRECTORY_FILE,                    /* create_options */
 		FILE_ATTRIBUTE_DIRECTORY,               /* file_attributes */
 		0,                                      /* oplock_request */
+		NULL,					/* lease */
 		0,                                      /* allocation_size */
 		0,					/* private_flags */
 		NULL,                                   /* sd */
@@ -6735,6 +6741,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			create_options,			/* create_options */
 			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
+			NULL,				/* lease */
 			0,				/* allocation_size */
 			0,				/* private_flags */
 			NULL,				/* sd */
@@ -6881,6 +6888,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			create_options,			/* create_options */
 			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
+			NULL,				/* lease */
 			0,				/* allocation_size */
 			0,				/* private_flags */
 			NULL,				/* sd */
@@ -7150,6 +7158,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		0,					/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -7179,6 +7188,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		0,					/* create_options */
 		dosattrs,				/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		NULL,					/* lease */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
