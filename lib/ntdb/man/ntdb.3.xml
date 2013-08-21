@@ -6,7 +6,7 @@
     <manvolnum>3</manvolnum>
     <refmiscinfo class="source">Samba</refmiscinfo>
     <refmiscinfo class="manual">System Administration tools</refmiscinfo>
-    <refmiscinfo class="version">4.0</refmiscinfo>
+    <refmiscinfo class="version">4.1</refmiscinfo>
   </refmeta>
   <refnamediv>
     <refname>ntdb</refname>
