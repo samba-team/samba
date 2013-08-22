@@ -328,8 +328,8 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("smbacl_nfs42win entered\n"));
 
 	aclint = get_validated_aclint(theacl);
-	/* We do not check for naces being 0 or theacl being NULL here
-	   because it is done upstream in smb_get_nt_acl_nfs4().
+	/* We do not check for theacl being NULL here
+	   because this is already checked in smb_get_nt_acl_nfs4().
 	   We reserve twice the number of input aces because one nfs4
 	   ace might result in 2 nt aces.*/
 	nt_ace_list = (struct security_ace *)TALLOC_ZERO_SIZE(
@@ -503,11 +503,11 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	struct security_acl *psa = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (theacl==NULL || smb_get_naces(theacl)==0) {
+	if (theacl==NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED; /* special because we
-						 * shouldn't alloc 0 for
-						 * win */
+						 * need to think through
+						 * the null case.*/
 	}
 
 	uid_to_sid(&sid_owner, sbuf->st_ex_uid);
@@ -515,7 +515,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 
 	if (smbacl4_nfs42win(mem_ctx, params, theacl, &sid_owner, &sid_group,
 			     S_ISDIR(sbuf->st_ex_mode),
-				&nt_ace_list, &good_aces)==false) {
+			     &nt_ace_list, &good_aces)==false) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
 		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
