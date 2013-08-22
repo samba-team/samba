@@ -7,6 +7,6 @@ modulesdir=${prefix}/modules/torture
 Name: torture
 Description: Samba torture (test) suite
 Requires: talloc
-Version: 0.0.1
+Version: @PACKAGE_VERSION@
 Libs: @LIB_RPATH@ -L${libdir} -ltorture
 Cflags: -I${includedir}  -DHAVE_IMMEDIATE_STRUCTURES=1
