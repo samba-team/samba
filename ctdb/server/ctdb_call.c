@@ -1085,13 +1085,13 @@ finished_ro:
 }
 
 
-/*
-  called when a CTDB_REPLY_DMASTER packet comes in
-
-  This packet comes in from the lmaster in response to a CTDB_REQ_CALL
-  request packet. It means that the current dmaster wants to give us
-  the dmaster role.
-*/
+/**
+ * called when a CTDB_REPLY_DMASTER packet comes in
+ *
+ * This packet comes in from the lmaster in response to a CTDB_REQ_CALL
+ * request packet. It means that the current dmaster wants to give us
+ * the dmaster role.
+ */
 void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_dmaster *c = (struct ctdb_reply_dmaster *)hdr;
