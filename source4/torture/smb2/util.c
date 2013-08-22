@@ -485,7 +485,7 @@ NTSTATUS smb2_util_roothandle(struct smb2_tree *tree, struct smb2_handle *handle
 	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_options = NTCREATEX_OPTIONS_ASYNC_ALERT;
-	io.in.fname = NULL;
+	io.in.fname = "";
 
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
