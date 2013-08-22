@@ -193,7 +193,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 					     NULL ) ) {
 			return NULL;
 		}
-		realm = NULL;
+		realm = SMB_STRDUP(domain->alt_name);
 	}
 	else {
 		struct winbindd_domain *our_domain = domain;
