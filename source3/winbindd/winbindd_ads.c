@@ -101,7 +101,6 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 
 	ads->auth.renewable = renewable;
 	ads->auth.password = password;
-	ads->auth.realm = realm;
 
 	ads->auth.realm = SMB_STRDUP(realm);
 	if (!strupper_m(ads->auth.realm)) {
