@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="samba-regedit.8">
+
+<refmeta>
+	<refentrytitle>samba-regedit</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.1</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>samba-regedit</refname>
+	<refpurpose>ncurses based tool to manage the Samba registry</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>samba-regedit</command>
+		<arg choice="opt">--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">-s &lt;configuration file&gt;</arg>
+		<arg choice="opt">-l &lt;log directory&gt;</arg>
+		<arg choice="opt">-V</arg>
+		<arg choice="opt">--option=&lt;parameter&gt;=&lt;value&gt;</arg>
+		<arg choice="opt">--socket-options=&lt;SOCKETOPTIONS&gt;</arg>
+		<arg choice="opt">--netbiosname=&lt;NETBIOSNAME&gt;</arg>
+		<arg choice="opt">--workgroup=&lt;WORKGROUP&gt;</arg>
+		<arg choice="opt">--scope=&lt;SCOPE&gt;</arg>
+		<arg choice="opt">--user=&lt;USERNAME&gt;</arg>
+		<arg choice="opt">-N</arg>
+		<arg choice="opt">-k</arg>
+		<arg choice="opt">--authentication-file=&lt;FILE&gt;</arg>
+		<arg choice="opt">--signing=[on|off|required]</arg>
+		<arg choice="opt">-P</arg>
+		<arg choice="opt">-e</arg>
+		<arg choice="opt">-C</arg>
+		<arg choice="opt">--pw-nt-hash</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+	<para><command>samba-regedit</command> is a ncurses based tool to manage the Samba
+	registry. It can be used to show/edit registry keys/subkeys and
+	their values.</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+	<variablelist>
+		&stdarg.help;
+		<varlistentry>
+		<term>--usage</term>
+		<listitem><para>Display brief usage message.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+		<term>-d|--debuglevel=&lt;debuglevel&gt;</term>
+		<listitem><para>Set debug level.</para></listitem>
+		</varlistentry>
+		&popt.common.samba;
+		<varlistentry>
+		<term>--option=&lt;parameter&gt;=&lt;value&gt;</term>
+		<listitem><para>Set smb.conf option from command line.</para></listitem>
+		</varlistentry>
+		&popt.common.connection;
+		<varlistentry>
+		<term>-S|--signing</term>
+		<listitem><para>Set the client signing state.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+		<term>-P|--machine-pass</term>
+		<listitem><para>Use stored machine account password.</para></listitem>
+		</varlistentry>
+		&popt.common.credentials;
+		<varlistentry>
+		<term>-e|--encrypt</term>
+		<listitem><para>Encrypt SMB transport (UNIX extended servers only).</para>
+		</listitem>
+		</varlistentry>
+		<varlistentry>
+		<term>--pw-nt-hash</term>
+		<listitem><para>The supplied password is the NT hash.</para>
+		</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4 of the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> and <citerefentry><refentrytitle>net</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+	<para>The samba-regedit man page was written by Karolin Seeger.</para>
+</refsect1>
+
+</refentry>

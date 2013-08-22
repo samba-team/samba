@@ -26,6 +26,7 @@ manpages='''
          manpages/samba.7
          manpages/samba.8
          manpages/samba-tool.8
+         manpages/samba-regedit.8
          manpages/sharesec.1
          manpages/smbcacls.1
          manpages/smbclient.1
