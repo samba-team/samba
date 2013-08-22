@@ -179,7 +179,7 @@ static bool torture_smb2_buffercheck(struct torture_context *tctx, struct smb2_t
 
 /* basic testing of all SMB2 getinfo levels
 */
-bool torture_smb2_getinfo(struct torture_context *torture)
+static bool torture_smb2_getinfo(struct torture_context *torture)
 {
 	struct smb2_tree *tree;
 	bool ret = true;
@@ -212,4 +212,13 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 	ret &= torture_smb2_buffercheck(torture, tree);
 
 	return ret;
+}
+
+struct torture_suite *torture_smb2_getinfo_init(void)
+{
+	struct torture_suite *suite = torture_suite_create(
+		talloc_autofree_context(), "getinfo");
+
+	torture_suite_add_simple_test(suite, "complex", torture_smb2_getinfo);
+	return suite;
 }
