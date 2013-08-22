@@ -313,7 +313,7 @@ tests/bin/ctdb_tool_stubby: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_stubby.o
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_lock_tdb: tests/src/ctdb_lock_tdb.o @TDB_OBJ@
+tests/bin/ctdb_lock_tdb: tests/src/ctdb_lock_tdb.o $(CTDB_CLIENT_OBJ)
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $^ $(LIB_FLAGS)
 
