@@ -3374,7 +3374,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 			/* access check */
 			if (get_current_uid(conn) != 0) {
-				DEBUG(0,("set_user_quota: access_denied "
+				DEBUG(0,("get_user_quota: access_denied "
 					 "service [%s] user [%s]\n",
 					 lp_servicename(talloc_tos(), SNUM(conn)),
 					 conn->session_info->unix_info->unix_name));
