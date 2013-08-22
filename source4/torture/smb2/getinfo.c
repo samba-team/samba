@@ -152,13 +152,19 @@ static bool torture_smb2_fsinfo(struct torture_context *tctx, struct smb2_tree *
 /*
   test for buffer size handling
 */
-static bool torture_smb2_buffercheck(struct torture_context *tctx, struct smb2_tree *tree)
+static bool torture_smb2_buffercheck(struct torture_context *tctx)
 {
+	bool ret;
+	struct smb2_tree *tree;
 	NTSTATUS status;
 	struct smb2_handle handle;
 	struct smb2_getinfo b;
 
 	printf("Testing buffer size handling\n");
+
+	ret = torture_smb2_connection(tctx, &tree);
+	torture_assert(tctx, ret, "connection failed");
+
 	status = smb2_util_roothandle(tree, &handle);
 	torture_assert_ntstatus_ok(tctx, status, "Unable to create root handle");
 
@@ -209,7 +215,6 @@ static bool torture_smb2_getinfo(struct torture_context *torture)
 
 	ret &= torture_smb2_fileinfo(torture, tree);
 	ret &= torture_smb2_fsinfo(torture, tree);
-	ret &= torture_smb2_buffercheck(torture, tree);
 
 	return ret;
 }
@@ -220,5 +225,7 @@ struct torture_suite *torture_smb2_getinfo_init(void)
 		talloc_autofree_context(), "getinfo");
 
 	torture_suite_add_simple_test(suite, "complex", torture_smb2_getinfo);
+	torture_suite_add_simple_test(suite, "buffercheck",
+				      torture_smb2_buffercheck);
 	return suite;
 }
