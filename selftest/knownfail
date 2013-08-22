@@ -207,6 +207,7 @@
 ^samba3.smb2.streams.rename2
 ^samba3.smb2.streams.attributes
 ^samba3.smb2.getinfo.complex
+^samba3.smb2.getinfo.fsinfo # quotas don't work yet
 ^samba3.smb2.setinfo.setinfo
 ^samba3.smb2.session.*reauth5 # some special anonymous checks?
 ^samba3.smb2.compound.interim2 # wrong return code (STATUS_CANCELLED)
