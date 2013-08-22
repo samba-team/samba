@@ -37,6 +37,10 @@ fi
 
 echo "$test_ip/$mask is on $iface"
 
+# Push out the next monitor event so it is less likely to be cancelled
+# and result in services not being restarted properly.
+try_command_on_node $test_node $CTDB eventscript monitor
+
 echo "Deleting IP $test_ip from all nodes"
 try_command_on_node -v $test_node $CTDB delip -n all $test_ip
 
