@@ -181,7 +181,6 @@ static bool torture_smb2_buffercheck(struct torture_context *tctx, struct smb2_t
 */
 bool torture_smb2_getinfo(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	bool ret = true;
 	NTSTATUS status;
@@ -211,8 +210,6 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 	ret &= torture_smb2_fileinfo(torture, tree);
 	ret &= torture_smb2_fsinfo(torture, tree);
 	ret &= torture_smb2_buffercheck(torture, tree);
-
-	talloc_free(mem_ctx);
 
 	return ret;
 }
