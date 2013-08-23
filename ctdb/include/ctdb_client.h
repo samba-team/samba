@@ -159,7 +159,9 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			     void *private_data);
 int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
 				       uint64_t srvid, void *private_data);
-
+int ctdb_client_check_message_handlers(struct ctdb_context *ctdb,
+				       uint64_t *ids, uint32_t num,
+				       uint8_t *result);
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);

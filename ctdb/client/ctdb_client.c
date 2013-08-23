@@ -511,6 +511,41 @@ int ctdb_client_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid
 	return 0;
 }
 
+/*
+ * check server ids
+ */
+int ctdb_client_check_message_handlers(struct ctdb_context *ctdb, uint64_t *ids, uint32_t num,
+				       uint8_t *result)
+{
+	TDB_DATA indata, outdata;
+	int res;
+	int32_t status;
+	int i;
+
+	indata.dptr = (uint8_t *)ids;
+	indata.dsize = num * sizeof(*ids);
+
+	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_CHECK_SRVIDS, 0,
+			   indata, ctdb, &outdata, &status, NULL, NULL);
+	if (res != 0 || status != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " failed to check srvids\n"));
+		return -1;
+	}
+
+	if (outdata.dsize != num*sizeof(uint8_t)) {
+		DEBUG(DEBUG_ERR, (__location__ " expected %lu bytes, received %zi bytes\n",
+				  num*sizeof(uint8_t), outdata.dsize));
+		talloc_free(outdata.dptr);
+		return -1;
+	}
+
+	for (i=0; i<num; i++) {
+		result[i] = outdata.dptr[i];
+	}
+
+	talloc_free(outdata.dptr);
+	return 0;
+}
 
 /*
   send a message - from client context
