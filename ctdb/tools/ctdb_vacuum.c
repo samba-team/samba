@@ -29,15 +29,6 @@
 #define TIMELIMIT() timeval_current_ofs(10, 0)
 
 
-/*
-  vacuum all our databases
- */
-int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	printf("\"ctdb vacuum\" is not implemented any more.\n");
-	return 0;
-}
-
 struct vacuum_traverse_state {
 	bool error;
 	struct tdb_context *dest_db;
