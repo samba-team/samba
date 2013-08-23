@@ -136,6 +136,7 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 {
 	char *ldap_server, *realm, *password;
 	struct winbindd_domain *wb_dom;
+	ADS_STATUS status;
 
 	ads_cached_connection_reuse(adsp);
 	if (*adsp != NULL) {
@@ -154,19 +155,40 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 	wb_dom = find_domain_from_name(dom_name);
 	if (wb_dom == NULL) {
 		DEBUG(10, ("could not find domain '%s'\n", dom_name));
-		realm = NULL;
-	} else {
-		DEBUG(10, ("find_domain_from_name found realm '%s' for "
-			  " domain '%s'\n", wb_dom->alt_name, dom_name));
-		realm = wb_dom->alt_name;
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
-	/* the machine acct password might have change - fetch it every time */
-	password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-	realm = SMB_STRDUP(lp_realm());
+	DEBUG(10, ("find_domain_from_name found realm '%s' for "
+			  " domain '%s'\n", wb_dom->alt_name, dom_name));
 
-	return ads_cached_connection_connect(adsp, realm, dom_name, ldap_server,
-					     password, realm, 0);
+	if (!get_trust_pw_clear(dom_name, &password, NULL, NULL)) {
+		return ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
+	}
+
+	if (IS_DC) {
+		realm = SMB_STRDUP(wb_dom->alt_name);
+	} else {
+		struct winbindd_domain *our_domain = wb_dom;
+
+		/* always give preference to the alt_name in our
+		   primary domain if possible */
+
+		if (!wb_dom->primary) {
+			our_domain = find_our_domain();
+		}
+
+		if (our_domain->alt_name != NULL) {
+			realm = SMB_STRDUP(our_domain->alt_name);
+		} else {
+			realm = SMB_STRDUP(lp_realm());
+		}
+	}
+
+	status = ads_cached_connection_connect(adsp, realm, dom_name, ldap_server,
+					       password, realm, 0);
+	SAFE_FREE(realm);
+
+	return status;
 }
 
 /*
