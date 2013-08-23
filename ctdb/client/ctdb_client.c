@@ -1859,6 +1859,40 @@ int ctdb_ctrl_getdbhealth(struct ctdb_context *ctdb,
 }
 
 /*
+ * get db sequence number
+ */
+int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
+			  uint32_t destnode, uint32_t dbid, uint64_t *seqnum)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data, outdata;
+
+	data.dptr = (uint8_t *)&dbid;
+	data.dsize = sizeof(uint64_t);	/* This is just wrong */
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_DB_SEQNUM,
+			   0, data, ctdb, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("ctdb_control for getdbesqnum failed\n"));
+		return -1;
+	}
+
+	if (outdata.dsize != sizeof(uint64_t)) {
+		DEBUG(DEBUG_ERR,("Invalid return data in get_dbseqnum\n"));
+		talloc_free(outdata.dptr);
+		return -1;
+	}
+
+	if (seqnum != NULL) {
+		*seqnum = *(uint64_t *)outdata.dptr;
+	}
+	talloc_free(outdata.dptr);
+
+	return 0;
+}
+
+/*
   create a database
  */
 int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
