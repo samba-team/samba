@@ -201,6 +201,8 @@ struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev,
 
 struct ctdb_statistics;
 int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_statistics *status);
+int ctdb_ctrl_dbstatistics(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
+			   TALLOC_CTX *mem_ctx, struct ctdb_db_statistics **dbstat);
 
 int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 

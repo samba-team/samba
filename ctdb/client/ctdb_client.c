@@ -1233,6 +1233,60 @@ int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ct
 }
 
 /*
+ * get db statistics
+ */
+int ctdb_ctrl_dbstatistics(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
+			   TALLOC_CTX *mem_ctx, struct ctdb_db_statistics **dbstat)
+{
+	int ret;
+	TDB_DATA indata, outdata;
+	int32_t res;
+	struct ctdb_db_statistics *wire, *s;
+	char *ptr;
+	int i;
+
+	indata.dptr = (uint8_t *)&dbid;
+	indata.dsize = sizeof(dbid);
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_DB_STATISTICS,
+			   0, indata, ctdb, &outdata, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for dbstatistics failed\n"));
+		return -1;
+	}
+
+	if (outdata.dsize < offsetof(struct ctdb_db_statistics, hot_keys_wire)) {
+		DEBUG(DEBUG_ERR,(__location__ " Wrong dbstatistics size %zi - expected >= %lu\n",
+				 outdata.dsize, sizeof(struct ctdb_statistics)));
+		return -1;
+	}
+
+	s = talloc_zero(mem_ctx, struct ctdb_db_statistics);
+	if (s == NULL) {
+		talloc_free(outdata.dptr);
+		CTDB_NO_MEMORY(ctdb, s);
+	}
+
+	wire = (struct ctdb_db_statistics *)outdata.dptr;
+	*s = *wire;
+	ptr = &wire->hot_keys_wire[0];
+	for (i=0; i<wire->num_hot_keys; i++) {
+		s->hot_keys[i].key.dptr = talloc_size(mem_ctx, s->hot_keys[i].key.dsize);
+		if (s->hot_keys[i].key.dptr == NULL) {
+			talloc_free(outdata.dptr);
+			CTDB_NO_MEMORY(ctdb, s->hot_keys[i].key.dptr);
+		}
+
+		memcpy(s->hot_keys[i].key.dptr, ptr, s->hot_keys[i].key.dsize);
+		ptr += wire->hot_keys[i].key.dsize;
+	}
+
+	talloc_free(outdata.dptr);
+	*dbstat = s;
+	return 0;
+}
+
+/*
   shutdown a remote ctdb node
  */
 int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
