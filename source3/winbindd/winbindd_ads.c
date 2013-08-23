@@ -220,7 +220,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 					domain->name, NULL,
 					password, realm,
 					WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
-
+	SAFE_FREE(realm);
 
 	if (!ADS_ERR_OK(status)) {
 		/* if we get ECONNREFUSED then it might be a NT4
