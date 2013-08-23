@@ -9579,6 +9579,7 @@ static struct {
 	{ "local-tdb-opener", run_local_tdb_opener, 0 },
 	{ "local-tdb-writer", run_local_tdb_writer, 0 },
 	{ "LOCAL-DBWRAP-CTDB", run_local_dbwrap_ctdb, 0 },
+	{ "qpathinfo-bufsize", run_qpathinfo_bufsize, 0 },
 	{NULL, NULL, 0}};
 
 /*
