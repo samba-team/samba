@@ -476,11 +476,10 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     ctdb_msg_fn_t handler,
 			     void *private_data)
-				    
 {
 	int res;
 	int32_t status;
-	
+
 	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_REGISTER_SRVID, 0, 
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
@@ -499,7 +498,7 @@ int ctdb_client_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid
 {
 	int res;
 	int32_t status;
-	
+
 	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_DEREGISTER_SRVID, 0, 
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
