@@ -112,7 +112,6 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
 TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
-	tests/bin/ctdb_fetch_lock_once \
 	tests/bin/ctdb_fetch_readonly_once tests/bin/ctdb_fetch_readonly_loop \
 	tests/bin/ctdb_store tests/bin/ctdb_trackingdb_test \
 	tests/bin/ctdb_randrec tests/bin/ctdb_persistent \
@@ -239,13 +238,9 @@ tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_one.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_fetch_lock_once: libctdb/libctdb.a tests/src/ctdb_fetch_lock_once.o $(CTDB_EXTERNAL_OBJ)
+tests/bin/ctdb_fetch_readonly_once: tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
-
-tests/bin/ctdb_fetch_readonly_once: libctdb/libctdb.a tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ)
-	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_readonly_loop: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_readonly_loop.o
 	@echo Linking $@
