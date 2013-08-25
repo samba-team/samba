@@ -7148,12 +7148,12 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			  (unsigned int)set_owner,
 			  smb_fname_str_dbg(smb_fname)));
 
-		if (fsp && fsp->fh->fd != -1) {
-			ret = SMB_VFS_FCHOWN(fsp, set_owner, (gid_t)-1);
-		} else {
-			/* UNIX calls always operate on symlinks. */
+		if (S_ISLNK(sbuf.st_ex_mode)) {
 			ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name,
 					     set_owner, (gid_t)-1);
+		} else {
+			ret = SMB_VFS_CHOWN(conn, smb_fname->base_name,
+					    set_owner, (gid_t)-1);
 		}
 
 		if (ret != 0) {
@@ -7171,20 +7171,12 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 
 	if ((set_grp != (uid_t)SMB_GID_NO_CHANGE) &&
 	    (sbuf.st_ex_gid != set_grp)) {
-		int ret;
-
 		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
 			  "changing group %u for file %s\n",
 			  (unsigned int)set_owner,
 			  smb_fname_str_dbg(smb_fname)));
-		if (fsp && fsp->fh->fd != -1) {
-			ret = SMB_VFS_FCHOWN(fsp, set_owner, (gid_t)-1);
-		} else {
-			/* UNIX calls always operate on symlinks. */
-			ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, (uid_t)-1,
-				  set_grp);
-		}
-		if (ret != 0) {
+		if (SMB_VFS_CHOWN(conn, smb_fname->base_name, (uid_t)-1,
+				  set_grp) != 0) {
 			status = map_nt_error_from_unix(errno);
 			if (delete_on_fail) {
 				SMB_VFS_UNLINK(conn, smb_fname);
