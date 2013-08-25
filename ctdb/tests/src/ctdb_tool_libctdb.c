@@ -143,7 +143,6 @@ static void test_parse_nodestring(const char *nodestring_s,
 	}
 
 	ctdb  = ctdb_connect("foo", NULL, NULL);
-	ctdb_connection = ctdb;
 
 	libctdb_test_read_nodemap(ctdb);
 

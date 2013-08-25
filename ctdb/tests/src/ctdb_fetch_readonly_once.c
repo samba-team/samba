@@ -22,53 +22,26 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include <poll.h>
-#include "ctdb.h"
 
 const char *TESTKEY = "testkey";
-
-static void rorl_cb(struct ctdb_db *ctdb_db,
-		   struct ctdb_lock *lock, TDB_DATA outdata, void *private)
-{
-	int *finished = private;
-
-	printf("Record fetchlocked.\n");
-	printf("Press enter to release the record ...\n");
-	(void)getchar();
-
-	*finished = 1;
-}
 
 /*
 	Just try locking/unlocking a single record once
 */
-static void fetch_readonly_once(struct ctdb_connection *ctdb, struct ctdb_db *ctdb_db, TDB_DATA key)
+static void fetch_readonly_once(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key)
 {
-	int finished;
+	TDB_DATA data;
+	struct ctdb_record_handle *h;
 
-	printf("Trying to fetch lock the record ...\n");
+	printf("Trying to readonly fetch lock the record ...\n");
 
-	finished = 0;
-	if (!ctdb_readonlyrecordlock_async(ctdb_db, key,
-				       rorl_cb, &finished)) {
-		printf("Failed to send READONLYRECORDLOCK\n");
-		exit(10);
+	h = ctdb_fetch_readonly_lock(ctdb_db, ctdb, key, &data, 1);
+	if (h == NULL) {
+		fprintf(stderr, "Failed to get readonly lock\n");
+		exit(1);
 	}
 
-	while (!finished) {
-		struct pollfd pfd;
-
-		pfd.fd = ctdb_get_fd(ctdb);
-		pfd.events = ctdb_which_events(ctdb);
-		if (poll(&pfd, 1, -1) < 0) {
-			fprintf(stderr, "Poll failed");
-			exit(10);
-		}
-		if (ctdb_service(ctdb, pfd.revents) < 0) {
-			fprintf(stderr, "Failed to service");
-			exit(10);
-		}
-	}
-
+	talloc_free(h);
 	printf("Record released.\n");
 }
 
@@ -77,9 +50,9 @@ static void fetch_readonly_once(struct ctdb_connection *ctdb, struct ctdb_db *ct
 */
 int main(int argc, const char *argv[])
 {
-	struct ctdb_connection *ctdb;
-	struct ctdb_db *ctdb_db;
-	const char *socket_name;
+	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
+	struct event_context *ev;
 
 	TDB_DATA key;
 
@@ -111,33 +84,31 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	socket_name = getenv("CTDB_SOCKET");
-	if (socket_name == NULL) {
-		socket_name = "/tmp/ctdb.socket";
-	}
-	ctdb = ctdb_connect(socket_name, ctdb_log_file, stderr);
+	ev = event_context_init(NULL);
 
-	if (!ctdb) {
-		fprintf(stderr, "Connecting to /tmp/ctdb.socket");
-		exit(10);
+	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
+	if (ctdb == NULL) {
+		printf("failed to connect to ctdb daemon.\n");
+		exit(1);
 	}
 
 	key.dptr  = discard_const(TESTKEY);
 	key.dsize = strlen(TESTKEY);
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attachdb(ctdb, "test.tdb", false, 0);
+	ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(3, 0), "test.tdb",
+			      false, 0);
 	if (!ctdb_db) {
-		fprintf(stderr, "ctdb_attachdb failed\n");
+		fprintf(stderr, "ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(10);
 	}
 
 	printf("Waiting for cluster\n");
 	while (1) {
 		uint32_t recmode=1;
-		ctdb_getrecmode(ctdb, CTDB_CURRENT_NODE, &recmode);
+		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
-		sleep(1);
+		event_loop_once(ev);
 	}
 
 	fetch_readonly_once(ctdb, ctdb_db, key);

@@ -238,9 +238,9 @@ tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_one.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_fetch_readonly_once: tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ)
+tests/bin/ctdb_fetch_readonly_once: tests/src/ctdb_fetch_readonly_once.o $(CTDB_CLIENT_OBJ)
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_readonly_loop: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_readonly_loop.o
 	@echo Linking $@
