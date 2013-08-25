@@ -88,10 +88,6 @@ CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 	lib/util/debug.o common/rb_tree.o @CTDB_SYSTEM_OBJ@ common/system_common.o \
 	common/ctdb_logging.o common/ctdb_fork.o
 
-CTDB_LIB_OBJ = libctdb/ctdb.o libctdb/io_elem.o libctdb/local_tdb.o \
-	libctdb/messages.o libctdb/sync.o libctdb/control.o \
-	libctdb/logging.o $(SOCKET_WRAPPER_OBJ)
-
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
 CTDB_EXTERNAL_OBJ = $(POPT_OBJ) $(TALLOC_OBJ) $(TDB_OBJ) \
@@ -131,7 +127,7 @@ DIRS = lib bin tests/bin
 
 .SUFFIXES: .c .o .h
 
-all: showflags dirs $(CTDB_VERSION_H) $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(CTDB_LIB_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
+all: showflags dirs $(CTDB_VERSION_H) $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
@@ -164,21 +160,6 @@ $(CTDB_VERSION_H):
 bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
-
-libctdb/libctdb.a: $(CTDB_LIB_OBJ)
-	@echo Linking $@
-	-rm -f libctdb.a
-	$(WRAPPER) $(AR) $(ARFLAGS) libctdb/libctdb.a $(CTDB_LIB_OBJ)
-	$(WRAPPER) $(RANLIB) libctdb/libctdb.a
-
-libctdb/libctdb.so.0: $(CTDB_LIB_OBJ)
-	@echo Linking $@
-	$(WRAPPER) $(SHLD) -Wl,-soname=libctdb.so.0 $(CTDB_LIB_OBJ)
-
-libctdb/libctdb.so: libctdb/libctdb.so.0
-	@echo Creating $@
-	$(WRAPPER) rm -f libctdb/libctdb.so
-	$(WRAPPER) ln -s libctdb.so.0 libctdb/libctdb.so
 
 bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
@@ -347,7 +328,6 @@ install: all manpages $(PMDA_INSTALL)
 	$(INSTALLCMD) -m 755 bin/ping_pong $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ltdbtool $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ctdb_lock_helper $(DESTDIR)$(bindir)
-	$(INSTALLCMD) -m 755 libctdb/libctdb.a $(DESTDIR)$(libdir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_client.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_protocol.h $(DESTDIR)$(includedir)

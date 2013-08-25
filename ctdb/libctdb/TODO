@@ -1,3 +1,0 @@
-- Use CTDB_CONTROL_GET_DB_PRIORITY to ensure db locking is done in order.
-- Attach tdb's logging to libctdb logging.
-- Threadsafe version.

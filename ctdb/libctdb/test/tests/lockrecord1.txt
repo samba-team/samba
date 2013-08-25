@@ -1,8 +1,0 @@
-connect
-# This is just a sanity check
-expect attachdb attached: 1
-attachdb test.tdb false
-# This is just a sanity check
-expect readrecordlock lock 1: data ''
-readrecordlock 1 testkey
-releaselock 1 1

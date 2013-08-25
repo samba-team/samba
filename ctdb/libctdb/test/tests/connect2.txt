@@ -1,3 +1,0 @@
-# Simple connect with explicit path, then disconnect
-connect /tmp/ctdb.socket
-disconnect

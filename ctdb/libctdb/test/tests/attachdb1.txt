@@ -1,8 +1,0 @@
-connect
-# This is just a sanity check
-expect attachdb attached: 1
-attachdb test.tdb false
-expect attachdb attached: 2
-attachdb test2.tdb false
-detachdb 2
-detachdb 1

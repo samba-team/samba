@@ -220,7 +220,6 @@ development libraries for ctdb
 %{_includedir}/ctdb_protocol.h
 %{_includedir}/ctdb_private.h
 %{_includedir}/ctdb_typesafe_cb.h
-%{_libdir}/libctdb.a
 
 %package tests
 Summary: CTDB test suite
