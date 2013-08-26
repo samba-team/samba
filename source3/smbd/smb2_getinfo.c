@@ -282,7 +282,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (in_info_type) {
-	case 0x01:/* SMB2_GETINFO_FILE */
+	case SMB2_GETINFO_FILE:
 	{
 		uint16_t file_info_level;
 		char *data = NULL;
@@ -403,7 +403,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case 0x02:/* SMB2_GETINFO_FS */
+	case SMB2_GETINFO_FS:
 	{
 		uint16_t file_info_level;
 		char *data = NULL;
@@ -443,7 +443,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case 0x03:/* SMB2_GETINFO_SEC */
+	case SMB2_GETINFO_SECURITY:
 	{
 		uint8_t *p_marshalled_sd = NULL;
 		size_t sd_size = 0;
@@ -489,7 +489,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case 0x04: /* SMB2_0_INFO_QUOTA */
+	case SMB2_GETINFO_QUOTA:
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		return tevent_req_post(req, ev);
 
