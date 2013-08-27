@@ -293,6 +293,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		struct ea_list *ea_list = NULL;
 		int lock_data_count = 0;
 		char *lock_data = NULL;
+		size_t fixed_portion;
 
 		ZERO_STRUCT(write_time_ts);
 
@@ -380,6 +381,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					       lock_data,
 					       STR_UNICODE,
 					       in_output_buffer_length,
+					       &fixed_portion,
 					       &data,
 					       &data_size);
 		if (!NT_STATUS_IS_OK(status)) {
