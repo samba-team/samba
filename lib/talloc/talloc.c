@@ -236,8 +236,6 @@ struct talloc_memlimit {
 };
 
 static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size);
-static bool talloc_memlimit_update(struct talloc_memlimit *limit,
-				   size_t old_size, size_t new_size);
 static void talloc_memlimit_grow(struct talloc_memlimit *limit,
 				size_t size);
 static void talloc_memlimit_shrink(struct talloc_memlimit *limit,
@@ -2610,28 +2608,6 @@ static void talloc_memlimit_shrink(struct talloc_memlimit *limit,
 		}
 		l->cur_size = l->cur_size - size;
 	}
-}
-
-static bool talloc_memlimit_update(struct talloc_memlimit *limit,
-				   size_t old_size, size_t new_size)
-{
-	struct talloc_memlimit *l;
-	ssize_t d;
-
-	if (old_size == 0) {
-		d = new_size + TC_HDR_SIZE;
-	} else {
-		d = new_size - old_size;
-	}
-	for (l = limit; l != NULL; l = l->upper) {
-		ssize_t new_cur_size = l->cur_size + d;
-		if (new_cur_size < 0) {
-			return false;
-		}
-		l->cur_size = new_cur_size;
-	}
-
-	return true;
 }
 
 _PUBLIC_ int talloc_set_memlimit(const void *ctx, size_t max_size)
