@@ -1629,14 +1629,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		if (new_chunk_size == old_chunk_size) {
 			TC_UNDEFINE_GROW_CHUNK(tc, size);
 			tc->flags &= ~TALLOC_FLAG_FREE;
-			if (!talloc_memlimit_update(tc->limit,
-							tc->size, size)) {
-				talloc_abort("cur_size memlimit counter not"
-					     " correct!");
-				errno = EINVAL;
-				return NULL;
-			}
-
 			tc->size = size;
 			return ptr;
 		}
@@ -1652,13 +1644,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			if (space_left >= space_needed) {
 				TC_UNDEFINE_GROW_CHUNK(tc, size);
 				tc->flags &= ~TALLOC_FLAG_FREE;
-				if (!talloc_memlimit_update(tc->limit,
-							tc->size, size)) {
-					talloc_abort("cur_size memlimit "
-						     "counter not correct!");
-					errno = EINVAL;
-					return NULL;
-				}
 				tc->size = size;
 				pool_tc->hdr.c.pool = tc_next_chunk(tc);
 				return ptr;
