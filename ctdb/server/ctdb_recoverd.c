@@ -1546,7 +1546,6 @@ static void takeover_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn,
 		DEBUG(DEBUG_ERR, ("Setting node %u as recovery fail culprit\n", node_pnn));
 
 		ctdb_set_culprit(rec, node_pnn);
-		rec->need_takeover_run = true;
 	}
 }
 
