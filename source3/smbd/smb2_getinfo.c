@@ -410,6 +410,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		uint16_t file_info_level;
 		char *data = NULL;
 		int data_size = 0;
+		size_t fixed_portion;
 
 		/* the levels directly map to the passthru levels */
 		file_info_level = in_file_info_class + 1000;
@@ -418,6 +419,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					 file_info_level,
 					 STR_UNICODE,
 					 in_output_buffer_length,
+					 &fixed_portion,
 					 fsp->fsp_name,
 					 &data,
 					 &data_size);
