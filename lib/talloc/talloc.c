@@ -1507,7 +1507,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		return NULL;
 	}
 
-	if (tc->limit && (size - tc->size > 0)) {
+	if (tc->limit && (size > tc->size)) {
 		if (!talloc_memlimit_check(tc->limit, (size - tc->size))) {
 			errno = ENOMEM;
 			return NULL;
