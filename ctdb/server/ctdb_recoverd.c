@@ -1580,6 +1580,27 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 	}
 }
 
+static bool do_takeover_run(struct ctdb_recoverd *rec,
+			    struct ctdb_node_map *nodemap,
+			    bool banning_credits_on_fail)
+{
+	int ret;
+	bool ok;
+
+	ret = ctdb_takeover_run(rec->ctdb, nodemap, takeover_fail_callback,
+				banning_credits_on_fail ? rec : NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP reallocation failed\n"));
+		ok = false;
+		goto done;
+	}
+
+	ok = true;
+done:
+	rec->need_takeover_run = !ok;
+	return ok;
+}
+
 
 /*
   we are the recmaster, and recovery is needed - start a recovery run
@@ -1856,12 +1877,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		rec->need_takeover_run = true;
 		return -1;
 	}
-	rec->need_takeover_run = false;
-	ret = ctdb_takeover_run(ctdb, nodemap, takeover_fail_callback, NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
-		rec->need_takeover_run = true;
-	}
+
+	do_takeover_run(rec, nodemap, false);
 
 	/* execute the "recovered" event script on all nodes */
 	ret = run_recovered_eventscript(rec, nodemap, "do_recovery");
@@ -2212,16 +2229,11 @@ static void ctdb_rebalance_timeout(struct event_context *ev, struct timed_event 
 				  struct timeval t, void *p)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
-	struct ctdb_context *ctdb = rec->ctdb;
-	int ret;
 
-	DEBUG(DEBUG_NOTICE,("Rebalance all nodes that have had ip assignment changes.\n"));
+	DEBUG(DEBUG_NOTICE,
+	      ("Rebalance all nodes that have had ip assignment changes.\n"));
 
-	ret = ctdb_takeover_run(ctdb, rec->nodemap, takeover_fail_callback, NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
-		rec->need_takeover_run = true;
-	}
+	do_takeover_run(rec, rec->nodemap, false);
 
 	talloc_free(rec->deferred_rebalance_ctx);
 	rec->deferred_rebalance_ctx = NULL;
@@ -2442,10 +2454,10 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 		rec->need_takeover_run = true;
 	}
 	if (ret == 0) {
-		ret = ctdb_takeover_run(ctdb, rec->nodemap, takeover_fail_callback, NULL);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to reallocate addresses: ctdb_takeover_run() failed.\n"));
-			rec->need_takeover_run = true;
+		if (do_takeover_run(rec, rec->nodemap, false)) {
+			ret = 0;
+		} else {
+			ret = -1;
 		}
 	}
 
@@ -3907,9 +3919,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		 * failure, monitoring is disabled cluster-wide (via
 		 * startrecovery eventscript) and will not get enabled.
 		 */
-		ret = ctdb_takeover_run(ctdb, nodemap, takeover_fail_callback, rec);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. Trying again\n"));
+		if (!do_takeover_run(rec, nodemap, true)) {
 			return;
 		}
 
