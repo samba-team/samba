@@ -26,6 +26,7 @@
 struct cli_state;
 struct messaging_context;
 struct netlogon_creds_cli_context;
+struct dcerpc_binding_handle;
 
 /* The following definitions come from rpc_client/cli_netlogon.c  */
 
@@ -71,6 +72,19 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   DATA_BLOB lm_response,
 					   DATA_BLOB nt_response,
 					   struct netr_SamInfo3 **info3);
+NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
+				       struct dcerpc_binding_handle *binding_handle,
+				       TALLOC_CTX *mem_ctx,
+				       uint32_t logon_parameters,
+				       const char *username,
+				       const char *domain,
+				       const char *workstation,
+				       const uint8 chal[8],
+				       DATA_BLOB lm_response,
+				       DATA_BLOB nt_response,
+				       uint8_t *authoritative,
+				       uint32_t *flags,
+				       struct netr_SamInfo3 **info3);
 NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    const char *account_name,

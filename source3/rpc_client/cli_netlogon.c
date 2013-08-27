@@ -524,6 +524,109 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
+				       struct dcerpc_binding_handle *binding_handle,
+				       TALLOC_CTX *mem_ctx,
+				       uint32_t logon_parameters,
+				       const char *username,
+				       const char *domain,
+				       const char *workstation,
+				       const uint8 chal[8],
+				       DATA_BLOB lm_response,
+				       DATA_BLOB nt_response,
+				       uint8_t *authoritative,
+				       uint32_t *flags,
+				       struct netr_SamInfo3 **info3)
+{
+	NTSTATUS status;
+	const char *workstation_name_slash;
+	union netr_LogonLevel *logon = NULL;
+	struct netr_NetworkInfo *network_info;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
+	uint8_t _authoritative = 0;
+	uint32_t _flags = 0;
+	struct netr_ChallengeResponse lm;
+	struct netr_ChallengeResponse nt;
+
+	*info3 = NULL;
+
+	if (authoritative == NULL) {
+		authoritative = &_authoritative;
+	}
+	if (flags == NULL) {
+		flags = &_flags;
+	}
+
+	ZERO_STRUCT(lm);
+	ZERO_STRUCT(nt);
+
+	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
+	if (!logon) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	network_info = talloc_zero(mem_ctx, struct netr_NetworkInfo);
+	if (!network_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (workstation[0] != '\\' && workstation[1] != '\\') {
+		workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
+	} else {
+		workstation_name_slash = workstation;
+	}
+
+	if (!workstation_name_slash) {
+		DEBUG(0, ("talloc_asprintf failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Initialise input parameters */
+
+	lm.data = lm_response.data;
+	lm.length = lm_response.length;
+	nt.data = nt_response.data;
+	nt.length = nt_response.length;
+
+	network_info->identity_info.domain_name.string		= domain;
+	network_info->identity_info.parameter_control		= logon_parameters;
+	network_info->identity_info.logon_id_low		= 0xdead;
+	network_info->identity_info.logon_id_high		= 0xbeef;
+	network_info->identity_info.account_name.string		= username;
+	network_info->identity_info.workstation.string		= workstation_name_slash;
+
+	memcpy(network_info->challenge, chal, 8);
+	network_info->nt = nt;
+	network_info->lm = lm;
+
+	logon->network = network_info;
+
+	/* Marshall data and send request */
+
+	status = netlogon_creds_cli_LogonSamLogon(creds,
+						  binding_handle,
+						  NetlogonNetworkInformation,
+						  logon,
+						  mem_ctx,
+						  &validation_level,
+						  &validation,
+						  authoritative,
+						  flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = map_validation_to_info3(mem_ctx,
+					 validation_level, validation,
+					 info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*********************************************************
  Change the domain password on the PDC.
 
