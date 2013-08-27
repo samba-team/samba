@@ -976,11 +976,8 @@ static void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
 
 		ctx_size = _talloc_total_limit_size(ptr, NULL, NULL);
 
-		if (!talloc_memlimit_update(tc->limit->upper, ctx_size, 0)) {
-			talloc_abort("cur_size memlimit counter not correct!");
-			errno = EINVAL;
-			return NULL;
-		}
+		/* Decrement the memory limit from the source .. */
+		talloc_memlimit_shrink(tc->limit->upper, ctx_size);
 
 		if (tc->limit->parent == tc) {
 			tc->limit->upper = NULL;
@@ -1028,13 +1025,9 @@ static void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
 	if (tc->limit || new_tc->limit) {
 		ctx_size = _talloc_total_limit_size(ptr, tc->limit,
 						    new_tc->limit);
-	}
-
-	if (new_tc->limit) {
-		struct talloc_memlimit *l;
-
-		for (l = new_tc->limit; l != NULL; l = l->upper) {
-			l->cur_size += ctx_size;
+		/* .. and increment it in the destination. */
+		if (new_tc->limit) {
+			talloc_memlimit_grow(new_tc->limit, ctx_size);
 		}
 	}
 
