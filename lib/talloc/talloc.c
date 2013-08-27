@@ -909,29 +909,6 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 
 	tc->flags |= TALLOC_FLAG_FREE;
 
-	/*
-	 * If we are part of a memory limited context hierarchy
-	 * we need to subtract the memory used from the counters
-	 */
-	if (tc->limit) {
-		struct talloc_memlimit *l;
-
-		for (l = tc->limit; l != NULL; l = l->upper) {
-			if (l->cur_size >= tc->size+TC_HDR_SIZE) {
-				l->cur_size -= tc->size+TC_HDR_SIZE;
-			} else {
-				talloc_abort("cur_size memlimit counter not correct!");
-				return 0;
-			}
-		}
-
-		if (tc->limit->parent == tc) {
-			free(tc->limit);
-		}
-
-		tc->limit = NULL;
-	}
-
 	/* we mark the freed memory with where we called the free
 	 * from. This means on a double free error we can report where
 	 * the first free came from
@@ -952,6 +929,8 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 			return 0;
 		}
 
+		talloc_memlimit_update_on_free(tc);
+
 		TC_INVALIDATE_FULL_CHUNK(tc);
 		free(tc);
 		return 0;
@@ -961,6 +940,8 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 		_talloc_free_poolmem(tc, location);
 		return 0;
 	}
+
+	talloc_memlimit_update_on_free(tc);
 
 	TC_INVALIDATE_FULL_CHUNK(tc);
 	free(tc);
