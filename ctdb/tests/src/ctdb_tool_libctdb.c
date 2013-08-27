@@ -146,7 +146,7 @@ static void test_parse_nodestring(const char *nodestring_s,
 
 	libctdb_test_read_nodemap(ctdb);
 
-	if (parse_nodestring(NULL, nodestring, CTDB_CURRENT_NODE, dd_ok,
+	if (parse_nodestring(NULL, NULL, nodestring, CTDB_CURRENT_NODE, dd_ok,
 			     &nodes, &pnn_mode)) {
 		print_nodes(nodes, pnn_mode);
 	}

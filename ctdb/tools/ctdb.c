@@ -166,13 +166,14 @@ static TDB_DATA hextodata(TALLOC_CTX *mem_ctx, const char *str)
  * explicitly specified.
  */
 static bool parse_nodestring(struct ctdb_context *ctdb,
+			     TALLOC_CTX *mem_ctx,
 			     const char * nodestring,
 			     uint32_t current_pnn,
 			     bool dd_ok,
 			     uint32_t **nodes,
 			     uint32_t *pnn_mode)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int n;
 	uint32_t i;
 	struct ctdb_node_map *nodemap;
@@ -188,7 +189,7 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 	}
 
 	if (nodestring != NULL) {
-		*nodes = talloc_array(tmp_ctx, uint32_t, 0);
+		*nodes = talloc_array(mem_ctx, uint32_t, 0);
 		if (*nodes == NULL) {
 			goto failed;
 		}
@@ -205,7 +206,7 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 				      NODE_FLAGS_DELETED)) && !dd_ok) {
 					continue;
 				}
-				*nodes = talloc_realloc(tmp_ctx, *nodes,
+				*nodes = talloc_realloc(mem_ctx, *nodes,
 							uint32_t, n+1);
 				if (*nodes == NULL) {
 					goto failed;
@@ -240,7 +241,7 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 					exit(10);
 				}
 
-				*nodes = talloc_realloc(ctdb, *nodes,
+				*nodes = talloc_realloc(mem_ctx, *nodes,
 							uint32_t, n+1);
 				if (*nodes == NULL) {
 					goto failed;
@@ -261,7 +262,7 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 		}
 	} else {
 		/* default - no nodes specified */
-		*nodes = talloc_array(tmp_ctx, uint32_t, 1);
+		*nodes = talloc_array(mem_ctx, uint32_t, 1);
 		if (*nodes == NULL) {
 			goto failed;
 		}
@@ -1057,7 +1058,7 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 		usage();
 	}
 
-	if (!parse_nodestring(ctdb, argc == 1 ? argv[0] : NULL,
+	if (!parse_nodestring(ctdb, tmp_ctx, argc == 1 ? argv[0] : NULL,
 			      options.pnn, true, &nodes, &pnn_mode)) {
 		return -1;
 	}
@@ -6321,7 +6322,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* setup the node number(s) to contact */
-	if (!parse_nodestring(ctdb, nodestring, CTDB_CURRENT_NODE, false,
+	if (!parse_nodestring(ctdb, ctdb, nodestring, CTDB_CURRENT_NODE, false,
 			      &options.nodes, &options.pnn)) {
 		usage();
 	}
