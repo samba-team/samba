@@ -378,8 +378,6 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 					   struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	unsigned char trust_md4_password[16];
-	char *trust_password;
 	fstring dc_name;
 	struct sockaddr_storage dc_ss;
 
@@ -407,26 +405,6 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 
 	if ( !is_trusted_domain( user_info->mapped.domain_name ) )
 		return NT_STATUS_NOT_IMPLEMENTED;
-
-	/*
-	 * Get the trusted account password for the trusted domain
-	 * No need to become_root() as secrets_init() is done at startup.
-	 */
-
-	if (!pdb_get_trusteddom_pw(user_info->mapped.domain_name, &trust_password,
-				   NULL, NULL)) {
-		DEBUG(0, ("check_trustdomain_security: could not fetch trust "
-			  "account password for domain %s\n",
-			  user_info->mapped.domain_name));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("Trust password for domain %s is %s\n", user_info->mapped.domain_name,
-		    trust_password));
-#endif
-	E_md4hash(trust_password, trust_md4_password);
-	SAFE_FREE(trust_password);
 
 	/* use get_dc_name() for consistency even through we know that it will be 
 	   a netbios name */
