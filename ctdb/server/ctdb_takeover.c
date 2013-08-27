@@ -2704,10 +2704,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	/* Do the IP reassignment calculations */
 	ctdb_takeover_run_core(ctdb, ipflags, &all_ips);
 
-	/* The IP flags need to be cleared because they should never
-	 * be seen outside the IP allocation code.
-	 */
-
 	/* The recovery daemon does regular sanity checks of the IPs.
 	 * However, sometimes it is overzealous and thinks changes are
 	 * required when they're already underway.  This stops the
