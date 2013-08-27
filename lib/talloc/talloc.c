@@ -807,6 +807,8 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 		 */
 		pool->hdr.c.name = location;
 
+		talloc_memlimit_update_on_free(&pool->hdr.c);
+
 		TC_INVALIDATE_FULL_CHUNK(&pool->hdr.c);
 		free(pool);
 		return;
