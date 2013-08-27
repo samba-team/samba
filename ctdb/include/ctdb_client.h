@@ -528,10 +528,6 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 				struct ctdb_vnn_map *vnn_map,
 				TALLOC_CTX *mem_ctx,
 				bool include_self);
-uint32_t *list_of_active_nodes_except_pnn(struct ctdb_context *ctdb,
-				struct ctdb_node_map *node_map,
-				TALLOC_CTX *mem_ctx,
-				uint32_t pnn);
 
 int ctdb_read_pnn_lock(int fd, int32_t pnn);
 

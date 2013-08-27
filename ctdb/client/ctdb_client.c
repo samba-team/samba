@@ -3521,14 +3521,6 @@ uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 			     include_self ? -1 : ctdb->pnn);
 }
 
-uint32_t *list_of_active_nodes_except_pnn(struct ctdb_context *ctdb,
-				struct ctdb_node_map *node_map,
-				TALLOC_CTX *mem_ctx,
-				uint32_t pnn)
-{
-	return list_of_nodes(ctdb, node_map, mem_ctx, NODE_FLAGS_INACTIVE, pnn);
-}
-
 uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
 				struct ctdb_node_map *node_map,
 				TALLOC_CTX *mem_ctx,
