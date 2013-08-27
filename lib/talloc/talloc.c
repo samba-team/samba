@@ -238,6 +238,11 @@ struct talloc_memlimit {
 static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size);
 static bool talloc_memlimit_update(struct talloc_memlimit *limit,
 				   size_t old_size, size_t new_size);
+static void talloc_memlimit_grow(struct talloc_memlimit *limit,
+				size_t size);
+static void talloc_memlimit_shrink(struct talloc_memlimit *limit,
+				size_t size);
+static void talloc_memlimit_update_on_free(struct talloc_chunk *tc);
 
 typedef int (*talloc_destructor_t)(void *);
 
@@ -2562,6 +2567,73 @@ static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size)
 	}
 
 	return true;
+}
+
+/*
+  Update memory limits when freeing a talloc_chunk.
+*/
+static void talloc_memlimit_update_on_free(struct talloc_chunk *tc)
+{
+	if (!tc->limit) {
+		return;
+	}
+
+	/*
+	 * Pool entries don't count. Only the pools
+	 * themselves are counted as part of the memory
+	 * limits.
+	 */
+	if (tc->flags & TALLOC_FLAG_POOLMEM) {
+		return;
+	}
+
+	/*
+	 * If we are part of a memory limited context hierarchy
+	 * we need to subtract the memory used from the counters
+	 */
+
+	talloc_memlimit_shrink(tc->limit, tc->size+TC_HDR_SIZE);
+
+	if (tc->limit->parent == tc) {
+		free(tc->limit);
+	}
+
+	tc->limit = NULL;
+}
+
+/*
+  Increase memory limit accounting after a malloc/realloc.
+*/
+static void talloc_memlimit_grow(struct talloc_memlimit *limit,
+				size_t size)
+{
+	struct talloc_memlimit *l;
+
+	for (l = limit; l != NULL; l = l->upper) {
+		size_t new_cur_size = l->cur_size + size;
+		if (new_cur_size < l->cur_size) {
+			talloc_abort("logic error in talloc_memlimit_grow\n");
+			return;
+		}
+		l->cur_size = new_cur_size;
+	}
+}
+
+/*
+  Decrease memory limit accounting after a free/realloc.
+*/
+static void talloc_memlimit_shrink(struct talloc_memlimit *limit,
+				size_t size)
+{
+	struct talloc_memlimit *l;
+
+	for (l = limit; l != NULL; l = l->upper) {
+		if (l->cur_size < size) {
+			talloc_abort("logic error in talloc_memlimit_shrink\n");
+			return;
+		}
+		l->cur_size = l->cur_size - size;
+	}
 }
 
 static bool talloc_memlimit_update(struct talloc_memlimit *limit,
