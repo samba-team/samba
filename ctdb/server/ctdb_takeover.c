@@ -2721,9 +2721,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 		DEBUG(DEBUG_INFO,("Failed to disable ip verification\n"));
 	}
 
-	/* now tell all nodes to delete any alias that they should not
-	   have.  This will be a NOOP on nodes that don't currently
-	   hold the given alias */
+	/* Now tell all nodes to release any public IPs should not
+	 * host.  This will be a NOOP on nodes that don't currently
+	 * hold the given IP.
+	 */
 	takeover_data = talloc_zero(tmp_ctx, struct takeover_callback_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, takeover_data);
 
