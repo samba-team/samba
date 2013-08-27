@@ -397,6 +397,11 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			if (tevent_req_nomem(state->out_output_buffer.data, req)) {
 				return tevent_req_post(req, ev);
 			}
+			if (data_size > in_output_buffer_length) {
+				state->out_output_buffer.length =
+					in_output_buffer_length;
+				status = STATUS_BUFFER_OVERFLOW;
+			}
 		}
 		SAFE_FREE(data);
 		break;
@@ -444,6 +449,11 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			SAFE_FREE(data);
 			if (tevent_req_nomem(state->out_output_buffer.data, req)) {
 				return tevent_req_post(req, ev);
+			}
+			if (data_size > in_output_buffer_length) {
+				state->out_output_buffer.length =
+					in_output_buffer_length;
+				status = STATUS_BUFFER_OVERFLOW;
 			}
 		}
 		SAFE_FREE(data);
