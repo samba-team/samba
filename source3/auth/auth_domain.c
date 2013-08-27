@@ -52,7 +52,8 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 						const char *domain,
 						const char *dc_name,
 						const struct sockaddr_storage *dc_ss,
-						struct rpc_pipe_client **pipe_ret)
+						struct rpc_pipe_client **pipe_ret,
+						struct netlogon_creds_cli_context **creds_ret)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct messaging_context *msg_ctx = server_messaging_context();
@@ -72,6 +73,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 	*cli_ret = NULL;
 
 	*pipe_ret = NULL;
+	*creds_ret = NULL;
 
 	/* TODO: Send a SAMLOGON request to determine whether this is a valid
 	   logonserver.  We can avoid a 30-second timeout if the DC is down
@@ -207,6 +209,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 
 	*cli_ret = cli;
 	*pipe_ret = netlogon_pipe;
+	*creds_ret = netlogon_creds;
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
@@ -230,8 +233,11 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	struct netr_SamInfo3 *info3 = NULL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds = NULL;
 	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	int i;
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to
@@ -248,7 +254,8 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 							domain,
 							dc_name,
 							dc_ss,
-							&netlogon_pipe);
+							&netlogon_pipe,
+							&netlogon_creds);
 	}
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
@@ -268,18 +275,19 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          * in the info3 structure.  
          */
 
-	nt_status = rpccli_netlogon_sam_network_logon(netlogon_pipe,
-						      mem_ctx,
-						      user_info->logon_parameters,         /* flags such as 'allow workstation logon' */
-						      dc_name,                             /* server name */
-						      user_info->client.account_name,      /* user name logging on. */
-						      user_info->client.domain_name,       /* domain name */
-						      user_info->workstation_name,         /* workstation name */
-						      chal,                                /* 8 byte challenge. */
-						      3,				   /* validation level */
-						      user_info->password.response.lanman, /* lanman 24 byte response */
-						      user_info->password.response.nt,     /* nt 24 byte response */
-						      &info3);                             /* info3 out */
+	nt_status = rpccli_netlogon_network_logon(netlogon_creds,
+						  netlogon_pipe->binding_handle,
+						  mem_ctx,
+						  user_info->logon_parameters,         /* flags such as 'allow workstation logon' */
+						  user_info->client.account_name,      /* user name logging on. */
+						  user_info->client.domain_name,       /* domain name */
+						  user_info->workstation_name,         /* workstation name */
+						  chal,                                /* 8 byte challenge. */
+						  user_info->password.response.lanman, /* lanman 24 byte response */
+						  user_info->password.response.nt,     /* nt 24 byte response */
+						  &authoritative,
+						  &flags,
+						  &info3);                             /* info3 out */
 
 	/* Let go as soon as possible so we avoid any potential deadlocks
 	   with winbind lookup up users or groups. */
