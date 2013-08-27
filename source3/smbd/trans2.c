@@ -4429,6 +4429,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       char *lock_data,
 			       uint16_t flags2,
 			       unsigned int max_data_bytes,
+			       size_t *fixed_portion,
 			       char **ppdata,
 			       unsigned int *pdata_size)
 {
@@ -4564,6 +4565,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	   I think this causes us to fail the IFSKIT
 	   BasicFileInformationTest. -tpot */
 	file_index = get_FileIndex(conn, psbuf);
+
+	*fixed_portion = 0;
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
@@ -4711,6 +4714,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			DEBUG(5,("write: %s ", ctime(&mtime)));
 			DEBUG(5,("change: %s ", ctime(&c_time)));
 			DEBUG(5,("mode: %x\n", mode));
+			*fixed_portion = data_size;
 			break;
 
 		case SMB_FILE_STANDARD_INFORMATION:
@@ -4724,6 +4728,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SCVAL(pdata,20,delete_pending?1:0);
 			SCVAL(pdata,21,(mode&FILE_ATTRIBUTE_DIRECTORY)?1:0);
 			SSVAL(pdata,22,0); /* Padding. */
+			*fixed_portion = 24;
 			break;
 
 		case SMB_FILE_EA_INFORMATION:
@@ -4733,6 +4738,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			    estimate_ea_size(conn, fsp,	smb_fname);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_EA_INFORMATION\n"));
 			data_size = 4;
+			*fixed_portion = 4;
 			SIVAL(pdata,0,ea_size);
 			break;
 		}
@@ -4754,6 +4760,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 					  STR_UNICODE);
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
+			*fixed_portion = 8;
 			break;
 		}
 
@@ -4817,6 +4824,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
+			*fixed_portion = 10;
 			break;
 		}
 
@@ -4854,6 +4862,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
+			*fixed_portion = 104;
 			break;
 		}
 		case SMB_FILE_INTERNAL_INFORMATION:
@@ -4861,12 +4870,14 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_INTERNAL_INFORMATION\n"));
 			SBVAL(pdata, 0, file_index);
 			data_size = 8;
+			*fixed_portion = 8;
 			break;
 
 		case SMB_FILE_ACCESS_INFORMATION:
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ACCESS_INFORMATION\n"));
 			SIVAL(pdata, 0, access_mask);
 			data_size = 4;
+			*fixed_portion = 4;
 			break;
 
 		case SMB_FILE_NAME_INFORMATION:
@@ -4884,24 +4895,28 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_DISPOSITION_INFORMATION\n"));
 			data_size = 1;
 			SCVAL(pdata,0,delete_pending);
+			*fixed_portion = 1;
 			break;
 
 		case SMB_FILE_POSITION_INFORMATION:
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_POSITION_INFORMATION\n"));
 			data_size = 8;
 			SOFF_T(pdata,0,pos);
+			*fixed_portion = 8;
 			break;
 
 		case SMB_FILE_MODE_INFORMATION:
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_MODE_INFORMATION\n"));
 			SIVAL(pdata,0,mode);
 			data_size = 4;
+			*fixed_portion = 4;
 			break;
 
 		case SMB_FILE_ALIGNMENT_INFORMATION:
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALIGNMENT_INFORMATION\n"));
 			SIVAL(pdata,0,0); /* No alignment needed. */
 			data_size = 4;
+			*fixed_portion = 4;
 			break;
 
 		/*
@@ -4946,6 +4961,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			TALLOC_FREE(streams);
 
+			*fixed_portion = 32;
+
 			break;
 		}
 		case SMB_QUERY_COMPRESSION_INFO:
@@ -4955,6 +4972,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,8,0); /* ??? */
 			SIVAL(pdata,12,0); /* ??? */
 			data_size = 16;
+			*fixed_portion = 16;
 			break;
 
 		case SMB_FILE_NETWORK_OPEN_INFORMATION:
@@ -4968,6 +4986,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,48,mode);
 			SIVAL(pdata,52,0); /* ??? */
 			data_size = 56;
+			*fixed_portion = 56;
 			break;
 
 		case SMB_FILE_ATTRIBUTE_TAG_INFORMATION:
@@ -4975,6 +4994,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,0,mode);
 			SIVAL(pdata,4,0);
 			data_size = 8;
+			*fixed_portion = 8;
 			break;
 
 		/*
@@ -5248,6 +5268,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	int lock_data_count = 0;
 	char *lock_data = NULL;
+	size_t fixed_portion;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (!params) {
@@ -5610,6 +5631,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				       ea_list,
 				       lock_data_count, lock_data,
 				       req->flags2, max_data_bytes,
+				       &fixed_portion,
 				       ppdata, &data_size);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
