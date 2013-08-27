@@ -162,6 +162,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       char *lock_data,
 			       uint16_t flags2,
 			       unsigned int max_data_bytes,
+			       size_t *fixed_portion,
 			       char **ppdata,
 			       unsigned int *pdata_size);
 
