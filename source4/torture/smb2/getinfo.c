@@ -22,9 +22,11 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "libcli/smb/smbXcli_base.h"
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "torture/util.h"
 
 static struct {
 	const char *name;
@@ -154,40 +156,242 @@ static bool torture_smb2_fsinfo(struct torture_context *tctx)
 	return true;
 }
 
+static bool torture_smb2_buffercheck_err(struct torture_context *tctx,
+					 struct smb2_tree *tree,
+					 struct smb2_getinfo *b,
+					 size_t fixed,
+					 DATA_BLOB full)
+{
+	size_t i;
 
-/*
-  test for buffer size handling
-*/
-static bool torture_smb2_buffercheck(struct torture_context *tctx)
+	for (i=0; i<=full.length; i++) {
+		NTSTATUS status;
+
+		b->in.output_buffer_length = i;
+
+		status = smb2_getinfo(tree, tree, b);
+
+		if (i < fixed) {
+			torture_assert_ntstatus_equal(
+				tctx, status, NT_STATUS_INFO_LENGTH_MISMATCH,
+				"Wrong error code small buffer");
+			continue;
+		}
+
+		if (i<full.length) {
+			torture_assert_ntstatus_equal(
+				tctx, status, STATUS_BUFFER_OVERFLOW,
+				"Wrong error code for large buffer");
+			/*
+			 * TODO: compare the output buffer. That seems a bit
+			 * difficult, because for level 5 for example the
+			 * label length is adjusted to what is there. And some
+			 * reserved fields seem to be not initialized to 0.
+			 */
+			TALLOC_FREE(b->out.blob.data);
+			continue;
+		}
+
+		torture_assert_ntstatus_equal(
+			tctx, status, NT_STATUS_OK,
+			"Wrong error code for right sized buffer");
+	}
+
+	return true;
+}
+
+struct level_buffersize {
+	int level;
+	size_t fixed;
+};
+
+static bool torture_smb2_qfs_buffercheck(struct torture_context *tctx)
 {
 	bool ret;
 	struct smb2_tree *tree;
 	NTSTATUS status;
 	struct smb2_handle handle;
-	struct smb2_getinfo b;
+	int i;
 
-	printf("Testing buffer size handling\n");
+	struct level_buffersize levels[] = {
+		{ 1, 24 },	/* We don't have proper defines here */
+		{ 3, 24 },
+		{ 4, 8 },
+		{ 5, 16 },
+		{ 6, 48 },
+		{ 7, 32 },
+		{ 11, 28 },
+	};
+
+	printf("Testing SMB2_GETINFO_FS buffer sizes\n");
 
 	ret = torture_smb2_connection(tctx, &tree);
 	torture_assert(tctx, ret, "connection failed");
 
 	status = smb2_util_roothandle(tree, &handle);
-	torture_assert_ntstatus_ok(tctx, status, "Unable to create root handle");
+	torture_assert_ntstatus_ok(
+		tctx, status, "Unable to create root handle");
 
-	ZERO_STRUCT(b);
-	b.in.info_type            = SMB2_GETINFO_FS;
-	b.in.info_class           = 1;
-	b.in.output_buffer_length = 0x1;
-	b.in.input_buffer_length  = 0;
-	b.in.file.handle          = handle;
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+		struct smb2_getinfo b;
 
-	status = smb2_getinfo(tree, tree, &b);
-	torture_assert_ntstatus_equal(tctx, status,
-				      NT_STATUS_INFO_LENGTH_MISMATCH,
-				      "Wrong error code for small buffer");
+		if (TARGET_IS_SAMBA3(tctx) &&
+		    ((levels[i].level == 6) || (levels[i].level == 11))) {
+			continue;
+		}
+
+		ZERO_STRUCT(b);
+		b.in.info_type			= SMB2_GETINFO_FS;
+		b.in.info_class			= levels[i].level;
+		b.in.file.handle		= handle;
+		b.in.output_buffer_length	= 65535;
+
+		status = smb2_getinfo(tree, tree, &b);
+
+		torture_assert_ntstatus_equal(
+			tctx, status, NT_STATUS_OK,
+			"Wrong error code for large buffer");
+
+		ret = torture_smb2_buffercheck_err(
+			tctx, tree, &b, levels[i].fixed, b.out.blob);
+		if (!ret) {
+			return ret;
+		}
+	}
+
 	return true;
 }
 
+static bool torture_smb2_qfile_buffercheck(struct torture_context *tctx)
+{
+	bool ret;
+	struct smb2_tree *tree;
+	struct smb2_create c;
+	NTSTATUS status;
+	struct smb2_handle handle;
+	int i;
+
+	struct level_buffersize levels[] = {
+		{ 4, 40 },
+		{ 5, 24 },
+		{ 6, 8 },
+		{ 7, 4 },
+		{ 8, 4 },
+		{ 16, 4 },
+		{ 17, 4 },
+		{ 18, 104 },
+		{ 21, 8 },
+		{ 22, 32 },
+		{ 28, 16 },
+		{ 34, 56 },
+		{ 35, 8 },
+	};
+
+	printf("Testing SMB2_GETINFO_FILE buffer sizes\n");
+
+	ret = torture_smb2_connection(tctx, &tree);
+	torture_assert(tctx, ret, "connection failed");
+
+	ZERO_STRUCT(c);
+	c.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	c.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	c.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	c.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	c.in.create_options = 0;
+	c.in.fname = "bufsize.txt";
+
+	c.in.eas.num_eas = 2;
+	c.in.eas.eas = talloc_array(tree, struct ea_struct, 2);
+	c.in.eas.eas[0].flags = 0;
+	c.in.eas.eas[0].name.s = "EAONE";
+	c.in.eas.eas[0].value = data_blob_talloc(c.in.eas.eas, "VALUE1", 6);
+	c.in.eas.eas[1].flags = 0;
+	c.in.eas.eas[1].name.s = "SECONDEA";
+	c.in.eas.eas[1].value = data_blob_talloc(c.in.eas.eas, "ValueTwo", 8);
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok(
+		tctx, status, "Unable to create test file");
+
+	handle = c.out.file.handle;
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+		struct smb2_getinfo b;
+
+		ZERO_STRUCT(b);
+		b.in.info_type			= SMB2_GETINFO_FILE;
+		b.in.info_class			= levels[i].level;
+		b.in.file.handle		= handle;
+		b.in.output_buffer_length	= 65535;
+
+		status = smb2_getinfo(tree, tree, &b);
+		torture_assert_ntstatus_equal(
+			tctx, status, NT_STATUS_OK,
+			"Wrong error code for large buffer");
+
+		ret = torture_smb2_buffercheck_err(
+			tctx, tree, &b, levels[i].fixed, b.out.blob);
+		if (!ret) {
+			return ret;
+		}
+	}
+	return true;
+}
+
+static bool torture_smb2_qsec_buffercheck(struct torture_context *tctx)
+{
+	struct smb2_getinfo b;
+	bool ret;
+	struct smb2_tree *tree;
+	struct smb2_create c;
+	NTSTATUS status;
+	struct smb2_handle handle;
+	int i;
+
+	printf("Testing SMB2_GETINFO_SECURITY buffer sizes\n");
+
+	ret = torture_smb2_connection(tctx, &tree);
+	torture_assert(tctx, ret, "connection failed");
+
+	ZERO_STRUCT(c);
+	c.in.oplock_level = 0;
+	c.in.desired_access = SEC_STD_SYNCHRONIZE | SEC_DIR_READ_ATTRIBUTE |
+		SEC_DIR_LIST | SEC_STD_READ_CONTROL;
+	c.in.file_attributes   = 0;
+	c.in.create_disposition = NTCREATEX_DISP_OPEN;
+	c.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	c.in.create_options = NTCREATEX_OPTIONS_ASYNC_ALERT;
+	c.in.fname = "";
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok(
+		tctx, status, "Unable to create root handle");
+
+	handle = c.out.file.handle;
+
+	ZERO_STRUCT(b);
+	b.in.info_type			= SMB2_GETINFO_SECURITY;
+	b.in.info_class			= 0;
+	b.in.file.handle		= handle;
+	b.in.output_buffer_length	= 0;
+
+	status = smb2_getinfo(tree, tree, &b);
+	torture_assert_ntstatus_equal(
+		tctx, status, NT_STATUS_BUFFER_TOO_SMALL,
+		"Wrong error code for large buffer");
+
+	b.in.output_buffer_length	= 1;
+	status = smb2_getinfo(tree, tree, &b);
+	torture_assert_ntstatus_equal(
+		tctx, status, NT_STATUS_BUFFER_TOO_SMALL,
+		"Wrong error code for large buffer");
+
+	return true;
+}
 
 /* basic testing of all SMB2 getinfo levels
 */
@@ -231,7 +435,11 @@ struct torture_suite *torture_smb2_getinfo_init(void)
 
 	torture_suite_add_simple_test(suite, "complex", torture_smb2_getinfo);
 	torture_suite_add_simple_test(suite, "fsinfo",  torture_smb2_fsinfo);
-	torture_suite_add_simple_test(suite, "buffercheck",
-				      torture_smb2_buffercheck);
+	torture_suite_add_simple_test(suite, "qfs_buffercheck",
+				      torture_smb2_qfs_buffercheck);
+	torture_suite_add_simple_test(suite, "qfile_buffercheck",
+				      torture_smb2_qfile_buffercheck);
+	torture_suite_add_simple_test(suite, "qsec_buffercheck",
+				      torture_smb2_qsec_buffercheck);
 	return suite;
 }
