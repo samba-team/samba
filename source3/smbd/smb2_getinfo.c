@@ -392,6 +392,12 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
+		if (in_output_buffer_length < fixed_portion) {
+			SAFE_FREE(data);
+			tevent_req_nterror(
+				req, NT_STATUS_INFO_LENGTH_MISMATCH);
+			return tevent_req_post(req, ev);
+		}
 		if (data_size > 0) {
 			state->out_output_buffer = data_blob_talloc(state,
 								    data,
@@ -432,6 +438,12 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				status = NT_STATUS_INVALID_INFO_CLASS;
 			}
 			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		if (in_output_buffer_length < fixed_portion) {
+			SAFE_FREE(data);
+			tevent_req_nterror(
+				req, NT_STATUS_INFO_LENGTH_MISMATCH);
 			return tevent_req_post(req, ev);
 		}
 		if (data_size > 0) {
