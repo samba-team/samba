@@ -2971,6 +2971,7 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 			 uint16_t info_level,
 			 uint16_t flags2,
 			 unsigned int max_data_bytes,
+			 size_t *fixed_portion,
 			 struct smb_filename *fname,
 			 char **ppdata,
 			 int *ret_data_len)
@@ -3022,6 +3023,8 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	pdata = *ppdata;
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	end_data = pdata + max_data_bytes + DIR_ENTRY_SAFETY_MARGIN - 1;
+
+	*fixed_portion = 0;
 
 	switch (info_level) {
 		case SMB_INFO_ALLOCATION:
@@ -3121,6 +3124,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 				data_len = max_data_bytes;
 				status = STATUS_BUFFER_OVERFLOW;
 			}
+			*fixed_portion = 16;
 			break;
 
 		case SMB_QUERY_FS_LABEL_INFO:
@@ -3189,6 +3193,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SBIG_UINT(pdata,8,dfree);
 			SIVAL(pdata,16,sectors_per_unit);
 			SIVAL(pdata,20,bytes_per_sector);
+			*fixed_portion = 24;
 			break;
 		}
 
@@ -3222,6 +3227,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SBIG_UINT(pdata,16,dfree); /* Actual available allocation units. */
 			SIVAL(pdata,24,sectors_per_unit); /* Sectors per allocation unit. */
 			SIVAL(pdata,28,bytes_per_sector); /* Bytes per sector. */
+			*fixed_portion = 32;
 			break;
 		}
 
@@ -3236,6 +3242,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 8;
 			SIVAL(pdata,0,FILE_DEVICE_DISK); /* dev type */
 			SIVAL(pdata,4,characteristics);
+			*fixed_portion = 8;
 			break;
 		}
 
@@ -3410,6 +3417,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
 				return NT_STATUS_DOS(ERRSRV, ERRerror);
 			}
+			*fixed_portion = 24;
 			break;
 		}
 
@@ -3556,6 +3564,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 	char *params = *pparams;
 	uint16_t info_level;
 	int data_len = 0;
+	size_t fixed_portion;
 	NTSTATUS status;
 
 	if (total_params < 2) {
@@ -3582,6 +3591,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 				 info_level,
 				 req->flags2,
 				 max_data_bytes,
+				 &fixed_portion,
 				 NULL,
 				 ppdata, &data_len);
 	if (!NT_STATUS_IS_OK(status)) {
