@@ -376,6 +376,139 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds,
+					struct dcerpc_binding_handle *binding_handle,
+					uint32_t logon_parameters,
+					const char *domain,
+					const char *username,
+					const char *password,
+					const char *workstation,
+					enum netr_LogonInfoClass logon_type)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	union netr_LogonLevel *logon;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
+	char *workstation_slash = NULL;
+
+	logon = talloc_zero(frame, union netr_LogonLevel);
+	if (logon == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (workstation == NULL) {
+		workstation = lp_netbios_name();
+	}
+
+	workstation_slash = talloc_asprintf(frame, "\\\\%s", workstation);
+	if (workstation_slash == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Initialise input parameters */
+
+	switch (logon_type) {
+	case NetlogonInteractiveInformation: {
+
+		struct netr_PasswordInfo *password_info;
+
+		struct samr_Password lmpassword;
+		struct samr_Password ntpassword;
+
+		password_info = talloc_zero(frame, struct netr_PasswordInfo);
+		if (password_info == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		nt_lm_owf_gen(password, ntpassword.hash, lmpassword.hash);
+
+		password_info->identity_info.domain_name.string		= domain;
+		password_info->identity_info.parameter_control		= logon_parameters;
+		password_info->identity_info.logon_id_low		= 0xdead;
+		password_info->identity_info.logon_id_high		= 0xbeef;
+		password_info->identity_info.account_name.string	= username;
+		password_info->identity_info.workstation.string		= workstation_slash;
+
+		password_info->lmpassword = lmpassword;
+		password_info->ntpassword = ntpassword;
+
+		logon->password = password_info;
+
+		break;
+	}
+	case NetlogonNetworkInformation: {
+		struct netr_NetworkInfo *network_info;
+		uint8 chal[8];
+		unsigned char local_lm_response[24];
+		unsigned char local_nt_response[24];
+		struct netr_ChallengeResponse lm;
+		struct netr_ChallengeResponse nt;
+
+		ZERO_STRUCT(lm);
+		ZERO_STRUCT(nt);
+
+		network_info = talloc_zero(frame, struct netr_NetworkInfo);
+		if (network_info == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		generate_random_buffer(chal, 8);
+
+		SMBencrypt(password, chal, local_lm_response);
+		SMBNTencrypt(password, chal, local_nt_response);
+
+		lm.length = 24;
+		lm.data = local_lm_response;
+
+		nt.length = 24;
+		nt.data = local_nt_response;
+
+		network_info->identity_info.domain_name.string		= domain;
+		network_info->identity_info.parameter_control		= logon_parameters;
+		network_info->identity_info.logon_id_low		= 0xdead;
+		network_info->identity_info.logon_id_high		= 0xbeef;
+		network_info->identity_info.account_name.string		= username;
+		network_info->identity_info.workstation.string		= workstation_slash;
+
+		memcpy(network_info->challenge, chal, 8);
+		network_info->nt = nt;
+		network_info->lm = lm;
+
+		logon->network = network_info;
+
+		break;
+	}
+	default:
+		DEBUG(0, ("switch value %d not supported\n",
+			logon_type));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	status = netlogon_creds_cli_LogonSamLogon(creds,
+						  binding_handle,
+						  logon_type,
+						  logon,
+						  frame,
+						  &validation_level,
+						  &validation,
+						  &authoritative,
+						  &flags);
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 					uint16_t validation_level,
 					union netr_Validation *validation,
