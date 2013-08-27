@@ -1359,6 +1359,8 @@ static bool test_memlimit(void)
 {
 	void *root;
 	char *l1, *l2, *l3, *l4, *l5, *t;
+	char *pool;
+	int i;
 
 	printf("test: memlimit\n# MEMORY LIMITS\n");
 
@@ -1520,6 +1522,31 @@ static bool test_memlimit(void)
 	talloc_report_full(root, stdout);
 	talloc_free(root);
 
+	/* Test memlimits with pools. */
+	pool = talloc_pool(NULL, 10*1024);
+	torture_assert("memlimit", pool != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+	talloc_set_memlimit(pool, 10*1024);
+	for (i = 0; i < 9; i++) {
+		l1 = talloc_size(pool, 1024);
+		torture_assert("memlimit", l1 != NULL,
+			"failed: alloc should not fail due to memory limit\n");
+	}
+	/* The next alloc should fail. */
+	l2 = talloc_size(pool, 1024);
+	torture_assert("memlimit", l2 == NULL,
+			"failed: alloc should fail due to memory limit\n");
+
+	/* Moving one of the children shouldn't change the limit,
+	   as it's still inside the pool. */
+	root = talloc_new(NULL);
+	talloc_steal(root, l1);
+	l2 = talloc_size(pool, 1024);
+	torture_assert("memlimit", l2 == NULL,
+			"failed: alloc should fail due to memory limit\n");
+
+	talloc_free(pool);
+	talloc_free(root);
 	printf("success: memlimit\n");
 
 	return true;
