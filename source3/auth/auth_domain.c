@@ -47,16 +47,17 @@ static struct named_mutex *mutex;
  *
  **/
 
-static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
+static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 						const char *domain,
 						const char *dc_name,
 						const struct sockaddr_storage *dc_ss,
 						struct rpc_pipe_client **pipe_ret)
 {
-        NTSTATUS result;
+	NTSTATUS result;
+	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 
-	*cli = NULL;
+	*cli_ret = NULL;
 
 	*pipe_ret = NULL;
 
@@ -80,18 +81,13 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	}
 
 	/* Attempt connection */
-	result = cli_full_connection(cli, lp_netbios_name(), dc_name, dc_ss, 0,
+	result = cli_full_connection(&cli, lp_netbios_name(), dc_name, dc_ss, 0,
 		"IPC$", "IPC", "", "", "", 0, SMB_SIGNING_DEFAULT);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* map to something more useful */
 		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
 			result = NT_STATUS_NO_LOGON_SERVERS;
-		}
-
-		if (*cli) {
-			cli_shutdown(*cli);
-			*cli = NULL;
 		}
 
 		TALLOC_FREE(mutex);
@@ -115,18 +111,17 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	if (lp_client_schannel()) {
 		/* We also setup the creds chain in the open_schannel call. */
 		result = cli_rpc_pipe_open_schannel(
-			*cli, &ndr_table_netlogon, NCACN_NP,
+			cli, &ndr_table_netlogon, NCACN_NP,
 			DCERPC_AUTH_LEVEL_PRIVACY, domain, &netlogon_pipe);
 	} else {
 		result = cli_rpc_pipe_open_noauth(
-			*cli, &ndr_table_netlogon, &netlogon_pipe);
+			cli, &ndr_table_netlogon, &netlogon_pipe);
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
-		cli_shutdown(*cli);
-		*cli = NULL;
+		cli_shutdown(cli);
 		TALLOC_FREE(mutex);
 		return result;
 	}
@@ -145,8 +140,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 			DEBUG(0, ("connect_to_domain_password_server: could not fetch "
 			"trust account password for domain '%s'\n",
 				domain));
-			cli_shutdown(*cli);
-			*cli = NULL;
+			cli_shutdown(cli);
 			TALLOC_FREE(mutex);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -161,8 +155,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 					&neg_flags);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			cli_shutdown(*cli);
-			*cli = NULL;
+			cli_shutdown(cli);
 			TALLOC_FREE(mutex);
 			return result;
 		}
@@ -172,14 +165,14 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		DEBUG(0, ("connect_to_domain_password_server: unable to open "
 			  "the domain client session to machine %s. Error "
 			  "was : %s.\n", dc_name, nt_errstr(result)));
-		cli_shutdown(*cli);
-		*cli = NULL;
+		cli_shutdown(cli);
 		TALLOC_FREE(mutex);
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
 	/* We exit here with the mutex *locked*. JRA */
 
+	*cli_ret = cli;
 	*pipe_ret = netlogon_pipe;
 
 	return NT_STATUS_OK;
