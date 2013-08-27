@@ -1609,6 +1609,27 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 				size_t old_used = TC_HDR_SIZE + tc->size;
 				size_t new_used = TC_HDR_SIZE + size;
 				new_ptr = start;
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
+				{
+					/*
+					 * The area from
+					 * start -> tc may have
+					 * been freed and thus been marked as
+					 * VALGRIND_MEM_NOACCESS. Set it to
+					 * VALGRIND_MEM_UNDEFINED so we can
+					 * copy into it without valgrind errors.
+					 * We can't just mark
+					 * new_ptr -> new_ptr + old_used
+					 * as this may overlap on top of tc,
+					 * (which is why we use memmove, not
+					 * memcpy below) hence the MIN.
+					 */
+					size_t undef_len = MIN((((char *)tc) - ((char *)new_ptr)),old_used);
+					VALGRIND_MAKE_MEM_UNDEFINED(new_ptr, undef_len);
+				}
+#endif
+
 				memmove(new_ptr, tc, old_used);
 
 				tc = (struct talloc_chunk *)new_ptr;
