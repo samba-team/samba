@@ -586,27 +586,24 @@ static inline void *__talloc(const void *context, size_t size)
 			limit = ptc->limit;
 		}
 
-		if (!talloc_memlimit_check(limit, (TC_HDR_SIZE+size))) {
-			errno = ENOMEM;
-			return NULL;
-		}
-
 		tc = talloc_alloc_pool(ptc, TC_HDR_SIZE+size);
 	}
 
 	if (tc == NULL) {
+		/*
+		 * Only do the memlimit check/update on actual allocation.
+		 */
+		if (!talloc_memlimit_check(limit, TC_HDR_SIZE + size)) {
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		tc = (struct talloc_chunk *)malloc(TC_HDR_SIZE+size);
 		if (unlikely(tc == NULL)) return NULL;
 		tc->flags = TALLOC_MAGIC;
 		tc->pool  = NULL;
-	}
 
-	if (limit != NULL) {
-		struct talloc_memlimit *l;
-
-		for (l = limit; l != NULL; l = l->upper) {
-			l->cur_size += TC_HDR_SIZE+size;
-		}
+		talloc_memlimit_grow(limit, TC_HDR_SIZE + size);
 	}
 
 	tc->limit = limit;
