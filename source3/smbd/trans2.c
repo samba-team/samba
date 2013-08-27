@@ -5493,6 +5493,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		reply_nterror(req, status);
 		return;
 	}
+	if (fixed_portion > max_data_bytes) {
+		reply_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
+		return;
+	}
 
 	send_trans2_replies(conn, req, params, param_size, *ppdata, data_size,
 			    max_data_bytes);
