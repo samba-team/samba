@@ -146,6 +146,7 @@ struct ctdb_recoverd {
 	struct vacuum_info *vacuum_info;
 	struct srvid_requests *reallocate_requests;
 	bool takeover_run_in_progress;
+	TALLOC_CTX *takeover_runs_disable_ctx;
 	TALLOC_CTX *ip_check_disable_ctx;
 	struct ctdb_control_get_ifaces *ifaces;
 	TALLOC_CTX *deferred_rebalance_ctx;
@@ -1547,6 +1548,7 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		}
 
 		if (ctdb->do_checkpublicip &&
+		    rec->takeover_runs_disable_ctx == NULL &&
 		    (rec->ip_check_disable_ctx == NULL) &&
 		    verify_remote_ip_allocation(ctdb,
 						 node->known_public_ips,
@@ -1662,8 +1664,10 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 			    struct ctdb_node_map *nodemap,
 			    bool banning_credits_on_fail)
 {
-	uint32_t disable_timeout;
+	uint32_t *nodes = NULL;
+	struct srvid_request dtr;
 	TDB_DATA data;
+	int i;
 	int ret;
 	bool ok;
 
@@ -1674,32 +1678,54 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 		goto done;
 	}
 
-	/* Disable IP checks while doing this takeover run.  This will
-	 * stop those other nodes from triggering takeover runs when
-	 * think they should be hosting an IP but it isn't yet on an
-	 * interface.
-	 */
-	data.dptr  = (uint8_t*)&disable_timeout;
-	data.dsize = sizeof(disable_timeout);
+	rec->takeover_run_in_progress = true;
 
-	disable_timeout = rec->ctdb->tunable.takeover_timeout;
-	if (ctdb_client_send_message(rec->ctdb, CTDB_BROADCAST_CONNECTED,
-				     CTDB_SRVID_DISABLE_IP_CHECK,
-				     data) != 0) {
-		DEBUG(DEBUG_INFO,("Failed to disable IP check\n"));
+	/* If takeover runs are in disabled then fail... */
+	if (rec->takeover_runs_disable_ctx != NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Takeover runs are disabled so refusing to run one\n"));
+		ok = false;
+		goto done;
 	}
 
-	rec->takeover_run_in_progress = true;
+	/* Disable IP checks (takeover runs, really) on other nodes
+	 * while doing this takeover run.  This will stop those other
+	 * nodes from triggering takeover runs when think they should
+	 * be hosting an IP but it isn't yet on an interface.  Don't
+	 * wait for replies since a failure here might cause some
+	 * noise in the logs but will not actually cause a problem.
+	 */
+	dtr.srvid = 0; /* No reply */
+	dtr.pnn = -1;
+
+	data.dptr  = (uint8_t*)&dtr;
+	data.dsize = sizeof(dtr);
+
+	nodes = list_of_connected_nodes(rec->ctdb, nodemap, rec, false);
+
+	/* Disable for 60 seconds.  This can be a tunable later if
+	 * necessary.
+	 */
+	dtr.data = 60;
+	for (i = 0; i < talloc_array_length(nodes); i++) {
+		if (ctdb_client_send_message(rec->ctdb, nodes[i],
+					     CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
+					     data) != 0) {
+			DEBUG(DEBUG_INFO,("Failed to disable takeover runs\n"));
+		}
+	}
 
 	ret = ctdb_takeover_run(rec->ctdb, nodemap, takeover_fail_callback,
 				banning_credits_on_fail ? rec : NULL);
 
-	/* Reenable IP checks */
-	disable_timeout = 0;
-	if (ctdb_client_send_message(rec->ctdb, CTDB_BROADCAST_CONNECTED,
-				     CTDB_SRVID_DISABLE_IP_CHECK,
-				     data) != 0) {
-		DEBUG(DEBUG_INFO,("Failed to reenable IP check\n"));
+	/* Reenable takeover runs and IP checks on other nodes */
+	dtr.data = 0;
+	for (i = 0; i < talloc_array_length(nodes); i++) {
+		if (ctdb_client_send_message(rec->ctdb, nodes[i],
+					     CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
+					     data) != 0) {
+			DEBUG(DEBUG_INFO,("Failed to reenable takeover runs\n"));
+		}
 	}
 
 	if (ret != 0) {
@@ -1711,6 +1737,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	ok = true;
 done:
 	rec->need_takeover_run = !ok;
+	talloc_free(nodes);
 	rec->takeover_run_in_progress = false;
 	return ok;
 }
@@ -2442,6 +2469,99 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	CTDB_NO_MEMORY_VOID(ctdb, rec->ip_check_disable_ctx);
 
 	event_add_timed(ctdb->ev, rec->ip_check_disable_ctx, timeval_current_ofs(timeout, 0), reenable_ip_check, rec);
+}
+
+static void clear_takeover_runs_disable(struct ctdb_recoverd *rec)
+{
+	TALLOC_FREE(rec->takeover_runs_disable_ctx);
+}
+
+static void reenable_takeover_runs(struct event_context *ev,
+				   struct timed_event *te,
+				   struct timeval yt, void *p)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_NOTICE,("Reenabling takeover runs after timeout\n"));
+	clear_takeover_runs_disable(rec);
+}
+
+static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
+					  uint64_t srvid, TDB_DATA data,
+					  void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data,
+						    struct ctdb_recoverd);
+	struct srvid_request *r;
+	uint32_t timeout;
+	TDB_DATA result;
+	int32_t ret = 0;
+
+	/* Validate input data */
+	if (data.dsize != sizeof(struct srvid_request)) {
+		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
+				 "expecting %lu\n", (long unsigned)data.dsize,
+				 (long unsigned)sizeof(struct srvid_request)));
+		ret = -EINVAL;
+		goto done;
+	}
+	if (data.dptr == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " No data received\n"));
+		ret = -EINVAL;
+		goto done;
+	}
+
+	r = (struct srvid_request *)data.dptr;
+	timeout = r->data;
+
+	if (timeout == 0) {
+		DEBUG(DEBUG_NOTICE,("Reenabling takeover runs\n"));
+		clear_takeover_runs_disable(rec);
+		ret = ctdb_get_pnn(ctdb);
+		goto done;
+	}
+
+	if (rec->node_flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(DEBUG_ERR,
+		      ("Refusing to disable takeover runs on inactive node\n"));
+		ret = -EHOSTDOWN;
+		goto done;
+	}
+
+	if (rec->takeover_run_in_progress) {
+		DEBUG(DEBUG_ERR,
+		      ("Unable to disable takeover runs - in progress\n"));
+		ret = -EAGAIN;
+		goto done;
+	}
+
+	DEBUG(DEBUG_NOTICE,("Disabling takeover runs for %u seconds\n", timeout));
+
+	/* Clear any old timers */
+	clear_takeover_runs_disable(rec);
+
+	/* When this is non-NULL it indicates that takeover runs are
+	 * disabled.  This context also holds the timeout timer.
+	 */
+	rec->takeover_runs_disable_ctx = talloc_new(rec);
+	if (rec->takeover_runs_disable_ctx == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate memory\n"));
+		ret = -ENOMEM;
+		goto done;
+	}
+
+	/* Arrange for the timeout to occur */
+	event_add_timed(ctdb->ev, rec->takeover_runs_disable_ctx,
+			timeval_current_ofs(timeout, 0),
+			reenable_takeover_runs,
+			rec);
+
+	/* Returning our PNN tells the caller that we succeeded */
+	ret = ctdb_get_pnn(ctdb);
+done:
+	result.dsize = sizeof(int32_t);
+	result.dptr  = (uint8_t *)&ret;
+	srvid_request_reply(ctdb, r, result);
 }
 
 
@@ -3677,11 +3797,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* verify that we have all ip addresses we should have and we dont
 	 * have addresses we shouldnt have.
 	 */ 
-	if (ctdb->tunable.disable_ip_failover == 0) {
-		if (rec->ip_check_disable_ctx == NULL) {
-			if (verify_local_ip_allocation(ctdb, rec, pnn, nodemap) != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
-			}
+	if (ctdb->tunable.disable_ip_failover == 0 &&
+	    rec->takeover_runs_disable_ctx == NULL &&
+	    rec->ip_check_disable_ctx == NULL) {
+		if (verify_local_ip_allocation(ctdb, rec, pnn, nodemap) != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
 		}
 	}
 
@@ -4077,6 +4197,11 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* register a message port for forcing a rebalance of a node next
 	   reallocation */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_REBALANCE_NODE, recd_node_rebalance_handler, rec);
+
+	/* Register a message port for disabling takeover runs */
+	ctdb_client_set_message_handler(ctdb,
+					CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
+					disable_takeover_runs_handler, rec);
 
 	for (;;) {
 		TALLOC_CTX *mem_ctx = talloc_new(ctdb);
