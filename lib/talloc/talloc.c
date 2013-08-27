@@ -1479,6 +1479,8 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 	void *new_ptr;
 	bool malloced = false;
 	union talloc_pool_chunk *pool_tc = NULL;
+	size_t old_size = 0;
+	size_t new_size = 0;
 
 	/* size zero is equivalent to free() */
 	if (unlikely(size == 0)) {
@@ -1566,6 +1568,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
 			malloced = true;
+			new_size = size;
 		}
 
 		if (new_ptr) {
@@ -1573,6 +1576,9 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			TC_INVALIDATE_FULL_CHUNK(tc);
 		}
 	} else {
+		/* We're doing malloc then free here, so record the difference. */
+		old_size = tc->size;
+		new_size = size;
 		new_ptr = malloc(size + TC_HDR_SIZE);
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size, size) + TC_HDR_SIZE);
@@ -1655,6 +1661,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
 			malloced = true;
+			new_size = size;
 		}
 
 		if (new_ptr) {
@@ -1664,6 +1671,9 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		}
 	}
 	else {
+		/* We're doing realloc here, so record the difference. */
+		old_size = tc->size;
+		new_size = size;
 		new_ptr = realloc(tc, size + TC_HDR_SIZE);
 	}
 got_new_ptr:
@@ -1692,11 +1702,12 @@ got_new_ptr:
 		tc->next->prev = tc;
 	}
 
-	if (!talloc_memlimit_update(tc->limit, tc->size, size)) {
-		talloc_abort("cur_size memlimit counter not correct!");
-		errno = EINVAL;
-		return NULL;
+	if (new_size > old_size) {
+		talloc_memlimit_grow(tc->limit, new_size - old_size);
+	} else if (new_size < old_size) {
+		talloc_memlimit_shrink(tc->limit, old_size - new_size);
 	}
+
 	tc->size = size;
 	_talloc_set_name_const(TC_PTR_FROM_CHUNK(tc), name);
 
