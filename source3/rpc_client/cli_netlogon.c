@@ -524,33 +524,6 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
-					      TALLOC_CTX *mem_ctx,
-					      uint32 logon_parameters,
-					      const char *server,
-					      const char *username,
-					      const char *domain,
-					      const char *workstation,
-					      const uint8 chal[8],
-					      uint16_t validation_level,
-					      DATA_BLOB lm_response,
-					      DATA_BLOB nt_response,
-					      struct netr_SamInfo3 **info3)
-{
-	return rpccli_netlogon_sam_network_logon(cli,
-						 mem_ctx,
-						 logon_parameters,
-						 server,
-						 username,
-						 domain,
-						 workstation,
-						 chal,
-						 validation_level,
-						 lm_response,
-						 nt_response,
-						 info3);
-}
-
 /*********************************************************
  Change the domain password on the PDC.
 
