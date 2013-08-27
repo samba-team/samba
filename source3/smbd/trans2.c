@@ -4229,6 +4229,10 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 	unsigned int i;
 	unsigned int ofs = 0;
 
+	if (max_data_bytes < 32) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
 	for (i = 0; i < num_streams; i++) {
 		unsigned int next_offset;
 		size_t namelen;
