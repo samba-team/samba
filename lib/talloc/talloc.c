@@ -2561,7 +2561,7 @@ static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size)
 	for (l = limit; l != NULL; l = l->upper) {
 		if (l->max_size != 0 &&
 		    ((l->max_size <= l->cur_size) ||
-		     (l->max_size - l->cur_size < TC_HDR_SIZE+size))) {
+		     (l->max_size - l->cur_size < size))) {
 			return false;
 		}
 	}
