@@ -1817,7 +1817,14 @@ static size_t _talloc_total_mem_internal(const void *ptr,
 		break;
 	case TOTAL_MEM_LIMIT:
 		if (likely(tc->name != TALLOC_MAGIC_REFERENCE)) {
-			total = tc->size + TC_HDR_SIZE;
+			/*
+			 * Don't count memory allocated from a pool
+			 * when calculating limits. Only count the
+			 * pool itself.
+			 */
+			if (!(tc->flags & TALLOC_FLAG_POOLMEM)) {
+				total = tc->size + TC_HDR_SIZE;
+			}
 		}
 		break;
 	}
