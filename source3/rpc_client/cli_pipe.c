@@ -2048,15 +2048,17 @@ static const struct dcerpc_binding_handle_ops rpccli_bh_ops = {
 };
 
 /* initialise a rpc_pipe_client binding handle */
-struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c)
+struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c,
+					const struct GUID *object,
+					const struct ndr_interface_table *table)
 {
 	struct dcerpc_binding_handle *h;
 	struct rpccli_bh_state *hs;
 
 	h = dcerpc_binding_handle_create(c,
 					 &rpccli_bh_ops,
-					 NULL,
-					 NULL, /* TODO */
+					 object,
+					 table,
 					 &hs,
 					 struct rpccli_bh_state,
 					 __location__);
@@ -2252,7 +2254,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 
 	result->transport->transport = NCACN_IP_TCP;
 
-	result->binding_handle = rpccli_bh_create(result);
+	result->binding_handle = rpccli_bh_create(result, NULL, table);
 	if (result->binding_handle == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
@@ -2491,7 +2493,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 
 	result->transport->transport = NCALRPC;
 
-	result->binding_handle = rpccli_bh_create(result);
+	result->binding_handle = rpccli_bh_create(result, NULL, table);
 	if (result->binding_handle == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
@@ -2582,7 +2584,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	DLIST_ADD(np_ref->cli->pipe_list, np_ref->pipe);
 	talloc_set_destructor(np_ref, rpc_pipe_client_np_ref_destructor);
 
-	result->binding_handle = rpccli_bh_create(result);
+	result->binding_handle = rpccli_bh_create(result, NULL, table);
 	if (result->binding_handle == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;

@@ -640,7 +640,7 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,
-				const struct ndr_syntax_id *abstract_syntax,
+				const struct ndr_interface_table *table,
 				const struct auth_session_info *session_info,
 				struct rpc_pipe_client **_result)
 {
@@ -675,7 +675,7 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result->abstract_syntax = *abstract_syntax;
+	result->abstract_syntax = table->syntax_id;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	result->desthost = get_myname(result);
@@ -696,7 +696,7 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result->binding_handle = rpccli_bh_create(result);
+	result->binding_handle = rpccli_bh_create(result, NULL, table);
 	if (result->binding_handle == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		DEBUG(0, ("Failed to create binding handle.\n"));
@@ -821,7 +821,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		 * to spoolssd. */
 
 		status = rpc_pipe_open_external(tmp_ctx,
-						pipe_name, &table->syntax_id,
+						pipe_name, table,
 						session_info,
 						&cli);
 		if (!NT_STATUS_IS_OK(status)) {
