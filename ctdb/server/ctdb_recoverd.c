@@ -30,11 +30,6 @@
 #include "dlinklist.h"
 
 
-/* most recent reload all ips request we need to perform during the 
-   next monitoring loop
-*/
-struct reloadips_all_reply *reload_all_ips_request = NULL;
-
 /* List of SRVID requests that need to be processed */
 struct srvid_list {
 	struct srvid_list *next, *prev;
@@ -2553,79 +2548,6 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 }
 
 /*
-  handler for reload all ips.
-*/
-static void ip_reloadall_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
-{
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
-
-	if (data.dsize != sizeof(struct reloadips_all_reply)) {
-		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
-		return;
-	}
-
-	reload_all_ips_request = (struct reloadips_all_reply *)talloc_steal(rec, data.dptr);
-
-	DEBUG(DEBUG_NOTICE,("RELOAD_ALL_IPS message received from node:%d srvid:%d\n", reload_all_ips_request->pnn, (int)reload_all_ips_request->srvid));
-	return;
-}
-
-static void async_reloadips_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
-{
-	uint32_t *status = callback_data;
-
-	if (res != 0) {
-		DEBUG(DEBUG_ERR,("Reload ips all failed on node %d\n", node_pnn));
-		*status = 1;
-	}
-}
-
-static int
-reload_all_ips(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, struct reloadips_all_reply *rips)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	uint32_t *nodes;
-	uint32_t status;
-	int i;
-
-	DEBUG(DEBUG_ERR,("RELOAD ALL IPS on all active nodes\n"));
-	for (i = 0; i< nodemap->num; i++) {
-		if (nodemap->nodes[i].flags != 0) {
-			DEBUG(DEBUG_ERR, ("Can not reload ips on all nodes. Node %d is not up and healthy\n", i));
-			talloc_free(tmp_ctx);
-			return -1;
-		}
-	}
-
-	/* send the flags update to all connected nodes */
-	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
-	status = 0;
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RELOAD_PUBLIC_IPS,
-					nodes, 0,
-					CONTROL_TIMEOUT(),
-					false, tdb_null,
-					async_reloadips_callback, NULL,
-					&status) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to reloadips on all nodes.\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	if (status != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to reloadips on all nodes.\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	ctdb_client_send_message(ctdb, rips->pnn, rips->srvid, tdb_null);
-
-	talloc_free(tmp_ctx);
-	return 0;
-}
-
-
-/*
   handler for ip reallocate, just add it to the list of requests and 
   handle this later in the monitor_cluster loop so we do not recurse
   with other requests to takeover_run()
@@ -3867,13 +3789,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 
-	/* is there a pending reload all ips ? */
-	if (reload_all_ips_request != NULL) {
-		reload_all_ips(ctdb, rec, nodemap, reload_all_ips_request);
-		talloc_free(reload_all_ips_request);
-		reload_all_ips_request = NULL;
-	}
-
 	/* if there are takeovers requested, perform it and notify the waiters */
 	if (rec->takeover_runs_disable_ctx == NULL &&
 	    rec->reallocate_requests) {
@@ -4171,9 +4086,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for performing a takeover run */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_TAKEOVER_RUN, ip_reallocate_handler, rec);
-
-	/* register a message port for performing a reload all ips */
-	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RELOAD_ALL_IPS, ip_reloadall_handler, rec);
 
 	/* register a message port for disabling the ip check for a short while */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_DISABLE_IP_CHECK, disable_ip_check_handler, rec);

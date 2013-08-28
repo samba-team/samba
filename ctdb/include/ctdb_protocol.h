@@ -147,11 +147,6 @@ struct ctdb_call_info {
 */
 #define CTDB_SRVID_REBALANCE_NODE 0xFB01000000000000LL
 
-/*
-   a message handler ID meaning to ask recovery master to reload all ips
- */
-#define CTDB_SRVID_RELOAD_ALL_IPS 0xFB02000000000000LL
-
 /* A message handler ID to stop takeover runs from occurring */
 #define CTDB_SRVID_DISABLE_TAKEOVER_RUNS 0xFB03000000000000LL
 
