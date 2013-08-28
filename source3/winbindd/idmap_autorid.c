@@ -194,7 +194,8 @@ error:
 
 }
 
-static NTSTATUS idmap_autorid_get_domainrange(struct autorid_range_config *range,
+static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
+					      struct autorid_range_config *range,
 					      bool read_only)
 {
 	NTSTATUS ret;
@@ -211,14 +212,14 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_range_config *range
 		fstrcpy(range->keystr, range->domsid);
 	}
 
-	ret = dbwrap_fetch_uint32_bystring(autorid_db, range->keystr,
+	ret = dbwrap_fetch_uint32_bystring(db, range->keystr,
 					   &(range->rangenum));
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		if (read_only) {
 			return NT_STATUS_NOT_FOUND;
 		}
-		ret = dbwrap_trans_do(autorid_db,
+		ret = dbwrap_trans_do(db,
 			      idmap_autorid_get_domainrange_action, range);
 	}
 
@@ -261,7 +262,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 	range.globalcfg = globalcfg;
 	fstrcpy(range.domsid, ALLOC_RANGE);
 
-	ret = idmap_autorid_get_domainrange(&range, dom->read_only);
+	ret = idmap_autorid_get_domainrange(autorid_db, &range, dom->read_only);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(3, ("Could not determine range for allocation pool, "
@@ -644,7 +645,8 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		/* Calculate domain_range_index for multi-range support */
 		range.domain_range_index = rid / (global->rangesize);
 
-		ret = idmap_autorid_get_domainrange(&range, dom->read_only);
+		ret = idmap_autorid_get_domainrange(autorid_db, &range,
+						    dom->read_only);
 
 		/* read-only mode and a new domain range would be required? */
 		if (NT_STATUS_EQUAL(ret, NT_STATUS_NOT_FOUND) &&
