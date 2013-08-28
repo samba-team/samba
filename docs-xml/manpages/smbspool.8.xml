@@ -73,7 +73,9 @@
 		</para></listitem>
 
 		<listitem><para>The user argument (argv[2]) contains the 
-		print user's name and is presently not used by smbspool.
+		print user's name and is presently not used by smbspool
+		except in Kerberos environments to access the user's
+		ticket cache.
 		</para></listitem>
 
 		<listitem><para>The title argument (argv[3]) contains the 
