@@ -99,10 +99,14 @@ bld.SAMBA3_MODULE('idmap_hash',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_hash'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_hash'))
 
+bld.SAMBA3_SUBSYSTEM('IDMAP_AUTORID_TDB',
+                     source='idmap_autorid_tdb.c',
+                     deps='tdb')
+
 bld.SAMBA3_MODULE('idmap_autorid',
                  subsystem='idmap',
                  source='idmap_autorid.c',
-                 deps='samba-util tdb IDMAP_TDB_COMMON',
+                 deps='samba-util tdb IDMAP_TDB_COMMON IDMAP_AUTORID_TDB',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_autorid'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_autorid'),
