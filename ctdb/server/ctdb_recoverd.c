@@ -147,7 +147,6 @@ struct ctdb_recoverd {
 	struct srvid_requests *reallocate_requests;
 	bool takeover_run_in_progress;
 	TALLOC_CTX *takeover_runs_disable_ctx;
-	TALLOC_CTX *ip_check_disable_ctx;
 	struct ctdb_control_get_ifaces *ifaces;
 	TALLOC_CTX *deferred_rebalance_ctx;
 };
@@ -1549,7 +1548,6 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 
 		if (ctdb->do_checkpublicip &&
 		    rec->takeover_runs_disable_ctx == NULL &&
-		    (rec->ip_check_disable_ctx == NULL) &&
 		    verify_remote_ip_allocation(ctdb,
 						 node->known_public_ips,
 						 node->pnn)) {
@@ -2356,16 +2354,6 @@ static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid,
 }
 
 
-static void reenable_ip_check(struct event_context *ev, struct timed_event *te, 
-			      struct timeval yt, void *p)
-{
-	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
-
-	talloc_free(rec->ip_check_disable_ctx);
-	rec->ip_check_disable_ctx = NULL;
-}
-
-
 static void ctdb_rebalance_timeout(struct event_context *ev, struct timed_event *te, 
 				  struct timeval t, void *p)
 {
@@ -2433,43 +2421,6 @@ static void recd_update_ip_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	update_ip_assignment_tree(rec->ctdb, ip);
 }
 
-
-static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
-{
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
-	uint32_t timeout;
-
-	if (rec->ip_check_disable_ctx != NULL) {
-		talloc_free(rec->ip_check_disable_ctx);
-		rec->ip_check_disable_ctx = NULL;
-	}
-
-	if (data.dsize != sizeof(uint32_t)) {
-		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
-				 "expexting %lu\n", (long unsigned)data.dsize,
-				 (long unsigned)sizeof(uint32_t)));
-		return;
-	}
-	if (data.dptr == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " No data recaived\n"));
-		return;
-	}
-
-	timeout = *((uint32_t *)data.dptr);
-
-	if (timeout == 0) {
-		DEBUG(DEBUG_NOTICE,("Reenabling ip check\n"));
-		return;
-	}
-		
-	DEBUG(DEBUG_NOTICE,("Disabling ip check for %u seconds\n", timeout));
-
-	rec->ip_check_disable_ctx = talloc_new(rec);
-	CTDB_NO_MEMORY_VOID(ctdb, rec->ip_check_disable_ctx);
-
-	event_add_timed(ctdb->ev, rec->ip_check_disable_ctx, timeval_current_ofs(timeout, 0), reenable_ip_check, rec);
-}
 
 static void clear_takeover_runs_disable(struct ctdb_recoverd *rec)
 {
@@ -2564,6 +2515,42 @@ done:
 	srvid_request_reply(ctdb, r, result);
 }
 
+/* Backward compatibility for this SRVID - call
+ * disable_takeover_runs_handler() instead
+ */
+static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
+				     TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data,
+						    struct ctdb_recoverd);
+	TDB_DATA data2;
+	struct srvid_request *req;
+
+	if (data.dsize != sizeof(uint32_t)) {
+		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
+				 "expecting %lu\n", (long unsigned)data.dsize,
+				 (long unsigned)sizeof(uint32_t)));
+		return;
+	}
+	if (data.dptr == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " No data received\n"));
+		return;
+	}
+
+	req = talloc(ctdb, struct srvid_request);
+	CTDB_NO_MEMORY_VOID(ctdb, req);
+
+	req->srvid = 0; /* No reply */
+	req->pnn = -1;
+	req->data = *((uint32_t *)data.dptr); /* Timeout */
+
+	data2.dsize = sizeof(*req);
+	data2.dptr = (uint8_t *)req;
+
+	disable_takeover_runs_handler(rec->ctdb,
+				      CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
+				      data2, rec);
+}
 
 /*
   handler for reload all ips.
@@ -3798,8 +3785,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	 * have addresses we shouldnt have.
 	 */ 
 	if (ctdb->tunable.disable_ip_failover == 0 &&
-	    rec->takeover_runs_disable_ctx == NULL &&
-	    rec->ip_check_disable_ctx == NULL) {
+	    rec->takeover_runs_disable_ctx == NULL) {
 		if (verify_local_ip_allocation(ctdb, rec, pnn, nodemap) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
 		}
