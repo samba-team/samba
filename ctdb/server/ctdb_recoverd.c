@@ -3875,7 +3875,8 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* if there are takeovers requested, perform it and notify the waiters */
-	if (rec->reallocate_requests) {
+	if (rec->takeover_runs_disable_ctx == NULL &&
+	    rec->reallocate_requests) {
 		process_ipreallocate_requests(ctdb, rec);
 	}
 
