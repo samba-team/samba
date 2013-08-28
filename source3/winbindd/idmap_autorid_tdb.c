@@ -264,16 +264,13 @@ NTSTATUS idmap_autorid_getconfigstr(struct db_context *db, TALLOC_CTX *mem_ctx,
 struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
 						       TALLOC_CTX *ctx)
 {
-
-	TDB_DATA data;
 	struct autorid_global_config *cfg;
 	unsigned long minvalue, rangesize, maxranges;
 	NTSTATUS status;
+	char *configstr = NULL;
 
-	status = dbwrap_fetch_bystring(db, ctx, CONFIGKEY, &data);
-
+	status = idmap_autorid_getconfigstr(db, ctx, &configstr);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("No saved config found\n"));
 		return NULL;
 	}
 
@@ -282,7 +279,7 @@ struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
 		return NULL;
 	}
 
-	if (sscanf((char *)data.dptr,
+	if (sscanf(configstr,
 		   "minvalue:%lu rangesize:%lu maxranges:%lu",
 		   &minvalue, &rangesize, &maxranges) != 3) {
 		DEBUG(1,
