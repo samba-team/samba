@@ -75,4 +75,11 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 NTSTATUS idmap_autorid_getconfigstr(struct db_context *db, TALLOC_CTX *mem_ctx,
 				    char **result);
 
+/**
+ * parse the handed in config string and fill the provided config structure.
+ * return false if the string could not be parsed.
+ */
+bool idmap_autorid_parse_configstr(const char *configstr,
+				   struct autorid_global_config *cfg);
+
 #endif /* _IDMAP_AUTORID_H_ */
