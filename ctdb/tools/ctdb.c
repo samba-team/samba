@@ -176,6 +176,7 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 	int n;
 	uint32_t i;
 	struct ctdb_node_map *nodemap;
+	bool ret = true;
        
 	*nodes = NULL;
 
@@ -255,13 +256,13 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 
 		if (!ctdb_getpnn(ctdb_connection, current_pnn,
 				 &((*nodes)[0]))) {
-			return false;
+			ret = false;
 		}
 	}
 
 	ctdb_free_nodemap(nodemap);
 
-	return true;
+	return ret;
 }
 
 /*
