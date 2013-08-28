@@ -207,6 +207,60 @@ NTSTATUS idmap_autorid_db_init(const char *path,
 	return status;
 }
 
+struct idmap_autorid_fetch_config_state {
+	TALLOC_CTX *mem_ctx;
+	char *configstr;
+};
+
+static void idmap_autorid_config_parser(TDB_DATA key, TDB_DATA value,
+					void *private_data)
+{
+	struct idmap_autorid_fetch_config_state *state;
+
+	state = (struct idmap_autorid_fetch_config_state *)private_data;
+
+	/*
+	 * strndup because we have non-nullterminated strings in the db
+	 */
+	state->configstr = talloc_strndup(
+		state->mem_ctx, (const char *)value.dptr, value.dsize);
+}
+
+NTSTATUS idmap_autorid_getconfigstr(struct db_context *db, TALLOC_CTX *mem_ctx,
+				    char **result)
+{
+	TDB_DATA key;
+	NTSTATUS status;
+	struct idmap_autorid_fetch_config_state state;
+
+	if (result == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	key = string_term_tdb_data(CONFIGKEY);
+
+	state.mem_ctx = mem_ctx;
+	state.configstr = NULL;
+
+	status = dbwrap_parse_record(db, key, idmap_autorid_config_parser,
+				     &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Error while retrieving config: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	if (state.configstr == NULL) {
+		DEBUG(1, ("Error while retrieving config\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(5, ("found CONFIG: %s\n", state.configstr));
+
+	*result = state.configstr;
+	return NT_STATUS_OK;
+}
+
 struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
 						       TALLOC_CTX *ctx)
 {

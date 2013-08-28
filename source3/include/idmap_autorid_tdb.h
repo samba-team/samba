@@ -69,4 +69,10 @@ struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
 NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 				  struct autorid_global_config *cfg);
 
+/**
+ * get the range config string stored in the database
+ */
+NTSTATUS idmap_autorid_getconfigstr(struct db_context *db, TALLOC_CTX *mem_ctx,
+				    char **result);
+
 #endif /* _IDMAP_AUTORID_H_ */
