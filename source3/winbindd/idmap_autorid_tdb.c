@@ -324,9 +324,68 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 				  struct autorid_global_config *cfg)
 {
 
-	NTSTATUS status;
+	struct autorid_global_config *storedconfig = NULL;
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	TDB_DATA data;
 	char *cfgstr;
+	uint32_t hwm;
+
+	DEBUG(10, ("New configuration provided for storing is "
+		   "minvalue:%d rangesize:%d maxranges:%d\n",
+		   cfg->minvalue, cfg->rangesize, cfg->maxranges));
+
+	if (cfg->rangesize < 2000) {
+		DEBUG(1, ("autorid rangesize must be at least 2000\n"));
+		goto done;
+	}
+
+	if (cfg->maxranges == 0) {
+		DEBUG(1, ("An autorid maxranges value of 0 is invalid. "
+			  "Must have at least one range available.\n"));
+		goto done;
+	}
+
+	status = idmap_autorid_loadconfig(db, talloc_tos(), &storedconfig);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		DEBUG(5, ("No configuration found. Storing initial "
+			  "configuration.\n"));
+	} else if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/* did the minimum value or rangesize change? */
+	if (storedconfig &&
+	    ((storedconfig->minvalue != cfg->minvalue) ||
+	     (storedconfig->rangesize != cfg->rangesize)))
+	{
+		DEBUG(1, ("New configuration values for rangesize or "
+			  "minimum uid value conflict with previously "
+			  "used values! Not storing new config.\n"));
+		TALLOC_FREE(storedconfig);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	TALLOC_FREE(storedconfig);
+
+	status = dbwrap_fetch_uint32_bystring(db, HWM, &hwm);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Fatal error while fetching current "
+			  "HWM value: %s\n", nt_errstr(status)));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	/*
+	 * has the highest uid value been reduced to setting that is not
+	 * sufficient any more for already existing ranges?
+	 */
+	if (hwm > cfg->maxranges) {
+		DEBUG(1, ("New upper uid limit is too low to cover "
+			  "existing mappings! Not storing new config.\n"));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
 
 	cfgstr =
 	    talloc_asprintf(talloc_tos(),
@@ -341,7 +400,7 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 
 	status = dbwrap_trans_store_bystring(db, CONFIGKEY, data, TDB_REPLACE);
 
-	talloc_free(cfgstr);
+	TALLOC_FREE(cfgstr);
 
 	return status;
 }

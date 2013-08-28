@@ -595,9 +595,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 {
 	struct idmap_tdb_common_context *commonconfig;
 	struct autorid_global_config *config;
-	struct autorid_global_config *storedconfig = NULL;
 	NTSTATUS status;
-	uint32_t hwm;
 
 	if (!strequal(dom->name, "*")) {
 		DEBUG(0, ("idmap_autorid_initialize: Error: autorid configured "
@@ -635,12 +633,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	config->rangesize = lp_parm_int(-1, "idmap config *",
 					"rangesize", 100000);
 
-	if (config->rangesize < 2000) {
-		DEBUG(1, ("autorid rangesize must be at least 2000\n"));
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto error;
-	}
-
 	config->maxranges = (dom->high_id - dom->low_id + 1) /
 	    config->rangesize;
 
@@ -658,50 +650,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 			  "limiting ranges to lower boundary number of %d\n",
 			  (dom->high_id - dom->low_id + 1), config->rangesize,
 			  config->maxranges));
-	}
-
-	DEBUG(10, ("Current configuration in config is "
-		   "minvalue:%d rangesize:%d maxranges:%d\n",
-		   config->minvalue, config->rangesize, config->maxranges));
-
-	/* read previously stored config and current HWM */
-	status = idmap_autorid_loadconfig(autorid_db, talloc_tos(),
-					  &storedconfig);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		DEBUG(5, ("No configuration found. Storing initial "
-			  "configuration.\n"));
-	} else if (!NT_STATUS_IS_OK(status)) {
-		goto error;
-	}
-
-	status = dbwrap_fetch_uint32_bystring(autorid_db, HWM, &hwm);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Fatal error while fetching current "
-			  "HWM value: %s\n", nt_errstr(status)));
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto error;
-	}
-
-	/* did the minimum value or rangesize change? */
-	if (storedconfig &&
-	    ((storedconfig->minvalue != config->minvalue) ||
-	     (storedconfig->rangesize != config->rangesize))) {
-		DEBUG(1, ("New configuration values for rangesize or "
-			  "minimum uid value conflict with previously "
-			  "used values! Aborting initialization\n"));
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto error;
-	}
-
-	/*
-	 * has the highest uid value been reduced to setting that is not
-	 * sufficient any more for already existing ranges?
-	 */
-	if (hwm > config->maxranges) {
-		DEBUG(1, ("New upper uid limit is too low to cover "
-			  "existing mappings! Aborting initialization\n"));
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto error;
 	}
 
 	status = idmap_autorid_saveconfig(autorid_db, config);
@@ -738,8 +686,6 @@ error:
 	talloc_free(config);
 
 done:
-	talloc_free(storedconfig);
-
 	return status;
 }
 
