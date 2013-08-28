@@ -151,12 +151,12 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 	DEBUG(10, ("ldap_server from saf cache: '%s'\n",
 		   ldap_server ? ldap_server : ""));
 
-	wb_dom = find_domain_from_name_noinit(dom_name);
+	wb_dom = find_domain_from_name(dom_name);
 	if (wb_dom == NULL) {
 		DEBUG(10, ("could not find domain '%s'\n", dom_name));
 		realm = NULL;
 	} else {
-		DEBUG(10, ("find_domain_from_name_noinit found realm '%s' for "
+		DEBUG(10, ("find_domain_from_name found realm '%s' for "
 			  " domain '%s'\n", wb_dom->alt_name, dom_name));
 		realm = wb_dom->alt_name;
 	}
