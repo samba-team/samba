@@ -12,20 +12,29 @@
 #    file:
 tkey-gssapi-keytab "${DNS_KEYTAB_ABS}";
 
+# 2. If SELinux is enabled, ensure that all files have the appropriate 
+#    SELinux file contexts.  The ${DNS_KEYTAB} file must be accessible by the 
+#    BIND daemon and should have a SELinux type of named_conf_t.  This can be 
+#    set with the following command:
+chcon -t named_conf_t ${DNS_KEYTAB_ABS}
+
+#    Even if not using SELinux, do confirm (only) BIND can access this file as the 
+#    user it becomes (generally not root).
+
 #
-# Common Steps for BIND 9.x.x --------------------------------------------
+# Steps for BIND 9.x.x using BIND9_DLZ ------------------------------
 #
 
-# 2. Set appropriate ownership and permissions on the ${DNS_KEYTAB} file.  
-#    Note that the most distributions have BIND configured to run under a 
-#    non-root user account.  For example, Fedora 9 runs BIND as the user 
-#    "named" once the daemon relinquishes its rights.  Therefore, the file 
-#    ${DNS_KEYTAB} must be readable by the user that BIND run as.  If BIND 
-#    is running as a non-root user, the "${DNS_KEYTAB}" file must have its 
-#    permissions altered to allow the daemon to read it.  Under Fedora 9, 
-#    execute the following commands:
-chgrp named ${DNS_KEYTAB_ABS}
-chmod g+r ${DNS_KEYTAB_ABS}
+# 3. Disable chroot support in BIND.  
+#    BIND is often configured to run in a chroot, but this is not
+#    compatible with access to the dns/sam.ldb files that database
+#    access and updates require.  Additionally, the DLZ plugin is
+#    linked to a large number of Samba shared libraries and loads
+#    additonal plugins.
+
+#
+# Steps for BIND 9.x.x using BIND9_FLATFILE ------------------------------
+#
 
 # 3. Ensure the BIND zone file(s) that will be dynamically updated are in 
 #    a directory where the BIND daemon can write.  When BIND performs 
@@ -38,8 +47,3 @@ chmod g+r ${DNS_KEYTAB_ABS}
 #    both example zone statements at the beginning of this file were changed 
 #    by prepending the directory "dynamic/".
 
-# 4. If SELinux is enabled, ensure that all files have the appropriate 
-#    SELinux file contexts.  The ${DNS_KEYTAB} file must be accessible by the 
-#    BIND daemon and should have a SELinux type of named_conf_t.  This can be 
-#    set with the following command:
-chcon -t named_conf_t ${DNS_KEYTAB_ABS}
