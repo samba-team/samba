@@ -793,7 +793,8 @@ static struct autorid_global_config *idmap_autorid_loadconfig(struct db_context 
 
 }
 
-static NTSTATUS idmap_autorid_saveconfig(struct autorid_global_config *cfg)
+static NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
+					 struct autorid_global_config *cfg)
 {
 
 	NTSTATUS status;
@@ -811,8 +812,7 @@ static NTSTATUS idmap_autorid_saveconfig(struct autorid_global_config *cfg)
 
 	data = string_tdb_data(cfgstr);
 
-	status = dbwrap_trans_store_bystring(autorid_db, CONFIGKEY,
-					     data, TDB_REPLACE);
+	status = dbwrap_trans_store_bystring(db, CONFIGKEY, data, TDB_REPLACE);
 
 	talloc_free(cfgstr);
 
@@ -970,7 +970,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		goto error;
 	}
 
-	status = idmap_autorid_saveconfig(config);
+	status = idmap_autorid_saveconfig(autorid_db, config);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to store configuration data!\n"));
