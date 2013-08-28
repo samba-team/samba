@@ -27,7 +27,6 @@
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../libds/common/flags.h"
 #include "ads.h"
-#include "secrets.h"
 #include "../libcli/ldap/ldap_ndr.h"
 #include "../libcli/security/security.h"
 #include "../libds/common/flag_mapping.h"
@@ -209,20 +208,18 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	/* the machine acct password might have change - fetch it every time */
 
+	if (!get_trust_pw_clear(domain->name, &password, NULL, NULL)) {
+		return NULL;
+	}
+
 	if ( IS_DC ) {
 
-		if ( !pdb_get_trusteddom_pw( domain->name, &password, NULL,
-					     NULL ) ) {
-			return NULL;
-		}
 		realm = SMB_STRDUP(domain->alt_name);
 	}
 	else {
 		struct winbindd_domain *our_domain = domain;
 
 
-		password = secrets_fetch_machine_password(lp_workgroup(), NULL,
-							  NULL);
 		/* always give preference to the alt_name in our
 		   primary domain if possible */
 
