@@ -1716,6 +1716,7 @@ struct smb_file_time {
 #define UCF_COND_ALLOW_WCARD_LCOMP	0x00000004
 #define UCF_POSIX_PATHNAMES		0x00000008
 #define UCF_UNIX_NAME_LOOKUP		0x00000010
+#define UCF_CREATING_FILE		0x00000020
 
 /*
  * smb_filename
