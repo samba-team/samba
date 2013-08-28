@@ -1474,6 +1474,14 @@ NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		goto fail;
 	}
 
+	if (reply->datalen == 0) {
+		/*
+		 * Treat an empty record as non-existing
+		 */
+		status = NT_STATUS_NOT_FOUND;
+		goto fail;
+	}
+
 	parser(key, make_tdb_data(&reply->data[0], reply->datalen),
 	       private_data);
 
