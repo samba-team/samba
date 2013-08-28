@@ -4276,89 +4276,59 @@ static int control_clearlog(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
-
-static uint32_t reloadips_finished;
-
-static void reloadips_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
-{
-	reloadips_finished = 1;
-}
-
-static int reloadips_all(struct ctdb_context *ctdb)
-{
-	struct reloadips_all_reply rips;
-	struct ctdb_node_map *nodemap=NULL;
-	TDB_DATA data;
-	uint32_t recmaster;
-	int ret, i;
-
-	/* check that there are valid nodes available */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		return 1;
-	}
-	for (i=0; i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags != 0) {
-			DEBUG(DEBUG_ERR,("reloadips -n all  can only be used when all nodes are up and healthy. Aborting due to problem with node %d\n", i));
-			return 1;
-		}
-	}
-
-	rips.pnn = ctdb_get_pnn(ctdb);
-	rips.srvid = getpid();
-
-	/* register a message port for receiveing the reply so that we
-	   can receive the reply
-	*/
-	ctdb_client_set_message_handler(ctdb, rips.srvid, reloadips_handler, NULL);
-
-	if (!ctdb_getrecmaster(ctdb_connection, CTDB_CURRENT_NODE, &recmaster)) {
-		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node\n"));
-		return -1;
-	}
-
-
-	data.dptr = (uint8_t *)&rips;
-	data.dsize = sizeof(rips);
-
-	ret = ctdb_client_send_message(ctdb, recmaster, CTDB_SRVID_RELOAD_ALL_IPS, data);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send reload all ips request message to %u\n", options.pnn));
-		return 1;
-	}
-
-	reloadips_finished = 0;
-	while (reloadips_finished == 0) {
-		event_loop_once(ctdb->ev);
-	}
-
-	return 0;
-}
-
-/*
-  reload public ips on a specific node
- */
+/* Reload public IPs on a specified nodes */
 static int control_reloadips(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
-	int32_t res;
-	char *errmsg;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	uint32_t *nodes;
+	uint32_t pnn_mode;
 
-	if (options.pnn == CTDB_BROADCAST_ALL) {
-		return reloadips_all(ctdb);
+	assert_single_node_only();
+
+	if (argc > 1) {
+		usage();
 	}
 
-	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_RELOAD_PUBLIC_IPS,
-			   0, tdb_null, tmp_ctx, NULL, &res, NULL, &errmsg);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,("Failed to reload ips\n"));
-		talloc_free(tmp_ctx);
+	/* Determine the nodes where IPs need to be reloaded */
+	if (!parse_nodestring(ctdb, argc == 1 ? argv[0] : NULL,
+			      options.pnn, true, &nodes, &pnn_mode)) {
 		return -1;
 	}
 
-	talloc_free(tmp_ctx);
+again:
+	/* Disable takeover runs on all connected nodes.  A reply
+	 * indicating success is needed from each node so all nodes
+	 * will need to be active.  This will retry until maxruntime
+	 * is exceeded, hence no error handling.
+	 * 
+	 * A check could be added to not allow reloading of IPs when
+	 * there are disconnected nodes.  However, this should
+	 * probably be left up to the administrator.
+	 */
+	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, 60,
+			"Disable takeover runs", true);
+
+	/* Now tell all the desired nodes to reload their public IPs.
+	 * Keep trying this until it succeeds.  This assumes all
+	 * failures are transient, which might not be true...
+	 */
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RELOAD_PUBLIC_IPS,
+				      nodes, 0, LONGTIMELIMIT(),
+				      false, tdb_null,
+				      NULL, NULL, NULL) != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Unable to reload IPs on some nodes, try again.\n"));
+		goto again;
+	}
+
+	/* It isn't strictly necessary to wait until takeover runs are
+	 * re-enabled but doing so can't hurt.
+	 */
+	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, 0,
+			"Enable takeover runs", true);
+
+	ipreallocate(ctdb);
+
+	talloc_free(nodes);
 	return 0;
 }
 
