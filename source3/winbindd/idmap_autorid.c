@@ -751,7 +751,8 @@ static NTSTATUS idmap_autorid_db_init(void)
 	return status;
 }
 
-static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
+static struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
+							      TALLOC_CTX *ctx)
 {
 
 	TDB_DATA data;
@@ -759,7 +760,7 @@ static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
 	unsigned long minvalue, rangesize, maxranges;
 	NTSTATUS status;
 
-	status = dbwrap_fetch_bystring(autorid_db, ctx, CONFIGKEY, &data);
+	status = dbwrap_fetch_bystring(db, ctx, CONFIGKEY, &data);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("No saved config found\n"));
@@ -937,7 +938,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		   config->minvalue, config->rangesize, config->maxranges));
 
 	/* read previously stored config and current HWM */
-	storedconfig = idmap_autorid_loadconfig(talloc_tos());
+	storedconfig = idmap_autorid_loadconfig(autorid_db, talloc_tos());
 
 	status = dbwrap_fetch_uint32_bystring(autorid_db, HWM, &hwm);
 	if (!NT_STATUS_IS_OK(status)) {
