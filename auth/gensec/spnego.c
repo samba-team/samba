@@ -1010,7 +1010,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
 			spnego_free_data(&spnego);
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_LOGON_FAILURE;
 		}
 
 		/* Server didn't like our choice of mech, and chose something else */
