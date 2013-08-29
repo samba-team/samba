@@ -26,7 +26,7 @@ use Nagios::Plugin;
 use File::Basename;
 
 $PROGNAME = basename($0);
-$VERSION = '0.3';
+$VERSION = '0.4';
 
 my $np = Nagios::Plugin->new(
   usage => "Usage: %s -i <info>\n"
@@ -110,7 +110,6 @@ my $percw;
 my $percc;
 
 $output = "";
-$result = OK;
 
 if (defined($critical))
 {
@@ -139,9 +138,12 @@ sub safe_open_command {
     $stderr = "";
     close STDERR;
     open(STDERR, ">>", \$stderr) or die "Can't open STDERR: $!";
+    if ($np->opts->verbose) {
+      print "Executing: @_\n";
+    }
     if (!open(PIPE, '-|', @_)) {
         $result = CRITICAL;
-        $output = "Cannot open command '@_': $! ($stderr)";
+        $output .= "Cannot open command '@_': $! ($stderr). ";
         # restore STDERR
         open(STDERR, ">", \*OLDERR) or die "Can't dup OLDERR: $!";
     }
@@ -152,22 +154,29 @@ sub safe_close_command {
 
     if ($? == -1) {
         $result = CRITICAL;
-        $output = "failed to execute: $!";
+        $output .= "failed to execute: $!. ";
     } elsif ($? & 127) {
         $result = CRITICAL;
-        $output = sprintf("child died with signal %d, %s coredump",
+        $output .= sprintf("child died with signal %d, %s coredump. ",
             ($? & 127), ($? & 128) ? 'with' : 'without');
     } elsif ($? >> 8) {
-        $result = CRITICAL;
-        $output = sprintf("child exited with value %d", $? >> 8);
+        if (($? >> 8) == 255) {
+            # ctdb returns -1=255 if any node is disconnected
+            $result = WARNING;
+            $output .= sprintf("child exited with value %d. ", $? >> 8) if $output eq "";
+        } else {
+            $result = CRITICAL;
+            $output .= sprintf("child exited with value %d. ", $? >> 8);
+        }
     }
     # restore STDERR
-    open(STDERR, ">&OLDERR")    or die "Can't dup OLDERR: $!";
+    open(STDERR, ">&OLDERR") or die "Can't dup OLDERR: $!";
 }
 
 # main :
 
 if ($info eq "scriptstatus") {
+    $result = OK;
     safe_open_command('ctdb', '-Y', 'scriptstatus');
     if ($result == OK) {
         my $script_count = 0;
@@ -186,7 +195,7 @@ if ($info eq "scriptstatus") {
             my $error = join(':', @error);
             if ($error ne "") {
                 $output = "$output ;; " if $output;
-                $output = "$output$name ($status=$code): $error";
+                $output = "$output$name ($status=$code): $error ";
                 if ($result != CRITICAL) {
                     $result = WARNING;
                 }
@@ -217,15 +226,19 @@ if ($info eq "scriptstatus") {
      }
     $np->nagios_exit($result, $output);
 } elsif ($info eq "ping") {
+    # Get expected nodes count
+    $result = OK;
+    safe_open_command('cat', '/etc/ctdb/nodes');
+    1 while( <PIPE> );
+    my $max_nodes_count = $.;
+    safe_close_command();
+    # ctdb ping
+    $result = OK;
     safe_open_command('ctdb', '-n', 'all', 'ping');
     if ($result == OK) {
         my $nodes_count = 0;
         my $time_total = 0.0;
         my $clients_count = 0;
-        open(CTDB_NODES, "/etc/ctdb/nodes");
-        1 while( <CTDB_NODES> );
-        my $max_nodes_count = $.;
-
         while (<PIPE>) {
             chop;
             if ($_ =~ /^response from (\d+) time=([0-9.]+) sec  \((\d+) clients\)$/) {
@@ -233,11 +246,14 @@ if ($info eq "scriptstatus") {
                 $nodes_count += 1;
                 $time_total += $time;
                 $clients_count += $clients;
+            } elsif ($_ =~ /^Unable to get ping response from node (\d+)$/) {
+                #
             } else {
                 $result = CRITICAL;
-                $output = "'$_' doesn't match regexp."
+                $output .= "'$_' doesn't match regexp. "
             }
         }
+        $output .= sprintf("%d missing nodes. ", $max_nodes_count - $nodes_count) if $nodes_count < $max_nodes_count;
         safe_close_command();
         $np->add_perfdata(label => "nodes", value => $nodes_count, uom => '',
             min => 0, max => $max_nodes_count, warning => $warning, critical => $critical);
