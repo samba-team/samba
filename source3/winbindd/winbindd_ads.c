@@ -86,6 +86,10 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	struct sockaddr_storage dc_ss;
 	fstring dc_name;
 
+	if (realm == NULL) {
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	}
+
 	/* we don't want this to affect the users ccache */
 	setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 
