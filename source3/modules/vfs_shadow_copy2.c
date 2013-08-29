@@ -107,9 +107,6 @@
 #include <ccan/hash/hash.h>
 #include "util_tdb.h"
 
-#define GMT_NAME_LEN 24 /* length of a @GMT- name */
-#define GMT_FORMAT "@GMT-%Y.%m.%d-%H.%M.%S"
-
 static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
 				      size_t **poffsets,
 				      unsigned *pnum_offsets)

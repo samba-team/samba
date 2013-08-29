@@ -567,6 +567,9 @@ Offset  Data			length.
 #define NOTIFY_ACTION_REMOVED_STREAM 7
 #define NOTIFY_ACTION_MODIFIED_STREAM 8
 
+/* timestamp format used in "previous versions" */
+#define GMT_NAME_LEN 24 /* length of a @GMT- name */
+#define GMT_FORMAT "@GMT-%Y.%m.%d-%H.%M.%S"
 
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((const char *)(buf))+4)
