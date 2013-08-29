@@ -224,6 +224,8 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	uint32_t dirtype = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
 	bool dont_descend = false;
 	bool ask_sharemode = true;
+	struct tm tm;
+	char *p;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_find_state);
@@ -256,6 +258,17 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	}
 	if (strcmp(in_file_name, "/") == 0) {
 		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
+		return tevent_req_post(req, ev);
+	}
+
+	p = strptime(in_file_name, GMT_FORMAT, &tm);
+	if ((p != NULL) && (*p =='\0')) {
+		/*
+		 * Bogus find that asks for a shadow copy timestamp as a
+		 * directory. The correct response is that it does not exist as
+		 * a directory.
+		 */
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_FILE);
 		return tevent_req_post(req, ev);
 	}
 
