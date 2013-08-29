@@ -3697,7 +3697,7 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 		exit(10);
 	}
 
-	printf("Data: size:%d ptr:[%s]\n", (int)data.dsize, data.dptr);
+	printf("Data: size:%d ptr:[%.*s]\n", (int)data.dsize, (int)data.dsize, data.dptr);
 
 	talloc_free(ctdb_db);
 	talloc_free(tmp_ctx);
