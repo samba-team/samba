@@ -481,11 +481,8 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 	}
 
 	if (glfd == NULL) {
-		DEBUG(0, ("glfs_{open[dir],creat}(%s) failed: %s\n",
-			  smb_fname->base_name, strerror(errno)));
 		return -1;
 	}
-
 	return glfd_fd_store(glfd);
 }
 
