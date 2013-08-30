@@ -692,14 +692,14 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 }
 
 /* initialize the given HWM to 0 if it does not exist yet */
-static NTSTATUS idmap_autorid_init_hwm(const char *hwm) {
-
+static NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm)
+{
 	NTSTATUS status;
 	uint32_t hwmval;
 
-	status = dbwrap_fetch_uint32_bystring(autorid_db, hwm, &hwmval);
+	status = dbwrap_fetch_uint32_bystring(db, hwm, &hwmval);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))  {
-		status = dbwrap_trans_store_int32_bystring(autorid_db, hwm, 0);
+		status = dbwrap_trans_store_int32_bystring(db, hwm, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,
 			      ("Unable to initialise HWM (%s) in autorid "
@@ -740,13 +740,13 @@ static NTSTATUS idmap_autorid_db_init(void)
 
 	/* Initialize high water mark for the currently used range to 0 */
 
-	status = idmap_autorid_init_hwm(HWM);
+	status = idmap_autorid_init_hwm(autorid_db, HWM);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = idmap_autorid_init_hwm(ALLOC_HWM_UID);
+	status = idmap_autorid_init_hwm(autorid_db, ALLOC_HWM_UID);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = idmap_autorid_init_hwm(ALLOC_HWM_GID);
+	status = idmap_autorid_init_hwm(autorid_db, ALLOC_HWM_GID);
 
 	return status;
 }
