@@ -1705,12 +1705,12 @@ def interface_ips_v4(lp):
     return ret
 
 
-def interface_ips_v6(lp, linklocal=False):
+def interface_ips_v6(lp):
     """return only IPv6 IPs"""
     ips = samba.interface_ips(lp, False)
     ret = []
     for i in ips:
-        if i.find(':') != -1 and (linklocal or i.find('%') == -1):
+        if i.find(':') != -1:
             ret.append(i)
     return ret
 
@@ -2007,7 +2007,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     if hostip6 is None:
         logger.info("Looking up IPv6 addresses")
-        hostips = interface_ips_v6(lp, linklocal=False)
+        hostips = interface_ips_v6(lp)
         if hostips:
             hostip6 = hostips[0]
         if len(hostips) > 1:
