@@ -159,9 +159,8 @@ sub ParseFunction_r_Done($$$$)
 
 	$self->pidl("status = dcerpc_binding_handle_call_recv(subreq);");
 	$self->pidl("TALLOC_FREE(subreq);");
-	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
+	$self->pidl("if (tevent_req_nterror(req, status)) {");
 	$self->indent;
-	$self->pidl("tevent_req_nterror(req, status);");
 	$self->pidl("return;");
 	$self->deindent;
 	$self->pidl("}");
@@ -564,9 +563,8 @@ sub ParseFunction_Done($$$$)
 
 	$self->pidl("status = dcerpc_$name\_r_recv(subreq, mem_ctx);");
 	$self->pidl("TALLOC_FREE(subreq);");
-	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
+	$self->pidl("if (tevent_req_nterror(req, status)) {");
 	$self->indent;
-	$self->pidl("tevent_req_nterror(req, status);");
 	$self->pidl("return;");
 	$self->deindent;
 	$self->pidl("}");
