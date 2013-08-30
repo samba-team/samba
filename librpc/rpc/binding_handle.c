@@ -180,8 +180,7 @@ static void dcerpc_binding_handle_raw_call_done(struct tevent_req *subreq)
 					  &state->out_length,
 					  &state->out_flags);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(error)) {
-		tevent_req_nterror(req, error);
+	if (tevent_req_nterror(req, error)) {
 		return;
 	}
 
@@ -313,8 +312,7 @@ static void dcerpc_binding_handle_disconnect_done(struct tevent_req *subreq)
 
 	error = state->ops->disconnect_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(error)) {
-		tevent_req_nterror(req, error);
+	if (tevent_req_nterror(req, error)) {
 		return;
 	}
 
@@ -466,8 +464,7 @@ static void dcerpc_binding_handle_call_done(struct tevent_req *subreq)
 						    &state->response.length,
 						    &out_flags);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(error)) {
-		tevent_req_nterror(req, error);
+	if (tevent_req_nterror(req, error)) {
 		return;
 	}
 
