@@ -25,6 +25,22 @@
 
 #include "idmap_autorid_tdb.h"
 
+/**
+ * Build the database keystring for getting a range
+ * belonging to a domain sid and a range index.
+ */
+static void idmap_autorid_build_keystr(const char *domsid,
+				       uint32_t domain_range_index,
+				       fstring keystr)
+{
+	if (domain_range_index > 0) {
+		snprintf(keystr, FSTRING_LEN, "%s#%"PRIu32,
+			 domsid, domain_range_index);
+	} else {
+		fstrcpy(keystr, domsid);
+	}
+}
+
 static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 					      void *private_data)
 {
@@ -37,12 +53,8 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 
 	range = (struct autorid_range_config *)private_data;
 
-	if (range->domain_range_index > 0) {
-		snprintf(keystr, FSTRING_LEN, "%s#%"PRIu32,
-			 range->domsid, range->domain_range_index);
-	} else {
-		fstrcpy(keystr, range->domsid);
-	}
+	idmap_autorid_build_keystr(range->domsid, range->domain_range_index,
+				   keystr);
 
 	ret = dbwrap_fetch_uint32_bystring(db, keystr,
 					   &(range->rangenum));
@@ -136,12 +148,8 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 	 * if it is not found create a mapping in a transaction unless
 	 * read-only mode has been set
 	 */
-	if (range->domain_range_index > 0) {
-		snprintf(keystr, FSTRING_LEN, "%s#%"PRIu32,
-			 range->domsid, range->domain_range_index);
-	} else {
-		fstrcpy(keystr, range->domsid);
-	}
+	idmap_autorid_build_keystr(range->domsid, range->domain_range_index,
+				   keystr);
 
 	ret = dbwrap_fetch_uint32_bystring(db, keystr,
 					   &(range->rangenum));
