@@ -50,7 +50,6 @@ struct autorid_range_config {
 	uint32_t rangenum;
 	uint32_t domain_range_index;
 	uint32_t low_id;
-	struct autorid_global_config *globalcfg;
 };
 
 NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,

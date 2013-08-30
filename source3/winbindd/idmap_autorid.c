@@ -91,16 +91,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 					  struct unixid *xid) {
 
 	NTSTATUS ret;
-	struct idmap_tdb_common_context *commoncfg;
-	struct autorid_global_config *globalcfg;
 	struct autorid_range_config range;
-
-	commoncfg =
-	    talloc_get_type_abort(dom->private_data,
-				  struct idmap_tdb_common_context);
-
-	globalcfg = talloc_get_type(commoncfg->private_data,
-				    struct autorid_global_config);
 
 	if (dom->read_only) {
 		DEBUG(3, ("Backend is read-only, refusing "
@@ -112,7 +103,6 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 
 	ZERO_STRUCT(range);
 
-	range.globalcfg = globalcfg;
 	fstrcpy(range.domsid, ALLOC_RANGE);
 
 	ret = idmap_autorid_get_domainrange(autorid_db, &range, dom->read_only);
@@ -492,7 +482,6 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		}
 		TALLOC_FREE(domain);
 
-		range.globalcfg = global;
 		sid_to_fstring(range.domsid, &domainsid);
 
 		/* Calculate domain_range_index for multi-range support */

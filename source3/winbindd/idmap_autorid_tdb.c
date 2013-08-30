@@ -32,6 +32,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	uint32_t rangenum, hwm;
 	char *numstr;
 	struct autorid_range_config *range;
+	struct autorid_global_config *globalcfg;
 
 	range = (struct autorid_range_config *)private_data;
 
@@ -56,12 +57,19 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 		goto error;
 	}
 
+	ret = idmap_autorid_loadconfig(db, talloc_tos(), &globalcfg);
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+
 	/* do we have a range left? */
-	if (hwm >= range->globalcfg->maxranges) {
+	if (hwm >= globalcfg->maxranges) {
 		DEBUG(1, ("No more domain ranges available!\n"));
+		talloc_free(globalcfg);
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
+	TALLOC_FREE(globalcfg);
 
 	/* increase the HWM */
 	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &rangenum, 1);
@@ -112,6 +120,7 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 				       bool read_only)
 {
 	NTSTATUS ret;
+	struct autorid_global_config *globalcfg;
 
 	/*
 	 * try to find mapping without locking the database,
@@ -136,14 +145,19 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 			      idmap_autorid_get_domainrange_action, range);
 	}
 
-	range->low_id = range->globalcfg->minvalue
-		      + range->rangenum * range->globalcfg->rangesize;
+	ret = idmap_autorid_loadconfig(db, talloc_tos(), &globalcfg);
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+	range->low_id = globalcfg->minvalue
+		      + range->rangenum * globalcfg->rangesize;
 
 	DEBUG(10, ("Using range #%d for domain %s "
 		   "(domain_range_index=%"PRIu32", low_id=%"PRIu32")\n",
 		   range->rangenum, range->domsid, range->domain_range_index,
 		   range->low_id));
 
+	TALLOC_FREE(globalcfg);
 	return ret;
 }
 
