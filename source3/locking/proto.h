@@ -171,7 +171,7 @@ void get_file_infos(struct file_id id,
 		    struct timespec *write_time);
 bool is_valid_share_mode_entry(const struct share_mode_entry *e);
 bool is_deferred_open_entry(const struct share_mode_entry *e);
-bool share_mode_stale_pid(struct share_mode_data *d, unsigned i);
+bool share_mode_stale_pid(struct share_mode_data *d, unsigned idx);
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		    uid_t uid, uint64_t mid, uint16 op_type);
 void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,

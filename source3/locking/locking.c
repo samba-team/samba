@@ -639,24 +639,24 @@ bool is_deferred_open_entry(const struct share_mode_entry *e)
  * from d->share_modes. Modifies d->num_share_modes, watch out in
  * routines iterating over that array.
  */
-bool share_mode_stale_pid(struct share_mode_data *d, unsigned i)
+bool share_mode_stale_pid(struct share_mode_data *d, unsigned idx)
 {
 	struct share_mode_entry *e;
 
-	if (i > d->num_share_modes) {
+	if (idx > d->num_share_modes) {
 		DEBUG(1, ("Asking for index %u, only %u around\n",
-			  i, (unsigned)d->num_share_modes));
+			  idx, (unsigned)d->num_share_modes));
 		return false;
 	}
-	e = &d->share_modes[i];
+	e = &d->share_modes[idx];
 	if (serverid_exists(&e->pid)) {
 		DEBUG(10, ("PID %s (index %u out of %u) still exists\n",
-			   procid_str_static(&e->pid), i,
+			   procid_str_static(&e->pid), idx,
 			   (unsigned)d->num_share_modes));
 		return false;
 	}
 	DEBUG(10, ("PID %s (index %u out of %u) does not exist anymore\n",
-		   procid_str_static(&e->pid), i,
+		   procid_str_static(&e->pid), idx,
 		   (unsigned)d->num_share_modes));
 	*e = d->share_modes[d->num_share_modes-1];
 	d->num_share_modes -= 1;
