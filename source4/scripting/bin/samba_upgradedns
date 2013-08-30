@@ -331,7 +331,7 @@ if __name__ == '__main__':
             logger.debug("IPv4 addresses: %s" % hostip)
 
         logger.info("Looking up IPv6 addresses")
-        hostip6 = interface_ips_v6(lp, linklocal=False)
+        hostip6 = interface_ips_v6(lp)
         if not hostip6:
             hostip6 = None
         else:
