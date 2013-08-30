@@ -617,6 +617,10 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 {
 	int num_props = 0;
 
+	if (e->stale) {
+		return false;
+	}
+
 	num_props += ((e->op_type == NO_OPLOCK) ? 1 : 0);
 	num_props += (EXCLUSIVE_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 	num_props += (LEVEL_II_OPLOCK_TYPE(e->op_type) ? 1 : 0);
@@ -630,9 +634,7 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 /*
  * In case d->share_modes[i] conflicts with something or otherwise is
  * being used, we need to make sure the corresponding process still
- * exists. This routine checks it and potentially removes the entry
- * from d->share_modes. Modifies d->num_share_modes, watch out in
- * routines iterating over that array.
+ * exists.
  */
 bool share_mode_stale_pid(struct share_mode_data *d, unsigned idx)
 {
@@ -653,17 +655,32 @@ bool share_mode_stale_pid(struct share_mode_data *d, unsigned idx)
 	DEBUG(10, ("PID %s (index %u out of %u) does not exist anymore\n",
 		   procid_str_static(&e->pid), idx,
 		   (unsigned)d->num_share_modes));
-	*e = d->share_modes[d->num_share_modes-1];
-	d->num_share_modes -= 1;
 
-	if (d->num_share_modes == 0 &&
-	    d->num_delete_tokens) {
+	e->stale = true;
+
+	if (d->num_delete_tokens != 0) {
+		uint32_t i, num_stale;
+
 		/*
 		 * We cannot have any delete tokens
 		 * if there are no valid share modes.
 		 */
-		TALLOC_FREE(d->delete_tokens);
-		d->num_delete_tokens = 0;
+
+		num_stale = 0;
+
+		for (i=0; i<d->num_share_modes; i++) {
+			if (d->share_modes[i].stale) {
+				num_stale += 1;
+			}
+		}
+
+		if (num_stale == d->num_share_modes) {
+			/*
+			 * No non-stale share mode found
+			 */
+			TALLOC_FREE(d->delete_tokens);
+			d->num_delete_tokens = 0;
+		}
 	}
 
 	d->modified = true;
