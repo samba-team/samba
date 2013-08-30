@@ -718,35 +718,35 @@ static NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm)
 /*
  * open and initialize the database which stores the ranges for the domains
  */
-static NTSTATUS idmap_autorid_db_init(void)
+static NTSTATUS idmap_autorid_db_init(const char *path,
+				      TALLOC_CTX *mem_ctx,
+				      struct db_context **db)
 {
 	NTSTATUS status;
 
-	if (autorid_db) {
+	if (*db != NULL) {
 		/* its already open */
 		return NT_STATUS_OK;
 	}
 
 	/* Open idmap repository */
-	autorid_db = db_open(NULL, state_path("autorid.tdb"), 0,
-			     TDB_DEFAULT, O_RDWR | O_CREAT, 0644,
-			     DBWRAP_LOCK_ORDER_1);
+	*db = db_open(mem_ctx, path, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644,
+		      DBWRAP_LOCK_ORDER_1);
 
-	if (!autorid_db) {
-		DEBUG(0, ("Unable to open idmap_autorid database '%s'\n",
-			  state_path("autorid.tdb")));
+	if (*db == NULL) {
+		DEBUG(0, ("Unable to open idmap_autorid database '%s'\n", path));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Initialize high water mark for the currently used range to 0 */
 
-	status = idmap_autorid_init_hwm(autorid_db, HWM);
+	status = idmap_autorid_init_hwm(*db, HWM);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = idmap_autorid_init_hwm(autorid_db, ALLOC_HWM_UID);
+	status = idmap_autorid_init_hwm(*db, ALLOC_HWM_UID);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = idmap_autorid_init_hwm(autorid_db, ALLOC_HWM_GID);
+	status = idmap_autorid_init_hwm(*db, ALLOC_HWM_GID);
 
 	return status;
 }
@@ -899,7 +899,9 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = idmap_autorid_db_init();
+	status = idmap_autorid_db_init(state_path("autorid.tdb"),
+				       NULL, /* TALLOC_CTX */
+				       &autorid_db);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
 	}
