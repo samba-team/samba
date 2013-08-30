@@ -24,6 +24,7 @@
  */
 
 #include "idmap_autorid_tdb.h"
+#include "../libcli/security/dom_sid.h"
 
 /**
  * Build the database keystring for getting a range
@@ -41,32 +42,87 @@ static void idmap_autorid_build_keystr(const char *domsid,
 	}
 }
 
-static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
+static bool idmap_autorid_validate_sid(const char *sid)
+{
+	struct dom_sid ignore;
+	if (sid == NULL) {
+		return false;
+	}
+
+	if (strcmp(sid, ALLOC_RANGE) == 0) {
+		return true;
+	}
+
+	return dom_sid_parse(sid, &ignore);
+}
+
+struct idmap_autorid_addrange_ctx {
+	struct autorid_range_config *range;
+	bool acquire;
+};
+
+static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 					      void *private_data)
 {
-	NTSTATUS ret;
-	uint32_t rangenum, hwm;
-	char *numstr;
+	struct idmap_autorid_addrange_ctx *ctx;
+	uint32_t requested_rangenum, stored_rangenum;
 	struct autorid_range_config *range;
+	bool acquire;
+	NTSTATUS ret;
+	uint32_t hwm;
+	char *numstr;
 	struct autorid_global_config *globalcfg;
 	fstring keystr;
+	uint32_t increment;
 
-	range = (struct autorid_range_config *)private_data;
+	ctx = (struct idmap_autorid_addrange_ctx *)private_data;
+	range = ctx->range;
+	acquire = ctx->acquire;
+	requested_rangenum = range->rangenum;
+
+	if (db == NULL) {
+		DEBUG(3, ("Invalid database argument: NULL"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (range == NULL) {
+		DEBUG(3, ("Invalid range argument: NULL"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DEBUG(10, ("Adding new range for domain %s "
+		   "(domain_range_index=%"PRIu32")\n",
+		   range->domsid, range->domain_range_index));
+
+	if (!idmap_autorid_validate_sid(range->domsid)) {
+		DEBUG(3, ("Invalid SID: %s\n", range->domsid));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	idmap_autorid_build_keystr(range->domsid, range->domain_range_index,
 				   keystr);
 
-	ret = dbwrap_fetch_uint32_bystring(db, keystr,
-					   &(range->rangenum));
+	ret = dbwrap_fetch_uint32_bystring(db, keystr, &stored_rangenum);
 
 	if (NT_STATUS_IS_OK(ret)) {
 		/* entry is already present*/
-		return ret;
-	}
+		if (acquire) {
+			DEBUG(10, ("domain range already allocated - "
+				   "Not adding!\n"));
+			return NT_STATUS_OK;
+		}
 
-	DEBUG(10, ("Acquiring new range for domain %s "
-		   "(domain_range_index=%"PRIu32")\n",
-		   range->domsid, range->domain_range_index));
+		if (stored_rangenum != requested_rangenum) {
+			DEBUG(1, ("Error: requested rangenumber (%u) differs "
+				  "from stored one (%u).\n",
+				  requested_rangenum, stored_rangenum));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		DEBUG(10, ("Note: stored range agrees with requested "
+			   "one - ok\n"));
+		return NT_STATUS_OK;
+	}
 
 	/* fetch the current HWM */
 	ret = dbwrap_fetch_uint32_bystring(db, HWM, &hwm);
@@ -79,20 +135,45 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 
 	ret = idmap_autorid_loadconfig(db, talloc_tos(), &globalcfg);
 	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
+		DEBUG(1, ("Fatal error while fetching configuration: %s\n",
+			  nt_errstr(ret)));
+		goto error;
 	}
 
-	/* do we have a range left? */
-	if (hwm >= globalcfg->maxranges) {
-		DEBUG(1, ("No more domain ranges available!\n"));
-		talloc_free(globalcfg);
+	if (acquire) {
+		/*
+		 * automatically acquire the next range
+		 */
+		requested_rangenum = hwm;
+	} else {
+		/*
+		 * set a specified range
+		 */
+
+		if (requested_rangenum < hwm) {
+			DEBUG(3, ("Invalid range %u requested: Range may not "
+				  "be smaller than %u (current HWM)\n",
+				  requested_rangenum, hwm));
+			ret = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+	}
+
+	if (requested_rangenum >= globalcfg->maxranges) {
+		DEBUG(1, ("Not enough ranges available: New range %u must be "
+			  "smaller than configured maximum number of ranges "
+			  "(%u).\n",
+			  requested_rangenum, globalcfg->maxranges));
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
 	TALLOC_FREE(globalcfg);
 
+	/* HWM always contains current max range + 1 */
+	increment = requested_rangenum + 1 - hwm;
+
 	/* increase the HWM */
-	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &rangenum, 1);
+	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &hwm, increment);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching a new "
 			  "domain range value!\n"));
@@ -100,14 +181,14 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	/* store away the new mapping in both directions */
-	ret = dbwrap_store_uint32_bystring(db, keystr, rangenum);
+	ret = dbwrap_store_uint32_bystring(db, keystr, requested_rangenum);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
 			  "domain->range assignment!\n"));
 		goto error;
 	}
 
-	numstr = talloc_asprintf(db, "%u", rangenum);
+	numstr = talloc_asprintf(db, "%u", requested_rangenum);
 	if (!numstr) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
@@ -123,10 +204,10 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 		goto error;
 	}
 	DEBUG(5, ("Acquired new range #%d for domain %s "
-		  "(domain_range_index=%"PRIu32")\n", rangenum, keystr,
+		  "(domain_range_index=%"PRIu32")\n", requested_rangenum, keystr,
 		  range->domain_range_index));
 
-	range->rangenum = rangenum;
+	range->rangenum = requested_rangenum;
 
 	range->low_id = globalcfg->minvalue
 		      + range->rangenum * globalcfg->rangesize;
@@ -135,7 +216,20 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 
 error:
 	return ret;
+}
 
+static NTSTATUS idmap_autorid_addrange(struct db_context *db,
+				       struct autorid_range_config *range,
+				       bool acquire)
+{
+	NTSTATUS status;
+	struct idmap_autorid_addrange_ctx ctx;
+
+	ctx.acquire = acquire;
+	ctx.range = range;
+
+	status = dbwrap_trans_do(db, idmap_autorid_addrange_action, &ctx);
+	return status;
 }
 
 static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
@@ -216,8 +310,8 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 		if (read_only) {
 			return NT_STATUS_NOT_FOUND;
 		}
-		ret = dbwrap_trans_do(db,
-			      idmap_autorid_get_domainrange_action, range);
+
+		ret = idmap_autorid_addrange(db, range, true);
 	}
 
 	DEBUG(10, ("Using range #%d for domain %s "
