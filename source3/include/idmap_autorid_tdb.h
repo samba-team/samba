@@ -46,7 +46,6 @@ struct autorid_global_config {
 
 struct autorid_range_config {
 	fstring domsid;
-	fstring keystr;
 	uint32_t rangenum;
 	uint32_t domain_range_index;
 	uint32_t low_id;

@@ -33,10 +33,18 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	char *numstr;
 	struct autorid_range_config *range;
 	struct autorid_global_config *globalcfg;
+	fstring keystr;
 
 	range = (struct autorid_range_config *)private_data;
 
-	ret = dbwrap_fetch_uint32_bystring(db, range->keystr,
+	if (range->domain_range_index > 0) {
+		snprintf(keystr, FSTRING_LEN, "%s#%"PRIu32,
+			 range->domsid, range->domain_range_index);
+	} else {
+		fstrcpy(keystr, range->domsid);
+	}
+
+	ret = dbwrap_fetch_uint32_bystring(db, keystr,
 					   &(range->rangenum));
 
 	if (NT_STATUS_IS_OK(ret)) {
@@ -80,7 +88,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	/* store away the new mapping in both directions */
-	ret = dbwrap_store_uint32_bystring(db, range->keystr, rangenum);
+	ret = dbwrap_store_uint32_bystring(db, keystr, rangenum);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
 			  "domain->range assignment!\n"));
@@ -94,7 +102,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	ret = dbwrap_store_bystring(db, numstr,
-			string_term_tdb_data(range->keystr), TDB_INSERT);
+			string_term_tdb_data(keystr), TDB_INSERT);
 
 	talloc_free(numstr);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -103,7 +111,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 		goto error;
 	}
 	DEBUG(5, ("Acquired new range #%d for domain %s "
-		  "(domain_range_index=%"PRIu32")\n", rangenum, range->keystr,
+		  "(domain_range_index=%"PRIu32")\n", rangenum, keystr,
 		  range->domain_range_index));
 
 	range->rangenum = rangenum;
@@ -121,6 +129,7 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 {
 	NTSTATUS ret;
 	struct autorid_global_config *globalcfg;
+	fstring keystr;
 
 	/*
 	 * try to find mapping without locking the database,
@@ -128,13 +137,13 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 	 * read-only mode has been set
 	 */
 	if (range->domain_range_index > 0) {
-		snprintf(range->keystr, FSTRING_LEN, "%s#%"PRIu32,
+		snprintf(keystr, FSTRING_LEN, "%s#%"PRIu32,
 			 range->domsid, range->domain_range_index);
 	} else {
-		fstrcpy(range->keystr, range->domsid);
+		fstrcpy(keystr, range->domsid);
 	}
 
-	ret = dbwrap_fetch_uint32_bystring(db, range->keystr,
+	ret = dbwrap_fetch_uint32_bystring(db, keystr,
 					   &(range->rangenum));
 
 	if (!NT_STATUS_IS_OK(ret)) {
