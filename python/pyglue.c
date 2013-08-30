@@ -164,18 +164,59 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	/* first count how many are not loopback addresses */
 	for (ifcount = i = 0; i<count; i++) {
 		const char *ip = iface_list_n_ip(ifaces, i);
-		if (!(!all_interfaces && iface_list_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
+
+		if (all_interfaces) {
 			ifcount++;
+			continue;
 		}
+
+		if (iface_list_same_net(ip, "127.0.0.1", "255.0.0.0")) {
+			continue;
+		}
+
+		if (iface_list_same_net(ip, "169.254.0.0", "255.255.0.0")) {
+			continue;
+		}
+
+		if (iface_list_same_net(ip, "::1", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")) {
+			continue;
+		}
+
+		if (iface_list_same_net(ip, "fe80::", "ffff:ffff:ffff:ffff::")) {
+			continue;
+		}
+
+		ifcount++;
 	}
 
 	pylist = PyList_New(ifcount);
 	for (ifcount = i = 0; i<count; i++) {
 		const char *ip = iface_list_n_ip(ifaces, i);
-		if (!(!all_interfaces && iface_list_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
+
+		if (all_interfaces) {
 			PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
 			ifcount++;
+			continue;
 		}
+
+		if (iface_list_same_net(ip, "127.0.0.1", "255.0.0.0")) {
+			continue;
+		}
+
+		if (iface_list_same_net(ip, "169.254.0.0", "255.255.0.0")) {
+			continue;
+		}
+
+		if (iface_list_same_net(ip, "::1", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")) {
+			continue;
+		}
+
+		if (iface_list_same_net(ip, "fe80::", "ffff:ffff:ffff:ffff::")) {
+			continue;
+		}
+
+		PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
+		ifcount++;
 	}
 	talloc_free(tmp_ctx);
 	return pylist;
