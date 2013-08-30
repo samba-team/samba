@@ -118,6 +118,7 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 {
 	struct share_mode_data *d;
 	enum ndr_err_code ndr_err;
+	uint32_t i;
 	DATA_BLOB blob;
 
 	d = talloc(mem_ctx, struct share_mode_data);
@@ -137,6 +138,14 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	/*
+	 * Initialize the values that are [skip] in the idl. The NDR code does
+	 * not initialize them.
+	 */
+
+	for (i=0; i<d->num_share_modes; i++) {
+		d->share_modes[i].stale = false;
+	}
 	d->modified = false;
 	d->fresh = false;
 
@@ -159,10 +168,25 @@ static TDB_DATA unparse_share_modes(struct share_mode_data *d)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
+	uint32_t i;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("unparse_share_modes:\n"));
 		NDR_PRINT_DEBUG(share_mode_data, d);
+	}
+
+	i = 0;
+	while (i < d->num_share_modes) {
+		if (d->share_modes[i].stale) {
+			/*
+			 * Remove the stale entries before storing
+			 */
+			struct share_mode_entry *m = d->share_modes;
+			m[i] = m[d->num_share_modes-1];
+			d->num_share_modes -= 1;
+		} else {
+			i += 1;
+		}
 	}
 
 	if (d->num_share_modes == 0) {
