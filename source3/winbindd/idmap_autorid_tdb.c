@@ -128,6 +128,9 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 
 	range->rangenum = rangenum;
 
+	range->low_id = globalcfg->minvalue
+		      + range->rangenum * globalcfg->rangesize;
+
 	return NT_STATUS_OK;
 
 error:
@@ -135,25 +138,48 @@ error:
 
 }
 
+static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
+					   struct autorid_range_config *range)
+{
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+	struct autorid_global_config *globalcfg = NULL;
+	fstring keystr;
+
+	if (db == NULL || range == NULL) {
+		DEBUG(3, ("Invalid arguments received\n"));
+		goto done;
+	}
+
+	idmap_autorid_build_keystr(range->domsid, range->domain_range_index,
+				   keystr);
+
+	DEBUG(10, ("reading domain range for key %s\n", keystr));
+	status = dbwrap_fetch_uint32_bystring(db, keystr, &(range->rangenum));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to read database for key %s\n", keystr));
+		goto done;
+	}
+
+	status = idmap_autorid_loadconfig(db, talloc_tos(), &globalcfg);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to read global configuration"));
+		goto done;
+	}
+	range->low_id = globalcfg->minvalue
+		      + range->rangenum * globalcfg->rangesize;
+
+	TALLOC_FREE(globalcfg);
+done:
+	return status;
+}
+
 NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 				       struct autorid_range_config *range,
 				       bool read_only)
 {
 	NTSTATUS ret;
-	struct autorid_global_config *globalcfg;
-	fstring keystr;
 
-	/*
-	 * try to find mapping without locking the database,
-	 * if it is not found create a mapping in a transaction unless
-	 * read-only mode has been set
-	 */
-	idmap_autorid_build_keystr(range->domsid, range->domain_range_index,
-				   keystr);
-
-	ret = dbwrap_fetch_uint32_bystring(db, keystr,
-					   &(range->rangenum));
-
+	ret = idmap_autorid_getrange_int(db, range);
 	if (!NT_STATUS_IS_OK(ret)) {
 		if (read_only) {
 			return NT_STATUS_NOT_FOUND;
@@ -162,19 +188,11 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 			      idmap_autorid_get_domainrange_action, range);
 	}
 
-	ret = idmap_autorid_loadconfig(db, talloc_tos(), &globalcfg);
-	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
-	}
-	range->low_id = globalcfg->minvalue
-		      + range->rangenum * globalcfg->rangesize;
-
 	DEBUG(10, ("Using range #%d for domain %s "
 		   "(domain_range_index=%"PRIu32", low_id=%"PRIu32")\n",
 		   range->rangenum, range->domsid, range->domain_range_index,
 		   range->low_id));
 
-	TALLOC_FREE(globalcfg);
 	return ret;
 }
 
