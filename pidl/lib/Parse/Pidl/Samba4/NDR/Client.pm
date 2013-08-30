@@ -158,6 +158,7 @@ sub ParseFunction_r_Done($$$$)
 	$self->pidl("");
 
 	$self->pidl("status = dcerpc_binding_handle_call_recv(subreq);");
+	$self->pidl("TALLOC_FREE(subreq);");
 	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
 	$self->indent;
 	$self->pidl("tevent_req_nterror(req, status);");
