@@ -62,14 +62,6 @@ struct rpc_request {
 	bool ignore_timeout;
 	bool wait_for_sync;
 
-	/* use by the ndr level async recv call */
-	struct {
-		const struct ndr_interface_table *table;
-		uint32_t opnum;
-		void *struct_ptr;
-		TALLOC_CTX *mem_ctx;
-	} ndr;
-
 	struct {
 		void (*callback)(struct rpc_request *);
 		void *private_data;
