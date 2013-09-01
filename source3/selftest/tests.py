@@ -63,6 +63,7 @@ tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7"
         "SMB2-SESSION-REAUTH", "SMB2-SESSION-RECONNECT",
         "CLEANUP1",
         "CLEANUP2",
+        "CLEANUP4",
         "BAD-NBT-SESSION"]
 
 for t in tests:
