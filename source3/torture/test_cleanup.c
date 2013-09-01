@@ -329,3 +329,73 @@ bool run_cleanup3(int dummy)
 
 	return true;
 }
+
+bool run_cleanup4(int dummy)
+{
+	struct cli_state *cli1, *cli2;
+	const char *fname = "\\cleanup4";
+	uint16_t fnum1, fnum2;
+	NTSTATUS status;
+
+	printf("CLEANUP4: Checking that a conflicting share mode is cleaned "
+	       "up\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		return false;
+	}
+	if (!torture_open_connection(&cli2, 0)) {
+		return false;
+	}
+
+	status = cli_ntcreate(
+		cli1, fname, 0,
+		FILE_GENERIC_READ|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_READ|FILE_SHARE_DELETE,
+		FILE_OVERWRITE_IF, 0, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("creating file failed: %s\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	status = cli_ntcreate(
+		cli2, fname, 0,
+		FILE_GENERIC_READ|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_READ|FILE_SHARE_DELETE,
+		FILE_OPEN, 0, 0, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("opening file 1st time failed: %s\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	status = smbXcli_conn_samba_suicide(cli1->conn, 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_conn_samba_suicide failed: %s\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	/*
+	 * The next open will conflict with both opens above. The first open
+	 * above will be correctly cleaned up. A bug in smbd iterating over
+	 * the share mode array made it skip the share conflict check for the
+	 * second open. Trigger this bug.
+	 */
+
+	status = cli_ntcreate(
+		cli2, fname, 0,
+		FILE_GENERIC_WRITE|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OPEN, 0, 0, &fnum2);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		printf("opening file 2nd time returned: %s\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}

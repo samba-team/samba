@@ -104,6 +104,7 @@ bool run_local_sprintf_append(int dummy);
 bool run_cleanup1(int dummy);
 bool run_cleanup2(int dummy);
 bool run_cleanup3(int dummy);
+bool run_cleanup4(int dummy);
 bool run_ctdb_conn(int dummy);
 bool run_msg_test(int dummy);
 bool run_notify_bench2(int dummy);
