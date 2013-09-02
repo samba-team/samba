@@ -23,6 +23,7 @@
 #include "dbwrap/dbwrap.h"
 
 struct g_lock_ctx;
+struct messaging_context;
 
 enum g_lock_type {
 	G_LOCK_READ = 0,
