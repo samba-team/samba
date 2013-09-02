@@ -8,7 +8,7 @@
     in a future version of Samba.
     </para>
     <para>This boolean parameter controls what <citerefentry><refentrytitle>smbd</refentrytitle> 
-    <manvolnum>8</manvolnum></citerefentry>does on receiving a protocol request of "open for delete"
+    <manvolnum>8</manvolnum></citerefentry> does on receiving a protocol request of "open for delete"
     from a Windows client. If a Windows client doesn't have permissions to delete a file then they
     expect this to be denied at open time. POSIX systems normally only detect restrictions on delete by
     actually attempting to delete the file or directory. As Windows clients can (and do) "back out" a
