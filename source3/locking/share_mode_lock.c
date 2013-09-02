@@ -171,26 +171,13 @@ static TDB_DATA unparse_share_modes(struct share_mode_data *d)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
-	uint32_t i;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("unparse_share_modes:\n"));
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
-	i = 0;
-	while (i < d->num_share_modes) {
-		if (d->share_modes[i].stale) {
-			/*
-			 * Remove the stale entries before storing
-			 */
-			struct share_mode_entry *m = d->share_modes;
-			m[i] = m[d->num_share_modes-1];
-			d->num_share_modes -= 1;
-		} else {
-			i += 1;
-		}
-	}
+	remove_stale_share_mode_entries(d);
 
 	if (d->num_share_modes == 0) {
 		DEBUG(10, ("No used share mode found\n"));

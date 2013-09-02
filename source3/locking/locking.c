@@ -693,6 +693,22 @@ bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 	return true;
 }
 
+void remove_stale_share_mode_entries(struct share_mode_data *d)
+{
+	uint32_t i;
+
+	i = 0;
+	while (i < d->num_share_modes) {
+		if (d->share_modes[i].stale) {
+			struct share_mode_entry *m = d->share_modes;
+			m[i] = m[d->num_share_modes-1];
+			d->num_share_modes -= 1;
+		} else {
+			i += 1;
+		}
+	}
+}
+
 bool set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		    uid_t uid, uint64_t mid, uint16 op_type)
 {
