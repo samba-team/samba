@@ -29,19 +29,26 @@
 
 /*********************************************************
  Change the domain password on the PDC.
- Store the password ourselves, but use the supplied password
- Caller must have already setup the connection to the NETLOGON pipe
+ Do most of the legwork ourselfs.  Caller must have
+ already setup the connection to the NETLOGON pipe
 **********************************************************/
 
-NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-				      const char *domain,
-				      const char *account_name,
-				      unsigned char orig_trust_passwd_hash[16],
-				      enum netr_SchannelType sec_channel_type)
+NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   const char *domain)
 {
+	unsigned char old_trust_passwd_hash[16];
 	unsigned char new_trust_passwd_hash[16];
+	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
+	const char *account_name;
 	char *new_trust_passwd;
 	NTSTATUS nt_status;
+
+	if (!get_trust_pw_hash(domain, old_trust_passwd_hash, &account_name,
+			       &sec_channel_type)) {
+		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	switch (sec_channel_type) {
 	case SEC_CHAN_WKSTA:
@@ -64,7 +71,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	nt_status = rpccli_netlogon_set_trust_password(cli, mem_ctx,
 						       account_name,
-						       orig_trust_passwd_hash,
+						       old_trust_passwd_hash,
 						       new_trust_passwd,
 						       new_trust_passwd_hash,
 						       sec_channel_type);
@@ -108,30 +115,3 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	return nt_status;
 }
-
-/*********************************************************
- Change the domain password on the PDC.
- Do most of the legwork ourselfs.  Caller must have
- already setup the connection to the NETLOGON pipe
-**********************************************************/
-
-NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
-					   TALLOC_CTX *mem_ctx, 
-					   const char *domain) 
-{
-	unsigned char old_trust_passwd_hash[16];
-	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
-	const char *account_name;
-
-	if (!get_trust_pw_hash(domain, old_trust_passwd_hash, &account_name,
-			       &sec_channel_type)) {
-		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return trust_pw_change_and_store_it(cli, mem_ctx, domain,
-					    account_name,
-					    old_trust_passwd_hash,
-					    sec_channel_type);
-}
-

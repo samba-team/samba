@@ -972,11 +972,6 @@ void update_trustdom_cache( void );
 
 /* The following definitions come from libsmb/trusts_util.c  */
 
-NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-				      const char *domain,
-				      const char *account_name,
-				      unsigned char orig_trust_passwd_hash[16],
-				      enum netr_SchannelType sec_channel_type);
 NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
 					   TALLOC_CTX *mem_ctx, 
 					   const char *domain) ;
