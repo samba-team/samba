@@ -1217,6 +1217,7 @@ static void find_oplock_types(files_struct *fsp,
 				bool *got_level2,
 				bool *got_no_oplock)
 {
+	struct share_mode_data *d = lck->data;
 	int i;
 
 	*pp_batch = NULL;
@@ -1232,8 +1233,8 @@ static void find_oplock_types(files_struct *fsp,
 		return;
 	}
 
-	for (i=0; i<lck->data->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->data->share_modes[i];
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
 
 		if (!is_valid_share_mode_entry(e)) {
 			continue;
@@ -1248,7 +1249,7 @@ static void find_oplock_types(files_struct *fsp,
 
 		if (BATCH_OPLOCK_TYPE(e->op_type)) {
 			/* batch - can only be one. */
-			if (share_mode_stale_pid(lck->data, i)) {
+			if (share_mode_stale_pid(d, i)) {
 				DEBUG(10, ("Found stale batch oplock\n"));
 				continue;
 			}
@@ -1259,7 +1260,7 @@ static void find_oplock_types(files_struct *fsp,
 		}
 
 		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
-			if (share_mode_stale_pid(lck->data, i)) {
+			if (share_mode_stale_pid(d, i)) {
 				DEBUG(10, ("Found stale duplicate oplock\n"));
 				continue;
 			}
@@ -1272,7 +1273,7 @@ static void find_oplock_types(files_struct *fsp,
 
 		if (LEVEL_II_OPLOCK_TYPE(e->op_type)) {
 			if (*pp_batch || *pp_ex_or_batch) {
-				if (share_mode_stale_pid(lck->data, i)) {
+				if (share_mode_stale_pid(d, i)) {
 					DEBUG(10, ("Found stale LevelII "
 						   "oplock\n"));
 					continue;
@@ -1284,7 +1285,7 @@ static void find_oplock_types(files_struct *fsp,
 
 		if (e->op_type == NO_OPLOCK) {
 			if (*pp_batch || *pp_ex_or_batch) {
-				if (share_mode_stale_pid(lck->data, i)) {
+				if (share_mode_stale_pid(d, i)) {
 					DEBUG(10, ("Found stale NO_OPLOCK "
 						   "entry\n"));
 					continue;
