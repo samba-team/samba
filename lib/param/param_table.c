@@ -920,6 +920,16 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
 	},
 	{
+		.label		= "acl allow execute always",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bAclAllowExecuteAlways),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
+	},
+
+	{
 		.label		= "create mask",
 		.type		= P_OCTAL,
 		.p_class	= P_LOCAL,
