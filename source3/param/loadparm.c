@@ -264,6 +264,7 @@ static struct loadparm_service sDefault =
 	.bAclCheckPermissions = true,
 	.bAclMapFullControl = true,
 	.bAclGroupControl = false,
+	.bAclAllowExecuteAlways = false,
 	.bChangeNotify = true,
 	.bKernelChangeNotify = true,
 	.iallocation_roundup_size = SMB_ROUNDUP_ALLOCATION_SIZE,
