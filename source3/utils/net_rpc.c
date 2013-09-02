@@ -493,7 +493,9 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* Display success or failure */
-	status = libnet_join_ok(c->opt_workgroup, lp_netbios_name(), dc,
+	status = libnet_join_ok(c->msg_ctx,
+				c->opt_workgroup,
+				dc,
 				c->opt_kerberos);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",

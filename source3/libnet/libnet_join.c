@@ -40,6 +40,8 @@
 #include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/param/loadparm.h"
+#include "libcli/auth/netlogon_creds_cli.h"
+#include "auth/credentials/credentials.h"
 
 /****************************************************************
 ****************************************************************/
@@ -1189,38 +1191,52 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS libnet_join_ok(const char *netbios_domain_name,
-			const char *machine_name,
+NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
+			const char *netbios_domain_name,
 			const char *dc_name,
 			const bool use_kerberos)
 {
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
-				NETLOGON_NEG_SUPPORTS_AES;
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct cli_state *cli = NULL;
-	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds = NULL;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	uint32_t netlogon_flags = 0;
+	enum netr_SchannelType sec_chan_type = 0;
 	NTSTATUS status;
 	char *machine_password = NULL;
-	char *machine_account = NULL;
+	const char *machine_name = NULL;
+	const char *machine_account = NULL;
 	int flags = 0;
+	struct samr_Password current_nt_hash;
+	struct samr_Password *previous_nt_hash = NULL;
+	bool ok;
 
 	if (!dc_name) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!secrets_init()) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	machine_password = secrets_fetch_machine_password(netbios_domain_name,
-							  NULL, NULL);
-	if (!machine_password) {
-		return NT_STATUS_NO_TRUST_LSA_SECRET;
+	ok = get_trust_pw_clear(netbios_domain_name,
+				&machine_password,
+				&machine_name,
+				&sec_chan_type);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	if (asprintf(&machine_account, "%s$", machine_name) == -1) {
+	machine_account = talloc_asprintf(frame, "%s$", machine_name);
+	if (machine_account == NULL) {
 		SAFE_FREE(machine_password);
-		return NT_STATUS_NO_MEMORY;
+		SAFE_FREE(previous_nt_hash);
+		TALLOC_FREE(frame);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	if (use_kerberos) {
@@ -1232,12 +1248,13 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     machine_account,
-				     NULL,
+				     netbios_domain_name,
 				     machine_password,
 				     flags,
 				     SMB_SIGNING_DEFAULT);
-	free(machine_account);
-	free(machine_password);
+
+	E_md4hash(machine_password, current_nt_hash.hash);
+	SAFE_FREE(machine_password);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		status = cli_full_connection(&cli, NULL,
@@ -1252,36 +1269,65 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(previous_nt_hash);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = get_schannel_session_key(cli, netbios_domain_name,
-					  &neg_flags, &netlogon_pipe);
+	status = rpccli_create_netlogon_creds(dc_name,
+					      netbios_domain_name,
+					      machine_account,
+					      sec_chan_type,
+					      msg_ctx,
+					      frame,
+					      &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_NETWORK_RESPONSE)) {
-			cli_shutdown(cli);
-			return NT_STATUS_OK;
-		}
-
-		DEBUG(0,("libnet_join_ok: failed to get schannel session "
-			"key from server %s for domain %s. Error was %s\n",
-			smbXcli_conn_remote_name(cli->conn),
-			netbios_domain_name, nt_errstr(status)));
+		SAFE_FREE(previous_nt_hash);
 		cli_shutdown(cli);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
-	if (!lp_client_schannel()) {
+	status = rpccli_setup_netlogon_creds(cli,
+					     netlogon_creds,
+					     true, /* force_reauth */
+					     current_nt_hash,
+					     previous_nt_hash);
+	SAFE_FREE(previous_nt_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("connect_to_domain_password_server: "
+			 "unable to open the domain client session to "
+			 "machine %s. Flags[0x%08X] Error was : %s.\n",
+			 dc_name, (unsigned)netlogon_flags,
+			 nt_errstr(status)));
 		cli_shutdown(cli);
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = netlogon_creds_cli_get(netlogon_creds,
+					talloc_tos(),
+					&creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_shutdown(cli);
+		TALLOC_FREE(frame);
+		return status;
+	}
+	netlogon_flags = creds->negotiate_flags;
+	TALLOC_FREE(creds);
+
+	if (!(netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+		cli_shutdown(cli);
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
 	status = cli_rpc_pipe_open_schannel_with_key(
 		cli, &ndr_table_netlogon, NCACN_NP,
 		netbios_domain_name,
-		netlogon_pipe->netlogon_creds, &pipe_hnd);
+		netlogon_creds, &netlogon_pipe);
 
-	cli_shutdown(cli);
+	TALLOC_FREE(netlogon_pipe);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_join_ok: failed to open schannel session "
@@ -1289,9 +1335,13 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 			"Error was %s\n",
 			smbXcli_conn_remote_name(cli->conn),
 			netbios_domain_name, nt_errstr(status)));
+		cli_shutdown(cli);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
+	cli_shutdown(cli);
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -1303,8 +1353,8 @@ static WERROR libnet_join_post_verify(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	status = libnet_join_ok(r->out.netbios_domain_name,
-				r->in.machine_name,
+	status = libnet_join_ok(r->in.msg_ctx,
+				r->out.netbios_domain_name,
 				r->in.dc_name,
 				r->in.use_kerberos);
 	if (!NT_STATUS_IS_OK(status)) {

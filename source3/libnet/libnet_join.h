@@ -23,8 +23,9 @@
 
 /* The following definitions come from libnet/libnet_join.c  */
 
-NTSTATUS libnet_join_ok(const char *netbios_domain_name,
-			const char *machine_name,
+struct messaging_context;
+NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
+			const char *netbios_domain_name,
 			const char *dc_name,
 			const bool use_kerberos);
 WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
