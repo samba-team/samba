@@ -1186,8 +1186,7 @@ static NTSTATUS send_break_message(files_struct *fsp,
 
 	status = messaging_send_buf(fsp->conn->sconn->msg_ctx, exclusive->pid,
 				    MSG_SMB_BREAK_REQUEST,
-				    (uint8 *)msg,
-				    MSG_SMB_SHARE_MODE_ENTRY_SIZE);
+				    (uint8 *)msg, sizeof(msg));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not send oplock break message: %s\n",
 			  nt_errstr(status)));
