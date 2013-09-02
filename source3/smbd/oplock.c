@@ -753,8 +753,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 			messaging_send_buf(state->sconn->msg_ctx,
 					share_entry->pid,
 					MSG_SMB_ASYNC_LEVEL2_BREAK,
-					(uint8 *)msg,
-					MSG_SMB_SHARE_MODE_ENTRY_SIZE);
+					(uint8 *)msg, sizeof(msg));
 		}
 	}
 
