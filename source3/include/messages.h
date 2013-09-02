@@ -136,7 +136,7 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
-			    const uint8 *buf, size_t len);
+			    const uint8_t *buf, size_t len);
 void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			    struct messaging_rec *rec);
 
