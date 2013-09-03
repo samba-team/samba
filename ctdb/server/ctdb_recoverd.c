@@ -67,6 +67,7 @@ struct ctdb_recoverd {
 	struct vacuum_info *vacuum_info;
 	TALLOC_CTX *ip_reallocate_ctx;
 	struct ip_reallocate_list *reallocate_callers;
+	bool takeover_run_in_progress;
 	TALLOC_CTX *ip_check_disable_ctx;
 	struct ctdb_control_get_ifaces *ifaces;
 	TALLOC_CTX *deferred_rebalance_ctx;
@@ -1586,6 +1587,15 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	int ret;
 	bool ok;
 
+	if (rec->takeover_run_in_progress) {
+		DEBUG(DEBUG_ERR, (__location__
+				  " takeover run already in progress \n"));
+		ok = false;
+		goto done;
+	}
+
+	rec->takeover_run_in_progress = true;
+
 	ret = ctdb_takeover_run(rec->ctdb, nodemap, takeover_fail_callback,
 				banning_credits_on_fail ? rec : NULL);
 	if (ret != 0) {
@@ -1597,6 +1607,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	ok = true;
 done:
 	rec->need_takeover_run = !ok;
+	rec->takeover_run_in_progress = false;
 	return ok;
 }
 
@@ -3951,6 +3962,8 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, rec);
 
 	rec->ctdb = ctdb;
+
+	rec->takeover_run_in_progress = false;
 
 	rec->priority_time = timeval_current();
 
