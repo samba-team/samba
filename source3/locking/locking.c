@@ -733,8 +733,8 @@ void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
  not automatically a logic error if they are identical. JRA.)
 ********************************************************************/
 
-static bool share_modes_identical(struct share_mode_entry *e1,
-				  struct share_mode_entry *e2)
+static bool share_modes_identical(const struct share_mode_entry *e1,
+				  const struct share_mode_entry *e2)
 {
 	/* We used to check for e1->share_access == e2->share_access here
 	   as well as the other fields but 2 different DOS or FCB opens
