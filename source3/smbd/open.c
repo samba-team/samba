@@ -1435,13 +1435,6 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 		fsp->oplock_type = NO_OPLOCK;
 	}
 
-	if (is_stat_open(fsp->access_mask)) {
-		/* Leave the value already set. */
-		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
-			fsp->oplock_type, fsp_str_dbg(fsp)));
-		return;
-	}
-
 	got_level2_oplock = false;
 	got_a_none_oplock = false;
 
@@ -2617,8 +2610,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return status;
 	}
 
-	grant_fsp_oplock_type(fsp, lck, oplock_request);
-
 	/*
 	 * We have the share entry *locked*.....
 	 */
@@ -2680,7 +2671,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (file_existed) {
 		/* stat opens on existing files don't get oplocks. */
 		if (is_stat_open(open_access_mask)) {
-			fsp->oplock_type = NO_OPLOCK;
+			oplock_request = NO_OPLOCK;
 		}
 	}
 
@@ -2702,6 +2693,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Setup the oplock info in both the shared memory and
 	 * file structs.
 	 */
+
+	grant_fsp_oplock_type(fsp, lck, oplock_request);
 
 	status = set_file_oplock(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
