@@ -211,16 +211,6 @@ bool downgrade_oplock(files_struct *fsp)
 	return ret;
 }
 
-/*
- * Some kernel oplock implementations handle the notification themselves.
- */
-bool should_notify_deferred_opens(struct smbd_server_connection *sconn)
-{
-	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-	return !(koplocks &&
-		(koplocks->flags & KOPLOCKS_DEFERRED_OPEN_NOTIFICATION));
-}
-
 /****************************************************************************
  Set up an oplock break message.
 ****************************************************************************/

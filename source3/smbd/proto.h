@@ -663,7 +663,6 @@ NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
-bool should_notify_deferred_opens(struct smbd_server_connection *sconn);
 void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
 void contend_level2_oplocks_end(files_struct *fsp,
