@@ -321,7 +321,6 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 					const char *domain_name,
 					const struct GUID *domain_guid,
 					uint32_t flags,
-					const char *site_name,
 					struct netr_DsRGetDCNameInfo **info_p)
 {
 	char *key;
@@ -394,7 +393,7 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	status = dsgetdcname_cache_fetch(mem_ctx, domain_name, domain_guid,
-					 flags, site_name, info);
+					 flags, info);
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		DEBUG(10,("dsgetdcname_cached: cache fetch failed with: %s\n",
