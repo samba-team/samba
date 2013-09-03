@@ -1106,7 +1106,6 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct netr_DsRGetDCNameInfo *myinfo = NULL;
-	char *query_site = NULL;
 	bool first = true;
 	struct netr_DsRGetDCNameInfo *first_info = NULL;
 
@@ -1114,7 +1113,7 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
 		  domain_name,
 		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
-		  site_name, flags));
+		  site_name ? site_name : "(null)", flags));
 
 	*info = NULL;
 
@@ -1123,18 +1122,12 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((site_name == NULL) || (site_name[0] == '\0')) {
-		query_site = sitename_fetch(domain_name);
-	} else {
-		query_site = SMB_STRDUP(site_name);
-	}
-
 	if (flags & DS_FORCE_REDISCOVERY) {
 		goto rediscover;
 	}
 
 	status = dsgetdcname_cached(mem_ctx, msg_ctx, domain_name, domain_guid,
-				    flags, query_site, &myinfo);
+				    flags, site_name, &myinfo);
 	if (NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -1145,12 +1138,10 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 
  rediscover:
 	status = dsgetdcname_rediscover(mem_ctx, msg_ctx, domain_name,
-					domain_guid, flags, query_site,
+					domain_guid, flags, site_name,
 					&myinfo);
 
  done:
-	SAFE_FREE(query_site);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!first) {
 			*info = first_info;
@@ -1165,7 +1156,7 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 		first = false;
 		first_info = myinfo;
 		/* TODO: may use the next_closest_site here */
-		query_site = SMB_STRDUP(myinfo->client_site_name);
+		site_name = myinfo->client_site_name;
 		goto rediscover;
 	}
 
@@ -1187,11 +1178,24 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
 		     struct netr_DsRGetDCNameInfo **info)
 {
-	return dsgetdcname_internal(mem_ctx,
+	NTSTATUS status;
+	char *query_site = NULL;
+
+	if ((site_name == NULL) || (site_name[0] == '\0')) {
+		query_site = sitename_fetch(domain_name);
+	} else {
+		query_site = SMB_STRDUP(site_name);
+	}
+
+	status = dsgetdcname_internal(mem_ctx,
 				msg_ctx,
 				domain_name,
 				domain_guid,
-				site_name,
+				query_site,
 				flags,
 				info);
+
+	SAFE_FREE(query_site);
+
+	return status;
 }
