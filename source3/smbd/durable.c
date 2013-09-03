@@ -864,7 +864,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = set_file_oplock(fsp, e->op_type);
+	status = set_file_oplock(fsp, fsp->oplock_type);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("vfs_default_durable_reconnect failed to set oplock "
 			  "after opening file: %s\n", nt_errstr(status)));
