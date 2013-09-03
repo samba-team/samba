@@ -1082,12 +1082,10 @@ static bool is_closest_site(struct netr_DsRGetDCNameInfo *info)
 }
 
 /********************************************************************
- dsgetdcname.
-
- This will be the only public function here.
+ Internal dsgetdcname.
 ********************************************************************/
 
-NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
+static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 		     struct messaging_context *msg_ctx,
 		     const char *domain_name,
 		     const struct GUID *domain_guid,
@@ -1101,7 +1099,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 	bool first = true;
 	struct netr_DsRGetDCNameInfo *first_info = NULL;
 
-	DEBUG(10,("dsgetdcname: domain_name: %s, "
+	DEBUG(10,("dsgetdcname_internal: domain_name: %s, "
 		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
 		  domain_name,
 		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
@@ -1162,4 +1160,27 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 
 	*info = myinfo;
 	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ dsgetdcname.
+
+ This will be the only public function here.
+********************************************************************/
+
+NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
+		     struct messaging_context *msg_ctx,
+		     const char *domain_name,
+		     const struct GUID *domain_guid,
+		     const char *site_name,
+		     uint32_t flags,
+		     struct netr_DsRGetDCNameInfo **info)
+{
+	return dsgetdcname_internal(mem_ctx,
+				msg_ctx,
+				domain_name,
+				domain_guid,
+				site_name,
+				flags,
+				info);
 }
