@@ -47,8 +47,7 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 
 /****************************************************************************
  Attempt to set an oplock on a file. Succeeds if kernel oplocks are
- disabled (just sets flags) and no byte-range locks in the file. Returns True
- if oplock set.
+ disabled (just sets flags).
 ****************************************************************************/
 
 NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type)
