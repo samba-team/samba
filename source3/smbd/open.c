@@ -1209,11 +1209,9 @@ static NTSTATUS send_break_message(files_struct *fsp,
  * Do internal consistency checks on the share mode for a file.
  */
 
-static bool find_oplock_types(files_struct *fsp,
-				int oplock_request,
-				const struct share_mode_lock *lck,
-				bool *got_level2,
-				bool *got_no_oplock)
+static bool validate_oplock_types(files_struct *fsp,
+				  int oplock_request,
+				  struct share_mode_lock *lck)
 {
 	struct share_mode_data *d = lck->data;
 	bool batch = false;
@@ -1221,9 +1219,6 @@ static bool find_oplock_types(files_struct *fsp,
 	bool level2 = false;
 	bool no_oplock = false;
 	uint32_t i;
-
-	*got_level2 = false;
-	*got_no_oplock = false;
 
 	/* Ignore stat or internal opens, as is done in
 		delay_for_batch_oplocks() and
@@ -1313,8 +1308,6 @@ static bool find_oplock_types(files_struct *fsp,
 		return false;
 	}
 
-	*got_level2 = level2;
-	*got_no_oplock = no_oplock;
 	return true;
 }
 
@@ -1367,12 +1360,13 @@ static bool file_has_brlocks(files_struct *fsp)
 }
 
 static void grant_fsp_oplock_type(files_struct *fsp,
-				int oplock_request,
-				bool got_level2_oplock,
-				bool got_a_none_oplock)
+				  struct share_mode_lock *lck,
+				  int oplock_request)
 {
 	bool allow_level2 = (global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
 		            lp_level2_oplocks(SNUM(fsp->conn));
+	bool got_level2_oplock, got_a_none_oplock;
+	uint32_t i;
 
 	/* Start by granting what the client asked for,
 	   but ensure no SAMBA_PRIVATE bits can be set. */
@@ -1397,6 +1391,20 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
 			fsp->oplock_type, fsp_str_dbg(fsp)));
 		return;
+	}
+
+	got_level2_oplock = false;
+	got_a_none_oplock = false;
+
+	for (i=0; i<lck->data->num_share_modes; i++) {
+		int op_type = lck->data->share_modes[i].op_type;
+
+		if (LEVEL_II_OPLOCK_TYPE(op_type)) {
+			got_level2_oplock = true;
+		}
+		if (op_type == NO_OPLOCK) {
+			got_a_none_oplock = true;
+		}
 	}
 
 	/*
@@ -1969,8 +1977,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	NTSTATUS status;
 	char *parent_dir;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
-	bool got_level2_oplock = false;
-	bool got_a_none_oplock = false;
 	struct timespec old_write_time;
 	struct file_id id;
 
@@ -2311,10 +2317,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		if (!find_oplock_types(fsp, 0, lck,
-				       &got_level2_oplock,
-				       &got_a_none_oplock)) {
-			smb_panic("find_oplock_types failed");
+		if (!validate_oplock_types(fsp, 0, lck)) {
+			smb_panic("validate_oplock_types failed");
 		}
 
 		if (delay_for_oplock(fsp, req->mid, 0, lck,
@@ -2402,10 +2406,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	/* Get the types we need to examine. */
-	if (!find_oplock_types(fsp, oplock_request, lck,
-			       &got_level2_oplock,
-			       &got_a_none_oplock)) {
-		smb_panic("find_oplock_types failed");
+	if (!validate_oplock_types(fsp, oplock_request, lck)) {
+		smb_panic("validate_oplock_types failed");
 	}
 
 	if (has_delete_on_close(lck, fsp->name_hash)) {
@@ -2570,10 +2572,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return status;
 	}
 
-	grant_fsp_oplock_type(fsp,
-			      oplock_request,
-			      got_level2_oplock,
-			      got_a_none_oplock);
+	grant_fsp_oplock_type(fsp, lck, oplock_request);
 
 	/*
 	 * We have the share entry *locked*.....
