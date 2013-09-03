@@ -1170,9 +1170,13 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	const char *query_site = NULL;
 	char *ptr_to_free = NULL;
+	bool retry_query_with_null = false;
 
 	if ((site_name == NULL) || (site_name[0] == '\0')) {
 		ptr_to_free = sitename_fetch(domain_name);
+		if (ptr_to_free != NULL) {
+			retry_query_with_null = true;
+		}
 		query_site = ptr_to_free;
 	} else {
 		query_site = site_name;
@@ -1193,7 +1197,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Should we try again with site_name == NULL ? */
-	if ((site_name == NULL) || (site_name[0] == '\0')) {
+	if (retry_query_with_null) {
 		status = dsgetdcname_internal(mem_ctx,
 					msg_ctx,
 					domain_name,
