@@ -2703,7 +2703,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * file structs.
 	 */
 
-	status = set_file_oplock(fsp, fsp->oplock_type);
+	status = set_file_oplock(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Could not get the kernel oplock

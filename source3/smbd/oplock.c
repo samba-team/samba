@@ -50,7 +50,7 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
  disabled (just sets flags).
 ****************************************************************************/
 
-NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type)
+NTSTATUS set_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
@@ -67,14 +67,13 @@ NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type)
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    use_kernel &&
-	    !koplocks->ops->set_oplock(koplocks, fsp, oplock_type))
+	    !koplocks->ops->set_oplock(koplocks, fsp, fsp->oplock_type))
 	{
 		return map_nt_error_from_unix(errno);
 	}
 
-	fsp->oplock_type = oplock_type;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	if (oplock_type == LEVEL_II_OPLOCK) {
+	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
 		sconn->oplocks.level_II_open++;
 	} else if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		sconn->oplocks.exclusive_open++;
