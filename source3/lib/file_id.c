@@ -80,7 +80,7 @@ void push_file_id_24(char *buf, const struct file_id *id)
 /*
   pull a 24 byte version of a file id from a buffer
  */
-void pull_file_id_24(char *buf, struct file_id *id)
+void pull_file_id_24(const char *buf, struct file_id *id)
 {
 	ZERO_STRUCTP(id);
 	id->devid  = IVAL(buf,  0);
