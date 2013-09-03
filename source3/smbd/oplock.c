@@ -819,7 +819,7 @@ void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
  De-linearize an internal oplock break message to a share mode entry struct.
 ****************************************************************************/
 
-void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
+void message_to_share_mode_entry(struct share_mode_entry *e, const char *msg)
 {
 	e->pid.pid = (pid_t)IVAL(msg,OP_BREAK_MSG_PID_OFFSET);
 	e->op_mid = BVAL(msg,OP_BREAK_MSG_MID_OFFSET);
