@@ -746,8 +746,8 @@ static bool share_modes_identical(const struct share_mode_entry *e1,
 		e1->share_file_id == e2->share_file_id );
 }
 
-static struct share_mode_entry *find_share_mode_entry(struct share_mode_data *d,
-						      struct share_mode_entry *entry)
+static struct share_mode_entry *find_share_mode_entry(
+	struct share_mode_data *d, const struct share_mode_entry *entry)
 {
 	int i;
 
