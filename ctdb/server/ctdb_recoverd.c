@@ -1584,6 +1584,8 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 			    struct ctdb_node_map *nodemap,
 			    bool banning_credits_on_fail)
 {
+	uint32_t disable_timeout;
+	TDB_DATA data;
 	int ret;
 	bool ok;
 
@@ -1594,10 +1596,34 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 		goto done;
 	}
 
+	/* Disable IP checks while doing this takeover run.  This will
+	 * stop those other nodes from triggering takeover runs when
+	 * think they should be hosting an IP but it isn't yet on an
+	 * interface.
+	 */
+	data.dptr  = (uint8_t*)&disable_timeout;
+	data.dsize = sizeof(disable_timeout);
+
+	disable_timeout = rec->ctdb->tunable.takeover_timeout;
+	if (ctdb_client_send_message(rec->ctdb, CTDB_BROADCAST_CONNECTED,
+				     CTDB_SRVID_DISABLE_IP_CHECK,
+				     data) != 0) {
+		DEBUG(DEBUG_INFO,("Failed to disable IP check\n"));
+	}
+
 	rec->takeover_run_in_progress = true;
 
 	ret = ctdb_takeover_run(rec->ctdb, nodemap, takeover_fail_callback,
 				banning_credits_on_fail ? rec : NULL);
+
+	/* Reenable IP checks */
+	disable_timeout = 0;
+	if (ctdb_client_send_message(rec->ctdb, CTDB_BROADCAST_CONNECTED,
+				     CTDB_SRVID_DISABLE_IP_CHECK,
+				     data) != 0) {
+		DEBUG(DEBUG_INFO,("Failed to reenable IP check\n"));
+	}
+
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP reallocation failed\n"));
 		ok = false;
