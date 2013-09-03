@@ -751,10 +751,13 @@ static struct share_mode_entry *find_share_mode_entry(struct share_mode_data *d,
 {
 	int i;
 
+	if (!is_valid_share_mode_entry(entry)) {
+		return NULL;
+	}
+
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
-		if (is_valid_share_mode_entry(entry) &&
-		    is_valid_share_mode_entry(e) &&
+		if (is_valid_share_mode_entry(e) &&
 		    share_modes_identical(e, entry)) {
 			return e;
 		}
