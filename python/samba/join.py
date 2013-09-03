@@ -303,7 +303,11 @@ class dc_join(object):
                                scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"])
         if not 'fSMORoleOwner' in res[0]:
             raise DCJoinException("Can't find naming master on partition DN %s" % ctx.partition_dn)
-        master_guid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['fSMORoleOwner'][0]).get_extended_component('GUID')))
+        try:
+            master_guid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['fSMORoleOwner'][0]).get_extended_component('GUID')))
+        except KeyError:
+            raise DCJoinException("Can't find GUID in naming master on partition DN %s" % res[0]['fSMORoleOwner'][0])
+
         master_host = '%s._msdcs.%s' % (master_guid, ctx.dnsforest)
         return master_host
 
