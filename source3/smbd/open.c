@@ -2337,7 +2337,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_RETRY)) {
 			schedule_async_open(request_time, req);
 		}
-		TALLOC_FREE(lck);
 		return fsp_open;
 	}
 
@@ -2351,7 +2350,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * just fail the open to prevent creating any problems
 		 * in the open file db having the wrong dev/ino key.
 		 */
-		TALLOC_FREE(lck);
 		fd_close(fsp);
 		DEBUG(1,("open_file_ntcreate: file %s - dev/ino mismatch. "
 			"Old (dev=0x%llu, ino =0x%llu). "
