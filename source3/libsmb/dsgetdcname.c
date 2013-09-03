@@ -1168,12 +1168,14 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		     struct netr_DsRGetDCNameInfo **info)
 {
 	NTSTATUS status;
-	char *query_site = NULL;
+	const char *query_site = NULL;
+	char *ptr_to_free = NULL;
 
 	if ((site_name == NULL) || (site_name[0] == '\0')) {
-		query_site = sitename_fetch(domain_name);
+		ptr_to_free = sitename_fetch(domain_name);
+		query_site = ptr_to_free;
 	} else {
-		query_site = SMB_STRDUP(site_name);
+		query_site = site_name;
 	}
 
 	status = dsgetdcname_internal(mem_ctx,
@@ -1184,7 +1186,22 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 				flags,
 				info);
 
-	SAFE_FREE(query_site);
+	SAFE_FREE(ptr_to_free);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		return status;
+	}
+
+	/* Should we try again with site_name == NULL ? */
+	if ((site_name == NULL) || (site_name[0] == '\0')) {
+		status = dsgetdcname_internal(mem_ctx,
+					msg_ctx,
+					domain_name,
+					domain_guid,
+					NULL,
+					flags,
+					info);
+	}
 
 	return status;
 }
