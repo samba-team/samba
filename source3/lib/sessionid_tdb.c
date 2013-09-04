@@ -23,14 +23,15 @@
 #include "session.h"
 #include "util_tdb.h"
 
+static struct db_context *session_db_ctx_ptr = NULL;
+
 static struct db_context *session_db_ctx(void)
 {
-	static struct db_context *session_db_ctx_ptr;
+	return session_db_ctx_ptr;
+}
 
-	if (session_db_ctx_ptr != NULL) {
-		return session_db_ctx_ptr;
-	}
-
+static struct db_context *session_db_ctx_init(void)
+{
 	session_db_ctx_ptr = db_open(NULL, lock_path("sessionid.tdb"), 0,
 				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
 				     O_RDWR | O_CREAT, 0644);
@@ -39,7 +40,7 @@ static struct db_context *session_db_ctx(void)
 
 bool sessionid_init(void)
 {
-	if (session_db_ctx() == NULL) {
+	if (session_db_ctx_init() == NULL) {
 		DEBUG(1,("session_init: failed to open sessionid tdb\n"));
 		return False;
 	}
