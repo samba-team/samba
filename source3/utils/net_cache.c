@@ -242,7 +242,7 @@ static int net_cache_get(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (gencache_get_data_blob(keystr, &value, &timeout, NULL)) {
+	if (gencache_get_data_blob(keystr, NULL, &value, &timeout, NULL)) {
 		print_cache_entry(keystr, value, timeout, NULL);
 		data_blob_free(&value);
 		return 0;

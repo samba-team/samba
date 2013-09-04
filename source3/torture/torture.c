@@ -8172,7 +8172,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	if (!gencache_get_data_blob("foo", &blob, NULL, NULL)) {
+	if (!gencache_get_data_blob("foo", NULL, &blob, NULL, NULL)) {
 		d_printf("%s: gencache_get_data_blob() failed\n", __location__);
 		return False;
 	}
@@ -8196,7 +8196,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	if (gencache_get_data_blob("foo", &blob, NULL, NULL)) {
+	if (gencache_get_data_blob("foo", NULL, &blob, NULL, NULL)) {
 		d_printf("%s: gencache_get_data_blob() on deleted entry "
 			 "succeeded\n", __location__);
 		return False;

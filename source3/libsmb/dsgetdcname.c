@@ -334,12 +334,13 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!gencache_get_data_blob(key, &blob, NULL, NULL)) {
+	if (!gencache_get_data_blob(key, NULL, &blob, NULL, NULL)) {
 		return NT_STATUS_NOT_FOUND;
 	}
 
 	info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo);
 	if (!info) {
+		data_blob_free(&blob);
 		return NT_STATUS_NO_MEMORY;
 	}
 

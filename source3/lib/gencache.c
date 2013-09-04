@@ -368,7 +368,8 @@ bool gencache_del(const char *keystr)
 	 * element.
 	 */
 
-	exists = gencache_get_data_blob(keystr, &value, NULL, &was_expired);
+	exists = gencache_get_data_blob(keystr, NULL, &value, NULL,
+					&was_expired);
 
 	if (!exists && was_expired) {
 		/*
@@ -469,6 +470,7 @@ bool gencache_parse(const char *keystr,
 }
 
 struct gencache_get_data_blob_state {
+	TALLOC_CTX *mem_ctx;
 	DATA_BLOB *blob;
 	time_t timeout;
 	bool result;
@@ -491,7 +493,8 @@ static void gencache_get_data_blob_parser(time_t timeout, DATA_BLOB blob,
 		return;
 	}
 
-	*state->blob = data_blob(blob.data, blob.length);
+	*state->blob = data_blob_talloc(state->mem_ctx, blob.data,
+					blob.length);
 	if (state->blob->data == NULL) {
 		state->result = false;
 		return;
@@ -511,13 +514,15 @@ static void gencache_get_data_blob_parser(time_t timeout, DATA_BLOB blob,
  * @retval False for failure
  **/
 
-bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
+bool gencache_get_data_blob(const char *keystr, TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *blob,
 			    time_t *timeout, bool *was_expired)
 {
 	struct gencache_get_data_blob_state state;
 	bool expired = false;
 
 	state.result = false;
+	state.mem_ctx = mem_ctx;
 	state.blob = blob;
 
 	if (!gencache_parse(keystr, gencache_get_data_blob_parser, &state)) {
@@ -705,7 +710,7 @@ bool gencache_get(const char *keystr, char **value, time_t *ptimeout)
 	DATA_BLOB blob;
 	bool ret = False;
 
-	ret = gencache_get_data_blob(keystr, &blob, ptimeout, NULL);
+	ret = gencache_get_data_blob(keystr, NULL, &blob, ptimeout, NULL);
 	if (!ret) {
 		return false;
 	}

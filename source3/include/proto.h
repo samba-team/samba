@@ -112,7 +112,8 @@ bool gencache_parse(const char *keystr,
 		    void (*parser)(time_t timeout, DATA_BLOB blob,
 				   void *private_data),
 		    void *private_data);
-bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
+bool gencache_get_data_blob(const char *keystr, TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *blob,
 			    time_t *timeout, bool *was_expired);
 bool gencache_stabilize(void);
 bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob, time_t timeout);
