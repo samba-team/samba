@@ -512,7 +512,8 @@ void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags, false);
 
-	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, ipflags, all_ips, NULL,
+		  &lcp2_imbalances, &newly_healthy);
 
 	lcp2_allocate_unassigned(ctdb, ipflags,
 				 all_ips, lcp2_imbalances);
@@ -534,7 +535,8 @@ void ctdb_test_lcp2_failback(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags, false);
 
-	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, ipflags, all_ips, NULL,
+		  &lcp2_imbalances, &newly_healthy);
 
 	lcp2_failback(ctdb, ipflags,
 		      all_ips, lcp2_imbalances, newly_healthy);
@@ -556,7 +558,8 @@ void ctdb_test_lcp2_failback_loop(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags, false);
 
-	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, ipflags, all_ips, NULL,
+		  &lcp2_imbalances, &newly_healthy);
 
 	lcp2_failback(ctdb, ipflags,
 		      all_ips, lcp2_imbalances, newly_healthy);
@@ -579,7 +582,7 @@ void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags,
 		       read_ips_for_multiple_nodes);
 
-	ctdb_takeover_run_core(ctdb, ipflags, &all_ips);
+	ctdb_takeover_run_core(ctdb, ipflags, &all_ips, NULL);
 
 	print_ctdb_public_ip_list(all_ips);
 

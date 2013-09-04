@@ -143,7 +143,7 @@ struct ctdb_recoverd {
 	bool takeover_run_in_progress;
 	TALLOC_CTX *takeover_runs_disable_ctx;
 	struct ctdb_control_get_ifaces *ifaces;
-	TALLOC_CTX *deferred_rebalance_ctx;
+	uint32_t *force_rebalance_nodes;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -1708,7 +1708,9 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 		}
 	}
 
-	ret = ctdb_takeover_run(rec->ctdb, nodemap, takeover_fail_callback,
+	ret = ctdb_takeover_run(rec->ctdb, nodemap,
+				rec->force_rebalance_nodes,
+				takeover_fail_callback,
 				banning_credits_on_fail ? rec : NULL);
 
 	/* Reenable takeover runs and IP checks on other nodes */
@@ -1728,6 +1730,8 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	}
 
 	ok = true;
+	/* Takeover run was successful so clear force rebalance targets */
+	TALLOC_FREE(rec->force_rebalance_nodes);
 done:
 	rec->need_takeover_run = !ok;
 	talloc_free(nodes);
@@ -2349,26 +2353,36 @@ static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid,
 }
 
 
-static void ctdb_rebalance_timeout(struct event_context *ev, struct timed_event *te, 
-				  struct timeval t, void *p)
+static void ctdb_rebalance_timeout(struct event_context *ev,
+				   struct timed_event *te,
+				   struct timeval t, void *p)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 
+	if (rec->force_rebalance_nodes == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Rebalance timeout occurred - no nodes to rebalance\n"));
+		return;
+	}
+
 	DEBUG(DEBUG_NOTICE,
-	      ("Rebalance all nodes that have had ip assignment changes.\n"));
-
+	      ("Rebalance timeout occurred - do takeover run\n"));
 	do_takeover_run(rec, rec->nodemap, false);
-
-	talloc_free(rec->deferred_rebalance_ctx);
-	rec->deferred_rebalance_ctx = NULL;
 }
 
 	
-static void recd_node_rebalance_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
+					uint64_t srvid,
+					TDB_DATA data, void *private_data)
 {
 	uint32_t pnn;
+	uint32_t *t;
+	int len;
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+
+	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
+		return;
+	}
 
 	if (data.dsize != sizeof(uint32_t)) {
 		DEBUG(DEBUG_ERR,(__location__ " Incorrect size of node rebalance message. Was %zd but expected %zd bytes\n", data.dsize, sizeof(uint32_t)));
@@ -2381,14 +2395,33 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb, uint64_t srvi
 
 	pnn = *(uint32_t *)&data.dptr[0];
 
-	lcp2_forcerebalance(ctdb, pnn);
-	DEBUG(DEBUG_NOTICE,("Received message to perform node rebalancing for node %d\n", pnn));
+	DEBUG(DEBUG_NOTICE,("Setting up rebalance of IPs to node %u\n", pnn));
 
-	if (rec->deferred_rebalance_ctx != NULL) {
-		talloc_free(rec->deferred_rebalance_ctx);
+	/* Copy any existing list of nodes.  There's probably some
+	 * sort of realloc variant that will do this but we need to
+	 * make sure that freeing the old array also cancels the timer
+	 * event for the timeout... not sure if realloc will do that.
+	 */
+	len = (rec->force_rebalance_nodes != NULL) ?
+		talloc_array_length(rec->force_rebalance_nodes) :
+		0;
+
+	/* This allows duplicates to be added but they don't cause
+	 * harm.  A call to add a duplicate PNN arguably means that
+	 * the timeout should be reset, so this is the simplest
+	 * solution.
+	 */
+	t = talloc_zero_array(rec, uint32_t, len+1);
+	CTDB_NO_MEMORY_VOID(ctdb, t);
+	if (len > 0) {
+		memcpy(t, rec->force_rebalance_nodes, sizeof(uint32_t) * len);
 	}
-	rec->deferred_rebalance_ctx = talloc_new(rec);
-	event_add_timed(ctdb->ev, rec->deferred_rebalance_ctx, 
+	t[len] = pnn;
+
+	talloc_free(rec->force_rebalance_nodes);
+
+	rec->force_rebalance_nodes = t;
+	event_add_timed(ctdb->ev, rec->force_rebalance_nodes,
 			timeval_current_ofs(ctdb->tunable.deferred_rebalance_on_node_add, 0),
 			ctdb_rebalance_timeout, rec);
 }
@@ -3610,9 +3643,18 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
+	/* If we are not the recmaster then do some housekeeping */
 	if (rec->recmaster != pnn) {
+		/* Ignore any IP reallocate requests - only recmaster
+		 * processes them
+		 */
 		TALLOC_FREE(rec->reallocate_requests);
+		/* Clear any nodes that should be force rebalanced in
+		 * the next takeover run.  If the recovery master role
+		 * has moved then we don't want to process these some
+		 * time in the future.
+		 */
+		TALLOC_FREE(rec->force_rebalance_nodes);
 	}
 
 	/* This is a special case.  When recovery daemon is started, recmaster

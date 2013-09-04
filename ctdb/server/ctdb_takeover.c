@@ -1733,38 +1733,10 @@ try_again:
 	}
 }
 
-struct ctdb_rebalancenodes {
-	struct ctdb_rebalancenodes *next;
-	uint32_t pnn;
-};
-static struct ctdb_rebalancenodes *force_rebalance_list = NULL;
-
-
-/* set this flag to force the node to be rebalanced even if it just didnt
-   become healthy again.
-*/
-void lcp2_forcerebalance(struct ctdb_context *ctdb, uint32_t pnn)
-{
-	struct ctdb_rebalancenodes *rebalance;
-
-	for (rebalance = force_rebalance_list; rebalance; rebalance = rebalance->next) {
-		if (rebalance->pnn == pnn) {
-			return;
-		}
-	}
-
-	rebalance = talloc(ctdb, struct ctdb_rebalancenodes);
-	rebalance->pnn = pnn;
-	rebalance->next = force_rebalance_list;
-	force_rebalance_list = rebalance;
-}
-
-/* Do necessary LCP2 initialisation.  Bury it in a function here so
- * that we can unit test it.
- */
 static void lcp2_init(struct ctdb_context *tmp_ctx,
 		      struct ctdb_ipflags *ipflags,
 		      struct ctdb_public_ip_list *all_ips,
+		      uint32_t *force_rebalance_nodes,
 		      uint32_t **lcp2_imbalances,
 		      bool **rebalance_candidates)
 {
@@ -1799,16 +1771,20 @@ static void lcp2_init(struct ctdb_context *tmp_ctx,
 
 	/* 3rd step: if a node is forced to re-balance then
 	   we allow failback onto the node */
-	while (force_rebalance_list != NULL) {
-		struct ctdb_rebalancenodes *next = force_rebalance_list->next;
-
-		if (force_rebalance_list->pnn <= numnodes) {
-			(*rebalance_candidates)[force_rebalance_list->pnn] = true;
+	if (force_rebalance_nodes == NULL) {
+		return;
+	}
+	for (i = 0; i < talloc_array_length(force_rebalance_nodes); i++) {
+		uint32_t pnn = force_rebalance_nodes[i];
+		if (pnn >= numnodes) {
+			DEBUG(DEBUG_ERR,
+			      (__location__ "unknown node %u\n", pnn));
+			continue;
 		}
 
-		DEBUG(DEBUG_ERR,("During ipreallocation, forced rebalance of node %d\n", force_rebalance_list->pnn));
-		talloc_free(force_rebalance_list);
-		force_rebalance_list = next;
+		DEBUG(DEBUG_NOTICE,
+		      ("Forcing rebalancing of IPs to node %u\n", pnn));
+		(*rebalance_candidates)[pnn] = true;
 	}
 }
 
@@ -2182,7 +2158,8 @@ static void ip_alloc_nondeterministic_ips(struct ctdb_context *ctdb,
 
 static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 			  struct ctdb_ipflags *ipflags,
-			  struct ctdb_public_ip_list *all_ips)
+			  struct ctdb_public_ip_list *all_ips,
+			  uint32_t *force_rebalance_nodes)
 {
 	uint32_t *lcp2_imbalances;
 	bool *rebalance_candidates;
@@ -2191,7 +2168,7 @@ static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 
 	unassign_unsuitable_ips(ctdb, ipflags, all_ips);
 
-	lcp2_init(tmp_ctx, ipflags, all_ips,
+	lcp2_init(tmp_ctx, ipflags, all_ips,force_rebalance_nodes,
 		  &lcp2_imbalances, &rebalance_candidates);
 
 	lcp2_allocate_unassigned(ctdb, ipflags, all_ips, lcp2_imbalances);
@@ -2229,7 +2206,8 @@ static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
 /* The calculation part of the IP allocation algorithm. */
 static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 				   struct ctdb_ipflags *ipflags,
-				   struct ctdb_public_ip_list **all_ips_p)
+				   struct ctdb_public_ip_list **all_ips_p,
+				   uint32_t *force_rebalance_nodes)
 {
 	/* since nodes only know about those public addresses that
 	   can be served by that particular node, no single node has
@@ -2242,7 +2220,7 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 	*all_ips_p = create_merged_ip_list(ctdb);
 
         if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
-		ip_alloc_lcp2(ctdb, ipflags, *all_ips_p);
+		ip_alloc_lcp2(ctdb, ipflags, *all_ips_p, force_rebalance_nodes);
 	} else if (1 == ctdb->tunable.deterministic_public_ips) {
 		ip_alloc_deterministic_ips(ctdb, ipflags, *all_ips_p);
 	} else {
@@ -2666,6 +2644,7 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
   make any IP alias changes for public addresses that are necessary 
  */
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
+		      uint32_t *force_rebalance_nodes,
 		      client_async_callback fail_callback, void *callback_data)
 {
 	int i, j, ret;
@@ -2701,7 +2680,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	ZERO_STRUCT(ip);
 
 	/* Do the IP reassignment calculations */
-	ctdb_takeover_run_core(ctdb, ipflags, &all_ips);
+	ctdb_takeover_run_core(ctdb, ipflags, &all_ips, force_rebalance_nodes);
 
 	/* Now tell all nodes to release any public IPs should not
 	 * host.  This will be a NOOP on nodes that don't currently
