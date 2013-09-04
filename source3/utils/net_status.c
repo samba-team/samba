@@ -239,5 +239,11 @@ int net_status(struct net_context *c, int argc, const char **argv)
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
+
+	if (!sessionid_init()) {
+		d_printf("failed to open sessionid.tdb\n");
+		return -1;
+	}
+
 	return net_run_function(c, argc, argv, "net status", func);
 }
