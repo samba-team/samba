@@ -64,13 +64,13 @@ static bool ads_dc_name(const char *domain,
 		realm = lp_realm();
 	}
 
-	sitename = sitename_fetch(realm);
+	sitename = sitename_fetch(talloc_tos(), realm);
 
 	/* Try this 3 times then give up. */
 	for( i =0 ; i < 3; i++) {
 		ads = ads_init(realm, domain, NULL);
 		if (!ads) {
-			SAFE_FREE(sitename);
+			TALLOC_FREE(sitename);
 			return False;
 		}
 
@@ -83,7 +83,7 @@ static bool ads_dc_name(const char *domain,
 #endif
 
 		if (!ads->config.realm) {
-			SAFE_FREE(sitename);
+			TALLOC_FREE(sitename);
 			ads_destroy(&ads);
 			return False;
 		}
@@ -93,8 +93,8 @@ static bool ads_dc_name(const char *domain,
 		   to ensure we only find servers in our site. */
 
 		if (stored_sitename_changed(realm, sitename)) {
-			SAFE_FREE(sitename);
-			sitename = sitename_fetch(realm);
+			TALLOC_FREE(sitename);
+			sitename = sitename_fetch(talloc_tos(), realm);
 			ads_destroy(&ads);
 			/* Ensure we don't cache the DC we just connected to. */
 			namecache_delete(realm, 0x1C);
@@ -129,12 +129,12 @@ static bool ads_dc_name(const char *domain,
 	if (i == 3) {
 		DEBUG(1,("ads_dc_name: sitename (now \"%s\") keeps changing ???\n",
 			sitename ? sitename : ""));
-		SAFE_FREE(sitename);
+		TALLOC_FREE(sitename);
 		ads_destroy(&ads);
 		return False;
 	}
 
-	SAFE_FREE(sitename);
+	TALLOC_FREE(sitename);
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	if (!strupper_m(srv_name)) {

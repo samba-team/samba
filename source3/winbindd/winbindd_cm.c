@@ -1161,7 +1161,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 
 			if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
 				if (ads_closest_dc(ads)) {
-					char *sitename = sitename_fetch(ads->config.realm);
+					char *sitename = sitename_fetch(mem_ctx, ads->config.realm);
 
 					/* We're going to use this KDC for this realm/domain.
 					   If we are using sites, then force the krb5 libs
@@ -1173,7 +1173,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 									pss,
 									*name);
 
-					SAFE_FREE(sitename);
+					TALLOC_FREE(sitename);
 				} else {
 					/* use an off site KDC */
 					create_local_private_krb5_conf_for_domain(domain->alt_name,
@@ -1279,7 +1279,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 
 		get_dc_name(domain->name, domain->alt_name, dcname, &ss);
 
-		sitename = sitename_fetch(domain->alt_name);
+		sitename = sitename_fetch(mem_ctx, domain->alt_name);
 		if (sitename) {
 
 			/* Do the site-specific AD dns lookup first. */
@@ -1303,7 +1303,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 			}
 
 			SAFE_FREE(ip_list);
-			SAFE_FREE(sitename);
+			TALLOC_FREE(sitename);
 			iplist_size = 0;
 		}
 

@@ -22,7 +22,7 @@
 #define _LIBADS_SITENAME_CACHE_H_
 
 bool sitename_store(const char *realm, const char *sitename);
-char *sitename_fetch(const char *realm);
+char *sitename_fetch(TALLOC_CTX *mem_ctx, const char *realm);
 bool stored_sitename_changed(const char *realm, const char *sitename);
 
 #endif /* _LIBADS_SITENAME_CACHE_H_ */

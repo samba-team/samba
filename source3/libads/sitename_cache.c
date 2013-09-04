@@ -79,7 +79,7 @@ bool sitename_store(const char *realm, const char *sitename)
  Caller must free.
 ****************************************************************************/
 
-char *sitename_fetch(const char *realm)
+char *sitename_fetch(TALLOC_CTX *mem_ctx, const char *realm)
 {
 	char *sitename = NULL;
 	time_t timeout;
@@ -95,7 +95,7 @@ char *sitename_fetch(const char *realm)
 
 	key = sitename_key(query_realm);
 
-	ret = gencache_get( key, NULL, &sitename, &timeout );
+	ret = gencache_get( key, mem_ctx, &sitename, &timeout );
 	SAFE_FREE(key);
 	if ( !ret ) {
 		DEBUG(5,("sitename_fetch: No stored sitename for %s\n",
@@ -122,7 +122,7 @@ bool stored_sitename_changed(const char *realm, const char *sitename)
 		return False;
 	}
 
-	new_sitename = sitename_fetch(realm);
+	new_sitename = sitename_fetch(talloc_tos(), realm);
 
 	if (sitename && new_sitename && !strequal(sitename, new_sitename)) {
 		ret = True;
@@ -130,7 +130,7 @@ bool stored_sitename_changed(const char *realm, const char *sitename)
 			(!sitename && new_sitename)) {
 		ret = True;
 	}
-	SAFE_FREE(new_sitename);
+	TALLOC_FREE(new_sitename);
 	return ret;
 }
 

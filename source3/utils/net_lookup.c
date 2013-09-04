@@ -113,14 +113,13 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	else
 		domain = c->opt_target_workgroup;
 
-	sitename = sitename_fetch(domain);
-
 	if ( (ctx = talloc_init("net_lookup_ldap")) == NULL ) {
 		d_fprintf(stderr,"net_lookup_ldap: talloc_init() %s!\n",
 			  _("failed"));
-		SAFE_FREE(sitename);
 		return -1;
 	}
+
+	sitename = sitename_fetch(ctx, domain);
 
 	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
 
@@ -130,14 +129,12 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
-		SAFE_FREE(sitename);
 		return 0;
 	}
 
      	DEBUG(9, ("Looking up PDC for domain %s\n", domain));
 	if (!get_pdc_ip(domain, &ss)) {
 		TALLOC_FREE( ctx );
-		SAFE_FREE(sitename);
 		return -1;
 	}
 
@@ -149,7 +146,6 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 
 	if (ret) {
 		TALLOC_FREE( ctx );
-		SAFE_FREE(sitename);
 		return -1;
 	}
 
@@ -157,7 +153,6 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	domain = strchr(h_name, '.');
 	if (!domain) {
 		TALLOC_FREE( ctx );
-		SAFE_FREE(sitename);
 		return -1;
 	}
 	domain++;
@@ -169,12 +164,10 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
-		SAFE_FREE(sitename);
 		return 0;
 	}
 
 	TALLOC_FREE( ctx );
-	SAFE_FREE(sitename);
 
 	return -1;
 #endif
@@ -212,14 +205,14 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 	}
 	d_printf("%s\n", pdc_str);
 
-	sitename = sitename_fetch(domain);
+	sitename = sitename_fetch(talloc_tos(), domain);
 	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename,
 					&ip_list, &count, sec_ads))) {
 		SAFE_FREE(pdc_str);
-		SAFE_FREE(sitename);
+		TALLOC_FREE(sitename);
 		return 0;
 	}
-	SAFE_FREE(sitename);
+	TALLOC_FREE(sitename);
 	for (i=0;i<count;i++) {
 		print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
 		if (!strequal(pdc_str, addr))

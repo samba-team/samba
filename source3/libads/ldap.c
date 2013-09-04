@@ -414,7 +414,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
-	sitename = sitename_fetch(realm);
+	sitename = sitename_fetch(talloc_tos(), realm);
 
  again:
 
@@ -429,7 +429,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 			goto again;
 		}
 
-		SAFE_FREE(sitename);
+		TALLOC_FREE(sitename);
 		return status;
 	}
 
@@ -464,7 +464,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 
 		if ( ads_try_connect(ads, server, false) ) {
 			SAFE_FREE(ip_list);
-			SAFE_FREE(sitename);
+			TALLOC_FREE(sitename);
 			return NT_STATUS_OK;
 		}
 
@@ -481,7 +481,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	if (sitename) {
 		DEBUG(1,("ads_find_dc: failed to find a valid DC on our site (%s), "
 				"trying to find another DC\n", sitename));
-		SAFE_FREE(sitename);
+		TALLOC_FREE(sitename);
 		namecache_delete(realm, 0x1C);
 		goto again;
 	}
@@ -563,9 +563,9 @@ ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
 	if (!realm)
 		realm = lp_realm();
 
-	if ((sitename = sitename_fetch(realm)) == NULL) {
+	if ((sitename = sitename_fetch(frame, realm)) == NULL) {
 		ads_lookup_site();
-		sitename = sitename_fetch(realm);
+		sitename = sitename_fetch(frame, realm);
 	}
 
 	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
@@ -580,8 +580,6 @@ ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
 		nt_status = ads_dns_query_gcs(frame, dns_hosts_file,
 					      realm, sitename,
 					      &gcs_list, &num_gcs);
-
-		SAFE_FREE(sitename);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			ads_status = ADS_ERROR_NT(nt_status);
@@ -618,7 +616,6 @@ ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
 	} while (!done);
 
 done:
-	SAFE_FREE(sitename);
 	talloc_destroy(frame);
 
 	return ads_status;

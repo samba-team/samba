@@ -2799,7 +2799,7 @@ bool resolve_name(const char *name,
 		return interpret_string_addr(return_ss, name, AI_NUMERICHOST);
 	}
 
-	sitename = sitename_fetch(lp_realm()); /* wild guess */
+	sitename = sitename_fetch(talloc_tos(), lp_realm()); /* wild guess */
 
 	status = internal_resolve_name(name, name_type, sitename,
 				       &ss_list, &count,
@@ -2814,7 +2814,7 @@ bool resolve_name(const char *name,
 						(ss_list[i].ss.ss_family == AF_INET)) {
 					*return_ss = ss_list[i].ss;
 					SAFE_FREE(ss_list);
-					SAFE_FREE(sitename);
+					TALLOC_FREE(sitename);
 					return True;
 				}
 			}
@@ -2826,14 +2826,14 @@ bool resolve_name(const char *name,
 			    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
 				*return_ss = ss_list[i].ss;
 				SAFE_FREE(ss_list);
-				SAFE_FREE(sitename);
+				TALLOC_FREE(sitename);
 				return True;
 			}
 		}
 	}
 
 	SAFE_FREE(ss_list);
-	SAFE_FREE(sitename);
+	TALLOC_FREE(sitename);
 	return False;
 }
 
@@ -2873,12 +2873,12 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	sitename = sitename_fetch(lp_realm()); /* wild guess */
+	sitename = sitename_fetch(ctx, lp_realm()); /* wild guess */
 
 	status = internal_resolve_name(name, name_type, sitename,
 						  &ss_list, &count,
 						  lp_name_resolve_order());
-	SAFE_FREE(sitename);
+	TALLOC_FREE(sitename);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
