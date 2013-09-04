@@ -378,7 +378,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	}
 
 
-	if (!sessionid_init()) {
+	if (!sessionid_init_readonly()) {
 		fprintf(stderr, "Can't open sessionid.tdb\n");
 		ret = -1;
 		goto done;
