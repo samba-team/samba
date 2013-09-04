@@ -240,7 +240,7 @@ int net_status(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	if (!sessionid_init()) {
+	if (!sessionid_init_readonly()) {
 		d_printf("failed to open sessionid.tdb\n");
 		return -1;
 	}

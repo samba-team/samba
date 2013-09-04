@@ -30,17 +30,27 @@ static struct db_context *session_db_ctx(void)
 	return session_db_ctx_ptr;
 }
 
-static struct db_context *session_db_ctx_init(void)
+static struct db_context *session_db_ctx_init(bool readonly)
 {
 	session_db_ctx_ptr = db_open(NULL, lock_path("sessionid.tdb"), 0,
 				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
-				     O_RDWR | O_CREAT, 0644);
+				     readonly ? O_RDONLY : O_RDWR | O_CREAT, 0644);
 	return session_db_ctx_ptr;
 }
 
 bool sessionid_init(void)
 {
-	if (session_db_ctx_init() == NULL) {
+	if (session_db_ctx_init(false) == NULL) {
+		DEBUG(1,("session_init: failed to open sessionid tdb\n"));
+		return False;
+	}
+
+	return True;
+}
+
+bool sessionid_init_readonly(void)
+{
+	if (session_db_ctx_init(true) == NULL) {
 		DEBUG(1,("session_init: failed to open sessionid tdb\n"));
 		return False;
 	}
