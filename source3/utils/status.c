@@ -378,6 +378,12 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	}
 
 
+	if (!sessionid_init()) {
+		fprintf(stderr, "Can't open sessionid.tdb\n");
+		ret = -1;
+		goto done;
+	}
+
 	if (lp_clustering()) {
 		/*
 		 * This implicitly initializes the global ctdbd
