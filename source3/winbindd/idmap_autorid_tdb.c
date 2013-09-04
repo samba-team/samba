@@ -175,8 +175,8 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	/* increase the HWM */
 	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &hwm, increment);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("Fatal error while fetching a new "
-			  "domain range value!\n"));
+		DEBUG(1, ("Fatal error while incrementing the HWM value "
+			  "in the database: %s\n", nt_errstr(ret)));
 		goto error;
 	}
 
