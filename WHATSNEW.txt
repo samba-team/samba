@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.1.  This is *not*
+This is the third release candidate of Samba 4.1.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -79,18 +79,78 @@ smb.conf changes
 RUNNING Samba 4.1 as an AD DC
 =============================
 
-A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
+A short guide to setting up Samba as an AD DC can be found on the wiki:
 
-  http://wiki.samba.org/index.php/Samba4/HOWTO
+  https://wiki.samba.org/index.php/Samba_AD_DC_HOWTO
 
 
 COMMIT HIGHLIGHTS
 =================
 
+o   Jeremy Allison <jra@samba.org>
+    * Add SMB2 and SMB3 support for smbclient.
+
+
 o   David Disseldorp <ddiss@samba.org>
     * Add vfs_btrfs module.
     * Add support for server-side copy operations via the
       SMB2 FSCTL_SRV_COPYCHUNK request.
+
+
+CHANGES SINCE 4.1.0rc2
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10107: Fix Winbind crashes on DC with trusted AD domains.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9974: Add SMB2 and SMB3 support for smbclient.
+    * BUG 10063: Fix memory leak in source3/lib/util.c:1493.
+    * BUG 10121: Masks incorrectly applied to UNIX extension permission
+      changes.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9911: Build Samba 4.0.x on AIX with IBM XL C/C++.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9615: Winbind unable to retrieve user information from AD.
+    * BUG 9899: winbind_lookup_names() fails because of
+      NT_STATUS_CANT_ACCESS_DOMAIN_INFO.
+    * BUG 10107: Fix Winbind crashes on DC with trusted AD domains.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10086: smbd: Fix async echo handler forking.
+    * BUG 10114: Handle Dropbox (write-only-directory) case correctly
+      in pathname lookup.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10030: ::1 added to nameserver on join.
+
+
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * BUG 10000: Add man pages for ntdb tools.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 7364: Add man page for vfs_syncops.
+    * BUG 7490: Add man page for vfs_linux_xfs_sgid.
+    * BUG 10001: Add man page for samba-regedit tool.
+    * BUG 10076: Fix variable list in vfs_crossrename man page.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10073: Fix segmentation fault in 'net ads join'.
+    * BUG 10082: s3-winbind: Fix a segfault passing NULL to a fstring argument.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 10097: MacOSX 10.9 will not follow path-based DFS referrals handed
+      out by Samba.
 
 
 CHANGES SINCE 4.1.0rc1
