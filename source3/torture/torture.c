@@ -8123,6 +8123,7 @@ static bool run_local_gencache(int dummy)
 	char *val;
 	time_t tm;
 	DATA_BLOB blob;
+	char v;
 
 	if (!gencache_set("foo", "bar", time(NULL) + 1000)) {
 		d_printf("%s: gencache_set() failed\n", __location__);
@@ -8200,6 +8201,20 @@ static bool run_local_gencache(int dummy)
 		d_printf("%s: gencache_get_data_blob() on deleted entry "
 			 "succeeded\n", __location__);
 		return False;
+	}
+
+	v = 1;
+	blob.data = (uint8_t *)&v;
+	blob.length = sizeof(v);
+
+	if (!gencache_set_data_blob("blob", &blob, tm)) {
+		d_printf("%s: gencache_set_data_blob() failed\n",
+			 __location__);
+		return false;
+	}
+	if (gencache_get("blob", &val, &tm)) {
+		d_printf("%s: gencache_get succeeded\n", __location__);
+		return false;
 	}
 
 	return True;
