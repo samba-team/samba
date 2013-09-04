@@ -188,7 +188,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		goto error;
 	}
 
-	numstr = talloc_asprintf(db, "%u", requested_rangenum);
+	numstr = talloc_asprintf(talloc_tos(), "%u", requested_rangenum);
 	if (!numstr) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
