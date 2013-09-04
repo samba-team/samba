@@ -2612,10 +2612,10 @@ static void iprealloc_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
 			return;
 		}
 
-		/* Can't run the "ipreallocated" event on a STOPPED node */
-		if (cd->nodemap->nodes[pnn].flags & NODE_FLAGS_STOPPED) {
+		/* Can't run the "ipreallocated" event on a INACTIVE node */
+		if (cd->nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE) {
 			DEBUG(DEBUG_ERR,
-			      ("ipreallocated failure from node %d, but node is stopped - not flagging a retry\n",
+			      ("ipreallocated failure from node %d, but node is inactive - not flagging a retry\n",
 			       pnn));
 			return;
 		}
