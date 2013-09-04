@@ -1512,7 +1512,7 @@ bool fetch_current_dc_from_gencache(TALLOC_CTX *mem_ctx,
 	if (key == NULL) {
 		goto done;
 	}
-	if (!gencache_get(key, NULL, &value, NULL)) {
+	if (!gencache_get(key, mem_ctx, &value, NULL)) {
 		goto done;
 	}
 	p = strchr(value, ' ');
@@ -1541,6 +1541,7 @@ done:
 	TALLOC_FREE(dc_name);
 	TALLOC_FREE(dc_ip);
 	TALLOC_FREE(key);
+	TALLOC_FREE(value);
 	return ret;
 }
 

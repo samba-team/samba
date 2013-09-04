@@ -631,16 +631,16 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s",
 				    aprinter);
 	if ((cache_key != NULL) &&
-	    gencache_get(cache_key, NULL, &tmp, NULL)) {
+	    gencache_get(cache_key, talloc_tos(), &tmp, NULL)) {
 
 		found = (strcmp(tmp, printer_not_found) != 0);
 		if (!found) {
 			DEBUG(4, ("Printer %s not found\n", aprinter));
-			SAFE_FREE(tmp);
+			TALLOC_FREE(tmp);
 			return WERR_INVALID_PRINTER_NAME;
 		}
 		fstrcpy(sname, tmp);
-		SAFE_FREE(tmp);
+		TALLOC_FREE(tmp);
 	}
 
 	/* Search all sharenames first as this is easier than pulling

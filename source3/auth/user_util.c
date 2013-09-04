@@ -96,14 +96,13 @@ static bool fetch_map_from_gencache(TALLOC_CTX *ctx,
 	if (key == NULL) {
 		return false;
 	}
-	found = gencache_get(key, NULL, &value, NULL);
+	found = gencache_get(key, ctx, &value, NULL);
 	TALLOC_FREE(key);
 	if (!found) {
 		return false;
 	}
 	TALLOC_FREE(*p_user_out);
-	*p_user_out = talloc_strdup(ctx, value);
-	SAFE_FREE(value);
+	*p_user_out = value;
 	if (!*p_user_out) {
 		return false;
 	}

@@ -446,7 +446,7 @@ bool cache_account_policy_get(enum pdb_policy_type type, uint32_t *value)
 		goto done;
 	}
 
-	if (gencache_get(cache_key, NULL, &cache_value, NULL)) {
+	if (gencache_get(cache_key, talloc_tos(), &cache_value, NULL)) {
 		uint32 tmp = strtoul(cache_value, NULL, 10);
 		*value = tmp;
 		ret = True;
@@ -454,7 +454,7 @@ bool cache_account_policy_get(enum pdb_policy_type type, uint32_t *value)
 
  done:
 	SAFE_FREE(cache_key);
-	SAFE_FREE(cache_value);
+	TALLOC_FREE(cache_value);
 	return ret;
 }
 

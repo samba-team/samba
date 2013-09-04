@@ -143,13 +143,13 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
 	if (key == NULL)
 		goto done;
 
-	if (gencache_get(key, NULL, &value, NULL))
+	if (gencache_get(key, talloc_tos(), &value, NULL))
 		result = negative_conn_cache_valuedecode(value);
  done:
 	DEBUG(9,("check_negative_conn_cache returning result %d for domain %s "
 		  "server %s\n", NT_STATUS_V(result), domain, server));
 	TALLOC_FREE(key);
-	SAFE_FREE(value);
+	TALLOC_FREE(value);
 	return result;
 }
 

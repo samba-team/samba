@@ -8135,7 +8135,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	if (!gencache_get("foo", NULL, &val, &tm)) {
+	if (!gencache_get("foo", talloc_tos(), &val, &tm)) {
 		d_printf("%s: gencache_get() failed\n", __location__);
 		return False;
 	}
@@ -8143,11 +8143,11 @@ static bool run_local_gencache(int dummy)
 	if (strcmp(val, "bar") != 0) {
 		d_printf("%s: gencache_get() returned %s, expected %s\n",
 			 __location__, val, "bar");
-		SAFE_FREE(val);
+		TALLOC_FREE(val);
 		return False;
 	}
 
-	SAFE_FREE(val);
+	TALLOC_FREE(val);
 
 	if (!gencache_del("foo")) {
 		d_printf("%s: gencache_del() failed\n", __location__);
@@ -8159,7 +8159,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	if (gencache_get("foo", NULL, &val, &tm)) {
+	if (gencache_get("foo", talloc_tos(), &val, &tm)) {
 		d_printf("%s: gencache_get() on deleted entry "
 			 "succeeded\n", __location__);
 		return False;
@@ -8173,7 +8173,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	if (!gencache_get_data_blob("foo", NULL, &blob, NULL, NULL)) {
+	if (!gencache_get_data_blob("foo", talloc_tos(), &blob, NULL, NULL)) {
 		d_printf("%s: gencache_get_data_blob() failed\n", __location__);
 		return False;
 	}
@@ -8197,7 +8197,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	if (gencache_get_data_blob("foo", NULL, &blob, NULL, NULL)) {
+	if (gencache_get_data_blob("foo", talloc_tos(), &blob, NULL, NULL)) {
 		d_printf("%s: gencache_get_data_blob() on deleted entry "
 			 "succeeded\n", __location__);
 		return False;
@@ -8212,7 +8212,7 @@ static bool run_local_gencache(int dummy)
 			 __location__);
 		return false;
 	}
-	if (gencache_get("blob", NULL, &val, &tm)) {
+	if (gencache_get("blob", talloc_tos(), &val, &tm)) {
 		d_printf("%s: gencache_get succeeded\n", __location__);
 		return false;
 	}

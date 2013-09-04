@@ -48,7 +48,7 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 	if (key == NULL) {
 		return false;
 	}
-	ret = gencache_get(key, NULL, &value, &timeout);
+	ret = gencache_get(key, talloc_tos(), &value, &timeout);
 	if (!ret) {
 		goto done;
 	}
@@ -128,7 +128,7 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 
 done:
 	TALLOC_FREE(key);
-	SAFE_FREE(value);
+	TALLOC_FREE(value);
 	return ret;
 }
 
@@ -209,7 +209,7 @@ bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 	if (key == NULL) {
 		return false;
 	}
-	ret = gencache_get(key, NULL, &value, &timeout);
+	ret = gencache_get(key, talloc_tos(), &value, &timeout);
 	TALLOC_FREE(key);
 	if (!ret) {
 		return false;
@@ -218,7 +218,7 @@ bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 	if (value[0] != '-') {
 		ret = string_to_sid(sid, value);
 	}
-	SAFE_FREE(value);
+	TALLOC_FREE(value);
 	if (ret) {
 		*expired = (timeout <= time(NULL));
 	}
@@ -246,7 +246,7 @@ bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 	if (key == NULL) {
 		return false;
 	}
-	ret = gencache_get(key, NULL, &value, &timeout);
+	ret = gencache_get(key, talloc_tos(), &value, &timeout);
 	TALLOC_FREE(key);
 	if (!ret) {
 		return false;
@@ -255,7 +255,7 @@ bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 	if (value[0] != '-') {
 		ret = string_to_sid(sid, value);
 	}
-	SAFE_FREE(value);
+	TALLOC_FREE(value);
 	if (ret) {
 		*expired = (timeout <= time(NULL));
 	}
@@ -431,7 +431,7 @@ static bool idmap_cache_del_xid(char t, int xid)
 	time_t timeout;
 	bool ret = true;
 
-	if (!gencache_get(key, NULL, &sid_str, &timeout)) {
+	if (!gencache_get(key, mem_ctx, &sid_str, &timeout)) {
 		DEBUG(3, ("no entry: %s\n", key));
 		ret = false;
 		goto done;

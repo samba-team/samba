@@ -711,7 +711,7 @@ bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
 	DATA_BLOB blob;
 	bool ret = False;
 
-	ret = gencache_get_data_blob(keystr, NULL, &blob, ptimeout, NULL);
+	ret = gencache_get_data_blob(keystr, mem_ctx, &blob, ptimeout, NULL);
 	if (!ret) {
 		return false;
 	}
@@ -725,11 +725,7 @@ bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
 		return false;
 	}
 	if (value) {
-		*value = SMB_STRDUP((char *)blob.data);
-		data_blob_free(&blob);
-		if (*value == NULL) {
-			return false;
-		}
+		*value = talloc_move(mem_ctx, (char **)&blob.data);
 		return true;
 	}
 	data_blob_free(&blob);
@@ -783,8 +779,11 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		keystr = (char *)key.dptr;
 	} else {
 		/* ensure 0-termination */
-		keystr = SMB_STRNDUP((char *)key.dptr, key.dsize);
+		keystr = talloc_strndup(talloc_tos(), (char *)key.dptr, key.dsize);
 		free_key = keystr;
+		if (keystr == NULL) {
+			goto done;
+		}
 	}
 
 	if (!gencache_pull_timeout((char *)data.dptr, &timeout, &endptr)) {
@@ -806,7 +805,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		  timeout, state->private_data);
 
  done:
-	SAFE_FREE(free_key);
+	TALLOC_FREE(free_key);
 	return 0;
 }
 
@@ -862,8 +861,11 @@ static void gencache_iterate_fn(const char *key, DATA_BLOB value,
 		valstr = (char *)value.data;
 	} else {
 		/* ensure 0-termination */
-		valstr = SMB_STRNDUP((char *)value.data, value.length);
+		valstr = talloc_strndup(talloc_tos(), (char *)value.data, value.length);
 		free_val = valstr;
+		if (valstr == NULL) {
+			goto done;
+		}
 	}
 
 	DEBUG(10, ("Calling function with arguments "
@@ -872,7 +874,9 @@ static void gencache_iterate_fn(const char *key, DATA_BLOB value,
 
 	state->fn(key, valstr, timeout, state->private_data);
 
-	SAFE_FREE(free_val);
+  done:
+
+	TALLOC_FREE(free_val);
 }
 
 void gencache_iterate(void (*fn)(const char *key, const char *value,
