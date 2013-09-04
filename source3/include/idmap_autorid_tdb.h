@@ -65,6 +65,15 @@ NTSTATUS idmap_autorid_getrange(struct db_context *db,
 				uint32_t *rangenum,
 				uint32_t *low_id);
 
+/**
+ * Set a range for a domain#index pair to a given
+ * number. Fail if a different range was already stored.
+ */
+NTSTATUS idmap_autorid_setrange(struct db_context *db,
+				const char *domsid,
+				uint32_t domain_range_index,
+				uint32_t rangenum);
+
 NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm);
 
 NTSTATUS idmap_autorid_db_init(const char *path,

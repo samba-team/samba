@@ -232,6 +232,23 @@ static NTSTATUS idmap_autorid_addrange(struct db_context *db,
 	return status;
 }
 
+NTSTATUS idmap_autorid_setrange(struct db_context *db,
+				const char *domsid,
+				uint32_t domain_range_index,
+				uint32_t rangenum)
+{
+	NTSTATUS status;
+	struct autorid_range_config range;
+
+	ZERO_STRUCT(range);
+	fstrcpy(range.domsid, domsid);
+	range.domain_range_index = domain_range_index;
+	range.rangenum = rangenum;
+
+	status = idmap_autorid_addrange(db, &range, false);
+	return status;
+}
+
 static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 					   struct autorid_range_config *range)
 {
