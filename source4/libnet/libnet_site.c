@@ -65,6 +65,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	if (ret != 0) {
 		r->out.error_string = NULL;
 		status = map_nt_error_from_unix_common(errno);
+		talloc_free(tmp_ctx);
 		return status;
 	}
 
