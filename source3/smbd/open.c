@@ -1184,14 +1184,6 @@ static NTSTATUS send_break_message(files_struct *fsp,
 	/* Create the message. */
 	share_mode_entry_to_message(msg, exclusive);
 
-	/* Add in the FORCE_OPLOCK_BREAK_TO_NONE bit in the message if set. We
-	   don't want this set in the share mode struct pointed to by lck. */
-
-	if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
-		SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET,
-			exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
-	}
-
 	status = messaging_send_buf(fsp->conn->sconn->msg_ctx, exclusive->pid,
 				    MSG_SMB_BREAK_REQUEST,
 				    (uint8 *)msg,
@@ -1914,10 +1906,7 @@ static int calculate_open_access_flags(uint32_t access_mask,
 	 * mean the same thing under DOS and Unix.
 	 */
 
-	need_write =
-		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
-		 (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE));
-
+	need_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA));
 	if (!need_write) {
 		return O_RDONLY;
 	}
@@ -2181,7 +2170,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	open_access_mask = access_mask;
 
-	if ((flags2 & O_TRUNC) || (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
+	if (flags2 & O_TRUNC) {
 		open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 	}
 

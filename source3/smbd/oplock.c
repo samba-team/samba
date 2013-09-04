@@ -535,7 +535,6 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
 
 	if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
-	    !(msg.op_type & FORCE_OPLOCK_BREAK_TO_NONE) &&
 	    !(use_kernel && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) &&
 	    lp_level2_oplocks(SNUM(fsp->conn))) {
 		break_to_level2 = True;

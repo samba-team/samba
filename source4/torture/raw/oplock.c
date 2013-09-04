@@ -264,6 +264,9 @@ static uint8_t get_setinfo_break_count(struct torture_context *tctx)
 	if (TARGET_IS_W2K12(tctx)) {
 		return 2;
 	}
+	if (TARGET_IS_SAMBA3(tctx)) {
+		return 2;
+	}
 	return 1;
 }
 

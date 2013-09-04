@@ -5900,7 +5900,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		FILE_OPEN,				/* create_disposition*/
 		0,					/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
-		FORCE_OPLOCK_BREAK_TO_NONE,		/* oplock_request */
+		0,					/* oplock_request */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -6891,7 +6891,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		FILE_OPEN,				/* create_disposition*/
 		0,					/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
-		FORCE_OPLOCK_BREAK_TO_NONE,		/* oplock_request */
+		0,					/* oplock_request */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
@@ -6919,7 +6919,6 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	 * if there are no pending writes.
 	 */
 	trigger_write_time_update_immediate(new_fsp);
-
 	close_file(req, new_fsp, NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
