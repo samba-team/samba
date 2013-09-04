@@ -96,7 +96,7 @@ static bool fetch_map_from_gencache(TALLOC_CTX *ctx,
 	if (key == NULL) {
 		return false;
 	}
-	found = gencache_get(key, &value, NULL);
+	found = gencache_get(key, NULL, &value, NULL);
 	TALLOC_FREE(key);
 	if (!found) {
 		return false;

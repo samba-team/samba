@@ -101,7 +101,7 @@ bool wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
 
 	/* If the key exists then the WINS server has been marked as dead */
 
-	result = gencache_get(keystr, NULL, NULL);
+	result = gencache_get(keystr, NULL, NULL, NULL);
 	SAFE_FREE(keystr);
 
 	DEBUG(4, ("wins_srv_is_dead: %s is %s\n", inet_ntoa(wins_ip),

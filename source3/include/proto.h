@@ -107,7 +107,8 @@ struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_S
 
 bool gencache_set(const char *keystr, const char *value, time_t timeout);
 bool gencache_del(const char *keystr);
-bool gencache_get(const char *keystr, char **valstr, time_t *timeout);
+bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
+		  time_t *ptimeout);
 bool gencache_parse(const char *keystr,
 		    void (*parser)(time_t timeout, DATA_BLOB blob,
 				   void *private_data),

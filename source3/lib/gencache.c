@@ -705,7 +705,8 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
  * @retval False for failure
  **/
 
-bool gencache_get(const char *keystr, char **value, time_t *ptimeout)
+bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
+		  time_t *ptimeout)
 {
 	DATA_BLOB blob;
 	bool ret = False;

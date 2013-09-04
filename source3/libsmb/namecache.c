@@ -156,7 +156,7 @@ bool namecache_fetch(const char *name,
 		return False;
 	}
 
-	if (!gencache_get(key, &value, &timeout)) {
+	if (!gencache_get(key, NULL, &value, &timeout)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
 		SAFE_FREE(key);
 		return False;
@@ -294,7 +294,7 @@ bool namecache_status_fetch(const char *keyname,
 	if (!key)
 		return False;
 
-	if (!gencache_get(key, &value, &timeout)) {
+	if (!gencache_get(key, NULL, &value, &timeout)) {
 		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n",
 					key));
 		SAFE_FREE(key);

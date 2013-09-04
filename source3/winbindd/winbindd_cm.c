@@ -1512,7 +1512,7 @@ bool fetch_current_dc_from_gencache(TALLOC_CTX *mem_ctx,
 	if (key == NULL) {
 		goto done;
 	}
-	if (!gencache_get(key, &value, NULL)) {
+	if (!gencache_get(key, NULL, &value, NULL)) {
 		goto done;
 	}
 	p = strchr(value, ' ');

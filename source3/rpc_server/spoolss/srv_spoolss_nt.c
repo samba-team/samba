@@ -630,7 +630,8 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s",
 				    aprinter);
-	if ((cache_key != NULL) && gencache_get(cache_key, &tmp, NULL)) {
+	if ((cache_key != NULL) &&
+	    gencache_get(cache_key, NULL, &tmp, NULL)) {
 
 		found = (strcmp(tmp, printer_not_found) != 0);
 		if (!found) {

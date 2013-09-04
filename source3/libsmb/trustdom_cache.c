@@ -160,7 +160,7 @@ bool trustdom_cache_fetch(const char* name, struct dom_sid* sid)
 	if (!key)
 		return False;
 
-	if (!gencache_get(key, &value, &timeout)) {
+	if (!gencache_get(key, NULL, &value, &timeout)) {
 		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
 		SAFE_FREE(key);
 		return False;
@@ -191,7 +191,7 @@ uint32 trustdom_cache_fetch_timestamp( void )
 	time_t timeout;
 	uint32 timestamp;
 
-	if (!gencache_get(TDOMTSKEY, &value, &timeout)) {
+	if (!gencache_get(TDOMTSKEY, NULL, &value, &timeout)) {
 		DEBUG(5, ("no timestamp for trusted domain cache located.\n"));
 		SAFE_FREE(value);
 		return 0;

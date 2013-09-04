@@ -183,7 +183,7 @@ char *saf_fetch( const char *domain )
 		return NULL;
 	}
 
-	ret = gencache_get( key, &server, &timeout );
+	ret = gencache_get( key, NULL, &server, &timeout );
 
 	TALLOC_FREE( key );
 
@@ -199,7 +199,7 @@ char *saf_fetch( const char *domain )
 		return NULL;
 	}
 
-	ret = gencache_get( key, &server, &timeout );
+	ret = gencache_get( key, NULL, &server, &timeout );
 
 	TALLOC_FREE( key );
 

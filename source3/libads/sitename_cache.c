@@ -95,7 +95,7 @@ char *sitename_fetch(const char *realm)
 
 	key = sitename_key(query_realm);
 
-	ret = gencache_get( key, &sitename, &timeout );
+	ret = gencache_get( key, NULL, &sitename, &timeout );
 	SAFE_FREE(key);
 	if ( !ret ) {
 		DEBUG(5,("sitename_fetch: No stored sitename for %s\n",
