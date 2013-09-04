@@ -249,6 +249,12 @@ NTSTATUS idmap_autorid_setrange(struct db_context *db,
 	return status;
 }
 
+static NTSTATUS idmap_autorid_acquire_range(struct db_context *db,
+					    struct autorid_range_config *range)
+{
+	return idmap_autorid_addrange(db, range, true);
+}
+
 static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 					   struct autorid_range_config *range)
 {
@@ -328,7 +334,7 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 			return NT_STATUS_NOT_FOUND;
 		}
 
-		ret = idmap_autorid_addrange(db, range, true);
+		ret = idmap_autorid_acquire_range(db, range);
 	}
 
 	DEBUG(10, ("Using range #%d for domain %s "
