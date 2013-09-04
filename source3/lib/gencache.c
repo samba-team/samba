@@ -715,12 +715,12 @@ bool gencache_get(const char *keystr, char **value, time_t *ptimeout)
 		return false;
 	}
 	if ((blob.data == NULL) || (blob.length == 0)) {
-		SAFE_FREE(blob.data);
+		data_blob_free(&blob);
 		return false;
 	}
 	if (blob.data[blob.length-1] != '\0') {
 		/* Not NULL terminated, can't be a string */
-		SAFE_FREE(blob.data);
+		data_blob_free(&blob);
 		return false;
 	}
 	if (value) {
