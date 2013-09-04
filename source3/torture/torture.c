@@ -8496,7 +8496,7 @@ static bool run_local_string_to_sid(int dummy) {
 	return true;
 }
 
-static bool sid_to_string_test(char *expected) {
+static bool sid_to_string_test(const char *expected) {
 	char *str;
 	bool res = true;
 	struct dom_sid sid;
