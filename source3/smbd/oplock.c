@@ -323,6 +323,8 @@ static void oplock_timeout_handler(struct tevent_context *ctx,
 {
 	files_struct *fsp = (files_struct *)private_data;
 
+	SMB_ASSERT(fsp->sent_oplock_break != NO_BREAK_SENT);
+
 	/* Remove the timed event handler. */
 	TALLOC_FREE(fsp->oplock_timeout);
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n",
