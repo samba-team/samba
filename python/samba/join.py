@@ -302,7 +302,7 @@ class dc_join(object):
         res = ctx.samdb.search(base='CN=Partitions,%s' % ctx.config_dn, attrs=['fSMORoleOwner'],
                                scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"])
         if not 'fSMORoleOwner' in res[0]:
-            raise DCJoinException("Can't find naming master on partition DN %s" % ctx.partition_dn)
+            raise DCJoinException("Can't find naming master on partition DN %s in %s" % (ctx.partition_dn, ctx.samdb.url))
         try:
             master_guid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['fSMORoleOwner'][0]).get_extended_component('GUID')))
         except KeyError:
