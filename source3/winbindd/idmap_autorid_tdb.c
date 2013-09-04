@@ -184,7 +184,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	ret = dbwrap_store_uint32_bystring(db, keystr, requested_rangenum);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
-			  "domain->range assignment!\n"));
+			  "domain->range assignment: %s\n", nt_errstr(ret)));
 		goto error;
 	}
 
@@ -199,8 +199,8 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 
 	talloc_free(numstr);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("Fatal error while storing "
-			  "new domain->range assignment!\n"));
+		DEBUG(1, ("Fatal error while storing new "
+			  "domain->range assignment: %s\n", nt_errstr(ret)));
 		goto error;
 	}
 	DEBUG(5, ("Acquired new range #%d for domain %s "
