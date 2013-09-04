@@ -165,7 +165,7 @@ bool saf_delete( const char *domain )
 /****************************************************************************
 ****************************************************************************/
 
-char *saf_fetch( const char *domain )
+char *saf_fetch(TALLOC_CTX *mem_ctx, const char *domain )
 {
 	char *server = NULL;
 	time_t timeout;
@@ -183,7 +183,7 @@ char *saf_fetch( const char *domain )
 		return NULL;
 	}
 
-	ret = gencache_get( key, NULL, &server, &timeout );
+	ret = gencache_get( key, mem_ctx, &server, &timeout );
 
 	TALLOC_FREE( key );
 
@@ -199,7 +199,7 @@ char *saf_fetch( const char *domain )
 		return NULL;
 	}
 
-	ret = gencache_get( key, NULL, &server, &timeout );
+	ret = gencache_get( key, mem_ctx, &server, &timeout );
 
 	TALLOC_FREE( key );
 
@@ -3073,7 +3073,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	/* fetch the server we have affinity for.  Add the
 	   'password server' list to a search for our domain controllers */
 
-	saf_servername = saf_fetch( domain);
+	saf_servername = saf_fetch(ctx, domain);
 
 	if (strequal(domain, lp_workgroup()) || strequal(domain, lp_realm())) {
 		pserver = talloc_asprintf(ctx, "%s, %s",
@@ -3084,7 +3084,7 @@ static NTSTATUS get_dc_list(const char *domain,
 			saf_servername ? saf_servername : "");
 	}
 
-	SAFE_FREE(saf_servername);
+	TALLOC_FREE(saf_servername);
 	if (!pserver) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;

@@ -825,7 +825,7 @@ bool namecache_status_fetch(const char *keyname,
 bool saf_store( const char *domain, const char *servername );
 bool saf_join_store( const char *domain, const char *servername );
 bool saf_delete( const char *domain );
-char *saf_fetch( const char *domain );
+char *saf_fetch(TALLOC_CTX *mem_ctx, const char *domain );
 struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct nmb_name *name,

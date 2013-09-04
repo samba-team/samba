@@ -151,7 +151,7 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 	 * Check if we can get server nam and realm from SAF cache
 	 * and the domain list.
 	 */
-	ldap_server = saf_fetch(dom_name);
+	ldap_server = saf_fetch(talloc_tos(), dom_name);
 	DEBUG(10, ("ldap_server from saf cache: '%s'\n",
 		   ldap_server ? ldap_server : ""));
 
@@ -165,6 +165,7 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 			  " domain '%s'\n", wb_dom->alt_name, dom_name));
 
 	if (!get_trust_pw_clear(dom_name, &password, NULL, NULL)) {
+		TALLOC_FREE(ldap_server);
 		return ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
 	}
 
@@ -190,6 +191,7 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 	status = ads_cached_connection_connect(adsp, realm, dom_name, ldap_server,
 					       password, realm, 0);
 	SAFE_FREE(realm);
+	TALLOC_FREE(ldap_server);
 
 	return status;
 }

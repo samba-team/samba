@@ -1549,14 +1549,15 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
-	char *saf_servername = saf_fetch( domain->name );
+	char *saf_servername;
 	int retries;
 
 	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL) {
-		SAFE_FREE(saf_servername);
 		set_domain_offline(domain);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	saf_servername = saf_fetch(mem_ctx, domain->name );
 
 	/* we have to check the server affinity cache here since 
 	   later we select a DC based on response time and not preference */
@@ -1577,13 +1578,14 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 			if (!interpret_string_addr(&ss, saf_servername,
 						AI_NUMERICHOST)) {
+				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			if (dcip_to_name(mem_ctx, domain, &ss, &dcname)) {
 				domain->dcname = talloc_strdup(domain,
 							       dcname);
 				if (domain->dcname == NULL) {
-					SAFE_FREE(saf_servername);
+					TALLOC_FREE(mem_ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 			} else {
@@ -1594,12 +1596,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		} else {
 			domain->dcname = talloc_strdup(domain, saf_servername);
 			if (domain->dcname == NULL) {
-				SAFE_FREE(saf_servername);
+				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
-
-		SAFE_FREE( saf_servername );
 	}
 
 	for (retries = 0; retries < 3; retries++) {
