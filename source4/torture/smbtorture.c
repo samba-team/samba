@@ -498,6 +498,8 @@ int main(int argc,char *argv[])
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k8", "true");
 		lpcfg_set_cmdline(cmdline_lp_ctx,
 		    "torture:invalid_lock_range_support", "false");
+	} else if (strcmp(target, "w2k12") == 0) {
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k12", "true");
 	} else if (strcmp(target, "win7") == 0) {
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:cn_max_buffer_size",

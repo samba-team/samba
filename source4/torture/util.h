@@ -31,6 +31,7 @@ struct smbcli_tree;
 #define TARGET_IS_WINXP(_tctx) (torture_setting_bool(_tctx, "winxp", false))
 #define TARGET_IS_W2K3(_tctx) (torture_setting_bool(_tctx, "w2k3", false))
 #define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
+#define TARGET_IS_W2K12(_tctx) (torture_setting_bool(_tctx, "w2k12", false))
 #define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
 #define TARGET_IS_SAMBA3(_tctx) (torture_setting_bool(_tctx, "samba3", false))
 #define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
