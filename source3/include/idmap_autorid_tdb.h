@@ -51,6 +51,13 @@ struct autorid_range_config {
 	uint32_t low_id;
 };
 
+/**
+ * Get the range for a pair consisting of the domain sid
+ * and a domain range. If there is no stored range for
+ * this pair and read_only == false, a new range is
+ * acquired by incrementing that range HWM counter in the
+ * database.
+ */
 NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 				       struct autorid_range_config *range,
 				       bool read_only);
