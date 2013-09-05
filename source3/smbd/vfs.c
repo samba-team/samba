@@ -561,16 +561,17 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 		return ret;
 	}
 
-	if (!lp_strict_allocate(SNUM(fsp->conn)))
-		return 0;
-
 	/* Grow - we need to test if we have enough space. */
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_GROW);
 
-	/* See if we have a syscall that will allocate beyond end-of-file
-	   without changing EOF. */
-	ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_KEEP_SIZE, 0, len);
+	if (lp_strict_allocate(SNUM(fsp->conn))) {
+		/* See if we have a syscall that will allocate beyond
+		   end-of-file without changing EOF. */
+		ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_KEEP_SIZE, 0, len);
+	} else {
+		ret = 0;
+	}
 
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_ALLOC_GROW);
 
