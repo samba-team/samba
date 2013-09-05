@@ -87,6 +87,12 @@ NTSTATUS idmap_autorid_setrange(struct db_context *db,
  */
 NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm);
 
+/**
+ * Initialize an idmap_autorid database.
+ * After this function has successfully completed, the following are true:
+ * - the database exists
+ * - the required HWM keys exist (range, alloc-uid, alloc-gid)
+ */
 NTSTATUS idmap_autorid_db_init(const char *path,
 			       TALLOC_CTX *mem_ctx,
 			       struct db_context **db);
