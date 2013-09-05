@@ -104,6 +104,13 @@ NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
 				  TALLOC_CTX *ctx,
 				  struct autorid_global_config **result);
 
+/**
+ * Save the global autorid configuration into the autorid database.
+ * The stored configuration consists of:
+ * - the low value of the idmap range
+ * - the rangesize
+ * - the maximum number of ranges
+ */
 NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 				  struct autorid_global_config *cfg);
 
