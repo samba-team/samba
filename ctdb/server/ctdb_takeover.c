@@ -4398,19 +4398,25 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_all_public_ips *ips;
 	struct ctdb_vnn *vnn;
+	struct client_async_data *async_data;
+	struct timeval timeout;
+	TDB_DATA data;
+	struct ctdb_client_control_state *state;
 	int i, ret;
 
 	CTDB_NO_MEMORY(ctdb, mem_ctx);
 
-	/* read the ip allocation from the local node */
-	ret = ctdb_ctrl_get_public_ips(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
+	/* Read IPs from local node */
+	ret = ctdb_ctrl_get_public_ips(ctdb, TAKEOVER_TIMEOUT(),
+				       CTDB_CURRENT_NODE, mem_ctx, &ips);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get public ips from local node\n"));
+		DEBUG(DEBUG_ERR,
+		      ("Unable to fetch public IPs from local node\n"));
 		talloc_free(mem_ctx);
 		return -1;
 	}
 
-	/* re-read the public ips file */
+	/* Read IPs file - this is safe since this is a child process */
 	ctdb->vnn = NULL;
 	if (ctdb_set_public_addresses(ctdb, false) != 0) {
 		DEBUG(DEBUG_ERR,("Failed to re-read public addresses file\n"));
@@ -4418,82 +4424,124 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 		return -1;
 	}
 
+	async_data = talloc_zero(mem_ctx, struct client_async_data);
+	CTDB_NO_MEMORY(ctdb, async_data);
 
-	/* check the previous list of ips and scan for ips that have been
-	   dropped.
-	 */
+	/* Compare IPs between node and file for IPs to be deleted */
 	for (i = 0; i < ips->num; i++) {
+		/* */
 		for (vnn = ctdb->vnn; vnn; vnn = vnn->next) {
-			if (ctdb_same_ip(&vnn->public_address, &ips->ips[i].addr)) {
+			if (ctdb_same_ip(&vnn->public_address,
+					 &ips->ips[i].addr)) {
+				/* IP is still in file */
 				break;
 			}
 		}
 
-		/* we need to delete this ip, no longer available on this node */
 		if (vnn == NULL) {
-			struct ctdb_control_ip_iface pub;
+			/* Delete IP ips->ips[i] */
+			struct ctdb_control_ip_iface *pub;
 
-			DEBUG(DEBUG_NOTICE,("RELOADIPS: IP%s is no longer available on this node. Deleting it.\n", ctdb_addr_to_str(&ips->ips[i].addr)));
-			pub.addr  = ips->ips[i].addr;
-			pub.mask  = 0;
-			pub.len   = 0;
+			DEBUG(DEBUG_NOTICE,
+			      ("IP %s no longer configured, deleting it\n",
+			       ctdb_addr_to_str(&ips->ips[i].addr)));
 
-			ret = ctdb_ctrl_del_public_ip(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, &pub);
-			if (ret != 0) {
-				talloc_free(mem_ctx);
-				DEBUG(DEBUG_ERR, ("RELOADIPS: Unable to del public ip:%s from local node\n", ctdb_addr_to_str(&ips->ips[i].addr)));
-				return -1;
+			pub = talloc_zero(mem_ctx,
+					  struct ctdb_control_ip_iface);
+			CTDB_NO_MEMORY(ctdb, pub);
+
+			pub->addr  = ips->ips[i].addr;
+			pub->mask  = 0;
+			pub->len   = 0;
+
+			timeout = TAKEOVER_TIMEOUT();
+
+			data.dsize = offsetof(struct ctdb_control_ip_iface,
+					      iface) + pub->len;
+			data.dptr = (uint8_t *)pub;
+
+			state = ctdb_control_send(ctdb, CTDB_CURRENT_NODE, 0,
+						  CTDB_CONTROL_DEL_PUBLIC_IP,
+						  0, data, async_data,
+						  &timeout, NULL);
+			if (state == NULL) {
+				DEBUG(DEBUG_ERR,
+				      (__location__
+				       " failed sending CTDB_CONTROL_DEL_PUBLIC_IP\n"));
+				goto failed;
 			}
+
 		}
 	}
 
-
-	/* loop over all new ones and check the ones we need to add */
+	/* Compare IPs between node and file for IPs to be added */
 	for (vnn = ctdb->vnn; vnn; vnn = vnn->next) {
 		for (i = 0; i < ips->num; i++) {
-			if (ctdb_same_ip(&vnn->public_address, &ips->ips[i].addr)) {
+			if (ctdb_same_ip(&vnn->public_address,
+					 &ips->ips[i].addr)) {
+				/* IP already on node */
 				break;
 			}
 		}
 		if (i == ips->num) {
+			/* Add IP ips->ips[i] */
 			struct ctdb_control_ip_iface *pub;
 			const char *ifaces = NULL;
+			uint32_t len;
 			int iface = 0;
 
-			DEBUG(DEBUG_NOTICE,("RELOADIPS: New ip:%s found, adding it.\n", ctdb_addr_to_str(&vnn->public_address)));
-
-			pub = talloc_zero(mem_ctx, struct ctdb_control_ip_iface);
-			pub->addr  = vnn->public_address;
-			pub->mask  = vnn->public_netmask_bits;
+			DEBUG(DEBUG_NOTICE,
+			      ("New IP %s configured, adding it\n",
+			       ctdb_addr_to_str(&vnn->public_address)));
 
 			ifaces = vnn->ifaces[0];
 			iface = 1;
 			while (vnn->ifaces[iface] != NULL) {
-				ifaces = talloc_asprintf(vnn, "%s,%s", ifaces, vnn->ifaces[iface]);
+				ifaces = talloc_asprintf(vnn, "%s,%s", ifaces,
+							 vnn->ifaces[iface]);
 				iface++;
 			}
-			pub->len   = strlen(ifaces)+1;
-			pub = talloc_realloc_size(mem_ctx, pub,
-				offsetof(struct ctdb_control_ip_iface, iface) + pub->len);
-			if (pub == NULL) {
-				DEBUG(DEBUG_ERR, (__location__ " Failed to allocate memory\n"));
-				talloc_free(mem_ctx);
-				return -1;
-			}
+
+			len   = strlen(ifaces) + 1;
+			pub = talloc_zero_size(mem_ctx,
+					       offsetof(struct ctdb_control_ip_iface, iface) + len);
+			CTDB_NO_MEMORY(ctdb, pub);
+
+			pub->addr  = vnn->public_address;
+			pub->mask  = vnn->public_netmask_bits;
+			pub->len   = len;
 			memcpy(&pub->iface[0], ifaces, pub->len);
 
-			ret = ctdb_ctrl_add_public_ip(ctdb, TAKEOVER_TIMEOUT(),
-						      CTDB_CURRENT_NODE, pub);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, ("RELOADIPS: Unable to add public ip:%s to local node\n", ctdb_addr_to_str(&vnn->public_address)));
-				talloc_free(mem_ctx);
-				return -1;
+			timeout = TAKEOVER_TIMEOUT();
+
+			data.dsize = offsetof(struct ctdb_control_ip_iface,
+					      iface) + pub->len;
+			data.dptr = (uint8_t *)pub;
+
+			state = ctdb_control_send(ctdb, CTDB_CURRENT_NODE, 0,
+						  CTDB_CONTROL_ADD_PUBLIC_IP,
+						  0, data, async_data,
+						  &timeout, NULL);
+			if (state == NULL) {
+				DEBUG(DEBUG_ERR,
+				      (__location__
+				       " failed sending CTDB_CONTROL_ADD_PUBLIC_IP\n"));
+				goto failed;
 			}
 		}
 	}
 
+	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Add/delete IPs failed\n"));
+		goto failed;
+	}
+
 	talloc_free(mem_ctx);
 	return 0;
+
+failed:
+	talloc_free(mem_ctx);
+	return -1;
 }
 
 /* This control is sent to force the node to re-read the public addresses file
