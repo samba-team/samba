@@ -259,6 +259,14 @@ static uint8_t get_break_level1_to_none_count(struct torture_context *tctx)
 	    2 : 1;
 }
 
+static uint8_t get_setinfo_break_count(struct torture_context *tctx)
+{
+	if (TARGET_IS_W2K12(tctx)) {
+		return 2;
+	}
+	return 1;
+}
+
 static bool test_raw_oplock_exclusive1(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
 	const char *fname = BASEDIR "\\test_exclusive1.dat";
@@ -477,7 +485,7 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
+	CHECK_VAL(break_info.count, get_setinfo_break_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_NONE);
 
@@ -767,7 +775,7 @@ static bool test_raw_oplock_exclusive7(struct torture_context *tctx,
 	torture_wait_for_oplock_break(tctx);
 	CHECK_VAL(break_info.failures, 0);
 
-	if (TARGET_IS_WINXP(tctx)) {
+	if (TARGET_IS_WINXP(tctx) || TARGET_IS_W2K12(tctx)) {
 		/* XP incorrectly breaks to level2. */
 		CHECK_VAL(break_info.count, 1);
 		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
@@ -800,6 +808,10 @@ static bool test_raw_oplock_exclusive7(struct torture_context *tctx,
 		/* XP already broke to level2. */
 		CHECK_VAL(break_info.failures, 0);
 		CHECK_VAL(break_info.count, 0);
+	} else if (TARGET_IS_W2K12(tctx)) {
+		/* no break */
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(break_info.level, 0);
 	} else {
 		/* Break to level 2 expected. */
 		CHECK_VAL(break_info.count, 1);
@@ -1792,7 +1804,7 @@ static bool test_raw_oplock_batch11(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
+	CHECK_VAL(break_info.count, get_setinfo_break_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(break_info.level, 0);
 
@@ -1869,7 +1881,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
+	CHECK_VAL(break_info.count, get_setinfo_break_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(break_info.level, 0);
 
@@ -2397,7 +2409,7 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 
 	CHECK_VAL(break_info.failures, 0);
 
-	if (TARGET_IS_WINXP(tctx)) {
+	if (TARGET_IS_WINXP(tctx) || TARGET_IS_W2K12(tctx)) {
 		/* Win XP breaks to level2. */
 		CHECK_VAL(break_info.count, 1);
 		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
@@ -2759,7 +2771,7 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	torture_wait_for_oplock_break(tctx);
 	CHECK_VAL(break_info.failures, 0);
 
-	if (TARGET_IS_WINXP(tctx)) {
+	if (TARGET_IS_WINXP(tctx) || TARGET_IS_W2K12(tctx)) {
 		/* Win XP breaks to level2. */
 		CHECK_VAL(break_info.count, 1);
 		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
