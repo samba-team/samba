@@ -81,6 +81,10 @@ NTSTATUS idmap_autorid_setrange(struct db_context *db,
 				uint32_t domain_range_index,
 				uint32_t rangenum);
 
+/**
+ * Initialize a specified HWM value to 0 if it is not
+ * yet present in the database.
+ */
 NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm);
 
 NTSTATUS idmap_autorid_db_init(const char *path,
