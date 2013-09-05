@@ -97,6 +97,9 @@ NTSTATUS idmap_autorid_db_init(const char *path,
 			       TALLOC_CTX *mem_ctx,
 			       struct db_context **db);
 
+/**
+ * Load the configuration stored in the autorid database.
+ */
 NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
 				  TALLOC_CTX *ctx,
 				  struct autorid_global_config **result);
