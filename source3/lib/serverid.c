@@ -34,37 +34,41 @@ struct serverid_data {
 	uint32_t msg_flags;
 };
 
+static struct db_context *db_ptr = NULL;
+
+static struct db_context *serverid_init(TALLOC_CTX *mem_ctx)
+{
+	db_ptr = db_open(mem_ctx, lock_path("serverid.tdb"),
+			 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+			 O_RDWR | O_CREAT,
+			 0644);
+	return db_ptr;
+}
+
 bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 {
-	struct tdb_wrap *db;
-
 	/*
 	 * Open the tdb in the parent process (smbd) so that our
 	 * CLEAR_IF_FIRST optimization in tdb_reopen_all can properly
 	 * work.
 	 */
 
-	db = tdb_wrap_open(mem_ctx, lock_path("serverid.tdb"),
-			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT,
-			   0644);
-	if (db == NULL) {
+	if (serverid_init(mem_ctx) == NULL) {
 		DEBUG(1, ("could not open serverid.tdb: %s\n",
 			  strerror(errno)));
 		return false;
 	}
+
 	return true;
 }
 
 static struct db_context *serverid_db(void)
 {
-	static struct db_context *db;
-
-	if (db != NULL) {
-		return db;
+	if (db_ptr != NULL) {
+		return db_ptr;
 	}
-	db = db_open(NULL, lock_path("serverid.tdb"), 0,
-		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT, 0644);
-	return db;
+
+	return serverid_init(NULL);
 }
 
 static void serverid_fill_key(const struct server_id *id,
