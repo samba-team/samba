@@ -839,8 +839,7 @@ void *talloc_find_parent_bytype(const void *ptr, #type);
  * talloc pool to a talloc parent outside the pool, the whole pool memory is
  * not free(3)'ed until that moved chunk is also talloc_free()ed.
  *
- * @param[in]  context  The talloc context to hang the result off (must not
- *			be another pool).
+ * @param[in]  context  The talloc context to hang the result off.
  *
  * @param[in]  size     Size of the talloc pool.
  *

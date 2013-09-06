@@ -672,13 +672,6 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 	tc = talloc_chunk_from_ptr(result);
 	pool_hdr = talloc_pool_from_chunk(tc);
 
-	if (unlikely(tc->flags & TALLOC_FLAG_POOLMEM)) {
-		/* We don't handle this correctly, so fail. */
-		talloc_log("talloc: cannot allocate pool off another pool %s\n",
-			   talloc_get_name(context));
-		talloc_free(result);
-		return NULL;
-	}
 	tc->flags |= TALLOC_FLAG_POOL;
 	tc->size = 0;
 
@@ -836,10 +829,19 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 		 */
 		pool_tc->name = location;
 
-		talloc_memlimit_update_on_free(pool_tc);
-
-		TC_INVALIDATE_FULL_CHUNK(pool_tc);
-		free(pool);
+		if (pool_tc->flags & TALLOC_FLAG_POOLMEM) {
+			_talloc_free_poolmem(pool_tc, location);
+		} else {
+			/*
+			 * The talloc_memlimit_update_on_free()
+			 * call takes into account the
+			 * prefix TP_HDR_SIZE allocated before
+			 * the pool talloc_chunk.
+			 */
+			talloc_memlimit_update_on_free(pool_tc);
+			TC_INVALIDATE_FULL_CHUNK(pool_tc);
+			free(pool);
+		}
 		return;
 	}
 
@@ -869,6 +871,7 @@ static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
 static inline int _talloc_free_internal(void *ptr, const char *location)
 {
 	struct talloc_chunk *tc;
+	void *ptr_to_free;
 
 	if (unlikely(ptr == NULL)) {
 		return -1;
@@ -961,15 +964,13 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 		}
 
 		/*
-		 * This call takes into account the
-		 * prefix TP_HDR_SIZE allocated before
-		 * the pool talloc_chunk.
-		 */
-		talloc_memlimit_update_on_free(tc);
-
-		TC_INVALIDATE_FULL_CHUNK(tc);
-		free(pool);
-		return 0;
+		 * With object_count==0, a pool becomes a normal piece of
+		 * memory to free. If it's allocated inside a pool, it needs
+		 * to be freed as poolmem, else it needs to be just freed.
+		*/
+		ptr_to_free = pool;
+	} else {
+		ptr_to_free = tc;
 	}
 
 	if (tc->flags & TALLOC_FLAG_POOLMEM) {
@@ -980,7 +981,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	talloc_memlimit_update_on_free(tc);
 
 	TC_INVALIDATE_FULL_CHUNK(tc);
-	free(tc);
+	free(ptr_to_free);
 	return 0;
 }
 
@@ -2632,7 +2633,9 @@ static void talloc_memlimit_update_on_free(struct talloc_chunk *tc)
 	/*
 	 * Pool entries don't count. Only the pools
 	 * themselves are counted as part of the memory
-	 * limits.
+	 * limits. Note that this also takes care of
+	 * nested pools which have both flags
+	 * TALLOC_FLAG_POOLMEM|TALLOC_FLAG_POOL set.
 	 */
 	if (tc->flags & TALLOC_FLAG_POOLMEM) {
 		return;
