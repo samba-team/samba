@@ -1661,6 +1661,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	struct srvid_request dtr;
 	TDB_DATA data;
 	int i;
+	uint32_t *rebalance_nodes = rec->force_rebalance_nodes;
 	int ret;
 	bool ok;
 
@@ -1731,7 +1732,12 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 
 	ok = true;
 	/* Takeover run was successful so clear force rebalance targets */
-	TALLOC_FREE(rec->force_rebalance_nodes);
+	if (rebalance_nodes == rec->force_rebalance_nodes) {
+		TALLOC_FREE(rec->force_rebalance_nodes);
+	} else {
+		DEBUG(DEBUG_WARNING,
+		      ("Rebalance target nodes changed during takeover run - not clearing\n"));
+	}
 done:
 	rec->need_takeover_run = !ok;
 	talloc_free(nodes);
