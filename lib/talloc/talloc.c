@@ -510,7 +510,7 @@ static void tc_invalidate_pool(union talloc_pool_chunk *pool_tc)
 */
 
 static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
-					      size_t size)
+					      size_t size, size_t prefix_len)
 {
 	union talloc_pool_chunk *pool_ctx = NULL;
 	size_t space_left;
@@ -537,13 +537,14 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 	/*
 	 * Align size to 16 bytes
 	 */
-	chunk_size = TC_ALIGN16(size);
+	chunk_size = TC_ALIGN16(size + prefix_len);
 
 	if (space_left < chunk_size) {
 		return NULL;
 	}
 
-	result = (struct talloc_chunk *)pool_ctx->hdr.next;
+	result = (struct talloc_chunk *)
+		((char *)pool_ctx->hdr.next + prefix_len);
 
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
 	VALGRIND_MAKE_MEM_UNDEFINED(result, size);
@@ -562,16 +563,22 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 /*
    Allocate a bit of memory as a child of an existing pointer
 */
-static inline void *__talloc(const void *context, size_t size)
+static inline void *__talloc_with_prefix(const void *context, size_t size,
+					size_t prefix_len)
 {
 	struct talloc_chunk *tc = NULL;
 	struct talloc_memlimit *limit = NULL;
+	size_t total_len = TC_HDR_SIZE + size + prefix_len;
 
 	if (unlikely(context == NULL)) {
 		context = null_context;
 	}
 
 	if (unlikely(size >= MAX_TALLOC_SIZE)) {
+		return NULL;
+	}
+
+	if (unlikely(total_len < TC_HDR_SIZE)) {
 		return NULL;
 	}
 
@@ -582,24 +589,24 @@ static inline void *__talloc(const void *context, size_t size)
 			limit = ptc->limit;
 		}
 
-		tc = talloc_alloc_pool(ptc, TC_HDR_SIZE+size);
+		tc = talloc_alloc_pool(ptc, TC_HDR_SIZE+size, prefix_len);
 	}
 
 	if (tc == NULL) {
 		/*
 		 * Only do the memlimit check/update on actual allocation.
 		 */
-		if (!talloc_memlimit_check(limit, TC_HDR_SIZE + size)) {
+		if (!talloc_memlimit_check(limit, total_len)) {
 			errno = ENOMEM;
 			return NULL;
 		}
 
-		tc = (struct talloc_chunk *)malloc(TC_HDR_SIZE+size);
+		tc = (struct talloc_chunk *)malloc(total_len);
 		if (unlikely(tc == NULL)) return NULL;
 		tc->flags = TALLOC_MAGIC;
 		tc->pool  = NULL;
 
-		talloc_memlimit_grow(limit, TC_HDR_SIZE + size);
+		talloc_memlimit_grow(limit, total_len);
 	}
 
 	tc->limit = limit;
@@ -627,6 +634,11 @@ static inline void *__talloc(const void *context, size_t size)
 	}
 
 	return TC_PTR_FROM_CHUNK(tc);
+}
+
+static inline void *__talloc(const void *context, size_t size)
+{
+	return __talloc_with_prefix(context, size, 0);
 }
 
 /*
@@ -1558,7 +1570,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 #if ALWAYS_REALLOC
 	if (pool_tc) {
-		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE);
+		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
 		pool_tc->hdr.object_count--;
 
 		if (new_ptr == NULL) {
@@ -1673,7 +1685,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			}
 		}
 
-		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE);
+		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
 
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
