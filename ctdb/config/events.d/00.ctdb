@@ -136,6 +136,46 @@ set_ctdb_variables () {
     done
 }
 
+monitor_system_memory ()
+{
+    # If monitoring free memory then calculate how much there is
+    if [ -n "$CTDB_MONITOR_FREE_MEMORY_WARN" -o \
+	-n "$CTDB_MONITOR_FREE_MEMORY" ] ; then
+	free_mem=$(free -m | awk '$2 == "buffers/cache:" { print $4 }')
+    fi
+
+    # Shutdown CTDB when memory is below the configured limit
+    if [ -n "$CTDB_MONITOR_FREE_MEMORY" ] ; then
+	if [ $free_mem -le $CTDB_MONITOR_FREE_MEMORY ] ; then
+	    echo "CRITICAL: OOM - ${free_mem}MB free <= ${CTDB_MONITOR_FREE_MEMORY}MB (CTDB threshold)"
+	    echo "CRITICAL: Shutting down CTDB!!!"
+	    get_proc "meminfo"
+	    ps auxfww
+	    set_proc "sysrq-trigger" "m"
+	    ctdb disable
+	    sleep 3
+	    ctdb shutdown
+	fi
+    fi
+
+    # Warn when low on memory
+    if [ -n "$CTDB_MONITOR_FREE_MEMORY_WARN" ] ; then
+	if [ $free_mem -le $CTDB_MONITOR_FREE_MEMORY_WARN ] ; then
+	    echo "WARNING: free memory is low - ${free_mem}MB free <=  ${CTDB_MONITOR_FREE_MEMORY_WARN}MB (CTDB threshold)"
+	fi
+    fi
+
+    # We should never enter swap, so SwapTotal == SwapFree.
+    if [ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] ; then
+	set -- $(get_proc "meminfo" | awk '$1 ~ /Swap(Total|Free):/ { print $2 }')
+	if [ "$1" != "$2" ] ; then
+	    echo We are swapping:
+	    get_proc "meminfo"
+	    ps auxfww
+	fi
+    fi
+}
+
 ############################################################
 
 ctdb_check_args "$@"
@@ -171,36 +211,7 @@ case "$1" in
 	update_config_from_tdb &
 	;;
     monitor)
-	# We should never enter swap, so SwapTotal == SwapFree.
-	[ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] && {
-	    if [ -n "`grep '^Swap\(Total\|Free\)' /proc/meminfo | uniq -s 10 -u`" ]; then
-		echo We are swapping:
-		cat /proc/meminfo
-		ps auxfww
-	    fi
-	}
-
-	# warn when we get low on memory
-	[ -z "$CTDB_MONITOR_FREE_MEMORY_WARN" ] || {
-		FREE_MEM=`free -m | grep "buffers/cache" | while read A B C D ;do echo -n $D ; done`
-		[ `expr "$FREE_MEM" "<" "$CTDB_MONITOR_FREE_MEMORY_WARN"` != "0" ] && {
-			echo "Running low on memory. Free:$FREE_MEM while CTDB treshold is $CTDB_MONITOR_FREE_MEMORY_WARN"
-		}
-	}
-
-	# monitor that we are not running out of memory
-	[ -z "$CTDB_MONITOR_FREE_MEMORY" ] || {
-		FREE_MEM=`free -m | grep "buffers/cache" | while read A B C D ;do echo -n $D ; done`
-		[ `expr "$FREE_MEM" "<" "$CTDB_MONITOR_FREE_MEMORY"` != "0" ] && {
-			echo "OOM. Free:$FREE_MEM while CTDB treshold is $CTDB_MONITOR_FREE_MEMORY"
-			cat /proc/meminfo
-			ps auxfww
-			echo m > /proc/sysrq-trigger
-			ctdb disable
-			sleep 3
-			ctdb shutdown
-		}
-	}
+	monitor_system_memory
 	;;
 
     *)
