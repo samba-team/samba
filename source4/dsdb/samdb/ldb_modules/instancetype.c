@@ -84,6 +84,11 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 				ldb_set_errstring(ldb, "instancetype: if TYPE_IS_NC_HEAD was set, then also TYPE_WRITE is requested!");
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
+			/*
+			 * TODO: Confirm we are naming master or start
+			 * a remote call to the naming master to
+			 * create the crossRef object
+			 */
 		}
 
 		/* we did only tests, so proceed with the original request */
