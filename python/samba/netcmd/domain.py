@@ -511,6 +511,8 @@ class cmd_domain_join(Command):
                action="store_true"),
         Option("--machinepass", type=str, metavar="PASSWORD",
                help="choose machine password (otherwise random)"),
+        Option("--adminpass", type="string", metavar="PASSWORD",
+               help="choose adminstrator password when joining as a subdomain (otherwise random)"),
         Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
                action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
@@ -526,7 +528,7 @@ class cmd_domain_join(Command):
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, parent_domain=None, machinepass=None,
-            use_ntvfs=False, dns_backend=None):
+            use_ntvfs=False, dns_backend=None, adminpass=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -561,10 +563,11 @@ class cmd_domain_join(Command):
             if parent_domain is None:
                 parent_domain = ".".join(domain.split(".")[1:])
             join_subdomain(server=server, creds=creds, lp=lp, dnsdomain=domain,
-                    parent_domain=parent_domain, site=site,
-                    netbios_name=netbios_name, netbios_domain=netbios_domain,
-                    targetdir=targetdir, machinepass=machinepass,
-                    use_ntvfs=use_ntvfs, dns_backend=dns_backend)
+                           parent_domain=parent_domain, site=site,
+                           netbios_name=netbios_name, netbios_domain=netbios_domain,
+                           targetdir=targetdir, machinepass=machinepass,
+                           use_ntvfs=use_ntvfs, dns_backend=dns_backend,
+                           adminpass=adminpass)
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
 

@@ -154,6 +154,7 @@ class dc_join(object):
         ctx.drsuapi = None
         ctx.managedby = None
         ctx.subdomain = False
+        ctx.adminpass = None
 
     def del_noerror(ctx, dn, recursive=False):
         if recursive:
@@ -1071,7 +1072,8 @@ class dc_join(object):
                 ctx.nc_list += [ctx.domaindns_zone]
 
         if ctx.dns_backend != "NONE":
-            ctx.full_nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
+            if not ctx.subdomain:
+                ctx.full_nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
             ctx.full_nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
             ctx.nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
 
@@ -1183,12 +1185,16 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 def join_subdomain(server=None, creds=None, lp=None, site=None,
         netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
-        netbios_domain=None, machinepass=None, use_ntvfs=False,
+        netbios_domain=None, machinepass=None, adminpass=None, use_ntvfs=False,
         dns_backend=None):
     """Join as a DC."""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain,
                   machinepass, use_ntvfs, dns_backend)
     ctx.subdomain = True
+    if adminpass is None:
+        ctx.adminpass = samba.generate_random_password(12, 32)
+    else:
+        ctx.adminpass = adminpass
     ctx.parent_domain_name = ctx.domain_name
     ctx.domain_name = netbios_domain
     ctx.realm = dnsdomain
