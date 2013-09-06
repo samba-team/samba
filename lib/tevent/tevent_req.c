@@ -61,10 +61,13 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	void **ppdata = (void **)pdata;
 	void *data;
 
-	req = talloc_zero(mem_ctx, struct tevent_req);
+	req = talloc_pooled_object(
+		mem_ctx, struct tevent_req, 2,
+		sizeof(struct tevent_immediate) + data_size);
 	if (req == NULL) {
 		return NULL;
 	}
+	ZERO_STRUCTP(req);
 	req->internal.private_type	= type;
 	req->internal.create_location	= location;
 	req->internal.finish_location	= NULL;
