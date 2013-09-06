@@ -570,7 +570,8 @@ done:
 	return ret;
 }
 
-static int net_idmap_set(struct net_context *c, int argc, const char **argv)
+static int net_idmap_set_mapping(struct net_context *c,
+				 int argc, const char **argv)
 {
 	d_printf("%s\n", _("Not implemented yet"));
 	return -1;
@@ -665,6 +666,23 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	return 0;
 }
 
+static int net_idmap_set(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"mapping",
+			net_idmap_set_mapping,
+			NET_TRANSPORT_LOCAL,
+			N_("Not implemented yet"),
+			N_("net idmap set mapping\n"
+			   "  Not implemented yet")
+		},
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net idmap set", func);
+}
+
 static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 {
 	const char* dbfile;
@@ -737,9 +755,9 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			"set",
 			net_idmap_set,
 			NET_TRANSPORT_LOCAL,
-			N_("Not implemented yet"),
+			N_("Write data to the ID mapping database"),
 			N_("net idmap set\n"
-			   "  Not implemented yet")
+			   "  Write data to the ID mapping database")
 		},
 		{
 			"delete",
