@@ -244,6 +244,8 @@ static void talloc_memlimit_update_on_free(struct talloc_chunk *tc);
 
 typedef int (*talloc_destructor_t)(void *);
 
+union talloc_pool_chunk;
+
 struct talloc_chunk {
 	struct talloc_chunk *next, *prev;
 	struct talloc_chunk *parent, *child;
@@ -263,17 +265,12 @@ struct talloc_chunk {
 	struct talloc_memlimit *limit;
 
 	/*
-	 * "pool" has dual use:
-	 *
-	 * For the talloc pool itself (i.e. TALLOC_FLAG_POOL is set), "pool"
-	 * marks the end of the currently allocated area.
-	 *
-	 * For members of the pool (i.e. TALLOC_FLAG_POOLMEM is set), "pool"
+	 * For members of a pool (i.e. TALLOC_FLAG_POOLMEM is set), "pool"
 	 * is a pointer to the struct talloc_chunk of the pool that it was
 	 * allocated from. This way children can quickly find the pool to chew
 	 * from.
 	 */
-	void *pool;
+	union talloc_pool_chunk *pool;
 };
 
 /* 16 byte alignment seems to keep everyone happy */
@@ -466,6 +463,7 @@ union talloc_pool_chunk {
 	 * on 32-bit platforms. */
 	struct tc_pool_hdr {
 		struct talloc_chunk c;
+		void *next;
 		unsigned int object_count;
 	} hdr;
 	/* This makes it always 16 byte aligned. */
@@ -479,7 +477,7 @@ static void *tc_pool_end(union talloc_pool_chunk *pool_tc)
 
 static size_t tc_pool_space_left(union talloc_pool_chunk *pool_tc)
 {
-	return (char *)tc_pool_end(pool_tc) - (char *)pool_tc->hdr.c.pool;
+	return (char *)tc_pool_end(pool_tc) - (char *)pool_tc->hdr.next;
 }
 
 static void *tc_pool_first_chunk(union talloc_pool_chunk *pool_tc)
@@ -499,11 +497,11 @@ static void tc_invalidate_pool(union talloc_pool_chunk *pool_tc)
 	size_t flen = tc_pool_space_left(pool_tc);
 
 	if (unlikely(talloc_fill.enabled)) {
-		memset(pool_tc->hdr.c.pool, talloc_fill.fill_value, flen);
+		memset(pool_tc->hdr.next, talloc_fill.fill_value, flen);
 	}
 
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
-	VALGRIND_MAKE_MEM_NOACCESS(pool_tc->hdr.c.pool, flen);
+	VALGRIND_MAKE_MEM_NOACCESS(pool_tc->hdr.next, flen);
 #endif
 }
 
@@ -527,7 +525,7 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 		pool_ctx = (union talloc_pool_chunk *)parent;
 	}
 	else if (parent->flags & TALLOC_FLAG_POOLMEM) {
-		pool_ctx = (union talloc_pool_chunk *)parent->pool;
+		pool_ctx = parent->pool;
 	}
 
 	if (pool_ctx == NULL) {
@@ -545,13 +543,13 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 		return NULL;
 	}
 
-	result = (struct talloc_chunk *)pool_ctx->hdr.c.pool;
+	result = (struct talloc_chunk *)pool_ctx->hdr.next;
 
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
 	VALGRIND_MAKE_MEM_UNDEFINED(result, size);
 #endif
 
-	pool_ctx->hdr.c.pool = (void *)((char *)result + chunk_size);
+	pool_ctx->hdr.next = (void *)((char *)result + chunk_size);
 
 	result->flags = TALLOC_MAGIC | TALLOC_FLAG_POOLMEM;
 	result->pool = pool_ctx;
@@ -653,7 +651,7 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 		return NULL;
 	}
 	pool_tc->hdr.c.flags |= TALLOC_FLAG_POOL;
-	pool_tc->hdr.c.pool = tc_pool_first_chunk(pool_tc);
+	pool_tc->hdr.next = tc_pool_first_chunk(pool_tc);
 
 	pool_tc->hdr.object_count = 1;
 
@@ -763,7 +761,7 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 	union talloc_pool_chunk *pool;
 	void *next_tc;
 
-	pool = (union talloc_pool_chunk *)tc->pool;
+	pool = tc->pool;
 	next_tc = tc_next_chunk(tc);
 
 	tc->flags |= TALLOC_FLAG_FREE;
@@ -792,7 +790,7 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 		 * the rest is available for new objects
 		 * again.
 		 */
-		pool->hdr.c.pool = tc_pool_first_chunk(pool);
+		pool->hdr.next = tc_pool_first_chunk(pool);
 		tc_invalidate_pool(pool);
 		return;
 	}
@@ -812,13 +810,13 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 		return;
 	}
 
-	if (pool->hdr.c.pool == next_tc) {
+	if (pool->hdr.next == next_tc) {
 		/*
 		 * if pool->pool still points to end of
 		 * 'tc' (which is stored in the 'next_tc' variable),
 		 * we can reclaim the memory of 'tc'.
 		 */
-		pool->hdr.c.pool = tc;
+		pool->hdr.next = tc;
 		return;
 	}
 
@@ -1516,7 +1514,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 	/* handle realloc inside a talloc_pool */
 	if (unlikely(tc->flags & TALLOC_FLAG_POOLMEM)) {
-		pool_tc = (union talloc_pool_chunk *)tc->pool;
+		pool_tc = tc->pool;
 	}
 
 #if (ALWAYS_REALLOC == 0)
@@ -1526,9 +1524,9 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			void *next_tc = tc_next_chunk(tc);
 			TC_INVALIDATE_SHRINK_CHUNK(tc, size);
 			tc->size = size;
-			if (next_tc == pool_tc->hdr.c.pool) {
+			if (next_tc == pool_tc->hdr.next) {
 				/* note: tc->size has changed, so this works */
-				pool_tc->hdr.c.pool = tc_next_chunk(tc);
+				pool_tc->hdr.next = tc_next_chunk(tc);
 			}
 			return ptr;
 		} else if ((tc->size - size) < 1024) {
@@ -1640,11 +1638,11 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 				 * because we want to invalidate the padding
 				 * too.
 				 */
-				pool_tc->hdr.c.pool = new_used + (char *)new_ptr;
+				pool_tc->hdr.next = new_used + (char *)new_ptr;
 				tc_invalidate_pool(pool_tc);
 
 				/* now the aligned pointer */
-				pool_tc->hdr.c.pool = new_chunk_size + (char *)new_ptr;
+				pool_tc->hdr.next = new_chunk_size + (char *)new_ptr;
 				goto got_new_ptr;
 			}
 
@@ -1658,7 +1656,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			return ptr;
 		}
 
-		if (next_tc == pool_tc->hdr.c.pool) {
+		if (next_tc == pool_tc->hdr.next) {
 			/*
 			 * optimize for the case where 'tc' is the last
 			 * chunk in the pool.
@@ -1670,7 +1668,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 				TC_UNDEFINE_GROW_CHUNK(tc, size);
 				tc->flags &= ~TALLOC_FLAG_FREE;
 				tc->size = size;
-				pool_tc->hdr.c.pool = tc_next_chunk(tc);
+				pool_tc->hdr.next = tc_next_chunk(tc);
 				return ptr;
 			}
 		}
