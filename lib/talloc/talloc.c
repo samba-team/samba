@@ -685,6 +685,72 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 }
 
 /*
+ * Create a talloc pool correctly sized for a basic size plus
+ * a number of subobjects whose total size is given. Essentially
+ * a custom allocator for talloc to reduce fragmentation.
+ */
+
+_PUBLIC_ void *_talloc_pooled_object(const void *ctx,
+				     size_t type_size,
+				     const char *type_name,
+				     unsigned num_subobjects,
+				     size_t total_subobjects_size)
+{
+	size_t poolsize, subobjects_slack, tmp;
+	struct talloc_chunk *tc;
+	struct talloc_pool_hdr *pool_hdr;
+	void *ret;
+
+	poolsize = type_size + total_subobjects_size;
+
+	if ((poolsize < type_size) || (poolsize < total_subobjects_size)) {
+		goto overflow;
+	}
+
+	if (num_subobjects == UINT_MAX) {
+		goto overflow;
+	}
+	num_subobjects += 1;       /* the object body itself */
+
+	/*
+	 * Alignment can increase the pool size by at most 15 bytes per object
+	 * plus alignment for the object itself
+	 */
+	subobjects_slack = (TC_HDR_SIZE + TP_HDR_SIZE + 15) * num_subobjects;
+	if (subobjects_slack < num_subobjects) {
+		goto overflow;
+	}
+
+	tmp = poolsize + subobjects_slack;
+	if ((tmp < poolsize) || (tmp < subobjects_slack)) {
+		goto overflow;
+	}
+	poolsize = tmp;
+
+	ret = talloc_pool(ctx, poolsize);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	tc = talloc_chunk_from_ptr(ret);
+	tc->size = type_size;
+
+	pool_hdr = talloc_pool_from_chunk(tc);
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
+	VALGRIND_MAKE_MEM_UNDEFINED(pool_hdr->end, type_size);
+#endif
+
+	pool_hdr->end = ((char *)pool_hdr->end + TC_ALIGN16(type_size));
+
+	talloc_set_name_const(ret, type_name);
+	return ret;
+
+overflow:
+	return NULL;
+}
+
+/*
   setup a destructor to be called on free of a pointer
   the destructor should return 0 on success, or -1 on failure.
   if the destructor fails then the free is failed, and the memory can
