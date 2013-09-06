@@ -173,6 +173,7 @@ o   Michael Adam <obnox@samba.org>
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 5917: Fix working on site with Read Only Domain Controller.
     * BUG 9974: Add SMB2 and SMB3 support for smbclient.
     * BUG 10063: Fix memory leak in source3/lib/util.c:1493.
     * BUG 10121: Masks incorrectly applied to UNIX extension permission
@@ -181,6 +182,11 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Christian Ambach <ambi@samba.org>
     * BUG 9911: Build Samba 4.0.x on AIX with IBM XL C/C++.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9091: When replicating DNS for bind9_dlz we need to create the
+      server-DNS account remotely.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -192,6 +198,8 @@ o   Günther Deschner <gd@samba.org>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 10086: smbd: Fix async echo handler forking.
+    * BUG 10106: Honour output buffer length set by the client for SMB2 GetInfo
+      requests.
     * BUG 10114: Handle Dropbox (write-only-directory) case correctly
       in pathname lookup.
 
@@ -219,6 +227,11 @@ o   Andreas Schneider <asn@samba.org>
 o   Richard Sharpe <realrichardsharpe@gmail.com>
     * BUG 10097: MacOSX 10.9 will not follow path-based DFS referrals handed
       out by Samba.
+
+
+o   Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+    * BUG 10106: Honour output buffer length set by the client for SMB2 GetInfo
+      requests.
 
 
 CHANGES SINCE 4.1.0rc1
