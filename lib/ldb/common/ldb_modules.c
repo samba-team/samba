@@ -554,8 +554,33 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		return ret;
 	}
 	if (!ldb_errstring(module->ldb)) {
+		const char *op;
+		switch (request->operation) {
+		case LDB_SEARCH:
+			op = "LDB_SEARCH";
+			break;
+		case LDB_ADD:
+			op = "LDB_ADD";
+			break;
+		case LDB_MODIFY:
+			op = "LDB_MODIFY";
+			break;
+		case LDB_DELETE:
+			op = "LDB_DELETE";
+			break;
+		case LDB_RENAME:
+			op = "LDB_RENAME";
+			break;
+		case LDB_EXTENDED:
+			op = "LDB_EXTENDED";
+			break;
+		default:
+			op = "request";
+			break;
+		}
+
 		/* Set a default error string, to place the blame somewhere */
-		ldb_asprintf_errstring(module->ldb, "error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
+		ldb_asprintf_errstring(module->ldb, "error in module %s: %s during %s (%d)", module->ops->name, ldb_strerror(ret), op, ret);
 	}
 
 	if (!(request->handle->flags & LDB_HANDLE_FLAG_DONE_CALLED)) {
