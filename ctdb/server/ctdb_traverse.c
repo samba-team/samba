@@ -279,6 +279,7 @@ struct traverse_start_state {
 	uint32_t db_id;
 	uint64_t srvid;
 	bool withemptyrecords;
+	int num_records;
 };
 
 
@@ -380,6 +381,9 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 		talloc_free(state);
 		return NULL;
 	}
+
+	DEBUG(DEBUG_NOTICE,("Starting traverse on DB %s (id %d)\n",
+			    ctdb_db->db_name, state->reqid));
 
 	/* timeout the traverse */
 	event_add_timed(ctdb->ev, state, 
@@ -643,6 +647,10 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 
 	ctdb_dispatch_message(state->ctdb, state->srvid, cdata);
 	if (key.dsize == 0 && data.dsize == 0) {
+		DEBUG(DEBUG_NOTICE, ("Ending traverse on DB %s (id %d), records %d\n",
+				     state->h->ctdb_db->db_name, state->h->reqid,
+				     state->num_records));
+
 	    	if (state->h->timedout) {
 		    	/* timed out, send TRAVERSE_KILL control */
 			talloc_free(state);
@@ -651,6 +659,8 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 			talloc_set_destructor(state, NULL);
 			talloc_free(state);
 		}
+	} else {
+		state->num_records++;
 	}
 }
 
@@ -706,8 +716,7 @@ int32_t ctdb_control_traverse_start_ext(struct ctdb_context *ctdb,
 	state->db_id = d->db_id;
 	state->ctdb = ctdb;
 	state->withemptyrecords = d->withemptyrecords;
-
-	DEBUG(DEBUG_NOTICE,("Stating traverse on DB %s\n", ctdb_db->db_name));
+	state->num_records = 0;
 
 	state->h = ctdb_daemon_traverse_all(ctdb_db, traverse_start_callback, state);
 	if (state->h == NULL) {
