@@ -46,7 +46,7 @@ ctdb_test_exit_hook_add restore_public_addresses
 
 try_command_on_node $test_node "mv $addresses $backup && touch $addresses"
 
-try_command_on_node any $CTDB reloadips -n all
+try_command_on_node any $CTDB reloadips all
 
 echo "Getting list of public IPs on node $test_node"
 try_command_on_node $test_node "$CTDB ip | tail -n +2"
@@ -64,7 +64,7 @@ echo "GOOD: no IPs left on node $test_node"
 echo "Restoring addresses"
 restore_public_addresses
 
-try_command_on_node any $CTDB reloadips -n all
+try_command_on_node any $CTDB reloadips all
 
 echo "Getting list of public IPs on node $test_node"
 try_command_on_node $test_node "$CTDB ip | tail -n +2"
@@ -87,7 +87,7 @@ echo "Removing IP $test_ip from node $test_node"
 
 try_command_on_node $test_node "mv $addresses $backup && grep -v '^${test_ip}/' $backup >$addresses"
 
-try_command_on_node any $CTDB reloadips -n all
+try_command_on_node any $CTDB reloadips all
 
 try_command_on_node $test_node $CTDB ip
 
