@@ -1773,16 +1773,30 @@ static int rebalance_node(struct ctdb_context *ctdb, uint32_t pnn)
  */
 static int control_rebalancenode(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	switch (options.pnn) {
-	case CTDB_BROADCAST_ALL:
-	case CTDB_CURRENT_NODE:
-		DEBUG(DEBUG_ERR,("You must specify a node number with -n <pnn> for the node to rebalance\n"));
+	uint32_t *nodes;
+	uint32_t pnn_mode;
+	int i, ret;
+
+	assert_single_node_only();
+
+	if (argc > 1) {
+		usage();
+	}
+
+	/* Determine the nodes where IPs need to be reloaded */
+	if (!parse_nodestring(ctdb, argc == 1 ? argv[0] : NULL,
+			      options.pnn, true, &nodes, &pnn_mode)) {
 		return -1;
 	}
 
-	return rebalance_node(ctdb, options.pnn);
-}
+	for (i = 0; i < talloc_array_length(nodes); i++) {
+		if (!rebalance_node(ctdb, nodes[i])) {
+			ret = -1;
+		}
+	}
 
+	return ret;
+}
 
 static int rebalance_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 {
