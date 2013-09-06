@@ -1267,6 +1267,30 @@ static bool test_pool_steal(void)
 	return true;
 }
 
+static bool test_pool_nest(void)
+{
+	void *p1, *p2, *p3;
+	void *e = talloc_new(NULL);
+
+	p1 = talloc_pool(NULL, 1024);
+	torture_assert("talloc_pool", p1 != NULL, "failed");
+
+	p2 = talloc_pool(p1, 500);
+	torture_assert("talloc_pool", p2 != NULL, "failed");
+
+	p3 = talloc_size(p2, 10);
+
+	talloc_steal(e, p3);
+
+	talloc_free(p2);
+
+	talloc_free(p3);
+
+	talloc_free(p1);
+
+	return true;
+}
+
 static bool test_free_ref_null_context(void)
 {
 	void *p1, *p2, *p3;
@@ -1566,6 +1590,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 
 	setlinebuf(stdout);
 
+	test_reset();
+	ret &= test_pool_nest();
 	test_reset();
 	ret &= test_ref1();
 	test_reset();
