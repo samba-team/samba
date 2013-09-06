@@ -174,6 +174,19 @@ int dsdb_module_search_tree(struct ldb_module *module,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
+	if (dsdb_flags & DSDB_SEARCH_ONE_ONLY) {
+		if (res->count == 0) {
+			talloc_free(tmp_ctx);
+			ldb_reset_err_string(ldb_module_get_ctx(module));
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+		if (res->count != 1) {
+			talloc_free(tmp_ctx);
+			ldb_reset_err_string(ldb_module_get_ctx(module));
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+	}
+
 	talloc_free(req);
 	if (ret == LDB_SUCCESS) {
 		*_res = talloc_steal(mem_ctx, res);
