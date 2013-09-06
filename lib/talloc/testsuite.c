@@ -1291,6 +1291,40 @@ static bool test_pool_nest(void)
 	return true;
 }
 
+struct pooled {
+	char *s1;
+	char *s2;
+	char *s3;
+};
+
+static bool test_pooled_object(void)
+{
+	struct pooled *p;
+	const char *s1 = "hello";
+	const char *s2 = "world";
+	const char *s3 = "";
+
+	p = talloc_pooled_object(NULL, struct pooled, 3,
+			strlen(s1)+strlen(s2)+strlen(s3)+3);
+
+	if (talloc_get_size(p) != sizeof(struct pooled)) {
+		return false;
+	}
+
+	p->s1 = talloc_strdup(p, s1);
+
+	TALLOC_FREE(p->s1);
+	p->s1 = talloc_strdup(p, s2);
+	TALLOC_FREE(p->s1);
+
+	p->s1 = talloc_strdup(p, s1);
+	p->s2 = talloc_strdup(p, s2);
+	p->s3 = talloc_strdup(p, s3);
+
+	TALLOC_FREE(p);
+	return true;
+}
+
 static bool test_free_ref_null_context(void)
 {
 	void *p1, *p2, *p3;
@@ -1590,6 +1624,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 
 	setlinebuf(stdout);
 
+	test_reset();
+	ret &= test_pooled_object();
 	test_reset();
 	ret &= test_pool_nest();
 	test_reset();
