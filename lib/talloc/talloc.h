@@ -847,6 +847,43 @@ void *talloc_find_parent_bytype(const void *ptr, #type);
  */
 void *talloc_pool(const void *context, size_t size);
 
+#ifdef DOXYGEN
+/**
+ * @brief Allocate a talloc object as/with an additional pool.
+ *
+ * This is like talloc_pool(), but's it's more flexible
+ * and allows an object to be a pool for its children.
+ *
+ * @param[in] ctx                   The talloc context to hang the result off.
+ *
+ * @param[in] type                  The type that we want to allocate.
+ *
+ * @param[in] num_subobjects        The expected number of subobjects, which will
+ *                                  be allocated within the pool. This allocates
+ *                                  space for talloc_chunk headers.
+ *
+ * @param[in] total_subobjects_size The size that all subobjects can use in total.
+ *
+ *
+ * @return              The allocated talloc object, NULL on error.
+ */
+void *talloc_pooled_object(const void *ctx, #type,
+			   unsigned num_subobjects,
+			   size_t total_subobjects_size);
+#else
+#define talloc_pooled_object(_ctx, _type, \
+			     _num_subobjects, \
+			     _total_subobjects_size) \
+	(_type *)_talloc_pooled_object((_ctx), sizeof(_type), #_type, \
+					(_num_subobjects), \
+					(_total_subobjects_size))
+void *_talloc_pooled_object(const void *ctx,
+			    size_t type_size,
+			    const char *type_name,
+			    unsigned num_subobjects,
+			    size_t total_subobjects_size);
+#endif
+
 /**
  * @brief Free a talloc chunk and NULL out the pointer.
  *
