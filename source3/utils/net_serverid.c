@@ -113,6 +113,11 @@ static int net_serverid_wipedbs_sessionid(struct db_record *rec,
 static int net_serverid_wipedbs(struct net_context *c, int argc,
 				const char **argv)
 {
+	if (!sessionid_init()) {
+		d_printf("failed to open sessionid.tdb\n");
+		return -1;
+	};
+
 	connections_forall(net_serverid_wipedbs_conn, NULL);
 	sessionid_traverse(net_serverid_wipedbs_sessionid, NULL);
 	return 0;
@@ -148,11 +153,6 @@ int net_serverid(struct net_context *c, int argc, const char **argv)
 			   "sessionid.tdb")
 		},
 		{NULL, NULL, 0, NULL, NULL}
-	};
-
-	if (!sessionid_init()) {
-		d_printf("failed to open sessionid.tdb\n");
-		return -1;
 	};
 
 	return net_run_function(c, argc, argv, "net serverid", func);
