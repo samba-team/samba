@@ -124,8 +124,8 @@ ip_reallocate ()
 		# Have non-zero flags
 		_this=0
 		for _j in "$FAKE_CTDB_STATE/node-state/"*"/$_i" ; do
-		    _t="${_j%/*}" # dirname
-		    _f="${_t%/*}" # basename
+		    _tf="${_j%/*}" # dirname
+		    _f="${_tf##*/}" # basename
 		    _this=$(( $_this | $_f ))
 		done
 	    else
@@ -220,6 +220,13 @@ ctdb_disable ()
     done
 
     ip_reallocate
+}
+
+######################################################################
+
+ctdb_shutdown ()
+{
+    echo "CTDB says BYE!"
 }
 
 ######################################################################
@@ -322,5 +329,6 @@ case "$1" in
     enable)      ctdb_enable "$@";;
     disable)     ctdb_disable "$@";;
     moveip)      ctdb_moveip "$@";;
+    shutdown)    ctdb_shutdown "$@";;
     *) not_implemented "$1" ;;
 esac

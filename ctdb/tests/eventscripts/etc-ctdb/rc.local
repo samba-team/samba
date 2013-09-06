@@ -39,6 +39,9 @@ get_proc ()
 	*/stack)
 	    echo "[<ffffffff87654321>] fake_stack_trace_for_pid_${1}+0x0/0xff"
 	    ;;
+	meminfo)
+	    echo "$FAKE_PROC_MEMINFO"
+	    ;;
 	*)
 	    echo "get_proc: \"$1\" not implemented"
 	    exit 1

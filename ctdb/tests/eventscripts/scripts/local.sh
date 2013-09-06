@@ -311,6 +311,51 @@ setup_ctdb ()
     export CTDB_PARTIALLY_ONLINE_INTERFACES
 }
 
+setup_memcheck ()
+{
+    setup_ctdb
+
+    _swap_total="5857276"
+
+    if [ "$1" = "bad" ] ; then
+	_swap_free="   4352"
+	_mem_cached=" 112"
+	_mem_free=" 468"
+    else
+	_swap_free="$_swap_total"
+	_mem_cached="1112"
+	_mem_free="1468"
+    fi
+
+    export FAKE_PROC_MEMINFO="\
+MemTotal:        3940712 kB
+MemFree:          225268 kB
+Buffers:          146120 kB
+Cached:          1139348 kB
+SwapCached:        56016 kB
+Active:          2422104 kB
+Inactive:        1019928 kB
+Active(anon):    1917580 kB
+Inactive(anon):   523080 kB
+Active(file):     504524 kB
+Inactive(file):   496848 kB
+Unevictable:        4844 kB
+Mlocked:            4844 kB
+SwapTotal:       ${_swap_total} kB
+SwapFree:        ${_swap_free} kB
+..."
+
+    export FAKE_FREE_M="\
+             total       used       free     shared    buffers     cached
+Mem:          3848       3634        213          0        142       ${_mem_cached}
+-/+ buffers/cache:       2379       ${_mem_free}
+Swap:         5719        246       5473"
+
+    export CTDB_MONITOR_FREE_MEMORY
+    export CTDB_MONITOR_FREE_MEMORY_WARN
+    export CTDB_CHECK_SWAP_IS_NOT_USED
+}
+
 ctdb_get_interfaces ()
 {
     # The echo/subshell forces all the output onto 1 line.
