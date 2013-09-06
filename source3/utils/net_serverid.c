@@ -36,6 +36,10 @@ static int net_serverid_list_fn(const struct server_id *id,
 static int net_serverid_list(struct net_context *c, int argc,
 			     const char **argv)
 {
+	if (!serverid_init_readonly(c)) {
+		d_printf("failed to open serverid.tdb\n");
+		return -1;
+	}
 	d_printf("pid unique_id msg_flags\n");
 	return serverid_traverse_read(net_serverid_list_fn, NULL) ? 0 : -1;
 }
