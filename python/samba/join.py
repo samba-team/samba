@@ -748,7 +748,15 @@ class dc_join(object):
         print("Finding domain GUID from ncName")
         res = ctx.local_samdb.search(base=ctx.partition_dn, scope=ldb.SCOPE_BASE, attrs=['ncName'],
                                      controls=["extended_dn:1:1", "reveal_internals:0"])
-        domguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
+
+        if 'nCName' not in res[0]:
+            raise DCJoinException("Can't find naming context on partition DN %s in %s" % (ctx.partition_dn, ctx.samdb.url))
+
+        try:
+            domguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
+        except KeyError:
+            raise DCJoinException("Can't find GUID in naming master on partition DN %s" % res[0]['ncName'][0])
+
         print("Got domain GUID %s" % domguid)
 
         print("Calling own domain provision")
