@@ -36,11 +36,12 @@ struct serverid_data {
 
 static struct db_context *db_ptr = NULL;
 
-static struct db_context *serverid_init(TALLOC_CTX *mem_ctx)
+static struct db_context *serverid_init(TALLOC_CTX *mem_ctx,
+					bool readonly)
 {
 	db_ptr = db_open(mem_ctx, lock_path("serverid.tdb"),
 			 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-			 O_RDWR | O_CREAT,
+			 readonly ? O_RDONLY : O_RDWR | O_CREAT,
 			 0644);
 	return db_ptr;
 }
@@ -53,7 +54,18 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 	 * work.
 	 */
 
-	if (serverid_init(mem_ctx) == NULL) {
+	if (serverid_init(mem_ctx, false) == NULL) {
+		DEBUG(1, ("could not open serverid.tdb: %s\n",
+			  strerror(errno)));
+		return false;
+	}
+
+	return true;
+}
+
+bool serverid_init_readonly(TALLOC_CTX *mem_ctx)
+{
+	if (serverid_init(mem_ctx, true) == NULL) {
 		DEBUG(1, ("could not open serverid.tdb: %s\n",
 			  strerror(errno)));
 		return false;
@@ -68,7 +80,7 @@ static struct db_context *serverid_db(void)
 		return db_ptr;
 	}
 
-	return serverid_init(NULL);
+	return serverid_init(NULL, false);
 }
 
 static void serverid_fill_key(const struct server_id *id,
