@@ -461,6 +461,7 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 struct talloc_pool_hdr {
 	void *end;
 	unsigned int object_count;
+	size_t poolsize;
 };
 
 #define TP_HDR_SIZE TC_ALIGN16(sizeof(struct talloc_pool_hdr))
@@ -478,7 +479,7 @@ static struct talloc_chunk *talloc_chunk_from_pool(struct talloc_pool_hdr *h)
 static void *tc_pool_end(struct talloc_pool_hdr *pool_hdr)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_pool(pool_hdr);
-	return (char *)tc + TC_HDR_SIZE + tc->size;
+	return (char *)tc + TC_HDR_SIZE + pool_hdr->poolsize;
 }
 
 static size_t tc_pool_space_left(struct talloc_pool_hdr *pool_hdr)
@@ -486,15 +487,16 @@ static size_t tc_pool_space_left(struct talloc_pool_hdr *pool_hdr)
 	return (char *)tc_pool_end(pool_hdr) - (char *)pool_hdr->end;
 }
 
-static void *tc_pool_first_chunk(struct talloc_pool_hdr *pool_hdr)
-{
-	return TC_PTR_FROM_CHUNK(talloc_chunk_from_pool(pool_hdr));
-}
-
 /* If tc is inside a pool, this gives the next neighbour. */
 static void *tc_next_chunk(struct talloc_chunk *tc)
 {
 	return (char *)tc + TC_ALIGN16(TC_HDR_SIZE + tc->size);
+}
+
+static void *tc_pool_first_chunk(struct talloc_pool_hdr *pool_hdr)
+{
+	struct talloc_chunk *tc = talloc_chunk_from_pool(pool_hdr);
+	return tc_next_chunk(tc);
 }
 
 /* Mark the whole remaining pool as not accessable */
@@ -678,9 +680,11 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 		return NULL;
 	}
 	tc->flags |= TALLOC_FLAG_POOL;
+	tc->size = 0;
 
 	pool_hdr->object_count = 1;
 	pool_hdr->end = result;
+	pool_hdr->poolsize = size;
 
 	tc_invalidate_pool(pool_hdr);
 
@@ -1847,13 +1851,20 @@ static size_t _talloc_total_mem_internal(const void *ptr,
 			 * pool itself.
 			 */
 			if (!(tc->flags & TALLOC_FLAG_POOLMEM)) {
-				total = tc->size + TC_HDR_SIZE;
-				/*
-				 * If this is a pool, remember to
-				 * add the prefix length.
-				 */
 				if (tc->flags & TALLOC_FLAG_POOL) {
-					total += TP_HDR_SIZE;
+					/*
+					 * If this is a pool, the allocated
+					 * size is in the pool header, and
+					 * remember to add in the prefix
+					 * length.
+					 */
+					struct talloc_pool_hdr *pool_hdr
+							= talloc_pool_from_chunk(tc);
+					total = pool_hdr->poolsize +
+							TC_HDR_SIZE +
+							TP_HDR_SIZE;
+				} else {
+					total = tc->size + TC_HDR_SIZE;
 				}
 			}
 		}
