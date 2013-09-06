@@ -93,12 +93,5 @@ NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 				       uint8_t *authoritative,
 				       uint32_t *flags,
 				       struct netr_SamInfo3 **info3);
-NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx,
-					    const char *account_name,
-					    const unsigned char orig_trust_passwd_hash[16],
-					    const char *new_trust_pwd_cleartext,
-					    const unsigned char new_trust_passwd_hash[16],
-					    enum netr_SchannelType sec_channel_type);
 
 #endif /* _RPC_CLIENT_CLI_NETLOGON_H_ */
