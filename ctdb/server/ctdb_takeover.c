@@ -4402,6 +4402,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 	struct timeval timeout;
 	TDB_DATA data;
 	struct ctdb_client_control_state *state;
+	bool first_add;
 	int i, ret;
 
 	CTDB_NO_MEMORY(ctdb, mem_ctx);
@@ -4475,6 +4476,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 	}
 
 	/* Compare IPs between node and file for IPs to be added */
+	first_add = true;
 	for (vnn = ctdb->vnn; vnn; vnn = vnn->next) {
 		for (i = 0; i < ips->num; i++) {
 			if (ctdb_same_ip(&vnn->public_address,
@@ -4493,6 +4495,24 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 			DEBUG(DEBUG_NOTICE,
 			      ("New IP %s configured, adding it\n",
 			       ctdb_addr_to_str(&vnn->public_address)));
+			if (first_add) {
+				uint32_t pnn = ctdb_get_pnn(ctdb);
+
+				data.dsize = sizeof(pnn);
+				data.dptr  = (uint8_t *)&pnn;
+
+				ret = ctdb_client_send_message(
+					ctdb,
+					CTDB_BROADCAST_CONNECTED,
+					CTDB_SRVID_REBALANCE_NODE,
+					data);
+				if (ret != 0) {
+					DEBUG(DEBUG_WARNING,
+					      ("Failed to send message to force node reallocation - IPs may be unbalanced\n"));
+				}
+
+				first_add = false;
+			}
 
 			ifaces = vnn->ifaces[0];
 			iface = 1;
