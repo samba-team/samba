@@ -575,6 +575,7 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 	d_printf("%s\n", _("Not implemented yet"));
 	return -1;
 }
+
 static bool idmap_store_secret(const char *backend,
 			       const char *domain,
 			       const char *identity,
@@ -733,11 +734,11 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			   "  Restore entries from stdin")
 		},
 		{
-			"setmap",
+			"set",
 			net_idmap_set,
 			NET_TRANSPORT_LOCAL,
 			N_("Not implemented yet"),
-			N_("net idmap setmap\n"
+			N_("net idmap set\n"
 			   "  Not implemented yet")
 		},
 		{
