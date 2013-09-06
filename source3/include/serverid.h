@@ -73,4 +73,6 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx);
  */
 uint64_t serverid_get_random_unique_id(void);
 
+bool serverid_init_readonly(TALLOC_CTX *mem_ctx);
+
 #endif
