@@ -19,6 +19,73 @@ releases candidates, you should backup all configuration and data.
 NEW FEATURES
 ============
 
+Client tools support SMB2/3
+===========================
+
+Samba 4.1.0 contains the first release of our client tools
+and client library that work over the new protocols SMB2 or SMB3.
+Note that SMB3 only works either to a Samba server version 4.0.0
+or above, or to a Windows Server running Windows 2012 or Windows 8.
+
+The default protocol for smbclient and smbcacls is still
+SMB1 (the NT1 protocol dialect). An SMB2 or SMB3 connection
+can be selected in one of two ways. The easiest way to test
+the new protocol connection is to add the -mMAX_PROTOCOL
+command line switch to either smbclient or smbcacls.
+
+For example, to connect using SMB3 with smbclient a user
+would type:
+
+smbclient //server/share -Uuser%password -mSMB3
+
+Another example of connecting using SMB2 using smbcacls
+would be:
+
+smbcacls //server/share -Uuser%password -mSMB2 filename
+
+Note that when connecting using SMB2 or SMB3 protocols
+the UNIX extensions are no longer available inside the
+smbclient command set. This is due to UNIX extensions
+not yet being defined for the SMB2 or SMB3 protocols.
+
+The second way to select SMB2 or SMB3 connections is to
+set the "client max protocol" parameter in the [global]
+section of your smb.conf.
+
+Setting this parameter will cause all client connections
+from Samba and its client tools to offer the requested
+max protocol to a server on every connection request.
+
+For example, to cause all client tools (including winbindd,
+rpcclient, and the libsmbclient library) to attempt use SMB3
+by default add the line:
+
+client max protocol = SMB3
+
+to the [global] section of your smb.conf. This has not
+been as widely tested as the -mPROTOCOL options, but
+is intended to work correctly in the final release of
+4.1.0.
+
+Encrypted transport
+===================
+
+Although Samba servers have supported encrypted transport
+connections using the UNIX extensions for many years,
+selecting SMB3 transport allows encrypted transport
+connections to Windows servers that support SMB3, as
+well as Samba servers.
+
+In order to enable this, add the "-e" option to the
+smbclient command line.
+
+For example, to connect to a Windows 2012 server over
+SMB3 and select an encrypted transport you would use
+the following command line:
+
+smbclient //Win2012Server/share -Uuser%password -mSMB3 -e
+
+
 Directory database replication (AD DC mode)
 ===========================================
 
@@ -88,7 +155,8 @@ COMMIT HIGHLIGHTS
 =================
 
 o   Jeremy Allison <jra@samba.org>
-    * Add SMB2 and SMB3 support for smbclient.
+    * Add SMB2 and SMB3 support for client tools and client library.
+    * Add support for SMB3 Encrypted transport.
 
 
 o   David Disseldorp <ddiss@samba.org>
