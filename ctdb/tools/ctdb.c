@@ -1752,18 +1752,14 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 
 static int rebalance_node(struct ctdb_context *ctdb, uint32_t pnn)
 {
-	uint32_t recmaster;
 	TDB_DATA data;
-
-	if (ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), pnn, &recmaster) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", pnn));
-		return -1;
-	}
 
 	data.dptr  = (uint8_t *)&pnn;
 	data.dsize = sizeof(uint32_t);
-	if (ctdb_client_send_message(ctdb, recmaster, CTDB_SRVID_REBALANCE_NODE, data) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send message to force node reallocation\n"));
+	if (ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_REBALANCE_NODE, data) != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to send message to force node %u to be a rebalancing target\n",
+		       pnn));
 		return -1;
 	}
 
