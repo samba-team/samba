@@ -186,36 +186,6 @@ static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 	return LDB_SUCCESS;
 }
 
-static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
-{
-	struct oc_context *ac;
-
-	ac = talloc_get_type(req->context, struct oc_context);
-
-	if (!ares) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		return ldb_module_send_referral(ac->req, ares->referral);
-	}
-
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	if (ares->type != LDB_REPLY_DONE) {
-		talloc_free(ares);
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-
-	return ldb_module_done(ac->req, ares->controls,
-				ares->response, ares->error);
-}
-
 /* Fix up the DN to be in the standard form, taking particular care to match the parent DN
 
    This should mean that if the parent is:
@@ -659,7 +629,7 @@ static int objectclass_do_add(struct oc_context *ac)
 	ret = ldb_build_add_req(&add_req, ldb, ac,
 				msg,
 				ac->req->controls,
-				ac, oc_op_callback,
+				ac->req, dsdb_next_callback,
 				ac->req);
 	LDB_REQ_SET_LOCATION(add_req);
 	if (ret != LDB_SUCCESS) {
@@ -745,11 +715,19 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		talloc_free(nc_root);
 	}
 
-	ret = ldb_build_mod_req(&down_req, ldb, ac,
-				msg,
-				req->controls, ac,
-				oc_changes ? oc_modify_callback : oc_op_callback,
-				req);
+	if (oc_changes) {
+		ret = ldb_build_mod_req(&down_req, ldb, ac,
+					msg,
+					req->controls, ac,
+					oc_modify_callback,
+					req);
+	} else {
+		ret = ldb_build_mod_req(&down_req, ldb, ac,
+					msg,
+					req->controls, req,
+					dsdb_next_callback,
+					req);
+	}
 	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -978,7 +956,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 	ret = ldb_build_mod_req(&mod_req, ldb, ac,
 				msg,
 				ac->req->controls,
-				ac, oc_op_callback,
+				ac->req, dsdb_next_callback,
 				ac->req);
 	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
@@ -1216,7 +1194,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 	ret = ldb_build_rename_req(&rename_req, ldb, ac,
 				   ac->req->op.rename.olddn, fixed_dn,
 				   ac->req->controls,
-				   ac, oc_op_callback,
+				   ac->req, dsdb_next_callback,
 				   ac->req);
 	LDB_REQ_SET_LOCATION(rename_req);
 	if (ret != LDB_SUCCESS) {
