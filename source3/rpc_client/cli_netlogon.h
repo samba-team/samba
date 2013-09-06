@@ -30,14 +30,6 @@ struct dcerpc_binding_handle;
 
 /* The following definitions come from rpc_client/cli_netlogon.c  */
 
-NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
-				     const char *server_name,
-				     const char *domain,
-				     const char *clnt_name,
-				     const char *machine_account,
-				     const unsigned char machine_pwd[16],
-				     enum netr_SchannelType sec_chan_type,
-				     uint32_t *neg_flags_inout);
 NTSTATUS rpccli_pre_open_netlogon_creds(void);
 NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 				      const char *server_netbios_domain,
