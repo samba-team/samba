@@ -599,7 +599,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         raise ProvisioningError("guess_names: 'realm =' was not specified in supplied %s.  Please remove the smb.conf file and let provision generate it" % lp.configfile)
 
     if lp.get("realm").upper() != realm:
-        raise ProvisioningError("guess_names: 'realm=%s' in %s must match chosen realm '%s'!  Please remove the smb.conf file and let provision generate it" % (lp.get("realm").upper(), realm, lp.configfile))
+        raise ProvisioningError("guess_names: 'realm=%s' in %s must match chosen realm '%s'!  Please remove the smb.conf file and let provision generate it" % (lp.get("realm").upper(), lp.configfile, realm))
 
     if lp.get("server role").lower() != serverrole:
         raise ProvisioningError("guess_names: 'server role=%s' in %s must match chosen server role '%s'!  Please remove the smb.conf file and let provision generate it" % (lp.get("server role"), lp.configfile, serverrole))
