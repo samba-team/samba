@@ -597,9 +597,12 @@ def apply_vnum(self):
 	path = self.install_path
 	if not path: return
 
-	bld.install_as(path + os.sep + name3, node, env=self.env)
-	bld.symlink_as(path + os.sep + name2, name3)
-	bld.symlink_as(path + os.sep + libname, name3)
+	if self.env.DEST_OS == 'openbsd':
+		bld.install_as(path + os.sep + name2, node, env=self.env, chmod=self.link_task.chmod)
+	else:
+		bld.install_as(path + os.sep + name3, node, env=self.env)
+		bld.symlink_as(path + os.sep + name2, name3)
+		bld.symlink_as(path + os.sep + libname, name3)
 
 	# the following task is just to enable execution from the build dir :-/
 	self.create_task('vnum', node, [node.parent.find_or_declare(name2), node.parent.find_or_declare(name3)])
