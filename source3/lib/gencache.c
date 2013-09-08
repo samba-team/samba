@@ -443,21 +443,19 @@ bool gencache_parse(const char *keystr,
 		    void *private_data)
 {
 	struct gencache_parse_state state;
-	TDB_DATA key;
+	TDB_DATA key = string_term_tdb_data(keystr);
 	int ret;
 
 	if (keystr == NULL) {
 		return false;
 	}
-	if (tdb_data_cmp(string_term_tdb_data(keystr),
-			 last_stabilize_key()) == 0) {
+	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
 		return false;
 	}
 	if (!gencache_init()) {
 		return false;
 	}
 
-	key = string_term_tdb_data(keystr);
 	state.parser = parser;
 	state.private_data = private_data;
 
