@@ -49,10 +49,11 @@ class DCJoinException(Exception):
 class dc_join(object):
     """Perform a DC join."""
 
-    def __init__(ctx, server=None, creds=None, lp=None, site=None,
+    def __init__(ctx, logger=None, server=None, creds=None, lp=None, site=None,
                  netbios_name=None, targetdir=None, domain=None,
                  machinepass=None, use_ntvfs=False, dns_backend=None,
                  promote_existing=False):
+        ctx.logger = logger
         ctx.creds = creds
         ctx.lp = lp
         ctx.site = site
@@ -72,9 +73,9 @@ class dc_join(object):
         if server is not None:
             ctx.server = server
         else:
-            print("Finding a writeable DC for domain '%s'" % domain)
+            ctx.logger.info("Finding a writeable DC for domain '%s'" % domain)
             ctx.server = ctx.find_dc(domain)
-            print("Found DC %s" % ctx.server)
+            ctx.logger.info("Found DC %s" % ctx.server)
 
         ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                           session_info=system_session(),
@@ -714,11 +715,9 @@ class dc_join(object):
 
         print "Calling bare provision"
 
-        logger = logging.getLogger("provision")
-        logger.addHandler(logging.StreamHandler(sys.stdout))
         smbconf = ctx.lp.configfile
 
-        presult = provision(logger, system_session(), None, smbconf=smbconf,
+        presult = provision(ctx.logger, system_session(), None, smbconf=smbconf,
                 targetdir=ctx.targetdir, samdb_fill=FILL_DRS, realm=ctx.realm,
                 rootdn=ctx.root_dn, domaindn=ctx.base_dn,
                 schemadn=ctx.schema_dn, configdn=ctx.config_dn,
@@ -746,7 +745,7 @@ class dc_join(object):
         ctx.samdb.set_invocation_id(str(ctx.invocation_id))
         ctx.local_samdb = ctx.samdb
 
-        print("Finding domain GUID from ncName")
+        ctx.logger.info("Finding domain GUID from ncName")
         res = ctx.local_samdb.search(base=ctx.partition_dn, scope=ldb.SCOPE_BASE, attrs=['ncName'],
                                      controls=["extended_dn:1:1", "reveal_internals:0"])
 
@@ -758,22 +757,19 @@ class dc_join(object):
         except KeyError:
             raise DCJoinException("Can't find GUID in naming master on partition DN %s" % res[0]['ncName'][0])
 
-        print("Got domain GUID %s" % domguid)
+        ctx.logger.info("Got domain GUID %s" % domguid)
 
-        print("Calling own domain provision")
-
-        logger = logging.getLogger("provision")
-        logger.addHandler(logging.StreamHandler(sys.stdout))
+        ctx.logger.info("Calling own domain provision")
 
         secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
 
         presult = provision_fill(ctx.local_samdb, secrets_ldb,
-                                 logger, ctx.names, ctx.paths, domainsid=security.dom_sid(ctx.domsid),
+                                 ctx.logger, ctx.names, ctx.paths, domainsid=security.dom_sid(ctx.domsid),
                                  domainguid=domguid,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="domain controller",
                                  lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
-                                 dns_backend=ctx.dns_backend)
+                                 dns_backend=ctx.dns_backend, adminpass=ctx.adminpass)
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
     def join_replicate(ctx):
@@ -878,15 +874,12 @@ class dc_join(object):
     def join_finalise(ctx):
         """Finalise the join, mark us synchronised and setup secrets db."""
 
-        logger = logging.getLogger("provision")
-        logger.addHandler(logging.StreamHandler(sys.stdout))
-
         # FIXME we shouldn't do this in all cases
         # If for some reasons we joined in another site than the one of
         # DC we just replicated from then we don't need to send the updatereplicateref
         # as replication between sites is time based and on the initiative of the
         # requesting DC
-        print "Sending DsReplicateUpdateRefs for all the replicated partitions"
+        ctx.logger.info("Sending DsReplicateUpdateRefs for all the replicated partitions")
         for nc in ctx.full_nc_list:
             ctx.send_DsReplicaUpdateRefs(nc)
 
@@ -916,7 +909,7 @@ class dc_join(object):
                                                                "invocationId",
                                                                0)
 
-        print "Setting isSynchronized and dsServiceName"
+        ctx.logger.info("Setting isSynchronized and dsServiceName")
         m = ldb.Message()
         m.dn = ldb.Dn(ctx.local_samdb, '@ROOTDSE')
         m["isSynchronized"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isSynchronized")
@@ -929,7 +922,7 @@ class dc_join(object):
 
         secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
 
-        print "Setting up secrets database"
+        ctx.logger.info("Setting up secrets database")
         secretsdb_self_join(secrets_ldb, domain=ctx.domain_name,
                             realm=ctx.realm,
                             dnsdomain=ctx.dnsdomain,
@@ -941,7 +934,7 @@ class dc_join(object):
 
         if ctx.dns_backend.startswith("BIND9_"):
             setup_bind9_dns(ctx.local_samdb, secrets_ldb, security.dom_sid(ctx.domsid),
-                            ctx.names, ctx.paths, ctx.lp, logger,
+                            ctx.names, ctx.paths, ctx.lp, ctx.logger,
                             dns_backend=ctx.dns_backend,
                             dnspass=ctx.dnspass, os_level=ctx.behavior_version,
                             targetdir=ctx.targetdir,
@@ -1097,20 +1090,20 @@ class dc_join(object):
             raise
 
 
-def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
+def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_name=None,
               targetdir=None, domain=None, domain_critical_only=False,
               machinepass=None, use_ntvfs=False, dns_backend=None,
               promote_existing=False):
     """Join as a RODC."""
 
-    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
+    ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, domain,
                   machinepass, use_ntvfs, dns_backend, promote_existing)
 
     lp.set("workgroup", ctx.domain_name)
-    print("workgroup is %s" % ctx.domain_name)
+    logger.info("workgroup is %s" % ctx.domain_name)
 
     lp.set("realm", ctx.realm)
-    print("realm is %s" % ctx.realm)
+    logger.info("realm is %s" % ctx.realm)
 
     ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
 
@@ -1149,22 +1142,22 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
     ctx.do_join()
 
-    print "Joined domain %s (SID %s) as an RODC" % (ctx.domain_name, ctx.domsid)
+    logger.info("Joined domain %s (SID %s) as an RODC" % (ctx.domain_name, ctx.domsid))
 
 
-def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
+def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_name=None,
             targetdir=None, domain=None, domain_critical_only=False,
             machinepass=None, use_ntvfs=False, dns_backend=None,
             promote_existing=False):
     """Join as a DC."""
-    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
+    ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, domain,
                   machinepass, use_ntvfs, dns_backend, promote_existing)
 
     lp.set("workgroup", ctx.domain_name)
-    print("workgroup is %s" % ctx.domain_name)
+    logger.info("workgroup is %s" % ctx.domain_name)
 
     lp.set("realm", ctx.realm)
-    print("realm is %s" % ctx.realm)
+    logger.info("realm is %s" % ctx.realm)
 
     ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
 
@@ -1181,14 +1174,14 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
         ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
 
     ctx.do_join()
-    print "Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid)
+    logger.info("Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid))
 
-def join_subdomain(server=None, creds=None, lp=None, site=None,
+def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
         netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
         netbios_domain=None, machinepass=None, adminpass=None, use_ntvfs=False,
         dns_backend=None):
     """Join as a DC."""
-    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain,
+    ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, parent_domain,
                   machinepass, use_ntvfs, dns_backend)
     ctx.subdomain = True
     if adminpass is None:
@@ -1204,7 +1197,7 @@ def join_subdomain(server=None, creds=None, lp=None, site=None,
     ctx.partition_dn = "CN=%s,CN=Partitions,%s" % (ctx.domain_name, ctx.config_dn)
     ctx.naming_master = ctx.get_naming_master()
     if ctx.naming_master != ctx.server:
-        print("Reconnecting to naming master %s" % ctx.naming_master)
+        logger.info("Reconnecting to naming master %s" % ctx.naming_master)
         ctx.server = ctx.naming_master
         ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                           session_info=system_session(),
@@ -1229,4 +1222,4 @@ def join_subdomain(server=None, creds=None, lp=None, site=None,
     ctx.domain_replica_flags = ctx.replica_flags
 
     ctx.do_join()
-    print "Created domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid)
+    ctx.logger.info("Created domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid))

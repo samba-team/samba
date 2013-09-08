@@ -452,18 +452,32 @@ class cmd_domain_dcpromo(Command):
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
                    "BIND9_DLZ uses samba4 AD to store zone information, "
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-               default="SAMBA_INTERNAL")
-       ]
+               default="SAMBA_INTERNAL"),
+        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--verbose", help="Be verbose", action="store_true")
+        ]
 
     takes_args = ["domain", "role?"]
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, parent_domain=None, machinepass=None,
-            use_ntvfs=False, dns_backend=None):
+            use_ntvfs=False, dns_backend=None,
+            quiet=False, verbose=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
+
+        if site is None:
+            site = "Default-First-Site-Name"
+
+        logger = self.get_logger()
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        elif quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
 
         if site is None:
             site = "Default-First-Site-Name"
@@ -474,14 +488,14 @@ class cmd_domain_dcpromo(Command):
             role = role.upper()
 
         if role == "DC":
-            join_DC(server=server, creds=creds, lp=lp, domain=domain,
+            join_DC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir,
                     domain_critical_only=domain_critical_only,
                     machinepass=machinepass, use_ntvfs=use_ntvfs,
                     dns_backend=dns_backend,
                     promote_existing=True)
         elif role == "RODC":
-            join_RODC(server=server, creds=creds, lp=lp, domain=domain,
+            join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
                       machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend,
@@ -520,7 +534,9 @@ class cmd_domain_join(Command):
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
                    "BIND9_DLZ uses samba4 AD to store zone information, "
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-               default="SAMBA_INTERNAL")
+               default="SAMBA_INTERNAL"),
+        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--verbose", help="Be verbose", action="store_true")
        ]
 
     takes_args = ["domain", "role?"]
@@ -528,13 +544,22 @@ class cmd_domain_join(Command):
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, parent_domain=None, machinepass=None,
-            use_ntvfs=False, dns_backend=None, adminpass=None):
+            use_ntvfs=False, dns_backend=None, adminpass=None,
+            quiet=False, verbose=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
 
         if site is None:
             site = "Default-First-Site-Name"
+
+        logger = self.get_logger()
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        elif quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
 
         netbios_name = lp.get("netbios name")
 
@@ -548,12 +573,12 @@ class cmd_domain_join(Command):
 
             self.errf.write("Joined domain %s (%s)\n" % (domain_name, sid))
         elif role == "DC":
-            join_DC(server=server, creds=creds, lp=lp, domain=domain,
+            join_DC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir,
                     domain_critical_only=domain_critical_only,
                     machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend)
         elif role == "RODC":
-            join_RODC(server=server, creds=creds, lp=lp, domain=domain,
+            join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
                       machinepass=machinepass, use_ntvfs=use_ntvfs,
@@ -562,7 +587,7 @@ class cmd_domain_join(Command):
             netbios_domain = lp.get("workgroup")
             if parent_domain is None:
                 parent_domain = ".".join(domain.split(".")[1:])
-            join_subdomain(server=server, creds=creds, lp=lp, dnsdomain=domain,
+            join_subdomain(logger=logger, server=server, creds=creds, lp=lp, dnsdomain=domain,
                            parent_domain=parent_domain, site=site,
                            netbios_name=netbios_name, netbios_domain=netbios_domain,
                            targetdir=targetdir, machinepass=machinepass,
