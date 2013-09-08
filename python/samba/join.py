@@ -24,6 +24,7 @@ from samba import gensec, Ldb, drs_utils
 import ldb, samba, sys, uuid
 from samba.ndr import ndr_pack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs
+from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
 from samba.provision.common import setup_path
@@ -765,6 +766,7 @@ class dc_join(object):
         presult = provision_fill(ctx.local_samdb, secrets_ldb,
                                  ctx.logger, ctx.names, ctx.paths, domainsid=security.dom_sid(ctx.domsid),
                                  domainguid=domguid,
+                                 dom_for_fun_level=DS_DOMAIN_FUNCTION_2003,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="active directory domain controller",
                                  lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,

@@ -101,7 +101,11 @@ from samba.provision.common import (
     setup_path,
     setup_add_ldif,
     setup_modify_ldif,
-    )
+    FILL_FULL,
+    FILL_SUBDOMAIN,
+    FILL_NT4SYNC,
+    FILL_DRS
+)
 from samba.provision.sambadns import (
     get_dnsadmins_sid,
     setup_ad_dns,
@@ -1462,10 +1466,6 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
         return samdb
 
 
-FILL_FULL = "FULL"
-FILL_SUBDOMAIN = "SUBDOMAIN"
-FILL_NT4SYNC = "NT4SYNC"
-FILL_DRS = "DRS"
 SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
 SYSVOL_SERVICE="sysvol"
@@ -1795,7 +1795,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         setup_ad_dns(samdb, secrets_ldb, domainsid, names, paths, lp, logger,
                      hostip=hostip, hostip6=hostip6, dns_backend=dns_backend,
                      dnspass=dnspass, os_level=dom_for_fun_level,
-                     targetdir=targetdir, site=DEFAULTSITE)
+                     targetdir=targetdir, site=DEFAULTSITE, fill_level=samdb_fill)
 
         domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
                                      attribute="objectGUID")

@@ -26,7 +26,8 @@ import pwd
 
 from samba import Ldb, registry
 from samba.param import LoadParm
-from samba.provision import provision, FILL_FULL, ProvisioningError, setsysvolacl
+from samba.provision import provision, ProvisioningError, setsysvolacl
+from samba.provision.common import FILL_FULL
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
 from samba.dcerpc import lsa, samr, security

@@ -31,6 +31,11 @@ import os
 from samba import read_and_sub_file
 from samba.param import setup_dir
 
+FILL_FULL = "FULL"
+FILL_SUBDOMAIN = "SUBDOMAIN"
+FILL_NT4SYNC = "NT4SYNC"
+FILL_DRS = "DRS"
+
 
 def setup_path(file):
     """Return an absolute path to the provision tempate file specified by file"""

@@ -67,11 +67,14 @@ from samba.dsdb import (
 from samba.credentials import DONT_USE_KERBEROS
 from samba.provision import (
     provision,
+    ProvisioningError
+    )
+
+from samba.provision.common import (
     FILL_FULL,
     FILL_NT4SYNC,
-    FILL_DRS,
-    ProvisioningError,
-    )
+    FILL_DRS
+)
 
 def get_testparm_var(testparm, smbconf, varname):
     cmd = "%s -s -l --parameter-name='%s' %s 2>/dev/null" % (testparm, varname, smbconf)

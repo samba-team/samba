@@ -48,7 +48,11 @@ from samba.provision.common import (
     setup_path,
     setup_add_ldif,
     setup_modify_ldif,
-    setup_ldb
+    setup_ldb,
+    FILL_FULL,
+    FILL_SUBDOMAIN,
+    FILL_NT4SYNC,
+    FILL_DRS,
     )
 
 
@@ -230,14 +234,19 @@ class AgingEnabledTimeProperty(dnsp.DnsProperty):
 
 
 def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
-        serverdn):
+                         serverdn, fill_level):
     domainzone_dn = "DC=DomainDnsZones,%s" % domaindn
     forestzone_dn = "DC=ForestDnsZones,%s" % forestdn
     descriptor = get_dns_partition_descriptor(domainsid)
+
     setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
-        "DOMAINZONE_DN": domainzone_dn,
-        "FORESTZONE_DN": forestzone_dn,
+        "ZONE_DN": domainzone_dn,
         "SECDESC"      : b64encode(descriptor)
+        })
+    if fill_level != FILL_SUBDOMAIN:
+        setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
+            "ZONE_DN": forestzone_dn,
+            "SECDESC"      : b64encode(descriptor)
         })
 
     domainzone_guid = get_domainguid(samdb, domainzone_dn)
@@ -252,24 +261,35 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
     protected1_desc = get_domain_delete_protected1_descriptor(domainsid)
     protected2_desc = get_domain_delete_protected2_descriptor(domainsid)
     setup_add_ldif(samdb, setup_path("provision_dnszones_add.ldif"), {
-        "DOMAINZONE_DN": domainzone_dn,
-        "FORESTZONE_DN": forestzone_dn,
-        "DOMAINZONE_GUID": domainzone_guid,
-        "FORESTZONE_GUID": forestzone_guid,
-        "DOMAINZONE_DNS": domainzone_dns,
-        "FORESTZONE_DNS": forestzone_dns,
+        "ZONE_DN": domainzone_dn,
+        "ZONE_GUID": domainzone_guid,
+        "ZONE_DNS": domainzone_dns,
         "CONFIGDN": configdn,
         "SERVERDN": serverdn,
         "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc),
         "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc),
         })
-
     setup_modify_ldif(samdb, setup_path("provision_dnszones_modify.ldif"), {
         "CONFIGDN": configdn,
         "SERVERDN": serverdn,
-        "DOMAINZONE_DN": domainzone_dn,
-        "FORESTZONE_DN": forestzone_dn,
+        "ZONE_DN": domainzone_dn,
     })
+
+    if fill_level != FILL_SUBDOMAIN:
+        setup_add_ldif(samdb, setup_path("provision_dnszones_add.ldif"), {
+            "ZONE_DN": forestzone_dn,
+            "ZONE_GUID": forestzone_guid,
+            "ZONE_DNS": forestzone_dns,
+            "CONFIGDN": configdn,
+            "SERVERDN": serverdn,
+            "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc),
+            "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc),
+        })
+        setup_modify_ldif(samdb, setup_path("provision_dnszones_modify.ldif"), {
+            "CONFIGDN": configdn,
+            "SERVERDN": serverdn,
+            "ZONE_DN": forestzone_dn,
+        })
 
 
 def add_dns_accounts(samdb, domaindn):
@@ -928,21 +948,23 @@ def fill_dns_data_legacy(samdb, domainsid, forestdn, dnsdomain, site, hostname,
 
 
 def create_dns_partitions(samdb, domainsid, names, domaindn, forestdn,
-                          dnsadmins_sid):
+                          dnsadmins_sid, fill_level):
     # Set up additional partitions (DomainDnsZones, ForstDnsZones)
     setup_dns_partitions(samdb, domainsid, domaindn, forestdn,
-                        names.configdn, names.serverdn)
+                        names.configdn, names.serverdn, fill_level)
 
     # Set up MicrosoftDNS containers
     add_dns_container(samdb, domaindn, "DC=DomainDnsZones", domainsid,
                       dnsadmins_sid)
-    add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid,
-                      dnsadmins_sid, forest=True)
+    if fill_level != FILL_SUBDOMAIN:
+        add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid,
+                          dnsadmins_sid, forest=True)
 
 
 def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
-                            dnsdomain, dnsforest, hostname, hostip, hostip6,
-                            domainguid, ntdsguid, dnsadmins_sid, autofill=True):
+                             dnsdomain, dnsforest, hostname, hostip, hostip6,
+                             domainguid, ntdsguid, dnsadmins_sid, autofill=True,
+                             fill_level=FILL_FULL):
     """Fill data in various AD partitions
 
     :param samdb: LDB object connected to sam.ldb file
@@ -974,20 +996,21 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
         add_dc_domain_records(samdb, domaindn, "DC=DomainDnsZones", site,
                               dnsdomain, hostname, hostip, hostip6)
 
-    ##### Set up DC=ForestDnsZones,<DOMAINDN>
-    # Add _msdcs record
-    add_msdcs_record(samdb, forestdn, "DC=ForestDnsZones", dnsforest)
+    if fill_level != FILL_SUBDOMAIN:
+        ##### Set up DC=ForestDnsZones,<FORESTDN>
+        # Add _msdcs record
+        add_msdcs_record(samdb, forestdn, "DC=ForestDnsZones", dnsforest)
 
-    # Add DNS records for a DC in forest
-    if autofill:
-        add_dc_msdcs_records(samdb, forestdn, "DC=ForestDnsZones", site,
-                             dnsforest, hostname, hostip, hostip6,
-                             domainguid, ntdsguid)
+        # Add DNS records for a DC in forest
+        if autofill:
+            add_dc_msdcs_records(samdb, forestdn, "DC=ForestDnsZones", site,
+                                 dnsforest, hostname, hostip, hostip6,
+                                 domainguid, ntdsguid)
 
 
 def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
         dns_backend, os_level, site, dnspass=None, hostip=None, hostip6=None,
-        targetdir=None):
+        targetdir=None, fill_level=FILL_FULL):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
@@ -1062,18 +1085,19 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
         # Create DNS partitions
         logger.info("Creating DomainDnsZones and ForestDnsZones partitions")
         create_dns_partitions(samdb, domainsid, names, domaindn, forestdn,
-                              dnsadmins_sid)
+                              dnsadmins_sid, fill_level)
 
         # Populating dns partitions
         logger.info("Populating DomainDnsZones and ForestDnsZones partitions")
         fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
-                                dnsdomain, dnsforest, hostname, hostip, hostip6,
-                                domainguid, names.ntdsguid, dnsadmins_sid)
+                                 dnsdomain, dnsforest, hostname, hostip, hostip6,
+                                 domainguid, names.ntdsguid, dnsadmins_sid,
+                                 fill_level=fill_level)
 
     if dns_backend.startswith("BIND9_"):
         setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
-            dns_backend, os_level, site=site, dnspass=dnspass, hostip=hostip,
-            hostip6=hostip6, targetdir=targetdir)
+                        dns_backend, os_level, site=site, dnspass=dnspass, hostip=hostip,
+                        hostip6=hostip6, targetdir=targetdir)
 
 
 def setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,

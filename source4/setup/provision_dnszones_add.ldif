@@ -1,7 +1,7 @@
 #################################
 # Required objectclasses
 #################################
-dn: CN=Deleted Objects,${DOMAINZONE_DN}
+dn: CN=Deleted Objects,${ZONE_DN}
 objectClass: top
 objectClass: container
 description: Deleted objects
@@ -9,71 +9,34 @@ isDeleted: TRUE
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
 
-dn: CN=LostAndFound,${DOMAINZONE_DN}
+dn: CN=LostAndFound,${ZONE_DN}
 objectClass: top
 objectClass: lostAndFound
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
 nTSecurityDescriptor:: ${LOSTANDFOUND_DESCRIPTOR}
 
-dn: CN=Infrastructure,${DOMAINZONE_DN}
+dn: CN=Infrastructure,${ZONE_DN}
 objectClass: top
 objectClass: infrastructureUpdate
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
 nTSecurityDescriptor:: ${INFRASTRUCTURE_DESCRIPTOR}
 
-dn: CN=NTDS Quotas,${DOMAINZONE_DN}
+dn: CN=NTDS Quotas,${ZONE_DN}
 objectClass: top
 objectClass: msDS-QuotaContainer
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
 
-
-dn: CN=Deleted Objects,${FORESTZONE_DN}
-objectClass: top
-objectClass: container
-description: Deleted objects
-isDeleted: TRUE
-isCriticalSystemObject: TRUE
-systemFlags: -1946157056
-
-dn: CN=LostAndFound,${FORESTZONE_DN}
-objectClass: top
-objectClass: lostAndFound
-isCriticalSystemObject: TRUE
-systemFlags: -1946157056
-nTSecurityDescriptor:: ${LOSTANDFOUND_DESCRIPTOR}
-
-dn: CN=Infrastructure,${FORESTZONE_DN}
-objectClass: top
-objectClass: infrastructureUpdate
-isCriticalSystemObject: TRUE
-systemFlags: -1946157056
-nTSecurityDescriptor:: ${INFRASTRUCTURE_DESCRIPTOR}
-
-dn: CN=NTDS Quotas,${FORESTZONE_DN}
-objectClass: top
-objectClass: msDS-QuotaContainer
-isCriticalSystemObject: TRUE
-systemFlags: -1946157056
 
 #################################
 # Configure partitions
 #################################
-dn: CN=${DOMAINZONE_GUID},CN=Partitions,${CONFIGDN}
+dn: CN=${ZONE_GUID},CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
-nCName: ${DOMAINZONE_DN}
-dnsRoot: ${DOMAINZONE_DNS}
+nCName: ${ZONE_DN}
+dnsRoot: ${ZONE_DNS}
 systemFlags: 5
 msDS-NC-Replica-Locations: CN=NTDS Settings,${SERVERDN}
-
-dn: CN=${FORESTZONE_GUID},CN=Partitions,${CONFIGDN}
-objectClass: top
-objectClass: crossRef
-nCName: ${FORESTZONE_DN}
-dnsRoot: ${FORESTZONE_DNS}
-systemFlags: 5
-msDS-NC-Replica-Locations: CN=NTDS Settings,${SERVERDN}
-
