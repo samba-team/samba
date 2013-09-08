@@ -584,6 +584,9 @@ class cmd_domain_join(Command):
                       machinepass=machinepass, use_ntvfs=use_ntvfs,
                       dns_backend=dns_backend)
         elif role == "SUBDOMAIN":
+            if not adminpass:
+                logger.info("Administrator password will be set randomly!")
+
             netbios_domain = lp.get("workgroup")
             if parent_domain is None:
                 parent_domain = ".".join(domain.split(".")[1:])
