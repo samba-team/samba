@@ -257,10 +257,10 @@ def build(bld):
         bld.SAMBA_BINARY('ldbdump', 'tools/ldbdump.c', deps='ldb-cmdline ldb',
                          install=False)
 
-    bld.SAMBA_LIBRARY('ldb-cmdline',
-                      source='tools/ldbutil.c tools/cmdline.c',
-                      deps='ldb dl popt',
-                      private_library=True)
+        bld.SAMBA_LIBRARY('ldb-cmdline',
+                          source='tools/ldbutil.c tools/cmdline.c',
+                          deps='ldb dl popt',
+                          private_library=True)
 
 
 def test(ctx):
