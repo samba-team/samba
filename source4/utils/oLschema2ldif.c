@@ -33,7 +33,6 @@
 
 #include "includes.h"
 #include "ldb.h"
-#include "tools/cmdline.h"
 #include "dsdb/samdb/samdb.h"
 #include "../lib/crypto/sha256.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
