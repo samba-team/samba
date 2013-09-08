@@ -170,7 +170,7 @@ static WERROR drs_security_access_check_log(struct ldb_context *sam_ctx,
 		security_token_debug(2, 0, token);
 		return WERR_DS_DRA_ACCESS_DENIED;
 	} else if (ret != LDB_SUCCESS) {
-		DEBUG(1,("Failed to perform access check on %s\n", ldb_dn_get_linearized(dn)));
+		DEBUG(1,("Failed to perform access check on %s: %s\n", ldb_dn_get_linearized(dn), ldb_strerror(ret)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 	return WERR_OK;
