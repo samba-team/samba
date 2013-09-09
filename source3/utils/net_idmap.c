@@ -720,7 +720,7 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			"dump",
 			net_idmap_dump,
 			NET_TRANSPORT_LOCAL,
-			N_("Dump the current ID mappings"),
+			N_("Dump the current ID mapping database"),
 			N_("net idmap dump\n"
 			   "  Dump the current ID mappings")
 		},
