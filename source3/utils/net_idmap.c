@@ -736,6 +736,45 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	return 0;
 }
 
+static int net_idmap_autorid_set_config(struct net_context *c,
+					int argc, const char **argv)
+{
+	int ret = -1;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct db_context *db = NULL;
+
+	if (argc != 1 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net idmap set config <config>"
+			   " [--db=<inputfile>]\n"
+			   " Update CONFIG entry in autorid.\n"
+			   "	config\tConfig string to be stored\n"
+			   "	inputfile\tTDB file to update config.\n"));
+		return c->display_usage ? 0 : -1;
+	}
+
+	mem_ctx = talloc_stackframe();
+
+	if (!net_idmap_opendb_autorid(mem_ctx, c, false, &db)) {
+		goto done;
+	}
+
+	status = idmap_autorid_saveconfigstr(db, argv[0]);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Error storing the config in the database: %s\n",
+		       nt_errstr(status));
+		goto done;
+	}
+
+	ret = 0;
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -746,6 +785,14 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 			N_("Not implemented yet"),
 			N_("net idmap set mapping\n"
 			   "  Not implemented yet")
+		},
+		{
+			"config",
+			net_idmap_autorid_set_config,
+			NET_TRANSPORT_LOCAL,
+			N_("Save the global configuration in the autorid database"),
+			N_("net idmap set config \n"
+			   "  Save the global configuration in the autorid database ")
 		},
 		{
 			"secret",
