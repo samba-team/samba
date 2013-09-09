@@ -1696,6 +1696,18 @@ static bool test_raw_oplock_batch10(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
 
+	{
+		union smb_write wr;
+		wr.write.level = RAW_WRITE_WRITE;
+		wr.write.in.file.fnum = fnum;
+		wr.write.in.count = 1;
+		wr.write.in.offset = 0;
+		wr.write.in.remaining = 0;
+		wr.write.in.data = (const uint8_t *)"x";
+		status = smb_raw_write(cli1->tree, &wr);
+		CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	}
+
 	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
