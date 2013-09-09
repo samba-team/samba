@@ -728,7 +728,7 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			"restore",
 			net_idmap_restore,
 			NET_TRANSPORT_LOCAL,
-			N_("Restore entries from stdin"),
+			N_("Restore entries from a file or stdin"),
 			N_("net idmap restore\n"
 			   "  Restore entries from stdin")
 		},
