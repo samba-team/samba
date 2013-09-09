@@ -40,7 +40,7 @@ enum idmap_dump_backend {
 	AUTORID
 };
 
-struct idmap_dump_ctx {
+struct net_idmap_ctx {
 	enum idmap_dump_backend backend;
 };
 
@@ -129,7 +129,7 @@ static int net_idmap_dump_one_tdb_entry(struct db_record *rec,
 }
 
 static const char* net_idmap_dbfile(struct net_context *c,
-				    struct idmap_dump_ctx *ctx)
+				    struct net_idmap_ctx *ctx)
 {
 	const char* dbfile = NULL;
 	const char *backend = NULL;
@@ -190,7 +190,7 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 	const char* dbfile;
 	NTSTATUS status;
 	int ret = -1;
-	struct idmap_dump_ctx ctx = { .backend = TDB };
+	struct net_idmap_ctx ctx = { .backend = TDB };
 
 	if ( argc > 1  || c->display_usage) {
 		d_printf("%s\n%s",
@@ -292,7 +292,7 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 	struct db_context *db;
 	const char *dbfile = NULL;
 	int ret = 0;
-	struct idmap_dump_ctx ctx = { .backend = TDB };
+	struct net_idmap_ctx ctx = { .backend = TDB };
 
 	if (c->display_usage) {
 		d_printf("%s\n%s",
@@ -525,7 +525,7 @@ static int net_idmap_delete_mapping(struct net_context *c, int argc,
 	TDB_DATA key;
 	NTSTATUS status;
 	const char* dbfile;
-	struct idmap_dump_ctx ctx = { .backend = TDB };
+	struct net_idmap_ctx ctx = { .backend = TDB };
 
 	if ( !delete_args_ok(argc,argv) || c->display_usage) {
 		d_printf("%s\n%s",
@@ -714,7 +714,7 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 {
 	const char* dbfile;
 	struct check_options opts;
-	struct idmap_dump_ctx ctx = { .backend = TDB };
+	struct net_idmap_ctx ctx = { .backend = TDB };
 
 	if ( argc > 1 || c->display_usage) {
 		d_printf("%s\n%s",
