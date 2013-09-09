@@ -723,7 +723,7 @@ class dc_join(object):
                 schemadn=ctx.schema_dn, configdn=ctx.config_dn,
                 serverdn=ctx.server_dn, domain=ctx.domain_name,
                 hostname=ctx.myname, domainsid=ctx.domsid,
-                machinepass=ctx.acct_pass, serverrole="domain controller",
+                machinepass=ctx.acct_pass, serverrole="active directory domain controller",
                 sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
                 use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend)
         print "Provision OK for domain DN %s" % presult.domaindn
@@ -767,7 +767,7 @@ class dc_join(object):
                                  ctx.logger, ctx.names, ctx.paths, domainsid=security.dom_sid(ctx.domsid),
                                  domainguid=domguid,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
-                                 machinepass=ctx.acct_pass, serverrole="domain controller",
+                                 machinepass=ctx.acct_pass, serverrole="active directory domain controller",
                                  lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
                                  dns_backend=ctx.dns_backend, adminpass=ctx.adminpass)
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
