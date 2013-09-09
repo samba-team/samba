@@ -615,7 +615,7 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	if (argc != 2 || c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:\n"),
-			 _("net idmap secret <DOMAIN> <secret>\n"
+			 _("net idmap set secret <DOMAIN> <secret>\n"
 			   "  Set the secret for the specified domain\n"
 			   "    DOMAIN\tDomain to set secret for.\n"
 			   "    secret\tNew secret to set.\n"));
@@ -676,6 +676,14 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 			N_("Not implemented yet"),
 			N_("net idmap set mapping\n"
 			   "  Not implemented yet")
+		},
+		{
+			"secret",
+			net_idmap_secret,
+			NET_TRANSPORT_LOCAL,
+			N_("Set secret for specified domain"),
+			N_("net idmap set secret <DOMAIN> <secret>\n"
+			   "  Set secret for specified domain")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
