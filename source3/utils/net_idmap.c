@@ -671,6 +671,81 @@ static int net_idmap_set_mapping(struct net_context *c,
 	return -1;
 }
 
+static void net_idmap_autorid_set_range_usage(void)
+{
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _("net idmap set range"
+		   " <range> <SID> [<index>] [--db=<inputfile>]\n"
+		   "  Store a domain-range mapping for a given domain.\n"
+		   "    range\tRange number to be set for the domain\n"
+		   "    SID\t\tSID of the domain\n"
+		   "    index\trange-index number to be set for the domain\n"
+		   "    inputfile\tTDB file to add mapping to.\n"));
+}
+
+static int net_idmap_autorid_set_range(struct net_context *c,
+				       int argc, const char **argv)
+{
+	int ret = -1;
+	TALLOC_CTX *mem_ctx;
+	struct db_context *db = NULL;
+	const char *domsid;
+	uint32_t rangenum;
+	uint32_t range_index = 0;
+	NTSTATUS status;
+	bool ok;
+
+	if (c->display_usage) {
+		net_idmap_autorid_set_range_usage();
+		return 0;
+	}
+
+	if (argc < 2  || argc > 3) {
+		net_idmap_autorid_set_range_usage();
+		return -1;
+	}
+
+	ok = parse_uint32(argv[0], &rangenum);
+	if (!ok) {
+		d_printf("%s: %s\n", _("Invalid range specification"),
+			 argv[0]);
+		net_idmap_autorid_set_range_usage();
+		return -1;
+	}
+
+	domsid = argv[1];
+
+	if (argc == 3) {
+		ok = parse_uint32(argv[2], &range_index);
+		if (!ok) {
+			d_printf("%s: %s\n",
+				 _("Invalid index specification"), argv[2]);
+			net_idmap_autorid_set_range_usage();
+			return -1;
+		}
+	}
+
+	mem_ctx = talloc_stackframe();
+	if (!net_idmap_opendb_autorid(mem_ctx, c, false, &db)) {
+		goto done;
+	}
+
+	status = idmap_autorid_setrange(db, domsid, range_index, rangenum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "%s: %s\n",
+			  _("Failed to save domain mapping"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+	ret = 0;
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 static bool idmap_store_secret(const char *backend,
 			       const char *domain,
 			       const char *identity,
@@ -809,6 +884,14 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 			N_("Not implemented yet"),
 			N_("net idmap set mapping\n"
 			   "  Not implemented yet")
+		},
+		{
+			"range",
+			net_idmap_autorid_set_range,
+			NET_TRANSPORT_LOCAL,
+			N_("Store a domain-range mapping"),
+			N_("net idmap set range\n"
+			   "  Store a domain-range mapping")
 		},
 		{
 			"config",
