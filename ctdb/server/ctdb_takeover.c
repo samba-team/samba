@@ -2668,7 +2668,7 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 		      client_async_callback fail_callback, void *callback_data)
 {
-	int i, j;
+	int i, j, ret;
 	struct ctdb_public_ip ip;
 	struct ctdb_public_ipv4 ipv4;
 	uint32_t *nodes;
@@ -2858,12 +2858,12 @@ ipreallocated:
 	iprealloc_data.nodemap = nodemap;
 
 	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_IPREALLOCATED,
-				      nodes, 0, TAKEOVER_TIMEOUT(),
-				      false, tdb_null,
-				      NULL, iprealloc_fail_callback,
-				      &iprealloc_data) != 0) {
-
+	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_IPREALLOCATED,
+					nodes, 0, TAKEOVER_TIMEOUT(),
+					false, tdb_null,
+					NULL, iprealloc_fail_callback,
+					&iprealloc_data);
+	if (ret != 0) {
 		/* If the control failed then we should retry to any
 		 * nodes flagged by iprealloc_fail_callback using the
 		 * EVENTSCRIPT control.  This is a best-effort at
@@ -2888,18 +2888,19 @@ ipreallocated:
 
 		data.dptr  = discard_const("ipreallocated");
 		data.dsize = strlen((char *)data.dptr) + 1; 
-		if (ctdb_client_async_control(ctdb,
-					      CTDB_CONTROL_RUN_EVENTSCRIPTS,
-					      nodes, 0, TAKEOVER_TIMEOUT(),
-					      false, data,
-					      NULL, fail_callback,
-					      callback_data) != 0) {
+		ret = ctdb_client_async_control(ctdb,
+						CTDB_CONTROL_RUN_EVENTSCRIPTS,
+						nodes, 0, TAKEOVER_TIMEOUT(),
+						false, data,
+						NULL, fail_callback,
+						callback_data);
+		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " failed to send control to run eventscripts with \"ipreallocated\"\n"));
 		}
 	}
 
 	talloc_free(tmp_ctx);
-	return 0;
+	return ret;
 }
 
 
