@@ -1222,6 +1222,7 @@ sub provision_vampire_dc($$$)
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+	$ret->{DC_REALM} = $dcvars->{DC_REALM};
 
 	return $ret;
 }
@@ -1321,6 +1322,7 @@ sub provision_dc($$)
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+	$ret->{DC_REALM} = $ret->{REALM};
 
 	return $ret;
 }
