@@ -467,6 +467,8 @@ bool parse_ip(const char *addr, const char *ifaces, unsigned port, ctdb_sock_add
 	char *p;
 	bool ret;
 
+	ZERO_STRUCTP(saddr); /* valgrind :-) */
+
 	/* now is this a ipv4 or ipv6 address ?*/
 	p = index(addr, ':');
 	if (p == NULL) {
