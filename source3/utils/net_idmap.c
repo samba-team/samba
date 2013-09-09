@@ -808,6 +808,15 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 	return net_run_function(c, argc, argv, "net idmap set", func);
 }
 
+static int net_idmap_get(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net idmap get", func);
+}
+
 static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 {
 	const char* dbfile;
@@ -875,6 +884,14 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			N_("Restore entries from a file or stdin"),
 			N_("net idmap restore\n"
 			   "  Restore entries from stdin")
+		},
+		{
+			"get",
+			net_idmap_get,
+			NET_TRANSPORT_LOCAL,
+			N_("Read data from the ID mapping database"),
+			N_("net idmap get\n"
+			   "  Read data from the ID mapping database")
 		},
 		{
 			"set",
