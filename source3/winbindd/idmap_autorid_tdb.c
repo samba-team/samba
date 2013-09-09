@@ -601,3 +601,19 @@ done:
 	TALLOC_FREE(frame);
 	return status;
 }
+
+NTSTATUS idmap_autorid_saveconfigstr(struct db_context *db,
+				     const char *configstr)
+{
+	bool ok;
+	NTSTATUS status;
+	struct autorid_global_config cfg;
+
+	ok = idmap_autorid_parse_configstr(configstr, &cfg);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = idmap_autorid_saveconfig(db, &cfg);
+	return status;
+}
