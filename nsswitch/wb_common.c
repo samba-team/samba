@@ -168,6 +168,35 @@ static int make_safe_fd(int fd)
 	return new_fd;
 }
 
+/**
+ * @internal
+ *
+ * @brief Check if we have priviliged access.
+ *
+ * This checks if we have uid_wrapper running and if yes turns it of so that we
+ * can check if we have access.
+ *
+ * @param[in]  uid      The uid to compare if we have access.
+ *
+ * @return              If we have access it returns true, else false.
+ */
+static bool winbind_privileged_access(uid_t uid)
+{
+	uid_t euid;
+
+	if (uid_wrapper_enabled()) {
+		setenv("UID_WRAPPER_MYUID", "1", 1);
+	}
+
+	euid = geteuid();
+
+	if (uid_wrapper_enabled()) {
+		unsetenv("UID_WRAPPER_MYUID");
+	}
+
+	return (uid == euid);
+}
+
 /* Connect to winbindd socket */
 
 static int winbind_named_pipe_sock(const char *dir)
@@ -186,8 +215,9 @@ static int winbind_named_pipe_sock(const char *dir)
 		return -1;
 	}
 
+	/* This tells uid_wrapper to return the userid for the geteuid check */
 	if (!S_ISDIR(st.st_mode) ||
-	    (st.st_uid != 0 && st.st_uid != geteuid())) {
+	    !winbind_privileged_access(st.st_uid)) {
 		errno = ENOENT;
 		return -1;
 	}
@@ -215,8 +245,9 @@ static int winbind_named_pipe_sock(const char *dir)
 	SAFE_FREE(path);
 	/* Check permissions on unix socket file */
 
+	/* This tells uid_wrapper to return the userid for the geteuid check */
 	if (!S_ISSOCK(st.st_mode) ||
-	    (st.st_uid != 0 && st.st_uid != geteuid())) {
+	    !winbind_privileged_access(st.st_uid)) {
 		errno = ENOENT;
 		return -1;
 	}
