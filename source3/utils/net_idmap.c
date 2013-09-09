@@ -516,7 +516,8 @@ static bool delete_args_ok(int argc, const char **argv)
 	return false;
 }
 
-static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
+static int net_idmap_delete_mapping(struct net_context *c, int argc,
+				    const char **argv)
 {
 	int ret = -1;
 	struct db_context *db;
@@ -529,7 +530,7 @@ static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 	if ( !delete_args_ok(argc,argv) || c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net idmap delete [-f] [--db=<TDB>] <ID>\n"
+			 _("net idmap delete mapping [-f] [--db=<TDB>] <ID>\n"
 			   "  Delete mapping of ID from TDB.\n"
 			   "    -f\tforce\n"
 			   "    TDB\tidmap database\n"
@@ -569,6 +570,24 @@ done:
 	talloc_free(mem_ctx);
 	return ret;
 }
+
+static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"mapping",
+			net_idmap_delete_mapping,
+			NET_TRANSPORT_LOCAL,
+			N_("Delete ID mapping"),
+			N_("net idmap delete mapping <ID>\n"
+			   "  Delete ID mapping")
+		},
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net idmap delete", func);
+}
+
 
 static int net_idmap_set_mapping(struct net_context *c,
 				 int argc, const char **argv)
@@ -771,9 +790,9 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			"delete",
 			net_idmap_delete,
 			NET_TRANSPORT_LOCAL,
-			N_("Delete ID mapping"),
-			N_("net idmap delete <ID>\n"
-			   "  Delete ID mapping")
+			N_("Delete entries from the ID mapping database"),
+			N_("net idmap delete\n"
+			   "  Delete entries from the ID mapping database")
 		},
 		{
 			"secret",
