@@ -195,9 +195,11 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 	if (h->child == 0) {
 		/* start the traverse in the child */
-		int res;
+		int res, status;
 		pid_t parent = getpid();
 		struct ctdb_context *ctdb = ctdb_db->ctdb;
+		struct ctdb_rec_data *d;
+		TDB_DATA outdata;
 
 		close(h->fd[0]);
 
@@ -205,6 +207,13 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		if (switch_from_server_to_client(ctdb, "traverse_local-%s:",
 						 ctdb_db->db_name) != 0) {
 			DEBUG(DEBUG_CRIT, ("Failed to switch traverse child into client mode\n"));
+			_exit(0);
+		}
+
+		d = ctdb_marshall_record(h, h->reqid, tdb_null, NULL, tdb_null);
+		if (d == NULL) {
+			res = 0;
+			write(h->fd[1], &res, sizeof(int));
 			_exit(0);
 		}
 
@@ -219,6 +228,19 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		/* Wait till all the data is flushed from output queue */
 		while (ctdb_queue_length(ctdb->daemon.queue) > 0) {
 			tevent_loop_once(ctdb->ev);
+		}
+
+		/* End traverse by sending empty record */
+		outdata.dptr = (uint8_t *)d;
+		outdata.dsize = d->length;
+		ret = ctdb_control(ctdb, h->srcnode, 0,
+				   CTDB_CONTROL_TRAVERSE_DATA,
+				   CTDB_CTRL_FLAG_NOREPLY, outdata,
+				   NULL, NULL, &status, NULL, NULL);
+		if (ret == -1 || status == -1) {
+			if (res > 0) {
+				res = -res;
+			}
 		}
 
 		write(h->fd[1], &res, sizeof(res));
@@ -422,35 +444,14 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 }
 
 /*
-  called for each record during a traverse all 
+  called when local traverse ends
  */
 static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 {
 	struct traverse_all_state *state = talloc_get_type(p, struct traverse_all_state);
-	int ret;
-	struct ctdb_rec_data *d;
-	TDB_DATA cdata;
 
-	d = ctdb_marshall_record(state, state->reqid, key, NULL, data);
-	if (d == NULL) {
-		/* darn .... */
-		DEBUG(DEBUG_ERR,("Out of memory in traverse_all_callback\n"));
-		return;
-	}
-
-	cdata.dptr = (uint8_t *)d;
-	cdata.dsize = d->length;
-
-	ret = ctdb_daemon_send_control(state->ctdb, state->srcnode, 0, CTDB_CONTROL_TRAVERSE_DATA,
-				       0, CTDB_CTRL_FLAG_NOREPLY, cdata, NULL, NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send traverse data\n"));
-	}
-
-	if (key.dsize == 0 && data.dsize == 0) {
-		/* we're done */
-		talloc_free(state);
-	}
+	/* we're done */
+	talloc_free(state);
 }
 
 /*
