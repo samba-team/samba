@@ -27,6 +27,7 @@
 #include "../libcli/security/security.h"
 #include "net_idmap_check.h"
 #include "util_tdb.h"
+#include "idmap_autorid_tdb.h"
 
 #define ALLOC_CHECK(mem) do { \
 	if (!mem) { \
@@ -179,6 +180,56 @@ static const char* net_idmap_dbfile(struct net_context *c,
 
 	return dbfile;
 }
+
+static bool net_idmap_opendb_autorid(TALLOC_CTX *mem_ctx,
+				     struct net_context *c,
+				     bool readonly,
+				     struct db_context **db)
+{
+	bool ret = false;
+	const char *dbfile;
+	struct net_idmap_ctx ctx = { .backend = AUTORID };
+
+	if (c == NULL) {
+		goto done;
+	}
+
+	dbfile = net_idmap_dbfile(c, &ctx);
+	if (dbfile == NULL) {
+		goto done;
+	}
+
+	if (ctx.backend != AUTORID) {
+		d_fprintf(stderr, _("Unsupported backend\n"));
+		goto done;
+	}
+
+	if (readonly) {
+		*db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDONLY, 0,
+			     DBWRAP_LOCK_ORDER_1);
+		if (*db == NULL) {
+			d_fprintf(stderr,
+				  _("Could not open autorid db (%s): %s\n"),
+				 dbfile, strerror(errno));
+			goto done;
+		}
+	} else {
+		NTSTATUS status;
+		status = idmap_autorid_db_init(dbfile, mem_ctx, db);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr,
+				_("Error calling idmap_autorid_db_init: %s\n"),
+				nt_errstr(status));
+			goto done;
+		}
+	}
+
+	ret = true;
+
+done:
+	return ret;
+}
+
 
 /***********************************************************
  Dump the current idmap
