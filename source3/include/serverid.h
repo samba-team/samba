@@ -21,6 +21,7 @@
 #define __SERVERID_H__
 
 #include "includes.h"
+#include "lib/dbwrap/dbwrap.h"
 
 /*
  * Register a server with its unique id
