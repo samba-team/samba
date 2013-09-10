@@ -114,6 +114,8 @@ void session_yield(struct smbXsrv_session *session)
 struct session_list {
 	TALLOC_CTX *mem_ctx;
 	int count;
+	const char *filter_user;
+	const char *filter_machine;
 	struct sessionid *sessions;
 };
 
@@ -121,6 +123,21 @@ static int gather_sessioninfo(const char *key, struct sessionid *session,
 			      void *private_data)
 {
 	struct session_list *sesslist = (struct session_list *)private_data;
+
+	/* filter the session if required */
+
+	if (sesslist->filter_user &&
+	    (sesslist->filter_user[0] != '\0') &&
+	    !strequal(session->username, sesslist->filter_user)) {
+		return 0;
+	}
+
+	if (sesslist->filter_machine &&
+	    (sesslist->filter_machine[0] != '\0') &&
+	    !strequal(session->remote_machine,
+		      sesslist->filter_machine)) {
+		return 0;
+	}
 
 	sesslist->sessions = talloc_realloc(
 		sesslist->mem_ctx, sesslist->sessions, struct sessionid,
@@ -152,6 +169,8 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list)
 
 	sesslist.mem_ctx = mem_ctx;
 	sesslist.count = 0;
+	sesslist.filter_user = NULL;
+	sesslist.filter_machine = NULL;
 	sesslist.sessions = NULL;
 
 	status = sessionid_traverse_read(gather_sessioninfo, (void *) &sesslist);
