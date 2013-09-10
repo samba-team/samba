@@ -55,6 +55,16 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 				       struct autorid_range_config *range,
 				       bool read_only);
 
+/**
+ * get the domain range and low_id for the domain
+ * identified by domsid and domain_range_index
+ */
+NTSTATUS idmap_autorid_getrange(struct db_context *db,
+				const char *domsid,
+				uint32_t domain_range_index,
+				uint32_t *rangenum,
+				uint32_t *low_id);
+
 NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm);
 
 NTSTATUS idmap_autorid_db_init(const char *path,

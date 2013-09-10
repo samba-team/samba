@@ -174,6 +174,37 @@ done:
 	return status;
 }
 
+NTSTATUS idmap_autorid_getrange(struct db_context *db,
+				const char *domsid,
+				uint32_t domain_range_index,
+				uint32_t *rangenum,
+				uint32_t *low_id)
+{
+	NTSTATUS status;
+	struct autorid_range_config range;
+
+	if (rangenum == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ZERO_STRUCT(range);
+	fstrcpy(range.domsid, domsid);
+	range.domain_range_index = domain_range_index;
+
+	status = idmap_autorid_getrange_int(db, &range);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*rangenum = range.rangenum;
+
+	if (low_id != NULL) {
+		*low_id = range.low_id;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 				       struct autorid_range_config *range,
 				       bool read_only)
