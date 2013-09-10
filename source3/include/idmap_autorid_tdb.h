@@ -63,8 +63,9 @@ NTSTATUS idmap_autorid_db_init(const char *path,
 			       TALLOC_CTX *mem_ctx,
 			       struct db_context **db);
 
-struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
-						       TALLOC_CTX *ctx);
+NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
+				  TALLOC_CTX *ctx,
+				  struct autorid_global_config **result);
 
 NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 				  struct autorid_global_config *cfg);

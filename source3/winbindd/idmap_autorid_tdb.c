@@ -282,36 +282,42 @@ bool idmap_autorid_parse_configstr(const char *configstr,
 	return true;
 }
 
-struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
-						       TALLOC_CTX *mem_ctx)
+NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
+				  TALLOC_CTX *mem_ctx,
+				  struct autorid_global_config **result)
 {
 	struct autorid_global_config *cfg;
 	NTSTATUS status;
 	bool ok;
 	char *configstr = NULL;
 
+	if (result == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	status = idmap_autorid_getconfigstr(db, mem_ctx, &configstr);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
+		return status;
 	}
 
 	cfg = talloc_zero(mem_ctx, struct autorid_global_config);
-	if (!cfg) {
-		return NULL;
+	if (cfg == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ok = idmap_autorid_parse_configstr(configstr, cfg);
 	if (!ok) {
 		talloc_free(cfg);
-		return NULL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	DEBUG(10, ("Loaded previously stored configuration "
 		   "minvalue:%d rangesize:%d\n",
 		   cfg->minvalue, cfg->rangesize));
 
-	return cfg;
+	*result = cfg;
 
+	return NT_STATUS_OK;
 }
 
 NTSTATUS idmap_autorid_saveconfig(struct db_context *db,

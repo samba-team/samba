@@ -665,7 +665,14 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		   config->minvalue, config->rangesize, config->maxranges));
 
 	/* read previously stored config and current HWM */
-	storedconfig = idmap_autorid_loadconfig(autorid_db, talloc_tos());
+	status = idmap_autorid_loadconfig(autorid_db, talloc_tos(),
+					  &storedconfig);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		DEBUG(5, ("No configuration found. Storing initial "
+			  "configuration.\n"));
+	} else if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
 
 	status = dbwrap_fetch_uint32_bystring(autorid_db, HWM, &hwm);
 	if (!NT_STATUS_IS_OK(status)) {
