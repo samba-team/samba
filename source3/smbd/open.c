@@ -1368,7 +1368,7 @@ static bool file_has_brlocks(files_struct *fsp)
 	if (!br_lck)
 		return false;
 
-	return (br_lck->num_locks > 0);
+	return (brl_num_locks(br_lck) > 0);
 }
 
 static void grant_fsp_oplock_type(files_struct *fsp,

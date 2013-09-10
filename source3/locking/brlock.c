@@ -63,6 +63,11 @@ static void print_lock_struct(unsigned int i, const struct lock_struct *pls)
 		lock_flav_name(pls->lock_flav) ));
 }
 
+unsigned int brl_num_locks(const struct byte_range_lock *brl)
+{
+	return brl->num_locks;
+}
+
 /****************************************************************************
  See if two locking contexts are equal.
 ****************************************************************************/
