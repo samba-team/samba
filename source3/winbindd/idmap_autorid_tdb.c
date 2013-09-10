@@ -329,6 +329,7 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 	TDB_DATA data;
 	char *cfgstr;
 	uint32_t hwm;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	DEBUG(10, ("New configuration provided for storing is "
 		   "minvalue:%d rangesize:%d maxranges:%d\n",
@@ -345,7 +346,7 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 		goto done;
 	}
 
-	status = idmap_autorid_loadconfig(db, talloc_tos(), &storedconfig);
+	status = idmap_autorid_loadconfig(db, frame, &storedconfig);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		DEBUG(5, ("No configuration found. Storing initial "
 			  "configuration.\n"));
@@ -361,12 +362,9 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 		DEBUG(1, ("New configuration values for rangesize or "
 			  "minimum uid value conflict with previously "
 			  "used values! Not storing new config.\n"));
-		TALLOC_FREE(storedconfig);
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
-
-	TALLOC_FREE(storedconfig);
 
 	status = dbwrap_fetch_uint32_bystring(db, HWM, &hwm);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -388,19 +386,20 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 	}
 
 	cfgstr =
-	    talloc_asprintf(talloc_tos(),
+	    talloc_asprintf(frame,
 			    "minvalue:%u rangesize:%u maxranges:%u",
 			    cfg->minvalue, cfg->rangesize, cfg->maxranges);
 
-	if (!cfgstr) {
-		return NT_STATUS_NO_MEMORY;
+	if (cfgstr == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	data = string_tdb_data(cfgstr);
 
 	status = dbwrap_trans_store_bystring(db, CONFIGKEY, data, TDB_REPLACE);
 
-	TALLOC_FREE(cfgstr);
-
+done:
+	TALLOC_FREE(frame);
 	return status;
 }
