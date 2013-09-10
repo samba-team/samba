@@ -67,7 +67,7 @@ static void print_lock_struct(unsigned int i, const struct lock_struct *pls)
  See if two locking contexts are equal.
 ****************************************************************************/
 
-bool brl_same_context(const struct lock_context *ctx1,
+static bool brl_same_context(const struct lock_context *ctx1,
 			     const struct lock_context *ctx2)
 {
 	return (serverid_equal(&ctx1->pid, &ctx2->pid) &&

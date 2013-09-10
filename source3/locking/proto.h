@@ -25,8 +25,6 @@
 
 /* The following definitions come from locking/brlock.c  */
 
-bool brl_same_context(const struct lock_context *ctx1,
-			     const struct lock_context *ctx2);
 NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, bool blocking_lock);
 void brl_init(bool read_only);
 void brl_shutdown(void);
