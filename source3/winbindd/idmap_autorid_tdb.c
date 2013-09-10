@@ -74,6 +74,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	struct autorid_global_config *globalcfg;
 	fstring keystr;
 	uint32_t increment;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	ctx = (struct idmap_autorid_addrange_ctx *)private_data;
 	range = ctx->range;
@@ -129,11 +130,12 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching current "
 			  "HWM value: %s\n", nt_errstr(ret)));
-		ret = NT_STATUS_INTERNAL_ERROR;
-		goto error;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ret = idmap_autorid_loadconfig(db, talloc_tos(), &globalcfg);
+	mem_ctx = talloc_stackframe();
+
+	ret = idmap_autorid_loadconfig(db, mem_ctx, &globalcfg);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching configuration: %s\n",
 			  nt_errstr(ret)));
@@ -167,7 +169,6 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
-	TALLOC_FREE(globalcfg);
 
 	/* HWM always contains current max range + 1 */
 	increment = requested_rangenum + 1 - hwm;
@@ -188,7 +189,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		goto error;
 	}
 
-	numstr = talloc_asprintf(talloc_tos(), "%u", requested_rangenum);
+	numstr = talloc_asprintf(mem_ctx, "%u", requested_rangenum);
 	if (!numstr) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
@@ -197,7 +198,6 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	ret = dbwrap_store_bystring(db, numstr,
 			string_term_tdb_data(keystr), TDB_INSERT);
 
-	talloc_free(numstr);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
 			  "domain->range assignment: %s\n", nt_errstr(ret)));
@@ -212,9 +212,10 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	range->low_id = globalcfg->minvalue
 		      + range->rangenum * globalcfg->rangesize;
 
-	return NT_STATUS_OK;
+	ret = NT_STATUS_OK;
 
 error:
+	talloc_free(mem_ctx);
 	return ret;
 }
 
