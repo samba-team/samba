@@ -915,6 +915,84 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 	return net_run_function(c, argc, argv, "net idmap set", func);
 }
 
+static void net_idmap_autorid_get_range_usage(void)
+{
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _("net idmap get range <SID> [<index>] [--db=<inputfile>]\n"
+		   "  Get the range for a given domain and index.\n"
+		   "    SID\t\tSID of the domain\n"
+		   "    index\trange-index number to be retrieved\n"
+		   "    inputfile\tTDB file to add mapping to.\n"));
+}
+
+
+static int net_idmap_autorid_get_range(struct net_context *c, int argc,
+				       const char **argv)
+{
+	int ret = -1;
+	TALLOC_CTX *mem_ctx;
+	struct db_context *db = NULL;
+	const char *domsid;
+	uint32_t rangenum;
+	uint32_t range_index = 0;
+	uint32_t low_id;
+	NTSTATUS status;
+	char *keystr;
+	bool ok;
+
+	if (c->display_usage) {
+		net_idmap_autorid_get_range_usage();
+		return 0;
+	}
+
+	if (argc < 1  || argc > 2) {
+		net_idmap_autorid_get_range_usage();
+		return -1;
+	}
+
+	domsid = argv[0];
+
+	if (argc == 2) {
+		ok = parse_uint32(argv[1], &range_index);
+		if (!ok) {
+			d_printf("%s: %s\n",
+				 _("Invalid index specification"), argv[1]);
+			net_idmap_autorid_get_range_usage();
+			return -1;
+		}
+	}
+
+	mem_ctx = talloc_stackframe();
+	if (!net_idmap_opendb_autorid(mem_ctx, c, true, &db)) {
+		goto done;
+	}
+
+	status = idmap_autorid_getrange(db, domsid, range_index, &rangenum,
+					&low_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "%s: %s\n",
+			  _("Failed to load domain range"), nt_errstr(status));
+		goto done;
+	}
+
+	if (range_index == 0) {
+		keystr = talloc_strdup(mem_ctx, domsid);
+	} else {
+		keystr = talloc_asprintf(mem_ctx, "%s#%"PRIu32, domsid,
+					 range_index);
+	}
+
+	printf("RANGE %"PRIu32": %s (low id: %"PRIu32")\n",
+	       rangenum, keystr, low_id);
+
+	ret = 0;
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 static int net_idmap_autorid_get_config(struct net_context *c, int argc,
 					const char **argv)
 {
@@ -960,6 +1038,14 @@ done:
 static int net_idmap_get(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
+		{
+			"range",
+			net_idmap_autorid_get_range,
+			NET_TRANSPORT_LOCAL,
+			N_("Get the range for a domain and range-index"),
+			N_("net idmap get range\n"
+			   "  Get the range for a domain and range-index")
+		},
 		{
 			"config",
 			net_idmap_autorid_get_config,
