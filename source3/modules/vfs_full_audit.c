@@ -1655,7 +1655,8 @@ static NTSTATUS smb_full_audit_brl_lock_windows(struct vfs_handle_struct *handle
 	    blocking_lock, blr);
 
 	do_log(SMB_VFS_OP_BRL_LOCK_WINDOWS, NT_STATUS_IS_OK(result), handle,
-	    "%s:%llu-%llu. type=%d. blocking=%d", fsp_str_do_log(br_lck->fsp),
+	    "%s:%llu-%llu. type=%d. blocking=%d",
+	       fsp_str_do_log(brl_fsp(br_lck)),
 	    plock->start, plock->size, plock->lock_type, blocking_lock);
 
 	return result;
@@ -1672,7 +1673,8 @@ static bool smb_full_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 	    plock);
 
 	do_log(SMB_VFS_OP_BRL_UNLOCK_WINDOWS, (result == 0), handle,
-	    "%s:%llu-%llu:%d", fsp_str_do_log(br_lck->fsp), plock->start,
+	       "%s:%llu-%llu:%d", fsp_str_do_log(brl_fsp(br_lck)),
+	       plock->start,
 	    plock->size, plock->lock_type);
 
 	return result;
@@ -1688,7 +1690,8 @@ static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr);
 
 	do_log(SMB_VFS_OP_BRL_CANCEL_WINDOWS, (result == 0), handle,
-	    "%s:%llu-%llu:%d", fsp_str_do_log(br_lck->fsp), plock->start,
+	       "%s:%llu-%llu:%d", fsp_str_do_log(brl_fsp(br_lck)),
+	       plock->start,
 	    plock->size, plock->lock_type);
 
 	return result;

@@ -68,6 +68,11 @@ unsigned int brl_num_locks(const struct byte_range_lock *brl)
 	return brl->num_locks;
 }
 
+struct files_struct *brl_fsp(struct byte_range_lock *brl)
+{
+	return brl->fsp;
+}
+
 /****************************************************************************
  See if two locking contexts are equal.
 ****************************************************************************/

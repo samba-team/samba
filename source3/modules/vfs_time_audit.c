@@ -1558,7 +1558,7 @@ static NTSTATUS smb_time_audit_brl_lock_windows(struct vfs_handle_struct *handle
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log_fsp("brl_lock_windows", timediff,
-				       br_lck->fsp);
+				       brl_fsp(br_lck));
 	}
 
 	return result;
@@ -1581,7 +1581,7 @@ static bool smb_time_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log_fsp("brl_unlock_windows", timediff,
-				       br_lck->fsp);
+				       brl_fsp(br_lck));
 	}
 
 	return result;
@@ -1603,7 +1603,7 @@ static bool smb_time_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log_fsp("brl_cancel_windows", timediff,
-				       br_lck->fsp);
+				       brl_fsp(br_lck));
 	}
 
 	return result;
