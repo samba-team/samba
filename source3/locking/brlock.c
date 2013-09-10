@@ -240,7 +240,9 @@ static bool brl_pending_overlap(const struct lock_struct *lock, const struct loc
  app depends on this ?
 ****************************************************************************/
 
-NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, bool blocking_lock)
+static NTSTATUS brl_lock_failed(files_struct *fsp,
+				const struct lock_struct *lock,
+				bool blocking_lock)
 {
 	if (lock->start >= 0xEF000000 && (lock->start >> 63) == 0) {
 		/* amazing the little things you learn with a test
