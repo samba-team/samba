@@ -111,7 +111,7 @@ static bool recalc_brl_timeout(struct smbd_server_connection *sconn)
 		return True;
 	}
 
-	/* 
+	/*
 	 to account for unclean shutdowns by clients we need a
 	 maximum timeout that we use for checking pending locks. If
 	 we have any pending locks at all, then check if the pending
@@ -217,7 +217,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	blr->lock_type = lock_type;
 	blr->offset = offset;
 	blr->count = count;
-      
+
 	/* Specific brl_lock() implementations can fill this in. */
 	blr->blr_private = NULL;
 
@@ -332,7 +332,7 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
 }
 
 /****************************************************************************
- Return a lock fail error for a lockingX call. Undo all the locks we have 
+ Return a lock fail error for a lockingX call. Undo all the locks we have
  obtained first.
 *****************************************************************************/
 
@@ -350,7 +350,7 @@ static void undo_locks_obtained(struct blocking_lock_record *blr)
 	data = discard_const_p(uint8_t, blr->req->buf)
 		+ ((large_file_format ? 20 : 10)*num_ulocks);
 
-	/* 
+	/*
 	 * Data now points at the beginning of the list
 	 * of smb_lkrng structs.
 	 */
@@ -449,7 +449,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 	data = discard_const_p(uint8_t, blr->req->buf)
 		+ ((large_file_format ? 20 : 10)*num_ulocks);
 
-	/* 
+	/*
 	 * Data now points at the beginning of the list
 	 * of smb_lkrng structs.
 	 */
@@ -550,7 +550,7 @@ static bool process_trans2(struct blocking_lock_record *blr)
 		if (ERROR_WAS_LOCK_DENIED(status)) {
 			/* Still can't get the lock, just keep waiting. */
 			return False;
-		}	
+		}
 		/*
 		 * We have other than a "can't get lock"
 		 * error. Send an error and return True so we get dequeued.

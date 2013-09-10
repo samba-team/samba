@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    byte range locking code
    Updated to handle range splits/merges.
@@ -67,7 +67,7 @@ static void print_lock_struct(unsigned int i, const struct lock_struct *pls)
  See if two locking contexts are equal.
 ****************************************************************************/
 
-bool brl_same_context(const struct lock_context *ctx1, 
+bool brl_same_context(const struct lock_context *ctx1,
 			     const struct lock_context *ctx2)
 {
 	return (serverid_equal(&ctx1->pid, &ctx2->pid) &&
@@ -102,7 +102,7 @@ static bool brl_overlap(const struct lock_struct *lck1,
  See if lock2 can be added when lock1 is in place.
 ****************************************************************************/
 
-static bool brl_conflict(const struct lock_struct *lck1, 
+static bool brl_conflict(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
 	/* Ignore PENDING locks. */
@@ -123,7 +123,7 @@ static bool brl_conflict(const struct lock_struct *lck1,
 	}
 
 	return brl_overlap(lck1, lck2);
-} 
+}
 
 /****************************************************************************
  See if lock2 can be added when lock1 is in place - when both locks are POSIX
@@ -131,7 +131,7 @@ static bool brl_conflict(const struct lock_struct *lck1,
  know already match.
 ****************************************************************************/
 
-static bool brl_conflict_posix(const struct lock_struct *lck1, 
+static bool brl_conflict_posix(const struct lock_struct *lck1,
 			 	const struct lock_struct *lck2)
 {
 #if defined(DEVELOPER)
@@ -156,10 +156,10 @@ static bool brl_conflict_posix(const struct lock_struct *lck1,
 	/* One is read, the other write, or the context is different,
 	   do they overlap ? */
 	return brl_overlap(lck1, lck2);
-} 
+}
 
 #if ZERO_ZERO
-static bool brl_conflict1(const struct lock_struct *lck1, 
+static bool brl_conflict1(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
 	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
@@ -184,7 +184,7 @@ static bool brl_conflict1(const struct lock_struct *lck1,
 	}
 
 	return True;
-} 
+}
 #endif
 
 /****************************************************************************
@@ -198,7 +198,7 @@ static bool brl_conflict_other(const struct lock_struct *lck1, const struct lock
 	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
-	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
+	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK)
 		return False;
 
 	/* POSIX flavour locks never conflict here - this is only called
@@ -219,7 +219,7 @@ static bool brl_conflict_other(const struct lock_struct *lck1, const struct lock
 	}
 
 	return brl_overlap(lck1, lck2);
-} 
+}
 
 /****************************************************************************
  Check if an unlock overlaps a pending lock.
@@ -314,7 +314,7 @@ void brl_shutdown(void)
  Compare two locks for sorting.
 ****************************************************************************/
 
-static int lock_compare(const struct lock_struct *lck1, 
+static int lock_compare(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
 	if (lck1->start != lck2->start) {
@@ -354,7 +354,7 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 			return brl_lock_failed(fsp,plock,blocking_lock);
 		}
 #if ZERO_ZERO
-		if (plock->start == 0 && plock->size == 0 && 
+		if (plock->start == 0 && plock->size == 0 &&
 				locks[i].size == 0) {
 			break;
 		}
@@ -913,7 +913,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		uint64_t smblctx,
 		struct server_id pid,
 		br_off start,
-		br_off size, 
+		br_off size,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
 		bool blocking_lock,
@@ -1031,7 +1031,7 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 
 	/* Actually delete the lock. */
 	if (i < br_lck->num_locks - 1) {
-		memmove(&locks[i], &locks[i+1], 
+		memmove(&locks[i], &locks[i+1],
 			sizeof(*locks)*((br_lck->num_locks-1) - i));
 	}
 
@@ -1234,7 +1234,7 @@ bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
 				     const struct lock_struct *plock)
 {
 	VFS_FIND(brl_unlock_windows);
-	return handle->fns->brl_unlock_windows_fn(handle, msg_ctx, br_lck, 
+	return handle->fns->brl_unlock_windows_fn(handle, msg_ctx, br_lck,
 						  plock);
 }
 
@@ -1278,7 +1278,7 @@ bool brl_locktest(struct byte_range_lock *br_lck,
 		uint64_t smblctx,
 		struct server_id pid,
 		br_off start,
-		br_off size, 
+		br_off size,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav)
 {
@@ -1336,7 +1336,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 		uint64_t *psmblctx,
 		struct server_id pid,
 		br_off *pstart,
-		br_off *psize, 
+		br_off *psize,
 		enum brl_type *plock_type,
 		enum brl_flavour lock_flav)
 {
@@ -1361,7 +1361,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 		if (exlock->lock_flav == WINDOWS_LOCK) {
 			conflict = brl_conflict(exlock, &lock);
-		} else {	
+		} else {
 			conflict = brl_conflict_posix(exlock, &lock);
 		}
 
@@ -1468,7 +1468,7 @@ bool brl_lock_cancel_default(struct byte_range_lock *br_lck,
 
 	if (i < br_lck->num_locks - 1) {
 		/* Found this particular pending lock - delete it */
-		memmove(&locks[i], &locks[i+1], 
+		memmove(&locks[i], &locks[i+1],
 			sizeof(*locks)*((br_lck->num_locks-1) - i));
 	}
 
