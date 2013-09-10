@@ -262,19 +262,19 @@ NTSTATUS idmap_autorid_getconfigstr(struct db_context *db, TALLOC_CTX *mem_ctx,
 }
 
 struct autorid_global_config *idmap_autorid_loadconfig(struct db_context *db,
-						       TALLOC_CTX *ctx)
+						       TALLOC_CTX *mem_ctx)
 {
 	struct autorid_global_config *cfg;
 	unsigned long minvalue, rangesize, maxranges;
 	NTSTATUS status;
 	char *configstr = NULL;
 
-	status = idmap_autorid_getconfigstr(db, ctx, &configstr);
+	status = idmap_autorid_getconfigstr(db, mem_ctx, &configstr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
-	cfg = talloc_zero(ctx, struct autorid_global_config);
+	cfg = talloc_zero(mem_ctx, struct autorid_global_config);
 	if (!cfg) {
 		return NULL;
 	}
