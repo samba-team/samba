@@ -215,6 +215,12 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		} else {
 			res = h->records_sent;
 		}
+
+		/* Wait till all the data is flushed from output queue */
+		while (ctdb_queue_length(ctdb->daemon.queue) > 0) {
+			tevent_loop_once(ctdb->ev);
+		}
+
 		write(h->fd[1], &res, sizeof(res));
 
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
