@@ -416,7 +416,8 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	locks = (struct lock_struct *)SMB_REALLOC(locks, (br_lck->num_locks + 1) * sizeof(*locks));
+	locks = talloc_realloc(br_lck, locks, struct lock_struct,
+			       (br_lck->num_locks + 1));
 	if (!locks) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -754,7 +755,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	   existing POSIX lock range into two, and add our lock,
 	   so we need at most 2 more entries. */
 
-	tp = SMB_MALLOC_ARRAY(struct lock_struct, (br_lck->num_locks + 2));
+	tp = talloc_array(br_lck, struct lock_struct, br_lck->num_locks + 2);
 	if (!tp) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -775,7 +776,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			/* Do any Windows flavour locks conflict ? */
 			if (brl_conflict(curr_lock, plock)) {
 				/* No games with error messages. */
-				SAFE_FREE(tp);
+				TALLOC_FREE(tp);
 				/* Remember who blocked us. */
 				plock->context.smblctx = curr_lock->context.smblctx;
 				return NT_STATUS_FILE_LOCK_CONFLICT;
@@ -790,7 +791,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			if (brl_conflict_posix(curr_lock, plock)) {
 				/* Can't block ourselves with POSIX locks. */
 				/* No games with error messages. */
-				SAFE_FREE(tp);
+				TALLOC_FREE(tp);
 				/* Remember who blocked us. */
 				plock->context.smblctx = curr_lock->context.smblctx;
 				return NT_STATUS_FILE_LOCK_CONFLICT;
@@ -855,11 +856,11 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			plock->context.smblctx = 0xFFFFFFFFFFFFFFFFLL;
 
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
-				SAFE_FREE(tp);
+				TALLOC_FREE(tp);
 				status = NT_STATUS_FILE_LOCK_CONFLICT;
 				goto fail;
 			} else {
-				SAFE_FREE(tp);
+				TALLOC_FREE(tp);
 				status = map_nt_error_from_unix(errno);
 				goto fail;
 			}
@@ -869,7 +870,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	/* If we didn't use all the allocated size,
 	 * Realloc so we don't leak entries per lock call. */
 	if (count < br_lck->num_locks + 2) {
-		tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+		tp = talloc_realloc(br_lck, tp, struct lock_struct, count);
 		if (!tp) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
@@ -877,7 +878,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	}
 
 	br_lck->num_locks = count;
-	SAFE_FREE(br_lck->lock_data);
+	TALLOC_FREE(br_lck->lock_data);
 	br_lck->lock_data = tp;
 	locks = tp;
 	br_lck->modified = True;
@@ -1123,7 +1124,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 	   existing POSIX lock range into two, so we need at most
 	   1 more entry. */
 
-	tp = SMB_MALLOC_ARRAY(struct lock_struct, (br_lck->num_locks + 1));
+	tp = talloc_array(br_lck, struct lock_struct, br_lck->num_locks + 1);
 	if (!tp) {
 		DEBUG(10,("brl_unlock_posix: malloc fail\n"));
 		return False;
@@ -1145,7 +1146,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 		if (lock->lock_flav == WINDOWS_LOCK) {
 			/* Do any Windows flavour locks conflict ? */
 			if (brl_conflict(lock, plock)) {
-				SAFE_FREE(tp);
+				TALLOC_FREE(tp);
 				return false;
 			}
 			/* Just copy the Windows lock into the new array. */
@@ -1190,7 +1191,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 
 	if (!overlap_found) {
 		/* Just ignore - no change. */
-		SAFE_FREE(tp);
+		TALLOC_FREE(tp);
 		DEBUG(10,("brl_unlock_posix: No overlap - unlocked.\n"));
 		return True;
 	}
@@ -1207,14 +1208,14 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
-		tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+		tp = talloc_realloc(br_lck, tp, struct lock_struct, count);
 		if (!tp) {
 			DEBUG(10,("brl_unlock_posix: realloc fail\n"));
 			return False;
 		}
 	} else {
 		/* We deleted the last lock. */
-		SAFE_FREE(tp);
+		TALLOC_FREE(tp);
 		tp = NULL;
 	}
 
@@ -1222,7 +1223,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 				   LEVEL2_CONTEND_POSIX_BRL);
 
 	br_lck->num_locks = count;
-	SAFE_FREE(br_lck->lock_data);
+	TALLOC_FREE(br_lck->lock_data);
 	locks = tp;
 	br_lck->lock_data = tp;
 	br_lck->modified = True;
@@ -1677,7 +1678,8 @@ bool brl_reconnect_disconnected(struct files_struct *fsp)
 /****************************************************************************
  Ensure this set of lock entries is valid.
 ****************************************************************************/
-static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct **pplocks,
+static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
+				  unsigned int *pnum_entries, struct lock_struct **pplocks,
 				  bool keep_disconnected)
 {
 	unsigned int i;
@@ -1738,7 +1740,9 @@ static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 		struct lock_struct *new_lock_data = NULL;
 
 		if (num_valid_entries) {
-			new_lock_data = SMB_MALLOC_ARRAY(struct lock_struct, num_valid_entries);
+			new_lock_data = talloc_array(
+				mem_ctx, struct lock_struct,
+				num_valid_entries);
 			if (!new_lock_data) {
 				DEBUG(3, ("malloc fail\n"));
 				return False;
@@ -1757,7 +1761,7 @@ static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 			}
 		}
 
-		SAFE_FREE(*pplocks);
+		TALLOC_FREE(*pplocks);
 		*pplocks = new_lock_data;
 		*pnum_entries = num_valid_entries;
 	}
@@ -1796,7 +1800,8 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 	/* In a traverse function we must make a copy of
 	   dbuf before modifying it. */
 
-	locks = (struct lock_struct *)memdup(value.dptr, value.dsize);
+	locks = (struct lock_struct *)talloc_memdup(
+		talloc_tos(), value.dptr, value.dsize);
 	if (!locks) {
 		return -1; /* Terminate traversal. */
 	}
@@ -1806,8 +1811,8 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 
 	/* Ensure the lock db is clean of entries from invalid processes. */
 
-	if (!validate_lock_entries(&num_locks, &locks, true)) {
-		SAFE_FREE(locks);
+	if (!validate_lock_entries(talloc_tos(), &num_locks, &locks, true)) {
+		TALLOC_FREE(locks);
 		return -1; /* Terminate traversal */
 	}
 
@@ -1834,7 +1839,7 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 		}
 	}
 
-	SAFE_FREE(locks);
+	TALLOC_FREE(locks);
 	return 0;
 }
 
@@ -1916,7 +1921,6 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
 	byte_range_lock_flush(br_lck);
-	SAFE_FREE(br_lck->lock_data);
 	return 0;
 }
 
@@ -1980,8 +1984,8 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
 
 	if (br_lck->num_locks != 0) {
-		br_lck->lock_data = SMB_MALLOC_ARRAY(struct lock_struct,
-						     br_lck->num_locks);
+		br_lck->lock_data = talloc_array(
+			br_lck, struct lock_struct, br_lck->num_locks);
 		if (br_lck->lock_data == NULL) {
 			DEBUG(0, ("malloc failed\n"));
 			TALLOC_FREE(br_lck);
@@ -2007,9 +2011,8 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		 * So we need to clean the disconnected brl entry.
 		 */
 
-		if (!validate_lock_entries(&br_lck->num_locks,
+		if (!validate_lock_entries(br_lck, &br_lck->num_locks,
 					   &br_lck->lock_data, false)) {
-			SAFE_FREE(br_lck->lock_data);
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
