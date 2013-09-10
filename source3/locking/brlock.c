@@ -933,7 +933,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 
 #ifdef DEVELOPER
 	/* Quieten valgrind on test. */
-	memset(&lock, '\0', sizeof(lock));
+	ZERO_STRUCT(lock);
 #endif
 
 	lock.context.smblctx = smblctx;
