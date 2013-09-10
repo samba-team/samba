@@ -23,6 +23,7 @@ def build(bld):
 		smbXcli_base.c
 		smb1cli_trans.c
 		smb1cli_echo.c
+                smb1cli_create.c
 		smb2cli_session.c
                 smb2cli_create.c
                 smb2cli_close.c

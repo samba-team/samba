@@ -201,6 +201,43 @@ NTSTATUS smb1cli_echo_recv(struct tevent_req *req);
 NTSTATUS smb1cli_echo(struct smbXcli_conn *conn, uint32_t timeout_msec,
 		      uint16_t num_echos, DATA_BLOB data);
 
+struct tevent_req *smb1cli_ntcreatex_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct smbXcli_conn *conn,
+					  uint32_t timeout_msec,
+					  uint32_t pid,
+					  struct smbXcli_tcon *tcon,
+					  struct smbXcli_session *session,
+					  const char *fname,
+					  uint32_t CreatFlags,
+					  uint32_t RootDirectoryFid,
+					  uint32_t DesiredAccess,
+					  uint64_t AllocationSize,
+					  uint32_t FileAttributes,
+					  uint32_t ShareAccess,
+					  uint32_t CreateDisposition,
+					  uint32_t CreateOptions,
+					  uint32_t ImpersonationLevel,
+					  uint8_t SecurityFlags);
+NTSTATUS smb1cli_ntcreatex_recv(struct tevent_req *req, uint16_t *pfnum);
+NTSTATUS smb1cli_ntcreatex(struct smbXcli_conn *conn,
+			   uint32_t timeout_msec,
+			   uint32_t pid,
+			   struct smbXcli_tcon *tcon,
+			   struct smbXcli_session *session,
+			   const char *fname,
+			   uint32_t CreatFlags,
+			   uint32_t RootDirectoryFid,
+			   uint32_t DesiredAccess,
+			   uint64_t AllocationSize,
+			   uint32_t FileAttributes,
+			   uint32_t ShareAccess,
+			   uint32_t CreateDisposition,
+			   uint32_t CreateOptions,
+			   uint32_t ImpersonationLevel,
+			   uint8_t SecurityFlags,
+			   uint16_t *pfnum);
+
 bool smb2cli_conn_req_possible(struct smbXcli_conn *conn, uint32_t *max_dyn_len);
 uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn);
 uint16_t smb2cli_conn_server_security_mode(struct smbXcli_conn *conn);
