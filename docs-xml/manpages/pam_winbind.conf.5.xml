@@ -106,16 +106,24 @@
 		<term>krb5_ccache_type = [type]</term>
 		<listitem><para>
 
-		When pam_winbind is configured to try kerberos authentication by
-		enabling the <parameter>krb5_auth</parameter> option, it can
-		store the retrieved Ticket Granting Ticket (TGT) in a credential
-		cache. The type of credential cache can be controlled with this
-		option.  The supported values are: <parameter>FILE</parameter>
-		and <parameter>DIR</parameter> (when the DIR type is supported
-		by the system's Kerberos library). In case of FILE a credential
+		When pam_winbind is configured to try kerberos authentication
+		by enabling the <parameter>krb5_auth</parameter> option, it can
+		store the retrieved Ticket Granting Ticket (TGT) in a
+		credential cache. The type of credential cache can be
+		controlled with this option.  The supported values are:
+		<parameter>KEYRING</parameter> (when supported by the system's
+		Kerberos library and Kernel), <parameter>FILE</parameter> and
+		<parameter>DIR</parameter> (when the DIR type is supported by
+		the system's Kerberos library). In case of FILE a credential
 		cache in the form of /tmp/krb5cc_UID will be created -  in case
-		of DIR it will be located under the /run/user/UID/krb5cc
-		directory.  UID is replaced with the numeric user id.</para>
+		of DIR you NEED to specify a directory. UID is replaced with
+		the numeric user id.</para>
+
+		<para>When using the KEYRING type, the supported mechanism is
+		<quote>KEYRING:persistent:UID</quote>, which uses the Linux
+		kernel keyring to store credentials on a per-UID basis. This is
+		the recommended choice on latest Linux distributions, as it is
+		the most secure and predictable method.</para>
 
 		<para>It is also possible to define custom filepaths and use the "%u"
 		pattern in order to substitue the numeric user id.
