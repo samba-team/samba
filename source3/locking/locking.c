@@ -411,7 +411,7 @@ void locking_close_file(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	/* If we have not outstanding locks or pending
+	/* If we have no outstanding locks or pending
 	 * locks then we don't need to look in the lock db.
 	 */
 
