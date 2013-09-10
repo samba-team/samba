@@ -1730,7 +1730,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 	result = open_printer_hnd(p, r->out.handle, r->in.printername, 0);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0,("_spoolss_OpenPrinterEx: Cannot open a printer handle "
+		DEBUG(3,("_spoolss_OpenPrinterEx: Cannot open a printer handle "
 			"for printer %s\n", r->in.printername));
 		ZERO_STRUCTP(r->out.handle);
 		return result;
