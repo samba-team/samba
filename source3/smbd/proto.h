@@ -1001,6 +1001,8 @@ bool session_init(void);
 bool session_claim(struct smbXsrv_session *session);
 void session_yield(struct smbXsrv_session *session);
 int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
+int find_sessions(TALLOC_CTX *mem_ctx, const char *username,
+		  const char *machine, struct sessionid **session_list);
 
 /* The following definitions come from smbd/sesssetup.c  */
 

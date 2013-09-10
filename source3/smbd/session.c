@@ -184,3 +184,31 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list)
 	*session_list = sesslist.sessions;
 	return sesslist.count;
 }
+
+/********************************************************************
+find the sessions that match the given username and machine
+********************************************************************/
+
+int find_sessions(TALLOC_CTX *mem_ctx, const char *username,
+		  const char *machine, struct sessionid **session_list)
+{
+	struct session_list sesslist;
+	NTSTATUS status;
+
+	sesslist.mem_ctx = mem_ctx;
+	sesslist.count = 0;
+	sesslist.filter_user = username;
+	sesslist.filter_machine = machine;
+	sesslist.sessions = NULL;
+
+	status = sessionid_traverse_read(gather_sessioninfo, (void *)&sesslist);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Session traverse failed: %s\n", nt_errstr(status)));
+		TALLOC_FREE(sesslist.sessions);
+		*session_list = NULL;
+		return 0;
+	}
+
+	*session_list = sesslist.sessions;
+	return sesslist.count;
+}
