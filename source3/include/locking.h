@@ -47,15 +47,7 @@ struct files_struct;
 
 #include "lib/file_id.h"
 
-struct byte_range_lock {
-	struct files_struct *fsp;
-	unsigned int num_locks;
-	bool modified;
-	bool read_only;
-	struct file_id key;
-	struct lock_struct *lock_data;
-	struct db_record *record;
-};
+struct byte_range_lock;
 
 /* Internal structure in brlock.tdb.
    The data in brlock records is an unsorted linear array of these

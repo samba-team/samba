@@ -43,6 +43,16 @@
 
 static struct db_context *brlock_db;
 
+struct byte_range_lock {
+	struct files_struct *fsp;
+	unsigned int num_locks;
+	bool modified;
+	bool read_only;
+	struct file_id key;
+	struct lock_struct *lock_data;
+	struct db_record *record;
+};
+
 /****************************************************************************
  Debug info at level 10 for lock struct.
 ****************************************************************************/
