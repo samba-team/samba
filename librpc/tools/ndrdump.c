@@ -143,6 +143,7 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	for (i=0; i < pipes->num_pipes; i++) {
 		uint64_t idx = 0;
 		while (true) {
+			void *saved_mem_ctx;
 			uint32_t *count;
 			void *c;
 			char *n;
@@ -159,15 +160,19 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 					function, pipes->pipes[i].name,
 					(unsigned long long)idx);
 
+			saved_mem_ctx = ndr_pull->current_mem_ctx;
+			ndr_pull->current_mem_ctx = c;
 			ndr_err = pipes->pipes[i].ndr_pull(ndr_pull, NDR_SCALARS, c);
+			ndr_pull->current_mem_ctx = saved_mem_ctx;
 			status = ndr_map_error2ntstatus(ndr_err);
 
 			printf("pull returned %s\n", nt_errstr(status));
 			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(c);
 				return status;
 			}
 			pipes->pipes[i].ndr_print(ndr_print, n, c);
-
+			talloc_free(c);
 			if (*count == 0) {
 				break;
 			}
