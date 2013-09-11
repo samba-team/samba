@@ -47,6 +47,7 @@ struct byte_range_lock {
 	struct files_struct *fsp;
 	unsigned int num_locks;
 	bool modified;
+	bool have_read_oplocks;
 	struct lock_struct *lock_data;
 	struct db_record *record;
 };
@@ -79,6 +80,19 @@ unsigned int brl_num_locks(const struct byte_range_lock *brl)
 struct files_struct *brl_fsp(struct byte_range_lock *brl)
 {
 	return brl->fsp;
+}
+
+bool brl_have_read_oplocks(const struct byte_range_lock *brl)
+{
+	return brl->have_read_oplocks;
+}
+
+void brl_set_have_read_oplocks(struct byte_range_lock *brl,
+			       bool have_read_oplocks)
+{
+	SMB_ASSERT(brl->record != NULL); /* otherwise we're readonly */
+	brl->have_read_oplocks = have_read_oplocks;
+	brl->modified = true;
 }
 
 /****************************************************************************
@@ -1878,11 +1892,18 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 
 static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 {
+	size_t data_len;
 	if (!br_lck->modified) {
 		goto done;
 	}
 
-	if (br_lck->num_locks == 0) {
+	data_len = br_lck->num_locks * sizeof(struct lock_struct);
+
+	if (br_lck->have_read_oplocks) {
+		data_len += 1;
+	}
+
+	if (data_len == 0) {
 		/* No locks - delete this entry. */
 		NTSTATUS status = dbwrap_record_delete(br_lck->record);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1894,10 +1915,19 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 		TDB_DATA data;
 		NTSTATUS status;
 
-		data.dptr = (uint8 *)br_lck->lock_data;
-		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
+		data.dsize = data_len;
+		data.dptr = talloc_array(talloc_tos(), uint8_t, data_len);
+		SMB_ASSERT(data.dptr != NULL);
+
+		memcpy(data.dptr, br_lck->lock_data,
+		       br_lck->num_locks * sizeof(struct lock_struct));
+
+		if (br_lck->have_read_oplocks) {
+			data.dptr[data_len-1] = 1;
+		}
 
 		status = dbwrap_record_store(br_lck->record, data, TDB_REPLACE);
+		TALLOC_FREE(data.dptr);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
 			smb_panic("Could not store byte range mode entry");
@@ -1932,6 +1962,7 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 
 	br_lck->fsp = fsp;
 	br_lck->num_locks = 0;
+	br_lck->have_read_oplocks = false;
 	br_lck->modified = False;
 
 	key.dptr = (uint8 *)&fsp->file_id;
@@ -1946,12 +1977,6 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 	}
 
 	data = dbwrap_record_get_value(br_lck->record);
-
-	if ((data.dsize % sizeof(struct lock_struct)) != 0) {
-		DEBUG(3, ("Got invalid brlock data\n"));
-		TALLOC_FREE(br_lck);
-		return NULL;
-	}
 
 	br_lck->lock_data = NULL;
 
@@ -1968,7 +1993,12 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 			return NULL;
 		}
 
-		memcpy(br_lck->lock_data, data.dptr, data.dsize);
+		memcpy(br_lck->lock_data, data.dptr,
+		       talloc_get_size(br_lck->lock_data));
+	}
+
+	if ((data.dsize % sizeof(struct lock_struct)) == 1) {
+		br_lck->have_read_oplocks = (data.dptr[data.dsize-1] == 1);
 	}
 
 	if (!fsp->lockdb_clean) {
@@ -2038,6 +2068,10 @@ static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
 		br_lock, data.dptr, data.dsize);
 	br_lock->num_locks = data.dsize / sizeof(struct lock_struct);
 
+	if ((data.dsize % sizeof(struct lock_struct)) == 1) {
+		br_lock->have_read_oplocks = (data.dptr[data.dsize-1] == 1);
+	}
+
 	*state->br_lock = br_lock;
 }
 
@@ -2079,6 +2113,7 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		if (br_lock == NULL) {
 			goto fail;
 		}
+		br_lock->have_read_oplocks = rw->have_read_oplocks;
 		br_lock->num_locks = rw->num_locks;
 		br_lock->lock_data = (struct lock_struct *)talloc_memdup(
 			br_lock, rw->lock_data, lock_data_size);

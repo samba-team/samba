@@ -30,6 +30,9 @@ void brl_shutdown(void);
 
 unsigned int brl_num_locks(const struct byte_range_lock *brl);
 struct files_struct *brl_fsp(struct byte_range_lock *brl);
+bool brl_have_read_oplocks(const struct byte_range_lock *brl);
+void brl_set_have_read_oplocks(struct byte_range_lock *brl,
+			       bool have_read_oplocks);
 
 NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 		struct lock_struct *plock,
