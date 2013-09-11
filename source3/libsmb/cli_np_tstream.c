@@ -163,16 +163,22 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(smb1_npipe, req)) {
 			return tevent_req_post(req, ev);
 		}
-
-		subreq = cli_ntcreate_send(state, ev, cli,
-					   smb1_npipe,
-					   0,
-					   DESIRED_ACCESS_PIPE,
-					   0,
-					   FILE_SHARE_READ|FILE_SHARE_WRITE,
-					   FILE_OPEN,
-					   0,
-					   0);
+		subreq = smb1cli_ntcreatex_send(state, ev, cli->conn,
+						cli->timeout,
+						cli->smb1.pid,
+						cli->smb1.tcon,
+						cli->smb1.session,
+						smb1_npipe,
+						0, /* CreatFlags */
+						0, /* RootDirectoryFid */
+						DESIRED_ACCESS_PIPE,
+						0, /* AllocationSize */
+						0, /* FileAttributes */
+						FILE_SHARE_READ|FILE_SHARE_WRITE,
+						FILE_OPEN, /* CreateDisposition */
+						0, /* CreateOptions */
+						2, /* NTCREATEX_IMPERSONATION_IMPERSONATION */
+						0); /* SecurityFlags */
 	} else {
 		subreq = smb2cli_create_send(state, ev, cli->conn,
 					     cli->timeout, cli->smb2.session,
@@ -204,7 +210,7 @@ static void tstream_cli_np_open_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	if (state->is_smb1) {
-		status = cli_ntcreate_recv(subreq, &state->fnum);
+		status = smb1cli_ntcreatex_recv(subreq, &state->fnum);
 	} else {
 		status = smb2cli_create_recv(subreq,
 					     &state->fid_persistent,
