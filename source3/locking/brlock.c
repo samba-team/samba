@@ -1929,8 +1929,7 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
  TALLOC_FREE(brl) will release the lock in the destructor.
 ********************************************************************/
 
-static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
-						      files_struct *fsp)
+struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 {
 	TDB_DATA key, data;
 	struct byte_range_lock *br_lck = talloc(mem_ctx, struct byte_range_lock);
@@ -2026,12 +2025,6 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	return br_lck;
 }
 
-struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
-					files_struct *fsp)
-{
-	return brl_get_locks_internal(mem_ctx, fsp);
-}
-
 struct brl_get_locks_readonly_state {
 	TALLOC_CTX *mem_ctx;
 	struct byte_range_lock **br_lock;
@@ -2076,7 +2069,7 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		 * Fetch the record in R/W mode to give validate_lock_entries
 		 * a chance to kick in once.
 		 */
-		rw = brl_get_locks_internal(talloc_tos(), fsp);
+		rw = brl_get_locks(talloc_tos(), fsp);
 		if (rw == NULL) {
 			return NULL;
 		}
