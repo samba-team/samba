@@ -47,7 +47,6 @@ struct byte_range_lock {
 	struct files_struct *fsp;
 	unsigned int num_locks;
 	bool modified;
-	bool read_only;
 	struct lock_struct *lock_data;
 	struct db_record *record;
 };
@@ -1879,10 +1878,6 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 
 static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 {
-	if (br_lck->read_only) {
-		SMB_ASSERT(!br_lck->modified);
-	}
-
 	if (!br_lck->modified) {
 		goto done;
 	}
@@ -1910,10 +1905,7 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 	}
 
  done:
-
-	br_lck->read_only = true;
 	br_lck->modified = false;
-
 	TALLOC_FREE(br_lck->record);
 }
 
@@ -1961,7 +1953,6 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 		return NULL;
 	}
 
-	br_lck->read_only = false;
 	br_lck->lock_data = NULL;
 
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
@@ -2119,7 +2110,6 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 
 	br_lock->fsp = fsp;
 	br_lock->modified = false;
-	br_lock->read_only = true;
 	br_lock->record = NULL;
 
 	if (lp_clustering()) {
