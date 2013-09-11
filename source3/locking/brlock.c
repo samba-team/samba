@@ -48,7 +48,6 @@ struct byte_range_lock {
 	unsigned int num_locks;
 	bool modified;
 	bool read_only;
-	struct file_id key;
 	struct lock_struct *lock_data;
 	struct db_record *record;
 };
@@ -1944,9 +1943,8 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	br_lck->fsp = fsp;
 	br_lck->num_locks = 0;
 	br_lck->modified = False;
-	br_lck->key = fsp->file_id;
 
-	key.dptr = (uint8 *)&br_lck->key;
+	key.dptr = (uint8 *)&fsp->file_id;
 	key.dsize = sizeof(struct file_id);
 
 	if (!fsp->lockdb_clean) {
