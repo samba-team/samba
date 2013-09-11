@@ -1976,6 +1976,12 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		data = dbwrap_record_get_value(br_lck->record);
 	}
 
+	if ((data.dsize % sizeof(struct lock_struct)) != 0) {
+		DEBUG(3, ("Got invalid brlock data\n"));
+		TALLOC_FREE(br_lck);
+		return NULL;
+	}
+
 	br_lck->read_only = do_read_only;
 	br_lck->lock_data = NULL;
 
