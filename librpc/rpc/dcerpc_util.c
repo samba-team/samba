@@ -209,15 +209,21 @@ static int dcerpc_read_ncacn_packet_next_vector(struct tstream_context *stream,
 	off_t ofs = 0;
 
 	if (state->buffer.length == 0) {
-		/* first get enough to read the fragment length */
+		/*
+		 * first get enough to read the fragment length
+		 *
+		 * We read the full fixed ncacn_packet header
+		 * in order to make wireshark happy with
+		 * pcap files from socket_wrapper.
+		 */
 		ofs = 0;
-		state->buffer.length = DCERPC_FRAG_LEN_OFFSET + 2;
+		state->buffer.length = DCERPC_NCACN_PAYLOAD_OFFSET;
 		state->buffer.data = talloc_array(state, uint8_t,
 						  state->buffer.length);
 		if (!state->buffer.data) {
 			return -1;
 		}
-	} else if (state->buffer.length == (DCERPC_FRAG_LEN_OFFSET + 2)) {
+	} else if (state->buffer.length == DCERPC_NCACN_PAYLOAD_OFFSET) {
 		/* now read the fragment length and allocate the full buffer */
 		size_t frag_len = dcerpc_get_frag_length(&state->buffer);
 
