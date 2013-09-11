@@ -2058,30 +2058,123 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 	return brl_get_locks_internal(mem_ctx, fsp, False);
 }
 
+struct brl_get_locks_readonly_state {
+	TALLOC_CTX *mem_ctx;
+	struct byte_range_lock **br_lock;
+};
+
+static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
+					  void *private_data)
+{
+	struct brl_get_locks_readonly_state *state =
+		(struct brl_get_locks_readonly_state *)private_data;
+	struct byte_range_lock *br_lock;
+
+	br_lock = talloc_pooled_object(
+		state->mem_ctx, struct byte_range_lock, 1, data.dsize);
+	if (br_lock == NULL) {
+		*state->br_lock = NULL;
+		return;
+	}
+	br_lock->lock_data = (struct lock_struct *)talloc_memdup(
+		br_lock, data.dptr, data.dsize);
+	br_lock->num_locks = data.dsize / sizeof(struct lock_struct);
+
+	*state->br_lock = br_lock;
+}
+
 struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 {
-	struct byte_range_lock *br_lock;
+	struct byte_range_lock *br_lock = NULL;
+	struct byte_range_lock *rw = NULL;
 
 	if ((fsp->brlock_rec != NULL)
 	    && (dbwrap_get_seqnum(brlock_db) == fsp->brlock_seqnum)) {
+		/*
+		 * We have cached the brlock_rec and the database did not
+		 * change.
+		 */
 		return fsp->brlock_rec;
 	}
 
+	if (!fsp->lockdb_clean) {
+		/*
+		 * Fetch the record in R/W mode to give validate_lock_entries
+		 * a chance to kick in once.
+		 */
+		rw = brl_get_locks_internal(talloc_tos(), fsp, false);
+		if (rw == NULL) {
+			return NULL;
+		}
+		fsp->lockdb_clean = true;
+	}
+
+	if (rw != NULL) {
+		size_t lock_data_size;
+
+		/*
+		 * Make a copy of the already retrieved and sanitized rw record
+		 */
+		lock_data_size = rw->num_locks * sizeof(struct lock_struct);
+		br_lock = talloc_pooled_object(
+			fsp, struct byte_range_lock, 1, lock_data_size);
+		if (br_lock == NULL) {
+			goto fail;
+		}
+		br_lock->num_locks = rw->num_locks;
+		br_lock->lock_data = (struct lock_struct *)talloc_memdup(
+			br_lock, rw->lock_data, lock_data_size);
+	} else {
+		struct brl_get_locks_readonly_state state;
+		NTSTATUS status;
+
+		/*
+		 * Parse the record fresh from the database
+		 */
+
+		state.mem_ctx = fsp;
+		state.br_lock = &br_lock;
+
+		status = dbwrap_parse_record(
+			brlock_db,
+			make_tdb_data((uint8_t *)&fsp->file_id,
+				      sizeof(fsp->file_id)),
+			brl_get_locks_readonly_parser, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not parse byte range lock record: "
+				  "%s\n", nt_errstr(status)));
+			goto fail;
+		}
+		if (br_lock == NULL) {
+			goto fail;
+		}
+	}
+
+	br_lock->fsp = fsp;
+	br_lock->modified = false;
+	br_lock->read_only = true;
+	br_lock->record = NULL;
+
 	if (lp_clustering()) {
-		return brl_get_locks_internal(talloc_tos(), fsp, true);
+		/*
+		 * In the cluster case we can't cache the brlock struct
+		 * because dbwrap_get_seqnum does not work reliably over
+		 * ctdb. Thus we have to throw away the brlock struct soon.
+		 */
+		talloc_steal(talloc_tos(), br_lock);
+	} else {
+		/*
+		 * Cache the brlock struct, invalidated when the dbwrap_seqnum
+		 * changes. See beginning of this routine.
+		 */
+		TALLOC_FREE(fsp->brlock_rec);
+		fsp->brlock_rec = br_lock;
+		fsp->brlock_seqnum = dbwrap_get_seqnum(brlock_db);
 	}
 
-	TALLOC_FREE(fsp->brlock_rec);
-
-	br_lock = brl_get_locks_internal(talloc_tos(), fsp, true);
-	if (br_lock == NULL) {
-		return NULL;
-	}
-	fsp->brlock_seqnum = dbwrap_get_seqnum(brlock_db);
-
-	fsp->brlock_rec = talloc_move(fsp, &br_lock);
-
-	return fsp->brlock_rec;
+fail:
+	TALLOC_FREE(rw);
+	return br_lock;
 }
 
 struct brl_revalidate_state {
