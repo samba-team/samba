@@ -2062,13 +2062,13 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 {
 	struct byte_range_lock *br_lock;
 
-	if (lp_clustering()) {
-		return brl_get_locks_internal(talloc_tos(), fsp, true);
-	}
-
 	if ((fsp->brlock_rec != NULL)
 	    && (dbwrap_get_seqnum(brlock_db) == fsp->brlock_seqnum)) {
 		return fsp->brlock_rec;
+	}
+
+	if (lp_clustering()) {
+		return brl_get_locks_internal(talloc_tos(), fsp, true);
 	}
 
 	TALLOC_FREE(fsp->brlock_rec);
