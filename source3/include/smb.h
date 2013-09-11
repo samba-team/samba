@@ -686,7 +686,8 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 
 /* The following are Samba-private. */
 #define INTERNAL_OPEN_ONLY 		0x8
-#define FAKE_LEVEL_II_OPLOCK 		0x10	/* Client requested no_oplock, but we have to
+/* #define FAKE_LEVEL_II_OPLOCK 	0x10 */	  /* Not used anymore */
+				/* Client requested no_oplock, but we have to
 				 * inform potential level2 holders on
 				 * write. */
 /* #define DEFERRED_OPEN_ENTRY 		0x20 */   /* Not used anymore */
@@ -698,7 +699,7 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
-#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)LEVEL_II_OPLOCK|(unsigned int)FAKE_LEVEL_II_OPLOCK))
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & (unsigned int)LEVEL_II_OPLOCK)
 
 /* kernel_oplock_message definition.
 

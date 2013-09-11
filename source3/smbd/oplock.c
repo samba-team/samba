@@ -66,7 +66,6 @@ NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type)
 	}
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
-	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    use_kernel &&
 	    !koplocks->ops->set_oplock(koplocks, fsp, oplock_type))
 	{
@@ -100,7 +99,6 @@ void release_file_oplock(files_struct *fsp)
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
-	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    koplocks) {
 		koplocks->ops->release_oplock(koplocks, fsp, NO_OPLOCK);
 	}
@@ -114,12 +112,7 @@ void release_file_oplock(files_struct *fsp)
 	SMB_ASSERT(sconn->oplocks.exclusive_open>=0);
 	SMB_ASSERT(sconn->oplocks.level_II_open>=0);
 
-	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		/* This doesn't matter for close. */
-		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
-	} else {
-		fsp->oplock_type = NO_OPLOCK;
-	}
+	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 
 	flush_write_cache(fsp, OPLOCK_RELEASE_FLUSH);
@@ -171,6 +164,45 @@ bool remove_oplock(files_struct *fsp)
 			 "file %s\n", fsp_str_dbg(fsp)));
 		return False;
 	}
+
+	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
+
+		/*
+		 * If we're the only LEVEL_II holder, we have to remove the
+		 * have_read_oplocks from the brlock entry
+		 */
+
+		struct share_mode_data *data = lck->data;
+		uint32_t i, num_level2;
+
+		num_level2 = 0;
+		for (i=0; i<data->num_share_modes; i++) {
+			if (data->share_modes[i].op_type == LEVEL_II_OPLOCK) {
+				num_level2 += 1;
+			}
+			if (num_level2 > 1) {
+				/*
+				 * No need to count them all...
+				 */
+				break;
+			}
+		}
+
+		if (num_level2 == 1) {
+			/*
+			 * That's only us. We are dropping that level2 oplock,
+			 * so remove the brlock flag.
+			 */
+			struct byte_range_lock *brl;
+
+			brl = brl_get_locks(talloc_tos(), fsp);
+			if (brl) {
+				brl_set_have_read_oplocks(brl, false);
+				TALLOC_FREE(brl);
+			}
+		}
+	}
+
 	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("remove_oplock: failed to remove share oplock for "
@@ -190,6 +222,7 @@ bool downgrade_oplock(files_struct *fsp)
 {
 	bool ret;
 	struct share_mode_lock *lck;
+	struct byte_range_lock *brl;
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
@@ -206,6 +239,13 @@ bool downgrade_oplock(files_struct *fsp)
 	}
 
 	downgrade_file_oplock(fsp);
+
+	brl = brl_get_locks(talloc_tos(), fsp);
+	if (brl != NULL) {
+		brl_set_have_read_oplocks(brl, true);
+		TALLOC_FREE(brl);
+	}
+
 	TALLOC_FREE(lck);
 	return ret;
 }
@@ -372,14 +412,6 @@ static void break_level2_to_none_async(files_struct *fsp)
 		 * it.  just ignore. */
 		DEBUG(3, ("process_oplock_async_level2_break_message: already "
 			  "broken to none, ignoring.\n"));
-		return;
-	}
-
-	if (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK) {
-		/* Don't tell the client, just downgrade. */
-		DEBUG(3, ("process_oplock_async_level2_break_message: "
-			  "downgrading fake level 2 oplock.\n"));
-		remove_oplock(fsp);
 		return;
 	}
 
@@ -622,6 +654,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct tevent_immediate *im;
 	struct break_to_none_state *state;
+	struct byte_range_lock *brl;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -631,8 +664,18 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	 * the shared memory area whilst doing this.
 	 */
 
-	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		/*
+		 * There can't be any level2 oplocks, we're alone.
+		 */
 		return;
+	}
+
+	brl = brl_get_locks_readonly(fsp);
+	if ((brl != NULL) && !brl_have_read_oplocks(brl)) {
+		DEBUG(10, ("No read oplocks around\n"));
+		return;
+	}
 
 	/*
 	 * When we get here we might have a brlock entry locked. Also

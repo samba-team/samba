@@ -1052,14 +1052,6 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 			  "share entry with an open file\n");
 	}
 
-	if ((share_entry->op_type == NO_OPLOCK) &&
-	    (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK))
-	{
-		/* Someone has already written to it, but I haven't yet
-		 * noticed */
-		return;
-	}
-
 	if (((uint16)fsp->oplock_type) != share_entry->op_type) {
 		goto panic;
 	}
@@ -1408,23 +1400,9 @@ static void grant_fsp_oplock_type(files_struct *fsp,
  	 * what was found in the existing share modes.
  	 */
 
-	if (got_a_none_oplock) {
-		fsp->oplock_type = NO_OPLOCK;
-	} else if (got_level2_oplock) {
-		if (fsp->oplock_type == NO_OPLOCK ||
-				fsp->oplock_type == FAKE_LEVEL_II_OPLOCK) {
-			/* Store a level2 oplock, but don't tell the client */
-			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
-		} else {
+	if (got_level2_oplock || got_a_none_oplock) {
+		if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 			fsp->oplock_type = LEVEL_II_OPLOCK;
-		}
-	} else {
-		/* All share_mode_entries are placeholders or deferred.
-		 * Silently upgrade to fake levelII if the client didn't
-		 * ask for an oplock. */
-		if (fsp->oplock_type == NO_OPLOCK) {
-			/* Store a level2 oplock, but don't tell the client */
-			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
 		}
 	}
 
@@ -1433,7 +1411,20 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 	 * or if we've turned them off.
 	 */
 	if (fsp->oplock_type == LEVEL_II_OPLOCK && !allow_level2) {
-		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+		fsp->oplock_type = NO_OPLOCK;
+	}
+
+	if (fsp->oplock_type == LEVEL_II_OPLOCK && !got_level2_oplock) {
+		/*
+		 * We're the first level2 oplock. Indicate that in brlock.tdb.
+		 */
+		struct byte_range_lock *brl;
+
+		brl = brl_get_locks(talloc_tos(), fsp);
+		if (brl != NULL) {
+			brl_set_have_read_oplocks(brl, true);
+			TALLOC_FREE(brl);
+		}
 	}
 
 	DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",

@@ -318,8 +318,7 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 			}
 			/* Paranoia check. */
 			if ((fsp->fh->fd == -1) &&
-			    (fsp->oplock_type != NO_OPLOCK) &&
-			    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
+			    (fsp->oplock_type != NO_OPLOCK)) {
 				DEBUG(0,("file_find_dif: file %s file_id = "
 					 "%s, gen = %u oplock_type = %u is a "
 					 "stat open with oplock type !\n",
