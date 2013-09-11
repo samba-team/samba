@@ -809,17 +809,22 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 	}
 
 	if (cli_nps->is_smb1) {
-		subreq = cli_trans_send(state, state->ev,
-					cli_nps->cli,
-					SMBtrans,
-					"\\PIPE\\",
-					0, 0, 0,
-					cli_nps->trans.setup, 2,
-					0,
-					NULL, 0, 0,
-					cli_nps->write.buf,
-					cli_nps->write.ofs,
-					TSTREAM_CLI_NP_MAX_BUF_SIZE);
+		subreq = smb1cli_trans_send(state, state->ev,
+					    cli_nps->cli->conn, SMBtrans,
+					    0, 0, /* *_flags */
+					    0, 0, /* *_flags2 */
+					    cli_nps->cli->timeout,
+					    cli_nps->cli->smb1.pid,
+					    cli_nps->cli->smb1.tcon,
+					    cli_nps->cli->smb1.session,
+					    "\\PIPE\\",
+					    0, 0, 0,
+					    cli_nps->trans.setup, 2,
+					    0,
+					    NULL, 0, 0,
+					    cli_nps->write.buf,
+					    cli_nps->write.ofs,
+					    TSTREAM_CLI_NP_MAX_BUF_SIZE);
 	} else {
 		DATA_BLOB in_input_buffer = data_blob_null;
 		DATA_BLOB in_output_buffer = data_blob_null;
@@ -870,9 +875,9 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	if (cli_nps->is_smb1) {
-		status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
-					NULL, 0, NULL,
-					&rcvbuf, 0, &received);
+		status = smb1cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+					    NULL, 0, NULL,
+					    &rcvbuf, 0, &received);
 	} else {
 		DATA_BLOB out_input_buffer = data_blob_null;
 		DATA_BLOB out_output_buffer = data_blob_null;
