@@ -111,13 +111,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
 
-/* The following definitions come from rpc_client/cli_pipe_schannel.c  */
-
-NTSTATUS get_schannel_session_key(struct cli_state *cli,
-				  const char *domain,
-				  uint32 *pneg_flags,
-				  struct rpc_pipe_client **presult);
-
 #endif /* _CLI_PIPE_H */
 
 /* vim: set ts=8 sw=8 noet cindent ft=c.doxygen: */
