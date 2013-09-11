@@ -1930,11 +1930,10 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 ********************************************************************/
 
 static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
-					files_struct *fsp, bool read_only)
+						      files_struct *fsp)
 {
 	TDB_DATA key, data;
 	struct byte_range_lock *br_lck = talloc(mem_ctx, struct byte_range_lock);
-	bool do_read_only = read_only;
 
 	if (br_lck == NULL) {
 		return NULL;
@@ -1947,32 +1946,15 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	key.dptr = (uint8 *)&fsp->file_id;
 	key.dsize = sizeof(struct file_id);
 
-	if (!fsp->lockdb_clean) {
-		/* We must be read/write to clean
-		   the dead entries. */
-		do_read_only = false;
+	br_lck->record = dbwrap_fetch_locked(brlock_db, br_lck, key);
+
+	if (br_lck->record == NULL) {
+		DEBUG(3, ("Could not lock byte range lock entry\n"));
+		TALLOC_FREE(br_lck);
+		return NULL;
 	}
 
-	if (do_read_only) {
-		NTSTATUS status;
-		status = dbwrap_fetch(brlock_db, br_lck, key, &data);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Could not fetch byte range lock record\n"));
-			TALLOC_FREE(br_lck);
-			return NULL;
-		}
-		br_lck->record = NULL;
-	} else {
-		br_lck->record = dbwrap_fetch_locked(brlock_db, br_lck, key);
-
-		if (br_lck->record == NULL) {
-			DEBUG(3, ("Could not lock byte range lock entry\n"));
-			TALLOC_FREE(br_lck);
-			return NULL;
-		}
-
-		data = dbwrap_record_get_value(br_lck->record);
-	}
+	data = dbwrap_record_get_value(br_lck->record);
 
 	if ((data.dsize % sizeof(struct lock_struct)) != 0) {
 		DEBUG(3, ("Got invalid brlock data\n"));
@@ -1980,7 +1962,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	br_lck->read_only = do_read_only;
+	br_lck->read_only = false;
 	br_lck->lock_data = NULL;
 
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
@@ -2041,21 +2023,13 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (do_read_only != read_only) {
-		/*
-		 * this stores the record and gets rid of
-		 * the write lock that is needed for a cleanup
-		 */
-		byte_range_lock_flush(br_lck);
-	}
-
 	return br_lck;
 }
 
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp)
 {
-	return brl_get_locks_internal(mem_ctx, fsp, False);
+	return brl_get_locks_internal(mem_ctx, fsp);
 }
 
 struct brl_get_locks_readonly_state {
@@ -2102,7 +2076,7 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		 * Fetch the record in R/W mode to give validate_lock_entries
 		 * a chance to kick in once.
 		 */
-		rw = brl_get_locks_internal(talloc_tos(), fsp, false);
+		rw = brl_get_locks_internal(talloc_tos(), fsp);
 		if (rw == NULL) {
 			return NULL;
 		}
