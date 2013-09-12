@@ -524,6 +524,125 @@ NTSTATUS idmap_autorid_delete_range_by_sid(struct db_context *db,
 	return status;
 }
 
+/*
+ * Delete a domain#index <-> range mapping from the database.
+ * The mapping is specified by the range number.
+ * If force == true, invalid mapping records are deleted as far
+ * as possible, otherwise they are left untouched.
+ */
+struct idmap_autorid_delete_range_by_num_ctx {
+	uint32_t rangenum;
+	bool force;
+};
+
+static NTSTATUS idmap_autorid_delete_range_by_num_action(struct db_context *db,
+							   void *private_data)
+{
+	struct idmap_autorid_delete_range_by_num_ctx *ctx =
+		(struct idmap_autorid_delete_range_by_num_ctx *)private_data;
+	uint32_t rangenum;
+	char *keystr;
+	char *range_keystr;
+	TDB_DATA val;
+	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	bool is_valid_range_mapping = true;
+	bool force;
+
+	rangenum = ctx->rangenum;
+	force = ctx->force;
+
+	range_keystr = talloc_asprintf(frame, "%"PRIu32, rangenum);
+	if (range_keystr == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ZERO_STRUCT(val);
+
+	status = dbwrap_fetch_bystring(db, frame, range_keystr, &val);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		DEBUG(10, ("Did not find range '%s' in database.\n",
+			   range_keystr));
+		goto done;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Error fetching rang key: %s\n", nt_errstr(status)));
+		goto done;
+	}
+
+	if (val.dptr == NULL) {
+		DEBUG(1, ("Invalid mapping: %s -> empty value\n",
+			  range_keystr));
+		is_valid_range_mapping = false;
+	} else {
+		uint32_t reverse_rangenum = 0;
+
+		keystr = (char *)val.dptr;
+
+		status = dbwrap_fetch_uint32_bystring(db, keystr,
+						      &reverse_rangenum);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			DEBUG(1, ("Incomplete mapping %s -> %s: "
+				  "no backward mapping\n",
+				  range_keystr, keystr));
+			is_valid_range_mapping = false;
+		} else if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Error fetching reverse mapping for "
+				  "%s -> %s: %s\n",
+				  range_keystr, keystr, nt_errstr(status)));
+			goto done;
+		} else if (rangenum != reverse_rangenum) {
+			is_valid_range_mapping = false;
+		}
+	}
+
+	if (!is_valid_range_mapping && !force) {
+		DEBUG(10, ("Not deleting invalid mapping, since not in force "
+			   "mode.\n"));
+		status = NT_STATUS_FILE_INVALID;
+		goto done;
+	}
+
+	status = dbwrap_delete_bystring(db, range_keystr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Deletion of '%s' failed: %s\n",
+			  range_keystr, nt_errstr(status)));
+		goto done;
+	}
+
+	if (!is_valid_range_mapping) {
+		goto done;
+	}
+
+	status = dbwrap_delete_bystring(db, keystr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Deletion of '%s' failed: %s\n",
+			  keystr, nt_errstr(status)));
+		goto done;
+	}
+
+	DEBUG(10, ("Deleted range mapping %s <--> %s\n", range_keystr,
+		   keystr));
+
+done:
+	talloc_free(frame);
+	return status;
+}
+
+NTSTATUS idmap_autorid_delete_range_by_num(struct db_context *db,
+					   uint32_t rangenum,
+					   bool force)
+{
+	NTSTATUS status;
+	struct idmap_autorid_delete_range_by_num_ctx ctx;
+
+	ctx.rangenum = rangenum;
+	ctx.force = force;
+
+	status = dbwrap_trans_do(db, idmap_autorid_delete_range_by_num_action,
+				 &ctx);
+	return status;
+}
 
 /*
  * open and initialize the database which stores the ranges for the domains

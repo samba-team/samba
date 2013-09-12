@@ -93,6 +93,16 @@ NTSTATUS idmap_autorid_delete_range_by_sid(struct db_context *db,
 					   bool force);
 
 /**
+ * Delete a domain#index <-> range maping from the database.
+ * The mapping is specified by the range number.
+ * If force == true, invalid mapping records are deleted as far
+ * as possible, otherwise they are left untouched.
+ */
+NTSTATUS idmap_autorid_delete_range_by_num(struct db_context *db,
+					   uint32_t rangenum,
+					   bool force);
+
+/**
  * Initialize a specified HWM value to 0 if it is not
  * yet present in the database.
  */
