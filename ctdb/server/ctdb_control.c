@@ -439,7 +439,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_get_server_id_list(ctdb, outdata);
 
 	case CTDB_CONTROL_PERSISTENT_STORE:
-		return ctdb_control_persistent_store(ctdb, c, indata, async_reply);
+		return control_not_implemented("PERSISTENT_STORE", NULL);
 
 	case CTDB_CONTROL_UPDATE_RECORD:
 		return ctdb_control_update_record(ctdb, c, indata, async_reply);
@@ -488,17 +488,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_TRANS2_COMMIT:
 	case CTDB_CONTROL_TRANS2_COMMIT_RETRY:
-		return ctdb_control_trans2_commit(ctdb, c, indata, async_reply);
+		return control_not_implemented("TRANS2_COMMIT", "TRANS3_COMMIT");
 
 	case CTDB_CONTROL_TRANS2_ERROR:
-		return ctdb_control_trans2_error(ctdb, c);
+		return control_not_implemented("TRANS2_ERROR", NULL);
 
 	case CTDB_CONTROL_TRANS2_FINISHED:
-		return ctdb_control_trans2_finished(ctdb, c);
+		return control_not_implemented("TRANS2_FINISHED", NULL);
 
 	case CTDB_CONTROL_TRANS2_ACTIVE:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		return ctdb_control_trans2_active(ctdb, c, *(uint32_t *)indata.dptr);
+		return control_not_implemented("TRANS2_ACTIVE", NULL);
 
 	case CTDB_CONTROL_TRANS3_COMMIT:
 		return ctdb_control_trans3_commit(ctdb, c, indata, async_reply);
