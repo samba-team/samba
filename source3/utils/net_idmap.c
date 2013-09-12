@@ -646,6 +646,93 @@ static bool parse_uint32(const char *str, uint32_t *result)
 	return true;
 }
 
+static void net_idmap_autorid_delete_range_usage(void)
+{
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _("net idmap delete range [-f] [--db=<TDB>] <RANGE>|(<SID>[ <INDEX>])\n"
+		   "  Delete a domain range mapping from the database.\n"
+		   "    -f\tforce\n"
+		   "    TDB\tidmap database\n"
+		   "    RANGE\tthe range number to delete\n"
+		   "    SID\t\tSID of the domain\n"
+		   "    INDEX\trange index number do delete for the domain\n"));
+}
+
+static int net_idmap_autorid_delete_range(struct net_context *c, int argc,
+					  const char **argv)
+{
+	int ret = -1;
+	struct db_context *db = NULL;
+	NTSTATUS status;
+	uint32_t rangenum;
+	uint32_t range_index;
+	const char *domsid;
+	TALLOC_CTX *mem_ctx = NULL;
+	bool ok;
+	bool force = (c->opt_force != 0);
+
+	if (c->display_usage) {
+		net_idmap_autorid_delete_range_usage();
+		return 0;
+	}
+
+	if (argc < 1 || argc > 2) {
+		net_idmap_autorid_delete_range_usage();
+		return -1;
+	}
+
+	mem_ctx = talloc_stackframe();
+	if (!net_idmap_opendb_autorid(mem_ctx, c, false, &db)) {
+		goto done;
+	}
+
+	ok = parse_uint32(argv[0], &rangenum);
+	if (ok) {
+		d_printf("%s: %"PRIu32"\n", _("Deleting range number"),
+			 rangenum);
+
+		status = idmap_autorid_delete_range_by_num(db, rangenum,
+							   force);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "%s: %s\n",
+				  _("Failed to delete domain range mapping"),
+				  nt_errstr(status));
+		} else {
+			ret = 0;
+		}
+
+		goto done;
+	}
+
+	domsid = argv[0];
+
+	if (argc == 2) {
+		ok = parse_uint32(argv[1], &range_index);
+		if (!ok) {
+			d_printf("%s: %s\n",
+				 _("Invalid index specification"), argv[1]);
+			net_idmap_autorid_delete_range_usage();
+			goto done;
+		}
+	}
+
+	status = idmap_autorid_delete_range_by_sid(db, domsid, range_index,
+						   force);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "%s: %s\n",
+			  _("Failed to delete domain range mapping"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+	ret = 0;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -656,6 +743,14 @@ static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 			N_("Delete ID mapping"),
 			N_("net idmap delete mapping <ID>\n"
 			   "  Delete ID mapping")
+		},
+		{
+			"range",
+			net_idmap_autorid_delete_range,
+			NET_TRANSPORT_LOCAL,
+			N_("Delete a domain range mapping"),
+			N_("net idmap delete range <RANGE>|(<SID>[ <INDEX>])\n"
+			   "  Delete a domain range mapping")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
