@@ -542,6 +542,11 @@ def distcheck():
     '''test that distribution tarball builds and installs'''
     samba_version.load_version(env=None)
 
+def printversion(ctx):
+    '''print version'''
+    ver = samba_version.load_version(env=None)
+    print('Samba Version: ' + ver.STRING_WITH_NICKNAME)
+
 def wildcard_cmd(cmd):
     '''called on a unknown command'''
     from samba_wildcard import run_named_build_task
