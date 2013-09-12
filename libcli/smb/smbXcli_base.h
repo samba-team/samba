@@ -254,6 +254,33 @@ NTSTATUS smb1cli_close(struct smbXcli_conn *conn,
 		       struct smbXcli_session *session,
 		       uint16_t fnum,
 		       uint32_t last_modified);
+struct tevent_req *smb1cli_writex_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct smbXcli_conn *conn,
+				       uint32_t timeout_msec,
+				       uint32_t pid,
+				       struct smbXcli_tcon *tcon,
+				       struct smbXcli_session *session,
+				       uint16_t fnum,
+				       uint16_t mode,
+				       const uint8_t *buf,
+				       uint64_t offset,
+				       uint32_t size);
+NTSTATUS smb1cli_writex_recv(struct tevent_req *req,
+			     uint32_t *pwritten,
+			     uint16_t *pavailable);
+NTSTATUS smb1cli_writex(struct smbXcli_conn *conn,
+			uint32_t timeout_msec,
+			uint32_t pid,
+			struct smbXcli_tcon *tcon,
+			struct smbXcli_session *session,
+			uint16_t fnum,
+			uint16_t mode,
+			const uint8_t *buf,
+			uint64_t offset,
+			uint32_t size,
+			uint32_t *pwritten,
+			uint16_t *pavailable);
 
 bool smb2cli_conn_req_possible(struct smbXcli_conn *conn, uint32_t *max_dyn_len);
 uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn);
