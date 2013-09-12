@@ -67,6 +67,10 @@ distcheck:
 	touch .tmplock
 	WAFLOCK=.tmplock $(WAF) distcheck
 
+printversion:
+	touch .tmplock
+	WAFLOCK=.tmplock $(WAF) printversion
+
 clean:
 	$(WAF) clean
 
