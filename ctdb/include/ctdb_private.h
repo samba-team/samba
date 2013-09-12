@@ -953,12 +953,6 @@ struct ctdb_marshall_buffer {
 	uint8_t data[1];
 };
 
-/* set dmaster control structure */
-struct ctdb_control_set_dmaster {
-	uint32_t db_id;
-	uint32_t dmaster;
-};
-
 /*
   structure for setting a tunable
  */
