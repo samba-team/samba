@@ -147,18 +147,6 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		 * automatically acquire the next range
 		 */
 		requested_rangenum = hwm;
-	} else {
-		/*
-		 * set a specified range
-		 */
-
-		if (requested_rangenum < hwm) {
-			DEBUG(3, ("Invalid range %u requested: Range may not "
-				  "be smaller than %u (current HWM)\n",
-				  requested_rangenum, hwm));
-			ret = NT_STATUS_INVALID_PARAMETER;
-			goto error;
-		}
 	}
 
 	if (requested_rangenum >= globalcfg->maxranges) {
@@ -170,18 +158,49 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		goto error;
 	}
 
-	/* HWM always contains current max range + 1 */
-	increment = requested_rangenum + 1 - hwm;
+	if (requested_rangenum < hwm) {
+		/*
+		 * Set a specified range below the HWM:
+		 * We need to check that it is not yet taken.
+		 */
 
-	/* increase the HWM */
-	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &hwm, increment);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("Fatal error while incrementing the HWM value "
-			  "in the database: %s\n", nt_errstr(ret)));
-		goto error;
+		numstr = talloc_asprintf(mem_ctx, "%u", requested_rangenum);
+		if (!numstr) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		if (dbwrap_exists(db, string_term_tdb_data(numstr))) {
+			DEBUG(1, ("Requested range already in use.\n"));
+			ret = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+
+		TALLOC_FREE(numstr);
+	} else {
+		/*
+		 * requested or automatic range >= HWM:
+		 * increment the HWM.
+		 */
+
+		/* HWM always contains current max range + 1 */
+		increment = requested_rangenum + 1 - hwm;
+
+		/* increase the HWM */
+		ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &hwm,
+							   increment);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, ("Fatal error while incrementing the HWM "
+				  "value in the database: %s\n",
+				  nt_errstr(ret)));
+			goto error;
+		}
 	}
 
-	/* store away the new mapping in both directions */
+	/*
+	 * store away the new mapping in both directions
+	 */
+
 	ret = dbwrap_store_uint32_bystring(db, keystr, requested_rangenum);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
