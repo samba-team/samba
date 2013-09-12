@@ -138,6 +138,7 @@ smb.conf changes
    Parameter Name			Description	Default
    --------------			-----------	-------
 
+   acl allow execute always		New		False
    password level			Removed
    set directory			Removed
    use ntdb				New		No
@@ -163,6 +164,17 @@ o   David Disseldorp <ddiss@samba.org>
     * Add vfs_btrfs module.
     * Add support for server-side copy operations via the
       SMB2 FSCTL_SRV_COPYCHUNK request.
+
+
+CHANGES SINCE 4.1.0rc3
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10134: Add "acl allow execute always" parameter.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10008: dbwrap_ctdb: Treat empty records as non-existing.
 
 
 CHANGES SINCE 4.1.0rc2
