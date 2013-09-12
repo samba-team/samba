@@ -237,6 +237,23 @@ NTSTATUS smb1cli_ntcreatex(struct smbXcli_conn *conn,
 			   uint32_t ImpersonationLevel,
 			   uint8_t SecurityFlags,
 			   uint16_t *pfnum);
+struct tevent_req *smb1cli_close_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct smbXcli_conn *conn,
+				      uint32_t timeout_msec,
+				      uint32_t pid,
+				      struct smbXcli_tcon *tcon,
+				      struct smbXcli_session *session,
+				      uint16_t fnum,
+				      uint32_t last_modified);
+NTSTATUS smb1cli_close_recv(struct tevent_req *req);
+NTSTATUS smb1cli_close(struct smbXcli_conn *conn,
+		       uint32_t timeout_msec,
+		       uint32_t pid,
+		       struct smbXcli_tcon *tcon,
+		       struct smbXcli_session *session,
+		       uint16_t fnum,
+		       uint32_t last_modified);
 
 bool smb2cli_conn_req_possible(struct smbXcli_conn *conn, uint32_t *max_dyn_len);
 uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn);
