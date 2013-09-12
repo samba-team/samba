@@ -65,6 +65,20 @@ int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	return 0;
 }
 
+static int32_t control_not_implemented(const char *unsupported,
+				       const char *alternate)
+{
+	if (alternate == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Control %s is not implemented any more\n",
+		       unsupported));
+	} else {
+		DEBUG(DEBUG_ERR,
+		      ("Control %s is not implemented any more, use %s instead\n",
+		       unsupported, alternate));
+	}
+	return -1;
+}
 
 /*
   process a control request
@@ -172,10 +186,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_pull_db(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_DMASTER: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_dmaster));
-		DEBUG(DEBUG_ERR, ("The SET_DMASTER control is not implemented "
-				  "any more.\n"));
-		return  -1;
+		return control_not_implemented("SET_DMASTER", NULL);
 
 	case CTDB_CONTROL_PUSH_DB:
 		return ctdb_control_push_db(ctdb, indata);
