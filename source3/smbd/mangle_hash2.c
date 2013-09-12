@@ -626,7 +626,8 @@ static bool is_legal_name(const char *name)
 	while (*name) {
 		if (((unsigned int)name[0]) > 128 && (name[1] != 0)) {
 			/* Possible start of mb character. */
-			char mbc[2];
+			size_t size = 0;
+			(void)next_codepoint(name, &size);
 			/*
 			 * Note that if CH_UNIX is utf8 a string may be 3
 			 * bytes, but this is ok as mb utf8 characters don't
@@ -634,9 +635,9 @@ static bool is_legal_name(const char *name)
 			 * for mb UNIX asian characters like Japanese (SJIS) here.
 			 * JRA.
 			 */
-			if (convert_string(CH_UNIX, CH_UTF16LE, name, 2, mbc, 2, False) == 2) {
-				/* Was a good mb string. */
-				name += 2;
+			if (size > 1) {
+				/* Was a mb string. */
+				name += size;
 				continue;
 			}
 		}
