@@ -484,7 +484,12 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 	}
 
 	if (cli_nps->is_smb1) {
-		subreq = cli_write_andx_send(state, state->ev, cli_nps->cli,
+		subreq = smb1cli_writex_send(state, state->ev,
+					     cli_nps->cli->conn,
+					     cli_nps->cli->timeout,
+					     cli_nps->cli->smb1.pid,
+					     cli_nps->cli->smb1.tcon,
+					     cli_nps->cli->smb1.session,
 					     cli_nps->fnum,
 					     8, /* 8 means message mode. */
 					     cli_nps->write.buf,
@@ -525,17 +530,13 @@ static void tstream_cli_np_writev_write_done(struct tevent_req *subreq)
 	struct tstream_cli_np *cli_nps =
 		tstream_context_data(state->stream,
 		struct tstream_cli_np);
-	size_t written;
+	uint32_t written;
 	NTSTATUS status;
 
 	if (cli_nps->is_smb1) {
-		status = cli_write_andx_recv(subreq, &written);
+		status = smb1cli_writex_recv(subreq, &written, NULL);
 	} else {
-		uint32_t smb2_written;
-		status = smb2cli_write_recv(subreq, &smb2_written);
-		if (NT_STATUS_IS_OK(status)) {
-			written = smb2_written;
-		}
+		status = smb2cli_write_recv(subreq, &written);
 	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
