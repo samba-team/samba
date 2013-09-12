@@ -244,9 +244,6 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 				  "commit active. Forcing recovery.\n"));
 		client->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 
-		/* legacy trans2 transaction state: */
-		ctdb_db->transaction_active = false;
-
 		/*
 		 * trans3 transaction state:
 		 *

@@ -941,7 +941,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	 * expensive as a migration.
 	 */
 	if (c->hdr.srcnode != ctdb->pnn) {
-		if (ctdb_db->transaction_active) {
+		if (ctdb_db->persistent_state) {
 			DEBUG(DEBUG_INFO, (__location__ " refusing migration"
 			      " of key %s while transaction is active\n",
 			      (char *)call->key.dptr));

@@ -575,7 +575,6 @@ struct ctdb_db_context {
 	uint32_t seqnum;
 	struct timed_event *seqnum_update;
 	struct ctdb_traverse_local_handle *traverse;
-	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
 	char *unhealthy_reason;
 	int pending_requests;
