@@ -132,7 +132,7 @@ struct tdb_logging_context {
  * @param[in]  tdb_flags The flags to use to open the db:\n\n
  *                         TDB_CLEAR_IF_FIRST - Clear database if we are the
  *                                              only one with it open\n
- *                         TDB_INTERNAL - Don't use a file, instaed store the
+ *                         TDB_INTERNAL - Don't use a file, instead store the
  *                                        data in memory. The filename is
  *                                        ignored in this case.\n
  *                         TDB_NOLOCK - Don't do any locking\n
@@ -168,7 +168,7 @@ struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
  * @param[in]  tdb_flags The flags to use to open the db:\n\n
  *                         TDB_CLEAR_IF_FIRST - Clear database if we are the
  *                                              only one with it open\n
- *                         TDB_INTERNAL - Don't use a file, instaed store the
+ *                         TDB_INTERNAL - Don't use a file, instead store the
  *                                        data in memory. The filename is
  *                                        ignored in this case.\n
  *                         TDB_NOLOCK - Don't do any locking\n
@@ -402,7 +402,7 @@ TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA key);
 /**
  * @brief Traverse the entire database.
  *
- * While travering the function fn(tdb, key, data, state) is called on each
+ * While traversing the function fn(tdb, key, data, state) is called on each
  * element. If fn is NULL then it is not called. A non-zero return value from
  * fn() indicates that the traversal should stop. Traversal callbacks may not
  * start transactions.
@@ -777,7 +777,7 @@ void tdb_enable_seqnum(struct tdb_context *tdb);
  * @brief Increment the tdb sequence number.
  *
  * This only works if the tdb has been opened using the TDB_SEQNUM flag or
- * enabled useing tdb_enable_seqnum().
+ * enabled using tdb_enable_seqnum().
  *
  * @param[in]  tdb      The database to increment the sequence number.
  *
