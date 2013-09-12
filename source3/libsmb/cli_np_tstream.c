@@ -94,7 +94,12 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 	 * never be called.
 	 */
 	if (cli_nps->is_smb1) {
-		status = cli_close(cli_nps->cli, cli_nps->fnum);
+		status = smb1cli_close(cli_nps->cli->conn,
+				       cli_nps->cli->timeout,
+				       cli_nps->cli->smb1.pid,
+				       cli_nps->cli->smb1.tcon,
+				       cli_nps->cli->smb1.session,
+				       cli_nps->fnum, UINT32_MAX);
 	} else {
 		status = smb2cli_close(cli_nps->cli->conn,
 				       cli_nps->cli->timeout,
@@ -570,8 +575,13 @@ static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
 	}
 
 	if (cli_nps->is_smb1) {
-		subreq = cli_close_send(state, state->ev, cli_nps->cli,
-					cli_nps->fnum);
+		subreq = smb1cli_close_send(state, state->ev,
+					    cli_nps->cli->conn,
+					    cli_nps->cli->timeout,
+					    cli_nps->cli->smb1.pid,
+					    cli_nps->cli->smb1.tcon,
+					    cli_nps->cli->smb1.session,
+					    cli_nps->fnum, UINT32_MAX);
 	} else {
 		subreq = smb2cli_close_send(state, state->ev,
 					    cli_nps->cli->conn,
@@ -602,7 +612,7 @@ static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq)
 		tstream_context_data(state->stream, struct tstream_cli_np);
 
 	if (cli_nps->is_smb1) {
-		cli_close_recv(subreq);
+		smb1cli_close_recv(subreq);
 	} else {
 		smb2cli_close_recv(subreq);
 	}
@@ -1037,8 +1047,13 @@ static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
 	}
 
 	if (cli_nps->is_smb1) {
-		subreq = cli_close_send(state, state->ev, cli_nps->cli,
-					cli_nps->fnum);
+		subreq = smb1cli_close_send(state, state->ev,
+					    cli_nps->cli->conn,
+					    cli_nps->cli->timeout,
+					    cli_nps->cli->smb1.pid,
+					    cli_nps->cli->smb1.tcon,
+					    cli_nps->cli->smb1.session,
+					    cli_nps->fnum, UINT32_MAX);
 	} else {
 		subreq = smb2cli_close_send(state, state->ev,
 					    cli_nps->cli->conn,
@@ -1069,7 +1084,7 @@ static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq)
 		tstream_context_data(state->stream, struct tstream_cli_np);
 
 	if (cli_nps->is_smb1) {
-		cli_close_recv(subreq);
+		smb1cli_close_recv(subreq);
 	} else {
 		smb2cli_close_recv(subreq);
 	}
@@ -1174,8 +1189,12 @@ static struct tevent_req *tstream_cli_np_disconnect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (cli_nps->is_smb1) {
-		subreq = cli_close_send(state, ev, cli_nps->cli,
-					cli_nps->fnum);
+		subreq = smb1cli_close_send(state, ev, cli_nps->cli->conn,
+					    cli_nps->cli->timeout,
+					    cli_nps->cli->smb1.pid,
+					    cli_nps->cli->smb1.tcon,
+					    cli_nps->cli->smb1.session,
+					    cli_nps->fnum, UINT32_MAX);
 	} else {
 		subreq = smb2cli_close_send(state, ev, cli_nps->cli->conn,
 					    cli_nps->cli->timeout,
@@ -1204,7 +1223,7 @@ static void tstream_cli_np_disconnect_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	if (cli_nps->is_smb1) {
-		status = cli_close_recv(subreq);
+		status = smb1cli_close_recv(subreq);
 	} else {
 		status = smb2cli_close_recv(subreq);
 	}
