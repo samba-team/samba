@@ -43,6 +43,4 @@ NTSTATUS tstream_cli_np_use_trans(struct tstream_context *stream);
 unsigned int tstream_cli_np_set_timeout(struct tstream_context *stream,
 					unsigned int timeout);
 
-struct cli_state *tstream_cli_np_get_cli_state(struct tstream_context *stream);
-
 #endif /*  _CLI_NP_TSTREAM_H_ */

@@ -330,14 +330,6 @@ unsigned int tstream_cli_np_set_timeout(struct tstream_context *stream,
 	return cli_set_timeout(cli_nps->cli, timeout);
 }
 
-struct cli_state *tstream_cli_np_get_cli_state(struct tstream_context *stream)
-{
-	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
-					 struct tstream_cli_np);
-
-	return cli_nps->cli;
-}
-
 struct tstream_cli_np_writev_state {
 	struct tstream_context *stream;
 	struct tevent_context *ev;
