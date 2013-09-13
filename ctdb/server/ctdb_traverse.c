@@ -197,12 +197,12 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		/* start the traverse in the child */
 		int res;
 		pid_t parent = getpid();
+		struct ctdb_context *ctdb = ctdb_db->ctdb;
 
 		close(h->fd[0]);
 
 		ctdb_set_process_name("ctdb_traverse");
-		if (switch_from_server_to_client(ctdb_db->ctdb,
-						 "traverse_local-%s:",
+		if (switch_from_server_to_client(ctdb, "traverse_local-%s:",
 						 ctdb_db->db_name) != 0) {
 			DEBUG(DEBUG_CRIT, ("Failed to switch traverse child into client mode\n"));
 			_exit(0);
@@ -217,7 +217,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		}
 		write(h->fd[1], &res, sizeof(res));
 
-		while (ctdb_kill(ctdb_db->ctdb, parent, 0) == 0 || errno != ESRCH) {
+		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
 		}
 		_exit(0);
