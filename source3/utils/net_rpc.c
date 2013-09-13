@@ -1342,7 +1342,7 @@ static NTSTATUS rpc_sh_handle_user(struct net_context *c,
 	ZERO_STRUCT(domain_pol);
 	ZERO_STRUCT(user_pol);
 
-	status = net_rpc_lookup_name(c, mem_ctx, rpc_pipe_np_smb_conn(pipe_hnd),
+	status = net_rpc_lookup_name(c, mem_ctx, ctx->cli,
 				     argv[0], NULL, NULL, &sid, &type);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not lookup %s: %s\n"), argv[0],
@@ -2276,9 +2276,10 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 }
 
 static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
-				TALLOC_CTX *mem_ctx,
-				const struct dom_sid *alias_sid,
-				const char *member)
+				 struct cli_state *cli,
+				 TALLOC_CTX *mem_ctx,
+				 const struct dom_sid *alias_sid,
+				 const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
@@ -2297,7 +2298,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = get_sid_from_name(rpc_pipe_np_smb_conn(pipe_hnd), mem_ctx,
+	result = get_sid_from_name(cli, mem_ctx,
 				   member, &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2404,7 +2405,7 @@ static NTSTATUS rpc_group_addmem_internals(struct net_context *c,
 	}
 
 	if (group_type == SID_NAME_ALIAS) {
-		NTSTATUS result = rpc_add_aliasmem(pipe_hnd, mem_ctx,
+		NTSTATUS result = rpc_add_aliasmem(pipe_hnd, cli, mem_ctx,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -2528,9 +2529,10 @@ static NTSTATUS rpc_del_groupmem(struct net_context *c,
 }
 
 static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
-				TALLOC_CTX *mem_ctx,
-				const struct dom_sid *alias_sid,
-				const char *member)
+				 struct cli_state *cli,
+				 TALLOC_CTX *mem_ctx,
+				 const struct dom_sid *alias_sid,
+				 const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
@@ -2548,7 +2550,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	if (!sid_split_rid(&sid, &alias_rid))
 		return NT_STATUS_UNSUCCESSFUL;
 
-	result = get_sid_from_name(rpc_pipe_np_smb_conn(pipe_hnd), mem_ctx,
+	result = get_sid_from_name(cli, mem_ctx,
 				   member, &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2657,7 +2659,7 @@ static NTSTATUS rpc_group_delmem_internals(struct net_context *c,
 	}
 
 	if (group_type == SID_NAME_ALIAS) {
-		NTSTATUS result = rpc_del_aliasmem(pipe_hnd, mem_ctx,
+		NTSTATUS result = rpc_del_aliasmem(pipe_hnd, cli, mem_ctx,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -3070,10 +3072,11 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 }
 
 static NTSTATUS rpc_list_alias_members(struct net_context *c,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					struct policy_handle *domain_pol,
-					uint32 rid)
+				       struct rpc_pipe_client *pipe_hnd,
+				       struct cli_state *cli,
+				       TALLOC_CTX *mem_ctx,
+				       struct policy_handle *domain_pol,
+				       uint32 rid)
 {
 	NTSTATUS result, status;
 	struct rpc_pipe_client *lsa_pipe;
@@ -3119,7 +3122,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 		return NT_STATUS_OK;
 	}
 
-	result = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(pipe_hnd),
+	result = cli_rpc_pipe_open_noauth(cli,
 					  &ndr_table_lsarpc,
 					  &lsa_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -3291,7 +3294,7 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 	}
 
 	if (rid_types.ids[0] == SID_NAME_ALIAS) {
-		return rpc_list_alias_members(c, pipe_hnd, mem_ctx, &domain_pol,
+		return rpc_list_alias_members(c, pipe_hnd, cli, mem_ctx, &domain_pol,
 					      rids.ids[0]);
 	}
 
@@ -5017,15 +5020,15 @@ static bool get_user_tokens_from_file(FILE *f,
  */
 
 static void show_userlist(struct rpc_pipe_client *pipe_hnd,
-			TALLOC_CTX *mem_ctx,
-			const char *netname,
-			int num_tokens,
-			struct user_token *tokens)
+			  struct cli_state *cli,
+			  TALLOC_CTX *mem_ctx,
+			  const char *netname,
+			  int num_tokens,
+			  struct user_token *tokens)
 {
 	uint16_t fnum;
 	struct security_descriptor *share_sd = NULL;
 	struct security_descriptor *root_sd = NULL;
-	struct cli_state *cli = rpc_pipe_np_smb_conn(pipe_hnd);
 	int i;
 	union srvsvc_NetShareInfo info;
 	WERROR result;
@@ -5209,7 +5212,7 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 
 		d_printf("%s\n", netname);
 
-		show_userlist(pipe_hnd, mem_ctx, netname,
+		show_userlist(pipe_hnd, cli, mem_ctx, netname,
 			      num_tokens, tokens);
 	}
  done:
