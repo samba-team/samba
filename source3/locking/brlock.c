@@ -90,6 +90,8 @@ bool brl_have_read_oplocks(const struct byte_range_lock *brl)
 void brl_set_have_read_oplocks(struct byte_range_lock *brl,
 			       bool have_read_oplocks)
 {
+	DEBUG(10, ("Setting have_read_oplocks to %s\n",
+		   have_read_oplocks ? "true" : "false"));
 	SMB_ASSERT(brl->record != NULL); /* otherwise we're readonly */
 	brl->have_read_oplocks = have_read_oplocks;
 	brl->modified = true;
@@ -1894,6 +1896,7 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 {
 	size_t data_len;
 	if (!br_lck->modified) {
+		DEBUG(10, ("br_lck not modified\n"));
 		goto done;
 	}
 
@@ -1902,6 +1905,8 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 	if (br_lck->have_read_oplocks) {
 		data_len += 1;
 	}
+
+	DEBUG(10, ("data_len=%d\n", (int)data_len));
 
 	if (data_len == 0) {
 		/* No locks - delete this entry. */
@@ -1933,6 +1938,8 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 			smb_panic("Could not store byte range mode entry");
 		}
 	}
+
+	DEBUG(10, ("seqnum=%d\n", dbwrap_get_seqnum(brlock_db)));
 
  done:
 	br_lck->modified = false;
@@ -1996,6 +2003,8 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 		memcpy(br_lck->lock_data, data.dptr,
 		       talloc_get_size(br_lck->lock_data));
 	}
+
+	DEBUG(10, ("data.dsize=%d\n", (int)data.dsize));
 
 	if ((data.dsize % sizeof(struct lock_struct)) == 1) {
 		br_lck->have_read_oplocks = (data.dptr[data.dsize-1] == 1);
@@ -2072,6 +2081,9 @@ static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
 		br_lock->have_read_oplocks = (data.dptr[data.dsize-1] == 1);
 	}
 
+	DEBUG(10, ("Got %d bytes, have_read_oplocks: %s\n", (int)data.dsize,
+		   br_lock->have_read_oplocks ? "true" : "false"));
+
 	*state->br_lock = br_lock;
 }
 
@@ -2079,6 +2091,9 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 {
 	struct byte_range_lock *br_lock = NULL;
 	struct byte_range_lock *rw = NULL;
+
+	DEBUG(10, ("seqnum=%d, fsp->brlock_seqnum=%d\n",
+		   dbwrap_get_seqnum(brlock_db), fsp->brlock_seqnum));
 
 	if ((fsp->brlock_rec != NULL)
 	    && (dbwrap_get_seqnum(brlock_db) == fsp->brlock_seqnum)) {

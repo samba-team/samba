@@ -157,6 +157,9 @@ bool remove_oplock(files_struct *fsp)
 	bool ret;
 	struct share_mode_lock *lck;
 
+	DEBUG(10, ("remove_oplock called for %s\n",
+		   fsp_str_dbg(fsp)));
+
 	/* Remove the oplock flag from the sharemode. */
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
@@ -223,6 +226,9 @@ bool downgrade_oplock(files_struct *fsp)
 	bool ret;
 	struct share_mode_lock *lck;
 	struct byte_range_lock *brl;
+
+	DEBUG(10, ("downgrade_oplock called for %s\n",
+		   fsp_str_dbg(fsp)));
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
