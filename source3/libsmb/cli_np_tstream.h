@@ -24,10 +24,16 @@ struct tevent_context;
 struct tevent_req;
 struct cli_state;
 struct tstream_context;
+struct smbXcli_conn;
+struct smbXcli_session;
+struct smbXcli_tcon;
 
 struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
-					    struct cli_state *cli,
+					    struct smbXcli_conn *conn,
+					    struct smbXcli_session *session,
+					    struct smbXcli_tcon *tcon,
+					    uint16_t pid, unsigned int timeout,
 					    const char *npipe);
 NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 				   TALLOC_CTX *mem_ctx,

@@ -22,6 +22,8 @@
 #include "rpc_client/rpc_transport.h"
 #include "libsmb/cli_np_tstream.h"
 #include "librpc/ndr/ndr_table.h"
+#include "libcli/smb/smbXcli_base.h"
+#include "client.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -41,11 +43,23 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 	struct rpc_transport_np_init_state *state;
 	const char *pipe_name;
 	struct tevent_req *subreq;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint16_t pid = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct rpc_transport_np_init_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		tcon = cli->smb2.tcon;
+		session = cli->smb2.session;
+	} else {
+		tcon = cli->smb1.tcon;
+		session = cli->smb1.session;
+		pid = cli->smb1.pid;
 	}
 
 	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
@@ -57,7 +71,8 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 		pipe_name++;
 	}
 
-	subreq = tstream_cli_np_open_send(state, ev, cli, pipe_name);
+	subreq = tstream_cli_np_open_send(state, ev, cli->conn, session, tcon,
+					  pid, cli->timeout, pipe_name);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

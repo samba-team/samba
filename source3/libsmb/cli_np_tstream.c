@@ -50,13 +50,17 @@ static const struct tstream_context_ops tstream_cli_np_ops;
 #define TSTREAM_CLI_NP_MAX_BUF_SIZE 4280
 
 struct tstream_cli_np {
-	struct cli_state *cli;
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint16_t pid;
+	unsigned int timeout;
+
 	const char *npipe;
 	bool is_smb1;
 	uint16_t fnum;
 	uint64_t fid_persistent;
 	uint64_t fid_volatile;
-	unsigned int default_timeout;
 
 	struct {
 		bool active;
@@ -76,7 +80,7 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 {
 	NTSTATUS status;
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
+	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		return 0;
 	}
 
@@ -94,17 +98,17 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 	 * never be called.
 	 */
 	if (cli_nps->is_smb1) {
-		status = smb1cli_close(cli_nps->cli->conn,
-				       cli_nps->cli->timeout,
-				       cli_nps->cli->smb1.pid,
-				       cli_nps->cli->smb1.tcon,
-				       cli_nps->cli->smb1.session,
+		status = smb1cli_close(cli_nps->conn,
+				       cli_nps->timeout,
+				       cli_nps->pid,
+				       cli_nps->tcon,
+				       cli_nps->session,
 				       cli_nps->fnum, UINT32_MAX);
 	} else {
-		status = smb2cli_close(cli_nps->cli->conn,
-				       cli_nps->cli->timeout,
-				       cli_nps->cli->smb2.session,
-				       cli_nps->cli->smb2.tcon,
+		status = smb2cli_close(cli_nps->conn,
+				       cli_nps->timeout,
+				       cli_nps->session,
+				       cli_nps->tcon,
 				       0, /* flags */
 				       cli_nps->fid_persistent,
 				       cli_nps->fid_volatile);
@@ -121,7 +125,12 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 }
 
 struct tstream_cli_np_open_state {
-	struct cli_state *cli;
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint16_t pid;
+	unsigned int timeout;
+
 	bool is_smb1;
 	uint16_t fnum;
 	uint64_t fid_persistent;
@@ -133,7 +142,10 @@ static void tstream_cli_np_open_done(struct tevent_req *subreq);
 
 struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
-					    struct cli_state *cli,
+					    struct smbXcli_conn *conn,
+					    struct smbXcli_session *session,
+					    struct smbXcli_tcon *tcon,
+					    uint16_t pid, unsigned int timeout,
 					    const char *npipe)
 {
 	struct tevent_req *req;
@@ -145,14 +157,18 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 	if (!req) {
 		return NULL;
 	}
-	state->cli = cli;
+	state->conn = conn;
+	state->tcon = tcon;
+	state->session = session;
+	state->pid = pid;
+	state->timeout = timeout;
 
 	state->npipe = talloc_strdup(state, npipe);
 	if (tevent_req_nomem(state->npipe, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(conn) < PROTOCOL_SMB2_02) {
 		state->is_smb1 = true;
 	}
 
@@ -168,11 +184,11 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(smb1_npipe, req)) {
 			return tevent_req_post(req, ev);
 		}
-		subreq = smb1cli_ntcreatex_send(state, ev, cli->conn,
-						cli->timeout,
-						cli->smb1.pid,
-						cli->smb1.tcon,
-						cli->smb1.session,
+		subreq = smb1cli_ntcreatex_send(state, ev, state->conn,
+						state->timeout,
+						state->pid,
+						state->tcon,
+						state->session,
 						smb1_npipe,
 						0, /* CreatFlags */
 						0, /* RootDirectoryFid */
@@ -185,9 +201,9 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 						2, /* NTCREATEX_IMPERSONATION_IMPERSONATION */
 						0); /* SecurityFlags */
 	} else {
-		subreq = smb2cli_create_send(state, ev, cli->conn,
-					     cli->timeout, cli->smb2.session,
-					     cli->smb2.tcon,
+		subreq = smb2cli_create_send(state, ev, state->conn,
+					     state->timeout, state->session,
+					     state->tcon,
 					     npipe,
 					     SMB2_OPLOCK_LEVEL_NONE,
 					     SMB2_IMPERSONATION_IMPERSONATION,
@@ -258,14 +274,16 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	}
 	ZERO_STRUCTP(cli_nps);
 
-	cli_nps->cli = state->cli;
+	cli_nps->conn = state->conn;
+	cli_nps->session = state->session;
+	cli_nps->tcon = state->tcon;
+	cli_nps->pid  = state->pid;
+	cli_nps->timeout = state->timeout;
 	cli_nps->npipe = talloc_move(cli_nps, &state->npipe);
 	cli_nps->is_smb1 = state->is_smb1;
 	cli_nps->fnum = state->fnum;
 	cli_nps->fid_persistent = state->fid_persistent;
 	cli_nps->fid_volatile = state->fid_volatile;
-	cli_nps->default_timeout = cli_set_timeout(state->cli, 0);
-	cli_set_timeout(state->cli, cli_nps->default_timeout);
 
 	talloc_set_destructor(cli_nps, tstream_cli_np_destructor);
 
@@ -285,7 +303,7 @@ static ssize_t tstream_cli_np_pending_bytes(struct tstream_context *stream)
 	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
 					 struct tstream_cli_np);
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
+	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		errno = ENOTCONN;
 		return -1;
 	}
@@ -333,12 +351,10 @@ unsigned int tstream_cli_np_set_timeout(struct tstream_context *stream,
 {
 	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
 					 struct tstream_cli_np);
+	unsigned int old_timeout = cli_nps->timeout;
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
-		return cli_nps->default_timeout;
-	}
-
-	return cli_set_timeout(cli_nps->cli, timeout);
+	cli_nps->timeout = timeout;
+	return old_timeout;
 }
 
 struct tstream_cli_np_writev_state {
@@ -391,7 +407,7 @@ static struct tevent_req *tstream_cli_np_writev_send(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(state, tstream_cli_np_writev_state_destructor);
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
+	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		tevent_req_error(req, ENOTCONN);
 		return tevent_req_post(req, ev);
 	}
@@ -485,11 +501,11 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 
 	if (cli_nps->is_smb1) {
 		subreq = smb1cli_writex_send(state, state->ev,
-					     cli_nps->cli->conn,
-					     cli_nps->cli->timeout,
-					     cli_nps->cli->smb1.pid,
-					     cli_nps->cli->smb1.tcon,
-					     cli_nps->cli->smb1.session,
+					     cli_nps->conn,
+					     cli_nps->timeout,
+					     cli_nps->pid,
+					     cli_nps->tcon,
+					     cli_nps->session,
 					     cli_nps->fnum,
 					     8, /* 8 means message mode. */
 					     cli_nps->write.buf,
@@ -497,10 +513,10 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 					     cli_nps->write.ofs); /* size */
 	} else {
 		subreq = smb2cli_write_send(state, state->ev,
-					    cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tcon,
+					    cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->session,
+					    cli_nps->tcon,
 					    cli_nps->write.ofs, /* length */
 					    0, /* offset */
 					    cli_nps->fid_persistent,
@@ -569,7 +585,7 @@ static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
 	state->error.val = error;
 	state->error.location = location;
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
+	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		/* return the original error */
 		_tevent_req_error(req, state->error.val, state->error.location);
 		return;
@@ -577,18 +593,18 @@ static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
 
 	if (cli_nps->is_smb1) {
 		subreq = smb1cli_close_send(state, state->ev,
-					    cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb1.pid,
-					    cli_nps->cli->smb1.tcon,
-					    cli_nps->cli->smb1.session,
+					    cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->pid,
+					    cli_nps->tcon,
+					    cli_nps->session,
 					    cli_nps->fnum, UINT32_MAX);
 	} else {
 		subreq = smb2cli_close_send(state, state->ev,
-					    cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tcon,
+					    cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->session,
+					    cli_nps->tcon,
 					    0, /* flags */
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile);
@@ -619,7 +635,9 @@ static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq)
 	}
 	TALLOC_FREE(subreq);
 
-	cli_nps->cli = NULL;
+	cli_nps->conn = NULL;
+	cli_nps->tcon = NULL;
+	cli_nps->session = NULL;
 
 	/* return the original error */
 	_tevent_req_error(req, state->error.val, state->error.location);
@@ -696,7 +714,7 @@ static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(state, tstream_cli_np_readv_state_destructor);
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
+	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		tevent_req_error(req, ENOTCONN);
 		return tevent_req_post(req, ev);
 	}
@@ -778,20 +796,20 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 
 	if (cli_nps->is_smb1) {
 		subreq = smb1cli_readx_send(state, state->ev,
-					    cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb1.pid,
-					    cli_nps->cli->smb1.tcon,
-					    cli_nps->cli->smb1.session,
+					    cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->pid,
+					    cli_nps->tcon,
+					    cli_nps->session,
 					    cli_nps->fnum,
 					    0, /* offset */
 					    TSTREAM_CLI_NP_MAX_BUF_SIZE);
 	} else {
 		subreq = smb2cli_read_send(state, state->ev,
-					   cli_nps->cli->conn,
-					   cli_nps->cli->timeout,
-					   cli_nps->cli->smb2.session,
-					   cli_nps->cli->smb2.tcon,
+					   cli_nps->conn,
+					   cli_nps->timeout,
+					   cli_nps->session,
+					   cli_nps->tcon,
 					   TSTREAM_CLI_NP_MAX_BUF_SIZE, /* length */
 					   0, /* offset */
 					   cli_nps->fid_persistent,
@@ -826,13 +844,13 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 
 	if (cli_nps->is_smb1) {
 		subreq = smb1cli_trans_send(state, state->ev,
-					    cli_nps->cli->conn, SMBtrans,
+					    cli_nps->conn, SMBtrans,
 					    0, 0, /* *_flags */
 					    0, 0, /* *_flags2 */
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb1.pid,
-					    cli_nps->cli->smb1.tcon,
-					    cli_nps->cli->smb1.session,
+					    cli_nps->timeout,
+					    cli_nps->pid,
+					    cli_nps->tcon,
+					    cli_nps->session,
 					    "\\PIPE\\",
 					    0, 0, 0,
 					    cli_nps->trans.setup, 2,
@@ -849,10 +867,10 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 						  cli_nps->write.ofs);
 
 		subreq = smb2cli_ioctl_send(state, state->ev,
-					    cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tcon,
+					    cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->session,
+					    cli_nps->tcon,
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile,
 					    FSCTL_NAMED_PIPE_READ_WRITE,
@@ -1044,7 +1062,7 @@ static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
 	state->error.val = error;
 	state->error.location = location;
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
+	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		/* return the original error */
 		tstream_cli_np_readv_error(req);
 		return;
@@ -1052,18 +1070,18 @@ static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
 
 	if (cli_nps->is_smb1) {
 		subreq = smb1cli_close_send(state, state->ev,
-					    cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb1.pid,
-					    cli_nps->cli->smb1.tcon,
-					    cli_nps->cli->smb1.session,
+					    cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->pid,
+					    cli_nps->tcon,
+					    cli_nps->session,
 					    cli_nps->fnum, UINT32_MAX);
 	} else {
 		subreq = smb2cli_close_send(state, state->ev,
-					    cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tcon,
+					    cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->session,
+					    cli_nps->tcon,
 					    0, /* flags */
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile);
@@ -1094,7 +1112,9 @@ static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq)
 	}
 	TALLOC_FREE(subreq);
 
-	cli_nps->cli = NULL;
+	cli_nps->conn = NULL;
+	cli_nps->session = NULL;
+	cli_nps->tcon = NULL;
 
 	tstream_cli_np_readv_error(req);
 }
@@ -1187,23 +1207,23 @@ static struct tevent_req *tstream_cli_np_disconnect_send(TALLOC_CTX *mem_ctx,
 
 	state->stream = stream;
 
-	if (!cli_state_is_connected(cli_nps->cli)) {
+	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		tevent_req_error(req, ENOTCONN);
 		return tevent_req_post(req, ev);
 	}
 
 	if (cli_nps->is_smb1) {
-		subreq = smb1cli_close_send(state, ev, cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb1.pid,
-					    cli_nps->cli->smb1.tcon,
-					    cli_nps->cli->smb1.session,
+		subreq = smb1cli_close_send(state, ev, cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->pid,
+					    cli_nps->tcon,
+					    cli_nps->session,
 					    cli_nps->fnum, UINT32_MAX);
 	} else {
-		subreq = smb2cli_close_send(state, ev, cli_nps->cli->conn,
-					    cli_nps->cli->timeout,
-					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tcon,
+		subreq = smb2cli_close_send(state, ev, cli_nps->conn,
+					    cli_nps->timeout,
+					    cli_nps->session,
+					    cli_nps->tcon,
 					    0, /* flags */
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile);
@@ -1237,7 +1257,9 @@ static void tstream_cli_np_disconnect_done(struct tevent_req *subreq)
 		return;
 	}
 
-	cli_nps->cli = NULL;
+	cli_nps->conn = NULL;
+	cli_nps->session = NULL;
+	cli_nps->tcon = NULL;
 
 	tevent_req_done(req);
 }
