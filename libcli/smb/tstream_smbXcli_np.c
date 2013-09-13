@@ -19,13 +19,12 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "libsmb/libsmb.h"
-#include "libsmb/smb2cli.h"
-#include "../libcli/smb/smbXcli_base.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/tsocket/tsocket_internal.h"
-#include "cli_np_tstream.h"
+#include "smb_common.h"
+#include "smbXcli_base.h"
+#include "tstream_smbXcli_np.h"
 #include "libcli/security/security.h"
 
 static const struct tstream_context_ops tstream_cli_np_ops;

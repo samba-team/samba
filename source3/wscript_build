@@ -367,7 +367,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                    libsmb/clirap2.c
                    libsmb/async_smb.c
                    libsmb/smb2cli_tcon.c
-                   libsmb/cli_np_tstream.c
                    libsmb/reparse_symlink.c
                    libsmb/clisymlink.c
                    libsmb/smbsock_connect.c

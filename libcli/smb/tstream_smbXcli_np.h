@@ -22,7 +22,6 @@
 
 struct tevent_context;
 struct tevent_req;
-struct cli_state;
 struct tstream_context;
 struct smbXcli_conn;
 struct smbXcli_session;

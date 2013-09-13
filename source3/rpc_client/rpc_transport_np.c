@@ -20,9 +20,9 @@
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_client/rpc_transport.h"
-#include "libsmb/cli_np_tstream.h"
 #include "librpc/ndr/ndr_table.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "libcli/smb/tstream_smbXcli_np.h"
 #include "client.h"
 
 #undef DBGC_CLASS
