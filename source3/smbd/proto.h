@@ -660,7 +660,6 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 
 void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
 NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type);
-void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
 void contend_level2_oplocks_begin(files_struct *fsp,

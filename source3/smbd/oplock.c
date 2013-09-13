@@ -93,7 +93,7 @@ NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type)
  Attempt to release an oplock on a file. Decrements oplock count.
 ****************************************************************************/
 
-void release_file_oplock(files_struct *fsp)
+static void release_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
