@@ -138,6 +138,7 @@ struct notify_back_channel {
 
 	/* print notify back-channel pipe handle*/
 	struct rpc_pipe_client *cli_pipe;
+	struct cli_state *cli;
 	uint32_t active_connections;
 };
 
@@ -276,7 +277,7 @@ static void srv_spoolss_replycloseprinter(int snum,
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (prn_hnd->notify.cli_chan->active_connections == 1) {
 
-		cli_shutdown(rpc_pipe_np_smb_conn(prn_hnd->notify.cli_chan->cli_pipe));
+		cli_shutdown(prn_hnd->notify.cli_chan->cli);
 		DLIST_REMOVE(back_channels, prn_hnd->notify.cli_chan);
 		TALLOC_FREE(prn_hnd->notify.cli_chan);
 
@@ -2440,11 +2441,10 @@ WERROR _spoolss_GetPrinterData(struct pipes_struct *p,
  Connect to the client machine.
 **********************************************************/
 
-static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
-			struct sockaddr_storage *client_ss, const char *remote_machine)
+static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct cli_state **pp_cli,
+				      struct sockaddr_storage *client_ss, const char *remote_machine)
 {
 	NTSTATUS ret;
-	struct cli_state *the_cli;
 	struct sockaddr_storage rm_addr;
 	char addr[INET6_ADDRSTRLEN];
 
@@ -2470,7 +2470,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	}
 
 	/* setup the connection */
-	ret = cli_full_connection( &the_cli, lp_netbios_name(), remote_machine,
+	ret = cli_full_connection( pp_cli, lp_netbios_name(), remote_machine,
 		&rm_addr, 0, "IPC$", "IPC",
 		"", /* username */
 		"", /* domain */
@@ -2483,9 +2483,9 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 		return false;
 	}
 
-	if ( smbXcli_conn_protocol(the_cli->conn) != PROTOCOL_NT1 ) {
+	if ( smbXcli_conn_protocol((*pp_cli)->conn) != PROTOCOL_NT1 ) {
 		DEBUG(0,("spoolss_connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
-		cli_shutdown(the_cli);
+		cli_shutdown(*pp_cli);
 		return false;
 	}
 
@@ -2494,11 +2494,11 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	ret = cli_rpc_pipe_open_noauth(the_cli, &ndr_table_spoolss, pp_pipe);
+	ret = cli_rpc_pipe_open_noauth(*pp_cli, &ndr_table_spoolss, pp_pipe);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(2,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
 			remote_machine, nt_errstr(ret)));
-		cli_shutdown(the_cli);
+		cli_shutdown(*pp_cli);
 		return false;
 	}
 
@@ -2544,7 +2544,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 		}
 		chan->client_address = *client_ss;
 
-		if (!spoolss_connect_to_client(&chan->cli_pipe, client_ss, unix_printer)) {
+		if (!spoolss_connect_to_client(&chan->cli_pipe, &chan->cli, client_ss, unix_printer)) {
 			TALLOC_FREE(chan);
 			return false;
 		}
