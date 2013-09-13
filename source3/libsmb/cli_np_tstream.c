@@ -777,7 +777,12 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 	}
 
 	if (cli_nps->is_smb1) {
-		subreq = cli_read_andx_send(state, state->ev, cli_nps->cli,
+		subreq = smb1cli_readx_send(state, state->ev,
+					    cli_nps->cli->conn,
+					    cli_nps->cli->timeout,
+					    cli_nps->cli->smb1.pid,
+					    cli_nps->cli->smb1.tcon,
+					    cli_nps->cli->smb1.session,
 					    cli_nps->fnum,
 					    0, /* offset */
 					    TSTREAM_CLI_NP_MAX_BUF_SIZE);
@@ -961,7 +966,7 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 	struct tstream_cli_np *cli_nps =
 		tstream_context_data(state->stream, struct tstream_cli_np);
 	uint8_t *rcvbuf;
-	ssize_t received;
+	uint32_t received;
 	NTSTATUS status;
 
 	/*
@@ -970,11 +975,9 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 	 */
 
 	if (cli_nps->is_smb1) {
-		status = cli_read_andx_recv(subreq, &received, &rcvbuf);
+		status = smb1cli_readx_recv(subreq, &received, &rcvbuf);
 	} else {
-		uint32_t data_length = 0;
-		status = smb2cli_read_recv(subreq, state, &rcvbuf, &data_length);
-		received = data_length;
+		status = smb2cli_read_recv(subreq, state, &rcvbuf, &received);
 	}
 	/*
 	 * We can't TALLOC_FREE(subreq) as usual here, as rcvbuf still is a
