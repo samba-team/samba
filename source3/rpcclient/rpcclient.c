@@ -49,6 +49,7 @@ static unsigned int timeout = 0;
 static enum dcerpc_transport_t default_transport = NCACN_NP;
 
 struct user_auth_info *rpcclient_auth_info;
+struct cli_state *rpcclient_cli_state;
 
 /* List to hold groups of commands.
  *
@@ -1113,7 +1114,7 @@ out_free:
 #endif
 
 	/* Load command lists */
-
+	rpcclient_cli_state = cli;
 	timeout = cli_set_timeout(cli, 10000);
 
 	cmd_set = rpcclient_command_list;
@@ -1161,6 +1162,7 @@ out_free:
 	}
 
 done:
+	rpcclient_cli_state = NULL;
 	if (cli != NULL) {
 		cli_shutdown(cli);
 	}
