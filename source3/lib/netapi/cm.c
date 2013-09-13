@@ -169,7 +169,7 @@ static NTSTATUS pipe_cm_find(struct client_ipc_connection *ipc,
 	for (p = ipc->pipe_connections; p; p = p->next) {
 		const char *ipc_remote_name;
 
-		if (!rpc_pipe_np_smb_conn(p->pipe)) {
+		if (!rpccli_is_connected(p->pipe)) {
 			return NT_STATUS_PIPE_EMPTY;
 		}
 
