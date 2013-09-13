@@ -2584,7 +2584,14 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		smb1cli_session_protect_session_key(cli->smb1.session);
 	}
 
-	cli_state_set_tid(cli, SVAL(inhdr, HDR_TID));
+	smb1cli_tcon_set_values(state->cli->smb1.tcon,
+				SVAL(inhdr, HDR_TID),
+				optional_support,
+				0, /* maximal_access */
+				0, /* guest_maximal_access */
+				NULL, /* service */
+				NULL); /* fs_type */
+
 	tevent_req_done(req);
 }
 
@@ -2718,7 +2725,15 @@ static void cli_tree_connect_raw_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	cli_state_set_tid(state->cli, tid);
+
+	smb1cli_tcon_set_values(state->cli->smb1.tcon,
+				tid,
+				0, /* optional_support */
+				0, /* maximal_access */
+				0, /* guest_maximal_access */
+				NULL, /* service */
+				NULL); /* fs_type */
+
 	tevent_req_done(req);
 }
 
