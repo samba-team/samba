@@ -735,7 +735,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 	/* Remove the oplock before potentially deleting the file. */
 	if(fsp->oplock_type) {
-		release_file_oplock(fsp);
+		remove_oplock(fsp);
 	}
 
 	/* If this is an old DOS or FCB open and we have multiple opens on
