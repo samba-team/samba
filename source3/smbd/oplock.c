@@ -442,8 +442,8 @@ static void break_level2_to_none_async(files_struct *fsp)
 /*******************************************************************
  This handles the case of a write triggering a break to none
  message on a level2 oplock.
- When we get this message we may be in any of three states :
- NO_OPLOCK, LEVEL_II, FAKE_LEVEL2. We only send a message to
+ When we get this message we may be in any of two states :
+ NO_OPLOCK, LEVEL_II. We only send a message to
  the client for LEVEL2.
 *******************************************************************/
 
@@ -740,7 +740,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 		 * As there could have been multiple writes waiting at the
 		 * lock_share_entry gate we may not be the first to
 		 * enter. Hence the state of the op_types in the share mode
-		 * entries may be partly NO_OPLOCK and partly LEVEL_II or FAKE_LEVEL_II
+		 * entries may be partly NO_OPLOCK and partly LEVEL_II
 		 * oplock. It will do no harm to re-send break messages to
 		 * those smbd's that are still waiting their turn to remove
 		 * their LEVEL_II state, and also no harm to ignore existing

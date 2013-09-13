@@ -58,11 +58,6 @@ static uint8_t map_samba_oplock_levels_to_smb2(int oplock_type)
 	} else if (EXCLUSIVE_OPLOCK_TYPE(oplock_type)) {
 		return SMB2_OPLOCK_LEVEL_EXCLUSIVE;
 	} else if (oplock_type == LEVEL_II_OPLOCK) {
-		/*
-		 * Don't use LEVEL_II_OPLOCK_TYPE here as
-		 * this also includes FAKE_LEVEL_II_OPLOCKs
-		 * which are internal only.
-		 */
 		return SMB2_OPLOCK_LEVEL_II;
 	} else {
 		return SMB2_OPLOCK_LEVEL_NONE;
