@@ -585,22 +585,3 @@ NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
 	*presult = result;
 	return NT_STATUS_OK;
 }
-
-struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p)
-{
-	struct rpc_tstream_state *transp =
-		talloc_get_type_abort(p->transport->priv,
-		struct rpc_tstream_state);
-	bool ok;
-
-	ok = rpccli_is_connected(p);
-	if (!ok) {
-		return NULL;
-	}
-
-	if (!tstream_is_cli_np(transp->stream)) {
-		return NULL;
-	}
-
-	return tstream_cli_np_get_cli_state(transp->stream);
-}
