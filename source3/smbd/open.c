@@ -2681,9 +2681,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->oplock_type = NO_OPLOCK;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn),
-			req ? req->mid : 0,
-		       fsp->oplock_type);
+	if (!set_share_mode(lck, fsp, get_current_uid(conn),
+			    req ? req->mid : 0,
+			    fsp->oplock_type)) {
+		TALLOC_FREE(lck);
+		fd_close(fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Handle strange delete on close create semantics. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
@@ -3173,8 +3177,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn),
-			req ? req->mid : 0, NO_OPLOCK);
+	if (!set_share_mode(lck, fsp, get_current_uid(conn),
+			    req ? req->mid : 0, NO_OPLOCK)) {
+		TALLOC_FREE(lck);
+		fd_close(fsp);
+		file_free(req, fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */

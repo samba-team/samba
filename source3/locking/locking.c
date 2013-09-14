@@ -734,12 +734,12 @@ static bool add_share_mode_entry(struct share_mode_data *d,
 	return true;
 }
 
-void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
+bool set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		    uid_t uid, uint64_t mid, uint16 op_type)
 {
 	struct share_mode_entry entry;
 	fill_share_mode_entry(&entry, fsp, uid, mid, op_type);
-	add_share_mode_entry(lck->data, &entry);
+	return add_share_mode_entry(lck->data, &entry);
 }
 
 /*******************************************************************
