@@ -717,12 +717,21 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->name_hash = fsp->name_hash;
 }
 
-static void add_share_mode_entry(struct share_mode_data *d,
+static bool add_share_mode_entry(struct share_mode_data *d,
 				 const struct share_mode_entry *entry)
 {
-	ADD_TO_ARRAY(d, struct share_mode_entry, *entry,
-		     &d->share_modes, &d->num_share_modes);
-	d->modified = True;
+	struct share_mode_entry *tmp;
+
+	tmp = talloc_realloc(d, d->share_modes, struct share_mode_entry,
+			     d->num_share_modes+1);
+	if (tmp == NULL) {
+		return false;
+	}
+	d->share_modes = tmp;
+	d->share_modes[d->num_share_modes] = *entry;
+	d->num_share_modes += 1;
+	d->modified = true;
+	return true;
 }
 
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
