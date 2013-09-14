@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    routines for marshalling/unmarshalling basic types
 
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -1005,7 +1005,7 @@ _PUBLIC_ void ndr_print_null(struct ndr_print *ndr)
 	ndr->print(ndr, "UNEXPECTED NULL POINTER");
 }
 
-_PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, 
+_PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type,
 		    const char *val, uint32_t value)
 {
 	if (ndr->flags & LIBNDR_PRINT_ARRAY_HEX) {
@@ -1027,7 +1027,7 @@ _PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const ch
 	while (!(flag & 1)) {
 		flag >>= 1;
 		value >>= 1;
-	}	
+	}
 	if (flag == 1) {
 		ndr->print(ndr, "   %d: %-25s", value, flag_name);
 	} else {
@@ -1165,7 +1165,7 @@ _PUBLIC_ void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint1
 	ndr->print(ndr, "UNKNOWN LEVEL %u", level);
 }
 
-_PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name, 
+_PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 			   const uint8_t *data, uint32_t count)
 {
 	int i;
@@ -1200,7 +1200,7 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 			free(idx);
 		}
 	}
-	ndr->depth--;	
+	ndr->depth--;
 #undef _ONELINE_LIMIT
 }
 
