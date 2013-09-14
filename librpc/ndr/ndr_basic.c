@@ -1020,6 +1020,10 @@ _PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const ch
 	/* this is an attempt to support multi-bit bitmap masks */
 	value &= flag;
 
+	if (value == 0) {
+		return;
+	}
+
 	while (!(flag & 1)) {
 		flag >>= 1;
 		value >>= 1;
