@@ -156,7 +156,8 @@ static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 	DEBUG(10, ("reading domain range for key %s\n", keystr));
 	status = dbwrap_fetch_uint32_bystring(db, keystr, &(range->rangenum));
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to read database for key %s\n", keystr));
+		DEBUG(1, ("Failed to read database for key '%s': %s\n",
+			  keystr, nt_errstr(status)));
 		goto done;
 	}
 
