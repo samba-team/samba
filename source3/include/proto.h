@@ -977,6 +977,14 @@ void update_trustdom_cache( void );
 NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
 					   TALLOC_CTX *mem_ctx, 
 					   const char *domain) ;
+struct netlogon_creds_cli_context;
+struct messaging_context;
+struct dcerpc_binding_handle;
+NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
+			 struct messaging_context *msg_ctx,
+			 struct dcerpc_binding_handle *b,
+			 const char *domain,
+			 bool force);
 
 /* The following definitions come from param/loadparm.c  */
 
