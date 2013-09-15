@@ -42,6 +42,23 @@ static void idmap_autorid_build_keystr(const char *domsid,
 	}
 }
 
+static char *idmap_autorid_build_keystr_talloc(TALLOC_CTX *mem_ctx,
+					      const char *domsid,
+					      uint32_t domain_range_index)
+{
+	char *keystr;
+
+	if (domain_range_index > 0) {
+		keystr = talloc_asprintf(mem_ctx, "%s#%"PRIu32, domsid,
+					 domain_range_index);
+	} else {
+		keystr = talloc_strdup(mem_ctx, domsid);
+	}
+
+	return keystr;
+}
+
+
 static bool idmap_autorid_validate_sid(const char *sid)
 {
 	struct dom_sid ignore;
