@@ -279,7 +279,11 @@ static NTSTATUS rpc_changetrustpw_internals(struct net_context *c,
 {
 	NTSTATUS status;
 
-	status = trust_pw_find_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup);
+	status = trust_pw_change(c->netlogon_creds,
+				 c->msg_ctx,
+				 pipe_hnd->binding_handle,
+				 c->opt_target_workgroup,
+				 true); /* force */
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Failed to change machine account password: %s\n"),
 			nt_errstr(status));
