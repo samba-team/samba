@@ -616,48 +616,27 @@ again:
 NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 				     struct wbint_ChangeMachineAccount *r)
 {
+	struct messaging_context *msg_ctx = winbind_messaging_context();
 	struct winbindd_domain *domain;
-	int num_retries = 0;
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
-	TALLOC_CTX *tmp_ctx;
 
-again:
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	invalidate_cm_connection(&domain->conn);
-
-	{
-		status = cm_connect_netlogon(domain, &netlogon_pipe);
-	}
-
-	/* There is a race condition between fetching the trust account
-	   password and the periodic machine password change.  So it's
-	   possible that the trust account password has been changed on us.
-	   We are returned NT_STATUS_ACCESS_DENIED if this happens. */
-
-#define MAX_RETRIES 3
-
-	if ((num_retries < MAX_RETRIES)
-	     && NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		num_retries++;
-		goto again;
-	}
-
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(p->mem_ctx);
-
-	status = trust_pw_find_change_and_store_it(netlogon_pipe,
-						   tmp_ctx,
-						   domain->name);
-	talloc_destroy(tmp_ctx);
+	status = trust_pw_change(domain->conn.netlogon_creds,
+				 msg_ctx,
+				 netlogon_pipe->binding_handle,
+				 domain->name,
+				 true); /* force */
 
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
