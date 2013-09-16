@@ -229,6 +229,27 @@ static PyObject *py_creds_set_krb_forwardable(pytalloc_Object *self, PyObject *a
 	Py_RETURN_NONE;
 }
 
+
+static PyObject *py_creds_get_forced_sasl_mech(pytalloc_Object *self)
+{
+	return PyString_FromStringOrNULL(cli_credentials_get_forced_sasl_mech(PyCredentials_AsCliCredentials(self)));
+}
+
+static PyObject *py_creds_set_forced_sasl_mech(pytalloc_Object *self, PyObject *args)
+{
+	char *newval;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s", &newval)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	cli_credentials_set_forced_sasl_mech(PyCredentials_AsCliCredentials(self), newval);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_creds_guess(pytalloc_Object *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
@@ -440,6 +461,11 @@ static PyMethodDef py_creds_methods[] = {
 	{ "get_named_ccache", (PyCFunction)py_creds_get_named_ccache, METH_VARARGS, NULL },
 	{ "set_gensec_features", (PyCFunction)py_creds_set_gensec_features, METH_VARARGS, NULL },
 	{ "get_gensec_features", (PyCFunction)py_creds_get_gensec_features, METH_NOARGS, NULL },
+	{ "get_forced_sasl_mech", (PyCFunction)py_creds_get_forced_sasl_mech, METH_NOARGS,
+		"S.get_forced_sasl_mech() -> SASL mechanism\nObtain forced SASL mechanism." },
+	{ "set_forced_sasl_mech", (PyCFunction)py_creds_set_forced_sasl_mech, METH_VARARGS,
+		"S.set_forced_sasl_mech(name) -> None\n"
+		"Set forced SASL mechanism." },
 	{ NULL }
 };
 

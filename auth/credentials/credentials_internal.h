@@ -101,6 +101,9 @@ struct cli_credentials {
 	/* Should we get a forwardable ticket? */
 	enum credentials_krb_forwardable krb_forwardable;
 
+	/* Forced SASL mechansim */
+	char *forced_sasl_mech;
+
 	/* gensec features which should be used for connections */
 	uint32_t gensec_features;
 

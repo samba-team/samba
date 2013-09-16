@@ -668,6 +668,20 @@ _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 {
 	NTSTATUS status;
+
+	if (gensec_security->credentials) {
+		const char *forced_mech = cli_credentials_get_forced_sasl_mech(gensec_security->credentials);
+		if (forced_mech &&
+		    (gensec_security->ops->sasl_name == NULL ||
+		     strcasecmp(forced_mech, gensec_security->ops->sasl_name) != 0)) {
+			DEBUG(5, ("GENSEC mechanism %s (%s) skipped, as it "
+				  "did not match forced mechanism %s\n",
+				  gensec_security->ops->name,
+				  gensec_security->ops->sasl_name,
+				  forced_mech));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
 	DEBUG(5, ("Starting GENSEC %smechanism %s\n",
 		  gensec_security->subcontext ? "sub" : "",
 		  gensec_security->ops->name));

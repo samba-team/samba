@@ -118,6 +118,8 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc,
 					 const char **error_string);
+void cli_credentials_set_forced_sasl_mech(struct cli_credentials *creds,
+					  const char *sasl_mech);
 void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
 					enum credentials_use_kerberos use_kerberos);
 void cli_credentials_set_krb_forwardable(struct cli_credentials *creds,
@@ -206,6 +208,7 @@ const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cr
 const char *cli_credentials_get_self_service(struct cli_credentials *cred);
 const char *cli_credentials_get_target_service(struct cli_credentials *cred);
 enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds);
+const char *cli_credentials_get_forced_sasl_mech(struct cli_credentials *cred);
 enum credentials_krb_forwardable cli_credentials_get_krb_forwardable(struct cli_credentials *creds);
 NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
