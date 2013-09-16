@@ -1141,12 +1141,8 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS result;
 	const char *server_name = cli->desthost;
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
-				NETLOGON_NEG_SUPPORTS_AES;
 	struct netr_Authenticator clnt_creds, srv_cred;
 	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
-	unsigned char trust_passwd_hash[16];
-	enum netr_SchannelType sec_channel_type = 0;
 	struct netr_ChangeLogEntry e;
 	uint32_t rid = 500;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -1161,23 +1157,8 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 		sscanf(argv[1], "%d", &rid);
 	}
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(),
-						  trust_passwd_hash,
-						  NULL, &sec_channel_type)) {
+	if (cli->netlogon_creds == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	status = rpccli_netlogon_setup_creds(cli,
-					     server_name, /* server name */
-					     lp_workgroup(), /* domain */
-					     lp_netbios_name(), /* client name */
-					     lp_netbios_name(), /* machine account name */
-					     trust_passwd_hash,
-					     sec_channel_type,
-					     &neg_flags);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	status = netlogon_creds_cli_lock(cli->netlogon_creds,
