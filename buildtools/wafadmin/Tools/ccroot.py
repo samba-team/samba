@@ -177,10 +177,14 @@ def get_target_name(self):
 
 	dir, name = os.path.split(self.target)
 
-	if self.env.DEST_BINFMT == 'pe' and getattr(self, 'vnum', None) and 'cshlib' in self.features:
-		# include the version in the dll file name,
-		# the import lib file name stays unversionned.
-		name = name + '-' + self.vnum.split('.')[0]
+	if 'cshlib' in self.features and getattr(self, 'vnum', None):
+		nums = self.vnum.split('.')
+		if self.env.DEST_BINFMT == 'pe':
+			# include the version in the dll file name,
+			# the import lib file name stays unversionned.
+			name = name + '-' + nums[0]
+		elif self.env.DEST_OS == 'openbsd':
+			pattern = '%s.%s.%s' % (pattern, nums[0], nums[1])
 
 	return os.path.join(dir, pattern % name)
 
@@ -598,14 +602,16 @@ def apply_vnum(self):
 	if not path: return
 
 	if self.env.DEST_OS == 'openbsd':
-		bld.install_as(path + os.sep + name2, node, env=self.env, chmod=self.link_task.chmod)
+		libname = self.link_task.outputs[0].name
+		bld.install_as('%s%s%s' % (path, os.sep, libname), node, env=self.env)
 	else:
 		bld.install_as(path + os.sep + name3, node, env=self.env)
 		bld.symlink_as(path + os.sep + name2, name3)
 		bld.symlink_as(path + os.sep + libname, name3)
 
 	# the following task is just to enable execution from the build dir :-/
-	self.create_task('vnum', node, [node.parent.find_or_declare(name2), node.parent.find_or_declare(name3)])
+	if self.env.DEST_OS != 'openbsd':
+		self.create_task('vnum', node, [node.parent.find_or_declare(name2), node.parent.find_or_declare(name3)])
 
 def exec_vnum_link(self):
 	for x in self.outputs:
