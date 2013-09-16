@@ -742,40 +742,31 @@ bool set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 	return add_share_mode_entry(lck->data, &entry);
 }
 
-/*******************************************************************
- Check if two share mode entries are identical, ignoring oplock 
- and mid info and desired_access. (Removed paranoia test - it's
- not automatically a logic error if they are identical. JRA.)
-********************************************************************/
-
-static bool share_modes_identical(const struct share_mode_entry *e1,
-				  const struct share_mode_entry *e2)
-{
-	/* We used to check for e1->share_access == e2->share_access here
-	   as well as the other fields but 2 different DOS or FCB opens
-	   sharing the same share mode entry may validly differ in
-	   fsp->share_access field. */
-
-	return (serverid_equal(&e1->pid, &e2->pid) &&
-		file_id_equal(&e1->id, &e2->id) &&
-		e1->share_file_id == e2->share_file_id );
-}
-
 static struct share_mode_entry *find_share_mode_entry(
-	struct share_mode_data *d, const struct share_mode_entry *entry)
+	struct share_mode_lock *lck, files_struct *fsp)
 {
+	struct share_mode_data *d = lck->data;
+	struct server_id pid;
 	int i;
 
-	if (!is_valid_share_mode_entry(entry)) {
-		return NULL;
-	}
+	pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
 
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
-		if (is_valid_share_mode_entry(e) &&
-		    share_modes_identical(e, entry)) {
-			return e;
+
+		if (!is_valid_share_mode_entry(e)) {
+			continue;
 		}
+		if (!serverid_equal(&pid, &e->pid)) {
+			continue;
+		}
+		if (!file_id_equal(&fsp->file_id, &e->id)) {
+			continue;
+		}
+		if (fsp->fh->gen_id != e->share_file_id) {
+			continue;
+		}
+		return e;
 	}
 	return NULL;
 }
@@ -787,12 +778,9 @@ static struct share_mode_entry *find_share_mode_entry(
 
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 {
-	struct share_mode_entry entry, *e;
+	struct share_mode_entry *e;
 
-	/* Don't care about the pid owner being correct here - just a search. */
-	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
-
-	e = find_share_mode_entry(lck->data, &entry);
+	e = find_share_mode_entry(lck, fsp);
 	if (e == NULL) {
 		return False;
 	}
@@ -805,7 +793,7 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 				  struct files_struct *fsp)
 {
-	struct share_mode_entry entry, *e;
+	struct share_mode_entry *e;
 
 	if (lck->data->num_share_modes != 1) {
 		return false;
@@ -818,10 +806,7 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 		return false;
 	}
 
-	/* Don't care about the pid owner being correct here - just a search. */
-	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
-
-	e = find_share_mode_entry(lck->data, &entry);
+	e = find_share_mode_entry(lck, fsp);
 	if (e == NULL) {
 		return false;
 	}
@@ -846,12 +831,9 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
-	struct share_mode_entry entry, *e;
+	struct share_mode_entry *e;
 
-	/* Don't care about the pid owner being correct here - just a search. */
-	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
-
-	e = find_share_mode_entry(lck->data, &entry);
+	e = find_share_mode_entry(lck, fsp);
 	if (e == NULL) {
 		return False;
 	}
@@ -879,12 +861,9 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
-	struct share_mode_entry entry, *e;
+	struct share_mode_entry *e;
 
-	/* Don't care about the pid owner being correct here - just a search. */
-	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
-
-	e = find_share_mode_entry(lck->data, &entry);
+	e = find_share_mode_entry(lck, fsp);
 	if (e == NULL) {
 		return False;
 	}
