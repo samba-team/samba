@@ -90,6 +90,7 @@ struct net_context {
 	bool smb_encrypt;
 	struct libnetapi_ctx *netapi_ctx;
 	struct messaging_context *msg_ctx;
+	struct netlogon_creds_cli_context *netlogon_creds;
 
 	bool display_usage;
 	void *private_data;

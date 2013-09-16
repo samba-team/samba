@@ -201,6 +201,7 @@ int run_rpc_command(struct net_context *c,
 					nt_errstr(nt_status) ));
 				goto fail;
 			}
+			c->netlogon_creds = pipe_hnd->netlogon_creds;
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
 				nt_status = cli_rpc_pipe_open_generic_auth(
