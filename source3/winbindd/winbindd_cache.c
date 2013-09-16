@@ -2120,6 +2120,19 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			old_status) {
 			have_mapped = have_unmapped = false;
 
+			*names = talloc_array(mem_ctx, char *, num_rids);
+			if (*names != NULL) {
+				result = NT_STATUS_NO_MEMORY;
+				goto error;
+			}
+
+			*types = talloc_array(mem_ctx, enum lsa_SidType,
+					      num_rids);
+			if (*types != NULL) {
+				result = NT_STATUS_NO_MEMORY;
+				goto error;
+			}
+
 			for (i=0; i<num_rids; i++) {
 				struct dom_sid sid;
 				struct cache_entry *centry;
