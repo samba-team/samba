@@ -29,6 +29,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "rpc_client/rpc_client.h"
 #include "nsswitch/wb_reqtrans.h"
 #include "secrets.h"
 #include "../lib/util/select.h"
@@ -999,10 +1000,10 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 					    struct timeval now,
 					    void *private_data)
 {
+	struct messaging_context *msg_ctx = winbind_messaging_context();
 	struct winbindd_child *child =
 		(struct winbindd_child *)private_data;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
-	TALLOC_CTX *frame;
 	NTSTATUS result;
 	struct timeval next_change;
 
@@ -1039,15 +1040,14 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 		return;
 	}
 
-	frame = talloc_stackframe();
-
-	result = trust_pw_find_change_and_store_it(netlogon_pipe,
-						   frame,
-						   child->domain->name);
-	TALLOC_FREE(frame);
+	result = trust_pw_change(child->domain->conn.netlogon_creds,
+				 msg_ctx,
+				 netlogon_pipe->binding_handle,
+				 child->domain->name,
+				 false); /* force */
 
 	DEBUG(10, ("machine_password_change_handler: "
-		   "trust_pw_find_change_and_store_it returned %s\n",
+		   "trust_pw_change returned %s\n",
 		   nt_errstr(result)));
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
