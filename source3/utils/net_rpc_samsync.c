@@ -129,6 +129,7 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 
 	ctx->mode		= NET_SAMSYNC_MODE_DUMP;
 	ctx->cli		= pipe_hnd;
+	ctx->netlogon_creds	= c->netlogon_creds;
 	ctx->ops		= &libnet_samsync_display_ops;
 	ctx->domain_name	= domain_name;
 

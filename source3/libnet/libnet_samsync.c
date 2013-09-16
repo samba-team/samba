@@ -216,7 +216,7 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 		struct netlogon_creds_CredentialState *creds = NULL;
 
-		status = netlogon_creds_cli_lock(ctx->cli->netlogon_creds,
+		status = netlogon_creds_cli_lock(ctx->netlogon_creds,
 						 mem_ctx, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
