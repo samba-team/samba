@@ -255,13 +255,11 @@ static files_struct *initial_break_processing(
 {
 	files_struct *fsp = NULL;
 
-	if( DEBUGLVL( 3 ) ) {
-		dbgtext( "initial_break_processing: called for %s/%u\n",
-			 file_id_string_tos(&id), (int)file_id);
-		dbgtext( "Current oplocks_open (exclusive = %d, levelII = %d)\n",
-			sconn->oplocks.exclusive_open,
-			sconn->oplocks.level_II_open);
-	}
+	DEBUG(3, ("initial_break_processing: called for %s/%u\n"
+		  "Current oplocks_open (exclusive = %d, levelII = %d)\n",
+		  file_id_string_tos(&id), (int)file_id,
+		  sconn->oplocks.exclusive_open,
+		  sconn->oplocks.level_II_open));
 
 	/*
 	 * We need to search the file open table for the
@@ -273,11 +271,9 @@ static files_struct *initial_break_processing(
 
 	if(fsp == NULL) {
 		/* The file could have been closed in the meantime - return success. */
-		if( DEBUGLVL( 3 ) ) {
-			dbgtext( "initial_break_processing: cannot find open file with " );
-			dbgtext( "file_id %s gen_id = %lu, ", file_id_string_tos(&id), file_id);
-			dbgtext( "allowing break to succeed.\n" );
-		}
+		DEBUG(3, ("initial_break_processing: cannot find open file "
+			  "with file_id %s gen_id = %lu, allowing break to "
+			  "succeed.\n", file_id_string_tos(&id), file_id));
 		return NULL;
 	}
 
@@ -292,13 +288,10 @@ static files_struct *initial_break_processing(
 	 */
 
 	if(fsp->oplock_type == NO_OPLOCK) {
-		if( DEBUGLVL( 3 ) ) {
-			dbgtext( "initial_break_processing: file %s ",
-				 fsp_str_dbg(fsp));
-			dbgtext( "(file_id = %s gen_id = %lu) has no oplock.\n",
-				 file_id_string_tos(&id), fsp->fh->gen_id );
-			dbgtext( "Allowing break to succeed regardless.\n" );
-		}
+		DEBUG(3, ("initial_break_processing: file %s (file_id = %s "
+			  "gen_id = %lu) has no oplock. Allowing break to "
+			  "succeed regardless.\n", fsp_str_dbg(fsp),
+			  file_id_string_tos(&id), fsp->fh->gen_id));
 		return NULL;
 	}
 
