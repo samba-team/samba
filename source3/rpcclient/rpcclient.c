@@ -52,6 +52,7 @@ static enum dcerpc_transport_t default_transport = NCACN_NP;
 struct messaging_context *rpcclient_msg_ctx;
 struct user_auth_info *rpcclient_auth_info;
 struct cli_state *rpcclient_cli_state;
+struct netlogon_creds_cli_context *rpcclient_netlogon_creds;
 
 /* List to hold groups of commands.
  *
@@ -797,6 +798,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			}
 		}
 	}
+
+	rpcclient_netlogon_creds = cmd_entry->rpc_pipe->netlogon_creds;
 
 	/* Run command */
 
