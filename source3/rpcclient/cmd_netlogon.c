@@ -782,9 +782,9 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 	/* Check arguments */
 
-	if (argc < 3 || argc > 7) {
+	if (argc < 3 || argc > 6) {
 		fprintf(stderr, "Usage: samlogon <username> <password> [workstation]"
-			"[logon_type (1 or 2)] [auth level (2 or 3)] [logon_parameter]\n");
+			"[logon_type (1 or 2)] [logon_parameter]\n");
 		return NT_STATUS_OK;
 	}
 
@@ -797,11 +797,8 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	if (argc >= 5)
 		sscanf(argv[4], "%i", &logon_type);
 
-	if (argc >= 6)
-		validation_level = atoi(argv[5]);
-
-	if (argc == 7)
-		sscanf(argv[6], "%x", &logon_param);
+	if (argc == 6)
+		sscanf(argv[5], "%x", &logon_param);
 
 	/* Perform the sam logon */
 
