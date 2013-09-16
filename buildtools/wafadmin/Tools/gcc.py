@@ -114,6 +114,10 @@ def gcc_modifier_aix(conf):
 	v['SHLIB_MARKER']        = ''
 
 @conftest
+def gcc_modifier_openbsd(conf):
+	conf.env['SONAME_ST'] = []
+
+@conftest
 def gcc_modifier_platform(conf):
 	# * set configurations specific for a platform.
 	# * the destination platform is detected automatically by looking at the macros the compiler predefines,
