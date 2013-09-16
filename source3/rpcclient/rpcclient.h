@@ -41,6 +41,7 @@ struct cmd_set {
 	const char *usage;
 };
 
+extern struct messaging_context *rpcclient_msg_ctx;
 extern struct cli_state *rpcclient_cli_state;
 
 #endif /* RPCCLIENT_H */

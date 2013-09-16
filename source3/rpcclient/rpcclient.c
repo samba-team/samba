@@ -33,6 +33,7 @@
 #include "libsmb/libsmb.h"
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "messages.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -48,6 +49,7 @@ static enum dcerpc_AuthLevel pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;
 static unsigned int timeout = 0;
 static enum dcerpc_transport_t default_transport = NCACN_NP;
 
+struct messaging_context *rpcclient_msg_ctx;
 struct user_auth_info *rpcclient_auth_info;
 struct cli_state *rpcclient_cli_state;
 
@@ -986,6 +988,9 @@ out_free:
 
 	/* We must load interfaces after we load the smb.conf */
 	load_interfaces();
+
+	rpcclient_msg_ctx = messaging_init(talloc_autofree_context(),
+			samba_tevent_context_init(talloc_autofree_context()));
 
 	/*
 	 * Get password
