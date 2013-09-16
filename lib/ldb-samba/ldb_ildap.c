@@ -681,6 +681,9 @@ static bool ildb_dn_is_special(struct ldb_request *req)
 	struct ldb_dn *dn = NULL;
 
 	switch (req->operation) {
+	case LDB_SEARCH:
+		dn = req->op.search.base;
+		break;
 	case LDB_ADD:
 		dn = req->op.add.message->dn;
 		break;
