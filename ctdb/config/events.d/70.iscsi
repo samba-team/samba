@@ -8,6 +8,8 @@
 
 service_name="iscsi"
 
+loadconfig
+
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
