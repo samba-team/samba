@@ -51,18 +51,6 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 					const char *password,
 					const char *workstation,
 					enum netr_LogonInfoClass logon_type);
-NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx,
-					   uint32 logon_parameters,
-					   const char *server,
-					   const char *username,
-					   const char *domain,
-					   const char *workstation,
-					   const uint8 chal[8],
-					   uint16_t validation_level,
-					   DATA_BLOB lm_response,
-					   DATA_BLOB nt_response,
-					   struct netr_SamInfo3 **info3);
 NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 				       struct dcerpc_binding_handle *binding_handle,
 				       TALLOC_CTX *mem_ctx,
