@@ -192,16 +192,16 @@ int run_rpc_command(struct net_context *c,
 		    && (ndr_syntax_id_equal(&table->syntax_id,
 					    &ndr_table_netlogon.syntax_id))) {
 			/* Always try and create an schannel netlogon pipe. */
+			TALLOC_FREE(c->netlogon_creds);
 			nt_status = cli_rpc_pipe_open_schannel(
-				cli, table, NCACN_NP,
+				cli, c->msg_ctx, table, NCACN_NP,
 				DCERPC_AUTH_LEVEL_PRIVACY, domain_name,
-				&pipe_hnd);
+				&pipe_hnd, c, &c->netlogon_creds);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise schannel netlogon pipe. Error was %s\n",
 					nt_errstr(nt_status) ));
 				goto fail;
 			}
-			c->netlogon_creds = pipe_hnd->netlogon_creds;
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
 				nt_status = cli_rpc_pipe_open_generic_auth(

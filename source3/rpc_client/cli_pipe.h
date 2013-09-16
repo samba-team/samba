@@ -101,11 +101,14 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     struct rpc_pipe_client **presult);
 
 NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
+				    struct messaging_context *msg_ctx,
 				    const struct ndr_interface_table *table,
 				    enum dcerpc_transport_t transport,
 				    enum dcerpc_AuthLevel auth_level,
 				    const char *domain,
-				    struct rpc_pipe_client **presult);
+				    struct rpc_pipe_client **presult,
+				    TALLOC_CTX *mem_ctx,
+				    struct netlogon_creds_cli_context **pcreds);
 
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,

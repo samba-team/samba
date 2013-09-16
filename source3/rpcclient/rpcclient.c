@@ -738,12 +738,16 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				&cmd_entry->rpc_pipe);
 			break;
 		case DCERPC_AUTH_TYPE_SCHANNEL:
+			TALLOC_FREE(rpcclient_netlogon_creds);
 			ntresult = cli_rpc_pipe_open_schannel(
-				cli, cmd_entry->table,
+				cli, rpcclient_msg_ctx,
+				cmd_entry->table,
 				default_transport,
 				pipe_default_auth_level,
 				get_cmdline_auth_info_domain(auth_info),
-				&cmd_entry->rpc_pipe);
+				&cmd_entry->rpc_pipe,
+				talloc_autofree_context(),
+				&rpcclient_netlogon_creds);
 			break;
 		default:
 			DEBUG(0, ("Could not initialise %s. Invalid "
@@ -763,7 +767,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 		ok = ndr_syntax_id_equal(&cmd_entry->table->syntax_id,
 					 &ndr_table_netlogon.syntax_id);
-		if (cmd_entry->rpc_pipe->netlogon_creds == NULL && ok) {
+		if (rpcclient_netlogon_creds == NULL && ok) {
 			const char *dc_name = cmd_entry->rpc_pipe->desthost;
 			const char *domain = get_cmdline_auth_info_domain(auth_info);
 			enum netr_SchannelType sec_chan_type = 0;
@@ -824,11 +828,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				TALLOC_FREE(mem_ctx);
 				return ntresult;
 			}
-			cmd_entry->rpc_pipe->netlogon_creds = rpcclient_netlogon_creds;
 		}
 	}
-
-	rpcclient_netlogon_creds = cmd_entry->rpc_pipe->netlogon_creds;
 
 	/* Run command */
 
