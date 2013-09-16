@@ -974,9 +974,6 @@ void update_trustdom_cache( void );
 
 /* The following definitions come from libsmb/trusts_util.c  */
 
-NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
-					   TALLOC_CTX *mem_ctx, 
-					   const char *domain) ;
 struct netlogon_creds_cli_context;
 struct messaging_context;
 struct dcerpc_binding_handle;
