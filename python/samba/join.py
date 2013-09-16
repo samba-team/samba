@@ -747,7 +747,7 @@ class dc_join(object):
 
         print("Finding domain GUID from ncName")
         res = ctx.local_samdb.search(base=ctx.partition_dn, scope=ldb.SCOPE_BASE, attrs=['ncName'],
-                                     controls=["extended_dn:1:1"])
+                                     controls=["extended_dn:1:1", "reveal_internals:0"])
         domguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
         print("Got domain GUID %s" % domguid)
 
