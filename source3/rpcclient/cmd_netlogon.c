@@ -829,11 +829,11 @@ static NTSTATUS cmd_netlogon_change_trust_pw(struct rpc_pipe_client *cli,
                 return NT_STATUS_OK;
         }
 
-        /* Perform the sam logon */
-
-	result = trust_pw_find_change_and_store_it(cli, mem_ctx,
-						   lp_workgroup());
-
+	result = trust_pw_change(rpcclient_netlogon_creds,
+				 rpcclient_msg_ctx,
+				 cli->binding_handle,
+				 lp_workgroup(),
+				 true); /* force */
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
