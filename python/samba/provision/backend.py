@@ -255,6 +255,7 @@ class LDAPBackend(ProvisionBackend):
         # Kerberos to an ldapi:// backend makes no sense
         self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
         self.credentials.set_password(self.ldapadminpass)
+        self.credentials.set_forced_sasl_mech("DIGEST-MD5")
 
         self.secrets_credentials = Credentials()
         self.secrets_credentials.guess(self.lp)
@@ -262,6 +263,7 @@ class LDAPBackend(ProvisionBackend):
         self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
         self.secrets_credentials.set_username("samba-admin")
         self.secrets_credentials.set_password(self.ldapadminpass)
+        self.secrets_credentials.set_forced_sasl_mech("DIGEST-MD5")
 
         self.provision()
 

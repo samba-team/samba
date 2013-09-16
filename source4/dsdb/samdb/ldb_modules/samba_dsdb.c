@@ -157,6 +157,7 @@ static int set_ldap_credentials(struct ldb_context *ldb)
 		return ldb_oom(ldb);
 	}
 	cli_credentials_set_anonymous(cred);
+	cli_credentials_set_forced_sasl_mech(cred, "DIGEST-MD5");
 
 	/*
 	 * We don't want to use krb5 to talk to our samdb - recursion
