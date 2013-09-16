@@ -3097,15 +3097,6 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 		return status;
 	}
 
-	status = netlogon_creds_cli_context_copy(netlogon_creds,
-						 rpccli,
-						 &rpccli->netlogon_creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("netlogon_creds_cli_context_copy failed with %s\n",
-			  nt_errstr(status)));
-		TALLOC_FREE(rpccli);
-		return status;
-	}
 
 done:
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
