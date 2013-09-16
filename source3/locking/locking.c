@@ -693,14 +693,22 @@ bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 	return true;
 }
 
-/*******************************************************************
- Fill a share mode entry.
-********************************************************************/
-
-static void fill_share_mode_entry(struct share_mode_entry *e,
-				  files_struct *fsp,
-				  uid_t uid, uint64_t mid, uint16 op_type)
+bool set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
+		    uid_t uid, uint64_t mid, uint16 op_type)
 {
+	struct share_mode_data *d = lck->data;
+	struct share_mode_entry *tmp, *e;
+
+	tmp = talloc_realloc(d, d->share_modes, struct share_mode_entry,
+			     d->num_share_modes+1);
+	if (tmp == NULL) {
+		return false;
+	}
+	d->share_modes = tmp;
+	e = &d->share_modes[d->num_share_modes];
+	d->num_share_modes += 1;
+	d->modified = true;
+
 	ZERO_STRUCTP(e);
 	e->pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
 	e->share_access = fsp->share_access;
@@ -715,31 +723,8 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->uid = (uint32)uid;
 	e->flags = fsp->posix_open ? SHARE_MODE_FLAG_POSIX_OPEN : 0;
 	e->name_hash = fsp->name_hash;
-}
 
-static bool add_share_mode_entry(struct share_mode_data *d,
-				 const struct share_mode_entry *entry)
-{
-	struct share_mode_entry *tmp;
-
-	tmp = talloc_realloc(d, d->share_modes, struct share_mode_entry,
-			     d->num_share_modes+1);
-	if (tmp == NULL) {
-		return false;
-	}
-	d->share_modes = tmp;
-	d->share_modes[d->num_share_modes] = *entry;
-	d->num_share_modes += 1;
-	d->modified = true;
 	return true;
-}
-
-bool set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-		    uid_t uid, uint64_t mid, uint16 op_type)
-{
-	struct share_mode_entry entry;
-	fill_share_mode_entry(&entry, fsp, uid, mid, op_type);
-	return add_share_mode_entry(lck->data, &entry);
 }
 
 static struct share_mode_entry *find_share_mode_entry(
