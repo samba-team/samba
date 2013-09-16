@@ -417,6 +417,8 @@ class OpenLDAPBackend(LDAPBackend):
         mmr_serverids_config = ""
         mmr_syncrepl_schema_config = ""
         mmr_syncrepl_config_config = ""
+        mmr_syncrepl_domaindns_config = ""
+        mmr_syncrepl_forestdns_config = ""
         mmr_syncrepl_user_config = ""
 
         if self.ol_mmr_urls is not None:
@@ -452,6 +454,22 @@ class OpenLDAPBackend(LDAPBackend):
                     setup_path("mmr_syncrepl.conf"), {
                         "RID" : str(rid),
                         "MMRDN": self.names.configdn,
+                        "LDAPSERVER" : url,
+                        "MMR_PASSWORD": mmr_pass})
+
+                rid = rid + 1
+                mmr_syncrepl_domaindns_config += read_and_sub_file(
+                    setup_path("mmr_syncrepl.conf"), {
+                        "RID" : str(rid),
+                        "MMRDN": "dc=DomainDNSZones," + self.names.domaindn,
+                        "LDAPSERVER" : url,
+                        "MMR_PASSWORD": mmr_pass})
+
+                rid = rid + 1
+                mmr_syncrepl_forestdns_config += read_and_sub_file(
+                    setup_path("mmr_syncrepl.conf"), {
+                        "RID" : str(rid),
+                        "MMRDN": "dc=ForestDNSZones," + self.names.domaindn,
                         "LDAPSERVER" : url,
                         "MMR_PASSWORD": mmr_pass})
 
@@ -508,6 +526,8 @@ class OpenLDAPBackend(LDAPBackend):
                     "MMR_SERVERIDS_CONFIG": mmr_serverids_config,
                     "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
                     "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
+                    "MMR_SYNCREPL_DOMAINDNS_CONFIG": mmr_syncrepl_domaindns_config,
+                    "MMR_SYNCREPL_FORESTDNS_CONFIG": mmr_syncrepl_forestdns_config,
                     "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
                     "OLC_SYNCREPL_CONFIG": olc_syncrepl_config,
                     "OLC_MMR_CONFIG": olc_mmr_config,
@@ -515,6 +535,8 @@ class OpenLDAPBackend(LDAPBackend):
                     "INDEX_CONFIG": index_config,
                     "NOSYNC": nosync_config})
 
+        self.setup_db_config(os.path.join(self.ldapdir, "db", "forestdns"))
+        self.setup_db_config(os.path.join(self.ldapdir, "db", "domaindns"))
         self.setup_db_config(os.path.join(self.ldapdir, "db", "user"))
         self.setup_db_config(os.path.join(self.ldapdir, "db", "config"))
         self.setup_db_config(os.path.join(self.ldapdir, "db", "schema"))
