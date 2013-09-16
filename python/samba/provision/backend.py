@@ -271,11 +271,14 @@ class LDAPBackend(ProvisionBackend):
     def start(self):
         from samba.provision import ProvisioningError
         self.slapd_command_escaped = "\'" + "\' \'".join(self.slapd_command) + "\'"
-        f = open(os.path.join(self.ldapdir, "ldap_backend_startup.sh"), 'w')
+        ldap_backend_script = os.path.join(self.ldapdir, "ldap_backend_startup.sh")
+        f = open(ldap_backend_script, 'w')
         try:
-            f.write("#!/bin/sh\n" + self.slapd_command_escaped + "\n")
+            f.write("#!/bin/sh\n" + self.slapd_command_escaped + " $@\n")
         finally:
             f.close()
+
+        os.chmod(ldap_backend_script, 0755)
 
         # Now start the slapd, so we can provision onto it.  We keep the
         # subprocess context around, to kill this off at the successful
