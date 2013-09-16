@@ -1228,6 +1228,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 	do {
 		struct rpc_pipe_client *netlogon_pipe;
+		uint8_t authoritative = 0;
+		uint32_t flags = 0;
 
 		ZERO_STRUCTP(info3);
 		retry = false;
@@ -1276,19 +1278,19 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		}
 		netr_attempts = 0;
 
-		result = rpccli_netlogon_sam_network_logon(
-					netlogon_pipe,
-					mem_ctx,
-					logon_parameters,
-					server,		/* server name */
-					username,	/* user name */
-					domainname,	/* target domain */
-					workstation,	/* workstation */
-					chal,
-					-1, /* ignored */
-					lm_response,
-					nt_response,
-					info3);
+		result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds,
+						netlogon_pipe->binding_handle,
+						mem_ctx,
+						logon_parameters,
+						username,
+						domainname,
+						workstation,
+						chal,
+						lm_response,
+						nt_response,
+						&authoritative,
+						&flags,
+						info3);
 
 		/*
 		 * we increment this after the "feature negotiation"
