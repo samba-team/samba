@@ -309,7 +309,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	static const char *fedora_ds_backend_modules[] = {
 		"nsuniqueid", "paged_searches", "simple_dn", NULL };
 	static const char *openldap_backend_modules[] = {
-		"entryuuid", "paged_searches", "simple_dn", NULL };
+		"entryuuid", "simple_dn", NULL };
 
 	static const char *samba_dsdb_attrs[] = { "backendType", NULL };
 	static const char *partition_attrs[] = { "ldapBackend", NULL };
