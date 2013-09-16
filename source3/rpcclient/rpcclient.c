@@ -677,6 +677,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 {
 	NTSTATUS ntresult;
 	WERROR wresult;
+	bool ok;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -760,17 +761,20 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			return ntresult;
 		}
 
-		if (ndr_syntax_id_equal(&cmd_entry->table->syntax_id,
-					&ndr_table_netlogon.syntax_id)) {
-			uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
-						NETLOGON_NEG_SUPPORTS_AES;
-			enum netr_SchannelType sec_channel_type;
-			uchar trust_password[16];
-			const char *machine_account;
+		ok = ndr_syntax_id_equal(&cmd_entry->table->syntax_id,
+					 &ndr_table_netlogon.syntax_id);
+		if (cmd_entry->rpc_pipe->netlogon_creds == NULL && ok) {
+			const char *dc_name = cmd_entry->rpc_pipe->desthost;
+			const char *domain = get_cmdline_auth_info_domain(auth_info);
+			enum netr_SchannelType sec_chan_type = 0;
+			const char *_account_name = NULL;
+			const char *account_name = NULL;
+			struct samr_Password current_nt_hash;
+			struct samr_Password *previous_nt_hash = NULL;
 
 			if (!get_trust_pw_hash(get_cmdline_auth_info_domain(auth_info),
-					       trust_password, &machine_account,
-					       &sec_channel_type))
+					       current_nt_hash.hash, &_account_name,
+					       &sec_chan_type))
 			{
 				DEBUG(0, ("Failed to fetch trust password for %s to connect to %s.\n",
 					  get_cmdline_auth_info_domain(auth_info),
@@ -780,22 +784,41 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 			}
 
-			ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
-						cmd_entry->rpc_pipe->desthost,   /* server name */
-						get_cmdline_auth_info_domain(auth_info),  /* domain */
-						lp_netbios_name(), /* client name */
-						machine_account, /* machine account name */
-						trust_password,
-						sec_channel_type,
-						&neg_flags);
+			account_name = talloc_asprintf(mem_ctx, "%s$", _account_name);
+			if (account_name == NULL) {
+				SAFE_FREE(previous_nt_hash);
+				TALLOC_FREE(mem_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 
+			ntresult = rpccli_create_netlogon_creds(dc_name,
+						domain,
+						account_name,
+						sec_chan_type,
+						rpcclient_msg_ctx,
+						talloc_autofree_context(),
+						&rpcclient_netlogon_creds);
+			if (!NT_STATUS_IS_OK(ntresult)) {
+				SAFE_FREE(previous_nt_hash);
+				TALLOC_FREE(mem_ctx);
+				return ntresult;
+			}
+
+			ntresult = rpccli_setup_netlogon_creds(cli,
+							rpcclient_netlogon_creds,
+							false, /* force_reauth */
+							current_nt_hash,
+							previous_nt_hash);
+			SAFE_FREE(previous_nt_hash);
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
 					  cmd_entry->table->name));
 				TALLOC_FREE(cmd_entry->rpc_pipe);
-				talloc_free(mem_ctx);
+				TALLOC_FREE(rpcclient_netlogon_creds);
+				TALLOC_FREE(mem_ctx);
 				return ntresult;
 			}
+			cmd_entry->rpc_pipe->netlogon_creds = rpcclient_netlogon_creds;
 		}
 	}
 
