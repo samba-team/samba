@@ -633,7 +633,11 @@ static NTSTATUS cmd_netlogon_sam_sync(struct rpc_pipe_client *cli,
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 		struct netlogon_creds_CredentialState *creds = NULL;
 
-		status = netlogon_creds_cli_lock(cli->netlogon_creds,
+		if (rpcclient_netlogon_creds == NULL) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
 						 mem_ctx, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -712,7 +716,11 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 		struct netlogon_creds_CredentialState *creds = NULL;
 
-		status = netlogon_creds_cli_lock(cli->netlogon_creds,
+		if (rpcclient_netlogon_creds == NULL) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
 						 mem_ctx, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -1157,11 +1165,11 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 		sscanf(argv[1], "%d", &rid);
 	}
 
-	if (cli->netlogon_creds == NULL) {
+	if (rpcclient_netlogon_creds == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	status = netlogon_creds_cli_lock(cli->netlogon_creds,
+	status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
 					 mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1223,7 +1231,11 @@ static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCT(return_authenticator);
 
-	status = netlogon_creds_cli_lock(cli->netlogon_creds,
+	if (rpcclient_netlogon_creds == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
 					 mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
