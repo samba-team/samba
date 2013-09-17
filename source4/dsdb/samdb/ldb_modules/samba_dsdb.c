@@ -253,7 +253,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	  stack visually - the code below then handles the creation of the list
 	  based on the parameters loaded from the database.
 	*/
-	static const char *modules_list[] = {"resolve_oids",
+	static const char *modules_list1[] = {"resolve_oids",
 					     "rootdse",
 					     "schema_load",
 					     "lazy_commit",
@@ -264,8 +264,9 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "server_sort",
 					     "asq",
 					     "extended_dn_store",
-					     "extended_dn_in",
-					     "objectclass",
+					     NULL };
+	/* extended_dn_in or extended_dn_in_openldap goes here */
+	static const char *modules_list1a[] = {"objectclass",
 					     "descriptor",
 					     "acl",
 					     "aclread",
@@ -293,6 +294,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	const char *extended_dn_module_ldb = "extended_dn_out_ldb";
 	const char *extended_dn_module_fds = "extended_dn_out_fds";
 	const char *extended_dn_module_openldap = "extended_dn_out_openldap";
+	const char *extended_dn_in_module = "extended_dn_in";
 
 	static const char *modules_list2[] = {"show_deleted",
 					      "new_partition",
@@ -357,6 +359,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 			link_modules = openldap_modules;
 			backend_modules = openldap_backend_modules;
 			extended_dn_module = extended_dn_module_openldap;
+			extended_dn_in_module = "extended_dn_in_openldap";
 		} else {
 			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "invalid backend type");
 		}
@@ -382,7 +385,13 @@ static int samba_dsdb_init(struct ldb_module *module)
 		}						\
 	} while (0)
 
-	final_module_list = str_list_copy_const(tmp_ctx, modules_list);
+	final_module_list = str_list_copy_const(tmp_ctx, modules_list1);
+	CHECK_MODULE_LIST;
+
+	final_module_list = str_list_add_const(final_module_list, extended_dn_in_module);
+	CHECK_MODULE_LIST;
+
+	final_module_list = str_list_append_const(final_module_list, modules_list1a);
 	CHECK_MODULE_LIST;
 
 	final_module_list = str_list_append_const(final_module_list, link_modules);

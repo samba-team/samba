@@ -56,6 +56,9 @@ static const char *wkattr[] = {
 	"otherWellKnownObjects",
 	NULL
 };
+
+static const struct ldb_module_ops ldb_extended_dn_in_openldap_module_ops;
+
 /* An extra layer of indirection because LDB does not allow the original request to be altered */
 
 static int extended_final_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -376,7 +379,14 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 	has_extended_component = (memchr(tree->u.equality.value.data, '<',
 					 tree->u.equality.value.length) != NULL);
 
-	if (!attribute->one_way_link && !has_extended_component) {
+	/*
+	 * Don't turn it into an extended DN if we're talking to OpenLDAP.
+	 * We just check the module_ops pointer instead of adding a private
+	 * pointer and a boolean to tell us the exact same thing.
+	 */
+	if (!has_extended_component) {
+		if (!attribute->one_way_link ||
+		    ldb_module_get_ops(filter_ctx->module) == &ldb_extended_dn_in_openldap_module_ops)
 		return LDB_SUCCESS;
 	}
 
@@ -706,8 +716,21 @@ static const struct ldb_module_ops ldb_extended_dn_in_module_ops = {
 	.rename            = extended_dn_in_rename,
 };
 
+static const struct ldb_module_ops ldb_extended_dn_in_openldap_module_ops = {
+	.name		   = "extended_dn_in_openldap",
+	.search            = extended_dn_in_search,
+	.modify            = extended_dn_in_modify,
+	.del               = extended_dn_in_del,
+	.rename            = extended_dn_in_rename,
+};
+
 int ldb_extended_dn_in_module_init(const char *version)
 {
+	int ret;
 	LDB_MODULE_CHECK_VERSION(version);
+	ret = ldb_register_module(&ldb_extended_dn_in_openldap_module_ops);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 	return ldb_register_module(&ldb_extended_dn_in_module_ops);
 }
