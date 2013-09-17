@@ -4655,7 +4655,11 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
  */
 static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *ar)
 {
-	if (ar->isDeleted) {
+	struct ldb_dn *deleted_objects_dn;
+	struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
+	int ret = dsdb_get_deleted_objects_dn(ldb_module_get_ctx(ar->module), msg, msg->dn,
+					      &deleted_objects_dn);
+	if (ar->isDeleted && (ret != LDB_SUCCESS || ldb_dn_compare(msg->dn, deleted_objects_dn) != 0)) {
 		/*
 		 * Do a delete here again, so that if there is
 		 * anything local that conflicts with this
@@ -4669,11 +4673,9 @@ static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *a
 		 */
 
 		/* This has been updated to point to the DN we eventually did the modify on */
-		struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
 
 		struct ldb_request *del_req;
 		struct ldb_result *res;
-		int ret;
 
 		TALLOC_CTX *tmp_ctx = talloc_new(ar);
 		if (!tmp_ctx) {
