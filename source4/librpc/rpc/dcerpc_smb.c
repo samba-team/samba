@@ -583,21 +583,6 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 	return dcerpc_pipe_open_smb_recv(ctx);
 }
 
-/*
-  return the SMB tree used for a dcerpc over SMB pipe
-*/
-_PUBLIC_ struct smbcli_tree *dcerpc_smb_tree(struct dcecli_connection *c)
-{
-	struct smb_private *smb;
-
-	if (c->transport.transport != NCACN_NP) return NULL;
-
-	smb = talloc_get_type(c->transport.private_data, struct smb_private);
-	if (!smb) return NULL;
-
-	return smb->tree;
-}
-
 struct composite_context *dcerpc_secondary_smb_send(struct dcecli_connection *c1,
 						    struct dcerpc_pipe *p2,
 						    const char *pipe_name)
