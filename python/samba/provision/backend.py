@@ -292,6 +292,7 @@ class LDAPBackend(ProvisionBackend):
         while self.slapd.poll() is None:
             # Wait until the socket appears
             try:
+                time.sleep(1)
                 ldapi_db = Ldb(self.ldap_uri, lp=self.lp, credentials=self.credentials)
                 ldapi_db.search(base="", scope=SCOPE_BASE,
                     expression="(objectClass=OpenLDAProotDSE)")
@@ -299,7 +300,6 @@ class LDAPBackend(ProvisionBackend):
                 # the LDAP server!
                 return
             except LdbError:
-                time.sleep(1)
                 count = count + 1
 
                 if count > 15:
