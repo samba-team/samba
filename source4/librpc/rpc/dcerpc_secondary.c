@@ -37,7 +37,6 @@ struct sec_conn_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
-	struct smbcli_tree *tree;
 	struct socket_address *peer_addr;
 };
 
@@ -82,14 +81,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	/* open second dcerpc pipe using the same transport as for primary pipe */
 	switch (s->pipe->conn->transport.transport) {
 	case NCACN_NP:
-		/* get smb tree of primary dcerpc pipe opened on smb */
-		s->tree = dcerpc_smb_tree(s->pipe->conn);
-		if (!s->tree) {
-			composite_error(c, NT_STATUS_INVALID_PARAMETER);
-			return c;
-		}
-
-		pipe_smb_req = dcerpc_pipe_open_smb_send(s->pipe2, s->tree,
+		pipe_smb_req = dcerpc_secondary_smb_send(s->pipe->conn, s->pipe2,
 							 s->binding->endpoint);
 		composite_continue(c, pipe_smb_req, continue_open_smb, c);
 		return c;
@@ -134,7 +126,7 @@ static void continue_open_smb(struct composite_context *ctx)
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 	
-	c->status = dcerpc_pipe_open_smb_recv(ctx);
+	c->status = dcerpc_secondary_smb_recv(ctx);
 	if (!composite_is_ok(c)) return;
 
 	continue_pipe_open(c);
