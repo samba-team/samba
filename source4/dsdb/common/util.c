@@ -1326,6 +1326,14 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 	}
 
 	*invocation_id = samdb_result_guid(res->msgs[0], "invocationId");
+	if (GUID_all_zero(invocation_id)) {
+		if (ldb_msg_find_ldb_val(res->msgs[0], "invocationId")) {
+			DEBUG(0, ("Failed to find our own NTDS Settings invocationId in the ldb!\n"));	
+		} else {
+			DEBUG(0, ("Failed to find parse own NTDS Settings invocationId from the ldb!\n"));
+		}
+		goto failed;
+	}
 
 	/* cache the domain_sid in the ldb */
 	if (ldb_set_opaque(ldb, "cache.invocation_id", invocation_id) != LDB_SUCCESS) {
