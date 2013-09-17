@@ -4843,7 +4843,16 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 					session->conn->protocol,
 					recv_iov, 3);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		/*
+		 * Sadly some vendors don't sign the
+		 * final SMB2 session setup response
+		 *
+		 * At least Windows and Samba are always doing this
+		 * if there's a session key available.
+		 */
+		if (conn->mandatory_signing) {
+			return status;
+		}
 	}
 
 	session->smb2->should_sign = false;
