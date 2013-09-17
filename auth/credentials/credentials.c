@@ -365,6 +365,14 @@ _PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *c
 		return true;
 	}
 
+	/*
+	 * If we forced the mech we clearly want authentication. E.g. to use
+	 * SASL/EXTERNAL which has no credentials.
+	 */
+	if (cred->forced_sasl_mech) {
+		return true;
+	}
+
 	if (cli_credentials_is_anonymous(cred)){
 		return false;
 	}

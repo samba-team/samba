@@ -215,6 +215,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	struct ldap_message **sasl_mechs_msgs;
 	struct ldap_SearchResEntry *search;
 	int count, i;
+	bool first = true;
 
 	const char **sasl_names;
 	uint32_t old_gensec_features;
@@ -337,7 +338,13 @@ try_logon_again:
 		 * avoid mutal authentication requirements.
 		 *
 		 * Likewise, you must not feed GENSEC too much (after the OK),
-		 * it doesn't like that either
+		 * it doesn't like that either.
+		 *
+		 * For SASL/EXTERNAL, there is no data to send, but we still
+		 * must send the actual Bind request the first time around.
+		 * Otherwise, a result of NT_STATUS_OK with 0 output means the
+		 * end of a multi-step authentication, and no message must be
+		 * sent.
 		 */
 
 		gensec_status = status;
@@ -347,8 +354,10 @@ try_logon_again:
 			break;
 		}
 		if (NT_STATUS_IS_OK(status) && output.length == 0) {
-			break;
+			if (!first)
+				break;
 		}
+		first = false;
 
 		/* Perhaps we should make gensec_start_mech_by_sasl_list() return the name we got? */
 		msg = new_ldap_sasl_bind_msg(tmp_ctx, conn->gensec->ops->sasl_name, (output.data?&output:NULL));
