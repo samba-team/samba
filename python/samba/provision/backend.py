@@ -255,7 +255,7 @@ class LDAPBackend(ProvisionBackend):
         # Kerberos to an ldapi:// backend makes no sense
         self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
         self.credentials.set_password(self.ldapadminpass)
-        self.credentials.set_forced_sasl_mech("DIGEST-MD5")
+        self.credentials.set_forced_sasl_mech("EXTERNAL")
 
         self.secrets_credentials = Credentials()
         self.secrets_credentials.guess(self.lp)
@@ -263,7 +263,7 @@ class LDAPBackend(ProvisionBackend):
         self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
         self.secrets_credentials.set_username("samba-admin")
         self.secrets_credentials.set_password(self.ldapadminpass)
-        self.secrets_credentials.set_forced_sasl_mech("DIGEST-MD5")
+        self.secrets_credentials.set_forced_sasl_mech("EXTERNAL")
 
         self.provision()
 
@@ -533,7 +533,8 @@ class OpenLDAPBackend(LDAPBackend):
                     "OLC_MMR_CONFIG": olc_mmr_config,
                     "REFINT_CONFIG": refint_config,
                     "INDEX_CONFIG": index_config,
-                    "NOSYNC": nosync_config})
+                    "ADMIN_UID": str(os.getuid()),
+                    "NOSYNC": nosync_config,})
 
         self.setup_db_config(os.path.join(self.ldapdir, "db", "forestdns"))
         self.setup_db_config(os.path.join(self.ldapdir, "db", "domaindns"))

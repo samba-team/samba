@@ -138,7 +138,7 @@ static int prepare_modules_line(struct ldb_context *ldb,
  * ldapi socket to an LDAP backend
  */
 
-static int set_ldap_credentials(struct ldb_context *ldb)
+static int set_ldap_credentials(struct ldb_context *ldb, bool use_external)
 {
 	const char *secrets_ldb_path, *sam_ldb_path;
 	char *private_dir, *p, *error_string;
@@ -157,56 +157,60 @@ static int set_ldap_credentials(struct ldb_context *ldb)
 		return ldb_oom(ldb);
 	}
 	cli_credentials_set_anonymous(cred);
-	cli_credentials_set_forced_sasl_mech(cred, "DIGEST-MD5");
-
-	/*
-	 * We don't want to use krb5 to talk to our samdb - recursion
-	 * here would be bad, and this account isn't in the KDC
-	 * anyway
-	 */
-	cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
-
-	/*
-	 * Work out where *our* secrets.ldb is.  It must be in
-	 * the same directory as sam.ldb
-	 */
-	sam_ldb_path = (const char *)ldb_get_opaque(ldb, "ldb_url");
-	if (!sam_ldb_path) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-	if (strncmp("tdb://", sam_ldb_path, 6) == 0) {
-		sam_ldb_path += 6;
-	}
-	private_dir = talloc_strdup(tmp_ctx, sam_ldb_path);
-	p = strrchr(private_dir, '/');
-	if (p) {
-		*p = '\0';
+	if (use_external) {
+		cli_credentials_set_forced_sasl_mech(cred, "EXTERNAL");
 	} else {
-		private_dir = talloc_strdup(tmp_ctx, ".");
-	}
+		cli_credentials_set_forced_sasl_mech(cred, "DIGEST-MD5");
 
-	secrets_ldb_path = talloc_asprintf(private_dir, "tdb://%s/secrets.ldb",
-					   private_dir);
+		/*
+		 * We don't want to use krb5 to talk to our samdb - recursion
+		 * here would be bad, and this account isn't in the KDC
+		 * anyway
+		 */
+		cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
 
-	if (!secrets_ldb_path) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
+		/*
+		 * Work out where *our* secrets.ldb is.  It must be in
+		 * the same directory as sam.ldb
+		 */
+		sam_ldb_path = (const char *)ldb_get_opaque(ldb, "ldb_url");
+		if (!sam_ldb_path) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
+		if (strncmp("tdb://", sam_ldb_path, 6) == 0) {
+			sam_ldb_path += 6;
+		}
+		private_dir = talloc_strdup(tmp_ctx, sam_ldb_path);
+		p = strrchr(private_dir, '/');
+		if (p) {
+			*p = '\0';
+		} else {
+			private_dir = talloc_strdup(tmp_ctx, ".");
+		}
 
-	/*
-	 * Now that we have found the location, connect to
-	 * secrets.ldb so we can read the SamDB Credentials
-	 * record
-	 */
-	secrets_ldb = ldb_wrap_connect(tmp_ctx, NULL, lp_ctx, secrets_ldb_path,
-				       NULL, NULL, 0);
+		secrets_ldb_path = talloc_asprintf(private_dir, "tdb://%s/secrets.ldb",
+						   private_dir);
 
-	if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, NULL, secrets_ldb, NULL,
-							 SECRETS_LDAP_FILTER, &error_string))) {
-		ldb_asprintf_errstring(ldb, "Failed to read LDAP backend password from %s", secrets_ldb_path);
-		talloc_free(tmp_ctx);
-		return LDB_ERR_STRONG_AUTH_REQUIRED;
+		if (!secrets_ldb_path) {
+			talloc_free(tmp_ctx);
+			return ldb_oom(ldb);
+		}
+
+		/*
+		 * Now that we have found the location, connect to
+		 * secrets.ldb so we can read the SamDB Credentials
+		 * record
+		 */
+		secrets_ldb = ldb_wrap_connect(tmp_ctx, NULL, lp_ctx, secrets_ldb_path,
+					       NULL, NULL, 0);
+
+		if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, NULL, secrets_ldb, NULL,
+								 SECRETS_LDAP_FILTER, &error_string))) {
+			ldb_asprintf_errstring(ldb, "Failed to read LDAP backend password from %s", secrets_ldb_path);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_STRONG_AUTH_REQUIRED;
+		}
 	}
 
 	/*
@@ -229,7 +233,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_result *res;
 	struct ldb_message *rootdse_msg, *partition_msg;
-	struct ldb_dn *samba_dsdb_dn;
+	struct ldb_dn *samba_dsdb_dn, *partition_dn;
 	struct ldb_module *backend_module, *module_chain;
 	const char **final_module_list, **reverse_module_list;
 	/*
@@ -308,7 +312,9 @@ static int samba_dsdb_init(struct ldb_module *module)
 		"entryuuid", "paged_searches", "simple_dn", NULL };
 
 	static const char *samba_dsdb_attrs[] = { "backendType", NULL };
-	const char *backendType;
+	static const char *partition_attrs[] = { "ldapBackend", NULL };
+	const char *backendType, *backendUrl;
+	bool use_sasl_external = false;
 
 	if (!tmp_ctx) {
 		return ldb_oom(ldb);
@@ -322,6 +328,12 @@ static int samba_dsdb_init(struct ldb_module *module)
 
 	samba_dsdb_dn = ldb_dn_new(tmp_ctx, ldb, "@SAMBA_DSDB");
 	if (!samba_dsdb_dn) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	partition_dn = ldb_dn_new(tmp_ctx, ldb, DSDB_PARTITION_DN);
+	if (!partition_dn) {
 		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);
 	}
@@ -351,6 +363,19 @@ static int samba_dsdb_init(struct ldb_module *module)
 		link_modules = tdb_modules_list;
 	} else {
 		struct cli_credentials *cred;
+		bool is_ldapi = false;
+
+		ret = dsdb_module_search_dn(module, tmp_ctx, &res, partition_dn,
+					    partition_attrs, DSDB_FLAG_NEXT_MODULE, NULL);
+		if (ret == LDB_SUCCESS) {
+			backendUrl = ldb_msg_find_attr_as_string(res->msgs[0], "ldapBackend", "ldapi://");
+			if (!strncasecmp(backendUrl, "ldapi://", sizeof("ldapi://")-1)) {
+				is_ldapi = true;
+			}
+		} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 		if (strcasecmp(backendType, "fedora-ds") == 0) {
 			link_modules = fedora_ds_modules;
 			backend_modules = fedora_ds_backend_modules;
@@ -360,6 +385,9 @@ static int samba_dsdb_init(struct ldb_module *module)
 			backend_modules = openldap_backend_modules;
 			extended_dn_module = extended_dn_module_openldap;
 			extended_dn_in_module = "extended_dn_in_openldap";
+			if (is_ldapi) {
+				use_sasl_external = true;
+			}
 		} else {
 			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "invalid backend type");
 		}
@@ -370,7 +398,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 
 		cred = ldb_get_opaque(ldb, "credentials");
 		if (!cred || !cli_credentials_authentication_requested(cred)) {
-			ret = set_ldap_credentials(ldb);
+			ret = set_ldap_credentials(ldb, use_sasl_external);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
