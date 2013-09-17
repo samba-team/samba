@@ -1997,6 +1997,10 @@ NTSTATUS cli_smb2_get_ea_list_path(struct cli_state *cli,
 
   fail:
 
+	if (fnum != 0xffff) {
+		cli_smb2_close_fnum(cli, fnum);
+	}
+
 	TALLOC_FREE(frame);
 	return status;
 }
