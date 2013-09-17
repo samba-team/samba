@@ -58,6 +58,7 @@ bool smbconf_reg_parameter_is_valid(const char *param_name)
 {
 	/* hard code the list of forbidden names here for now */
 	const char *forbidden_names[] = {
+		"state directory",
 		"lock directory",
 		"lock dir",
 		"config backend",
