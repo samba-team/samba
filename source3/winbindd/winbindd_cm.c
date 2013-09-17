@@ -2678,7 +2678,6 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 					  &ndr_table_lsarpc,
 					  &conn->lsa_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
-		result = NT_STATUS_PIPE_NOT_AVAILABLE;
 		goto done;
 	}
 
