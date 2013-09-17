@@ -3442,6 +3442,14 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	   also frozen and that the recmode is set to active.
 	*/
 	if (rec->node_flags & (NODE_FLAGS_STOPPED | NODE_FLAGS_BANNED)) {
+		/* If this node has become inactive then we want to
+		 * reduce the chances of it taking over the recovery
+		 * master role when it becomes active again.  This
+		 * helps to stabilise the recovery master role so that
+		 * it stays on the most stable node.
+		 */
+		rec->priority_time = timeval_current();
+
 		ret = ctdb_ctrl_getrecmode(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->recovery_mode);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to read recmode from local node\n"));
