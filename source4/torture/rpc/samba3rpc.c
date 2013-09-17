@@ -63,6 +63,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	struct policy_handle handle;
 	struct lsa_Close close_handle;
 	struct smbcli_session *tmp;
+	uint16_t tmp_vuid;
 	struct smbcli_session *session2;
 	struct smbcli_state *cli;
 	struct dcerpc_pipe *lsa_pipe;
@@ -179,10 +180,13 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	session2->vuid = setup.out.vuid;
 
 	tmp = cli->tree->session;
+	tmp_vuid = smb1cli_session_current_id(tmp->smbXcli);
+	smb1cli_session_set_id(tmp->smbXcli, session2->vuid);
 	cli->tree->session = session2;
 
 	status = dcerpc_lsa_OpenPolicy2_r(lsa_handle, mem_ctx, &openpolicy);
 
+	smb1cli_session_set_id(tmp->smbXcli, tmp_vuid);
 	cli->tree->session = tmp;
 	talloc_free(lsa_pipe);
 	lsa_pipe = NULL;
