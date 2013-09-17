@@ -4839,6 +4839,10 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 
 	/* get our invocation_id if we have one already attached to the ldb */
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
+	if (our_invocation_id == NULL) {
+		DEBUG(0, ("repl_meta_data: Could not find our own server's invocationID!\n"));
+		return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);		
+	}
 
 	/* merge in the source_dsa vector is available */
 	for (i=0; (ruv && i < ruv->count); i++) {
