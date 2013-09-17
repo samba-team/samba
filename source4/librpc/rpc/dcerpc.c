@@ -1622,7 +1622,6 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 	pkt.call_id = req->call_id;
 	pkt.auth_length = 0;
 	pkt.pfc_flags = 0;
-	pkt.u.request.alloc_hint = remaining;
 	pkt.u.request.context_id = p->context_id;
 	pkt.u.request.opnum = req->opnum;
 
@@ -1649,6 +1648,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 			last_frag = true;
 		}
 
+		pkt.u.request.alloc_hint = remaining;
 		pkt.u.request.stub_and_verifier.data = stub_data->data + 
 			(stub_data->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk;
