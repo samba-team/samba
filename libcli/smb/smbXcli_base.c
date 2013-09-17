@@ -737,6 +737,14 @@ static uint16_t smb1cli_alloc_mid(struct smbXcli_conn *conn)
 	size_t num_pending = talloc_array_length(conn->pending);
 	uint16_t result;
 
+	if (conn->protocol == PROTOCOL_NONE) {
+		/*
+		 * This is what windows sends on the SMB1 Negprot request
+		 * and some vendors reuse the SMB1 MID as SMB2 sequence number.
+		 */
+		return 0;
+	}
+
 	while (true) {
 		size_t i;
 
