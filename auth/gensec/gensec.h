@@ -41,7 +41,8 @@ enum gensec_priority {
 	GENSEC_SCHANNEL = 60,
 	GENSEC_NTLMSSP = 50,
 	GENSEC_SASL = 20,
-	GENSEC_OTHER = 0
+	GENSEC_OTHER = 10,
+	GENSEC_EXTERNAL = 0
 };
 
 struct gensec_security;
