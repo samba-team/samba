@@ -3001,14 +3001,17 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 
 	/* work out where we will be renaming this object to */
 	if (!disallow_move_on_delete) {
+		struct ldb_dn *deleted_objects_dn;
 		ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn,
-						  &new_dn);
+						  &deleted_objects_dn);
+
 		/*
-		 * Deleted Objects itself appears to be deleted, but
-		 * should also not be moved, and we should not move
-		 * objects if we can't find the deleted objects DN
+		 * We should not move objects if we can't find the
+		 * deleted objects DN.  Not moving (or otherwise
+		 * harming) the Deleted Objects DN itself is handled
+		 * in the caller.
 		 */
-		if (re_delete && (ret != LDB_SUCCESS || ldb_dn_compare(old_dn, new_dn) == 0)) {
+		if (re_delete && (ret != LDB_SUCCESS)) {
 			new_dn = ldb_dn_get_parent(tmp_ctx, old_dn);
 			if (new_dn == NULL) {
 				ldb_module_oom(module);
@@ -3023,6 +3026,8 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 					       ldb_dn_get_linearized(old_dn));
 			talloc_free(tmp_ctx);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
+		} else {
+			new_dn = deleted_objects_dn;
 		}
 	} else {
 		new_dn = ldb_dn_get_parent(tmp_ctx, old_dn);
