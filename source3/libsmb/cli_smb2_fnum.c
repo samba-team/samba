@@ -412,7 +412,7 @@ static NTSTATUS parse_finfo_id_both_directory_info(uint8_t *dir_data,
 	if (namelen > (dir_data_length - 104)) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
-	slen = SVAL(dir_data + 68, 0);
+	slen = CVAL(dir_data + 68, 0);
 	if (slen > 24) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
