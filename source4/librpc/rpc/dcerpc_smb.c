@@ -597,3 +597,22 @@ _PUBLIC_ struct smbcli_tree *dcerpc_smb_tree(struct dcecli_connection *c)
 
 	return smb->tree;
 }
+
+struct composite_context *dcerpc_secondary_smb_send(struct dcecli_connection *c1,
+						    struct dcerpc_pipe *p2,
+						    const char *pipe_name)
+{
+	struct smb_private *smb;
+
+	if (c1->transport.transport != NCACN_NP) return NULL;
+
+	smb = talloc_get_type(c1->transport.private_data, struct smb_private);
+	if (!smb) return NULL;
+
+	return dcerpc_pipe_open_smb_send(p2, smb->tree, pipe_name);
+}
+
+NTSTATUS dcerpc_secondary_smb_recv(struct composite_context *c)
+{
+	return dcerpc_pipe_open_smb_recv(c);
+}
