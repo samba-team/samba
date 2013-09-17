@@ -157,4 +157,35 @@ bool idmap_autorid_parse_configstr(const char *configstr,
 NTSTATUS idmap_autorid_saveconfigstr(struct db_context *db,
 				     const char *configstr);
 
+
+/**
+ * idmap_autorid_iterate_domain_ranges:
+ * perform an action on all domain range mappings for a given domain
+ * specified by domain sid.
+ */
+NTSTATUS idmap_autorid_iterate_domain_ranges(struct db_context *db,
+					const char *domsid,
+					NTSTATUS (*fn)(struct db_context *db,
+						       const char *domsid,
+						       uint32_t index,
+						       uint32_t rangenum,
+						       void *private_data),
+					void *private_data,
+					int *count);
+
+/**
+ * idmap_autorid_iterate_domain_ranges_read:
+ * perform a read only action on all domain range mappings for a given domain
+ * specified by domain sid.
+ */
+NTSTATUS idmap_autorid_iterate_domain_ranges_read(struct db_context *db,
+					const char *domsid,
+					NTSTATUS (*fn)(struct db_context *db,
+						       const char *domsid,
+						       uint32_t index,
+						       uint32_t rangenum,
+						       void *private_data),
+					void *private_data,
+					int *count);
+
 #endif /* _IDMAP_AUTORID_H_ */

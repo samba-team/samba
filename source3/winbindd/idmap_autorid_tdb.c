@@ -892,3 +892,188 @@ NTSTATUS idmap_autorid_saveconfigstr(struct db_context *db,
 	status = idmap_autorid_saveconfig(db, &cfg);
 	return status;
 }
+
+
+/*
+ * iteration: Work on all range mappings for a given domain
+ */
+
+struct domain_range_visitor_ctx {
+	const char *domsid;
+	NTSTATUS (*fn)(struct db_context *db,
+		       const char *domsid,
+		       uint32_t index,
+		       uint32_t rangenum,
+		       void *private_data);
+	void *private_data;
+	int count; /* number of records worked on */
+};
+
+static int idmap_autorid_visit_domain_range(struct db_record *rec,
+					    void *private_data)
+{
+	struct domain_range_visitor_ctx *vi;
+	char *domsid;
+	char *sep;
+	uint32_t range_index = 0;
+	uint32_t rangenum = 0;
+	TDB_DATA key, value;
+	NTSTATUS status;
+	int ret = 0;
+	struct db_context *db;
+
+	vi = talloc_get_type_abort(private_data,
+				   struct domain_range_visitor_ctx);
+
+	key = dbwrap_record_get_key(rec);
+
+	/*
+	 * split string "<sid>[#<index>]" into sid string and index number
+	 */
+
+	domsid = (char *)key.dptr;
+
+	DEBUG(10, ("idmap_autorid_visit_domain_range: visiting key '%s'\n",
+		   domsid));
+
+	sep = strrchr(domsid, '#');
+	if (sep != NULL) {
+		char *index_str;
+		*sep = '\0';
+		index_str = sep+1;
+		if (sscanf(index_str, "%"SCNu32, &range_index) != 1) {
+			DEBUG(10, ("Found separator '#' but '%s' is not a "
+				   "valid range index. Skipping record\n",
+				   index_str));
+			goto done;
+		}
+	}
+
+	if (!idmap_autorid_validate_sid(domsid)) {
+		DEBUG(10, ("String '%s' is not a valid sid. "
+			   "Skipping record.\n", domsid));
+		goto done;
+	}
+
+	if (strcmp(domsid, vi->domsid) != 0) {
+		DEBUG(10, ("key sid '%s' does not match requested sid '%s'.\n",
+			   domsid, vi->domsid));
+		goto done;
+	}
+
+	value = dbwrap_record_get_value(rec);
+	rangenum = IVAL(value.dptr, 0);
+
+	db = dbwrap_record_get_db(rec);
+
+	status = vi->fn(db, domsid, range_index, rangenum, vi->private_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = -1;
+		goto done;
+	}
+
+	vi->count++;
+	ret = 0;
+
+done:
+	return ret;
+}
+
+static NTSTATUS idmap_autorid_iterate_domain_ranges_int(struct db_context *db,
+				const char *domsid,
+				NTSTATUS (*fn)(struct db_context *db,
+					       const char *domsid,
+					       uint32_t index,
+					       uint32_t rangnum,
+					       void *private_data),
+				void *private_data,
+				int *count,
+				NTSTATUS (*traverse)(struct db_context *db,
+					  int (*f)(struct db_record *, void *),
+					  void *private_data,
+					  int *count))
+{
+	NTSTATUS status;
+	struct domain_range_visitor_ctx *vi;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (domsid == NULL) {
+		DEBUG(1, ("Error: no domain sid provided\n"));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (fn == NULL) {
+		DEBUG(1, ("Error: missing visitor callback\n"));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	vi = talloc_zero(frame, struct domain_range_visitor_ctx);
+	if (vi == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	vi->domsid = domsid;
+	vi->fn = fn;
+	vi->private_data = private_data;
+
+	status = traverse(db, idmap_autorid_visit_domain_range, vi, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (count != NULL) {
+		*count = vi->count;
+	}
+
+done:
+	talloc_free(frame);
+	return status;
+}
+
+NTSTATUS idmap_autorid_iterate_domain_ranges(struct db_context *db,
+					const char *domsid,
+					NTSTATUS (*fn)(struct db_context *db,
+						       const char *domsid,
+						       uint32_t index,
+						       uint32_t rangenum,
+						       void *private_data),
+					void *private_data,
+					int *count)
+{
+	NTSTATUS status;
+
+	status = idmap_autorid_iterate_domain_ranges_int(db,
+							 domsid,
+							 fn,
+							 private_data,
+							 count,
+							 dbwrap_traverse);
+
+	return status;
+}
+
+
+NTSTATUS idmap_autorid_iterate_domain_ranges_read(struct db_context *db,
+					const char *domsid,
+					NTSTATUS (*fn)(struct db_context *db,
+						       const char *domsid,
+						       uint32_t index,
+						       uint32_t rangenum,
+						       void *count),
+					void *private_data,
+					int *count)
+{
+	NTSTATUS status;
+
+	status = idmap_autorid_iterate_domain_ranges_int(db,
+							 domsid,
+							 fn,
+							 private_data,
+							 count,
+							 dbwrap_traverse_read);
+
+	return status;
+}
