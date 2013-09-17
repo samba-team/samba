@@ -195,7 +195,7 @@ static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_ele
 	/* no local result, add as new element */
 	if (old == NULL) {
 		if (ldb_msg_add_empty(msg, el->name, 0, &old) != 0) {
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		talloc_free(discard_const_p(char, old->name));
 	}
@@ -205,10 +205,10 @@ static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_ele
 
 	/* and make sure we reference the contents */
 	if (!talloc_reference(msg->elements, el->name)) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (!talloc_reference(msg->elements, el->values)) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	return 0;
@@ -480,7 +480,7 @@ static int map_reply_remote(struct map_context *ac, struct ldb_reply *ares)
 	msg = ldb_msg_new(ares);
 	if (msg == NULL) {
 		map_oom(ac->module);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Merge remote message into new message */
@@ -494,7 +494,7 @@ static int map_reply_remote(struct map_context *ac, struct ldb_reply *ares)
 	dn = ldb_dn_map_rebase_remote(ac->module, msg, ares->message->dn);
 	if (dn == NULL) {
 		talloc_free(msg);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	msg->dn = dn;
 
@@ -581,7 +581,7 @@ static int map_subtree_select_local_not(struct ldb_module *module, void *mem_ctx
 	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
 	if (*new == NULL) {
 		map_oom(module);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Generate new subtree */
@@ -613,7 +613,7 @@ static int map_subtree_select_local_list(struct ldb_module *module, void *mem_ct
 	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
 	if (*new == NULL) {
 		map_oom(module);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Prepare list of subtrees */
@@ -622,7 +622,7 @@ static int map_subtree_select_local_list(struct ldb_module *module, void *mem_ct
 	if ((*new)->u.list.elements == NULL) {
 		map_oom(module);
 		talloc_free(*new);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Generate new list of subtrees */
@@ -662,7 +662,7 @@ static int map_subtree_select_local_simple(struct ldb_module *module, void *mem_
 	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
 	if (*new == NULL) {
 		map_oom(module);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	return 0;
@@ -705,7 +705,7 @@ static int map_subtree_collect_remote_not(struct ldb_module *module, void *mem_c
 	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
 	if (*new == NULL) {
 		map_oom(module);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Generate new subtree */
@@ -737,7 +737,7 @@ static int map_subtree_collect_remote_list(struct ldb_module *module, void *mem_
 	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
 	if (*new == NULL) {
 		map_oom(module);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Prepare list of subtrees */
@@ -746,7 +746,7 @@ static int map_subtree_collect_remote_list(struct ldb_module *module, void *mem_
 	if ((*new)->u.list.elements == NULL) {
 		map_oom(module);
 		talloc_free(*new);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Generate new list of subtrees */
@@ -788,7 +788,7 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 	*new = talloc(mem_ctx, struct ldb_parse_tree);
 	if (*new == NULL) {
 		map_oom(module);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	**new = *tree;
 	
@@ -825,7 +825,7 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 		break;
 	default:			/* unknown kind of simple subtree */
 		talloc_free(*new);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (attr == NULL) {
@@ -880,7 +880,7 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 		break;
 	default:			/* unknown kind of simple subtree */
 		talloc_free(*new);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	return 0;
@@ -1031,7 +1031,7 @@ done:
 
 oom:
 	map_oom(module);
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 
@@ -1264,8 +1264,7 @@ static int map_remote_search_callback(struct ldb_request *req,
 
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ares);
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 		break;
 
