@@ -211,7 +211,6 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 struct tevent_context *dcerpc_event_context(struct dcerpc_pipe *p);
 NTSTATUS dcerpc_init(void);
 struct smbcli_tree *dcerpc_smb_tree(struct dcecli_connection *c);
-uint16_t dcerpc_smb_fnum(struct dcecli_connection *c);
 NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
 				  struct dcerpc_pipe **pp2,
 				  const struct ndr_interface_table *table);
