@@ -361,19 +361,13 @@ class OpenLDAPBackend(LDAPBackend):
                              schemadn=self.names.schemadn, files=[
                 setup_path("schema_samba4.ldif")])
 
-    def setup_db_config(self, dbdir):
-        """Setup a Berkeley database.
+    def setup_db_dir(self, dbdir):
+        """Create a database directory.
 
         :param dbdir: Database directory.
         """
-        from samba.provision import setup_path
-        if not os.path.isdir(os.path.join(dbdir, "bdb-logs")):
-            os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700)
-            if not os.path.isdir(os.path.join(dbdir, "tmp")):
-                os.makedirs(os.path.join(dbdir, "tmp"), 0700)
-
-        setup_file(setup_path("DB_CONFIG"),
-            os.path.join(dbdir, "DB_CONFIG"), {"LDAPDBDIR": dbdir})
+        if not os.path.exists(dbdir):
+            os.makedirs(dbdir, 0700)
 
     def provision(self):
         from samba.provision import ProvisioningError, setup_path
@@ -420,6 +414,7 @@ class OpenLDAPBackend(LDAPBackend):
         mmr_syncrepl_domaindns_config = ""
         mmr_syncrepl_forestdns_config = ""
         mmr_syncrepl_user_config = ""
+        mmr_pass = ""
 
         if self.ol_mmr_urls is not None:
             # For now, make these equal
@@ -536,31 +531,23 @@ class OpenLDAPBackend(LDAPBackend):
                     "ADMIN_UID": str(os.getuid()),
                     "NOSYNC": nosync_config,})
 
-        self.setup_db_config(os.path.join(self.ldapdir, "db", "forestdns"))
-        self.setup_db_config(os.path.join(self.ldapdir, "db", "domaindns"))
-        self.setup_db_config(os.path.join(self.ldapdir, "db", "user"))
-        self.setup_db_config(os.path.join(self.ldapdir, "db", "config"))
-        self.setup_db_config(os.path.join(self.ldapdir, "db", "schema"))
-
-        if not os.path.exists(os.path.join(self.ldapdir, "db", "samba", "cn=samba")):
-            os.makedirs(os.path.join(self.ldapdir, "db", "samba", "cn=samba"), 0700)
-
-        setup_file(setup_path("cn=samba.ldif"),
-                   os.path.join(self.ldapdir, "db", "samba", "cn=samba.ldif"),
-                   { "UUID": str(uuid.uuid4()),
-                     "LDAPTIME": timestring(int(time.time()))} )
-        setup_file(setup_path("cn=samba-admin.ldif"),
-                   os.path.join(self.ldapdir, "db", "samba", "cn=samba", "cn=samba-admin.ldif"),
-                   {"LDAPADMINPASS_B64": b64encode(self.ldapadminpass),
-                    "UUID": str(uuid.uuid4()),
-                    "LDAPTIME": timestring(int(time.time()))} )
+        self.setup_db_dir(os.path.join(self.ldapdir, "db", "forestdns"))
+        self.setup_db_dir(os.path.join(self.ldapdir, "db", "domaindns"))
+        self.setup_db_dir(os.path.join(self.ldapdir, "db", "user"))
+        self.setup_db_dir(os.path.join(self.ldapdir, "db", "config"))
+        self.setup_db_dir(os.path.join(self.ldapdir, "db", "schema"))
+        self.setup_db_dir(os.path.join(self.ldapdir, "db", "samba"))
 
         if self.ol_mmr_urls is not None:
-            setup_file(setup_path("cn=replicator.ldif"),
-                       os.path.join(self.ldapdir, "db", "samba", "cn=samba", "cn=replicator.ldif"),
-                       {"MMR_PASSWORD_B64": b64encode(mmr_pass),
-                        "UUID": str(uuid.uuid4()),
-                        "LDAPTIME": timestring(int(time.time()))} )
+            mmr = ""
+        else:
+            mmr = "#"
+
+        cn_samba = read_and_sub_file(
+                    setup_path("cn=samba.ldif"),
+                            { "LDAPADMINPASS": self.ldapadminpass,
+                           "MMR_PASSWORD": mmr_pass,
+                           "MMR": mmr })
 
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
@@ -635,6 +622,11 @@ class OpenLDAPBackend(LDAPBackend):
 
         # Don't confuse the admin by leaving the slapd.conf around
         os.remove(self.slapdconf)
+
+        cn_samba_cmd = [self.slapd_path, "-Tadd", "-b", "cn=samba", "-F", self.olcdir]
+        p = subprocess.Popen(cn_samba_cmd, stdin=subprocess.PIPE, shell=False)
+        p.stdin.write(cn_samba)
+        p.communicate()
 
 
 class FDSBackend(LDAPBackend):

@@ -2,10 +2,15 @@ dn: cn=Samba
 objectClass: top
 objectClass: container
 cn: Samba
-structuralObjectClass: container
-entryUUID: b1d4823a-e58c-102c-9f74-51b6d59a1b68
-creatorsName:
-createTimestamp: 20080714010529Z
-entryCSN: 20080714010529.194412Z#000000#000#000000
-modifiersName:
-modifyTimestamp: 20080714010529Z
+
+dn: cn=samba-admin,cn=samba
+objectClass: top
+objectClass: person
+cn: samba-admin
+userPassword: ${LDAPADMINPASS}
+
+${MMR}dn: cn=replicator,cn=samba
+${MMR}objectClass: top
+${MMR}objectClass: person
+${MMR}cn: replicator
+${MMR}userPassword: ${MMR_PASSWORD}
