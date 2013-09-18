@@ -1710,10 +1710,11 @@ static int do_allinfo(const char *name)
 		d_printf("%s getting alt name for %s\n", nt_errstr(status),
 			 name);
 		/*
-		 * Ignore not supported, it does not hurt if we can't list
-		 * alternate names.
+		 * Ignore not supported or not implemented, it does not
+		 * hurt if we can't list alternate names.
 		 */
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 			altname[0] = '\0';
 		} else {
 			return false;
