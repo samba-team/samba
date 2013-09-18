@@ -531,6 +531,16 @@ static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX
 		return status;
 	}
 
+	if (dom_sid_equal(state->domain_sid, sid)) {
+		*authority_name = talloc_strdup(mem_ctx, state->domain_name);
+		if (*authority_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		*name = NULL;
+		*rtype = SID_NAME_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
 	if (dom_sid_in_domain(state->domain_sid, sid)) {
 		*authority_name = talloc_strdup(mem_ctx, state->domain_name);
 		if (*authority_name == NULL) {
