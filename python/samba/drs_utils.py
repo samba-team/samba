@@ -147,12 +147,16 @@ def drs_DsBind(drs):
 class drs_Replicate(object):
     '''DRS replication calls'''
 
-    def __init__(self, binding_string, lp, creds, samdb):
+    def __init__(self, binding_string, lp, creds, samdb, invocation_id):
         self.drs = drsuapi.drsuapi(binding_string, lp, creds)
         (self.drs_handle, self.supported_extensions) = drs_DsBind(self.drs)
         self.net = Net(creds=creds, lp=lp)
         self.samdb = samdb
-        self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs)
+        if not isinstance(invocation_id, misc.GUID):
+            raise RuntimeError("Must supply GUID for invocation_id")
+        if invocation_id == misc.GUID("00000000-0000-0000-0000-000000000000"):
+            raise RuntimeError("Must not set GUID 00000000-0000-0000-0000-000000000000 as invocation_id")
+        self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs, invocation_id)
 
     def drs_get_rodc_partial_attribute_set(self):
         '''get a list of attributes for RODC replication'''

@@ -727,6 +727,11 @@ static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 	GUID_from_string(PyString_AsString(py_guid), &guid);
 
+	if (GUID_all_zero(&guid)) {
+		PyErr_SetString(PyExc_RuntimeError, "set_ntds_invocation_id rejected due to all-zero invocation ID");
+		return NULL;
+	}
+
 	ret = samdb_set_ntds_invocation_id(ldb, &guid);
 	if (!ret) {
 		PyErr_SetString(PyExc_RuntimeError, "set_ntds_invocation_id failed");

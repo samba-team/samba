@@ -258,11 +258,13 @@ def drs_local_replicate(self, SOURCE_DC, NC):
 
 
     source_dsa_invocation_id = misc.GUID(self.samdb.get_invocation_id())
+    dest_dsa_invocation_id = misc.GUID(self.local_samdb.get_invocation_id())
     destination_dsa_guid = self.ntds_guid
 
     self.samdb.transaction_start()
     repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % self.server, self.lp,
-                                   self.creds, self.local_samdb)
+                                   self.creds, self.local_samdb, dest_dsa_invocation_id)
+
     try:
         repl.replicate(NC, source_dsa_invocation_id, destination_dsa_guid)
     except Exception, e:

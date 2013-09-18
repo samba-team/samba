@@ -22,6 +22,7 @@
 #include <Python.h>
 #include "includes.h"
 #include <pyldb.h>
+#include <pytalloc.h>
 #include "libnet.h"
 #include "auth/credentials/pycredentials.h"
 #include "libcli/security/security.h"
@@ -33,6 +34,7 @@
 #include "libcli/finddc.h"
 #include "dsdb/samdb/samdb.h"
 #include "py_net.h"
+#include "librpc/rpc/pyrpc_util.h"
 
 void initnet(void);
 
@@ -363,16 +365,17 @@ struct replicate_state {
  */
 static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
-	const char *kwnames[] = { "samdb", "lp", "drspipe", NULL };
-	PyObject *py_ldb, *py_lp, *py_drspipe;
+	const char *kwnames[] = { "samdb", "lp", "drspipe", "invocation_id", NULL };
+	PyObject *py_ldb, *py_lp, *py_drspipe, *py_invocation_id;
 	struct ldb_context *samdb;
 	struct loadparm_context *lp;
 	struct replicate_state *s;
 	NTSTATUS status;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOO",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOOO",
 					 discard_const_p(char *, kwnames),
-	                                 &py_ldb, &py_lp, &py_drspipe)) {
+	                                 &py_ldb, &py_lp, &py_drspipe,
+					 &py_invocation_id)) {
 		return NULL;
 	}
 
@@ -392,6 +395,12 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 		talloc_free(s);
 		return NULL;
 	}
+	if (!py_check_dcerpc_type(py_invocation_id, "samba.dcerpc.misc", "GUID")) {
+		
+		talloc_free(s);
+		return NULL;
+	}
+	s->dest_dsa.invocation_id = *pytalloc_get_type(py_invocation_id, struct GUID);
 
 	s->drs_pipe = (dcerpc_InterfaceObject *)(py_drspipe);
 

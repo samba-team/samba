@@ -1302,6 +1302,7 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 	/* see if we have a cached copy */
 	invocation_id = (struct GUID *)ldb_get_opaque(ldb, "cache.invocation_id");
 	if (invocation_id) {
+		SMB_ASSERT(!GUID_all_zero(invocation_id));
 		return invocation_id;
 	}
 
@@ -1362,6 +1363,7 @@ bool samdb_set_ntds_invocation_id(struct ldb_context *ldb, const struct GUID *in
 		goto failed;
 	}
 
+	SMB_ASSERT(!GUID_all_zero(invocation_id_in));
 	*invocation_id_new = *invocation_id_in;
 
 	/* cache the domain_sid in the ldb */
