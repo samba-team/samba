@@ -269,7 +269,6 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	size_t max_len;
 	size_t mod_len;
 	struct gensec_security *gensec_security;
-	struct schannel_state *schannel_auth;
 
 	/* no auth token cases first */
 	switch (auth->auth_level) {
@@ -303,15 +302,10 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_SPNEGO:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 		gensec_security = talloc_get_type_abort(auth->auth_ctx,
 							struct gensec_security);
 		*auth_len = gensec_sig_size(gensec_security, max_len);
-		break;
-
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-		schannel_auth = talloc_get_type_abort(auth->auth_ctx,
-						      struct schannel_state);
-		*auth_len = netsec_outgoing_sig_size(schannel_auth);
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -544,7 +538,6 @@ static NTSTATUS get_schannel_auth_footer(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 				size_t pad_len, DATA_BLOB *rpc_out)
 {
-	struct schannel_state *schannel_auth;
 	struct gensec_security *gensec_security;
 	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
 	DATA_BLOB auth_info;
@@ -596,18 +589,12 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_SPNEGO:
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 		gensec_security = talloc_get_type_abort(auth->auth_ctx,
 						struct gensec_security);
 		status = add_generic_auth_footer(gensec_security,
 						 auth->auth_level,
 						 rpc_out);
-		break;
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-		schannel_auth = talloc_get_type_abort(auth->auth_ctx,
-						      struct schannel_state);
-		status = add_schannel_auth_footer(schannel_auth,
-						  auth->auth_level,
-						  rpc_out);
 		break;
 	default:
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -636,7 +623,6 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			   DATA_BLOB *raw_pkt,
 			   size_t *pad_len)
 {
-	struct schannel_state *schannel_auth;
 	struct gensec_security *gensec_security;
 	NTSTATUS status;
 	struct dcerpc_auth auth_info;
@@ -706,6 +692,7 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_SPNEGO:
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 
 		DEBUG(10, ("GENSEC auth\n"));
 
@@ -719,22 +706,6 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			return status;
 		}
 		break;
-
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-
-		DEBUG(10, ("SCHANNEL auth\n"));
-
-		schannel_auth = talloc_get_type_abort(auth->auth_ctx,
-						      struct schannel_state);
-		status = get_schannel_auth_footer(pkt, schannel_auth,
-						  auth->auth_level,
-						  &data, &full_pkt,
-						  &auth_info.credentials);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		break;
-
 	default:
 		DEBUG(0, ("process_request_pdu: "
 			  "unknown auth type %u set.\n",
