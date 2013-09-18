@@ -157,31 +157,6 @@ _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
 
 }
 
-static const struct gensec_security_ops *gensec_security_by_authtype(struct gensec_security *gensec_security,
-								     uint8_t auth_type)
-{
-	int i;
-	const struct gensec_security_ops **backends;
-	const struct gensec_security_ops *backend;
-	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
-	if (!mem_ctx) {
-		return NULL;
-	}
-	backends = gensec_security_mechs(gensec_security, mem_ctx);
-	for (i=0; backends && backends[i]; i++) {
-		if (!gensec_security_ops_enabled(backends[i], gensec_security))
-				continue;
-		if (backends[i]->auth_type == auth_type) {
-			backend = backends[i];
-			talloc_free(mem_ctx);
-			return backend;
-		}
-	}
-	talloc_free(mem_ctx);
-
-	return NULL;
-}
-
 _PUBLIC_ const struct gensec_security_ops *gensec_security_by_oid(
 				struct gensec_security *gensec_security,
 				const char *oid_string)
@@ -733,7 +708,7 @@ NTSTATUS gensec_start_mech_by_ops(struct gensec_security *gensec_security,
 _PUBLIC_ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 				       uint8_t auth_type, uint8_t auth_level)
 {
-	gensec_security->ops = gensec_security_by_authtype(gensec_security, auth_type);
+	gensec_security->ops = gensec_security_by_auth_type(gensec_security, auth_type);
 	if (!gensec_security->ops) {
 		DEBUG(3, ("Could not find GENSEC backend for auth_type=%d\n", (int)auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -760,7 +735,7 @@ _PUBLIC_ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_s
 _PUBLIC_ const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security, uint8_t authtype)
 {
 	const struct gensec_security_ops *ops;
-	ops = gensec_security_by_authtype(gensec_security, authtype);
+	ops = gensec_security_by_auth_type(gensec_security, authtype);
 	if (ops) {
 		return ops->name;
 	}
