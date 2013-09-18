@@ -32,6 +32,7 @@
 #include "librpc/crypto/gse.h"
 #include "auth/credentials/credentials.h"
 #include "lib/param/loadparm.h"
+#include "librpc/gen_ndr/dcerpc.h"
 
 static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 						TALLOC_CTX *mem_ctx,
@@ -261,7 +262,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		}
 
 		backends = talloc_zero_array(gensec_settings,
-					     const struct gensec_security_ops *, 4);
+					     const struct gensec_security_ops *, 5);
 		if (backends == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -278,6 +279,8 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
 
 		backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_SPNEGO);
+
+		backends[idx++] = gensec_security_by_auth_type(NULL, DCERPC_AUTH_TYPE_SCHANNEL);
 
 		/*
 		 * This is anonymous for now, because we just use it
