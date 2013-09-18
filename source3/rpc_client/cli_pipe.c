@@ -1096,12 +1096,6 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_SCHANNEL:
-		ret = create_schannel_auth_rpc_bind_req(cli, &auth_token);
-		if (!NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-		break;
-
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_SPNEGO:
@@ -2856,16 +2850,26 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct netr_Authenticator auth;
 	struct netr_Authenticator return_auth;
 	union netr_Capabilities capabilities;
+	const char *target_service = table->authservices->names[0];
 
 	status = cli_rpc_pipe_open(cli, transport, table, &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = rpccli_schannel_bind_data(rpccli, domain, auth_level,
-					   *pdc, &rpcauth);
+	status = rpccli_generic_bind_data(rpccli,
+					  DCERPC_AUTH_TYPE_SCHANNEL,
+					  auth_level,
+					  NULL,
+					  target_service,
+					  domain,
+					  (*pdc)->computer_name,
+					  NULL,
+					  CRED_AUTO_USE_KERBEROS,
+					  *pdc,
+					  &rpcauth);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
+		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(rpccli);
 		return status;
