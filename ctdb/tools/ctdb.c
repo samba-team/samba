@@ -54,8 +54,10 @@ static struct {
 	int printrecordflags;
 } options;
 
+#define LONGTIMEOUT options.timelimit*10
+
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
-#define LONGTIMELIMIT() timeval_current_ofs(options.timelimit*10, 0)
+#define LONGTIMELIMIT() timeval_current_ofs(LONGTIMEOUT, 0)
 
 static int control_version(struct ctdb_context *ctdb, int argc, const char **argv)
 {
@@ -4314,7 +4316,7 @@ again:
 	 * there are disconnected nodes.  However, this should
 	 * probably be left up to the administrator.
 	 */
-	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, 60,
+	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, LONGTIMEOUT,
 			"Disable takeover runs", true);
 
 	/* Now tell all the desired nodes to reload their public IPs.
