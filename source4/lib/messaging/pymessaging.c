@@ -42,7 +42,7 @@ extern PyTypeObject imessaging_Type;
 static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 {
 	if (!PyTuple_Check(object)) {
-		if (!py_check_dcerpc_type(object, "server_id", "server_id")) {
+		if (!py_check_dcerpc_type(object, "samba.dcerpc.server_id", "server_id")) {
 
 			PyErr_SetString(PyExc_ValueError, "Expected tuple or server_id");
 			return false;
