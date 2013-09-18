@@ -848,7 +848,7 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 		int i;
 		/* Map value */
 		(*new)->u.substring.chunks = NULL;
-		for (i=0; tree->u.substring.chunks[i]; i++) {
+		for (i=0; tree->u.substring.chunks && tree->u.substring.chunks[i]; i++) {
 			(*new)->u.substring.chunks = talloc_realloc(*new, (*new)->u.substring.chunks, struct ldb_val *, i+2);
 			if (!(*new)->u.substring.chunks) {
 				talloc_free(*new);
