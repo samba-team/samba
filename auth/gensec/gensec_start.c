@@ -230,8 +230,10 @@ _PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
-		if (!gensec_security_ops_enabled(backends[i], gensec_security))
-		    continue;
+		if (gensec_security != NULL &&
+		    !gensec_security_ops_enabled(backends[i], gensec_security)) {
+			continue;
+		}
 		if (backends[i]->auth_type == auth_type) {
 			backend = backends[i];
 			talloc_free(mem_ctx);
