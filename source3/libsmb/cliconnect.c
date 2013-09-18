@@ -2570,14 +2570,8 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 	 * Avoids issues when connecting to Win9x boxes sharing files
 	 */
 
-	cli->dfsroot = false;
-
 	if ((wct > 2) && (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_LANMAN2)) {
 		optional_support = SVAL(vwv+2, 0);
-	}
-
-	if (optional_support & SMB_SHARE_IN_DFS) {
-		cli->dfsroot = true;
 	}
 
 	if (optional_support & SMB_EXTENDED_SIGNATURES) {

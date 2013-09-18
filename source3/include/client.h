@@ -76,7 +76,6 @@ struct cli_state {
 	uint32_t server_posix_capabilities;
 	/* What the client requested. */
 	uint32_t requested_posix_capabilities;
-	bool dfsroot;
 	bool backup_intent;
 
 	/* The list of pipes currently open on this connection. */
