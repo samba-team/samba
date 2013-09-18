@@ -78,7 +78,7 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	}
 
 	backends = talloc_zero_array(gensec_settings,
-				     const struct gensec_security_ops *, 4);
+				     const struct gensec_security_ops *, 5);
 	if (backends == NULL) {
 		TALLOC_FREE(ans);
 		return NT_STATUS_NO_MEMORY;
@@ -95,6 +95,7 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	backends[idx++] = &gensec_ntlmssp3_client_ops;
 
 	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_SPNEGO);
+	backends[idx++] = gensec_security_by_auth_type(NULL, DCERPC_AUTH_TYPE_SCHANNEL);
 
 	nt_status = gensec_client_start(ans, &ans->gensec_security, gensec_settings);
 
