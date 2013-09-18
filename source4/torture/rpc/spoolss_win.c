@@ -278,7 +278,10 @@ static bool test_EnumJobs(struct torture_context *tctx,
 
 	torture_comment(tctx, "Test EnumJobs\n");
 
+	ZERO_STRUCT(ej);
 	ej.in.handle = handle;
+	ej.in.firstjob = 0;
+	ej.in.numjobs = 0;
 	ej.in.level = 2;
 	ej.in.buffer = &blob;
 	ej.in.offered = 1024;
