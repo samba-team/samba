@@ -190,7 +190,7 @@ static int map_attrs_partition(struct ldb_module *module, void *mem_ctx, const c
 static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_element *el)
 {
 	struct ldb_message_element *old;
-
+	int j;
 	old = ldb_msg_find_element(msg, el->name);
 
 	/* no local result, add as new element */
@@ -198,18 +198,22 @@ static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_ele
 		if (ldb_msg_add_empty(msg, el->name, 0, &old) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_free(discard_const_p(char, old->name));
+	}
+	else {
+		talloc_free(old->values);
 	}
 
-	/* copy new element */
-	*old = *el;
-
-	/* and make sure we reference the contents */
-	if (!talloc_reference(msg->elements, el->name)) {
+	old->values = talloc_array(msg->elements, struct ldb_val, el->num_values);
+	old->num_values = el->num_values;
+	if (old->values == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (!talloc_reference(msg->elements, el->values)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	/* copy the values into the element */
+	for (j=0;j<el->num_values;j++) {
+		old->values[j] = ldb_val_dup(old->values, &el->values[j]);
+		if (old->values[j].data == NULL && el->values[j].length != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	return 0;
