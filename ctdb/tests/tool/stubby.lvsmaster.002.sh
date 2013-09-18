@@ -4,7 +4,7 @@
 
 define_test "3 nodes, current disconnected"
 
-# This isn't very useful, since the stub for capabilities does set LVS :-)
+# This isn't very useful, since the stub for capabilities doesn't set LVS :-)
 required_result 10 <<EOF
 DATE TIME [PID]: Unable to get nodemap from local node
 EOF

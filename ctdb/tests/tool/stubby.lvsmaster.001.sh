@@ -4,7 +4,7 @@
 
 define_test "3 nodes, all ok"
 
-# This isn't very useful, since the stub for capabilities does set LVS :-)
+# This isn't very useful, since the stub for capabilities doesn't set LVS :-)
 required_result 255 <<EOF
 There is no LVS master
 EOF
