@@ -534,7 +534,8 @@ int ctdb_client_check_message_handlers(struct ctdb_context *ctdb, uint64_t *ids,
 
 	if (outdata.dsize != num*sizeof(uint8_t)) {
 		DEBUG(DEBUG_ERR, (__location__ " expected %lu bytes, received %zi bytes\n",
-				  num*sizeof(uint8_t), outdata.dsize));
+				  (long unsigned int)num*sizeof(uint8_t),
+				  outdata.dsize));
 		talloc_free(outdata.dptr);
 		return -1;
 	}
@@ -1257,7 +1258,8 @@ int ctdb_ctrl_dbstatistics(struct ctdb_context *ctdb, uint32_t destnode, uint32_
 
 	if (outdata.dsize < offsetof(struct ctdb_db_statistics, hot_keys_wire)) {
 		DEBUG(DEBUG_ERR,(__location__ " Wrong dbstatistics size %zi - expected >= %lu\n",
-				 outdata.dsize, sizeof(struct ctdb_statistics)));
+				 outdata.dsize,
+				 (long unsigned int)sizeof(struct ctdb_statistics)));
 		return -1;
 	}
 
