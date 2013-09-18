@@ -799,7 +799,7 @@ class dc_join(object):
                 binding_options += ",print"
             repl = drs_utils.drs_Replicate(
                 "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
-                ctx.lp, repl_creds, ctx.local_samdb)
+                ctx.lp, repl_creds, ctx.local_samdb, ctx.invocation_id)
 
             repl.replicate(ctx.schema_dn, source_dsa_invocation_id,
                     destination_dsa_guid, schema=True, rodc=ctx.RODC,
