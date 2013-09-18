@@ -114,7 +114,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	tests/bin/ctdb_takeover_tests tests/bin/ctdb_update_record \
 	tests/bin/ctdb_update_record_persistent \
-	tests/bin/ctdb_tool_libctdb tests/bin/ctdb_tool_stubby \
+	tests/bin/ctdb_functest tests/bin/ctdb_stubtest \
 	tests/bin/ctdb_porting_tests tests/bin/ctdb_lock_tdb \
 	@INFINIBAND_BINS@
 
@@ -266,7 +266,7 @@ tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o
 CTDB_SERVER_MOST_OBJ = $(CTDB_SERVER_OBJ:server/ctdbd.o=)
 CTDBD_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
 
-CTDB_TEST_C = $(CTDB_CLIENT_OBJ:.o=.c) tools/ctdb.c tools/ctdb_vacuum.c  tests/src/ctdb_test.c
+CTDB_TEST_C =  $(CTDB_CLIENT_OBJ:.o=.c) tools/ctdb.c tools/ctdb_vacuum.c tests/src/ctdb_test_stubs.c
 
 CTDB_TEST_OBJ =  $(TALLOC_OBJ) $(TDB_OBJ) \
 	@CTDB_SYSTEM_OBJ@ $(REPLACE_OBJ) $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
@@ -277,17 +277,17 @@ tests/bin/ctdb_takeover_tests: $(CTDB_TEST_OBJ) tests/src/ctdb_takeover_tests.o
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_TEST_OBJ) $(LIB_FLAGS)
 
-tests/src/ctdb_tool_libctdb.o: tests/src/ctdb_tool_libctdb.c tests/src/libctdb_test.c $(CTDB_TEST_C)
+tests/src/ctdb_functest.o: tests/src/ctdb_functest.c tests/src/ctdb_test.c $(CTDB_TEST_C)
 
-tests/bin/ctdb_tool_libctdb: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_libctdb.o
+tests/bin/ctdb_functest: tests/src/ctdb_functest.o $(CTDB_TEST_OBJ) 
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_libctdb.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $^ $(POPT_OBJ) $(LIB_FLAGS)
 
-tests/src/ctdb_tool_stubby.o: tests/src/ctdb_tool_stubby.c tests/src/libctdb_test.c $(CTDB_TEST_C)
+tests/src/ctdb_test.o: tests/src/ctdb_test.c $(CTDB_TEST_C)
 
-tests/bin/ctdb_tool_stubby: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_stubby.o
+tests/bin/ctdb_stubtest: tests/src/ctdb_test.o $(CTDB_TEST_OBJ)
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $^ $(POPT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_lock_tdb: tests/src/ctdb_lock_tdb.o $(CTDB_CLIENT_OBJ)
 	@echo Linking $@

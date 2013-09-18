@@ -1,5 +1,5 @@
 /* 
-   Tests for tools/ctdb.c and libctdb stubs
+   Tests for tools/ctdb.c and CTDB client stubs
 
    Copyright (C) Martin Schwenke 2011
 
@@ -24,8 +24,8 @@ static void test_read_nodemap(void)
 {
 	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
-	libctdb_test_read_nodemap(ctdb);
-	libctdb_test_print_nodemap(ctdb);
+	ctdb_test_stubs_read_nodemap(ctdb);
+	ctdb_test_stubs_print_nodemap(ctdb);
 
 	talloc_free(ctdb);
 }
@@ -34,8 +34,8 @@ static void test_read_ifaces(void)
 {
 	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
-	libctdb_test_read_ifaces(ctdb);
-	libctdb_test_print_ifaces(ctdb);
+	ctdb_test_stubs_read_ifaces(ctdb);
+	ctdb_test_stubs_print_ifaces(ctdb);
 
 	talloc_free(ctdb);
 }
@@ -44,8 +44,8 @@ static void test_read_vnnmap(void)
 {
 	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
-	libctdb_test_read_vnnmap(ctdb);
-	libctdb_test_print_vnnmap(ctdb);
+	ctdb_test_stubs_read_vnnmap(ctdb);
+	ctdb_test_stubs_print_vnnmap(ctdb);
 
 	talloc_free(ctdb);
 }
@@ -55,14 +55,14 @@ static void test_fake_setup(void)
 	bool first = true;
 	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
-	libctdb_test_fake_setup(ctdb);
+	ctdb_test_stubs_fake_setup(ctdb);
 
 	if (ctdb->nodes != NULL) {
 		if (!first) {
 			printf("\n");
 		}
 		printf("NODEMAP\n");
-		libctdb_test_print_nodemap(ctdb);
+		ctdb_test_stubs_print_nodemap(ctdb);
 		first = false;
 	}
 
@@ -71,7 +71,7 @@ static void test_fake_setup(void)
 			printf("\n");
 		}
 		printf("IFACES\n");
-		libctdb_test_print_ifaces(ctdb);
+		ctdb_test_stubs_print_ifaces(ctdb);
 		first = false;
 	}
 
@@ -80,7 +80,7 @@ static void test_fake_setup(void)
 			printf("\n");
 		}
 		printf("VNNMAP\n");
-		libctdb_test_print_vnnmap(ctdb);
+		ctdb_test_stubs_print_vnnmap(ctdb);
 		first = false;
 	}
 
@@ -144,7 +144,7 @@ static void test_parse_nodestring(const char *nodestring_s,
 
 	ctdb  = talloc_zero(NULL, struct ctdb_context);
 
-	libctdb_test_read_nodemap(ctdb);
+	ctdb_test_stubs_read_nodemap(ctdb);
 
 	if (parse_nodestring(ctdb, NULL, nodestring, CTDB_CURRENT_NODE, dd_ok,
 			     &nodes, &pnn_mode)) {
@@ -156,7 +156,7 @@ static void test_parse_nodestring(const char *nodestring_s,
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: ctdb_tool_libctdb <op>\n");
+	fprintf(stderr, "usage: ctdb_tool_functest <op>\n");
 	exit(1);
 }
 

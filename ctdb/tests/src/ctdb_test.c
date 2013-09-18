@@ -99,6 +99,6 @@
 #include "client/ctdb_client.c"
 
 /* TEST STUBS */
-#include "libctdb_test.c"
+#include "ctdb_test_stubs.c"
 
 #endif /* _CTDBD_TEST_C */

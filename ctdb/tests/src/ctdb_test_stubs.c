@@ -1,5 +1,5 @@
 /*
-   Test stubs and support functions for some libctdb functions
+   Test stubs and support functions for some CTDB client functions
 
    Copyright (C) Martin Schwenke  2011
 
@@ -21,7 +21,7 @@
  *  <PNN> <FLAGS> [RECMASTER] [CURRENT]
  * EOF or a blank line terminates input.
  */
-void libctdb_test_read_nodemap(struct ctdb_context *ctdb)
+void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
@@ -102,7 +102,7 @@ void libctdb_test_read_nodemap(struct ctdb_context *ctdb)
 	}
 }
 
-void libctdb_test_print_nodemap(struct ctdb_context *ctdb)
+void ctdb_test_stubs_print_nodemap(struct ctdb_context *ctdb)
 {
 	int i;
 
@@ -129,7 +129,7 @@ struct ctdb_iface {
 	uint32_t references;
 };
 
-void libctdb_test_read_ifaces(struct ctdb_context *ctdb)
+void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
 {
 	char line[1024];
 	struct ctdb_iface *iface;
@@ -189,7 +189,7 @@ void libctdb_test_read_ifaces(struct ctdb_context *ctdb)
 	}
 }
 
-void libctdb_test_print_ifaces(struct ctdb_context *ctdb)
+void ctdb_test_stubs_print_ifaces(struct ctdb_context *ctdb)
 {
 	struct ctdb_iface *iface;
 
@@ -217,7 +217,7 @@ struct ctdb_vnn_map {
 	uint32_t *map;
 };
 */
-void libctdb_test_read_vnnmap(struct ctdb_context *ctdb)
+void ctdb_test_stubs_read_vnnmap(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
@@ -261,7 +261,7 @@ void libctdb_test_read_vnnmap(struct ctdb_context *ctdb)
 	}
 }
 
-void libctdb_test_print_vnnmap(struct ctdb_context *ctdb)
+void ctdb_test_stubs_print_vnnmap(struct ctdb_context *ctdb)
 {
 	int i;
 
@@ -271,7 +271,7 @@ void libctdb_test_print_vnnmap(struct ctdb_context *ctdb)
 	}
 }
 
-void libctdb_test_fake_setup(struct ctdb_context *ctdb)
+void ctdb_test_stubs_fake_setup(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
@@ -284,11 +284,11 @@ void libctdb_test_fake_setup(struct ctdb_context *ctdb)
 		}
 
 		if (strcmp(line, "NODEMAP") == 0) {
-			libctdb_test_read_nodemap(ctdb);
+			ctdb_test_stubs_read_nodemap(ctdb);
 		} else if (strcmp(line, "IFACES") == 0) {
-			libctdb_test_read_ifaces(ctdb);
+			ctdb_test_stubs_read_ifaces(ctdb);
 		} else if (strcmp(line, "VNNMAP") == 0) {
-			libctdb_test_read_vnnmap(ctdb);
+			ctdb_test_stubs_read_vnnmap(ctdb);
 		} else {
 			printf("Unknown line %s\n", line);
 			exit(1);
@@ -326,7 +326,7 @@ struct ctdb_context *ctdb_cmdline_client_stub(struct tevent_context *ev,
 
 	ctdb_set_socketname(ctdb, "fake");
 
-	libctdb_test_fake_setup(ctdb);
+	ctdb_test_stubs_fake_setup(ctdb);
 
 	return ctdb;
 }

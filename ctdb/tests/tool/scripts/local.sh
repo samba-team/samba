@@ -14,12 +14,12 @@ define_test ()
 	func.*)
 	    _func="${_f#func.}"
 	    _func="${_func%.*}" # Strip test number
-	    test_prog="ctdb_tool_libctdb ${_func}"
+	    test_prog="ctdb_functest ${_func}"
 	    ;;
 	stubby.*)
 	    _cmd="${_f#stubby.}"
 	    _cmd="${_cmd%.*}" # Strip test number
-	    test_prog="ctdb_tool_stubby ${_cmd}"
+	    test_prog="ctdb_stubtest ${_cmd}"
 	    ;;
 	*)
 	    die "Unknown pattern for testcase \"$_f\""
