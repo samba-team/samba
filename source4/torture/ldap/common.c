@@ -100,7 +100,7 @@ NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 	struct ldap_request *req;
 	NTSTATUS status;
 
-	printf("Testing the most important error code -> error message conversions!\n");
+	printf("Closing the connection...\n");
 
 	msg = new_ldap_message(conn);
 	if (!msg) {
@@ -108,7 +108,7 @@ NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	printf(" Try a AbandonRequest for an old message id\n");
+	printf(" Try a UnbindRequest\n");
 
 	msg->type = LDAP_TAG_UnbindRequest;
 
