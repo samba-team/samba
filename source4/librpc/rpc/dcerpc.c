@@ -136,8 +136,14 @@ static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	c->security_state.generic_state = NULL;
 	c->binding_string = NULL;
 	c->flags = 0;
-	c->srv_max_xmit_frag = 0;
-	c->srv_max_recv_frag = 0;
+	/*
+	 * Windows uses 5840 for ncacn_ip_tcp,
+	 * so we also use it (for every transport)
+	 * by default. But we give the transport
+	 * the chance to overwrite it.
+	 */
+	c->srv_max_xmit_frag = 5840;
+	c->srv_max_recv_frag = 5840;
 	c->pending = NULL;
 
 	c->io_trigger = tevent_create_immediate(c);
@@ -1159,8 +1165,8 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
-	pkt.u.bind.max_xmit_frag = 5840;
-	pkt.u.bind.max_recv_frag = 5840;
+	pkt.u.bind.max_xmit_frag = p->conn->srv_max_xmit_frag;
+	pkt.u.bind.max_recv_frag = p->conn->srv_max_recv_frag;
 	pkt.u.bind.assoc_group_id = p->binding->assoc_group_id;
 	pkt.u.bind.num_contexts = 1;
 	pkt.u.bind.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
@@ -1289,8 +1295,24 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		return;
 	}
 
-	conn->srv_max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
-	conn->srv_max_recv_frag = pkt->u.bind_ack.max_recv_frag;
+	/*
+	 * DCE-RPC 1.1 (c706) specifies
+	 * CONST_MUST_RCV_FRAG_SIZE as 1432
+	 */
+	if (pkt->u.bind_ack.max_xmit_frag < 1432) {
+		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+	if (pkt->u.bind_ack.max_recv_frag < 1432) {
+		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+	conn->srv_max_xmit_frag = MIN(conn->srv_max_xmit_frag,
+				      pkt->u.bind_ack.max_xmit_frag);
+	conn->srv_max_recv_frag = MIN(conn->srv_max_recv_frag,
+				      pkt->u.bind_ack.max_recv_frag);
 
 	if ((state->p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) &&
 	    (pkt->pfc_flags & DCERPC_PFC_FLAG_CONC_MPX)) {
@@ -2037,8 +2059,8 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 	}
 
-	pkt.u.alter.max_xmit_frag = 5840;
-	pkt.u.alter.max_recv_frag = 5840;
+	pkt.u.alter.max_xmit_frag = p->conn->srv_max_xmit_frag;
+	pkt.u.alter.max_recv_frag = p->conn->srv_max_recv_frag;
 	pkt.u.alter.assoc_group_id = p->binding->assoc_group_id;
 	pkt.u.alter.num_contexts = 1;
 	pkt.u.alter.ctx_list = talloc_array(state, struct dcerpc_ctx_list, 1);
