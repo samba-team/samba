@@ -1272,6 +1272,12 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 
 	if (tcon) {
 		tid = tcon->smb1.tcon_id;
+
+		if (smbXcli_conn_dfs_supported(conn) &&
+		    smbXcli_tcon_is_dfs_share(tcon))
+		{
+			additional_flags2 |= FLAGS2_DFS_PATHNAMES;
+		}
 	}
 
 	state->smb1.recv_cmd = 0xFF;
