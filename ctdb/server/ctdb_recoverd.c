@@ -1665,6 +1665,8 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	int ret;
 	bool ok;
 
+	DEBUG(DEBUG_NOTICE, ("Takeover run starting\n"));
+
 	if (rec->takeover_run_in_progress) {
 		DEBUG(DEBUG_ERR, (__location__
 				  " takeover run already in progress \n"));
@@ -1725,7 +1727,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	}
 
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP reallocation failed\n"));
+		DEBUG(DEBUG_ERR, ("ctdb_takeover_run() failed\n"));
 		ok = false;
 		goto done;
 	}
@@ -1742,6 +1744,8 @@ done:
 	rec->need_takeover_run = !ok;
 	talloc_free(nodes);
 	rec->takeover_run_in_progress = false;
+
+	DEBUG(DEBUG_NOTICE, ("Takeover run %s\n", ok ? "completed successfully" : "unsuccessful"));
 	return ok;
 }
 
