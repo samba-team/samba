@@ -36,6 +36,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_contexts.h"
 #include "rpc_server/rpc_config.h"
+#include "librpc/ndr/ndr_table.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -54,8 +55,15 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	struct pipe_rpc_fns *context_fns;
 	const char *pipe_name;
 	int ret;
+	const struct ndr_interface_table *table;
 
-	pipe_name = get_pipe_name_from_syntax(talloc_tos(), syntax);
+	table = ndr_table_by_uuid(&syntax->uuid);
+	if (table == NULL) {
+		DEBUG(0,("unknown interface\n"));
+		return NULL;
+	}
+
+	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
 
 	DEBUG(4,("Create pipe requested %s\n", pipe_name));
 
@@ -783,7 +791,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pipe_name = get_pipe_name_from_syntax(tmp_ctx, &table->syntax_id);
+	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
 	if (pipe_name == NULL) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;

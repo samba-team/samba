@@ -552,6 +552,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	struct dcerpc_ack_ctx bind_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
+	const struct ndr_interface_table *table;
 
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
@@ -569,15 +570,21 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	 * that this is a pipe name we support.
 	 */
 	id = pkt->u.bind.ctx_list[0].abstract_syntax;
+
+	table = ndr_table_by_uuid(&id.uuid);
+	if (table == NULL) {
+		DEBUG(0,("unknown interface\n"));
+		return false;
+	}
+
 	if (rpc_srv_pipe_exists_by_id(&id)) {
 		DEBUG(3, ("api_pipe_bind_req: %s -> %s rpc service\n",
 			  rpc_srv_get_pipe_cli_name(&id),
 			  rpc_srv_get_pipe_srv_name(&id)));
 	} else {
 		status = smb_probe_module(
-			"rpc", get_pipe_name_from_syntax(
-				talloc_tos(),
-				&id));
+			"rpc", dcerpc_default_transport_endpoint(pkt,
+				NCACN_NP, table));
 
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("api_pipe_bind_req: Unknown rpc service name "
@@ -589,8 +596,8 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		}
 
 		if (rpc_srv_get_pipe_interface_by_cli_name(
-				get_pipe_name_from_syntax(talloc_tos(),
-							  &id),
+				dcerpc_default_transport_endpoint(pkt,
+					NCACN_NP, table),
 				&id)) {
 			DEBUG(3, ("api_pipe_bind_req: %s -> %s rpc service\n",
 				  rpc_srv_get_pipe_cli_name(&id),
@@ -1240,16 +1247,23 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 {
 	int fn_num;
 	uint32_t offset1;
+	const struct ndr_interface_table *table;
 
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
 		 ndr_interface_name(&syntax->uuid, syntax->if_version),
 		 pkt->u.request.opnum));
 
+	table = ndr_table_by_uuid(&syntax->uuid);
+	if (table == NULL) {
+		DEBUG(0,("unknown interface\n"));
+		return false;
+	}
+
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "in_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), syntax));
+			 dcerpc_default_transport_endpoint(pkt, NCACN_NP, table));
 		dump_pdu_region(name, pkt->u.request.opnum,
 				&p->in_data.data, 0,
 				p->in_data.data.length);
@@ -1298,7 +1312,7 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "out_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), syntax));
+			 dcerpc_default_transport_endpoint(pkt, NCACN_NP, table));
 		dump_pdu_region(name, pkt->u.request.opnum,
 				&p->out_data.rdata, offset1,
 				p->out_data.rdata.length);

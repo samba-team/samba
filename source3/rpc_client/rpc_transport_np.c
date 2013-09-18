@@ -21,6 +21,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_client/rpc_transport.h"
 #include "libsmb/cli_np_tstream.h"
+#include "librpc/ndr/ndr_table.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -47,7 +48,7 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	pipe_name = get_pipe_name_from_syntax(state, &table->syntax_id);
+	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
 	if (tevent_req_nomem(pipe_name, req)) {
 		return tevent_req_post(req, ev);
 	}
