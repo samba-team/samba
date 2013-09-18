@@ -1088,6 +1088,76 @@ done:
 	return ret;
 }
 
+static NTSTATUS net_idmap_autorid_print_range(struct db_context *db,
+					      const char *domsid,
+					      uint32_t range_index,
+					      uint32_t rangenum,
+					      void *private_data)
+{
+	if (range_index == 0) {
+		printf("RANGE %"PRIu32": %s\n", rangenum, domsid);
+	} else {
+		printf("RANGE %"PRIu32": %s#%"PRIu32"\n", rangenum, domsid,
+		       range_index);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void net_idmap_autorid_get_ranges_usage(void)
+{
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _("net idmap get ranges <SID> [--db=<inputfile>]\n"
+		   "  Get all ranges for a given domain.\n"
+		   "    SID\t\tSID of the domain\n"
+		   "    inputfile\tTDB file to add mapping to.\n"));
+}
+
+static int net_idmap_autorid_get_ranges(struct net_context *c, int argc,
+					const char **argv)
+{
+	int ret = -1;
+	TALLOC_CTX *mem_ctx;
+	struct db_context *db = NULL;
+	const char *domsid;
+	NTSTATUS status;
+
+	if (c->display_usage) {
+		net_idmap_autorid_get_ranges_usage();
+		return 0;
+	}
+
+	if (argc != 1) {
+		net_idmap_autorid_get_ranges_usage();
+		return -1;
+	}
+
+	domsid = argv[0];
+
+	mem_ctx = talloc_stackframe();
+	if (!net_idmap_opendb_autorid(mem_ctx, c, true, &db)) {
+		goto done;
+	}
+
+	status = idmap_autorid_iterate_domain_ranges_read(db,
+						domsid,
+						net_idmap_autorid_print_range,
+						NULL, /* private_data */
+						NULL  /* count */);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "%s: %s\n",
+			  _("Error getting domain ranges"), nt_errstr(status));
+		goto done;
+	}
+
+	ret = 0;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static int net_idmap_autorid_get_config(struct net_context *c, int argc,
 					const char **argv)
 {
@@ -1140,6 +1210,14 @@ static int net_idmap_get(struct net_context *c, int argc, const char **argv)
 			N_("Get the range for a domain and range-index"),
 			N_("net idmap get range\n"
 			   "  Get the range for a domain and range-index")
+		},
+		{
+			"ranges",
+			net_idmap_autorid_get_ranges,
+			NET_TRANSPORT_LOCAL,
+			N_("Get all ranges for a domain"),
+			N_("net idmap get ranges <SID>\n"
+			   "  Get all ranges for a domain")
 		},
 		{
 			"config",
