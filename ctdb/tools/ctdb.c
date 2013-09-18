@@ -3538,8 +3538,6 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 		CTDB_NO_MEMORY(ctdb, capabilities);
 	}
 
-	ret = -1;
-	
 	/* collect capabilities for all connected nodes */
 	for (i=0; i<nodemap->num; i++) {
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
@@ -3564,6 +3562,8 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 			healthy_count++;
 		}
 	}
+
+	ret = -1;
 
 	/* find and show the lvsmaster */
 	for (i=0; i<nodemap->num; i++) {
