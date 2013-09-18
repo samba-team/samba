@@ -20,13 +20,7 @@
 #ifndef _CTDBD_TEST_C
 #define _CTDBD_TEST_C
 
-#ifdef CTDB_TEST_USE_MAIN
-
-/* Use main, stubify some stuff */
-#define ctdb_cmdline_client(x, y) ctdb_cmdline_client_foobar(x, y)
-#define ctdb_get_socketname(x) ctdb_get_socketname_foobar(x)
-
-#else
+#ifdef CTDB_TEST_OVERRIDE_MAIN
 
 /* Define our own main() and usage() functions */
 #define main(argc, argv) main_foobar(argc, argv)
@@ -34,16 +28,47 @@
 
 #endif /* CTDB_TEST_USE_MAIN */
 
+#define ctdb_cmdline_client(x, y) \
+	ctdb_cmdline_client_stub(x, y)
+#define ctdb_ctrl_getnodemap(ctdb, timelimit, pnn, tmp_ctx, nodemap) \
+	ctdb_ctrl_getnodemap_stub(ctdb, timelimit, pnn, tmp_ctx, nodemap)
+#define ctdb_ctrl_get_ifaces(ctdb, timelimit, pnn, tmp_ctx, ifaces) \
+	ctdb_ctrl_get_ifaces_stub(ctdb, timelimit, pnn, tmp_ctx, ifaces)
+#define ctdb_ctrl_getpnn(ctdb, timelimit, pnn) \
+	ctdb_ctrl_getpnn_stub(ctdb, timelimit, pnn)
+#define ctdb_ctrl_getrecmode(ctdb, tmp_ctx, timelimit, pnn, recmode) \
+	ctdb_ctrl_getrecmode_stub(ctdb, tmp_ctx, timelimit, pnn, recmode)
+#define ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, timelimit, pnn, recmaster) \
+	ctdb_ctrl_getrecmaster_stub(ctdb, tmp_ctx, timelimit, pnn, recmaster)
+#define ctdb_ctrl_getvnnmap(ctdb, timelimit, pnn, tmp_ctx, vnnmap) \
+	ctdb_ctrl_getvnnmap_stub(ctdb, timelimit, pnn, tmp_ctx, vnnmap)
+#define ctdb_ctrl_getdebseqnum(ctdb, timelimit, pnn, db_id, seqnum) \
+	ctdb_ctrl_getvnnmap_stub(ctdb, timelimit, pnn, db_id, seqnum)
+#define ctdb_client_check_message_handlers(ctdb, ids, argc, result) \
+	ctdb_client_check_message_handlers_stub(ctdb, ids, argc, result)
+#define ctdb_ctrl_getcapabilities(ctdb, timeout, destnode, capabilities) \
+	ctdb_ctrl_getcapabilities_stub(ctdb, timeout, destnode, capabilities)
+
 #include "tools/ctdb.c"
 
-#ifdef CTDB_TEST_USE_MAIN
-#undef ctdb_cmdline_client
-#undef ctdb_get_socketname
-#else
+#ifndef CTDB_TEST_USE_MAIN
 #undef main
 #undef usage
 #endif /* CTDB_TEST_USE_MAIN */
- 
+
+#undef ctdb_cmdline_client
+
+#include "common/cmdline.c"
+
+#undef ctdb_ctrl_getnodemap
+#undef ctdb_ctrl_get_ifaces 
+#undef ctdb_ctrl_getpnn
+#undef ctdb_ctrl_getrecmode
+#undef ctdb_ctrl_getrecmaster
+#undef ctdb_ctrl_getvnnmap
+#undef ctdb_ctrl_getdebseqnum
+#undef ctdb_client_check_message_handlers
+#undef ctdb_ctrl_getcapabilities
 
 #undef TIMELIMIT
 #include "tools/ctdb_vacuum.c"
@@ -64,7 +89,6 @@
 #include "common/ctdb_util.c"
 #include "common/ctdb_ltdb.c"
 #include "common/ctdb_message.c"
-#include "common/cmdline.c"
 #include "lib/util/debug.c"
 #include "common/rb_tree.c"
 #include "common/system_common.c"
@@ -73,5 +97,8 @@
 
 /* CTDB_CLIENT_OBJ */
 #include "client/ctdb_client.c"
+
+/* TEST STUBS */
+#include "libctdb_test.c"
 
 #endif /* _CTDBD_TEST_C */

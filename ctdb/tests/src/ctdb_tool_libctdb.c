@@ -17,47 +17,47 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#define CTDB_TEST_OVERRIDE_MAIN
 #include "ctdb_test.c"
-#include "libctdb_test.c"
 
 static void test_read_nodemap(void)
 {
-	struct ctdb_connection *ctdb = ctdb_connect("foo", NULL, NULL);
+	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
 	libctdb_test_read_nodemap(ctdb);
 	libctdb_test_print_nodemap(ctdb);
 
-	ctdb_disconnect(ctdb);
+	talloc_free(ctdb);
 }
 
 static void test_read_ifaces(void)
 {
-	struct ctdb_connection *ctdb = ctdb_connect("foo", NULL, NULL);
+	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
 	libctdb_test_read_ifaces(ctdb);
 	libctdb_test_print_ifaces(ctdb);
 
-	ctdb_disconnect(ctdb);
+	talloc_free(ctdb);
 }
 
 static void test_read_vnnmap(void)
 {
-	struct ctdb_connection *ctdb = ctdb_connect("foo", NULL, NULL);
+	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
 	libctdb_test_read_vnnmap(ctdb);
 	libctdb_test_print_vnnmap(ctdb);
 
-	ctdb_disconnect(ctdb);
+	talloc_free(ctdb);
 }
 
 static void test_fake_setup(void)
 {
 	bool first = true;
-	struct ctdb_connection *ctdb = ctdb_connect("foo", NULL, NULL);
+	struct ctdb_context *ctdb = talloc_zero(NULL, struct ctdb_context);
 
 	libctdb_test_fake_setup(ctdb);
 
-	if (ctdb->nodemap != NULL) {
+	if (ctdb->nodes != NULL) {
 		if (!first) {
 			printf("\n");
 		}
@@ -75,7 +75,7 @@ static void test_fake_setup(void)
 		first = false;
 	}
 
-	if (ctdb->vnnmap != NULL) {
+	if (ctdb->vnn_map != NULL) {
 		if (!first) {
 			printf("\n");
 		}
@@ -84,7 +84,7 @@ static void test_fake_setup(void)
 		first = false;
 	}
 
-	ctdb_disconnect(ctdb);
+	talloc_free(ctdb);
 }
 
 static const char * decode_pnn_mode(uint32_t pnn_mode)
@@ -129,7 +129,7 @@ static void test_parse_nodestring(const char *nodestring_s,
 {
 	const char *nodestring;
 	bool dd_ok;
-	struct ctdb_connection *ctdb;
+	struct ctdb_context *ctdb;
 	uint32_t *nodes;
 	uint32_t pnn_mode;
 
@@ -142,16 +142,16 @@ static void test_parse_nodestring(const char *nodestring_s,
 		dd_ok = false;
 	}
 
-	ctdb  = ctdb_connect("foo", NULL, NULL);
+	ctdb  = talloc_zero(NULL, struct ctdb_context);
 
 	libctdb_test_read_nodemap(ctdb);
 
-	if (parse_nodestring(NULL, NULL, nodestring, CTDB_CURRENT_NODE, dd_ok,
+	if (parse_nodestring(ctdb, NULL, nodestring, CTDB_CURRENT_NODE, dd_ok,
 			     &nodes, &pnn_mode)) {
 		print_nodes(nodes, pnn_mode);
 	}
 
-	ctdb_disconnect(ctdb);
+	talloc_free(ctdb);
 }
 
 static void usage(void)

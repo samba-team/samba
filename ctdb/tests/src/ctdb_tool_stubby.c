@@ -17,22 +17,4 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#define CTDB_TEST_USE_MAIN
 #include "ctdb_test.c"
-
-#include "libctdb_test.c"
-
-struct ctdb_context *ctdb_cmdline_client_foobar(struct tevent_context *ev,
-						struct timeval req_timeout)
-{
-	struct ctdb_context *ret;
-
-	ret = talloc(NULL, struct ctdb_context);
-
-	return ret;
-}
-
-const char *ctdb_get_socketname_foobar(struct ctdb_context *ctdb)
-{
-	return LIBCTDB_TEST_FAKESTATE;
-}

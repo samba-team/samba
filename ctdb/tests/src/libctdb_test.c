@@ -17,41 +17,25 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <syslog.h>
-#include "ctdb.h"
-
-#define LIBCTDB_TEST_FAKESTATE "fakestate"
-
-/* Can't use the real definition, since including libctdb_private.h
- * causes macro conflicts */
-struct ctdb_connection {
-	struct ctdb_node_map *nodemap;
-	uint32_t current_node;
-	uint32_t recmaster;
-	struct ctdb_ifaces_list *ifaces;
-	struct ctdb_vnn_map *vnnmap;
-};
-
-
 /* Read a nodemap from stdin.  Each line looks like:
  *  <PNN> <FLAGS> [RECMASTER] [CURRENT]
  * EOF or a blank line terminates input.
  */
-void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
+void libctdb_test_read_nodemap(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
-	ctdb->nodemap = (struct ctdb_node_map *) malloc(offsetof(struct ctdb_node_map, nodes));
-	if (ctdb->nodemap == NULL) {
-		DEBUG(DEBUG_ERR, ("OOM allocating nodemap\n"));
-		exit (1);
-	}
-	ctdb->nodemap->num = 0;
+	TALLOC_FREE(ctdb->nodes);
+	ctdb->pnn = -1;
+	ctdb->num_nodes = 0;
+
+	ctdb->nodes = NULL;
 
 	while ((fgets(line, sizeof(line), stdin) != NULL) &&
 	       (line[0] != '\n')) {
 		uint32_t pnn, flags;
 		char *tok, *t;
+		const char *ip;
 		ctdb_sock_addr saddr;
 
 		/* Get rid of pesky newline */
@@ -77,6 +61,7 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line (IP) ignored \"%s\"\n", line));
 			continue;
 		}
+		ip = talloc_strdup(ctdb, tok);
 
 		/* Get flags */
 		tok = strtok(NULL, " \t");
@@ -89,36 +74,44 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 		tok = strtok(NULL, " \t");
 		while (tok != NULL) {
 			if (strcmp(tok, "CURRENT") == 0) {
-				ctdb->current_node = pnn;
+				ctdb->pnn = pnn;
 			} else if (strcmp(tok, "RECMASTER") == 0) {
-				ctdb->recmaster = pnn;
+				ctdb->recovery_master = pnn;
 			}
 			tok = strtok(NULL, " \t");
 		}
 
-		ctdb->nodemap = (struct ctdb_node_map *) realloc(ctdb->nodemap, offsetof(struct ctdb_node_map, nodes) + (ctdb->nodemap->num + 1) * sizeof(struct ctdb_node_and_flags));
-		if (ctdb->nodemap == NULL) {
-			DEBUG(DEBUG_ERR, ("OOM allocating nodemap\n"));
+		ctdb->nodes = talloc_realloc(ctdb, ctdb->nodes, struct ctdb_node *, ctdb->num_nodes + 1);
+		if (ctdb->nodes == NULL) {
+			DEBUG(DEBUG_ERR, ("OOM allocating nodes array\n"));
+			exit (1);
+		}
+		ctdb->nodes[ctdb->num_nodes] = talloc_zero(ctdb, struct ctdb_node);
+		if (ctdb->nodes[ctdb->num_nodes] == NULL) {
+			DEBUG(DEBUG_ERR, ("OOM allocating node structure\n"));
 			exit (1);
 		}
 
-		ctdb->nodemap->nodes[ctdb->nodemap->num].pnn = pnn;
-		ctdb->nodemap->nodes[ctdb->nodemap->num].flags = flags;
-		memcpy(&(ctdb->nodemap->nodes[ctdb->nodemap->num].addr), &saddr, sizeof(ctdb_sock_addr));
-		ctdb->nodemap->num++;
+		ctdb->nodes[ctdb->num_nodes]->ctdb = ctdb;
+		ctdb->nodes[ctdb->num_nodes]->name = "fakectdb";
+		ctdb->nodes[ctdb->num_nodes]->pnn = pnn;
+		ctdb->nodes[ctdb->num_nodes]->address.address = ip;
+		ctdb->nodes[ctdb->num_nodes]->address.port = 0;
+		ctdb->nodes[ctdb->num_nodes]->flags = flags;
+		ctdb->num_nodes++;
 	}
 }
 
-void libctdb_test_print_nodemap(struct ctdb_connection *ctdb)
+void libctdb_test_print_nodemap(struct ctdb_context *ctdb)
 {
 	int i;
 
-	for (i = 0; i < ctdb->nodemap->num; i++) {
+	for (i = 0; i < ctdb->num_nodes; i++) {
 		printf("%ld\t0x%lx%s%s\n",
-		       (unsigned long) ctdb->nodemap->nodes[i].pnn,
-		       (unsigned long) ctdb->nodemap->nodes[i].flags,
-		       ctdb->nodemap->nodes[i].pnn == ctdb->current_node ? "\tCURRENT" : "",
-		       ctdb->nodemap->nodes[i].pnn == ctdb->recmaster ? "\tRECMASTER" : "");
+		       (unsigned long) ctdb->nodes[i]->pnn,
+		       (unsigned long) ctdb->nodes[i]->flags,
+		       ctdb->nodes[i]->pnn == ctdb->pnn ? "\tCURRENT" : "",
+		       ctdb->nodes[i]->pnn == ctdb->recovery_master ? "\tRECMASTER" : "");
 	}
 }
 
@@ -128,16 +121,18 @@ void libctdb_test_print_nodemap(struct ctdb_connection *ctdb)
  *   :eth2:1:4294967294
  *   :eth1:1:4294967292
  */
-void libctdb_test_read_ifaces(struct ctdb_connection *ctdb)
+
+struct ctdb_iface {
+	struct ctdb_iface *prev, *next;
+	const char *name;
+	bool link_up;
+	uint32_t references;
+};
+
+void libctdb_test_read_ifaces(struct ctdb_context *ctdb)
 {
 	char line[1024];
-
-	ctdb->ifaces = (struct ctdb_ifaces_list *) malloc(offsetof(struct ctdb_ifaces_list, ifaces));
-	if (ctdb->ifaces == NULL) {
-		DEBUG(DEBUG_ERR, ("OOM allocating ifaces\n"));
-		exit (1);
-	}
-	ctdb->ifaces->num = 0;
+	struct ctdb_iface *iface;
 
 	while ((fgets(line, sizeof(line), stdin) != NULL) &&
 	       (line[0] != '\n')) {
@@ -179,29 +174,31 @@ void libctdb_test_read_ifaces(struct ctdb_connection *ctdb)
 		}
 		references = (uint32_t)strtoul(tok, NULL, 0);
 
-		ctdb->ifaces = (struct ctdb_ifaces_list *) realloc(ctdb->ifaces, offsetof(struct ctdb_ifaces_list, ifaces) + (ctdb->ifaces->num + 1) * sizeof(struct ctdb_iface_info));
-		if (ctdb->ifaces == NULL) {
-			DEBUG(DEBUG_ERR, ("OOM allocating ifaces\n"));
+		iface = talloc_zero(ctdb, struct ctdb_iface);
+
+		if (iface == NULL) {
+			DEBUG(DEBUG_ERR, ("OOM allocating iface\n"));
 			exit (1);
 		}
 
-		strcpy(&(ctdb->ifaces->ifaces[ctdb->ifaces->num].name[0]), name);
-		ctdb->ifaces->ifaces[ctdb->ifaces->num].link_state = link_state;
-		ctdb->ifaces->ifaces[ctdb->ifaces->num].references = references;
-		ctdb->ifaces->num++;
+		iface->name = talloc_strdup(iface, name);
+		iface->link_up = link_state;
+		iface->references = references;
+
+		DLIST_ADD(ctdb->ifaces, iface);
 	}
 }
 
-void libctdb_test_print_ifaces(struct ctdb_connection *ctdb)
+void libctdb_test_print_ifaces(struct ctdb_context *ctdb)
 {
-	int i;
+	struct ctdb_iface *iface;
 
 	printf(":Name:LinkStatus:References:\n");
-	for (i = 0; i < ctdb->ifaces->num; i++) {
+	for (iface = ctdb->ifaces; iface != NULL; iface = iface->next) {
 		printf(":%s:%u:%u:\n",
-		       ctdb->ifaces->ifaces[i].name,
-		       ctdb->ifaces->ifaces[i].link_state,
-		       ctdb->ifaces->ifaces[i].references);
+		       iface->name,
+		       iface->link_up,
+		       iface->references);
 	}
 }
 
@@ -212,18 +209,28 @@ void libctdb_test_print_ifaces(struct ctdb_connection *ctdb)
  *   <LMASTER1>
  *   ...
  */
-void libctdb_test_read_vnnmap(struct ctdb_connection *ctdb)
+
+/*
+struct ctdb_vnn_map {
+	uint32_t generation;
+	uint32_t size;
+	uint32_t *map;
+};
+*/
+void libctdb_test_read_vnnmap(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
-	ctdb->vnnmap = (struct ctdb_vnn_map *) malloc(sizeof(struct ctdb_vnn_map));
-	if (ctdb->vnnmap == NULL) {
+	TALLOC_FREE(ctdb->vnn_map);
+
+	ctdb->vnn_map = talloc_zero(ctdb, struct ctdb_vnn_map);
+	if (ctdb->vnn_map == NULL) {
 		DEBUG(DEBUG_ERR, ("OOM allocating vnnmap\n"));
 		exit (1);
 	}
-	ctdb->vnnmap->generation = INVALID_GENERATION;
-	ctdb->vnnmap->size = 0;
-	ctdb->vnnmap->map = NULL;
+	ctdb->vnn_map->generation = INVALID_GENERATION;
+	ctdb->vnn_map->size = 0;
+	ctdb->vnn_map->map = NULL;
 
 	while ((fgets(line, sizeof(line), stdin) != NULL) &&
 	       (line[0] != '\n')) {
@@ -238,33 +245,33 @@ void libctdb_test_read_vnnmap(struct ctdb_connection *ctdb)
 		n = (uint32_t) strtol(line, NULL, 0);
 
 		/* generation */
-		if (ctdb->vnnmap->generation == INVALID_GENERATION) {
-			ctdb->vnnmap->generation = n;
+		if (ctdb->vnn_map->generation == INVALID_GENERATION) {
+			ctdb->vnn_map->generation = n;
 			continue;
 		}
 
-		ctdb->vnnmap->map = (uint32_t *) realloc(ctdb->vnnmap->map, (ctdb->vnnmap->size + 1) * sizeof(uint32_t));
-		if (ctdb->vnnmap->map == NULL) {
-			DEBUG(DEBUG_ERR, ("OOM allocating vnnmap->map\n"));
+		ctdb->vnn_map->map = talloc_realloc(ctdb, ctdb->vnn_map->map, uint32_t, ctdb->vnn_map->size + 1);
+		if (ctdb->vnn_map->map == NULL) {
+			DEBUG(DEBUG_ERR, ("OOM allocating vnn_map->map\n"));
 			exit (1);
 		}
 
-		ctdb->vnnmap->map[ctdb->vnnmap->size] = n;
-		ctdb->vnnmap->size++;
+		ctdb->vnn_map->map[ctdb->vnn_map->size] = n;
+		ctdb->vnn_map->size++;
 	}
 }
 
-void libctdb_test_print_vnnmap(struct ctdb_connection *ctdb)
+void libctdb_test_print_vnnmap(struct ctdb_context *ctdb)
 {
 	int i;
 
-	printf("%d\n", ctdb->vnnmap->generation);
-	for (i = 0; i < ctdb->vnnmap->size; i++) {
-		printf("%d\n", ctdb->vnnmap->map[i]);
+	printf("%d\n", ctdb->vnn_map->generation);
+	for (i = 0; i < ctdb->vnn_map->size; i++) {
+		printf("%d\n", ctdb->vnn_map->map[i]);
 	}
 }
 
-void libctdb_test_fake_setup(struct ctdb_connection *ctdb)
+void libctdb_test_fake_setup(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
@@ -290,12 +297,12 @@ void libctdb_test_fake_setup(struct ctdb_connection *ctdb)
 }
 
 /* Support... */
-static bool current_node_is_connected (struct ctdb_connection *ctdb)
+static bool current_node_is_connected (struct ctdb_context *ctdb)
 {
 	int i;
-	for (i = 0; i < ctdb->nodemap->num; i++) {
-		if (ctdb->nodemap->nodes[i].pnn == ctdb->current_node) {
-			if (ctdb->nodemap->nodes[i].flags &
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
+			if (ctdb->nodes[i]->flags &
 			    (NODE_FLAGS_DISCONNECTED | NODE_FLAGS_DELETED)) {
 				return false;
 			} else {
@@ -310,223 +317,213 @@ static bool current_node_is_connected (struct ctdb_connection *ctdb)
 
 /* Stubs... */
 
-bool ctdb_getnodemap(struct ctdb_connection *ctdb,
-		     uint32_t destnode, struct ctdb_node_map **nodemap)
+struct ctdb_context *ctdb_cmdline_client_stub(struct tevent_context *ev,
+					      struct timeval req_timeout)
 {
-	size_t n;
+	struct ctdb_context *ctdb;
 
-	if (!current_node_is_connected(ctdb)) {
-		*nodemap = NULL;
-		return false;
-	}
+	ctdb = talloc_zero(NULL, struct ctdb_context);
 
-	n = offsetof(struct ctdb_node_map, nodes) + (ctdb->nodemap->num) * sizeof(struct ctdb_node_and_flags);
-	*nodemap = (struct ctdb_node_map *) malloc(n);
-	memcpy(*nodemap, ctdb->nodemap, n);
+	ctdb_set_socketname(ctdb, "fake");
 
-	return true;
-}
-
-void ctdb_free_nodemap(struct ctdb_node_map *nodemap)
-{
-	free(nodemap);
-}
-
-bool ctdb_getifaces(struct ctdb_connection *ctdb,
-		    uint32_t destnode, struct ctdb_ifaces_list **ifaces)
-{
-	size_t n;
-
-	if (!current_node_is_connected(ctdb)) {
-		*ifaces = NULL;
-		return false;
-	}
-
-	n = offsetof(struct ctdb_ifaces_list, ifaces) + (ctdb->ifaces->num) * sizeof(struct ctdb_iface_info);
-	*ifaces = (struct ctdb_ifaces_list *) malloc(n);
-	memcpy(*ifaces, ctdb->ifaces, n);
-
-	return true;
-}
-
-void ctdb_free_ifaces(struct ctdb_ifaces_list *ifaces)
-{
-	free(ifaces);
-}
-
-bool ctdb_getpnn(struct ctdb_connection *ctdb,
-		 uint32_t destnode,
-		 uint32_t *pnn)
-{
-	if (!current_node_is_connected(ctdb)) {
-		return false;
-	}
-
-	if (destnode == CTDB_CURRENT_NODE) {
-		*pnn = ctdb->current_node;
-	} else {
-		*pnn = destnode;
-	}
-	return true;
-}
-
-bool ctdb_getrecmode(struct ctdb_connection *ctdb,
-		     uint32_t destnode,
-		     uint32_t *recmode)
-{
-	if (!current_node_is_connected(ctdb)) {
-		return false;
-	}
-
-	*recmode = 0;
-	return true;
-}
-
-bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
-		       uint32_t destnode,
-		       uint32_t *recmaster)
-{
-	if (!current_node_is_connected(ctdb)) {
-		return false;
-	}
-
-	*recmaster = ctdb->recmaster;
-	return true;
-}
-
-bool ctdb_getvnnmap(struct ctdb_connection *ctdb,
-		    uint32_t destnode, struct ctdb_vnn_map **vnnmap)
-{
-	size_t n;
-
-	if (!current_node_is_connected(ctdb)) {
-		*vnnmap = NULL;
-		return false;
-	}
-
-	*vnnmap = (struct ctdb_vnn_map *) malloc(sizeof(struct ctdb_vnn_map));
-	n = ctdb->vnnmap->size * sizeof(uint32_t);
-	(*vnnmap)->map = malloc(n);
-	memcpy((*vnnmap)->map, ctdb->vnnmap->map, n);
-	(*vnnmap)->generation = ctdb->vnnmap->generation;
-	(*vnnmap)->size = ctdb->vnnmap->size;
-
-	return true;
-}
-
-void ctdb_free_vnnmap(struct ctdb_vnn_map *vnnmap)
-{
-	free(vnnmap->map);
-	free(vnnmap);
-}
-
-bool
-ctdb_getdbseqnum(struct ctdb_connection *ctdb,
-		 uint32_t destnode,
-		 uint32_t dbid,
-		 uint64_t *seqnum)
-{
-	*seqnum = 0;
-	return false; /* Not implemented */
-}
-
-bool
-ctdb_check_message_handlers(struct ctdb_connection *ctdb,
-			   uint32_t destnode,
-			   uint32_t num,
-			   uint64_t *mhs,
-			   uint8_t *result)
-{
-	*result = 0;
-	return false; /* Not implemented */
-}
-
-/* Not a stub, a copy */
-void ctdb_log_file(FILE *outf, int priority, const char *format, va_list ap)
-{
-	fprintf(outf, "%s:",
-		priority == LOG_EMERG ? "EMERG" :
-		priority == LOG_ALERT ? "ALERT" :
-		priority == LOG_CRIT ? "CRIT" :
-		priority == LOG_ERR ? "ERR" :
-		priority == LOG_WARNING ? "WARNING" :
-		priority == LOG_NOTICE ? "NOTICE" :
-		priority == LOG_INFO ? "INFO" :
-		priority == LOG_DEBUG ? "DEBUG" :
-		"Unknown Error Level");
-
-	vfprintf(outf, format, ap);
-	if (priority == LOG_ERR) {
-		fprintf(outf, " (%s)", strerror(errno));
-	}
-	fprintf(outf, "\n");
-}
-
-/* Remove type-safety macro. */
-#undef ctdb_connect
-struct ctdb_connection *ctdb_connect(const char *addr,
-				     ctdb_log_fn_t log_func, void *log_priv)
-{
-	struct ctdb_connection *ctdb;
-
-	ctdb = malloc(sizeof(struct ctdb_connection));
-	if (ctdb == NULL) {
-		DEBUG(DEBUG_ERR, ("OOM allocating ctdb_connection\n"));
-		exit (1);
-	}
-
-	ctdb->nodemap = NULL;
-	ctdb->current_node = 0;
-	ctdb->recmaster = 0;
-	ctdb->ifaces = NULL;
-	ctdb->vnnmap = NULL;
-
-	/* Don't always fake up the state...  but do it on request */
-	if (strcmp(addr, LIBCTDB_TEST_FAKESTATE) == 0) {
-		libctdb_test_fake_setup(ctdb);
-	}
+	libctdb_test_fake_setup(ctdb);
 
 	return ctdb;
 }
 
-void ctdb_disconnect(struct ctdb_connection *ctdb)
+/* Copied from ctdb_recover.c */
+int
+ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
-	if (ctdb->nodemap != NULL) {
-		free(ctdb->nodemap);
+	uint32_t i, num_nodes;
+	struct ctdb_node_map *node_map;
+
+	CHECK_CONTROL_DATA_SIZE(0);
+
+	num_nodes = ctdb->num_nodes;
+
+	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
+	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
+	if (!outdata->dptr) {
+		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate nodemap array\n"));
+		exit(1);
 	}
-	if (ctdb->ifaces != NULL) {
-		free(ctdb->ifaces);
-	}
-	if (ctdb->vnnmap != NULL) {
-		if (ctdb->vnnmap->map != NULL) {
-			free(ctdb->vnnmap->map);
+
+	node_map = (struct ctdb_node_map *)outdata->dptr;
+	node_map->num = num_nodes;
+	for (i=0; i<num_nodes; i++) {
+		if (parse_ip(ctdb->nodes[i]->address.address,
+			     NULL, /* TODO: pass in the correct interface here*/
+			     0,
+			     &node_map->nodes[i].addr) == 0)
+		{
+			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
 		}
-		free(ctdb->vnnmap);
+
+		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
+		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
 	}
-	free(ctdb);
+
+	return 0;
 }
 
-bool ctdb_getdbstat(struct ctdb_connection *ctdb,
-		    uint32_t destnode,
-		    uint32_t db_id,
-		    struct ctdb_db_statistics **dbstatistics)
+int
+ctdb_ctrl_getnodemap_stub(struct ctdb_context *ctdb,
+			  struct timeval timeout, uint32_t destnode,
+			  TALLOC_CTX *mem_ctx,
+			  struct ctdb_node_map **nodemap)
+{
+	int ret;
+
+	TDB_DATA indata;
+	TDB_DATA *outdata;
+
+	if (!current_node_is_connected(ctdb)) {
+		return -1;
+	}
+
+	indata.dsize = 0;
+	indata.dptr = NULL;
+
+	outdata = talloc_zero(ctdb, TDB_DATA);
+
+	ret = ctdb_control_getnodemap(ctdb, CTDB_CONTROL_GET_NODEMAP,
+				      indata, outdata);
+
+	if (ret == 0) {
+		*nodemap = (struct ctdb_node_map *) outdata->dptr;
+	}
+
+	return ret;
+}
+
+int
+ctdb_ctrl_getvnnmap_stub(struct ctdb_context *ctdb,
+			 struct timeval timeout, uint32_t destnode,
+			 TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap)
+{
+	*vnnmap = talloc(ctdb, struct ctdb_vnn_map);
+	if (*vnnmap == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ "OOM\n"));
+		exit (1);
+	}
+	(*vnnmap)->map = talloc_array(*vnnmap, uint32_t, ctdb->vnn_map->size);
+
+	(*vnnmap)->generation = ctdb->vnn_map->generation;
+	(*vnnmap)->size = ctdb->vnn_map->size;
+	memcpy((*vnnmap)->map, ctdb->vnn_map->map, sizeof(uint32_t) * (*vnnmap)->size);
+
+	return 0;
+}
+
+int
+ctdb_ctrl_getrecmode_stub(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+			  struct timeval timeout, uint32_t destnode,
+			  uint32_t *recmode)
+{
+	*recmode = ctdb->recovery_mode;
+
+	return 0;
+}
+
+int
+ctdb_ctrl_getrecmaster_stub(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+			    struct timeval timeout, uint32_t destnode,
+			    uint32_t *recmaster)
+{
+	*recmaster = ctdb->recovery_master;
+
+	return 0;
+}
+
+int
+ctdb_ctrl_getpnn_stub(struct ctdb_context *ctdb, struct timeval timeout,
+		      uint32_t destnode)
 {
 	if (!current_node_is_connected(ctdb)) {
-		return false;
+		return -1;
 	}
 
-	*dbstatistics = malloc(sizeof(struct ctdb_db_statistics));
-	return true;
+	if (destnode == CTDB_CURRENT_NODE) {
+		return ctdb->pnn;
+	} else {
+		return destnode;
+	}
 }
 
-void ctdb_free_dbstat(struct ctdb_db_statistics *dbstatistics)
+/* From ctdb_takeover.c */
+int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
+				struct ctdb_req_control *c,
+				TDB_DATA *outdata)
 {
-	free(dbstatistics);
+	int i, num, len;
+	struct ctdb_control_get_ifaces *ifaces;
+	struct ctdb_iface *cur;
+
+	/* count how many public ip structures we have */
+	num = 0;
+	for (cur=ctdb->ifaces;cur;cur=cur->next) {
+		num++;
+	}
+
+	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
+		num*sizeof(struct ctdb_control_iface_info);
+	ifaces = talloc_zero_size(outdata, len);
+	CTDB_NO_MEMORY(ctdb, ifaces);
+
+	i = 0;
+	for (cur=ctdb->ifaces;cur;cur=cur->next) {
+		strcpy(ifaces->ifaces[i].name, cur->name);
+		ifaces->ifaces[i].link_state = cur->link_up;
+		ifaces->ifaces[i].references = cur->references;
+		i++;
+	}
+	ifaces->num = i;
+	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
+		i*sizeof(struct ctdb_control_iface_info);
+
+	outdata->dsize = len;
+	outdata->dptr  = (uint8_t *)ifaces;
+
+	return 0;
 }
 
-bool ctdb_getcapabilities(struct ctdb_connection *ctdb,
-			  uint32_t destnode, uint32_t *capabilities)
+int
+ctdb_ctrl_get_ifaces_stub(struct ctdb_context *ctdb,
+			  struct timeval timeout, uint32_t destnode,
+			  TALLOC_CTX *mem_ctx,
+			  struct ctdb_control_get_ifaces **ifaces)
 {
-	*capabilities = CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW;
-	return true;
+	TDB_DATA *outdata;
+	int ret;
+
+	if (!current_node_is_connected(ctdb)) {
+		return -1;
+	}
+
+	outdata = talloc(mem_ctx, TDB_DATA);
+
+	ret = ctdb_control_get_ifaces(ctdb, NULL, outdata);
+
+	if (ret == 0) {
+		*ifaces = (struct ctdb_control_get_ifaces *)outdata->dptr;
+	}
+
+	return ret;
+}
+
+int ctdb_client_check_message_handlers_stub(struct ctdb_context *ctdb,
+					    uint64_t *ids, uint32_t num,
+					    uint8_t *result)
+{
+	DEBUG(DEBUG_ERR, (__location__ " NOT IMPLEMENTED\n"));
+	return -1;
+}
+
+int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
+				   struct timeval timeout, uint32_t destnode,
+				   uint32_t *capabilities)
+{
+       *capabilities = CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW;
+       return 0;
 }
