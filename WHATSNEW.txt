@@ -4,17 +4,51 @@
                    ==============================
 
 
-This is is the latest stable release of Samba 3.6.
+This is is the latest maintenance release of Samba 3.6.
 
-Major enhancements in Samba 3.6.19 include:
-
-o   
+Please note that this will probably be the last maintenance release
+of the Samba 3.6 release series. With the release of Samba 4.1.0, the
+3.6 release series will be turned into the "security fixes only" mode.
 
 
 Changes since 3.6.18:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 5917: Make Samba work on site with Read Only Domain Controller.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8955: NetrServerPasswordSet2 timeout is too short.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9899: Fix fallback to ncacn_np in cm_connect_lsat().
+    * BUG 9615: Fix fallback to ncacn_np in cm_connect_lsat().
+    * BUG 10127: Fix 'smbstatus' as non-root user.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8955: Give machine password changes 10 minutes of time.
+    * BUG 10106: Honour output buffer length set by the client for SMB2 GetInfo
+      requests.
+    * BUG 10114: Handle Dropbox (write-only-directory) case correctly in
+      pathname lookup.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 10076: Fix variable list in man vfs_crossrename.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9994: s3-winbind: Do not delete an existing valid credential cache.
+    * BUG 10073: 'net ads join': Fix segmentation fault in
+      create_local_private_krb5_conf_for_domain.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 10097: MacOSX 10.9 will not follow path-based DFS referrals handed
+      out by Samba.
 
 
 ######################################################################
