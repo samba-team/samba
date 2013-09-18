@@ -17,6 +17,14 @@ bld.SAMBA_MODULE('gensec_spnego',
 	deps='asn1util samba-credentials SPNEGO_PARSE'
 	)
 
+bld.SAMBA_MODULE('gensec_schannel',
+	source='schannel.c',
+	autoproto='schannel_proto.h',
+	subsystem='gensec',
+	init_function='gensec_schannel_init',
+	deps='COMMON_SCHANNEL NDR_SCHANNEL samba-credentials auth_session'
+	)
+
 bld.SAMBA_MODULE('gensec_external',
 	source='external.c',
 	autoproto='external_proto.h',

@@ -32,16 +32,6 @@ bld.SAMBA_MODULE('cyrus_sasl',
 	)
 
 
-bld.SAMBA_MODULE('gensec_schannel',
-	source='schannel.c',
-	subsystem='gensec',
-	deps='COMMON_SCHANNEL NDR_SCHANNEL samba-credentials ndr auth_session',
-	internal_module=True,
-	autoproto='schannel_proto.h',
-	init_function='gensec_schannel_init'
-	)
-
-
 bld.SAMBA_PYTHON('pygensec',
 	source='pygensec.c',
 	deps='gensec pytalloc-util pyparam_util',
