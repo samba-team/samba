@@ -1077,3 +1077,85 @@ NTSTATUS idmap_autorid_iterate_domain_ranges_read(struct db_context *db,
 
 	return status;
 }
+
+
+/*
+ * Delete all ranges configured for a given domain
+ */
+
+struct delete_domain_ranges_visitor_ctx {
+	bool force;
+};
+
+static NTSTATUS idmap_autorid_delete_domain_ranges_visitor(
+						struct db_context *db,
+						const char *domsid,
+						uint32_t domain_range_index,
+						uint32_t rangenum,
+						void *private_data)
+{
+	struct delete_domain_ranges_visitor_ctx *ctx;
+	NTSTATUS status;
+
+	ctx = (struct delete_domain_ranges_visitor_ctx *)private_data;
+
+	status = idmap_autorid_delete_range_by_sid(
+				db, domsid, domain_range_index, ctx->force);
+	return status;
+}
+
+struct idmap_autorid_delete_domain_ranges_ctx {
+	const char *domsid;
+	bool force;
+	int count; /* output: count records operated on */
+};
+
+static NTSTATUS idmap_autorid_delete_domain_ranges_action(struct db_context *db,
+							  void *private_data)
+{
+	struct idmap_autorid_delete_domain_ranges_ctx *ctx;
+	struct delete_domain_ranges_visitor_ctx visitor_ctx;
+	int count;
+	NTSTATUS status;
+
+	ctx = (struct idmap_autorid_delete_domain_ranges_ctx *)private_data;
+
+	ZERO_STRUCT(visitor_ctx);
+	visitor_ctx.force = ctx->force;
+
+	status = idmap_autorid_iterate_domain_ranges(db,
+				ctx->domsid,
+				idmap_autorid_delete_domain_ranges_visitor,
+				&visitor_ctx,
+				&count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ctx->count = count;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS idmap_autorid_delete_domain_ranges(struct db_context *db,
+					    const char *domsid,
+					    bool force,
+					    int *count)
+{
+	NTSTATUS status;
+	struct idmap_autorid_delete_domain_ranges_ctx ctx;
+
+	ZERO_STRUCT(ctx);
+	ctx.domsid = domsid;
+	ctx.force = force;
+
+	status = dbwrap_trans_do(db, idmap_autorid_delete_domain_ranges_action,
+				 &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*count = ctx.count;
+
+	return NT_STATUS_OK;
+}

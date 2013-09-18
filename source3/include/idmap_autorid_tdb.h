@@ -188,4 +188,12 @@ NTSTATUS idmap_autorid_iterate_domain_ranges_read(struct db_context *db,
 					void *private_data,
 					int *count);
 
+/**
+ * delete all range mappings for a given domain
+ */
+NTSTATUS idmap_autorid_delete_domain_ranges(struct db_context *db,
+					    const char *domsid,
+					    bool force,
+					    int *count);
+
 #endif /* _IDMAP_AUTORID_H_ */
