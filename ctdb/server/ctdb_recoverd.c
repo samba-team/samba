@@ -1699,10 +1699,10 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 
 	nodes = list_of_connected_nodes(rec->ctdb, nodemap, rec, false);
 
-	/* Disable for 60 seconds.  This can be a tunable later if
+	/* Disable for 5 minutes.  This can be a tunable later if
 	 * necessary.
 	 */
-	dtr.data = 60;
+	dtr.data = 300;
 	for (i = 0; i < talloc_array_length(nodes); i++) {
 		if (ctdb_client_send_message(rec->ctdb, nodes[i],
 					     CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
