@@ -63,6 +63,8 @@ struct tevent_req *smb2cli_create_send(
 	uint8_t *dyn;
 	size_t dyn_len;
 	size_t max_dyn_len;
+	uint32_t additional_flags = 0;
+	uint32_t clear_flags = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_create_state);
@@ -130,6 +132,12 @@ struct tevent_req *smb2cli_create_send(
 		data_blob_free(&blob);
 	}
 
+	if (smbXcli_conn_dfs_supported(conn) &&
+	    smbXcli_tcon_is_dfs_share(tcon))
+	{
+		additional_flags |= SMB2_HDR_FLAG_DFS;
+	}
+
 	/*
 	 * We use max_dyn_len = 0
 	 * as we don't explicitly ask for any output length.
@@ -140,7 +148,7 @@ struct tevent_req *smb2cli_create_send(
 	max_dyn_len = 0;
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_CREATE,
-				  0, 0, /* flags */
+				  additional_flags, clear_flags,
 				  timeout_msec,
 				  tcon,
 				  session,
