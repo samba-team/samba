@@ -27,6 +27,7 @@
 #include "rpc_server/rpc_pipes.h"
 #include "../libcli/security/security.h"
 #include "lib/tsocket/tsocket.h"
+#include "librpc/ndr/ndr_table.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -218,7 +219,8 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
 
 		DEBUG(10,("init_pipe_handle_list: created handle list for "
 			  "pipe %s\n",
-			  get_pipe_name_from_syntax(talloc_tos(), syntax)));
+			  ndr_interface_name(&syntax->uuid,
+					     syntax->if_version)));
 	}
 
 	/*
@@ -235,7 +237,7 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
 
 	DEBUG(10,("init_pipe_handle_list: pipe_handles ref count = %lu for "
 		  "pipe %s\n", (unsigned long)p->pipe_handles->pipe_ref_count,
-		  get_pipe_name_from_syntax(talloc_tos(), syntax)));
+		  ndr_interface_name(&syntax->uuid, syntax->if_version)));
 
 	return True;
 }
@@ -412,8 +414,8 @@ void close_policy_by_pipe(struct pipes_struct *p)
 		TALLOC_FREE(p->pipe_handles);
 
 		DEBUG(10,("Deleted handle list for RPC connection %s\n",
-			  get_pipe_name_from_syntax(talloc_tos(),
-						    &p->contexts->syntax)));
+			  ndr_interface_name(&p->contexts->syntax.uuid,
+					     p->contexts->syntax.if_version)));
 	}
 }
 
@@ -456,8 +458,9 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
 		DEBUG(0, ("ERROR: Too many handles (%d) for RPC connection %s\n",
 			  (int) p->pipe_handles->count,
-			  get_pipe_name_from_syntax(talloc_tos(),
-						    &p->contexts->syntax)));
+			  ndr_interface_name(&p->contexts->syntax.uuid,
+					     p->contexts->syntax.if_version)));
+
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}

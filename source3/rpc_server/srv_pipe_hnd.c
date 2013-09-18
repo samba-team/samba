@@ -30,6 +30,7 @@
 #include "rpc_server/rpc_config.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "librpc/ndr/ndr_table.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -281,7 +282,8 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 	}
 
 	DEBUG(6,(" name: %s len: %u\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->contexts->syntax),
+		 ndr_interface_name(&p->contexts->syntax.uuid,
+				    p->contexts->syntax.if_version),
 		 (unsigned int)n));
 
 	/*
@@ -299,7 +301,8 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
                 DEBUG(5,("read_from_pipe: too large read (%u) requested on "
 			 "pipe %s. We can only service %d sized reads.\n",
 			 (unsigned int)n,
-			 get_pipe_name_from_syntax(talloc_tos(), &p->contexts->syntax),
+			 ndr_interface_name(&p->contexts->syntax.uuid,
+					    p->contexts->syntax.if_version),
 			 RPC_MAX_PDU_FRAG_LEN ));
 		n = RPC_MAX_PDU_FRAG_LEN;
 	}
@@ -320,7 +323,8 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, "
 			  "current_pdu_sent = %u returning %d bytes.\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &p->contexts->syntax),
+			  ndr_interface_name(&p->contexts->syntax.uuid,
+					     p->contexts->syntax.if_version),
 			  (unsigned int)p->out_data.frag.length,
 			  (unsigned int)p->out_data.current_pdu_sent,
 			  (int)data_returned));
@@ -341,7 +345,8 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 
 	DEBUG(10,("read_from_pipe: %s: fault_state = %d : data_sent_length "
 		  "= %u, p->out_data.rdata.length = %u.\n",
-		  get_pipe_name_from_syntax(talloc_tos(), &p->contexts->syntax),
+		  ndr_interface_name(&p->contexts->syntax.uuid,
+				     p->contexts->syntax.if_version),
 		  (int)p->fault_state,
 		  (unsigned int)p->out_data.data_sent_length,
 		  (unsigned int)p->out_data.rdata.length));
@@ -363,7 +368,8 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 
 	if(!create_next_pdu(p)) {
 		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->contexts->syntax)));
+			 ndr_interface_name(&p->contexts->syntax.uuid,
+					    p->contexts->syntax.if_version)));
 		return -1;
 	}
 

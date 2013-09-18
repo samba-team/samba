@@ -41,6 +41,7 @@
 #include "rpc_server/srv_pipe.h"
 #include "rpc_server/rpc_contexts.h"
 #include "lib/param/param.h"
+#include "librpc/ndr/ndr_table.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -336,7 +337,8 @@ static bool check_bind_req(struct pipes_struct *p,
 	bool ok;
 
 	DEBUG(3,("check_bind_req for %s\n",
-		 get_pipe_name_from_syntax(talloc_tos(), abstract)));
+		 ndr_interface_name(&abstract->uuid,
+				    abstract->if_version)));
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 	if (rpc_srv_pipe_exists_by_id(abstract) &&
@@ -580,7 +582,8 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("api_pipe_bind_req: Unknown rpc service name "
                                  "%s in bind request.\n",
-				 get_pipe_name_from_syntax(talloc_tos(), &id)));
+				 ndr_interface_name(&id.uuid,
+						    id.if_version)));
 
 			return setup_bind_nak(p, pkt);
 		}
@@ -595,8 +598,10 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		} else {
 			DEBUG(0, ("module %s doesn't provide functions for "
 				  "pipe %s!\n",
-				  get_pipe_name_from_syntax(talloc_tos(), &id),
-				  get_pipe_name_from_syntax(talloc_tos(), &id)));
+				  ndr_interface_name(&id.uuid,
+						     id.if_version),
+				  ndr_interface_name(&id.uuid,
+						     id.if_version)));
 			return setup_bind_nak(p, pkt);
 		}
 	}
@@ -1206,7 +1211,8 @@ static bool api_pipe_request(struct pipes_struct *p,
 		TALLOC_CTX *frame = talloc_stackframe();
 
 		DEBUG(5, ("Requested %s rpc service\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &pipe_fns->syntax)));
+			  ndr_interface_name(&pipe_fns->syntax.uuid,
+					     pipe_fns->syntax.if_version)));
 
 		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
 				 &pipe_fns->syntax);
@@ -1237,7 +1243,7 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
-		 get_pipe_name_from_syntax(talloc_tos(), syntax),
+		 ndr_interface_name(&syntax->uuid, syntax->if_version),
 		 pkt->u.request.opnum));
 
 	if (DEBUGLEVEL >= 50) {
@@ -1276,7 +1282,7 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), syntax),
+			 ndr_interface_name(&syntax->uuid, syntax->if_version),
 			 api_rpc_cmds[fn_num].name));
 		data_blob_free(&p->out_data.rdata);
 		return False;
@@ -1299,7 +1305,7 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 	}
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n",
-		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
+		 ndr_interface_name(&syntax->uuid, syntax->if_version)));
 
 	/* Check for buffer underflow in rpc parsing */
 	if ((DEBUGLEVEL >= 10) &&

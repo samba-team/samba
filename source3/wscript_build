@@ -672,7 +672,8 @@ bld.SAMBA3_LIBRARY('msrpc3',
                    deps='''ndr ndr-standard
                     RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
                     LIBTSOCKET gse dcerpc-binding
-                    libsmb''',
+                    libsmb
+                    ndr-table''',
                    vars=locals(),
                    private_library=True)
 
