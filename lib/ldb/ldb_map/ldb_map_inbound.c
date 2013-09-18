@@ -65,7 +65,7 @@ static struct ldb_message_element *ldb_msg_el_map_local(struct ldb_module *modul
 
 /* Add a message element either to a local or to a remote message,
  * depending on whether it goes into the local or remote partition. */
-static int ldb_msg_el_partition(struct ldb_module *module, struct ldb_message *local, struct ldb_message *remote, const struct ldb_message *msg, const char *attr_name, /* const char * const names[], */ const struct ldb_message_element *old)
+static int ldb_msg_el_partition(struct ldb_module *module, enum ldb_request_type optype, struct ldb_message *local, struct ldb_message *remote, const struct ldb_message *msg, const char *attr_name, /* const char * const names[], */ const struct ldb_message_element *old)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	const struct ldb_map_attribute *map = map_attr_find_local(data, attr_name);
@@ -81,6 +81,13 @@ static int ldb_msg_el_partition(struct ldb_module *module, struct ldb_message *l
 	}
 
 	switch (map->type) {
+	case LDB_MAP_RENDROP:
+		if (optype != LDB_ADD) {
+			/* do the same as LDB_MAP_RENAME */
+			el = ldb_msg_el_map_local(module, remote, map, old);
+			break;
+		}
+		/* fall through */
 	case LDB_MAP_IGNORE:
 		goto local;
 
@@ -157,7 +164,7 @@ static bool ldb_msg_check_remote(struct ldb_module *module, const struct ldb_mes
 
 /* Split message elements that stay in the local partition from those
  * that are mapped into the remote partition. */
-static int ldb_msg_partition(struct ldb_module *module, struct ldb_message *local, struct ldb_message *remote, const struct ldb_message *msg)
+static int ldb_msg_partition(struct ldb_module *module, enum ldb_request_type optype, struct ldb_message *local, struct ldb_message *remote, const struct ldb_message *msg)
 {
 	/* const char * const names[]; */
 	struct ldb_context *ldb;
@@ -175,7 +182,7 @@ static int ldb_msg_partition(struct ldb_module *module, struct ldb_message *loca
 			continue;
 		}
 
-		ret = ldb_msg_el_partition(module, local, remote, msg, msg->elements[i].name, &msg->elements[i]);
+		ret = ldb_msg_el_partition(module, optype, local, remote, msg, msg->elements[i].name, &msg->elements[i]);
 		if (ret) {
 			return ret;
 		}
@@ -408,7 +415,7 @@ int ldb_map_add(struct ldb_module *module, struct ldb_request *req)
 	remote_msg->dn = ldb_dn_map_local(ac->module, remote_msg, msg->dn);
 
 	/* Split local from remote message */
-	ldb_msg_partition(module, ac->local_msg, remote_msg, msg);
+	ldb_msg_partition(module, req->operation, ac->local_msg, remote_msg, msg);
 
 	/* Prepare the remote operation */
 	ret = ldb_build_add_req(&ac->remote_req, ldb,
@@ -518,7 +525,7 @@ int ldb_map_modify(struct ldb_module *module, struct ldb_request *req)
 	remote_msg->dn = ldb_dn_map_local(ac->module, remote_msg, msg->dn);
 
 	/* Split local from remote message */
-	ldb_msg_partition(module, ac->local_msg, remote_msg, msg);
+	ldb_msg_partition(module, req->operation, ac->local_msg, remote_msg, msg);
 
 	/* Prepare the remote operation */
 	ret = ldb_build_mod_req(&ac->remote_req, ldb,

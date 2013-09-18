@@ -134,6 +134,7 @@ static const char **map_attrs_collect_remote(struct ldb_module *module, void *me
 			goto named;
 
 		case LDB_MAP_RENAME:
+		case LDB_MAP_RENDROP:
 		case LDB_MAP_CONVERT:
 			name = map->u.rename.remote_name;
 			goto named;
@@ -241,7 +242,7 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 
 	for (i = 0; data->attribute_maps[i].local_name; i++) {
 		struct ldb_map_attribute *am = &data->attribute_maps[i];
-		if ((am->type == LDB_MAP_RENAME &&
+		if (((am->type == LDB_MAP_RENAME || am->type == LDB_MAP_RENDROP) &&
 			!strcmp(am->u.rename.remote_name, attr_name))
 		    || (am->type == LDB_MAP_CONVERT &&
 			!strcmp(am->u.convert.remote_name, attr_name))) {
@@ -306,6 +307,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 		remote_name = attr_name;
 		break;
 	case LDB_MAP_RENAME:
+	case LDB_MAP_RENDROP:
 		remote_name = map->u.rename.remote_name;
 		break;
 	case LDB_MAP_GENERATE:
@@ -327,6 +329,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 		/* fall through */
 	case LDB_MAP_KEEP:
 	case LDB_MAP_RENAME:
+	case LDB_MAP_RENDROP:
 		old = ldb_msg_find_element(remote, remote_name);
 		if (old) {
 			el = ldb_msg_el_map_remote(module, local, map, attr_name, old);
@@ -834,7 +837,7 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 		return 0;
 	}
 
-	if (map->type == LDB_MAP_RENAME) {
+	if (map->type == LDB_MAP_RENAME || map->type == LDB_MAP_RENDROP) {
 		/* Nothing more to do here, the attribute has been renamed */
 		return 0;
 	}

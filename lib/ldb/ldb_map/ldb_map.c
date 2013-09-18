@@ -332,6 +332,7 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
 			break;
 
 		case LDB_MAP_RENAME:
+		case LDB_MAP_RENDROP:
 		case LDB_MAP_CONVERT:
 			if (ldb_attr_cmp(map->u.rename.remote_name, name) == 0) {
 				return map;
@@ -383,6 +384,7 @@ const char *map_attr_map_local(void *mem_ctx, const struct ldb_map_attribute *ma
 		return talloc_strdup(mem_ctx, attr);
 
 	case LDB_MAP_RENAME:
+	case LDB_MAP_RENDROP:
 	case LDB_MAP_CONVERT:
 		return talloc_strdup(mem_ctx, map->u.rename.remote_name);
 
@@ -524,6 +526,7 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 			/* fall through */
 		case LDB_MAP_KEEP:
 		case LDB_MAP_RENAME:
+		case LDB_MAP_RENDROP:
 			name = map_attr_map_local(newdn, map, ldb_dn_get_component_name(dn, i));
 			if (name == NULL) goto failed;
 
@@ -599,6 +602,7 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 			/* fall through */
 		case LDB_MAP_KEEP:
 		case LDB_MAP_RENAME:
+		case LDB_MAP_RENDROP:
 			name = map_attr_map_remote(newdn, map, ldb_dn_get_component_name(dn, i));
 			if (name == NULL) goto failed;
 

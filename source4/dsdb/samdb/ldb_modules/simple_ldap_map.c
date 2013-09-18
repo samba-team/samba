@@ -362,7 +362,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "distinguishedName",
-		.type = LDB_MAP_RENAME,
+		.type = LDB_MAP_RENDROP,
 		.u = {
 			.rename = {
 				 .remote_name = "entryDN"
