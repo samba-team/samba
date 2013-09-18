@@ -430,9 +430,16 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		fstring sid_str;
 
 		sid_to_fstring(sid_str, &sids[i]);
-		printf("%s %s\\%s (%d)\n", sid_str, 
-		       domains[i] ? domains[i] : "*unknown*", 
-		       names[i] ? names[i] : "*unknown*", types[i]);
+		if (types[i] == SID_NAME_DOMAIN) {
+			printf("%s %s (%d)\n", sid_str,
+			       domains[i] ? domains[i] : "*unknown*",
+			       types[i]);
+		} else {
+			printf("%s %s\\%s (%d)\n", sid_str,
+			       domains[i] ? domains[i] : "*unknown*",
+			       names[i] ? names[i] : "*unknown*",
+			       types[i]);
+		}
 	}
 
 	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
