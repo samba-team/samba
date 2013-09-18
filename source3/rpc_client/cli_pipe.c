@@ -2150,6 +2150,7 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 					 const char *username,
 					 const char *password,
 					 enum credentials_use_kerberos use_kerberos,
+					 struct netlogon_creds_CredentialState *creds,
 					 struct pipe_auth_data **presult)
 {
 	struct auth_generic_state *auth_generic_ctx;
@@ -2203,6 +2204,7 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	cli_credentials_set_kerberos_state(auth_generic_ctx->credentials, use_kerberos);
+	cli_credentials_set_netlogon_creds(auth_generic_ctx->credentials, creds);
 
 	status = auth_generic_client_start_by_authtype(auth_generic_ctx, auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2802,6 +2804,7 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 					  server, target_service,
 					  domain, username, password, 
 					  CRED_AUTO_USE_KERBEROS,
+					  NULL,
 					  &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
@@ -3029,7 +3032,7 @@ NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
 					  DCERPC_AUTH_TYPE_SPNEGO, auth_level,
 					  server, target_service,
 					  domain, username, password, 
-					  use_kerberos,
+					  use_kerberos, NULL,
 					  &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
