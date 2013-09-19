@@ -808,7 +808,11 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	p2->transfer_syntax = p->transfer_syntax;
 
-	p2->binding = talloc_reference(p2, p->binding);
+	p2->binding = dcerpc_binding_dup(p2, p->binding);
+	if (p2->binding == NULL) {
+		talloc_free(p2);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	p2->binding_handle = dcerpc_pipe_binding_handle(p2);
 	if (p2->binding_handle == NULL) {

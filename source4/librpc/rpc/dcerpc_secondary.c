@@ -174,9 +174,8 @@ static void continue_pipe_open(struct composite_context *c)
 	s = talloc_get_type(c->private_data, struct sec_conn_state);
 
 	s->pipe2->conn->flags = s->pipe->conn->flags;
-	s->pipe2->binding     = s->binding;
-	if (!talloc_reference(s->pipe2, s->binding)) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
+	s->pipe2->binding     = dcerpc_binding_dup(s->pipe2, s->binding);
+	if (composite_nomem(s->pipe2->binding, c)) {
 		return;
 	}
 

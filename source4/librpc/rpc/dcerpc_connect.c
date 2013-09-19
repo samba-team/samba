@@ -717,9 +717,8 @@ static void continue_pipe_connect(struct composite_context *c, struct pipe_conne
 {
 	struct composite_context *auth_bind_req;
 
-	s->pipe->binding = s->binding;
-	if (!talloc_reference(s->pipe, s->binding)) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
+	s->pipe->binding = dcerpc_binding_dup(s->pipe, s->binding);
+	if (composite_nomem(s->pipe->binding, c)) {
 		return;
 	}
 
