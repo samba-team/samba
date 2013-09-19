@@ -477,12 +477,7 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p,
 	state->smb = talloc_zero(state, struct smb_private);
 	if (composite_nomem(state->smb, ctx)) return ctx;
 
-	/*
-	 * this is use by dcerpc_secondary_smb_send()
-	 * which is fixed in the near future
-	 */
-	state->smb->tree = talloc_reference(state->smb, tree);
-	if (composite_nomem(state->smb->tree, ctx)) return ctx;
+	state->smb->tree = tree;
 
 	state->smb->server_name = strupper_talloc(state->smb,
 		smbXcli_conn_remote_name(conn));
