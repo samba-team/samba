@@ -214,7 +214,7 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 struct tevent_context *dcerpc_event_context(struct dcerpc_pipe *p);
 NTSTATUS dcerpc_init(void);
 struct composite_context *dcerpc_secondary_smb_send(struct dcecli_connection *c1,
-						    struct dcerpc_pipe *p2,
+						    struct dcecli_connection *c2,
 						    const char *pipe_name);
 NTSTATUS dcerpc_secondary_smb_recv(struct composite_context *c);
 NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 

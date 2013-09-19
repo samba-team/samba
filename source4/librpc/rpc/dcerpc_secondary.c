@@ -81,7 +81,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	/* open second dcerpc pipe using the same transport as for primary pipe */
 	switch (s->pipe->conn->transport.transport) {
 	case NCACN_NP:
-		pipe_smb_req = dcerpc_secondary_smb_send(s->pipe->conn, s->pipe2,
+		pipe_smb_req = dcerpc_secondary_smb_send(s->pipe->conn, s->pipe2->conn,
 							 s->binding->endpoint);
 		composite_continue(c, pipe_smb_req, continue_open_smb, c);
 		return c;

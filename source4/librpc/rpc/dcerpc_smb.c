@@ -591,7 +591,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 }
 
 struct composite_context *dcerpc_secondary_smb_send(struct dcecli_connection *c1,
-						    struct dcerpc_pipe *p2,
+						    struct dcecli_connection *c2,
 						    const char *pipe_name)
 {
 	struct smb_private *smb;
@@ -601,7 +601,7 @@ struct composite_context *dcerpc_secondary_smb_send(struct dcecli_connection *c1
 	smb = talloc_get_type(c1->transport.private_data, struct smb_private);
 	if (!smb) return NULL;
 
-	return dcerpc_pipe_open_smb_send(p2->conn,
+	return dcerpc_pipe_open_smb_send(c2,
 					 smb->conn,
 					 smb->session,
 					 smb->tcon,
