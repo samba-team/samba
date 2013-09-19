@@ -30,11 +30,8 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "srv_pipe_internal.h"
-#include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../librpc/gen_ndr/dcerpc.h"
 #include "../librpc/rpc/rpc_common.h"
-#include "../libcli/auth/schannel.h"
-#include "../libcli/auth/spnego.h"
 #include "dcesrv_auth_generic.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"
@@ -412,119 +409,6 @@ bool is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
 		   pipename));
 
 	return false;
-}
-
-/*******************************************************************
- Handle an schannel bind auth.
-*******************************************************************/
-
-static bool pipe_schannel_auth_bind(struct pipes_struct *p,
-				    TALLOC_CTX *mem_ctx,
-				    struct dcerpc_auth *auth_info,
-				    DATA_BLOB *response)
-{
-	struct NL_AUTH_MESSAGE neg;
-	struct NL_AUTH_MESSAGE reply;
-	bool ret;
-	NTSTATUS status;
-	struct netlogon_creds_CredentialState *creds;
-	enum ndr_err_code ndr_err;
-	struct schannel_state *schannel_auth;
-	struct loadparm_context *lp_ctx;
-
-	ndr_err = ndr_pull_struct_blob(
-			&auth_info->credentials, mem_ctx, &neg,
-			(ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_MESSAGE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("pipe_schannel_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
-		return false;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, &neg);
-	}
-
-	if (!(neg.Flags & NL_FLAG_OEM_NETBIOS_COMPUTER_NAME)) {
-		DEBUG(0,("pipe_schannel_auth_bind: Did not receive netbios computer name\n"));
-		return false;
-	}
-
-	lp_ctx = loadparm_init_s3(p, loadparm_s3_helpers());
-	if (!lp_ctx) {
-		DEBUG(0,("pipe_schannel_auth_bind: loadparm_init_s3() failed!\n"));
-		return false;
-	}
-
-	/*
-	 * The neg.oem_netbios_computer.a key here must match the remote computer name
-	 * given in the DOM_CLNT_SRV.uni_comp_name used on all netlogon pipe
-	 * operations that use credentials.
-	 */
-
-	become_root();
-	status = schannel_get_creds_state(p->mem_ctx, lp_ctx,
-					  neg.oem_netbios_computer.a, &creds);
-	unbecome_root();
-	
-	talloc_unlink(p, lp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("pipe_schannel_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
-		return False;
-	}
-
-	schannel_auth = netsec_create_state(p, creds, false /* not initiator */);
-	TALLOC_FREE(creds);
-	if (!schannel_auth) {
-		return False;
-	}
-
-	/*
-	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
-	 * here ? We do that for NTLMSSP, but the session key is already set up from the vuser
-	 * struct of the person who opened the pipe. I need to test this further. JRA.
-	 *
-	 * VL. As we are mapping this to guest set the generic key
-	 * "SystemLibraryDTC" key here. It's a bit difficult to test against
-	 * W2k3, as it does not allow schannel binds against SAMR and LSA
-	 * anymore.
-	 */
-
-	ret = session_info_set_session_key(p->session_info, generic_session_key());
-
-	if (!ret) {
-		DEBUG(0, ("session_info_set_session_key failed\n"));
-		return false;
-	}
-
-	/*** SCHANNEL verifier ***/
-
-	reply.MessageType			= NL_NEGOTIATE_RESPONSE;
-	reply.Flags				= 0;
-	reply.Buffer.dummy			= 5; /* ??? actually I don't think
-						      * this has any meaning
-						      * here - gd */
-
-	ndr_err = ndr_push_struct_blob(response, mem_ctx, &reply,
-		       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("Failed to marshall NL_AUTH_MESSAGE.\n"));
-		return false;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, &reply);
-	}
-
-	DEBUG(10,("pipe_schannel_auth_bind: schannel auth: domain [%s] myname [%s]\n",
-		neg.oem_netbios_domain.a, neg.oem_netbios_computer.a));
-
-	/* We're finished with this bind - no more packets. */
-	p->auth.auth_ctx = schannel_auth;
-	p->auth.auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
-
-	p->pipe_bound = True;
-
-	return True;
 }
 
 /*******************************************************************
