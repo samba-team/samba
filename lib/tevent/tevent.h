@@ -1592,6 +1592,39 @@ size_t tevent_queue_length(struct tevent_queue *queue);
  */
 bool tevent_queue_running(struct tevent_queue *queue);
 
+/**
+ * @brief Create a tevent subrequest that waits in a tevent_queue
+ *
+ * The idea is that always the same syntax for tevent requests.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  ev       The event handle to setup the request.
+ *
+ * @param[in]  queue    The queue to wait in.
+ *
+ * @return              The new subrequest, NULL on error.
+ *
+ * @see tevent_queue_wait_recv()
+ */
+struct tevent_req *tevent_queue_wait_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct tevent_queue *queue);
+
+/**
+ * @brief Check if we no longer need to wait in the queue.
+ *
+ * This function needs to be called in the callback function set after calling
+ * tevent_queue_wait_send().
+ *
+ * @param[in]  req      The tevent request to check.
+ *
+ * @return              True on success, false otherwise.
+ *
+ * @see tevent_queue_wait_send()
+ */
+bool tevent_queue_wait_recv(struct tevent_req *req);
+
 typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
 				   void *private_data,
 				   uint32_t level,
