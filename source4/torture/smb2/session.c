@@ -856,6 +856,108 @@ done:
 	return ret;
 }
 
+/**
+ * do reauth with wrong credentials,
+ * hence triggering the error path in reauth.
+ * The invalid reauth deletes the session.
+ */
+bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	bool ret = true;
+	char *corrupted_password;
+	struct cli_credentials *broken_creds;
+	bool ok;
+	bool encrypted;
+	NTSTATUS expected;
+	enum credentials_use_kerberos krb_state;
+
+	krb_state = cli_credentials_get_kerberos_state(cmdline_credentials);
+	if (krb_state == CRED_MUST_USE_KERBEROS) {
+		torture_skip(tctx,
+			     "Can't test failing session setup with kerberos.");
+	}
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree->smbXcli);
+
+	/* Add some random component to the file name. */
+	snprintf(fname, 256, "session_reauth1_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+
+	/*
+	 * reauthentication with invalid credentials:
+	 */
+
+	broken_creds = cli_credentials_shallow_copy(mem_ctx,
+						    cmdline_credentials);
+	torture_assert(tctx, (broken_creds != NULL), "talloc error");
+
+	corrupted_password = talloc_asprintf(mem_ctx, "%s%s",
+				cli_credentials_get_password(broken_creds),
+				"corrupt");
+	torture_assert(tctx, (corrupted_password != NULL), "talloc error");
+
+	ok = cli_credentials_set_password(broken_creds, corrupted_password,
+					  CRED_SPECIFIED);
+	CHECK_VAL(ok, true);
+
+	status = smb2_session_setup_spnego(tree->session,
+					   broken_creds,
+					   0 /* previous_session_id */);
+	CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
+
+	torture_comment(tctx, "did failed reauth\n");
+	/*
+	 * now verify that the invalid session reauth has closed our session
+	 */
+
+	if (encrypted) {
+		expected = NT_STATUS_CONNECTION_DISCONNECTED;
+	} else {
+		expected = NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, expected);
+
+done:
+	if (h1 != NULL) {
+		smb2_util_close(tree, *h1);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
 static bool test_session_expire1(struct torture_context *tctx)
 {
 	NTSTATUS status;
@@ -981,6 +1083,7 @@ struct torture_suite *torture_smb2_session_init(void)
 	torture_suite_add_1smb2_test(suite, "reauth3", test_session_reauth3);
 	torture_suite_add_1smb2_test(suite, "reauth4", test_session_reauth4);
 	torture_suite_add_1smb2_test(suite, "reauth5", test_session_reauth5);
+	torture_suite_add_1smb2_test(suite, "reauth6", test_session_reauth6);
 	torture_suite_add_simple_test(suite, "expire1", test_session_expire1);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
