@@ -40,7 +40,7 @@ sub openldap_start($$$) {
 sub slapd_start($$)
 {
 	my $count = 0;
-	my ($self, $env_vars) = @_;
+	my ($self, $env_vars, $STDIN_READER) = @_;
 	my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
 
 	my $uri = $env_vars->{LDAP_URI};
@@ -51,11 +51,22 @@ sub slapd_start($$)
 	}
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
-	if ($self->{ldap} eq "fedora-ds") {
-	        system("$ENV{FEDORA_DS_ROOT}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d0 -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
-	} elsif ($self->{ldap} eq "openldap") {
-	        system("$ENV{OPENLDAP_SLAPD} -d0 -F $env_vars->{SLAPD_CONF_D} -h $uri > $env_vars->{LDAPDIR}/logs 2>&1 &");
+	my $pid = fork();
+	if ($pid == 0) {
+		open STDOUT, ">$env_vars->{LDAPDIR}/logs";
+		open STDERR, '>&STDOUT';
+		close($env_vars->{STDIN_PIPE});
+		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
+
+		if ($self->{ldap} eq "fedora-ds") {
+			exec("$ENV{FEDORA_DS_ROOT}/sbin/ns-slapd", "-D", $env_vars->{FEDORA_DS_DIR}, "-d0", "-i", $env_vars->{FEDORA_DS_PIDFILE});
+		} elsif ($self->{ldap} eq "openldap") {
+			exec($ENV{OPENLDAP_SLAPD}, "-dnone", "-F", $env_vars->{SLAPD_CONF_D}, "-h", $uri);
+		}
+		die("Unable to start slapd: $!");
 	}
+	$env_vars->{SLAPD_PID} = $pid;
+	sleep(1);
 	while (system("$ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
 		$count++;
 		if ($count > 40) {
@@ -70,29 +81,29 @@ sub slapd_start($$)
 sub slapd_stop($$)
 {
 	my ($self, $envvars) = @_;
-	if ($self->{ldap} eq "fedora-ds") {
-		system("$envvars->{LDAPDIR}/slapd-$envvars->{LDAP_INSTANCE}/stop-slapd");
-	} elsif ($self->{ldap} eq "openldap") {
-		unless (open(IN, "<$envvars->{OPENLDAP_PIDFILE}")) {
-			warn("unable to open slapd pid file: $envvars->{OPENLDAP_PIDFILE}");
-			return 0;
-		}
-		kill 9, <IN>;
-		close(IN);
-	}
+	kill 9, $envvars->{SLAPD_PID};
 	return 1;
 }
 
 sub check_or_start($$$)
 {
         my ($self, $env_vars, $process_model) = @_;
+	my $STDIN_READER;
 
 	return 0 if $self->check_env($env_vars);
 
 	# use a pipe for stdin in the child processes. This allows
 	# those processes to monitor the pipe for EOF to ensure they
 	# exit when the test script exits
-	pipe(STDIN_READER, $env_vars->{STDIN_PIPE});
+	pipe($STDIN_READER, $env_vars->{STDIN_PIPE});
+
+	# Start slapd before samba, but with the fifo on stdin
+	if (defined($self->{ldap})) {
+		unless($self->slapd_start($env_vars, $STDIN_READER)) {
+			warn("couldn't start slapd (main run)");
+			return undef;
+		}
+	}
 
 	print "STARTING SAMBA...";
 	my $pid = fork();
@@ -126,14 +137,14 @@ sub check_or_start($$$)
 		}
 
 		close($env_vars->{STDIN_PIPE});
-		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
+		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
 		exec(@preargs, Samba::bindir_path($self, "samba"), "-M", $process_model, "-i", "--maximum-runtime=$self->{server_maxtime}", $env_vars->{CONFIGURATION}, @optargs) or die("Unable to start samba: $!");
 	}
 	$env_vars->{SAMBA_PID} = $pid;
 	print "DONE\n";
 
-	close(STDIN_READER);
+	close($STDIN_READER);
 
 	return $pid;
 }
@@ -169,6 +180,7 @@ sub wait_for_start($$)
 	    my $count = 0;
 	    my $base_dn = "DC=".join(",DC=", split(/\./, $testenv_vars->{REALM}));
 	    my $rid_set_dn = "cn=RID Set,cn=$testenv_vars->{NETBIOSNAME},ou=domain controllers,$base_dn";
+	    sleep(1);
 	    while (system("$ldbsearch -H ldap://$testenv_vars->{SERVER} -U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} -s base -b \"$rid_set_dn\" rIDAllocationPool > /dev/null") != 0) {
 		$count++;
 		if ($count > 40) {
@@ -1566,22 +1578,17 @@ sub teardown_env($$)
 	    $count++;
 	}
 
-	if ($count <= 20 && kill(0, $pid) == 0) {
-	    return;
-	}
+	if ($count > 30 || kill(0, $pid)) {
+	    kill "TERM", $pid;
 
-	kill "TERM", $pid;
-
-	until ($count > 20) {
-	    if (Samba::cleanup_child($pid, "samba") == -1) {
-		last;
+	    until ($count > 40) {
+		if (Samba::cleanup_child($pid, "samba") == -1) {
+		    last;
+		}
+		sleep(1);
+		$count++;
 	    }
-	    sleep(1);
-	    $count++;
-	}
-
-	# If it is still around, kill it
-	if ($count > 20 && kill(0, $pid) == 0) {
+	    # If it is still around, kill it
 	    warn "server process $pid took more than $count seconds to exit, killing\n";
 	    kill 9, $pid;
 	}
