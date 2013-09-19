@@ -476,6 +476,8 @@ static const char * const entryuuid_wildcard_attributes[] = {
 	"usnCreated",
 	"usnChanged",
 	"memberOf",
+	"name",
+	"distinguishedName",
 	NULL
 };
 
