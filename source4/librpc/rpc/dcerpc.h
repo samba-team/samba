@@ -153,6 +153,9 @@ struct epm_floor;
 
 struct smbcli_tree;
 struct smb2_tree;
+struct smbXcli_conn;
+struct smbXcli_session;
+struct smbXcli_tcon;
 struct socket_address;
 
 NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 

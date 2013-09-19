@@ -29,6 +29,7 @@
 #include "lib/events/events.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "libcli/smb/smbXcli_base.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "auth/credentials/credentials.h"
@@ -38,7 +39,6 @@
 
 struct pipe_np_smb_state {
 	struct smb_composite_connect conn;
-	struct smbcli_tree *tree;
 	struct dcerpc_pipe_connect io;
 };
 
@@ -69,17 +69,44 @@ static void continue_smb_connect(struct composite_context *ctx)
 						      struct composite_context);
 	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
 						      struct pipe_np_smb_state);
-	
+	struct smbcli_tree *t;
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint32_t timeout_msec;
+
 	/* receive result of smb connect request */
 	c->status = smb_composite_connect_recv(ctx, s->io.pipe->conn);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
-	s->tree         = s->conn.out.tree;
 	s->io.pipe_name = s->io.binding->endpoint;
 
+	t = s->conn.out.tree;
+	conn = t->session->transport->conn;
+	session = t->session->smbXcli;
+	tcon = t->smbXcli;
+	smb1cli_tcon_set_id(tcon, t->tid);
+	timeout_msec = t->session->transport->options.request_timeout * 1000;
+
+	/* if we don't have a binding on this pipe yet, then create one */
+	if (s->io.pipe->binding == NULL) {
+		const char *r = smbXcli_conn_remote_name(conn);
+		char *str;
+		SMB_ASSERT(r != NULL);
+		str = talloc_asprintf(s, "ncacn_np:%s", r);
+		if (composite_nomem(str, c)) return;
+		c->status = dcerpc_parse_binding(s->io.pipe, str,
+						 &s->io.pipe->binding);
+		talloc_free(str);
+		if (!composite_is_ok(c)) return;
+	}
+
 	/* send named pipe open request */
-	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe, s->tree, s->io.pipe_name);
+	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn,
+					     conn, session,
+					     tcon, timeout_msec,
+					     s->io.pipe_name);
 	if (composite_nomem(open_ctx, c)) return;
 
 	composite_continue(c, open_ctx, continue_pipe_open_smb, c);

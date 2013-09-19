@@ -37,12 +37,18 @@ struct smb_private {
 	DATA_BLOB session_key;
 	const char *server_name;
 
-	struct smbcli_tree *tree;
-
 	struct tstream_context *stream;
 	struct tevent_queue *write_queue;
 	struct tevent_req *read_subreq;
 	uint32_t pending_reads;
+
+	/*
+	 * these are needed to open a secondary connection
+	 */
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint32_t timeout_msec;
 };
 
 
@@ -422,36 +428,17 @@ struct dcerpc_pipe_open_smb_state {
 
 static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq);
 
-struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p, 
-						    struct smbcli_tree *tree,
-						    const char *pipe_name)
+struct composite_context *dcerpc_pipe_open_smb_send(struct dcecli_connection *c,
+						struct smbXcli_conn *conn,
+						struct smbXcli_session *session,
+						struct smbXcli_tcon *tcon,
+						uint32_t timeout_msec,
+						const char *pipe_name)
 {
 	struct composite_context *ctx;
 	struct dcerpc_pipe_open_smb_state *state;
-	struct dcecli_connection *c = p->conn;
-	struct smbXcli_conn *conn = tree->session->transport->conn;
-	struct smbXcli_session *session = tree->session->smbXcli;
-	struct smbXcli_tcon *tcon = tree->smbXcli;
-	uint16_t pid = tree->session->pid;
-	uint32_t timeout_msec = tree->session->transport->options.request_timeout * 1000;
+	uint16_t pid = 0;
 	struct tevent_req *subreq;
-
-	/* if we don't have a binding on this pipe yet, then create one */
-	if (p->binding == NULL) {
-		NTSTATUS status;
-		const char *r = smbXcli_conn_remote_name(conn);
-		char *s;
-		SMB_ASSERT(r != NULL);
-		s = talloc_asprintf(p, "ncacn_np:%s", r);
-		if (s == NULL) return NULL;
-		status = dcerpc_parse_binding(p, s, &p->binding);
-		talloc_free(s);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NULL;
-		}
-	}
-
-	smb1cli_tcon_set_id(tree->smbXcli, tree->tid);
 
 	ctx = composite_create(c, c->event_ctx);
 	if (ctx == NULL) return NULL;
@@ -477,7 +464,10 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p,
 	state->smb = talloc_zero(state, struct smb_private);
 	if (composite_nomem(state->smb, ctx)) return ctx;
 
-	state->smb->tree = tree;
+	state->smb->conn = conn;
+	state->smb->session = session;
+	state->smb->tcon = tcon;
+	state->smb->timeout_msec = timeout_msec;
 
 	state->smb->server_name = strupper_talloc(state->smb,
 		smbXcli_conn_remote_name(conn));
@@ -556,11 +546,47 @@ NTSTATUS dcerpc_pipe_open_smb_recv(struct composite_context *c)
 }
 
 _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
-			      struct smbcli_tree *tree,
+			      struct smbcli_tree *t,
 			      const char *pipe_name)
 {
-	struct composite_context *ctx =	dcerpc_pipe_open_smb_send(p, tree,
-								  pipe_name);
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint32_t timeout_msec;
+	struct composite_context *ctx;
+
+	conn = t->session->transport->conn;
+	session = t->session->smbXcli;
+	tcon = t->smbXcli;
+	smb1cli_tcon_set_id(tcon, t->tid);
+	timeout_msec = t->session->transport->options.request_timeout * 1000;
+
+	/* if we don't have a binding on this pipe yet, then create one */
+	if (p->binding == NULL) {
+		NTSTATUS status;
+		const char *r = smbXcli_conn_remote_name(conn);
+		char *str;
+		SMB_ASSERT(r != NULL);
+		str = talloc_asprintf(p, "ncacn_np:%s", r);
+		if (str == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = dcerpc_parse_binding(p, str,
+					      &p->binding);
+		talloc_free(str);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	ctx = dcerpc_pipe_open_smb_send(p->conn,
+					conn, session,
+					tcon, timeout_msec,
+					pipe_name);
+	if (ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	return dcerpc_pipe_open_smb_recv(ctx);
 }
 
@@ -575,7 +601,12 @@ struct composite_context *dcerpc_secondary_smb_send(struct dcecli_connection *c1
 	smb = talloc_get_type(c1->transport.private_data, struct smb_private);
 	if (!smb) return NULL;
 
-	return dcerpc_pipe_open_smb_send(p2, smb->tree, pipe_name);
+	return dcerpc_pipe_open_smb_send(p2->conn,
+					 smb->conn,
+					 smb->session,
+					 smb->tcon,
+					 smb->timeout_msec,
+					 pipe_name);
 }
 
 NTSTATUS dcerpc_secondary_smb_recv(struct composite_context *c)
