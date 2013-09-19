@@ -189,7 +189,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb_recv(struct composite_context *
 
 
 struct pipe_np_smb2_state {
-	struct smb2_tree *tree;
 	struct dcerpc_pipe_connect io;
 };
 
@@ -203,7 +202,7 @@ static void continue_pipe_open_smb2(struct composite_context *ctx)
 						      struct composite_context);
 
 	/* receive result of named pipe open request on smb2 */
-	c->status = dcerpc_pipe_open_smb2_recv(ctx);
+	c->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
@@ -221,17 +220,43 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 		struct composite_context);
 	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
 						       struct pipe_np_smb2_state);
+	struct smb2_tree *t;
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint32_t timeout_msec;
 
 	/* receive result of smb2 connect request */
-	c->status = smb2_connect_recv(subreq, s->io.pipe->conn, &s->tree);
+	c->status = smb2_connect_recv(subreq, s->io.pipe->conn, &t);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
 	s->io.pipe_name = s->io.binding->endpoint;
 
+	conn = t->session->transport->conn;
+	session = t->session->smbXcli;
+	tcon = t->smbXcli;
+	timeout_msec = t->session->transport->options.request_timeout * 1000;
+
+	/* if we don't have a binding on this pipe yet, then create one */
+	if (s->io.pipe->binding == NULL) {
+		const char *r = smbXcli_conn_remote_name(conn);
+		char *str;
+		SMB_ASSERT(r != NULL);
+		str = talloc_asprintf(s, "ncacn_np:%s", r);
+		if (composite_nomem(str, c)) return;
+		c->status = dcerpc_parse_binding(s->io.pipe, str,
+						 &s->io.pipe->binding);
+		talloc_free(str);
+		if (!composite_is_ok(c)) return;
+	}
+
 	/* send named pipe open request */
-	open_req = dcerpc_pipe_open_smb2_send(s->io.pipe, s->tree, s->io.pipe_name);
+	open_req = dcerpc_pipe_open_smb_send(s->io.pipe->conn,
+					     conn, session,
+					     tcon, timeout_msec,
+					     s->io.pipe_name);
 	if (composite_nomem(open_req, c)) return;
 
 	composite_continue(c, open_req, continue_pipe_open_smb2, c);
