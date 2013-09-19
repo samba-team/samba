@@ -71,7 +71,7 @@ static void continue_smb_connect(struct composite_context *ctx)
 						      struct pipe_np_smb_state);
 	
 	/* receive result of smb connect request */
-	c->status = smb_composite_connect_recv(ctx, c);
+	c->status = smb_composite_connect_recv(ctx, s->io.pipe->conn);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
@@ -196,7 +196,7 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 						       struct pipe_np_smb2_state);
 
 	/* receive result of smb2 connect request */
-	c->status = smb2_connect_recv(subreq, c, &s->tree);
+	c->status = smb2_connect_recv(subreq, s->io.pipe->conn, &s->tree);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
