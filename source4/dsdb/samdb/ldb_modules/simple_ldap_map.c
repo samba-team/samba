@@ -176,7 +176,13 @@ static struct ldb_val usn_to_entryCSN(struct ldb_module *module, TALLOC_CTX *ctx
 	struct ldb_val out;
 	unsigned long long usn = strtoull((const char *)val->data, NULL, 10);
 	time_t t = (usn >> 24);
-	out = data_blob_string_const(talloc_asprintf(ctx, "%s#%06x#00#000000", ldb_timestring(ctx, t), (unsigned int)(usn & 0xFFFFFF)));
+	struct tm *tm = gmtime(&t);
+	/* CSN timestamp is YYYYMMDDhhmmss.ssssssZ */
+	out = data_blob_string_const(talloc_asprintf(ctx,
+		"%04u%02u%02u%02u%02u%02u.000000Z#%06x#000#000000",
+		tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+		tm->tm_hour, tm->tm_min, tm->tm_sec,
+		(unsigned int)(usn & 0xFFFFFF)));
 	return out;
 }
 
