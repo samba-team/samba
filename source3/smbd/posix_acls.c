@@ -1807,7 +1807,7 @@ static bool add_current_ace_to_acl(files_struct *fsp, struct security_ace *psa,
 		if (current_ace->attr == ALLOW_ACE)
 			*got_file_allow = True;
 
-		if ((current_ace->attr == DENY_ACE) && got_file_allow) {
+		if ((current_ace->attr == DENY_ACE) && *got_file_allow) {
 			DEBUG(0,("add_current_ace_to_acl: malformed "
 				 "ACL in file ACL ! Deny entry after "
 				 "Allow entry. Failing to set on file "
