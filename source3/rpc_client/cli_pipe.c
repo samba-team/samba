@@ -22,11 +22,8 @@
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
-#include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../librpc/gen_ndr/ndr_dssetup.h"
 #include "../libcli/auth/schannel.h"
-#include "../libcli/auth/spnego.h"
-#include "../auth/ntlmssp/ntlmssp.h"
 #include "auth_generic.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
@@ -991,42 +988,6 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 
 	DEBUG(5, ("create_generic_auth_rpc_bind_req: generate first token\n"));
 	return gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
-}
-
-/*******************************************************************
- Creates schannel auth bind.
- ********************************************************************/
-
-static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
-						  DATA_BLOB *auth_token)
-{
-	NTSTATUS status;
-	struct NL_AUTH_MESSAGE r;
-
-	if (!cli->auth->user_name || !cli->auth->user_name[0]) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
-	if (!cli->auth->domain || !cli->auth->domain[0]) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
-	/*
-	 * Now marshall the data into the auth parse_struct.
-	 */
-
-	r.MessageType			= NL_NEGOTIATE_REQUEST;
-	r.Flags				= NL_FLAG_OEM_NETBIOS_DOMAIN_NAME |
-					  NL_FLAG_OEM_NETBIOS_COMPUTER_NAME;
-	r.oem_netbios_domain.a		= cli->auth->domain;
-	r.oem_netbios_computer.a	= cli->auth->user_name;
-
-	status = dcerpc_push_schannel_bind(cli, &r, auth_token);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -2213,43 +2174,6 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
  fail:
 	TALLOC_FREE(result);
 	return status;
-}
-
-static NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx,
-				const char *domain,
-				enum dcerpc_AuthLevel auth_level,
-				struct netlogon_creds_CredentialState *creds,
-				struct pipe_auth_data **presult)
-{
-	struct schannel_state *schannel_auth;
-	struct pipe_auth_data *result;
-
-	result = talloc(mem_ctx, struct pipe_auth_data);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result->auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
-	result->auth_level = auth_level;
-
-	result->user_name = talloc_strdup(result, creds->computer_name);
-	result->domain = talloc_strdup(result, domain);
-	if ((result->user_name == NULL) || (result->domain == NULL)) {
-		goto fail;
-	}
-
-	schannel_auth = netsec_create_state(result, creds, true /* initiator */);
-	if (schannel_auth == NULL) {
-		goto fail;
-	}
-
-	result->auth_ctx = schannel_auth;
-	*presult = result;
-	return NT_STATUS_OK;
-
- fail:
-	TALLOC_FREE(result);
-	return NT_STATUS_NO_MEMORY;
 }
 
 /**
