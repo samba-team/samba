@@ -458,10 +458,19 @@ static int pp_self_ref_destructor(struct smbd_smb2_session_setup_state **pp_stat
 static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_setup_state *state)
 {
 	/*
-	 * if state->session is not NULL,
-	 * we remove the session on failure
+	 * If state->session is not NULL,
+	 * we move the session from the session table to the request on failure
+	 * so that the error response can be correctly signed, but the session
+	 * is then really deleted when the request is done.
 	 */
-	TALLOC_FREE(state->session);
+
+	if (state->session == NULL) {
+		return 0;
+	}
+
+	state->session->status = NT_STATUS_USER_SESSION_DELETED;
+	state->smb2req->session = talloc_move(state->smb2req, &state->session);
+
 	return 0;
 }
 
@@ -614,6 +623,7 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		state->out_session_id = state->session->global->session_wire_id;
 		/* we want to keep the session */
+		state->session = NULL;
 		TALLOC_FREE(state->pp_self_ref);
 		tevent_req_nterror(req, status);
 		return;
@@ -654,6 +664,7 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 			return;
 		}
 		/* we want to keep the session */
+		state->session = NULL;
 		TALLOC_FREE(state->pp_self_ref);
 		tevent_req_done(req);
 		return;
@@ -670,6 +681,7 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 	}
 
 	/* we want to keep the session */
+	state->session = NULL;
 	TALLOC_FREE(state->pp_self_ref);
 	tevent_req_done(req);
 	return;
@@ -701,6 +713,7 @@ static void smbd_smb2_session_setup_previous_done(struct tevent_req *subreq)
 			return;
 		}
 		/* we want to keep the session */
+		state->session = NULL;
 		TALLOC_FREE(state->pp_self_ref);
 		tevent_req_done(req);
 		return;
@@ -717,6 +730,7 @@ static void smbd_smb2_session_setup_previous_done(struct tevent_req *subreq)
 	}
 
 	/* we want to keep the session */
+	state->session = NULL;
 	TALLOC_FREE(state->pp_self_ref);
 	tevent_req_done(req);
 	return;
