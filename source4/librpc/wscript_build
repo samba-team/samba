@@ -128,7 +128,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_WINSIF',
 
 bld.SAMBA_LIBRARY('dcerpc',
 	source='''rpc/dcerpc.c rpc/dcerpc_auth.c rpc/dcerpc_schannel.c
-	rpc/dcerpc_util.c rpc/dcerpc_smb.c rpc/dcerpc_smb2.c rpc/dcerpc_sock.c
+	rpc/dcerpc_util.c rpc/dcerpc_smb.c rpc/dcerpc_sock.c
 	rpc/dcerpc_connect.c rpc/dcerpc_secondary.c''',
 	pc_files='dcerpc.pc',
 	deps='samba_socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 ndr NDR_DCERPC RPC_NDR_EPMAPPER NDR_SCHANNEL RPC_NDR_NETLOGON RPC_NDR_MGMT gensec LIBCLI_AUTH smbclient-raw LP_RESOLVE tevent-util dcerpc-binding param_options',
