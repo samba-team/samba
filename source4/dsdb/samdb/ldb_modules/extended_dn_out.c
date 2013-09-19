@@ -140,35 +140,6 @@ static bool add_attrs(void *mem_ctx, char ***attrs, const char *attr)
 	return true;
 }
 
-/* Fix the DN so that the relative attribute names are in upper case so that the DN:
-   cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
-   CN=Adminstrator,CN=users,DC=samba,DC=example,DC=com
-*/
-static int fix_dn(struct ldb_context *ldb, struct ldb_dn *dn)
-{
-	int i, ret;
-	char *upper_rdn_attr;
-
-	for (i=0; i < ldb_dn_get_comp_num(dn); i++) {
-		/* We need the attribute name in upper case */
-		upper_rdn_attr = strupper_talloc(dn,
-						 ldb_dn_get_component_name(dn, i));
-		if (!upper_rdn_attr) {
-			return ldb_oom(ldb);
-		}
-		
-		/* And replace it with CN=foo (we need the attribute in upper case */
-		ret = ldb_dn_set_component(dn, i, upper_rdn_attr,
-					   *ldb_dn_get_component_val(dn, i));
-		talloc_free(upper_rdn_attr);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	return LDB_SUCCESS;
-}
-
-
 /* Inject the extended DN components, so the DN cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
    <GUID=541203ae-f7d6-47ef-8390-bfcf019f9583>;<SID=S-1-5-21-4177067393-1453636373-93818737-500>;cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com */
 
@@ -458,7 +429,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	}
 
 	if (p && p->normalise) {
-		ret = fix_dn(ldb, ares->message->dn);
+		ret = dsdb_fix_dn_rdncase(ldb, ares->message->dn);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
@@ -600,7 +571,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			}
 
 			if (p->normalise) {
-				ret = fix_dn(ldb, dn);
+				ret = dsdb_fix_dn_rdncase(ldb, dn);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(dsdb_dn);
 					return ldb_module_done(ac->req, NULL, NULL, ret);

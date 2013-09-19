@@ -516,6 +516,13 @@ int partition_reload_if_required(struct ldb_module *module,
 			talloc_free(partition->ctrl->dn);
 			partition->ctrl->dn = talloc_steal(partition->ctrl, dn_res->msgs[0]->dn);
 			talloc_free(dn_res);
+			if (data->ldapBackend) {
+				ret = dsdb_fix_dn_rdncase(ldb, partition->ctrl->dn);
+				if (ret) {
+					talloc_free(mem_ctx);
+					return ret;
+				}
+			}
 		} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 			ldb_asprintf_errstring(ldb,
 					       "Failed to search for partition base %s in new partition at %s: %s", 

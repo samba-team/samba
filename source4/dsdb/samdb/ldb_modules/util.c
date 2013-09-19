@@ -1419,3 +1419,29 @@ const struct dsdb_class *dsdb_get_structural_oc_from_msg(const struct dsdb_schem
 
 	return dsdb_get_last_structural_class(schema, oc_el);
 }
+
+/* Fix the DN so that the relative attribute names are in upper case so that the DN:
+   cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
+   CN=Adminstrator,CN=users,DC=samba,DC=example,DC=com
+*/
+int dsdb_fix_dn_rdncase(struct ldb_context *ldb, struct ldb_dn *dn)
+{
+	int i, ret;
+	char *upper_rdn_attr;
+
+	for (i=0; i < ldb_dn_get_comp_num(dn); i++) {
+		/* We need the attribute name in upper case */
+		upper_rdn_attr = strupper_talloc(dn,
+						 ldb_dn_get_component_name(dn, i));
+		if (!upper_rdn_attr) {
+			return ldb_oom(ldb);
+		}
+		ret = ldb_dn_set_component(dn, i, upper_rdn_attr,
+					   *ldb_dn_get_component_val(dn, i));
+		talloc_free(upper_rdn_attr);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
