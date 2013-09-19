@@ -48,7 +48,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	}
 
 	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
-	if (blob.data == NULL) {
+	if ((dsize != 0) && (blob.data == NULL)) {
 		talloc_free(tmp_ctx);
 		return;
 	}
