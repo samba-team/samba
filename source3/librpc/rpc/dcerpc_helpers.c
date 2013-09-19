@@ -21,9 +21,6 @@
 #include "includes.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
-#include "librpc/gen_ndr/ndr_schannel.h"
-#include "../libcli/auth/schannel.h"
-#include "../libcli/auth/spnego.h"
 #include "librpc/crypto/gse.h"
 #include "auth/gensec/gensec.h"
 
@@ -125,34 +122,6 @@ NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(ncacn_packet, r);
-	}
-
-	return NT_STATUS_OK;
-}
-
-/**
-* @brief NDR Encodes a NL_AUTH_MESSAGE
-*
-* @param mem_ctx	The memory context the blob will be allocated on
-* @param r		The NL_AUTH_MESSAGE to encode
-* @param blob [out]	The encoded blob if successful
-*
-* @return a NTSTATUS error code
-*/
-NTSTATUS dcerpc_push_schannel_bind(TALLOC_CTX *mem_ctx,
-				   struct NL_AUTH_MESSAGE *r,
-				   DATA_BLOB *blob)
-{
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_push_struct_blob(blob, mem_ctx, r,
-		(ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, r);
 	}
 
 	return NT_STATUS_OK;
@@ -427,99 +396,6 @@ static NTSTATUS get_generic_auth_footer(struct gensec_security *gensec_security,
 					   full_pkt->data,
 					   full_pkt->length,
 					   auth_token);
-
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-}
-
-/*******************************************************************
- Create and add the schannel sign/seal auth data.
- ********************************************************************/
-
-static NTSTATUS add_schannel_auth_footer(struct schannel_state *sas,
-					enum dcerpc_AuthLevel auth_level,
-					DATA_BLOB *rpc_out)
-{
-	uint8_t *data_p = rpc_out->data + DCERPC_RESPONSE_LENGTH;
-	size_t data_and_pad_len = rpc_out->length
-					- DCERPC_RESPONSE_LENGTH
-					- DCERPC_AUTH_TRAILER_LENGTH;
-	DATA_BLOB auth_blob;
-	NTSTATUS status;
-
-	if (!sas) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	switch (auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = netsec_outgoing_packet(sas,
-						rpc_out->data,
-						true,
-						data_p,
-						data_and_pad_len,
-						&auth_blob);
-		break;
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = netsec_outgoing_packet(sas,
-						rpc_out->data,
-						false,
-						data_p,
-						data_and_pad_len,
-						&auth_blob);
-		break;
-	default:
-		status = NT_STATUS_INTERNAL_ERROR;
-		break;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("add_schannel_auth_footer: failed to process packet: %s\n",
-			nt_errstr(status)));
-		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		dump_NL_AUTH_SIGNATURE(talloc_tos(), &auth_blob);
-	}
-
-	/* Finally attach the blob. */
-	if (!data_blob_append(NULL, rpc_out,
-				auth_blob.data, auth_blob.length)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	data_blob_free(&auth_blob);
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- Check/unseal the Schannel auth data. (Unseal in place).
- ********************************************************************/
-
-static NTSTATUS get_schannel_auth_footer(TALLOC_CTX *mem_ctx,
-					 struct schannel_state *auth_state,
-					 enum dcerpc_AuthLevel auth_level,
-					 DATA_BLOB *data, DATA_BLOB *full_pkt,
-					 DATA_BLOB *auth_token)
-{
-	switch (auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		/* Data portion is encrypted. */
-		return netsec_incoming_packet(auth_state,
-						true,
-						data->data,
-						data->length,
-						auth_token);
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* Data is signed. */
-		return netsec_incoming_packet(auth_state,
-						false,
-						data->data,
-						data->length,
-						auth_token);
 
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
