@@ -117,4 +117,14 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 					  session_info, \
 					  __location__)
 
+int _tstream_npa_socketpair(uint16_t file_type,
+			    TALLOC_CTX *mem_ctx1,
+			    struct tstream_context **pstream1,
+			    TALLOC_CTX *mem_ctx2,
+			    struct tstream_context **pstream2,
+			    const char *location);
+#define tstream_npa_socketpair(ft, mem1, stream1, mem2, stream2) \
+	_tstream_npa_socketpair(ft, mem1, stream1, mem2, stream2, \
+				__location__)
+
 #endif /* NPA_TSTREAM_H */

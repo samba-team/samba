@@ -1442,3 +1442,60 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 	tevent_req_received(req);
 	return 0;
 }
+
+
+/* SOCKETPAIR for internal rpc communication */
+
+/* file_type is FILE_TYPE_BYTE_MODE_PIPE or FILE_TYPE_MESSAGE_MODE_PIPE */
+int _tstream_npa_socketpair(uint16_t file_type,
+			    TALLOC_CTX *mem_ctx1,
+			    struct tstream_context **pstream1,
+			    TALLOC_CTX *mem_ctx2,
+			    struct tstream_context **pstream2,
+			    const char *location)
+{
+	struct tstream_context *stream1 = NULL;
+	struct tstream_context *stream2 = NULL;
+	int fds[2];
+	int fd1;
+	int fd2;
+	int rc;
+
+	rc = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+	if (rc == -1) {
+		return -1;
+	}
+	fd1 = fds[0];
+	fd2 = fds[1];
+
+	rc = _tstream_npa_existing_socket(mem_ctx1,
+					  fd1,
+					  file_type,
+					  &stream1,
+					  location);
+	if (rc == -1) {
+		int sys_errno = errno;
+		close(fd1);
+		close(fd2);
+		errno = sys_errno;
+		return -1;
+	}
+
+	rc = _tstream_npa_existing_socket(mem_ctx2,
+					  fd2,
+					  file_type,
+					  &stream2,
+					  location);
+	if (rc == -1) {
+		int sys_errno = errno;
+		talloc_free(stream1);
+		close(fd2);
+		errno = sys_errno;
+		return -1;
+	}
+
+	*pstream1 = stream1;
+	*pstream2 = stream2;
+
+	return 0;
+}
