@@ -539,14 +539,6 @@ NTSTATUS dcerpc_pipe_open_smb2_recv(struct composite_context *c)
 	return status;
 }
 
-NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
-			       struct smb2_tree *tree,
-			       const char *pipe_name)
-{
-	struct composite_context *ctx =	dcerpc_pipe_open_smb2_send(p, tree, pipe_name);
-	return dcerpc_pipe_open_smb2_recv(ctx);
-}
-
 /*
   return the SMB2 tree used for a dcerpc over SMB2 pipe
 */

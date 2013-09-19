@@ -170,6 +170,9 @@ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context 
 NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 			      struct smbcli_tree *tree,
 			      const char *pipe_name);
+NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
+			       struct smb2_tree *tree,
+			       const char *pipe_name);
 NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 			       const struct ndr_interface_table *table);
 NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,

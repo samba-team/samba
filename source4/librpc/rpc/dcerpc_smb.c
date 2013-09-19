@@ -28,6 +28,7 @@
 #include "libcli/smb/smbXcli_base.h"
 #include "libcli/smb/tstream_smbXcli_np.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/smb2/smb2.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "libcli/composite/composite.h"
@@ -559,6 +560,50 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 	session = t->session->smbXcli;
 	tcon = t->smbXcli;
 	smb1cli_tcon_set_id(tcon, t->tid);
+	timeout_msec = t->session->transport->options.request_timeout * 1000;
+
+	/* if we don't have a binding on this pipe yet, then create one */
+	if (p->binding == NULL) {
+		NTSTATUS status;
+		const char *r = smbXcli_conn_remote_name(conn);
+		char *str;
+		SMB_ASSERT(r != NULL);
+		str = talloc_asprintf(p, "ncacn_np:%s", r);
+		if (str == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = dcerpc_parse_binding(p, str,
+					      &p->binding);
+		talloc_free(str);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	ctx = dcerpc_pipe_open_smb_send(p->conn,
+					conn, session,
+					tcon, timeout_msec,
+					pipe_name);
+	if (ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return dcerpc_pipe_open_smb_recv(ctx);
+}
+
+_PUBLIC_ NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
+			      struct smb2_tree *t,
+			      const char *pipe_name)
+{
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint32_t timeout_msec;
+	struct composite_context *ctx;
+
+	conn = t->session->transport->conn;
+	session = t->session->smbXcli;
+	tcon = t->smbXcli;
 	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
 	/* if we don't have a binding on this pipe yet, then create one */
