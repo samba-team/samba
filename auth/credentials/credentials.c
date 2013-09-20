@@ -405,9 +405,9 @@ _PUBLIC_ const char *cli_credentials_get_password(struct cli_credentials *cred)
 
 	if (cred->password_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = true;
+		cred->callback_running = true;
 		cred->password = cred->password_cb(cred);
-	    	cred->callback_running = false;
+		cred->callback_running = false;
 		if (cred->password_obtained == CRED_CALLBACK) {
 			cred->password_obtained = CRED_CALLBACK_RESULT;
 			cli_credentials_invalidate_ccache(cred, cred->password_obtained);
