@@ -3611,6 +3611,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	print_status_struct status;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	WERROR result;
+	struct tdb_print_db *pdb;
 
 	DEBUG(4,("printer_notify_info\n"));
 
@@ -3634,13 +3635,19 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
+	pdb = get_print_db_byname(Printer->sharename);
+	if (pdb == NULL) {
+		return WERR_BADFID;
+	}
+
 	/* Maybe we should use the SYSTEM session_info here... */
 	result = winreg_get_printer_internal(mem_ctx,
 				    get_session_info_system(),
 				    p->msg_ctx,
 				    lp_servicename(talloc_tos(), snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
-		return WERR_BADFID;
+		result = WERR_BADFID;
+		goto err_pdb_drop;
 	}
 
 	/*
@@ -3649,10 +3656,11 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	 */
 	pinfo2->servername = talloc_strdup(pinfo2, Printer->servername);
 	if (pinfo2->servername == NULL) {
-		return WERR_NOMEM;
+		result = WERR_NOMEM;
+		goto err_pdb_drop;
 	}
 
-	for (i=0; i<option->count; i++) {
+	for (i = 0; i < option->count; i++) {
 		option_type = option->types[i];
 
 		switch (option_type.type) {
@@ -3671,12 +3679,21 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 			count = print_queue_status(p->msg_ctx, snum, &queue,
 						   &status);
 
-			for (j=0; j<count; j++) {
+			for (j = 0; j < count; j++) {
+				uint32_t jobid;
+				jobid = sysjob_to_jobid_pdb(pdb,
+							    queue[j].sysjob);
+				if (jobid == (uint32_t)-1) {
+					DEBUG(2, ("ignoring untracked job %d\n",
+						  queue[j].sysjob));
+					continue;
+				}
+				/* FIXME check return value */
 				construct_notify_jobs_info(p->msg_ctx,
 							   &queue[j], info,
 							   pinfo2, snum,
 							   &option_type,
-							   queue[j].sysjob,
+							   jobid,
 							   mem_ctx);
 			}
 
@@ -3701,7 +3718,10 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	*/
 
 	talloc_free(pinfo2);
-	return WERR_OK;
+	result = WERR_OK;
+err_pdb_drop:
+	release_print_db(pdb);
+	return result;
 }
 
 /****************************************************************
