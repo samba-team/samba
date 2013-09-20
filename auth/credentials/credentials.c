@@ -836,7 +836,11 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 _PUBLIC_ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
 						 struct netlogon_creds_CredentialState *netlogon_creds)
 {
-	cred->netlogon_creds = talloc_reference(cred, netlogon_creds);
+	TALLOC_FREE(cred->netlogon_creds);
+	if (netlogon_creds == NULL) {
+		return;
+	}
+	cred->netlogon_creds = netlogon_creds_copy(cred, netlogon_creds);
 }
 
 /**
