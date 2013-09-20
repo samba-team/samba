@@ -519,7 +519,7 @@ static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 	return 0;
 }
 
-static uint32 sysjob_to_jobid_pdb(struct tdb_print_db *pdb, int sysjob)
+uint32 sysjob_to_jobid_pdb(struct tdb_print_db *pdb, int sysjob)
 {
 	struct unixjob_traverse_state state;
 
