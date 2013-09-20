@@ -306,7 +306,7 @@ static void continue_srv_auth2(struct tevent_req *subreq)
   Initiate establishing a schannel key using netlogon challenge
   on a secondary pipe
 */
-struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
+static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 						   struct dcerpc_pipe *p,
 						   struct cli_credentials *credentials,
 						   struct loadparm_context *lp_ctx)
@@ -369,7 +369,7 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 /*
   Receive result of schannel key request
  */
-NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c)
+static NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
 	
