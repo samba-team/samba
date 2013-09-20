@@ -315,6 +315,7 @@ void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
 			     uint32_t flags,
 			     uint32_t capabilities,
 			     uint32_t maximal_access);
+bool smb2cli_tcon_is_encryption_on(struct smbXcli_tcon *tcon);
 
 struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,

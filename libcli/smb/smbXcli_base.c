@@ -5090,3 +5090,8 @@ void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
 		tcon->smb2.should_encrypt = true;
 	}
 }
+
+bool smb2cli_tcon_is_encryption_on(struct smbXcli_tcon *tcon)
+{
+	return tcon->smb2.should_encrypt;
+}
