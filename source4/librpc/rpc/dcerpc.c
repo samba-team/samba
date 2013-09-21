@@ -713,6 +713,7 @@ static NTSTATUS ncacn_pull(struct dcecli_connection *c, DATA_BLOB *blob, TALLOC_
 	}
 
 	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	TALLOC_FREE(ndr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
