@@ -591,7 +591,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 				| SECINFO_DACL
 				| SECINFO_PROTECTED_DACL
 				| SECINFO_UNPROTECTED_DACL;
-	struct security_descriptor *f_sd1, *f_sd2;
+	struct security_descriptor *f_sd1;
 	struct security_descriptor *d_sd1 = NULL;
 	struct security_ace ace;
 	struct dom_sid *extra_sid;
@@ -835,8 +835,6 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
-
-	f_sd2 = qfinfo.query_secdesc.out.sd;
 
 done:
 	if (dh1 != NULL) {
