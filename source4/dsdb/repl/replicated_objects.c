@@ -427,6 +427,15 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			continue;
 		}
 
+		if (GUID_all_zero(&d->originating_invocation_id)) {
+			status = WERR_DS_SRC_GUID_MISMATCH;
+			DEBUG(0, ("Refusing replication of object containing invalid zero invocationID on attribute %d of %s: %s\n",
+				  a->attid,
+				  ldb_dn_get_linearized(msg->dn),
+				  win_errstr(status)));
+			return status;
+		}
+
 		if (a->attid == DRSUAPI_ATTID_instanceType) {
 			if (instanceType_e != NULL) {
 				return WERR_FOOBAR;
