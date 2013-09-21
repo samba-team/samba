@@ -75,6 +75,111 @@ _PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *
 	return ndr;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_pull_append(struct ndr_pull *ndr, DATA_BLOB *blob)
+{
+	enum ndr_err_code ndr_err;
+	DATA_BLOB b;
+	uint32_t append = 0;
+	bool ok;
+
+	if (blob->length == 0) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	ndr_err = ndr_token_retrieve(&ndr->array_size_list, ndr, &append);
+	if (ndr_err == NDR_ERR_TOKEN) {
+		append = 0;
+		ndr_err = NDR_ERR_SUCCESS;
+	}
+	NDR_CHECK(ndr_err);
+
+	if (ndr->data_size == 0) {
+		ndr->data = NULL;
+		append = UINT32_MAX;
+	}
+
+	if (append == UINT32_MAX) {
+		/*
+		 * append == UINT32_MAX means that
+		 * ndr->data is either NULL or a valid
+		 * talloc child of ndr, which means
+		 * we can use data_blob_append() without
+		 * data_blob_talloc() of the existing callers data
+		 */
+		b = data_blob_const(ndr->data, ndr->data_size);
+	} else {
+		b = data_blob_talloc(ndr, ndr->data, ndr->data_size);
+		if (b.data == NULL) {
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "%s", __location__);
+		}
+	}
+
+	ok = data_blob_append(ndr, &b, blob->data, blob->length);
+	if (!ok) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "%s", __location__);
+	}
+
+	ndr->data = b.data;
+	ndr->data_size = b.length;
+
+	return ndr_token_store(ndr, &ndr->array_size_list, ndr, UINT32_MAX);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_pop(struct ndr_pull *ndr)
+{
+	uint32_t skip = 0;
+	uint32_t append = 0;
+
+	if (ndr->relative_base_offset != 0) {
+		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
+				      "%s", __location__);
+	}
+	if (ndr->relative_highest_offset != 0) {
+		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
+				      "%s", __location__);
+	}
+	if (ndr->relative_list != NULL) {
+		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
+				      "%s", __location__);
+	}
+	if (ndr->relative_base_list != NULL) {
+		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
+				      "%s", __location__);
+	}
+
+	/*
+	 * we need to keep up to 7 bytes
+	 * in order to get the aligment right.
+	 */
+	skip = ndr->offset & 0xFFFFFFF8;
+
+	if (skip == 0) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	ndr->offset -= skip;
+	ndr->data_size -= skip;
+
+	append = ndr_token_peek(&ndr->array_size_list, ndr);
+	if (append != UINT32_MAX) {
+		/*
+		 * here we assume, that ndr->data is not a
+		 * talloc child of ndr.
+		 */
+		ndr->data += skip;
+		return NDR_ERR_SUCCESS;
+	}
+
+	memmove(ndr->data, ndr->data + skip, ndr->data_size);
+
+	ndr->data = talloc_realloc(ndr, ndr->data, uint8_t, ndr->data_size);
+	if (ndr->data_size != 0 && ndr->data == NULL) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "%s", __location__);
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
 /*
   advance by 'size' bytes
 */

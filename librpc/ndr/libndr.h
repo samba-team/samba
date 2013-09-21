@@ -480,6 +480,8 @@ enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p);
 enum ndr_err_code ndr_pull_relative_ptr_short(struct ndr_pull *ndr, uint16_t *v);
 size_t ndr_align_size(uint32_t offset, size_t n);
 struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
+enum ndr_err_code ndr_pull_append(struct ndr_pull *ndr, DATA_BLOB *blob);
+enum ndr_err_code ndr_pull_pop(struct ndr_pull *ndr);
 enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size);
 struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx);
 DATA_BLOB ndr_push_blob(struct ndr_push *ndr);
