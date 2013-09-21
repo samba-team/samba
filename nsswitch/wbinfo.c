@@ -1398,8 +1398,9 @@ static bool wbinfo_lookup_sids(const char *arg)
 				 domains[names[i].domain_index].short_name,
 				 names[i].type);
 		} else {
-			d_printf("%s -> %s\\%s %d\n", sidstr,
+			d_printf("%s -> %s%c%s %d\n", sidstr,
 				 domains[names[i].domain_index].short_name,
+				 winbind_separator(),
 				 names[i].name, names[i].type);
 		}
 	}
