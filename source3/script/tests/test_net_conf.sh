@@ -424,7 +424,8 @@ test_conf_setparm_existing()
 
 test_conf_setparm_forbidden()
 {
-	FORBIDDEN_PARAMS="lock directory
+	FORBIDDEN_PARAMS="state directory
+lock directory
 lock dir
 config backend
 include"
