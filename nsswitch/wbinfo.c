@@ -1222,8 +1222,12 @@ static bool wbinfo_lookupsid(const char *sid_str)
 
 	/* Display response */
 
-	d_printf("%s%c%s %d\n",
-		 domain, winbind_separator(), name, type);
+	if (type == WBC_SID_NAME_DOMAIN) {
+		d_printf("%s %d\n", domain, type);
+	} else {
+		d_printf("%s%c%s %d\n",
+			 domain, winbind_separator(), name, type);
+	}
 
 	wbcFreeMemory(domain);
 	wbcFreeMemory(name);
