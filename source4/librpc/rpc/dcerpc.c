@@ -1471,6 +1471,7 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 	}
 
 	if (!(pkt->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		data_blob_free(raw_packet);
 		c->transport.send_read(c);
 		return;
 	}
@@ -1481,8 +1482,9 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 		req->flags &= ~DCERPC_PULL_BIGENDIAN;
 	}
 
-
 req_done:
+	data_blob_free(raw_packet);
+
 	/* we've got the full payload */
 	dcerpc_req_dequeue(req);
 	req->state = RPC_REQUEST_DONE;
