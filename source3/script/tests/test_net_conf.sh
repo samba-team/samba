@@ -422,6 +422,51 @@ test_conf_setparm_existing()
     fi
 }
 
+test_conf_setparm_forbidden()
+{
+	FORBIDDEN_PARAMS="lock directory
+lock dir
+config backend
+include"
+
+	echo '\nTrying to set forbidden parameters' >> $LOG
+
+	echo '\nDropping existing configuration' >> $LOG
+	$NETCMD conf drop
+	log_print $NETCMD conf drop
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	OLD_IFS="$IFS"
+	IFS='
+'
+	for PARAM in $FORBIDDEN_PARAMS ; do
+		IFS="$OLD_IFS"
+		echo "Trying to set parameter '$PARAM'" | tee -a $LOG
+		$NETCMD conf setparm global "$PARAM" "value" > $DIR/setparm_forbidden_out 2>&1
+		log_print $NETCMD conf setparm global \""$PARAM"\" "value"
+		test "x$?" = "x0" && {
+			echo "ERROR: setting forbidden parameter '$PARAM' succeeded" | tee -a $LOG
+			return 1
+		}
+
+		echo "output of net command: " | tee -a $LOG
+		cat $DIR/setparm_forbidden_out | tee -a $LOG
+
+		SEARCH="Parameter '$PARAM' not allowed in registry."
+		grep "$SEARCH" $DIR/setparm_forbidden_out >/dev/null 2>>$LOG
+		test "x$?" = "x0" || {
+			echo "ERROR: expected '$SEARCH'" | tee -a $LOG
+			return 1
+		}
+	done
+
+	IFS="$OLD_IFS"
+	return 0
+}
+
 test_conf_setparm_usage()
 {
     echo '\nChecking usage' >>$LOG
@@ -882,6 +927,10 @@ CONF_FILES=$SERVERCONFFILE
 
     testit "conf_setparm_existing" \
 	test_conf_setparm_existing \
+	|| failed=`expr $failed + 1`
+
+    testit "conf_setparm_forbidden" \
+	test_conf_setparm_forbidden \
 	|| failed=`expr $failed + 1`
 
     testit "conf_setparm_usage" \
