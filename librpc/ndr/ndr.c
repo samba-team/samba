@@ -616,6 +616,23 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &reserved));
 		break;
 	}
+	case 0xFFFFFFFF:
+		/*
+		 * a shallow copy like subcontext
+		 * useful for DCERPC pipe chunks.
+		 */
+		subndr = talloc_zero(ndr, struct ndr_pull);
+		NDR_ERR_HAVE_NO_MEMORY(subndr);
+
+		subndr->flags		= ndr->flags;
+		subndr->current_mem_ctx	= ndr->current_mem_ctx;
+		subndr->data		= ndr->data;
+		subndr->offset		= ndr->offset;
+		subndr->data_size	= ndr->data_size;
+
+		*_subndr = subndr;
+		return NDR_ERR_SUCCESS;
+
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) header_size %d", 
 				      (int)header_size);
@@ -650,7 +667,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_end(struct ndr_pull *ndr,
 	uint32_t advance;
 	uint32_t highest_ofs;
 
-	if (size_is >= 0) {
+	if (header_size == 0xFFFFFFFF) {
+		advance = subndr->offset - ndr->offset;
+	} else if (size_is >= 0) {
 		advance = size_is;
 	} else if (header_size > 0) {
 		advance = subndr->data_size;
