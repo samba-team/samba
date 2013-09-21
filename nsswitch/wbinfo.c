@@ -1393,9 +1393,15 @@ static bool wbinfo_lookup_sids(const char *arg)
 	for (i=0; i<num_sids; i++) {
 		wbcSidToStringBuf(&sids[i], sidstr, sizeof(sidstr));
 
-		d_printf("%s -> %s\\%s %d\n", sidstr,
-			 domains[names[i].domain_index].short_name,
-			 names[i].name, names[i].type);
+		if (names[i].type == WBC_SID_NAME_DOMAIN) {
+			d_printf("%s -> %s %d\n", sidstr,
+				 domains[names[i].domain_index].short_name,
+				 names[i].type);
+		} else {
+			d_printf("%s -> %s\\%s %d\n", sidstr,
+				 domains[names[i].domain_index].short_name,
+				 names[i].name, names[i].type);
+		}
 	}
 	wbcFreeMemory(names);
 	wbcFreeMemory(domains);
