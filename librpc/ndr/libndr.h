@@ -274,6 +274,11 @@ enum ndr_compression_alg {
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
 	if (unlikely((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size)) { \
+		if (ndr->flags & LIBNDR_FLAG_INCOMPLETE_BUFFER) { \
+			uint32_t _available = ndr->data_size - ndr->offset; \
+			uint32_t _missing = n - _available; \
+			ndr->relative_highest_offset = _missing; \
+		} \
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u (%s)", (unsigned)n, __location__); \
 	} \
 } while(0)
@@ -290,6 +295,10 @@ enum ndr_compression_alg {
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
 	if (unlikely(ndr->offset > ndr->data_size)) {			\
+		if (ndr->flags & LIBNDR_FLAG_INCOMPLETE_BUFFER) { \
+			uint32_t _missing = ndr->offset - ndr->data_size; \
+			ndr->relative_highest_offset = _missing; \
+		} \
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %u", (unsigned)n); \
 	} \
 } while(0)
