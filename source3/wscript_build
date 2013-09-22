@@ -461,24 +461,6 @@ LIBSMBSHAREMODES_SRC0 = 'libsmb/smb_share_modes.c'
 
 LIBSMBSHAREMODES_SRC = '${LIBSMBSHAREMODES_SRC0}'
 
-LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
-                    lib/netapi/cm.c
-                    lib/netapi/libnetapi.c
-                    lib/netapi/joindomain.c
-                    lib/netapi/serverinfo.c
-                    lib/netapi/getdc.c
-                    lib/netapi/user.c
-                    lib/netapi/group.c
-                    lib/netapi/localgroup.c
-                    lib/netapi/samr.c
-                    lib/netapi/sid.c
-                    lib/netapi/share.c
-                    lib/netapi/file.c
-                    lib/netapi/shutdown.c
-                    lib/netapi/netlogon.c'''
-
-LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}'''
-
 CLIENT_SRC = '''
              client/client.c
              client/clitar.c
@@ -626,7 +608,21 @@ bld.SETUP_BUILD_GROUPS()
 ######################## SUBSYSTEMS #################################
 
 bld.SAMBA3_LIBRARY('netapi',
-                    source=LIBNETAPI_SRC,
+                    source='''lib/netapi/netapi.c
+                    lib/netapi/cm.c
+                    lib/netapi/libnetapi.c
+                    lib/netapi/joindomain.c
+                    lib/netapi/serverinfo.c
+                    lib/netapi/getdc.c
+                    lib/netapi/user.c
+                    lib/netapi/group.c
+                    lib/netapi/localgroup.c
+                    lib/netapi/samr.c
+                    lib/netapi/sid.c
+                    lib/netapi/share.c
+                    lib/netapi/file.c
+                    lib/netapi/shutdown.c
+                    lib/netapi/netlogon.c''',
                     public_deps='''
                     talloc
                     util_cmdline
@@ -642,8 +638,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     ''',
                     public_headers='../source3/lib/netapi/netapi.h',
                     pc_files='libnet/netapi.pc',
-                    vnum='0',
-                    vars=locals())
+                    vnum='0')
 
 bld.SAMBA3_LIBRARY('smbsharemodes',
                     source=LIBSMBSHAREMODES_SRC,
