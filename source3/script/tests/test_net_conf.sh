@@ -42,25 +42,6 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 
 failed=0
 
-SED_INVALID_PARAMS="{
-s/lock directory/;&/g
-s/lock dir/;&/g
-s/modules dir/;&/g
-s/logging/;&/g
-s/status/;&/g
-s/logdir/;&/g
-s/read prediction/;&/g
-s/mkprofile/;&/g
-s/valid chars/;&/g
-s/timesync/;&/g
-s/sambaconf/;&/g
-s/logtype/;&/g
-s/servername/;&/g
-s/postscript/;&/g
-}"
-
-REGPATH="HKLM\Software\Samba"
-
 log_print() {
     RC=$?
     echo "CMD: $*" >>$LOG
