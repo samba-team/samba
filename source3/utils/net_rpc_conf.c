@@ -1740,7 +1740,7 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	enum winreg_CreateAction action = 0;
 
 	const char *service_name, *param_name, *valstr;
-	const char *canon_valname;
+	const char *canon_param_name;
 	const char *canon_valstr;
 
 	ZERO_STRUCT(hive_hnd);
@@ -1857,7 +1857,7 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	}
 
 	if (!lp_canonicalize_parameter_with_value(param_name, valstr,
-						  &canon_valname,
+						  &canon_param_name,
 						  &canon_valstr))
 	{
 		/*
