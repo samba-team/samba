@@ -14,15 +14,21 @@ IDMAP_HASH_SRC = '''idmap_hash/idmap_hash.c
 
 IDMAP_AUTORID_SRC = '''idmap_autorid.c'''
 
-IDMAP_RW_SRC = 'idmap_rw.c'
-IDMAP_SRC = 'idmap.c idmap_util.c idmap_tdb_common.c ${IDMAP_RW_SRC}'
+IDMAP_SRC = 'idmap.c idmap_util.c'
 
 bld.SAMBA3_LIBRARY('idmap',
                    source=IDMAP_SRC,
                    deps='samba-util',
-                   vars=locals(),
                    allow_undefined_symbols=True,
                    private_library=True)
+
+bld.SAMBA3_SUBSYSTEM('IDMAP_RW',
+                     source='idmap_rw.c',
+                     deps='samba-util')
+
+bld.SAMBA3_SUBSYSTEM('IDMAP_TDB_COMMON',
+                     source='idmap_tdb_common.c',
+                     deps='tdb IDMAP_RW')
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
                     source=IDMAP_HASH_SRC,
@@ -72,7 +78,7 @@ bld.SAMBA3_MODULE('idmap_passdb',
 bld.SAMBA3_MODULE('idmap_ldap',
                  subsystem='idmap',
                  source=IDMAP_LDAP_SRC,
-                 deps='smbldap smbldaphelper pdb',
+                 deps='smbldap smbldaphelper pdb IDMAP_RW',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ldap'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ldap') and bld.CONFIG_SET("HAVE_LDAP"),
@@ -89,7 +95,7 @@ bld.SAMBA3_MODULE('idmap_nss',
 bld.SAMBA3_MODULE('idmap_tdb',
                  subsystem='idmap',
                  source=IDMAP_TDB_SRC,
-                 deps='samba-util tdb',
+                 deps='samba-util tdb IDMAP_TDB_COMMON',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_tdb'))
@@ -97,7 +103,7 @@ bld.SAMBA3_MODULE('idmap_tdb',
 bld.SAMBA3_MODULE('idmap_tdb2',
                  subsystem='idmap',
                  source=IDMAP_TDB2_SRC,
-                 deps='samba-util tdb',
+                 deps='samba-util tdb IDMAP_TDB_COMMON',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_tdb2'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_tdb2'))
@@ -114,7 +120,7 @@ bld.SAMBA3_MODULE('idmap_hash',
 bld.SAMBA3_MODULE('idmap_autorid',
                  subsystem='idmap',
                  source=IDMAP_AUTORID_SRC,
-                 deps='samba-util tdb',
+                 deps='samba-util tdb IDMAP_TDB_COMMON',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_autorid'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_autorid'),
