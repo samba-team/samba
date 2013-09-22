@@ -37,13 +37,21 @@ dbcheck_clean() {
        $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
 
-# This should 'fail', because it returns the number of modified records
+# This should 'fail', because it returns the number of modified records.  
+# We don't need to run this against 4.1.0rc3
 dbcheck_acl_reset() {
+    if [ x$RELEASE != x"release-4-1-0rc3" ]; then
        $PYTHON $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+    else 
+	return 1
+    fi
 }
-# But having fixed it all up, this should pass
+# But having fixed it all up, this should pass.  
+# We don't need to run this against 4.1.0rc3
 dbcheck_acl_reset_clean() {
+    if [ x$RELEASE != x"release-4-1-0rc3" ]; then
        $PYTHON $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+    fi
 }
 
 referenceprovision() {
