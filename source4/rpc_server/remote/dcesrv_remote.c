@@ -161,6 +161,18 @@ static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CT
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
+	/*
+	 * We don't have support for calls with pipes.
+	 */
+	if (table->calls[opnum].in_pipes.num_pipes != 0) {
+		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+	if (table->calls[opnum].out_pipes.num_pipes != 0) {
+		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
 	*r = talloc_size(mem_ctx, table->calls[opnum].struct_size);
 	if (!*r) {
 		return NT_STATUS_NO_MEMORY;
