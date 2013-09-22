@@ -993,7 +993,8 @@ sub provision_rpc_proxy($$$)
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool delegation for-any-protocol '$ret->{NETBIOSNAME}\$' on";
-	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} $dcvars->{CONFIGURATION}";
+        $cmd .= " $dcvars->{CONFIGURATION}";
+        print $cmd;
 
 	unless (system($cmd) == 0) {
 		warn("Delegation failed\n$cmd");
@@ -1005,7 +1006,7 @@ sub provision_rpc_proxy($$$)
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool delegation add-service '$ret->{NETBIOSNAME}\$' cifs/$dcvars->{SERVER}";
-	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} $dcvars->{CONFIGURATION}";
+        $cmd .= " $dcvars->{CONFIGURATION}";
 
 	unless (system($cmd) == 0) {
 		warn("Delegation failed\n$cmd");

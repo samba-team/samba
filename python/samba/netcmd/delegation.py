@@ -44,13 +44,24 @@ class cmd_delegation_show(Command):
         "versionopts": options.VersionOptions,
         }
 
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
     takes_args = ["accountname"]
 
-    def run(self, accountname, credopts=None, sambaopts=None, versionopts=None):
+    def run(self, accountname, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+
+        if H == None:
+            path = paths.samdb
+        else:
+            path = H
+
+        sam = SamDB(path, session_info=system_session(),
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
@@ -89,9 +100,14 @@ class cmd_delegation_for_any_service(Command):
         "versionopts": options.VersionOptions,
         }
 
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
     takes_args = ["accountname", "onoff"]
 
-    def run(self, accountname, onoff, credopts=None, sambaopts=None,
+    def run(self, accountname, onoff, H=None, credopts=None, sambaopts=None,
             versionopts=None):
 
         on = False
@@ -105,7 +121,12 @@ class cmd_delegation_for_any_service(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+        if H == None:
+            path = paths.samdb
+        else:
+            path = H
+
+        sam = SamDB(path, session_info=system_session(),
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
@@ -132,9 +153,15 @@ class cmd_delegation_for_any_protocol(Command):
         "versionopts": options.VersionOptions,
         }
 
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
+
     takes_args = ["accountname", "onoff"]
 
-    def run(self, accountname, onoff, credopts=None, sambaopts=None,
+    def run(self, accountname, onoff, H=None, credopts=None, sambaopts=None,
             versionopts=None):
 
         on = False
@@ -146,9 +173,14 @@ class cmd_delegation_for_any_protocol(Command):
             raise CommandError("invalid argument: '%s' (choose from 'on', 'off')" % onoff)
 
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+        if H == None:
+            path = paths.samdb
+        else:
+            path = H
+
+        sam = SamDB(path, session_info=system_session(),
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
@@ -175,15 +207,25 @@ class cmd_delegation_add_service(Command):
         "versionopts": options.VersionOptions,
         }
 
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
     takes_args = ["accountname", "principal"]
 
-    def run(self, accountname, principal, credopts=None, sambaopts=None,
+    def run(self, accountname, principal, H=None, credopts=None, sambaopts=None,
             versionopts=None):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+        if H == None:
+            path = paths.samdb
+        else:
+            path = H
+
+        sam = SamDB(path, session_info=system_session(),
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
@@ -219,15 +261,25 @@ class cmd_delegation_del_service(Command):
         "versionopts": options.VersionOptions,
         }
 
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
     takes_args = ["accountname", "principal"]
 
-    def run(self, accountname, principal, credopts=None, sambaopts=None,
+    def run(self, accountname, principal, H=None, credopts=None, sambaopts=None,
             versionopts=None):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+        if H == None:
+            path = paths.samdb
+        else:
+            path = H
+
+        sam = SamDB(path, session_info=system_session(),
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
