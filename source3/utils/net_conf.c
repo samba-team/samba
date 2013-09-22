@@ -30,6 +30,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "utils/net.h"
+#include "utils/net_conf_util.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/smbconf/smbconf_reg.h"
@@ -787,6 +788,10 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 	value_str = argv[2];
+
+	if (!net_conf_param_valid(service,param, value_str)) {
+		goto done;
+	}
 
 	err = smbconf_transaction_start(conf_ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
