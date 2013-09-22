@@ -175,27 +175,6 @@ static int rpc_conf_delincludes_usage(struct net_context *c, int argc,
  *
  **********************************************************/
 
-static bool rpc_conf_reg_valname_forbidden(const char * valname)
-{
-	const char *forbidden_valnames[] = {
-		"lock directory",
-		"lock dir",
-		"config backend",
-		"include",
-		"includes", /* this has a special meaning internally */
-		NULL
-	};
-	const char **forbidden = NULL;
-
-	for (forbidden = forbidden_valnames; *forbidden != NULL; forbidden++) {
-		if (strwicmp(valname, *forbidden) == 0) {
-			return true;
-		}
-	}
-	return false;
-
-}
-
 /*
  * The function deletes a registry value with the name 'value' from the share
  * with the name 'share_name'. 'parent_hnd' is the handle for the smbconf key.
