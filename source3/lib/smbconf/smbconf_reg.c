@@ -174,24 +174,15 @@ static sbcErr smbconf_reg_set_value(struct registry_key *key,
 	const char *canon_valname;
 	const char *canon_valstr;
 
-	if (!lp_canonicalize_parameter_with_value(valname, valstr,
-						  &canon_valname,
-						  &canon_valstr))
-	{
-		if (canon_valname == NULL) {
-			DEBUG(5, ("invalid parameter '%s' given\n",
-				  valname));
-		} else {
-			DEBUG(5, ("invalid value '%s' given for "
-				  "parameter '%s'\n", valstr, valname));
-		}
+	if (!lp_parameter_is_valid(valname)) {
+		DEBUG(5, ("Invalid parameter '%s' given.\n", valname));
 		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
-	if (!smbconf_reg_parameter_is_valid(canon_valname)) {
+	if (!smbconf_reg_parameter_is_valid(valname)) {
 		DEBUG(5, ("Parameter '%s' not allowed in registry.\n",
-			  canon_valname));
+			  valname));
 		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
@@ -208,8 +199,22 @@ static sbcErr smbconf_reg_set_value(struct registry_key *key,
 	    lp_parameter_is_global(valname))
 	{
 		DEBUG(5, ("Global parameter '%s' not allowed in "
-			  "service definition ('%s').\n", canon_valname,
+			  "service definition ('%s').\n", valname,
 			  subkeyname));
+		err = SBC_ERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (!lp_canonicalize_parameter_with_value(valname, valstr,
+						  &canon_valname,
+						  &canon_valstr))
+	{
+		/*
+		 * We already know the parameter name is valid.
+		 * So the value must be invalid.
+		 */
+		DEBUG(5, ("invalid value '%s' given for parameter '%s'\n",
+			  valstr, valname));
 		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
