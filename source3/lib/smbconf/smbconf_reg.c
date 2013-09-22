@@ -54,7 +54,7 @@ static struct reg_private_data *rpd(struct smbconf_ctx *ctx)
  * Check whether a given parameter name is valid in the
  * smbconf registry backend.
  */
-static bool smbconf_reg_parameter_is_valid(const char *param_name)
+bool smbconf_reg_parameter_is_valid(const char *param_name)
 {
 	/* hard code the list of forbidden names here for now */
 	const char *forbidden_names[] = {

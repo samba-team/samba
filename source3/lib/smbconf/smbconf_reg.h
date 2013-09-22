@@ -29,5 +29,10 @@ struct smbconf_ctx;
 sbcErr smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			const char *path);
 
+/**
+ * Check whether a given parameter name is valid in the
+ * smbconf registry backend.
+ */
+bool smbconf_reg_parameter_is_valid(const char *param_name);
 
 #endif /*  _LIBSMBCONF_REG_H_  */
