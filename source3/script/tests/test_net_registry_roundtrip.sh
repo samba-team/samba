@@ -32,21 +32,15 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 
 failed=0
 
+#
+# List of parameters to skip when importing configuration files:
+# They are forbidden in the registry and would lead import to fail.
+#
 SED_INVALID_PARAMS="{
 s/lock directory/;&/g
 s/lock dir/;&/g
-s/modules dir/;&/g
-s/logging/;&/g
-s/status/;&/g
-s/logdir/;&/g
-s/read prediction/;&/g
-s/mkprofile/;&/g
-s/valid chars/;&/g
-s/timesync/;&/g
-s/sambaconf/;&/g
-s/logtype/;&/g
-s/servername/;&/g
-s/postscript/;&/g
+s/config backend/;&/g
+s/include/;&/g
 }"
 
 REGPATH="HKLM\Software\Samba"
