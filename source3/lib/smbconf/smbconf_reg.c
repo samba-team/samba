@@ -50,13 +50,14 @@ static struct reg_private_data *rpd(struct smbconf_ctx *ctx)
 	return (struct reg_private_data *)(ctx->data);
 }
 
-/*
- * check whether a given value name is forbidden in registry (smbconf)
+/**
+ * Check whether a given parameter name is valid in the
+ * smbconf registry backend.
  */
-static bool smbconf_reg_valname_forbidden(const char *valname)
+static bool smbconf_reg_parameter_is_valid(const char *param_name)
 {
 	/* hard code the list of forbidden names here for now */
-	const char *forbidden_valnames[] = {
+	const char *forbidden_names[] = {
 		"lock directory",
 		"lock dir",
 		"config backend",
@@ -66,18 +67,17 @@ static bool smbconf_reg_valname_forbidden(const char *valname)
 	};
 	const char **forbidden = NULL;
 
-	for (forbidden = forbidden_valnames; *forbidden != NULL; forbidden++) {
-		if (strwicmp(valname, *forbidden) == 0) {
-			return true;
+	if (!lp_parameter_is_valid(param_name)) {
+		return false;
+	}
+
+	for (forbidden = forbidden_names; *forbidden != NULL; forbidden++) {
+		if (strwicmp(param_name, *forbidden) == 0) {
+			return false;
 		}
 	}
-	return false;
-}
 
-static bool smbconf_reg_valname_valid(const char *valname)
-{
-	return (!smbconf_reg_valname_forbidden(valname) &&
-		lp_parameter_is_valid(valname));
+	return true;
 }
 
 /**
@@ -189,7 +189,7 @@ static sbcErr smbconf_reg_set_value(struct registry_key *key,
 		goto done;
 	}
 
-	if (smbconf_reg_valname_forbidden(canon_valname)) {
+	if (!smbconf_reg_parameter_is_valid(canon_valname)) {
 		DEBUG(5, ("Parameter '%s' not allowed in registry.\n",
 			  canon_valname));
 		err = SBC_ERR_INVALID_PARAM;
@@ -456,7 +456,7 @@ static sbcErr smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	{
 		char *valstring;
 
-		if (!smbconf_reg_valname_valid(valname)) {
+		if (!smbconf_reg_parameter_is_valid(valname)) {
 			continue;
 		}
 
@@ -1008,7 +1008,7 @@ static sbcErr smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	if (!smbconf_reg_valname_valid(param)) {
+	if (!smbconf_reg_parameter_is_valid(param)) {
 		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
@@ -1053,7 +1053,7 @@ static sbcErr smbconf_reg_delete_parameter(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	if (!smbconf_reg_valname_valid(param)) {
+	if (!smbconf_reg_parameter_is_valid(param)) {
 		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
