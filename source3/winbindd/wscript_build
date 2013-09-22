@@ -16,8 +16,7 @@ bld.SAMBA3_SUBSYSTEM('IDMAP_TDB_COMMON',
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
                     source='idmap_hash/idmap_hash.c idmap_hash/mapfile.c',
-                    deps='samba-util krb5samba',
-                    vars=locals())
+                    deps='samba-util krb5samba')
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_AD',
                     source='idmap_ad.c',
