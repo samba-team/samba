@@ -37,6 +37,7 @@ failed=0
 # They are forbidden in the registry and would lead import to fail.
 #
 SED_INVALID_PARAMS="{
+s/state directory/;&/g
 s/lock directory/;&/g
 s/lock dir/;&/g
 s/config backend/;&/g
