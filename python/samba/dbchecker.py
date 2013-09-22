@@ -18,6 +18,8 @@
 #
 
 import ldb
+import samba
+import time
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
@@ -59,6 +61,7 @@ class dbcheck(object):
         self.seize_fsmo_role = False
         self.move_to_lost_and_found = False
         self.fix_instancetype = False
+        self.fix_replmetadata_zero_invocationid = False
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -816,6 +819,65 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
         self.samdb.set_session_info(self.system_session_info)
 
+
+    def has_replmetadata_zero_invocationid(self, dn, repl_meta_data):
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                          str(repl_meta_data))
+        ctr = repl.ctr
+        found = False
+        for o in ctr.array:
+            # Search for a zero invocationID
+            if o.originating_invocation_id != misc.GUID("00000000-0000-0000-0000-000000000000"):
+                continue
+
+            found = True
+            self.report('''ERROR: on replPropertyMetaData of %s, the instanceType on attribute 0x%08x,
+                           version %d changed at %s is 00000000-0000-0000-0000-000000000000,
+                           but should be non-zero.  Proposed fix is to set to our invocationID (%s).'''
+                        % (dn, o.attid, o.version,
+                           time.ctime(samba.nttime2unix(o.originating_change_time)),
+                           self.samdb.get_invocation_id()))
+
+        return found
+
+
+    def err_replmetadata_zero_invocationid(self, dn, attr, repl_meta_data):
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                          str(repl_meta_data))
+        ctr = repl.ctr
+        now = samba.unix2nttime(int(time.time()))
+        found = False
+        for o in ctr.array:
+            # Search for a zero invocationID
+            if o.originating_invocation_id != misc.GUID("00000000-0000-0000-0000-000000000000"):
+                continue
+
+            found = True
+            seq = self.samdb.sequence_number(ldb.SEQ_NEXT)
+            o.version = o.version + 1
+            o.originating_change_time = now
+            o.originating_invocation_id = misc.GUID(self.samdb.get_invocation_id())
+            o.originating_usn = seq
+            o.local_usn = seq
+
+        if found:
+            replBlob = ndr_pack(repl)
+            msg = ldb.Message()
+            msg.dn = dn
+
+            if not self.confirm_all('Fix %s on %s by setting originating_invocation_id on some elements to our invocationID %s?'
+                                    % (attr, dn, self.samdb.get_invocation_id()), 'fix_replmetadata_zero_invocationid'):
+                self.report('Not fixing %s on %s\n' % (attr, dn))
+                return
+
+            nmsg = ldb.Message()
+            nmsg.dn = dn
+            nmsg[attr] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, attr)
+            if self.do_modify(nmsg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"],
+                              "Failed to fix attribute %s" % attr):
+                self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
+
+
     def is_fsmo_role(self, dn):
         if dn == self.samdb.domain_dn:
             return True
@@ -901,6 +963,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 continue
 
             if str(attrname).lower() == 'replpropertymetadata':
+                if self.has_replmetadata_zero_invocationid(dn, obj[attrname]):
+                    error_count += 1
+                    self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname])
+                    # We don't continue, as we may also have other fixes for this attribute
+                    # based on what other attributes we see.
+
                 list_attrs_from_md = self.process_metadata(obj[attrname])
                 got_repl_property_meta_data = True
                 continue
