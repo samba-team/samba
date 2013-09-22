@@ -1859,7 +1859,7 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 		goto error;
 	}
 
-	if (rpc_conf_reg_valname_forbidden(canon_valname)) {
+	if (!smbconf_reg_parameter_is_valid(canon_valname)) {
 		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
 			  canon_valname);
 		werr = WERR_INVALID_PARAM;
