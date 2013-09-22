@@ -38,7 +38,6 @@ bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
 bld.SAMBA3_SUBSYSTEM('IDMAP_AD',
                     source=IDMAP_AD_SRC,
                     deps='ads nss_info',
-                    vars=locals(),
                     enabled=bld.CONFIG_SET("HAVE_LDAP"))
 
 bld.SAMBA3_MODULE('idmap_ad',
