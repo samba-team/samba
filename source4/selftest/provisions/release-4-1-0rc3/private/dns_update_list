@@ -1,0 +1,39 @@
+# this is a list of DNS entries which will be put into DNS using
+# dynamic DNS update. It is processed by the samba_dnsupdate script
+A                                                        ${DNSDOMAIN} $IP
+A                                                        ${HOSTNAME} $IP
+AAAA                                                     ${DNSDOMAIN} $IP
+AAAA                                                     ${HOSTNAME} $IP
+
+A                                                        gc._msdcs.${DNSFOREST} $IP
+AAAA                                                     gc._msdcs.${DNSFOREST} $IP
+
+CNAME ${NTDSGUID}._msdcs.${DNSFOREST}                    ${HOSTNAME}
+
+SRV _kpasswd._tcp.${DNSDOMAIN}                           ${HOSTNAME} 464
+SRV _kpasswd._udp.${DNSDOMAIN}                           ${HOSTNAME} 464
+
+SRV _kerberos._tcp.${DNSDOMAIN}                          ${HOSTNAME} 88
+SRV _kerberos._tcp.dc._msdcs.${DNSDOMAIN}                ${HOSTNAME} 88
+SRV _kerberos._tcp.dc._msdcs.${DNSFOREST}                ${HOSTNAME} 88
+SRV _kerberos._tcp.${SITE}._sites.${DNSDOMAIN}           ${HOSTNAME} 88
+SRV _kerberos._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN} ${HOSTNAME} 88
+SRV _kerberos._tcp.${SITE}._sites.dc._msdcs.${DNSFOREST} ${HOSTNAME} 88
+
+SRV _kerberos._udp.${DNSDOMAIN}                          ${HOSTNAME} 88
+
+SRV _ldap._tcp.${DNSDOMAIN}                              ${HOSTNAME} 389
+SRV _ldap._tcp.dc._msdcs.${DNSDOMAIN}                    ${HOSTNAME} 389
+SRV _ldap._tcp.dc._msdcs.${DNSFOREST}                    ${HOSTNAME} 389
+SRV _ldap._tcp.gc._msdcs.${DNSFOREST}                    ${HOSTNAME} 3268
+SRV _ldap._tcp.pdc._msdcs.${DNSDOMAIN}                   ${HOSTNAME} 389
+SRV _ldap._tcp.pdc._msdcs.${DNSFOREST}                   ${HOSTNAME} 389
+SRV _ldap._tcp.${SITE}._sites.${DNSDOMAIN}	         ${HOSTNAME} 389
+SRV _ldap._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}     ${HOSTNAME} 389
+SRV _ldap._tcp.${SITE}._sites.dc._msdcs.${DNSFOREST}     ${HOSTNAME} 389
+SRV _ldap._tcp.${SITE}._sites.gc._msdcs.${DNSFOREST}     ${HOSTNAME} 3268
+SRV _ldap._tcp.${DOMAINGUID}.domains._msdcs.${DNSFOREST} ${HOSTNAME} 389
+
+
+SRV _gc._tcp.${DNSFOREST}                                ${HOSTNAME} 3268
+SRV _gc._tcp.${SITE}._sites.${DNSFOREST}                 ${HOSTNAME} 3268
