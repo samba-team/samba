@@ -62,7 +62,13 @@ bool smbconf_reg_parameter_is_valid(const char *param_name)
 		"lock dir",
 		"config backend",
 		"include",
-		"includes", /* this has a special meaning internally */
+		/*
+		 * "includes" has a special meaning internally.
+		 * It is currently not necessary to list it here since it is
+		 * not a valid parameter. But for clarity and safety, we keep
+		 * it for now.
+		 */
+		INCLUDES_VALNAME,
 		NULL
 	};
 	const char **forbidden = NULL;
