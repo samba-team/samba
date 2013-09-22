@@ -1739,6 +1739,7 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	struct winreg_String key, keyclass;
 	enum winreg_CreateAction action = 0;
 
+	const char *service_name, *param_name, *valstr;
 	const char *canon_valname;
 	const char *canon_valstr;
 
@@ -1770,7 +1771,11 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 		goto error;
 	}
 
-	key.name = argv[0];
+	service_name = argv[0];
+	param_name = argv[1];
+	valstr = argv[2];
+
+	key.name = service_name;
 	keyclass.name = "";
 
 	status = dcerpc_winreg_CreateKey(b, frame, &key_hnd, key, keyclass,
@@ -1779,13 +1784,13 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 
 	if (!(NT_STATUS_IS_OK(status))) {
 		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
-				argv[0], nt_errstr(status));
+			  service_name, nt_errstr(status));
 		goto error;
 	}
 
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
-				argv[0], win_errstr(werr));
+			  service_name, win_errstr(werr));
 		goto error;
 	}
 
@@ -1793,22 +1798,23 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 		case REG_ACTION_NONE:
 			werr = WERR_CREATE_FAILED;
 			d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
-				argv[0], win_errstr(werr));
+				  service_name, win_errstr(werr));
 			goto error;
 		case REG_CREATED_NEW_KEY:
 			DEBUG(5, ("net rpc conf setparm:"
-					"createkey created %s\n", argv[0]));
+				  "createkey created %s\n", service_name));
 			break;
 		case REG_OPENED_EXISTING_KEY:
 			DEBUG(5, ("net rpc conf setparm:"
-					"createkey opened existing %s\n", argv[0]));
+				  "createkey opened existing %s\n",
+				  service_name));
 
 			/* delete posibly existing value */
 			status = rpc_conf_del_value(frame,
 						    b,
 						    &key_hnd,
-						    argv[0],
-						    argv[1],
+						    service_name,
+						    param_name,
 						    &werr);
 
 			if (!(NT_STATUS_IS_OK(status))) {
@@ -1826,28 +1832,31 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	 * check if parameter is valid for writing
 	 */
 
-	if (!lp_parameter_is_valid(argv[1])) {
-		d_fprintf(stderr, "Invalid parameter '%s' given.\n", argv[1]);
+	if (!lp_parameter_is_valid(param_name)) {
+		d_fprintf(stderr, "Invalid parameter '%s' given.\n",
+			  param_name);
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
 
-	if (!smbconf_reg_parameter_is_valid(argv[1])) {
+	if (!smbconf_reg_parameter_is_valid(param_name)) {
 		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
-			  argv[1]);
+			  param_name);
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
 
-	if (!strequal(argv[0], "global") && lp_parameter_is_global(argv[1])) {
+	if (!strequal(service_name, "global") &&
+	   lp_parameter_is_global(param_name))
+	{
 		d_fprintf(stderr, "Global parameter '%s' not allowed in "
-			  "service definition ('%s').\n", argv[1],
-			  argv[0]);
+			  "service definition ('%s').\n", param_name,
+			  service_name);
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
 
-	if (!lp_canonicalize_parameter_with_value(argv[1], argv[2],
+	if (!lp_canonicalize_parameter_with_value(param_name, valstr,
 						  &canon_valname,
 						  &canon_valstr))
 	{
@@ -1856,26 +1865,26 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 		 * So the value must be invalid.
 		 */
 		d_fprintf(stderr, "invalid value '%s' given for "
-			  "parameter '%s'\n", argv[1], argv[2]);
+			  "parameter '%s'\n", param_name, valstr);
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
 
 	/* set the parameter */
 	status = dcerpc_winreg_set_sz(frame, b, &share_hnd,
-					argv[1], argv[2], &werr);
+				      param_name, valstr, &werr);
 
 	if (!(NT_STATUS_IS_OK(status))) {
 		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
 				" with value %s\n %s\n",
-				argv[1], argv[2], nt_errstr(status));
+				param_name, valstr, nt_errstr(status));
 		goto error;
 	}
 
 	if (!(W_ERROR_IS_OK(werr))) {
 		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
 				" with value %s\n %s\n",
-				argv[1], argv[2], win_errstr(werr));
+				param_name, valstr, win_errstr(werr));
 		goto error;
 	}
 
