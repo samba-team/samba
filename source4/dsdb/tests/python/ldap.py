@@ -2879,12 +2879,16 @@ class BaseDnTests(samba.tests.TestCase):
     def test_ldapServiceName(self):
         """Testing the ldap service name in rootDSE"""
         res = self.ldb.search("", scope=SCOPE_BASE,
-                              attrs=["ldapServiceName", "dNSHostName"])
+                              attrs=["ldapServiceName", "dnsHostName"])
         self.assertEquals(len(res), 1)
+        self.assertTrue("ldapServiceName" in res[0])
+        self.assertTrue("dnsHostName" in res[0])
 
-        (hostname, _, dns_domainname) = res[0]["dNSHostName"][0].partition(".")
-        self.assertTrue(":%s$@%s" % (hostname, dns_domainname.upper())
-                        in res[0]["ldapServiceName"][0])
+        (hostname, _, dns_domainname) = res[0]["dnsHostName"][0].partition(".")
+
+        given = res[0]["ldapServiceName"][0]
+        expected = "%s:%s$@%s" % (dns_domainname.lower(), hostname.lower(), dns_domainname.upper())
+        self.assertEquals(given, expected)
 
 if not "://" in host:
     if os.path.isfile(host):
