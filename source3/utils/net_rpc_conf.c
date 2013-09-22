@@ -1822,35 +1822,41 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 			break;
 	}
 
-	/* check if parameter is valid for writing */
-	if (!lp_canonicalize_parameter_with_value(argv[1], argv[2],
-						  &canon_valname,
-						  &canon_valstr))
-	{
-		if (canon_valname == NULL) {
-			d_fprintf(stderr, "invalid parameter '%s' given\n",
-				  argv[1]);
-		} else {
-			d_fprintf(stderr, "invalid value '%s' given for "
-				  "parameter '%s'\n", argv[1], argv[2]);
-		}
+	/*
+	 * check if parameter is valid for writing
+	 */
+
+	if (!lp_parameter_is_valid(argv[1])) {
+		d_fprintf(stderr, "Invalid parameter '%s' given.\n", argv[1]);
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
 
-	if (!smbconf_reg_parameter_is_valid(canon_valname)) {
+	if (!smbconf_reg_parameter_is_valid(argv[1])) {
 		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
 			  argv[1]);
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
 
-	if (!strequal(argv[0], "global") &&
-	    lp_parameter_is_global(argv[1]))
-	{
+	if (!strequal(argv[0], "global") && lp_parameter_is_global(argv[1])) {
 		d_fprintf(stderr, "Global parameter '%s' not allowed in "
-			  "service definition ('%s').\n", canon_valname,
+			  "service definition ('%s').\n", argv[1],
 			  argv[0]);
+		werr = WERR_INVALID_PARAM;
+		goto error;
+	}
+
+	if (!lp_canonicalize_parameter_with_value(argv[1], argv[2],
+						  &canon_valname,
+						  &canon_valstr))
+	{
+		/*
+		 * We already know the parameter name is valid.
+		 * So the value must be invalid.
+		 */
+		d_fprintf(stderr, "invalid value '%s' given for "
+			  "parameter '%s'\n", argv[1], argv[2]);
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
