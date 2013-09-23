@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBNTLMSSP_SRC = '''
-               libsmb/ntlmssp.c
-               libsmb/ntlmssp_wrap.c'''
-
 TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
 LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
@@ -682,9 +678,9 @@ bld.SAMBA3_LIBRARY('smbd_shim',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
-                    source=LIBNTLMSSP_SRC,
-                    deps='NDR_NTLMSSP NTLMSSP_COMMON wbclient',
-                    vars=locals())
+                    source='''libsmb/ntlmssp.c
+                    libsmb/ntlmssp_wrap.c''',
+                    deps='NDR_NTLMSSP NTLMSSP_COMMON wbclient')
 
 bld.SAMBA3_SUBSYSTEM('auth_generic',
                     source='libsmb/auth_generic.c',
