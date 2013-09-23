@@ -3,18 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
-                    rpcclient/cmd_samr.c rpcclient/cmd_spoolss.c
-                    rpcclient/cmd_netlogon.c rpcclient/cmd_srvsvc.c
-                    rpcclient/cmd_dfs.c rpcclient/cmd_epmapper.c
-                    rpcclient/cmd_dssetup.c rpcclient/cmd_echo.c
-                    rpcclient/cmd_shutdown.c rpcclient/cmd_test.c
-                    rpcclient/cmd_wkssvc.c rpcclient/cmd_ntsvcs.c
-                    rpcclient/cmd_drsuapi.c rpcclient/cmd_eventlog.c
-                    rpcclient/cmd_winreg.c rpcclient/cmd_fss.c'''
-
-RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}'''
-
 LIBSMBCLIENT_THREAD_SRC = '''libsmb/libsmb_thread_impl.c
                         libsmb/libsmb_thread_posix.c'''
 
@@ -1111,7 +1099,24 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('rpcclient/rpcclient',
-                 source=RPCCLIENT_SRC,
+                 source='''rpcclient/rpcclient.c
+                 rpcclient/cmd_lsarpc.c
+                 rpcclient/cmd_samr.c
+                 rpcclient/cmd_spoolss.c
+                 rpcclient/cmd_netlogon.c
+                 rpcclient/cmd_srvsvc.c
+                 rpcclient/cmd_dfs.c
+                 rpcclient/cmd_epmapper.c
+                 rpcclient/cmd_dssetup.c
+                 rpcclient/cmd_echo.c
+                 rpcclient/cmd_shutdown.c
+                 rpcclient/cmd_test.c
+                 rpcclient/cmd_wkssvc.c
+                 rpcclient/cmd_ntsvcs.c
+                 rpcclient/cmd_drsuapi.c
+                 rpcclient/cmd_eventlog.c
+                 rpcclient/cmd_winreg.c
+                 rpcclient/cmd_fss.c''',
                  deps='''
                  talloc
                  popt_samba3
@@ -1138,9 +1143,8 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  RPC_NDR_NTSVCS
                  RPC_NDR_EVENTLOG
                  INIT_SAMR
-		 RPC_NDR_FSRVP
-                 ''',
-                 vars=locals())
+                 RPC_NDR_FSRVP
+                 ''')
 
 bld.SAMBA3_BINARY('client/smbclient',
                  source='''client/client.c
