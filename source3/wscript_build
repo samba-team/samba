@@ -884,13 +884,13 @@ bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
                     deps='samba-util krb5samba',
 		    vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('LIBAFS',
-                    source='lib/afs.c',
-                    deps='samba-util')
-
 bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
                     source='lib/afs_settoken.c',
                     deps='samba-util')
+
+bld.SAMBA3_SUBSYSTEM('LIBAFS',
+                    source='lib/afs.c',
+                    deps='samba-util LIBAFS_SETTOKEN')
 
 bld.SAMBA3_LIBRARY('smbconf',
                    source=LIB_SMBCONF_SRC,
@@ -938,7 +938,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     LOCKING
                     LIBADS_SERVER
                     LIBAFS
-                    LIBAFS_SETTOKEN
                     RPC_SERVER
                     NDR_SMBXSRV
 		    LIBASYS
