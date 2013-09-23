@@ -3,12 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-TDB_LIB_SRC = '''
-	  lib/dbwrap/dbwrap_open.c
-          lib/dbwrap/dbwrap_ctdb.c
-          lib/dbwrap/dbwrap_watch.c
-          lib/g_lock.c'''
-
 AVAHI_SRC = 'lib/avahi.c smbd/avahi_register.c'
 
 SERVER_MUTEX_SRC = 'lib/server_mutex.c'
@@ -37,7 +31,6 @@ LIB_SRC = '''
           lib/talloc_dict.c
           lib/serverid.c
           lib/addrchange.c
-          ${TDB_LIB_SRC}
           ../lib/util/debug_s3.c
           lib/dumpcore.c
           lib/interface.c
@@ -704,6 +697,14 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash',
                    vars=locals())
 
+
+bld.SAMBA3_SUBSYSTEM('TDB_LIB',
+                     source='''lib/dbwrap/dbwrap_open.c
+                     lib/dbwrap/dbwrap_ctdb.c
+                     lib/dbwrap/dbwrap_watch.c
+                     lib/g_lock.c''',
+                     deps='dbwrap')
+
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
                    deps='''
@@ -718,8 +719,8 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         param
                         dbwrap
                         samba3-util
-                        errors3''',
-                   vars=locals())
+                        errors3
+                        TDB_LIB''')
 
 bld.SAMBA3_LIBRARY('smbd_shim',
                    source='''lib/smbd_shim.c''',
