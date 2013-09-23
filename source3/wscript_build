@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LOCKTEST2_SRC = '''torture/locktest2.c'''
-
 SMBCACLS_SRC = '''utils/smbcacls.c'''
 
 SMBCQUOTAS_SRC = '''utils/smbcquotas.c'''
@@ -1373,14 +1371,13 @@ bld.SAMBA3_BINARY('log2pcap',
                  install=False)
 
 bld.SAMBA3_BINARY('locktest2',
-                 source=LOCKTEST2_SRC,
+                 source='torture/locktest2.c',
                  deps='''
                  talloc
                  param
                  libsmb
                  LOCKING''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('debug2html',
                  source=DEBUG2HTML_SRC,
