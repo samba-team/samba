@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c'''
-
 NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 
 NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}'''
@@ -79,7 +77,7 @@ bld.SAMBA3_LIBRARY('smbsharemodes',
                     vnum='0')
 
 bld.SAMBA3_LIBRARY('nss_wins',
-                  source=WINBIND_WINS_NSS_SRC,
+                  source='../nsswitch/wins.c',
                   deps='''param libsmb LIBTSOCKET''',
                   realname='libnss_wins.so.2',
                   soname='libnss_wins.so',
