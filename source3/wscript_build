@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-AVAHI_SRC = 'lib/avahi.c smbd/avahi_register.c'
-
 SERVER_MUTEX_SRC = 'lib/server_mutex.c'
 
 PASSCHANGE_SRC = '''libsmb/passchange.c'''
@@ -521,7 +519,7 @@ bld.SAMBA3_LIBRARY('gpo',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('AVAHI',
-                    source=AVAHI_SRC,
+                    source='lib/avahi.c smbd/avahi_register.c',
                     deps='avahi-common avahi-client',
                     enabled=bld.env.with_avahi)
 
