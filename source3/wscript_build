@@ -23,18 +23,6 @@ REG_BACKENDS_EXTRA_SRC = '''registry/reg_backend_printing.c
                          registry/reg_backend_current_version.c
                          registry/reg_backend_perflib.c'''
 
-REG_BASE_SRC = '''registry/reg_api.c
-               registry/reg_dispatcher.c
-               registry/reg_cachehook.c
-               registry/reg_objects.c
-               registry/reg_util_internal.c
-               lib/util_nttoken.c
-               registry/reg_backend_db.c
-               registry/reg_parse_internal.c
-               lib/cbuf.c
-               lib/srprs.c
-               registry/reg_init_basic.c'''
-
 REG_SMBCONF_SRC = '''
                   ${REG_BACKENDS_SMBCONF_SRC}
                   ${REG_INIT_SMBCONF_SRC}
@@ -548,7 +536,17 @@ bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('smbregistry',
-                   source=REG_BASE_SRC,
+                   source='''registry/reg_api.c
+                   registry/reg_dispatcher.c
+                   registry/reg_cachehook.c
+                   registry/reg_objects.c
+                   registry/reg_util_internal.c
+                   lib/util_nttoken.c
+                   registry/reg_backend_db.c
+                   registry/reg_parse_internal.c
+                   lib/cbuf.c
+                   lib/srprs.c
+                   registry/reg_init_basic.c''',
                    deps='''smbd_shim tdb-wrap3 NDR_SECURITY util_tdb talloc
                    replace util_reg samba-util samba-security
                    errors3 dbwrap samba3-util''',
