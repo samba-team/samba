@@ -3,9 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBNET_SRC = 'libnet/libnet_join.c'
-
-
 LIBNET_DSSYNC_SRC = '''libnet/libnet_dssync.c
                        libnet/libnet_dssync_passdb.c
                        libnet/libnet_dssync_keytab.c'''
@@ -795,9 +792,8 @@ bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
-                    source=LIBNET_SRC,
-                    deps='NDR_LIBNET_JOIN INIT_SAMR net_keytab pdb',
-                    vars=locals())
+                    source='libnet/libnet_join.c',
+                    deps='NDR_LIBNET_JOIN INIT_SAMR net_keytab pdb')
 
 bld.SAMBA3_LIBRARY('net_keytab',
                    source='libnet/libnet_keytab.c',
