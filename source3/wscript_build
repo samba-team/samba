@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PLAINTEXT_AUTH_SRC = '''auth/pampass.c auth/pass_check.c'''
-
 SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
 
 DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/dsgetdcname.c'''
@@ -897,9 +895,8 @@ bld.SAMBA3_SUBSYSTEM('SERVICES',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
-                    source=PLAINTEXT_AUTH_SRC,
-                    deps='pam PAM_ERRORS',
-                    vars=locals())
+                    source='''auth/pampass.c auth/pass_check.c''',
+                    deps='pam PAM_ERRORS')
 
 bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
                     source='libsmb/passchange.c',
