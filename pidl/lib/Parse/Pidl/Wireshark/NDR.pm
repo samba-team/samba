@@ -364,6 +364,7 @@ sub ElementLevel($$$$$$$$)
 		}
 		my $num_bits = ($l->{HEADER_SIZE}*8);
 		my $hf2 = $self->register_hf_field($hf."_", "Subcontext length", "$ifname.$pn.$_->{NAME}subcontext", "FT_UINT$num_bits", "BASE_HEX", "NULL", 0, "");
+		$num_bits = 3264 if ($num_bits == 32);
 		$self->{hf_used}->{$hf2} = 1;
 		$self->pidl_code("dcerpc_info *di = pinfo->private_data;");
 		$self->pidl_code("guint$num_bits size;");
@@ -374,7 +375,12 @@ sub ElementLevel($$$$$$$$)
 		# and conformant run skips the dissections of scalars ...
 		$self->pidl_code("if (!conformant) {");
 		$self->indent;
+		$self->pidl_code("guint32 saved_flags = di->call_data->flags;");
 		$self->pidl_code("offset = dissect_ndr_uint$num_bits(tvb, offset, pinfo, tree, drep, $hf2, &size);");
+		# This is a subcontext, there is normally no such thing as
+		# 64 bit NDR is subcontext so we clear the flag so that we can
+		# continue to dissect handmarshalled stuff with pidl
+		$self->pidl_code("di->call_data->flags &= ~DCERPC_IS_NDR64;");
 
 		$self->pidl_code("subtvb = tvb_new_subset(tvb, offset, size, -1);");
 		if ($param ne 0) {
@@ -383,6 +389,7 @@ sub ElementLevel($$$$$$$$)
 			$self->pidl_code("$myname\_(subtvb, 0, pinfo, tree, drep);");
 		}
 		$self->pidl_code("offset += size;");
+		$self->pidl_code("di->call_data->flags = saved_flags;");
 		$self->deindent;
 		$self->pidl_code("}");
 	} else {
@@ -972,6 +979,7 @@ sub Initialize($$)
 		$self->register_type("int$bits", "offset = PIDL_dissect_uint$bits(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", "FT_INT$bits", "BASE_DEC", 0, "NULL", $bytes);
 	}
 		
+	$self->register_type("uint3264", "offset = dissect_ndr_uint3264(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_UINT32", "BASE_DEC", 0, "NULL", 8);
 	$self->register_type("hyper", "offset = dissect_ndr_uint64(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_UINT64", "BASE_DEC", 0, "NULL", 8);
 	$self->register_type("udlong", "offset = dissect_ndr_duint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_UINT64", "BASE_DEC", 0, "NULL", 4);
 	$self->register_type("bool8", "offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
