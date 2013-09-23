@@ -3,21 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
-             libsmb/clispnego.c
-             libsmb/clirap.c libsmb/clierror.c libsmb/climessage.c
-             libsmb/clireadwrite.c libsmb/clilist.c libsmb/cliprint.c
-             libsmb/clitrans.c libsmb/clisecdesc.c libsmb/clidgram.c
-             libsmb/clistr.c libsmb/cliquota.c libsmb/clifsinfo.c libsmb/clidfs.c
-             libsmb/clioplock.c libsmb/clirap2.c
-             libsmb/async_smb.c
-             libsmb/smb2cli_tcon.c
-             libsmb/cli_np_tstream.c
-             libsmb/reparse_symlink.c
-             libsmb/clisymlink.c
-             libsmb/smbsock_connect.c
-             libsmb/cli_smb2_fnum.c'''
-
 LIBMSRPC_SRC = '''
                rpc_client/cli_pipe.c
                rpc_client/rpc_transport_np.c
@@ -688,7 +673,32 @@ bld.SAMBA3_SUBSYSTEM('auth_generic',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('libsmb',
-                   source=LIBSMB_SRC,
+                   source='''libsmb/clientgen.c
+                   libsmb/cliconnect.c
+                   libsmb/clifile.c
+                   libsmb/clispnego.c
+                   libsmb/clirap.c
+                   libsmb/clierror.c
+                   libsmb/climessage.c
+                   libsmb/clireadwrite.c
+                   libsmb/clilist.c
+                   libsmb/cliprint.c
+                   libsmb/clitrans.c
+                   libsmb/clisecdesc.c
+                   libsmb/clidgram.c
+                   libsmb/clistr.c
+                   libsmb/cliquota.c
+                   libsmb/clifsinfo.c
+                   libsmb/clidfs.c
+                   libsmb/clioplock.c
+                   libsmb/clirap2.c
+                   libsmb/async_smb.c
+                   libsmb/smb2cli_tcon.c
+                   libsmb/cli_np_tstream.c
+                   libsmb/reparse_symlink.c
+                   libsmb/clisymlink.c
+                   libsmb/smbsock_connect.c
+                   libsmb/cli_smb2_fnum.c''',
                    deps='''
                    LIBNTLMSSP
                    auth_generic
@@ -700,7 +710,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                    cli_smb_common
                    util_cmdline
                    tevent''',
-                   vars=locals(),
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('CLDAP',
