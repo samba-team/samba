@@ -40,13 +40,10 @@ bool allow_access(const char **deny_list,
 
 char *afs_createtoken_str(const char *username, const char *cell);
 bool afs_login(connection_struct *conn);
-bool afs_login(connection_struct *conn);
-char *afs_createtoken_str(const char *username, const char *cell);
 
 /* The following definitions come from lib/afs_settoken.c  */
 
 int afs_syscall(int subcall, const char *path, int cmd, char *cmarg, int follow);
-bool afs_settoken_str(const char *token_string);
 bool afs_settoken_str(const char *token_string);
 
 /* The following definitions come from lib/audit.c  */
