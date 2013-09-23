@@ -3,9 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBCLI_SPOOLSS_SRC = '''rpc_client/cli_spoolss.c
-                     rpc_client/init_spoolss.c'''
-
 LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c'''
 
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
@@ -1011,7 +1008,8 @@ bld.SAMBA3_LIBRARY('libcli_netlogon3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('cli_spoolss',
-                   source=LIBCLI_SPOOLSS_SRC,
+                   source='''rpc_client/cli_spoolss.c
+                   rpc_client/init_spoolss.c''',
                    deps='RPC_NDR_SPOOLSS param secrets3',
                    private_library=True)
 
