@@ -3182,6 +3182,11 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 	bantime.pnn  = options.pnn;
 	bantime.time = strtoul(argv[0], NULL, 0);
 
+	if (bantime.time == 0) {
+		DEBUG(DEBUG_ERR, ("Invalid ban time specified - must be >0\n"));
+		return -1;
+	}
+
 	return update_flags_and_ipreallocate(ctdb, &bantime,
 						  update_state_banned,
 						  NODE_FLAGS_BANNED,
