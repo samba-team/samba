@@ -11,8 +11,6 @@ TDB_LIB_SRC = '''
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
 
-SMBLDAP_SRC = '''lib/smbldap.c'''
-
 VERSION_SRC = '''lib/version.c'''
 
 AFS_SRC = 'lib/afs.c'
@@ -866,9 +864,8 @@ bld.SAMBA3_LIBRARY('secrets3',
                    vars=locals())
 
 bld.SAMBA3_LIBRARY('smbldap',
-                    source=SMBLDAP_SRC,
+                    source='lib/smbldap.c',
                     deps='ldap lber samba-util param',
-                    vars=locals(),
                     enabled=bld.CONFIG_SET("HAVE_LDAP"),
                     private_library=False,
                     abi_directory='lib/ABI',
