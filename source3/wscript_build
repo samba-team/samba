@@ -3,9 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c
-		torture/vfstest_chain.c'''
-
 LOG2PCAP_SRC = '''utils/log2pcaphex.c'''
 
 LOCKTEST2_SRC = '''torture/locktest2.c'''
@@ -1363,13 +1360,14 @@ bld.SAMBA3_BINARY('pdbtest',
                  install=False)
 
 bld.SAMBA3_BINARY('vfstest',
-                 source=VFSTEST_SRC,
+                 source='''torture/cmd_vfs.c
+                 torture/vfstest.c
+                 torture/vfstest_chain.c''',
                  deps='''
                  vfs
                  popt_samba3
                  SMBREADLINE''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('log2pcap',
                  source=LOG2PCAP_SRC,
