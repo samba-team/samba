@@ -1225,7 +1225,7 @@ static bool test_durable_open_lock_oplock(struct torture_context *tctx,
 	/* Clean slate */
 	smb2_util_unlink(tree, fname);
 
-	/* Create with lease */
+	/* Create with oplock */
 
 	smb2_oplock_create_share(&io, fname,
 				 smb2_util_share_access(""),
