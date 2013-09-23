@@ -9,8 +9,6 @@ TDB_LIB_SRC = '''
           lib/dbwrap/dbwrap_watch.c
           lib/g_lock.c'''
 
-TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
-
 AVAHI_SRC = 'lib/avahi.c smbd/avahi_register.c'
 
 SERVER_MUTEX_SRC = 'lib/server_mutex.c'
@@ -316,8 +314,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_pam_auth_crap.c
                    winbindd/winbindd_pam_chng_pswd_auth_crap.c'''
 
-WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${TDB_VALIDATE_SRC}'''
+WINBINDD_SRC = '''${WINBINDD_SRC1}'''
 
 MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
 
@@ -1163,6 +1160,12 @@ bld.SAMBA3_BINARY('nmbd/nmbd',
                  PROFILE''',
                  install_path='${SBINDIR}')
 
+
+bld.SAMBA3_SUBSYSTEM('TDB_VALIDATE',
+                     source='lib/tdb_validate.c',
+                     deps='samba-util')
+
+
 bld.SAMBA3_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''
@@ -1186,6 +1189,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  RPC_NCACN_NP
                  RPC_PIPE_REGISTER
                  WB_REQTRANS
+                 TDB_VALIDATE
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
