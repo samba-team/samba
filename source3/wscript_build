@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c'''
-
-NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c'''
-
 FNAME_UTIL_SRC = '''lib/filename_util.c'''
 
 
@@ -16,72 +12,9 @@ SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
 
 DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/dsgetdcname.c'''
 
-MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
-
 SMBD_SRC_MAIN = '''smbd/server.c'''
 
-BUILDOPT_SRC = '''smbd/build_options.c'''
 
-SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
-               smbd/utmp.c smbd/session.c
-               smbd/dfree.c smbd/dir.c smbd/password.c smbd/conn_msg.c
-               smbd/conn_idle.c
-               smbd/share_access.c smbd/fileio.c
-               smbd/ipc.c smbd/lanman.c smbd/negprot.c
-               smbd/message.c smbd/nttrans.c smbd/pipes.c
-               smbd/reply.c smbd/sesssetup.c smbd/trans2.c smbd/uid.c
-               smbd/dosmode.c smbd/filename.c smbd/open.c smbd/close.c
-               smbd/blocking.c smbd/sec_ctx.c smbd/srvstr.c
-               smbd/vfs.c smbd/perfcount.c smbd/statcache.c smbd/seal.c
-               smbd/posix_acls.c lib/sysacls.c
-               smbd/process.c smbd/service.c smbd/error.c
-               printing/printspoolss.c printing/spoolssd.c
-               lib/sysquotas.c lib/sysquotas_linux.c
-               lib/sysquotas_xfs.c lib/sysquotas_4A.c lib/sysquotas_4B.c
-               lib/sysquotas_nfs.c
-               lib/background.c
-               lib/sessionid_tdb.c
-               lib/conn_tdb.c
-               smbd/fake_file.c
-               smbd/quotas.c smbd/ntquotas.c smbd/msdfs.c
-               smbd/aio.c smbd/statvfs.c
-               smbd/dmapi.c smbd/signing.c
-               smbd/file_access.c
-               smbd/dnsregister.c smbd/globals.c
-               smbd/smb2_server.c
-               smbd/smb2_glue.c
-               smbd/smb2_negprot.c
-               smbd/smb2_sesssetup.c
-               smbd/smb2_tcon.c
-               smbd/smb2_create.c
-               smbd/smb2_close.c
-               smbd/smb2_flush.c
-               smbd/smb2_read.c
-               smbd/smb2_write.c
-               smbd/smb2_lock.c
-               smbd/smb2_ioctl.c
-               smbd/smb2_ioctl_dfs.c
-               smbd/smb2_ioctl_filesys.c
-               smbd/smb2_ioctl_named_pipe.c
-               smbd/smb2_ioctl_network_fs.c
-               smbd/smb2_keepalive.c
-               smbd/smb2_find.c
-               smbd/smb2_notify.c
-               smbd/smb2_getinfo.c
-               smbd/smb2_setinfo.c
-               smbd/smb2_break.c
-               smbd/smbXsrv_version.c
-               smbd/smbXsrv_session.c
-               smbd/smbXsrv_tcon.c
-               smbd/smbXsrv_open.c
-               smbd/server_exit.c
-               smbd/durable.c
-               smbd/scavenger.c
-               ${MANGLE_SRC}'''
-
-SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
-                ${OPLOCK_SRC} ${NOTIFY_SRC}
-                ${BUILDOPT_SRC}'''
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
                printing/print_cups.c printing/print_generic.c
@@ -750,36 +683,132 @@ bld.SAMBA3_LIBRARY('smbd_conn',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('smbd_base',
-                    source=SMBD_SRC_BASE,
-                    deps='''
-                    talloc
-                    tevent
-                    pdb
-                    libsmb
-                    msrpc3
-                    vfs
-                    vfs_default
-                    vfs_posixacl
-                    popt_samba3
-                    samba3core
-                    smbd_conn
-                    param_service
-                    AVAHI
-                    PRINTBASE
-                    PROFILE
-                    LOCKING
-                    LIBADS_SERVER
-                    LIBAFS
-                    RPC_SERVER
-                    NDR_SMBXSRV
-		    LIBASYS
-                    ccan-hash
-                    NDR_SMB_ACL
-                    netapi
-		    NDR_IOCTL
-                    ''' + bld.env['dmapi_lib'],
-                    private_library=True,
-                    vars=locals())
+                   source='''
+                   smbd/server_reload.c
+                   smbd/files.c
+                   smbd/connection.c
+                   smbd/utmp.c
+                   smbd/session.c
+                   smbd/dfree.c
+                   smbd/dir.c
+                   smbd/password.c
+                   smbd/conn_msg.c
+                   smbd/conn_idle.c
+                   smbd/share_access.c
+                   smbd/fileio.c
+                   smbd/ipc.c
+                   smbd/lanman.c
+                   smbd/negprot.c
+                   smbd/message.c
+                   smbd/nttrans.c
+                   smbd/pipes.c
+                   smbd/reply.c
+                   smbd/sesssetup.c
+                   smbd/trans2.c
+                   smbd/uid.c
+                   smbd/dosmode.c
+                   smbd/filename.c
+                   smbd/open.c
+                   smbd/close.c
+                   smbd/blocking.c
+                   smbd/sec_ctx.c
+                   smbd/srvstr.c
+                   smbd/vfs.c
+                   smbd/perfcount.c
+                   smbd/statcache.c
+                   smbd/seal.c
+                   smbd/posix_acls.c
+                   lib/sysacls.c
+                   smbd/process.c
+                   smbd/service.c
+                   smbd/error.c
+                   printing/printspoolss.c
+                   printing/spoolssd.c
+                   lib/sysquotas.c
+                   lib/sysquotas_linux.c
+                   lib/sysquotas_xfs.c
+                   lib/sysquotas_4A.c
+                   lib/sysquotas_4B.c
+                   lib/sysquotas_nfs.c
+                   lib/background.c
+                   lib/sessionid_tdb.c
+                   lib/conn_tdb.c
+                   smbd/fake_file.c
+                   smbd/quotas.c
+                   smbd/ntquotas.c
+                   smbd/msdfs.c
+                   smbd/aio.c smbd/statvfs.c
+                   smbd/dmapi.c
+                   smbd/signing.c
+                   smbd/file_access.c
+                   smbd/dnsregister.c smbd/globals.c
+                   smbd/smb2_server.c
+                   smbd/smb2_glue.c
+                   smbd/smb2_negprot.c
+                   smbd/smb2_sesssetup.c
+                   smbd/smb2_tcon.c
+                   smbd/smb2_create.c
+                   smbd/smb2_close.c
+                   smbd/smb2_flush.c
+                   smbd/smb2_read.c
+                   smbd/smb2_write.c
+                   smbd/smb2_lock.c
+                   smbd/smb2_ioctl.c
+                   smbd/smb2_ioctl_dfs.c
+                   smbd/smb2_ioctl_filesys.c
+                   smbd/smb2_ioctl_named_pipe.c
+                   smbd/smb2_ioctl_network_fs.c
+                   smbd/smb2_keepalive.c
+                   smbd/smb2_find.c
+                   smbd/smb2_notify.c
+                   smbd/smb2_getinfo.c
+                   smbd/smb2_setinfo.c
+                   smbd/smb2_break.c
+                   smbd/smbXsrv_version.c
+                   smbd/smbXsrv_session.c
+                   smbd/smbXsrv_tcon.c
+                   smbd/smbXsrv_open.c
+                   smbd/server_exit.c
+                   smbd/durable.c
+                   smbd/scavenger.c
+                   smbd/mangle.c
+                   smbd/mangle_hash.c
+                   smbd/mangle_hash2.c
+                   smbd/oplock.c
+                   smbd/oplock_irix.c
+                   smbd/oplock_linux.c
+                   smbd/notify.c
+                   smbd/notify_inotify.c
+                   smbd/notify_internal.c
+                   smbd/build_options.c''',
+                   deps='''
+                   talloc
+                   tevent
+                   pdb
+                   libsmb
+                   msrpc3
+                   vfs
+                   vfs_default
+                   vfs_posixacl
+                   popt_samba3
+                   samba3core
+                   smbd_conn
+                   param_service
+                   AVAHI
+                   PRINTBASE
+                   PROFILE
+                   LOCKING
+                   LIBADS_SERVER
+                   LIBAFS
+                   RPC_SERVER
+                   NDR_SMBXSRV
+                   LIBASYS
+                   ccan-hash
+                   NDR_SMB_ACL
+                   netapi
+                   NDR_IOCTL
+                   ''' + bld.env['dmapi_lib'],
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LOCKING',
                     source='''locking/locking.c
