@@ -327,7 +327,7 @@ static PyObject *py_dsdb_get_attid_from_lDAPDisplayName(PyObject *self, PyObject
 
 	a = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
 	if (a == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
 		return NULL;
 	}
 
@@ -361,7 +361,7 @@ static PyObject *py_dsdb_get_systemFlags_from_lDAPDisplayName(PyObject *self, Py
 
 	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
 	if (attribute == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
 		return NULL;
 	}
 
@@ -393,7 +393,7 @@ static PyObject *py_dsdb_get_linkId_from_lDAPDisplayName(PyObject *self, PyObjec
 
 	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
 	if (attribute == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
 		return NULL;
 	}
 
@@ -425,7 +425,7 @@ static PyObject *py_dsdb_get_backlink_from_lDAPDisplayName(PyObject *self, PyObj
 
 	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
 	if (attribute == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
 		return NULL;
 	}
 
@@ -466,7 +466,7 @@ static PyObject *py_dsdb_get_lDAPDisplayName_by_attid(PyObject *self, PyObject *
 
 	a = dsdb_attribute_by_attributeID_id(schema, attid);
 	if (a == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '0x%08x'", attid);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '0x%08x'", attid);
 		return NULL;
 	}
 
@@ -499,7 +499,7 @@ static PyObject *py_dsdb_get_syntax_oid_from_lDAPDisplayName(PyObject *self, PyO
 
 	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
 	if (attribute == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
 		return NULL;
 	}
 
@@ -542,7 +542,7 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 
 	a = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
 	if (a == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
 		return NULL;
 	}
 
@@ -637,7 +637,7 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 
 	a = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
 	if (a == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
 		return NULL;
 	}
 
