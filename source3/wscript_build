@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-MSGTEST_SRC = '''torture/msgtest.c'''
-
 PDBTEST_SRC = '''torture/pdbtest.c'''
 
 VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c
@@ -1315,12 +1313,11 @@ bld.SAMBA3_BINARY('replacetort',
                  install=False)
 
 bld.SAMBA3_BINARY('msgtest',
-                 source=MSGTEST_SRC,
+                 source='torture/msgtest.c',
                  deps='''
                  talloc
                  param''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('smbcacls',
                  source=SMBCACLS_SRC,
