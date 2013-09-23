@@ -478,7 +478,7 @@ done:
  * A stream held open with FILE_SHARE_DELETE allows the file to be
  * deleted. After the main file is deleted, access to the open file descriptor
  * still works, but all name-based access to both the main file as well as the
- * stream is denied with DELETE ending.
+ * stream is denied with DELETE pending.
  *
  * This means, an open of the main file with SEC_STD_DELETE should walk all
  * streams and also open them with SEC_STD_DELETE. If any of these opens gives
