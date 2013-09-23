@@ -7,12 +7,9 @@ import samba_version, samba3
 # registry-related objects
 #
 
-REG_INIT_SMBCONF_SRC = '''registry/reg_init_smbconf.c'''
 REG_INIT_FULL_SRC = '''registry/reg_init_full.c'''
 
 REG_API_REGF_SRC = '''registry/reg_api_regf.c'''
-
-REG_BACKENDS_SMBCONF_SRC = '''registry/reg_backend_smbconf.c'''
 
 REG_BACKENDS_EXTRA_SRC = '''registry/reg_backend_printing.c
                          registry/reg_backend_shares.c
@@ -22,12 +19,6 @@ REG_BACKENDS_EXTRA_SRC = '''registry/reg_backend_printing.c
                          registry/reg_backend_hkpt_params.c
                          registry/reg_backend_current_version.c
                          registry/reg_backend_perflib.c'''
-
-REG_SMBCONF_SRC = '''
-                  ${REG_BACKENDS_SMBCONF_SRC}
-                  ${REG_INIT_SMBCONF_SRC}
-                  registry/reg_util_token.c
-                  registry/reg_api_util.c'''
 
 REG_FULL_SRC = '''
                ${REG_BACKENDS_EXTRA_SRC}
@@ -554,9 +545,11 @@ bld.SAMBA3_LIBRARY('smbregistry',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
-                    source=REG_SMBCONF_SRC,
-                    deps='smbregistry',
-                    vars=locals())
+                    source='''registry/reg_backend_smbconf.c
+                    registry/reg_init_smbconf.c
+                    registry/reg_util_token.c
+                    registry/reg_api_util.c''',
+                    deps='smbregistry')
 
 bld.SAMBA3_SUBSYSTEM('REG_FULL',
                     source=REG_FULL_SRC,
