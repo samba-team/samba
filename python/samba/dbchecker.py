@@ -62,6 +62,7 @@ class dbcheck(object):
         self.move_to_lost_and_found = False
         self.fix_instancetype = False
         self.fix_replmetadata_zero_invocationid = False
+        self.fix_deleted_deleted_objects = False
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -100,6 +101,21 @@ class dbcheck(object):
             else:
                 self.write_ncs = None
 
+        res = self.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=['namingContexts'])
+        try:
+            ncs = res[0]["namingContexts"]
+            self.deleted_objects_containers = []
+            for nc in ncs:
+                try:
+                    dn = self.samdb.get_wellknown_dn(ldb.Dn(self.samdb, nc),
+                                                     dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+                    self.deleted_objects_containers.append(dn)
+                except KeyError:
+                    pass
+        except KeyError:
+            pass
+        except IndexError:
+            pass
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -878,6 +894,51 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
 
 
+    def is_deleted_deleted_objects(self, obj):
+        faulty = False
+        if "description" not in obj:
+            self.report("ERROR: description not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "showInAdvancedViewOnly" not in obj:
+            self.report("ERROR: showInAdvancedViewOnly not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "objectCategory" not in obj:
+            self.report("ERROR: objectCategory not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "isCriticalSystemObject" not in obj:
+            self.report("ERROR: isCriticalSystemObject not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "isRecycled" in obj:
+            self.report("ERROR: isRecycled present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        return faulty
+
+
+    def err_deleted_deleted_objects(self, obj):
+        nmsg = ldb.Message()
+        nmsg.dn = dn = obj.dn
+
+        if "description" not in obj:
+            nmsg["description"] = ldb.MessageElement("Container for deleted objects", ldb.FLAG_MOD_REPLACE, "description")
+        if "showInAdvancedViewOnly" not in obj:
+            nmsg["showInAdvancedViewOnly"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "showInAdvancedViewOnly")
+        if "objectCategory" not in obj:
+            nmsg["objectCategory"] = ldb.MessageElement("CN=Container,%s" % self.schema_dn, ldb.FLAG_MOD_REPLACE, "objectCategory")
+        if "isCriticalSystemObject" not in obj:
+            nmsg["isCriticalSystemObject"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isCriticalSystemObject")
+        if "isRecycled" in obj:
+            nmsg["isRecycled"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_DELETE, "isRecycled")
+
+        if not self.confirm_all('Fix Deleted Objects container %s by restoring default attributes?'
+                                % (dn), 'fix_deleted_deleted_objects'):
+            self.report('Not fixing missing/incorrect attributes on %s\n' % (dn))
+            return
+
+        if self.do_modify(nmsg, ["relax:0"],
+                          "Failed to fix Deleted Objects container  %s" % dn):
+            self.report("Fixed Deleted Objects container '%s'\n" % (dn))
+
+
     def is_fsmo_role(self, dn):
         if dn == self.samdb.domain_dn:
             return True
@@ -1095,6 +1156,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 error_count += 1
             else:
                 raise
+
+        if dn in self.deleted_objects_containers and '*' in attrs:
+            if self.is_deleted_deleted_objects(obj):
+                self.err_deleted_deleted_objects(obj)
+                error_count += 1
 
         return error_count
 
