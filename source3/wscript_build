@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-
-
-GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
-
 PROFILE_SRC = '''profile/profile.c'''
 PROFILES_SRC = '''utils/profiles.c'''
 
@@ -367,7 +363,7 @@ bld.SAMBA3_SUBSYSTEM('AVAHI',
                     enabled=bld.env.with_avahi)
 
 bld.SAMBA3_SUBSYSTEM('GROUPDB',
-                    source=GROUPDB_SRC,
+                    source='groupdb/mapping.c groupdb/mapping_tdb.c',
                     deps='tdb_compat')
 
 bld.SAMBA3_SUBSYSTEM('TLDAP',
