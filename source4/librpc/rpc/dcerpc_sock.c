@@ -34,8 +34,6 @@
 
 /* transport private information used by general socket pipe transports */
 struct sock_private {
-	char *server_name;
-
 	const char *path; /* For ncacn_unix_sock and ncalrpc */
 
 	struct socket_address *peer_addr;
@@ -259,27 +257,6 @@ static NTSTATUS sock_shutdown_pipe(struct dcecli_connection *p, NTSTATUS status)
 	return status;
 }
 
-/*
-  return sock server name
-*/
-static const char *sock_peer_name(struct dcecli_connection *p)
-{
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
-	return sock->server_name;
-}
-
-/*
-  return remote name we make the actual connection (good for kerberos) 
-*/
-static const char *sock_target_hostname(struct dcecli_connection *p)
-{
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
-	return sock->server_name;
-}
-
-
 struct pipe_open_socket_state {
 	struct dcecli_connection *conn;
 	struct socket_context *socket_ctx;
@@ -336,8 +313,6 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->transport.recv_data       = NULL;
 
 	conn->transport.shutdown_pipe   = sock_shutdown_pipe;
-	conn->transport.peer_name       = sock_peer_name;
-	conn->transport.target_hostname = sock_target_hostname;
 
 	/*
 	 * Windows uses 5840 for ncacn_ip_tcp,
@@ -347,7 +322,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->srv_max_recv_frag = 5840;
 
 	sock->pending_reads = 0;
-	sock->server_name   = strupper_talloc(sock, s->target_hostname);
+	conn->server_name   = strupper_talloc(conn, s->target_hostname);
 
 	conn->transport.private_data = sock;
 

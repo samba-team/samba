@@ -1984,13 +1984,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcecli_connection *c,
 */
 _PUBLIC_ const char *dcerpc_server_name(struct dcerpc_pipe *p)
 {
-	if (!p->conn->transport.target_hostname) {
-		if (!p->conn->transport.peer_name) {
-			return "";
-		}
-		return p->conn->transport.peer_name(p->conn);
-	}
-	return p->conn->transport.target_hostname(p->conn);
+	return p->conn ? p->conn->server_name : NULL;
 }
 
 

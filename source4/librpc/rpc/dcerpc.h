@@ -80,10 +80,6 @@ struct dcecli_connection {
 
 		NTSTATUS (*shutdown_pipe)(struct dcecli_connection *, NTSTATUS status);
 
-		const char *(*peer_name)(struct dcecli_connection *);
-
-		const char *(*target_hostname)(struct dcecli_connection *);
-
 		/* send a request to the server */
 		NTSTATUS (*send_request)(struct dcecli_connection *, DATA_BLOB *, bool trigger_read);
 
@@ -94,6 +90,8 @@ struct dcecli_connection {
 		   has been received */
 		void (*recv_data)(struct dcecli_connection *, DATA_BLOB *, NTSTATUS status);
 	} transport;
+
+	const char *server_name;
 
 	/* Requests that have been sent, waiting for a reply */
 	struct rpc_request *pending;

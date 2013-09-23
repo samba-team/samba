@@ -36,7 +36,6 @@
 /* transport private information used by SMB pipe transport */
 struct smb_private {
 	DATA_BLOB session_key;
-	const char *server_name;
 
 	struct tstream_context *stream;
 	struct tevent_queue *write_queue;
@@ -379,28 +378,6 @@ static void smb_shutdown_pipe_done(struct tevent_req *subreq)
 }
 
 /*
-  return SMB server name (called name)
-*/
-static const char *smb_peer_name(struct dcecli_connection *c)
-{
-	struct smb_private *smb = talloc_get_type_abort(
-		c->transport.private_data, struct smb_private);
-	if (smb == NULL) return "";
-	return smb->server_name;
-}
-
-/*
-  return remote name we make the actual connection (good for kerberos) 
-*/
-static const char *smb_target_hostname(struct dcecli_connection *c)
-{
-	struct smb_private *smb = talloc_get_type_abort(
-		c->transport.private_data, struct smb_private);
-	if (smb == NULL) return "";
-	return smb->server_name;
-}
-
-/*
   fetch the user session key 
 */
 static NTSTATUS smb_session_key(struct dcecli_connection *c, DATA_BLOB *session_key)
@@ -470,9 +447,9 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcecli_connection *c,
 	state->smb->tcon = tcon;
 	state->smb->timeout_msec = timeout_msec;
 
-	state->smb->server_name = strupper_talloc(state->smb,
+	state->c->server_name = strupper_talloc(state->c,
 		smbXcli_conn_remote_name(conn));
-	if (composite_nomem(state->smb->server_name, ctx)) return ctx;
+	if (composite_nomem(state->c->server_name, ctx)) return ctx;
 
 	ctx->status = smbXcli_session_application_key(session,
 						      state->smb,
@@ -516,8 +493,6 @@ static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq)
 	c->transport.transport       = NCACN_NP;
 	c->transport.private_data    = NULL;
 	c->transport.shutdown_pipe   = smb_shutdown_pipe;
-	c->transport.peer_name       = smb_peer_name;
-	c->transport.target_hostname = smb_target_hostname;
 
 	c->transport.send_request    = smb_send_request;
 	c->transport.send_read       = smb_send_read;
