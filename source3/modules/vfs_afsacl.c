@@ -47,8 +47,6 @@ static char space_replacement = '%';
 /* Do we expect SIDs as pts names? */
 static bool sidpts;
 
-extern int afs_syscall(int, const char *, int, char *, int);
-
 struct afs_ace {
 	bool positive;
 	char *name;
