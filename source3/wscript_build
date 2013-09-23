@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LOG2PCAP_SRC = '''utils/log2pcaphex.c'''
-
 LOCKTEST2_SRC = '''torture/locktest2.c'''
 
 SMBCACLS_SRC = '''utils/smbcacls.c'''
@@ -1370,10 +1368,9 @@ bld.SAMBA3_BINARY('vfstest',
                  install=False)
 
 bld.SAMBA3_BINARY('log2pcap',
-                 source=LOG2PCAP_SRC,
+                 source='utils/log2pcaphex.c',
                  deps='''talloc popt''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('locktest2',
                  source=LOCKTEST2_SRC,
