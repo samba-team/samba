@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-SMBD_SRC_MAIN = '''smbd/server.c'''
-
-
-
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
                printing/print_cups.c printing/print_generic.c
                printing/lpq_parse.c printing/load.c printing/print_standard.c
@@ -993,10 +989,9 @@ bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
 ########################## BINARIES #################################
 
 bld.SAMBA3_BINARY('smbd/smbd',
-                 source='${SMBD_SRC_MAIN}',
+                 source='smbd/server.c',
                  deps='smbd_base EPMD LSASD',
-                 install_path='${SBINDIR}',
-                 vars=locals())
+                 install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('nmbd/nmbd',
                  source='''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
