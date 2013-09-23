@@ -3,11 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
-              ../libgpo/gpo_fetch.c libgpo/gpo_filesync.c ../libgpo/gpo_sec.c
-              libgpo/gpo_reg.c'''
-LIBGPO_SRC = '''${LIBGPO_SRC0}'''
-
 LIBADS_SRC = '''libads/ldap.c
              libads/sasl.c libads/sasl_wrapping.c
              libads/krb5_setpw.c
@@ -473,9 +468,14 @@ bld.SAMBA3_LIBRARY('msrpc3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('gpo',
-                   source='${LIBGPO_SRC}',
+                   source='''../libgpo/gpo_ldap.c
+                   ../libgpo/gpo_ini.c
+                   ../libgpo/gpo_util.c
+                   ../libgpo/gpo_fetch.c
+                   libgpo/gpo_filesync.c
+                   ../libgpo/gpo_sec.c
+                   libgpo/gpo_reg.c''',
                    deps='talloc ads TOKEN_UTIL gpext auth',
-                   vars=locals(),
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('AVAHI',
