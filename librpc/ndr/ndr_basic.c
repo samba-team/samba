@@ -32,6 +32,8 @@
 #define NDR_SIVALS(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSIVALS(ndr->data,ofs,v); } else SIVALS(ndr->data,ofs,v); } while (0)
 
 
+static void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len);
+
 /*
   check for data leaks from the server by looking for non-zero pad bytes
   these could also indicate that real structure elements have been
@@ -1162,14 +1164,15 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 			   const uint8_t *data, uint32_t count)
 {
 	int i;
+#define _ONELINE_LIMIT 32
 
 	if (data == NULL) {
 		ndr->print(ndr, "%s: ARRAY(%d) : NULL", name, count);
 		return;
 	}
 
-	if (count <= 600 && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
-		char s[1202];
+	if (count <= _ONELINE_LIMIT && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
+		char s[(_ONELINE_LIMIT + 1) * 2];
 		for (i=0;i<count;i++) {
 			snprintf(&s[i*2], 3, "%02x", data[i]);
 		}
@@ -1179,6 +1182,11 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 	}
 
 	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	if (count > _ONELINE_LIMIT && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
+		ndr_dump_data(ndr, data, count);
+		return;
+	}
+
 	ndr->depth++;
 	for (i=0;i<count;i++) {
 		char *idx=NULL;
@@ -1188,6 +1196,7 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 		}
 	}
 	ndr->depth--;	
+#undef _ONELINE_LIMIT
 }
 
 static void ndr_print_asc(struct ndr_print *ndr, const uint8_t *buf, int len)
