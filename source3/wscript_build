@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PASSCHANGE_SRC = '''libsmb/passchange.c'''
-
 LIBCLI_SPOOLSS_SRC = '''rpc_client/cli_spoolss.c
                      rpc_client/init_spoolss.c'''
 
@@ -947,12 +945,11 @@ bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
-                    source=PASSCHANGE_SRC,
+                    source='libsmb/passchange.c',
                     deps='''LIBCLI_SAMR
                     INIT_LSA
                     msrpc3
-                    krb5samba''',
-                    vars=locals())
+                    krb5samba''')
 
 bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
                     source='lib/version.c',
