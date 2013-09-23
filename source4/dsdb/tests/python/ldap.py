@@ -952,7 +952,7 @@ class BasicTests(samba.tests.TestCase):
             ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -976,7 +976,7 @@ class BasicTests(samba.tests.TestCase):
             ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
