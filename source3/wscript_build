@@ -3,12 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBNET_SAMSYNC_SRC = '''libnet/libnet_samsync.c
-                        libnet/libnet_samsync_ldif.c
-                        libnet/libnet_samsync_passdb.c
-                        libnet/libnet_samsync_display.c
-                        libnet/libnet_samsync_keytab.c'''
-
 NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_rap.c utils/net_rpc.c utils/net_rpc_samsync.c
               utils/net_time.c utils/net_lookup.c
@@ -805,9 +799,12 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     deps='LIBNET RPC_NDR_DRSUAPI')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
-                    source=LIBNET_SAMSYNC_SRC,
-                    deps='LIBNET LIBCLI_SAMSYNC',
-                    vars=locals())
+                    source='''libnet/libnet_samsync.c
+                    libnet/libnet_samsync_ldif.c
+                    libnet/libnet_samsync_passdb.c
+                    libnet/libnet_samsync_display.c
+                    libnet/libnet_samsync_keytab.c''',
+                    deps='LIBNET LIBCLI_SAMSYNC')
 
 bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
                     source='lib/eventlog/eventlog.c',
