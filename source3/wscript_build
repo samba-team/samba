@@ -3,9 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBSMBCLIENT_THREAD_SRC = '''libsmb/libsmb_thread_impl.c
-                        libsmb/libsmb_thread_posix.c'''
-
 LIBSMBSHAREMODES_SRC0 = 'libsmb/smb_share_modes.c'
 
 LIBSMBSHAREMODES_SRC = '${LIBSMBSHAREMODES_SRC0}'
