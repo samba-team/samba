@@ -3,34 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/utable.c
-                torture/denytest.c torture/mangle_test.c
-                torture/nbench.c
-                torture/test_async_echo.c
-                torture/test_addrchange.c
-                torture/test_posix_append.c
-                torture/test_nttrans_create.c
-                torture/test_nttrans_fsctl.c
-                torture/test_case_insensitive.c
-                torture/test_notify_online.c
-                torture/test_chain3.c
-                torture/test_smb2.c
-                torture/test_authinfo_structs.c
-                torture/test_smbsock_any_connect.c
-                torture/test_cleanup.c
-                torture/test_ctdbconn.c
-                torture/test_msg.c
-                torture/test_notify.c
-                lib/tevent_barrier.c
-                torture/test_dbwrap_watch.c
-                torture/test_idmap_tdb_common.c
-                torture/test_dbwrap_ctdb.c
-                torture/test_buffersize.c
-                torture/t_strappend.c'''
-
-SMBTORTURE_SRC = '''${SMBTORTURE_SRC1}
-        torture/wbc_async.c'''
-
 MSGTEST_SRC = '''torture/msgtest.c'''
 
 PDBTEST_SRC = '''torture/pdbtest.c'''
@@ -1286,7 +1258,35 @@ bld.SAMBA3_BINARY('nmblookup',
                  LIBNMB''')
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
-                 source=SMBTORTURE_SRC,
+                 source='''torture/torture.c
+                 torture/nbio.c
+                 torture/scanner.c
+                 torture/utable.c
+                 torture/denytest.c
+                 torture/mangle_test.c
+                 torture/nbench.c
+                 torture/test_async_echo.c
+                 torture/test_addrchange.c
+                 torture/test_posix_append.c
+                 torture/test_nttrans_create.c
+                 torture/test_nttrans_fsctl.c
+                 torture/test_case_insensitive.c
+                 torture/test_notify_online.c
+                 torture/test_chain3.c
+                 torture/test_smb2.c
+                 torture/test_authinfo_structs.c
+                 torture/test_smbsock_any_connect.c
+                 torture/test_cleanup.c
+                 torture/test_ctdbconn.c
+                 torture/test_msg.c
+                 torture/test_notify.c
+                 lib/tevent_barrier.c
+                 torture/test_dbwrap_watch.c
+                 torture/test_idmap_tdb_common.c
+                 torture/test_dbwrap_ctdb.c
+                 torture/test_buffersize.c
+                 torture/t_strappend.c
+                 torture/wbc_async.c''',
                  deps='''
                  talloc
                  param
@@ -1296,11 +1296,10 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  RPC_NDR_ECHO
                  WB_REQTRANS
                  LOCKING
-		 NDR_OPEN_FILES
-		 idmap
+                 NDR_OPEN_FILES
+                 idmap
                  ''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('smbconftort',
                  source='lib/smbconf/testsuite.c',
