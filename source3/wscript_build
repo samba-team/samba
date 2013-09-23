@@ -3,9 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-FNAME_UTIL_SRC = '''lib/filename_util.c'''
-
-
 PLAINTEXT_AUTH_SRC = '''auth/pampass.c auth/pass_check.c'''
 
 SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
@@ -852,9 +849,8 @@ bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
-                    source=FNAME_UTIL_SRC,
-                    deps='samba-util',
-                    vars=locals())
+                    source='lib/filename_util.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
                     source=LIBNET_SRC,
