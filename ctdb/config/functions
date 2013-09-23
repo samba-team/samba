@@ -42,6 +42,13 @@ _loadconfig() {
     elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
 	. $CTDB_BASE/sysconfig/$1
     fi
+
+    if [ "$1" = "ctdb" ] ; then
+	_config="${CTDB_BASE}/ctdbd.conf"
+	if [ -r "$_config" ] ; then
+	    . "$_config"
+	fi
+    fi
 }
 
 loadconfig () {
