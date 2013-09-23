@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-DEBUG2HTML_SRC = '''utils/debug2html.c utils/debugparse.c'''
-
 SMBFILTER_SRC = '''utils/smbfilter.c'''
 
 WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c'''
@@ -1365,10 +1363,9 @@ bld.SAMBA3_BINARY('locktest2',
                  install=False)
 
 bld.SAMBA3_BINARY('debug2html',
-                 source=DEBUG2HTML_SRC,
+                 source='''utils/debug2html.c utils/debugparse.c''',
                  deps='''talloc popt''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('smbfilter',
                  source=SMBFILTER_SRC,
