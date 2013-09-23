@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
 	int opt;
 	const char *cmd, *idb, *odb;
 
-	while ((opt = getopt(argc, argv, "s:o:S:O:ph:e")) != -1) {
+	while ((opt = getopt(argc, argv, "s:o:S:O:phe")) != -1) {
 		switch (opt) {
 		case 's':
 		case 'S':
