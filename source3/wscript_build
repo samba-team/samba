@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c locking/share_mode_lock.c'''
-
 PRIVILEGES_SRC = '''lib/privileges.c'''
 
 PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
@@ -790,13 +788,15 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LOCKING',
-                    source='${LOCKING_SRC}',
+                    source='''locking/locking.c
+                    locking/brlock.c
+                    locking/posix.c
+                    locking/share_mode_lock.c''',
                     deps='''
                     tdb_compat
                     talloc
                     NDR_OPEN_FILES
-                    FNAME_UTIL''',
-                    vars=locals())
+                    FNAME_UTIL''')
 
 bld.SAMBA3_SUBSYSTEM('PROFILE',
                     source='${PROFILE_SRC}',
