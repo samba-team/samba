@@ -3,15 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBADS_SRC = '''libads/ldap.c
-             libads/sasl.c libads/sasl_wrapping.c
-             libads/krb5_setpw.c
-             libads/kerberos_util.c
-             libads/ldap_user.c
-             libads/ads_struct.c libads/kerberos_keytab.c
-             libads/disp_sec.c libads/ldap_utils.c
-             libads/ldap_schema.c libads/util.c libads/ndr.c'''
-
 LIBADS_SERVER_SRC = '''libads/authdata.c'''
 
 LIBADS_PRINTER_SRC = '''libads/ldap_printer.c'''
@@ -754,10 +745,21 @@ bld.SAMBA3_LIBRARY('smbldap',
                     public_headers='include/smbldap.h include/smb_ldap.h')
 
 bld.SAMBA3_LIBRARY('ads',
-                   source=LIBADS_SRC,
+                   source='''libads/ldap.c
+                   libads/sasl.c
+                   libads/sasl_wrapping.c
+                   libads/krb5_setpw.c
+                   libads/kerberos_util.c
+                   libads/ldap_user.c
+                   libads/ads_struct.c
+                   libads/kerberos_keytab.c
+                   libads/disp_sec.c
+                   libads/ldap_utils.c
+                   libads/ldap_schema.c
+                   libads/util.c
+                   libads/ndr.c''',
                    deps='cli-ldap-common krb5samba ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL smbldap',
-                   private_library=True,
-                   vars=locals())
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
