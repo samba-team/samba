@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c'''
-
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
 LIBCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
@@ -998,7 +996,7 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
                     deps='RPC_NDR_SAMR')
 
 bld.SAMBA3_LIBRARY('libcli_lsa3',
-                   source=LIBCLI_LSA_SRC,
+                   source='rpc_client/cli_lsarpc.c',
                    deps='RPC_NDR_LSA INIT_LSA',
                    private_library=True)
 
