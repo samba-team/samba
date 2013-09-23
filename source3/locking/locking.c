@@ -646,6 +646,12 @@ bool share_mode_stale_pid(struct share_mode_data *d, unsigned idx)
 		return false;
 	}
 	e = &d->share_modes[idx];
+	if (e->stale) {
+		/*
+		 * Checked before
+		 */
+		return true;
+	}
 	if (serverid_exists(&e->pid)) {
 		DEBUG(10, ("PID %s (index %u out of %u) still exists\n",
 			   procid_str_static(&e->pid), idx,
