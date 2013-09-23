@@ -11,8 +11,6 @@ TDB_LIB_SRC = '''
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
 
-VERSION_SRC = '''lib/version.c'''
-
 AFS_SRC = 'lib/afs.c'
 
 AFS_SETTOKEN_SRC = 'lib/afs_settoken.c'
@@ -1054,9 +1052,8 @@ bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
-                    source=VERSION_SRC,
-                    deps='samba-util',
-                    vars=locals())
+                    source='lib/version.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('SLCACHE',
                     source=SLCACHE_SRC,
