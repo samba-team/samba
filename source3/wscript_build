@@ -407,21 +407,6 @@ PRINTBACKEND_SRC = '''printing/printing.c
                       printing/nt_printing_ads.c
                       printing/queue_process.c'''
 
-NMBD_SRC1 = '''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
-            nmbd/nmbd_become_lmb.c nmbd/nmbd_browserdb.c
-            nmbd/nmbd_browsesync.c nmbd/nmbd_elections.c
-            nmbd/nmbd_incomingdgrams.c nmbd/nmbd_incomingrequests.c
-            nmbd/nmbd_lmhosts.c nmbd/nmbd_logonnames.c nmbd/nmbd_mynames.c
-            nmbd/nmbd_namelistdb.c nmbd/nmbd_namequery.c
-            nmbd/nmbd_nameregister.c nmbd/nmbd_namerelease.c
-            nmbd/nmbd_nodestatus.c nmbd/nmbd_packets.c
-            nmbd/nmbd_processlogon.c nmbd/nmbd_responserecordsdb.c
-            nmbd/nmbd_sendannounce.c nmbd/nmbd_serverlistdb.c
-            nmbd/nmbd_subnetdb.c nmbd/nmbd_winsproxy.c nmbd/nmbd_winsserver.c
-            nmbd/nmbd_workgroupdb.c nmbd/nmbd_synclists.c'''
-
-NMBD_SRC = '${NMBD_SRC1}'
-
 STATUS_SRC = '''utils/status.c utils/status_profile.c smbd/notify_internal.c'''
 
 SMBCONTROL_SRC = '''utils/smbcontrol.c'''
@@ -1170,7 +1155,18 @@ bld.SAMBA3_BINARY('smbd/smbd',
                  vars=locals())
 
 bld.SAMBA3_BINARY('nmbd/nmbd',
-                 source=NMBD_SRC,
+                 source='''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
+                 nmbd/nmbd_become_lmb.c nmbd/nmbd_browserdb.c
+                 nmbd/nmbd_browsesync.c nmbd/nmbd_elections.c
+                 nmbd/nmbd_incomingdgrams.c nmbd/nmbd_incomingrequests.c
+                 nmbd/nmbd_lmhosts.c nmbd/nmbd_logonnames.c nmbd/nmbd_mynames.c
+                 nmbd/nmbd_namelistdb.c nmbd/nmbd_namequery.c
+                 nmbd/nmbd_nameregister.c nmbd/nmbd_namerelease.c
+                 nmbd/nmbd_nodestatus.c nmbd/nmbd_packets.c
+                 nmbd/nmbd_processlogon.c nmbd/nmbd_responserecordsdb.c
+                 nmbd/nmbd_sendannounce.c nmbd/nmbd_serverlistdb.c
+                 nmbd/nmbd_subnetdb.c nmbd/nmbd_winsproxy.c nmbd/nmbd_winsserver.c
+                 nmbd/nmbd_workgroupdb.c nmbd/nmbd_synclists.c''',
                  deps='''
                  talloc
                  tevent
@@ -1178,8 +1174,7 @@ bld.SAMBA3_BINARY('nmbd/nmbd',
                  libsmb
                  popt_samba3
                  PROFILE''',
-                 install_path='${SBINDIR}',
-                 vars=locals())
+                 install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
