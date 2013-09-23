@@ -228,94 +228,6 @@ SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
 
 DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/dsgetdcname.c'''
 
-WINBINDD_SRC1 = '''winbindd/winbindd.c
-                   winbindd/winbindd_group.c
-                   winbindd/winbindd_util.c
-                   winbindd/winbindd_cache.c
-                   winbindd/winbindd_pam.c
-                   winbindd/winbindd_misc.c
-                   winbindd/winbindd_cm.c
-                   winbindd/winbindd_wins_byip.c
-                   winbindd/winbindd_wins_byname.c
-                   winbindd/winbindd_msrpc.c
-                   winbindd/winbindd_rpc.c
-                   winbindd/winbindd_reconnect.c
-                   winbindd/winbindd_ads.c
-                   winbindd/winbindd_samr.c
-                   winbindd/winbindd_dual.c
-                   winbindd/winbindd_dual_ndr.c
-                   winbindd/winbindd_dual_srv.c
-                   winbindd/winbindd_async.c
-                   winbindd/winbindd_creds.c
-                   winbindd/winbindd_cred_cache.c
-                   winbindd/winbindd_ccache_access.c
-                   winbindd/winbindd_domain.c
-                   winbindd/winbindd_idmap.c
-                   winbindd/winbindd_locator.c
-                   winbindd/winbindd_ndr.c
-                   winbindd/wb_ping.c
-                   winbindd/wb_lookupsid.c
-                   winbindd/wb_lookupsids.c
-                   winbindd/wb_lookupname.c
-                   winbindd/wb_uid2sid.c
-                   winbindd/wb_gid2sid.c
-                   winbindd/wb_sids2xids.c
-                   winbindd/wb_queryuser.c
-                   winbindd/wb_lookupuseraliases.c
-                   winbindd/wb_lookupusergroups.c
-                   winbindd/wb_getpwsid.c
-                   winbindd/wb_gettoken.c
-                   winbindd/wb_seqnum.c
-                   winbindd/wb_seqnums.c
-                   winbindd/wb_group_members.c
-                   winbindd/wb_getgrsid.c
-                   winbindd/wb_query_user_list.c
-                   winbindd/wb_fill_pwent.c
-                   winbindd/wb_next_pwent.c
-                   winbindd/wb_next_grent.c
-                   winbindd/wb_dsgetdcname.c
-                   winbindd/winbindd_lookupsid.c
-                   winbindd/winbindd_lookupsids.c
-                   winbindd/winbindd_lookupname.c
-                   winbindd/winbindd_sid_to_uid.c
-                   winbindd/winbindd_sid_to_gid.c
-                   winbindd/winbindd_uid_to_sid.c
-                   winbindd/winbindd_gid_to_sid.c
-                   winbindd/winbindd_sids_to_xids.c
-                   winbindd/winbindd_allocate_uid.c
-                   winbindd/winbindd_allocate_gid.c
-                   winbindd/winbindd_getpwsid.c
-                   winbindd/winbindd_getpwnam.c
-                   winbindd/winbindd_getpwuid.c
-                   winbindd/winbindd_getsidaliases.c
-                   winbindd/winbindd_getuserdomgroups.c
-                   winbindd/winbindd_getgroups.c
-                   winbindd/winbindd_show_sequence.c
-                   winbindd/winbindd_getgrgid.c
-                   winbindd/winbindd_getgrnam.c
-                   winbindd/winbindd_getusersids.c
-                   winbindd/winbindd_lookuprids.c
-                   winbindd/winbindd_setpwent.c
-                   winbindd/winbindd_getpwent.c
-                   winbindd/winbindd_endpwent.c
-                   winbindd/winbindd_setgrent.c
-                   winbindd/winbindd_getgrent.c
-                   winbindd/winbindd_endgrent.c
-                   winbindd/winbindd_dsgetdcname.c
-                   winbindd/winbindd_getdcname.c
-                   winbindd/winbindd_list_users.c
-                   winbindd/winbindd_list_groups.c
-                   winbindd/winbindd_check_machine_acct.c
-                   winbindd/winbindd_change_machine_acct.c
-                   winbindd/winbindd_ping_dc.c
-                   winbindd/winbindd_pam_auth.c
-                   winbindd/winbindd_pam_logoff.c
-                   winbindd/winbindd_pam_chauthtok.c
-                   winbindd/winbindd_pam_auth_crap.c
-                   winbindd/winbindd_pam_chng_pswd_auth_crap.c'''
-
-WINBINDD_SRC = '''${WINBINDD_SRC1}'''
-
 MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
 
 SMBD_SRC_MAIN = '''smbd/server.c'''
@@ -1167,7 +1079,91 @@ bld.SAMBA3_SUBSYSTEM('TDB_VALIDATE',
 
 
 bld.SAMBA3_BINARY('winbindd/winbindd',
-                 source=WINBINDD_SRC,
+                 source='''winbindd/winbindd.c
+                 winbindd/winbindd_group.c
+                 winbindd/winbindd_util.c
+                 winbindd/winbindd_cache.c
+                 winbindd/winbindd_pam.c
+                 winbindd/winbindd_misc.c
+                 winbindd/winbindd_cm.c
+                 winbindd/winbindd_wins_byip.c
+                 winbindd/winbindd_wins_byname.c
+                 winbindd/winbindd_msrpc.c
+                 winbindd/winbindd_rpc.c
+                 winbindd/winbindd_reconnect.c
+                 winbindd/winbindd_ads.c
+                 winbindd/winbindd_samr.c
+                 winbindd/winbindd_dual.c
+                 winbindd/winbindd_dual_ndr.c
+                 winbindd/winbindd_dual_srv.c
+                 winbindd/winbindd_async.c
+                 winbindd/winbindd_creds.c
+                 winbindd/winbindd_cred_cache.c
+                 winbindd/winbindd_ccache_access.c
+                 winbindd/winbindd_domain.c
+                 winbindd/winbindd_idmap.c
+                 winbindd/winbindd_locator.c
+                 winbindd/winbindd_ndr.c
+                 winbindd/wb_ping.c
+                 winbindd/wb_lookupsid.c
+                 winbindd/wb_lookupsids.c
+                 winbindd/wb_lookupname.c
+                 winbindd/wb_uid2sid.c
+                 winbindd/wb_gid2sid.c
+                 winbindd/wb_sids2xids.c
+                 winbindd/wb_queryuser.c
+                 winbindd/wb_lookupuseraliases.c
+                 winbindd/wb_lookupusergroups.c
+                 winbindd/wb_getpwsid.c
+                 winbindd/wb_gettoken.c
+                 winbindd/wb_seqnum.c
+                 winbindd/wb_seqnums.c
+                 winbindd/wb_group_members.c
+                 winbindd/wb_getgrsid.c
+                 winbindd/wb_query_user_list.c
+                 winbindd/wb_fill_pwent.c
+                 winbindd/wb_next_pwent.c
+                 winbindd/wb_next_grent.c
+                 winbindd/wb_dsgetdcname.c
+                 winbindd/winbindd_lookupsid.c
+                 winbindd/winbindd_lookupsids.c
+                 winbindd/winbindd_lookupname.c
+                 winbindd/winbindd_sid_to_uid.c
+                 winbindd/winbindd_sid_to_gid.c
+                 winbindd/winbindd_uid_to_sid.c
+                 winbindd/winbindd_gid_to_sid.c
+                 winbindd/winbindd_sids_to_xids.c
+                 winbindd/winbindd_allocate_uid.c
+                 winbindd/winbindd_allocate_gid.c
+                 winbindd/winbindd_getpwsid.c
+                 winbindd/winbindd_getpwnam.c
+                 winbindd/winbindd_getpwuid.c
+                 winbindd/winbindd_getsidaliases.c
+                 winbindd/winbindd_getuserdomgroups.c
+                 winbindd/winbindd_getgroups.c
+                 winbindd/winbindd_show_sequence.c
+                 winbindd/winbindd_getgrgid.c
+                 winbindd/winbindd_getgrnam.c
+                 winbindd/winbindd_getusersids.c
+                 winbindd/winbindd_lookuprids.c
+                 winbindd/winbindd_setpwent.c
+                 winbindd/winbindd_getpwent.c
+                 winbindd/winbindd_endpwent.c
+                 winbindd/winbindd_setgrent.c
+                 winbindd/winbindd_getgrent.c
+                 winbindd/winbindd_endgrent.c
+                 winbindd/winbindd_dsgetdcname.c
+                 winbindd/winbindd_getdcname.c
+                 winbindd/winbindd_list_users.c
+                 winbindd/winbindd_list_groups.c
+                 winbindd/winbindd_check_machine_acct.c
+                 winbindd/winbindd_change_machine_acct.c
+                 winbindd/winbindd_ping_dc.c
+                 winbindd/winbindd_pam_auth.c
+                 winbindd/winbindd_pam_logoff.c
+                 winbindd/winbindd_pam_chauthtok.c
+                 winbindd/winbindd_pam_auth_crap.c
+                 winbindd/winbindd_pam_chng_pswd_auth_crap.c''',
                  deps='''
                  talloc
                  tevent
@@ -1192,8 +1188,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  TDB_VALIDATE
                  ''',
                  enabled=bld.env.build_winbind,
-                 install_path='${SBINDIR}',
-                 vars=locals())
+                 install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
