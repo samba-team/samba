@@ -981,6 +981,11 @@ static PyObject *py_dsdb_get_wellknown_dn(PyObject *self, PyObject *args)
 	PyErr_LDB_DN_OR_RAISE(py_nc_dn, nc_dn);
 
 	ret = dsdb_wellknown_dn(ldb, ldb, nc_dn, wkguid, &wk_dn);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		PyErr_Format(PyExc_KeyError, "Failed to find well known DN for GUID %s", wkguid);
+		return NULL;
+	}
+
 	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
 
 	py_wk_dn = pyldb_Dn_FromDn(wk_dn);
