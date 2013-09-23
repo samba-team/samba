@@ -343,8 +343,8 @@ interface frsrpc
 		[value(0)] uint32 upk_len;
 		[subcontext(4),subcontext_size(pkt_len)]
 			frsrpc_CommPktChunkCtr *ctr;
-		[value(0)] uint32 data_name;
-		[value(0)] uint32 data_handle;
+		[value(0)] uint3264 data_name;
+		[value(0)] uint3264 data_handle;
 	} frsrpc_FrsSendCommPktReq;
 
 	WERROR frsrpc_FrsSendCommPkt(
