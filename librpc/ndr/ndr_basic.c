@@ -1253,7 +1253,7 @@ _PUBLIC_ void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_
  *    current ndr offset.
  * 2) When called with the LIBNDR_FLAG_REMAINING flag, push the byte array to
  *    the ndr buffer.
- * 3) Otherwise, push a uint32 length _and_ a corresponding byte array to the
+ * 3) Otherwise, push a uint3264 length _and_ a corresponding byte array to the
  *    ndr buffer.
  */
 _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flags, DATA_BLOB blob)
@@ -1271,7 +1271,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flag
 		NDR_PUSH_ALLOC_SIZE(ndr, blob.data, blob.length);
 		data_blob_clear(&blob);
 	} else {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.length));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, blob.length));
 	}
 	NDR_CHECK(ndr_push_bytes(ndr, blob.data, blob.length));
 	return NDR_ERR_SUCCESS;
@@ -1284,7 +1284,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flag
  *    current ndr offset.
  * 2) When called with the LIBNDR_FLAG_REMAINING flag, pull all remaining bytes
  *    from the ndr buffer.
- * 3) Otherwise, pull a uint32 length _and_ a corresponding byte array from the
+ * 3) Otherwise, pull a uint3264 length _and_ a corresponding byte array from the
  *    ndr buffer.
  */
 _PUBLIC_ enum ndr_err_code ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob)
@@ -1305,7 +1305,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flag
 			length = ndr->data_size - ndr->offset;
 		}
 	} else {
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &length));
+		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &length));
 	}
 	NDR_PULL_NEED_BYTES(ndr, length);
 	*blob = data_blob_talloc(ndr->current_mem_ctx, ndr->data+ndr->offset, length);
