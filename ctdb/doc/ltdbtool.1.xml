@@ -1,88 +1,75 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry
-	PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <refentry id="ltdbtool.1">
 
-<refmeta>
-	<refentrytitle>ltdbtool</refentrytitle>
-	<manvolnum>1</manvolnum>
-	<refmiscinfo class="source"> </refmiscinfo>
-	<refmiscinfo class="manual"> </refmiscinfo>
-</refmeta>
+  <refmeta>
+    <refentrytitle>ltdbtool</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
 
+  <refnamediv>
+    <refname>ltdbtool</refname>
+    <refpurpose>manipulate CTDB's local TDB files</refpurpose>
+  </refnamediv>
 
-<refnamediv>
-	<refname>ltdbtool</refname>
-        <refpurpose>handle ctdb's local tdb copies </refpurpose>
-</refnamediv>
-
-<refsynopsisdiv>
-	<cmdsynopsis>
-		<command>ltdbtool [OPTIONS] COMMAND</command>
-	</cmdsynopsis>
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>ltdbtool</command>
+      <arg rep="repeat"><replaceable>OPTION</replaceable></arg>
+      <arg choice="req"><replaceable>COMMAND</replaceable></arg>
+      <arg><replaceable>COMMAND-ARGS</replaceable></arg>
+    </cmdsynopsis>
 </refsynopsisdiv>
 
-  <refsect1><title>DESCRIPTION</title>
+  <refsect1>
+    <title>DESCRIPTION</title>
+
     <para>
-      ltdbtool is a utility to cope with ctdb's local tdb copies (LTDBs)
-      without connecting to a ctdb daemon.
+      ltdbtool is a utility to manipulate CTDB's local TDB databases
+      (LTDBs) without connecting to a CTDB daemon.
     </para>
-    <para>It can be used to
-    <itemizedlist spacing='compact'> <!-- mark='opencircle' -->
+
+    <para>
+      It can be used to:
+    </para>
+
+    <itemizedlist>
       <listitem>
 	<para>
-	  dump the contents of a LTDB, optionally printing the ctdb
-	  record header information,
+	  dump the contents of a LTDB, optionally printing the CTDB
+	    record header information,
 	</para>
       </listitem>
       <listitem>
 	<para>
 	  convert between an LTDB and a non-clustered tdb
-	  by adding or removing ctdb headers and
+	  by adding or removing CTDB headers and
 	</para>
       </listitem>
       <listitem>
-	<para>convert between 64 and 32 bit LTDBs where the ctdb record
-	headers differ by 4 bytes of padding.
-	</para>
+	  <para>convert between 64 and 32 bit LTDBs where the CTDB record
+	  headers differ by 4 bytes of padding.
+	  </para>
       </listitem>
     </itemizedlist>
-    </para>
   </refsect1>
 
-  <refsect1><title>COMMANDS</title>
+  <refsect1>
+    <title>OPTIONS</title>
 
     <variablelist>
-      <varlistentry><term>help</term>
+      <varlistentry><term>-e</term>
         <listitem>
           <para>
-	    Print a help text.
-	  </para>
-        </listitem>
-      </varlistentry>
-      <varlistentry><term>dump &lt;IDB&gt;</term>
-        <listitem>
-          <para>
-	    Dump the contents of a LTDB file to standard output in a
-	    human-readable format.
+	    Dump empty records.  These are normally excluded.
 	  </para>
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>convert &lt;IDB&gt; &lt;ODB&gt;</term>
-        <listitem>
-          <para>
-	    Make a copy of a LTDB optionally adding or removing ctdb headers.
-	  </para>
-        </listitem>
-      </varlistentry>
-    </variablelist>
-  </refsect1>
-
-  <refsect1><title>OPTIONS</title>
-
-    <variablelist>
       <varlistentry><term>-p</term>
         <listitem>
           <para>
@@ -91,25 +78,33 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>-s {0|32|64}</term>
+      <varlistentry>
+	<term>
+	  -s
+	  <group choice="req">
+	    <arg choice="plain">0</arg>
+	    <arg choice="plain">32</arg>
+	    <arg choice="plain">64</arg>
+	  </group>
+	</term>
         <listitem>
 	  <para>
-	    Specify how to determine the ctdb record header size
+	    Specify how to determine the CTDB record header size
 	    for the input database:
 	    <variablelist spacing="normal">
 	      <varlistentry><term>0</term>
 	      <listitem>
-		<para>no ctdb header</para>
+		<para>no CTDB header</para>
 	      </listitem>
 	      </varlistentry>
 	      <varlistentry><term>32</term>
 	      <listitem>
-		<para>ctdb header size of a 32 bit system (20 bytes)</para>
+		<para>CTDB header size of a 32 bit system (20 bytes)</para>
 	      </listitem>
 	      </varlistentry>
 	      <varlistentry><term>64</term>
 	      <listitem>
-		<para>ctdb header size of a 64 bit system (24 bytes)</para>
+		<para>CTDB header size of a 64 bit system (24 bytes)</para>
 	      </listitem>
 	      </varlistentry>
 	    </variablelist>
@@ -118,27 +113,37 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>-o {0|32|64}</term>
+      <varlistentry>
+	<term>
+	  -o
+	  <group choice="req">
+	    <arg choice="plain">0</arg>
+	    <arg choice="plain">32</arg>
+	    <arg choice="plain">64</arg>
+	  </group>
+	</term>
         <listitem>
           <para>
-	    Specify how to determine the ctdb record header size
-	    for the output database, see -s
+	    Specify how to determine the CTDB record header size
+	    for the output database, see -s.
 	  </para>
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>-S &lt;SIZE&gt;</term>
+      <varlistentry><term>-S <parameter>SIZE</parameter></term>
         <listitem>
           <para>
-	    Explicitly specify the ctdb record header size of the input database in bytes.
+	    Explicitly specify the CTDB record header SIZE of the
+	    input database in bytes.
 	  </para>
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>-O &lt;SIZE&gt;</term>
+      <varlistentry><term>-O <parameter>SIZE</parameter></term>
         <listitem>
           <para>
-	    Explicitly specify the ctdb record header size for the output database in bytes.
+	    Explicitly specify the CTDB record header SIZE for the
+	    output database in bytes.
 	  </para>
         </listitem>
       </varlistentry>
@@ -146,14 +151,51 @@
       <varlistentry><term>-h</term>
         <listitem>
           <para>
-            Print a help text.
+            Print help text.
 	  </para>
         </listitem>
       </varlistentry>
     </variablelist>
   </refsect1>
 
-  <refsect1><title>EXAMPLES</title>
+  <refsect1>
+    <title>COMMANDS</title>
+
+    <variablelist>
+      <varlistentry><term>help</term>
+        <listitem>
+          <para>
+	    Print help text.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>dump <parameter>IDB</parameter></term>
+        <listitem>
+          <para>
+	    Dump the contents of an LTDB input file IDB to standard
+	    output in a human-readable format.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>
+	  convert <parameter>IDB</parameter> <parameter>ODB</parameter>
+	</term>
+        <listitem>
+          <para>
+	    Copy an LTDB input file IDB to output file ODB, optionally
+	    adding or removing CTDB headers.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>EXAMPLES</title>
+
     <para>
       Print a local tdb in "tdbdump" style:
     </para>
@@ -169,21 +211,21 @@
     </screen>
 
     <para>
-      Strip the ctdb headers from records:
+      Strip the CTDB headers from records:
     </para>
     <screen format="linespecific">
       ltdbtool convert -o0 idmap2.tdb.0 idmap.tdb
     </screen>
 
     <para>
-      Strip 64 bit ctdb headers from records, running on i386:
+      Strip 64 bit CTDB headers from records, running on i386:
     </para>
     <screen format="linespecific">
       ltdbtool convert -s64 -o0 idmap2.tdb.0 idmap.tdb
     </screen>
 
     <para>
-      Strip the ctdb headers from records by piping through tdbrestore:
+      Strip the CTDB headers from records by piping through tdbrestore:
     </para>
     <screen format="linespecific">
       ltdbtool dump idmap2.tdb.0 | tdbrestore idmap.tdb
@@ -206,27 +248,53 @@
 
   <refsect1><title>SEE ALSO</title>
     <para>
-      ctdbd(1), ctdb(1), tdbdump(1), tdbrestore(1),
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>tdbdump</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>tdbrestore</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
       <ulink url="http://ctdb.samba.org/"/>
     </para>
   </refsect1>
-  <refsect1><title>COPYRIGHT/LICENSE</title>
-<literallayout>
-Copyright (C) Gregor Beck 2011
-Copyright (C) Michael Adam 2011
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or (at
-your option) any later version.
+  <refentryinfo>
+    <author>
+      <contrib>
+	This documentation was written by Gregor Beck
+      </contrib>
+    </author>
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-General Public License for more details.
+    <copyright>
+      <year>2011</year>
+      <holder>Gregor Beck</holder>
+      <holder>Michael Adam</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </refentryinfo>
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, see http://www.gnu.org/licenses/.
-</literallayout>
-  </refsect1>
 </refentry>

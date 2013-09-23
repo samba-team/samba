@@ -1,1804 +1,623 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry
-	PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+
 <refentry id="ctdbd.1">
 
-<refmeta>
-	<refentrytitle>ctdbd</refentrytitle>
-	<manvolnum>1</manvolnum>
-	<refmiscinfo class="source">ctdb</refmiscinfo>
-	<refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
-</refmeta>
+  <refmeta>
+    <refentrytitle>ctdbd</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
 
+  <refnamediv>
+    <refname>ctdbd</refname>
+    <refpurpose>The CTDB cluster daemon</refpurpose>
+  </refnamediv>
 
-<refnamediv>
-	<refname>ctdbd</refname>
-	<refpurpose>The CTDB cluster daemon</refpurpose>
-</refnamediv>
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>ctdbd</command>
+      <arg rep="repeat"><replaceable>OPTION</replaceable></arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
 
-<refsynopsisdiv>
-	<cmdsynopsis>
-		<command>ctdbd</command>
-	</cmdsynopsis>
-	
-	<cmdsynopsis>
-		<command>ctdbd</command>
-		<arg choice="opt">-? --help</arg>
-		<arg choice="opt">-d --debug=&lt;INTEGER&gt;</arg>
-		<arg choice="req">--dbdir=&lt;directory&gt;</arg>
-		<arg choice="req">--dbdir-persistent=&lt;directory&gt;</arg>
-		<arg choice="opt">--event-script-dir=&lt;directory&gt;</arg>
-		<arg choice="opt">-i --interactive</arg>
-		<arg choice="opt">--listen=&lt;address&gt;</arg>
-		<arg choice="opt">--logfile=&lt;filename&gt;</arg>
-		<arg choice="opt">--lvs</arg>
-		<arg choice="req">--nlist=&lt;filename&gt;</arg>
-		<arg choice="opt">--no-lmaster</arg>
-		<arg choice="opt">--no-recmaster</arg>
-		<arg choice="opt">--nosetsched</arg>
-		<arg choice="req">--notification-script=&lt;filename&gt;</arg>
-		<arg choice="opt">--public-addresses=&lt;filename&gt;</arg>
-		<arg choice="opt">--public-interface=&lt;interface&gt;</arg>
-		<arg choice="req">--reclock=&lt;filename&gt;</arg>
-		<arg choice="opt">--single-public-ip=&lt;address&gt;</arg>
-		<arg choice="opt">--socket=&lt;filename&gt;</arg>
-		<arg choice="opt">--start-as-disabled</arg>
-		<arg choice="opt">--start-as-stopped</arg>
-		<arg choice="opt">--syslog</arg>
-		<arg choice="opt">--log-ringbuf-size=&lt;num-entries&gt;</arg>
-		<arg choice="opt">--torture</arg>
-		<arg choice="opt">--transport=&lt;STRING&gt;</arg>
-		<arg choice="opt">--usage</arg>
-	</cmdsynopsis>
-	
-</refsynopsisdiv>
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      ctdbd is the main CTDB daemon.
+    </para>
 
-  <refsect1><title>DESCRIPTION</title>
     <para>
-      ctdbd is the main ctdb daemon.
+      Note that ctdbd is not usually invoked directly.  It is invoked
+      via <citerefentry><refentrytitle>ctdbd_wrapper</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry> or via the initscript.
     </para>
+
     <para>
-      ctdbd provides a clustered version of the TDB database with automatic rebuild/recovery of the databases upon nodefailures.
-    </para>
-    <para>
-      Combined with a cluster filesystem ctdbd provides a full HA environment for services such as clustered Samba and NFS as well as other services.
-    </para>
-    <para>
-      ctdbd provides monitoring of all nodes in the cluster and automatically reconfigures the cluster and recovers upon node failures.
-    </para>
-    <para>
-      ctdbd is the main component in clustered Samba that provides a high-availability load-sharing CIFS server cluster.
+      See <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry> for an overview of CTDB.
     </para>
   </refsect1>
 
-
   <refsect1>
-    <title>OPTIONS</title>
+    <title>GENERAL OPTIONS</title>
 
     <variablelist>
-      <varlistentry><term>-? --help</term>
-        <listitem>
-          <para>
-            Print some help text to the screen.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>-d --debug=&lt;DEBUGLEVEL&gt;</term>
-        <listitem>
-          <para>
-            This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--dbdir=&lt;directory&gt;</term>
-        <listitem>
-          <para>
-            This is the directory on local storage where ctdbd keeps the local
-            copy of the TDB databases. This directory is local for each node and should not be stored on the shared cluster filesystem.
-          </para>
-          <para>
-            This directory would usually be /var/ctdb .
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--dbdir-persistent=&lt;directory&gt;</term>
-        <listitem>
-          <para>
-            This is the directory on local storage where ctdbd keeps the local
-            copy of the persistent TDB databases. This directory is local for each node and should not be stored on the shared cluster filesystem.
-          </para>
-          <para>
-            This directory would usually be /etc/ctdb/persistent .
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--event-script-dir=&lt;directory&gt;</term>
-        <listitem>
-          <para>
-            This option is used to specify the directory where the CTDB event
-	    scripts are stored.
-          </para>
-          <para>
-            This will normally be /etc/ctdb/events.d which is part of the ctdb distribution.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>-i --interactive</term>
-        <listitem>
-          <para>
-            By default ctdbd will detach itself from the shell and run in
-            the background as a daemon. This option makes ctdbd to start in interactive mode.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--listen=&lt;address&gt;</term>
-        <listitem>
-          <para>
-            This specifies which ip address ctdb will bind to. By default ctdbd will bind to the first address it finds in the /etc/ctdb/nodes file and which is also present on the local system in which case you do not need to provide this option.
-          </para>
-          <para>
-            This option is only required when you want to run multiple ctdbd daemons/nodes on the same physical host in which case there would be multiple entries in /etc/ctdb/nodes what would match a local interface.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--logfile=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            This is the file where ctdbd will write its log. This is usually /var/log/log.ctdb .
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--lvs</term>
-        <listitem>
-          <para>
-	  This option is used to activate the LVS capability on a CTDB node.
-	  Please see the LVS section.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--nlist=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            This file contains a list of the private ip addresses of every node in the cluster. There is one line/ip address for each node. This file must be the same for all nodes in the cluster.
-          </para>
-          <para>
-            This file is usually /etc/ctdb/nodes .
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--no-lmaster</term>
-        <listitem>
-          <para>
-	  This argument specifies that this node can NOT become an lmaster
-	  for records in the database. This means that it will never show up
-	  in the vnnmap. This feature is primarily used for making a cluster
-	span across a WAN link and use CTDB as a WAN-accelerator.
-          </para>
-          <para>
-	  Please see the "remote cluster nodes" section for more information.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--no-recmaster</term>
-        <listitem>
-          <para>
-	  This argument specifies that this node can NOT become a recmaster
-	  for the database. This feature is primarily used for making a cluster
-	span across a WAN link and use CTDB as a WAN-accelerator.
-          </para>
-          <para>
-	  Please see the "remote cluster nodes" section for more information.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--nosetsched</term>
-        <listitem>
-          <para>
-	    This is a ctdbd debugging option. this option is only used when
-	    debugging ctdbd.
+      <varlistentry>
+	<term>-d, --debug=<parameter>DEBUGLEVEL</parameter></term>
+	<listitem>
+	  <para>
+	    This option sets the debug level to DEBUGLEVEL, which
+	    controls what will be written to the logfile. The default is
+	    0 which will only log important events and errors. A larger
+	    number will provide additional logging.
 	  </para>
 	  <para>
-            Normally ctdb will change its scheduler to run as a real-time 
-	    process. This is the default mode for a normal ctdbd operation
-	    to gurarantee that ctdbd always gets the cpu cycles that it needs.
-          </para>
-          <para>
-	    This option is used to tell ctdbd to NOT run as a real-time process
-	    and instead run ctdbd as a normal userspace process.
-	    This is useful for debugging and when you want to run ctdbd under
-	    valgrind or gdb. (You don't want to attach valgrind or gdb to a
-	    real-time process.)
-          </para>
-        </listitem>
+	    See the <citetitle>DEBUG LEVELS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--notification-script=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-	    This specifies a script which will be invoked by ctdb when certain
-	    state changes occur in ctdbd and when you may want to trigger this
-	    to run certain scripts.
-          </para>
-          <para>
-            This file is usually /etc/ctdb/notify.sh .
-          </para>
-          <para>
-	    See the NOTIFICATION SCRIPT section below for more information.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--dbdir=<parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY on local storage where ctdbd keeps a local copy of
+	    TDB databases.  This directory is local for each node and
+	    should not be stored on the shared cluster filesystem.
+	  </para>
+	  <para>
+	    This directory would usually be <filename>/var/ctdb</filename>
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--public_addresses=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes.
-          </para>
-          <para>
-            This is usually the file /etc/ctdb/public_addresses
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--dbdir-persistent=<parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY on local storage where ctdbd keeps a local copy of
+	    persistent TDB databases.  This directory is local for each
+	    node and should not be stored on the shared cluster
+	    filesystem.
+	  </para>
+	  <para>
+	    This directory would usually be
+	    <filename>/etc/ctdb/persistent</filename>
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--public-interface=&lt;interface&gt;</term>
-        <listitem>
-          <para>
-            This option tells ctdb which interface to attach public-addresses
-	    to and also where to attach the single-public-ip when used.
-	    </para>
-	    <para>
-	    This is only required when using public ip addresses and only when
-	    you don't specify the interface explicitly in /etc/ctdb/public_addresses or when you are using --single-public-ip.
-          </para>
-          <para>
-	  If you omit this argument when using public addresses or single public ip, ctdb will not be able to send out Gratious ARPs correctly or be able to kill tcp connections correctly which will lead to application failures. 
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--dbdir-state=<parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY on local storage where ctdbd keep internal state
+	    TDB files.  This directory is local for each node and
+	    should not be stored on the shared cluster filesystem.
+	  </para>
+	  <para>
+	    This directory would usually be
+	    <filename>/var/ctdb/state</filename>
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--reclock=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to prevent split brains from occuring.
-            This file must be stored on shared storage.
-          </para>
-          <para>
-	    It is possible to run CTDB without a reclock file, but then there 
-	    will be no protection against split brain if the network becomes
-	    partitioned. Using CTDB without a reclock file is strongly
-	    discouraged.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--event-script-dir=<parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY where the CTDB event scripts are stored.  See the
+	    <citetitle>EVENT SCRIPTS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more information.
+	  </para>
+	  <para>
+	    Default is <envar>CTDB_BASE</envar>/events.d, so usually
+	    <filename>/etc/ctdb/events.d</filename>, which is part of
+	    the CTDB installation.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--socket=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            This specifies the name of the domain socket that ctdbd will create. This socket is used for local clients to attach to and communicate with the ctdbd daemon.
-          </para>
-          <para>
-            The default is /tmp/ctdb.socket . You only need to use this option if you plan to run multiple ctdbd daemons on the same physical host.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--logfile=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME where ctdbd will write its log. This is usually
+	    <filename>/var/log/log.ctdb</filename>.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--start-as-disabled</term>
-        <listitem>
-          <para>
-	  This makes the ctdb daemon to be DISABLED when it starts up.
-          </para>
-          <para>
-	  As it is DISABLED it will not get any of the public ip addresses
-	  allocated to it, and thus this allow you to start ctdb on a node 
-	  without causing any ip address to failover from other nodes onto
-	  the new node.
-          </para>
-          <para>
-	  When used, the administrator must keep track of when nodes start and
-	  manually enable them again using the "ctdb enable" command, or else
-	  the node will not host any services.
-          </para>
-          <para>
-	  A node that is DISABLED will not host any services and will not be
-	  reachable/used by any clients.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--log-ringbuf-size=<parameter>NUM</parameter></term>
+	<listitem>
+	  <para>
+	    Set the size of the log ringbuffer to NUM entries.
+	  </para>
+	  <para>
+	    CTDB uses an in-memory ringbuffer containing NUM most
+	    recent log entries for all log levels (except DEBUG).  The
+	    ringbugger can be useful for extracting detailed logs even
+	    if some entries are not logged to the regular logs.
+	  </para>
+	  <para>
+	    Use the <command>ctdb getlog</command> command to retrieve
+	    log entries from the ringbuffer.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--start-as-stopped</term>
-        <listitem>
-          <para>
-	  This makes the ctdb daemon to be STOPPED when it starts up.
-          </para>
-          <para>
-	  A node that is STOPPED does not host any public addresses. It is not part of the VNNMAP so it does act as an LMASTER. It also has all databases locked in recovery mode until restarted.
-          </para>
-          <para>
-	  To restart and activate a STOPPED node, the command "ctdb continue" is used.
-          </para>
-          <para>
-	  A node that is STOPPED will not host any services and will not be
-	  reachable/used by any clients.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--lvs</term>
+	<listitem>
+	  <para>
+	    This option is used to activate the LVS capability on a CTDB
+	    node.  Please see the <citetitle>LVS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--syslog</term>
-        <listitem>
-          <para>
-	    Send all log messages to syslog instead of to the ctdb logfile.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--max-persistent-check-errors=<parameter>NUM</parameter></term>
+	<listitem>
+	  <para>
+	    NUM specifies the maximum number of health check failures
+	    allowed for persistent databases during startup.
+	  </para>
+	  <para>
+	    The default value is 0.  Setting this to non-zero allows a
+	    node with unhealthy persistent databases to startup and
+	    join the cluster as long as there is another node with
+	    healthy persistent databases.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--log-ringbuf-size=&lt;num-entries&gt;</term>
-        <listitem>
-          <para>
-	    In addition to the normal loggign to a log file,
-	    CTDBD also keeps a in-memory ringbuffer containing the most recent
-	    log entries for all log levels (except DEBUG).
-          </para>
-          <para>
-	    This is useful since it allows for keeping continuous logs to a file
-	    at a reasonable non-verbose level, but shortly after an incident has
-	    occured, a much more detailed log can be pulled from memory. This
-	    can allow you to avoid having to reproduce an issue due to the
-	    on-disk logs being of insufficient detail.
-          </para>
-          <para>
-	    This in-memory ringbuffer contains a fixed number of the most recent
-	    entries. This is settable at startup either through the
-	    --log-ringbuf-size argument, or preferably by using
-	    CTDB_LOG_RINGBUF_SIZE in the sysconfig file.
-          </para>
-          <para>
-	    Use the "ctdb getlog" command to access this log.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--nlist=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME containing a list of the private IP addresses, one
+	    per line, for each node in the cluster.  This file
+	    <emphasis>must be the same on each node</emphasis> in the
+	    cluster.
+	  </para>
+	  <para>
+	    Default is <envar>CTDB_BASE</envar>/nodes, so usually
+	    <filename>/etc/ctdb/nodes</filename>.
+	  </para>
+	</listitem>
       </varlistentry>
 
-
-      <varlistentry><term>--torture</term>
-        <listitem>
-          <para>
-            This option is only used for development and testing of ctdbd. It adds artificial errors and failures to the common codepaths in ctdbd to verify that ctdbd can recover correctly for failures.
-          </para>
-          <para>
-            You do NOT want to use this option unless you are developing and testing new functionality in ctdbd.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--no-lmaster</term>
+	<listitem>
+	  <para>
+	    This argument specifies that this node can NOT become an lmaster
+	    for records in the database. This means that it will never show up
+	    in the vnnmap. This feature is primarily used for making a cluster
+	    span across a WAN link and use CTDB as a WAN-accelerator.
+	  </para>
+	  <para>
+	    Please see the <citetitle>REMOTE CLUSTER NODES</citetitle>
+	    section in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--transport=&lt;STRING&gt;</term>
-        <listitem>
-          <para>
-            This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
-          </para>
-          <para>
-            Currently only "tcp" is supported but "infiniband" might be
-	    implemented in the future.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--no-recmaster</term>
+	<listitem>
+	  <para>
+	    This argument specifies that this node can NOT become a recmaster
+	    for the database. This feature is primarily used for making a cluster
+	    span across a WAN link and use CTDB as a WAN-accelerator.
+	  </para>
+	  <para>
+	    Please see the <citetitle>REMOTE CLUSTER NODES</citetitle>
+	    section in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term>--usage</term>
-        <listitem>
-          <para>
-            Print useage information to the screen.
-          </para>
-        </listitem>
+      <varlistentry>
+	<term>--notification-script=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME specifying a script to be invoked by ctdbd when
+	    certain state changes occur.
+	  </para>
+	  <para>
+	    This file is usually
+	    <filename>/etc/ctdb/notify.sh</filename>.
+	  </para>
+	  <para>
+	    Please see the <citetitle>NOTIFICATION SCRIPT</citetitle>
+	    section in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--pidfile=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME for file containing process ID of main CTDB
+	    daemon.  This file is automatically created and removed by
+	    CTDB.
+	  </para>
+	  <para>
+	    The default is to not create a PID file.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--public_addresses=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME specifying a file containing the public IP
+	    addresses to use on the cluster when CTDB should use IP
+	    takeover. This file contains a list of IP addresses,
+	    netmasks and interfaces.  CTDB will distribute these public
+	    IP addresses appropriately across the available nodes.
+	  </para>
+	  <para>
+	    The IP addresses specified in this file can differ across
+	    nodes.
+	  </para>
+	  <para>
+	    This is usually the file
+	    <filename>/etc/ctdb/public_addresses</filename>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--public-interface=<parameter>INTERFACE</parameter></term>
+	<listitem>
+	  <para>
+	    INTERFACE on which to attach public IP addresses or on which
+	    to attach the single-public-ip when used.
+	  </para>
+	  <para>
+	    When using public IP addresses, this is only required if
+	    interfaces are not explicitly specified in the public
+	    addresses file.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--reclock=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME is the name of the recovery lock file stored in
+	    <emphasis>shared storage</emphasis> that ctdbd uses to
+	    prevent split brains from occuring.
+	  </para>
+	  <para>
+	    It is possible to run CTDB without a recovery lock file, but
+	    then there will be no protection against split brain if the
+	    cluster/network becomes partitioned. Using CTDB without a
+	    reclock file is strongly discouraged.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--single-public-ip=<parameter>IPADDR</parameter></term>
+	<listitem>
+	  <para>
+	    IPADDR specifies the single IP that CTDB will use in
+	    conjuction with LVS.
+	  </para>
+	  <para>
+	    Please see the <citetitle>LVS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--start-as-disabled</term>
+	<listitem>
+	  <para>
+	    This makes ctdbd start in the DISABLED state.
+	  </para>
+	  <para>
+	    To allow the node to host public IP addresses and
+	    services, it must be manually enabled using the
+	    <command>ctdb enable</command> command.
+	  </para>
+	  <para>
+	    Please see the <citetitle>NODE STATES</citetitle> section
+	    in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information about the DISABLED state.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--start-as-stopped</term>
+	<listitem>
+	  <para>
+	    This makes ctdbd start in the STOPPED state.
+	  </para>
+	  <para>
+	    To allow the node to take part in the cluster it must be
+	    manually continued with the the <command>ctdb
+	    enable</command> command.
+	  </para>
+	  <para>
+	    Please see the <citetitle>NODE STATES</citetitle> section
+	    in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information about the STOPPED state.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--syslog</term>
+	<listitem>
+	  <para>
+	    Send log messages to syslog instead of the CTDB logfile.
+	    This option overrides --logfile.  The default is to log to
+	    a file.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--transport=tcp|infiniband</term>
+	<listitem>
+	  <para>
+	    This option specifies which transport to use for ctdbd
+	    internode communications. The default is "tcp".
+	  </para>
+	  <para>
+	    The "infiniband" support is not regularly tested.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>-?, --help</term>
+	<listitem>
+	  <para>
+	    Display a summary of options.
+	  </para>
+	</listitem>
       </varlistentry>
 
     </variablelist>
   </refsect1>
 
+  <refsect1>
+    <title>DEBUGGING OPTIONS</title>
 
-  <refsect1><title>Private vs Public addresses</title>
-    <para>
-      When used for ip takeover in a HA environment, each node in a ctdb 
-      cluster has multiple ip addresses assigned to it. One private and one or more public.
-    </para>
+    <variablelist>
 
-    <refsect2><title>Private address</title>
-      <para>
-        This is the physical ip address of the node which is configured in 
-        linux and attached to a physical interface. This address uniquely
-        identifies a physical node in the cluster and is the ip addresses
-        that ctdbd will use to communicate with the ctdbd daemons on the
-        other nodes in the cluster.
-      </para>
-      <para>
-        The private addresses are configured in /etc/ctdb/nodes 
-        (unless the --nlist option is used) and contain one line for each 
-        node in the cluster. Each line contains the private ip address for one
-        node in the cluster. This file must be the same on all nodes in the
-	cluster.
-      </para>
-      <para>
-        Since the private addresses are only available to the network when the
-        corresponding node is up and running you should not use these addresses
-        for clients to connect to services provided by the cluster. Instead
-        client applications should only attach to the public addresses since
-        these are guaranteed to always be available.
-      </para>
-      <para>
-        When using ip takeover, it is strongly recommended that the private 
-	addresses are configured on a private network physically separated
-	from the rest of the network and that this private network is dedicated
-	to CTDB traffic.
-      </para>
-      Example /etc/ctdb/nodes for a four node cluster:
-      <screen format="linespecific">
-        10.1.1.1
-        10.1.1.2
-        10.1.1.3
-        10.1.1.4
-      </screen>
-    </refsect2>
-    <refsect2><title>Public address</title>
-      <para>
-        A public address on the other hand is not attached to an interface.
-        This address is managed by ctdbd itself and is attached/detached to
-        a physical node at runtime.
-      </para>
-      <para>
-        The ctdb cluster will assign/reassign these public addresses across the
-        available healthy nodes in the cluster. When one node fails, its public address
-        will be migrated to and taken over by a different node in the cluster
-        to ensure that all public addresses are always available to clients as 
-	long as there are still nodes available capable of hosting this address.
-      </para>
-      <para>
-        These addresses are not physically attached to a specific node. 
-        The 'ctdb ip' command can be used to view the current assignment of 
-        public addresses and which physical node is currently serving it.
-      </para>
-      <para>
-	On each node this file contains a list of the public addresses that 
-	this node is capable of hosting.
-        The list also contain the netmask and the 
-	interface where this address should be attached for the case where you
-	may want to serve data out through multiple different interfaces.
-      </para>
-      Example /etc/ctdb/public_addresses for a node that can host 4 public addresses:
-      <screen format="linespecific">
-        11.1.1.1/24 eth0
-        11.1.1.2/24 eth0
-        11.1.2.1/24 eth1
-        11.1.2.2/24 eth1
-      </screen>
+      <varlistentry>
+	<term>-i, --interactive</term>
+	<listitem>
+	  <para>
+	    Enable interactive mode.  This will make ctdbd run in the
+	    foreground and not detach from the terminal.  By default
+	    ctdbd will detach itself and run in the background as a
+	    daemon.
+	  </para>
+	</listitem>
+      </varlistentry>
 
-	<para>
-	In most cases this file would be the same on all nodes in a cluster but
-	there are exceptions when one may want to use different files
-	on different nodes.
-	</para>
-	Example: 4 nodes partitioned into two subgroups :
-	<screen format="linespecific">
-	Node 0:/etc/ctdb/public_addresses
-		10.1.1.1/24 eth0
-		10.1.1.2/24 eth0
+      <varlistentry>
+	<term>--listen=<parameter>IPADDR</parameter></term>
+	<listitem>
+	  <para>
+	    This specifies which IP address that ctdbd will bind to.
+	  </para>
+	  <para>
+	    By default ctdbd will bind to the first address it finds in
+	    the <filename>/etc/ctdb/nodes</filename> file that is also
+	    present on the local system.
+	  </para>
+	  <para>
+	    This option is only required when you want to run multiple
+	    ctdbd daemons/nodes on the same physical host in which case
+	    there would be multiple entries in
+	    <filename>/etc/ctdb/nodes</filename> that would match a
+	    local interface.
+	  </para>
+	</listitem>
+      </varlistentry>
 
-	Node 1:/etc/ctdb/public_addresses
-		10.1.1.1/24 eth0
-		10.1.1.2/24 eth0
+      <varlistentry>
+	<term>--nopublicipcheck</term>
+	<listitem>
+	  <para>
+	    This option is used when testing with multiple local
+	    daemons on a single machine.  It disables checks related
+	    to public IP addresses.
+	  </para>
+	</listitem>
+      </varlistentry>
 
-	Node 2:/etc/ctdb/public_addresses
-		10.2.1.1/24 eth0
-		10.2.1.2/24 eth0
+      <varlistentry>
+	<term>--nosetsched</term>
+	<listitem>
+	  <para>
+	    This is a debugging option. This option is only used when
+	    debugging ctdbd.
+	  </para>
+	  <para>
+	    Normally ctdbd will change its scheduler to run as a
+	    real-time process. This is the default mode for a normal
+	    ctdbd operation to gurarantee that ctdbd always gets the CPU
+	    cycles that it needs.
+	  </para>
+	  <para>
+	    This option is used to tell ctdbd to
+	    <emphasis>not</emphasis> run as a real-time process and
+	    instead run ctdbd as a normal userspace process.  This is
+	    useful for debugging and when you want to run ctdbd under
+	    valgrind or gdb. (You don't want to attach valgrind or gdb
+	    to a real-time process.)
+	  </para>
+	</listitem>
+      </varlistentry>
 
-	Node 3:/etc/ctdb/public_addresses
-		10.2.1.1/24 eth0
-		10.2.1.2/24 eth0
-	</screen>
-	<para>
-	In this example nodes 0 and 1 host two public addresses on the 
-	10.1.1.x network  while nodes 2 and 3 host two public addresses for the 
-	10.2.1.x network.
-	</para>
-	<para>
-	Ip address 10.1.1.1 can be hosted by either of nodes 0 or 1 and will be
-	available to clients as long as at least one of these two nodes are
-	available.
-	If both nodes 0 and node 1 become unavailable 10.1.1.1 also becomes 
-	unavailable. 10.1.1.1 can not be failed over to node 2 or node 3 since
-	these nodes do not have this ip address listed in their public
-	addresses file.
-	</para>
-    </refsect2>
-  </refsect1>
+      <varlistentry>
+	<term>--socket=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME specifies the name of the Unix domain socket that
+	    ctdbd will create. This socket is used by local clients to
+	    communicate with ctdbd.
+	  </para>
+	  <para>
+	    The default is <filename>/tmp/ctdb.socket</filename> . You
+	    only need to use this option if you plan to run multiple
+	    ctdbd daemons on the same physical host, usually for
+	    testing.
+	  </para>
+	</listitem>
+      </varlistentry>
 
+      <varlistentry>
+	<term>--script-log-level=<parameter>DEBUGLEVEL</parameter></term>
+	<listitem>
+	  <para>
+	    This option sets the debug level of event script output to
+	    DEBUGLEVEL.  The default is ERR (0).
+	  </para>
+	  <para>
+	    See the <citetitle>DEBUG LEVELS</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	</listitem>
+      </varlistentry>
 
-  <refsect1><title>Node status</title>
-    <para>
-      The current status of each node in the cluster can be viewed by the 
-      'ctdb status' command.
-    </para>
-    <para>
-      There are five possible states for a node.
-    </para>
+      <varlistentry>
+	<term>--sloppy-start</term>
+	<listitem>
+	  <para>
+	    This is debugging option.  This speeds up the initial
+	    recovery during startup at the expense of some consistency
+	    checking.  <emphasis>Don't use this option in
+	    production</emphasis>.
+	  </para>
+	</listitem>
+      </varlistentry>
 
-    <para>
-      OK - This node is fully functional.
-    </para>
-    
-    <para>
-      DISCONNECTED - This node could not be connected through the network 
-      and is currently not particpating in the cluster. If there is a 
-      public IP address associated with this node it should have been taken 
-      over by a different node. No services are running on this node.
-    </para>
- 
-    <para>
-      DISABLED - This node has been administratively disabled. This node is 
-      still functional and participates in the CTDB cluster but its IP 
-      addresses have been taken over by a different node and no services are 
-      currently being hosted.
-    </para>
-   
-    <para>
-      UNHEALTHY - A service provided by this node is malfunctioning and should 
-      be investigated. The CTDB daemon itself is operational and participates 
-      in the cluster. Its public IP address has been taken over by a different 
-      node and no services are currently being hosted. All unhealthy nodes 
-      should be investigated and require an administrative action to rectify.
-    </para>
-    
-    <para>
-      BANNED - This node failed too many recovery attempts and has been banned 
-      from participating in the cluster for a period of RecoveryBanPeriod 
-      seconds. Any public IP address has been taken over by other nodes. This 
-      node does not provide any services. All banned nodes should be 
-      investigated and require an administrative action to rectify. This node 
-      does not perticipate in the CTDB cluster but can still be communicated 
-      with. I.e. ctdb commands can be sent to it.
-    </para>
+      <varlistentry>
+	<term>--torture</term>
+	<listitem>
+	  <para>
+	    This option is only used for development and testing of
+	    CTDB.  It adds artificial errors and failures to the
+	    common codepaths in ctdbd to verify that ctdbd can recover
+	    correctly from failures.
+	  </para>
+	  <para>
+	    <emphasis>Do not use this option</emphasis> unless you are
+	    developing and testing new functionality in CTDB.
+	  </para>
+	</listitem>
+      </varlistentry>
 
-    <para>
-      STOPPED - A node that is stopped does not host any public ip addresses,
-      nor is it part of the VNNMAP. A stopped node can not become LVSMASTER,
-      RECMASTER or NATGW.
-      This node does not perticipate in the CTDB cluster but can still be
-      communicated with. I.e. ctdb commands can be sent to it.
-    </para>
+      <varlistentry>
+	<term>--valgrinding</term>
+	<listitem>
+	  <para>
+	    This is a debugging option. This option is only used when
+	    debugging ctdbd.  This enables additional debugging
+	    capabilities and implies --nosetsched.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
   </refsect1>
 
   <refsect1>
-    <title>PUBLIC TUNABLES</title>
+    <title>SEE ALSO</title>
     <para>
-    These are the public tuneables that can be used to control how ctdb behaves.
-    </para>
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
 
-    <refsect2><title>MaxRedirectCount</title>
-    <para>Default: 3</para>
-    <para>
-    If we are not the DMASTER and need to fetch a record across the network
-    we first send the request to the LMASTER after which the record
-    is passed onto the current DMASTER. If the DMASTER changes before
-    the request has reached that node, the request will be passed onto the
-    "next" DMASTER. For very hot records that migrate rapidly across the
-    cluster this can cause a request to "chase" the record for many hops
-    before it catches up with the record.
-
-    this is how many hops we allow trying to chase the DMASTER before we
-    switch back to the LMASTER again to ask for new directions.
-    </para>
-    <para>
-    When chasing a record, this is how many hops we will chase the record
-    for before going back to the LMASTER to ask for new guidance.
-    </para>
-    </refsect2>
-
-    <refsect2><title>SeqnumInterval</title>
-    <para>Default: 1000</para>
-    <para>
-    Some databases have seqnum tracking enabled, so that samba will be able
-    to detect asynchronously when there has been updates to the database.
-    Everytime a database is updated its sequence number is increased.
-    </para>
-    <para>
-    This tunable is used to specify in 'ms' how frequently ctdb will
-    send out updates to remote nodes to inform them that the sequence
-    number is increased.
-    </para>
-    </refsect2>
-
-    <refsect2><title>ControlTimeout</title>
-    <para>Default: 60</para>
-    <para>
-    This is the default
-    setting for timeout for when sending a control message to either the
-    local or a remote ctdb daemon.
-    </para>
-    </refsect2>
-
-    <refsect2><title>TraverseTimeout</title>
-    <para>Default: 20</para>
-    <para>
-    This setting controls how long we allow a traverse process to run.
-    After this timeout triggers, the main ctdb daemon will abort the
-    traverse if it has not yet finished.
-    </para>
-    </refsect2>
-
-    <refsect2><title>KeepaliveInterval</title>
-    <para>Default: 5</para>
-    <para>
-    How often in seconds should the nodes send keepalives to eachother.
-    </para>
-    </refsect2>
-
-    <refsect2><title>KeepaliveLimit</title>
-    <para>Default: 5</para>
-    <para>
-    After how many keepalive intervals without any traffic should a node
-    wait until marking the peer as DISCONNECTED.
-    </para>
-    <para>
-    If a node has hung, it can thus take KeepaliveInterval*(KeepaliveLimit+1)
-    seconds before we determine that the node is DISCONNECTED and that we
-    require a recovery. This limitshould not be set too high since we want
-    a hung node to be detectec, and expunged from the cluster well before
-    common CIFS timeouts (45-90 seconds) kick in.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecoverTimeout</title>
-    <para>Default: 20</para>
-    <para>
-    This is the default setting for timeouts for controls when sent from the
-    recovery daemon. We allow longer control timeouts from the recovery daemon
-    than from normal use since the recovery dameon often use controls that 
-    can take a lot longer than normal controls.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecoverInterval</title>
-    <para>Default: 1</para>
-    <para>
-    How frequently in seconds should the recovery daemon perform the
-    consistency checks that determine if we need to perform a recovery or not.
-    </para>
-    </refsect2>
-
-    <refsect2><title>ElectionTimeout</title>
-    <para>Default: 3</para>
-    <para>
-    When electing a new recovery master, this is how many seconds we allow
-    the election to take before we either deem the election finished
-    or we fail the election and start a new one.
-    </para>
-    </refsect2>
-
-    <refsect2><title>TakeoverTimeout</title>
-    <para>Default: 9</para>
-    <para>
-    This is how many seconds we allow controls to take for IP failover events.
-    </para>
-    </refsect2>
-
-    <refsect2><title>MonitorInterval</title>
-    <para>Default: 15</para>
-    <para>
-    How often should ctdb run the event scripts to check for a nodes health.
-    </para>
-    </refsect2>
-
-    <refsect2><title>TickleUpdateInterval</title>
-    <para>Default: 20</para>
-    <para>
-    How often will ctdb record and store the "tickle" information used to
-    kickstart stalled tcp connections after a recovery.
-    </para>
-    </refsect2>
-
-    <refsect2><title>EventScriptTimeout</title>
-    <para>Default: 20</para>
-    <para>
-    How long should ctdb let an event script run before aborting it and
-    marking the node unhealthy.
-    </para>
-    </refsect2>
-
-    <refsect2><title>EventScriptTimeoutCount</title>
-    <para>Default: 1</para>
-    <para>
-    How many events in a row needs to timeout before we flag the node UNHEALTHY.
-    This setting is useful if your scripts can not be written so that they
-    do not hang for benign reasons.
-    </para>
-    </refsect2>
-
-    <refsect2><title>EventScriptUnhealthyOnTimeout</title>
-    <para>Default: 0</para>
-    <para>
-    This setting can be be used to make ctdb never become UNHEALTHY if your
-    eventscripts keep hanging/timing out.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecoveryGracePeriod</title>
-    <para>Default: 120</para>
-    <para>
-    During recoveries, if a node has not caused recovery failures during the
-    last grace period, any records of transgressions that the node has caused
-    recovery failures will be forgiven. This resets the ban-counter back to 
-    zero for that node.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecoveryBanPeriod</title>
-    <para>Default: 300</para>
-    <para>
-    If a node becomes banned causing repetitive recovery failures. The node will
-    eventually become banned from the cluster.
-    This controls how long the culprit node will be banned from the cluster
-    before it is allowed to try to join the cluster again.
-    Don't set to small. A node gets banned for a reason and it is usually due
-    to real problems with the node.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DatabaseHashSize</title>
-    <para>Default: 100001</para>
-    <para>
-    Size of the hash chains for the local store of the tdbs that ctdb manages.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DatabaseMaxDead</title>
-    <para>Default: 5</para>
-    <para>
-    How many dead records per hashchain in the TDB database do we allow before
-    the freelist needs to be processed.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RerecoveryTimeout</title>
-    <para>Default: 10</para>
-    <para>
-    Once a recovery has completed, no additional recoveries are permitted
-    until this timeout has expired.
-    </para>
-    </refsect2>
-
-    <refsect2><title>EnableBans</title>
-    <para>Default: 1</para>
-    <para>
-    When set to 0, this disables BANNING completely in the cluster and thus
-    nodes can not get banned, even it they break. Don't set to 0 unless you
-    know what you are doing.  You should set this to the same value on
-    all nodes to avoid unexpected behaviour.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DeterministicIPs</title>
-    <para>Default: 0</para>
-    <para>
-    When enabled, this tunable makes ctdb try to keep public IP addresses
-    locked to specific nodes as far as possible. This makes it easier for
-    debugging since you can know that as long as all nodes are healthy
-    public IP X will always be hosted by node Y. 
-    </para>
-    <para>
-    The cost of using deterministic IP address assignment is that it
-    disables part of the logic where ctdb tries to reduce the number of
-    public IP assignment changes in the cluster. This tunable may increase
-    the number of IP failover/failbacks that are performed on the cluster
-    by a small margin.
-    </para>
-
-    </refsect2>
-    <refsect2><title>LCP2PublicIPs</title>
-    <para>Default: 1</para>
-    <para>
-    When enabled this switches ctdb to use the LCP2 ip allocation
-    algorithm.
-    </para>
-    </refsect2>
-
-    <refsect2><title>ReclockPingPeriod</title>
-    <para>Default: x</para>
-    <para>
-    Obsolete
-    </para>
-    </refsect2>
-
-    <refsect2><title>NoIPFailback</title>
-    <para>Default: 0</para>
-    <para>
-    When set to 1, ctdb will not perform failback of IP addresses when a node
-    becomes healthy. Ctdb WILL perform failover of public IP addresses when a
-    node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb
-    will not fail the addresses back.
-    </para>
-    <para>
-    Use with caution! Normally when a node becomes available to the cluster
-    ctdb will try to reassign public IP addresses onto the new node as a way
-    to distribute the workload evenly across the clusternode. Ctdb tries to
-    make sure that all running nodes have approximately the same number of
-    public addresses it hosts.
-    </para>
-    <para>
-    When you enable this tunable, CTDB will no longer attempt to rebalance
-    the cluster by failing IP addresses back to the new nodes. An unbalanced
-    cluster will therefore remain unbalanced until there is manual
-    intervention from the administrator. When this parameter is set, you can
-    manually fail public IP addresses over to the new node(s) using the
-    'ctdb moveip' command.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DisableIPFailover</title>
-    <para>Default: 0</para>
-    <para>
-    When enabled, ctdb will not perform failover or failback. Even if a
-    node fails while holding public IPs, ctdb will not recover the IPs or
-    assign them to another node.
-    </para>
-    <para>
-    When you enable this tunable, CTDB will no longer attempt to recover
-    the cluster by failing IP addresses over to other nodes. This leads to
-    a service outage until the administrator has manually performed failover
-    to replacement nodes using the 'ctdb moveip' command.
-    </para>
-    </refsect2>
-
-    <refsect2><title>NoIPTakeover</title>
-    <para>Default: 0</para>
-    <para>
-    When set to 1, ctdb will not allow IP addresses to be failed over
-    onto this node. Any IP addresses that the node currently hosts
-    will remain on the node but no new IP addresses can be failed over
-    to the node.
-    </para>
-    </refsect2>
-
-    <refsect2><title>NoIPHostOnAllDisabled</title>
-    <para>Default: 0</para>
-    <para>
-    If no nodes are healthy then by default ctdb will happily host
-    public IPs on disabled (unhealthy or administratively disabled)
-    nodes.  This can cause problems, for example if the underlying
-    cluster filesystem is not mounted.  When set to 1 on a node and
-    that node is disabled it, any IPs hosted by this node will be
-    released and the node will not takeover any IPs until it is no
-    longer disabled.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DBRecordCountWarn</title>
-    <para>Default: 100000</para>
-    <para>
-    When set to non-zero, ctdb will log a warning when we try to recover a
-    database with more than this many records. This will produce a warning
-    if a database grows uncontrollably with orphaned records.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DBRecordSizeWarn</title>
-    <para>Default: 10000000</para>
-    <para>
-    When set to non-zero, ctdb will log a warning when we try to recover a
-    database where a single record is bigger than this. This will produce
-    a warning if a database record grows uncontrollably with orphaned
-    sub-records.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DBSizeWarn</title>
-    <para>Default: 1000000000</para>
-    <para>
-    When set to non-zero, ctdb will log a warning when we try to recover a
-    database bigger than this. This will produce
-    a warning if a database grows uncontrollably.
-    </para>
-    </refsect2>
-
-    <refsect2><title>VerboseMemoryNames</title>
-    <para>Default: 0</para>
-    <para>
-    This feature consumes additional memory. when used the talloc library
-    will create more verbose names for all talloc allocated objects.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecdPingTimeout</title>
-    <para>Default: 60</para>
-    <para>
-    If the main dameon has not heard a "ping" from the recovery dameon for
-    this many seconds, the main dameon will log a message that the recovery
-    daemon is potentially hung.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecdFailCount</title>
-    <para>Default: 10</para>
-    <para>
-    If the recovery daemon has failed to ping the main dameon for this many
-    consecutive intervals, the main daemon will consider the recovery daemon
-    as hung and will try to restart it to recover.
-    </para>
-    </refsect2>
-
-    <refsect2><title>LogLatencyMs</title>
-    <para>Default: 0</para>
-    <para>
-    When set to non-zero, this will make the main daemon log any operation that
-    took longer than this value, in 'ms', to complete.
-    These include "how long time a lockwait child process needed", 
-    "how long time to write to a persistent database" but also
-    "how long did it take to get a response to a CALL from a remote node".
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecLockLatencyMs</title>
-    <para>Default: 1000</para>
-    <para>
-    When using a reclock file for split brain prevention, if set to non-zero
-    this tunable will make the recovery dameon log a message if the fcntl()
-    call to lock/testlock the recovery file takes longer than this number of 
-    ms.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecoveryDropAllIPs</title>
-    <para>Default: 120</para>
-    <para>
-    If we have been stuck in recovery, or stopped, or banned, mode for
-    this many seconds we will force drop all held public addresses.
-    </para>
-    </refsect2>
-
-    <refsect2><title>verifyRecoveryLock</title>
-    <para>Default: 1</para>
-    <para>
-    Should we take a fcntl() lock on the reclock file to verify that we are the
-    sole recovery master node on the cluster or not.
-    </para>
-    </refsect2>
-
-    <refsect2><title>DeferredAttachTO</title>
-    <para>Default: 120</para>
-    <para>
-    When databases are frozen we do not allow clients to attach to the
-    databases. Instead of returning an error immediately to the application
-    the attach request from the client is deferred until the database
-    becomes available again at which stage we respond to the client.
-    </para>
-    <para>
-    This timeout controls how long we will defer the request from the client
-    before timing it out and returning an error to the client.
-    </para>
-    </refsect2>
-
-    <refsect2><title>HopcountMakeSticky</title>
-    <para>Default: 50</para>
-    <para>
-    If the database is set to 'STICKY' mode, using the 'ctdb setdbsticky' 
-    command, any record that is seen as very hot and migrating so fast that
-    hopcount surpasses 50 is set to become a STICKY record for StickyDuration
-    seconds. This means that after each migration the record will be kept on
-    the node and prevented from being migrated off the node.
-    </para>
-    <para>
-    This setting allows one to try to identify such records and stop them from
-    migrating across the cluster so fast. This will improve performance for
-    certain workloads, such as locking.tdb if many clients are opening/closing
-    the same file concurrently.
-    </para>
-    </refsect2>
-
-    <refsect2><title>StickyDuration</title>
-    <para>Default: 600</para>
-    <para>
-    Once a record has been found to be fetch-lock hot and has been flagged to
-    become STICKY, this is for how long, in seconds, the record will be 
-    flagged as a STICKY record.
-    </para>
-    </refsect2>
-
-    <refsect2><title>StickyPindown</title>
-    <para>Default: 200</para>
-    <para>
-    Once a STICKY record has been migrated onto a node, it will be pinned down
-    on that node for this number of ms. Any request from other nodes to migrate
-    the record off the node will be deferred until the pindown timer expires.
-    </para>
-    </refsect2>
-
-    <refsect2><title>MaxLACount</title>
-    <para>Default: 20</para>
-    <para>
-    When record content is fetched from a remote node, if it is only for 
-    reading the record, pass back the content of the record but do not yet 
-    migrate the record. Once MaxLACount identical requests from the 
-    same remote node have been seen will the record be forcefully migrated
-    onto the requesting node. This reduces the amount of migration for a 
-    database read-mostly workload at the expense of more frequent network
-    roundtrips.
-    </para>
-    </refsect2>
-
-    <refsect2><title>StatHistoryInterval</title>
-    <para>Default: 1</para>
-    <para>
-    Granularity of the statistics collected in the statistics history.
-    </para>
-    </refsect2>
-
-    <refsect2><title>AllowClientDBAttach</title>
-    <para>Default: 1</para>
-    <para>
-    When set to 0, clients are not allowed to attach to any databases.
-    This can be used to temporarily block any new processes from attaching
-    to and accessing the databases.
-    </para>
-    </refsect2>
-
-    <refsect2><title>RecoverPDBBySeqNum</title>
-    <para>Default: 1</para>
-    <para>
-    When set to zero, database recovery for persistent databases is
-    record-by-record and recovery process simply collects the most recent
-    version of every individual record.
-    </para>
-    <para>
-    When set to non-zero, persistent databases will instead be recovered as
-    a whole db and not by individual records. The node that contains the
-    highest value stored in the record "__db_sequence_number__" is selected
-    and the copy of that nodes database is used as the recovered database.
-    </para>
-    <para>
-    By default, recovery of persistent databses is done using
-    __db_sequence_number__ record.
-    </para>
-
-    </refsect2>
-
-    <refsect2><title>FetchCollapse</title>
-    <para>Default: 1</para>
-    <para>
-    When many clients across many nodes try to access the same record at the
-    same time this can lead to a fetch storm where the record becomes very
-    active and bounces between nodes very fast. This leads to high CPU
-    utilization of the ctdbd daemon, trying to bounce that record around
-    very fast, and poor performance.
-    </para>
-    <para>
-    This parameter is used to activate a fetch-collapse. A fetch-collapse
-    is when we track which records we have requests in flight so that we only
-    keep one request in flight from a certain node, even if multiple smbd
-    processes are attemtping to fetch the record at the same time. This 
-    can improve performance and reduce CPU utilization for certain
-    workloads.
-    </para>
-    <para>
-    This timeout controls if we should collapse multiple fetch operations
-    of the same record into a single request and defer all duplicates or not.
-    </para>
-    </refsect2>
-
-    <refsect2><title>Samba3AvoidDeadlocks</title>
-    <para>Default: 0</para>
-    <para>
-    Enable code that prevents deadlocks with Samba (only for Samba 3.x).
-    </para>
-    <para>
-    This should be set to 1 when using Samba version 3.x to enable special
-    code in CTDB to avoid deadlock with Samba version 3.x.  This code
-    is not required for Samba version 4.x and must not be enabled for
-    Samba 4.x.
-    </para>
-    </refsect2>
-  </refsect1>
-
-  <refsect1><title>LVS</title>
-    <para>
-    LVS is a mode where CTDB presents one single IP address for the entire
-    cluster. This is an alternative to using public IP addresses and round-robin
-    DNS to loadbalance clients across the cluster.
-    </para>
-
-    <para>
-    This is similar to using a layer-4 loadbalancing switch but with some restrictions.
-    </para>
-
-    <para>
-    In this mode the cluster select a set of nodes in the cluster and loadbalance
-    all client access to the LVS address across this set of nodes. This set of nodes are all LVS capable nodes that are HEALTHY, or if no HEALTHY nodes exists
-    all LVS capable nodes regardless of health status.
-    LVS will however never loadbalance traffic to nodes that are BANNED,
-    STOPPED, DISABLED or DISCONNECTED. The "ctdb lvs" command is used to show
-    which nodes are currently load-balanced across.
-    </para>
-
-    <para>
-    One of the these nodes are elected as the LVSMASTER. This node receives all
-    traffic from clients coming in to the LVS address and multiplexes it
-    across the internal network to one of the nodes that LVS is using.
-    When responding to the client, that node will send the data back
-    directly to the client, bypassing the LVSMASTER node.
-    The command "ctdb lvsmaster" will show which node is the current
-    LVSMASTER.
-    </para>
-
-    <para>
-    The path used for a client i/o is thus :
-    <screen format="linespecific">
-	(1) Client sends request packet to LVSMASTER
-	(2) LVSMASTER passes the request on to one node across the internal network.
-	(3) Selected node processes the request.
-	(4) Node responds back to client.
-    </screen>
-    </para>
+      <citerefentry><refentrytitle>ctdbd_wrapper</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
 
-    <para> 
-    This means that all incoming traffic to the cluster will pass through
-    one physical node, which limits scalability. You can send more data to the
-    LVS address that one physical node can multiplex. This means that you 
-    should not use LVS if your I/O pattern is write-intensive since you will be
-    limited in the available network bandwidth that node can handle.
-    LVS does work wery well for read-intensive workloads where only smallish
-    READ requests are going through the LVSMASTER bottleneck and the majority
-    of the traffic volume (the data in the read replies) goes straight from
-    the processing node back to the clients. For read-intensive i/o patterns you can acheive very high throughput rates in this mode.
-    </para>
+      <citerefentry><refentrytitle>onnode</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
 
-    <para>
-    Note: you can use LVS and public addresses at the same time.
-    </para>
-
-    <refsect2><title>Configuration</title>
-	<para>
-    To activate LVS on a CTDB node you must specify CTDB_PUBLIC_INTERFACE and 
-    CTDB_LVS_PUBLIC_ADDRESS in /etc/sysconfig/ctdb.
-	</para>
-
-	<para>
-You must also specify the "--lvs" command line argument to ctdbd to activate LVS as a capability of the node. This should be done automatically for you by the /etc/init.d/ctdb script.
-	</para>
-
-	<para>
-	Example:
-    <screen format="linespecific">
-	CTDB_PUBLIC_INTERFACE=eth0
-	CTDB_LVS_PUBLIC_IP=10.0.0.237
-	</screen>
-	</para>
-
-    </refsect2>
-
-    <para>
-    If you use LVS, you must still have a real/permanent address configured
-    for the public interface on each node. This address must be routable
-    and the cluster nodes must be configured so that all traffic back to client
-    hosts are routed through this interface. This is also required in order
-    to allow samba/winbind on the node to talk to the domain controller.
-    (we can not use the lvs IP address to initiate outgoing traffic)
-    </para>
-    <para>
-    I.e. make sure that you can "ping" both the domain controller and also
-    all of the clients from the node BEFORE you enable LVS. Also make sure
-    that when you ping these hosts that the traffic is routed out through the
-    eth0 interface.
-    </para>
-  </refsect1>
-    
-
-  <refsect1><title>REMOTE CLUSTER NODES</title>
-    <para>
-It is possible to have a CTDB cluster that spans across a WAN link. 
-For example where you have a CTDB cluster in your datacentre but you also
-want to have one additional CTDB node located at a remote branch site.
-This is similar to how a WAN accelerator works but with the difference 
-that while a WAN-accelerator often acts as a Proxy or a MitM, in 
-the ctdb remote cluster node configuration the Samba instance at the remote site
-IS the genuine server, not a proxy and not a MitM, and thus provides 100%
-correct CIFS semantics to clients.
-    </para>
-
-    <para>
-	See the cluster as one single multihomed samba server where one of
-	the NICs (the remote node) is very far away.
-    </para>
-
-    <para>
-	NOTE: This does require that the cluster filesystem you use can cope
-	with WAN-link latencies. Not all cluster filesystems can handle
-	WAN-link latencies! Whether this will provide very good WAN-accelerator
-	performance or it will perform very poorly depends entirely
-	on how optimized your cluster filesystem is in handling high latency
-	for data and metadata operations.
-    </para>
-
-    <para>
-	To activate a node as being a remote cluster node you need to set
-	the following two parameters in /etc/sysconfig/ctdb  for the remote node:
-        <screen format="linespecific">
-CTDB_CAPABILITY_LMASTER=no
-CTDB_CAPABILITY_RECMASTER=no
-	</screen>
-    </para>
-
-    <para>
-	Verify with the command "ctdb getcapabilities" that that node no longer
-	has the recmaster or the lmaster capabilities.
-    </para>
-
-  </refsect1>
-
-
-  <refsect1><title>NAT-GW</title>
-    <para>
-      Sometimes it is desireable to run services on the CTDB node which will
-      need to originate outgoing traffic to external servers. This might
-      be contacting NIS servers, LDAP servers etc. etc.
-    </para>
-    <para>
-      This can sometimes be problematic since there are situations when a
-      node does not have any public ip addresses assigned. This could
-      be due to the nobe just being started up and no addresses have been
-      assigned yet or it could be that the node is UNHEALTHY in which
-      case all public addresses have been migrated off.
-    </para>
-    <para>
-      If then the service status of CTDB depends on such services being
-      able to always being able to originate traffic to external resources
-      this becomes extra troublesome. The node might be UNHEALTHY because
-      the service can not be reached, and the service can not be reached
-      because the node is UNHEALTHY.
-    </para>
-    <para>
-      There are two ways to solve this problem. The first is by assigning a
-      static ip address for one public interface on every node which will allow
-      every node to be able to route traffic to the public network even
-      if there are no public addresses assigned to the node.
-      This is the simplest way but it uses up a lot of ip addresses since you
-      have to assign both static and also public addresses to each node.
-    </para>
-    <refsect2><title>NAT-GW</title>
-    <para>
-      A second way is to use the built in NAT-GW feature in CTDB.
-      With NAT-GW you assign one public NATGW address for each natgw group.
-      Each NATGW group is a set of nodes in the cluster that shares the same
-      NATGW address to talk to the outside world. Normally there would only be
-      one NATGW group spanning the entire cluster, but in situations where one
-      ctdb cluster spans multiple physical sites it is useful to have one
-      NATGW group for each of the two sites.
-    </para>
-    <para>
-      There can be multiple NATGW groups in one cluster but each node can only
-      be member of one NATGW group.
-    </para>
-    <para>
-      In each NATGW group, one of the nodes is designated the NAT Gateway
-      through which all traffic that is originated by nodes in this group
-      will be routed through if a public addresses are not available. 
-    </para>
-    </refsect2>
-
-    <refsect2><title>Configuration</title>
-    <para>
-      NAT-GW is configured in /etc/sysconfig/ctdb by setting the following
-      variables:
-    </para>
-    <screen format="linespecific">
-# NAT-GW configuration
-# Some services running on nthe CTDB node may need to originate traffic to
-# remote servers before the node is assigned any IP addresses,
-# This is problematic since before the node has public addresses the node might
-# not be able to route traffic to the public networks.
-# One solution is to have static public addresses assigned with routing
-# in addition to the public address interfaces, thus guaranteeing that
-# a node always can route traffic to the external network.
-# This is the most simple solution but it uses up a large number of 
-# additional ip addresses.
-#
-# A more complex solution is NAT-GW.
-# In this mode we only need one additional ip address for the cluster from
-# the exsternal public network.
-# One of the nodes in the cluster is elected to be hosting this ip address
-# so it can reach the external services. This node is also configured
-# to use NAT MASQUERADING for all traffic from the internal private network
-# to the external network. This node is the NAT-GW node.
-#
-# All other nodes are set up with a default rote with a metric of 10 to point
-# to the nat-gw node.
-# 
-# The effect of this is that only when a node does not have a public address
-# and thus no proper routes to the external world it will instead
-# route all packets through the nat-gw node.
-#
-# CTDB_NATGW_NODES is the list of nodes that belong to this natgw group.
-# You can have multiple natgw groups in one cluster but each node
-# can only belong to one single natgw group.
-#
-# CTDB_NATGW_PUBLIC_IP=10.0.0.227/24
-# CTDB_NATGW_PUBLIC_IFACE=eth0
-# CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
-# CTDB_NATGW_PRIVATE_NETWORK=10.1.1.0/24
-# CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
-#
-# Normally any node in the natgw group can act as the natgw master.
-# In some configurations you may have special nodes that is a part of the
-# cluster/natgw group, but where the node lacks connectivity to the 
-# public network.
-# For these cases, set this variable to make these nodes not able to
-# become natgw master.
-#
-# CTDB_NATGW_SLAVE_ONLY=yes
-    </screen>
-    </refsect2>
-
-    <refsect2><title>CTDB_NATGW_PUBLIC_IP</title>
-    <para>
-      This is an ip address in the public network that is used for all outgoing
-      traffic when the public addresses are not assigned.
-      This address will be assigned to one of the nodes in the cluster which
-      will masquerade all traffic for the other nodes.
-    </para>
-    <para>
-      Format of this parameter is IPADDRESS/NETMASK
-    </para>
-    </refsect2>
-
-    <refsect2><title>CTDB_NATGW_PUBLIC_IFACE</title>
-    <para>
-      This is the physical interface where the CTDB_NATGW_PUBLIC_IP will be
-      assigned to. This should be an interface connected to the public network.
-    </para>
-    <para>
-      Format of this parameter is INTERFACE
-    </para>
-    </refsect2>
-
-    <refsect2><title>CTDB_NATGW_DEFAULT_GATEWAY</title>
-    <para>
-      This is the default gateway to use on the node that is elected to host
-      the CTDB_NATGW_PUBLIC_IP. This is the default gateway on the public network.
-    </para>
-    <para>
-      Format of this parameter is IPADDRESS
-    </para>
-    </refsect2>
-
-    <refsect2><title>CTDB_NATGW_PRIVATE_NETWORK</title>
-    <para>
-      This is the network/netmask used for the interal private network.
-    </para>
-    <para>
-      Format of this parameter is IPADDRESS/NETMASK
-    </para>
-    </refsect2>
-
-    <refsect2><title>CTDB_NATGW_NODES</title>
-    <para>
-      This is the list of all nodes that belong to the same NATGW group
-      as this node. The default is /etc/ctdb/natgw_nodes.
-    </para>
-    </refsect2>
-
-    <refsect2><title>Operation</title>
-    <para>
-      When the NAT-GW functionality is used, one of the nodes is elected
-      to act as a NAT router for all the other nodes in the group when
-      they need to originate traffic to the external public network.
-    </para>
-    <para>
-      The NAT-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the
-      specified interface and the provided default route.  Given that
-      the NAT-GW mechanism acts as a last resort, its default route is
-      added with a metric of 10 so that it can coexist with other
-      configured static routes.  The NAT-GW is configured to act as a
-      router and to masquerade all traffic it receives from the
-      internal private network and which is destined to the external
-      network(s).
-    </para>
-    <para>
-      All other nodes in the group are configured with a default route of
-      metric 10 pointing to the designated NAT GW node.
-    </para>
-    <para>
-      This is implemented in the 11.natgw eventscript. Please see the
-      eventscript for further information.
-    </para>
-
-    </refsect2>
-
-    <refsect2><title>Removing/Changing NATGW at runtime</title>
-    <para>
-      The following are the procedures to change/remove a NATGW configuration 
-      at runtime, without having to restart ctdbd.
-    </para>
-
-    <para>
-      If you want to remove NATGW completely from a node, use these steps:
-    </para>
-    <screen format="linespecific">
-1, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw removenatgw'
-2, Then remove the configuration from /etc/sysconfig/ctdb
-    </screen>
-
-    <para>
-      If you want to change the NATGW configuration on a node :
-    </para>
-    <screen format="linespecific">
-1, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw removenatgw'
-2, Then change the configuration in /etc/sysconfig/ctdb
-3, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw updatenatgw'
-    </screen>
-
-    </refsect2>
-
-  </refsect1>
-
-  <refsect1>
-    <title>POLICY ROUTING</title>
-
-    <para>
-      A node running CTDB may be a component of a complex network
-      topology.  In particular, public addresses may be spread across
-      several different networks (or VLANs) and it may not be possible
-      to route packets from these public addresses via the system's
-      default route.  Therefore, CTDB has support for policy routing
-      via the 13.per_ip_routing eventscript.  This allows routing to
-      be specified for packets sourced from each public address.  The
-      routes are added and removed as CTDB moves public addresses
-      between nodes.
-    </para>
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
 
-    <refsect2>
-      <title>Configuration variables</title>
+      <citerefentry><refentrytitle>ctdb-tunables</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
 
-      <para>
-	There are 4 configuration variables related to policy routing:
-      </para>
-
-      <variablelist>
-	<varlistentry><term><varname>CTDB_PER_IP_ROUTING_CONF</varname></term>
-	<listitem>
-	  <para>
-	    The name of a configuration file that specifies the
-	    desired routes for each source address.  The configuration
-	    file format is discussed below.  A recommended value is
-	    <filename>/etc/ctdb/policy_routing</filename>.
-	  </para>
-
-	  <para>
-	    The special value <constant>__auto_link_local__</constant>
-	    indicates that no configuration file is provided and that
-	    CTDB should generate reasonable link-local routes for each
-	    public address.
-	  </para>
-	</listitem>
-	</varlistentry>
-
-	<varlistentry><term><varname>CTDB_PER_IP_ROUTING_RULE_PREF</varname></term>
-	<listitem>
-	  <para>
-	    This sets the priority (or preference) for the routing
-	    rules that are added by CTDB.
-	  </para>
-
-	  <para>
-	    This should be (strictly) greater than 0 and (strictly)
-	    less than 32766.  A priority of 100 is recommended, unless
-	    this conflicts with a priority already in use on the
-	    system.  See ip(8) for more details.
-	  </para>
-	</listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>
-	    <varname>CTDB_PER_IP_ROUTING_TABLE_ID_LOW</varname>,
-	    <varname>CTDB_PER_IP_ROUTING_TABLE_ID_HIGH</varname>
-	  </term>
-	  <listitem>
-	    <para>
-	      CTDB determines a unique routing table number to use for
-	      the routing related to each public address.  These
-	      variables indicate the minimum and maximum routing table
-	      numbers that are used.
-	    </para>
-
-	    <para>
-	      The ip command uses some reserved routing table numbers
-	      below 255.  Therefore, CTDB_PER_IP_ROUTING_TABLE_ID_LOW
-	      should be (strictly) greater than 255.  1000 and 9000
-	      are recommended values, unless this range conflicts with
-	      routing tables numbers already in use on the system.
-	    </para>
-
-	    <para>
-	      CTDB uses the standard file
-	      <filename>/etc/iproute2/rt_tables</filename> to maintain
-	      a mapping between the routing table numbers and labels.
-	      The label for a public address &lt;addr;gt; will look
-	      like ctdb.&lt;addr&gt;.  This means that the associated
-	      rules and routes are easy to read (and manipulate).
-	    </para>
-	  </listitem>
-	</varlistentry>
-      </variablelist>
-    </refsect2>
-
-    <refsect2>
-      <title>Configuration file</title>
-
-      <para>
-	The format of each line is:
-      </para>
-      
-      <screen>
-    &lt;public_address&gt; &lt;network&gt; [ &lt;gateway&gt; ]
-      </screen>
-
-      <para>
-	Leading whitespace is ignored and arbitrary whitespace may be
-	used as a separator.  Lines that have a "public address" item
-	that doesn't match an actual public address are ignored.  This
-	means that comment lines can be added using a leading
-	character such as '#', since this will never match an IP
-	address.
-      </para>
-
-      <para>
-	A line without a gateway indicates a link local route.
-      </para>
-
-      <para>
-	For example, consider the configuration line:
-      </para>
-
-      <screen>
-  192.168.1.99	192.168.1.1/24
-      </screen>
-
-      <para>
-	If the corresponding public_addresses line is:
-      </para>
-
-      <screen>
-  192.168.1.99/24     eth2,eth3
-      </screen>
-
-      <para>
-	<varname>CTDB_PER_IP_ROUTING_RULE_PREF</varname> is 100, and
-	CTDB adds the address to eth2 then the following routing
-	information is added:
-      </para>
-
-      <screen>
-  ip rule add from 192.168.1.99 pref 100 table ctdb.192.168.1.99
-  ip route add 192.168.1.0/24 dev eth2 table ctdb.192.168.1.99
-      </screen>
-
-      <para>  
-	This causes traffic from 192.168.1.1 to 192.168.1.0/24 go via
-	eth2.
-      </para>
-
-      <para>
-	The <command>ip rule</command> command will show (something
-	like - depending on other public addresses and other routes on
-	the system):
-      </para>
-
-      <screen>
-  0:		from all lookup local 
-  100:		from 192.168.1.99 lookup ctdb.192.168.1.99
-  32766:	from all lookup main 
-  32767:	from all lookup default 
-      </screen>
-
-      <para>
-	<command>ip route show table ctdb.192.168.1.99</command> will show:
-      </para>
-
-      <screen>
-  192.168.1.0/24 dev eth2 scope link
-      </screen>
-
-      <para>
-	The usual use for a line containing a gateway is to add a
-	default route corresponding to a particular source address.
-	Consider this line of configuration:
-      </para>
-
-      <screen>
-  192.168.1.99	0.0.0.0/0	192.168.1.1
-      </screen>
-
-      <para>
-	In the situation described above this will cause an extra
-	routing command to be executed:
-      </para>
-
-      <screen>
-  ip route add 0.0.0.0/0 via 192.168.1.1 dev eth2 table ctdb.192.168.1.99
-      </screen>
-
-      <para>
-	With both configuration lines, <command>ip route show table
-	ctdb.192.168.1.99</command> will show:
-      </para>
-
-      <screen>
-  192.168.1.0/24 dev eth2 scope link 
-  default via 192.168.1.1 dev eth2 
-      </screen>
-    </refsect2>
-
-    <refsect2>
-      <title>Example configuration</title>
-
-      <para>
-	Here is a more complete example configuration.
-      </para>
-
-      <screen>
-/etc/ctdb/public_addresses:
-
-  192.168.1.98	eth2,eth3
-  192.168.1.99	eth2,eth3
-
-/etc/ctdb/policy_routing:
-
-  192.168.1.98 192.168.1.0/24
-  192.168.1.98 192.168.200.0/24	192.168.1.254
-  192.168.1.98 0.0.0.0/0 	192.168.1.1
-  192.168.1.99 192.168.1.0/24
-  192.168.1.99 192.168.200.0/24	192.168.1.254
-  192.168.1.99 0.0.0.0/0 	192.168.1.1
-      </screen>
-
-      <para>
-	The routes local packets as expected, the default route is as
-	previously discussed, but packets to 192.168.200.0/24 are
-	routed via the alternate gateway 192.168.1.254.
-      </para>
-
-    </refsect2>
-  </refsect1>
-
-  <refsect1><title>NOTIFICATION SCRIPT</title>
-    <para>
-      Notification scripts are used with ctdb to have a call-out from ctdb
-      to a user-specified script when certain state changes occur in ctdb.
-      This is commonly to set up either sending SNMP traps or emails
-      when a node becomes unhealthy and similar.
-    </para>
-    <para>
-      This is activated by setting CTDB_NOTIFY_SCRIPT=&lt;your script&gt; in the
-	sysconfig file, or by adding --notification-script=&lt;your script&gt;.
-    </para>
-    <para>
-      See /etc/ctdb/notify.sh for an example script.  This script
-      executes files in <filename>/etc/ctdb/notify.d/</filename>, so
-      it is recommended that you handle notifications using the
-      example script and by place executable scripts in
-      <filename>/etc/ctdb/notify.d/</filename> to handle the desired
-      notifications.
-    </para>
-    <para>
-      CTDB currently generates notifications on these state changes:
-    </para>
-
-    <refsect2><title>unhealthy</title>
-    <para>
-      This call-out is triggered when the node changes to UNHEALTHY state.
-    </para>
-    </refsect2>
-
-    <refsect2><title>healthy</title>
-    <para>
-      This call-out is triggered when the node changes to HEALTHY state.
-    </para>
-    </refsect2>
-
-    <refsect2><title>startup</title>
-    <para>
-      This call-out is triggered when ctdb has started up and all managed services are up and running.
-    </para>
-    </refsect2>
-
-  </refsect1>
-
-
-<refsect1><title>ClamAV Daemon</title>
-<para>
-CTDB has support to manage the popular anti-virus daemon ClamAV.
-This support is implemented through the
-eventscript : /etc/ctdb/events.d/31.clamd.
-</para>
-      
-<refsect2><title>Configuration</title>
-<para>
-Start by configuring CLAMAV normally and test that it works. Once this is
-done, copy the configuration files over to all the nodes so that all nodes
-share identical CLAMAV configurations.
-Once this is done you can proceed with the intructions below to activate
-CTDB support for CLAMAV.
-</para>
-
-<para>
-First, to activate CLAMAV support in CTDB, edit /etc/sysconfig/ctdb and add the two lines :
-</para>
-<screen format="linespecific">
-CTDB_MANAGES_CLAMD=yes
-CTDB_CLAMD_SOCKET="/path/to/clamd.socket"
-</screen>
-
-<para>
-Second, activate the eventscript
-</para>
-<screen format="linespecific">
-ctdb enablescript 31.clamd
-</screen>
-
-<para>
-Third, CTDB will now be starting and stopping this service accordingly,
-so make sure that the system is not configured to start/stop this service
-automatically.
-On RedHat systems you can disable the system starting/stopping CLAMAV automatically by running :
-<screen format="linespecific">
-chkconfig clamd off
-</screen>
-</para>
-
-
-<para>
-Once you have restarted CTDBD, use
-<screen format="linespecific">
-ctdb scriptstatus
-</screen>
-and verify that the 31.clamd eventscript is listed and that it was executed successfully.
-</para>
-
-</refsect2>
-</refsect1>
-
-
-
-
-  <refsect1><title>SEE ALSO</title>
-    <para>
-      ctdb(1), onnode(1)
       <ulink url="http://ctdb.samba.org/"/>
     </para>
   </refsect1>
 
-  <refsect1><title>COPYRIGHT/LICENSE</title>
-<literallayout>
-Copyright (C) Andrew Tridgell 2007
-Copyright (C) Ronnie sahlberg 2007
+  <refentryinfo>
+    <author>
+      <contrib>
+	This documentation was written by
+	Ronnie Sahlberg,
+	Amitay Isaacs,
+	Martin Schwenke
+      </contrib>
+    </author>
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or (at
-your option) any later version.
+    <copyright>
+      <year>2007</year>
+      <holder>Andrew Tridgell</holder>
+      <holder>Ronnie Sahlberg</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </refentryinfo>
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, see http://www.gnu.org/licenses/.
-</literallayout>
-  </refsect1>
 </refentry>
