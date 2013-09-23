@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-POPT_LIB_SRC = '''lib/popt_common.c'''
-
 PARAM_UTIL_SRC = '''param/util.c'''
 
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c
@@ -617,9 +615,8 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('popt_samba3',
-                   source=POPT_LIB_SRC,
+                   source='lib/popt_common.c',
                    deps='popt samba-util util_cmdline',
-                   vars=locals(),
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('util_cmdline',
