@@ -248,6 +248,12 @@ bool afs_settoken_str(const char *token_string)
 
 #else
 
+int afs_syscall(int subcall, const char *path, int cmd, char *cmarg, int follow)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 bool afs_settoken_str(const char *token_string)
 {
 	return false;
