@@ -7,23 +7,7 @@ import samba_version, samba3
 # registry-related objects
 #
 
-REG_INIT_FULL_SRC = '''registry/reg_init_full.c'''
-
 REG_API_REGF_SRC = '''registry/reg_api_regf.c'''
-
-REG_BACKENDS_EXTRA_SRC = '''registry/reg_backend_printing.c
-                         registry/reg_backend_shares.c
-                         registry/reg_backend_netlogon_params.c
-                         registry/reg_backend_prod_options.c
-                         registry/reg_backend_tcpip_params.c
-                         registry/reg_backend_hkpt_params.c
-                         registry/reg_backend_current_version.c
-                         registry/reg_backend_perflib.c'''
-
-REG_FULL_SRC = '''
-               ${REG_BACKENDS_EXTRA_SRC}
-               ${REG_INIT_FULL_SRC}
-               registry/reg_perfcount.c'''
 
 SERVICES_SRC = '''services/svc_spoolss.c
                   services/svc_rcinit.c
@@ -552,9 +536,17 @@ bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
                     deps='smbregistry')
 
 bld.SAMBA3_SUBSYSTEM('REG_FULL',
-                    source=REG_FULL_SRC,
-                    deps='REG_SMBCONF tdb-wrap3',
-                    vars=locals())
+                    source='''registry/reg_backend_printing.c
+                    registry/reg_backend_shares.c
+                    registry/reg_backend_netlogon_params.c
+                    registry/reg_backend_prod_options.c
+                    registry/reg_backend_tcpip_params.c
+                    registry/reg_backend_hkpt_params.c
+                    registry/reg_backend_current_version.c
+                    registry/reg_backend_perflib.c
+                    registry/reg_init_full.c
+                    registry/reg_perfcount.c''',
+                    deps='REG_SMBCONF tdb-wrap3')
 
 bld.SAMBA3_LIBRARY('popt_samba3',
                    source='lib/popt_common.c',
