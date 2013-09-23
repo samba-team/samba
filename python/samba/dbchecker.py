@@ -1046,6 +1046,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if str(attrname).lower() == "instancetype":
                 calculated_instancetype = self.calculate_instancetype(dn)
                 if len(obj["instanceType"]) != 1 or obj["instanceType"][0] != str(calculated_instancetype):
+                    error_count += 1
                     self.err_wrong_instancetype(obj, calculated_instancetype)
 
         show_dn = True
