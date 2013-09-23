@@ -3,12 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-#
-# registry-related objects
-#
-
-REG_API_REGF_SRC = '''registry/reg_api_regf.c'''
-
 SERVICES_SRC = '''services/svc_spoolss.c
                   services/svc_rcinit.c
                   services/svc_winreg_glue.c
@@ -506,9 +500,8 @@ bld.SAMBA3_SUBSYSTEM('REGFIO',
                     deps='samba-util REG_PARSE_PRS')
 
 bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
-                    source=REG_API_REGF_SRC,
-                    deps='samba-util',
-                    vars=locals())
+                    source='registry/reg_api_regf.c',
+                    deps='samba-util')
 
 bld.SAMBA3_LIBRARY('smbregistry',
                    source='''registry/reg_api.c
