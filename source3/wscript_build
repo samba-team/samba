@@ -3,9 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PARAM_WITHOUT_REG_SRC = '''param/loadparm.c
-                           lib/sharesec.c lib/ldap_debug_handler.c lib/util_names.c'''
-
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
 
 LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
@@ -567,7 +564,10 @@ bld.SAMBA_GENERATOR('param/param_global_h',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
 
 bld.SAMBA3_SUBSYSTEM('param',
-                   source=PARAM_WITHOUT_REG_SRC,
+                   source='''param/loadparm.c
+                   lib/sharesec.c
+                   lib/ldap_debug_handler.c
+                   lib/util_names.c''',
                    deps='samba-util PARAM_UTIL ldap lber LOADPARM_CTX samba3core smbconf param_local_h param/param_global_h cups''')
 
 bld.SAMBA3_PYTHON('pys3param',
