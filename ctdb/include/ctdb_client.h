@@ -546,11 +546,6 @@ struct ctdb_client_control_state *ctdb_ctrl_getcapabilities_send(struct ctdb_con
 
 int ctdb_ctrl_getcapabilities_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *capabilities);
 
-
-int32_t ctdb_ctrl_transaction_active(struct ctdb_context *ctdb,
-				     uint32_t destnode,
-				     uint32_t db_id);
-
 struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_marshall_buffer *m,
 					       uint64_t db_id,
