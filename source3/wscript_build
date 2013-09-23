@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PARAM_UTIL_SRC = '''param/util.c'''
-
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c
                            lib/sharesec.c lib/ldap_debug_handler.c lib/util_names.c'''
 
@@ -555,8 +553,8 @@ bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
                      deps='talloc')
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
-                    source=PARAM_UTIL_SRC,
-		    deps='talloc')
+                     source='param/util.c',
+                     deps='talloc')
 
 bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
                      source='param/loadparm_ctx.c',
