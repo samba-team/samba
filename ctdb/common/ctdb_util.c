@@ -657,7 +657,7 @@ int32_t get_debug_by_desc(const char *desc)
 	int i;
 
 	for (i=0; debug_levels[i].description != NULL; i++) {
-		if (!strcmp(debug_levels[i].description, desc)) {
+		if (!strcasecmp(debug_levels[i].description, desc)) {
 			return debug_levels[i].level;
 		}
 	}
