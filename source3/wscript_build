@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
-
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
@@ -999,7 +997,7 @@ bld.SAMBA3_LIBRARY('libcli_lsa3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('libcli_netlogon3',
-                   source=LIBCLI_NETLOGON_SRC,
+                   source='rpc_client/cli_netlogon.c rpc_client/util_netlogon.c',
                    deps='RPC_NDR_NETLOGON INIT_NETLOGON cliauth param',
                    private_library=True)
 
