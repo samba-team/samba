@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBSMBSHAREMODES_SRC0 = 'libsmb/smb_share_modes.c'
-
-LIBSMBSHAREMODES_SRC = '${LIBSMBSHAREMODES_SRC0}'
-
 LIB_SMBCONF_SRC = 'lib/smbconf/smbconf_init.c lib/smbconf/smbconf_reg.c'
 
 SMBCONFTORT_SRC0 = 'lib/smbconf/testsuite.c'
@@ -182,13 +178,12 @@ bld.SAMBA3_LIBRARY('netapi',
                     vnum='0')
 
 bld.SAMBA3_LIBRARY('smbsharemodes',
-                    source=LIBSMBSHAREMODES_SRC,
+                    source='libsmb/smb_share_modes.c',
                     public_deps='''talloc tdb_compat''',
                     deps='''ccan-hash''',
                     public_headers='include/smb_share_modes.h',
                     pc_files='libsmb/smbsharemodes.pc',
-                    vnum='0',
-                    vars=locals())
+                    vnum='0')
 
 bld.SAMBA3_LIBRARY('nss_wins',
                   source=WINBIND_WINS_NSS_SRC,
