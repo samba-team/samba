@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-SMBCQUOTAS_SRC = '''utils/smbcquotas.c'''
-
 EVTLOGADM_SRC0 = 'utils/eventlogadm.c'
 
 EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}'''
@@ -1318,14 +1316,13 @@ bld.SAMBA3_BINARY('smbcacls',
                  krb5samba''')
 
 bld.SAMBA3_BINARY('smbcquotas',
-                 source=SMBCQUOTAS_SRC,
+                 source='utils/smbcquotas.c',
                  deps='''
                  talloc
                  popt_samba3
                  libsmb
                  msrpc3
-                 libcli_lsa3''',
-                 vars=locals())
+                 libcli_lsa3''')
 
 bld.SAMBA3_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
