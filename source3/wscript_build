@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
-
-NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}'''
-
 VLP_SRC = '''printing/tests/vlp.c'''
 
 RPC_OPEN_TCP_SRC = 'torture/rpc_open_tcp.c'
@@ -1380,15 +1376,14 @@ bld.SAMBA3_BINARY('versiontest',
                  vars=locals())
 
 bld.SAMBA3_BINARY('ntlm_auth',
-                 source=NTLM_AUTH_SRC,
+                 source='''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c''',
                  deps='''
                  talloc
                  krb5samba
                  iniparser
                  libsmb
                  popt_samba3
-                 LIBNTLMSSP gse gensec''',
-                 vars=locals())
+                 LIBNTLMSSP gse gensec''')
 
 bld.SAMBA3_BINARY('timelimit',
                  source='script/tests/timelimit.c',
