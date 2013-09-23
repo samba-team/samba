@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PDBEDIT_SRC = '''utils/pdbedit.c'''
-
 SMBGET_SRC = '''utils/smbget.c'''
 
 RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
@@ -1275,14 +1273,13 @@ bld.SAMBA3_BINARY('smbpasswd',
                  PASSCHANGE''')
 
 bld.SAMBA3_BINARY('pdbedit',
-                 source=PDBEDIT_SRC,
+                 source='utils/pdbedit.c',
                  deps='''
                  talloc
                  param
                  popt_samba3
                  pdb
-                 PASSWD_UTIL''',
-                 vars=locals())
+                 PASSWD_UTIL''')
 
 bld.SAMBA3_BINARY('smbget',
                  source=SMBGET_SRC,
