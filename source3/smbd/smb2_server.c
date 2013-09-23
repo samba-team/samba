@@ -1993,7 +1993,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	if (req->do_encryption) {
 		signing_required = false;
-	} else if (flags & SMB2_HDR_FLAG_SIGNED) {
+	} else if (signing_required || (flags & SMB2_HDR_FLAG_SIGNED)) {
 		DATA_BLOB signing_key;
 
 		if (x == NULL) {
