@@ -3,18 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIB_UTIL_SRC = '''
-               lib/system.c
-               lib/sendfile.c
-               lib/recvfile.c
-               lib/time.c
-               lib/util_sid.c
-               lib/util_file.c
-               lib/util.c
-               lib/util_sock.c
-               lib/util_transfer_file.c
-               lib/sock_exec.c'''
-
 POPT_LIB_SRC = '''lib/popt_common.c'''
 
 PARAM_UTIL_SRC = '''param/util.c'''
@@ -645,9 +633,17 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
-                   source=LIB_UTIL_SRC,
-                   deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash',
-                   vars=locals())
+                   source='''lib/system.c
+                   lib/sendfile.c
+                   lib/recvfile.c
+                   lib/time.c
+                   lib/util_sid.c
+                   lib/util_file.c
+                   lib/util.c
+                   lib/util_sock.c
+                   lib/util_transfer_file.c
+                   lib/sock_exec.c''',
+                   deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash')
 
 
 bld.SAMBA3_SUBSYSTEM('TDB_LIB',
