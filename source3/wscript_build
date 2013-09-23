@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PROFILES_SRC = '''utils/profiles.c'''
-
 OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c'''
 
 NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c'''
@@ -1211,13 +1209,12 @@ bld.SAMBA3_BINARY('net',
                  vars=locals())
 
 bld.SAMBA3_BINARY('profiles',
-                 source=PROFILES_SRC,
+                 source='utils/profiles.c',
                  deps='''
                  talloc
                  popt_samba3
                  param
-                 REGFIO''',
-                 vars=locals())
+                 REGFIO''')
 
 bld.SAMBA3_BINARY('smbspool',
                  source=CUPS_SRC,
