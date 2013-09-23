@@ -11,8 +11,6 @@ TDB_LIB_SRC = '''
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
 
-AFS_SETTOKEN_SRC = 'lib/afs_settoken.c'
-
 AVAHI_SRC = 'lib/avahi.c smbd/avahi_register.c'
 
 SERVER_MUTEX_SRC = 'lib/server_mutex.c'
@@ -891,9 +889,8 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
-                    source=AFS_SETTOKEN_SRC,
-                    deps='samba-util',
-                    vars=locals())
+                    source='lib/afs_settoken.c',
+                    deps='samba-util')
 
 bld.SAMBA3_LIBRARY('smbconf',
                    source=LIB_SMBCONF_SRC,
