@@ -169,7 +169,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint3264(struct ndr_pull *ndr, int ndr_flags
 	if (unlikely(v64 != *v)) {
 		DEBUG(0,(__location__ ": non-zero upper 32 bits 0x%016llx\n",
 			 (unsigned long long)v64));
-		return NDR_ERR_NDR64;
+		return ndr_pull_error(ndr, NDR_ERR_NDR64, __location__ ": non-zero upper 32 bits 0x%016llx\n",
+			 (unsigned long long)v64);
 	}
 	return err;
 }
