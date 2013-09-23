@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIB_SMBCONF_SRC = 'lib/smbconf/smbconf_init.c lib/smbconf/smbconf_reg.c'
-
 SMBCONFTORT_SRC0 = 'lib/smbconf/testsuite.c'
 
 SMBCONFTORT_SRC = '''${SMBCONFTORT_SRC0}'''
@@ -592,7 +590,8 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS',
                     deps='samba-util LIBAFS_SETTOKEN')
 
 bld.SAMBA3_LIBRARY('smbconf',
-                   source=LIB_SMBCONF_SRC,
+                   source='''lib/smbconf/smbconf_init.c
+                   lib/smbconf/smbconf_reg.c''',
                    deps='''
                    CHARSET3
                    LIBSMBCONF
