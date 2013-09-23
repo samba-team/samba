@@ -277,7 +277,7 @@ interface frstrans
 
 	/*****************/
 	/* Function 0x0f */
-	typedef pipe uint8 frstrans_BytePipe;
+	typedef [flag(NDR_PAHEX)] pipe uint8 frstrans_BytePipe;
 
 	WERROR frstrans_RawGetFileDataAsync(
 		[in,ref] policy_handle *server_context,
