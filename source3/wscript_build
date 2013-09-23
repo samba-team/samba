@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-TEST_LP_LOAD_SRC = '''param/test_lp_load.c'''
-
 PASSWD_UTIL_SRC = 'utils/passwd_util.c'
 
 SMBPASSWD_SRC = '''utils/smbpasswd.c'''
@@ -1467,13 +1465,12 @@ bld.SAMBA3_BINARY('rpc_open_tcp',
                  vars=locals())
 
 bld.SAMBA3_BINARY('test_lp_load',
-                 source=TEST_LP_LOAD_SRC,
+                 source='param/test_lp_load.c',
                  deps='''
                  talloc
                  param
                  popt_samba3''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('dbwrap_tool',
                  source=DBWRAP_TOOL_SRC,
