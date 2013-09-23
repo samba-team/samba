@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-SMBCONTROL_SRC = '''utils/smbcontrol.c'''
-
 SMBTREE_SRC = '''utils/smbtree.c'''
 
 TESTPARM_SRC = 'utils/testparm.c'
@@ -1264,13 +1262,12 @@ bld.SAMBA3_BINARY('smbstatus',
                  PROFILE''')
 
 bld.SAMBA3_BINARY('smbcontrol',
-                 source=SMBCONTROL_SRC,
+                 source='utils/smbcontrol.c',
                  deps='''
                  talloc
                  param
                  popt_samba3
-                 PRINTBASE''',
-                 vars=locals())
+                 PRINTBASE''')
 
 bld.SAMBA3_BINARY('smbtree',
                  source=SMBTREE_SRC,
