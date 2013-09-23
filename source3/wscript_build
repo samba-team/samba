@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBADS_PRINTER_SRC = '''libads/ldap_printer.c'''
-
 SECRETS_SRC = '''passdb/secrets.c passdb/machine_account_secrets.c
                  passdb/machine_sid.c passdb/secrets_lsa.c'''
 
@@ -764,9 +762,8 @@ bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                      deps='SERVER_MUTEX ndr-krb5pac krb5samba gssapi')
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
-                    source=LIBADS_PRINTER_SRC,
-                    deps='samba-util krb5samba',
-		    vars=locals())
+                    source='libads/ldap_printer.c',
+                    deps='samba-util krb5samba')
 
 bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
                     source='lib/afs_settoken.c',
