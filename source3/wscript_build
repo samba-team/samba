@@ -3,7 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PROFILE_SRC = '''profile/profile.c'''
 PROFILES_SRC = '''utils/profiles.c'''
 
 OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c'''
@@ -796,9 +795,8 @@ bld.SAMBA3_SUBSYSTEM('LOCKING',
                     FNAME_UTIL''')
 
 bld.SAMBA3_SUBSYSTEM('PROFILE',
-                    source='${PROFILE_SRC}',
-                    deps='samba-util',
-                    vars=locals())
+                    source='profile/profile.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('PRINTBASE',
                     source=PRINTBASE_SRC,
