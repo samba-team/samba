@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-DBWRAP_TOOL_SRC = 'utils/dbwrap_tool.c'
-
 DBWRAP_TORTURE_SRC = 'utils/dbwrap_torture.c'
 
 SPLIT_TOKENS_SRC = 'utils/split_tokens.c'
@@ -1402,11 +1400,10 @@ bld.SAMBA3_BINARY('test_lp_load',
                  install=False)
 
 bld.SAMBA3_BINARY('dbwrap_tool',
-                 source=DBWRAP_TOOL_SRC,
+                 source='utils/dbwrap_tool.c',
                  deps='''
                  talloc
-                 popt_samba3''',
-                 vars=locals())
+                 popt_samba3''')
 
 bld.SAMBA3_BINARY('dbwrap_torture',
                  source=DBWRAP_TORTURE_SRC,
