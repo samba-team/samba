@@ -366,7 +366,7 @@ sub ElementLevel($$$$$$$$)
 		my $hf2 = $self->register_hf_field($hf."_", "Subcontext length", "$ifname.$pn.$_->{NAME}subcontext", "FT_UINT$num_bits", "BASE_HEX", "NULL", 0, "");
 		$num_bits = 3264 if ($num_bits == 32);
 		$self->{hf_used}->{$hf2} = 1;
-		$self->pidl_code("dcerpc_info *di = pinfo->private_data;");
+		$self->pidl_code("dcerpc_info *di = (dcerpc_info*)pinfo->private_data;");
 		$self->pidl_code("guint$num_bits size;");
 		$self->pidl_code("int conformant = di->conformant_run;");
 		$self->pidl_code("tvbuff_t *subtvb;");
@@ -641,7 +641,7 @@ sub Struct($$$$)
 	$self->pidl_code("proto_item *item = NULL;");
 	$self->pidl_code("proto_tree *tree = NULL;");
 	if ($e->{ALIGN} > 1) {
-		$self->pidl_code("dcerpc_info *di = pinfo->private_data;");
+		$self->pidl_code("dcerpc_info *di = (dcerpc_info *)pinfo->private_data;");
 	}
 	$self->pidl_code("int old_offset;");
 	$self->pidl_code("");
@@ -1025,6 +1025,8 @@ sub Parse($$$$$)
 	It is maintained by the Samba team, not the Wireshark team.
 	Instructions on how to download and install Pidl can be 
 	found at http://wiki.wireshark.org/Pidl
+
+	\$Id\$
 */
 
 ";
@@ -1032,9 +1034,7 @@ sub Parse($$$$$)
 	$self->pidl_hdr($notice);
 
 	$self->{res}->{headers} = "\n";
-	$self->{res}->{headers} .= "#ifdef HAVE_CONFIG_H\n";
 	$self->{res}->{headers} .= "#include \"config.h\"\n";
-	$self->{res}->{headers} .= "#endif\n\n";
 
 	$self->{res}->{headers} .= "#ifdef _MSC_VER\n";
 	$self->{res}->{headers} .= "#pragma warning(disable:4005)\n";
