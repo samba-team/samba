@@ -3,13 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-SERVICES_SRC = '''services/svc_spoolss.c
-                  services/svc_rcinit.c
-                  services/svc_winreg_glue.c
-                  services/svc_netlogon.c
-                  services/svc_winreg.c
-                  services/svc_wins.c'''
-
 LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
 RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
@@ -882,9 +875,13 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
                      deps='addns lmhosts resolv')
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
-                    source=SERVICES_SRC,
-                    deps='samba-util',
-                    vars=locals())
+                    source='''services/svc_spoolss.c
+                    services/svc_rcinit.c
+                    services/svc_winreg_glue.c
+                    services/svc_netlogon.c
+                    services/svc_winreg.c
+                    services/svc_wins.c''',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
                     source=PLAINTEXT_AUTH_SRC,
