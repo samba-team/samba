@@ -3,14 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBMSRPC_SRC = '''
-               rpc_client/cli_pipe.c
-               rpc_client/rpc_transport_np.c
-               rpc_client/rpc_transport_sock.c
-               rpc_client/rpc_transport_tstream.c
-               librpc/rpc/dcerpc_helpers.c
-               '''
-
 #
 # registry-related objects
 #
@@ -416,13 +408,16 @@ bld.SAMBA3_LIBRARY('gse',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('msrpc3',
-                   source='${LIBMSRPC_SRC}',
+                   source='''rpc_client/cli_pipe.c
+                   rpc_client/rpc_transport_np.c
+                   rpc_client/rpc_transport_sock.c
+                   rpc_client/rpc_transport_tstream.c
+                   librpc/rpc/dcerpc_helpers.c''',
                    deps='''ndr ndr-standard
                     RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
                     LIBTSOCKET gse dcerpc-binding
                     libsmb
                     ndr-table''',
-                   vars=locals(),
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('gpo',
