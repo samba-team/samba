@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-NMBLOOKUP_SRC = '''utils/nmblookup.c'''
-
 SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/utable.c
                 torture/denytest.c torture/mangle_test.c
                 torture/nbench.c
@@ -1280,13 +1278,12 @@ bld.SAMBA3_BINARY('smbget',
                  smbclient''')
 
 bld.SAMBA3_BINARY('nmblookup',
-                 source=NMBLOOKUP_SRC,
+                 source='utils/nmblookup.c',
                  deps='''
                  talloc
                  param
                  popt_samba3
-                 LIBNMB''',
-                 vars=locals())
+                 LIBNMB''')
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source=SMBTORTURE_SRC,
