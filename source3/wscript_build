@@ -22,37 +22,6 @@ LIBCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 
-LIB_SRC = '''
-          lib/messages.c lib/messages_local.c
-          lib/messages_ctdbd.c lib/ctdb_packet.c lib/ctdbd_conn.c
-	  lib/ctdb_conn.c
-	  lib/msg_channel.c
-          lib/id_cache.c
-          lib/talloc_dict.c
-          lib/serverid.c
-          lib/addrchange.c
-          ../lib/util/debug_s3.c
-          lib/dumpcore.c
-          lib/interface.c
-          lib/username.c
-          lib/access.c lib/smbrun.c
-          lib/wins_srv.c
-          lib/substitute.c lib/substitute_generic.c
-          lib/ms_fnmatch.c
-          lib/tallocmsg.c lib/dmallocmsg.c
-          intl/lang_tdb.c
-          lib/gencache.c
-          lib/events.c
-          lib/server_contexts.c
-          lib/server_prefork.c
-          lib/server_prefork_util.c
-          lib/ldap_escape.c
-          lib/fncall.c
-          libads/krb5_errs.c lib/system_smbd.c lib/audit.c
-	  lib/tevent_wait.c
-          lib/idmap_cache.c
-          lib/util_ea.c'''
-
 LIB_UTIL_SRC = '''
                lib/system.c
                lib/sendfile.c
@@ -706,7 +675,42 @@ bld.SAMBA3_SUBSYSTEM('TDB_LIB',
                      deps='dbwrap')
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
-                   source=LIB_SRC,
+                   source='''lib/messages.c
+                   lib/messages_local.c
+                   lib/messages_ctdbd.c
+                   lib/ctdb_packet.c
+                   lib/ctdbd_conn.c
+                   lib/ctdb_conn.c
+                   lib/msg_channel.c
+                   lib/id_cache.c
+                   lib/talloc_dict.c
+                   lib/serverid.c
+                   lib/addrchange.c
+                   ../lib/util/debug_s3.c
+                   lib/dumpcore.c
+                   lib/interface.c
+                   lib/username.c
+                   lib/access.c lib/smbrun.c
+                   lib/wins_srv.c
+                   lib/substitute.c
+                   lib/substitute_generic.c
+                   lib/ms_fnmatch.c
+                   lib/tallocmsg.c
+                   lib/dmallocmsg.c
+                   intl/lang_tdb.c
+                   lib/gencache.c
+                   lib/events.c
+                   lib/server_contexts.c
+                   lib/server_prefork.c
+                   lib/server_prefork_util.c
+                   lib/ldap_escape.c
+                   lib/fncall.c
+                   libads/krb5_errs.c
+                   lib/system_smbd.c
+                   lib/audit.c
+                   lib/tevent_wait.c
+                   lib/idmap_cache.c
+                   lib/util_ea.c''',
                    deps='''
                         samba3util
                         LIBTSOCKET
