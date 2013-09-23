@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-RPC_OPEN_TCP_SRC = 'torture/rpc_open_tcp.c'
-
 DBWRAP_TOOL_SRC = 'utils/dbwrap_tool.c'
 
 DBWRAP_TORTURE_SRC = 'utils/dbwrap_torture.c'
@@ -1389,12 +1387,11 @@ bld.SAMBA3_BINARY('timelimit',
                  vars=locals())
 
 bld.SAMBA3_BINARY('rpc_open_tcp',
-                 source=RPC_OPEN_TCP_SRC,
+                 source='torture/rpc_open_tcp.c',
                  deps='''
                  talloc
                  msrpc3''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('test_lp_load',
                  source='param/test_lp_load.c',
