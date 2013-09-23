@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
-
 LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clispnego.c
              libsmb/clirap.c libsmb/clierror.c libsmb/climessage.c
@@ -463,7 +461,9 @@ bld.SAMBA3_SUBSYSTEM('GROUPDB',
                     deps='tdb_compat')
 
 bld.SAMBA3_SUBSYSTEM('TLDAP',
-                    source=TLDAP_SRC,
+                    source='''lib/tldap.c
+                    lib/tldap_util.c
+                    lib/util_tsock.c''',
                     deps='asn1util LIBTSOCKET')
 
 # libpdb.so should not expose internal symbols that are only usable
