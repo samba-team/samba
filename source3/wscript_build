@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
-
 DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/dsgetdcname.c'''
 
 SMBD_SRC_MAIN = '''smbd/server.c'''
@@ -910,9 +908,8 @@ bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('SLCACHE',
-                    source=SLCACHE_SRC,
-                    deps='samba-util tdb_compat',
-                    vars=locals())
+                    source='libsmb/samlogon_cache.c',
+                    deps='samba-util tdb_compat')
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
