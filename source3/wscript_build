@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBNET_DSSYNC_SRC = '''libnet/libnet_dssync.c
-                       libnet/libnet_dssync_passdb.c
-                       libnet/libnet_dssync_keytab.c'''
-
 LIBNET_SAMSYNC_SRC = '''libnet/libnet_samsync.c
                         libnet/libnet_samsync_ldif.c
                         libnet/libnet_samsync_passdb.c
@@ -803,9 +799,10 @@ bld.SAMBA3_LIBRARY('net_keytab',
 
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
-                    source=LIBNET_DSSYNC_SRC,
-                    deps='LIBNET RPC_NDR_DRSUAPI',
-                    vars=locals())
+                    source='''libnet/libnet_dssync.c
+                    libnet/libnet_dssync_passdb.c
+                    libnet/libnet_dssync_keytab.c''',
+                    deps='LIBNET RPC_NDR_DRSUAPI')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
                     source=LIBNET_SAMSYNC_SRC,
