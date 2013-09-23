@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-SERVER_MUTEX_SRC = 'lib/server_mutex.c'
-
 PASSCHANGE_SRC = '''libsmb/passchange.c'''
 
 LIBCLI_SPOOLSS_SRC = '''rpc_client/cli_spoolss.c
@@ -584,8 +582,8 @@ bld.SAMBA3_LIBRARY('smbldaphelper',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
-                     source=SERVER_MUTEX_SRC,
-		     deps='talloc')
+                     source='lib/server_mutex.c',
+                     deps='talloc')
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
                     source=PARAM_UTIL_SRC,
