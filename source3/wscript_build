@@ -3,11 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
-             libsmb/namequery.c libsmb/conncache.c
-
-             libads/sitename_cache.c'''
-
 LIBNTLMSSP_SRC = '''
                libsmb/ntlmssp.c
                libsmb/ntlmssp_wrap.c'''
@@ -902,9 +897,13 @@ bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNMB',
-                     source=LIBNMB_SRC,
-                     deps='addns lmhosts resolv',
-                     vars=locals())
+                     source='''libsmb/unexpected.c
+                     libsmb/namecache.c
+                     libsmb/nmblib.c
+                     libsmb/namequery.c
+                     libsmb/conncache.c
+                     libads/sitename_cache.c''',
+                     deps='addns lmhosts resolv')
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
                     source=SERVICES_SRC,
