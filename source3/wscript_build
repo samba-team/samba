@@ -461,11 +461,6 @@ LIBSMBSHAREMODES_SRC0 = 'libsmb/smb_share_modes.c'
 
 LIBSMBSHAREMODES_SRC = '${LIBSMBSHAREMODES_SRC0}'
 
-CLIENT_SRC = '''
-             client/client.c
-             client/clitar.c
-             client/dnsbrowse.c'''
-
 LIB_SMBCONF_SRC = 'lib/smbconf/smbconf_init.c lib/smbconf/smbconf_reg.c'
 
 SMBCONFTORT_SRC0 = 'lib/smbconf/testsuite.c'
@@ -1247,7 +1242,9 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  vars=locals())
 
 bld.SAMBA3_BINARY('client/smbclient',
-                 source=CLIENT_SRC,
+                 source='''client/client.c
+                 client/clitar.c
+                 client/dnsbrowse.c''',
                  deps='''
                  talloc
                  popt_samba3
