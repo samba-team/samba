@@ -3,10 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-EVTLOGADM_SRC0 = 'utils/eventlogadm.c'
-
-EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}'''
-
 SHARESEC_SRC0 = 'utils/sharesec.c'
 SHARESEC_SRC  = '''${SHARESEC_SRC0}'''
 
@@ -1325,12 +1321,11 @@ bld.SAMBA3_BINARY('smbcquotas',
                  libcli_lsa3''')
 
 bld.SAMBA3_BINARY('eventlogadm',
-                 source=EVTLOGADM_SRC,
+                 source='utils/eventlogadm.c',
                  deps='''
                  talloc
                  param
-                 LIBEVENTLOG''',
-                 vars=locals())
+                 LIBEVENTLOG''')
 
 bld.SAMBA3_BINARY('sharesec',
                  source=SHARESEC_SRC,
