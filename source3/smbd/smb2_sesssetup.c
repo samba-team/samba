@@ -457,6 +457,8 @@ static int pp_self_ref_destructor(struct smbd_smb2_session_setup_state **pp_stat
 
 static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_setup_state *state)
 {
+	struct smbd_smb2_request *preq;
+
 	/*
 	 * If state->session is not NULL,
 	 * we move the session from the session table to the request on failure
@@ -470,6 +472,27 @@ static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_set
 
 	state->session->status = NT_STATUS_USER_SESSION_DELETED;
 	state->smb2req->session = talloc_move(state->smb2req, &state->session);
+
+	/*
+	 * We've made this session owned by the current request.
+	 * Ensure that any outstanding requests don't also refer
+	 * to it.
+	 */
+
+	for (preq = state->smb2req->sconn->smb2.requests; preq != NULL; preq = preq->next) {
+		if (preq == state->smb2req) {
+			continue;
+		}
+		if (preq->session == state->smb2req->session) {
+			preq->session = NULL;
+			/*
+			 * If we no longer have a session we can't
+			 * sign or encrypt replies.
+			 */
+			preq->do_signing = false;
+			preq->do_encryption = false;
+		}
+	}
 
 	return 0;
 }
