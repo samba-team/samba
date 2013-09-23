@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PASSWD_UTIL_SRC = 'utils/passwd_util.c'
-
 SMBPASSWD_SRC = '''utils/smbpasswd.c'''
 
 PDBEDIT_SRC = '''utils/pdbedit.c'''
@@ -820,9 +818,8 @@ bld.SAMBA3_SUBSYSTEM('PRINTING',
                     deps='NDR_PRINTCAP tdb_compat cups')
 
 bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
-                    source=PASSWD_UTIL_SRC,
-                    deps='samba-util',
-                    vars=locals())
+                    source='utils/passwd_util.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     source='lib/filename_util.c',
