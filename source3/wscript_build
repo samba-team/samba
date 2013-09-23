@@ -190,8 +190,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
                      source='param/loadparm_ctx.c',
-                     deps='''talloc s3_param_h param''',
-                     vars=locals())
+                     deps='''talloc s3_param_h param''')
 
 bld.SAMBA_GENERATOR('param/param_global_h',
                     source= '../script/mkparamdefs.pl param/loadparm.c ../lib/param/param_functions.c',
@@ -365,8 +364,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
 
 bld.SAMBA3_SUBSYSTEM('auth_generic',
                     source='libsmb/auth_generic.c',
-                    deps='LIBNTLMSSP gse gensec',
-                    vars=locals())
+                    deps='LIBNTLMSSP gse gensec')
 
 bld.SAMBA3_LIBRARY('libsmb',
                    source='''libsmb/clientgen.c
@@ -410,8 +408,7 @@ bld.SAMBA3_LIBRARY('libsmb',
 
 bld.SAMBA3_SUBSYSTEM('CLDAP',
                     source='libads/cldap.c',
-                    deps='cli-ldap-common cli_cldap LIBTSOCKET',
-                    vars=locals())
+                    deps='cli-ldap-common cli_cldap LIBTSOCKET')
 
 # NOTE: The secrets3 library is a low level library used by several subsystems.
 # PLEASE DO NOT make it depend on high level libraries like PDB, if you are
@@ -653,7 +650,6 @@ bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
 bld.SAMBA3_LIBRARY('printing_migrate',
                     source='printing/nt_printing_migrate.c rpc_client/cli_winreg_spoolss.c printing/nt_printing_os2.c',
                     deps='NDR_NTPRINTING cli_spoolss RPC_NDR_WINREG LIBCLI_WINREG param',
-                    vars=locals(),
                     private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('PRINTING',
@@ -684,7 +680,6 @@ bld.SAMBA3_SUBSYSTEM('LIBNET',
 bld.SAMBA3_LIBRARY('net_keytab',
                    source='libnet/libnet_keytab.c',
                    deps='krb5samba ads',
-                   vars=locals(),
                    private_library=True)
 
 
@@ -752,13 +747,11 @@ bld.SAMBA3_SUBSYSTEM('DCUTIL',
 bld.SAMBA3_LIBRARY('trusts_util',
                    source='libsmb/trusts_util.c',
                    deps='libcli_netlogon3 msrpc3 pdb',
-                   vars=locals(),
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
-                    deps='talloc samba3-util',
-                    vars=locals())
+                    deps='talloc samba3-util')
 
 bld.SAMBA3_LIBRARY('samba3-util',
                    source='''lib/util_sec.c lib/util_str.c lib/adt_tree.c lib/util_malloc.c lib/memcache.c lib/namearray.c lib/file_id.c''',
@@ -1362,8 +1355,7 @@ bld.SAMBA3_BINARY('versiontest',
                  deps='''
                  SAMBA_VERSION
                  param''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('ntlm_auth',
                  source='''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c''',
@@ -1377,8 +1369,7 @@ bld.SAMBA3_BINARY('ntlm_auth',
 
 bld.SAMBA3_BINARY('timelimit',
                  source='script/tests/timelimit.c',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('rpc_open_tcp',
                  source='torture/rpc_open_tcp.c',
@@ -1440,8 +1431,7 @@ bld.SAMBA3_BINARY('samba-regedit',
                             utils/regedit_valuelist.c utils/regedit_dialog.c
                             utils/regedit_hexedit.c""",
                   deps='ncurses menu panel form registry param popt_samba3 smbregistry',
-                  enabled=bld.env.build_regedit,
-                  vars=locals())
+                  enabled=bld.env.build_regedit)
 
 ########################## INCLUDES #################################
 
