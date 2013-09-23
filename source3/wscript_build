@@ -3,8 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-PDBTEST_SRC = '''torture/pdbtest.c'''
-
 VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c
 		torture/vfstest_chain.c'''
 
@@ -1355,15 +1353,14 @@ bld.SAMBA3_BINARY('sharesec',
                  vars=locals())
 
 bld.SAMBA3_BINARY('pdbtest',
-                 source=PDBTEST_SRC,
+                 source='torture/pdbtest.c',
                  deps='''
                  talloc
                  pdb
                  popt_samba3
                  AUTH_COMMON
                  auth''',
-                 install=False,
-                 vars=locals())
+                 install=False)
 
 bld.SAMBA3_BINARY('vfstest',
                  source=VFSTEST_SRC,
