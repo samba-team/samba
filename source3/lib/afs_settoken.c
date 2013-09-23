@@ -34,11 +34,7 @@
 #include <openssl/des.h>
 #include <sys/syscall.h>
 
-int afs_syscall( int subcall,
-	  const char * path,
-	  int cmd,
-	  char * cmarg,
-	  int follow)
+int afs_syscall(int subcall, const char *path, int cmd, char *cmarg, int follow)
 {
 /*
 	return( syscall( SYS_afs_syscall, subcall, path, cmd, cmarg, follow));

@@ -45,11 +45,7 @@ char *afs_createtoken_str(const char *username, const char *cell);
 
 /* The following definitions come from lib/afs_settoken.c  */
 
-int afs_syscall( int subcall,
-	  const char * path,
-	  int cmd,
-	  char * cmarg,
-	  int follow);
+int afs_syscall(int subcall, const char *path, int cmd, char *cmarg, int follow);
 bool afs_settoken_str(const char *token_string);
 bool afs_settoken_str(const char *token_string);
 
