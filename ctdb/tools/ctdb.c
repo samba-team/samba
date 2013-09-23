@@ -6069,13 +6069,13 @@ static const struct {
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
-	{ "rebalancenode",     control_rebalancenode,	false,	false, "release a node by allowing it to takeover ips", "<pnn>"},
+	{ "rebalancenode",     control_rebalancenode,	false,	false, "mark nodes as forced IP rebalancing targets", "[<pnn-list>]"},
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbname|dbid>" },
 	{ "setdbseqnum",     control_setdbseqnum,       false,	false, "set the sequence number for a database", "<dbname|dbid> <seqnum>" },
-	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
+	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status", "[<pnn-list>]" },
 	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<dbname|dbid>" },
-	{ "reloadips",       control_reloadips,         false,	false, "reload the public addresses file on a node" },
-	{ "ipiface",         control_ipiface,           false,	true,  "Find which interface an ip address is hsoted on", "<ip>" },
+	{ "reloadips",       control_reloadips,         false,	false, "reload the public addresses file on specified nodes" , "[<pnn-list>]" },
+	{ "ipiface",         control_ipiface,           false,	true,  "Find which interface an ip address is hosted on", "<ip>" },
 };
 
 /*
