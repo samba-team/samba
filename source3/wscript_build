@@ -3,21 +3,7 @@
 from samba_utils import *
 import samba_version, samba3
 
-PRIVILEGES_SRC = '''lib/privileges.c'''
 
-PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
-
-PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c
-                lib/util_wellknown.c lib/util_builtin.c passdb/pdb_compat.c
-                lib/util_sid_passdb.c
-                lib/util_unixsids.c passdb/lookup_sid.c
-                passdb/login_cache.c
-                passdb/account_pol.c ${PRIVILEGES_SRC}
-                lib/util_nscd.c lib/winbind_util.c
-                passdb/pdb_util.c passdb/pdb_interface.c
-                passdb/pdb_secrets.c
-                passdb/pdb_unixid.c'''
-#FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
 
 GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
 
@@ -421,19 +407,34 @@ private_pdb_match = private_pdb_match + ldapsam_pdb_match
 private_pdb_match = private_pdb_match + map(lambda x: '!pdb_%s_init' % x, static_pdb_match)
 
 bld.SAMBA3_LIBRARY('pdb',
-                   source=PASSDB_SRC,
+                   source='''passdb/pdb_get_set.c
+                   passdb/passdb.c
+                   lib/util_wellknown.c
+                   lib/util_builtin.c
+                   passdb/pdb_compat.c
+                   lib/util_sid_passdb.c
+                   lib/util_unixsids.c
+                   passdb/lookup_sid.c
+                   passdb/login_cache.c
+                   passdb/account_pol.c
+                   lib/privileges.c
+                   lib/util_nscd.c
+                   lib/winbind_util.c
+                   passdb/pdb_util.c
+                   passdb/pdb_interface.c
+                   passdb/pdb_secrets.c
+                   passdb/pdb_unixid.c''',
                    deps='secrets3 GROUPDB SERVER_MUTEX wbclient LIBCLI_AUTH flag_mapping',
                    private_library=False,
                    pc_files=[],
                    public_headers_install=True,
                    public_headers='''
-				include/passdb.h
-				passdb/machine_sid.h
-				passdb/lookup_sid.h''',
+                   include/passdb.h
+                   passdb/machine_sid.h
+                   passdb/lookup_sid.h''',
                    abi_match=private_pdb_match,
                    abi_directory='passdb/ABI',
-                   vnum='0',
-                   vars=locals())
+                   vnum='0')
 
 bld.SAMBA3_LIBRARY('smbldaphelper',
                    source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',
