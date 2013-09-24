@@ -772,6 +772,91 @@ static bool test_lease_break(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_lease_nobreakself(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1, h2;
+	NTSTATUS status;
+	const char *fname = "lease.dat";
+	bool ret = true;
+	uint32_t caps;
+	char c = 0;
+
+	caps = smb2cli_conn_server_capabilities(
+		tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	/* Win7 is happy to grant RHW leases on files. */
+	smb2_lease_create(&io, &ls, false, fname, LEASE1,
+			  smb2_util_lease_state("R"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "R", true, LEASE1);
+
+	smb2_lease_create(&io, &ls, false, fname, LEASE2,
+			  smb2_util_lease_state("R"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+	CHECK_LEASE(&io, "R", true, LEASE2);
+
+	ZERO_STRUCT(break_info);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+
+	/* Make sure we don't break ourselves on write */
+
+	status = smb2_util_write(tree, h1, &c, 0, 1);
+	torture_wait_for_lease_break(tctx);
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.failures, 0);
+	CHECK_BREAK_INFO("R", "", LEASE2);
+
+	/* Try the other way round. First, upgrade LEASE2 to R again */
+
+	smb2_lease_create(&io, &ls, false, fname, LEASE2,
+			  smb2_util_lease_state("R"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_LEASE(&io, "R", true, LEASE2);
+	smb2_util_close(tree, io.out.file.handle);
+
+	/* Now break LEASE1 via h2 */
+
+	ZERO_STRUCT(break_info);
+	status = smb2_util_write(tree, h2, &c, 0, 1);
+	torture_wait_for_lease_break(tctx);
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.failures, 0);
+	CHECK_BREAK_INFO("R", "", LEASE1);
+
+	/* .. and break LEASE2 via h1 */
+
+	ZERO_STRUCT(break_info);
+	status = smb2_util_write(tree, h1, &c, 0, 1);
+	torture_wait_for_lease_break(tctx);
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.failures, 0);
+	CHECK_BREAK_INFO("R", "", LEASE2);
+
+done:
+	smb2_util_close(tree, h2);
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static void torture_oplock_break_callback(struct smb2_request *req)
 {
 	NTSTATUS status;
@@ -1340,6 +1425,8 @@ struct torture_suite *torture_smb2_lease_init(void)
 	torture_suite_add_1smb2_test(suite, "request", test_lease_request);
 	torture_suite_add_1smb2_test(suite, "break_twice",
 				     test_lease_break_twice);
+	torture_suite_add_1smb2_test(suite, "nobreakself",
+				     test_lease_nobreakself);
 	torture_suite_add_1smb2_test(suite, "upgrade", test_lease_upgrade);
 	torture_suite_add_1smb2_test(suite, "upgrade2", test_lease_upgrade2);
 	torture_suite_add_1smb2_test(suite, "upgrade3", test_lease_upgrade3);
