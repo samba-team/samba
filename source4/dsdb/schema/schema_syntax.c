@@ -1529,7 +1529,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_syntax_ctx *c
 			return WERR_FOOBAR;
 		}
 
-		out->values[i] = data_blob_string_const(str);
+		out->values[i] = data_blob_const(str, converted_size);
 	}
 
 	return WERR_OK;
