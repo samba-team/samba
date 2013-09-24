@@ -59,8 +59,7 @@ names = [
 
 bld.SAMBA_SUBSYSTEM('LIBNETAPI_EXAMPLES_COMMON',
                     source='common.c',
-                    deps='netapi popt',
-                    vars=locals())
+                    deps='netapi popt')
 
 for pattern in names:
     (subdir, name) = pattern
