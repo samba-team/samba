@@ -371,6 +371,7 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	const struct ldb_val *rdn_val_p;
+	struct ldb_message_element *e = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -389,10 +390,15 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	if (ldb_msg_find_element(req->op.mod.message, "distinguishedName")) {
+	e = ldb_msg_find_element(req->op.mod.message, "distinguishedName");
+	if (e != NULL) {
 		ldb_asprintf_errstring(ldb, "Modify of 'distinguishedName' on %s not permitted, must use 'rename' operation instead",
 				       ldb_dn_get_linearized(req->op.mod.message->dn));
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+		if (e->flags == LDB_FLAG_MOD_REPLACE) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		} else {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 	}
 
 	if (ldb_msg_find_element(req->op.mod.message, "name")) {
