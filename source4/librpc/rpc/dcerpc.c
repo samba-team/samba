@@ -2247,3 +2247,25 @@ _PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 	return dcerpc_alter_context_recv(subreq);
 }
 
+void dcerpc_transport_dead(struct dcecli_connection *c, NTSTATUS status)
+{
+	if (c->transport.stream == NULL) {
+		return;
+	}
+
+	tevent_queue_stop(c->transport.write_queue);
+	TALLOC_FREE(c->transport.read_subreq);
+	TALLOC_FREE(c->transport.stream);
+
+	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
+	if (NT_STATUS_EQUAL(NT_STATUS_OK, status)) {
+		status = NT_STATUS_END_OF_FILE;
+	}
+
+	if (c->transport.recv_data) {
+		c->transport.recv_data(c, NULL, status);
+	}
+}

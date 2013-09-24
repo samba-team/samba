@@ -89,6 +89,14 @@ struct dcecli_connection {
 		/* a callback to the dcerpc code when a full fragment
 		   has been received */
 		void (*recv_data)(struct dcecli_connection *, DATA_BLOB *, NTSTATUS status);
+
+		struct tstream_context *stream;
+		/** to serialize write events */
+		struct tevent_queue *write_queue;
+		/** the current active read request if any */
+		struct tevent_req *read_subreq;
+		/** number of read requests other than the current active */
+		uint32_t pending_reads;
 	} transport;
 
 	const char *server_name;

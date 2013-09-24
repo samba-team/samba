@@ -37,40 +37,14 @@ struct sock_private {
 	const char *path; /* For ncacn_unix_sock and ncalrpc */
 
 	struct socket_address *peer_addr;
-
-	struct tstream_context *stream;
-	struct tevent_queue *write_queue;
-	struct tevent_req *read_subreq;
-	uint32_t pending_reads;
 };
 
 
 /*
-  mark the socket dead
+  Mark the socket dead.
+  This function is declared here because it is going to be private.
 */
-static void sock_dead(struct dcecli_connection *p, NTSTATUS status)
-{
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
-
-	if (!sock) return;
-
-	tevent_queue_stop(sock->write_queue);
-	TALLOC_FREE(sock->read_subreq);
-	TALLOC_FREE(sock->stream);
-
-	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
-		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-
-	if (NT_STATUS_EQUAL(NT_STATUS_OK, status)) {
-		status = NT_STATUS_END_OF_FILE;
-	}
-
-	if (p->transport.recv_data) {
-		p->transport.recv_data(p, NULL, status);
-	}
-}
+void dcerpc_transport_dead(struct dcecli_connection *p, NTSTATUS status);
 
 /*
    initiate a read request - not needed for dcerpc sockets
@@ -82,10 +56,8 @@ struct sock_send_read_state {
 static int sock_send_read_state_destructor(struct sock_send_read_state *state)
 {
 	struct dcecli_connection *p = state->p;
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
 
-	sock->read_subreq = NULL;
+	p->transport.read_subreq = NULL;
 
 	return 0;
 }
@@ -98,8 +70,8 @@ static NTSTATUS sock_send_read(struct dcecli_connection *p)
 		p->transport.private_data, struct sock_private);
 	struct sock_send_read_state *state;
 
-	if (sock->read_subreq != NULL) {
-		sock->pending_reads++;
+	if (p->transport.read_subreq != NULL) {
+		p->transport.pending_reads++;
 		return NT_STATUS_OK;
 	}
 
@@ -111,13 +83,13 @@ static NTSTATUS sock_send_read(struct dcecli_connection *p)
 
 	talloc_set_destructor(state, sock_send_read_state_destructor);
 
-	sock->read_subreq = dcerpc_read_ncacn_packet_send(state,
+	p->transport.read_subreq = dcerpc_read_ncacn_packet_send(state,
 							  p->event_ctx,
-							  sock->stream);
-	if (sock->read_subreq == NULL) {
+							  p->transport.stream);
+	if (p->transport.read_subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	tevent_req_set_callback(sock->read_subreq, sock_send_read_done, state);
+	tevent_req_set_callback(p->transport.read_subreq, sock_send_read_done, state);
 
 	return NT_STATUS_OK;
 }
@@ -128,8 +100,6 @@ static void sock_send_read_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 					 struct sock_send_read_state);
 	struct dcecli_connection *p = state->p;
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
 	NTSTATUS status;
 	struct ncacn_packet *pkt;
 	DATA_BLOB blob;
@@ -139,7 +109,7 @@ static void sock_send_read_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(state);
-		sock_dead(p, status);
+		dcerpc_transport_dead(p, status);
 		return;
 	}
 
@@ -150,12 +120,12 @@ static void sock_send_read_done(struct tevent_req *subreq)
 	talloc_steal(p, blob.data);
 	TALLOC_FREE(state);
 
-	if (sock->pending_reads > 0) {
-		sock->pending_reads--;
+	if (p->transport.pending_reads > 0) {
+		p->transport.pending_reads--;
 
 		status = sock_send_read(p);
 		if (!NT_STATUS_IS_OK(status)) {
-			sock_dead(p, status);
+			dcerpc_transport_dead(p, status);
 			return;
 		}
 	}
@@ -185,7 +155,7 @@ static NTSTATUS sock_send_request(struct dcecli_connection *p, DATA_BLOB *data,
 	struct sock_send_request_state *state;
 	struct tevent_req *subreq;
 
-	if (sock->stream == NULL) {
+	if (p->transport.stream == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
@@ -204,8 +174,8 @@ static NTSTATUS sock_send_request(struct dcecli_connection *p, DATA_BLOB *data,
 	state->iov.iov_len = state->blob.length;
 
 	subreq = tstream_writev_queue_send(state, p->event_ctx,
-					   sock->stream,
-					   sock->write_queue,
+					   p->transport.stream,
+					   p->transport.write_queue,
 					   &state->iov, 1);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -235,7 +205,7 @@ static void sock_send_request_done(struct tevent_req *subreq)
 		NTSTATUS status = map_nt_error_from_unix_common(error);
 
 		TALLOC_FREE(state);
-		sock_dead(p, status);
+		dcerpc_transport_dead(p, status);
 		return;
 	}
 
@@ -247,12 +217,11 @@ static void sock_send_request_done(struct tevent_req *subreq)
 */
 static NTSTATUS sock_shutdown_pipe(struct dcecli_connection *p, NTSTATUS status)
 {
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
-
-	if (sock && sock->stream) {
-		sock_dead(p, status);
+	if (p->transport.stream == NULL) {
+		return NT_STATUS_OK;
 	}
+
+	dcerpc_transport_dead(p, status);
 
 	return status;
 }
@@ -321,22 +290,22 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->srv_max_xmit_frag = 5840;
 	conn->srv_max_recv_frag = 5840;
 
-	sock->pending_reads = 0;
+	conn->transport.pending_reads = 0;
 	conn->server_name   = strupper_talloc(conn, s->target_hostname);
 
 	conn->transport.private_data = sock;
 
 	rc = tstream_bsd_existing_socket(sock, sock_fd,
-					 &sock->stream);
+					 &conn->transport.stream);
 	if (rc < 0) {
 		talloc_free(sock);
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
-	sock->write_queue = tevent_queue_create(sock,
-						"dcerpc sock write queue");
-	if (sock->write_queue == NULL) {
+	conn->transport.write_queue =
+		tevent_queue_create(conn, "dcerpc sock write queue");
+	if (conn->transport.write_queue == NULL) {
 		talloc_free(sock);
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;

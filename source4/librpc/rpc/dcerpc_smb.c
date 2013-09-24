@@ -37,11 +37,6 @@
 struct smb_private {
 	DATA_BLOB session_key;
 
-	struct tstream_context *stream;
-	struct tevent_queue *write_queue;
-	struct tevent_req *read_subreq;
-	uint32_t pending_reads;
-
 	/*
 	 * these are needed to open a secondary connection
 	 */
@@ -53,33 +48,10 @@ struct smb_private {
 
 
 /*
-  tell the dcerpc layer that the transport is dead
+  Tell the dcerpc layer that the transport is dead.
+  This function is declared here because it is going to be private.
 */
-static void pipe_dead(struct dcecli_connection *c, NTSTATUS status)
-{
-	struct smb_private *smb = talloc_get_type_abort(
-		c->transport.private_data, struct smb_private);
-
-	if (smb->stream == NULL) {
-		return;
-	}
-
-	tevent_queue_stop(smb->write_queue);
-	TALLOC_FREE(smb->read_subreq);
-	TALLOC_FREE(smb->stream);
-
-	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
-		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-
-	if (NT_STATUS_EQUAL(NT_STATUS_OK, status)) {
-		status = NT_STATUS_END_OF_FILE;
-	}
-
-	if (c->transport.recv_data) {
-		c->transport.recv_data(c, NULL, status);
-	}
-}
+void dcerpc_transport_dead(struct dcecli_connection *c, NTSTATUS status);
 
 struct smb_send_read_state {
 	struct dcecli_connection *p;
@@ -88,10 +60,8 @@ struct smb_send_read_state {
 static int smb_send_read_state_destructor(struct smb_send_read_state *state)
 {
 	struct dcecli_connection *p = state->p;
-	struct smb_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct smb_private);
 
-	sock->read_subreq = NULL;
+	p->transport.read_subreq = NULL;
 
 	return 0;
 }
@@ -104,8 +74,8 @@ static NTSTATUS smb_send_read(struct dcecli_connection *p)
 		p->transport.private_data, struct smb_private);
 	struct smb_send_read_state *state;
 
-	if (sock->read_subreq != NULL) {
-		sock->pending_reads++;
+	if (p->transport.read_subreq != NULL) {
+		p->transport.pending_reads++;
 		return NT_STATUS_OK;
 	}
 
@@ -117,13 +87,13 @@ static NTSTATUS smb_send_read(struct dcecli_connection *p)
 
 	talloc_set_destructor(state, smb_send_read_state_destructor);
 
-	sock->read_subreq = dcerpc_read_ncacn_packet_send(state,
+	p->transport.read_subreq = dcerpc_read_ncacn_packet_send(state,
 							  p->event_ctx,
-							  sock->stream);
-	if (sock->read_subreq == NULL) {
+							  p->transport.stream);
+	if (p->transport.read_subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	tevent_req_set_callback(sock->read_subreq, smb_send_read_done, state);
+	tevent_req_set_callback(p->transport.read_subreq, smb_send_read_done, state);
 
 	return NT_STATUS_OK;
 }
@@ -134,8 +104,6 @@ static void smb_send_read_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 					 struct smb_send_read_state);
 	struct dcecli_connection *p = state->p;
-	struct smb_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct smb_private);
 	NTSTATUS status;
 	struct ncacn_packet *pkt;
 	DATA_BLOB blob;
@@ -145,7 +113,7 @@ static void smb_send_read_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(state);
-		pipe_dead(p, status);
+		dcerpc_transport_dead(p, status);
 		return;
 	}
 
@@ -156,12 +124,12 @@ static void smb_send_read_done(struct tevent_req *subreq)
 	talloc_steal(p, blob.data);
 	TALLOC_FREE(state);
 
-	if (sock->pending_reads > 0) {
-		sock->pending_reads--;
+	if (p->transport.pending_reads > 0) {
+		p->transport.pending_reads--;
 
 		status = smb_send_read(p);
 		if (!NT_STATUS_IS_OK(status)) {
-			pipe_dead(p, status);
+			dcerpc_transport_dead(p, status);
 			return;
 		}
 	}
@@ -183,11 +151,7 @@ struct smb_send_request_state {
 
 static int smb_send_request_state_destructor(struct smb_send_request_state *state)
 {
-	struct dcecli_connection *p = state->p;
-	struct smb_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct smb_private);
-
-	sock->read_subreq = NULL;
+	state->p->transport.read_subreq = NULL;
 
 	return 0;
 }
@@ -204,7 +168,7 @@ static NTSTATUS smb_send_request(struct dcecli_connection *p, DATA_BLOB *data,
 	struct tevent_req *subreq;
 	bool use_trans = trigger_read;
 
-	if (sock->stream == NULL) {
+	if (p->transport.stream == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
@@ -222,7 +186,7 @@ static NTSTATUS smb_send_request(struct dcecli_connection *p, DATA_BLOB *data,
 	state->iov.iov_base = (void *)state->blob.data;
 	state->iov.iov_len = state->blob.length;
 
-	if (sock->read_subreq != NULL) {
+	if (p->transport.read_subreq != NULL) {
 		use_trans = false;
 	}
 
@@ -231,13 +195,13 @@ static NTSTATUS smb_send_request(struct dcecli_connection *p, DATA_BLOB *data,
 		 * we need to block reads until our write is
 		 * the next in the write queue.
 		 */
-		sock->read_subreq = tevent_queue_wait_send(state, p->event_ctx,
-							   sock->write_queue);
-		if (sock->read_subreq == NULL) {
+		p->transport.read_subreq = tevent_queue_wait_send(state, p->event_ctx,
+							p->transport.write_queue);
+		if (p->transport.read_subreq == NULL) {
 			TALLOC_FREE(state);
 			return NT_STATUS_NO_MEMORY;
 		}
-		tevent_req_set_callback(sock->read_subreq,
+		tevent_req_set_callback(p->transport.read_subreq,
 					smb_send_request_wait_done,
 					state);
 
@@ -247,8 +211,8 @@ static NTSTATUS smb_send_request(struct dcecli_connection *p, DATA_BLOB *data,
 	}
 
 	subreq = tstream_writev_queue_send(state, p->event_ctx,
-					   sock->stream,
-					   sock->write_queue,
+					   p->transport.stream,
+					   p->transport.write_queue,
 					   &state->iov, 1);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -269,26 +233,24 @@ static void smb_send_request_wait_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct smb_send_request_state);
 	struct dcecli_connection *p = state->p;
-	struct smb_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct smb_private);
 	NTSTATUS status;
 	bool ok;
 
-	sock->read_subreq = NULL;
+	p->transport.read_subreq = NULL;
 	talloc_set_destructor(state, NULL);
 
 	ok = tevent_queue_wait_recv(subreq);
 	if (!ok) {
 		TALLOC_FREE(state);
-		pipe_dead(p, NT_STATUS_NO_MEMORY);
+		dcerpc_transport_dead(p, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
-	if (tevent_queue_length(sock->write_queue) <= 2) {
-		status = tstream_smbXcli_np_use_trans(sock->stream);
+	if (tevent_queue_length(p->transport.write_queue) <= 2) {
+		status = tstream_smbXcli_np_use_trans(p->transport.stream);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(state);
-			pipe_dead(p, status);
+			dcerpc_transport_dead(p, status);
 			return;
 		}
 	}
@@ -314,7 +276,7 @@ static void smb_send_request_done(struct tevent_req *subreq)
 		NTSTATUS status = map_nt_error_from_unix_common(error);
 
 		TALLOC_FREE(state);
-		pipe_dead(p, status);
+		dcerpc_transport_dead(p, status);
 		return;
 	}
 
@@ -338,7 +300,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcecli_connection *c, NTSTATUS status)
 	struct smb_shutdown_pipe_state *state;
 	struct tevent_req *subreq;
 
-	if (smb->stream == NULL) {
+	if (c->transport.stream == NULL) {
 		return NT_STATUS_OK;
 	}
 
@@ -349,7 +311,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcecli_connection *c, NTSTATUS status)
 	state->c = c;
 	state->status = status;
 
-	subreq = tstream_disconnect_send(state, c->event_ctx, smb->stream);
+	subreq = tstream_disconnect_send(state, c->event_ctx, c->transport.stream);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -374,7 +336,7 @@ static void smb_shutdown_pipe_done(struct tevent_req *subreq)
 
 	TALLOC_FREE(state);
 
-	pipe_dead(c, status);
+	dcerpc_transport_dead(c, status);
 }
 
 /*
@@ -479,13 +441,13 @@ static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq)
 
 	ctx->status = tstream_smbXcli_np_open_recv(subreq,
 						   state->smb,
-						   &state->smb->stream);
+						   &state->c->transport.stream);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(ctx)) return;
 
-	state->smb->write_queue = tevent_queue_create(state->smb,
-					"dcerpc_smb write queue");
-	if (composite_nomem(state->smb->write_queue, ctx)) return;
+	state->c->transport.write_queue =
+		tevent_queue_create(state->c, "dcerpc_smb write queue");
+	if (composite_nomem(state->c->transport.write_queue, ctx)) return;
 
 	/*
 	  fill in the transport methods
