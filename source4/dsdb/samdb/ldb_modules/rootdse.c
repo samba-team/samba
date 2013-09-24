@@ -270,7 +270,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		if (ret == LDB_SUCCESS) {
 			const char *hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
 			if (hostname != NULL) {
-				if (ldb_msg_add_string(msg, "dNSHostName", hostname)) {
+				if (ldb_msg_add_string(msg, "dnsHostName", hostname)) {
 					goto failed;
 				}
 			}
