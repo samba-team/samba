@@ -78,8 +78,6 @@ struct dcecli_connection {
 		enum dcerpc_transport_t transport;
 		void *private_data;
 
-		NTSTATUS (*shutdown_pipe)(struct dcecli_connection *, NTSTATUS status);
-
 		/* send a request to the server */
 		NTSTATUS (*send_request)(struct dcecli_connection *, DATA_BLOB *, bool trigger_read);
 

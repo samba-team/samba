@@ -212,20 +212,6 @@ static void sock_send_request_done(struct tevent_req *subreq)
 	TALLOC_FREE(state);
 }
 
-/* 
-   shutdown sock pipe connection
-*/
-static NTSTATUS sock_shutdown_pipe(struct dcecli_connection *p, NTSTATUS status)
-{
-	if (p->transport.stream == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	dcerpc_transport_dead(p, status);
-
-	return status;
-}
-
 struct pipe_open_socket_state {
 	struct dcecli_connection *conn;
 	struct socket_context *socket_ctx;
@@ -280,8 +266,6 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->transport.send_request    = sock_send_request;
 	conn->transport.send_read       = sock_send_read;
 	conn->transport.recv_data       = NULL;
-
-	conn->transport.shutdown_pipe   = sock_shutdown_pipe;
 
 	/*
 	 * Windows uses 5840 for ncacn_ip_tcp,

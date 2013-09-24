@@ -283,62 +283,6 @@ static void smb_send_request_done(struct tevent_req *subreq)
 	TALLOC_FREE(state);
 }
 
-/* 
-   shutdown SMB pipe connection
-*/
-struct smb_shutdown_pipe_state {
-	struct dcecli_connection *c;
-	NTSTATUS status;
-};
-
-static void smb_shutdown_pipe_done(struct tevent_req *subreq);
-
-static NTSTATUS smb_shutdown_pipe(struct dcecli_connection *c, NTSTATUS status)
-{
-	struct smb_private *smb = talloc_get_type_abort(
-		c->transport.private_data, struct smb_private);
-	struct smb_shutdown_pipe_state *state;
-	struct tevent_req *subreq;
-
-	if (c->transport.stream == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	state = talloc_zero(smb, struct smb_shutdown_pipe_state);
-	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	state->c = c;
-	state->status = status;
-
-	subreq = tstream_disconnect_send(state, c->event_ctx, c->transport.stream);
-	if (subreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tevent_req_set_callback(subreq, smb_shutdown_pipe_done, state);
-
-	return status;
-}
-
-static void smb_shutdown_pipe_done(struct tevent_req *subreq)
-{
-	struct smb_shutdown_pipe_state *state =
-		tevent_req_callback_data(subreq, struct smb_shutdown_pipe_state);
-	struct dcecli_connection *c = state->c;
-	NTSTATUS status = state->status;
-	int error;
-
-	/*
-	 * here we ignore the return values...
-	 */
-	tstream_disconnect_recv(subreq, &error);
-	TALLOC_FREE(subreq);
-
-	TALLOC_FREE(state);
-
-	dcerpc_transport_dead(c, status);
-}
-
 /*
   fetch the user session key 
 */
@@ -454,7 +398,6 @@ static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq)
 	*/
 	c->transport.transport       = NCACN_NP;
 	c->transport.private_data    = NULL;
-	c->transport.shutdown_pipe   = smb_shutdown_pipe;
 
 	c->transport.send_request    = smb_send_request;
 	c->transport.send_read       = smb_send_read;

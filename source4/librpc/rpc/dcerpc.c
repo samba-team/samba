@@ -31,6 +31,8 @@
 #include "param/param.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/rpc_common.h"
+#include "lib/tsocket/tsocket.h"
+
 
 enum rpc_request_state {
 	RPC_REQUEST_QUEUED,
@@ -1009,6 +1011,7 @@ static int dcerpc_req_dequeue(struct rpc_request *req)
 }
 
 
+static NTSTATUS dcerpc_shutdown_pipe(struct dcecli_connection *p, NTSTATUS status);
 /*
   mark the dcerpc connection dead. All outstanding requests get an error
 */
@@ -1023,9 +1026,7 @@ static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS stat
 
 	conn->transport.recv_data = NULL;
 
-	if (conn->transport.shutdown_pipe) {
-		conn->transport.shutdown_pipe(conn, status);
-	}
+	dcerpc_shutdown_pipe(conn, status);
 
 	/* all pending requests get the error */
 	while (conn->pending) {
@@ -2268,4 +2269,59 @@ void dcerpc_transport_dead(struct dcecli_connection *c, NTSTATUS status)
 	if (c->transport.recv_data) {
 		c->transport.recv_data(c, NULL, status);
 	}
+}
+
+
+/*
+   shutdown SMB pipe connection
+*/
+struct dcerpc_shutdown_pipe_state {
+	struct dcecli_connection *c;
+	NTSTATUS status;
+};
+
+static void dcerpc_shutdown_pipe_done(struct tevent_req *subreq);
+
+static NTSTATUS dcerpc_shutdown_pipe(struct dcecli_connection *c, NTSTATUS status)
+{
+	struct dcerpc_shutdown_pipe_state *state;
+	struct tevent_req *subreq;
+
+	if (c->transport.stream == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	state = talloc_zero(c, struct dcerpc_shutdown_pipe_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->c = c;
+	state->status = status;
+
+	subreq = tstream_disconnect_send(state, c->event_ctx, c->transport.stream);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, dcerpc_shutdown_pipe_done, state);
+
+	return status;
+}
+
+static void dcerpc_shutdown_pipe_done(struct tevent_req *subreq)
+{
+	struct dcerpc_shutdown_pipe_state *state =
+		tevent_req_callback_data(subreq, struct dcerpc_shutdown_pipe_state);
+	struct dcecli_connection *c = state->c;
+	NTSTATUS status = state->status;
+	int error;
+
+	/*
+	 * here we ignore the return values...
+	 */
+	tstream_disconnect_recv(subreq, &error);
+	TALLOC_FREE(subreq);
+
+	TALLOC_FREE(state);
+
+	dcerpc_transport_dead(c, status);
 }
