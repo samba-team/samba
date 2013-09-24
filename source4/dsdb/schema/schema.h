@@ -74,6 +74,7 @@ struct dsdb_syntax {
 			       const struct dsdb_attribute *attr,
 			       const struct ldb_message_element *in);
 	bool auto_normalise;
+	bool userParameters; /* Indicates the syntax userParameters should be forced to */
 };
 
 struct dsdb_attribute {
