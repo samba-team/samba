@@ -46,7 +46,7 @@ bool net_conf_param_valid(const char *service,
 		return false;
 	}
 
-	if (!strequal(service, "global") && lp_parameter_is_global(param)) {
+	if (!strequal(service, GLOBAL_NAME) && lp_parameter_is_global(param)) {
 		d_fprintf(stderr, "Global parameter '%s' not allowed in "
 			  "service definition ('%s').\n", param, service);
 		return false;
