@@ -1316,6 +1316,9 @@ static bool test_durable_open_lock_lease(struct torture_context *tctx,
 	bool ret = true;
 	uint64_t lease;
 	uint32_t caps;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
 	if (!(caps & SMB2_CAP_LEASING)) {
@@ -1367,7 +1370,7 @@ static bool test_durable_open_lock_lease(struct torture_context *tctx,
 	talloc_free(tree);
 	tree = NULL;
 
-	if (!torture_smb2_connection(tctx, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
@@ -1416,6 +1419,9 @@ static bool test_durable_open_open2_lease(struct torture_context *tctx,
 	bool ret = true;
 	uint64_t lease;
 	uint32_t caps;
+	struct smbcli_options options;
+
+	options = tree1->session->transport->options;
 
 	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
 	if (!(caps & SMB2_CAP_LEASING)) {
@@ -1465,7 +1471,7 @@ static bool test_durable_open_open2_lease(struct torture_context *tctx,
 	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 
 	/* Reconnect */
-	if (!torture_smb2_connection(tctx, &tree1)) {
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree1)) {
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
