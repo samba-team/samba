@@ -426,6 +426,9 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	const char **proxy_list;
 	struct fake_file_handle *handle;
 	struct ndr_syntax_id syntax;
+	struct npa_state *npa = NULL;
+	NTSTATUS status;
+	bool ok;
 
 	proxy_list = lp_parm_string_list(-1, "np", "proxy", NULL);
 
@@ -445,37 +448,49 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 
 	switch (pipe_mode) {
 	case RPC_SERVICE_MODE_EXTERNAL:
+		status = make_external_rpc_pipe(handle,
+						name,
+						local_address,
+						remote_address,
+						session_info,
+						&npa);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(handle);
+			return status;
+		}
 
-		handle->private_data = (void *)make_external_rpc_pipe_p(
-					     handle, name,
-					     local_address,
-					     remote_address,
-					     session_info);
-
+		handle->private_data = (void *)npa;
 		handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
+
 		break;
-
 	case RPC_SERVICE_MODE_EMBEDDED:
-
-		if (!is_known_pipename(name, &syntax)) {
-			TALLOC_FREE(handle);
+		/* Check if we this daemon handles this pipe */
+		ok = is_known_pipename(name, &syntax);
+		if (!ok) {
+			DEBUG(0, ("ERROR! '%s' is not a registred pipe!\n",
+				  name));
+			talloc_free(handle);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		handle->private_data = (void *)make_internal_rpc_pipe_p(
-					     handle, &syntax, remote_address,
-					     session_info, msg_ctx);
+		status = make_internal_rpc_pipe(handle,
+						msg_ctx,
+						name,
+						&syntax,
+						remote_address,
+						session_info,
+						&npa);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(handle);
+			return status;
+		}
 
+		handle->private_data = (void *)npa;
 		handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
-		break;
 
+		break;
 	case RPC_SERVICE_MODE_DISABLED:
-		handle->private_data = NULL;
-		break;
-	}
-
-	if (handle->private_data == NULL) {
-		TALLOC_FREE(handle);
+		talloc_free(handle);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -491,8 +506,9 @@ bool np_read_in_progress(struct fake_file_handle *handle)
 	}
 
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
-		struct np_proxy_state *p = talloc_get_type_abort(
-			handle->private_data, struct np_proxy_state);
+		struct npa_state *p =
+			talloc_get_type_abort(handle->private_data,
+					      struct npa_state);
 		size_t read_count;
 
 		read_count = tevent_queue_length(p->read_queue);
@@ -508,7 +524,7 @@ bool np_read_in_progress(struct fake_file_handle *handle)
 
 struct np_write_state {
 	struct tevent_context *ev;
-	struct np_proxy_state *p;
+	struct npa_state *p;
 	struct iovec iov;
 	ssize_t nwritten;
 };
@@ -538,8 +554,12 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
-		struct pipes_struct *p = talloc_get_type_abort(
-			handle->private_data, struct pipes_struct);
+		struct npa_state *npa =
+			talloc_get_type_abort(handle->private_data,
+					      struct npa_state);
+		struct pipes_struct *p =
+			talloc_get_type_abort(npa->private_data,
+					      struct pipes_struct);
 
 		state->nwritten = write_to_internal_pipe(p, (const char *)data, len);
 
@@ -549,8 +569,8 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
-		struct np_proxy_state *p = talloc_get_type_abort(
-			handle->private_data, struct np_proxy_state);
+		struct npa_state *p = talloc_get_type_abort(
+			handle->private_data, struct npa_state);
 		struct tevent_req *subreq;
 
 		state->ev = ev;
@@ -559,7 +579,7 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		state->iov.iov_len = len;
 
 		subreq = tstream_writev_queue_send(state, ev,
-						   p->npipe,
+						   p->stream,
 						   p->write_queue,
 						   &state->iov, 1);
 		if (subreq == NULL) {
@@ -690,7 +710,7 @@ static int np_ipc_readv_next_vector(struct tstream_context *stream,
 }
 
 struct np_read_state {
-	struct np_proxy_state *p;
+	struct npa_state *p;
 	struct np_ipc_readv_next_vector_state next_vector;
 
 	ssize_t nread;
@@ -713,8 +733,12 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
-		struct pipes_struct *p = talloc_get_type_abort(
-			handle->private_data, struct pipes_struct);
+		struct npa_state *npa =
+			talloc_get_type_abort(handle->private_data,
+					      struct npa_state);
+		struct pipes_struct *p =
+			talloc_get_type_abort(npa->private_data,
+					      struct pipes_struct);
 
 		state->nread = read_from_internal_pipe(
 			p, (char *)data, len, &state->is_data_outstanding);
@@ -725,8 +749,8 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
-		struct np_proxy_state *p = talloc_get_type_abort(
-			handle->private_data, struct np_proxy_state);
+		struct npa_state *p = talloc_get_type_abort(
+			handle->private_data, struct npa_state);
 		struct tevent_req *subreq;
 
 		np_ipc_readv_next_vector_init(&state->next_vector,
@@ -734,7 +758,7 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 		subreq = tstream_readv_pdu_queue_send(state,
 						      ev,
-						      p->npipe,
+						      p->stream,
 						      p->read_queue,
 						      np_ipc_readv_next_vector,
 						      &state->next_vector);
