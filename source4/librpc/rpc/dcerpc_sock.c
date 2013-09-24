@@ -102,6 +102,12 @@ static NTSTATUS sock_complete_packet(void *private_data, DATA_BLOB blob, size_t 
 		return STATUS_MORE_ENTRIES;
 	}
 	*size = dcerpc_get_frag_length(&blob);
+	if (*size < blob.length) {
+		/*
+		 * something is wrong, let the caller deal with it
+		 */
+		*size = blob.length;
+	}
 	if (*size > blob.length) {
 		return STATUS_MORE_ENTRIES;
 	}
