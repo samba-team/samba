@@ -2395,6 +2395,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "Octet String",
+		.userParameters         = true
 	},{
 		.name			= "String(Sid)",
 		.ldap_oid		= LDB_SYNTAX_OCTET_STRING,
@@ -2665,6 +2666,16 @@ const struct dsdb_syntax *dsdb_syntax_for_attribute(const struct dsdb_attribute 
 	unsigned int i;
 
 	for (i=0; i < ARRAY_SIZE(dsdb_syntaxes); i++) {
+		/*
+		 * We must pretend that userParamters was declared
+		 * binary string, so we can store the 'UTF16' (not
+		 * really string) structure as given over SAMR to samba
+		 */
+		if (dsdb_syntaxes[i].userParameters &&
+		    (strcasecmp(attr->lDAPDisplayName, "userParameters") == 0))
+		{
+			return &dsdb_syntaxes[i];
+		}
 		if (attr->oMSyntax != dsdb_syntaxes[i].oMSyntax) continue;
 
 		if (attr->oMObjectClass.length != dsdb_syntaxes[i].oMObjectClass.length) continue;
