@@ -758,6 +758,22 @@ void smb2_lease_v2_create_share(struct smb2_create *io,
 	}
 }
 
+void smb2_lease_v2_create(struct smb2_create *io,
+			  struct smb2_lease *ls,
+			  bool dir,
+			  const char *name,
+			  uint64_t leasekey,
+			  const uint64_t *parentleasekey,
+			  uint32_t leasestate,
+			  uint16_t lease_epoch)
+{
+	smb2_lease_v2_create_share(io, ls, dir, name,
+				   smb2_util_share_access("RWD"),
+				   leasekey, parentleasekey,
+				   leasestate, lease_epoch);
+}
+
+
 void smb2_oplock_create_share(struct smb2_create *io, const char *name,
 			      uint32_t share_access, uint8_t oplock)
 {
