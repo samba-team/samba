@@ -15,8 +15,7 @@ bld.SAMBA3_SUBSYSTEM('VFS_AIXACL_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('vfs',
                     source='',
-                    deps='smbd_base',
-                    vars=locals())
+                    deps='smbd_base')
 
 bld.SAMBA3_MODULE('vfs_default',
                  subsystem='vfs',
