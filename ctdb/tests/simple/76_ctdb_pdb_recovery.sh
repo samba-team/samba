@@ -12,10 +12,10 @@ when using sequence number based recovery method.
 Steps:
 
 1. Create a persistent database
-2. Add a record and update it few times. Set the sequence number to 5
+2. Add a record and update it few times.
 3. Delete the record
 4. Turn off one of the nodes
-5. Add a record with same key. Set the sequence number to 10
+5. Add a record with same key.
 6. Turn on the stopped node
 
 Expected results:
@@ -51,10 +51,6 @@ for value in value1 value2 value3 value4 value5 ; do
 	try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb pstore $TESTDB test1 /tmp/test_data
 done
 
-# Update sequence number on all the nodes
-echo "set __db_sequence_number__ to 5"
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb setdbseqnum $TESTDB 5
-
 # Delete record
 echo "delete key(test1)"
 try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb pdelete $TESTDB test1
@@ -69,9 +65,6 @@ wait_until_node_has_status 1 stopped
 echo "store key(test1) data(newvalue1)"
 try_command_on_node -q 0 "(echo -ne newvalue1 > /tmp/test_data)"
 try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb pstore $TESTDB test1 /tmp/test_data
-
-echo "set __db_sequence_number__ to 6"
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb setdbseqnum $TESTDB 6
 
 # Continue node
 echo "contine node 1"
@@ -92,7 +85,6 @@ status=0
 echo "create persistent test database $TESTDB"
 try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb attach $TESTDB persistent
 
-# Set RecoverPDBBySeqNum = 0
 echo "set RecoverPDBBySeqNum to 0"
 try_command_on_node -q all $CTDB_TEST_WRAPPER ctdb setvar RecoverPDBBySeqNum 0
 
