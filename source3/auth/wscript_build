@@ -2,8 +2,7 @@
 
 bld.SAMBA3_SUBSYSTEM('TOKEN_UTIL',
                     source='token_util.c',
-                    deps='samba-util pdb',
-                    vars=locals())
+                    deps='samba-util pdb')
 
 bld.SAMBA3_SUBSYSTEM('USER_UTIL',
                      source='user_util.c',
@@ -15,8 +14,7 @@ bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
 			      server_info.c
 			      server_info_sam.c
 			      user_info.c''',
-                     deps='TOKEN_UTIL DCUTIL USER_UTIL',
-                    vars=locals())
+                     deps='TOKEN_UTIL DCUTIL USER_UTIL')
 
 bld.SAMBA3_LIBRARY('auth',
                    source='''auth.c
