@@ -214,6 +214,21 @@ class cmd_domain_provision(Command):
          Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
         ]
+
+    openldap_options = [
+        Option("--ldap-dryrun-mode", help="Configure LDAP backend, but do not run any binaries and exit early.  Used only for the test environment.  DO NOT USE",
+               action="store_true"),
+        Option("--slapd-path", type="string", metavar="SLAPD-PATH",
+               help="Path to slapd for LDAP backend [e.g.:'/usr/local/libexec/slapd']. Required for Setup with LDAP-Backend. OpenLDAP Version >= 2.4.17 should be used."),
+        Option("--ldap-backend-extra-port", type="int", metavar="LDAP-BACKEND-EXTRA-PORT", help="Additional TCP port for LDAP backend server (to use for replication)"),
+        Option("--ldap-backend-forced-uri", type="string", metavar="LDAP-BACKEND-FORCED-URI",
+               help="Force the LDAP backend connection to be to a particular URI.  Use this ONLY for 'existing' backends, or when debugging the interaction with the LDAP backend and you need to intercept the LDA"),
+        Option("--ldap-backend-nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true"),
+        ]
+
+    if os.getenv('TEST_LDAP', "no") == "yes":
+        takes_options.extend(openldap_options)
+
     takes_args = []
 
     def run(self, sambaopts=None, credopts=None, versionopts=None,
@@ -246,8 +261,13 @@ class cmd_domain_provision(Command):
             targetdir=None,
             ol_mmr_urls=None,
             use_xattrs=None,
+            slapd_path=None,
             use_ntvfs=None,
-            use_rfc2307=None):
+            use_rfc2307=None,
+            ldap_backend_nosync=None,
+            ldap_backend_extra_port=None,
+            ldap_backend_forced_uri=None,
+            ldap_dryrun_mode=None):
 
         self.logger = self.get_logger("provision")
         if quiet:
@@ -376,6 +396,14 @@ class cmd_domain_provision(Command):
 
         if eadb:
             self.logger.info("not using extended attributes to store ACLs and other metadata. If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+        if ldap_backend_type == "existing":
+            if dap_backend_forced_uri is not None:
+                logger.warn("You have specified to use an existing LDAP server as the backend, please make sure an LDAP server is running at %s" % ldap_backend_forced_uri)
+            else:
+                logger.info("You have specified to use an existing LDAP server as the backend, please make sure an LDAP server is running at the default location")
+        else:
+            if ldap_backend_forced_uri is not None:
+                logger.warn("You have specified to use an fixed URI %s for connecting to your LDAP server backend.  This is NOT RECOMMENDED, as our default communiation over ldapi:// is more secure and much less")
 
         session = system_session()
         try:
@@ -393,9 +421,13 @@ class cmd_domain_provision(Command):
                   users=users,
                   serverrole=server_role, dom_for_fun_level=dom_for_fun_level,
                   backend_type=ldap_backend_type,
-                  ldapadminpass=ldapadminpass, ol_mmr_urls=ol_mmr_urls,
+                  ldapadminpass=ldapadminpass, ol_mmr_urls=ol_mmr_urls, slapd_path=slapd_path,
                   useeadb=eadb, next_rid=next_rid, lp=lp, use_ntvfs=use_ntvfs,
-                  use_rfc2307=use_rfc2307, skip_sysvolacl=False)
+                  use_rfc2307=use_rfc2307, skip_sysvolacl=False,
+                  ldap_backend_extra_port=ldap_backend_extra_port,
+                  ldap_backend_forced_uri=ldap_backend_forced_uri,
+                  nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode)
+
         except ProvisioningError, e:
             raise CommandError("Provision failed", e)
 

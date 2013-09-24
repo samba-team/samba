@@ -154,7 +154,7 @@ class ExistingBackend(ProvisionBackend):
 
     def init(self):
         # Check to see that this 'existing' LDAP backend in fact exists
-        ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
+        ldapi_db = Ldb(self.ldapi_uri)
         ldapi_db.search(base="", scope=SCOPE_BASE,
             expression="(objectClass=OpenLDAProotDSE)")
 
@@ -162,6 +162,7 @@ class ExistingBackend(ProvisionBackend):
         # server, with valid credentials supplied This caused them to be set
         # into the long-term database later in the script.
         self.secrets_credentials = self.credentials
+
 
          # For now, assume existing backends at least emulate OpenLDAP
         self.ldap_backend_type = "openldap"
@@ -173,7 +174,7 @@ class LDAPBackend(ProvisionBackend):
                  credentials=None, names=None, logger=None, domainsid=None,
                  schema=None, hostname=None, ldapadminpass=None,
                  slapd_path=None, ldap_backend_extra_port=None,
-                 ldap_backend_forced_uri=None, ldap_dryrun_mode=True):
+                 ldap_backend_forced_uri=None, ldap_dryrun_mode=False):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
                 paths=paths, lp=lp,
@@ -334,7 +335,7 @@ class OpenLDAPBackend(LDAPBackend):
     def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-            ldap_backend_extra_port=None, ldap_dryrun_mode=True,
+            ldap_backend_extra_port=None, ldap_dryrun_mode=False,
             ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
         from samba.provision import setup_path
         super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
@@ -588,7 +589,6 @@ class OpenLDAPBackend(LDAPBackend):
         self.slapd_command = list(self.slapd_provision_command)
 
         self.slapd_provision_command.extend([self.ldap_uri, "-d0"])
-
         uris = self.ldap_uri
         if server_port_string is not "":
             uris = uris + " " + server_port_string
@@ -634,7 +634,7 @@ class FDSBackend(LDAPBackend):
     def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-            ldap_backend_extra_port=None, ldap_dryrun_mode=True, root=None,
+            ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
             setup_ds_path=None):
 
         from samba.provision import setup_path
