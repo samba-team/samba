@@ -1,19 +1,12 @@
 #!/usr/bin/env python
 
-GPEXT_REGISTRY_SRC = 'registry.c'
-GPEXT_SCRIPTS_SRC = 'scripts.c'
-GPEXT_SECURITY_SRC = 'security.c'
-
-GPEXT_SRC = '''../../../libgpo/gpext/gpext.c'''
-
 bld.SAMBA3_SUBSYSTEM('gpext',
-                    source=GPEXT_SRC,
-                    deps='samba-util samba3core gpo',
-                    vars=locals())
+                    source='../../../libgpo/gpext/gpext.c',
+                    deps='samba-util samba3core gpo')
 
 bld.SAMBA3_MODULE('gpext_registry',
                  subsystem='gpext',
-                 source=GPEXT_REGISTRY_SRC,
+                 source='registry.c',
                  deps='NDR_PREG',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('gpext_registry'),
@@ -21,14 +14,14 @@ bld.SAMBA3_MODULE('gpext_registry',
 
 bld.SAMBA3_MODULE('gpext_scripts',
                  subsystem='gpext',
-                 source=GPEXT_SCRIPTS_SRC,
+                 source='scripts.c',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('gpext_scripts'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('gpext_scripts'))
 
 bld.SAMBA3_MODULE('gpext_security',
                  subsystem='gpext',
-                 source=GPEXT_SECURITY_SRC,
+                 source='security.c',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('gpext_security'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('gpext_security'))
