@@ -41,6 +41,33 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx)
+{
+	struct npa_state *npa;
+
+	npa = talloc_zero(mem_ctx, struct npa_state);
+	if (npa == NULL) {
+		return NULL;
+	}
+
+	npa->read_queue = tevent_queue_create(npa, "npa_cli_read");
+	if (npa->read_queue == NULL) {
+		DEBUG(0, ("tevent_queue_create failed\n"));
+		goto fail;
+	}
+
+	npa->write_queue = tevent_queue_create(npa, "npa_cli_write");
+	if (npa->write_queue == NULL) {
+		DEBUG(0, ("tevent_queue_create failed\n"));
+		goto fail;
+	}
+
+	return npa;
+fail:
+	talloc_free(npa);
+	return NULL;
+}
+
 /****************************************************************************
  Make an internal namedpipes structure
 ****************************************************************************/

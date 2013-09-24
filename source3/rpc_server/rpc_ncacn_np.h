@@ -24,6 +24,19 @@ struct dcerpc_binding_handle;
 struct ndr_interface_table;
 struct tsocket_address;
 
+struct npa_state {
+	struct tstream_context *stream;
+
+	struct tevent_queue *read_queue;
+	struct tevent_queue *write_queue;
+
+	uint64_t allocation_size;
+	uint16_t device_state;
+	uint16_t file_type;
+
+	void *private_data;
+};
+
 struct np_proxy_state {
 	uint16_t file_type;
 	uint16_t device_state;
