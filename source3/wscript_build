@@ -1056,6 +1056,7 @@ bld.SAMBA3_BINARY('net',
                  utils/net_dns.c
                  utils/net_ads_gpo.c
                  utils/net_conf.c
+                 utils/net_conf_util.c
                  utils/net_join.c
                  utils/net_user.c
                  utils/net_group.c

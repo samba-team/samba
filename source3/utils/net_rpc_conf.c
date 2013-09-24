@@ -28,6 +28,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "utils/net_conf_util.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/init_samr.h"
@@ -1740,8 +1741,6 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	enum winreg_CreateAction action = 0;
 
 	const char *service_name, *param_name, *valstr;
-	const char *canon_param_name;
-	const char *canon_valstr;
 
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
@@ -1832,40 +1831,7 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	 * check if parameter is valid for writing
 	 */
 
-	if (!lp_parameter_is_valid(param_name)) {
-		d_fprintf(stderr, "Invalid parameter '%s' given.\n",
-			  param_name);
-		werr = WERR_INVALID_PARAM;
-		goto error;
-	}
-
-	if (!smbconf_reg_parameter_is_valid(param_name)) {
-		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
-			  param_name);
-		werr = WERR_INVALID_PARAM;
-		goto error;
-	}
-
-	if (!strequal(service_name, "global") &&
-	   lp_parameter_is_global(param_name))
-	{
-		d_fprintf(stderr, "Global parameter '%s' not allowed in "
-			  "service definition ('%s').\n", param_name,
-			  service_name);
-		werr = WERR_INVALID_PARAM;
-		goto error;
-	}
-
-	if (!lp_canonicalize_parameter_with_value(param_name, valstr,
-						  &canon_param_name,
-						  &canon_valstr))
-	{
-		/*
-		 * We already know the parameter name is valid.
-		 * So the value must be invalid.
-		 */
-		d_fprintf(stderr, "invalid value '%s' given for "
-			  "parameter '%s'\n", param_name, valstr);
+	if (!net_conf_param_valid(service_name, param_name, valstr)) {
 		werr = WERR_INVALID_PARAM;
 		goto error;
 	}
