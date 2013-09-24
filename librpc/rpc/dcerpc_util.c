@@ -292,6 +292,11 @@ static void dcerpc_read_ncacn_packet_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (state->pkt->frag_length != state->buffer.length) {
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
