@@ -543,6 +543,137 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
  * External pipes functions
  ***************************************************************************/
 
+NTSTATUS make_external_rpc_pipe(TALLOC_CTX *mem_ctx,
+				const char *pipe_name,
+				const struct tsocket_address *local_address,
+				const struct tsocket_address *remote_address,
+				const struct auth_session_info *session_info,
+				struct npa_state **pnpa)
+{
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct auth_session_info_transport *session_info_t;
+	struct tevent_context *ev_ctx;
+	struct tevent_req *subreq;
+	const char *socket_np_dir;
+	const char *socket_dir;
+	struct npa_state *npa;
+	int sys_errno;
+	NTSTATUS status;
+	int rc = -1;
+	bool ok;
+
+	npa = npa_state_init(tmp_ctx);
+	if (npa == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	socket_dir = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					  "external_rpc_pipe",
+					  "socket_dir",
+					  lp_ncalrpc_dir());
+	if (socket_dir == NULL) {
+		DEBUG(0, ("external_rpc_pipe: socket_dir not set\n"));
+		status = NT_STATUS_PIPE_NOT_AVAILABLE;
+		goto out;
+	}
+
+	socket_np_dir = talloc_asprintf(tmp_ctx, "%s/np", socket_dir);
+	if (socket_np_dir == NULL) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	session_info_t = talloc_zero(tmp_ctx,
+				     struct auth_session_info_transport);
+	if (session_info_t == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	session_info_t->session_info = copy_session_info(session_info_t,
+							 session_info);
+	if (session_info_t->session_info == NULL) {
+		DEBUG(0, ("copy_session_info failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	ev_ctx = s3_tevent_context_init(tmp_ctx);
+	if (ev_ctx == NULL) {
+		DEBUG(0, ("s3_tevent_context_init failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	become_root();
+	subreq = tstream_npa_connect_send(tmp_ctx,
+					  ev_ctx,
+					  socket_np_dir,
+					  pipe_name,
+					  remote_address, /* client_addr */
+					  NULL, /* client_name */
+					  local_address, /* server_addr */
+					  NULL, /* server_name */
+					  session_info_t);
+	if (subreq == NULL) {
+		unbecome_root();
+		DEBUG(0, ("tstream_npa_connect_send to %s for pipe %s and "
+			  "user %s\\%s failed\n",
+			  socket_np_dir, pipe_name, session_info_t->session_info->info->domain_name,
+			  session_info_t->session_info->info->account_name));
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
+	}
+	ok = tevent_req_poll(subreq, ev_ctx);
+	unbecome_root();
+	if (!ok) {
+		DEBUG(0, ("tevent_req_poll to %s for pipe %s and user %s\\%s "
+			  "failed for tstream_npa_connect: %s\n",
+			  socket_np_dir,
+			  pipe_name,
+			  session_info_t->session_info->info->domain_name,
+			  session_info_t->session_info->info->account_name,
+			  strerror(errno)));
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
+	}
+
+	rc = tstream_npa_connect_recv(subreq,
+				      &sys_errno,
+				      npa,
+				      &npa->stream,
+				      &npa->file_type,
+				      &npa->device_state,
+				      &npa->allocation_size);
+	talloc_free(subreq);
+	if (rc != 0) {
+		int l = 1;
+
+		if (errno == ENOENT) {
+			l = 2;
+		}
+
+		DEBUG(l, ("tstream_npa_connect_recv  to %s for pipe %s and "
+			  "user %s\\%s failed: %s\n",
+			  socket_np_dir,
+			  pipe_name,
+			  session_info_t->session_info->info->domain_name,
+			  session_info_t->session_info->info->account_name,
+			  strerror(sys_errno)));
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
+	}
+
+	*pnpa = talloc_steal(mem_ctx, npa);
+	status = NT_STATUS_OK;
+out:
+	talloc_free(tmp_ctx);
+
+	return status;
+}
 
 struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,

@@ -37,6 +37,13 @@ struct npa_state {
 	void *private_data;
 };
 
+NTSTATUS make_external_rpc_pipe(TALLOC_CTX *mem_ctx,
+				const char *pipe_name,
+				const struct tsocket_address *local_address,
+				const struct tsocket_address *remote_address,
+				const struct auth_session_info *session_info,
+				struct npa_state **pnpa);
+
 struct np_proxy_state {
 	uint16_t file_type;
 	uint16_t device_state;
