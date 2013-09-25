@@ -658,6 +658,10 @@ static NTSTATUS ncacn_pull(struct dcecli_connection *c, DATA_BLOB *blob, TALLOC_
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
+	if (pkt->frag_length != blob->length) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
 	return NT_STATUS_OK;
 }
 
