@@ -44,6 +44,7 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 	options->unicode = lpcfg_unicode(lp_ctx);
 	options->use_oplocks = true;
 	options->use_level2_oplocks = true;
+	options->smb2_capabilities = SMB2_CAP_ALL;
 	options->client_guid = GUID_random();
 }
 

@@ -59,16 +59,13 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 	TALLOC_FREE(sock->event.fde);
 	TALLOC_FREE(sock->event.te);
 
-	/* TODO: hand this in via the options? */
-	smb2_capabilities = SMB2_CAP_ALL;
-
 	transport->conn = smbXcli_conn_create(transport,
 					      sock->sock->fd,
 					      sock->hostname,
 					      options->signing,
 					      0, /* smb1_capabilities */
 					      &options->client_guid,
-					      smb2_capabilities);
+					      options->smb2_capabilities);
 	if (transport->conn == NULL) {
 		talloc_free(transport);
 		return NULL;
