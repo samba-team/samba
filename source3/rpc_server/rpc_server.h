@@ -25,6 +25,17 @@ struct pipes_struct;
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
 typedef void (named_pipe_termination_fn)(void *private_data);
 
+int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
+			     struct messaging_context *msg_ctx,
+			     const char *pipe_name,
+			     enum dcerpc_transport_t transport,
+			     bool ncalrpc_as_system,
+			     const struct tsocket_address *local_address,
+			     const struct tsocket_address *remote_address,
+			     struct auth_session_info *session_info,
+			     struct pipes_struct **_p,
+			     int *perrno);
+
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p);
 int create_named_pipe_socket(const char *pipe_name);

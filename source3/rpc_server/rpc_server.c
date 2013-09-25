@@ -52,16 +52,16 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
-static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
-				    struct messaging_context *msg_ctx,
-				    const char *pipe_name,
-				    enum dcerpc_transport_t transport,
-				    bool ncalrpc_as_system,
-				    const struct tsocket_address *local_address,
-				    const struct tsocket_address *remote_address,
-				    struct auth_session_info *session_info,
-				    struct pipes_struct **_p,
-				    int *perrno)
+int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
+			     struct messaging_context *msg_ctx,
+			     const char *pipe_name,
+			     enum dcerpc_transport_t transport,
+			     bool ncalrpc_as_system,
+			     const struct tsocket_address *local_address,
+			     const struct tsocket_address *remote_address,
+			     struct auth_session_info *session_info,
+			     struct pipes_struct **_p,
+			     int *perrno)
 {
 	struct pipes_struct *p;
 	int ret;
