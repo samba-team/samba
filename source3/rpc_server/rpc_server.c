@@ -354,7 +354,6 @@ void named_pipe_accept_function(struct tevent_context *ev_ctx,
 	tevent_req_set_callback(subreq, named_pipe_accept_done, npc);
 }
 
-static void named_pipe_packet_process(struct tevent_req *subreq);
 static void named_pipe_packet_done(struct tevent_req *subreq);
 
 static void named_pipe_accept_done(struct tevent_req *subreq)
@@ -417,7 +416,7 @@ fail:
 	return;
 }
 
-static void named_pipe_packet_process(struct tevent_req *subreq)
+void named_pipe_packet_process(struct tevent_req *subreq)
 {
 	struct named_pipe_client *npc =
 		tevent_req_callback_data(subreq, struct named_pipe_client);

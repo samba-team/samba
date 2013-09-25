@@ -47,6 +47,7 @@ void named_pipe_accept_function(struct tevent_context *ev_ctx,
 				const char *pipe_name, int fd,
 				named_pipe_termination_fn *term_fn,
 				void *private_data);
+void named_pipe_packet_process(struct tevent_req *subreq);
 
 uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 					 struct messaging_context *msg_ctx,
