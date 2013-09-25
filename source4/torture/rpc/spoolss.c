@@ -8173,18 +8173,17 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 	torture_comment(tctx, "Testing smbd job spooling\n");
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 
-	status = smb2_connect_ext(mem_ctx,
-				  torture_setting_string(tctx, "host", NULL),
-				  lpcfg_smb_ports(tctx->lp_ctx),
-				  share,
-				  lpcfg_resolve_context(tctx->lp_ctx),
-				  credentials,
-				  0,
-				  &tree,
-				  tctx->ev,
-				  &options,
-				  lpcfg_socket_options(tctx->lp_ctx),
-				  lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	status = smb2_connect(mem_ctx,
+			      torture_setting_string(tctx, "host", NULL),
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to SMB2 printer %s - %s\n",
 		       share, nt_errstr(status));
