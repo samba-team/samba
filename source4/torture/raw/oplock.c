@@ -638,6 +638,7 @@ static bool test_raw_oplock_exclusive5(struct torture_context *tctx, struct smbc
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 	torture_wait_for_oplock_break(tctx);
 	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
+	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_NONE);
 	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli1->tree, fnum);
