@@ -64,7 +64,7 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 				     struct resolve_context *resolve_ctx,
 				     struct cli_credentials *credentials,
 				     uint64_t previous_session_id,
-				     struct smbcli_options *options,
+				     const struct smbcli_options *options,
 				     const char *socket_options,
 				     struct gensec_settings *gensec_settings)
 {
@@ -284,7 +284,7 @@ NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 			  uint64_t previous_session_id,
 			  struct smb2_tree **tree,
 			  struct tevent_context *ev,
-			  struct smbcli_options *options,
+			  const struct smbcli_options *options,
 			  const char *socket_options,
 			  struct gensec_settings *gensec_settings)
 {
