@@ -692,6 +692,20 @@ sub ParseFunction_Sync($$$$)
 	}
 	$self->pidl("");
 
+	$self->pidl("/* Out parameters */");
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless grep(/out/, @{$e->{DIRECTION}});
+
+		$self->ParseCopyArgument($fn, $e, "r.out.", "_");
+	}
+	$self->pidl("");
+
+	if (defined($fn->{RETURN_TYPE})) {
+		$self->pidl("/* Result */");
+		$self->pidl("ZERO_STRUCT(r.out.result);");
+		$self->pidl("");
+	}
+
 	$self->pidl("status = dcerpc_$name\_r(h, mem_ctx, &r);");
 	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
 	$self->indent;
