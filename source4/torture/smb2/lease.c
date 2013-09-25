@@ -1134,6 +1134,70 @@ static bool test_lease_v2_request_parent(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_lease_break_twice(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1;
+	NTSTATUS status;
+	const char *fname = "lease.dat";
+	bool ret = true;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(
+		tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	ZERO_STRUCT(break_info);
+	ZERO_STRUCT(io);
+	ZERO_STRUCT(ls);
+
+	smb2_lease_v2_create_share(
+		&io, &ls, false, fname, smb2_util_share_access("RWD"),
+		LEASE1, NULL, smb2_util_lease_state("RWH"), 0);
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE_V2(&io, "RHW", true, LEASE1, 0, 0);
+
+	tree->session->transport->lease.handler = torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+
+	ZERO_STRUCT(break_info);
+
+	smb2_lease_v2_create_share(
+		&io, &ls, false, fname, smb2_util_share_access("R"),
+		LEASE2, NULL, smb2_util_lease_state("RWH"), 0);
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+	CHECK_BREAK_INFO("RWH", "RW", LEASE1);
+
+	smb2_lease_v2_create_share(
+		&io, &ls, false, fname, smb2_util_share_access("RWD"),
+		LEASE2, NULL, smb2_util_lease_state("RWH"), 0);
+
+	ZERO_STRUCT(break_info);
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_BREAK_INFO("RW", "R", LEASE1);
+
+done:
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_lease_v2_request(struct torture_context *tctx,
 				  struct smb2_tree *tree)
 {
@@ -1274,6 +1338,8 @@ struct torture_suite *torture_smb2_lease_init(void)
 	    torture_suite_create(talloc_autofree_context(), "lease");
 
 	torture_suite_add_1smb2_test(suite, "request", test_lease_request);
+	torture_suite_add_1smb2_test(suite, "break_twice",
+				     test_lease_break_twice);
 	torture_suite_add_1smb2_test(suite, "upgrade", test_lease_upgrade);
 	torture_suite_add_1smb2_test(suite, "upgrade2", test_lease_upgrade2);
 	torture_suite_add_1smb2_test(suite, "upgrade3", test_lease_upgrade3);

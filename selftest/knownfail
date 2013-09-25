@@ -201,6 +201,7 @@
 ^samba3.smb2.lease.multibreak
 ^samba3.smb2.lease.v2_request
 ^samba3.smb2.lease.v2_request_parent
+^samba3.smb2.lease.break_twice
 ^samba3.smb2.oplock.batch20
 ^samba3.smb2.oplock.stream1
 ^samba3.smb2.streams.rename
