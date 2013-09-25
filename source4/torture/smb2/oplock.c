@@ -827,6 +827,87 @@ static bool test_smb2_oplock_exclusive6(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_smb2_oplock_exclusive9(struct torture_context *tctx,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+{
+	const char *fname = BASEDIR "\\test_exclusive9.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	struct smb2_handle h1, h2;
+	int i;
+
+	struct {
+		uint32_t create_disposition;
+		uint32_t break_level;
+	} levels[] = {
+		{ NTCREATEX_DISP_SUPERSEDE, SMB2_OPLOCK_LEVEL_NONE },
+		{ NTCREATEX_DISP_OPEN, SMB2_OPLOCK_LEVEL_II },
+		{ NTCREATEX_DISP_OVERWRITE_IF, SMB2_OPLOCK_LEVEL_NONE },
+		{ NTCREATEX_DISP_OPEN_IF, SMB2_OPLOCK_LEVEL_II },
+	};
+
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &h1);
+	torture_assert_ntstatus_ok(tctx, status, "Error creating directory");
+	smb2_util_close(tree1, h1);
+
+	/* cleanup */
+	smb2_util_unlink(tree1, fname);
+
+	tree1->session->transport->oplock.handler = torture_oplock_handler;
+	tree1->session->transport->oplock.private_data = tree1;
+
+	/*
+	  base ntcreatex parms
+	*/
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.smb2.in.create_options = 0;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = fname;
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+		io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+		io.smb2.in.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+
+		status = smb2_create(tree1, tctx, &(io.smb2));
+		torture_assert_ntstatus_ok(tctx, status,
+					   "Error opening the file");
+		h1 = io.smb2.out.file.handle;
+		CHECK_VAL(io.smb2.out.oplock_level,
+			  SMB2_OPLOCK_LEVEL_EXCLUSIVE);
+
+		ZERO_STRUCT(break_info);
+
+		io.smb2.in.create_disposition = levels[i].create_disposition;
+		status = smb2_create(tree2, tctx, &(io.smb2));
+		torture_assert_ntstatus_ok(tctx, status,
+					   "Error opening the file");
+		h2 = io.smb2.out.file.handle;
+		CHECK_VAL(io.smb2.out.oplock_level, SMB2_OPLOCK_LEVEL_II);
+
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, levels[i].break_level);
+		CHECK_VAL(break_info.failures, 0);
+
+		smb2_util_close(tree2, h2);
+		smb2_util_close(tree1, h1);
+	}
+
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
 static bool test_smb2_oplock_batch1(struct torture_context *tctx,
 				    struct smb2_tree *tree1,
 				    struct smb2_tree *tree2)
@@ -3410,6 +3491,8 @@ struct torture_suite *torture_smb2_oplocks_init(void)
 	torture_suite_add_2smb2_test(suite, "exclusive4", test_smb2_oplock_exclusive4);
 	torture_suite_add_2smb2_test(suite, "exclusive5", test_smb2_oplock_exclusive5);
 	torture_suite_add_2smb2_test(suite, "exclusive6", test_smb2_oplock_exclusive6);
+	torture_suite_add_2smb2_test(suite, "exclusive9",
+				     test_smb2_oplock_exclusive9);
 	torture_suite_add_2smb2_test(suite, "batch1", test_smb2_oplock_batch1);
 	torture_suite_add_2smb2_test(suite, "batch2", test_smb2_oplock_batch2);
 	torture_suite_add_2smb2_test(suite, "batch3", test_smb2_oplock_batch3);

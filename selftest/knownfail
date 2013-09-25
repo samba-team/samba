@@ -62,6 +62,7 @@
 ^samba3.raw.acls nfs4acl_xattr-special.inherit_creator_owner\(s3dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.inherit_creator_group\(s3dc\)
 ^samba3.raw.oplock.exclusive5
+^samba3.raw.oplock.exclusive9
 ^samba3.base.delete.deltest16a
 ^samba3.base.delete.deltest17a
 ^samba3.unix.whoami anonymous connection.whoami\(plugin_s4_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
@@ -142,6 +143,7 @@
 ^samba4.raw.oplock.*.batch22 # bug 6963
 ^samba4.raw.oplock.*.doc1
 ^samba4.raw.oplock.*.exclusive5
+^samba4.raw.oplock.*.exclusive9
 ^samba4.raw.lock.*.zerobyteread # bug 6974
 ^samba4.smb2.lock.*.zerobyteread # bug 6974
 ^samba4.raw.streams.*.delete
@@ -161,6 +163,7 @@
 ^samba4.smb2.oplock.exclusive2\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.exclusive5\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.exclusive6\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.exclusive9\(.*\)$
 ^samba4.smb2.oplock.brl3\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.levelii500\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.brl1\(.*\)$ # samba 4 oplocks are a mess
@@ -208,6 +211,7 @@
 ^samba3.smb2.lease.multibreak
 ^samba3.smb2.lease.v2_request
 ^samba3.smb2.oplock.batch20
+^samba3.smb2.oplock.exclusive9
 ^samba3.smb2.oplock.stream1
 ^samba3.smb2.streams.rename
 ^samba3.smb2.streams.rename2
