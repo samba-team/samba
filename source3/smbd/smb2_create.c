@@ -470,6 +470,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (in_context_blobs.num_blobs != 1) {
 			/*
 			 * DHNC should be the only one.
+			 * TODO: This is only true for the oplock case!
+			 * For leases, lease request is required additionally!
 			 */
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return tevent_req_post(req, ev);
@@ -486,6 +488,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (in_context_blobs.num_blobs != 1) {
 			/*
 			 * DH2C should be the only one.
+			 * TODO: This is only true for the oplock case!
+			 * For leases, lease request is required additionally!
 			 */
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return tevent_req_post(req, ev);
