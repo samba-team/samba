@@ -160,6 +160,12 @@ static NTSTATUS send_read_request_continue(struct dcecli_connection *c, DATA_BLO
 	} else {
 		uint32_t frag_length = blob->length>=16?
 			dcerpc_get_frag_length(blob):0x2000;
+
+		if (frag_length < state->data.length) {
+			talloc_free(state);
+			return NT_STATUS_RPC_PROTOCOL_ERROR;
+		}
+
 		state->received = blob->length;
 		state->data = data_blob_talloc(state, NULL, frag_length);
 		if (!state->data.data) {
