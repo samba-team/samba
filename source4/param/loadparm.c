@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "lib/param/param.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/ndr/libndr.h"
 
 void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options)
@@ -43,6 +44,7 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 	options->unicode = lpcfg_unicode(lp_ctx);
 	options->use_oplocks = true;
 	options->use_level2_oplocks = true;
+	options->client_guid = GUID_random();
 }
 
 void lpcfg_smbcli_session_options(struct loadparm_context *lp_ctx,

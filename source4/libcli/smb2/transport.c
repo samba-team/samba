@@ -48,7 +48,6 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 					   struct smbcli_options *options)
 {
 	struct smb2_transport *transport;
-	struct GUID client_guid;
 	uint32_t smb2_capabilities = 0;
 
 	transport = talloc_zero(parent_ctx, struct smb2_transport);
@@ -60,8 +59,6 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 	TALLOC_FREE(sock->event.fde);
 	TALLOC_FREE(sock->event.te);
 
-	client_guid = GUID_random();
-
 	/* TODO: hand this in via the options? */
 	smb2_capabilities = SMB2_CAP_ALL;
 
@@ -70,7 +67,7 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 					      sock->hostname,
 					      options->signing,
 					      0, /* smb1_capabilities */
-					      &client_guid,
+					      &options->client_guid,
 					      smb2_capabilities);
 	if (transport->conn == NULL) {
 		talloc_free(transport);
