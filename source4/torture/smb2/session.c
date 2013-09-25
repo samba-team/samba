@@ -94,7 +94,10 @@ bool test_session_reconnect1(struct torture_context *tctx, struct smb2_tree *tre
 	/* disconnect, reconnect and then do durable reopen */
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree2)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &tree->session->transport->options,
+					 &tree2))
+	{
 		torture_warning(tctx, "session reconnect failed\n");
 		ret = false;
 		goto done;

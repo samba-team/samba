@@ -347,15 +347,13 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 */
 bool torture_smb2_connection_ext(struct torture_context *tctx,
 				 uint64_t previous_session_id,
+				 const struct smbcli_options *options,
 				 struct smb2_tree **tree)
 {
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
 	struct cli_credentials *credentials = cmdline_credentials;
-	struct smbcli_options options;
-
-	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 
 	status = smb2_connect_ext(tctx,
 				  host,
@@ -366,7 +364,7 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 				  previous_session_id,
 				  tree,
 				  tctx->ev,
-				  &options,
+				  options,
 				  lpcfg_socket_options(tctx->lp_ctx),
 				  lpcfg_gensec_settings(tctx, tctx->lp_ctx)
 				  );
@@ -381,8 +379,11 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tree)
 {
 	bool ret;
+	struct smbcli_options options;
 
-	ret = torture_smb2_connection_ext(tctx, 0, tree);
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, tree);
 
 	return ret;
 }

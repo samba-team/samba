@@ -497,6 +497,9 @@ static bool test_durable_open_reopen2a(struct torture_context *tctx,
 	struct smb2_create io1, io2;
 	uint64_t previous_session_id;
 	bool ret = true;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_reopen2_%s.dat",
@@ -522,7 +525,9 @@ static bool test_durable_open_reopen2a(struct torture_context *tctx,
 	talloc_free(tree);
 	tree = NULL;
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree))
+	{
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
@@ -816,6 +821,9 @@ static bool test_durable_open_delete_on_close2(struct torture_context *tctx,
 	uint8_t b = 0;
 	uint64_t previous_session_id;
 	uint64_t alloc_size_step;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_delete_on_close2_%s.dat",
@@ -845,7 +853,9 @@ static bool test_durable_open_delete_on_close2(struct torture_context *tctx,
 	/* disconnect, leaving the durable handle in place */
 	TALLOC_FREE(tree);
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree))
+	{
 		torture_warning(tctx, "could not reconnect, bailing\n");
 		ret = false;
 		goto done;
@@ -929,6 +939,9 @@ static bool test_durable_open_file_position(struct torture_context *tctx,
 	bool ret = true;
 	uint64_t pos;
 	uint64_t previous_session_id;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
 
 	smb2_util_unlink(tree, fname);
 
@@ -978,7 +991,9 @@ static bool test_durable_open_file_position(struct torture_context *tctx,
 	tree = NULL;
 
 	/* do a session reconnect */
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree))
+	{
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
@@ -1580,6 +1595,9 @@ static bool test_durable_open_alloc_size(struct torture_context *tctx,
 	uint64_t alloc_size_step;
 	uint64_t initial_alloc_size = 0x100;
 	const uint8_t *b = NULL;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_alloc_size_%s.dat",
@@ -1614,7 +1632,9 @@ static bool test_durable_open_alloc_size(struct torture_context *tctx,
 	talloc_free(tree);
 	tree = NULL;
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree))
+	{
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
@@ -1643,7 +1663,9 @@ static bool test_durable_open_alloc_size(struct torture_context *tctx,
 	talloc_free(tree);
 	tree = NULL;
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree))
+	{
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
@@ -1671,7 +1693,9 @@ static bool test_durable_open_alloc_size(struct torture_context *tctx,
 	talloc_free(tree);
 	tree = NULL;
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree))
+	{
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
@@ -1720,6 +1744,9 @@ static bool test_durable_open_read_only(struct torture_context *tctx,
 	uint64_t previous_session_id;
 	const uint8_t b = 0;
 	uint64_t alloc_size = 0;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_initial_alloc_%s.dat",
@@ -1751,7 +1778,9 @@ static bool test_durable_open_read_only(struct torture_context *tctx,
 	talloc_free(tree);
 	tree = NULL;
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree))
+	{
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
