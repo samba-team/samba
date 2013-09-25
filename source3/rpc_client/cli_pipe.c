@@ -281,6 +281,10 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->frag_len = dcerpc_get_frag_length(pdu);
+	if (state->frag_len < RPC_HEADER_LEN) {
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return tevent_req_post(req, ev);
+	}
 
 	/*
 	 * Ensure we have frag_len bytes of data.
@@ -329,6 +333,10 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 	}
 
 	state->frag_len = dcerpc_get_frag_length(state->pdu);
+	if (state->frag_len < RPC_HEADER_LEN) {
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
 
 	if (!data_blob_realloc(NULL, state->pdu, state->frag_len)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
