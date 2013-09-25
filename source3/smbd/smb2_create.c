@@ -421,6 +421,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	int requested_oplock_level;
 	struct smb2_create_blob *dhnc = NULL;
 	struct smb2_create_blob *dh2c = NULL;
+	struct smb2_create_blob *dhnq = NULL;
+	struct smb2_create_blob *dh2q = NULL;
 	struct smbXsrv_open *op = NULL;
 
 	ZERO_STRUCT(out_context_blobs);
@@ -459,8 +461,22 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			in_name ));
 	}
 
+	dhnq = smb2_create_blob_find(&in_context_blobs,
+				     SMB2_CREATE_TAG_DHNQ);
 	dhnc = smb2_create_blob_find(&in_context_blobs,
 				     SMB2_CREATE_TAG_DHNC);
+	dh2q = smb2_create_blob_find(&in_context_blobs,
+				     SMB2_CREATE_TAG_DH2Q);
+	dh2c = smb2_create_blob_find(&in_context_blobs,
+				     SMB2_CREATE_TAG_DH2C);
+
+	if ((dhnc && dh2c) || (dhnc && dh2q) || (dh2c && dhnq) ||
+	    (dh2q && dh2c))
+	{
+		/* not both are allowed at the same time */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
 
 	if (dhnc) {
 		if (dhnc->data.length != 16) {
@@ -478,8 +494,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	dh2c = smb2_create_blob_find(&in_context_blobs,
-				     SMB2_CREATE_TAG_DH2C);
 	if (dh2c) {
 		if (dh2c->data.length != 36) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -545,7 +559,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		NTTIME max_access_time = 0;
 		struct smb2_create_blob *secd = NULL;
 		struct security_descriptor *sec_desc = NULL;
-		struct smb2_create_blob *dhnq = NULL;
 		struct smb2_create_blob *alsi = NULL;
 		uint64_t allocation_size = 0;
 		struct smb2_create_blob *twrp = NULL;
@@ -556,7 +569,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		bool durable_requested = false;
 		uint32_t durable_timeout_msec = 0;
 		bool do_durable_reconnect = false;
-		struct smb2_create_blob *dh2q = NULL;
 		uint64_t persistent_id = 0;
 
 		exta = smb2_create_blob_find(&in_context_blobs,
@@ -565,16 +577,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     SMB2_CREATE_TAG_MXAC);
 		secd = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_SECD);
-		dhnq = smb2_create_blob_find(&in_context_blobs,
-					     SMB2_CREATE_TAG_DHNQ);
 		alsi = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_ALSI);
 		twrp = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_TWRP);
 		qfid = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_QFID);
-		dh2q = smb2_create_blob_find(&in_context_blobs,
-					     SMB2_CREATE_TAG_DH2Q);
 
 		fname = talloc_strdup(state, in_name);
 		if (tevent_req_nomem(fname, req)) {
