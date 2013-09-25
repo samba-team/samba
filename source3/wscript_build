@@ -778,7 +778,7 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG_INTERNAL',
                     source='rpc_client/cli_winreg_int.c',
-                    deps='LIBCLI_WINREG RPC_NCACN_NP')
+                    deps='LIBCLI_WINREG RPC_SERVER')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
                     source='rpc_client/cli_pipe_schannel.c',
@@ -935,8 +935,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  SRV_NDR_WBINT
                  RPC_SAMR
                  RPC_LSARPC
-                 RPC_NCACN_NP
-                 RPC_PIPE_REGISTER
+                 RPC_SERVER
                  WB_REQTRANS
                  TDB_VALIDATE
                  ''',

@@ -73,8 +73,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETLOGON',
                      source='''netlogon/srv_netlog_nt.c
-                     ../../librpc/gen_ndr/srv_netlogon.c''',
-                     deps='RPC_NCACN_NP')
+                     ../../librpc/gen_ndr/srv_netlogon.c''')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NTSVCS',
                     source='''ntsvcs/srv_ntsvcs_nt.c
@@ -97,7 +96,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source='''spoolss/srv_spoolss_nt.c
                     ../../librpc/gen_ndr/srv_spoolss.c
                     spoolss/srv_spoolss_util.c''',
-                    deps='PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL RPC_NCACN_NP')
+                    deps='PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
                     source='''srvsvc/srv_srvsvc_nt.c

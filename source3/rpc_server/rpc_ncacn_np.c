@@ -37,6 +37,7 @@
 #include "rpc_contexts.h"
 #include "rpc_server/rpc_config.h"
 #include "librpc/ndr/ndr_table.h"
+#include "rpc_server/rpc_server.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -66,6 +67,114 @@ static struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx)
 fail:
 	talloc_free(npa);
 	return NULL;
+}
+
+NTSTATUS make_internal_rpc_pipe_socketpair(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev_ctx,
+					   struct messaging_context *msg_ctx,
+					   const char *pipe_name,
+					   const struct ndr_syntax_id *syntax,
+					   const struct tsocket_address *remote_address,
+					   const struct auth_session_info *session_info,
+					   struct npa_state **pnpa)
+{
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct named_pipe_client *npc;
+	struct tevent_req *subreq;
+	struct npa_state *npa;
+	NTSTATUS status;
+	int error;
+	int rc;
+
+	DEBUG(4, ("Create of internal pipe %s requested\n", pipe_name));
+
+	npa = npa_state_init(tmp_ctx);
+	if (npa == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	npa->file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
+	npa->device_state = 0xff | 0x0400 | 0x0100;
+	npa->allocation_size = 4096;
+
+	npc = named_pipe_client_init(npa,
+				     ev_ctx,
+				     msg_ctx,
+				     pipe_name,
+				     NULL, /* term_fn */
+				     npa->file_type,
+				     npa->device_state,
+				     npa->allocation_size,
+				     NULL); /* private_data */
+	if (npc == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+	npa->private_data = (void*) npc;
+
+	rc = tstream_npa_socketpair(npa->file_type,
+				    npa,
+				    &npa->stream,
+				    npc,
+				    &npc->tstream);
+	if (rc == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	npc->client = tsocket_address_copy(remote_address, npc);
+	if (npc->client == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	npc->client_name = tsocket_address_inet_addr_string(npc->client, npc);
+	if (npc->client_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	npc->session_info = copy_session_info(npc, session_info);
+	if (npc->session_info == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	rc = make_server_pipes_struct(npc,
+				      npc->msg_ctx,
+				      npc->pipe_name,
+				      NCACN_NP,
+				      false,
+				      npc->server,
+				      npc->client,
+				      npc->session_info,
+				      &npc->p,
+				      &error);
+	if (rc == -1) {
+		status = map_nt_error_from_unix(error);
+		goto out;
+	}
+
+	npc->write_queue = tevent_queue_create(npc, "npa_server_write_queue");
+	if (npc->write_queue == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
+	if (subreq == NULL) {
+		DEBUG(2, ("Failed to start receving packets\n"));
+		status = NT_STATUS_PIPE_BROKEN;
+		goto out;
+	}
+	tevent_req_set_callback(subreq, named_pipe_packet_process, npc);
+
+	*pnpa = talloc_steal(mem_ctx, npa);
+	status = NT_STATUS_OK;
+out:
+	talloc_free(tmp_ctx);
+	return status;
 }
 
 NTSTATUS make_internal_rpc_pipe(TALLOC_CTX *mem_ctx,
