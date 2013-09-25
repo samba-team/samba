@@ -457,7 +457,7 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct auth_session_info *session_info,
 			       uint64_t persistent_id,
-			       struct GUID create_guid,
+			       const struct GUID *create_guid,
 			       NTTIME now,
 			       struct smbXsrv_open **_open);
 struct smbXsrv_open_global0;

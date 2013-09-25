@@ -1168,7 +1168,7 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct auth_session_info *session_info,
 			       uint64_t persistent_id,
-			       struct GUID create_guid,
+			       const struct GUID *create_guid,
 			       NTTIME now,
 			       struct smbXsrv_open **_open)
 {
@@ -1207,7 +1207,15 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 		return status;
 	}
 
-	if (!GUID_equal(&op->global->create_guid, &create_guid)) {
+	/*
+	 * If the provided create_guid is NULL, this means that
+	 * the reconnect request was a v1 request. In that case
+	 * we should skipt the create GUID verification, since
+	 * it is valid to v1-reconnect a v2-opened handle.
+	 */
+	if ((create_guid != NULL) &&
+	    !GUID_equal(&op->global->create_guid, create_guid))
+	{
 		TALLOC_FREE(op);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}

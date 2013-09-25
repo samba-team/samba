@@ -550,7 +550,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		uint64_t allocation_size = 0;
 		struct smb2_create_blob *twrp = NULL;
 		struct smb2_create_blob *qfid = NULL;
-		struct GUID create_guid = GUID_zero();
+		struct GUID _create_guid = GUID_zero();
+		struct GUID *create_guid = NULL;
 		bool update_open = false;
 		bool durable_requested = false;
 		uint32_t durable_timeout_msec = 0;
@@ -668,10 +669,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			create_guid_blob = data_blob_const(p + 16, 16);
 
 			status = GUID_from_ndr_blob(&create_guid_blob,
-						    &create_guid);
+						    &_create_guid);
 			if (tevent_req_nterror(req, status)) {
 				return tevent_req_post(req, ev);
 			}
+			create_guid = &_create_guid;
 			/*
 			 * we need to store the create_guid later
 			 */
@@ -706,10 +708,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			create_guid_blob = data_blob_const(p + 16, 16);
 
 			status = GUID_from_ndr_blob(&create_guid_blob,
-						    &create_guid);
+						    &_create_guid);
 			if (tevent_req_nterror(req, status)) {
 				return tevent_req_post(req, ev);
 			}
+			create_guid = &_create_guid;
 
 			do_durable_reconnect = true;
 		}
@@ -940,7 +943,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (update_open) {
-			op->global->create_guid = create_guid;
+			op->global->create_guid = _create_guid;
 
 			status = smbXsrv_open_update(op);
 			DEBUG(10, ("smb2_create_send: smbXsrv_open_update "
