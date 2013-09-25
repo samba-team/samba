@@ -248,42 +248,50 @@ static void named_pipe_listener(struct tevent_context *ev,
  * Accepts connections from clients and process requests using the appropriate
  * dispatcher table. */
 
-struct named_pipe_client {
-	const char *pipe_name;
-
-	struct tevent_context *ev;
-	struct messaging_context *msg_ctx;
-
-	uint16_t file_type;
-	uint16_t device_state;
-	uint64_t allocation_size;
-
-	struct tstream_context *tstream;
-
-	struct tsocket_address *client;
-	char *client_name;
-	struct tsocket_address *server;
-	char *server_name;
-
-	struct auth_session_info *session_info;
-
-	struct pipes_struct *p;
-
-	struct tevent_queue *write_queue;
-
-	struct iovec *iov;
-	size_t count;
-
-	named_pipe_termination_fn *term_fn;
-	void *private_data;
-};
-
 static int named_pipe_destructor(struct named_pipe_client *npc)
 {
 	if (npc->term_fn) {
 		npc->term_fn(npc->private_data);
 	}
 	return 0;
+}
+
+struct named_pipe_client *named_pipe_client_init(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev_ctx,
+						 struct messaging_context *msg_ctx,
+						 const char *pipe_name,
+						 named_pipe_termination_fn *term_fn,
+						 uint16_t file_type,
+						 uint16_t device_state,
+						 uint64_t allocation_size,
+						 void *private_data)
+{
+	struct named_pipe_client *npc;
+
+	npc = talloc_zero(mem_ctx, struct named_pipe_client);
+	if (npc == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NULL;
+	}
+	talloc_set_destructor(npc, named_pipe_destructor);
+
+	npc->pipe_name = talloc_strdup(npc, pipe_name);
+	if (npc->pipe_name == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		talloc_free(npc);
+		return NULL;
+	}
+
+	npc->ev = ev_ctx;
+	npc->msg_ctx = msg_ctx;
+	npc->term_fn = term_fn;
+	npc->private_data = private_data;
+
+	npc->file_type = file_type;
+	npc->device_state = device_state;
+	npc->allocation_size = allocation_size;
+
+	return npc;
 }
 
 static void named_pipe_accept_done(struct tevent_req *subreq);
