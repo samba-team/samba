@@ -129,6 +129,10 @@ NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(ncacn_packet, r);
 	}
 
+	if (r->frag_length != blob->length) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
 	return NT_STATUS_OK;
 }
 
