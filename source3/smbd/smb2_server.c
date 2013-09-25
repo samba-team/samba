@@ -1998,7 +1998,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 		if (x == NULL) {
 			return smbd_smb2_request_error(
-				req, NT_STATUS_ACCESS_DENIED);
+				req, NT_STATUS_USER_SESSION_DELETED);
 		}
 
 		signing_key = x->global->channels[0].signing_key;
