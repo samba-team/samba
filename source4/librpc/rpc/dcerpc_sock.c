@@ -192,6 +192,7 @@ struct pipe_tcp_state {
 	struct socket_address *srvaddr;
 	struct resolve_context *resolve_ctx;
 	struct dcecli_connection *conn;
+	struct nbt_name name;
 	char *local_address;
 	char *remote_address;
 };
@@ -286,7 +287,6 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcecli_connection *co
 	struct composite_context *c;
 	struct pipe_tcp_state *s;
 	struct composite_context *resolve_req;
-	struct nbt_name name;
 
 	/* composite context allocation and setup */
 	c = composite_create(conn, conn->event_ctx);
@@ -313,8 +313,8 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcecli_connection *co
 		   meaning no local binding address specified */
 	}
 
-	make_nbt_name_server(&name, server);
-	resolve_req = resolve_name_send(resolve_ctx, s, &name, c->event_ctx);
+	make_nbt_name_server(&s->name, s->server);
+	resolve_req = resolve_name_send(resolve_ctx, s, &s->name, c->event_ctx);
 	composite_continue(c, resolve_req, continue_ip_resolve_name, c);
 	return c;
 }
