@@ -1167,7 +1167,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
  * our client.
  */
 
-static NTSTATUS send_break_message(files_struct *fsp,
+static NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 				   struct share_mode_entry *exclusive,
 				   uint64_t mid)
 {
@@ -1181,7 +1181,7 @@ static NTSTATUS send_break_message(files_struct *fsp,
 	/* Create the message. */
 	share_mode_entry_to_message(msg, exclusive);
 
-	status = messaging_send_buf(fsp->conn->sconn->msg_ctx, exclusive->pid,
+	status = messaging_send_buf(msg_ctx, exclusive->pid,
 				    MSG_SMB_BREAK_REQUEST,
 				    (uint8 *)msg, sizeof(msg));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1349,7 +1349,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		if (share_mode_stale_pid(d, 0)) {
 			return false;
 		}
-		send_break_message(fsp, entry, mid);
+		send_break_message(fsp->conn->sconn->msg_ctx, entry, mid);
 		return true;
 	}
 	if (have_sharing_violation) {
@@ -1369,7 +1369,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		return false;
 	}
 
-	send_break_message(fsp, entry, mid);
+	send_break_message(fsp->conn->sconn->msg_ctx, entry, mid);
 	return true;
 }
 
