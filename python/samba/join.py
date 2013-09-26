@@ -1193,6 +1193,10 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
         ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                           session_info=system_session(),
                           credentials=ctx.creds, lp=ctx.lp)
+        res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=['dnsHostName'],
+                               controls=[])
+        ctx.server = res[0]["dnsHostName"]
+        logger.info("DNS name of new naming master is %s" % ctx.server)
 
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
     ctx.domsid = str(security.random_sid())
