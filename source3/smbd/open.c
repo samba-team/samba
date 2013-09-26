@@ -1308,21 +1308,21 @@ static bool delay_for_oplock(files_struct *fsp,
 			     uint64_t mid,
 			     int oplock_request,
 			     struct share_mode_lock *lck,
-			     int delay_for_type)
+			     bool have_sharing_violation)
 {
+	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *entry;
 
 	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		return false;
 	}
 	if (lck->data->num_share_modes != 1) {
+		/*
+		 * More than one. There can't be any exclusive or batch left.
+		 */
 		return false;
 	}
-	entry = &lck->data->share_modes[0];
-
-	if (!(entry->op_type & delay_for_type)) {
-		return false;
-	}
+	entry = &d->share_modes[0];
 
 	if (server_id_is_disconnected(&entry->pid)) {
 		/*
@@ -1334,6 +1334,30 @@ static bool delay_for_oplock(files_struct *fsp,
 		 * For now we keep it simple and do not
 		 * allow delete on close for durable handles.
 		 */
+		return false;
+	}
+
+	if (have_sharing_violation && (entry->op_type & BATCH_OPLOCK)) {
+		if (share_mode_stale_pid(d, 0)) {
+			return false;
+		}
+		send_break_message(fsp, entry, mid, oplock_request);
+		return true;
+	}
+	if (have_sharing_violation) {
+		/*
+		 * Non-batch exclusive is not broken if we have a sharing
+		 * violation
+		 */
+		return false;
+	}
+	if (!EXCLUSIVE_OPLOCK_TYPE(entry->op_type)) {
+		/*
+		 * No break for NO_OPLOCK or LEVEL2_OPLOCK oplocks
+		 */
+		return false;
+	}
+	if (share_mode_stale_pid(d, 0)) {
 		return false;
 	}
 
@@ -2314,8 +2338,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			smb_panic("validate_oplock_types failed");
 		}
 
-		if (delay_for_oplock(fsp, req->mid, 0, lck,
-				     BATCH_OPLOCK|EXCLUSIVE_OPLOCK)) {
+		if (delay_for_oplock(fsp, req->mid, 0, lck, false)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
@@ -2409,19 +2432,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	/* First pass - send break only on batch oplocks. */
-	if ((req != NULL) &&
-	    delay_for_oplock(fsp, req->mid, oplock_request, lck,
-			     BATCH_OPLOCK)) {
-		schedule_defer_open(lck, request_time, req);
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return NT_STATUS_SHARING_VIOLATION;
-	}
-
 	status = open_mode_check(conn, lck,
 				 access_mask, share_access);
-
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
 	    (lck->data->num_share_modes > 0)) {
@@ -2435,19 +2447,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		file_existed = true;
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
-		/* We might be going to allow this open. Check oplock
-		 * status again. */
-		/* Second pass - send break for both batch or
-		 * exclusive oplocks. */
-		if ((req != NULL) &&
-		    delay_for_oplock(fsp, req->mid, oplock_request, lck,
-				     BATCH_OPLOCK|EXCLUSIVE_OPLOCK)) {
-			schedule_defer_open(lck, request_time, req);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return NT_STATUS_SHARING_VIOLATION;
-		}
+	if ((req != NULL) &&
+	    delay_for_oplock(
+		    fsp, req->mid, oplock_request, lck,
+		    NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION))) {
+		schedule_defer_open(lck, request_time, req);
+		TALLOC_FREE(lck);
+		fd_close(fsp);
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
