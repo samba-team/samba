@@ -207,6 +207,15 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
+	/* Don't allow connection if encryption is required. */
+	if (lp_smb_encrypt(snum) == Required) {
+		DEBUG(0,("Connection refused on share %s as encryption is"
+			" required on this share and SMB2 does not support"
+			" this.\n",
+			lp_servicename(snum)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* create a new tcon as child of the session */
 	tcon = talloc_zero(req->session, struct smbd_smb2_tcon);
 	if (tcon == NULL) {
