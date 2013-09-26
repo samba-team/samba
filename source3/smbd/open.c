@@ -1114,8 +1114,7 @@ static bool has_delete_on_close(struct share_mode_lock *lck,
 static NTSTATUS open_mode_check(connection_struct *conn,
 				struct share_mode_lock *lck,
 				uint32 access_mask,
-				uint32 share_access,
-				bool *file_existed)
+				uint32 share_access)
 {
 	int i;
 
@@ -1156,14 +1155,8 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				continue;
 			}
 
-			*file_existed = true;
-
 			return NT_STATUS_SHARING_VIOLATION;
 		}
-	}
-
-	if (lck->data->num_share_modes != 0) {
-		*file_existed = true;
 	}
 
 	return NT_STATUS_OK;
@@ -2427,8 +2420,20 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	status = open_mode_check(conn, lck,
-				 access_mask, share_access,
-				 &file_existed);
+				 access_mask, share_access);
+
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	    (lck->data->num_share_modes > 0)) {
+		/*
+		 * This comes from ancient times out of open_mode_check. I
+		 * have no clue whether this is still necessary. I can't think
+		 * of a case where this would actually matter further down in
+		 * this function. I leave it here for further investigation
+		 * :-)
+		 */
+		file_existed = true;
+	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* We might be going to allow this open. Check oplock
@@ -3159,8 +3164,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	status = open_mode_check(conn, lck,
-				access_mask, share_access,
-				 &dir_existed);
+				 access_mask, share_access);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
