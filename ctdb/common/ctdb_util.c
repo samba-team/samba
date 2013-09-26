@@ -322,17 +322,45 @@ struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, st
 #include <sched.h>
 #endif
 
+#if HAVE_PROCINFO_H
+#include <procinfo.h>
+#endif
+
 /*
   if possible, make this task real time
  */
 void ctdb_set_scheduler(struct ctdb_context *ctdb)
 {
-#if HAVE_SCHED_SETSCHEDULER	
+#ifdef _AIX_
+#if HAVE_THREAD_SETSCHED
+	struct thrdentry64 te;
+	tid64_t ti;
+
+	ti = 0ULL;
+	if (getthrds64(getpid(), &te, sizeof(te), &ti, 1) != 1) {
+		DEBUG(DEBUG_ERR, ("Unable to get thread information\n"));
+		return;
+	}
+
+	if (ctdb->saved_scheduler_param == NULL) {
+		ctdb->saved_scheduler_param = talloc_size(ctdb, sizeof(te));
+	}
+	*(struct thrdentry64 *)ctdb->saved_scheduler_param = te;
+
+	if (thread_setsched(te.ti_tid, 0, SCHED_RR) == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_RR (%s)\n",
+				  strerror(errno)));
+	} else {
+		DEBUG(DEBUG_NOTICE, ("Set scheduler to SCHED_RR\n"));
+	}
+#endif
+#else /* no AIX */
+#if HAVE_SCHED_SETSCHEDULER
 	struct sched_param p;
 	if (ctdb->saved_scheduler_param == NULL) {
 		ctdb->saved_scheduler_param = talloc_size(ctdb, sizeof(p));
 	}
-	
+
 	if (sched_getparam(0, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
 		DEBUG(DEBUG_ERR,("Unable to get old scheduler params\n"));
 		return;
@@ -348,6 +376,7 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 		DEBUG(DEBUG_NOTICE,("Set scheduler to SCHED_FIFO\n"));
 	}
 #endif
+#endif
 }
 
 /*
@@ -355,13 +384,32 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
  */
 void ctdb_restore_scheduler(struct ctdb_context *ctdb)
 {
-#if HAVE_SCHED_SETSCHEDULER	
+#ifdef _AIX_
+#if HAVE_THREAD_SETSCHED
+	struct thrdentry64 te, *saved;
+	tid64_t ti;
+
+	ti = 0ULL;
+	if (getthrds64(getpid(), &te, sizeof(te), &ti, 1) != 1) {
+		ctdb_fatal(ctdb, "Unable to get thread information\n");
+	}
+	if (ctdb->saved_scheduler_param == NULL) {
+		ctdb_fatal(ctdb, "No saved scheduler parameters\n");
+	}
+	saved = (struct thrdentry64 *)ctdb->saved_scheduler_param;
+	if (thread_setsched(te.ti_tid, saved->ti_pri, saved->ti_policy) == -1) {
+		ctdb_fatal(ctdb, "Unable to restore old scheduler parameters\n");
+	}
+#endif
+#else /* no AIX */
+#if HAVE_SCHED_SETSCHEDULER
 	if (ctdb->saved_scheduler_param == NULL) {
 		ctdb_fatal(ctdb, "No saved scheduler parameters\n");
 	}
 	if (sched_setscheduler(0, SCHED_OTHER, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
 		ctdb_fatal(ctdb, "Unable to restore old scheduler parameters\n");
 	}
+#endif
 #endif
 }
 

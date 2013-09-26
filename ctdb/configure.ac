@@ -26,6 +26,7 @@ case `uname` in
   AIX*)
     CTDB_SYSTEM_OBJ=common/system_aix.o
     CTDB_SCSI_IO=
+    CPPFLAGS="$CPPFLAGS -D_AIX_=1"
     CTDB_PCAP_LDFLAGS=-lpcap
     ;;
   GNU/kFreeBSD)
@@ -97,12 +98,14 @@ m4_include(lib/socket_wrapper/config.m4)
 m4_include(utils/pmda/config.m4)
 
 AC_CHECK_HEADERS(sched.h)
+AC_CHECK_HEADERS(procinfo.h)
 
 AC_CHECK_DECL([ETIME], [],[AC_DEFINE([ETIME], ETIMEDOUT, [ETIME on non-supporting platforms])], [
 #include <errno.h>
 ])
 
 AC_CHECK_FUNCS(sched_setscheduler)
+AC_CHECK_FUNCS(thread_setsched)
 AC_CHECK_FUNCS(mlockall)
 
 AC_CACHE_CHECK([for sin_len in sock],ctdb_cv_HAVE_SOCK_SIN_LEN,[
