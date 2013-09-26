@@ -1168,7 +1168,8 @@ static NTSTATUS open_mode_check(connection_struct *conn,
  */
 
 static NTSTATUS send_break_message(struct messaging_context *msg_ctx,
-				   const struct share_mode_entry *exclusive)
+				   const struct share_mode_entry *exclusive,
+				   uint16_t break_to)
 {
 	NTSTATUS status;
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
@@ -1178,6 +1179,9 @@ static NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 
 	/* Create the message. */
 	share_mode_entry_to_message(msg, exclusive);
+
+	/* Overload entry->op_type */
+	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET, break_to);
 
 	status = messaging_send_buf(msg_ctx, exclusive->pid,
 				    MSG_SMB_BREAK_REQUEST,
@@ -1292,12 +1296,14 @@ static bool validate_oplock_types(struct share_mode_lock *lck)
 static bool delay_for_oplock(files_struct *fsp,
 			     int oplock_request,
 			     struct share_mode_lock *lck,
-			     bool have_sharing_violation)
+			     bool have_sharing_violation,
+			     uint32_t create_disposition)
 {
 	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *entry;
 	uint32_t num_non_stat_opens = 0;
 	uint32_t i;
+	uint16_t break_to;
 
 	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		return false;
@@ -1342,11 +1348,21 @@ static bool delay_for_oplock(files_struct *fsp,
 		return false;
 	}
 
+	switch (create_disposition) {
+	case FILE_SUPERSEDE:
+	case FILE_OVERWRITE_IF:
+		break_to = NO_OPLOCK;
+		break;
+	default:
+		break_to = LEVEL_II_OPLOCK;
+		break;
+	}
+
 	if (have_sharing_violation && (entry->op_type & BATCH_OPLOCK)) {
 		if (share_mode_stale_pid(d, 0)) {
 			return false;
 		}
-		send_break_message(fsp->conn->sconn->msg_ctx, entry);
+		send_break_message(fsp->conn->sconn->msg_ctx, entry, break_to);
 		return true;
 	}
 	if (have_sharing_violation) {
@@ -1366,7 +1382,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		return false;
 	}
 
-	send_break_message(fsp->conn->sconn->msg_ctx, entry);
+	send_break_message(fsp->conn->sconn->msg_ctx, entry, break_to);
 	return true;
 }
 
@@ -2343,7 +2359,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			smb_panic("validate_oplock_types failed");
 		}
 
-		if (delay_for_oplock(fsp, 0, lck, false)) {
+		if (delay_for_oplock(fsp, 0, lck, false, create_disposition)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
@@ -2455,7 +2471,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if ((req != NULL) &&
 	    delay_for_oplock(
 		    fsp, oplock_request, lck,
-		    NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION))) {
+		    NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION),
+		    create_disposition)) {
 		schedule_defer_open(lck, request_time, req);
 		TALLOC_FREE(lck);
 		fd_close(fsp);

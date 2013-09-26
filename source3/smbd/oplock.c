@@ -510,6 +510,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		struct smbd_server_connection);
 	struct server_id self = messaging_server_id(sconn->msg_ctx);
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+	uint16_t break_to;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -523,9 +524,10 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
+	break_to = msg.op_type;
 
-	DEBUG(10, ("Got oplock break message from pid %s: %s/%llu\n",
-		   server_id_str(talloc_tos(), &src),
+	DEBUG(10, ("Got oplock break to %u message from pid %s: %s/%llu\n",
+		   (unsigned)break_to, server_id_str(talloc_tos(), &src),
 		   file_id_string_tos(&msg.id),
 		   (unsigned long long)msg.share_file_id));
 
@@ -545,8 +547,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	if (EXCLUSIVE_OPLOCK_TYPE(msg.op_type) &&
-	    !EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+	if (break_to == fsp->oplock_type) {
 		DEBUG(3, ("Already downgraded oplock on %s: %s\n",
 			  file_id_string_tos(&fsp->file_id),
 			  fsp_str_dbg(fsp)));
@@ -556,6 +557,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
 
 	if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
+	    (break_to != NO_OPLOCK) &&
 	    !(use_kernel && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) &&
 	    lp_level2_oplocks(SNUM(fsp->conn))) {
 		break_to_level2 = True;
