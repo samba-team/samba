@@ -1168,9 +1168,8 @@ static NTSTATUS open_mode_check(connection_struct *conn,
  */
 
 static NTSTATUS send_break_message(files_struct *fsp,
-					struct share_mode_entry *exclusive,
-					uint64_t mid,
-					int oplock_request)
+				   struct share_mode_entry *exclusive,
+				   uint64_t mid)
 {
 	NTSTATUS status;
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
@@ -1350,7 +1349,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		if (share_mode_stale_pid(d, 0)) {
 			return false;
 		}
-		send_break_message(fsp, entry, mid, oplock_request);
+		send_break_message(fsp, entry, mid);
 		return true;
 	}
 	if (have_sharing_violation) {
@@ -1370,7 +1369,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		return false;
 	}
 
-	send_break_message(fsp, entry, mid, oplock_request);
+	send_break_message(fsp, entry, mid);
 	return true;
 }
 
