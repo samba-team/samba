@@ -1123,7 +1123,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				struct share_mode_lock *lck,
 				uint32 access_mask,
 				uint32 share_access,
-				uint32 create_options,
 				bool *file_existed)
 {
 	int i;
@@ -2436,7 +2435,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	status = open_mode_check(conn, lck,
 				 access_mask, share_access,
-				 create_options, &file_existed);
+				 &file_existed);
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* We might be going to allow this open. Check oplock
@@ -3174,7 +3173,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	status = open_mode_check(conn, lck,
 				access_mask, share_access,
-				 create_options, &dir_existed);
+				 &dir_existed);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
