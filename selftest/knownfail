@@ -138,6 +138,7 @@
 ^samba4.smb2.lock.*.multiple-unlock # bug 6959
 ^samba4.raw.sfileinfo.*.end-of-file\(.*\)$ # bug 6962
 ^samba4.raw.oplock.*.batch22 # bug 6963
+^samba4.raw.oplock.*.doc1
 ^samba4.raw.lock.*.zerobyteread # bug 6974
 ^samba4.smb2.lock.*.zerobyteread # bug 6974
 ^samba4.raw.streams.*.delete

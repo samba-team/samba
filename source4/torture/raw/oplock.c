@@ -3576,7 +3576,8 @@ static bool test_raw_oplock_stream1(struct torture_context *tctx,
 }
 
 static bool test_raw_oplock_doc(struct torture_context *tctx,
-				struct smbcli_state *cli)
+				struct smbcli_state *cli,
+				struct smbcli_state *cli2)
 {
 	const char *fname = BASEDIR "\\test_oplock_doc.dat";
 	NTSTATUS status;
@@ -3600,16 +3601,15 @@ static bool test_raw_oplock_doc(struct torture_context *tctx,
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
-	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open a delete-on-close file with a batch "
-			"oplock\n");
-	ZERO_STRUCT(break_info);
+	torture_comment(tctx, "open a file with a batch oplock\n");
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 	    NTCREATEX_FLAGS_REQUEST_OPLOCK |
 	    NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
@@ -3618,6 +3618,20 @@ static bool test_raw_oplock_doc(struct torture_context *tctx,
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	torture_comment(tctx, "Set delete-on-close\n");
+	status = smbcli_nt_delete_on_close(cli->tree, fnum, true);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+
+	torture_comment(tctx, "2nd open should not break and get "
+			"DELETE_PENDING\n");
+	ZERO_STRUCT(break_info);
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
+	status = smb_raw_open(cli2->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_DELETE_PENDING);
+	CHECK_VAL(break_info.count, 0);
 
 	smbcli_close(cli->tree, fnum);
 
@@ -4075,7 +4089,7 @@ struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_2smb_test(suite, "batch25", test_raw_oplock_batch25);
 	torture_suite_add_2smb_test(suite, "batch26", test_raw_oplock_batch26);
 	torture_suite_add_2smb_test(suite, "stream1", test_raw_oplock_stream1);
-	torture_suite_add_1smb_test(suite, "doc1", test_raw_oplock_doc);
+	torture_suite_add_2smb_test(suite, "doc1", test_raw_oplock_doc);
 	torture_suite_add_2smb_test(suite, "brl1", test_raw_oplock_brl1);
 	torture_suite_add_1smb_test(suite, "brl2", test_raw_oplock_brl2);
 	torture_suite_add_1smb_test(suite, "brl3", test_raw_oplock_brl3);
