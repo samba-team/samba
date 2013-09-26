@@ -420,7 +420,7 @@ static bool test_durable_open_reopen2(struct torture_context *tctx,
 	char fname[256];
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
-	struct smb2_create io1, io2;
+	struct smb2_create io;
 	bool ret = true;
 
 	/* Choose a random name in case the state is left a little funky. */
@@ -429,22 +429,21 @@ static bool test_durable_open_reopen2(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	smb2_oplock_create_share(&io1, fname,
+	smb2_oplock_create_share(&io, fname,
 				 smb2_util_share_access(""),
 				 smb2_util_oplock_level("b"));
-	io1.in.durable_open = true;
+	io.in.durable_open = true;
 
-	status = smb2_create(tree, mem_ctx, &io1);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	_h = io1.out.file.handle;
+	_h = io.out.file.handle;
 	h = &_h;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.durable_open, true);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
 
-	/* disconnect, reconnect and then do durable reopen */
-	talloc_free(tree);
-	tree = NULL;
+	/* disconnect, leaving the durable in place */
+	TALLOC_FREE(tree);
 
 	if (!torture_smb2_connection(tctx, &tree)) {
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
@@ -452,17 +451,83 @@ static bool test_durable_open_reopen2(struct torture_context *tctx,
 		goto done;
 	}
 
-	ZERO_STRUCT(io2);
+	ZERO_STRUCT(io);
 	/* the path name is ignored by the server */
-	io2.in.fname = "__non_existing_fname__";
-	io2.in.durable_handle = h;
+	io.in.fname = fname;
+	io.in.durable_handle = h; /* durable v1 reconnect request */
 	h = NULL;
 
-	status = smb2_create(tree, mem_ctx, &io2);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
-	_h = io2.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	/* disconnect again, leaving the durable in place */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * show that the filename and many other fields
+	 * are ignored. only the reconnect request blob
+	 * is important.
+	 */
+	ZERO_STRUCT(io);
+	/* the path name is ignored by the server */
+	io.in.security_flags = 0x78;
+	io.in.oplock_level = 0x78;
+	io.in.impersonation_level = 0x12345678;
+	io.in.create_flags = 0x12345678;
+	io.in.reserved = 0x12345678;
+	io.in.desired_access = 0x12345678;
+	io.in.file_attributes = 0x12345678;
+	io.in.share_access = 0x12345678;
+	io.in.create_disposition = 0x12345678;
+	io.in.create_options = 0x12345678;
+	io.in.fname = "__non_existing_fname__";
+	io.in.durable_handle = h; /* durable v1 reconnect request */
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	/* disconnect, leaving the durable in place */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * show that an additionally specified durable v1 request
+	 * is ignored by the server.
+	 * See MS-SMB2, 3.3.5.9.7
+	 * Handling the SMB2_CREATE_DURABLE_HANDLE_RECONNECT Create Context
+	 */
+	ZERO_STRUCT(io);
+	/* the path name is ignored by the server */
+	io.in.fname = fname;
+	io.in.durable_handle = h;  /* durable v1 reconnect request */
+	io.in.durable_open = true; /* durable v1 handle request */
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
 	h = &_h;
 
 done:
