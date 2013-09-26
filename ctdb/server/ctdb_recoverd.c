@@ -129,6 +129,7 @@ struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	uint32_t recmaster;
 	uint32_t num_active;
+	uint32_t num_lmasters;
 	uint32_t num_connected;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map *nodemap;
@@ -3701,10 +3702,14 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* count how many active nodes there are */
 	rec->num_active    = 0;
+	rec->num_lmasters  = 0;
 	rec->num_connected = 0;
 	for (i=0; i<nodemap->num; i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
 			rec->num_active++;
+			if (rec->ctdb->nodes[i]->capabilities & CTDB_CAP_LMASTER) {
+				rec->num_lmasters++;
+			}
 		}
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
 			rec->num_connected++;
@@ -3952,12 +3957,13 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 
-	/* there better be the same number of lmasters in the vnn map
-	   as there are active nodes or we will have to do a recovery
+	/* There must be the same number of lmasters in the vnn map as
+	 * there are active nodes with the lmaster capability...  or
+	 * do a recovery.
 	 */
-	if (vnnmap->size != rec->num_active) {
-		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active nodes. %u vs %u\n", 
-			  vnnmap->size, rec->num_active));
+	if (vnnmap->size != rec->num_lmasters) {
+		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active lmaster nodes: %u vs %u\n",
+			  vnnmap->size, rec->num_lmasters));
 		ctdb_set_culprit(rec, ctdb->pnn);
 		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
 		return;
