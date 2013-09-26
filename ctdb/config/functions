@@ -491,7 +491,7 @@ ctdb_check_tcp_ports()
 	exit 1
     fi
 
-    # Set default value for CTDB_TCP_PORT_CHECKS if unset.
+    # Set default value for CTDB_TCP_PORT_CHECKERS if unset.
     # If any of these defaults are unsupported then this variable can
     # be overridden in /etc/sysconfig/ctdb or via a file in
     # /etc/ctdb/rc.local.d/.
