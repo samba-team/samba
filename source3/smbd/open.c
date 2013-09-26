@@ -1121,7 +1121,6 @@ static bool has_delete_on_close(struct share_mode_lock *lck,
 
 static NTSTATUS open_mode_check(connection_struct *conn,
 				struct share_mode_lock *lck,
-				uint32_t name_hash,
 				uint32 access_mask,
 				uint32 share_access,
 				uint32 create_options,
@@ -2435,7 +2434,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
-	status = open_mode_check(conn, lck, fsp->name_hash,
+	status = open_mode_check(conn, lck,
 				 access_mask, share_access,
 				 create_options, &file_existed);
 
@@ -3173,7 +3172,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	status = open_mode_check(conn, lck, fsp->name_hash,
+	status = open_mode_check(conn, lck,
 				access_mask, share_access,
 				 create_options, &dir_existed);
 
