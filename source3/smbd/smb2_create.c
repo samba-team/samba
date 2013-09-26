@@ -479,16 +479,36 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (dhnc) {
+		uint32_t num_blobs_allowed;
+
 		if (dhnc->data.length != 16) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
-		if (in_context_blobs.num_blobs != 1) {
-			/*
-			 * DHNC should be the only one.
-			 * TODO: This is only true for the oplock case!
-			 * For leases, lease request is required additionally!
-			 */
+
+		/*
+		 * According to MS-SMB2: 3.3.5.9.7, "Handling the
+		 * SMB2_CREATE_DURABLE_HANDLE_RECONNECT Create Context",
+		 * we should ignore an additional dhnq blob, but fail
+		 * the request (with status OBJECT_NAME_NOT_FOUND) if
+		 * any other extra create blob has been provided.
+		 *
+		 * (Note that the cases of an additional dh2q or dh2c blob
+		 *  which require a different error code, have been treated
+		 *  above.)
+		 *
+		 * TODO:
+		 * This is only true for the oplock case:
+		 * For leases, lease request is required additionally.
+		 */
+
+		if (dhnq) {
+			num_blobs_allowed = 2;
+		} else {
+			num_blobs_allowed = 1;
+		}
+
+		if (in_context_blobs.num_blobs != num_blobs_allowed) {
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return tevent_req_post(req, ev);
 		}
