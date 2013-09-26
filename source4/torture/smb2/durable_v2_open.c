@@ -479,6 +479,7 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 	struct smb2_handle *h = NULL;
 	struct smb2_create io;
 	struct GUID create_guid = GUID_random();
+	struct GUID create_guid_invalid = GUID_random();
 	bool ret = true;
 
 	/* Choose a random name in case the state is left a little funky. */
@@ -507,15 +508,18 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 	CHECK_VAL(io.out.persistent_open, false);
 	CHECK_VAL(io.out.timeout, io.in.timeout);
 
-	/* disconnect, reconnect and then do durable reopen */
-	talloc_free(tree);
-	tree = NULL;
+	/* disconnect, leaving the durable open */
+	TALLOC_FREE(tree);
 
 	if (!torture_smb2_connection(tctx, &tree)) {
 		torture_warning(tctx, "couldn't reconnect, bailing\n");
 		ret = false;
 		goto done;
 	}
+
+	/*
+	 * first a few failure cases
+	 */
 
 	ZERO_STRUCT(io);
 	io.in.fname = "";
@@ -535,10 +539,46 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
+	/* a non-zero but non-matching create_guid does not change it: */
 	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid_invalid;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
 	/*
-	 * These are completely ignored by the server
+	 * now success:
+	 * The important difference is that the create_guid is provided.
 	 */
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	/* disconnect one more time */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	/* These are completely ignored by the server */
 	io.in.security_flags = 0x78;
 	io.in.oplock_level = 0x78;
 	io.in.impersonation_level = 0x12345678;
