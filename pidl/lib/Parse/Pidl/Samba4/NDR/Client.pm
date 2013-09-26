@@ -400,11 +400,16 @@ sub ParseOutputArgument($$$$$$)
 			$self->pidl("$copy_len_var = $out_length_is;");
 		}
 
+		my $dest_ptr = "$o$e->{NAME}";
+		my $elem_size = "sizeof(*$dest_ptr)";
+		$self->pidl("if ($dest_ptr != $out_var) {");
+		$self->indent;
 		if (has_property($e, "charset")) {
-			$self->pidl("memcpy(discard_const_p(uint8_t *, $o$e->{NAME}), $out_var, $copy_len_var * sizeof(*$o$e->{NAME}));");
-		} else {
-			$self->pidl("memcpy($o$e->{NAME}, $out_var, $copy_len_var * sizeof(*$o$e->{NAME}));");
+			$dest_ptr = "discard_const_p(uint8_t *, $dest_ptr)";
 		}
+		$self->pidl("memcpy($dest_ptr, $out_var, $copy_len_var * $elem_size);");
+		$self->deindent;
+		$self->pidl("}");
 
 		$self->deindent;
 		$self->pidl("}");
