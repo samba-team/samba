@@ -2241,10 +2241,9 @@ def provision_become_dc(smbconf=None, targetdir=None,
 
 
 def create_krb5_conf(path, dnsdomain, hostname, realm):
-    """Write out a file containing zone statements suitable for inclusion in a
-    named.conf file (including GSS-TSIG configuration).
+    """Write out a file containing a valid krb5.conf file
 
-    :param path: Path of the new named.conf file.
+    :param path: Path of the new krb5.conf file.
     :param dnsdomain: DNS Domain name
     :param hostname: Local hostname
     :param realm: Realm name
