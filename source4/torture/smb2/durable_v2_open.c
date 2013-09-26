@@ -820,6 +820,80 @@ done:
 
 	return ret;
 }
+/**
+ * durable reconnect test:
+ * connect with v1, reconnect with v2 : fails (no create_guid...)
+ */
+bool test_durable_v2_open_reopen2c(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_v2_open_reopen2c_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = true;
+	io.in.durable_open_v2 = false;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.durable_open_v2, false);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 0);
+
+	/* disconnect, leaving the durable open */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle_v2 = h;     /* durable v2 reconnect */
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
 
 /**
  * lease variant of reopen2
@@ -1592,6 +1666,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(void)
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
 	torture_suite_add_1smb2_test(suite, "reopen2", test_durable_v2_open_reopen2);
 	torture_suite_add_1smb2_test(suite, "reopen2b", test_durable_v2_open_reopen2b);
+	torture_suite_add_1smb2_test(suite, "reopen2c", test_durable_v2_open_reopen2c);
 	torture_suite_add_1smb2_test(suite, "reopen2-lease", test_durable_v2_open_reopen2_lease);
 	torture_suite_add_1smb2_test(suite, "reopen2-lease-v2", test_durable_v2_open_reopen2_lease_v2);
 	torture_suite_add_2smb2_test(suite, "app-instance", test_durable_v2_open_app_instance);
