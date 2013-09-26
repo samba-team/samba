@@ -83,6 +83,113 @@ static bool torture_oplock_handler(struct smb2_transport *transport,
 }
 
 /**
+ * testing various create blob combinations.
+ */
+bool test_durable_v2_open_create_blob(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_v2_open_create_blob_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, io.in.timeout);
+
+	/* disconnect */
+	TALLOC_FREE(tree);
+
+	/* create a new session (same client_guid) */
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * check invalid combinations of durable handle
+	 * request and reconnect blobs
+	 * See MS-SMB2: 3.3.5.9.12
+	 * Handling the SMB2_CREATE_DURABLE_HANDLE_RECONNECT_V2 Create Context
+	 */
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle_v2 = h; /* durable v2 reconnect request */
+	io.in.durable_open = true;   /* durable v1 handle request */
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;     /* durable v1 reconnect request */
+	io.in.durable_open_v2 = true; /* durable v2 handle request */
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;    /* durable v1 reconnect request */
+	io.in.durable_handle_v2 = h; /* durable v2 reconnect request */
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle_v2 = h;  /* durable v2 reconnect request */
+	io.in.durable_open_v2 = true; /* durable v2 handle request */
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+/**
  * basic durable_open test.
  * durable state should only be granted when requested
  * along with a batch oplock or a handle lease.
@@ -1389,6 +1496,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(void)
 	struct torture_suite *suite =
 	    torture_suite_create(talloc_autofree_context(), "durable-v2-open");
 
+	torture_suite_add_1smb2_test(suite, "create-blob", test_durable_v2_open_create_blob);
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_v2_open_oplock);
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_v2_open_lease);
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
