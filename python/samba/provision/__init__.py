@@ -1888,7 +1888,7 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
         samdb.transaction_commit()
 
 
-def provision(logger, session_info, credentials, smbconf=None,
+def provision(logger, session_info, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
         domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
@@ -2065,25 +2065,25 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type, paths=paths,
-            lp=lp, credentials=credentials,
+            lp=lp,
             names=names, logger=logger)
     elif backend_type == "existing":
         # If support for this is ever added back, then the URI will need to be
         # specified again
         provision_backend = ExistingBackend(backend_type, paths=paths,
-            lp=lp, credentials=credentials,
+            lp=lp,
             names=names, logger=logger,
             ldap_backend_forced_uri=ldap_backend_forced_uri)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type, paths=paths,
-            lp=lp, credentials=credentials,
+            lp=lp,
             names=names, logger=logger, domainsid=domainsid,
             schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
             slapd_path=slapd_path,
             root=root)
     elif backend_type == "openldap":
         provision_backend = OpenLDAPBackend(backend_type, paths=paths,
-            lp=lp, credentials=credentials,
+            lp=lp,
             names=names, logger=logger, domainsid=domainsid,
             schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
             slapd_path=slapd_path, ol_mmr_urls=ol_mmr_urls,
@@ -2105,7 +2105,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     logger.info("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths,
         session_info=session_info,
-        backend_credentials=provision_backend.secrets_credentials, lp=lp)
+        backend_credentials=provision_backend.credentials, lp=lp)
 
     try:
         logger.info("Setting up the registry")
@@ -2227,7 +2227,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
 
-    res = provision(logger, system_session(), None,
+    res = provision(logger, system_session(),
         smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
         realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
         configdn=configdn, serverdn=serverdn, domain=domain,

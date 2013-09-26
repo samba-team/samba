@@ -63,19 +63,11 @@ class BackendResult(object):
 
 class LDAPBackendResult(BackendResult):
 
-    def __init__(self, credentials, slapd_command_escaped, ldapdir):
-        self.credentials = credentials
+    def __init__(self, slapd_command_escaped, ldapdir):
         self.slapd_command_escaped = slapd_command_escaped
         self.ldapdir = ldapdir
 
     def report_logger(self, logger):
-        if self.credentials.get_bind_dn() is not None:
-            logger.info("LDAP Backend Admin DN: %s" %
-                self.credentials.get_bind_dn())
-        else:
-            logger.info("LDAP Admin User:       %s" %
-                self.credentials.get_username())
-
         if self.slapd_command_escaped is not None:
             # now display slapd_command_file.txt to show how slapd must be
             # started next time
@@ -90,11 +82,11 @@ class LDAPBackendResult(BackendResult):
 class ProvisionBackend(object):
 
     def __init__(self, backend_type, paths=None, lp=None,
-            credentials=None, names=None, logger=None):
+            names=None, logger=None):
         """Provision a backend for samba4"""
         self.paths = paths
         self.lp = lp
-        self.credentials = credentials
+        self.credentials = None
         self.names = names
         self.logger = logger
 
@@ -127,7 +119,6 @@ class LDBBackend(ProvisionBackend):
 
     def init(self):
         self.credentials = None
-        self.secrets_credentials = None
 
         # Wipe the old sam.ldb databases away
         shutil.rmtree(self.paths.samdb + ".d", True)
@@ -145,11 +136,11 @@ class LDBBackend(ProvisionBackend):
 class ExistingBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, lp=None,
-            credentials=None, names=None, logger=None, ldapi_uri=None):
+            names=None, logger=None, ldapi_uri=None):
 
         super(ExistingBackend, self).__init__(backend_type=backend_type,
                 paths=paths, lp=lp,
-                credentials=credentials, names=names, logger=logger,
+                names=names, logger=logger,
                 ldap_backend_forced_uri=ldapi_uri)
 
     def init(self):
@@ -158,27 +149,21 @@ class ExistingBackend(ProvisionBackend):
         ldapi_db.search(base="", scope=SCOPE_BASE,
             expression="(objectClass=OpenLDAProotDSE)")
 
-        # If we have got here, then we must have a valid connection to the LDAP
-        # server, with valid credentials supplied This caused them to be set
-        # into the long-term database later in the script.
-        self.secrets_credentials = self.credentials
-
-
-         # For now, assume existing backends at least emulate OpenLDAP
+        # For now, assume existing backends at least emulate OpenLDAP
         self.ldap_backend_type = "openldap"
 
 
 class LDAPBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, lp=None,
-                 credentials=None, names=None, logger=None, domainsid=None,
+                 names=None, logger=None, domainsid=None,
                  schema=None, hostname=None, ldapadminpass=None,
                  slapd_path=None, ldap_backend_extra_port=None,
                  ldap_backend_forced_uri=None, ldap_dryrun_mode=False):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
                 paths=paths, lp=lp,
-                credentials=credentials, names=names, logger=logger)
+                names=names, logger=logger)
 
         self.domainsid = domainsid
         self.schema = schema
@@ -253,18 +238,11 @@ class LDAPBackend(ProvisionBackend):
 
         self.credentials = Credentials()
         self.credentials.guess(self.lp)
-        # Kerberos to an ldapi:// backend makes no sense
+        # Kerberos to an ldapi:// backend makes no sense (we also force EXTERNAL)
         self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
+        self.credentials.set_username("samba-admin")
         self.credentials.set_password(self.ldapadminpass)
         self.credentials.set_forced_sasl_mech("EXTERNAL")
-
-        self.secrets_credentials = Credentials()
-        self.secrets_credentials.guess(self.lp)
-        # Kerberos to an ldapi:// backend makes no sense
-        self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
-        self.secrets_credentials.set_username("samba-admin")
-        self.secrets_credentials.set_password(self.ldapadminpass)
-        self.secrets_credentials.set_forced_sasl_mech("EXTERNAL")
 
         self.provision()
 
@@ -340,7 +318,7 @@ class OpenLDAPBackend(LDAPBackend):
         from samba.provision import setup_path
         super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
                 paths=paths, lp=lp,
-                credentials=credentials, names=names, logger=logger,
+                names=names, logger=logger,
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
@@ -595,10 +573,6 @@ class OpenLDAPBackend(LDAPBackend):
 
         self.slapd_command.append(uris)
 
-        # Set the username - done here because Fedora DS still uses the admin
-        # DN and simple bind
-        self.credentials.set_username("samba-admin")
-
         # Wipe the old sam.ldb databases away
         shutil.rmtree(self.olcdir, True)
         os.makedirs(self.olcdir, 0770)
@@ -632,7 +606,7 @@ class OpenLDAPBackend(LDAPBackend):
 class FDSBackend(LDAPBackend):
 
     def __init__(self, backend_type, paths=None, lp=None,
-            credentials=None, names=None, logger=None, domainsid=None,
+            names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
             ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
             setup_ds_path=None):
@@ -641,7 +615,7 @@ class FDSBackend(LDAPBackend):
 
         super(FDSBackend, self).__init__(backend_type=backend_type,
                 paths=paths, lp=lp,
-                credentials=credentials, names=names, logger=logger,
+                names=names, logger=logger,
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,

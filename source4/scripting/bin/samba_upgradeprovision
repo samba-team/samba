@@ -1632,7 +1632,7 @@ if __name__ == '__main__':
         message(SIMPLE, "Creating a reference provision")
         provisiondir = tempfile.mkdtemp(dir=paths.private_dir,
                         prefix="referenceprovision")
-        result = newprovision(names, creds, session, smbconf, provisiondir,
+        result = newprovision(names, session, smbconf, provisiondir,
                 provision_logger)
         result.report_logger(provision_logger)
 

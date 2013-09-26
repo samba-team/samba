@@ -855,7 +855,7 @@ Please fix this account before attempting to upgrade again
         adminpass = None
 
     # Do full provision
-    result = provision(logger, session_info, None,
+    result = provision(logger, session_info,
                        targetdir=targetdir, realm=realm, domain=domainname,
                        domainsid=str(domainsid), next_rid=next_rid,
                        dc_rid=machinerid, adminpass = adminpass,

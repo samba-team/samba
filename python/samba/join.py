@@ -717,7 +717,7 @@ class dc_join(object):
 
         smbconf = ctx.lp.configfile
 
-        presult = provision(ctx.logger, system_session(), None, smbconf=smbconf,
+        presult = provision(ctx.logger, system_session(), smbconf=smbconf,
                 targetdir=ctx.targetdir, samdb_fill=FILL_DRS, realm=ctx.realm,
                 rootdn=ctx.root_dn, domaindn=ctx.base_dn,
                 schemadn=ctx.schema_dn, configdn=ctx.config_dn,

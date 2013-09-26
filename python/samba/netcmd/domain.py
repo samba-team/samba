@@ -144,7 +144,6 @@ class cmd_domain_provision(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
     }
 
     takes_options = [
@@ -231,7 +230,7 @@ class cmd_domain_provision(Command):
 
     takes_args = []
 
-    def run(self, sambaopts=None, credopts=None, versionopts=None,
+    def run(self, sambaopts=None, versionopts=None,
             interactive=None,
             domain=None,
             domain_guid=None,
@@ -277,10 +276,6 @@ class cmd_domain_provision(Command):
 
         lp = sambaopts.get_loadparm()
         smbconf = lp.configfile
-
-        creds = credopts.get_credentials(lp)
-
-        creds.set_kerberos_state(DONT_USE_KERBEROS)
 
         if dns_forwarder is not None:
             suggested_forwarder = dns_forwarder
@@ -408,7 +403,7 @@ class cmd_domain_provision(Command):
         session = system_session()
         try:
             result = provision(self.logger,
-                  session, creds, smbconf=smbconf, targetdir=targetdir,
+                  session, smbconf=smbconf, targetdir=targetdir,
                   samdb_fill=samdb_fill, realm=realm, domain=domain,
                   domainguid=domain_guid, domainsid=domain_sid,
                   hostname=host_name,

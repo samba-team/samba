@@ -225,7 +225,7 @@ def update_policyids(names, samdb):
         names.policyid_dc = None
 
 
-def newprovision(names, creds, session, smbconf, provdir, logger):
+def newprovision(names, session, smbconf, provdir, logger):
     """Create a new provision.
 
     This provision will be the reference for knowing what has changed in the
@@ -242,7 +242,7 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
         shutil.rmtree(provdir)
     os.mkdir(provdir)
     logger.info("Provision stored in %s", provdir)
-    return provision(logger, session, creds, smbconf=smbconf,
+    return provision(logger, session, smbconf=smbconf,
             targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
             domain=names.domain, domainguid=names.domainguid,
             domainsid=str(names.domainsid), ntdsguid=names.ntdsguid,
