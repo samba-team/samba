@@ -1678,7 +1678,11 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		} else {
 
 			reply_code = "AF";
-			reply_arg = session_info->unix_info->unix_name;
+			reply_arg = talloc_strdup(state->gensec_state, session_info->unix_info->unix_name);
+			if (reply_arg == NULL) {
+				reply_code = "BH out of memory";
+				reply_arg = nt_errstr(NT_STATUS_NO_MEMORY);
+			}
 			talloc_free(session_info);
 		}
 	} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) {
