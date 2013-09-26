@@ -185,7 +185,9 @@ interface frstrans
 
 	/*****************/
 	/* Function 0x0c */
-	[todo] void FRSTRANS_RDC_CLOSE();
+	WERROR frstrans_RdcClose(
+		[in,out,ref] policy_handle *server_context
+		);
 
 	/*****************/
 	/* Function 0x0d */
