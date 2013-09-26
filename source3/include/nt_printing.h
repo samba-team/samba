@@ -128,9 +128,9 @@ bool nt_printing_init(struct messaging_context *msg_ctx);
 
 const char *get_short_archi(const char *long_archi);
 
-bool print_access_check(const struct auth_session_info *server_info,
-			struct messaging_context *msg_ctx, int snum,
-			int access_type);
+WERROR print_access_check(const struct auth_session_info *server_info,
+			  struct messaging_context *msg_ctx, int snum,
+			  int access_type);
 
 WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 			   const struct auth_session_info *session_info,

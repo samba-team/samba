@@ -1897,10 +1897,10 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		if (!user_ok_token(uidtoname(p->session_info->unix_token->uid), NULL,
 				   p->session_info->security_token, snum) ||
-		    !print_access_check(p->session_info,
-					p->msg_ctx,
-					snum,
-					r->in.access_mask)) {
+		    !W_ERROR_IS_OK(print_access_check(p->session_info,
+						      p->msg_ctx,
+						      snum,
+						      r->in.access_mask))) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, r->out.handle);
 			ZERO_STRUCTP(r->out.handle);
@@ -8153,10 +8153,10 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	}
 
 	/* you must be a printer admin to add a new printer */
-	if (!print_access_check(p->session_info,
-				p->msg_ctx,
-				snum,
-				PRINTER_ACCESS_ADMINISTER)) {
+	if (!W_ERROR_IS_OK(print_access_check(p->session_info,
+					      p->msg_ctx,
+					      snum,
+					      PRINTER_ACCESS_ADMINISTER))) {
 		return WERR_ACCESS_DENIED;
 	}
 

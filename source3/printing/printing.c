@@ -2226,17 +2226,16 @@ WERROR print_job_delete(const struct auth_session_info *server_info,
 	   owns their job. */
 
 	if (!owner &&
-	    !print_access_check(server_info, msg_ctx, snum,
-				JOB_ACCESS_ADMINISTER)) {
+	    !W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
+					      JOB_ACCESS_ADMINISTER))) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 
-		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR,
-			      "Permission denied-- user not allowed to delete, \
-pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(server_info->unix_token->uid),
-			      lp_printername(talloc_tos(), snum) );
-		/* END_ADMIN_LOG */
+		sys_adminlog(LOG_ERR,
+			     "Permission denied-- user not allowed to delete, "
+			     "pause, or resume print job. User name: %s. "
+			     "Printer name: %s.",
+			     uidtoname(server_info->unix_token->uid),
+			     lp_printername(tmp_ctx, snum) );
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
@@ -2316,17 +2315,16 @@ WERROR print_job_pause(const struct auth_session_info *server_info,
 	}
 
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
-	    !print_access_check(server_info, msg_ctx, snum,
-				JOB_ACCESS_ADMINISTER)) {
+	    !W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
+					      JOB_ACCESS_ADMINISTER))) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 
-		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR,
-			"Permission denied-- user not allowed to delete, \
-pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(server_info->unix_token->uid),
-			      lp_printername(talloc_tos(), snum) );
-		/* END_ADMIN_LOG */
+		sys_adminlog(LOG_ERR,
+			     "Permission denied-- user not allowed to delete, "
+			     "pause, or resume print job. User name: %s. "
+			     "Printer name: %s.",
+			     uidtoname(server_info->unix_token->uid),
+			     lp_printername(tmp_ctx, snum) );
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
@@ -2388,17 +2386,17 @@ WERROR print_job_resume(const struct auth_session_info *server_info,
 	}
 
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
-	    !print_access_check(server_info, msg_ctx, snum,
-				JOB_ACCESS_ADMINISTER)) {
+	    !W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
+					      JOB_ACCESS_ADMINISTER))) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 
-		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR,
-			 "Permission denied-- user not allowed to delete, \
-pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(server_info->unix_token->uid),
-			      lp_printername(talloc_tos(), snum) );
-		/* END_ADMIN_LOG */
+		sys_adminlog(LOG_ERR,
+			     "Permission denied-- user not allowed to delete, "
+			     "pause, or resume print job. User name: %s. "
+			     "Printer name: %s.",
+			     uidtoname(server_info->unix_token->uid),
+			     lp_printername(tmp_ctx, snum));
+
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
 	}
@@ -2654,8 +2652,8 @@ static WERROR print_job_checks(const struct auth_session_info *server_info,
 	uint64_t minspace;
 	int ret;
 
-	if (!print_access_check(server_info, msg_ctx, snum,
-				PRINTER_ACCESS_USE)) {
+	if (!W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
+					      PRINTER_ACCESS_USE))) {
 		DEBUG(3, ("print_job_checks: "
 			  "job start denied by security descriptor\n"));
 		return WERR_ACCESS_DENIED;
@@ -3285,8 +3283,8 @@ WERROR print_queue_pause(const struct auth_session_info *server_info,
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 
-	if (!print_access_check(server_info, msg_ctx, snum,
-				PRINTER_ACCESS_ADMINISTER)) {
+	if (!W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
+					      PRINTER_ACCESS_ADMINISTER))) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -3322,8 +3320,8 @@ WERROR print_queue_resume(const struct auth_session_info *server_info,
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 
-	if (!print_access_check(server_info, msg_ctx, snum,
-				PRINTER_ACCESS_ADMINISTER)) {
+	if (!W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
+					      PRINTER_ACCESS_ADMINISTER))) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -3364,10 +3362,10 @@ WERROR print_queue_purge(const struct auth_session_info *server_info,
 	/* Force and update so the count is accurate (i.e. not a cached count) */
 	print_queue_update(msg_ctx, snum, True);
 
-	can_job_admin = print_access_check(server_info,
-					   msg_ctx,
-					   snum,
-					   JOB_ACCESS_ADMINISTER);
+	can_job_admin = W_ERROR_IS_OK(print_access_check(server_info,
+							 msg_ctx,
+							 snum,
+							JOB_ACCESS_ADMINISTER));
 	njobs = print_queue_status(msg_ctx, snum, &queue, &status);
 
 	if ( can_job_admin )

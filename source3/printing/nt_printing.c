@@ -1765,9 +1765,9 @@ void map_job_permissions(struct security_descriptor *sd)
     3)  "printer admins" (may result in numerous calls to winbind)
 
  ****************************************************************************/
-bool print_access_check(const struct auth_session_info *session_info,
-			struct messaging_context *msg_ctx, int snum,
-			int access_type)
+WERROR print_access_check(const struct auth_session_info *session_info,
+			  struct messaging_context *msg_ctx, int snum,
+			  int access_type)
 {
 	struct spoolss_security_descriptor *secdesc = NULL;
 	uint32 access_granted;
@@ -1781,9 +1781,10 @@ bool print_access_check(const struct auth_session_info *session_info,
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if (session_info->unix_token->uid == sec_initial_uid()
-	    || security_token_has_privilege(session_info->security_token, SEC_PRIV_PRINT_OPERATOR)) {
-		return True;
+	if ((session_info->unix_token->uid == sec_initial_uid())
+	    || security_token_has_privilege(session_info->security_token,
+					    SEC_PRIV_PRINT_OPERATOR)) {
+		return WERR_OK;
 	}
 
 	/* Get printer name */
@@ -1791,15 +1792,13 @@ bool print_access_check(const struct auth_session_info *session_info,
 	pname = lp_printername(talloc_tos(), snum);
 
 	if (!pname || !*pname) {
-		errno = EACCES;
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/* Get printer security descriptor */
 
 	if(!(mem_ctx = talloc_init("print_access_check"))) {
-		errno = ENOMEM;
-		return False;
+		return WERR_NOMEM;
 	}
 
 	result = winreg_get_printer_secdesc_internal(mem_ctx,
@@ -1809,8 +1808,7 @@ bool print_access_check(const struct auth_session_info *session_info,
 					    &secdesc);
 	if (!W_ERROR_IS_OK(result)) {
 		talloc_destroy(mem_ctx);
-		errno = ENOMEM;
-		return False;
+		return WERR_NOMEM;
 	}
 
 	if (access_type == JOB_ACCESS_ADMINISTER) {
@@ -1828,8 +1826,7 @@ bool print_access_check(const struct auth_session_info *session_info,
 						 false);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(mem_ctx);
-			errno = map_errno_from_nt_status(status);
-			return False;
+			return ntstatus_to_werror(status);
 		}
 
 		map_job_permissions(secdesc);
@@ -1845,11 +1842,7 @@ bool print_access_check(const struct auth_session_info *session_info,
 
 	talloc_destroy(mem_ctx);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = EACCES;
-	}
-
-	return NT_STATUS_IS_OK(status);
+	return ntstatus_to_werror(status);
 }
 
 /****************************************************************************
