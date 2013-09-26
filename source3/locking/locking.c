@@ -636,7 +636,7 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
  * being used, we need to make sure the corresponding process still
  * exists.
  */
-bool share_mode_stale_pid(struct share_mode_data *d, unsigned idx)
+bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 {
 	struct share_mode_entry *e;
 

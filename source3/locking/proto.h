@@ -170,7 +170,7 @@ void get_file_infos(struct file_id id,
 		    bool *delete_on_close,
 		    struct timespec *write_time);
 bool is_valid_share_mode_entry(const struct share_mode_entry *e);
-bool share_mode_stale_pid(struct share_mode_data *d, unsigned idx);
+bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx);
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		    uid_t uid, uint64_t mid, uint16 op_type);
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
