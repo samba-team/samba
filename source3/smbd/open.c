@@ -1290,7 +1290,6 @@ static bool validate_oplock_types(struct share_mode_lock *lck)
 }
 
 static bool delay_for_oplock(files_struct *fsp,
-			     uint64_t mid,
 			     int oplock_request,
 			     struct share_mode_lock *lck,
 			     bool have_sharing_violation)
@@ -2344,7 +2343,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			smb_panic("validate_oplock_types failed");
 		}
 
-		if (delay_for_oplock(fsp, req->mid, 0, lck, false)) {
+		if (delay_for_oplock(fsp, 0, lck, false)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
@@ -2455,7 +2454,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if ((req != NULL) &&
 	    delay_for_oplock(
-		    fsp, req->mid, oplock_request, lck,
+		    fsp, oplock_request, lck,
 		    NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION))) {
 		schedule_defer_open(lck, request_time, req);
 		TALLOC_FREE(lck);
