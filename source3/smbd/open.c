@@ -1093,6 +1093,26 @@ bool is_stat_open(uint32 access_mask)
 		((access_mask & ~stat_open_bits) == 0));
 }
 
+static bool has_delete_on_close(struct share_mode_lock *lck,
+				uint32_t name_hash)
+{
+	struct share_mode_data *d = lck->data;
+	uint32_t i;
+
+	if (d->num_share_modes == 0) {
+		return false;
+	}
+	if (!is_delete_on_close_set(lck, name_hash)) {
+		return false;
+	}
+	for (i=0; i<d->num_share_modes; i++) {
+		if (!share_mode_stale_pid(d, i)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /****************************************************************************
  Deal with share modes
  Invarient: Share mode must be locked on entry and exit.
@@ -1110,25 +1130,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	int i;
 
 	if(lck->data->num_share_modes == 0) {
-		return NT_STATUS_OK;
-	}
-
-	/* A delete on close prohibits everything */
-
-	if (is_delete_on_close_set(lck, name_hash)) {
-		/*
-		 * Check the delete on close token
-		 * is valid. It could have been left
-		 * after a server crash.
-		 */
-		for(i = 0; i < lck->data->num_share_modes; i++) {
-			if (!share_mode_stale_pid(lck->data, i)) {
-
-				*file_existed = true;
-
-				return NT_STATUS_DELETE_PENDING;
-			}
-		}
 		return NT_STATUS_OK;
 	}
 
@@ -2416,6 +2417,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			  &got_level2_oplock,
 			  &got_a_none_oplock);
 
+	if (has_delete_on_close(lck, fsp->name_hash)) {
+		TALLOC_FREE(lck);
+		fd_close(fsp);
+		return NT_STATUS_DELETE_PENDING;
+	}
+
 	/* First pass - send break only on batch oplocks. */
 	if ((req != NULL) &&
 	    delay_for_batch_oplocks(fsp,
@@ -2448,13 +2455,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			fd_close(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-		/* DELETE_PENDING is not deferred for a second */
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return status;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3164,6 +3164,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 		fd_close(fsp);
 		file_free(req, fsp);
 		return NT_STATUS_SHARING_VIOLATION;
+	}
+
+	if (has_delete_on_close(lck, fsp->name_hash)) {
+		TALLOC_FREE(lck);
+		fd_close(fsp);
+		file_free(req, fsp);
+		return NT_STATUS_DELETE_PENDING;
 	}
 
 	status = open_mode_check(conn, lck, fsp->name_hash,
