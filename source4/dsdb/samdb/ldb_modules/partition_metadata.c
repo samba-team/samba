@@ -129,9 +129,13 @@ static int partition_metadata_set_uint64(struct ldb_module *module,
 	}
 
 	if (tdb_store(tdb, tdb_key, tdb_data, tdb_flag) != 0) {
+		int ret;
+		char *error_string = talloc_asprintf(tmp_ctx, "%s: tdb_store of key %s failed: %s",
+						     tdb_name(tdb), key, tdb_errorstr(tdb));
+		ret = ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+				       error_string);
 		talloc_free(tmp_ctx);
-		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-					tdb_errorstr(tdb));
+		return ret;
 	}
 
 	talloc_free(tmp_ctx);
@@ -242,9 +246,11 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 	if (data->metadata->db == NULL) {
 		talloc_free(tmp_ctx);
 		if (create) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "partition_metadata: Unable to create %s",
-				  filename);
+			ldb_asprintf_errstring(ldb, "partition_metadata: Unable to create %s",
+					       filename);
+		} else {
+			ldb_asprintf_errstring(ldb, "partition_metadata: Unable to open %s",
+					       filename);
 		}
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -295,9 +301,16 @@ int partition_metadata_init(struct ldb_module *module)
 	}
 
 	/* metadata.tdb does not exist, create it */
-	DEBUG(2, ("partition_metadata: Migrating partition metadata\n"));
+	DEBUG(2, ("partition_metadata: Migrating partition metadata: "
+		  "open of metadata.tdb gave: %s\n",
+		  ldb_errstring(ldb_module_get_ctx(module))));
 	ret = partition_metadata_open(module, true);
 	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "partition_metadata: "
+				       "Migrating partition metadata: "
+				       "create of metadata.tdb gave: %s\n",
+				       ldb_errstring(ldb_module_get_ctx(module)));
 		talloc_free(data->metadata);
 		data->metadata = NULL;
 		goto end;
