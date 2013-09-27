@@ -364,6 +364,25 @@ enum csc_policy {
 #define OPLOCK_BREAK_TO_NONE     0
 #define OPLOCK_BREAK_TO_LEVEL_II 1
 
+/* Filesystem Attributes. */
+#define FILE_CASE_SENSITIVE_SEARCH      0x00000001
+#define FILE_CASE_PRESERVED_NAMES       0x00000002
+#define FILE_UNICODE_ON_DISK            0x00000004
+/* According to cifs9f, this is 4, not 8 */
+/* Acconding to testing, this actually sets the security attribute! */
+#define FILE_PERSISTENT_ACLS            0x00000008
+#define FILE_FILE_COMPRESSION           0x00000010
+#define FILE_VOLUME_QUOTAS              0x00000020
+#define FILE_SUPPORTS_SPARSE_FILES      0x00000040
+#define FILE_SUPPORTS_REPARSE_POINTS    0x00000080
+#define FILE_SUPPORTS_REMOTE_STORAGE    0x00000100
+#define FS_LFN_APIS                     0x00004000
+#define FILE_VOLUME_IS_COMPRESSED       0x00008000
+#define FILE_SUPPORTS_OBJECT_IDS        0x00010000
+#define FILE_SUPPORTS_ENCRYPTION        0x00020000
+#define FILE_NAMED_STREAMS              0x00040000
+#define FILE_READ_ONLY_VOLUME           0x00080000
+
 
 /* ioctl codes */
 #define IOCTL_QUERY_JOB_INFO      0x530060
