@@ -51,6 +51,8 @@ char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
 	return req->private_print(req, mem_ctx);
 }
 
+static int tevent_req_destructor(struct tevent_req *req);
+
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 				    void *pdata,
 				    size_t data_size,
@@ -86,8 +88,16 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 
 	req->data = data;
 
+	talloc_set_destructor(req, tevent_req_destructor);
+
 	*ppdata = data;
 	return req;
+}
+
+static int tevent_req_destructor(struct tevent_req *req)
+{
+	tevent_req_received(req);
+	return 0;
 }
 
 void _tevent_req_notify_callback(struct tevent_req *req, const char *location)
@@ -200,7 +210,8 @@ bool tevent_req_is_in_progress(struct tevent_req *req)
 
 void tevent_req_received(struct tevent_req *req)
 {
-	TALLOC_FREE(req->data);
+	talloc_set_destructor(req, NULL);
+
 	req->private_print = NULL;
 	req->private_cancel = NULL;
 
@@ -208,6 +219,8 @@ void tevent_req_received(struct tevent_req *req)
 	TALLOC_FREE(req->internal.timer);
 
 	req->internal.state = TEVENT_REQ_RECEIVED;
+
+	TALLOC_FREE(req->data);
 }
 
 bool tevent_req_poll(struct tevent_req *req,
