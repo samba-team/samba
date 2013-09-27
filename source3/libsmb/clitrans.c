@@ -73,16 +73,6 @@ struct tevent_req *cli_trans_send(
 		return NULL;
 	}
 	*state->ptr = state;
-	if (cli->case_sensitive) {
-		clear_flags |= FLAG_CASELESS_PATHNAMES;
-	} else {
-		/* Default setting, case insensitive. */
-		additional_flags |= FLAG_CASELESS_PATHNAMES;
-	}
-
-	if ((smb1cli_conn_capabilities(cli->conn) & CAP_DFS) && cli->dfsroot) {
-		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
-	}
 
 	state->req = smb1cli_trans_send(state, ev,
 					cli->conn, cmd,
@@ -168,17 +158,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint8_t clear_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint16_t clear_flags2 = 0;
-
-	if (cli->case_sensitive) {
-		clear_flags |= FLAG_CASELESS_PATHNAMES;
-	} else {
-		/* Default setting, case insensitive. */
-		additional_flags |= FLAG_CASELESS_PATHNAMES;
-	}
-
-	if ((smb1cli_conn_capabilities(cli->conn) & CAP_DFS) && cli->dfsroot) {
-		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
-	}
 
 	status = smb1cli_trans(mem_ctx,
 			       cli->conn, trans_cmd,
