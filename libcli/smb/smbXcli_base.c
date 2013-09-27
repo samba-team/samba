@@ -168,6 +168,7 @@ struct smbXcli_session {
 
 struct smbXcli_tcon {
 	bool is_smb1;
+	uint32_t fs_attributes;
 
 	struct {
 		uint16_t tcon_id;
@@ -5027,6 +5028,17 @@ struct smbXcli_tcon *smbXcli_tcon_create(TALLOC_CTX *mem_ctx)
 	return tcon;
 }
 
+void smbXcli_tcon_set_fs_attributes(struct smbXcli_tcon *tcon,
+				    uint32_t fs_attributes)
+{
+	tcon->fs_attributes = fs_attributes;
+}
+
+uint32_t smbXcli_tcon_get_fs_attributes(struct smbXcli_tcon *tcon)
+{
+	return tcon->fs_attributes;
+}
+
 bool smbXcli_tcon_is_dfs_share(struct smbXcli_tcon *tcon)
 {
 	if (tcon == NULL) {
@@ -5068,6 +5080,7 @@ bool smb1cli_tcon_set_values(struct smbXcli_tcon *tcon,
 			     const char *fs_type)
 {
 	tcon->is_smb1 = true;
+	tcon->fs_attributes = 0;
 	tcon->smb1.tcon_id = tcon_id;
 	tcon->smb1.optional_support = optional_support;
 	tcon->smb1.maximal_access = maximal_access;
@@ -5107,6 +5120,7 @@ void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
 			     uint32_t maximal_access)
 {
 	tcon->is_smb1 = false;
+	tcon->fs_attributes = 0;
 	tcon->smb2.tcon_id = tcon_id;
 	tcon->smb2.type = type;
 	tcon->smb2.flags = flags;
