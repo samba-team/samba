@@ -203,6 +203,7 @@ void tevent_req_received(struct tevent_req *req)
 {
 	TALLOC_FREE(req->data);
 	req->private_print = NULL;
+	req->private_cancel = NULL;
 
 	TALLOC_FREE(req->internal.trigger);
 	TALLOC_FREE(req->internal.timer);
