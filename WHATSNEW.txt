@@ -183,8 +183,12 @@ o   Jeremy Allison <jra@samba.org>
 
 
 o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8077: dsdb: Convert the full string from UTF16 to UTF8, including
+      embedded NULLs.
     * BUG 9461: python-samba-tool fsmo: Do not give an error on a successful
       role transfer.
+    * BUG 10157: Regression causes replication failure with Windows 2008R2 and
+      deletes Deleted Objects.
 
 
 o   Günther Deschner <gd@samba.org>
