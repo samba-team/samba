@@ -426,6 +426,23 @@ uint16_t cli_state_set_uid(struct cli_state *cli, uint16_t uid)
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 {
 	bool ret = cli->case_sensitive;
+	uint32_t fs_attrs;
+	struct smbXcli_tcon *tcon;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		tcon = cli->smb2.tcon;
+	} else {
+		tcon = cli->smb1.tcon;
+	}
+
+	fs_attrs = smbXcli_tcon_get_fs_attributes(tcon);
+	if (case_sensitive) {
+		fs_attrs |= FILE_CASE_SENSITIVE_SEARCH;
+	} else {
+		fs_attrs &= ~FILE_CASE_SENSITIVE_SEARCH;
+	}
+	smbXcli_tcon_set_fs_attributes(tcon, fs_attrs);
+
 	cli->case_sensitive = case_sensitive;
 	return ret;
 }
