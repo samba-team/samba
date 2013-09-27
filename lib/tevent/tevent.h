@@ -934,6 +934,41 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location);
 	_tevent_req_cancel(req, __location__)
 #endif
 
+/**
+ * @brief A typedef for a cleanup function for a tevent request.
+ *
+ * @param[in]  req       The tevent request calling this function.
+ *
+ * @param[in]  req_state The current tevent_req_state.
+ *
+ */
+typedef void (*tevent_req_cleanup_fn)(struct tevent_req *req,
+				      enum tevent_req_state req_state);
+
+/**
+ * @brief This function sets a cleanup function for the given tevent request.
+ *
+ * This function can be used to setup a cleanup function for the given request.
+ * This will be triggered when the tevent_req_done() or tevent_req_error()
+ * function was called, before notifying the callers callback function,
+ * and also before scheduling the deferred trigger.
+ *
+ * This might be useful if more than one tevent_req belong together
+ * and need to finish both requests at the same time.
+ *
+ * The cleanup function is able to call tevent_req_done() or tevent_req_error()
+ * recursively, the cleanup function is only triggered the first time.
+ *
+ * The cleanup function is also called by tevent_req_received()
+ * (possibly triggered from tevent_req_destructor()) before destroying
+ * the private data of the tevent_req.
+ *
+ * @param[in]  req      The request to use.
+ *
+ * @param[in]  fn       A pointer to the cancel function.
+ */
+void tevent_req_set_cleanup_fn(struct tevent_req *req, tevent_req_cleanup_fn fn);
+
 #ifdef DOXYGEN
 /**
  * @brief Create an async tevent request.

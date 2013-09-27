@@ -113,6 +113,24 @@ void _tevent_req_notify_callback(struct tevent_req *req, const char *location)
 	}
 }
 
+static void tevent_req_cleanup(struct tevent_req *req)
+{
+	if (req->private_cleanup.fn == NULL) {
+		return;
+	}
+
+	if (req->private_cleanup.state >= req->internal.state) {
+		/*
+		 * Don't call the cleanup_function multiple times for the same
+		 * state recursively
+		 */
+		return;
+	}
+
+	req->private_cleanup.state = req->internal.state;
+	req->private_cleanup.fn(req, req->internal.state);
+}
+
 static void tevent_req_finish(struct tevent_req *req,
 			      enum tevent_req_state state,
 			      const char *location)
@@ -124,6 +142,10 @@ static void tevent_req_finish(struct tevent_req *req,
 	TALLOC_FREE(req->internal.timer);
 
 	req->internal.state = state;
+	req->internal.finish_location = location;
+
+	tevent_req_cleanup(req);
+
 	_tevent_req_notify_callback(req, location);
 }
 
@@ -220,6 +242,8 @@ void tevent_req_received(struct tevent_req *req)
 
 	req->internal.state = TEVENT_REQ_RECEIVED;
 
+	tevent_req_cleanup(req);
+
 	TALLOC_FREE(req->data);
 }
 
@@ -314,4 +338,10 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location)
 	}
 
 	return req->private_cancel(req);
+}
+
+void tevent_req_set_cleanup_fn(struct tevent_req *req, tevent_req_cleanup_fn fn)
+{
+	req->private_cleanup.state = req->internal.state;
+	req->private_cleanup.fn = fn;
 }

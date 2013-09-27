@@ -74,6 +74,18 @@ struct tevent_req {
 	tevent_req_cancel_fn private_cancel;
 
 	/**
+	 * @brief A function to cleanup the request
+	 *
+	 * The implementation might want to set a function
+	 * that is called before the tevent_req_done() and tevent_req_error()
+	 * trigger the callers callback function.
+	 */
+	struct {
+		tevent_req_cleanup_fn fn;
+		enum tevent_req_state state;
+	} private_cleanup;
+
+	/**
 	 * @brief Internal state of the request
 	 *
 	 * Callers should only access this via functions and never directly.
