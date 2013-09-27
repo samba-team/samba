@@ -222,9 +222,6 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct event_context *ev;
 
-	printf("SUCCESS (transaction test disabled while transactions are being rewritten)\n");
-	exit(0);
-
 	if (verbose) {
 		setbuf(stdout, (char *)NULL); /* don't buffer */
 	} else {
