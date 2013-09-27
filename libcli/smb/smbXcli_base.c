@@ -1273,6 +1273,13 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	if (tcon) {
 		tid = tcon->smb1.tcon_id;
 
+		if (tcon->fs_attributes & FILE_CASE_SENSITIVE_SEARCH) {
+			clear_flags |= FLAG_CASELESS_PATHNAMES;
+		} else {
+			/* Default setting, case insensitive. */
+			additional_flags |= FLAG_CASELESS_PATHNAMES;
+		}
+
 		if (smbXcli_conn_dfs_supported(conn) &&
 		    smbXcli_tcon_is_dfs_share(tcon))
 		{
