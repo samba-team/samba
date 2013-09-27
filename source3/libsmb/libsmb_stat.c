@@ -364,6 +364,13 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         unsigned long flags = 0;
 	uint32 fs_attrs = 0;
 	struct cli_state *cli = file->srv->cli;
+	struct smbXcli_tcon *tcon;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		tcon = cli->smb2.tcon;
+	} else {
+		tcon = cli->smb1.tcon;
+	}
 
         /* Initialize all fields (at least until we actually use them) */
         memset(st, 0, sizeof(*st));
@@ -469,7 +476,9 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         }
 
         /* See if DFS is supported */
-	if (smbXcli_conn_dfs_supported(cli->conn) &&  cli->dfsroot) {
+	if (smbXcli_conn_dfs_supported(cli->conn) &&
+	    smbXcli_tcon_is_dfs_share(tcon))
+	{
                 flags |= SMBC_VFS_FEATURE_DFS;
         }
 

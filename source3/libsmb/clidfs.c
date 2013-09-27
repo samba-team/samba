@@ -822,6 +822,8 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
 	NTSTATUS status;
+	struct smbXcli_tcon *root_tcon = NULL;
+	struct smbXcli_tcon *target_tcon = NULL;
 
 	if ( !rootcli || !path || !targetcli ) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -829,7 +831,13 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* Don't do anything if this is not a DFS root. */
 
-	if ( !rootcli->dfsroot) {
+	if (smbXcli_conn_protocol(rootcli->conn) >= PROTOCOL_SMB2_02) {
+		root_tcon = rootcli->smb2.tcon;
+	} else {
+		root_tcon = rootcli->smb1.tcon;
+	}
+
+	if (!smbXcli_tcon_is_dfs_share(root_tcon)) {
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
 		if (!*pp_targetpath) {
@@ -1029,8 +1037,14 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 
   done:
 
+	if (smbXcli_conn_protocol((*targetcli)->conn) >= PROTOCOL_SMB2_02) {
+		target_tcon = (*targetcli)->smb2.tcon;
+	} else {
+		target_tcon = (*targetcli)->smb1.tcon;
+	}
+
 	/* If returning true ensure we return a dfs root full path. */
-	if ((*targetcli)->dfsroot) {
+	if (smbXcli_tcon_is_dfs_share(target_tcon)) {
 		dfs_path = talloc_strdup(ctx, *pp_targetpath);
 		if (!dfs_path) {
 			return NT_STATUS_NO_MEMORY;
