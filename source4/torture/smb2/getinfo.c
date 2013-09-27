@@ -328,6 +328,9 @@ static bool torture_smb2_qfile_buffercheck(struct torture_context *tctx)
 		b.in.output_buffer_length	= 65535;
 
 		status = smb2_getinfo(tree, tree, &b);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			continue;
+		}
 		torture_assert_ntstatus_equal(
 			tctx, status, NT_STATUS_OK,
 			"Wrong error code for large buffer");
