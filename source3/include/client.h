@@ -90,8 +90,6 @@ struct cli_state {
 
 	bool use_oplocks; /* should we use oplocks? */
 
-	bool case_sensitive; /* False by default. */
-
 	/* Where (if anywhere) this is mounted under DFS. */
 	char *dfs_mountpoint;
 

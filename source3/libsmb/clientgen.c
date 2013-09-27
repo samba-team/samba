@@ -177,7 +177,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->map_dos_errors = true; /* remove this */
 	cli->timeout = CLIENT_TIMEOUT;
-	cli->case_sensitive = false;
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
@@ -425,7 +424,7 @@ uint16_t cli_state_set_uid(struct cli_state *cli, uint16_t uid)
 
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 {
-	bool ret = cli->case_sensitive;
+	bool ret;
 	uint32_t fs_attrs;
 	struct smbXcli_tcon *tcon;
 
@@ -436,6 +435,11 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 	}
 
 	fs_attrs = smbXcli_tcon_get_fs_attributes(tcon);
+	if (fs_attrs & FILE_CASE_SENSITIVE_SEARCH) {
+		ret = true;
+	} else {
+		ret = false;
+	}
 	if (case_sensitive) {
 		fs_attrs |= FILE_CASE_SENSITIVE_SEARCH;
 	} else {
@@ -443,7 +447,6 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 	}
 	smbXcli_tcon_set_fs_attributes(tcon, fs_attrs);
 
-	cli->case_sensitive = case_sensitive;
 	return ret;
 }
 
