@@ -70,14 +70,12 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(req);
 	req->internal.private_type	= type;
 	req->internal.create_location	= location;
-	req->internal.finish_location	= NULL;
 	req->internal.state		= TEVENT_REQ_IN_PROGRESS;
 	req->internal.trigger		= tevent_create_immediate(req);
 	if (!req->internal.trigger) {
 		talloc_free(req);
 		return NULL;
 	}
-	req->internal.defer_callback_ev	= NULL;
 
 	data = talloc_zero_size(req, data_size);
 	if (data == NULL) {
