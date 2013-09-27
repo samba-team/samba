@@ -256,6 +256,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
  	NTSTATUS status;
 	char *newserver, *newshare;
 	int flags = 0;
+	struct smbXcli_tcon *tcon = NULL;
 
 	ZERO_STRUCT(c);
 	*in_cache = false;
@@ -528,6 +529,12 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	DEBUG(4,(" tconx ok\n"));
 
+	if (smbXcli_conn_protocol(c->conn) >= PROTOCOL_SMB2_02) {
+		tcon = c->smb2.tcon;
+	} else {
+		tcon = c->smb1.tcon;
+	}
+
         /* Determine if this share supports case sensitivity */
 	if (is_ipc) {
                 DEBUG(4, ("IPC$ so ignore case sensitivity\n"));
@@ -555,10 +562,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                           (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
                            ? "True"
                            : "False")));
-                cli_set_case_sensitive(c,
-                                       (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
-                                        ? True
-                                        : False));
+		smbXcli_tcon_set_fs_attributes(tcon, fs_attrs);
         }
 
 	if (context->internal->smb_encryption_level) {
