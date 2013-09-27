@@ -1857,8 +1857,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
-			return -1;
+			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
+			} else {
+				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
+				return -1;
+			}
 		}
 	}
 
