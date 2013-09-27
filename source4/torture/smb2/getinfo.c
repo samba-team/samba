@@ -352,7 +352,6 @@ static bool torture_smb2_qsec_buffercheck(struct torture_context *tctx)
 	struct smb2_create c;
 	NTSTATUS status;
 	struct smb2_handle handle;
-	int i;
 
 	printf("Testing SMB2_GETINFO_SECURITY buffer sizes\n");
 
