@@ -1302,6 +1302,7 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 	/* see if we have a cached copy */
 	invocation_id = (struct GUID *)ldb_get_opaque(ldb, "cache.invocation_id");
 	if (invocation_id) {
+		SMB_ASSERT(!GUID_all_zero(invocation_id));
 		return invocation_id;
 	}
 
@@ -1325,6 +1326,14 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 	}
 
 	*invocation_id = samdb_result_guid(res->msgs[0], "invocationId");
+	if (GUID_all_zero(invocation_id)) {
+		if (ldb_msg_find_ldb_val(res->msgs[0], "invocationId")) {
+			DEBUG(0, ("Failed to find our own NTDS Settings invocationId in the ldb!\n"));	
+		} else {
+			DEBUG(0, ("Failed to find parse own NTDS Settings invocationId from the ldb!\n"));
+		}
+		goto failed;
+	}
 
 	/* cache the domain_sid in the ldb */
 	if (ldb_set_opaque(ldb, "cache.invocation_id", invocation_id) != LDB_SUCCESS) {
@@ -1362,6 +1371,7 @@ bool samdb_set_ntds_invocation_id(struct ldb_context *ldb, const struct GUID *in
 		goto failed;
 	}
 
+	SMB_ASSERT(!GUID_all_zero(invocation_id_in));
 	*invocation_id_new = *invocation_id_in;
 
 	/* cache the domain_sid in the ldb */

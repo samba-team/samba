@@ -3001,14 +3001,17 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 
 	/* work out where we will be renaming this object to */
 	if (!disallow_move_on_delete) {
+		struct ldb_dn *deleted_objects_dn;
 		ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn,
-						  &new_dn);
+						  &deleted_objects_dn);
+
 		/*
-		 * Deleted Objects itself appears to be deleted, but
-		 * should also not be moved, and we should not move
-		 * objects if we can't find the deleted objects DN
+		 * We should not move objects if we can't find the
+		 * deleted objects DN.  Not moving (or otherwise
+		 * harming) the Deleted Objects DN itself is handled
+		 * in the caller.
 		 */
-		if (re_delete && (ret != LDB_SUCCESS || ldb_dn_compare(old_dn, new_dn) == 0)) {
+		if (re_delete && (ret != LDB_SUCCESS)) {
 			new_dn = ldb_dn_get_parent(tmp_ctx, old_dn);
 			if (new_dn == NULL) {
 				ldb_module_oom(module);
@@ -3023,6 +3026,8 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 					       ldb_dn_get_linearized(old_dn));
 			talloc_free(tmp_ctx);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
+		} else {
+			new_dn = deleted_objects_dn;
 		}
 	} else {
 		new_dn = ldb_dn_get_parent(tmp_ctx, old_dn);
@@ -4655,7 +4660,11 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
  */
 static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *ar)
 {
-	if (ar->isDeleted) {
+	struct ldb_dn *deleted_objects_dn;
+	struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
+	int ret = dsdb_get_deleted_objects_dn(ldb_module_get_ctx(ar->module), msg, msg->dn,
+					      &deleted_objects_dn);
+	if (ar->isDeleted && (ret != LDB_SUCCESS || ldb_dn_compare(msg->dn, deleted_objects_dn) != 0)) {
 		/*
 		 * Do a delete here again, so that if there is
 		 * anything local that conflicts with this
@@ -4669,11 +4678,9 @@ static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *a
 		 */
 
 		/* This has been updated to point to the DN we eventually did the modify on */
-		struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
 
 		struct ldb_request *del_req;
 		struct ldb_result *res;
-		int ret;
 
 		TALLOC_CTX *tmp_ctx = talloc_new(ar);
 		if (!tmp_ctx) {
@@ -4839,6 +4846,10 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 
 	/* get our invocation_id if we have one already attached to the ldb */
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
+	if (our_invocation_id == NULL) {
+		DEBUG(0, ("repl_meta_data: Could not find our own server's invocationID!\n"));
+		return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);		
+	}
 
 	/* merge in the source_dsa vector is available */
 	for (i=0; (ruv && i < ruv->count); i++) {

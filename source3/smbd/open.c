@@ -76,6 +76,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	struct security_descriptor *sd = NULL;
 	uint32_t rejected_share_access;
 	uint32_t rejected_mask = access_mask;
+	uint32_t do_not_check_mask = 0;
 
 	rejected_share_access = access_mask & ~(conn->share_access);
 
@@ -143,10 +144,23 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	 * se_file_access_check() also takes care of
 	 * owner WRITE_DAC and READ_CONTROL.
 	 */
+	do_not_check_mask = FILE_READ_ATTRIBUTES;
+
+	/*
+	 * Samba 3.6 and earlier granted execute access even
+	 * if the ACL did not contain execute rights.
+	 * Samba 4.0 is more correct and checks it.
+	 * The compatibilty mode allows to skip this check
+	 * to smoothen upgrades.
+	 */
+	if (lp_acl_allow_execute_always(SNUM(conn))) {
+		do_not_check_mask |= FILE_EXECUTE;
+	}
+
 	status = se_file_access_check(sd,
 				get_current_nttok(conn),
 				use_privs,
-				(access_mask & ~FILE_READ_ATTRIBUTES),
+				(access_mask & ~do_not_check_mask),
 				&rejected_mask);
 
 	DEBUG(10,("smbd_check_access_rights: file %s requesting "
@@ -1237,19 +1251,20 @@ static void find_oplock_types(files_struct *fsp,
 	}
 
 	for (i=0; i<lck->data->num_share_modes; i++) {
-		if (!is_valid_share_mode_entry(&lck->data->share_modes[i])) {
+		struct share_mode_entry *e = &lck->data->share_modes[i];
+
+		if (!is_valid_share_mode_entry(e)) {
 			continue;
 		}
 
-		if (lck->data->share_modes[i].op_type == NO_OPLOCK &&
-				is_stat_open(lck->data->share_modes[i].access_mask)) {
+		if (e->op_type == NO_OPLOCK && is_stat_open(e->access_mask)) {
 			/* We ignore stat opens in the table - they
 			   always have NO_OPLOCK and never get or
 			   cause breaks. JRA. */
 			continue;
 		}
 
-		if (BATCH_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
+		if (BATCH_OPLOCK_TYPE(e->op_type)) {
 			/* batch - can only be one. */
 			if (share_mode_stale_pid(lck->data, i)) {
 				DEBUG(10, ("Found stale batch oplock\n"));
@@ -1258,10 +1273,10 @@ static void find_oplock_types(files_struct *fsp,
 			if (*pp_ex_or_batch || *pp_batch || *got_level2 || *got_no_oplock) {
 				smb_panic("Bad batch oplock entry.");
 			}
-			*pp_batch = &lck->data->share_modes[i];
+			*pp_batch = e;
 		}
 
-		if (EXCLUSIVE_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
+		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
 			if (share_mode_stale_pid(lck->data, i)) {
 				DEBUG(10, ("Found stale duplicate oplock\n"));
 				continue;
@@ -1270,10 +1285,10 @@ static void find_oplock_types(files_struct *fsp,
 			if (*pp_ex_or_batch || *got_level2 || *got_no_oplock) {
 				smb_panic("Bad exclusive or batch oplock entry.");
 			}
-			*pp_ex_or_batch = &lck->data->share_modes[i];
+			*pp_ex_or_batch = e;
 		}
 
-		if (LEVEL_II_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
+		if (LEVEL_II_OPLOCK_TYPE(e->op_type)) {
 			if (*pp_batch || *pp_ex_or_batch) {
 				if (share_mode_stale_pid(lck->data, i)) {
 					DEBUG(10, ("Found stale LevelII "
@@ -1285,7 +1300,7 @@ static void find_oplock_types(files_struct *fsp,
 			*got_level2 = true;
 		}
 
-		if (lck->data->share_modes[i].op_type == NO_OPLOCK) {
+		if (e->op_type == NO_OPLOCK) {
 			if (*pp_batch || *pp_ex_or_batch) {
 				if (share_mode_stale_pid(lck->data, i)) {
 					DEBUG(10, ("Found stale NO_OPLOCK "

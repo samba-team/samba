@@ -18,6 +18,8 @@
 #
 
 import ldb
+import samba
+import time
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
@@ -59,6 +61,8 @@ class dbcheck(object):
         self.seize_fsmo_role = False
         self.move_to_lost_and_found = False
         self.fix_instancetype = False
+        self.fix_replmetadata_zero_invocationid = False
+        self.fix_deleted_deleted_objects = False
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -97,6 +101,21 @@ class dbcheck(object):
             else:
                 self.write_ncs = None
 
+        res = self.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=['namingContexts'])
+        try:
+            ncs = res[0]["namingContexts"]
+            self.deleted_objects_containers = []
+            for nc in ncs:
+                try:
+                    dn = self.samdb.get_wellknown_dn(ldb.Dn(self.samdb, nc),
+                                                     dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+                    self.deleted_objects_containers.append(dn)
+                except KeyError:
+                    pass
+        except KeyError:
+            pass
+        except IndexError:
+            pass
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -816,6 +835,110 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
         self.samdb.set_session_info(self.system_session_info)
 
+
+    def has_replmetadata_zero_invocationid(self, dn, repl_meta_data):
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                          str(repl_meta_data))
+        ctr = repl.ctr
+        found = False
+        for o in ctr.array:
+            # Search for a zero invocationID
+            if o.originating_invocation_id != misc.GUID("00000000-0000-0000-0000-000000000000"):
+                continue
+
+            found = True
+            self.report('''ERROR: on replPropertyMetaData of %s, the instanceType on attribute 0x%08x,
+                           version %d changed at %s is 00000000-0000-0000-0000-000000000000,
+                           but should be non-zero.  Proposed fix is to set to our invocationID (%s).'''
+                        % (dn, o.attid, o.version,
+                           time.ctime(samba.nttime2unix(o.originating_change_time)),
+                           self.samdb.get_invocation_id()))
+
+        return found
+
+
+    def err_replmetadata_zero_invocationid(self, dn, attr, repl_meta_data):
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                          str(repl_meta_data))
+        ctr = repl.ctr
+        now = samba.unix2nttime(int(time.time()))
+        found = False
+        for o in ctr.array:
+            # Search for a zero invocationID
+            if o.originating_invocation_id != misc.GUID("00000000-0000-0000-0000-000000000000"):
+                continue
+
+            found = True
+            seq = self.samdb.sequence_number(ldb.SEQ_NEXT)
+            o.version = o.version + 1
+            o.originating_change_time = now
+            o.originating_invocation_id = misc.GUID(self.samdb.get_invocation_id())
+            o.originating_usn = seq
+            o.local_usn = seq
+
+        if found:
+            replBlob = ndr_pack(repl)
+            msg = ldb.Message()
+            msg.dn = dn
+
+            if not self.confirm_all('Fix %s on %s by setting originating_invocation_id on some elements to our invocationID %s?'
+                                    % (attr, dn, self.samdb.get_invocation_id()), 'fix_replmetadata_zero_invocationid'):
+                self.report('Not fixing %s on %s\n' % (attr, dn))
+                return
+
+            nmsg = ldb.Message()
+            nmsg.dn = dn
+            nmsg[attr] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, attr)
+            if self.do_modify(nmsg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"],
+                              "Failed to fix attribute %s" % attr):
+                self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
+
+
+    def is_deleted_deleted_objects(self, obj):
+        faulty = False
+        if "description" not in obj:
+            self.report("ERROR: description not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "showInAdvancedViewOnly" not in obj:
+            self.report("ERROR: showInAdvancedViewOnly not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "objectCategory" not in obj:
+            self.report("ERROR: objectCategory not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "isCriticalSystemObject" not in obj:
+            self.report("ERROR: isCriticalSystemObject not present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "isRecycled" in obj:
+            self.report("ERROR: isRecycled present on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        return faulty
+
+
+    def err_deleted_deleted_objects(self, obj):
+        nmsg = ldb.Message()
+        nmsg.dn = dn = obj.dn
+
+        if "description" not in obj:
+            nmsg["description"] = ldb.MessageElement("Container for deleted objects", ldb.FLAG_MOD_REPLACE, "description")
+        if "showInAdvancedViewOnly" not in obj:
+            nmsg["showInAdvancedViewOnly"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "showInAdvancedViewOnly")
+        if "objectCategory" not in obj:
+            nmsg["objectCategory"] = ldb.MessageElement("CN=Container,%s" % self.schema_dn, ldb.FLAG_MOD_REPLACE, "objectCategory")
+        if "isCriticalSystemObject" not in obj:
+            nmsg["isCriticalSystemObject"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isCriticalSystemObject")
+        if "isRecycled" in obj:
+            nmsg["isRecycled"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_DELETE, "isRecycled")
+
+        if not self.confirm_all('Fix Deleted Objects container %s by restoring default attributes?'
+                                % (dn), 'fix_deleted_deleted_objects'):
+            self.report('Not fixing missing/incorrect attributes on %s\n' % (dn))
+            return
+
+        if self.do_modify(nmsg, ["relax:0"],
+                          "Failed to fix Deleted Objects container  %s" % dn):
+            self.report("Fixed Deleted Objects container '%s'\n" % (dn))
+
+
     def is_fsmo_role(self, dn):
         if dn == self.samdb.domain_dn:
             return True
@@ -901,6 +1024,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 continue
 
             if str(attrname).lower() == 'replpropertymetadata':
+                if self.has_replmetadata_zero_invocationid(dn, obj[attrname]):
+                    error_count += 1
+                    self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname])
+                    # We don't continue, as we may also have other fixes for this attribute
+                    # based on what other attributes we see.
+
                 list_attrs_from_md = self.process_metadata(obj[attrname])
                 got_repl_property_meta_data = True
                 continue
@@ -978,6 +1107,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if str(attrname).lower() == "instancetype":
                 calculated_instancetype = self.calculate_instancetype(dn)
                 if len(obj["instanceType"]) != 1 or obj["instanceType"][0] != str(calculated_instancetype):
+                    error_count += 1
                     self.err_wrong_instancetype(obj, calculated_instancetype)
 
         show_dn = True
@@ -1026,6 +1156,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 error_count += 1
             else:
                 raise
+
+        if dn in self.deleted_objects_containers and '*' in attrs:
+            if self.is_deleted_deleted_objects(obj):
+                self.err_deleted_deleted_objects(obj)
+                error_count += 1
 
         return error_count
 

@@ -23,6 +23,12 @@ interface open_files
 		uint32		uid;
 		uint16		flags;
 		uint32		name_hash;
+
+		/*
+		 * In-memory flag indicating a non-existing pid. We don't want
+		 * to store this share_mode_entry on disk.
+		 */
+		[skip] boolean8	stale;
 	} share_mode_entry;
 
 	typedef [public] struct {
@@ -42,8 +48,8 @@ interface open_files
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
 		timespec old_write_time;
 		timespec changed_write_time;
-		uint8 fresh;
-		uint8 modified;
+		[skip] boolean8 fresh;
+		[skip] boolean8 modified;
 		[ignore] db_record *record;
 	} share_mode_data;
 

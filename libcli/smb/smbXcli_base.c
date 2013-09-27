@@ -737,6 +737,14 @@ static uint16_t smb1cli_alloc_mid(struct smbXcli_conn *conn)
 	size_t num_pending = talloc_array_length(conn->pending);
 	uint16_t result;
 
+	if (conn->protocol == PROTOCOL_NONE) {
+		/*
+		 * This is what windows sends on the SMB1 Negprot request
+		 * and some vendors reuse the SMB1 MID as SMB2 sequence number.
+		 */
+		return 0;
+	}
+
 	while (true) {
 		size_t i;
 
@@ -4732,9 +4740,15 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	struct smbXcli_conn *conn = session->conn;
 	uint16_t no_sign_flags;
 	uint8_t session_key[16];
+	bool check_signature = true;
+	uint32_t hdr_flags;
 	NTSTATUS status;
 
 	if (conn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (recv_iov[0].iov_len != SMB2_HDR_BODY) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
@@ -4829,11 +4843,30 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = smb2_signing_check_pdu(session->smb2_channel.signing_key,
-					session->conn->protocol,
-					recv_iov, 3);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	check_signature = conn->mandatory_signing;
+
+	hdr_flags = IVAL(recv_iov[0].iov_base, SMB2_HDR_FLAGS);
+	if (hdr_flags & SMB2_HDR_FLAG_SIGNED) {
+		/*
+		 * Sadly some vendors don't sign the
+		 * final SMB2 session setup response
+		 *
+		 * At least Windows and Samba are always doing this
+		 * if there's a session key available.
+		 *
+		 * We only check the signature if it's mandatory
+		 * or SMB2_HDR_FLAG_SIGNED is provided.
+		 */
+		check_signature = true;
+	}
+
+	if (check_signature) {
+		status = smb2_signing_check_pdu(session->smb2_channel.signing_key,
+						session->conn->protocol,
+						recv_iov, 3);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	session->smb2->should_sign = false;

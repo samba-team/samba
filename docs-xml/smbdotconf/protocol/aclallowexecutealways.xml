@@ -1,0 +1,26 @@
+<samba:parameter name="acl allow execute always"
+                 context="S"
+                 type="boolean"
+                 advanced="1" wizard="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+    This boolean parameter controls the behaviour of <citerefentry><refentrytitle>smbd</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> when receiving a protocol request of "open for execution"
+    from a Windows client.
+    With Samba 3.6 and older, the execution right in the ACL was not checked, so a client
+    could execute a file even if it did not have execute rights on the file. In Samba 4.0,
+    this has been fixed, so that by default, i.e. when this parameter is set to "False",
+    "open for execution" is now denied when execution permissions are not present.
+    </para>
+    <para>
+    If this parameter is set to "True", Samba does not check execute permissions on
+    "open for execution", thus re-establishing the behaviour of Samba 3.6.
+    This can be useful to smoothen upgrades from older Samba versions to 4.0 and newer.
+    This setting is not not meant to be used as a permanent setting, but as a temporary relief:
+    It is recommended to fix the permissions in the ACLs and reset this parameter to the
+    default after a certain transition period.
+    </para>
+</description>
+<value type="default">False</value>
+</samba:parameter>

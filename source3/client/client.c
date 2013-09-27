@@ -1709,7 +1709,16 @@ static int do_allinfo(const char *name)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s getting alt name for %s\n", nt_errstr(status),
 			 name);
-		return false;
+		/*
+		 * Ignore not supported or not implemented, it does not
+		 * hurt if we can't list alternate names.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			altname[0] = '\0';
+		} else {
+			return false;
+		}
 	}
 	d_printf("altname: %s\n", altname);
 
