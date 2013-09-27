@@ -288,8 +288,6 @@ static struct loadparm_service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
 static struct db_context *ServiceHash;
-static int *invalid_services = NULL;
-static int num_invalid_services = 0;
 static bool bInGlobalSection = true;
 static bool bGlobalOnly = false;
 
@@ -1533,7 +1531,6 @@ static void free_service_byindex(int idx)
 		return;
 
 	ServicePtrs[idx]->valid = false;
-	invalid_services[num_invalid_services++] = idx;
 
 	/* we have to cleanup the hash record */
 
@@ -1560,6 +1557,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 	int i;
 	struct loadparm_service tservice;
 	int num_to_alloc = iNumServices + 1;
+	struct loadparm_service **tsp = NULL;
 
 	tservice = *pservice;
 
@@ -1571,42 +1569,20 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		}
 	}
 
-	/* find an invalid one */
-	i = iNumServices;
-	if (num_invalid_services > 0) {
-		i = invalid_services[--num_invalid_services];
-	}
-
 	/* if not, then create one */
-	if (i == iNumServices) {
-		struct loadparm_service **tsp;
-		int *tinvalid;
-
-		tsp = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(ServicePtrs, struct loadparm_service *, num_to_alloc);
-		if (tsp == NULL) {
-			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
-			return (-1);
-		}
-		ServicePtrs = tsp;
-		ServicePtrs[iNumServices] = talloc(NULL, struct loadparm_service);
-		if (!ServicePtrs[iNumServices]) {
-			DEBUG(0,("add_a_service: out of memory!\n"));
-			return (-1);
-		}
-		iNumServices++;
-
-		/* enlarge invalid_services here for now... */
-		tinvalid = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(invalid_services, int,
-					     num_to_alloc);
-		if (tinvalid == NULL) {
-			DEBUG(0,("add_a_service: failed to enlarge "
-				 "invalid_services!\n"));
-			return (-1);
-		}
-		invalid_services = tinvalid;
-	} else {
-		free_service_byindex(i);
+	i = iNumServices;
+	tsp = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(ServicePtrs, struct loadparm_service *, num_to_alloc);
+	if (tsp == NULL) {
+		DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
+		return (-1);
 	}
+	ServicePtrs = tsp;
+	ServicePtrs[iNumServices] = talloc(NULL, struct loadparm_service);
+	if (!ServicePtrs[iNumServices]) {
+		DEBUG(0,("add_a_service: out of memory!\n"));
+		return (-1);
+	}
+	iNumServices++;
 
 	ServicePtrs[i]->valid = true;
 
@@ -5277,7 +5253,6 @@ bool lp_preferred_master(void)
 void lp_remove_service(int snum)
 {
 	ServicePtrs[snum]->valid = false;
-	invalid_services[num_invalid_services++] = snum;
 }
 
 /*******************************************************************
