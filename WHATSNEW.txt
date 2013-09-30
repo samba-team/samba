@@ -11,6 +11,10 @@ Major enhancements in Samba 4.0.10 include:
 o  NetBIOS related samba process consumes 100% CPU (bug #10158).
 o  Fix POSIX ACL mapping when setting DENY ACE's from Windows (bug #10162).
 
+To ease upgrades from Samba 3.6 and older, a new parameter called "acl allow
+execute always" has been introduced as a temporary workaround. Please see the
+smb.conf man page for details.
+
 
 Changes since 4.0.9:
 --------------------
