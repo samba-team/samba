@@ -1,3 +1,128 @@
+                   ==============================
+                   Release Notes for Samba 4.0.10
+                           October 1, 2013
+                   ==============================
+
+
+This is is the latest stable release of Samba 4.0.
+
+Major enhancements in Samba 4.0.10 include:
+
+o  NetBIOS related samba process consumes 100% CPU (bug #10158).
+o  Fix POSIX ACL mapping when setting DENY ACE's from Windows (bug #10162).
+
+
+Changes since 4.0.9:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10134: Ease file server upgrades from 3.6 and earlier with "acl allow
+      execute always".
+    * BUG 10169: Fix build error in scavenger.c.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5917: Make Samba work on site with Read Only Domain Controller.
+    * BUG 9166: Starting smbd or nmbd with stdin from /dev/null results in
+      "EOF on stdin".
+    * BUG 10063: source3/lib/util.c:1493 leaking memory w/ pam_winbind.so /
+      winbind.
+    * BUG 10121: Masks incorrectly applied to UNIX extension permission changes.
+    * BUG 10139: Valid utf8 filenames cause "invalid conversion error"
+      messages.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG #9911 - Build Samba 4.0.x on AIX with IBM XL C/C++.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8077: dsdb: Convert the full string from UTF16 to UTF8, including
+      embedded NULLs.
+    * BUG 9091: When replicating DNS for bind9_dlz we need to create the
+      server-DNS account remotely.
+    * BUG 9461: python-samba-tool fsmo: Do not give an error on a successful
+      role transfer.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9615: s3-winbindd: fix fallback to ncacn_np in cm_connect_lsat().
+    * BUG 9899: s3-winbindd: fix fallback to ncacn_np in cm_connect_lsat().
+    * BUG 10147: Better document potential implications of a globally used
+      "valid users".
+
+
+o   Korobkin <korobkin+samba@gmail.com>
+    * BUG 10118: Samba is chatty about being unable to open a printer.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 9599: samba-tool/dns: Pass on additional flags when creating zones.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10086: smbd: Fix async echo handler forking.
+    * BUG 10106: Honour output buffer length set by the client for SMB2
+      GetInfo requests.
+    * BUG 10114: Dropbox (write-only-directory) case isn't handled correctly in
+      pathname lookup.
+
+
+o   Daniel Liberman <danielvl@gmail.com>
+    * BUG 10162: Fix POSIX ACL mapping when setting DENY ACE's from Windows.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9802: Move gencache.tdb to /var/cache/samba.
+    * BUG 10030: ::1 added to nameserver on join.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 10158: NetBIOS related samba process consumes 100% CPU.
+
+
+o   Christof Schmitt <christof.schmitt@us.ibm.com>
+    * BUG 10137: vfs_shadow_copy2 does not display previous versions correctly
+      over SMB2.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 10076: docs: Fix variable list in man vfs_crossrename.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 10097 - MacOSX 10.9 will not follow path-based DFS referrals handed
+      out by Samba.
+
+
+o   Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+    * BUG 10106: Honour output buffer length set by the client for SMB2
+      GetInfo requests.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
                    =============================
                    Release Notes for Samba 4.0.9
                           August 20, 2013
@@ -105,8 +230,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.8
