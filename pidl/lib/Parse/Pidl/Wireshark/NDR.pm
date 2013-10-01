@@ -1000,13 +1000,19 @@ sub Initialize($$)
 	$self->register_type("NTTIME_hyper", "offset = dissect_ndr_nt_NTTIME(tvb, offset, pinfo, tree, drep, \@HF\@);","FT_ABSOLUTE_TIME", "ABSOLUTE_TIME_LOCAL", 0, "NULL", 4);
 	$self->register_type("time_t", "offset = dissect_ndr_time_t(tvb, offset, pinfo,tree, drep, \@HF\@, NULL);","FT_ABSOLUTE_TIME", "ABSOLUTE_TIME_LOCAL", 0, "NULL", 4);
 	$self->register_type("NTTIME_1sec", "offset = dissect_ndr_nt_NTTIME(tvb, offset, pinfo, tree, drep, \@HF\@);", "FT_ABSOLUTE_TIME", "ABSOLUTE_TIME_LOCAL", 0, "NULL", 4);
-	$self->register_type("SID", "
+	$self->register_type("dom_sid28", "{
+		dcerpc_info *di = (dcerpc_info *)pinfo->private_data;
+		di->hf_index = \@HF\@;
+
+		offset = dissect_ndr_nt_SID28(tvb, offset, pinfo, tree, drep);
+	}", "FT_STRING", "BASE_NONE", 0, "NULL", 4);
+	$self->register_type("SID", "{
 		dcerpc_info *di = (dcerpc_info *)pinfo->private_data;
 
 		di->hf_index = \@HF\@;
 
 		offset = dissect_ndr_nt_SID_with_options(tvb, offset, pinfo, tree, drep, param);
-	","FT_STRING", "BASE_NONE", 0, "NULL", 4);
+	}", "FT_STRING", "BASE_NONE", 0, "NULL", 4);
 	$self->register_type("WERROR", 
 		"offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);","FT_UINT32", "BASE_DEC", 0, "VALS(WERR_errors)", 4);
 	$self->register_type("NTSTATUS", 
