@@ -955,7 +955,7 @@ static int idmap_autorid_visit_domain_range(struct db_record *rec,
 		goto done;
 	}
 
-	if (strcmp(domsid, vi->domsid) != 0) {
+	if ((vi->domsid != NULL) && (strcmp(domsid, vi->domsid) != 0)) {
 		DEBUG(10, ("key sid '%s' does not match requested sid '%s'.\n",
 			   domsid, vi->domsid));
 		goto done;
@@ -998,9 +998,7 @@ static NTSTATUS idmap_autorid_iterate_domain_ranges_int(struct db_context *db,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (domsid == NULL) {
-		DEBUG(1, ("Error: no domain sid provided\n"));
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto done;
+		DEBUG(10, ("No sid provided, operating on all ranges\n"));
 	}
 
 	if (fn == NULL) {
