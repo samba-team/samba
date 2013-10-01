@@ -622,6 +622,30 @@ done:
 	return ret;
 }
 
+static bool parse_uint32(const char *str, uint32_t *result)
+{
+	unsigned long val;
+	char *endptr;
+
+	val = strtoul(str, &endptr, 10);
+
+	if (str == endptr) {
+		return false;
+	}
+	if (*endptr != '\0') {
+		return false;
+	}
+	if ((val == ULONG_MAX) && (errno == ERANGE)) {
+		return false;
+	}
+	if ((val & UINT32_MAX) != val) {
+		/* overflow */
+		return false;
+	}
+	*result = val;		/* Potential crop */
+	return true;
+}
+
 static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
