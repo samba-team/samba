@@ -414,6 +414,29 @@ sub ElementLevel($$$$$$$$)
 	}
 }
 
+sub SwitchType($$;$)
+{
+	my ($e, $type, $nodiscriminant) = @_;
+
+	my $switch_dt =  getType($type);
+	my $switch_type = undef;
+	if ($switch_dt->{DATA}->{TYPE} eq "ENUM") {
+		$switch_type = Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
+	} elsif ($switch_dt->{DATA}->{TYPE} eq "BITMAP") {
+		$switch_type = Parse::Pidl::Typelist::bitmap_type_fn($switch_dt->{DATA});
+	} elsif ($switch_dt->{DATA}->{TYPE} eq "SCALAR") {
+		if (defined $e->{SWITCH_TYPE}) {
+			$switch_type = "$e->{SWITCH_TYPE}";
+		} else {
+			$switch_type = "$switch_dt->{DATA}->{NAME}";
+		}
+	} elsif (not defined $e->{SWITCH_TYPE}) {
+		$switch_type = $nodiscriminant;
+	}
+
+	return $switch_type
+}
+
 sub Element($$$$$)
 {
 	my ($self,$e,$pn,$ifname,$isoruseswitch) = @_;
@@ -426,13 +449,12 @@ sub Element($$$$$)
 		my $type = $isoruseswitch->[0];
 		my $name = $isoruseswitch->[1];
 
-		my $switch_dt =  getType($type);
-		my $switch_type;
-		if ($switch_dt->{DATA}->{TYPE} eq "ENUM") {
-			$switch_type = "g".Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
-		} elsif ($switch_dt->{DATA}->{TYPE} eq "SCALAR") {
-			$switch_type = "g$e->{SWITCH_TYPE}";
+		my $switch_raw_type = SwitchType($e, $type, "uint32");
+		if (not defined($switch_raw_type)) {
+			die("Unknown type[$type]\n");
 		}
+		my $switch_type = "g${switch_raw_type}";
+
 		$moreparam = ", $switch_type *".$name;
 		$param = $name;
 		$call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, drep, &$name);";
@@ -632,13 +654,11 @@ sub Struct($$$$)
 		my $v = $_->{NAME};
 		if (scalar(grep {/^$v$/} keys(%$varswitchs)) == 1) {
 			# This element is one of the switch attribute
-			my $switch_dt =  getType($_->{TYPE});
-			my $switch_type;
-			if ($switch_dt->{DATA}->{TYPE} eq "ENUM") {
-				$switch_type = "g".Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
-			} elsif ($switch_dt->{DATA}->{TYPE} eq "SCALAR") {
-				$switch_type = "g$e->{SWITCH_TYPE}";
+			my $switch_raw_type = SwitchType($e, $_->{TYPE}, "uint32");
+			if (not defined($switch_raw_type)) {
+				die("Unknown type[$_->{TYPE}]\n");
 			}
+			my $switch_type = "g${switch_raw_type}";
 
 			push @$vars, "$switch_type $v;";
 			$switch_info = [ $_->{TYPE}, $v ];
@@ -741,15 +761,12 @@ sub Union($$$$)
 		$res.="\t\tbreak;\n";
 	}
 
-	my $switch_type;
-	my $switch_dissect;
-	my $switch_dt = getType($e->{SWITCH_TYPE});
-	if ($switch_dt->{DATA}->{TYPE} eq "ENUM") {
-		$switch_type = "g".Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
-		$switch_dissect = "dissect_ndr_" .Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
-	} elsif ($switch_dt->{DATA}->{TYPE} eq "SCALAR") {
-		$switch_type = "g$e->{SWITCH_TYPE}";
-		$switch_dissect = "dissect_ndr_$e->{SWITCH_TYPE}";
+	my $switch_type = undef;
+	my $switch_dissect = undef;
+	my $switch_raw_type = SwitchType($e, $e->{SWITCH_TYPE});
+	if (defined($switch_raw_type)) {
+		$switch_type = "g${switch_raw_type}";
+		$switch_dissect = "dissect_ndr_${switch_raw_type}";
 	}
 
 	$self->pidl_fn_start($dissectorname);
