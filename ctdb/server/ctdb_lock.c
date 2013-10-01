@@ -495,7 +495,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 				    struct timeval current_time,
 				    void *private_data)
 {
-	const char *cmd = getenv("CTDB_DEBUG_LOCKS");
+	static const char * debug_locks = NULL;
 	struct lock_context *lock_ctx;
 	struct ctdb_context *ctdb;
 	pid_t pid;
@@ -515,12 +515,24 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		       timeval_elapsed(&lock_ctx->start_time)));
 	}
 
-	/* fire a child process to find the blocking process */
-	if (cmd != NULL) {
+	/* Fire a child process to find the blocking process. */
+	if (debug_locks == NULL) {
+		debug_locks = getenv("CTDB_DEBUG_LOCKS");
+		if (debug_locks == NULL) {
+			debug_locks = talloc_asprintf(ctdb,
+						      "%s/debug_locks.sh",
+						      getenv("CTDB_BASE"));
+		}
+	}
+	if (debug_locks != NULL) {
 		pid = fork();
 		if (pid == 0) {
-			execl(cmd, cmd, NULL);
+			execl(debug_locks, debug_locks, NULL);
 		}
+	} else {
+		DEBUG(DEBUG_WARNING,
+		      (__location__
+		       " Unable to setup lock debugging - no memory?\n"));
 	}
 
 	/* reset the timeout timer */
