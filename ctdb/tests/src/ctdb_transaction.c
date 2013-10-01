@@ -49,7 +49,7 @@ static unsigned int pnn;
 
 static TDB_DATA old_data;
 
-static int success = true;
+static bool success = false;
 
 static void print_counters(void)
 {
@@ -78,6 +78,7 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 {
 	int i;
 	uint32_t *counters, *old_counters;
+	bool monotonous = true;
 
 	counters     = (uint32_t *)data.dptr;
 	old_counters = (uint32_t *)old_data.dptr;
@@ -87,7 +88,7 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 		if (counters[i]<old_counters[i]) {
 			printf("[%4u] ERROR: counters has decreased for node %u  From %u to %u\n", 
 			       getpid(), i, old_counters[i], counters[i]);
-			success = false;
+			monotonous = false;
 		}
 	}
 
@@ -98,6 +99,8 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 
 	memcpy(old_data.dptr, data.dptr, data.dsize);
 	if (verbose) print_counters();
+
+	success = monotonous;
 }
 
 
