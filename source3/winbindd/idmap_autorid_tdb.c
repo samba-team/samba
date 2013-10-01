@@ -34,8 +34,8 @@ static void idmap_autorid_build_keystr(const char *domsid,
 				       fstring keystr)
 {
 	if (domain_range_index > 0) {
-		snprintf(keystr, FSTRING_LEN, "%s#%"PRIu32,
-			 domsid, domain_range_index);
+		fstr_sprintf(keystr, "%s#%"PRIu32,
+			     domsid, domain_range_index);
 	} else {
 		fstrcpy(keystr, domsid);
 	}
