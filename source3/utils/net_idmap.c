@@ -1175,9 +1175,9 @@ static void net_idmap_autorid_get_ranges_usage(void)
 {
 	d_printf("%s\n%s",
 		 _("Usage:"),
-		 _("net idmap get ranges <SID> [--db=<inputfile>]\n"
+		 _("net idmap get ranges [<SID>] [--db=<inputfile>]\n"
 		   "  Get all ranges for a given domain.\n"
-		   "    SID\t\tSID of the domain\n"
+		   "    SID\t\tSID of the domain - list all ranges if omitted\n"
 		   "    inputfile\tTDB file to add mapping to.\n"));
 }
 
@@ -1195,12 +1195,14 @@ static int net_idmap_autorid_get_ranges(struct net_context *c, int argc,
 		return 0;
 	}
 
-	if (argc != 1) {
+	if (argc == 0) {
+		domsid = NULL;
+	} else if (argc == 1) {
+		domsid = argv[0];
+	} else {
 		net_idmap_autorid_get_ranges_usage();
 		return -1;
 	}
-
-	domsid = argv[0];
 
 	mem_ctx = talloc_stackframe();
 	if (!net_idmap_opendb_autorid(mem_ctx, c, true, &db)) {
