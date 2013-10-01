@@ -9,6 +9,7 @@ This is is the latest stable release of Samba 4.0.
 Major enhancements in Samba 4.0.10 include:
 
 o  NetBIOS related samba process consumes 100% CPU (bug #10158).
+o  smbd: Clean up share modes after hard crash (bug #10138).
 o  Fix POSIX ACL mapping when setting DENY ACE's from Windows (bug #10162).
 
 To ease upgrades from Samba 3.6 and older, a new parameter called "acl allow
@@ -70,6 +71,7 @@ o   Volker Lendecke <vl@samba.org>
       GetInfo requests.
     * BUG 10114: Dropbox (write-only-directory) case isn't handled correctly in
       pathname lookup.
+    * BUG 10138: smbd: Clean up share modes after hard crash.
 
 
 o   Daniel Liberman <danielvl@gmail.com>
