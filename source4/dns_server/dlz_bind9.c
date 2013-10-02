@@ -36,12 +36,18 @@
 #include "gen_ndr/server_id.h"
 #include "messaging/messaging.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/util/dlinklist.h"
 #include "dlz_minimal.h"
 
 
 struct b9_options {
 	const char *url;
 	const char *debug;
+};
+
+struct b9_zone {
+	char *name;
+	struct b9_zone *prev, *next;
 };
 
 struct dlz_bind9_data {
@@ -51,6 +57,7 @@ struct dlz_bind9_data {
 	struct loadparm_context *lp;
 	int *transaction_token;
 	uint32_t soa_serial;
+	struct b9_zone *zonelist;
 
 	/* Used for dynamic update */
 	struct smb_krb5_context *smb_krb5_ctx;
@@ -1099,6 +1106,42 @@ static bool b9_has_soa(struct dlz_bind9_data *state, struct ldb_dn *dn, const ch
 	return false;
 }
 
+static bool b9_zone_add(struct dlz_bind9_data *state, const char *name)
+{
+	struct b9_zone *zone;
+
+	zone = talloc_zero(state, struct b9_zone);
+	if (zone == NULL) {
+		return false;
+	}
+
+	zone->name = talloc_strdup(zone, name);
+	if (zone->name == NULL) {
+		talloc_free(zone);
+		return false;
+	}
+
+	DLIST_ADD(state->zonelist, zone);
+	return true;
+}
+
+static bool b9_zone_exists(struct dlz_bind9_data *state, const char *name)
+{
+	struct b9_zone *zone = state->zonelist;
+	bool found = false;
+
+	while (zone != NULL) {
+		if (strcasecmp(name, zone->name) == 0) {
+			found = true;
+			break;
+		}
+		zone = zone->next;
+	}
+
+	return found;
+}
+
+
 /*
   configure a writeable zone
  */
@@ -1161,6 +1204,18 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 			if (!b9_has_soa(state, zone_dn, zone)) {
 				continue;
 			}
+
+			if (b9_zone_exists(state, zone)) {
+				state->log(ISC_LOG_WARNING, "samba_dlz: Ignoring duplicate zone '%s' from '%s'",
+					   zone, ldb_dn_get_linearized(zone_dn));
+				continue;
+			}
+
+			if (!b9_zone_add(state, zone)) {
+				talloc_free(tmp_ctx);
+				return ISC_R_NOMEMORY;
+			}
+
 			result = state->writeable_zone(view, zone);
 			if (result != ISC_R_SUCCESS) {
 				state->log(ISC_LOG_ERROR, "samba_dlz: Failed to configure zone '%s'",
