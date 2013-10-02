@@ -743,8 +743,8 @@ bool idmap_autorid_parse_configstr(const char *configstr,
 		   "minvalue:%lu rangesize:%lu maxranges:%lu",
 		   &minvalue, &rangesize, &maxranges) != 3) {
 		DEBUG(1,
-		      ("Found invalid configuration data"
-		       "creating new config\n"));
+		      ("Found invalid configuration data. "
+		       "Creating new config\n"));
 		return false;
 	}
 
