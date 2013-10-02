@@ -645,7 +645,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	 * When we get here we might have a brlock entry locked. Also
 	 * locking the share mode entry would violate the locking
 	 * order. Breaking level2 oplocks to none is asynchronous
-	 * anyway, so we postpone this into an immediate timed event.
+	 * anyway, so we postpone this into an immediate event.
 	 */
 
 	state = talloc(sconn, struct break_to_none_state);
