@@ -57,9 +57,9 @@ static struct {
 	.transport = "tcp",
 	.event_script_dir = NULL,
 	.logfile = LOGDIR "/log.ctdb",
-	.db_dir = VARDIR "/ctdb",
-	.db_dir_persistent = VARDIR "/ctdb/persistent",
-	.db_dir_state = VARDIR "/ctdb/state",
+	.db_dir = CTDB_VARDIR,
+	.db_dir_persistent = CTDB_VARDIR "/persistent",
+	.db_dir_state = CTDB_VARDIR "/state",
 	.script_log_level = DEBUG_ERR,
 };
 

@@ -65,6 +65,7 @@ endif
 CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        $(TALLOC_CFLAGS) $(TEVENT_CFLAGS) $(TDB_CFLAGS) -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
+	-DCTDB_VARDIR=\"$(localstatedir)/lib/ctdb\" \
 	-DLOGDIR=\"$(logdir)\" -DBINDIR=\"$(bindir)\" \
 	-DSOCKPATH=\"$(sockpath)\" \
 	-DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS) \
