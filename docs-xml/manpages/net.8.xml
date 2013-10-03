@@ -1392,7 +1392,7 @@ Restore the mappings from the specified file or stdin.
 </refsect2>
 
 <refsect2>
-<title>IDMAP SECRET &lt;DOMAIN&gt; &lt;secret&gt;</title>
+<title>IDMAP SET SECRET &lt;DOMAIN&gt; &lt;secret&gt;</title>
 
 <para>
 Store a secret for the specified domain, used primarily for domains
@@ -1403,8 +1403,53 @@ as the password for the user DN used to bind to the ldap server.
 </refsect2>
 
 <refsect2>
+<title>IDMAP SET RANGE &lt;RANGE&gt; &lt;SID&gt; [index] [--db=&lt;DB&gt;]</title>
 
-<title>IDMAP DELETE [-f] [--db=&lt;DB&gt;] &lt;ID&gt;</title>
+<para>
+Store a domain-range mapping for a given domain (and index) in autorid database.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>IDMAP SET CONFIG &lt;config&gt; [--db=&lt;DB&gt;]</title>
+
+<para>
+Update CONFIG entry in autorid database.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>IDMAP GET RANGE &lt;SID&gt; [index] [--db=&lt;DB&gt;]</title>
+
+<para>
+Get the range for a given domain and index from autorid database.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>IDMAP GET RANGES [&lt;SID&gt;] [--db=&lt;DB&gt;]</title>
+
+<para>
+Get ranges for all domains or for one identified by given SID.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>IDMAP GET CONFIG [--db=&lt;DB&gt;]</title>
+
+<para>
+Get CONFIG entry from autorid database.
+</para>
+
+</refsect2>
+
+<refsect2>
+
+<title>IDMAP DELETE MAPPING [-f] [--db=&lt;DB&gt;] &lt;ID&gt;</title>
 
 <para>
 Delete a mapping sid &lt;-&gt; gid or sid &lt;-&gt; uid from the IDMAP database.
@@ -1416,6 +1461,26 @@ Use -f to delete an invalid partial mapping &lt;ID&gt; -&gt; xx
   See the <citerefentry><refentrytitle>smbcontrol</refentrytitle>
   <manvolnum>1</manvolnum></citerefentry> manpage for details.
 </para>
+</refsect2>
+
+<refsect2>
+<title>IDMAP DELETE RANGE [-f] [--db=&lt;TDB&gt;] &lt;RANGE&gt;|(&lt;SID&gt; [&lt;INDEX&gt;])</title>
+
+<para>
+Delete a domain range mapping identified by 'RANGE' or "domain SID and INDEX" from autorid database.
+Use -f to delete invalid mappings.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>IDMAP DELETE RANGES [-f] [--db=&lt;TDB&gt;] &lt;SID&gt;</title>
+
+<para>
+Delete all domain range mappings for a domain identified by SID.
+Use -f to delete invalid mappings.
+</para>
+
 </refsect2>
 
 <refsect2>
