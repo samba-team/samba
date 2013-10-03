@@ -119,6 +119,7 @@ struct shadow_copy2_config {
 	bool snapdir_absolute;
 	char *basedir;
 	char *mount_point;
+	char *rel_connectpath; /* share root, relative to the basedir */
 };
 
 static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
@@ -1737,8 +1738,19 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		config->basedir = config->mount_point;
 	}
 
+	if (strlen(config->basedir) != strlen(handle->conn->connectpath)) {
+		config->rel_connectpath = talloc_strdup(config,
+			handle->conn->connectpath + strlen(config->basedir));
+		if (config->rel_connectpath == NULL) {
+			DEBUG(0, ("talloc_strdup() failed\n"));
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
 	if (config->snapdir[0] == '/') {
 		config->snapdir_absolute = true;
+
 		if (config->snapdirseverywhere == true) {
 			DEBUG(1, (__location__ " Warning: An absolute snapdir "
 				  "is incompatible with 'snapdirseverywhere', "
