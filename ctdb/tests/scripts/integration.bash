@@ -608,10 +608,6 @@ daemons_start ()
     for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
 	daemons_start_1 $i "$@"
     done
-
-    if [ -L /tmp/ctdb.socket -o ! -S /tmp/ctdb.socket ] ; then 
-	ln -sf "${TEST_VAR_DIR}/sock.0" /tmp/ctdb.socket || return 1
-    fi
 }
 
 #######################################

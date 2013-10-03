@@ -24,7 +24,7 @@
 #ifdef SOCKPATH
 #define CTDB_PATH 	SOCKPATH
 #else
-#define CTDB_PATH 	"/tmp/ctdb.socket"
+#define CTDB_PATH 	"/var/run/ctdb/ctdbd.socket"
 #endif
 
 /* default ctdb port number */

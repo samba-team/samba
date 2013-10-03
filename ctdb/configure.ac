@@ -72,9 +72,9 @@ if test ! -z "$LOGDIR"; then
 fi
 AC_SUBST(LOGDIR)
 
-SOCKPATH='/tmp/ctdb.socket'
+SOCKPATH='${localstatedir}/run/ctdb/ctdbd.socket'
 AC_ARG_WITH([socketpath],
-	[  --with-socketpath=FILE       path to CTDB daemon socket [[/tmp/ctdb.socket]]],
+	[  --with-socketpath=FILE       path to CTDB daemon socket [[LOCALSTATEDIR/run/ctdb/ctdbd.socket]]],
 	SOCKPATH=$withval)
 if test ! -z "$SOCKPATH"; then
   if test "$SOCKPATH" = "yes" -o "$SOCKPATH" = "no"; then

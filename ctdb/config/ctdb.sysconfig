@@ -108,8 +108,8 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # CTDB_EVENT_SCRIPT_DIR=/etc/ctdb/events.d
 
 # the location of the local ctdb socket
-# defaults to /tmp/ctdb.socket
-# CTDB_SOCKET=/tmp/ctdb.socket
+# defaults to /var/run/ctdb/ctdbd.socket
+# CTDB_SOCKET=/var/run/ctdb/ctdbd.socket
 
 # what transport to use. Only tcp is currently supported
 # defaults to tcp
