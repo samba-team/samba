@@ -1395,14 +1395,6 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			   "  Delete entries from the ID mapping database")
 		},
 		{
-			"secret",
-			net_idmap_secret,
-			NET_TRANSPORT_LOCAL,
-			N_("Set secret for specified domain"),
-			N_("net idmap secret <DOMAIN> <secret>\n"
-			   "  Set secret for specified domain")
-		},
-		{
 			"check",
 			net_idmap_check,
 			NET_TRANSPORT_LOCAL,
