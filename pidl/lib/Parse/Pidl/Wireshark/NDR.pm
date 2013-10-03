@@ -338,12 +338,13 @@ sub ElementLevel($$$$$$$$)
 			my $call;
 
 			if ($self->{conformance}->{imports}->{$l->{DATA_TYPE}}) {
-				$call = $self->{conformance}->{imports}->{$l->{DATA_TYPE}}->{DATA};	
+				$call = $self->{conformance}->{imports}->{$l->{DATA_TYPE}}->{DATA};
 				$self->{conformance}->{imports}->{$l->{DATA_TYPE}}->{USED} = 1;
- 		        } elsif (defined($self->{conformance}->{imports}->{"$pn.$e->{NAME}"})) {
- 			        $call = $self->{conformance}->{imports}->{"$pn.$e->{NAME}"}->{DATA};
+
+			} elsif (defined($self->{conformance}->{imports}->{"$pn.$e->{NAME}"})) {
+				$call = $self->{conformance}->{imports}->{"$pn.$e->{NAME}"}->{DATA};
 				$self->{conformance}->{imports}->{"$pn.$e->{NAME}"}->{USED} = 1;
-			    
+
 			} elsif (defined($self->{conformance}->{types}->{$l->{DATA_TYPE}})) {
 				$call= $self->{conformance}->{types}->{$l->{DATA_TYPE}}->{DISSECTOR_NAME};
 				$self->{conformance}->{types}->{$l->{DATA_TYPE}}->{USED} = 1;
