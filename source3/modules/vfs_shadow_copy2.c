@@ -120,6 +120,7 @@ struct shadow_copy2_config {
 	char *basedir;
 	char *mount_point;
 	char *rel_connectpath; /* share root, relative to the basedir */
+	char *snapshot_basepath; /* the absolute version of snapdir */
 };
 
 static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
@@ -1761,6 +1762,16 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				  "is not supported with an absolute snapdir. "
 				  "Disabling it.\n"));
 			config->crossmountpoints = false;
+		}
+
+		config->snapshot_basepath = config->snapdir;
+	} else {
+		config->snapshot_basepath = talloc_asprintf(config, "%s/%s",
+				config->mount_point, config->snapdir);
+		if (config->snapshot_basepath == NULL) {
+			DEBUG(0, ("talloc_asprintf() failed\n"));
+			errno = ENOMEM;
+			return -1;
 		}
 	}
 
