@@ -737,7 +737,7 @@ static void net_idmap_autorid_delete_ranges_usage(void)
 {
 	d_printf("%s\n%s",
 		 _("Usage:"),
-		 _("net idmap delete ranges [-f] [--db=<TDB>] <SID>)\n"
+		 _("net idmap delete ranges [-f] [--db=<TDB>] <SID>\n"
 		   "  Delete all domain range mappings for a given domain.\n"
 		   "    -f\tforce\n"
 		   "    TDB\tidmap database\n"
@@ -814,7 +814,7 @@ static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 			"ranges",
 			net_idmap_autorid_delete_ranges,
 			NET_TRANSPORT_LOCAL,
-			N_("Delete all domain range mapping for a given "
+			N_("Delete all domain range mappings for a given "
 			   "domain"),
 			N_("net idmap delete ranges <SID>\n"
 			   "  Delete a domain range mapping")
