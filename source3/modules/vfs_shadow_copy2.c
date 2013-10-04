@@ -1032,7 +1032,8 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 	ZERO_STRUCT(timestamp);
 	if (lp_parm_bool(SNUM(handle->conn), "shadow", "sscanf", false)) {
 		if (sscanf(name, fmt, &timestamp_long) != 1) {
-			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: no sscanf match %s: %s\n",
+			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: "
+				   "no sscanf match %s: %s\n",
 				   fmt, name));
 			return false;
 		}
@@ -1040,11 +1041,13 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 		gmtime_r(&timestamp_t, &timestamp);
 	} else {
 		if (strptime(name, fmt, &timestamp) == NULL) {
-			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: no match %s: %s\n",
+			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: "
+				   "no match %s: %s\n",
 				   fmt, name));
 			return false;
 		}
-		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n", fmt, name));
+		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n",
+			   fmt, name));
 		
 		if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime", false)) {
 			timestamp.tm_isdst = -1;
