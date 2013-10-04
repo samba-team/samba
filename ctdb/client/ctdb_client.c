@@ -3730,6 +3730,72 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 	return ret;
 }
 
+struct server_id {
+	uint64_t pid;
+	uint32_t task_id;
+	uint32_t vnn;
+	uint64_t unique_id;
+};
+
+static struct server_id server_id_get(struct ctdb_context *ctdb, uint32_t reqid)
+{
+	struct server_id id;
+
+	id.pid = getpid();
+	id.task_id = reqid;
+	id.vnn = ctdb_get_pnn(ctdb);
+	id.unique_id = id.vnn;
+	id.unique_id = (id.unique_id << 32) | reqid;
+
+	return id;
+}
+
+static bool server_id_equal(struct server_id *id1, struct server_id *id2)
+{
+	if (id1->pid != id2->pid) {
+		return false;
+	}
+
+	if (id1->task_id != id2->task_id) {
+		return false;
+	}
+
+	if (id1->vnn != id2->vnn) {
+		return false;
+	}
+
+	if (id1->unique_id != id2->unique_id) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool server_id_exists(struct ctdb_context *ctdb, struct server_id *id)
+{
+	struct ctdb_server_id sid;
+	int ret;
+	uint32_t result;
+
+	sid.type = SERVER_TYPE_SAMBA;
+	sid.pnn = id->vnn;
+	sid.server_id = id->pid;
+
+	ret = ctdb_ctrl_check_server_id(ctdb, timeval_current_ofs(3,0),
+					id->vnn, &sid, &result);
+	if (ret != 0) {
+		/* If control times out, assume server_id exists. */
+		return true;
+	}
+
+	if (result) {
+		return true;
+	}
+
+	return false;
+}
+
+
 /**
  * check whether a transaction is active on a given db on a given node
  */
