@@ -3796,6 +3796,204 @@ static bool server_id_exists(struct ctdb_context *ctdb, struct server_id *id)
 }
 
 
+enum g_lock_type {
+	G_LOCK_READ = 0,
+	G_LOCK_WRITE = 1,
+};
+
+struct g_lock_rec {
+	enum g_lock_type type;
+	struct server_id id;
+};
+
+struct g_lock_recs {
+	unsigned int num;
+	struct g_lock_rec *lock;
+};
+
+static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
+			 struct g_lock_recs **locks)
+{
+	struct g_lock_recs *recs;
+
+	recs = talloc_zero(mem_ctx, struct g_lock_recs);
+	if (recs == NULL) {
+		return false;
+	}
+
+	if (data.dsize == 0) {
+		goto done;
+	}
+
+	if (data.dsize % sizeof(struct g_lock_rec) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ "invalid data size %lu in g_lock record\n",
+				  data.dsize));
+		talloc_free(recs);
+		return false;
+	}
+
+	recs->num = data.dsize / sizeof(struct g_lock_rec);
+	recs->lock = talloc_memdup(mem_ctx, data.dptr, data.dsize);
+	if (recs->lock == NULL) {
+		talloc_free(recs);
+		return false;
+	}
+
+done:
+	if (locks != NULL) {
+		*locks = recs;
+	}
+
+	return true;
+}
+
+
+static bool g_lock_lock(TALLOC_CTX *mem_ctx,
+			struct ctdb_db_context *ctdb_db,
+			const char *keyname, uint32_t reqid)
+{
+	TDB_DATA key, data;
+	struct ctdb_record_handle *h;
+	struct g_lock_recs *locks;
+	struct server_id id;
+	int i;
+
+	key.dptr = (uint8_t *)discard_const(keyname);
+	key.dsize = strlen(keyname) + 1;
+	h = ctdb_fetch_lock(ctdb_db, mem_ctx, key, &data);
+	if (h == NULL) {
+		return false;
+	}
+
+	if (!g_lock_parse(h, data, &locks)) {
+		DEBUG(DEBUG_ERR, ("g_lock: error parsing locks\n"));
+		talloc_free(data.dptr);
+		talloc_free(h);
+		return false;
+	}
+
+	talloc_free(data.dptr);
+
+	id = server_id_get(ctdb_db->ctdb, reqid);
+
+	i = 0;
+	while (i < locks->num) {
+		if (server_id_equal(&locks->lock[i].id, &id)) {
+			/* Internal error */
+			talloc_free(h);
+			return false;
+		}
+
+		if (!server_id_exists(ctdb_db->ctdb, &locks->lock[i].id)) {
+			if (i < locks->num-1) {
+				locks->lock[i] = locks->lock[locks->num-1];
+			}
+			locks->num--;
+			continue;
+		}
+
+		/* This entry is locked. */
+		DEBUG(DEBUG_INFO, ("g_lock: lock already granted for "
+				   "pid=0x%llx taskid=%x vnn=%d id=0x%llx\n",
+				   (unsigned long long)id.pid,
+				   id.task_id, id.vnn,
+				   (unsigned long long)id.unique_id));
+		talloc_free(h);
+		return false;
+	}
+
+	locks->lock = talloc_realloc(locks, locks->lock, struct g_lock_rec,
+				     locks->num+1);
+	if (locks->lock == NULL) {
+		talloc_free(h);
+		return false;
+	}
+
+	locks->lock[locks->num].type = G_LOCK_WRITE;
+	locks->lock[locks->num].id = id;
+	locks->num++;
+
+	data.dptr = (uint8_t *)locks->lock;
+	data.dsize = locks->num * sizeof(struct g_lock_rec);
+
+	if (ctdb_record_store(h, data) != 0) {
+		DEBUG(DEBUG_ERR, ("g_lock: failed to write transaction lock for "
+				  "pid=0x%llx taskid=%x vnn=%d id=0x%llx\n",
+				  (unsigned long long)id.pid,
+				  id.task_id, id.vnn,
+				  (unsigned long long)id.unique_id));
+		talloc_free(h);
+		return false;
+	}
+
+	DEBUG(DEBUG_INFO, ("g_lock: lock granted for "
+			   "pid=0x%llx taskid=%x vnn=%d id=0x%llx\n",
+			   (unsigned long long)id.pid,
+			   id.task_id, id.vnn,
+			   (unsigned long long)id.unique_id));
+
+	talloc_free(h);
+	return true;
+}
+
+static bool g_lock_unlock(TALLOC_CTX *mem_ctx,
+			  struct ctdb_db_context *ctdb_db,
+			  const char *keyname, uint32_t reqid)
+{
+	TDB_DATA key, data;
+	struct ctdb_record_handle *h;
+	struct g_lock_recs *locks;
+	struct server_id id;
+	int i;
+	bool found = false;
+
+	key.dptr = (uint8_t *)discard_const(keyname);
+	key.dsize = strlen(keyname) + 1;
+	h = ctdb_fetch_lock(ctdb_db, mem_ctx, key, &data);
+	if (h == NULL) {
+		return false;
+	}
+
+	if (!g_lock_parse(h, data, &locks)) {
+		DEBUG(DEBUG_ERR, ("g_lock: error parsing locks\n"));
+		talloc_free(data.dptr);
+		talloc_free(h);
+		return false;
+	}
+
+	talloc_free(data.dptr);
+
+	id = server_id_get(ctdb_db->ctdb, reqid);
+
+	for (i=0; i<locks->num; i++) {
+		if (server_id_equal(&locks->lock[i].id, &id)) {
+			if (i < locks->num-1) {
+				locks->lock[i] = locks->lock[locks->num-1];
+			}
+			locks->num--;
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) {
+		DEBUG(DEBUG_ERR, ("g_lock: lock not found\n"));
+		talloc_free(h);
+		return false;
+	}
+
+	data.dptr = (uint8_t *)locks->lock;
+	data.dsize = locks->num * sizeof(struct g_lock_rec);
+
+	if (ctdb_record_store(h, data) != 0) {
+		talloc_free(h);
+		return false;
+	}
+
+	talloc_free(h);
+	return true;
+}
+
 /**
  * check whether a transaction is active on a given db on a given node
  */
