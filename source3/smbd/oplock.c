@@ -409,9 +409,10 @@ static void send_break_message_smb1(files_struct *fsp, int level)
 	}
 }
 
-static void break_level2_to_none_async(files_struct *fsp)
+static void break_level2_to_none_async(struct server_id src, files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct server_id self = messaging_server_id(sconn->msg_ctx);
 
 	if (fsp->oplock_type == NO_OPLOCK) {
 		/* We already got a "break to none" message and we've handled
@@ -427,6 +428,12 @@ static void break_level2_to_none_async(files_struct *fsp)
 	DEBUG(10,("process_oplock_async_level2_break_message: sending break "
 		  "to none message for %s, file %s\n", fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp)));
+
+	/* Need to wait before sending a break
+	   message if we sent ourselves this message. */
+	if (serverid_equal(&self, &src)) {
+		wait_before_sending_break();
+	}
 
 	/* Now send a break to none message to our client. */
 	if (sconn->using_smb2) {
@@ -487,7 +494,7 @@ static void process_oplock_async_level2_break_message(struct messaging_context *
 		return;
 	}
 
-	break_level2_to_none_async(fsp);
+	break_level2_to_none_async(src, fsp);
 }
 
 /*******************************************************************
@@ -713,7 +720,6 @@ static void do_break_to_none(struct tevent_context *ctx,
 {
 	struct break_to_none_state *state = talloc_get_type_abort(
 		private_data, struct break_to_none_state);
-	struct server_id self = messaging_server_id(state->sconn->msg_ctx);
 	int i;
 	struct share_mode_lock *lck;
 
@@ -766,36 +772,9 @@ static void do_break_to_none(struct tevent_context *ctx,
 
 		share_mode_entry_to_message(msg, share_entry);
 
-		/*
-		 * Deal with a race condition when breaking level2
- 		 * oplocks. Don't send all the messages and release
- 		 * the lock, this allows someone else to come in and
- 		 * get a level2 lock before any of the messages are
- 		 * processed, and thus miss getting a break message.
- 		 * Ensure at least one entry (the one we're breaking)
- 		 * is processed immediately under the lock and becomes
- 		 * set as NO_OPLOCK to stop any waiter getting a level2.
- 		 * Bugid #5980.
- 		 */
-
-		if (serverid_equal(&self, &share_entry->pid)) {
-			struct files_struct *cur_fsp =
-				initial_break_processing(state->sconn,
-					share_entry->id,
-					share_entry->share_file_id);
-			if (cur_fsp != NULL) {
-				wait_before_sending_break();
-				break_level2_to_none_async(cur_fsp);
-			} else {
-				DEBUG(3, ("release_level_2_oplocks_on_change: "
-				"Did not find fsp, ignoring\n"));
-			}
-		} else {
-			messaging_send_buf(state->sconn->msg_ctx,
-					share_entry->pid,
-					MSG_SMB_ASYNC_LEVEL2_BREAK,
-					(uint8 *)msg, sizeof(msg));
-		}
+		messaging_send_buf(state->sconn->msg_ctx, share_entry->pid,
+				   MSG_SMB_ASYNC_LEVEL2_BREAK,
+				   (uint8 *)msg, sizeof(msg));
 	}
 
 	/* We let the message receivers handle removing the oplock state
