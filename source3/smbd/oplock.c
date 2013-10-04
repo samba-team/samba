@@ -409,10 +409,55 @@ static void send_break_message_smb1(files_struct *fsp, int level)
 	}
 }
 
-static void break_level2_to_none_async(struct server_id src, files_struct *fsp)
+/*******************************************************************
+ This handles the case of a write triggering a break to none
+ message on a level2 oplock.
+ When we get this message we may be in any of two states :
+ NO_OPLOCK, LEVEL_II. We only send a message to
+ the client for LEVEL2.
+*******************************************************************/
+
+static void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
+						      void *private_data,
+						      uint32_t msg_type,
+						      struct server_id src,
+						      DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct share_mode_entry msg;
+	files_struct *fsp;
+	struct smbd_server_connection *sconn =
+		talloc_get_type_abort(private_data,
+		struct smbd_server_connection);
 	struct server_id self = messaging_server_id(sconn->msg_ctx);
+
+	if (data->data == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (data->length != MSG_SMB_SHARE_MODE_ENTRY_SIZE) {
+		DEBUG(0, ("Got invalid msg len %d\n", (int)data->length));
+		return;
+	}
+
+	/* De-linearize incoming message. */
+	message_to_share_mode_entry(&msg, (char *)data->data);
+
+	DEBUG(10, ("Got oplock async level 2 break message from pid %s: "
+		   "%s/%llu\n", server_id_str(talloc_tos(), &src),
+		   file_id_string_tos(&msg.id),
+		   (unsigned long long)msg.share_file_id));
+
+	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
+
+	if (fsp == NULL) {
+		/* We hit a race here. Break messages are sent, and before we
+		 * get to process this message, we have closed the file. 
+		 * No need to reply as this is an async message. */
+		DEBUG(3, ("process_oplock_async_level2_break_message: Did not find fsp, ignoring\n"));
+		return;
+	}
+
 
 	if (fsp->oplock_type == NO_OPLOCK) {
 		/* We already got a "break to none" message and we've handled
@@ -444,57 +489,6 @@ static void break_level2_to_none_async(struct server_id src, files_struct *fsp)
 
 	/* Async level2 request, don't send a reply, just remove the oplock. */
 	remove_oplock(fsp);
-}
-
-/*******************************************************************
- This handles the case of a write triggering a break to none
- message on a level2 oplock.
- When we get this message we may be in any of two states :
- NO_OPLOCK, LEVEL_II. We only send a message to
- the client for LEVEL2.
-*******************************************************************/
-
-static void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
-						      void *private_data,
-						      uint32_t msg_type,
-						      struct server_id src,
-						      DATA_BLOB *data)
-{
-	struct share_mode_entry msg;
-	files_struct *fsp;
-	struct smbd_server_connection *sconn =
-		talloc_get_type_abort(private_data,
-		struct smbd_server_connection);
-
-	if (data->data == NULL) {
-		DEBUG(0, ("Got NULL buffer\n"));
-		return;
-	}
-
-	if (data->length != MSG_SMB_SHARE_MODE_ENTRY_SIZE) {
-		DEBUG(0, ("Got invalid msg len %d\n", (int)data->length));
-		return;
-	}
-
-	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, (char *)data->data);
-
-	DEBUG(10, ("Got oplock async level 2 break message from pid %s: "
-		   "%s/%llu\n", server_id_str(talloc_tos(), &src),
-		   file_id_string_tos(&msg.id),
-		   (unsigned long long)msg.share_file_id));
-
-	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
-
-	if (fsp == NULL) {
-		/* We hit a race here. Break messages are sent, and before we
-		 * get to process this message, we have closed the file. 
-		 * No need to reply as this is an async message. */
-		DEBUG(3, ("process_oplock_async_level2_break_message: Did not find fsp, ignoring\n"));
-		return;
-	}
-
-	break_level2_to_none_async(src, fsp);
 }
 
 /*******************************************************************
