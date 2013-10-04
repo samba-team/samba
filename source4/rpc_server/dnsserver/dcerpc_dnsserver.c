@@ -142,13 +142,19 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 		}
 		for (z = zones; z; ) {
 			znext = z->next;
-			z->zoneinfo = dnsserver_init_zoneinfo(z, dsstate->serverinfo);
-			if (z->zoneinfo == NULL) {
-				goto failed;
+			if (dnsserver_find_zone(dsstate->zones, z->name) == NULL) {
+				z->zoneinfo = dnsserver_init_zoneinfo(z, dsstate->serverinfo);
+				if (z->zoneinfo == NULL) {
+					goto failed;
+				}
+				DLIST_ADD_END(dsstate->zones, z, NULL);
+				p->zones_count++;
+				dsstate->zones_count++;
+			} else {
+				/* Ignore duplicate zone */
+				DEBUG(3,("dnsserver: Ignoring duplicate zone '%s' from '%s'",
+					 z->name, ldb_dn_get_linearized(z->zone_dn)));
 			}
-			DLIST_ADD_END(dsstate->zones, z, NULL);
-			p->zones_count++;
-			dsstate->zones_count++;
 			z = znext;
 		}
 	}
