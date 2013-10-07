@@ -3190,6 +3190,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		status = can_set_delete_on_close(fsp, 0);
 		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
+			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 			file_free(req, fsp);
