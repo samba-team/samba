@@ -270,21 +270,32 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/sock_exec.c''',
                    deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash')
 
+bld.SAMBA3_LIBRARY('samba-cluster-support',
+                   source='''
+                     lib/dbwrap/dbwrap_ctdb.c
+                     lib/messages_ctdbd.c
+                     lib/ctdb_packet.c
+                     lib/ctdbd_conn.c
+                     lib/ctdb_conn.c
+                     torture/test_ctdbconn.c
+                   ''',
+                   deps='''
+                     talloc
+                     tevent
+                     tdb
+                   ''',
+                   allow_undefined_symbols=True,
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('TDB_LIB',
                      source='''lib/dbwrap/dbwrap_open.c
-                     lib/dbwrap/dbwrap_ctdb.c
                      lib/dbwrap/dbwrap_watch.c
                      lib/g_lock.c''',
-                     deps='dbwrap')
+                     deps='dbwrap samba-cluster-support')
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source='''lib/messages.c
                    lib/messages_local.c
-                   lib/messages_ctdbd.c
-                   lib/ctdb_packet.c
-                   lib/ctdbd_conn.c
-                   lib/ctdb_conn.c
                    lib/util_cluster.c
                    lib/id_cache.c
                    lib/talloc_dict.c
@@ -1210,7 +1221,6 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  torture/test_authinfo_structs.c
                  torture/test_smbsock_any_connect.c
                  torture/test_cleanup.c
-                 torture/test_ctdbconn.c
                  torture/test_notify.c
                  lib/tevent_barrier.c
                  torture/test_dbwrap_watch.c
@@ -1230,6 +1240,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  LOCKING
                  NDR_OPEN_FILES
                  idmap
+                 samba-cluster-support
                  ''',
                  cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
                  install=False)
