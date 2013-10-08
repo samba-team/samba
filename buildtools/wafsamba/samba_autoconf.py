@@ -495,6 +495,14 @@ def CONFIG_SET(conf, option):
     if v == ():
         return False
     return True
+
+@conf
+def CONFIG_RESET(conf, option):
+    if option not in conf.env:
+        return
+    del conf.env[option]
+
+Build.BuildContext.CONFIG_RESET = CONFIG_RESET
 Build.BuildContext.CONFIG_SET = CONFIG_SET
 Build.BuildContext.CONFIG_GET = CONFIG_GET
 
