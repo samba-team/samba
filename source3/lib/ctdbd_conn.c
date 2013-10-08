@@ -1154,12 +1154,13 @@ bool ctdb_serverids_exist_supported(struct ctdbd_connection *conn)
 #endif /* HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL */
 }
 
-#ifdef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
-
 bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, unsigned num_pids,
 			  bool *results)
 {
+#ifndef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
+	return false;
+#else /* HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL */
 	unsigned i, num_received;
 	NTSTATUS status;
 	struct ctdb_vnn_list *vnns = NULL;
@@ -1305,9 +1306,8 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 fail:
 	TALLOC_FREE(vnns);
 	return result;
-}
-
 #endif /* HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL */
+}
 
 /*
  * Get a db path
