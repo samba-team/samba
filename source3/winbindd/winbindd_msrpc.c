@@ -944,8 +944,9 @@ static NTSTATUS msrpc_trusted_domains(struct winbindd_domain *domain,
 	}
 
 	status = cm_connect_lsa(domain, tmp_ctx, &lsa_pipe, &lsa_policy);
-	if (!NT_STATUS_IS_OK(status))
-		return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	status = rpc_trusted_domains(tmp_ctx,
 				     lsa_pipe,
