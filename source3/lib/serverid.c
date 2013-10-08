@@ -126,11 +126,13 @@ bool serverid_register(const struct server_id id, uint32_t msg_flags)
 			  nt_errstr(status)));
 		goto done;
 	}
-#ifdef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
-	if (lp_clustering()) {
+
+	if (lp_clustering() &&
+	    ctdb_serverids_exist_supported(messaging_ctdbd_connection()))
+	{
 		register_with_ctdbd(messaging_ctdbd_connection(), id.unique_id);
 	}
-#endif
+
 	ret = true;
 done:
 	TALLOC_FREE(rec);
@@ -341,8 +343,10 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 		remote_num += 1;
 	}
 
-#ifdef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
-	if (remote_num != 0) {
+#ifdef CLUSTER_SUPPORT
+	if (remote_num != 0 &&
+	    ctdb_serverids_exist_supported(messaging_ctdbd_connection()))
+	{
 		int old_remote_num = remote_num;
 
 		remote_num = 0;
