@@ -1192,7 +1192,7 @@ sub DumpHfList($)
 
 	foreach (values %{$self->{conformance}->{header_fields}}) 
 	{
-		$res .= "\t{ &$_->{INDEX}, 
+		$res .= "\t{ &$_->{INDEX},
 	  { ".make_str($_->{NAME}).", ".make_str($_->{FILTER}).", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALSSTRING}, $_->{MASK}, ".make_str_or_null($_->{BLURB}).", HFILL }},
 ";
 	}
