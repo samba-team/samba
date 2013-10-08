@@ -286,6 +286,7 @@ bld.SAMBA3_LIBRARY('samba-cluster-support',
                      tevent
                      tdb
                    ''',
+                   cflags=bld.CONFIG_GET("CTDB_CFLAGS"),
                    allow_undefined_symbols=True,
                    private_library=True)
 
