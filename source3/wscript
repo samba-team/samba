@@ -1458,7 +1458,7 @@ main() {
         if not conf.env.USING_SYSTEM_TALLOC:
             includes = includes + ' ' + srcdir + '/lib/talloc'
 
-        conf.CHECK_CODE('''
+        ok = conf.CHECK_CODE('''
             #define NO_CONFIG_H
             #include "replace.h"
             #include "system/wait.h"
@@ -1473,17 +1473,19 @@ main() {
                 return 0;
             }
             ''',
-            'HAVE_CTDB_H',
+            'HAVE_CTDB_CHECK_CODE',
             addmain=False,
             includes=includes,
             msg='Checking for header ctdb.h')
-
-        if not conf.CONFIG_SET('HAVE_CTDB_H'):
+        if ok:
+            CTDB_CFLAGS += ' -DHAVE_CTDB_H=1'
+        else:
             have_cluster_support = False
             ctdb_broken = "ctdb.h is required for cluster support"
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
@@ -1499,17 +1501,19 @@ main() {
                     return 0;
                 }
                 ''',
-                'HAVE_CTDB_PRIVATE_H',
+                'HAVE_CTDB_CHECK_CODE',
                 addmain=False,
                 includes=includes,
                 msg='Checking for header ctdb_private.h')
-
-            if not conf.CONFIG_SET('HAVE_CTDB_PRIVATE_H'):
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_CTDB_PRIVATE_H=1'
+            else:
                 have_cluster_support = False
                 ctdb_broken = "ctdb_private.h is required for cluster support"
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
@@ -1525,13 +1529,16 @@ main() {
                     return 0;
                 }
                 ''',
-                'HAVE_CTDB_PROTOCOL_H',
+                'HAVE_CTDB_CHECK_CODE',
                 addmain=False,
                 includes=includes,
                 msg='Checking for header ctdb_protocol.h')
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_CTDB_PROTOCOL_H=1'
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
@@ -1547,17 +1554,19 @@ main() {
                    return 0;
                 }
                 ''',
-                'HAVE_CTDB_CONTROL_TRANS3_COMMIT_DECL',
+                'HAVE_CTDB_CHECK_CODE',
                 addmain=False,
                 includes=includes,
                 msg='Checking for transaction support (TRANS3_COMMIT control)')
-
-            if not conf.CONFIG_SET('HAVE_CTDB_CONTROL_TRANS3_COMMIT_DECL'):
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_CTDB_CONTROL_TRANS3_COMMIT_DECL=1'
+            else:
                 have_cluster_support = False
                 ctdb_broken = "ctdb transaction support missing or too old"
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
@@ -1573,20 +1582,22 @@ main() {
                     return 0;
                 }
                 ''',
-                'HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL',
+                'HAVE_CTDB_CHECK_CODE',
                 addmain=False,
                 includes=includes,
                 msg='Checking for SCHEDULE_FOR_DELETION control')
-
-            if not conf.CONFIG_SET('HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL'):
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL=1'
+            else:
                 if not Options.options.enable_old_ctdb:
                     have_cluster_support = False
                     ctdb_broken = "SCHEDULE_FOR_DELETION control missing"
                 else:
                     Logs.warn("ignoring missing SCHEDULE_FOR_DELETION control (--enable-old-ctdb)")
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                #define NO_CONFIG_H
                #include "replace.h"
                #include "system/wait.h"
@@ -1601,20 +1612,22 @@ main() {
                    return 0;
                }
                ''',
-               'HAVE_CTDB_WANT_READONLY_DECL',
+               'HAVE_CTDB_CHECK_CODE',
                addmain=False,
                includes=includes,
                msg='Checking for CTDB readonly records support')
-
-            if not conf.CONFIG_SET('HAVE_CTDB_WANT_READONLY_DECL'):
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_CTDB_WANT_READONLY_DECL=1'
+            else:
                 if not Options.options.enable_old_ctdb:
                     have_cluster_support = False
                     ctdb_broken = "support for CTDB readonly records missing"
                 else:
                     Logs.warn("ignoring missing READONLY support (--enable-old-ctdb)")
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
@@ -1630,17 +1643,19 @@ main() {
                     return 0;
                 }
                 ''',
-                'HAVE_STRUCT_CTDB_CONTROL_TCP',
+                'HAVE_CTDB_CHECK_CODE',
                 addmain=False,
                 includes=includes,
                 msg='Checking for ctdb ipv4 support')
-
-            if not conf.CONFIG_SET('HAVE_STRUCT_CTDB_CONTROL_TCP'):
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_STRUCT_CTDB_CONTROL_TCP=1'
+            else:
                 have_cluster_support = False
                 ctdb_broken = "missing struct ctdb_control_tcp"
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
@@ -1656,13 +1671,16 @@ main() {
                     return 0;
                 }
                 ''',
-                'HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR',
+                'HAVE_CTDB_CHECK_CODE',
                 addmain=False,
                 includes=includes,
                 msg='Checking for ctdb ipv6 support')
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_STRUCT_CTDB_CONTROL_TCP_ADDR=1'
 
+        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
-            conf.CHECK_CODE('''
+            ok = conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
@@ -1678,18 +1696,21 @@ main() {
                     return 0;
                 }
                 ''',
-                'HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL',
+                'HAVE_CTDB_CHECK_CODE',
                 addmain=False,
                 includes=includes,
                 msg='Checking for CHECK_SRVIDS control')
-
-            if not conf.CONFIG_SET('HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL'):
+            if ok:
+                CTDB_CFLAGS += ' -DHAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL=1'
+            else:
                 if not Options.options.enable_old_ctdb:
                     have_cluster_support = False
                     ctdb_broken = "CHECK_SRVIDS control missing"
                 else:
                     Logs.warn("ignoring missing CHECK_SRVIDS control (--enable-old-ctdb)")
 
+    conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
+    conf.undefine('HAVE_CTDB_CHECK_CODE')
     if have_cluster_support:
         Logs.info("building with cluster support")
         conf.DEFINE('CLUSTER_SUPPORT', 1);
