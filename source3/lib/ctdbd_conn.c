@@ -1145,6 +1145,15 @@ fail:
 	return false;
 }
 
+bool ctdb_serverids_exist_supported(struct ctdbd_connection *conn)
+{
+#ifndef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
+	return false;
+#else /* HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL */
+	return true;
+#endif /* HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL */
+}
+
 #ifdef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
 
 bool ctdb_serverids_exist(struct ctdbd_connection *conn,

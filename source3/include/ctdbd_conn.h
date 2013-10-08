@@ -49,6 +49,7 @@ bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, int num_pids,
 			  bool *results);
+bool ctdb_serverids_exist_supported(struct ctdbd_connection *conn);
 bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, unsigned num_pids,
 			  bool *results);
