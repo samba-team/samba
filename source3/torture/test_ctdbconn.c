@@ -23,6 +23,7 @@
 #ifdef CLUSTER_SUPPORT
 
 #include "ctdb_conn.h"
+#include "ctdbd_conn.h"
 #include "lib/util/tevent_unix.h"
 #include "tdb.h"
 

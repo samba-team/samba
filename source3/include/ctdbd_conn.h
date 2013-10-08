@@ -30,6 +30,7 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 				    struct ctdbd_connection **pconn);
 
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
+const char *lp_ctdbd_socket(void);
 
 NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 				struct messaging_context *msg_ctx);

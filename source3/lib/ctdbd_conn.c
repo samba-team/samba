@@ -194,6 +194,18 @@ uint32_t ctdbd_vnn(const struct ctdbd_connection *conn)
 	return conn->our_vnn;
 }
 
+const char *lp_ctdbd_socket(void)
+{
+	const char *ret;
+
+	ret = lp__ctdbd_socket();
+	if (ret != NULL && strlen(ret) > 0) {
+		return ret;
+	}
+
+	return CTDB_PATH;
+}
+
 /*
  * Get us a ctdb connection
  */

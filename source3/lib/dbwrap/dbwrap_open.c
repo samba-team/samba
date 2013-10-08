@@ -26,9 +26,7 @@
 #include "dbwrap/dbwrap_ctdb.h"
 #include "lib/param/param.h"
 #include "util_tdb.h"
-#ifdef CLUSTER_SUPPORT
-#include "ctdb_private.h"
-#endif
+#include "ctdbd_conn.h"
 
 bool db_is_local(const char *name)
 {

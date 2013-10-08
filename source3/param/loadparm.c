@@ -78,10 +78,6 @@
 #include <cups/http.h>
 #endif
 
-#ifdef CLUSTER_SUPPORT
-#include "ctdb_private.h"
-#endif
-
 bool bLoaded = false;
 
 extern userdom_struct current_user_info;
@@ -934,11 +930,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.cups_server, "");
 	string_set(&Globals.iprint_server, "");
 
-#ifdef CLUSTER_SUPPORT
-	string_set(&Globals.ctdbd_socket, CTDB_PATH);
-#else
-	string_set(&Globals.ctdbd_socket, "");
-#endif
+	string_set(&Globals._ctdbd_socket, "");
 
 	Globals.cluster_addresses = NULL;
 	Globals.clustering = false;

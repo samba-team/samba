@@ -59,6 +59,11 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+const char *lp_ctdbd_socket(void)
+{
+	return "";
+}
+
 bool ctdb_serverids_exist_supported(struct ctdbd_connection *conn)
 {
 	return false;

@@ -1,8 +1,9 @@
 <samba:parameter name="ctdbd socket"
                  context="G"
                  advanced="1"
-				 type="string"
+                 type="string"
                  constant="1"
+                 function="_ctdbd_socket"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If you set <value type="example">clustering=yes</value>,
