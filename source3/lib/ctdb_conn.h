@@ -20,26 +20,11 @@
 #ifndef _CTDB_CONN_H
 #define _CTDB_CONN_H
 
-#ifdef CLUSTER_SUPPORT
-
-#include <tdb.h>
-
-#ifdef HAVE_CTDB_PROTOCOL_H
-#include <ctdb_protocol.h>
-#else
-#include <ctdb_private.h>
-#endif
-
-#else /* CLUSTER_SUPPORT */
-
-struct ctdb_reply_control;
-
-#endif /* CLUSTER_SUPPORT */
-
 #include "tevent.h"
 #include "librpc/gen_ndr/messaging.h"
 
 struct ctdb_conn;
+struct ctdb_reply_control;
 
 struct tevent_req *ctdb_conn_control_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
