@@ -1,10 +1,10 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.1.0
+                         October 11, 2013
+                   =============================
 
-This is the fourth release candidate of Samba 4.1.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
+
+This is is the first stable release of Samba 4.1.
 
 Samba 4.1 will be the next version of the Samba suite and includes
 all the technology found in both the Samba4 series and the stable 3.x
@@ -12,12 +12,7 @@ series. The primary additional features over Samba 3.6 are
 support for the Active Directory logon protocols used by Windows 2000
 and above.
 
-If you are upgrading, or looking to develop, test or deploy Samba 4.1
-releases candidates, you should backup all configuration and data.
-
-
-NEW FEATURES
-============
+Major enhancements in Samba 4.1.0 include:
 
 Client tools support SMB2/3
 ===========================
@@ -126,6 +121,10 @@ REMOVED COMPONENTS
 ==================
 
 The Samba Web Administration Tool (SWAT) has been removed.
+Details why SWAT has been removed can be found on the samba-technical mailing
+list:
+
+https://lists.samba.org/archive/samba-technical/2013-February/090572.html
 
 
 ######################################################################
@@ -164,6 +163,17 @@ o   David Disseldorp <ddiss@samba.org>
     * Add vfs_btrfs module.
     * Add support for server-side copy operations via the
       SMB2 FSCTL_SRV_COPYCHUNK request.
+
+
+CHANGES SINCE 4.1.0rc4
+======================
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10178: Fix PAC parsing failure.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10132: pam_winbindd: Support the KEYRING ccache type.
 
 
 CHANGES SINCE 4.1.0rc3
