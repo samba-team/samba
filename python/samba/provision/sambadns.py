@@ -1021,18 +1021,18 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
     add_dns_accounts(samdb, names.domaindn)
 
     # If dns_backend is BIND9_FLATFILE
-    #   Populate only CN=MicrosoftDNS,CN=System,<FORESTDN>
+    #   Populate only CN=MicrosoftDNS,CN=System,<DOMAINDN>
     #
     # If dns_backend is SAMBA_INTERNAL or BIND9_DLZ
     #   Populate DNS partitions
 
     # If os_level < 2003 (DS_DOMAIN_FUNCTION_2000)
-    #   All dns records are in CN=MicrosoftDNS,CN=System,<FORESTDN>
+    #   All dns records are in CN=MicrosoftDNS,CN=System,<DOMAINDN>
     #
     # If os_level >= 2003 (DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008,
     #                        DS_DOMAIN_FUNCTION_2008_R2)
-    #   Root server records are in CN=MicrosoftDNS,CN=System,<FORESTDN>
-    #   Domain records are in CN=MicrosoftDNS,CN=System,<FORESTDN>
+    #   Root server records are in CN=MicrosoftDNS,CN=System,<DOMAINDN>
+    #   Domain records are in CN=MicrosoftDNS,CN=System,<DOMAINDN>
     #   Domain records are in CN=MicrosoftDNS,DC=DomainDnsZones,<DOMAINDN>
     #   Forest records are in CN=MicrosoftDNS,DC=ForestDnsZones,<FORESTDN>
     domaindn = names.domaindn
@@ -1047,13 +1047,13 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
     domainguid = get_domainguid(samdb, domaindn)
 
     # Create CN=System
-    logger.info("Creating CN=MicrosoftDNS,CN=System,%s" % forestdn)
-    create_dns_legacy(samdb, domainsid, forestdn, dnsadmins_sid)
+    logger.info("Creating CN=MicrosoftDNS,CN=System,%s" % domaindn)
+    create_dns_legacy(samdb, domainsid, domaindn, dnsadmins_sid)
 
     if os_level == DS_DOMAIN_FUNCTION_2000:
         # Populating legacy dns
-        logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % forestdn)
-        fill_dns_data_legacy(samdb, domainsid, forestdn, dnsdomain, site,
+        logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
+        fill_dns_data_legacy(samdb, domainsid, domaindn, dnsdomain, site,
                              hostname, hostip, hostip6, dnsadmins_sid)
 
     elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
