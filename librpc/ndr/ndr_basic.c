@@ -1017,12 +1017,12 @@ _PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char
 
 _PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint32_t flag, uint32_t value)
 {
-	/* this is an attempt to support multi-bit bitmap masks */
-	value &= flag;
-
-	if (value == 0) {
+	if (flag == 0) {
 		return;
 	}
+
+	/* this is an attempt to support multi-bit bitmap masks */
+	value &= flag;
 
 	while (!(flag & 1)) {
 		flag >>= 1;
