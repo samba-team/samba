@@ -659,10 +659,11 @@ _PUBLIC_ enum NTDB_ERROR ntdb_check_(struct ntdb_context *ntdb,
 			  enum NTDB_ERROR (*check)(NTDB_DATA, NTDB_DATA, void *),
 			  void *data)
 {
-	ntdb_off_t *fr = NULL, *used = NULL, ft, recovery;
+	ntdb_off_t *fr = NULL, *used = NULL;
+	ntdb_off_t ft = 0, recovery = 0;
 	size_t num_free = 0, num_used = 0, num_found = 0, num_ftables = 0,
 		num_capabilities = 0;
-	uint64_t features;
+	uint64_t features = 0;
 	enum NTDB_ERROR ecode;
 
 	if (ntdb->flags & NTDB_CANT_CHECK) {
