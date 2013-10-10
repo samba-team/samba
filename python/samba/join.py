@@ -65,7 +65,6 @@ class dc_join(object):
         ctx.promote_from_dn = None
 
         ctx.nc_list = []
-        ctx.full_nc_list = []
 
         ctx.creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
         ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
@@ -875,8 +874,8 @@ class dc_join(object):
         # DC we just replicated from then we don't need to send the updatereplicateref
         # as replication between sites is time based and on the initiative of the
         # requesting DC
-        ctx.logger.info("Sending DsReplicateUpdateRefs for all the replicated partitions")
-        for nc in ctx.full_nc_list:
+        ctx.logger.info("Sending DsReplicaUpdateRefs for all the replicated partitions")
+        for nc in ctx.nc_list:
             ctx.send_DsReplicaUpdateRefs(nc)
 
         if ctx.RODC:
@@ -1053,7 +1052,6 @@ class dc_join(object):
         # full_nc_list is the list of naming context (NC) for which we will
         # send a updateRef command to the partner DC
         ctx.nc_list = [ ctx.config_dn, ctx.schema_dn ]
-        ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
 
         if not ctx.subdomain:
             ctx.nc_list += [ctx.base_dn]
@@ -1061,9 +1059,6 @@ class dc_join(object):
                 ctx.nc_list += [ctx.domaindns_zone]
 
         if ctx.dns_backend != "NONE":
-            if not ctx.subdomain:
-                ctx.full_nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
-            ctx.full_nc_list += [ctx.forestdns_zone]
             ctx.nc_list += [ctx.forestdns_zone]
 
         if ctx.promote_existing:
