@@ -119,7 +119,7 @@ class dc_join(object):
         ctx.dnsdomain = ctx.samdb.domain_dns_name()
         ctx.dnsforest = ctx.samdb.forest_dns_name()
         ctx.domaindns_zone = 'DC=DomainDnsZones,%s' % ctx.base_dn
-        ctx.forestdns_zone = 'DC=ForestDnsZones,%s' % ctx.base_dn
+        ctx.forestdns_zone = 'DC=ForestDnsZones,%s' % ctx.root_dn
 
         res_domaindns = ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
                                          attrs=[],
@@ -830,10 +830,6 @@ class dc_join(object):
                                     destination_dsa_guid, rodc=ctx.RODC,
                                     replica_flags=ctx.replica_flags)
 
-            if 'DC=ForestDnsZones,%s' % ctx.root_dn in ctx.nc_list:
-                repl.replicate('DC=ForestDnsZones,%s' % ctx.root_dn, source_dsa_invocation_id,
-                               destination_dsa_guid, rodc=ctx.RODC,
-                               replica_flags=ctx.replica_flags)
             # FIXME At this point we should add an entry in the forestdns and domaindns NC
             # (those under CN=Partions,DC=...)
             # in order to indicate that we hold a replica for this NC
