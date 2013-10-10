@@ -1223,6 +1223,11 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_DEBUG, NULL);
 
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_DOMAIN_OFFLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_DOMAIN_ONLINE, NULL);
+
 	/* We have destroyed all events in the winbindd_event_context
 	 * in reinit_after_fork(), so clean out all possible pending
 	 * event pointers. */
