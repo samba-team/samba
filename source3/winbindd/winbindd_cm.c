@@ -387,6 +387,8 @@ void winbind_msg_domain_online(struct messaging_context *msg_ctx,
 
 void set_domain_offline(struct winbindd_domain *domain)
 {
+	pid_t parent_pid = getppid();
+
 	DEBUG(10,("set_domain_offline: called for domain %s\n",
 		domain->name ));
 
@@ -434,6 +436,15 @@ void set_domain_offline(struct winbindd_domain *domain)
 	DEBUG(10,("set_domain_offline: added event handler for domain %s\n",
 		domain->name ));
 
+	/* Send a message to the parent that the domain is offline. */
+	if (parent_pid > 1 && !domain->internal) {
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_DOMAIN_OFFLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name) + 1);
+	}
+
 	/* Send an offline message to the idmap child when our
 	   primary domain goes offline */
 
@@ -458,6 +469,8 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 static void set_domain_online(struct winbindd_domain *domain)
 {
+	pid_t parent_pid = getppid();
+
 	DEBUG(10,("set_domain_online: called for domain %s\n",
 		domain->name ));
 
@@ -508,6 +521,15 @@ static void set_domain_online(struct winbindd_domain *domain)
 			     MSG_WINBIND_FAILED_TO_GO_ONLINE, NULL);
 
 	domain->online = True;
+
+	/* Send a message to the parent that the domain is online. */
+	if (parent_pid > 1 && !domain->internal) {
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_DOMAIN_ONLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name) + 1);
+	}
 
 	/* Send an online message to the idmap child when our
 	   primary domain comes online */
