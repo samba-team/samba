@@ -1168,6 +1168,12 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 	messaging_register(msg_ctx, NULL,
 			   MSG_WINBIND_ONLINESTATUS, winbind_msg_onlinestatus);
 
+	/* Handle domain online/offline messages for domains */
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_DOMAIN_OFFLINE, winbind_msg_domain_offline);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_DOMAIN_ONLINE, winbind_msg_domain_online);
+
 	messaging_register(msg_ctx, NULL,
 			   MSG_DUMP_EVENT_LIST, winbind_msg_dump_event_list);
 
