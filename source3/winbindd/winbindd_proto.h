@@ -150,6 +150,16 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 void winbindd_ccache_save(struct winbindd_cli_state *state);
 
 /* The following definitions come from winbindd/winbindd_cm.c  */
+void winbind_msg_domain_offline(struct messaging_context *msg_ctx,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data);
+void winbind_msg_domain_online(struct messaging_context *msg_ctx,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data);
 
 void set_domain_offline(struct winbindd_domain *domain);
 void set_domain_online_request(struct winbindd_domain *domain);
