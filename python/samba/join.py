@@ -1063,8 +1063,8 @@ class dc_join(object):
         if ctx.dns_backend != "NONE":
             if not ctx.subdomain:
                 ctx.full_nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
-            ctx.full_nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
-            ctx.nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
+            ctx.full_nc_list += [ctx.forestdns_zone]
+            ctx.nc_list += [ctx.forestdns_zone]
 
         if ctx.promote_existing:
             ctx.promote_possible()
