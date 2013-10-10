@@ -340,6 +340,46 @@ static void calc_new_online_timeout_check(struct winbindd_domain *domain)
 	}
 }
 
+void winbind_msg_domain_offline(struct messaging_context *msg_ctx,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data)
+{
+	const char *domain_name = (const char *)data->data;
+	struct winbindd_domain *domain;
+
+	domain = find_domain_from_name_noinit(domain_name);
+	if (domain == NULL) {
+		return;
+	}
+
+	domain->online = false;
+
+	DEBUG(10, ("Domain %s is marked as offline now.\n",
+		   domain_name));
+}
+
+void winbind_msg_domain_online(struct messaging_context *msg_ctx,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data)
+{
+	const char *domain_name = (const char *)data->data;
+	struct winbindd_domain *domain;
+
+	domain = find_domain_from_name_noinit(domain_name);
+	if (domain == NULL) {
+		return;
+	}
+
+	domain->online = true;
+
+	DEBUG(10, ("Domain %s is marked as online now.\n",
+		   domain_name));
+}
+
 /****************************************************************
  Set domain offline and also add handler to put us back online
  if we detect a DC.
