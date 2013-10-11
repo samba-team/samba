@@ -1265,6 +1265,7 @@ NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
 		return status;
 	}
 
+	sbuf->st_ex_btime = interpret_long_date((char *)state->data);
 	sbuf->st_ex_atime = interpret_long_date((char *)state->data+8);
 	sbuf->st_ex_mtime = interpret_long_date((char *)state->data+16);
 	sbuf->st_ex_ctime = interpret_long_date((char *)state->data+24);
