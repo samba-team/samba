@@ -1060,6 +1060,7 @@ char *lp_wins_hook(TALLOC_CTX *ctx);
 const char *lp_template_homedir(void);
 const char *lp_template_shell(void);
 const char *lp_winbind_separator(void);
+const char *lp_winbindd_socket_directory(void);
 bool lp_winbind_enum_users(void);
 bool lp_winbind_enum_groups(void);
 bool lp_winbind_use_default_domain(void);

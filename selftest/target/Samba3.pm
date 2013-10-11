@@ -968,7 +968,7 @@ sub provision($$$$$$)
 	printing = bsd
 	printcap name = /dev/null
 
-	winbindd:socket dir = $wbsockdir
+	winbindd socket directory = $wbsockdir
 	nmbd:socket dir = $nmbdsockdir
 	idmap config * : range = 100000-200000
 	winbind enum users = yes

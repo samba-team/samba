@@ -189,7 +189,7 @@ static void terminate(bool is_parent)
 		char *path = NULL;
 
 		if (asprintf(&path, "%s/%s",
-			get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME) > 0) {
+			lp_winbindd_socket_directory(), WINBINDD_SOCKET_NAME) > 0) {
 			unlink(path);
 			SAFE_FREE(path);
 		}
@@ -1031,11 +1031,6 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
  * Winbindd socket accessor functions
  */
 
-const char *get_winbind_pipe_dir(void)
-{
-	return lp_parm_const_string(-1, "winbindd", "socket dir", get_dyn_WINBINDD_SOCKET_DIR());
-}
-
 char *get_winbind_priv_pipe_dir(void)
 {
 	return state_path(WINBINDD_PRIV_SOCKET_SUBDIR);
@@ -1056,7 +1051,7 @@ static bool winbindd_setup_listeners(void)
 
 	pub_state->privileged = false;
 	pub_state->fd = create_pipe_sock(
-		get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME, 0755);
+		lp_winbindd_socket_directory(), WINBINDD_SOCKET_NAME, 0755);
 	if (pub_state->fd == -1) {
 		goto failed;
 	}
