@@ -583,6 +583,9 @@ SMBC_getatr(SMBCCTX * context,
                 if (change_time_ts != NULL) {
                         *change_time_ts = w_time_ts;
                 }
+		if (ino) {
+			*ino = 0;
+		}
 		TALLOC_FREE(frame);
 		return True;
 	}
