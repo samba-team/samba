@@ -16,6 +16,12 @@ case $(basename "$0") in
 	# * default to running: all unit tests, simple integration tests
 	opts="-s -l"
 	tests="onnode takeover tool eventscripts simple"
+	# If running in the source tree then use a fixed TEST_VAR_DIR.
+	# If this script is installed using the INSTALL script then
+	# TEST_BIN_DIR will be set, so use this as the test.
+	if [ -z "$TEST_BIN_DIR" ] ; then
+	    opts="${opts} -V ${test_dir}/var"
+	fi
 esac
 
 # Allow options to be passed to this script.  However, if any options
