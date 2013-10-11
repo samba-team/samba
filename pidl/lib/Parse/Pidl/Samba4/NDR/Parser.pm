@@ -261,7 +261,7 @@ sub check_fully_dereferenced($$)
 				$nump = $_->{POINTER_INDEX}+1;
 			}
 		}
-		warning($element->{ORIGINAL}, "Got pointer for `$e->{NAME}', expected fully derefenced variable") if ($nump > length($ptr));
+		warning($element->{ORIGINAL}, "Got pointer for `$e->{NAME}', expected fully dereferenced variable") if ($nump > length($ptr));
 		return ($origvar);
 	}
 }	
