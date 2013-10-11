@@ -3827,7 +3827,7 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 
 	if (data.dsize % sizeof(struct g_lock_rec) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ "invalid data size %lu in g_lock record\n",
-				  data.dsize));
+				  (unsigned long)data.dsize));
 		talloc_free(recs);
 		return false;
 	}
