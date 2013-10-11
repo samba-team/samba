@@ -535,7 +535,7 @@
 	smb_vfs_call_durable_cookie((fsp)->conn->vfs_handles, \
 				    (fsp), (mem_ctx), (cookie))
 #define SMB_VFS_NEXT_DURABLE_COOKIE(handle, fsp, mem_ctx, cookie) \
-	smb_vfs_call_durable_cookie(((handle)->next, \
+	smb_vfs_call_durable_cookie((handle)->next, \
 				    (fsp), (mem_ctx), (cookie))
 
 #define SMB_VFS_DURABLE_DISCONNECT(fsp, old_cookie, mem_ctx, new_cookie) \
