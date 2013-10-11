@@ -96,6 +96,7 @@ extern bool override_logfile;
 
 static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool need_rw_dc);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
+static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain );
 static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs);
 
@@ -881,6 +882,29 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	enum smb_signing_setting smb_sign_client_connections = lp_client_signing();
+
+	if (smb_sign_client_connections == SMB_SIGNING_DEFAULT) {
+		/*
+		 * If we are connecting to our own AD domain, require
+		 * smb signing to disrupt MITM attacks
+		 */
+		if (domain->primary && lp_security() == SEC_ADS) {
+			smb_sign_client_connections = SMB_SIGNING_REQUIRED;
+		/*
+		 * If we are in or are an AD domain and connecting to another
+		 * AD domain in our forest
+		 * then require smb signing to disrupt MITM attacks
+		 */
+		} else if ((lp_security() == SEC_ADS ||
+			    lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC)
+			   && domain->active_directory
+			   && (domain->domain_trust_attribs
+			       & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST)) {
+			smb_sign_client_connections = SMB_SIGNING_REQUIRED;
+		}
+	}
+
 	DEBUG(10,("cm_prepare_connection: connecting to DC %s for domain %s\n",
 		controller, domain->name ));
 
@@ -900,7 +924,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	*cli = cli_state_create(NULL, sockfd,
 				controller, domain->alt_name,
-				SMB_SIGNING_DEFAULT, flags);
+				smb_sign_client_connections, flags);
 	if (*cli == NULL) {
 		close(sockfd);
 		DEBUG(1, ("Could not cli_initialize\n"));
@@ -1957,6 +1981,14 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool 
 	}
 
 	invalidate_cm_connection(&domain->conn);
+
+	if (!domain->primary && !domain->initialized) {
+		/*
+		 * Before we connect to a trust, work out if it is an
+		 * AD domain by asking our own domain.
+		 */
+		set_dc_type_and_flags_trustinfo(domain);
+	}
 
 	result = cm_open_connection(domain, &domain->conn);
 
