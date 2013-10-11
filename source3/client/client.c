@@ -1695,7 +1695,6 @@ static int do_allinfo(const char *name)
 	struct timespec b_time, a_time, m_time, c_time;
 	off_t size;
 	uint16_t mode;
-	SMB_INO_T ino;
 	NTTIME tmp;
 	uint16_t fnum;
 	unsigned int num_streams;
@@ -1723,7 +1722,7 @@ static int do_allinfo(const char *name)
 	d_printf("altname: %s\n", altname);
 
 	status = cli_qpathinfo2(cli, name, &b_time, &a_time, &m_time, &c_time,
-				&size, &mode, &ino);
+				&size, &mode, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s getting pathinfo for %s\n", nt_errstr(status),
 			 name);
