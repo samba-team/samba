@@ -2185,7 +2185,113 @@ static bool smb_time_audit_aio_force(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static bool smb_time_audit_is_offline(struct vfs_handle_struct *handle,
+				      const struct smb_filename *fname,
+				      SMB_STRUCT_STAT *sbuf)
+{
+	bool result;
+	struct timespec ts1,ts2;
+	double timediff;
 
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_smb_fname("is_offline", timediff, fname);
+	}
+
+	return result;
+}
+
+static int smb_time_audit_set_offline(struct vfs_handle_struct *handle,
+				      const struct smb_filename *fname)
+{
+	int result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_SET_OFFLINE(handle, fname);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_smb_fname("set_offline", timediff, fname);
+	}
+
+	return result;
+}
+
+NTSTATUS smb_time_audit_durable_cookie(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       TALLOC_CTX *mem_ctx,
+				       DATA_BLOB *cookie)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_DURABLE_COOKIE(handle, fsp, mem_ctx, cookie);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("durable_cookie", timediff, fsp);
+	}
+
+	return result;
+}
+
+NTSTATUS smb_time_audit_durable_disconnect(struct vfs_handle_struct *handle,
+					   struct files_struct *fsp,
+					   const DATA_BLOB old_cookie,
+					   TALLOC_CTX *mem_ctx,
+					   DATA_BLOB *new_cookie)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_DURABLE_DISCONNECT(handle, fsp, old_cookie,
+						 mem_ctx, new_cookie);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("durable_disconnect", timediff, fsp);
+	}
+
+	return result;
+}
+
+NTSTATUS smb_time_audit_durable_reconnect(struct vfs_handle_struct *handle,
+					  struct smb_request *smb1req,
+					  struct smbXsrv_open *op,
+					  const DATA_BLOB old_cookie,
+					  TALLOC_CTX *mem_ctx,
+					  struct files_struct **fsp,
+					  DATA_BLOB *new_cookie)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_DURABLE_RECONNECT(handle, smb1req, op, old_cookie,
+						mem_ctx, fsp, new_cookie);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("durable_reconnect", timediff);
+	}
+
+	return result;
+}
 
 /* VFS operations */
 
@@ -2285,6 +2391,11 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.setxattr_fn = smb_time_audit_setxattr,
 	.fsetxattr_fn = smb_time_audit_fsetxattr,
 	.aio_force_fn = smb_time_audit_aio_force,
+	.is_offline_fn = smb_time_audit_is_offline,
+	.set_offline_fn = smb_time_audit_set_offline,
+	.durable_cookie_fn = smb_time_audit_durable_cookie,
+	.durable_disconnect_fn = smb_time_audit_durable_disconnect,
+	.durable_reconnect_fn = smb_time_audit_durable_reconnect,
 };
 
 
