@@ -1363,3 +1363,52 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 
 	return NT_STATUS_OK;
 }
+
+/****************************************************************************
+ Send a qpathinfo SMB_QUERY_FILE_STADNDARD_INFO call.
+****************************************************************************/
+
+NTSTATUS cli_qpathinfo_standard(struct cli_state *cli, const char *fname,
+				uint64_t *allocated, uint64_t *size,
+				uint32_t *nlinks,
+				bool *is_del_pending, bool *is_dir)
+{
+	uint8_t *rdata;
+	uint32_t num_rdata;
+	NTSTATUS status;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	status = cli_qpathinfo(talloc_tos(), cli, fname,
+			       SMB_QUERY_FILE_STANDARD_INFO,
+			       24, CLI_BUFFER_SIZE, &rdata, &num_rdata);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (allocated) {
+		*allocated = BVAL(rdata, 0);
+	}
+
+	if (size) {
+		*size = BVAL(rdata, 8);
+	}
+
+	if (nlinks) {
+		*nlinks = IVAL(rdata, 16);
+	}
+
+	if (is_del_pending) {
+		*is_del_pending = CVAL(rdata, 20);
+	}
+
+	if (is_dir) {
+		*is_dir = CVAL(rdata, 20);
+	}
+
+	TALLOC_FREE(rdata);
+
+	return NT_STATUS_OK;
+}

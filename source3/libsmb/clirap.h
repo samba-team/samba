@@ -115,6 +115,10 @@ NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
 				  SMB_STRUCT_STAT *sbuf, uint32 *attributes);
 NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 			     SMB_STRUCT_STAT *sbuf, uint32 *attributes);
+NTSTATUS cli_qpathinfo_standard(struct cli_state *cli, const char *fname,
+				uint64_t *allocated, uint64_t *size,
+				uint32_t *nlinks,
+				bool *is_del_pending, bool *is_dir);
 NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name);
 struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
