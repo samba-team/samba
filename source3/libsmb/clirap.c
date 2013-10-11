@@ -1412,3 +1412,57 @@ NTSTATUS cli_qpathinfo_standard(struct cli_state *cli, const char *fname,
 
 	return NT_STATUS_OK;
 }
+
+
+/* like cli_qpathinfo2 but do not use SMB_QUERY_FILE_ALL_INFO */
+NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
+			struct timespec *create_time,
+			struct timespec *access_time,
+			struct timespec *write_time,
+			struct timespec *change_time,
+			off_t *size, uint16 *mode,
+			SMB_INO_T *ino)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	SMB_STRUCT_STAT st;
+	uint32_t attr;
+	uint64_t pos;
+
+	if (create_time || access_time || write_time || change_time || mode) {
+		status = cli_qpathinfo_basic(cli, fname, &st, &attr);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	if (size) {
+		status = cli_qpathinfo_standard(cli, fname,
+						NULL, &pos, NULL, NULL, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		*size = pos;
+	}
+
+	if (create_time) {
+		*create_time = st.st_ex_btime;
+	}
+	if (access_time) {
+		*access_time = st.st_ex_atime;
+	}
+	if (write_time) {
+		*write_time = st.st_ex_mtime;
+	}
+	if (change_time) {
+		*change_time = st.st_ex_ctime;
+	}
+	if (mode) {
+		*mode = attr;
+	}
+	if (ino) {
+		*ino = 0;
+	}
+
+	return NT_STATUS_OK;
+}
