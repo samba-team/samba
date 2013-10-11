@@ -78,6 +78,7 @@ struct _SMBCSRV {
 	dev_t dev;
 	bool no_pathinfo;
 	bool no_pathinfo2;
+	bool no_pathinfo3;
         bool no_nt_session;
         struct policy_handle pol;
 

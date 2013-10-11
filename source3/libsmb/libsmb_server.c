@@ -606,6 +606,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
         srv->no_pathinfo = False;
         srv->no_pathinfo2 = False;
+	srv->no_pathinfo3 = False;
         srv->no_nt_session = False;
 
 done:

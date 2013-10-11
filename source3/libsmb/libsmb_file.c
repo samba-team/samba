@@ -560,6 +560,19 @@ SMBC_getatr(SMBCCTX * context,
 
 	srv->no_pathinfo2 = True;
 
+	if (!srv->no_pathinfo3 &&
+            NT_STATUS_IS_OK(cli_qpathinfo3(targetcli, targetpath,
+                           create_time_ts,
+                           access_time_ts,
+                           write_time_ts,
+                           change_time_ts,
+			   size, mode, ino))) {
+		TALLOC_FREE(frame);
+		return True;
+        }
+
+	srv->no_pathinfo3 = True;
+
 	/* if this is NT then don't bother with the getatr */
 	if (smb1cli_conn_capabilities(targetcli->conn) & CAP_NT_SMBS) {
                 errno = EPERM;
