@@ -1252,6 +1252,13 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	uint32_t flags;
 
 	if (!tevent_req_is_in_progress(subreq)) {
+		/*
+		 * This is a performance optimization,
+		 * it avoids one tevent_loop iteration,
+		 * which means we avoid one
+		 * talloc_stackframe_pool/talloc_free pair.
+		 */
+		tevent_req_notify_callback(subreq);
 		return NT_STATUS_OK;
 	}
 
