@@ -148,7 +148,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 			char *sid_string;
 			const char *sid_dn;
 			DATA_BLOB sid_blob;
-			int ret;
 
 			sid_string = dom_sid_string(tmp_ctx,
 						      &sids[i]);
