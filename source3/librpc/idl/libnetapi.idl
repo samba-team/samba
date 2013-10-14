@@ -777,6 +777,43 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetWkstaGetInfo                         */
+	/*******************************************/
+
+	[public] typedef struct {
+		uint32 wki100_platform_id;
+		string wki100_computername;
+		string wki100_langroup;
+		uint32 wki100_ver_major;
+		uint32 wki100_ver_minor;
+	} WKSTA_INFO_100;
+
+	[public] typedef struct {
+		uint32 wki101_platform_id;
+		string wki101_computername;
+		string wki101_langroup;
+		uint32 wki101_ver_major;
+		uint32 wki101_ver_minor;
+		string wki101_lanroot;
+	} WKSTA_INFO_101;
+
+	[public] typedef struct {
+		uint32 wki102_platform_id;
+		string wki102_computername;
+		string wki102_langroup;
+		uint32 wki102_ver_major;
+		uint32 wki102_ver_minor;
+		string wki102_lanroot;
+		uint32 wki102_logged_on_users;
+	} WKSTA_INFO_102;
+
+	[nopush,nopull] NET_API_STATUS NetWkstaGetInfo(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
 	/* NetGetDCName                            */
 	/*******************************************/
 

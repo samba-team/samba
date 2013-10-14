@@ -1617,6 +1617,23 @@ NET_API_STATUS NetServerSetInfo(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetWkstaGetInfo
+ *
+ * @brief Get Information on a workstation
+ *
+ * @param[in] wksta_name The workstation name to connect to
+ * @param[in] level The level to define which information is requested
+ * @param[out] buffer The returned buffer carrying the WKSTA_INFO structure
+ * @return NET_API_STATUS
+ *
+ ***************************************************************/
+
+NET_API_STATUS NetWkstaGetInfo(const char * wksta_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */);
+
+/************************************************************//**
+ *
  * NetGetDCName
  *
  * @brief Query for the PDC for a given domain

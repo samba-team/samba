@@ -374,6 +374,53 @@ NET_API_STATUS NetServerSetInfo(const char * server_name /* [in] [unique] */,
 }
 
 /****************************************************************
+ NetWkstaGetInfo
+****************************************************************/
+
+NET_API_STATUS NetWkstaGetInfo(const char * wksta_name /* [in] [unique] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */)
+{
+	struct NetWkstaGetInfo r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = wksta_name;
+	r.in.level = level;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetWkstaGetInfo, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(wksta_name)) {
+		werr = NetWkstaGetInfo_l(ctx, &r);
+	} else {
+		werr = NetWkstaGetInfo_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetWkstaGetInfo, &r);
+	}
+
+	TALLOC_FREE(frame);
+	return (NET_API_STATUS)r.out.result;
+}
+
+/****************************************************************
  NetGetDCName
 ****************************************************************/
 

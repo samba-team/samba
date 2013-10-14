@@ -78,6 +78,13 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 			  struct NetServerSetInfo *r);
 WERROR NetServerSetInfo_l(struct libnetapi_ctx *ctx,
 			  struct NetServerSetInfo *r);
+NET_API_STATUS NetWkstaGetInfo(const char * wksta_name /* [in] [unique] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */);
+WERROR NetWkstaGetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetWkstaGetInfo *r);
+WERROR NetWkstaGetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetWkstaGetInfo *r);
 NET_API_STATUS NetGetDCName(const char * server_name /* [in] [unique] */,
 			    const char * domain_name /* [in] [unique] */,
 			    uint8_t **buffer /* [out] [ref] */);

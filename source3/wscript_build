@@ -27,6 +27,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     lib/netapi/libnetapi.c
                     lib/netapi/joindomain.c
                     lib/netapi/serverinfo.c
+                    lib/netapi/wkstainfo.c
                     lib/netapi/getdc.c
                     lib/netapi/user.c
                     lib/netapi/group.c
