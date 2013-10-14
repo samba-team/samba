@@ -1486,7 +1486,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 */
 static void reload_nodes_file(struct ctdb_context *ctdb)
 {
-	ctdb->nodes = NULL;
+
 	ctdb_load_nodes_file(ctdb);
 }
 
