@@ -13,6 +13,11 @@ bld.SAMBA_GENERATOR('s3_param_global_h',
                     target='param_global.h',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
 
+bld.SAMBA_GENERATOR('s3_param_proto_h',
+                    source= '../../script/mks3param_proto.pl loadparm.c ../../lib/param/param_functions.c',
+                    target='param_proto.h',
+                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT}')
+
 bld.SAMBA3_PYTHON('pys3param',
                   source='pyparam.c',
                   deps='param',
