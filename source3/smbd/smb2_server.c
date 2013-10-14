@@ -2644,10 +2644,24 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 
 	if (unread_bytes) {
 		/* Recvfile error. Drain incoming socket. */
-		size_t ret = drain_socket(req->sconn->sock, unread_bytes);
+		size_t ret;
+
+		errno = 0;
+		ret = drain_socket(req->sconn->sock, unread_bytes);
 		if (ret != unread_bytes) {
-			smbd_server_connection_terminate(req->sconn,
-				"Failed to drain SMB2 socket\n");
+			NTSTATUS error;
+
+			if (errno == 0) {
+				error = NT_STATUS_IO_DEVICE_ERROR;
+			} else {
+				error = map_nt_error_from_unix_common(errno);
+			}
+
+			DEBUG(2, ("Failed to drain %u bytes from SMB2 socket: "
+				  "ret[%u] errno[%d] => %s\n",
+				  (unsigned)unread_bytes,
+				  (unsigned)ret, errno, nt_errstr(error)));
+			return error;
 		}
 	}
 
