@@ -166,6 +166,7 @@ struct smbd_smb2_read_state {
 	uint32_t in_length;
 	uint64_t in_offset;
 	uint32_t in_minimum;
+	DATA_BLOB out_headers;
 	DATA_BLOB out_data;
 	uint32_t out_remaining;
 };
@@ -180,10 +181,10 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 	ssize_t nread;
 
 	nread = SMB_VFS_SENDFILE(fsp->conn->sconn->sock,
-					fsp,
-					NULL,
-					in_offset,
-					in_length);
+				 fsp,
+				 state->smb2req->queue_entry.sendfile_header,
+				 in_offset,
+				 in_length);
 	DEBUG(10,("smb2_sendfile_send_data: SMB_VFS_SENDFILE returned %d on file %s\n",
 		(int)nread,
 		fsp_str_dbg(fsp) ));
@@ -301,6 +302,7 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	}
 	*state_copy = *state;
 	talloc_set_destructor(state_copy, smb2_sendfile_send_data);
+	state->smb2req->queue_entry.sendfile_header = &state_copy->out_headers;
 	return NT_STATUS_OK;
 }
 
