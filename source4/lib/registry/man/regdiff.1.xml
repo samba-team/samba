@@ -21,10 +21,7 @@
 		<command>regdiff</command>
 		<arg choice="opt">--help</arg>
 		<arg choice="opt">--backend=BACKEND</arg>
-		<arg choice="opt">--backend=BACKEND</arg>
 		<arg choice="opt">--credentials=CREDENTIALS</arg>
-		<arg choice="opt">--credentials=CREDENTIALS</arg>
-		<arg choice="opt">location</arg>
 		<arg choice="opt">location</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
