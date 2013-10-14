@@ -1451,6 +1451,7 @@ sub provision_plugin_s4_dc($$)
 	queue pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queuepause %p
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
+	print notify backchannel = yes
 
 ";
 

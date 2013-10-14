@@ -998,6 +998,7 @@ sub provision($$$$$$)
 	queue pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queuepause %p
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
+	print notify backchannel = yes
 
 	ncalrpc dir = $prefix_abs/ncalrpc
         resolv:host file = $dns_host_file
