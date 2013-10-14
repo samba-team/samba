@@ -44,7 +44,6 @@ bool asn1_write(struct asn1_data *data, const void *p, int len)
 		uint8_t *newp;
 		newp = talloc_realloc(data, data->data, uint8_t, data->ofs+len);
 		if (!newp) {
-			asn1_free(data);
 			data->has_error = true;
 			return false;
 		}
