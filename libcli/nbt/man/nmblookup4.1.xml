@@ -57,7 +57,7 @@
 		<varlistentry>
 		<term>-M</term>
 		<listitem><para>Searches for a master browser by looking
-		up the  NetBIOS name <replaceable>name</replaceable> with a
+		up the NetBIOS <replaceable>name</replaceable> with a
 		type of <constant>0x1d</constant>. If <replaceable>
 		name</replaceable> is "-" then it does a lookup on the special name
 		<constant>__MSBROWSE__</constant>. Please note that in order to
