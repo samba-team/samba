@@ -20,10 +20,6 @@
 
 	<cmdsynopsis>
 		<command>ntdbtool</command>
-	</cmdsynopsis>
-
-	<cmdsynopsis>
-		<command>ntdbtool</command>
 		<arg choice="plain">
 		<replaceable>NTDBFILE</replaceable>
 		</arg>
