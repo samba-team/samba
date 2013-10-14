@@ -1414,7 +1414,7 @@ NTSTATUS cli_qpathinfo_standard(struct cli_state *cli, const char *fname,
 }
 
 
-/* like cli_qpathinfo2 but do not use SMB_QUERY_FILE_ALL_INFO */
+/* like cli_qpathinfo2 but do not use SMB_QUERY_FILE_ALL_INFO with smb1 */
 NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 			struct timespec *create_time,
 			struct timespec *access_time,
@@ -1427,6 +1427,12 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 	SMB_STRUCT_STAT st;
 	uint32_t attr;
 	uint64_t pos;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_qpathinfo2(cli, fname,
+				      create_time, access_time, write_time, change_time,
+				      size, mode, ino);
+	}
 
 	if (create_time || access_time || write_time || change_time || mode) {
 		status = cli_qpathinfo_basic(cli, fname, &st, &attr);
