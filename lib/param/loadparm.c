@@ -314,7 +314,7 @@ static struct loadparm_context *global_loadparm_context;
 
 #define FN_LOCAL_PARM_INTEGER(fn_name, val) FN_LOCAL_INTEGER(fn_name, val)
 
-#define FN_LOCAL_CHAR(fn_name,val) \
+#define FN_LOCAL_PARM_CHAR(fn_name,val) \
  _PUBLIC_ char lpcfg_ ## fn_name(struct loadparm_service *service, \
 				struct loadparm_service *sDefault) {	\
 	 return((service != NULL)? service->val : sDefault->val); \

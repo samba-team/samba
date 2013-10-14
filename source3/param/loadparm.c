@@ -1113,7 +1113,7 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
  bool lp_ ## fn_name(const struct share_params *p) {return(bool)(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 #define FN_LOCAL_PARM_INTEGER(fn_name,val) \
  int lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
-#define FN_LOCAL_CHAR(fn_name,val) \
+#define FN_LOCAL_PARM_CHAR(fn_name,val) \
  char lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
 
