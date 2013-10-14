@@ -2649,7 +2649,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
         delete_force(self.ldb, user_dn)
         try:
-            sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
+            sddl = "O:DUG:DUD:AI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, security.dom_sid('S-1-5-21'))
             desc_base64 = base64.b64encode( ndr_pack(desc) )
             self.ldb.add_ldif("""
@@ -2659,6 +2659,10 @@ sAMAccountName: """ + user_name + """
 nTSecurityDescriptor:: """ + desc_base64)
             res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
             self.assertTrue("nTSecurityDescriptor" in res[0])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            self.assertTrue("O:S-1-5-21-513G:S-1-5-21-513D:AI(A;;RPWP;;;AU)" in desc_sddl)
         finally:
             delete_force(self.ldb, user_dn)
 
