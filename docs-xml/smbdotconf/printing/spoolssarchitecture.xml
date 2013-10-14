@@ -1,0 +1,15 @@
+<samba:parameter name="spoolss: architecture"
+		 context="G"
+		 type="string"
+		 advanced="1"
+		 developer="1"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Windows spoolss print clients only allow association of server-side drivers
+	with printers when the driver architecture matches the advertised print server
+	architecture. Samba's spoolss print server architecture can be changed using
+	this parameter.</para>
+</description>
+<value type="default">Windows NT x86</value>
+<value type="example">Windows x64</value>
+</samba:parameter>
