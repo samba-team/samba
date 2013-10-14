@@ -877,7 +877,7 @@ net rpc trust create \
 <refsect3>
 <title>RPC TRUST DELETE</title>
 
-<para>Delete a trust trust object by calling lsaDeleteTrustedDomain.
+<para>Delete a trust object by calling lsaDeleteTrustedDomain.
 The can be done on a single server or on two servers at once.</para>
 
 <variablelist><title>Options:</title>
