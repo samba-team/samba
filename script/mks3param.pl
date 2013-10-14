@@ -108,7 +108,14 @@ sub handle_loadparm($$)
 {
 	my ($file,$line) = @_;
 
-	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
+	# Local parameters don't need the ->s3_fns because the struct
+	# loadparm_service is shared and lpcfg_service() checks the ->s3_fns
+	# hook
+	#
+	# STRING isn't handled as we do not yet have a way to pass in a memory context nor
+	# do we have a good way of dealing with the % macros yet.
+
+	if ($line =~ /^FN_(GLOBAL)_(CONST_STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
 		my $scope = $1;
 		my $type = $2;
 		my $name = $3;
