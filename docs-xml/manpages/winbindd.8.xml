@@ -364,7 +364,7 @@ auth  required    /lib/security/pam_unix.so \
 	be the same.  The user and group ids will only be valid for the local
 	machine, unless a shared <smbconfoption name="idmap config * : backend"/> is configured.</para>
 
-	<para>If the the Windows NT SID to UNIX user and group id mapping
+	<para>If the Windows NT SID to UNIX user and group id mapping
 	file is damaged or destroyed then the mappings will be lost. </para>
 </refsect1>
 
