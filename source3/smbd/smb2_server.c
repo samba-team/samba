@@ -2680,7 +2680,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 		do_encryption = true;
 	}
 
-	state = talloc(sconn, struct smbd_smb2_send_oplock_break_state);
+	state = talloc_zero(sconn, struct smbd_smb2_send_oplock_break_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2982,6 +2982,38 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 
 	while (sconn->smb2.send_queue != NULL) {
 		struct smbd_smb2_send_queue *e = sconn->smb2.send_queue;
+
+		if (e->sendfile_header != NULL) {
+			size_t size = 0;
+			size_t i = 0;
+			uint8_t *buf;
+
+			for (i=0; i < e->count; i++) {
+				size += e->vector[i].iov_len;
+			}
+
+			buf = talloc_array(e->mem_ctx, uint8_t, size);
+			if (buf == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			size = 0;
+			for (i=0; i < e->count; i++) {
+				memcpy(buf+size,
+				       e->vector[i].iov_base,
+				       e->vector[i].iov_len);
+				size += e->vector[i].iov_len;
+			}
+
+			e->sendfile_header->data = buf;
+			e->sendfile_header->length = size;
+			e->count = 0;
+
+			sconn->smb2.send_queue_len--;
+			DLIST_REMOVE(sconn->smb2.send_queue, e);
+			talloc_free(e->mem_ctx);
+			continue;
+		}
 
 		ret = writev(sconn->sock, e->vector, e->count);
 		if (ret == 0) {
