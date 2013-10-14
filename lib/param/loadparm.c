@@ -2611,3 +2611,45 @@ int lpcfg_security(struct loadparm_context *lp_ctx)
 	return lp_find_security(lpcfg__server_role(lp_ctx),
 				lpcfg__security(lp_ctx));
 }
+
+bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandatory)
+{
+	bool allowed = true;
+	enum smb_signing_setting signing_setting = lpcfg_server_signing(lp_ctx);
+
+	*mandatory = false;
+
+	if (signing_setting == SMB_SIGNING_DEFAULT) {
+		/*
+		 * If we are a domain controller, SMB signing is
+		 * really important, as it can prevent a number of
+		 * attacks on communications between us and the
+		 * clients
+		 *
+		 * However, it really sucks (no sendfile, CPU
+		 * overhead) performance-wise when used on a
+		 * file server, so disable it by default
+		 * on non-DCs
+		 */
+
+		if (lpcfg_server_role(lp_ctx) >= ROLE_ACTIVE_DIRECTORY_DC) {
+			signing_setting = SMB_SIGNING_REQUIRED;
+		} else {
+			signing_setting = SMB_SIGNING_OFF;
+		}
+	}
+
+	switch (signing_setting) {
+	case SMB_SIGNING_REQUIRED:
+		*mandatory = true;
+		break;
+	case SMB_SIGNING_IF_REQUIRED:
+		break;
+	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_OFF:
+		allowed = false;
+		break;
+	}
+
+	return allowed;
+}

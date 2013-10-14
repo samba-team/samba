@@ -23,6 +23,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_signing.h"
+#include "lib/param/param.h"
 
 /***********************************************************
  Called to validate an incoming packet from the client.
@@ -168,20 +169,14 @@ static void smbd_shm_signing_free(TALLOC_CTX *mem_ctx, void *ptr)
 
 bool srv_init_signing(struct smbd_server_connection *conn)
 {
-	bool allowed = true;
+	bool allowed;
 	bool desired;
 	bool mandatory = false;
 
-	switch (lp_server_signing()) {
-	case SMB_SIGNING_REQUIRED:
-		mandatory = true;
-		break;
-	case SMB_SIGNING_IF_REQUIRED:
-		break;
-	case SMB_SIGNING_DEFAULT:
-	case SMB_SIGNING_OFF:
-		allowed = false;
-		break;
+	struct loadparm_context *lp_ctx = loadparm_init_s3(conn, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DEBUG(10, ("loadparm_init_s3 failed\n"));
+		return false;
 	}
 
 	/*
@@ -192,7 +187,9 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	 * because not every client that requires signing
 	 * sends FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED.
 	 */
-	desired = allowed;
+
+	allowed = desired = lpcfg_server_signing_allowed(lp_ctx, &mandatory);
+	talloc_unlink(conn, lp_ctx);
 
 	if (lp_async_smb_echo_handler()) {
 		struct smbd_shm_signing *s;

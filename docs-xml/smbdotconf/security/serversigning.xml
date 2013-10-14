@@ -6,9 +6,14 @@
 <description>
 
     <para>This controls whether the client is allowed or required to use SMB1 and SMB2 signing. Possible values
-    are <emphasis>auto</emphasis>, <emphasis>mandatory</emphasis>
+    are <emphasis>default</emphasis>, <emphasis>auto</emphasis>, <emphasis>mandatory</emphasis>
     and <emphasis>disabled</emphasis>.
     </para>
+
+    <para>By default, and when smb signing is set to
+    <emphasis>default</emphasis>, smb signing enabled when
+    <smbconfoption name="server role"/> is <emphasis>active directory
+    domain controller</emphasis> and disabled otherwise.</para>
 
     <para>When set to auto, SMB1 signing is offered, but not enforced.
     When set to mandatory, SMB1 signing is required and if set
@@ -20,5 +25,5 @@
     will still require SMB2 clients to use signing.</para>
 </description>
 
-<value type="default">Disabled</value>
+<value type="default">default</value>
 </samba:parameter>
