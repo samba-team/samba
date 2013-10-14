@@ -18,6 +18,11 @@ bld.SAMBA_GENERATOR('s3_param_proto_h',
                     target='param_proto.h',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT}')
 
+bld.SAMBA_GENERATOR('s3_loadparm_ctx_table_c',
+                    source= ' ../../script/mks3param_ctx_table.pl ../../lib/param/loadparm.c ../../lib/param/param_functions.c',
+                    target='loadparm_ctx_table.c',
+                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT}')
+
 bld.SAMBA3_PYTHON('pys3param',
                   source='pyparam.c',
                   deps='param',

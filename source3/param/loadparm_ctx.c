@@ -56,69 +56,7 @@ static bool lp_load_for_s4_ctx(const char *filename)
 	return status;
 }
 
-/* These are in the order that they appear in the s4 loadparm file.
- * All of the s4 loadparm functions should be here eventually, once
- * they are implemented in the s3 loadparm, have the same format (enum
- * values in particular) and defaults. */
-static const struct loadparm_s3_helpers s3_fns =
-{
-	.get_parametric = lp_parm_const_string_service,
-	.get_parm_struct = lp_get_parameter,
-	.get_parm_ptr = lp_parm_ptr,
-	.get_service = lp_service_for_s4_ctx,
-	.get_servicebynum = lp_servicebynum_for_s4_ctx,
-	.get_default_loadparm_service = lp_default_loadparm_service,
-	.get_numservices = lp_numservices,
-	.load = lp_load_for_s4_ctx,
-	.set_cmdline = lp_set_cmdline,
-	.dump = lp_dump,
-
-	._server_role = lp__server_role,
-	._security = lp__security,
-	._domain_master = lp__domain_master,
-	._domain_logons = lp__domain_logons,
-
-	.winbind_separator = lp_winbind_separator,
-	.template_homedir = lp_template_homedir,
-	.template_shell = lp_template_shell,
-
-	.dos_charset = lp_dos_charset,
-	.unix_charset = lp_unix_charset,
-
-	.realm = lp_realm,
-	.dnsdomain = lp_dnsdomain,
-	.socket_options = lp_socket_options,
-	.workgroup = lp_workgroup,
-
-	.netbios_name = lp_netbios_name,
-	.netbios_scope = lp_netbios_scope,
-	.netbios_aliases = lp_netbios_aliases,
-
-	.lanman_auth = lp_lanman_auth,
-	.ntlm_auth = lp_ntlm_auth,
-
-	.client_plaintext_auth = lp_client_plaintext_auth,
-	.client_lanman_auth = lp_client_lanman_auth,
-	.client_ntlmv2_auth = lp_client_ntlmv2_auth,
-	.client_use_spnego_principal = lp_client_use_spnego_principal,
-
-	.private_dir = lp_private_dir,
-	.ncalrpc_dir = lp_ncalrpc_dir,
-	.lockdir = lp_lockdir,
-
-	.passdb_backend = lp_passdb_backend,
-
-	.host_msdfs = lp_host_msdfs,
-	.unix_extensions = lp_unix_extensions,
-	.use_spnego = lp_use_spnego,
-	.use_mmap = lp_use_mmap,
-	.use_ntdb = lp_use_ntdb,
-
-	.srv_minprotocol = lp_srv_minprotocol,
-	.srv_maxprotocol = lp_srv_maxprotocol,
-
-	.passwordserver = lp_passwordserver
-};
+#include "loadparm_ctx_table.c"
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)
 {
