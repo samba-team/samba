@@ -1481,15 +1481,6 @@ static int recover_database(struct ctdb_recoverd *rec,
 	return 0;
 }
 
-/*
-  reload the nodes file 
-*/
-static void reload_nodes_file(struct ctdb_context *ctdb)
-{
-
-	ctdb_load_nodes_file(ctdb);
-}
-
 static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 					 struct ctdb_recoverd *rec,
 					 struct ctdb_node_map *nodemap,
@@ -2364,7 +2355,7 @@ static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	DEBUG(DEBUG_ERR, (__location__ " Reload nodes file from recovery daemon\n"));
 
-	reload_nodes_file(rec->ctdb);
+	ctdb_load_nodes_file(rec->ctdb);
 }
 
 
@@ -3797,7 +3788,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	if (ctdb->num_nodes != nodemap->num) {
 		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
-		reload_nodes_file(ctdb);
+		ctdb_load_nodes_file(ctdb);
 		return;
 	}
 
