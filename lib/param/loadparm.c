@@ -232,7 +232,16 @@ static struct loadparm_context *global_loadparm_context;
 #define lpcfg_default_service global_loadparm_context->sDefault
 #define lpcfg_global_service(i) global_loadparm_context->services[i]
 
-#define FN_GLOBAL_STRING(fn_name,var_name)				\
+#define FN_GLOBAL_STRING(fn_name,var_name) \
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {\
+	 if (lp_ctx == NULL) return NULL;				\
+	 if (lp_ctx->s3_fns) {						\
+	         smb_panic( __location__ ": " #fn_name " not implemented because it is an allocated and substiuted string"); \
+	 }								\
+	 return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : ""; \
+}
+
+#define FN_GLOBAL_CONST_STRING(fn_name,var_name)				\
  _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) { \
 	if (lp_ctx == NULL) return NULL;				\
 	if (lp_ctx->s3_fns) {						\
@@ -241,16 +250,6 @@ static struct loadparm_context *global_loadparm_context;
 	}								\
 	return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : ""; \
 }
-
-#define FN_GLOBAL_CONST_STRING(fn_name,var_name) \
- _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {\
-	 if (lp_ctx == NULL) return NULL;				\
-	 if (lp_ctx->s3_fns) {						\
-		 SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
-		 return lp_ctx->s3_fns->fn_name();			\
-	 }								\
-	 return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : ""; \
- }
 
 #define FN_GLOBAL_LIST(fn_name,var_name)				\
  _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) { \
