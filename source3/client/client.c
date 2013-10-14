@@ -1721,7 +1721,7 @@ static int do_allinfo(const char *name)
 	}
 	d_printf("altname: %s\n", altname);
 
-	status = cli_qpathinfo2(cli, name, &b_time, &a_time, &m_time, &c_time,
+	status = cli_qpathinfo3(cli, name, &b_time, &a_time, &m_time, &c_time,
 				&size, &mode, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s getting pathinfo for %s\n", nt_errstr(status),
@@ -1799,7 +1799,7 @@ static int do_allinfo(const char *name)
 		d_printf("%s\n", snapshots[i]);
 		snap_name = talloc_asprintf(talloc_tos(), "%s%s",
 					    snapshots[i], name);
-		status = cli_qpathinfo2(cli, snap_name, &b_time, &a_time,
+		status = cli_qpathinfo3(cli, snap_name, &b_time, &a_time,
 					&m_time, &c_time, &size,
 					NULL, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
