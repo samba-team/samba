@@ -19,10 +19,6 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbtorture</command>
-	</cmdsynopsis>
-	
-	<cmdsynopsis>
-		<command>smbtorture</command>
 		<arg choice="req">//server/share</arg>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-U user%pass</arg>
