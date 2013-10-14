@@ -2552,6 +2552,11 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 		/* Special object (security principal?) */
 		return LDB_SUCCESS;
 	}
+	/* do not allow deletion of well-known sids */
+	if (rid < DSDB_SAMDB_MINIMUM_ALLOWED_RID &&
+	    (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) == NULL)) {
+		return LDB_ERR_OTHER;
+	}
 
 	/* Deny delete requests from groups which are primary ones */
 	ret = dsdb_module_search(ac->module, ac, &res,

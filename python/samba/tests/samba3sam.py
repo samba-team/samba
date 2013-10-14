@@ -172,7 +172,7 @@ class Samba3SamTestCase(MapBaseTestCase):
         self.assertEquals(str(msg[0].dn),
                           "cn=Replicator,ou=Groups,dc=vernstok,dc=nl")
         self.assertTrue("objectSid" in msg[0])
-        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552",
+        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-1052",
                              msg[0]["objectSid"])
         oc = set(msg[0]["objectClass"])
         self.assertEquals(oc, set(["group"]))
@@ -345,7 +345,7 @@ dnsHostName: x
 nextRid: y
 lastLogon: x
 description: x
-objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
+objectSid: S-1-5-21-4231626423-2410014848-2360679739-1052
 """)
 
         self.ldb.add({
@@ -380,7 +380,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
             "sambaBadPasswordCount": "x",
             "sambaLogonTime": "x",
             "description": "x",
-            "sambaSID": "S-1-5-21-4231626423-2410014848-2360679739-552",
+            "sambaSID": "S-1-5-21-4231626423-2410014848-2360679739-1052",
             "sambaPrimaryGroupSID": "S-1-5-21-4231626423-2410014848-2360679739-512"})
 
         self.samba3.db.add({
@@ -483,20 +483,20 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # TODO:
         #   Using the SID directly in the parse tree leads to conversion
         #   errors, letting the search fail with no results.
-        #res = self.ldb.search("(objectSid=S-1-5-21-4231626423-2410014848-2360679739-552)", scope=SCOPE_DEFAULT, attrs)
+        #res = self.ldb.search("(objectSid=S-1-5-21-4231626423-2410014848-2360679739-1052)", scope=SCOPE_DEFAULT, attrs)
         res = self.ldb.search(expression="(objectSid=*)", base=None, scope=SCOPE_DEFAULT, attrs=["dnsHostName", "lastLogon", "objectSid"])
         self.assertEquals(len(res), 4)
         res = sorted(res, key=attrgetter('dn'))
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
         self.assertEquals(str(res[1]["dnsHostName"]), "x")
         self.assertEquals(str(res[1]["lastLogon"]), "x")
-        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552",
+        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-1052",
                              res[1]["objectSid"])
         self.assertTrue("objectSid" in res[1])
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "x")
-        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552",
+        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-1052",
                              res[0]["objectSid"])
         self.assertTrue("objectSid" in res[0])
 
