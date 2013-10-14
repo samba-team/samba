@@ -31,7 +31,7 @@
 
 	<para>
 	Currently, the <parameter>ad</parameter> backend
-	does not work as the the default idmap backend, but one has
+	does not work as the default idmap backend, but one has
 	to configure it separately for each domain for which one wants
 	to use it, using disjoint ranges. One usually needs to configure
 	a writeable default idmap range, using for example the
