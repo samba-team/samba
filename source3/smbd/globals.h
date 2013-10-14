@@ -467,11 +467,21 @@ NTSTATUS smbXsrv_open_global_traverse(
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);
 
+struct smbd_smb2_send_queue {
+	struct smbd_smb2_send_queue *prev, *next;
+
+	struct iovec *vector;
+	int count;
+
+	TALLOC_CTX *mem_ctx;
+};
 
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
 
 	struct smbd_server_connection *sconn;
+
+	struct smbd_smb2_send_queue queue_entry;
 
 	/* the session the request operates on, maybe NULL */
 	struct smbXsrv_session *session;
@@ -740,9 +750,21 @@ struct smbd_server_connection {
 		} locks;
 	} smb1;
 	struct {
-		struct tevent_queue *recv_queue;
-		struct tevent_queue *send_queue;
-		struct tstream_context *stream;
+		struct smbd_smb2_request_read_state {
+			struct smbd_smb2_request *req;
+			struct {
+				uint8_t nbt[NBT_HDR_SIZE];
+				bool done;
+			} hdr;
+			struct iovec vector;
+			bool doing_receivefile;
+			size_t min_recv_size;
+			size_t pktlen;
+			uint8_t *pktbuf;
+		} request_read_state;
+		struct smbd_smb2_send_queue *send_queue;
+		size_t send_queue_len;
+		struct tevent_fd *fde;
 		bool negprot_2ff;
 		struct {
 			/* The event that makes us process our blocking lock queue */
