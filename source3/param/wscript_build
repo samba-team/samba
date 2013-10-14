@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
+                     source='util.c',
+                     deps='talloc')
+
+bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
+                     source='loadparm_ctx.c',
+                     deps='''talloc s3_param_h param''')
+
+bld.SAMBA_GENERATOR('s3_param_global_h',
+                    source= '../../script/mkparamdefs.pl loadparm.c ../../lib/param/param_functions.c',
+                    target='param_global.h',
+                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
+
+bld.SAMBA3_PYTHON('pys3param',
+                  source='pyparam.c',
+                  deps='param',
+                  public_deps='samba-hostconfig pytalloc-util talloc',
+                  realname='samba/samba3/param.so')
+
+bld.SAMBA3_SUBSYSTEM('param_service',
+                     source='service.c',
+                     deps = 'USER_UTIL param PRINTING')
+
+bld.SAMBA3_BINARY('test_lp_load',
+                 source='test_lp_load.c',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3''',
+                 install=False)

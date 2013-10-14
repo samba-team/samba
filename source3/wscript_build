@@ -185,35 +185,12 @@ bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
                      source='lib/server_mutex.c',
                      deps='talloc')
 
-bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
-                     source='param/util.c',
-                     deps='talloc')
-
-bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
-                     source='param/loadparm_ctx.c',
-                     deps='''talloc s3_param_h param''')
-
-bld.SAMBA_GENERATOR('param/param_global_h',
-                    source= '../script/mkparamdefs.pl param/loadparm.c ../lib/param/param_functions.c',
-                    target='param/param_global.h',
-                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
-
 bld.SAMBA3_SUBSYSTEM('param',
                    source='''param/loadparm.c
                    lib/sharesec.c
                    lib/ldap_debug_handler.c
                    lib/util_names.c''',
-                   deps='samba-util PARAM_UTIL ldap lber LOADPARM_CTX samba3core smbconf param_local_h param/param_global_h cups''')
-
-bld.SAMBA3_PYTHON('pys3param',
-                  source='param/pyparam.c',
-                  deps='param',
-                  public_deps='samba-hostconfig pytalloc-util talloc',
-                  realname='samba/samba3/param.so')
-    
-bld.SAMBA3_SUBSYSTEM('param_service',
-                     source='param/service.c',
-                     deps = 'USER_UTIL param PRINTING')
+                   deps='samba-util PARAM_UTIL ldap lber LOADPARM_CTX samba3core smbconf param_local_h s3_param_global_h cups''')
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -1381,14 +1358,6 @@ bld.SAMBA3_BINARY('rpc_open_tcp',
                  msrpc3''',
                  install=False)
 
-bld.SAMBA3_BINARY('test_lp_load',
-                 source='param/test_lp_load.c',
-                 deps='''
-                 talloc
-                 param
-                 popt_samba3''',
-                 install=False)
-
 bld.SAMBA3_BINARY('dbwrap_tool',
                  source='utils/dbwrap_tool.c',
                  deps='''
@@ -1447,6 +1416,7 @@ bld.RECURSE('librpc/idl')
 bld.RECURSE('libsmb')
 bld.RECURSE('modules')
 bld.RECURSE('pam_smbpass')
+bld.RECURSE('param')
 bld.RECURSE('passdb')
 bld.RECURSE('rpc_server')
 bld.RECURSE('script')
