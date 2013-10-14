@@ -20,10 +20,6 @@
 
 	<cmdsynopsis>
 		<command>smbta-util</command>
-	</cmdsynopsis>
-
-	<cmdsynopsis>
-		<command>smbta-util</command>
 		<arg rep="repeat" choice="opt">
 		<replaceable>COMMANDS</replaceable>
 		</arg>
