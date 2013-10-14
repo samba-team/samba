@@ -1250,6 +1250,32 @@ class AclRenameTests(AclTests):
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % ou3_dn)
         self.assertNotEqual(len(res), 0)
 
+    def test_rename_u9(self):
+        """Rename 'User object' cross OU, with explicit deny on sd and dc"""
+        ou1_dn = "OU=test_rename_ou1," + self.base_dn
+        ou2_dn = "OU=test_rename_ou2," + self.base_dn
+        user_dn = "CN=test_rename_user2," + ou1_dn
+        rename_user_dn = "CN=test_rename_user5," + ou2_dn
+        # Create OU structure
+        self.ldb_admin.create_ou(ou1_dn)
+        self.ldb_admin.create_ou(ou2_dn)
+        self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
+        mod = "(D;;SD;;;DA)"
+        self.sd_utils.dacl_add_ace(user_dn, mod)
+        mod = "(D;;DC;;;DA)"
+        self.sd_utils.dacl_add_ace(ou1_dn, mod)
+        # Rename 'User object' having SD and CC to AU
+        try:
+            self.ldb_admin.rename(user_dn, rename_user_dn)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+        #add an allow ace so we can delete this ou
+        mod = "(A;;DC;;;DA)"
+        self.sd_utils.dacl_add_ace(ou1_dn, mod)
+
+
 #tests on Control Access Rights
 class AclCARTests(AclTests):
 
