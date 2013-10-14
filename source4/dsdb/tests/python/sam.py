@@ -586,7 +586,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_sam_attributes(self):
         """Test the behaviour of special attributes of SAM objects"""
-        print "Testing the behaviour of special attributes of SAM objects\n"""
+        print "Testing the behaviour of special attributes of SAM objects\n"
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -2604,7 +2604,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_sam_description_attribute(self):
         """Test SAM description attribute"""
-        print "Test SAM description attribute"""
+        print "Test SAM description attribute"
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -2772,7 +2772,7 @@ class SamTests(samba.tests.TestCase):
 
     def test_fSMORoleOwner_attribute(self):
         """Test fSMORoleOwner attribute"""
-        print "Test fSMORoleOwner attribute"""
+        print "Test fSMORoleOwner attribute"
 
         ds_service_name = self.ldb.get_dsServiceName()
 
@@ -2846,6 +2846,37 @@ class SamTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_protected_sid_objects(self):
+        """Test deletion of objects with RID < 1000"""
+        self.ldb.create_ou("ou=ldaptestou," + self.base_dn)
+        # a list of some well-known sids
+        # objects in Builtin are aready covered by objectclass
+        protected_list = [
+            ["CN=Domain Admins","CN=Users,"],
+            ["CN=Schema Admins","CN=Users,"],
+            ["CN=Enterprise Admins","CN=Users,"],
+            ["CN=Administrator","CN=Users,"],
+            ["CN=Domain Controllers","CN=Users,"],
+            ]
+
+
+
+        for pr_object in protected_list:
+            try:
+                self.ldb.delete(pr_object[0] + "," + pr_object[1] + self.base_dn)
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_OTHER)
+            else:
+                self.fail("Deleted " + pr_object[0])
+
+            try:
+                self.ldb.rename(pr_object[0] + "," + pr_object[1] + self.base_dn,
+                                pr_object[0] + "2," + pr_object[1] + self.base_dn)
+            except LdbError, (num, _):
+                self.fail("Could not rename " + pr_object[0])
+
+            self.ldb.rename(pr_object[0] + "2," + pr_object[1] + self.base_dn,
+                            pr_object[0] + "," + pr_object[1] + self.base_dn)
 
 if not "://" in host:
     if os.path.isfile(host):
