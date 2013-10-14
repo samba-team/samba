@@ -135,7 +135,6 @@ _PUBLIC_ void ndr_print_dnsp_string(struct ndr_print *ndr, const char *name,
 _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_flags, const char **string)
 {
 	uint8_t len;
-	uint32_t total_len;
 	char *ret;
 
 	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &len));
@@ -144,13 +143,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_fl
 	if (!ret) {
 		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string");
 	}
-	total_len = 1;
-	ret = talloc_zero_array(ndr->current_mem_ctx, char, len+1);
+	ret = talloc_zero_array(ndr->current_mem_ctx, char, len + 1);
 	if (!ret) {
 		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string");
 	}
-	NDR_CHECK(ndr_pull_bytes(ndr, (uint8_t *)&ret[total_len-1], len));
-	total_len = len;
+	NDR_CHECK(ndr_pull_bytes(ndr, (uint8_t *)ret, len));
 
 	(*string) = ret;
 	NDR_PULL_ALIGN(ndr, 1);
