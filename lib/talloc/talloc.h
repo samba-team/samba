@@ -961,6 +961,10 @@ size_t talloc_reference_count(const void *ptr);
  * @return              The original pointer 'ptr', NULL if talloc ran out of
  *                      memory in creating the reference.
  *
+ * @warning You should try to avoid using this interface. It turns a beautiful
+ *          talloc-tree into a graph. It is often really hard to debug if you
+ *          screw something up by accident.
+ *
  * Example:
  * @code
  *      unsigned int *a, *b, *c;
@@ -1000,6 +1004,10 @@ void *_talloc_reference_loc(const void *context, const void *ptr, const char *lo
  * @note If the parent has already been removed using talloc_free() then
  * this function will fail and will return -1.  Likewise, if ptr is NULL,
  * then the function will make no modifications and return -1.
+ *
+ * @warning You should try to avoid using this interface. It turns a beautiful
+ *          talloc-tree into a graph. It is often really hard to debug if you
+ *          screw something up by accident.
  *
  * Example:
  * @code
