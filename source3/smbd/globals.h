@@ -469,6 +469,7 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);
 struct smbd_smb2_send_queue {
 	struct smbd_smb2_send_queue *prev, *next;
 
+	DATA_BLOB *sendfile_header;
 	struct iovec *vector;
 	int count;
 
