@@ -1372,7 +1372,6 @@ is_ctdb_managed_service ()
     # backward compatibility and try again.
     ctdb_compat_managed_service "$CTDB_MANAGES_VSFTPD"   "vsftpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_SAMBA"    "samba"
-    ctdb_compat_managed_service "$CTDB_MANAGES_SCP"      "scp"
     ctdb_compat_managed_service "$CTDB_MANAGES_WINBIND"  "winbind"
     ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "apache2"
     ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "httpd"
