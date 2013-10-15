@@ -11,7 +11,8 @@
 . $CTDB_BASE/functions
 loadconfig
 
-[ -z "$CTDB_NATGW_NODES" ] && exit 0
+[ -n "$CTDB_NATGW_NODES" ] || exit 0
+export CTDB_NATGW_NODES
 
 set_natgw_capability ()
 {
