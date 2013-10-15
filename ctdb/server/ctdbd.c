@@ -323,11 +323,8 @@ int main(int argc, const char *argv[])
 		ctdb->max_persistent_check_errors = (uint64_t)options.max_persistent_check_errors;
 	}
 
-	if (getenv("CTDB_BASE") == NULL) {
-		/* setup a environment variable for the event scripts to use
-		   to find the installation directory */
-		setenv("CTDB_BASE", ETCDIR "/ctdb", 1);
-	}
+	/* Default value for CTDB_BASE - don't override */
+	setenv("CTDB_BASE", ETCDIR "/ctdb", 0);
 
 	/* start the protocol running (as a child) */
 	return ctdb_start_daemon(ctdb, interactive?false:true, options.use_syslog, options.public_address_list);
