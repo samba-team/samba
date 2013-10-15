@@ -392,9 +392,9 @@ static int winbind_write_sock(void *buffer, int count, int recursing,
 		   call would not block by calling poll(). */
 
 		pfd.fd = winbindd_fd;
-		pfd.events = POLLIN|POLLHUP;
+		pfd.events = POLLIN|POLLOUT|POLLHUP;
 
-		ret = poll(&pfd, 1, 0);
+		ret = poll(&pfd, 1, -1);
 		if (ret == -1) {
 			winbind_close_sock();
 			return -1;                   /* poll error */
