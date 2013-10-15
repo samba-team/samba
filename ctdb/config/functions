@@ -88,12 +88,7 @@ script_log ()
 {
     _tag="$1" ; shift
 
-    _using_syslog=false
-    if [ "$CTDB_SYSLOG" = "yes" -o -z "$CTDB_LOGFILE" ] ; then
-	_using_syslog=true
-    fi
-
-    if $_using_syslog ; then
+    if [ "$CTDB_SYSLOG" = "yes" ] ; then
 	logger -t "ctdbd: ${_tag}" $*
     else
 	{
