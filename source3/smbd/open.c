@@ -1194,17 +1194,10 @@ static NTSTATUS send_break_message(files_struct *fsp,
 }
 
 /*
- * Return share_mode_entry pointers for :
- * 1). Batch oplock entry.
- * 2). Batch or exclusive oplock entry (may be identical to #1).
- * bool have_level2_oplock
- * bool have_no_oplock.
  * Do internal consistency checks on the share mode for a file.
  */
 
-static bool validate_oplock_types(files_struct *fsp,
-				  int oplock_request,
-				  struct share_mode_lock *lck)
+static bool validate_oplock_types(struct share_mode_lock *lck)
 {
 	struct share_mode_data *d = lck->data;
 	bool batch = false;
@@ -1213,14 +1206,6 @@ static bool validate_oplock_types(files_struct *fsp,
 	bool no_oplock = false;
 	uint32_t num_non_stat_opens = 0;
 	uint32_t i;
-
-	/* Ignore stat or internal opens, as is done in
-		delay_for_batch_oplocks() and
-		delay_for_exclusive_oplocks().
-	 */
-	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
-		return true;
-	}
 
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
@@ -2358,7 +2343,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		if (!validate_oplock_types(fsp, 0, lck)) {
+		if (!validate_oplock_types(lck)) {
 			smb_panic("validate_oplock_types failed");
 		}
 
@@ -2446,7 +2431,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	/* Get the types we need to examine. */
-	if (!validate_oplock_types(fsp, oplock_request, lck)) {
+	if (!validate_oplock_types(lck)) {
 		smb_panic("validate_oplock_types failed");
 	}
 
