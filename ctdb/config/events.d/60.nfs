@@ -51,7 +51,7 @@ nfs_check_thread_count ()
 
 loadconfig
 
-[ "$NFS_SERVER_MODE" != "ganesha" ] || exit 0
+[ "${CTDB_NFS_SERVER_MODE:-${NFS_SERVER_MODE}}" != "ganesha" ] || exit 0
 
 ctdb_setup_service_state_dir
 

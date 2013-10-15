@@ -139,7 +139,7 @@ case "$1" in
 	# will respond "strangely" immediately after restarting it, which
 	# causes clients to fail to reclaim the locks.
 	# 
-	if [ "$NFS_SERVER_MODE" != "ganesha" ] ; then
+	if [ "${CTDB_NFS_SERVER_MODE:-${NFS_SERVER_MODE}}" != "ganesha" ] ; then
             startstop_nfslock stop >/dev/null 2>&1
             sleep 2
             startstop_nfslock start >/dev/null 2>&1

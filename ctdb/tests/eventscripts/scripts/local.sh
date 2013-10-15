@@ -644,7 +644,7 @@ setup_nfs ()
 setup_nfs_ganesha ()
 {
     setup_nfs "$@"
-    export NFS_SERVER_MODE="ganesha"
+    export CTDB_NFS_SERVER_MODE="ganesha"
     if [ "$1" != "down" ] ; then
 	export CTDB_MANAGES_NFS="yes"
     fi
