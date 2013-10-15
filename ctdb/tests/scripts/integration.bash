@@ -620,12 +620,6 @@ _ctdb_hack_options ()
 {
     local ctdb_options="$*"
 
-    # We really just want to pass CTDB_OPTIONS but on RH
-    # /etc/sysconfig/ctdb can, and frequently does, set that variable.
-    # So instead, we hack badly.  We'll add these as we use them.
-    # Note that these may still be overridden by the above file... but
-    # we tend to use the exotic options here... so that is unlikely.
-
     case "$ctdb_options" in
 	*--start-as-stopped*)
 	    export CTDB_START_AS_STOPPED="yes"

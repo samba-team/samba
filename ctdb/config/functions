@@ -92,9 +92,6 @@ script_log ()
     if [ "$CTDB_SYSLOG" = "yes" -o -z "$CTDB_LOGFILE" ] ; then
 	_using_syslog=true
     fi
-    case "$CTDB_OPTIONS" in
-	*--syslog*) _using_syslog=true ;;
-    esac
 
     if $_using_syslog ; then
 	logger -t "ctdbd: ${_tag}" $*

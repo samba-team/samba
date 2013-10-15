@@ -334,7 +334,3 @@ CTDB_SERVICE_AUTOSTARTSTOP=yes
 # for example
 #    CTDB_SET_TRAVERSETIMEOUT=60
 # you can get a list of variables using "ctdb listvars"
-
-# any other options you might want. Run ctdbd --help for a list
-# CTDB_OPTIONS=
-

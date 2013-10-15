@@ -79,6 +79,7 @@ ctdbd_is_running ()
 
 build_ctdb_options ()
 {
+    ctdb_options=""
 
     maybe_set ()
     {
@@ -99,7 +100,7 @@ build_ctdb_options ()
 	    sep=""
 	fi
 
-	CTDB_OPTIONS="${CTDB_OPTIONS}${CTDB_OPTIONS:+ }${1}${sep}${val}"
+	ctdb_options="${ctdb_options}${ctdb_options:+ }${1}${sep}${val}"
     }
 
     if [ -z "$CTDB_RECOVERY_LOCK" ] ; then
@@ -109,7 +110,7 @@ build_ctdb_options ()
 
     maybe_set "--pidfile"                "$pidfile"
 
-    # build up CTDB_OPTIONS variable from optional parameters
+    # build up ctdb_options variable from optional parameters
     maybe_set "--logfile"                "$CTDB_LOGFILE"
     maybe_set "--nlist"                  "$CTDB_NODES"
     maybe_set "--socket"                 "$CTDB_SOCKET"
@@ -181,18 +182,14 @@ start()
 	else
 	    ctdbd="${CTDB_VALGRIND} ${ctdbd}"
 	fi
-	CTDB_OPTIONS="${CTDB_OPTIONS} --valgrinding"
+	ctdb_options="${ctdb_options} --valgrinding"
     fi
 
-    # This is ugly but will improve when we get rid of $CTDB_OPTIONS
-    # and use only $CTDB_SYSLOG.
-    case "$CTDB_OPTIONS" in
-	*--syslog*) : ;;
-	*)
-	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGFILE:-/var/log/log.ctdb}"
-    esac
+    if [ "$CTDB_SYSLOG" != "yes" ] ; then
+	logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGFILE:-/var/log/log.ctdb}"
+    fi
 
-    eval "$ctdbd" "$CTDB_OPTIONS" || return 1
+    eval "$ctdbd" "$ctdb_options" || return 1
 
     # Wait until ctdbd has started and is ready to respond to clients.
     _pid=""
