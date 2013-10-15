@@ -1,0 +1,36 @@
+#!/bin/sh
+
+usage ()
+{
+    die "usage: ${0} -ll device"
+}
+    
+[ "$1" = "-ll" ] || usage
+shift
+[ $# -eq 1 ] || usage
+
+device="$1"
+
+if [ -n "$FAKE_MULTIPATH_HANG" ] ; then
+    FAKE_SLEEP_REALLY="yes" sleep 999
+fi
+
+path1_state="active"
+path2_state="enabled"
+
+for i in $FAKE_MULTIPATH_FAILURES ; do
+    if [ "$device" = "$i" ] ; then
+	path1_state="inactive"
+	path2_state="inactive"
+	break
+    fi
+done
+
+	cat <<EOF
+${device} (AUTO-01234567) dm-0 ,
+size=10G features='0' hwhandler='0' wp=rw
+|-+- policy='round-robin 0' prio=1 status=${path1_state}
+| \`- #:#:#:# vda 252:0  active ready running
+\`-+- policy='round-robin 0' prio=1 status=${path2_state}
+  \`- #:#:#:# vdb 252:16 active ready running
+EOF
