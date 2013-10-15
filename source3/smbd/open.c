@@ -1218,7 +1218,7 @@ static void find_oplock_types(files_struct *fsp,
 				bool *got_no_oplock)
 {
 	struct share_mode_data *d = lck->data;
-	int i;
+	uint32_t i;
 
 	*pp_batch = NULL;
 	*pp_ex_or_batch = NULL;
