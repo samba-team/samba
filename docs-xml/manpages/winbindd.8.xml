@@ -20,13 +20,13 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>winbindd</command>
-		<arg choice="opt">-D</arg>
-		<arg choice="opt">-F</arg>
-		<arg choice="opt">-S</arg>
-		<arg choice="opt">-i</arg>
+		<arg choice="opt">-D|--daemon</arg>
+		<arg choice="opt">-F|--foreground</arg>
+		<arg choice="opt">-S|--stdout</arg>
+		<arg choice="opt">-i|--interactive</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
-		<arg choice="opt">-n</arg>
+		<arg choice="opt">-n|--no-caching</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -135,7 +135,7 @@ hosts:		files wins
 
 	<variablelist>
 		<varlistentry>
-		<term>-D</term>
+		<term>-D|--daemon</term>
 		<listitem><para>If specified, this parameter causes
 		the server to operate as a daemon. That is, it detaches
 		itself and runs in the background on the appropriate port.
@@ -145,7 +145,7 @@ hosts:		files wins
 		</varlistentry>
 
 		<varlistentry>
-		<term>-F</term>
+		<term>-F|--foreground</term>
 		<listitem><para>If specified, this parameter causes
 		the main <command>winbindd</command> process to not daemonize,
 		i.e. double-fork and disassociate with the terminal.
@@ -160,7 +160,7 @@ hosts:		files wins
 		</varlistentry>
 
 		<varlistentry>
-		<term>-S</term>
+		<term>-S|--stdout</term>
 		<listitem><para>If specified, this parameter causes
 		<command>winbindd</command> to log to standard output rather
 		than a file.</para></listitem>
@@ -171,7 +171,7 @@ hosts:		files wins
 		&stdarg.help;
 
 		<varlistentry>
-		<term>-i</term>
+		<term>-i|--interactive</term>
 		<listitem><para>Tells <command>winbindd</command> to not
 		become a daemon and detach from the current terminal. This
 		option is used by developers when interactive debugging
@@ -182,7 +182,7 @@ hosts:		files wins
 		</varlistentry>
 
 		<varlistentry>
-		<term>-n</term>
+		<term>-n|--no-caching</term>
 		<listitem><para>Disable some caching. This means winbindd will
 		often have to wait for a response from the domain controller
 		before it can respond to a client and this thus makes things
