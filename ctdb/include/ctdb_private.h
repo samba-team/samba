@@ -1219,7 +1219,6 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *iface,
 			      const char *ip);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
-int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir);
 int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 		      uint32_t *force_rebalance_nodes,

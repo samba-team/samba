@@ -1135,16 +1135,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	return 0;
 }
 
-/*
-  setup the event script directory
-*/
-int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir)
-{
-	ctdb->event_script_dir = talloc_strdup(ctdb, script_dir);
-	CTDB_NO_MEMORY(ctdb, ctdb->event_script_dir);
-	return 0;
-}
-
 static void ctdb_check_interfaces_event(struct event_context *ev, struct timed_event *te, 
 				  struct timeval t, void *private_data)
 {

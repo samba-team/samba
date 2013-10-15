@@ -54,7 +54,7 @@ static struct {
 } options = {
 	.nlist = NULL,
 	.transport = "tcp",
-	.event_script_dir = ETCDIR "/ctdb/events.d",
+	.event_script_dir = NULL,
 	.logfile = LOGDIR "/log.ctdb",
 	.db_dir = VARDIR "/ctdb",
 	.db_dir_persistent = VARDIR "/ctdb/persistent",
@@ -296,10 +296,15 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	ret = ctdb_set_event_script_dir(ctdb, options.event_script_dir);
-	if (ret == -1) {
-		DEBUG(DEBUG_ALERT,("Unable to setup event script directory\n"));
-		exit(1);
+	if (options.event_script_dir != NULL) {
+		ctdb->event_script_dir = options.event_script_dir;
+	} else {
+		ctdb->event_script_dir = talloc_asprintf(ctdb, "%s/events.d",
+							 getenv("CTDB_BASE"));
+		if (ctdb->event_script_dir == NULL) {
+			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			exit(1);
+		}
 	}
 
 	if (options.notification_script != NULL) {
