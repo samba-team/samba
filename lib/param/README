@@ -1,4 +1,73 @@
+libsamba-hostconfig
+-------------------
+
 This directory contains "libsamba-hostconfig". 
 
 The libsamba-hostconfig library provides access to all host-wide configuration
 such as the configured shares, default parameter values and host secret keys.
+
+
+Adding a parameter
+------------------
+
+To add or change an smb.conf option, you only have to modify
+lib/param/param_table.c and lib/param/param_functions.c.  The rest is
+generated for you.
+
+
+Using smb.conf parameters in the code
+-------------------------------------
+
+Call the lpcfg_*() function.  To get the lp_ctx, have the caller pass
+it to you.  To get a lp_ctx for the source3/param loadparm system, use:
+
+struct loadparm_context *lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_helpers());
+
+Remember to talloc_unlink(tmp_ctx, lp_ctx) the result when you are done!
+
+To get a lp_ctx for the lib/param loadparm system, typically the
+pointer is already set up by popt at startup, and is passed down from
+cmdline_lp_ctx.
+
+In pure source3/ code, you may use lp_*() functions, but are
+encouraged to use the lpcfg_*() functions so that code can be made
+common.
+
+
+How does loadparm_init_s3() work?
+---------------------------------
+
+loadparm_s3_helpers() returns a initialised table of function
+pointers, pointing at all global lp_*() functions, except for those
+that return substituted strings (% macros).  The lpcfg_*() function
+then calls this plugged in function, allowing the one function and
+pattern to use either loadparm system.
+
+
+There is a lot of generated code, here, what generates what?
+------------------------------------------------------------
+
+The regular format of the CPP macros in param_functions.c is used to
+generate up the prototypes (mkproto.pl, mks3param_proto.pl), the service
+and globals table (mkparamdefs.pl), the glue table (mmks3param.pl) and
+the initilisation of the glue table (mks3param_ctx_table.pl).
+
+I have tried combining some of these, but it just makes the scripts more
+complex.
+
+The CPP macros are defined in and expand in lib/param/loadparm.c and
+source3/param/loadparm.c to read the values from the generated
+stuctures.  They are CPP #included into these files so that the same
+macro has two definitions, depending on the system it is loading into.
+
+
+Why was this done, rather than a 'proper' fix, or just using one system or the other?
+-------------------------------------------------------------------------------------
+
+This was done to allow merging from both ends - merging more parts of
+the loadparm handling, and merging code that needs to read the
+smb.conf, without having to do it all at once.  Ideally
+param_functions.c would be generated from param_table.c or (even
+better) our XML manpage source, and the CPP macros would instead be
+generated expanded as generated C files, but this is a task nobody has
+taken on yet.
