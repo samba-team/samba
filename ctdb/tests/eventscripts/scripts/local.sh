@@ -909,11 +909,13 @@ simple_test ()
     _extra_header=$(_extra_header)
 
     echo "Running eventscript \"$script $event${1:+ }$*\""
-    _trace=""
+    _shell=""
     if $TEST_COMMAND_TRACE ; then
-	_trace="sh -x"
+	_shell="sh -x"
+    else
+	_shell="sh"
     fi
-    _out=$($_trace "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
+    _out=$($_shell "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
 
     result_check "$_extra_header"
 }
@@ -1006,11 +1008,13 @@ iterate_test ()
 	    shift 2
 	fi
 
-	_trace=""
+	_shell=""
 	if $TEST_COMMAND_TRACE ; then
-	    _trace="sh -x"
+	    _shell="sh -x"
+	else
+	    _shell="sh"
 	fi
-	_out=$($_trace "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
+	_out=$($_shell "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
 	_rc=$?
 
     if [ -n "$OUT_FILTER" ] ; then
