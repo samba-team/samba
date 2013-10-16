@@ -631,7 +631,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 			case KRB5_KDC_UNREACH:
-				DEBUG(3, ("Cannot reach a KDC we require in order to obtain a ticetk to %s: %s\n",
+				DEBUG(3, ("Cannot reach a KDC we require in order to obtain a ticket to %s: %s\n",
 					  gensec_gssapi_state->target_principal,
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_NO_LOGON_SERVERS; /* Make SPNEGO ignore us, we can't go any further here */
