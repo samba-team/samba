@@ -5274,7 +5274,7 @@ void lp_copy_service(int snum, const char *new_name)
 
 const char *lp_printername(TALLOC_CTX *ctx, int snum)
 {
-	const char *ret = lp__printername(talloc_tos(), snum);
+	const char *ret = lp__printername(ctx, snum);
 	if (ret == NULL || *ret == '\0') {
 		ret = lp_const_servicename(snum);
 	}
