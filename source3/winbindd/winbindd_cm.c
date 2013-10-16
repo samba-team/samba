@@ -1565,7 +1565,8 @@ bool fetch_current_dc_from_gencache(TALLOC_CTX *mem_ctx,
 				    const char *domain_name,
 				    char **p_dc_name, char **p_dc_ip)
 {
-	char *key, *value, *p;
+	char *key, *p;
+	char *value = NULL;
 	bool ret = false;
 	char *dc_name = NULL;
 	char *dc_ip = NULL;
