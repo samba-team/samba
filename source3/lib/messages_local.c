@@ -191,7 +191,7 @@ static TDB_DATA message_key_pid(TALLOC_CTX *mem_ctx, struct server_id pid)
 	char *key;
 	TDB_DATA kbuf;
 
-	key = talloc_asprintf(talloc_tos(), "PID/%s", procid_str_static(&pid));
+	key = talloc_asprintf(mem_ctx, "PID/%s", procid_str_static(&pid));
 
 	SMB_ASSERT(key != NULL);
 
@@ -387,7 +387,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
-	status = messaging_tdb_fetch(tdb->tdb, key, talloc_tos(), &msg_array);
+	status = messaging_tdb_fetch(tdb->tdb, key, frame, &msg_array);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -401,7 +401,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	if (!(rec = talloc_realloc(talloc_tos(), msg_array->messages,
+	if (!(rec = talloc_realloc(frame, msg_array->messages,
 					 struct messaging_rec,
 					 msg_array->num_messages+1))) {
 		status = NT_STATUS_NO_MEMORY;
@@ -428,7 +428,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		DEBUG(2, ("pid %s doesn't exist - deleting messages record\n",
 			  procid_str_static(&pid)));
-		tdb_delete(tdb->tdb, message_key_pid(talloc_tos(), pid));
+		tdb_delete(tdb->tdb, message_key_pid(frame, pid));
 	}
 
  done:
