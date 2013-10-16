@@ -269,7 +269,7 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 	/* Enable this to find subtle valgrind errors. */
 	mem_pool = talloc_init("smbd_smb2_request_allocate");
 #else
-	mem_pool = talloc_pool(mem_ctx, 8192);
+	mem_pool = talloc_tos();
 #endif
 	if (mem_pool == NULL) {
 		return NULL;
@@ -281,7 +281,9 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	talloc_reparent(mem_pool, mem_ctx, req);
+#if 0
 	TALLOC_FREE(mem_pool);
+#endif
 
 	req->last_session_id = UINT64_MAX;
 	req->last_tid = UINT32_MAX;
