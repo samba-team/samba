@@ -635,6 +635,11 @@ static void read_packet_handler(struct tevent_context *ev,
 		return;
 	}
 
+	if (total + more < total) {
+		tevent_req_error(req, EMSGSIZE);
+		return;
+	}
+
 	tmp = talloc_realloc(state, state->buf, uint8_t, total+more);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
