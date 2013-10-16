@@ -1074,6 +1074,8 @@ static bool test_raw_oplock_level_ii_1(struct torture_context *tctx,
 	bool ret = true;
 	union smb_open io;
 	uint16_t fnum=0, fnum2=0;
+	char c = 0;
+	ssize_t written;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -1154,6 +1156,18 @@ static bool test_raw_oplock_level_ii_1(struct torture_context *tctx,
 	torture_wait_for_oplock_break(tctx);
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_NONE);
+	CHECK_VAL(break_info.failures, 0);
+
+	/*
+	 * Check that a write does not cause another break. This used to be a
+	 * bug in smbd.
+	 */
+
+	ZERO_STRUCT(break_info);
+	written = smbcli_write(cli2->tree, fnum2, 0, &c, 0, 1);
+	CHECK_VAL(written, 1);
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.failures, 0);
 
 	status = smbcli_close(cli2->tree, fnum2);
