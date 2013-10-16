@@ -2,8 +2,6 @@
 
 # utility functions for ctdb event scripts
 
-PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
-
 [ -z "$CTDB_VARDIR" ] && {
     if [ -d "/var/lib/ctdb" ] ; then
 	export CTDB_VARDIR="/var/lib/ctdb"
