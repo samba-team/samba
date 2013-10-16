@@ -1669,6 +1669,7 @@ class AclSPNTests(AclTests):
     # same as for join_RODC, but do not set any SPNs
     def create_rodc(self, ctx):
          ctx.nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+         ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
          ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
 
          ctx.never_reveal_sid = [ "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
@@ -1699,6 +1700,7 @@ class AclSPNTests(AclTests):
 
     def create_dc(self, ctx):
         ctx.nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
         ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
         ctx.secure_channel_type = misc.SEC_CHAN_BDC
         ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |

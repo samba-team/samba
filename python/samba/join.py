@@ -66,6 +66,7 @@ class dc_join(object):
         ctx.promote_from_dn = None
 
         ctx.nc_list = []
+        ctx.full_nc_list = []
 
         ctx.creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
         ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
@@ -447,8 +448,8 @@ class dc_join(object):
 
         return ctr.objects
 
-    def join_add_ntdsdsa(ctx):
-        '''add the ntdsdsa object'''
+    def join_ntdsdsa_obj(ctx):
+        '''return the ntdsdsa object to add'''
 
         print "Adding %s" % ctx.ntds_dn
         rec = {
@@ -467,16 +468,28 @@ class dc_join(object):
 
         if ctx.RODC:
             rec["objectCategory"] = "CN=NTDS-DSA-RO,%s" % ctx.schema_dn
-            rec["msDS-HasFullReplicaNCs"] = ctx.nc_list
+            rec["msDS-HasFullReplicaNCs"] = ctx.full_nc_list
             rec["options"] = "37"
-            ctx.samdb.add(rec, ["rodc_join:1:1"])
         else:
             rec["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
-            rec["HasMasterNCs"]      = nc_list
+            rec["HasMasterNCs"]      = []
+            for nc in nc_list:
+                if nc in ctx.full_nc_list:
+                    rec["HasMasterNCs"].append(nc)
             if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-                rec["msDS-HasMasterNCs"] = ctx.nc_list
+                rec["msDS-HasMasterNCs"] = ctx.full_nc_list
             rec["options"] = "1"
             rec["invocationId"] = ndr_pack(ctx.invocation_id)
+
+        return rec
+
+    def join_add_ntdsdsa(ctx):
+        '''add the ntdsdsa object'''
+
+        rec = ctx.join_ntdsdsa_obj()
+        if ctx.RODC:
+            ctx.samdb.add(rec, ["rodc_join:1:1"])
+        else:
             ctx.DsAddEntry([rec])
 
         # find the GUID of our NTDS DN
@@ -672,26 +685,7 @@ class dc_join(object):
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
 
-        rec2 = {
-            "dn" : ctx.ntds_dn,
-            "objectclass" : "nTDSDSA",
-            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
-            "dMDLocation" : ctx.schema_dn}
-
-        nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec2["msDS-Behavior-Version"] = str(ctx.behavior_version)
-
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec2["msDS-HasDomainNCs"] = ctx.base_dn
-
-        rec2["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
-        rec2["HasMasterNCs"]      = nc_list
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec2["msDS-HasMasterNCs"] = ctx.nc_list
-        rec2["options"] = "1"
-        rec2["invocationId"] = ndr_pack(ctx.invocation_id)
+        rec2 = ctx.join_ntdsdsa_obj()
 
         objects = ctx.DsAddEntry([rec, rec2])
         if len(objects) != 2:
@@ -1054,17 +1048,25 @@ class dc_join(object):
 
 
     def do_join(ctx):
-        # full_nc_list is the list of naming context (NC) for which we will
-        # send a updateRef command to the partner DC
-        ctx.nc_list = [ ctx.config_dn, ctx.schema_dn ]
+        # nc_list is the list of naming context (NC) for which we will
+        # replicate in and send a updateRef command to the partner DC
 
-        if not ctx.subdomain:
+        # full_nc_list is the list of naming context (NC) we hold
+        # read/write copies of.  These are not subsets of each other.
+        ctx.nc_list = [ ctx.config_dn, ctx.schema_dn ]
+        ctx.full_nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+
+        if ctx.subdomain and ctx.dns_backend != "NONE":
+            ctx.full_nc_list += [ctx.domaindns_zone]
+
+        elif not ctx.subdomain:
             ctx.nc_list += [ctx.base_dn]
+
             if ctx.dns_backend != "NONE":
                 ctx.nc_list += [ctx.domaindns_zone]
-
-        if ctx.dns_backend != "NONE":
-            ctx.nc_list += [ctx.forestdns_zone]
+                ctx.nc_list += [ctx.forestdns_zone]
+                ctx.full_nc_list += [ctx.domaindns_zone]
+                ctx.full_nc_list += [ctx.forestdns_zone]
 
         if ctx.promote_existing:
             ctx.promote_possible()
