@@ -1,3 +1,106 @@
+Changes in CTDB 2.5
+===================
+
+User-visible changes
+--------------------
+
+* The default location of the ctdbd socket is now:
+
+    /var/run/ctdb/ctdbd.socket
+
+  If you currently set CTDB_SOCKET in configuration then unsetting it
+  will probably do what you want.
+
+* The default location of CTDB TDB databases is now:
+
+    /var/lib/ctdb
+
+  If you only set CTDB_DBDIR (to the old default of /var/ctdb) then
+  you probably want to move your databases to /var/lib/ctdb, drop your
+  setting of CTDB_DBDIR and just use the default.
+
+  To maintain the database files in /var/ctdb you will need to set
+  CTDB_DBDIR, CTDB_DBDIR_PERSISTENT and CTDB_DBDIR_STATE, since all of
+  these have moved.
+
+* Use of CTDB_OPTIONS to set ctdbd command-line options is no longer
+  supported.  Please use individual configuration variables instead.
+
+* Obsolete tunables VacuumDefaultInterval, VacuumMinInterval and
+  VacuumMaxInterval have been removed.  Setting them had no effect but
+  if you now try to set them in a configuration files via CTDB_SET_X=Y
+  then CTDB will not start.
+
+* Much improved manual pages.  Added new manpages ctdb(7),
+  ctdbd.conf(5), ctdb-tunables(7).  Still some work to do.
+
+* Most CTDB-specific configuration can now be set in
+  /etc/ctdb/ctdbd.conf.
+
+  This avoids cluttering distribution-specific configuration files,
+  such as /etc/sysconfig/ctdb.  It also means that we can say: see
+  ctdbd.conf(5) for more details.  :-)
+
+* Configuration variable NFS_SERVER_MODE is deprecated and has been
+  replaced by CTDB_NFS_SERVER_MODE.  See ctdbd.conf(5) for more
+  details.
+
+* "ctdb reloadips" is much improved and should be used for reloading
+  the public IP configuration.
+
+  This commands attempts to yield much more predictable IP allocations
+  than using sequences of delip and addip commands.  See ctdb(1) for
+  details.
+
+* Ability to pass comma-separated string to ctdb(1) tool commands via
+  the -n option is now documented and works for most commands.  See
+  ctdb(1) for details.
+
+* "ctdb rebalancenode" is now a debugging command and should not be
+  used in normal operation.  See ctdb(1) for details.
+
+* "ctdb ban 0" is now invalid.
+
+  This was documented as causing a permanent ban.  However, this was
+  not implemented and caused an "unban" instead.  To avoid confusion,
+  0 is now an invalid ban duration.  To administratively "ban" a node
+  use "ctdb stop" instead.
+
+* The systemd configuration now puts the PID file in /run/ctdb (rather
+  than /run/ctdbd) for consistency with the initscript and other uses
+  of /var/run/ctdb.
+
+Important bug fixes
+-------------------
+
+* Traverse regression fixed.
+
+* The default recovery method for persistent databases has been
+  changed to use database sequence numbers instead of doing
+  record-by-record recovery (using record sequence numbers).  This
+  fixes issues including registry corruption.
+
+* Banned nodes are no longer told to run the "ipreallocated" event
+  during a takeover run, when in fallback mode with nodes that don't
+  support the IPREALLOCATED control.
+
+Important internal changes
+--------------------------
+
+* Persistent transactions are now compatible with Samba and work
+  reliably.
+
+* The recovery master role has been made more stable by resetting the
+  priority time each time a node becomes inactive.  This means that
+  nodes that are active for a long time are more likely to retain the
+  recovery master role.
+
+* The incomplete libctdb library has been removed.
+
+* Test suite now starts ctdbd with the --sloppy-start option to speed
+  up startup.  However, this should not be done in production.
+
+
 Changes in CTDB 2.4
 ===================
 
