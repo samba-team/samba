@@ -66,6 +66,9 @@ def configure(conf):
             Logs.warn('Disabling pytalloc-util as python devel libs not found')
             conf.env.disable_python = True
 
+    conf.CHECK_HEADERS('sys/auxv.h')
+    conf.CHECK_FUNCS('getauxval')
+
     conf.SAMBA_CONFIG_H()
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
