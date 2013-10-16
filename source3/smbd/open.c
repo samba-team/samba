@@ -1372,6 +1372,17 @@ static bool delay_for_oplock(files_struct *fsp,
 		 */
 		return false;
 	}
+	if (LEVEL_II_OPLOCK_TYPE(entry->op_type) &&
+	    (break_to == NO_OPLOCK)) {
+		if (share_mode_stale_pid(d, 0)) {
+			return false;
+		}
+		DEBUG(10, ("Asynchronously breaking level2 oplock for "
+			   "create_disposition=%u\n",
+			   (unsigned)create_disposition));
+		send_break_message(fsp->conn->sconn->msg_ctx, entry, break_to);
+		return false;
+	}
 	if (!EXCLUSIVE_OPLOCK_TYPE(entry->op_type)) {
 		/*
 		 * No break for NO_OPLOCK or LEVEL2_OPLOCK oplocks
