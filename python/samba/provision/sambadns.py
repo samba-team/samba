@@ -252,13 +252,8 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
         })
 
     domainzone_guid = get_domainguid(samdb, domainzone_dn)
-    forestzone_guid = get_domainguid(samdb, forestzone_dn)
-
     domainzone_guid = str(uuid.uuid4())
-    forestzone_guid = str(uuid.uuid4())
-
     domainzone_dns = ldb.Dn(samdb, domainzone_dn).canonical_ex_str().strip()
-    forestzone_dns = ldb.Dn(samdb, forestzone_dn).canonical_ex_str().strip()
 
     protected1_desc = get_domain_delete_protected1_descriptor(domainsid)
     protected2_desc = get_domain_delete_protected2_descriptor(domainsid)
@@ -278,6 +273,10 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
     })
 
     if fill_level != FILL_SUBDOMAIN:
+        forestzone_guid = get_domainguid(samdb, forestzone_dn)
+        forestzone_guid = str(uuid.uuid4())
+        forestzone_dns = ldb.Dn(samdb, forestzone_dn).canonical_ex_str().strip()
+
         setup_add_ldif(samdb, setup_path("provision_dnszones_add.ldif"), {
             "ZONE_DN": forestzone_dn,
             "ZONE_GUID": forestzone_guid,
