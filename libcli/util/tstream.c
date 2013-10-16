@@ -129,6 +129,11 @@ static void tstream_read_pdu_blob_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (new_buf_size <= old_buf_size) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_BUFFER_SIZE);
+		return;
+	}
+
 	buf = talloc_realloc(state, state->pdu_blob.data, uint8_t, new_buf_size);
 	if (tevent_req_nomem(buf, req)) {
 		return;
