@@ -3023,7 +3023,6 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_interface_table *table,
 					     enum dcerpc_transport_t transport,
-					     enum dcerpc_AuthLevel auth_level,
 					     const char *domain,
 					     struct netlogon_creds_cli_context *netlogon_creds,
 					     struct rpc_pipe_client **_rpccli)
@@ -3031,6 +3030,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct rpc_pipe_client *rpccli;
 	struct pipe_auth_data *rpcauth;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
 	const char *target_service = table->authservices->names[0];
 	int rpc_pipe_bind_dbglvl = 0;
@@ -3047,6 +3047,8 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 		TALLOC_FREE(rpccli);
 		return status;
 	}
+
+	auth_level = netlogon_creds_cli_auth_level(netlogon_creds);
 
 	status = rpccli_generic_bind_data(rpccli,
 					  DCERPC_AUTH_TYPE_SCHANNEL,
