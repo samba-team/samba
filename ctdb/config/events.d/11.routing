@@ -23,7 +23,7 @@ loadconfig
 }
 
 case "$1" in
-    recovered|ipreallocated)
+    ipreallocated)
         while read iface dest gw; do
             ip route add "$dest" via "$gw" dev "$iface" >/dev/null 2>&1
         done <"${CTDB_BASE}/static-routes"
