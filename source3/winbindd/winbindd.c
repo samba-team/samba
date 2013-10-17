@@ -37,7 +37,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "../lib/util/pidfile.h"
-#include "ctdbd_conn.h"
+#include "util_cluster.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1465,15 +1465,8 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
-	if (lp_clustering()) {
-		NTSTATUS status;
-
-		status = ctdbd_probe();
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("clustering=yes but ctdbd connect failed: "
-				  "%s\n", nt_errstr(status)));
-			exit(1);
-		}
+	if (!cluster_probe_ok()) {
+		exit(1);
 	}
 
 	/* Initialise messaging system */
