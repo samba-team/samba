@@ -1724,6 +1724,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
+		bool seal_pipes = true;
 
 		winbindd_set_locator_kdc_envs(domain);
 
@@ -1743,6 +1744,17 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		 */
 		store_current_dc_in_gencache(domain->name, domain->dcname,
 					     new_conn->cli);
+
+		seal_pipes = lp_winbind_sealed_pipes();
+		seal_pipes = lp_parm_bool(-1, "winbind sealed pipes",
+					  domain->name,
+					  seal_pipes);
+
+		if (seal_pipes) {
+			new_conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+		} else {
+			new_conn->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+		}
 	} else {
 		/* Ensure we setup the retry handler. */
 		set_domain_offline(domain);
@@ -1814,6 +1826,8 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 			cli_set_timeout(conn->cli, 500);
 		}
 	}
+
+	conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 
 	if (conn->cli) {
 		cli_shutdown(conn->cli);
@@ -2365,7 +2379,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 					  &ndr_table_samr,
 					  NCACN_NP,
 					  GENSEC_OID_NTLMSSP,
-					  DCERPC_AUTH_LEVEL_PRIVACY,
+					  conn->auth_level,
 					  smbXcli_conn_remote_name(conn->cli->conn),
 					  domain_name,
 					  machine_account,
@@ -2536,7 +2550,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	if (conn->lsa_pipe_tcp &&
 	    conn->lsa_pipe_tcp->transport->transport == NCACN_IP_TCP &&
-	    conn->lsa_pipe_tcp->auth->auth_level == DCERPC_AUTH_LEVEL_PRIVACY &&
+	    conn->lsa_pipe_tcp->auth->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY &&
 	    rpccli_is_connected(conn->lsa_pipe_tcp)) {
 		goto done;
 	}
@@ -2604,7 +2618,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = cli_rpc_pipe_open_spnego
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
 		 GENSEC_OID_NTLMSSP,
-		 DCERPC_AUTH_LEVEL_PRIVACY,
+		 conn->auth_level,
 		 smbXcli_conn_remote_name(conn->cli->conn),
 		 conn->cli->domain, conn->cli->user_name, conn->cli->password,
 		 &conn->lsa_pipe);

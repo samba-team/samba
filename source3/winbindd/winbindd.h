@@ -25,6 +25,7 @@
 
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/gen_ndr/wbint.h"
 
 #include "talloc_dict.h"
@@ -104,6 +105,8 @@ struct getpwent_user {
 
 struct winbindd_cm_conn {
 	struct cli_state *cli;
+
+	enum dcerpc_AuthLevel auth_level;
 
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle sam_connect_handle, sam_domain_handle;
