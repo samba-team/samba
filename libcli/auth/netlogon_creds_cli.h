@@ -49,10 +49,6 @@ NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
 				const char *server_netbios_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context);
-NTSTATUS netlogon_creds_cli_context_copy(
-				const struct netlogon_creds_cli_context *src,
-				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_cli_context **_dst);
 
 enum dcerpc_AuthLevel netlogon_creds_cli_auth_level(
 		struct netlogon_creds_cli_context *context);

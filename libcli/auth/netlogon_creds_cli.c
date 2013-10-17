@@ -488,53 +488,6 @@ NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS netlogon_creds_cli_context_copy(
-				const struct netlogon_creds_cli_context *src,
-				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_cli_context **_dst)
-{
-	struct netlogon_creds_cli_context *dst;
-
-	dst = talloc_zero(mem_ctx, struct netlogon_creds_cli_context);
-	if (dst == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*dst = *src;
-
-	dst->client.computer = talloc_strdup(dst, src->client.computer);
-	if (dst->client.computer == NULL) {
-		TALLOC_FREE(dst);
-		return NT_STATUS_NO_MEMORY;
-	}
-	dst->client.account = talloc_strdup(dst, src->client.account);
-	if (dst->client.account == NULL) {
-		TALLOC_FREE(dst);
-		return NT_STATUS_NO_MEMORY;
-	}
-	dst->server.computer = talloc_strdup(dst, src->server.computer);
-	if (dst->server.computer == NULL) {
-		TALLOC_FREE(dst);
-		return NT_STATUS_NO_MEMORY;
-	}
-	dst->server.netbios_domain = talloc_strdup(dst, src->server.netbios_domain);
-	if (dst->server.netbios_domain == NULL) {
-		TALLOC_FREE(dst);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dst->db.key_name = talloc_strdup(dst, src->db.key_name);
-	if (dst->db.key_name == NULL) {
-		TALLOC_FREE(dst);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dst->db.key_data = string_term_tdb_data(dst->db.key_name);
-
-	*_dst = dst;
-	return NT_STATUS_OK;
-}
-
 enum dcerpc_AuthLevel netlogon_creds_cli_auth_level(
 		struct netlogon_creds_cli_context *context)
 {
