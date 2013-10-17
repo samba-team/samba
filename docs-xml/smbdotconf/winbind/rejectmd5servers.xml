@@ -1,0 +1,23 @@
+<samba:parameter name="reject md5 servers"
+                 context="G"
+                 type="boolean"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether winbindd requires support
+	for aes support for the netlogon secure channel.</para>
+
+	<para>The following flags will be required NETLOGON_NEG_ARCFOUR,
+	NETLOGON_NEG_SUPPORTS_AES, NETLOGON_NEG_PASSWORD_SET2 and NETLOGON_NEG_AUTHENTICATED_RPC.</para>
+
+	<para>You can set this to yes if all domain controllers support aes.
+	This will prevent downgrade attacks.</para>
+
+	<para>The behavior can be controlled per netbios domain
+	by using 'reject md5 servers:NETBIOSDOMAIN = yes' as option.</para>
+
+	<para>This option takes precedence to the <smbconfoption name="require strong key"/> option.</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
