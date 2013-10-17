@@ -21,6 +21,10 @@
 ## 1.3.6.1.4.1.7165.4.4.x - LDB/LDAP Extended Operations
 ## 1.3.6.1.4.1.7165.4.255.x - mapped OIDs due to conflicts between AD and standards-track
 ##
+## External projects
+## 1.3.6.1.4.1.7165.655.x
+## 1.3.6.1.4.1.7165.655.1.x - GSS-NTLMSSP
+##
 ## ----- READ THIS WHEN ADDING A NEW ATTRIBUTE OR OBJECT CLASS ------
 ##
 ## Run the 'get_next_oid' bash script in this directory to find the 
