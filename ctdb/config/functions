@@ -474,6 +474,8 @@ ctdb_check_tcp_init ()
     touch "$_ctdb_service_started_file"
 }
 
+# Check whether something is listening on all of the given TCP ports
+# using the "ctdb checktcpport" command.
 ctdb_check_tcp_ports()
 {
     if [ -z "$1" ] ; then
@@ -481,61 +483,20 @@ ctdb_check_tcp_ports()
 	exit 1
     fi
 
-    # Set default value for CTDB_TCP_PORT_CHECKERS if unset.
-    # If any of these defaults are unsupported then this variable can
-    # be overridden in /etc/sysconfig/ctdb or via a file in
-    # /etc/ctdb/rc.local.d/.
-    : ${CTDB_TCP_PORT_CHECKERS:=ctdb}
-
-    for _c in $CTDB_TCP_PORT_CHECKERS ; do
-	ctdb_check_tcp_ports_$_c "$@"
-	case "$?" in
-	    0)
-		_ctdb_check_tcp_common
-		rm -f "$_ctdb_service_started_file"
-		return 0
-		;;
-	    1)
-		_ctdb_check_tcp_common
-		if [ ! -f "$_ctdb_service_started_file" ] ; then
-		    echo "ERROR: $service_name tcp port $_p is not responding"
-		    debug <<EOF
-$ctdb_check_tcp_ports_debug
-EOF
-		else
-		    echo "INFO: $service_name tcp port $_p is not responding"
-		fi
-
-		return 1
-		;;
-	    127)
-		debug <<EOF
-ctdb_check_ports - checker $_c not implemented
-output from checker was:
-$ctdb_check_tcp_ports_debug
-EOF
-		;;
-	    *)
-		
-	esac
-    done
-
-    echo "INTERNAL ERROR: ctdb_check_ports - no working checkers in CTDB_TCP_PORT_CHECKERS=\"$CTDB_TCP_PORT_CHECKERS\""
-
-    return 127
-}
-
-# Use the new "ctdb checktcpport" command to check the port.
-# This is very cheap.
-ctdb_check_tcp_ports_ctdb ()
-{
     for _p ; do  # process each function argument (port)
 	_cmd="ctdb checktcpport $_p"
 	_out=$($_cmd 2>&1)
 	_ret=$?
 	case "$_ret" in
 	    0)
-		ctdb_check_tcp_ports_debug="\"$_cmd\" was able to bind to port"
+		_ctdb_check_tcp_common
+		if [ ! -f "$_ctdb_service_started_file" ] ; then
+		    echo "ERROR: $service_name tcp port $_p is not responding"
+		    debug "\"ctdb checktcpport $_p\" was able to bind to port"
+		else
+		    echo "INFO: $service_name tcp port $_p is not responding"
+		fi
+
 		return 1
 		;;
 	    98)
@@ -543,13 +504,18 @@ ctdb_check_tcp_ports_ctdb ()
 		continue
 		;;
 	    *)
-		ctdb_check_tcp_ports_debug="$_cmd (exited with $_ret) with output:
+		echo "ERROR: unexpected error running \"ctdb checktcpport\""
+		debug <<EOF
+ctdb checktcpport (exited with $_ret) with output:
 $_out"
-		# assume not implemented
-		return 127
+EOF
+		return $_ret
 	esac
     done
 
+    # All ports listening
+    _ctdb_check_tcp_common
+    rm -f "$_ctdb_service_started_file"
     return 0
 }
 
