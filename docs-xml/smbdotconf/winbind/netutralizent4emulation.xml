@@ -1,0 +1,19 @@
+<samba:parameter name="neutralize nt4 emulation"
+                 context="G"
+                 type="boolean"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether winbindd sends
+	the NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION flag in order to bypass
+	the NT4 emulation of a domain controller.</para>
+
+	<para>Typically you should not need set this.
+	It can be useful for upgrades from NT4 to AD domains.</para>
+
+	<para>The behavior can be controlled per netbios domain
+	by using 'neutralize nt4 emulation:NETBIOSDOMAIN = yes' as option.</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

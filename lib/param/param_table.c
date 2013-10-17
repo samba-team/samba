@@ -4180,6 +4180,15 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "neutralize nt4 emulation",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bNeutralizeNT4Emulation),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 
 	{N_("DNS options"), P_SEP, P_SEPARATOR},
 	{
