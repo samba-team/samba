@@ -279,11 +279,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	 * allow overwrite per domain
 	 * reject md5 servers:<netbios_domain>
 	 */
-	//TODO: add lpcfp_reject_md5_servers()
-	reject_md5_servers = lpcfg_parm_bool(lp_ctx, NULL,
-					     "__default__",
-					     "reject md5 servers",
-					     reject_md5_servers);
+	reject_md5_servers = lpcfg_reject_md5_servers(lp_ctx);
 	reject_md5_servers = lpcfg_parm_bool(lp_ctx, NULL,
 					     "reject md5 servers",
 					     server_netbios_domain,
@@ -293,11 +289,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	 * allow overwrite per domain
 	 * require strong key:<netbios_domain>
 	 */
-	//TODO: add lpcfp_require_strong_key()
-	require_strong_key = lpcfg_parm_bool(lp_ctx, NULL,
-					     "__default__",
-					     "require strong key",
-					     require_strong_key);
+	require_strong_key = lpcfg_require_strong_key(lp_ctx);
 	require_strong_key = lpcfg_parm_bool(lp_ctx, NULL,
 					     "require strong key",
 					     server_netbios_domain,
@@ -327,11 +319,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	 * allow overwrite per domain
 	 * neutralize nt4 emulation:<netbios_domain>
 	 */
-	//TODO: add lpcfp_neutralize_nt4_emulation()
-	neutralize_nt4_emulation = lpcfg_parm_bool(lp_ctx, NULL,
-						   "__default__",
-						   "neutralize nt4 emulation",
-						   neutralize_nt4_emulation);
+	neutralize_nt4_emulation = lpcfg_neutralize_nt4_emulation(lp_ctx);
 	neutralize_nt4_emulation = lpcfg_parm_bool(lp_ctx, NULL,
 						   "neutralize nt4 emulation",
 						   server_netbios_domain,
