@@ -285,6 +285,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                    lib/ctdb_packet.c
                    lib/ctdbd_conn.c
                    lib/ctdb_conn.c
+                   lib/util_cluster.c
                    lib/msg_channel.c
                    lib/id_cache.c
                    lib/talloc_dict.c
