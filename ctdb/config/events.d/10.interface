@@ -262,17 +262,6 @@ case "$1" in
 
 	;;
 
-
-     ###########################################
-     # called when ctdbd has finished a recovery
-     recovered)
-	;;
-
-     ####################################
-     # called when ctdbd is shutting down
-     shutdown)
-	;;
-
      monitor)
 	monitor_interfaces || exit 1
 	;;
