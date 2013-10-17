@@ -50,14 +50,8 @@ ensure_natgwmaster ()
     natgwip="$2"
 
     if [ "$natgwmaster" = "-1" ]; then
-	echo "There is no NATGW master node"
-	# The recovered event should never fail - we'll catch this
-	# failure in the monitor event.
-	if [ "$_event" = "recovered" ] ; then
-	    exit 0
-	else
-	    exit 1
-	fi
+	# Fail...
+	die "There is no NATGW master node"
     fi
 }
 
@@ -75,7 +69,7 @@ case "$1" in
 	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
 	;;
 
-    recovered|updatenatgw|ipreallocated)
+    updatenatgw|ipreallocated)
 	mypnn=$(ctdb pnn | cut -d: -f2)
 
 	set_natgw_capability
