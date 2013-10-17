@@ -41,18 +41,11 @@ service_stop ()
     killall -q -9 $service_name || true
 }
 
-service_reconfigure ()
-{
-    service $service_name restart
-}
-
 loadconfig
 
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
-
-ctdb_service_check_reconfigure
 
 case "$1" in
     startup)
