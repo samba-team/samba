@@ -389,6 +389,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 						struct ncacn_packet *pkt,
 						DATA_BLOB *pdu,
 						uint8_t expected_pkt_type,
+						uint32_t call_id,
 						DATA_BLOB *rdata,
 						DATA_BLOB *reply_pdu)
 {
@@ -487,7 +488,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 			  "from %s!\n",
 			  (unsigned int)pkt->ptype,
 			  rpccli_pipe_txt(talloc_tos(), cli)));
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
 	if (pkt->ptype != expected_pkt_type) {
@@ -495,7 +496,15 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 			  "RPC packet type - %u, not %u\n",
 			  rpccli_pipe_txt(talloc_tos(), cli),
 			  pkt->ptype, expected_pkt_type));
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (pkt->call_id != call_id) {
+		DEBUG(3, (__location__ ": Connection to %s got an unexpected "
+			  "RPC call_id - %u, not %u\n",
+			  rpccli_pipe_txt(talloc_tos(), cli),
+			  pkt->call_id, call_id));
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
 	/* Do this just before return - we don't want to modify any rpc header
@@ -701,6 +710,7 @@ struct rpc_api_pipe_state {
 	struct event_context *ev;
 	struct rpc_pipe_client *cli;
 	uint8_t expected_pkt_type;
+	uint32_t call_id;
 
 	DATA_BLOB incoming_frag;
 	struct ncacn_packet *pkt;
@@ -719,7 +729,8 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 					    struct event_context *ev,
 					    struct rpc_pipe_client *cli,
 					    DATA_BLOB *data, /* Outgoing PDU */
-					    uint8_t expected_pkt_type)
+					    uint8_t expected_pkt_type,
+					    uint32_t call_id)
 {
 	struct tevent_req *req, *subreq;
 	struct rpc_api_pipe_state *state;
@@ -733,6 +744,7 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 	state->expected_pkt_type = expected_pkt_type;
+	state->call_id = call_id;
 	state->incoming_frag = data_blob_null;
 	state->reply_pdu = data_blob_null;
 	state->reply_pdu_offset = 0;
@@ -884,6 +896,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 						state->cli, state->pkt,
 						&state->incoming_frag,
 						state->expected_pkt_type,
+						state->call_id,
 						&rdata,
 						&state->reply_pdu);
 
@@ -1226,7 +1239,8 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	if (is_last_frag) {
 		subreq = rpc_api_pipe_send(state, ev, state->cli,
 					   &state->rpc_out,
-					   DCERPC_PKT_RESPONSE);
+					   DCERPC_PKT_RESPONSE,
+					   state->call_id);
 		if (subreq == NULL) {
 			goto fail;
 		}
@@ -1362,7 +1376,8 @@ static void rpc_api_pipe_req_write_done(struct tevent_req *subreq)
 	if (is_last_frag) {
 		subreq = rpc_api_pipe_send(state, state->ev, state->cli,
 					   &state->rpc_out,
-					   DCERPC_PKT_RESPONSE);
+					   DCERPC_PKT_RESPONSE,
+					   state->call_id);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -1608,7 +1623,7 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = rpc_api_pipe_send(state, ev, cli, &state->rpc_out,
-				   DCERPC_PKT_BIND_ACK);
+				   DCERPC_PKT_BIND_ACK, state->rpc_call_id);
 	if (subreq == NULL) {
 		goto fail;
 	}
@@ -1916,7 +1931,8 @@ static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
 	}
 
 	subreq = rpc_api_pipe_send(state, state->ev, state->cli,
-				   &state->rpc_out, DCERPC_PKT_ALTER_RESP);
+				   &state->rpc_out, DCERPC_PKT_ALTER_RESP,
+				   state->rpc_call_id);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1948,7 +1964,8 @@ static NTSTATUS rpc_bind_finish_send(struct tevent_req *req,
 	}
 
 	subreq = rpc_api_pipe_send(state, state->ev, state->cli,
-				   &state->rpc_out, DCERPC_PKT_AUTH3);
+				   &state->rpc_out, DCERPC_PKT_AUTH3,
+				   state->rpc_call_id);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
