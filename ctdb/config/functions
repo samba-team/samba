@@ -485,7 +485,7 @@ ctdb_check_tcp_ports()
     # If any of these defaults are unsupported then this variable can
     # be overridden in /etc/sysconfig/ctdb or via a file in
     # /etc/ctdb/rc.local.d/.
-    : ${CTDB_TCP_PORT_CHECKERS:=ctdb nmap netstat}
+    : ${CTDB_TCP_PORT_CHECKERS:=ctdb}
 
     for _c in $CTDB_TCP_PORT_CHECKERS ; do
 	ctdb_check_tcp_ports_$_c "$@"
@@ -523,74 +523,6 @@ EOF
     echo "INTERNAL ERROR: ctdb_check_ports - no working checkers in CTDB_TCP_PORT_CHECKERS=\"$CTDB_TCP_PORT_CHECKERS\""
 
     return 127
-}
-
-ctdb_check_tcp_ports_netstat ()
-{
-    _cmd='netstat -l -t -n'
-    _ns=$($_cmd 2>&1)
-    if [ $? -eq 127 ] ; then
-	# netstat probably not installed - unlikely?
-	ctdb_check_tcp_ports_debug="$_ns"
-	return 127
-    fi
-
-    for _p ; do  # process each function argument (port)
-	for _a in '0\.0\.0\.0' '::' ; do
-	    _pat="[[:space:]]${_a}:${_p}[[:space:]]+[^[:space:]]+[[:space:]]+LISTEN"
-	    if echo "$_ns" | grep -E -q "$_pat" ; then
-		# We matched the port, so process next port
-		continue 2
-	    fi
-	done
-
-	# We didn't match the port, so flag an error.
-	ctdb_check_tcp_ports_debug="$_cmd shows this output:
-$_ns"
-	return 1
-    done
-
-    return 0
-}
-
-ctdb_check_tcp_ports_nmap ()
-{
-    # nmap wants a comma-separated list of ports
-    _ports=""
-    for _p ; do
-	_ports="${_ports}${_ports:+,}${_p}"
-    done
-
-    _cmd="nmap -n -oG - -PS 127.0.0.1 -p $_ports"
-
-    _nmap_out=$($_cmd 2>&1)
-    if [ $? -eq 127 ] ; then
-	# nmap probably not installed
-	ctdb_check_tcp_ports_debug="$_nmap_out"
-	return 127
-    fi
-
-    # get the port-related output
-    _port_info=$(echo "$_nmap_out" | sed -n -r -e 's@^.*Ports:[[:space:]]@@p')
-
-    for _p ; do
-	# looking for something like this:
-	#  445/open/tcp//microsoft-ds///
-	# possibly followed by a comma
-	_t="$_p/open/tcp//"
-	case "$_port_info" in
-	    # The info we're after must be either at the beginning of
-	    # the string or it must follow a space.
-            $_t*|*\ $_t*) : ;;
-	    *)
-		# Nope, flag an error...
-		ctdb_check_tcp_ports_debug="$_cmd shows this output:
-$_nmap_out"
-		return 1
-	esac
-    done
-
-    return 0
 }
 
 # Use the new "ctdb checktcpport" command to check the port.
