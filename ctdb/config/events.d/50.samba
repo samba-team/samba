@@ -152,8 +152,6 @@ ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
 
-ctdb_service_check_reconfigure
-
 ###########################
 
 case "$1" in
