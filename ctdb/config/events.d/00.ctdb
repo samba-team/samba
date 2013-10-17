@@ -1,13 +1,7 @@
 #!/bin/sh
-############################
-# main event script for ctdb
-#
-# This script is called with one of the following sets of arguments
-#     startup    : called when ctdb starts
-#     shutdown   : called when ctdb shuts down
-#     takeip     : called when an IP address is taken over
-#     releaseip  : called when an IP address is released
-#     recovered  : called when ctdb has finished a recovery event
+
+# Event script for ctdb-specific setup and other things that don't fit
+# elsewhere.
 
 [ -n "$CTDB_BASE" ] || \
     export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
