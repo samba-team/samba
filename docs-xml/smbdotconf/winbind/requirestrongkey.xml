@@ -1,0 +1,27 @@
+<samba:parameter name="require strong key"
+                 context="G"
+                 type="boolean"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether winbindd requires support
+	for md5 strong key support for the netlogon secure channel.</para>
+
+	<para>The following flags will be required NETLOGON_NEG_STRONG_KEYS,
+	NETLOGON_NEG_ARCFOUR and NETLOGON_NEG_AUTHENTICATED_RPC.</para>
+
+	<para>You can set this to no if some domain controllers only support des.
+	This might allows weak crypto to be negotiated, may via downgrade attacks.</para>
+
+	<para>The behavior can be controlled per netbios domain
+	by using 'require strong key:NETBIOSDOMAIN = no' as option.</para>
+
+	<para>Note for active directory domain this option is hardcoded to 'yes'</para>
+
+	<para>This option yields precedence to the <smbconfoption name="reject md5 servers"/> option.</para>
+
+	<para>This option takes precedence to the <smbconfoption name="client schannel"/> option.</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
