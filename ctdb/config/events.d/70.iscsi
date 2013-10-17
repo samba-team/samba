@@ -20,31 +20,33 @@ is_ctdb_managed_service || exit 0
 }
 
 case "$1" in 
-    recovered)
+    ipreallocated)
 	# block the iscsi port
 	iptables -I INPUT 1 -p tcp --dport 3260 -j DROP
 	
 	# shut down the iscsi service
 	killall -9 tgtd >/dev/null 2>/dev/null
 
-	THIS_NODE=`ctdb status | grep "THIS NODE" | sed -e "s/pnn://" -e "s/ .*//"`
-	[ -z $THIS_NODE ] && {
-		echo "70.iscsi: Failed to get node pnn"
+	this_node=$(ctdb xpnn | sed -e 's@PNN:@@')
+	if [ -z "$this_node" ] ; then
+		echo "Failed to get node pnn"
 		exit 0
-	}
+	fi
 
 	# start the iscsi daemon
 	tgtd >/dev/null 2>/dev/null
 
-	for NODE in `ctdb ip | grep -v "Public" | egrep " ${THIS_NODE}$" | sed -e "s/ .*//"`; do
-		[ -f $CTDB_START_ISCSI_SCRIPTS/${NODE}.sh ] && {
-			echo Starting iscsi service for public address $NODE
-			$CTDB_START_ISCSI_SCRIPTS/${NODE}.sh
-		}
+	ips=$(ctdb -Y ip | awk -F: -v pnn=$this_node '$3 == pnn {print $2}')
+	for ip in $ips ; do
+	    script="${CTDB_START_ISCSI_SCRIPTS}/${ip}.sh"
+	    if [ -x "$script" ] ; then
+		echo "Starting iscsi service for public address ${ip}"
+		"$script"
+	    fi
 	done
 
 	# remove all iptables rules
-	while iptables -D INPUT -p tcp --dport 3260 -j DROP 2>/dev/null >/dev/null ;  do
+	while iptables -D INPUT -p tcp --dport 3260 -j DROP >/dev/null 2>&1 ; do
 	    :
 	done
 
