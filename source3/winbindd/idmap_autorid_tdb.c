@@ -962,6 +962,14 @@ static int idmap_autorid_visit_domain_range(struct db_record *rec,
 	}
 
 	value = dbwrap_record_get_value(rec);
+
+	if (value.dsize != sizeof(uint32_t)) {
+		/* it might be a mapping of a well known sid */
+		DEBUG(10, ("value size %u != sizeof(uint32_t) for sid '%s', "
+			   "skipping.\n", (unsigned)value.dsize, vi->domsid));
+		goto done;
+	}
+
 	rangenum = IVAL(value.dptr, 0);
 
 	db = dbwrap_record_get_db(rec);
