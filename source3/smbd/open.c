@@ -1211,6 +1211,7 @@ static bool validate_oplock_types(files_struct *fsp,
 	bool ex_or_batch = false;
 	bool level2 = false;
 	bool no_oplock = false;
+	uint32_t num_non_stat_opens = 0;
 	uint32_t i;
 
 	/* Ignore stat or internal opens, as is done in
@@ -1234,6 +1235,8 @@ static bool validate_oplock_types(files_struct *fsp,
 			   cause breaks. JRA. */
 			continue;
 		}
+
+		num_non_stat_opens += 1;
 
 		if (BATCH_OPLOCK_TYPE(e->op_type)) {
 			/* batch - can only be one. */
@@ -1294,7 +1297,7 @@ static bool validate_oplock_types(files_struct *fsp,
 
 	remove_stale_share_mode_entries(d);
 
-	if ((batch || ex_or_batch) && (d->num_share_modes != 1)) {
+	if ((batch || ex_or_batch) && (num_non_stat_opens != 1)) {
 		DEBUG(1, ("got batch (%d) or ex (%d) non-exclusively (%d)\n",
 			  (int)batch, (int)ex_or_batch,
 			  (int)d->num_share_modes));
@@ -1312,17 +1315,38 @@ static bool delay_for_oplock(files_struct *fsp,
 {
 	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *entry;
+	uint32_t num_non_stat_opens = 0;
+	uint32_t i;
 
 	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		return false;
 	}
-	if (lck->data->num_share_modes != 1) {
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+		if (e->op_type == NO_OPLOCK && is_stat_open(e->access_mask)) {
+			continue;
+		}
+		num_non_stat_opens += 1;
+
 		/*
-		 * More than one. There can't be any exclusive or batch left.
+		 * We found the a non-stat open, which in the exclusive/batch
+		 * case will be inspected further down.
+		 */
+		entry = e;
+	}
+	if (num_non_stat_opens == 0) {
+		/*
+		 * Nothing to wait for around
 		 */
 		return false;
 	}
-	entry = &d->share_modes[0];
+	if (num_non_stat_opens != 1) {
+		/*
+		 * More than one open around. There can't be any exclusive or
+		 * batch left, this is all level2.
+		 */
+		return false;
+	}
 
 	if (server_id_is_disconnected(&entry->pid)) {
 		/*
