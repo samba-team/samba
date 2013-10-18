@@ -575,9 +575,7 @@ SMBC_getatr(SMBCCTX * context,
 
 	/* if this is NT then don't bother with the getatr */
 	if (smb1cli_conn_capabilities(targetcli->conn) & CAP_NT_SMBS) {
-                errno = EPERM;
-		TALLOC_FREE(frame);
-                return False;
+		goto all_failed;
         }
 
 	if (NT_STATUS_IS_OK(cli_getatr(targetcli, targetpath, mode, size, &write_time))) {
@@ -602,6 +600,10 @@ SMBC_getatr(SMBCCTX * context,
 		TALLOC_FREE(frame);
 		return True;
 	}
+
+all_failed:
+	srv->no_pathinfo2 = False;
+	srv->no_pathinfo3 = False;
 
         errno = EPERM;
 	TALLOC_FREE(frame);
