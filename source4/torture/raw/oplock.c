@@ -556,6 +556,18 @@ static bool test_raw_oplock_exclusive4(struct torture_context *tctx, struct smbc
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.failures, 0);
 
+	/*
+	 * Open another non-stat open. This reproduces bug 10216. Make sure it
+	 * won't happen again...
+	 */
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
+	status = smb_raw_open(cli2->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_SHARING_VIOLATION);
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
+
 	smbcli_close(cli1->tree, fnum);
 	smbcli_close(cli2->tree, fnum2);
 
