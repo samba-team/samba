@@ -3043,7 +3043,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	size_t len = 0;
 	uint32 i;
 	int max_reported_jobs = lp_max_reported_jobs(snum);
-	bool ret = False;
+	bool ret = false;
 	const char* sharename = lp_servicename(talloc_tos(), snum);
 	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
 	if (tmp_ctx == NULL) {
@@ -3087,7 +3087,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 
 	/* Retrieve the linearised queue data. */
 
-	for( i  = 0; i < qcount; i++) {
+	for(i = 0; i < qcount; i++) {
 		uint32 qjob, qsize, qpage_count, qstatus, qpriority, qtime;
 		len += tdb_unpack(data.dptr + len, data.dsize - len, "ddddddff",
 				&qjob,
@@ -3109,7 +3109,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	total_count = qcount;
 
 	/* Add new jobids to the queue. */
-	for( i  = 0; i < extra_count; i++) {
+	for (i = 0; i < extra_count; i++) {
 		uint32 jobid;
 		struct printjob *pjob;
 
@@ -3122,7 +3122,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		queue[total_count].sysjob = jobid;
+		queue[total_count].sysjob = pjob->sysjob;
 		queue[total_count].size = pjob->size;
 		queue[total_count].page_count = pjob->page_count;
 		queue[total_count].status = pjob->status;
@@ -3137,32 +3137,31 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	/* Update the changed jobids. */
 	for (i = 0; i < changed_count; i++) {
 		uint32_t jobid = IVAL(jcdata.dptr, i * 4);
+		struct printjob *pjob;
 		uint32_t j;
 		bool found = false;
 
+		pjob = print_job_find(tmp_ctx, sharename, jobid);
+		if (pjob == NULL) {
+			DEBUG(5,("get_stored_queue_info: failed to find "
+				 "changed job = %u\n",
+				 (unsigned int)jobid));
+			remove_from_jobs_changed(sharename, jobid);
+			continue;
+		}
+
 		for (j = 0; j < total_count; j++) {
-			if (queue[j].sysjob == jobid) {
+			if (queue[j].sysjob == pjob->sysjob) {
 				found = true;
 				break;
 			}
 		}
 
 		if (found) {
-			struct printjob *pjob;
-
 			DEBUG(5,("get_stored_queue_info: changed job: %u\n",
-				 (unsigned int) jobid));
+				 (unsigned int)jobid));
 
-			pjob = print_job_find(tmp_ctx, sharename, jobid);
-			if (pjob == NULL) {
-				DEBUG(5,("get_stored_queue_info: failed to find "
-					 "changed job = %u\n",
-					 (unsigned int) jobid));
-				remove_from_jobs_changed(sharename, jobid);
-				continue;
-			}
-
-			queue[j].sysjob = jobid;
+			queue[j].sysjob = pjob->sysjob;
 			queue[j].size = pjob->size;
 			queue[j].page_count = pjob->page_count;
 			queue[j].status = pjob->status;
@@ -3172,8 +3171,10 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 			fstrcpy(queue[j].fs_file, pjob->jobname);
 			talloc_free(pjob);
 
-			DEBUG(5,("get_stored_queue_info: updated queue[%u], jobid: %u, jobname: %s\n",
-				 (unsigned int) j, (unsigned int) jobid, pjob->jobname));
+			DEBUG(5,("updated queue[%u], jobid: %u, sysjob: %u, "
+				 "jobname: %s\n",
+				 (unsigned int)j, (unsigned int)jobid,
+				 (unsigned int)queue[j].sysjob, pjob->jobname));
 		}
 
 		remove_from_jobs_changed(sharename, jobid);
@@ -3192,7 +3193,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	*ppqueue = queue;
 	*pcount = total_count;
 
-	ret = True;
+	ret = true;
 
   out:
 
