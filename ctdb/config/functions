@@ -133,9 +133,10 @@ ctdb_check_args ()
 
 ##############################################################
 # determine on what type of system (init style) we are running
-detect_init_style() {
+detect_init_style()
+{
     # only do detection if not already set:
-    test "x$CTDB_INIT_STYLE" != "x" && return
+    [ -z "$CTDB_INIT_STYLE" ] || return
 
     if [ -x /sbin/startproc ]; then
         CTDB_INIT_STYLE="suse"
