@@ -1236,13 +1236,60 @@ static bool test_ioctl_copy_chunk_bad_access(struct torture_context *torture,
 
 	/*
 	 * FSCTL_SRV_COPYCHUNK requires read permission on dest,
-	 * FSCTL_SRV_COPYCHUNK_WRITE (not supported by Samba) on the other hand
-	 * does not.
+	 * FSCTL_SRV_COPYCHUNK_WRITE on the other hand does not.
 	 */
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
 	torture_assert_ntstatus_equal(torture, status,
 				      NT_STATUS_ACCESS_DENIED,
 				      "FSCTL_SRV_COPYCHUNK");
+
+	smb2_util_close(tree, src_h);
+	smb2_util_close(tree, dest_h);
+	talloc_free(tmp_ctx);
+
+	return true;
+}
+
+static bool test_ioctl_copy_chunk_write_access(struct torture_context *torture,
+					       struct smb2_tree *tree)
+{
+	struct smb2_handle src_h;
+	struct smb2_handle dest_h;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct srv_copychunk_copy cc_copy;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+
+	/* no read permission on dest with FSCTL_SRV_COPYCHUNK_WRITE */
+	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
+				   1, /* 1 chunk */
+				   &src_h, 4096, /* fill 4096 byte src file */
+				   SEC_RIGHTS_FILE_ALL,
+				   &dest_h, 0,	/* 0 byte dest file */
+				   (SEC_RIGHTS_FILE_WRITE
+				    | SEC_RIGHTS_FILE_EXECUTE),
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		torture_fail(torture, "setup copy chunk error");
+	}
+
+	ioctl.smb2.in.function = FSCTL_SRV_COPYCHUNK_WRITE;
+	cc_copy.chunks[0].source_off = 0;
+	cc_copy.chunks[0].target_off = 0;
+	cc_copy.chunks[0].length = 4096;
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cc_copy,
+			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_srv_copychunk_copy");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_SRV_COPYCHUNK_WRITE");
 
 	smb2_util_close(tree, src_h);
 	smb2_util_close(tree, dest_h);
@@ -2068,6 +2115,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_copy_chunk_src_is_dest_overlap);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_bad_access",
 				     test_ioctl_copy_chunk_bad_access);
+	torture_suite_add_1smb2_test(suite, "copy_chunk_write_access",
+				     test_ioctl_copy_chunk_write_access);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_src_exceed",
 				     test_ioctl_copy_chunk_src_exceed);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_src_exceed_multi",
