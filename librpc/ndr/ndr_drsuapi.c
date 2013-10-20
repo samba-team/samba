@@ -4,6 +4,7 @@
    routines for printing some linked list structs in DRSUAPI
 
    Copyright (C) Stefan (metze) Metzmacher 2005
+   Copyright (C) Matthieu Patou 2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -404,5 +405,160 @@ _PUBLIC_ void ndr_print_drsuapi_DsAddEntry_AttrErrListItem_V1(struct ndr_print *
 	ndr->depth--;
 	if (r->next) {
 		ndr_print_drsuapi_DsAddEntry_AttrErrListItem_V1(ndr, "next", r->next);
+	}
+}
+
+enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int ndr_flags, const union drsuapi_DsBindInfo *r)
+{
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		uint32_t level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
+		switch (level) {
+			case 24: {
+				{
+					struct ndr_push *_ndr_info24;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info24, 0, 24));
+					NDR_CHECK(ndr_push_drsuapi_DsBindInfo24(_ndr_info24, NDR_SCALARS, &r->info24));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info24, 0, 24));
+				}
+			break; }
+
+			case 28: {
+				{
+					struct ndr_push *_ndr_info28;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info28, 0, 28));
+					NDR_CHECK(ndr_push_drsuapi_DsBindInfo28(_ndr_info28, NDR_SCALARS, &r->info28));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info28, 0, 28));
+				}
+			break; }
+
+			case 48: {
+				{
+					struct ndr_push *_ndr_info48;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info48, 0, 48));
+					NDR_CHECK(ndr_push_drsuapi_DsBindInfo48(_ndr_info48, NDR_SCALARS, &r->info48));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info48, 0, 48));
+				}
+			break; }
+
+			default: {
+				{
+					struct ndr_push *_ndr_Fallback;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_Fallback, 0, level));
+					NDR_CHECK(ndr_push_drsuapi_DsBindInfoFallBack(_ndr_Fallback, NDR_SCALARS, &r->Fallback));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_Fallback, 0, level));
+				}
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		uint32_t level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case 24:
+			break;
+
+			case 28:
+			break;
+
+			case 48:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsBindInfo *r)
+{
+	uint32_t level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
+		switch (level) {
+			case 24: {
+				{
+					struct ndr_pull *_ndr_info24;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info24, 0, 24));
+					NDR_CHECK(ndr_pull_drsuapi_DsBindInfo24(_ndr_info24, NDR_SCALARS, &r->info24));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info24, 0, 24));
+				}
+			break; }
+
+			case 28: {
+				{
+					struct ndr_pull *_ndr_info28;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info28, 0, 28));
+					NDR_CHECK(ndr_pull_drsuapi_DsBindInfo28(_ndr_info28, NDR_SCALARS, &r->info28));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info28, 0, 28));
+				}
+			break; }
+
+			case 48: {
+				{
+					struct ndr_pull *_ndr_info48;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info48, 0, 48));
+					NDR_CHECK(ndr_pull_drsuapi_DsBindInfo48(_ndr_info48, NDR_SCALARS, &r->info48));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info48, 0, 48));
+				}
+			break; }
+
+			default: {
+				{
+					struct ndr_pull *_ndr_Fallback;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_Fallback, 0, level));
+					NDR_CHECK(ndr_pull_drsuapi_DsBindInfoFallBack(_ndr_Fallback, NDR_SCALARS, &r->Fallback));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_Fallback, 0, level));
+				}
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case 24:
+			break;
+
+			case 28:
+			break;
+
+			case 48:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsBindInfo(struct ndr_print *ndr, const char *name, const union drsuapi_DsBindInfo *r)
+{
+	uint32_t level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "drsuapi_DsBindInfo");
+	switch (level) {
+		case 24:
+			ndr_print_drsuapi_DsBindInfo24(ndr, "info24", &r->info24);
+		break;
+
+		case 28:
+			ndr_print_drsuapi_DsBindInfo28(ndr, "info28", &r->info28);
+		break;
+
+		case 48:
+			ndr_print_drsuapi_DsBindInfo48(ndr, "info48", &r->info48);
+		break;
+
+		default:
+			ndr_print_drsuapi_DsBindInfoFallBack(ndr, "Fallback", &r->Fallback);
+		break;
+
 	}
 }
