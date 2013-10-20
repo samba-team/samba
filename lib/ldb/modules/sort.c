@@ -252,7 +252,6 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	struct ldb_control *control;
 	struct ldb_server_sort_control **sort_ctrls;
 	struct ldb_control **saved_controls;
-	struct ldb_control **controls;
 	struct ldb_request *down_req;
 	struct sort_context *ac;
 	struct ldb_context *ldb;
@@ -286,6 +285,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		
 	if (sort_ctrls[1] != NULL) {
 		if (control->critical) {
+			struct ldb_control **controls = NULL;
 
 			/* callback immediately */
 			ret = build_response(req, &controls,
