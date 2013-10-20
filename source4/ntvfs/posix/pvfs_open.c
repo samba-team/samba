@@ -717,7 +717,9 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	if (io->generic.in.query_maximal_access) {
 		status = pvfs_access_maximal_allowed(pvfs, req, name, 
 						     &io->generic.out.maximal_access);
-		NT_STATUS_NOT_OK_RETURN(status);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto cleanup_delete;
+		}
 	}
 
 	/* form the lock context used for byte range locking and
