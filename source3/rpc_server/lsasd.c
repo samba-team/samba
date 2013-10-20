@@ -808,7 +808,6 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	if (rc == -1) {
 		DEBUG(0, ("Failed to listen on netlogon ncalrpc - %s\n",
 			  strerror(errno)));
-		close(fd);
 		ok = false;
 		goto done;
 	}
