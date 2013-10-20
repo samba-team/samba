@@ -1155,7 +1155,7 @@ static void set_updating_pid(const fstring sharename, bool updating)
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", sharename);
     	key = string_tdb_data(keystr);
 
-	DEBUG(5, ("set_updating_pid: %s updating lpq cache for print share %s\n",
+	DEBUG(5, ("set_updating_pid: %supdating lpq cache for print share %s\n",
 		updating ? "" : "not ",
 		sharename ));
 
