@@ -1107,9 +1107,16 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x10 */
+	typedef [v1_enum] enum {
+		DRSUAPI_DC_INFO_CTR_1  = 1,
+		DRSUAPI_DC_INFO_CTR_2  = 2,
+		DRSUAPI_DC_INFO_CTR_3  = 3,
+		DRSUAPI_DC_CONNECTION_CTR_01 = 0xFFFFFFFF
+	} drsuapi_DsGetDCInfoCtrLevels;
+
 	typedef struct {
 		[charset(UTF16),string] uint16 *domain_name; /* netbios or dns */
-		int32 level; /* specifies the switch level for the request */
+		drsuapi_DsGetDCInfoCtrLevels level; /* specifies the switch level for the request */
 	} drsuapi_DsGetDCInfoRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -1204,14 +1211,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsGetDCConnection01 *array;
 	} drsuapi_DsGetDCConnectionCtr01;
 
-	typedef [v1_enum] enum {
-		DRSUAPI_DC_INFO_CTR_1  = 1,
-		DRSUAPI_DC_INFO_CTR_2  = 2,
-		DRSUAPI_DC_INFO_CTR_3  = 3,
-		DRSUAPI_DC_CONNECTION_CTR_01 = -1
-	} drsuapi_DsGetDCInfoCtrLevels;
-
-        typedef [switch_type(int32)] union {
+        typedef [switch_type(drsuapi_DsGetDCInfoCtrLevels)] union {
 		[case(DRSUAPI_DC_INFO_CTR_1)]  drsuapi_DsGetDCInfoCtr1  ctr1;
 		[case(DRSUAPI_DC_INFO_CTR_2)]  drsuapi_DsGetDCInfoCtr2  ctr2;
 		[case(DRSUAPI_DC_INFO_CTR_3)]  drsuapi_DsGetDCInfoCtr3  ctr3;
@@ -1222,7 +1222,7 @@ interface drsuapi
 		[in] policy_handle *bind_handle,
 		[in] int32 level,
 		[in,ref,switch_is(level)] drsuapi_DsGetDCInfoRequest *req,
-		[out,ref] int32 *level_out,
+		[out,ref] drsuapi_DsGetDCInfoCtrLevels *level_out,
 		[out,ref,switch_is(*level_out)] drsuapi_DsGetDCInfoCtr *ctr
 		);
 
