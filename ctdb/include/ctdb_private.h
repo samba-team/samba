@@ -1588,4 +1588,6 @@ struct lock_request *ctdb_lock_alldb(struct ctdb_context *ctdb,
 				     void (*callback)(void *, bool),
 				     void *private_data);
 
+int mkdir_p(const char *dir, int mode);
+
 #endif

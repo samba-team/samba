@@ -20,6 +20,8 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/filesys.h"
+#include <libgen.h>
 
 /*
   uint16 checksum for n bytes
@@ -156,4 +158,30 @@ char *ctdb_sys_find_ifname(ctdb_sock_addr *addr)
 	close(s);
 
 	return NULL;
+}
+
+int mkdir_p(const char *dir, int mode)
+{
+	char * t;
+	int ret;
+
+	if (strcmp(dir, "/") == 0) {
+		return 0;
+	}
+
+	t = talloc_strdup(NULL, dir);
+	if (t == NULL) {
+		return ENOMEM;
+	}
+	ret = mkdir_p(dirname(t), mode);
+	talloc_free(t);
+
+	if (ret == 0) {
+		ret = mkdir(dir, mode);
+		if ((ret == -1) &&  (errno == EEXIST)) {
+			ret = 0;
+		}
+	}
+
+	return ret;
 }
