@@ -1589,5 +1589,6 @@ struct lock_request *ctdb_lock_alldb(struct ctdb_context *ctdb,
 				     void *private_data);
 
 int mkdir_p(const char *dir, int mode);
+void ctdb_mkdir_p_or_die(struct ctdb_context *ctdb, const char *dir, int mode);
 
 #endif

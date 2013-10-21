@@ -811,3 +811,17 @@ void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate)
 			    runstate_to_string(runstate), runstate));
 	ctdb->runstate = runstate;
 }
+
+void ctdb_mkdir_p_or_die(struct ctdb_context *ctdb, const char *dir, int mode)
+{
+	int ret;
+
+	ret = mkdir_p(dir, mode);
+	if (ret != 0) {
+		DEBUG(DEBUG_ALERT,
+		      ("ctdb exiting with error: "
+		       "failed to create directory \"%s\" (%s)\n",
+		       dir, strerror(ret)));
+		exit(1);
+	}
+}
