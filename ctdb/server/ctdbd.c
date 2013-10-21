@@ -263,6 +263,8 @@ int main(int argc, const char *argv[])
 			exit(1);
 		}
 	}
+	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory, 0700);
+
 	if (options.db_dir_persistent) {
 		ret = ctdb_set_tdb_dir_persistent(ctdb, options.db_dir_persistent);
 		if (ret == -1) {
@@ -270,6 +272,8 @@ int main(int argc, const char *argv[])
 			exit(1);
 		}
 	}
+	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory_persistent, 0700);
+
 	if (options.db_dir_state) {
 		ret = ctdb_set_tdb_dir_state(ctdb, options.db_dir_state);
 		if (ret == -1) {
@@ -277,6 +281,7 @@ int main(int argc, const char *argv[])
 			exit(1);
 		}
 	}
+	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory_state, 0700);
 
 	if (options.public_interface) {
 		ctdb->default_public_interface = talloc_strdup(ctdb, options.public_interface);

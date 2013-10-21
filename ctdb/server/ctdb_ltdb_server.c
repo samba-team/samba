@@ -1235,40 +1235,6 @@ int ctdb_attach_databases(struct ctdb_context *ctdb)
 	char *unhealthy_reason = NULL;
 	bool first_try = true;
 
-	if (ctdb->db_directory == NULL) {
-		ctdb->db_directory = VARDIR "/ctdb";
-	}
-	if (ctdb->db_directory_persistent == NULL) {
-		ctdb->db_directory_persistent = VARDIR "/ctdb/persistent";
-	}
-	if (ctdb->db_directory_state == NULL) {
-		ctdb->db_directory_state = VARDIR "/ctdb/state";
-	}
-
-	/* make sure the db directory exists */
-	ret = mkdir(ctdb->db_directory, 0700);
-	if (ret == -1 && errno != EEXIST) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb directory '%s'\n",
-			 ctdb->db_directory));
-		return -1;
-	}
-
-	/* make sure the persistent db directory exists */
-	ret = mkdir(ctdb->db_directory_persistent, 0700);
-	if (ret == -1 && errno != EEXIST) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb persistent directory '%s'\n",
-			 ctdb->db_directory_persistent));
-		return -1;
-	}
-
-	/* make sure the internal state db directory exists */
-	ret = mkdir(ctdb->db_directory_state, 0700);
-	if (ret == -1 && errno != EEXIST) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb state directory '%s'\n",
-			 ctdb->db_directory_state));
-		return -1;
-	}
-
 	persistent_health_path = talloc_asprintf(ctdb, "%s/%s.%u",
 						 ctdb->db_directory_state,
 						 PERSISTENT_HEALTH_TDB,
