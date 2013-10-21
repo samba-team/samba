@@ -810,7 +810,12 @@ static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
 	/* read the nodes file */
 	nodes_list = getenv("CTDB_NODES");
 	if (nodes_list == NULL) {
-		nodes_list = "/etc/ctdb/nodes";
+		nodes_list = talloc_asprintf(mem_ctx, "%s/nodes",
+					     getenv("CTDB_BASE"));
+		if (nodes_list == NULL) {
+			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			exit(1);
+		}
 	}
 	lines = file_lines_load(nodes_list, &nlines, mem_ctx);
 	if (lines == NULL) {
@@ -1162,7 +1167,12 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	/* read the natgw nodes file into a linked list */
 	natgw_list = getenv("CTDB_NATGW_NODES");
 	if (natgw_list == NULL) {
-		natgw_list = "/etc/ctdb/natgw_nodes";
+		natgw_list = talloc_asprintf(tmp_ctx, "%s/natgw_nodes",
+					     getenv("CTDB_BASE"));
+		if (natgw_list == NULL) {
+			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			exit(1);
+		}
 	}
 	lines = file_lines_load(natgw_list, &nlines, ctdb);
 	if (lines == NULL) {
@@ -6200,6 +6210,9 @@ int main(int argc, const char *argv[])
 	alarm(options.maxruntime);
 
 	control = extra_argv[0];
+
+	/* Default value for CTDB_BASE - don't override */
+	setenv("CTDB_BASE", ETCDIR "/ctdb", 0);
 
 	ev = event_context_init(NULL);
 	if (!ev) {
