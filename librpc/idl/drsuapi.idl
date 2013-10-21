@@ -1119,7 +1119,7 @@ interface drsuapi
 		drsuapi_DsGetDCInfoCtrLevels level; /* specifies the switch level for the request */
 	} drsuapi_DsGetDCInfoRequest1;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsGetDCInfoRequest1 req1;
 	} drsuapi_DsGetDCInfoRequest;
 
@@ -1220,7 +1220,7 @@ interface drsuapi
 
 	WERROR drsuapi_DsGetDomainControllerInfo(
 		[in] policy_handle *bind_handle,
-		[in] int32 level,
+		[in] uint32 level,
 		[in,ref,switch_is(level)] drsuapi_DsGetDCInfoRequest *req,
 		[out,ref] drsuapi_DsGetDCInfoCtrLevels *level_out,
 		[out,ref,switch_is(*level_out)] drsuapi_DsGetDCInfoCtr *ctr
