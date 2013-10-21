@@ -139,12 +139,12 @@ int main(int argc, const char *argv[])
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
 		{ "lvs", 0, POPT_ARG_NONE, &options.lvs, 0, "lvs is enabled on this node", NULL },
-		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, DEBUG_ERR, "log level of event script output", NULL },
+		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, 0, "log level of event script output", NULL },
 		{ "nopublicipcheck", 0, POPT_ARG_NONE, &options.no_publicipcheck, 0, "don't check we have/don't have the correct public ip addresses", NULL },
 		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
 		  &options.max_persistent_check_errors, 0,
 		  "max allowed persistent check errors (default 0)", NULL },
-		{ "log-ringbuf-size", 0, POPT_ARG_INT, &log_ringbuf_size, DEBUG_ERR, "Number of log messages we can store in the memory ringbuffer", NULL },
+		{ "log-ringbuf-size", 0, POPT_ARG_INT, &log_ringbuf_size, 0, "Number of log messages we can store in the memory ringbuffer", NULL },
 		{ "sloppy-start", 0, POPT_ARG_NONE, &fast_start, 0, "Do not perform full recovery on start", NULL },
 		POPT_TABLEEND
 	};
