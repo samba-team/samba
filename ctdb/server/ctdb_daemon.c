@@ -1145,7 +1145,7 @@ static void ctdb_create_pidfile(pid_t pid)
 /*
   start the protocol going as a daemon
 */
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, const char *public_address_list)
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 {
 	int res, ret = -1;
 	struct fd_event *fde;
@@ -1261,8 +1261,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 
 	initialise_node_flags(ctdb);
 
-	if (public_address_list) {
-		ctdb->public_addresses_file = public_address_list;
+	if (ctdb->public_addresses_file) {
 		ret = ctdb_set_public_addresses(ctdb, true);
 		if (ret == -1) {
 			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));

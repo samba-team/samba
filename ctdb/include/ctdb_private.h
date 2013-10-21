@@ -769,8 +769,7 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 
 
 int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork,
-		      bool use_syslog,
-		      const char *public_address_list);
+		      bool use_syslog);
 struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 

@@ -53,6 +53,7 @@ static struct {
 	int         max_persistent_check_errors;
 } options = {
 	.nlist = NULL,
+	.public_address_list = NULL,
 	.transport = "tcp",
 	.event_script_dir = NULL,
 	.logfile = LOGDIR "/log.ctdb",
@@ -322,6 +323,7 @@ int main(int argc, const char *argv[])
 		ctdb->do_setsched = 1;
 	}
 
+	ctdb->public_addresses_file = options.public_address_list;
 	ctdb->do_checkpublicip = !options.no_publicipcheck;
 
 	if (options.max_persistent_check_errors < 0) {
@@ -331,5 +333,5 @@ int main(int argc, const char *argv[])
 	}
 
 	/* start the protocol running (as a child) */
-	return ctdb_start_daemon(ctdb, interactive?false:true, options.use_syslog, options.public_address_list);
+	return ctdb_start_daemon(ctdb, interactive?false:true, options.use_syslog);
 }
