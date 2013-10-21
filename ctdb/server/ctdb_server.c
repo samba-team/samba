@@ -197,7 +197,7 @@ static int ctdb_add_deleted_node(struct ctdb_context *ctdb)
 /*
   setup the node list from a file
 */
-int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
+static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 {
 	char **lines;
 	int nlines;
@@ -265,6 +265,16 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	return 0;
 }
 
+void ctdb_load_nodes_file(struct ctdb_context *ctdb)
+{
+	int ret;
+
+	ret = ctdb_set_nlist(ctdb, ctdb->nodes_file);
+	if (ret == -1) {
+		DEBUG(DEBUG_ALERT,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
+		exit(1);
+	}
+}
 
 /*
   setup the local node address

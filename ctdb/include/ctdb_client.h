@@ -85,12 +85,6 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname);
 const char *ctdb_get_socketname(struct ctdb_context *ctdb);
 
 /*
-  tell ctdb what nodes are available. This takes a filename, which will contain
-  1 node address per line, in a transport specific format
-*/
-int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
-
-/*
   Check that a specific ip address exists in the node list and returns
   the id for the node or -1
 */

@@ -30,8 +30,6 @@
  */
 int script_log_level;
 bool fast_start;
-void ctdb_load_nodes_file(struct ctdb_context *ctdb) {}
-
 
 /* UTIL_OBJ */
 #include "lib/util/idtree.c"

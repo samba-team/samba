@@ -52,7 +52,7 @@ static struct {
 	int         no_publicipcheck;
 	int         max_persistent_check_errors;
 } options = {
-	.nlist = ETCDIR "/ctdb/nodes",
+	.nlist = NULL,
 	.transport = "tcp",
 	.event_script_dir = ETCDIR "/ctdb/events.d",
 	.logfile = LOGDIR "/log.ctdb",
@@ -84,17 +84,6 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 	}
 
 	ctdb_input_pkt(ctdb, hdr);
-}
-
-void ctdb_load_nodes_file(struct ctdb_context *ctdb)
-{
-	int ret;
-
-	ret = ctdb_set_nlist(ctdb, options.nlist);
-	if (ret == -1) {
-		DEBUG(DEBUG_ALERT,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
-		exit(1);
-	}
 }
 
 static const struct ctdb_upcalls ctdb_upcalls = {
@@ -250,7 +239,20 @@ int main(int argc, const char *argv[])
 	 */
 	ctdb->pnn = -1;
 
+	/* Default value for CTDB_BASE - don't override */
+	setenv("CTDB_BASE", ETCDIR "/ctdb", 0);
+
 	/* tell ctdb what nodes are available */
+	if (options.nlist != NULL) {
+		ctdb->nodes_file = options.nlist;
+	} else {
+		ctdb->nodes_file =
+			talloc_asprintf(ctdb, "%s/nodes", getenv("CTDB_BASE"));
+		if (ctdb->nodes_file == NULL) {
+			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			exit(1);
+		}
+	}
 	ctdb_load_nodes_file(ctdb);
 
 	if (options.db_dir) {
@@ -322,9 +324,6 @@ int main(int argc, const char *argv[])
 	} else {
 		ctdb->max_persistent_check_errors = (uint64_t)options.max_persistent_check_errors;
 	}
-
-	/* Default value for CTDB_BASE - don't override */
-	setenv("CTDB_BASE", ETCDIR "/ctdb", 0);
 
 	/* start the protocol running (as a child) */
 	return ctdb_start_daemon(ctdb, interactive?false:true, options.use_syslog, options.public_address_list);
