@@ -78,42 +78,6 @@ int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 }
 
 /*
-  set the directory for the local databases
-*/
-int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
-{
-	ctdb->db_directory = talloc_strdup(ctdb, dir);
-	if (ctdb->db_directory == NULL) {
-		return -1;
-	}
-	return 0;
-}
-
-/*
-  set the directory for the persistent databases
-*/
-int ctdb_set_tdb_dir_persistent(struct ctdb_context *ctdb, const char *dir)
-{
-	ctdb->db_directory_persistent = talloc_strdup(ctdb, dir);
-	if (ctdb->db_directory_persistent == NULL) {
-		return -1;
-	}
-	return 0;
-}
-
-/*
-  set the directory for internal state databases
-*/
-int ctdb_set_tdb_dir_state(struct ctdb_context *ctdb, const char *dir)
-{
-	ctdb->db_directory_state = talloc_strdup(ctdb, dir);
-	if (ctdb->db_directory_state == NULL) {
-		return -1;
-	}
-	return 0;
-}
-
-/*
   add a node to the list of nodes
 */
 static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)

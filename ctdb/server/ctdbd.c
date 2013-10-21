@@ -256,31 +256,13 @@ int main(int argc, const char *argv[])
 	}
 	ctdb_load_nodes_file(ctdb);
 
-	if (options.db_dir) {
-		ret = ctdb_set_tdb_dir(ctdb, options.db_dir);
-		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb)));
-			exit(1);
-		}
-	}
+	ctdb->db_directory = options.db_dir;
 	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory, 0700);
 
-	if (options.db_dir_persistent) {
-		ret = ctdb_set_tdb_dir_persistent(ctdb, options.db_dir_persistent);
-		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("ctdb_set_tdb_dir_persistent failed - %s\n", ctdb_errstr(ctdb)));
-			exit(1);
-		}
-	}
+	ctdb->db_directory_persistent = options.db_dir_persistent;
 	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory_persistent, 0700);
 
-	if (options.db_dir_state) {
-		ret = ctdb_set_tdb_dir_state(ctdb, options.db_dir_state);
-		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("ctdb_set_tdb_dir_state failed - %s\n", ctdb_errstr(ctdb)));
-			exit(1);
-		}
-	}
+	ctdb->db_directory_state = options.db_dir_state;
 	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory_state, 0700);
 
 	if (options.public_interface) {
