@@ -1981,46 +1981,49 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			}
 
 			if (unixid.type == ID_TYPE_BOTH) {
-				/* If it's the owning user, this is a
-				 * user_obj, not a user.  This way, we
-				 * get a valid ACL for groups that own
-				 * files, without putting user ACL
-				 * entries in for groups otherwise */
-				if (unixid.id == pst->st_ex_uid) {
-					current_ace->owner_type = UID_ACE;
-					current_ace->unix_ug.type = ID_TYPE_UID;
-					current_ace->unix_ug.id = unixid.id;
-					current_ace->type = SMB_ACL_USER_OBJ;
+				/*
+				 * We must add both a user and group
+				 * entry POSIX_ACL.
+				 * This is due to the fact that in POSIX
+				 * user entries are more specific than
+				 * groups.
+				 */
+				current_ace->owner_type = UID_ACE;
+				current_ace->unix_ug.type = ID_TYPE_UID;
+				current_ace->unix_ug.id = unixid.id;
+				current_ace->type =
+					(unixid.id == pst->st_ex_uid) ?
+						SMB_ACL_USER_OBJ :
+						SMB_ACL_USER;
 
-					/* Add the user object to the posix ACL,
-					   and proceed to the group mapping
-					   below. This handles the talloc_free
-					   of current_ace if not added for some
-					   reason */
-					if (!add_current_ace_to_acl(fsp,
-							psa,
-							&file_ace,
-							&dir_ace,
-							&got_file_allow,
-							&got_dir_allow,
-							&all_aces_are_inherit_only,
-							current_ace)) {
-						free_canon_ace_list(file_ace);
-						free_canon_ace_list(dir_ace);
-						return false;
-					}
-
-					if ((current_ace = talloc(talloc_tos(),
-							canon_ace)) == NULL) {
-						free_canon_ace_list(file_ace);
-						free_canon_ace_list(dir_ace);
-						DEBUG(0,("create_canon_ace_lists: "
-							"malloc fail.\n"));
-						return False;
-					}
-
-					ZERO_STRUCTP(current_ace);
+				/* Add the user object to the posix ACL,
+				   and proceed to the group mapping
+				   below. This handles the talloc_free
+				   of current_ace if not added for some
+				   reason */
+				if (!add_current_ace_to_acl(fsp,
+						psa,
+						&file_ace,
+						&dir_ace,
+						&got_file_allow,
+						&got_dir_allow,
+						&all_aces_are_inherit_only,
+						current_ace)) {
+					free_canon_ace_list(file_ace);
+					free_canon_ace_list(dir_ace);
+					return false;
 				}
+
+				if ((current_ace = talloc(talloc_tos(),
+						canon_ace)) == NULL) {
+					free_canon_ace_list(file_ace);
+					free_canon_ace_list(dir_ace);
+					DEBUG(0,("create_canon_ace_lists: "
+						"malloc fail.\n"));
+					return False;
+				}
+
+				ZERO_STRUCTP(current_ace);
 
 				sid_copy(&current_ace->trustee, &psa->trustee);
 
