@@ -577,8 +577,14 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 			OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
 	}
 
+	if ((fsp->oplock_type == LEVEL_II_OPLOCK) && (break_to == NO_OPLOCK)) {
+		/*
+		 * This is an async break without a reply and thus no timeout
+		 */
+		remove_oplock(fsp);
+		return;
+	}
 	fsp->sent_oplock_break = break_to_level2 ? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
-
 	add_oplock_timeout_handler(fsp);
 }
 
@@ -767,9 +773,11 @@ static void do_break_to_none(struct tevent_context *ctx,
 		}
 
 		share_mode_entry_to_message(msg, share_entry);
+		/* Overload entry->op_type */
+		SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
 
 		messaging_send_buf(state->sconn->msg_ctx, share_entry->pid,
-				   MSG_SMB_ASYNC_LEVEL2_BREAK,
+				   MSG_SMB_BREAK_REQUEST,
 				   (uint8 *)msg, sizeof(msg));
 	}
 
