@@ -481,8 +481,8 @@ struct ctdb_uptime {
   ctdb_control_tcp_addr structure instead
  */
 struct ctdb_control_tcp {
-	struct sockaddr_in src; // samba uses this
-	struct sockaddr_in dest;// samba uses this
+	struct sockaddr_in src;  /* samba uses this */
+	struct sockaddr_in dest; /* samba uses this */
 };
 /* new style structure */
 struct ctdb_control_tcp_addr {
