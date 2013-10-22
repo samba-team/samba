@@ -594,6 +594,10 @@ daemons_start_1 ()
 	ctdb_options="$ctdb_options --public-addresses=$public_addresses_mine"
     fi
 
+    if [ -n "$VALGRIND" ] ; then
+	ctdb_options="$ctdb_options --valgrinding"
+    fi
+
     # We'll use "pkill -f" to kill the daemons with
     # "--socket=.* --nlist .* --nopublicipcheck" as context.
     $VALGRIND ctdbd --socket="${TEST_VAR_DIR}/sock.$pnn" $ctdb_options "$@" ||return 1
