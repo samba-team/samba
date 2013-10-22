@@ -48,6 +48,15 @@ uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob)
 	}
 }
 
+uint32_t dcerpc_get_call_id(const DATA_BLOB *blob)
+{
+	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
+		return IVAL(blob->data, DCERPC_CALL_ID_OFFSET);
+	} else {
+		return RIVAL(blob->data, DCERPC_CALL_ID_OFFSET);
+	}
+}
+
 void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 {
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {

@@ -135,6 +135,7 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower)
 
 void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v);
 uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob);
+uint32_t dcerpc_get_call_id(const DATA_BLOB *blob);
 void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v);
 uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob);
 
