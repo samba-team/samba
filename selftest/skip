@@ -43,6 +43,7 @@
 ^samba3.smb2.hold-oplock                # Not a test, but a way to block other clients for a test
 ^samba3.smb2.durable-open-disconnect    # Not a test, but a way to create a disconnected durable
 ^samba3.smb2.scan                       # No tests
+^samba3.smb2.oplock.levelii501		# No test yet
 ^samba4.base.iometer
 ^samba4.base.casetable
 ^samba4.base.nttrans
@@ -62,6 +63,7 @@
 ^samba4.smb2.dir
 ^samba4.smb2.session
 ^samba4.smb2.compound
+^samba4.smb2.oplock.levelii501		# No test yet
 ^samba4.ntvfs.cifs.*.base.charset
 ^samba4.ntvfs.cifs.*.base.iometer
 ^samba4.ntvfs.cifs.*.base.casetable

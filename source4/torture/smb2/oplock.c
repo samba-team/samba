@@ -3480,6 +3480,260 @@ static bool test_smb2_oplock_levelII500(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Test a double-break. Open a file with exclusive. Send off a second open
+ * request with OPEN_IF, triggering a break to level2. This should respond
+ * with level2. Before replying to the break to level2, fire off a third open
+ * with OVERWRITE_IF. The expected sequence would be that the 3rd opener gets
+ * a level2 immediately triggered by a break to none, but that seems not the
+ * case. Still investigating what the right behaviour should be.
+ */
+
+struct levelII501_state {
+	struct torture_context *tctx;
+	struct smb2_tree *tree1;
+	struct smb2_tree *tree2;
+	struct smb2_tree *tree3;
+	struct smb2_handle h;
+	struct smb2_handle h1;
+	union smb_open io;
+
+	struct smb2_handle break_handle;
+	uint8_t break_to;
+	struct smb2_break br;
+
+	bool done;
+};
+
+static bool torture_oplock_break_delay(struct smb2_transport *transport,
+				       const struct smb2_handle *handle,
+				       uint8_t level, void *private_data);
+static void levelII501_break_done(struct smb2_request *req);
+static void levelII501_open1_done(struct smb2_request *req);
+static void levelII501_open2_done(struct smb2_request *req);
+static void levelII501_2ndopen_cb(struct tevent_context *ev,
+				  struct tevent_timer *te,
+				  struct timeval current_time,
+				  void *private_data);
+static void levelII501_break_timeout_cb(struct tevent_context *ev,
+					struct tevent_timer *te,
+					struct timeval current_time,
+					void *private_data);
+static void levelII501_timeout_cb(struct tevent_context *ev,
+				  struct tevent_timer *te,
+				  struct timeval current_time,
+				  void *private_data);
+
+static bool test_smb2_oplock_levelII501(struct torture_context *tctx,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+{
+	const char *fname = BASEDIR "\\test_levelII501.dat";
+	NTSTATUS status;
+	bool ret = true;
+	struct levelII501_state *state;
+	struct smb2_request *req;
+	struct tevent_timer *te;
+
+	state = talloc(tctx, struct levelII501_state);
+	state->tctx = tctx;
+	state->done = false;
+	state->tree1 = tree1;
+	state->tree2 = tree2;
+
+	if (!torture_smb2_connection(tctx, &state->tree3)) {
+		torture_fail(tctx, "Establishing SMB2 connection failed\n");
+		return false;
+	}
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &state->h);
+	torture_assert_ntstatus_ok(tctx, status, "Error creating directory");
+
+	/* cleanup */
+	smb2_util_unlink(tree1, fname);
+
+	/*
+	  base ntcreatex parms
+	*/
+	ZERO_STRUCT(state->io.smb2);
+	state->io.generic.level = RAW_OPEN_SMB2;
+	state->io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	state->io.smb2.in.alloc_size = 0;
+	state->io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	state->io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	state->io.smb2.in.create_options = 0;
+	state->io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	state->io.smb2.in.security_flags = 0;
+	state->io.smb2.in.fname = fname;
+
+	torture_comment(tctx, "LEVELII501: Test double break sequence\n");
+	ZERO_STRUCT(break_info);
+
+	state->io.smb2.in.desired_access = SEC_RIGHTS_FILE_READ |
+				SEC_RIGHTS_FILE_WRITE;
+	state->io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE;
+	state->io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+	state->io.smb2.in.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+
+	tree1->session->transport->oplock.handler = torture_oplock_break_delay;
+	tree1->session->transport->oplock.private_data = state;
+
+	status = smb2_create(tree1, tctx, &(state->io.smb2));
+	torture_assert_ntstatus_ok(tctx, status, "Error opening the file");
+	state->h1 = state->io.smb2.out.file.handle;
+	CHECK_VAL(state->io.smb2.out.oplock_level, SMB2_OPLOCK_LEVEL_EXCLUSIVE);
+
+	/*
+	 * Trigger a break to level2
+	 */
+
+	req = smb2_create_send(tree2, &state->io.smb2);
+	req->async.fn = levelII501_open1_done;
+	req->async.private_data = state;
+
+	te = tevent_add_timer(
+		tctx->ev, tctx, tevent_timeval_current_ofs(0, 200000),
+		levelII501_2ndopen_cb, state);
+	torture_assert(tctx, te != NULL, "tevent_add_timer failed\n");
+
+	te = tevent_add_timer(
+		tctx->ev, tctx, tevent_timeval_current_ofs(2, 0),
+		levelII501_timeout_cb, state);
+	torture_assert(tctx, te != NULL, "tevent_add_timer failed\n");
+
+	while (!state->done) {
+		if (tevent_loop_once(tctx->ev) != 0) {
+			torture_comment(tctx, "tevent_loop_once failed\n");
+		}
+	}
+
+	return ret;
+}
+
+/*
+ * Fire off a second open after a little timeout
+ */
+
+static void levelII501_2ndopen_cb(struct tevent_context *ev,
+				  struct tevent_timer *te,
+				  struct timeval current_time,
+				  void *private_data)
+{
+	struct levelII501_state *state = talloc_get_type_abort(
+		private_data, struct levelII501_state);
+	struct smb2_request *req;
+
+	state->io.smb2.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	req = smb2_create_send(state->tree3, &state->io.smb2);
+	req->async.fn = levelII501_open2_done;
+	req->async.private_data = state;
+}
+
+/*
+ * Postpone the break response by 500 msec
+ */
+static bool torture_oplock_break_delay(struct smb2_transport *transport,
+				       const struct smb2_handle *handle,
+				       uint8_t level, void *private_data)
+{
+	struct levelII501_state *state = talloc_get_type_abort(
+		private_data, struct levelII501_state);
+	const char *name;
+	struct tevent_timer *te;
+
+	break_info.handle	= *handle;
+	break_info.level	= level;
+	break_info.count++;
+
+	state->break_handle = *handle;
+	state->break_to = level;
+
+	switch(level) {
+	case SMB2_OPLOCK_LEVEL_II:
+		name = "level II";
+		break;
+	case SMB2_OPLOCK_LEVEL_NONE:
+		name = "none";
+		break;
+	default:
+		name = "unknown";
+		break;
+	}
+	printf("Got break to %s [0x%02X] in oplock handler, postponing "
+	       "break response for 500msec\n", name, level);
+
+	te = tevent_add_timer(
+		state->tctx->ev, state->tctx,
+		tevent_timeval_current_ofs(0, 500000),
+		levelII501_break_timeout_cb, state);
+	torture_assert(state->tctx, te != NULL, "tevent_add_timer failed\n");
+
+	return true;
+}
+
+static void levelII501_break_timeout_cb(struct tevent_context *ev,
+					struct tevent_timer *te,
+					struct timeval current_time,
+					void *private_data)
+{
+	struct levelII501_state *state = talloc_get_type_abort(
+		private_data, struct levelII501_state);
+	struct smb2_request *req;
+
+	talloc_free(te);
+
+	ZERO_STRUCT(state->br);
+	state->br.in.file.handle = state->break_handle;
+	state->br.in.oplock_level = state->break_to;
+
+	req = smb2_break_send(state->tree1, &state->br);
+	req->async.fn = levelII501_break_done;
+	req->async.private_data = state;
+}
+
+static void levelII501_break_done(struct smb2_request *req)
+{
+	struct smb2_break io;
+	NTSTATUS status;
+
+	status = smb2_break_recv(req, &io);
+	printf("break done: %s\n", nt_errstr(status));
+}
+
+static void levelII501_open1_done(struct smb2_request *req)
+{
+	struct levelII501_state *state = talloc_get_type_abort(
+		req->async.private_data, struct levelII501_state);
+	struct smb2_create io;
+	NTSTATUS status;
+
+	status = smb2_create_recv(req, state, &io);
+	printf("open1 done: %s\n", nt_errstr(status));
+}
+
+static void levelII501_open2_done(struct smb2_request *req)
+{
+	struct levelII501_state *state = talloc_get_type_abort(
+		req->async.private_data, struct levelII501_state);
+	struct smb2_create io;
+	NTSTATUS status;
+
+	status = smb2_create_recv(req, state, &io);
+	printf("open2 done: %s\n", nt_errstr(status));
+}
+
+static void levelII501_timeout_cb(struct tevent_context *ev,
+				  struct tevent_timer *te,
+				  struct timeval current_time,
+				  void *private_data)
+{
+	struct levelII501_state *state = talloc_get_type_abort(
+		private_data, struct levelII501_state);
+	talloc_free(te);
+	state->done = true;
+}
+
 struct torture_suite *torture_smb2_oplocks_init(void)
 {
 	struct torture_suite *suite =
@@ -3522,7 +3776,8 @@ struct torture_suite *torture_smb2_oplocks_init(void)
 	torture_suite_add_1smb2_test(suite, "brl2", test_smb2_oplock_brl2);
 	torture_suite_add_1smb2_test(suite, "brl3", test_smb2_oplock_brl3);
 	torture_suite_add_1smb2_test(suite, "levelii500", test_smb2_oplock_levelII500);
-
+	torture_suite_add_2smb2_test(suite, "levelii501",
+				     test_smb2_oplock_levelII501);
 	suite->description = talloc_strdup(suite, "SMB2-OPLOCK tests");
 
 	return suite;
