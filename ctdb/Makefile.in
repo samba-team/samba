@@ -322,6 +322,9 @@ install: all manpages $(PMDA_INSTALL)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d
 	mkdir -p $(DESTDIR)$(etcdir)/sudoers.d/
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/notify.d
+	mkdir -p $(DESTDIR)$(localstatedir)/lib/ctdb
+	mkdir -p $(DESTDIR)$(localstatedir)/run/ctdb
+	mkdir -p $(DESTDIR)$(logdir)
 	${INSTALLCMD} -m 644 ctdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
