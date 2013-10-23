@@ -32,8 +32,10 @@ from samba.samba3 import param as s3param
 #        for entry in posix_acl.acl:
 #            print "a_type: %d" % entry.a_type
 #            print "a_perm: %o" % entry.a_perm
-#            print "uid: %d" % entry.uid
-#            print "gid: %d" % entry.gid
+#            if entry.a_type == smb_acl.SMB_ACL_USER:
+#                print "uid: %d" % entry.uid
+#            if entry.a_type == smb_acl.SMB_ACL_GROUP:
+#                print "gid: %d" % entry.gid
 
 class PosixAclMappingTests(TestCaseInTempDir):
 
