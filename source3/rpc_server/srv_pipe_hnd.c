@@ -474,20 +474,21 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		status = make_internal_rpc_pipe(handle,
-						msg_ctx,
-						name,
-						&syntax,
-						remote_address,
-						session_info,
-						&npa);
+		status = make_internal_rpc_pipe_socketpair(handle,
+							   ev_ctx,
+							   msg_ctx,
+							   name,
+							   &syntax,
+							   remote_address,
+							   session_info,
+							   &npa);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(handle);
 			return status;
 		}
 
 		handle->private_data = (void *)npa;
-		handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
+		handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
 
 		break;
 	case RPC_SERVICE_MODE_DISABLED:
