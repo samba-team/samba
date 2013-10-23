@@ -1101,7 +1101,6 @@ NTSTATUS check_user_share_access(connection_struct *conn,
 				uint32_t *p_share_access,
 				bool *p_readonly_share);
 bool change_to_user(connection_struct *conn, uint64_t vuid);
-bool change_to_root_user(void);
 bool smbd_change_to_root_user(void);
 bool smbd_become_authenticated_pipe_user(struct auth_session_info *session_info);
 bool smbd_unbecome_authenticated_pipe_user(void);
