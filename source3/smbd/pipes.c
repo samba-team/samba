@@ -67,6 +67,7 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 			 conn->sconn->local_address,
 			 conn->sconn->remote_address,
 			 conn->session_info,
+			 conn->sconn->ev_ctx,
 			 conn->sconn->msg_ctx,
 			 &fsp->fake_file_handle);
 	if (!NT_STATUS_IS_OK(status)) {
