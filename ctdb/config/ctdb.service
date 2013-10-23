@@ -5,9 +5,9 @@ After=network.target
 [Service]
 Type=forking
 LimitCORE=infinity
-PIDFile=/run/ctdbd/ctdbd.pid
-ExecStart=/usr/sbin/ctdbd_wrapper /run/ctdbd/ctdbd.pid start
-ExecStop=/usr/sbin/ctdbd_wrapper /run/ctdbd/ctdbd.pid stop
+PIDFile=/run/ctdb/ctdbd.pid
+ExecStart=/usr/sbin/ctdbd_wrapper /run/ctdb/ctdbd.pid start
+ExecStop=/usr/sbin/ctdbd_wrapper /run/ctdb/ctdbd.pid stop
 KillMode=control-group
 Restart=no
 
