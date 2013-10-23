@@ -30,7 +30,7 @@ bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
-                    source='srv_pipe_hnd.c srv_pipe.c rpc_sock_helper.c',
+                    source='srv_pipe_hnd.c srv_pipe.c',
                     deps='''
                     RPC_CONFIG
                     RPC_NCACN_NP
@@ -149,10 +149,14 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     ''')
 
 # RPC_DAEMONS
+bld.SAMBA3_SUBSYSTEM('RPC_SOCK_HELPER',
+                    source='rpc_sock_helper.c',
+                    deps='RPC_SERVER_REGISTER')
+
 bld.SAMBA3_SUBSYSTEM('EPMD',
                     source='epmd.c',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('LSASD',
                     source='lsasd.c',
-                    deps='samba-util')
+                    deps='RPC_SOCK_HELPER samba-util')
