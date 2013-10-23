@@ -411,8 +411,7 @@ bool fsp_is_np(struct files_struct *fsp)
 
 	type = fsp->fake_file_handle->type;
 
-	return ((type == FAKE_FILE_TYPE_NAMED_PIPE)
-		|| (type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY));
+	return (type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY);
 }
 
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
@@ -503,10 +502,6 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 
 bool np_read_in_progress(struct fake_file_handle *handle)
 {
-	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
-		return false;
-	}
-
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
 		struct npa_state *p =
 			talloc_get_type_abort(handle->private_data,
@@ -552,21 +547,6 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	if (len == 0) {
 		state->nwritten = 0;
 		status = NT_STATUS_OK;
-		goto post_status;
-	}
-
-	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
-		struct npa_state *npa =
-			talloc_get_type_abort(handle->private_data,
-					      struct npa_state);
-		struct pipes_struct *p =
-			talloc_get_type_abort(npa->private_data,
-					      struct pipes_struct);
-
-		state->nwritten = write_to_internal_pipe(p, (const char *)data, len);
-
-		status = (state->nwritten >= 0)
-			? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
 		goto post_status;
 	}
 
@@ -732,22 +712,6 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	req = tevent_req_create(mem_ctx, &state, struct np_read_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
-		struct npa_state *npa =
-			talloc_get_type_abort(handle->private_data,
-					      struct npa_state);
-		struct pipes_struct *p =
-			talloc_get_type_abort(npa->private_data,
-					      struct pipes_struct);
-
-		state->nread = read_from_internal_pipe(
-			p, (char *)data, len, &state->is_data_outstanding);
-
-		status = (state->nread >= 0)
-			? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
-		goto post_status;
 	}
 
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
