@@ -13,7 +13,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_NCACN_NP',
                     source='rpc_ncacn_np.c rpc_handles.c rpc_contexts.c',
                     deps='RPC_CONFIG auth auth_sam_reply RPC_PIPE_REGISTER npa_tstream')
 
-bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
+bld.SAMBA3_SUBSYSTEM('RPC_SERVER_LOOP',
                     source='rpc_server.c',
                     deps='samba-util')
 
@@ -28,6 +28,16 @@ bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
 bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
                     source='srv_access_check.c',
                     deps='samba-util')
+
+bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
+                    source='srv_pipe_hnd.c srv_pipe.c rpc_sock_helper.c',
+                    deps='''
+                    RPC_CONFIG
+                    RPC_NCACN_NP
+                    RPC_SERVER_LOOP
+                    RPC_CRYPTO
+                    NDR_NAMED_PIPE_AUTH
+                    ''')
 
 ### RPC_SERVICES
 bld.SAMBA3_SUBSYSTEM('RPC_DSSETUP',
@@ -115,14 +125,28 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
                     source='rpc_ep_register.c ../librpc/rpc/dcerpc_ep.c',
                     deps='samba-util')
 
-bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
-                    source='srv_pipe_hnd.c srv_pipe.c rpc_sock_helper.c rpc_service_setup.c',
-                    deps='''RPC_CONFIG RPC_NCACN_NP RPC_SERVICE RPC_CRYPTO
-                          RPC_SAMR RPC_LSARPC RPC_WINREG RPC_INITSHUTDOWN
-                          RPC_DSSETUP RPC_WKSSVC RPC_SVCCTL RPC_NTSVCS
-                          RPC_NETLOGON RPC_NETDFS RPC_SRVSVC RPC_SPOOLSS
-                          RPC_EVENTLOG RPC_RPCECHO RPC_SERVER RPC_EPMAPPER
-                          RPC_SERVER_REGISTER NDR_NAMED_PIPE_AUTH''')
+bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
+                    source='rpc_service_setup.c',
+                    deps='''
+                    RPC_SERVER
+                    RPC_SERVER_REGISTER
+                    RPC_SAMR
+                    RPC_LSARPC
+                    RPC_WINREG
+                    RPC_INITSHUTDOWN
+                    RPC_DSSETUP
+                    RPC_WKSSVC
+                    RPC_SVCCTL
+                    RPC_NTSVCS
+                    RPC_NETLOGON
+                    RPC_NETDFS
+                    RPC_SRVSVC
+                    RPC_SPOOLSS
+                    RPC_EVENTLOG
+                    RPC_RPCECHO
+                    RPC_SERVER
+                    RPC_EPMAPPER
+                    ''')
 
 # RPC_DAEMONS
 bld.SAMBA3_SUBSYSTEM('EPMD',

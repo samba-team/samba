@@ -588,7 +588,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    LOCKING
                    LIBADS_SERVER
                    LIBAFS
-                   RPC_SERVER
+                   RPC_SERVICE
                    NDR_SMBXSRV
                    LIBASYS
                    ccan-hash
