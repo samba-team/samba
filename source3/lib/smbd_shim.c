@@ -58,6 +58,24 @@ bool change_to_root_user(void)
 	return false;
 }
 
+bool become_authenticated_pipe_user(struct auth_session_info *session_info)
+{
+	if (shim.become_authenticated_pipe_user) {
+		return shim.become_authenticated_pipe_user(session_info);
+	}
+
+	return false;
+}
+
+bool unbecome_authenticated_pipe_user(void)
+{
+	if (shim.unbecome_authenticated_pipe_user) {
+		return shim.unbecome_authenticated_pipe_user();
+	}
+
+	return false;
+}
+
 /**
  * The following two functions need to be called from inside the low-level BRL
  * code for oplocks correctness in smbd.  Since other utility binaries also

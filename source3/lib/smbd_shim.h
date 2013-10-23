@@ -36,6 +36,8 @@ struct smbd_shim
 					       const char *name);
 
 	bool (*change_to_root_user)(void);
+	bool (*become_authenticated_pipe_user)(struct auth_session_info *session_info);
+	bool (*unbecome_authenticated_pipe_user)(void);
 
 	void (*contend_level2_oplocks_begin)(files_struct *fsp,
 					     enum level2_contention_type type);

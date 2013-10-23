@@ -436,7 +436,7 @@ bool smbd_change_to_root_user(void)
  user. Doesn't modify current_user.
 ****************************************************************************/
 
-bool become_authenticated_pipe_user(struct auth_session_info *session_info)
+bool smbd_become_authenticated_pipe_user(struct auth_session_info *session_info)
 {
 	if (!push_sec_ctx())
 		return False;
@@ -455,7 +455,7 @@ bool become_authenticated_pipe_user(struct auth_session_info *session_info)
  current_user.
 ****************************************************************************/
 
-bool unbecome_authenticated_pipe_user(void)
+bool smbd_unbecome_authenticated_pipe_user(void)
 {
 	return pop_sec_ctx();
 }

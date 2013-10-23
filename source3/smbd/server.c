@@ -1058,6 +1058,8 @@ extern void build_options(bool screen);
 		.cancel_pending_lock_requests_by_fid = smbd_cancel_pending_lock_requests_by_fid,
 		.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
 		.change_to_root_user = smbd_change_to_root_user,
+		.become_authenticated_pipe_user = smbd_become_authenticated_pipe_user,
+		.unbecome_authenticated_pipe_user = smbd_unbecome_authenticated_pipe_user,
 
 		.contend_level2_oplocks_begin = smbd_contend_level2_oplocks_begin,
 		.contend_level2_oplocks_end = smbd_contend_level2_oplocks_end,

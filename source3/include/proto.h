@@ -1253,7 +1253,7 @@ bool ea_list_has_invalid_name(struct ea_list *ea_list);
 void become_root(void);
 void unbecome_root(void);
 
-/* The following definitions come from lib/dummysmbd.c */
+/* The following definitions come from lib/smbd_shim.c */
 
 int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp,
@@ -1263,6 +1263,9 @@ void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);
 NTSTATUS can_delete_directory_fsp(files_struct *fsp);
 bool change_to_root_user(void);
+bool become_authenticated_pipe_user(struct auth_session_info *session_info);
+bool unbecome_authenticated_pipe_user(void);
+
 void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
 void contend_level2_oplocks_end(files_struct *fsp,
