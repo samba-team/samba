@@ -336,7 +336,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 9)
+        self.assertEquals(posix_acl.count, 13)
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -352,23 +352,39 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[3].a_perm, 6)
 
-        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[4].a_perm, 7)
+        self.assertEquals(posix_acl.acl[4].info.uid, BA_gid)
 
-        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[5].a_perm, 5)
-        self.assertEquals(posix_acl.acl[5].info.gid, SO_gid)
+        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[5].a_perm, 7)
 
-        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[6].a_perm, 7)
-        self.assertEquals(posix_acl.acl[6].info.gid, SY_gid)
+        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[6].a_perm, 5)
+        self.assertEquals(posix_acl.acl[6].info.uid, SO_gid)
 
         self.assertEquals(posix_acl.acl[7].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[7].a_perm, 5)
-        self.assertEquals(posix_acl.acl[7].info.gid, AU_gid)
+        self.assertEquals(posix_acl.acl[7].info.gid, SO_gid)
 
-        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[8].a_perm, 7)
+        self.assertEquals(posix_acl.acl[8].info.uid, SY_gid)
+
+        self.assertEquals(posix_acl.acl[9].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[9].a_perm, 7)
+        self.assertEquals(posix_acl.acl[9].info.gid, SY_gid)
+
+        self.assertEquals(posix_acl.acl[10].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[10].a_perm, 5)
+        self.assertEquals(posix_acl.acl[10].info.uid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[11].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[11].a_perm, 5)
+        self.assertEquals(posix_acl.acl[11].info.gid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[12].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[12].a_perm, 7)
 
 
 # check that it matches:
@@ -454,7 +470,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 9)
+        self.assertEquals(posix_acl.count, 13)
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -470,23 +486,39 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[3].a_perm, 7)
 
-        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[4].a_perm, 7)
+        self.assertEquals(posix_acl.acl[4].info.uid, BA_gid)
 
-        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[5].a_perm, 5)
-        self.assertEquals(posix_acl.acl[5].info.gid, SO_gid)
+        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[5].a_perm, 7)
 
-        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[6].a_perm, 7)
-        self.assertEquals(posix_acl.acl[6].info.gid, SY_gid)
+        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[6].a_perm, 5)
+        self.assertEquals(posix_acl.acl[6].info.uid, SO_gid)
 
         self.assertEquals(posix_acl.acl[7].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[7].a_perm, 5)
-        self.assertEquals(posix_acl.acl[7].info.gid, AU_gid)
+        self.assertEquals(posix_acl.acl[7].info.gid, SO_gid)
 
-        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[8].a_perm, 7)
+        self.assertEquals(posix_acl.acl[8].info.uid, SY_gid)
+
+        self.assertEquals(posix_acl.acl[9].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[9].a_perm, 7)
+        self.assertEquals(posix_acl.acl[9].info.gid, SY_gid)
+
+        self.assertEquals(posix_acl.acl[10].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[10].a_perm, 5)
+        self.assertEquals(posix_acl.acl[10].info.uid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[11].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[11].a_perm, 5)
+        self.assertEquals(posix_acl.acl[11].info.gid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[12].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[12].a_perm, 7)
 
 
 # check that it matches:
@@ -534,7 +566,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (PA_gid,PA_type) = s4_passdb.sid_to_id(PA_sid)
         self.assertEquals(PA_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 10)
+        self.assertEquals(posix_acl.count, 15)
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -550,27 +582,47 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[3].a_perm, 7)
 
-        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[4].a_perm, 7)
+        self.assertEquals(posix_acl.acl[4].info.uid, BA_gid)
 
-        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[5].a_perm, 5)
-        self.assertEquals(posix_acl.acl[5].info.gid, SO_gid)
+        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[5].a_perm, 7)
 
-        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[6].a_perm, 7)
-        self.assertEquals(posix_acl.acl[6].info.gid, SY_gid)
+        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[6].a_perm, 5)
+        self.assertEquals(posix_acl.acl[6].info.uid, SO_gid)
 
         self.assertEquals(posix_acl.acl[7].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[7].a_perm, 5)
-        self.assertEquals(posix_acl.acl[7].info.gid, AU_gid)
+        self.assertEquals(posix_acl.acl[7].info.gid, SO_gid)
 
-        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[8].a_perm, 7)
-        self.assertEquals(posix_acl.acl[8].info.gid, PA_gid)
+        self.assertEquals(posix_acl.acl[8].info.uid, SY_gid)
 
-        self.assertEquals(posix_acl.acl[9].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[9].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[9].a_perm, 7)
+        self.assertEquals(posix_acl.acl[9].info.gid, SY_gid)
+
+        self.assertEquals(posix_acl.acl[10].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[10].a_perm, 5)
+        self.assertEquals(posix_acl.acl[10].info.uid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[11].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[11].a_perm, 5)
+        self.assertEquals(posix_acl.acl[11].info.gid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[12].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[12].a_perm, 7)
+        self.assertEquals(posix_acl.acl[12].info.uid, PA_gid)
+
+        self.assertEquals(posix_acl.acl[13].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[13].a_perm, 7)
+        self.assertEquals(posix_acl.acl[13].info.gid, PA_gid)
+
+        self.assertEquals(posix_acl.acl[14].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[14].a_perm, 7)
 
 
 # check that it matches:
@@ -621,7 +673,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (PA_gid,PA_type) = s4_passdb.sid_to_id(PA_sid)
         self.assertEquals(PA_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 10)
+        self.assertEquals(posix_acl.count, 15)
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -637,27 +689,47 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[3].a_perm, 6)
 
-        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[4].a_perm, 7)
+        self.assertEquals(posix_acl.acl[4].info.uid, BA_gid)
 
-        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[5].a_perm, 5)
-        self.assertEquals(posix_acl.acl[5].info.gid, SO_gid)
+        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[5].a_perm, 7)
 
-        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_GROUP)
-        self.assertEquals(posix_acl.acl[6].a_perm, 7)
-        self.assertEquals(posix_acl.acl[6].info.gid, SY_gid)
+        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[6].a_perm, 5)
+        self.assertEquals(posix_acl.acl[6].info.uid, SO_gid)
 
         self.assertEquals(posix_acl.acl[7].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[7].a_perm, 5)
-        self.assertEquals(posix_acl.acl[7].info.gid, AU_gid)
+        self.assertEquals(posix_acl.acl[7].info.gid, SO_gid)
 
-        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[8].a_perm, 7)
-        self.assertEquals(posix_acl.acl[8].info.gid, PA_gid)
+        self.assertEquals(posix_acl.acl[8].info.uid, SY_gid)
 
-        self.assertEquals(posix_acl.acl[9].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[9].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[9].a_perm, 7)
+        self.assertEquals(posix_acl.acl[9].info.gid, SY_gid)
+
+        self.assertEquals(posix_acl.acl[10].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[10].a_perm, 5)
+        self.assertEquals(posix_acl.acl[10].info.uid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[11].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[11].a_perm, 5)
+        self.assertEquals(posix_acl.acl[11].info.gid, AU_gid)
+
+        self.assertEquals(posix_acl.acl[12].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[12].a_perm, 7)
+        self.assertEquals(posix_acl.acl[12].info.uid, PA_gid)
+
+        self.assertEquals(posix_acl.acl[13].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[13].a_perm, 7)
+        self.assertEquals(posix_acl.acl[13].info.gid, PA_gid)
+
+        self.assertEquals(posix_acl.acl[14].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[14].a_perm, 7)
 
 
 # check that it matches:
