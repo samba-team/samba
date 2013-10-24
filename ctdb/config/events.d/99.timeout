@@ -14,7 +14,7 @@ loadconfig ctdb
 
 case "$1" in
     monitor)
-	TIMEOUT=$(ctdb listvars | awk '$1 == "EventScriptTimeout" {print $3}')
+	TIMEOUT=$(ctdb getvar EventScriptTimeout | awk '{print $3}')
 	echo "sleeping for $((TIMEOUT * 2)) seconds..."
 	sleep $((TIMEOUT * 2))
 	;;
