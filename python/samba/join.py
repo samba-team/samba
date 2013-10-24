@@ -612,15 +612,18 @@ class dc_join(object):
                                                                  "DNSNAME" : ctx.dnshostname}))
             for changetype, msg in recs:
                 assert changetype == ldb.CHANGETYPE_NONE
+                dns_acct_dn = msg["dn"]
                 print "Adding DNS account %s with dns/ SPN" % msg["dn"]
 
                 # Remove dns password (we will set it as a modify, as we can't do clearTextPassword over LDAP)
                 del msg["clearTextPassword"]
                 # Remove isCriticalSystemObject for similar reasons, it cannot be set over LDAP
                 del msg["isCriticalSystemObject"]
+                # Disable account until password is set
+                msg["userAccountControl"] = str(samba.dsdb.UF_NORMAL_ACCOUNT |
+                                                samba.dsdb.UF_ACCOUNTDISABLE)
                 try:
                     ctx.samdb.add(msg)
-                    dns_acct_dn = msg["dn"]
                 except ldb.LdbError, (num, _):
                     if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
                         raise
@@ -630,7 +633,7 @@ class dc_join(object):
             # connections which are hard to set up and otherwise refuse with
             # ERR_UNWILLING_TO_PERFORM. In this case we fall back to libnet
             # over SAMR.
-            print "Setting account password for %s" % ctx.samname
+            print "Setting account password for dns-%s" % ctx.myname
             try:
                 ctx.samdb.setpassword("(&(objectClass=user)(samAccountName=dns-%s))"
                                       % ldb.binary_encode(ctx.myname),
@@ -639,8 +642,8 @@ class dc_join(object):
                                       username=ctx.samname)
             except ldb.LdbError, (num, _):
                 if num != ldb.ERR_UNWILLING_TO_PERFORM:
-                    pass
-                ctx.net.set_password(account_name="dns-" % ctx.myname,
+                    raise
+                ctx.net.set_password(account_name="dns-%s" % ctx.myname,
                                      domain_name=ctx.domain_name,
                                      newpassword=ctx.dnspass)
 
