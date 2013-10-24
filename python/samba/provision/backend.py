@@ -304,7 +304,7 @@ class LDAPBackend(ProvisionBackend):
             self.slapd.communicate()
 
     def post_setup(self):
-        return LDAPBackendResult(self.credentials, self.slapd_command_escaped,
+        return LDAPBackendResult(self.slapd_command_escaped,
                     self.ldapdir)
 
 
