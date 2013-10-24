@@ -7,11 +7,11 @@ cmd="$ONNODE con hostname"
 define_test "$cmd" "1st node disconnected"
 
 ctdb_set_output <<EOF
-:Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:
-:0:192.168.1.101:1:0:0:0:0:0:
-:1:192.168.1.102:0:0:0:0:0:0:
-:2:192.168.1.103:0:0:0:0:0:0:
-:3:192.168.1.104:0:0:0:0:0:0:
+:Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:PartiallyOnline:ThisNode:
+:0:192.168.1.101:1:0:0:0:0:0:0:N:
+:1:192.168.1.102:0:0:0:0:0:0:0:Y:
+:2:192.168.1.103:0:0:0:0:0:0:0:N:
+:3:192.168.1.104:0:0:0:0:0:0:0:N:
 EOF
 
 required_result <<EOF

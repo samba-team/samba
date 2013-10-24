@@ -165,10 +165,10 @@ get_nodes_with_status ()
 
 	    case "$status" in
 		healthy)
-		    # If any bit is not 0, don't match this address.
+		    # If any bit is 1, don't match this address.
 		    local s
 		    for s ; do
-			[ "$s" = "0" ] || continue 2
+			[ "$s" != "1" ] || continue 2
 		    done
 		    ;;
 		connected)
