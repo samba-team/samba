@@ -2668,6 +2668,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
 	}
 
+	if (file_existed) {
+		/* stat opens on existing files don't get oplocks. */
+		if (is_stat_open(open_access_mask)) {
+			oplock_request = NO_OPLOCK;
+		}
+	}
+
 	if (new_file_created) {
 		info = FILE_WAS_CREATED;
 	} else {
@@ -2686,13 +2693,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Setup the oplock info in both the shared memory and
 	 * file structs.
 	 */
-
-	if (file_existed) {
-		/* stat opens on existing files don't get oplocks. */
-		if (is_stat_open(open_access_mask)) {
-			oplock_request = NO_OPLOCK;
-		}
-	}
 
 	grant_fsp_oplock_type(fsp, lck, oplock_request);
 
