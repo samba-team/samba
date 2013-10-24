@@ -356,7 +356,7 @@ static int rpc_tstream_trans_next_vector(struct tstream_context *stream,
 
 static struct tevent_req *rpc_tstream_trans_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
-						 uint8_t *data, size_t data_len,
+						 const uint8_t *data, size_t data_len,
 						 uint32_t max_rdata_len,
 						 void *priv)
 {
