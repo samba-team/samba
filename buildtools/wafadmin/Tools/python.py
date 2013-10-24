@@ -10,6 +10,7 @@ import TaskGen, Utils, Options
 from Logs import debug, warn, info
 from TaskGen import extension, before, after, feature
 from Configure import conf
+from config_c import parse_flags
 
 EXT_PY = ['.py']
 FRAG_2 = '''
@@ -213,7 +214,7 @@ MACOSX_DEPLOYMENT_TARGET = %r
 				env.append_value('LINKFLAGS_PYEMBED', lib)
 
 	if Options.platform != 'darwin' and python_LDFLAGS:
-		env.append_value('LINKFLAGS_PYEMBED', python_LDFLAGS.split())
+		parse_flags(python_LDFLAGS, 'PYEMBED', env)
 
 	result = False
 	name = 'python' + env['PYTHON_VERSION']
