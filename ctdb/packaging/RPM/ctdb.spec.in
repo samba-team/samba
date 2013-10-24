@@ -163,6 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc README.eventscripts README.notify.d
 %doc doc/recovery-process.txt
 %doc doc/*.html
+%doc doc/examples
 %{_sysconfdir}/sudoers.d/ctdb
 %{_sysconfdir}/ctdb/functions
 %{_sysconfdir}/ctdb/events.d/00.ctdb
