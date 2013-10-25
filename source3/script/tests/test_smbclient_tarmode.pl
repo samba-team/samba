@@ -82,6 +82,7 @@ my $CLEAN = 0;
 
 # all tests
 my @TESTS = (
+#   ['test helper',                                 \&test_helper],
     ['create, normal files (no attributes)',        \&test_creation_normal,      'normal'],
     ['create, normal nested files (no attributes)', \&test_creation_normal,      'nested'],
     ['create, normal files (interactive)',          \&test_creation_normal,      'inter'],
@@ -96,13 +97,12 @@ my @TESTS = (
     ['create, explicit include',                    \&test_creation_include],
 #    ['create, explicit exclude',                    \&test_creation_exclude],
     ['create, include w/ filelist (F)',             \&test_creation_list],
-#   ['create, wildcard',                            \&test_creation_wildcard],
     ['create, wildcard simple',                     \&test_creation_wildcard_simple],
+    ['create, regex',                               \&test_creation_regex],
     ['extract, normal files',                       \&test_extraction_normal],
     ['extract, explicit include',                   \&test_extraction_include],
     ['extract, explicit exclude',                   \&test_extraction_exclude],
     ['extract, include w/ filelist (F)',            \&test_extraction_list],
-#   ['extract, wildcard and regex',                 \&test_extraction_wildcard],
 );
 
 =head1 SYNOPSIS
@@ -498,6 +498,65 @@ sub test_creation_list {
     return check_tar($TAR, \@inc_files);
 }
 
+sub test_creation_regex {
+    my @exts = qw(jpg exe);
+    my @dirs = ('', "$DIR/");
+    my @all = make_env(\@exts, \@dirs);
+    my $nb;
+    my @inc;
+    my $err = 0;
+
+    # EXCLUSION
+
+    # skip *.exe
+    @inc = grep { $_->remotepath !~ m{exe$} } @all;
+    smb_tar('', '-TcrX', $TAR, '*.exe');
+    $err += check_tar($TAR, \@inc);
+
+    # if the pattern is a path, it doesn't skip anything
+    smb_tar('', '-TcrX', $TAR, "$DIR/*.exe");
+    $err += check_tar($TAR, \@all);
+    smb_tar('', '-TcrX', $TAR, "$DIR/*");
+    $err += check_tar($TAR, \@all);
+    smb_tar('', '-TcrX', $TAR, "$DIR");
+    $err += check_tar($TAR, \@all);
+
+    # no paths => include everything
+    smb_tar('', '-TcrX', $TAR);
+    $err += check_tar($TAR, \@all);
+
+
+    # skip everything
+    smb_tar('', '-TcrX', $TAR, "*.*");
+    $err += check_tar($TAR, []);
+    smb_tar('', '-TcrX', $TAR, "*");
+    $err += check_tar($TAR, []);
+
+    # INCLUSION
+
+    # no paths => include everything
+    smb_tar('', '-Tcr', $TAR);
+    $err += check_tar($TAR, \@all);
+
+    # include everything
+    smb_tar('', '-Tcr', $TAR, '*');
+    $err += check_tar($TAR, \@all);
+
+    # include only .exe at root
+    @inc = grep { $_->remotepath =~ m{^[^/]+exe$}} @all;
+    smb_tar('', '-Tcr', $TAR, '*.exe');
+    $err += check_tar($TAR, \@inc);
+
+    # smb_tar('', '-Tcr', $TAR, "$DIR/*");
+    ## in old version (bug?)
+    # $err += check_tar($TAR, []);
+    ## in rewrite
+    # @inc = grep { $_->remotepath =~ /^$DIR/ } @all;
+    # $err += check_tar($TAR, \@inc);
+
+    $err;
+}
+
 sub test_creation_wildcard_simple {
     my @exts = qw(jpg exe);
     my @dirs = ('', "$DIR/");
@@ -518,78 +577,17 @@ sub test_creation_wildcard_simple {
 }
 
 # NOT USED
-sub test_creation_wildcard {
+# helper to test tests
+sub test_helper {
     my @exts = qw(txt jpg exe);
     my @dirs = ('', "$DIR/", "$DIR/dir/");
-    my @all;
+    my @all = make_env(\@exts, \@dirs);
     my $nb;
     my $err = 0;
 
-    $nb = 0;
-    for my $dir (@dirs) {
-        for (@exts) {
-            my $fn = $dir . "file$nb." . $_;
-            my $f = File->new_remote($fn, 'ABSPATH');
-            $f->delete_on_destruction(1);
-            push @all, $f;
-            $nb++;
-        }
-    }
-
-
-    smb_tar('', '-Tcr', $TAR, "file2.exe", "file2.exe");
+    smb_tar('', '-Tcr', $TAR);
     check_tar($TAR, \@all);
     return 0;
-
-    $nb = 0;
-    for my $dir (@dirs) {
-        for my $ext (@exts) {
-            my @inc;
-
-            my $fn = $dir."file$nb.".$ext;
-            my $pattern = $dir.'*.'.$ext;
-            my $flist;
-
-            # include
-
-            @inc = grep { $_->remotepath eq $fn } @all;
-            smb_tar('', '-Tc', $TAR, $pattern);
-            $err += check_tar($TAR, \@inc);
-
-            # include with -r
-
-            # supposed to be the same results but if you include a
-            # pattern not at the root -> tar will be empty... bug?
-            @inc = grep { $_->remotepath eq $fn } @all;
-            smb_tar('', '-Tcr', $TAR, $pattern);
-            $err += check_tar($TAR, \@inc);
-
-            # exclude with -r
-
-            # supposed to work on the whole hierarchy
-            @inc = grep { my $n = $_->remotepath; $n !~ /$ext/} @all;
-            smb_tar('', '-TcrX', $TAR, "*.$ext");
-            $err += check_tar($TAR, \@inc);
-
-            # # exclude
-            # @inc = grep { my $n = $_->remotepath; $n !~ /$ext/ && $n !~ /dir/} @all;
-            # smb_tar('', '-TcX', $TAR, "$DIR/*.$ext");
-            # #$err += check_tar($TAR, \@inc);
-            # $err += check_tar($TAR, \@all);
-
-            # with F
-
-            $flist = File->new_local("$TMP/list", "$pattern\n");
-
-            # include with F r
-
-            @inc = grep { $_->remotepath eq $fn } @all;
-            smb_tar('', '-TcFr', $TAR, $flist->localpath);
-            $err += check_tar($TAR, \@inc);
-        }
-    }
-
-    $err;
 }
 
 sub test_extraction_wildcard {
