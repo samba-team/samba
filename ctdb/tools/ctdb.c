@@ -6039,7 +6039,7 @@ static const struct {
 	{ "enable",          control_enable,            true,	false,  "enable a nodes public IP" },
 	{ "stop",            control_stop,              true,	false,  "stop a node" },
 	{ "continue",        control_continue,          true,	false,  "re-start a stopped node" },
-	{ "ban",             control_ban,               true,	false,  "ban a node from the cluster",          "<bantime|0>"},
+	{ "ban",             control_ban,               true,	false,  "ban a node from the cluster",          "<bantime>"},
 	{ "unban",           control_unban,             true,	false,  "unban a node" },
 	{ "showban",         control_showban,           true,	false,  "show ban information"},
 	{ "shutdown",        control_shutdown,          true,	false,  "shutdown ctdbd" },
