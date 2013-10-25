@@ -84,6 +84,7 @@ my $CLEAN = 0;
 my @TESTS = (
     ['create, normal files (no attributes)',        \&test_creation_normal,      'normal'],
     ['create, normal nested files (no attributes)', \&test_creation_normal,      'nested'],
+    ['create, normal files (interactive)',          \&test_creation_normal, 'inter'],
     ['create, incremental with -g',                 \&test_creation_incremental, '-g'],
     ['create, incremental with tarmode',            \&test_creation_incremental, 'tarmode inc'],
     ['create, reset archived files with -a',        \&test_creation_reset,       '-a'],
@@ -339,7 +340,12 @@ sub test_creation_normal {
         my $f = File->new_remote($prefix."file-$_");
         push @files, $f;
     }
-    smb_tar('tarmode full', '-Tc', $TAR, $DIR);
+
+    if ($mode =~ /inter/) {
+        smb_tar("tar c $TAR $DIR", '');
+    } else {
+        smb_tar('tarmode full', '-Tc', $TAR, $DIR);
+    }
     return check_tar($TAR, \@files);
 }
 
