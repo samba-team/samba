@@ -193,6 +193,7 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 	ok = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!ok) {
+		talloc_free(tmp_ctx);
 		talloc_free(state);
 		return;
 	}
