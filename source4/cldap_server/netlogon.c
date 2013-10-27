@@ -369,6 +369,95 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS parse_netlogon_request(struct ldb_parse_tree *tree,
+				struct loadparm_context *lp_ctx,
+				TALLOC_CTX *tmp_ctx,
+				const char **domain,
+				const char **host,
+				const char **user,
+				const char **domain_guid,
+				struct dom_sid **domain_sid,
+				int *acct_control,
+				int *version)
+{
+	unsigned int i;
+
+	*domain = NULL;
+	*host = NULL;
+	*user = NULL;
+	*domain_guid = NULL;
+	*domain_sid = NULL;
+	*acct_control = -1;
+	*version = -1;
+
+	if (tree->operation != LDB_OP_AND) goto failed;
+
+	/* extract the query elements */
+	for (i=0;i<tree->u.list.num_elements;i++) {
+		struct ldb_parse_tree *t = tree->u.list.elements[i];
+		if (t->operation != LDB_OP_EQUALITY) goto failed;
+		if (strcasecmp(t->u.equality.attr, "DnsDomain") == 0) {
+			*domain = talloc_strndup(tmp_ctx,
+						(const char *)t->u.equality.value.data,
+						t->u.equality.value.length);
+		}
+		if (strcasecmp(t->u.equality.attr, "Host") == 0) {
+			*host = talloc_strndup(tmp_ctx,
+					      (const char *)t->u.equality.value.data,
+					      t->u.equality.value.length);
+		}
+		if (strcasecmp(t->u.equality.attr, "DomainGuid") == 0) {
+			NTSTATUS enc_status;
+			struct GUID guid;
+			enc_status = ldap_decode_ndr_GUID(tmp_ctx, 
+							  t->u.equality.value, &guid);
+			if (NT_STATUS_IS_OK(enc_status)) {
+				*domain_guid = GUID_string(tmp_ctx, &guid);
+			}
+		}
+		if (strcasecmp(t->u.equality.attr, "DomainSid") == 0) {
+			enum ndr_err_code ndr_err;
+
+			*domain_sid = talloc(tmp_ctx, struct dom_sid);
+			if (*domain_sid == NULL) {
+				goto failed;
+			}
+			ndr_err = ndr_pull_struct_blob(&t->u.equality.value,
+						       *domain_sid, *domain_sid,
+						       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				talloc_free(*domain_sid);
+				goto failed;
+			}
+		}
+		if (strcasecmp(t->u.equality.attr, "User") == 0) {
+			*user = talloc_strndup(tmp_ctx,
+					       (const char *)t->u.equality.value.data,
+					       t->u.equality.value.length);
+		}
+		if (strcasecmp(t->u.equality.attr, "NtVer") == 0 &&
+		    t->u.equality.value.length == 4) {
+			*version = IVAL(t->u.equality.value.data, 0);
+		}
+		if (strcasecmp(t->u.equality.attr, "AAC") == 0 &&
+		    t->u.equality.value.length == 4) {
+			*acct_control = IVAL(t->u.equality.value.data, 0);
+		}
+	}
+
+	if ((*domain == NULL) && (*domain_guid == NULL) && (*domain_sid == NULL)) {
+		*domain = lpcfg_dnsdomain(lp_ctx);
+	}
+
+	if (*version == -1) {
+		goto failed;
+	}
+
+	return NT_STATUS_OK;
+
+failed:
+	return NT_STATUS_UNSUCCESSFUL;
+}
 
 /*
   handle incoming cldap requests
@@ -380,82 +469,21 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 			     struct ldb_parse_tree *tree,
 			     struct tsocket_address *src)
 {
-	unsigned int i;
-	const char *domain = NULL;
-	const char *host = NULL;
-	const char *user = NULL;
-	const char *domain_guid = NULL;
-	struct dom_sid *domain_sid = NULL;
-	int acct_control = -1;
-	int version = -1;
+	const char *domain, *host, *user, *domain_guid;
+	struct dom_sid *domain_sid;
+	int acct_control, version;
 	struct netlogon_samlogon_response netlogon;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 
-	if (tree->operation != LDB_OP_AND) goto failed;
-
-	/* extract the query elements */
-	for (i=0;i<tree->u.list.num_elements;i++) {
-		struct ldb_parse_tree *t = tree->u.list.elements[i];
-		if (t->operation != LDB_OP_EQUALITY) goto failed;
-		if (strcasecmp(t->u.equality.attr, "DnsDomain") == 0) {
-			domain = talloc_strndup(tmp_ctx, 
-						(const char *)t->u.equality.value.data,
-						t->u.equality.value.length);
-		}
-		if (strcasecmp(t->u.equality.attr, "Host") == 0) {
-			host = talloc_strndup(tmp_ctx, 
-					      (const char *)t->u.equality.value.data,
-					      t->u.equality.value.length);
-		}
-		if (strcasecmp(t->u.equality.attr, "DomainGuid") == 0) {
-			NTSTATUS enc_status;
-			struct GUID guid;
-			enc_status = ldap_decode_ndr_GUID(tmp_ctx, 
-							  t->u.equality.value, &guid);
-			if (NT_STATUS_IS_OK(enc_status)) {
-				domain_guid = GUID_string(tmp_ctx, &guid);
-			}
-		}
-		if (strcasecmp(t->u.equality.attr, "DomainSid") == 0) {
-			enum ndr_err_code ndr_err;
-
-			domain_sid = talloc(tmp_ctx, struct dom_sid);
-			if (domain_sid == NULL) {
-				goto failed;
-			}
-			ndr_err = ndr_pull_struct_blob(&t->u.equality.value,
-						       domain_sid, domain_sid,
-						       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				talloc_free(domain_sid);
-				goto failed;
-			}
-		}
-		if (strcasecmp(t->u.equality.attr, "User") == 0) {
-			user = talloc_strndup(tmp_ctx, 
-					      (const char *)t->u.equality.value.data,
-					      t->u.equality.value.length);
-		}
-		if (strcasecmp(t->u.equality.attr, "NtVer") == 0 &&
-		    t->u.equality.value.length == 4) {
-			version = IVAL(t->u.equality.value.data, 0);
-		}
-		if (strcasecmp(t->u.equality.attr, "AAC") == 0 &&
-		    t->u.equality.value.length == 4) {
-			acct_control = IVAL(t->u.equality.value.data, 0);
-		}
-	}
-
-	if ((domain == NULL) && (domain_guid == NULL) && (domain_sid == NULL)) {
-		domain = lpcfg_dnsdomain(cldapd->task->lp_ctx);
-	}
-
-	if (version == -1) {
-		goto failed;
-	}
-
 	DEBUG(5,("cldap netlogon query domain=%s host=%s user=%s version=%d guid=%s\n",
 		 domain, host, user, version, domain_guid));
+
+	status = parse_netlogon_request(tree, cldapd->task->lp_ctx, tmp_ctx,
+					&domain, &host, &user, &domain_guid,
+					&domain_sid, &acct_control, &version);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
 
 	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx,
 						 domain, NULL, domain_sid,
