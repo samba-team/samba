@@ -35,7 +35,7 @@ static NTSTATUS rpc_ep_try_register(TALLOC_CTX *mem_ctx,
 				    const struct dcerpc_binding_vector *v,
 				    struct dcerpc_binding_handle **pbh);
 
-struct rpc_ep_regsiter_state {
+struct rpc_ep_register_state {
 	struct dcerpc_binding_handle *h;
 
 	TALLOC_CTX *mem_ctx;
@@ -53,10 +53,10 @@ NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 			 const struct ndr_interface_table *iface,
 			 const struct dcerpc_binding_vector *v)
 {
-	struct rpc_ep_regsiter_state *state;
+	struct rpc_ep_register_state *state;
 	struct tevent_req *req;
 
-	state = talloc(ev_ctx, struct rpc_ep_regsiter_state);
+	state = talloc(ev_ctx, struct rpc_ep_register_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -98,8 +98,8 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq);
 
 static void rpc_ep_register_loop(struct tevent_req *subreq)
 {
-	struct rpc_ep_regsiter_state *state =
-		tevent_req_callback_data(subreq, struct rpc_ep_regsiter_state);
+	struct rpc_ep_register_state *state =
+		tevent_req_callback_data(subreq, struct rpc_ep_register_state);
 	NTSTATUS status;
 	bool ok;
 
@@ -178,8 +178,8 @@ static NTSTATUS rpc_ep_try_register(TALLOC_CTX *mem_ctx,
  */
 static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 {
-	struct rpc_ep_regsiter_state *state =
-		tevent_req_callback_data(subreq, struct rpc_ep_regsiter_state);
+	struct rpc_ep_register_state *state =
+		tevent_req_callback_data(subreq, struct rpc_ep_register_state);
 	struct policy_handle entry_handle;
 	struct dcerpc_binding map_binding;
 	struct epm_twr_p_t towers[10];
