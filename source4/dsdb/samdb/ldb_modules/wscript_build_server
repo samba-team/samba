@@ -106,7 +106,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	init_function='ldb_rootdse_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc samdb MESSAGING samba-security DSDB_MODULE_HELPERS RPC_NDR_IRPC'
+	deps='talloc samdb MESSAGING samba-security DSDB_MODULE_HELPERS RPC_NDR_IRPC CLDAPD'
 	)
 
 

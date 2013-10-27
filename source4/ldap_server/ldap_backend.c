@@ -226,6 +226,9 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 		ldb_set_opaque(conn->ldb, "supportedSASLMechanisms", sasl_mechs);
 	}
 
+	ldb_set_opaque(conn->ldb, "remoteAddress",
+		       conn->connection->remote_address);
+
 	return NT_STATUS_OK;
 }
 

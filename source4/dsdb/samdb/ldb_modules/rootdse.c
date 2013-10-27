@@ -34,6 +34,8 @@
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
+#include "lib/tsocket/tsocket.h"
+#include "cldap_server/cldap_server.h"
 
 struct private_data {
 	unsigned int num_controls;
@@ -46,6 +48,7 @@ struct private_data {
 struct rootdse_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
+	struct ldb_val netlogon;
 };
 
 /*
@@ -477,6 +480,12 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 		}
 	}
 
+	if (ac->netlogon.length > 0) {
+		if (ldb_msg_add_steal_value(msg, "netlogon", &ac->netlogon) != LDB_SUCCESS) {
+			goto failed;
+		}
+	}
+
 	/* TODO: lots more dynamic attributes should be added here */
 
 	edn_control = ldb_request_get_control(ac->req, LDB_CONTROL_EXTENDED_DN_OID);
@@ -597,16 +606,6 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		/*
-		 * if the client explicit asks for the 'netlogon' attribute
-		 * the reply_entry needs to be skipped
-		 */
-		if (ac->req->op.search.attrs &&
-		    ldb_attr_in_list(ac->req->op.search.attrs, "netlogon")) {
-			talloc_free(ares);
-			return LDB_SUCCESS;
-		}
-
 		/* for each record returned post-process to add any dynamic
 		   attributes that have been asked for */
 		ret = rootdse_add_dynamic(ac, ares->message);
@@ -743,6 +742,62 @@ static int rootdse_filter_operations(struct ldb_module *module, struct ldb_reque
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
+static int rootdse_handle_netlogon(struct rootdse_context *ac)
+{
+	struct ldb_context *ldb;
+	struct ldb_parse_tree *tree;
+	struct loadparm_context *lp_ctx;
+	struct tsocket_address *src_addr;
+	TALLOC_CTX *tmp_ctx = talloc_new(ac->req);
+	const char *domain, *host, *user, *domain_guid;
+	char *src_addr_s = NULL;
+	struct dom_sid *domain_sid;
+	int acct_control = -1;
+	int version = -1;
+	NTSTATUS status;
+	struct netlogon_samlogon_response netlogon;
+	int ret = LDB_ERR_OPERATIONS_ERROR;
+
+	ldb = ldb_module_get_ctx(ac->module);
+	tree = ac->req->op.search.tree;
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				 struct loadparm_context);
+	src_addr = talloc_get_type(ldb_get_opaque(ldb, "remoteAddress"),
+				   struct tsocket_address);
+	if (src_addr) {
+		src_addr_s = tsocket_address_inet_addr_string(src_addr,
+							      tmp_ctx);
+	}
+
+	status = parse_netlogon_request(tree, lp_ctx, tmp_ctx,
+					&domain, &host, &user, &domain_guid,
+					&domain_sid, &acct_control, &version);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	status = fill_netlogon_samlogon_response(ldb, tmp_ctx,
+						 domain, NULL, domain_sid,
+						 domain_guid,
+						 user, acct_control,
+						 src_addr_s,
+						 version, lp_ctx,
+						 &netlogon, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	status = push_netlogon_samlogon_response(&ac->netlogon, ac, &netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	ret = LDB_SUCCESS;
+failed:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -771,6 +826,14 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 	ac = rootdse_init_context(module, req);
 	if (ac == NULL) {
 		return ldb_operr(ldb);
+	}
+
+	if (do_attribute_explicit(req->op.search.attrs, "netlogon")) {
+		ret = rootdse_handle_netlogon(ac);
+		/* We have to return an empty result, so dont forward `ret' */
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, LDB_SUCCESS);
+		}
 	}
 
 	/* in our db we store the rootDSE with a DN of @ROOTDSE */
