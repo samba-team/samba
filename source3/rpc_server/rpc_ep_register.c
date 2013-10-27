@@ -38,7 +38,6 @@ static NTSTATUS rpc_ep_try_register(TALLOC_CTX *mem_ctx,
 struct rpc_ep_register_state {
 	struct dcerpc_binding_handle *h;
 
-	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 
@@ -61,15 +60,6 @@ NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state->mem_ctx = talloc_named(state,
-				      0,
-				      "ep %s %p",
-				      iface->name, state);
-	if (state->mem_ctx == NULL) {
-		talloc_free(state);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	state->wait_time = 1;
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
@@ -80,7 +70,7 @@ NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	req = tevent_wakeup_send(state->mem_ctx,
+	req = tevent_wakeup_send(state,
 				 state->ev_ctx,
 				 timeval_current_ofs(1, 0));
 	if (req == NULL) {
@@ -110,7 +100,7 @@ static void rpc_ep_register_loop(struct tevent_req *subreq)
 		return;
 	}
 
-	status = rpc_ep_try_register(state->mem_ctx,
+	status = rpc_ep_try_register(state,
 				     state->ev_ctx,
 				     state->msg_ctx,
 				     state->iface,
@@ -118,7 +108,7 @@ static void rpc_ep_register_loop(struct tevent_req *subreq)
 				     &state->h);
 	if (NT_STATUS_IS_OK(status)) {
 		/* endpoint registered, monitor the connnection. */
-		subreq = tevent_wakeup_send(state->mem_ctx,
+		subreq = tevent_wakeup_send(state,
 					    state->ev_ctx,
 					    timeval_current_ofs(MONITOR_WAIT_TIME, 0));
 		if (subreq == NULL) {
@@ -137,7 +127,7 @@ static void rpc_ep_register_loop(struct tevent_req *subreq)
 		state->wait_time = 16;
 	}
 
-	subreq = tevent_wakeup_send(state->mem_ctx,
+	subreq = tevent_wakeup_send(state,
 				    state->ev_ctx,
 				    timeval_current_ofs(state->wait_time, 0));
 	if (subreq == NULL) {
@@ -255,7 +245,7 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 				    &result);
 	talloc_free(tmp_ctx);
 
-	subreq = tevent_wakeup_send(state->mem_ctx,
+	subreq = tevent_wakeup_send(state,
 				    state->ev_ctx,
 				    timeval_current_ofs(MONITOR_WAIT_TIME, 0));
 	if (subreq == NULL) {
