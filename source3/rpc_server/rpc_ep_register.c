@@ -83,7 +83,7 @@ NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 	req = tevent_wakeup_send(state->mem_ctx,
 				 state->ev_ctx,
 				 timeval_current_ofs(1, 0));
-	if (tevent_req_nomem(state->mem_ctx, req)) {
+	if (req == NULL) {
 		talloc_free(state);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -121,7 +121,7 @@ static void rpc_ep_register_loop(struct tevent_req *subreq)
 		subreq = tevent_wakeup_send(state->mem_ctx,
 					    state->ev_ctx,
 					    timeval_current_ofs(MONITOR_WAIT_TIME, 0));
-		if (tevent_req_nomem(state->mem_ctx, subreq)) {
+		if (subreq == NULL) {
 			talloc_free(state);
 			return;
 		}
@@ -140,7 +140,7 @@ static void rpc_ep_register_loop(struct tevent_req *subreq)
 	subreq = tevent_wakeup_send(state->mem_ctx,
 				    state->ev_ctx,
 				    timeval_current_ofs(state->wait_time, 0));
-	if (tevent_req_nomem(state->mem_ctx, subreq)) {
+	if (subreq == NULL) {
 		talloc_free(state);
 		return;
 	}
@@ -258,7 +258,7 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 	subreq = tevent_wakeup_send(state->mem_ctx,
 				    state->ev_ctx,
 				    timeval_current_ofs(MONITOR_WAIT_TIME, 0));
-	if (tevent_req_nomem(state->mem_ctx, subreq)) {
+	if (subreq == NULL) {
 		talloc_free(state);
 		return;
 	}
