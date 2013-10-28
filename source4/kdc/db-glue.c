@@ -132,7 +132,7 @@ static HDBFlags uf2HDBFlags(krb5_context context, uint32_t userAccountControl, e
 		flags.client = 0;
 	}
 	if (userAccountControl & UF_LOCKOUT) {
-		flags.invalid = 1;
+		flags.locked_out = 1;
 	}
 /*
 	if (userAccountControl & UF_PASSWORD_NOTREQD) {
