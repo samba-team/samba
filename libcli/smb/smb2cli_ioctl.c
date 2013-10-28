@@ -201,7 +201,21 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 			return;
 		}
 
-		if (input_buffer_length < dyn_len) {
+		ofs = input_buffer_length;
+		ofs = NDR_ROUND(ofs, 8);
+
+		if (state->max_input_length == 0) {
+			/*
+			 * If max_input_length is 0 we ignore
+			 * the input_buffer_length, because
+			 * Windows 2008 echos the DCERPC request
+			 * from the requested input_buffer
+			 * to the response input_buffer.
+			 */
+			input_buffer_length = 0;
+		}
+
+		if (input_buffer_length > dyn_len) {
 			tevent_req_nterror(
 				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
@@ -216,8 +230,11 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 		state->out_input_buffer.data = dyn;
 		state->out_input_buffer.length = input_buffer_length;
 
-		ofs = input_buffer_length;
-		ofs = NDR_ROUND(ofs, 8);
+		if (ofs > dyn_len) {
+			tevent_req_nterror(
+				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
 
 		dyn_ofs += ofs;
 		dyn += ofs;
@@ -231,7 +248,15 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 			return;
 		}
 
-		if (output_buffer_length < dyn_len) {
+		if (state->max_output_length == 0) {
+			/*
+			 * We do the same logic as for
+			 * max_input_length.
+			 */
+			output_buffer_length = 0;
+		}
+
+		if (output_buffer_length > dyn_len) {
 			tevent_req_nterror(
 				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
