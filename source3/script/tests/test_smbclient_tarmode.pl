@@ -79,7 +79,7 @@ my @TESTS = (
     ['create, files newer than a file',             \&test_creation_newer],
     ['create, combination of tarmode filter',       \&test_creation_attr],
     ['create, explicit include',                    \&test_creation_include],
-#    ['create, explicit exclude',                    \&test_creation_exclude],
+    ['create, explicit exclude',                    \&test_creation_exclude],
     ['create, include w/ filelist (F)',             \&test_creation_list],
     ['create, wildcard simple',                     \&test_creation_wildcard_simple],
     ['create, regex',                               \&test_creation_regex],
