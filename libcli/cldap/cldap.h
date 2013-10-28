@@ -123,6 +123,8 @@ NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
 NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 			TALLOC_CTX *mem_ctx,
 			struct cldap_netlogon *io);
+char *cldap_netlogon_create_filter(TALLOC_CTX *mem_ctx,
+				   const struct cldap_netlogon *io);
 
 NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 			      uint32_t message_id,
