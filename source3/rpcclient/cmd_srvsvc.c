@@ -235,6 +235,7 @@ static void display_share_info_2(struct srvsvc_NetShareInfo2 *r)
 	printf("\tremark:\t%s\n", r->comment);
 	printf("\tpath:\t%s\n", r->path);
 	printf("\tpassword:\t%s\n", r->password);
+	printf("\tcurrent_users:\t%" PRIu32 "\n", r->current_users);
 }
 
 static void display_share_info_502(struct srvsvc_NetShareInfo502 *r)
