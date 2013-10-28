@@ -882,6 +882,70 @@ struct cldap_netlogon_state {
 	struct cldap_search search;
 };
 
+char *cldap_netlogon_create_filter(TALLOC_CTX *mem_ctx,
+				   const struct cldap_netlogon *io)
+{
+	char *filter;
+
+	filter = talloc_asprintf(mem_ctx, "(&(NtVer=%s)",
+				 ldap_encode_ndr_uint32(mem_ctx, io->in.version));
+	if (filter == NULL)
+		return NULL;
+
+	if (io->in.user) {
+		filter = talloc_asprintf_append_buffer(filter, "(User=%s)", io->in.user);
+		if (filter == NULL) {
+			return NULL;
+		}
+	}
+	if (io->in.host) {
+		filter = talloc_asprintf_append_buffer(filter, "(Host=%s)", io->in.host);
+		if (filter == NULL) {
+			return NULL;
+		}
+	}
+	if (io->in.realm) {
+		filter = talloc_asprintf_append_buffer(filter, "(DnsDomain=%s)", io->in.realm);
+		if (filter == NULL) {
+			return NULL;
+		}
+	}
+	if (io->in.acct_control != -1) {
+		filter = talloc_asprintf_append_buffer(filter, "(AAC=%s)", 
+						ldap_encode_ndr_uint32(mem_ctx, io->in.acct_control));
+		if (filter == NULL) {
+			return NULL;
+		}
+	}
+	if (io->in.domain_sid) {
+		struct dom_sid *sid = dom_sid_parse_talloc(mem_ctx, io->in.domain_sid);
+		if (filter == NULL) {
+			return NULL;
+		}
+		filter = talloc_asprintf_append_buffer(filter, "(domainSid=%s)",
+						ldap_encode_ndr_dom_sid(mem_ctx, sid));
+		if (filter == NULL) {
+			return NULL;
+		}
+	}
+	if (io->in.domain_guid) {
+		struct GUID guid;
+		NTSTATUS status;
+		status = GUID_from_string(io->in.domain_guid, &guid);
+		if (filter == NULL) {
+			return NULL;
+		}
+		filter = talloc_asprintf_append_buffer(filter, "(DomainGuid=%s)",
+						ldap_encode_ndr_GUID(mem_ctx, &guid));
+		if (filter == NULL) {
+			return NULL;
+		}
+	}
+	filter = talloc_asprintf_append_buffer(filter, ")");
+
+	return filter;
+}
+
 static void cldap_netlogon_state_done(struct tevent_req *subreq);
 /*
   queue a cldap netlogon for send
@@ -902,61 +966,7 @@ struct tevent_req *cldap_netlogon_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	filter = talloc_asprintf(state, "(&(NtVer=%s)", 
-				 ldap_encode_ndr_uint32(state, io->in.version));
-	if (tevent_req_nomem(filter, req)) {
-		goto post;
-	}
-	if (io->in.user) {
-		filter = talloc_asprintf_append_buffer(filter, "(User=%s)", io->in.user);
-		if (tevent_req_nomem(filter, req)) {
-			goto post;
-		}
-	}
-	if (io->in.host) {
-		filter = talloc_asprintf_append_buffer(filter, "(Host=%s)", io->in.host);
-		if (tevent_req_nomem(filter, req)) {
-			goto post;
-		}
-	}
-	if (io->in.realm) {
-		filter = talloc_asprintf_append_buffer(filter, "(DnsDomain=%s)", io->in.realm);
-		if (tevent_req_nomem(filter, req)) {
-			goto post;
-		}
-	}
-	if (io->in.acct_control != -1) {
-		filter = talloc_asprintf_append_buffer(filter, "(AAC=%s)", 
-						ldap_encode_ndr_uint32(state, io->in.acct_control));
-		if (tevent_req_nomem(filter, req)) {
-			goto post;
-		}
-	}
-	if (io->in.domain_sid) {
-		struct dom_sid *sid = dom_sid_parse_talloc(state, io->in.domain_sid);
-		if (tevent_req_nomem(sid, req)) {
-			goto post;
-		}
-		filter = talloc_asprintf_append_buffer(filter, "(domainSid=%s)",
-						ldap_encode_ndr_dom_sid(state, sid));
-		if (tevent_req_nomem(filter, req)) {
-			goto post;
-		}
-	}
-	if (io->in.domain_guid) {
-		struct GUID guid;
-		NTSTATUS status;
-		status = GUID_from_string(io->in.domain_guid, &guid);
-		if (tevent_req_nterror(req, status)) {
-			goto post;
-		}
-		filter = talloc_asprintf_append_buffer(filter, "(DomainGuid=%s)",
-						ldap_encode_ndr_GUID(state, &guid));
-		if (tevent_req_nomem(filter, req)) {
-			goto post;
-		}
-	}
-	filter = talloc_asprintf_append_buffer(filter, ")");
+	filter = cldap_netlogon_create_filter(state, io);
 	if (tevent_req_nomem(filter, req)) {
 		goto post;
 	}
