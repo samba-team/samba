@@ -72,7 +72,7 @@ static const struct {
 	{ "StatHistoryInterval",  1,  offsetof(struct ctdb_tunable, stat_history_interval), false },
 	{ "DeferredAttachTO",  120,  offsetof(struct ctdb_tunable, deferred_attach_timeout), false },
 	{ "AllowClientDBAttach", 1, offsetof(struct ctdb_tunable, allow_client_db_attach), false },
-	{ "RecoverPDBBySeqNum",  0, offsetof(struct ctdb_tunable, recover_pdb_by_seqnum), false },
+	{ "RecoverPDBBySeqNum",  1, offsetof(struct ctdb_tunable, recover_pdb_by_seqnum), false },
 	{ "DeferredRebalanceOnNodeAdd", 300, offsetof(struct ctdb_tunable, deferred_rebalance_on_node_add) },
 	{ "FetchCollapse",       1, offsetof(struct ctdb_tunable, fetch_collapse) },
 	{ "HopcountMakeSticky",   50,  offsetof(struct ctdb_tunable, hopcount_make_sticky) },
