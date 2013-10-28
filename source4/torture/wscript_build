@@ -108,7 +108,7 @@ bld.SAMBA_MODULE('TORTURE_UNIX',
 
 
 bld.SAMBA_MODULE('TORTURE_LDAP',
-	source='ldap/common.c ldap/basic.c ldap/schema.c ldap/uptodatevector.c ldap/cldap.c ldap/cldapbench.c ldap/ldap_sort.c ldap/nested_search.c',
+	source='ldap/common.c ldap/basic.c ldap/schema.c ldap/uptodatevector.c ldap/cldap.c ldap/netlogon.c ldap/cldapbench.c ldap/ldap_sort.c ldap/nested_search.c',
 	subsystem='smbtorture',
 	deps='cli-ldap cli_cldap samdb POPT_CREDENTIALS torture ldbsamba',
 	internal_module=True,

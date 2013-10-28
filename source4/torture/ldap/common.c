@@ -136,6 +136,8 @@ NTSTATUS torture_ldap_init(void)
 	torture_suite_add_simple_test(suite, "basic", torture_ldap_basic);
 	torture_suite_add_simple_test(suite, "sort", torture_ldap_sort);
 	torture_suite_add_simple_test(suite, "cldap", torture_cldap);
+	torture_suite_add_simple_test(suite, "netlogon-udp", torture_netlogon_udp);
+	torture_suite_add_simple_test(suite, "netlogon-tcp", torture_netlogon_tcp);
 	torture_suite_add_simple_test(suite, "schema", torture_ldap_schema);
 	torture_suite_add_simple_test(suite, "uptodatevector", torture_ldap_uptodatevector);
 	torture_suite_add_simple_test(suite, "nested-search", test_ldap_nested_search);
