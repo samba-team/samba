@@ -634,9 +634,24 @@ static const struct {
 struct op_attributes_replace {
 	const char *attr;
 	const char *replace;
-	const char *extra_attr;
+	const char * const *extra_attrs;
 	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *);
 };
+
+
+static const char *objectSid_attr[] =
+{
+	"objectSid",
+	NULL
+};
+
+
+static const char *objectCategory_attr[] =
+{
+	"objectCategory",
+	NULL
+};
+
 
 /*
   a list of attribute names that are hidden, but can be searched for
@@ -647,11 +662,11 @@ static const struct op_attributes_replace search_sub[] = {
 	{ "modifyTimeStamp", "whenChanged", NULL , construct_modifyTimeStamp},
 	{ "structuralObjectClass", "objectClass", NULL , NULL },
 	{ "canonicalName", NULL, NULL , construct_canonical_name },
-	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
-	{ "tokenGroups", "primaryGroupID", "objectSid", construct_token_groups },
+	{ "primaryGroupToken", "objectClass", objectSid_attr, construct_primary_group_token },
+	{ "tokenGroups", "primaryGroupID", objectSid_attr, construct_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
-	{ "msDS-isRODC", "objectClass", "objectCategory", construct_msds_isrodc },
+	{ "msDS-isRODC", "objectClass", objectCategory_attr, construct_msds_isrodc },
 	{ "msDS-KeyVersionNumber", "replPropertyMetaData", NULL, construct_msds_keyversionnumber }
 };
 
@@ -745,9 +760,13 @@ static int operational_search_post_process(struct ldb_module *module,
 			    !ldb_attr_in_list(attrs_from_user, list_replace[i].replace)) {
 				ldb_msg_remove_attr(msg, list_replace[i].replace);
 			}
-			if (list_replace[i].extra_attr != NULL &&
-			    !ldb_attr_in_list(attrs_from_user, list_replace[i].extra_attr)) {
-				ldb_msg_remove_attr(msg, list_replace[i].extra_attr);
+			if (list_replace[i].extra_attrs != NULL) {
+				unsigned int j;
+				for (j=0; list_replace[i].extra_attrs[j]; j++) {
+					if (!ldb_attr_in_list(attrs_from_user, list_replace[i].extra_attrs[j])) {
+						ldb_msg_remove_attr(msg, list_replace[i].extra_attrs[j]);
+					}
+				}
 			}
 		}
 	}
@@ -950,25 +969,30 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 		}
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
 
-			if (ldb_attr_cmp(ac->attrs[a], search_sub[i].attr) == 0 ) {
-				ac->attrs_to_replace = talloc_realloc(ac,
-								      ac->attrs_to_replace,
-								      struct op_attributes_replace,
-								      ac->attrs_to_replace_size + 1);
+			if (ldb_attr_cmp(ac->attrs[a], search_sub[i].attr) != 0 ) {
+				continue;
+			}
 
-				ac->attrs_to_replace[ac->attrs_to_replace_size] = search_sub[i];
-				ac->attrs_to_replace_size++;
-				if (!search_sub[i].replace) {
-					continue;
-				}
+			ac->attrs_to_replace = talloc_realloc(ac,
+							      ac->attrs_to_replace,
+							      struct op_attributes_replace,
+							      ac->attrs_to_replace_size + 1);
 
-				if (search_sub[i].extra_attr) {
-					const char **search_attrs2;
-					/* Only adds to the end of the list */
+			ac->attrs_to_replace[ac->attrs_to_replace_size] = search_sub[i];
+			ac->attrs_to_replace_size++;
+			if (!search_sub[i].replace) {
+				continue;
+			}
+
+			if (search_sub[i].extra_attrs && search_sub[i].extra_attrs[0]) {
+				unsigned int j;
+				const char **search_attrs2;
+				/* Only adds to the end of the list */
+				for (j = 0; search_sub[i].extra_attrs[j]; j++) {
 					search_attrs2 = ldb_attr_list_copy_add(req, search_attrs
 									       ? search_attrs
 									       : ac->attrs, 
-									       search_sub[i].extra_attr);
+									       search_sub[i].extra_attrs[j]);
 					if (search_attrs2 == NULL) {
 						return ldb_operr(ldb);
 					}
@@ -976,16 +1000,16 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 					talloc_free(search_attrs);
 					search_attrs = search_attrs2;
 				}
-
-				if (!search_attrs) {
-					search_attrs = ldb_attr_list_copy(req, ac->attrs);
-					if (search_attrs == NULL) {
-						return ldb_operr(ldb);
-					}
-				}
-				/* Despite the ldb_attr_list_copy_add, this is safe as that fn only adds to the end */
-				search_attrs[a] = search_sub[i].replace;
 			}
+
+			if (!search_attrs) {
+				search_attrs = ldb_attr_list_copy(req, ac->attrs);
+				if (search_attrs == NULL) {
+					return ldb_operr(ldb);
+				}
+			}
+			/* Despite the ldb_attr_list_copy_add, this is safe as that fn only adds to the end */
+			search_attrs[a] = search_sub[i].replace;
 		}
 	}
 	ac->list_operations = operation_get_op_list(ac, ac->attrs,
