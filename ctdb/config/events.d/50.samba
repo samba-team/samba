@@ -68,74 +68,44 @@ service_stop ()
     fi
 }
 
-# we keep a cached copy of smb.conf here
+######################################################################
+# Show the testparm output using a cached smb.conf to avoid delays due
+# to registry access.
+
 smbconf_cache="$service_state_dir/smb.conf.cache"
 
+testparm_foreground_update ()
+{
+    _timeout="$1"
 
-#############################################
-# update the smb.conf cache in the foreground
-testparm_foreground_update() {
-    testparm -s 2> /dev/null | egrep -v 'registry.shares.=|include.=' > "$smbconf_cache"
+    if ! _out=$(timeout $_timeout testparm -v -s 2>/dev/null) ; then
+	if [ -f "$smbconf_cache" ] ; then
+	    echo "WARNING: smb.conf cache update failed - using old cache file"
+	    return 1
+	else
+	    die "ERROR: smb.conf cache create failed"
+	fi
+    fi
+
+    _tmpfile="${smbconf_cache}.$$"
+    # Patterns to exclude...
+    pat='^[[:space:]]+(registry[[:space:]]+shares|include|copy|winbind[[:space:]]+separator)[[:space:]]+='    
+    echo "$_out" | grep -Ev "$pat" >"$_tmpfile"
+    mv "$_tmpfile" "$smbconf_cache" # atomic
+
+    return 0
 }
 
-#############################################
-# update the smb.conf cache in the background
-testparm_background_update() {
-    # if the cache doesn't exist, then update in the foreground
-    [ -f $smbconf_cache ] || {
-	testparm_foreground_update
-    }
-    # otherwise do a background update
-    (
-	tmpfile="${smbconf_cache}.$$"
-	testparm -s > $tmpfile 2> /dev/null &
-	# remember the pid of the teamparm process
-	pid="$!"
-	# give it 10 seconds to run
-	timeleft=10
-	while [ $timeleft -gt 0 ]; do
-	    timeleft=$(($timeleft - 1))
-	    # see if the process still exists
-	    kill -0 $pid > /dev/null 2>&1 || {
-		# it doesn't exist, grab its exit status
-		wait $pid
-		[ $? = 0 ] || {
-		    echo "50.samba: smb.conf background update exited with status $?"
-		    rm -f "${tmpfile}"
-		    exit 1
-		}		
-		# put the new smb.conf contents in the cache (atomic rename)
-		# make sure we remove references to the registry while doing 
-		# this to ensure that running testparm on the cache does
-		# not use the registry
-		egrep -v 'registry.shares.=|include.=' < "$tmpfile" > "${tmpfile}.2"
-		rm -f "$tmpfile"
-		mv -f "${tmpfile}.2" "$smbconf_cache" || {
-		    echo "50.samba: failed to update background cache"
-		    rm -f "${tmpfile}.2"
-		    exit 1
-		}
-		exit 0
-	    }
-	    # keep waiting for testparm to finish
-	    sleep 1
-	done
-	# it took more than 10 seconds - kill it off
-	rm -f "${tmpfile}"
-	kill -9 "$pid" > /dev/null 2>&1
-	echo "50.samba: timed out updating smbconf cache in background"
-	exit 1
-    ) &
+testparm_background_update ()
+{
+    _timeout="$1"
+
+    testparm_foreground_update $_timeout >/dev/null 2>&1 </dev/null &
 }
 
-##################################################
-# show the testparm output using a cached smb.conf 
-# to avoid registry access
-testparm_cat() {
-    [ -f $smbconf_cache ] || {
-	testparm_foreground_update
-    }
-    testparm -v -s "$smbconf_cache" "$@" 2>/dev/null
+testparm_cat ()
+{
+    testparm -s "$smbconf_cache" "$@" 2>/dev/null
 }
 
 list_samba_shares ()
@@ -145,6 +115,11 @@ list_samba_shares ()
     sed -e 's/"//g'
 }
 
+list_samba_ports ()
+{
+    testparm_cat --parameter-name="smb ports" |
+    sed -e 's@,@ @g'
+}
 
 ###########################
 
@@ -164,27 +139,23 @@ case "$1" in
 	;;
 
      monitor)
-	if [ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] ; then
-	    testparm_background_update
-
-	    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
-		testparm_foreground_update
-		testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && \
-		    die "ERROR: testparm shows smb.conf is not clean"
-	    }
-
-	    list_samba_shares | ctdb_check_directories_probe || {
-		testparm_foreground_update
-		list_samba_shares |
-		ctdb_check_directories
-	    } || exit $?
-	fi
+	testparm_foreground_update 10
+	ret=$?
 
 	smb_ports="$CTDB_SAMBA_CHECK_PORTS"
 	if [ -z "$smb_ports" ] ; then
-	    smb_ports=`testparm_cat --parameter-name="smb ports"`
+	    smb_ports=$(list_samba_ports)
+	    [ -n "$smb_ports" ] || die "Failed to set smb ports"
 	fi
 	ctdb_check_tcp_ports $smb_ports || exit $?
+
+	if [ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] ; then
+	    list_samba_shares | ctdb_check_directories || exit $?
+	fi
+
+	if [ $ret -ne 0 ] ; then
+	    testparm_background_update 10
+	fi
 	;;
 
     *)
