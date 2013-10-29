@@ -606,6 +606,160 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 
 }
 
+#define _UF_TRUST_ACCOUNTS ( \
+	UF_WORKSTATION_TRUST_ACCOUNT | \
+	UF_SERVER_TRUST_ACCOUNT | \
+	UF_INTERDOMAIN_TRUST_ACCOUNT \
+)
+#define _UF_NO_EXPIRY_ACCOUNTS ( \
+	UF_SMARTCARD_REQUIRED | \
+	UF_DONT_EXPIRE_PASSWD | \
+	_UF_TRUST_ACCOUNTS \
+)
+
+/*
+  calculate msDS-UserPasswordExpiryTimeComputed
+*/
+static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *module,
+						struct ldb_message *msg,
+						struct ldb_dn *domain_dn)
+{
+	int64_t pwdLastSet, maxPwdAge;
+	uint32_t userAccountControl;
+	NTTIME ret;
+
+	userAccountControl = ldb_msg_find_attr_as_uint(msg,
+					"userAccountControl",
+					0);
+	if (userAccountControl & _UF_NO_EXPIRY_ACCOUNTS) {
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
+
+	pwdLastSet = ldb_msg_find_attr_as_int64(msg, "pwdLastSet", 0);
+	if (pwdLastSet == 0) {
+		return 0;
+	}
+
+	if (pwdLastSet <= -1) {
+		/*
+		 * This can't really happen...
+		 */
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
+
+	if (pwdLastSet >= 0x7FFFFFFFFFFFFFFFULL) {
+		/*
+		 * Somethings wrong with the clock...
+		 */
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
+
+	/*
+	 * Note that maxPwdAge is a stored as negative value.
+	 *
+	 * Possible values are in the range of:
+	 *
+	 * maxPwdAge: -864000000001
+	 * to
+	 * maxPwdAge: -9223372036854775808 (-0x8000000000000000ULL)
+	 *
+	 */
+	maxPwdAge = samdb_search_int64(ldb_module_get_ctx(module), msg, 0,
+				       domain_dn, "maxPwdAge", NULL);
+	if (maxPwdAge >= -864000000000) {
+		/*
+		 * This is not really possible...
+		 */
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
+
+	if (maxPwdAge == -0x8000000000000000ULL) {
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
+
+	/*
+	 * Note we already catched maxPwdAge == -0x8000000000000000ULL
+	 * and pwdLastSet >= 0x7FFFFFFFFFFFFFFFULL above.
+	 *
+	 * Remember maxPwdAge is a negative number,
+	 * so it results in the following.
+	 *
+	 * 0x7FFFFFFFFFFFFFFEULL + 0x7FFFFFFFFFFFFFFFULL
+	 * =
+	 * 0xFFFFFFFFFFFFFFFFULL
+	 */
+	ret = pwdLastSet - maxPwdAge;
+	if (ret >= 0x7FFFFFFFFFFFFFFFULL) {
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
+
+	return ret;
+}
+
+
+/*
+  construct msDS-User-Account-Control-Computed attr
+*/
+static int construct_msds_user_account_control_computed(struct ldb_module *module,
+							struct ldb_message *msg, enum ldb_scope scope,
+							struct ldb_request *parent)
+{
+	uint32_t userAccountControl;
+	uint32_t msDS_User_Account_Control_Computed = 0;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	NTTIME now;
+	struct ldb_dn *nc_root;
+	int ret;
+
+	ret = dsdb_find_nc_root(ldb, msg, msg->dn, &nc_root);
+	if (ret != 0) {
+		ldb_asprintf_errstring(ldb,
+				       "Failed to find NC root of DN: %s: %s",
+				       ldb_dn_get_linearized(msg->dn),
+				       ldb_errstring(ldb_module_get_ctx(module)));
+		return ret;
+	}
+	if (ldb_dn_compare(nc_root, ldb_get_default_basedn(ldb)) != 0) {
+		/* Only calculate this on our default NC */
+		return 0;
+	}
+	/* Test account expire time */
+	unix_to_nt_time(&now, time(NULL));
+
+	userAccountControl = ldb_msg_find_attr_as_uint(msg,
+						       "userAccountControl",
+						       0);
+	if (!(userAccountControl & _UF_TRUST_ACCOUNTS)) {
+
+		int64_t lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
+		if (lockoutTime != 0) {
+			int64_t lockoutDuration = samdb_search_int64(ldb,
+								     msg, 0, nc_root,
+								     "lockoutDuration", NULL);
+			if (lockoutDuration >= 0) {
+				msDS_User_Account_Control_Computed |= UF_LOCKOUT;
+			} else if (lockoutTime - lockoutDuration >= now) {
+				msDS_User_Account_Control_Computed |= UF_LOCKOUT;
+			}
+		}
+	}
+
+	if (!(userAccountControl & _UF_NO_EXPIRY_ACCOUNTS)) {
+		NTTIME must_change_time
+			= get_msds_user_password_expiry_time_computed(module,
+								      msg, nc_root);
+		/* check for expired password */
+		if (must_change_time < now) {
+			msDS_User_Account_Control_Computed |= UF_PASSWORD_EXPIRED;
+		}
+	}
+
+	return samdb_msg_add_int64(ldb,
+				   msg->elements, msg,
+				   "msDS-User-Account-Control-Computed",
+				   msDS_User_Account_Control_Computed);
+}
+
 struct op_controls_flags {
 	bool sd;
 	bool bypassoperational;
@@ -653,6 +807,14 @@ static const char *objectCategory_attr[] =
 };
 
 
+static const char *user_account_control_computed_attrs[] =
+{
+	"lockoutTime",
+	"pwdLastSet",
+	NULL
+};
+
+
 /*
   a list of attribute names that are hidden, but can be searched for
   using another (non-hidden) name to produce the correct result
@@ -667,7 +829,9 @@ static const struct op_attributes_replace search_sub[] = {
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
 	{ "msDS-isRODC", "objectClass", objectCategory_attr, construct_msds_isrodc },
-	{ "msDS-KeyVersionNumber", "replPropertyMetaData", NULL, construct_msds_keyversionnumber }
+	{ "msDS-KeyVersionNumber", "replPropertyMetaData", NULL, construct_msds_keyversionnumber },
+	{ "msDS-User-Account-Control-Computed", "userAccountControl", user_account_control_computed_attrs,
+	  construct_msds_user_account_control_computed }
 };
 
 
