@@ -623,6 +623,15 @@ _PUBLIC_ time_t file_modtime(const char *fname);
 _PUBLIC_ bool directory_exist(const char *dname);
 
 /**
+ Check file permissions.
+**/
+struct stat;
+_PUBLIC_ bool file_check_permissions(const char *fname,
+				     uid_t uid,
+				     mode_t file_perms,
+				     struct stat *pst);
+
+/**
  * Try to create the specified directory if it didn't exist.
  *
  * @retval true if the directory already existed and has the right permissions 
