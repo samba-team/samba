@@ -546,6 +546,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	uint32_t userAccountControl;
+	uint32_t msDS_User_Account_Control_Computed;
 	unsigned int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
@@ -604,6 +605,25 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 
+	msDS_User_Account_Control_Computed
+		= ldb_msg_find_attr_as_uint(msg,
+					    "msDS-User-Account-Control-Computed",
+					    UF_ACCOUNTDISABLE);
+
+	/*
+	 * This brings in the lockout flag, block the account if not
+	 * found.  We need the weird UF_ACCOUNTDISABLE check because
+	 * we do not want to fail open if the value is not returned,
+	 * but 0 is a valid value (all OK)
+	 */
+	if (msDS_User_Account_Control_Computed == UF_ACCOUNTDISABLE) {
+		ret = EINVAL;
+		krb5_set_error_message(context, ret, "samba_kdc_message2entry: "
+				"no msDS-User-Account-Control-Computed present");
+		goto out;
+	} else {
+		userAccountControl |= msDS_User_Account_Control_Computed;
+	}
 
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
