@@ -580,6 +580,8 @@ a line
 **/
 _PUBLIC_ void file_lines_slashcont(char **lines);
 
+_PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
+			     size_t length, mode_t mode);
 /**
   save a lump of data into a file. Mostly used for debugging 
 */
