@@ -122,6 +122,50 @@ _PUBLIC_ time_t file_modtime(const char *fname)
 }
 
 /**
+ Check file permissions.
+**/
+
+_PUBLIC_ bool file_check_permissions(const char *fname,
+				     uid_t uid,
+				     mode_t file_perms,
+				     struct stat *pst)
+{
+	int ret;
+	struct stat st;
+
+	if (pst == NULL) {
+		pst = &st;
+	}
+
+	ZERO_STRUCTP(pst);
+
+	ret = stat(fname, pst);
+	if (ret != 0) {
+		DEBUG(0, ("stat failed on file '%s': %s\n",
+			 fname, strerror(errno)));
+		return false;
+	}
+
+	if (pst->st_uid != uid && !uwrap_enabled()) {
+		DEBUG(0, ("invalid ownership of file '%s': "
+			 "owned by uid %u, should be %u\n",
+			 fname, (unsigned int)pst->st_uid,
+			 (unsigned int)uid));
+		return false;
+	}
+
+	if ((pst->st_mode & 0777) != file_perms) {
+		DEBUG(0, ("invalid permissions on file "
+			 "'%s': has 0%o should be 0%o\n", fname,
+			 (unsigned int)(pst->st_mode & 0777),
+			 (unsigned int)file_perms));
+		return false;
+	}
+
+	return true;
+}
+
+/**
  Check if a directory exists.
 **/
 
