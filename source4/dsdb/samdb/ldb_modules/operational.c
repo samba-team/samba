@@ -760,6 +760,43 @@ static int construct_msds_user_account_control_computed(struct ldb_module *modul
 				   msDS_User_Account_Control_Computed);
 }
 
+/*
+  construct msDS-UserPasswordExpiryTimeComputed
+*/
+static int construct_msds_user_password_expiry_time_computed(struct ldb_module *module,
+							     struct ldb_message *msg, enum ldb_scope scope,
+							     struct ldb_request *parent)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_dn *nc_root;
+	int64_t password_expiry_time;
+	int ret;
+
+	ret = dsdb_find_nc_root(ldb, msg, msg->dn, &nc_root);
+	if (ret != 0) {
+		ldb_asprintf_errstring(ldb,
+				       "Failed to find NC root of DN: %s: %s",
+				       ldb_dn_get_linearized(msg->dn),
+				       ldb_errstring(ldb));
+		return ret;
+	}
+
+	if (ldb_dn_compare(nc_root, ldb_get_default_basedn(ldb)) != 0) {
+		/* Only calculate this on our default NC */
+		return 0;
+	}
+
+	password_expiry_time
+		= get_msds_user_password_expiry_time_computed(module, msg,
+							      nc_root);
+
+	return samdb_msg_add_int64(ldb,
+				   msg->elements, msg,
+				   "msDS-UserPasswordExpiryTimeComputed",
+				   password_expiry_time);
+}
+
+
 struct op_controls_flags {
 	bool sd;
 	bool bypassoperational;
@@ -815,6 +852,13 @@ static const char *user_account_control_computed_attrs[] =
 };
 
 
+static const char *user_password_expiry_time_computed_attrs[] =
+{
+	"pwdLastSet",
+	NULL
+};
+
+
 /*
   a list of attribute names that are hidden, but can be searched for
   using another (non-hidden) name to produce the correct result
@@ -831,7 +875,9 @@ static const struct op_attributes_replace search_sub[] = {
 	{ "msDS-isRODC", "objectClass", objectCategory_attr, construct_msds_isrodc },
 	{ "msDS-KeyVersionNumber", "replPropertyMetaData", NULL, construct_msds_keyversionnumber },
 	{ "msDS-User-Account-Control-Computed", "userAccountControl", user_account_control_computed_attrs,
-	  construct_msds_user_account_control_computed }
+	  construct_msds_user_account_control_computed },
+	{ "msDS-UserPasswordExpiryTimeComputed", "userAccountControl", user_password_expiry_time_computed_attrs,
+	  construct_msds_user_password_expiry_time_computed }
 };
 
 
