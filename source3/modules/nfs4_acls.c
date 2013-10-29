@@ -336,7 +336,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		mem_ctx, 2 * aclint->naces * sizeof(struct security_ace));
 	if (nt_ace_list==NULL)
 	{
-		DEBUG(10, ("talloc error"));
+		DEBUG(10, ("talloc error with %d aces", aclint->naces));
 		errno = ENOMEM;
 		return false;
 	}
@@ -473,10 +473,12 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	nt_ace_list = (struct security_ace *)TALLOC_REALLOC(mem_ctx,
-					nt_ace_list,
-					good_aces * sizeof(struct security_ace));
-	if (nt_ace_list == NULL) {
+	nt_ace_list = (struct security_ace *)
+		TALLOC_REALLOC(mem_ctx, nt_ace_list,
+				       good_aces * sizeof(struct security_ace));
+	/* returns a NULL ace list when good_aces is zero. */
+	if (good_aces && nt_ace_list == NULL) {
+		DEBUG(10, ("realloc error with %d aces", good_aces));
 		errno = ENOMEM;
 		return false;
 	}
