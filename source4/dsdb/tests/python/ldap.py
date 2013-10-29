@@ -667,7 +667,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_single_valued_attributes(self):
         """Test single-valued attributes"""
-        print "Test single-valued attributes"""
+        print "Test single-valued attributes"
 
         try:
             self.ldb.add({
@@ -767,7 +767,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_empty_messages(self):
         """Test empty messages"""
-        print "Test empty messages"""
+        print "Test empty messages"
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -788,7 +788,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_empty_attributes(self):
         """Test empty attributes"""
-        print "Test empty attributes"""
+        print "Test empty attributes"
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -899,6 +899,17 @@ class BasicTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        #only write is allowed with NC_HEAD for originating updates
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "instanceType": "3" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
 
     def test_distinguished_name(self):
         """Tests the 'distinguishedName' attribute"""
