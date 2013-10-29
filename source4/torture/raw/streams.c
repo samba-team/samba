@@ -23,6 +23,8 @@
 #include "system/locale.h"
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/security/dom_sid.h"
+#include "libcli/security/security_descriptor.h"
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
@@ -1885,6 +1887,184 @@ static bool test_stream_summary_tab(struct torture_context *tctx,
 	return ret;
 }
 
+/* Test how streams interact with base file permissions */
+/* Regression test for bug:
+   https://bugzilla.samba.org/show_bug.cgi?id=10229
+   bug #10229 - No access check verification on stream files.
+*/
+static bool test_stream_permissions(struct torture_context *tctx,
+					   struct smbcli_state *cli)
+{
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream_permissions.txt";
+	const char *stream = "Stream One:$DATA";
+	const char *fname_stream;
+	union smb_fileinfo finfo;
+	union smb_setfileinfo sfinfo;
+	int fnum = -1;
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
+	struct security_ace ace;
+	struct security_descriptor *sd;
+
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
+		"Failed to setup up test directory: " BASEDIR);
+
+	torture_comment(tctx, "(%s) testing permissions on streams\n", __location__);
+
+	fname_stream = talloc_asprintf(tctx, "%s:%s", fname, stream);
+
+	/* Create a file with a stream with attribute FILE_ATTRIBUTE_ARCHIVE. */
+	ret = create_file_with_stream(tctx, cli, fname_stream);
+	if (!ret) {
+		goto done;
+	}
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_BASIC_INFO;
+	finfo.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_assert_int_equal_goto(tctx,
+		finfo.all_info.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
+		FILE_ATTRIBUTE_ARCHIVE, ret, done, "attrib incorrect");
+
+	/* Change the attributes on the base file name. */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.level = RAW_SFILEINFO_SETATTR;
+	sfinfo.generic.in.file.path        = fname;
+	sfinfo.setattr.in.attrib           = FILE_ATTRIBUTE_READONLY;
+
+	status = smb_raw_setpathinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try and open the stream name for WRITE_DATA. Should
+	   fail with ACCESS_DENIED. */
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname_stream;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	/* Change the attributes on the base file back. */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.level = RAW_SFILEINFO_SETATTR;
+	sfinfo.generic.in.file.path        = fname;
+	sfinfo.setattr.in.attrib           = 0;
+
+	status = smb_raw_setpathinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Re-open the file name. */
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+		SEC_STD_READ_CONTROL|SEC_STD_WRITE_DAC|
+		SEC_FILE_WRITE_ATTRIBUTE);
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* Get the existing security descriptor. */
+	ZERO_STRUCT(q);
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	status = smb_raw_fileinfo(cli->tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd = q.query_secdesc.out.sd;
+
+	/* Now add a DENY WRITE security descriptor for Everyone. */
+	torture_comment(tctx, "add a new ACE to the DACL\n");
+
+	ace.type = SEC_ACE_TYPE_ACCESS_DENIED;
+	ace.flags = 0;
+	ace.access_mask = SEC_FILE_WRITE_DATA;
+	ace.trustee = *dom_sid_parse_talloc(tctx, SID_WORLD);
+
+	status = security_descriptor_dacl_add(sd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* security_descriptor_dacl_add adds to the *end* of
+	   the ace array, we need it at the start. Swap.. */
+	ace = sd->dacl->aces[0];
+	sd->dacl->aces[0] = sd->dacl->aces[sd->dacl->num_aces-1];
+	sd->dacl->aces[sd->dacl->num_aces-1] = ace;
+
+	ZERO_STRUCT(set);
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.fnum = fnum;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+
+	status = smb_raw_setfileinfo(cli->tree, &set);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+	fnum = -1;
+
+	/* Try and open the stream name for WRITE_DATA. Should
+	   fail with ACCESS_DENIED. */
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname_stream;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+ done:
+
+	if (fnum != -1) {
+		smbcli_close(cli->tree, fnum);
+	}
+	smbcli_unlink(cli->tree, fname);
+
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
 /* 
    basic testing of streams calls
 */
@@ -1905,6 +2085,7 @@ struct torture_suite *torture_raw_streams(TALLOC_CTX *tctx)
 	    test_stream_create_disposition);
 	torture_suite_add_1smb_test(suite, "attr", test_stream_attributes);
 	torture_suite_add_1smb_test(suite, "sumtab", test_stream_summary_tab);
+	torture_suite_add_1smb_test(suite, "perms", test_stream_permissions);
 
 #if 0
 	torture_suite_add_1smb_test(suite, "LARGESTREAMINFO",
