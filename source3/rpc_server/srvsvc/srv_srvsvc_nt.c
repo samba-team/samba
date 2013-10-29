@@ -2499,7 +2499,7 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 	}
 
 	/* enum_file_close_fn sends the close message to
-	 * the relevent smbd process. */
+	 * the relevant smbd process. */
 
 	r->out.result = WERR_BADFILE;
 	state.r = r;
