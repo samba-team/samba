@@ -679,6 +679,7 @@ options {
         set_route = False
         set_dns = False
         set_telnetclients = True
+        start_telnet = True
         if self.getvar('WIN_IP'):
             ip = self.getvar('WIN_IP')
         else:
@@ -711,6 +712,7 @@ options {
                               pexpect.EOF])
             if i == 1:
                 if set_telnetclients:
+                    self.run_cmd('bin/net rpc group add TelnetClients -S $WIN_IP -U$WIN_USER%$WIN_PASS')
                     self.run_cmd('bin/net rpc group addmem TelnetClients "authenticated users" -S $WIN_IP -U$WIN_USER%$WIN_PASS')
                     child.close()
                     retries -= 1
@@ -719,6 +721,15 @@ options {
                     continue
                 else:
                     raise RuntimeError("Failed to connect with telnet due to missing TelnetClients membership")
+
+            if i == 6:
+                # This only works if it is installed and enabled, but not started.  Not entirely likely, but possible
+                self.run_cmd('bin/net rpc service start TlntSvr -S $WIN_IP -U$WIN_USER%$WIN_PASS')
+                child.close()
+                start_telnet = False
+                retries -= 1
+                self.info("retrying (retries=%u delay=%u)" % (retries, delay))
+                continue
 
             if i != 0:
                 child.close()
