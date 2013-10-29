@@ -144,6 +144,7 @@
 ^samba4.raw.streams.*.delete
 ^samba4.raw.streams.*.createdisp
 ^samba4.raw.streams.*.sumtab
+^samba4.raw.streams.*.perms
 ^samba4.raw.acls.INHERITFLAGS
 ^samba4.raw.acls.*.create_dir
 ^samba4.raw.acls.*.create_file
