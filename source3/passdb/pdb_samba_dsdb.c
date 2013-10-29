@@ -272,12 +272,12 @@ static NTSTATUS pdb_samba_dsdb_init_sam_from_priv(struct pdb_methods *m,
 	}
 	pdb_set_user_sid(sam, sid, PDB_SET);
 
-	n = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
+	n = samdb_result_acct_flags(msg, "msDS-User-Account-Control-Computed");
 	if (n == 0) {
 		DEBUG(10, ("Could not pull userAccountControl\n"));
 		goto fail;
 	}
-	pdb_set_acct_ctrl(sam, ds_uf2acb(n), PDB_SET);
+	pdb_set_acct_ctrl(sam, n, PDB_SET);
 
 	blob = ldb_msg_find_ldb_val(msg, "unicodePwd");
 	if (blob) {
@@ -614,7 +614,8 @@ static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 		"sAMAccountName", "displayName", "homeDirectory",
 		"homeDrive", "scriptPath", "profilePath", "description",
 		"userWorkstations", "comment", "userParameters", "objectSid",
-		"primaryGroupID", "userAccountControl", "logonHours",
+		"primaryGroupID", "userAccountControl",
+		"msDS-User-Account-Control-Computed", "logonHours",
 		"badPwdCount", "logonCount", "countryCode", "codePage",
 		"unicodePwd", "dBCSPwd", NULL };
 
@@ -1936,9 +1937,7 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 		}
 		sid_peek_rid(sid, &e->rid);
 
-		e->acct_flags = samdb_result_acct_flags(state->ldb, tmp_ctx,
-							res->msgs[i],
-							ldb_get_default_basedn(state->ldb));
+		e->acct_flags = samdb_result_acct_flags(res->msgs[i], "userAccountControl");
 		e->account_name = ldb_msg_find_attr_as_string(
 			res->msgs[i], "samAccountName", NULL);
 		if (e->account_name == NULL) {

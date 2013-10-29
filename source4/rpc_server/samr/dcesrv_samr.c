@@ -60,7 +60,7 @@
 #define QUERY_LHOURS(msg, field, attr) \
 	info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
-	info->field = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, a_state->domain_state->domain_dn);
+	info->field = samdb_result_acct_flags(msg, attr);
 #define QUERY_PARAMETERS(msg, field, attr) \
 	info->field = samdb_result_parameters(mem_ctx, msg, attr);
 
@@ -1309,8 +1309,7 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	for (i=0;i<ldb_cnt;i++) {
 		/* Check if a mask has been requested */
 		if (r->in.acct_flags
-		    && ((samdb_result_acct_flags(d_state->sam_ctx, mem_ctx,
-						 res[i], d_state->domain_dn) & r->in.acct_flags) == 0)) {
+		    && ((samdb_result_acct_flags(res[i], NULL) & r->in.acct_flags) == 0)) {
 			continue;
 		}
 		entries[count].idx = samdb_result_rid_from_sid(mem_ctx, res[i],
@@ -2750,6 +2749,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 						      "badPwdCount",
 						      "logonCount",
 						      "userAccountControl",
+						      "msDS-User-Account-Control-Computed",
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -2781,6 +2781,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 						      "pwdLastSet",
 						      "accountExpires",
 						      "userAccountControl",
+						      "msDS-User-Account-Control-Computed",
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -2853,6 +2854,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	case 16:
 	{
 		static const char * const attrs2[] = {"userAccountControl",
+						      "msDS-User-Account-Control-Computed",
 						      "pwdLastSet",
 						      NULL};
 		attrs = attrs2;
@@ -2895,6 +2897,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 						      "objectSid",
 						      "primaryGroupID",
 						      "userAccountControl",
+						      "msDS-User-Account-Control-Computed",
 						      "logonHours",
 						      "badPwdCount",
 						      "logonCount",
@@ -2968,7 +2971,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_LHOURS(msg, info3.logon_hours,           "logonHours");
 		QUERY_UINT  (msg, info3.bad_password_count,    "badPwdCount");
 		QUERY_UINT  (msg, info3.logon_count,           "logonCount");
-		QUERY_AFLAGS(msg, info3.acct_flags,            "userAccountControl");
+		QUERY_AFLAGS(msg, info3.acct_flags,            "msDS-User-Account-Control-Computed");
 		break;
 
 	case 4:
@@ -2993,7 +2996,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_UINT  (msg, info5.logon_count,           "logonCount");
 		QUERY_UINT64(msg, info5.last_password_change,  "pwdLastSet");
 		QUERY_UINT64(msg, info5.acct_expiry,           "accountExpires");
-		QUERY_AFLAGS(msg, info5.acct_flags,            "userAccountControl");
+		QUERY_AFLAGS(msg, info5.acct_flags,            "msDS-User-Account-Control-Computed");
 		break;
 
 	case 6:
@@ -3035,7 +3038,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		break;
 
 	case 16:
-		QUERY_AFLAGS(msg, info16.acct_flags,    "userAccountControl");
+		QUERY_AFLAGS(msg, info16.acct_flags,    "msDS-User-Account-Control-Computed");
 		break;
 
 	case 17:
@@ -3065,7 +3068,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_PARAMETERS(msg, info21.parameters,       "userParameters");
 		QUERY_RID   (msg, info21.rid,                  "objectSid");
 		QUERY_UINT  (msg, info21.primary_gid,          "primaryGroupID");
-		QUERY_AFLAGS(msg, info21.acct_flags,           "userAccountControl");
+		QUERY_AFLAGS(msg, info21.acct_flags,           "msDS-User-Account-Control-Computed");
 		info->info21.fields_present = 0x08FFFFFF;
 		QUERY_LHOURS(msg, info21.logon_hours,          "logonHours");
 		QUERY_UINT  (msg, info21.bad_password_count,   "badPwdCount");
@@ -3725,10 +3728,7 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			entriesGeneral[count].rid =
 				objectsid->sub_auths[objectsid->num_auths-1];
 			entriesGeneral[count].acct_flags =
-				samdb_result_acct_flags(d_state->sam_ctx,
-							mem_ctx,
-							res->msgs[i],
-							d_state->domain_dn);
+				samdb_result_acct_flags(res->msgs[i], NULL);
 			entriesGeneral[count].account_name.string =
 				ldb_msg_find_attr_as_string(res->msgs[i],
 							    "sAMAccountName", "");
@@ -3746,10 +3746,8 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 
 			/* No idea why we need to or in ACB_NORMAL here, but this is what Win2k3 seems to do... */
 			entriesFull[count].acct_flags =
-				samdb_result_acct_flags(d_state->sam_ctx,
-							mem_ctx,
-							res->msgs[i],
-							d_state->domain_dn) | ACB_NORMAL;
+				samdb_result_acct_flags(res->msgs[i],
+							NULL) | ACB_NORMAL;
 			entriesFull[count].account_name.string =
 				ldb_msg_find_attr_as_string(res->msgs[i],
 							    "sAMAccountName", "");

@@ -47,7 +47,8 @@
 	"dBCSPwd",				\
 	"unicodePwd",				\
 						\
-	"userAccountControl",			\
+	"userAccountControl",	                \
+	"msDS-User-Account-Control-Computed",	\
 	"objectSid",				\
 						\
 	"pwdLastSet",				\
@@ -170,7 +171,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
 
-	acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, domain_dn);
+	acct_flags = samdb_result_acct_flags(msg, "msDS-User-Account-Control-Computed");
 	
 	acct_expiry = samdb_result_account_expires(msg);
 
@@ -451,8 +452,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	info->bad_password_count = ldb_msg_find_attr_as_uint(msg, "badPwdCount",
 		0);
 
-	info->acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx,
-							  msg, domain_dn);
+	info->acct_flags = samdb_result_acct_flags(msg, "msDS-User-Account-Control-Computed");
 
 	user_info_dc->user_session_key = data_blob_talloc(user_info_dc,
 							 user_sess_key.data,

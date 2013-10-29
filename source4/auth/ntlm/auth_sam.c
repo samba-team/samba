@@ -180,7 +180,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
 
-	uint16_t acct_flags = samdb_result_acct_flags(auth_context->sam_ctx, mem_ctx, msg, domain_dn);
+	uint16_t acct_flags = samdb_result_acct_flags(msg, "msDS-User-Account-Control-Computed");
 	
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
