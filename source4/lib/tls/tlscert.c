@@ -152,7 +152,7 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 
 	bufsize = sizeof(buf);
 	TLSCHECK(gnutls_x509_privkey_export(key, GNUTLS_X509_FMT_PEM, buf, &bufsize));
-	if (!file_save(keyfile, buf, bufsize)) {
+	if (!file_save_mode(keyfile, buf, bufsize, 0600)) {
 		DEBUG(0,("Unable to save privatekey in %s parent dir exists ?\n", keyfile));
 		goto failed;
 	}
