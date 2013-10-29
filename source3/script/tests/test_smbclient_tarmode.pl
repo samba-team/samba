@@ -43,11 +43,11 @@ sub d {print Dumper @_;}
 # 'our' to make them available in the File package
 our $USER      = '';
 our $PW        = '';
-our $HOST      = 'localhost';
+our $HOST      = '';
 our $IP        = '';
-our $SHARE     = 'public';
+our $SHARE     = '';
 our $DIR       = 'tar_test_dir';
-our $LOCALPATH = '/media/data/smb-test';
+our $LOCALPATH = '';
 our $TMP       = File::Temp->newdir();
 our $BIN       = 'smbclient';
 our $SUBUNIT   = 0;
@@ -101,13 +101,13 @@ my @TESTS = (
   Environment:
     -u, --user      USER
     -p, --password  PW
-    -n, --name      HOST
+    -n, --name      HOST	(required)
     -i, --ip        IP
-    -s, --share     SHARE
+    -s, --share     SHARE	(required)
     -d, --dir       PATH
         sub-path to use on the share
 
-    -l, --local-path  PATH
+    -l, --local-path  PATH	(required)
         path to the root of the samba share on the machine.
 
     -b, --bin  BIN
@@ -155,6 +155,9 @@ GetOptions('u|user=s'       => \$USER,
 pod2usage(0) if $HELP;
 pod2usage(-exitval => 0, -verbose => 2) if $MAN;
 list_test(), exit 0 if $LIST_TEST;
+pod2usage(1) unless $HOST;
+pod2usage(1) unless $SHARE;
+pod2usage(1) unless $LOCALPATH;
 
 if ($USER xor $PW) {
     die "Need both user and password when one is provided\n";
