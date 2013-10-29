@@ -425,8 +425,9 @@ void ctdb_node_connected(struct ctdb_node *node)
 	node->dead_count = 0;
 	node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	node->flags |= NODE_FLAGS_UNHEALTHY;
-	DEBUG(DEBUG_INFO,("%s: connected to %s - %u connected\n", 
-		 node->ctdb->name, node->name, node->ctdb->num_connected));
+	DEBUG(DEBUG_NOTICE,
+	      ("%s: connected to %s - %u connected\n", 
+	       node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 
 struct queue_next {
