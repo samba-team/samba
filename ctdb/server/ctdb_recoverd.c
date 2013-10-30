@@ -2377,6 +2377,7 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
 	uint32_t pnn;
 	uint32_t *t;
 	int len;
+	uint32_t deferred_rebalance;
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 
 	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
@@ -2385,10 +2386,6 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
 
 	if (data.dsize != sizeof(uint32_t)) {
 		DEBUG(DEBUG_ERR,(__location__ " Incorrect size of node rebalance message. Was %zd but expected %zd bytes\n", data.dsize, sizeof(uint32_t)));
-		return;
-	}
-
-	if (ctdb->tunable.deferred_rebalance_on_node_add == 0) {
 		return;
 	}
 
@@ -2420,9 +2417,19 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
 	talloc_free(rec->force_rebalance_nodes);
 
 	rec->force_rebalance_nodes = t;
-	event_add_timed(ctdb->ev, rec->force_rebalance_nodes,
-			timeval_current_ofs(ctdb->tunable.deferred_rebalance_on_node_add, 0),
-			ctdb_rebalance_timeout, rec);
+
+	/* If configured, setup a deferred takeover run to make sure
+	 * that certain nodes get IPs rebalanced to them.  This will
+	 * be cancelled if a successful takeover run happens before
+	 * the timeout.  Assign tunable value to variable for
+	 * readability.
+	 */
+	deferred_rebalance = ctdb->tunable.deferred_rebalance_on_node_add;
+	if (deferred_rebalance != 0) {
+		event_add_timed(ctdb->ev, rec->force_rebalance_nodes,
+				timeval_current_ofs(deferred_rebalance, 0),
+				ctdb_rebalance_timeout, rec);
+	}
 }
 
 
