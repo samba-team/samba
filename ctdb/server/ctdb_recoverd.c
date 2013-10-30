@@ -2101,7 +2101,7 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, rec, &nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " unable to get election data\n"));
+		DEBUG(DEBUG_ERR,(__location__ " unable to get node map\n"));
 		return;
 	}
 
