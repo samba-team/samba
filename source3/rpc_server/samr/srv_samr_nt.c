@@ -6378,6 +6378,23 @@ static NTSTATUS set_dom_info_12(TALLOC_CTX *mem_ctx,
 {
 	time_t u_lock_duration, u_reset_time;
 
+	/*
+	 * It is not possible to set lockout_duration < lockout_window.
+	 * (The test is the other way around since the negative numbers
+	 *  are stored...)
+	 *
+	 * This constraint is documented here for the samr rpc service:
+	 * MS-SAMR 3.1.1.6 Attribute Constraints for Originating Updates
+	 * http://msdn.microsoft.com/en-us/library/cc245667%28PROT.10%29.aspx
+	 *
+	 * And here for the ldap backend:
+	 * MS-ADTS 3.1.1.5.3.2 Constraints
+	 * http://msdn.microsoft.com/en-us/library/cc223462(PROT.10).aspx
+	 */
+	if (r->lockout_duration > r->lockout_window) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	u_lock_duration = nt_time_to_unix_abs((NTTIME *)&r->lockout_duration);
 	if (u_lock_duration != -1) {
 		u_lock_duration /= 60;
