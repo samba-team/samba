@@ -102,12 +102,9 @@ struct ctdb_tunable {
 	uint32_t recovery_drop_all_ips;
 	uint32_t verify_recovery_lock;
 	uint32_t vacuum_interval;
-	uint32_t vacuum_default_interval;
 	uint32_t vacuum_max_run_time;
 	uint32_t repack_limit;
 	uint32_t vacuum_limit;
-	uint32_t vacuum_min_interval;
-	uint32_t vacuum_max_interval;
 	uint32_t max_queue_depth_drop_msg;
 	uint32_t use_status_events_for_monitoring;
 	uint32_t allow_unhealthy_db_read;
