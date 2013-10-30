@@ -958,6 +958,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	if (pdp->reqpath[0] == '\0') {
 		char *tmp;
 		struct referral *ref;
+		int refcount;
 
 		if (*lp_msdfs_proxy(talloc_tos(), snum) == '\0') {
 			TALLOC_FREE(pdp);
@@ -973,39 +974,20 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
  		 * the configured target share.
  		 */
 
-		jucn->referral_count = 1;
-		if ((ref = talloc_zero(ctx, struct referral)) == NULL) {
+		tmp = talloc_asprintf(talloc_tos(), "msdfs:%s",
+				      lp_msdfs_proxy(talloc_tos(), snum));
+		if (tmp == NULL) {
 			TALLOC_FREE(pdp);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!(tmp = talloc_strdup(ctx, lp_msdfs_proxy(talloc_tos(), snum)))) {
+		if (!parse_msdfs_symlink(ctx, tmp, &ref, &refcount)) {
+			TALLOC_FREE(tmp);
 			TALLOC_FREE(pdp);
-			return NT_STATUS_NO_MEMORY;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
-
-		trim_string(tmp, "\\", 0);
-
-		ref->alternate_path = talloc_asprintf(ctx, "\\%s", tmp);
 		TALLOC_FREE(tmp);
-
-		if (!ref->alternate_path) {
-			TALLOC_FREE(pdp);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (pdp->reqpath[0] != '\0') {
-			ref->alternate_path = talloc_asprintf_append(
-					ref->alternate_path,
-					"%s",
-					pdp->reqpath);
-			if (!ref->alternate_path) {
-				TALLOC_FREE(pdp);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		ref->proximity = 0;
-		ref->ttl = REFERRAL_TTL;
+		jucn->referral_count = refcount;
 		jucn->referral_list = ref;
 		*consumedcntp = strlen(dfs_path);
 		TALLOC_FREE(pdp);
