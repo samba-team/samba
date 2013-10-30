@@ -537,26 +537,26 @@ static bool test_SetUserInfo(struct dcerpc_binding_handle *b, struct torture_con
 
 	/* Samba3 cannot store these atm */
 	if (!torture_setting_bool(tctx, "samba3", false)) {
-	/* The 'store plaintext' flag does stick */
-	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
-			      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED),
-			      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED | user_extra_flags),
-			      0);
-	/* The 'use DES' flag does stick */
-	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
-			      (base_acct_flags | ACB_DISABLED | ACB_USE_DES_KEY_ONLY),
-			      (base_acct_flags | ACB_DISABLED | ACB_USE_DES_KEY_ONLY | user_extra_flags),
-			      0);
-	/* The 'don't require kerberos pre-authentication flag does stick */
-	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
-			      (base_acct_flags | ACB_DISABLED | ACB_DONT_REQUIRE_PREAUTH),
-			      (base_acct_flags | ACB_DISABLED | ACB_DONT_REQUIRE_PREAUTH | user_extra_flags),
-			      0);
-	/* The 'no kerberos PAC required' flag sticks */
-	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
-			      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD),
-			      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD | user_extra_flags),
-			      0);
+		/* The 'store plaintext' flag does stick */
+		TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
+				      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED),
+				      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED | user_extra_flags),
+				      0);
+		/* The 'use DES' flag does stick */
+		TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
+				      (base_acct_flags | ACB_DISABLED | ACB_USE_DES_KEY_ONLY),
+				      (base_acct_flags | ACB_DISABLED | ACB_USE_DES_KEY_ONLY | user_extra_flags),
+				      0);
+		/* The 'don't require kerberos pre-authentication flag does stick */
+		TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
+				      (base_acct_flags | ACB_DISABLED | ACB_DONT_REQUIRE_PREAUTH),
+				      (base_acct_flags | ACB_DISABLED | ACB_DONT_REQUIRE_PREAUTH | user_extra_flags),
+				      0);
+		/* The 'no kerberos PAC required' flag sticks */
+		TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags,
+				      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD),
+				      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD | user_extra_flags),
+				      0);
 	}
 	TEST_USERINFO_INT_EXP(21, acct_flags, 21, acct_flags,
 			      (base_acct_flags | ACB_DISABLED),
