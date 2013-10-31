@@ -6,13 +6,13 @@
 	<para>This parameter indicates that the share is a
 	stand-in for another CIFS share whose location is specified by
 	the value of the parameter. When clients attempt to connect to
-	this share, they are redirected to the proxied share using
-	the SMB-Dfs protocol.</para>
+	this share, they are redirected to one or multiple, comma separated
+	proxied shares using the SMB-Dfs protocol.</para>
 
 	<para>Only Dfs roots can act as proxy shares. Take a look at the
 	<smbconfoption name="msdfs root"/> and <smbconfoption name="host msdfs"/>
 	options to find out how to set up a Dfs root share.</para>
 </description>
 
-<value type="example">\otherserver\someshare</value>
+<value type="example">\otherserver\someshare,\otherserver2\someshare</value>
 </samba:parameter>
