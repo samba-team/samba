@@ -379,6 +379,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	const char *username;
 	const uint8_t *nt_pw;
 	const uint8_t *lm_pw;
+	uint32_t acct_ctrl;
 
 	/* the returned struct gets kept on the server_info, by means
 	   of a steal further down */
@@ -401,19 +402,20 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	username = pdb_get_username(sampass);
 	nt_pw = pdb_get_nt_passwd(sampass);
 	lm_pw = pdb_get_lanman_passwd(sampass);
 
 	/* Quit if the account was locked out. */
-	if (pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK) {
+	if (acct_ctrl & ACB_AUTOLOCK) {
 		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", username));
 		TALLOC_FREE(sampass);
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
 	nt_status = sam_password_ok(mem_ctx,
-				    username, pdb_get_acct_ctrl(sampass),
+				    username, acct_ctrl,
 				    challenge, lm_pw, nt_pw,
 				    user_info, &user_sess_key, &lm_sess_key);
 
@@ -426,7 +428,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 		bool increment_bad_pw_count = false;
 
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_WRONG_PASSWORD) &&
-		    pdb_get_acct_ctrl(sampass) & ACB_NORMAL &&
+		    (acct_ctrl & ACB_NORMAL) &&
 		    NT_STATUS_IS_OK(update_login_attempts_status))
 		{
 			increment_bad_pw_count =
@@ -456,7 +458,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 		goto done;
 	}
 
-	if ((pdb_get_acct_ctrl(sampass) & ACB_NORMAL) &&
+	if ((acct_ctrl & ACB_NORMAL) &&
 	    (pdb_get_bad_password_count(sampass) > 0)){
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
