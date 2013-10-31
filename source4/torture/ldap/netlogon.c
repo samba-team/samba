@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap_client.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
@@ -40,6 +41,10 @@
 typedef NTSTATUS (*request_netlogon_t)(void *con,
 				       TALLOC_CTX *mem_ctx,
 				       struct cldap_netlogon *io);
+
+typedef NTSTATUS (*request_rootdse_t)(void *con,
+				     TALLOC_CTX *mem_ctx,
+				     struct cldap_search *io);
 
 /*
   test netlogon operations
@@ -456,6 +461,82 @@ static NTSTATUS tcp_ldap_netlogon(void *conn,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS udp_ldap_rootdse(void *data, TALLOC_CTX *mem_ctx,
+				 struct cldap_search *io)
+{
+	struct cldap_socket *cldap = talloc_get_type(data,
+						     struct cldap_socket);
+
+	return cldap_search(cldap, mem_ctx, io);
+}
+
+static bool test_netlogon_extra_attrs(struct torture_context *tctx,
+				      request_rootdse_t request_rootdse,
+				      void *conn)
+{
+	struct cldap_search io;
+	NTSTATUS status;
+	const char *attrs[] = {
+		"netlogon",
+		"supportedCapabilities",
+		NULL
+	};
+	const char *attrs2[] = { "netlogon", "*", NULL };
+	struct ldb_message ldbmsg = { NULL, 0, NULL };
+
+	ZERO_STRUCT(io);
+	io.in.dest_address = NULL;
+	io.in.dest_port = 0;
+	io.in.timeout   = 2;
+	io.in.retries   = 2;
+	/* Additional attributes may be requested next to netlogon */
+	torture_comment(tctx, "Requesting netlogon with additional attribute\n");
+	io.in.filter =
+		talloc_asprintf(tctx, "(&"
+				"(NtVer=%s)(AAC=%s)"
+				/* Query for LDAP_CAP_ACTIVE_DIRECTORY_OID */
+				"(supportedCapabilities=1.2.840.113556.1.4.800)"
+				")",
+				ldap_encode_ndr_uint32(tctx,
+						       NETLOGON_NT_VERSION_5EX),
+				ldap_encode_ndr_uint32(tctx, 0));
+	torture_assert(tctx, io.in.filter != NULL, "OOM");
+	io.in.attributes = attrs;
+	status = request_rootdse(conn, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert(tctx, io.out.response != NULL, "No Entries found.");
+	CHECK_VAL(io.out.response->num_attributes, 2);
+
+	/* netlogon + '*' attr return zero results */
+	torture_comment(tctx, "Requesting netlogon and '*' attributes\n");
+	io.in.attributes = attrs2;
+	status = request_rootdse(conn, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert(tctx, io.out.response != NULL, "No Entries found.");
+	ldbmsg.num_elements = io.out.response->num_attributes;
+	ldbmsg.elements = io.out.response->attributes;
+	torture_assert(tctx, ldb_msg_find_element(&ldbmsg, "netlogon") != NULL,
+		       "Attribute netlogon not found in Result Entry\n");
+
+	/* Wildcards are not allowed in filters when netlogon is requested. */
+	torture_comment(tctx, "Requesting netlogon with invalid attr filter\n");
+	io.in.filter =
+		talloc_asprintf(tctx,
+				"(&(NtVer=%s)(AAC=%s)(supportedCapabilities=*))",
+				ldap_encode_ndr_uint32(tctx,
+						       NETLOGON_NT_VERSION_5EX),
+				ldap_encode_ndr_uint32(tctx, 0));
+	torture_assert(tctx, io.in.filter != NULL, "OOM");
+	io.in.attributes = attrs;
+	status = request_rootdse(conn, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert(tctx, io.out.response == NULL,
+		       "A wildcard filter should return no entries.");
+
+	return true;
+}
+
+
 bool torture_netlogon_tcp(struct torture_context *tctx)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
@@ -476,6 +557,7 @@ bool torture_netlogon_tcp(struct torture_context *tctx)
 
 	ret &= test_ldap_netlogon(tctx, tcp_ldap_netlogon, conn, host);
 	ret &= test_ldap_netlogon_flags(tctx, tcp_ldap_netlogon, conn, host);
+	ret &= test_netlogon_extra_attrs(tctx, tcp_ldap_rootdse, conn);
 
 	return ret;
 }
@@ -511,6 +593,7 @@ bool torture_netlogon_udp(struct torture_context *tctx)
 
 	ret &= test_ldap_netlogon(tctx, udp_ldap_netlogon, cldap, host);
 	ret &= test_ldap_netlogon_flags(tctx, udp_ldap_netlogon, cldap, host);
+	ret &= test_netlogon_extra_attrs(tctx, udp_ldap_rootdse, cldap);
 
 	return ret;
 }
