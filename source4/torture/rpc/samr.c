@@ -4890,57 +4890,32 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
 
 		/* test last password change timestamp behaviour */
-		if (!test_SetPassword_pwdlastset(p, tctx, base_acct_flags,
-						 base_acct_name,
-						 user_handle, &password,
-						 machine_credentials)) {
-			ret = false;
-		}
-
-		if (ret == true) {
-			torture_comment(tctx, "pwdLastSet test succeeded\n");
-		} else {
-			torture_result(tctx, TORTURE_FAIL, "pwdLastSet test failed\n");
-		}
-
+		torture_assert(tctx, test_SetPassword_pwdlastset(p, tctx, base_acct_flags,
+								 base_acct_name,
+								 user_handle, &password,
+								 machine_credentials),
+			       "pwdLastSet test failed\n");
 		break;
 
 	case TORTURE_SAMR_PASSWORDS_BADPWDCOUNT:
 
 		/* test bad pwd count change behaviour */
-		if (!test_Password_badpwdcount_wrap(p, tctx, base_acct_flags,
-						    base_acct_name,
-						    domain_handle,
-						    user_handle, &password,
-						    machine_credentials)) {
-			ret = false;
-		}
-
-		if (ret == true) {
-			torture_comment(tctx, "badPwdCount test succeeded\n");
-		} else {
-			torture_result(tctx, TORTURE_FAIL, "badPwdCount test failed\n");
-		}
-
+		torture_assert(tctx, test_Password_badpwdcount_wrap(p, tctx, base_acct_flags,
+								    base_acct_name,
+								    domain_handle,
+								    user_handle, &password,
+								    machine_credentials),
+			       "badPwdCount test failed\n");
 		break;
 
 	case TORTURE_SAMR_PASSWORDS_LOCKOUT:
 
-		if (!test_Password_lockout_wrap(p, tctx, base_acct_flags,
-						base_acct_name,
-						domain_handle,
-						user_handle, &password,
-						machine_credentials))
-		{
-			ret = false;
-		}
-
-		if (ret == true) {
-			torture_comment(tctx, "lockout test succeeded\n");
-		} else {
-			torture_result(tctx, TORTURE_FAIL, "lockout test failed\n");
-		}
-
+		torture_assert(tctx, test_Password_lockout_wrap(p, tctx, base_acct_flags,
+								base_acct_name,
+								domain_handle,
+								user_handle, &password,
+								machine_credentials),
+			       "Lockout test failed");
 		break;
 
 
