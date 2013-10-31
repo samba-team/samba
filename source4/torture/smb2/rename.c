@@ -22,6 +22,8 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "lib/tevent/tevent.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
@@ -926,6 +928,375 @@ done:
 	return ret;
 }
 
+struct rename_one_dir_cycle_state {
+	struct tevent_context *ev;
+	struct smb2_tree *tree;
+	struct smb2_handle file;
+	const char *base_name;
+	char *new_name;
+	unsigned *rename_counter;
+
+	unsigned current;
+	unsigned max;
+	union smb_setfileinfo sinfo;
+};
+
+static void rename_one_dir_cycle_done(struct smb2_request *subreq);
+
+static struct tevent_req *rename_one_dir_cycle_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct smb2_tree *tree,
+						    struct smb2_handle file,
+						    unsigned max_renames,
+						    const char *base_name,
+						    unsigned *rename_counter)
+{
+	struct tevent_req *req;
+	struct rename_one_dir_cycle_state *state;
+	struct smb2_request *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rename_one_dir_cycle_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->tree = tree;
+	state->file = file;
+	state->base_name = base_name;
+	state->rename_counter = rename_counter;
+	state->current = 0;
+	state->max = max_renames;
+
+	ZERO_STRUCT(state->sinfo);
+	state->sinfo.rename_information.level =
+		RAW_SFILEINFO_RENAME_INFORMATION;
+	state->sinfo.rename_information.in.file.handle = state->file;
+	state->sinfo.rename_information.in.overwrite = 0;
+	state->sinfo.rename_information.in.root_fid = 0;
+
+	state->new_name = talloc_asprintf(
+		state, "%s-%u", state->base_name, state->current);
+	if (tevent_req_nomem(state->new_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->sinfo.rename_information.in.new_name = state->new_name;
+
+	subreq = smb2_setinfo_file_send(state->tree, &state->sinfo);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	subreq->async.fn = rename_one_dir_cycle_done;
+	subreq->async.private_data = req;
+	return req;
+}
+
+static void rename_one_dir_cycle_done(struct smb2_request *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		subreq->async.private_data, struct tevent_req);
+	struct rename_one_dir_cycle_state *state = tevent_req_data(
+		req, struct rename_one_dir_cycle_state);
+	NTSTATUS status;
+
+	status = smb2_setinfo_recv(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	TALLOC_FREE(state->new_name);
+
+	*state->rename_counter += 1;
+
+	state->current += 1;
+	if (state->current >= state->max) {
+		tevent_req_done(req);
+		return;
+	}
+
+	ZERO_STRUCT(state->sinfo);
+	state->sinfo.rename_information.level =
+		RAW_SFILEINFO_RENAME_INFORMATION;
+	state->sinfo.rename_information.in.file.handle = state->file;
+	state->sinfo.rename_information.in.overwrite = 0;
+	state->sinfo.rename_information.in.root_fid = 0;
+
+	state->new_name = talloc_asprintf(
+		state, "%s-%u", state->base_name, state->current);
+	if (tevent_req_nomem(state->new_name, req)) {
+		return;
+	}
+	state->sinfo.rename_information.in.new_name = state->new_name;
+
+	subreq = smb2_setinfo_file_send(state->tree, &state->sinfo);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = rename_one_dir_cycle_done;
+	subreq->async.private_data = req;
+}
+
+static NTSTATUS rename_one_dir_cycle_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct rename_dir_bench_state {
+	struct tevent_context *ev;
+	struct smb2_tree *tree;
+	const char *base_name;
+	unsigned max_renames;
+	unsigned *rename_counter;
+
+	struct smb2_create io;
+	union smb_setfileinfo sinfo;
+	struct smb2_close cl;
+
+	struct smb2_handle file;
+};
+
+static void rename_dir_bench_opened(struct smb2_request *subreq);
+static void rename_dir_bench_renamed(struct tevent_req *subreq);
+static void rename_dir_bench_set_doc(struct smb2_request *subreq);
+static void rename_dir_bench_closed(struct smb2_request *subreq);
+
+static struct tevent_req *rename_dir_bench_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct smb2_tree *tree,
+						const char *base_name,
+						unsigned max_renames,
+						unsigned *rename_counter)
+{
+	struct tevent_req *req;
+	struct rename_dir_bench_state *state;
+	struct smb2_request *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rename_dir_bench_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->tree = tree;
+	state->base_name = base_name;
+	state->max_renames = max_renames;
+	state->rename_counter = rename_counter;
+
+	ZERO_STRUCT(state->io);
+	state->io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->io.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	state->io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	state->io.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	state->io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	state->io.in.fname = state->base_name;
+
+	subreq = smb2_create_send(state->tree, &state->io);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	subreq->async.fn = rename_dir_bench_opened;
+	subreq->async.private_data = req;
+	return req;
+}
+
+static void rename_dir_bench_opened(struct smb2_request *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		subreq->async.private_data, struct tevent_req);
+	struct rename_dir_bench_state *state = tevent_req_data(
+		req, struct rename_dir_bench_state);
+	struct smb2_create *io;
+	struct tevent_req *subreq2;
+	NTSTATUS status;
+
+	io = talloc(state, struct smb2_create);
+	if (tevent_req_nomem(io, req)) {
+		return;
+	}
+
+	status = smb2_create_recv(subreq, io, io);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	state->file = io->out.file.handle;
+	TALLOC_FREE(io);
+
+	subreq2 = rename_one_dir_cycle_send(
+		state, state->ev, state->tree, state->file,
+		state->max_renames, state->base_name,
+		state->rename_counter);
+	if (tevent_req_nomem(subreq2, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq2, rename_dir_bench_renamed, req);
+}
+
+static void rename_dir_bench_renamed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rename_dir_bench_state *state = tevent_req_data(
+		req, struct rename_dir_bench_state);
+	struct smb2_request *subreq2;
+	NTSTATUS status;
+
+	status = rename_one_dir_cycle_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	ZERO_STRUCT(state->sinfo);
+	state->sinfo.disposition_info.level =
+		RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	state->sinfo.disposition_info.in.file.handle = state->file;
+	state->sinfo.disposition_info.in.delete_on_close = true;
+
+	subreq2 = smb2_setinfo_file_send(state->tree, &state->sinfo);
+	if (tevent_req_nomem(subreq2, req)) {
+		return;
+	}
+	subreq2->async.fn = rename_dir_bench_set_doc;
+	subreq2->async.private_data = req;
+}
+
+static void rename_dir_bench_set_doc(struct smb2_request *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		subreq->async.private_data, struct tevent_req);
+	struct rename_dir_bench_state *state = tevent_req_data(
+		req, struct rename_dir_bench_state);
+	NTSTATUS status;
+
+	status = smb2_setinfo_recv(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	ZERO_STRUCT(state->cl);
+	state->cl.in.file.handle = state->file;
+
+	subreq = smb2_close_send(state->tree, &state->cl);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = rename_dir_bench_closed;
+	subreq->async.private_data = req;
+}
+
+static void rename_dir_bench_closed(struct smb2_request *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		subreq->async.private_data, struct tevent_req);
+	struct smb2_close cl;
+	NTSTATUS status;
+
+	status = smb2_close_recv(subreq, &cl);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS rename_dir_bench_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct rename_dirs_bench_state {
+	unsigned num_reqs;
+	unsigned num_done;
+};
+
+static void rename_dirs_bench_done(struct tevent_req *subreq);
+
+static struct tevent_req *rename_dirs_bench_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct smb2_tree *tree,
+						 const char *base_name,
+						 unsigned num_parallel,
+						 unsigned max_renames,
+						 unsigned *rename_counter)
+{
+	struct tevent_req *req;
+	struct rename_dirs_bench_state *state;
+	unsigned i;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rename_dirs_bench_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->num_reqs = num_parallel;
+	state->num_done = 0;
+
+	for (i=0; i<num_parallel; i++) {
+		struct tevent_req *subreq;
+		char *sub_base;
+
+		sub_base = talloc_asprintf(state, "%s-%u", base_name, i);
+		if (tevent_req_nomem(sub_base, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = rename_dir_bench_send(state, ev, tree, sub_base,
+					       max_renames, rename_counter);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, rename_dirs_bench_done, req);
+	}
+	return req;
+}
+
+static void rename_dirs_bench_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rename_dirs_bench_state *state = tevent_req_data(
+		req, struct rename_dirs_bench_state);
+	NTSTATUS status;
+
+	status = rename_dir_bench_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->num_done += 1;
+	if (state->num_done >= state->num_reqs) {
+		tevent_req_done(req);
+	}
+}
+
+static NTSTATUS rename_dirs_bench_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool torture_smb2_rename_dir_bench(struct torture_context *tctx,
+					  struct smb2_tree *tree)
+{
+	struct tevent_req *req;
+	NTSTATUS status;
+	unsigned counter = 0;
+	bool ret;
+
+	req = rename_dirs_bench_send(tctx, tctx->ev, tree, "dir", 3, 10,
+				     &counter);
+	torture_assert(tctx, req != NULL, "rename_dirs_bench_send failed");
+
+	ret = tevent_req_poll(req, tctx->ev);
+	torture_assert(tctx, ret, "tevent_req_poll failed");
+
+	status = rename_dirs_bench_recv(req);
+	torture_comment(tctx, "rename_dirs_bench returned %s\n",
+			nt_errstr(status));
+	TALLOC_FREE(req);
+	torture_assert_ntstatus_ok(tctx, status, "bench failed");
+	return true;
+}
 
 
 /*
@@ -964,6 +1335,10 @@ struct torture_suite *torture_smb2_rename_init(void)
 	torture_suite_add_1smb2_test(suite,
 		"msword",
 		torture_smb2_rename_msword);
+
+	torture_suite_add_1smb2_test(suite,
+		"rename_dir_bench",
+		torture_smb2_rename_dir_bench);
 
 	suite->description = talloc_strdup(suite, "smb2.rename tests");
 

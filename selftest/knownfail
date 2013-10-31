@@ -122,6 +122,7 @@
 ^samba4.smb2.rename.share_delete_no_delete_access\(.*\)$
 ^samba4.smb2.rename.no_share_delete_no_delete_access\(.*\)$
 ^samba4.smb2.rename.msword
+^samba4.smb2.rename.rename_dir_bench\(dc\)
 ^samba4.smb2.oplock.doc
 ^samba4.smb2.compound.related3
 ^samba4.smb2.compound.compound-break
