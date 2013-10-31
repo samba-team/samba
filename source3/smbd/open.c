@@ -152,6 +152,48 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 }
 
 /****************************************************************************
+ Ensure when opening a base file for a stream open that we have permissions
+ to do so given the access mask on the base file.
+****************************************************************************/
+
+static NTSTATUS check_base_file_access(struct connection_struct *conn,
+				struct smb_filename *smb_fname,
+				uint32_t access_mask)
+{
+	uint32_t access_granted = 0;
+	NTSTATUS status;
+
+	status = smbd_calculate_access_mask(conn, smb_fname,
+					false,
+					access_mask,
+					&access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("smbd_calculate_access_mask "
+			"on file %s returned %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status)));
+		return status;
+	}
+
+	if (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) {
+		uint32_t dosattrs;
+		if (!CAN_WRITE(conn)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		dosattrs = dos_mode(conn, smb_fname);
+ 		if (IS_DOS_READONLY(dosattrs)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+
+	return smbd_check_open_rights(conn,
+				smb_fname,
+				access_mask,
+				&access_granted);
+}
+
+/****************************************************************************
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
@@ -3227,6 +3269,25 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		if (SMB_VFS_STAT(conn, smb_fname_base) == -1) {
 			DEBUG(10, ("Unable to stat stream: %s\n",
 				   smb_fname_str_dbg(smb_fname_base)));
+		} else {
+			/*
+			 * https://bugzilla.samba.org/show_bug.cgi?id=10229
+			 * We need to check if the requested access mask
+			 * could be used to open the underlying file (if
+			 * it existed), as we're passing in zero for the
+			 * access mask to the base filename.
+			 */
+			status = check_base_file_access(conn,
+							smb_fname_base,
+							access_mask);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("Permission check "
+					"for base %s failed: "
+					"%s\n", smb_fname->base_name,
+					nt_errstr(status)));
+				goto fail;
+			}
 		}
 
 		/* Open the base file. */
