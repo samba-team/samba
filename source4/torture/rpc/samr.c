@@ -2298,6 +2298,84 @@ static bool test_ChangePasswordUser2(struct dcerpc_pipe *p, struct torture_conte
 }
 
 
+static bool test_ChangePasswordUser2_ntstatus(struct dcerpc_pipe *p, struct torture_context *tctx,
+					      const char *acct_name,
+					      const char *password, NTSTATUS status)
+{
+	struct samr_ChangePasswordUser2 r;
+	bool ret = true;
+	struct lsa_String server, account;
+	struct samr_CryptPassword nt_pass, lm_pass;
+	struct samr_Password nt_verifier, lm_verifier;
+	const char *oldpass;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_lm_hash[16], new_lm_hash[16];
+
+	struct samr_GetDomPwInfo dom_pw_info;
+	struct samr_PwInfo info;
+
+	struct lsa_String domain_name;
+	char *newpass;
+	int policy_min_pw_len = 0;
+
+	domain_name.string = "";
+	dom_pw_info.in.domain_name = &domain_name;
+	dom_pw_info.out.info = &info;
+
+	torture_comment(tctx, "Testing ChangePasswordUser2 on %s\n", acct_name);
+
+	oldpass = password;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_GetDomPwInfo_r(b, tctx, &dom_pw_info),
+				   "GetDomPwInfo failed");
+	if (NT_STATUS_IS_OK(dom_pw_info.out.result)) {
+		policy_min_pw_len = dom_pw_info.out.info->min_password_length;
+	}
+
+	newpass = samr_rand_pass(tctx, policy_min_pw_len);
+
+	server.string = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	init_lsa_String(&account, acct_name);
+
+	E_md4hash(oldpass, old_nt_hash);
+	E_md4hash(newpass, new_nt_hash);
+
+	E_deshash(oldpass, old_lm_hash);
+	E_deshash(newpass, new_lm_hash);
+
+	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII|STR_TERMINATE);
+	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
+
+	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
+	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.nt_password = &nt_pass;
+	r.in.nt_verifier = &nt_verifier;
+	r.in.lm_change = 1;
+	r.in.lm_password = &lm_pass;
+	r.in.lm_verifier = &lm_verifier;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_ChangePasswordUser2_r(b, tctx, &r),
+		"ChangePasswordUser2 failed");
+	torture_comment(tctx, "(%s:%s) old_password[%s] new_password[%s] status[%s]\n",
+			__location__, __FUNCTION__,
+			oldpass, newpass, nt_errstr(r.out.result));
+
+	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
+		torture_comment(tctx, "ChangePasswordUser2 returned: %s perhaps min password age? (not fatal)\n", nt_errstr(r.out.result));
+	} else {
+		torture_assert_ntstatus_equal(tctx, r.out.result, status, "ChangePasswordUser2 returned unexpected value");
+	}
+
+	return true;
+}
+
+
 bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tctx,
 			      const char *account_string,
 			      int policy_min_pw_len,
@@ -4066,14 +4144,16 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static bool test_QueryUserInfo_acct_flags(struct dcerpc_binding_handle *b,
-					  struct torture_context *tctx,
-					  struct policy_handle *domain_handle,
-					  const char *acct_name,
-					  uint32_t *acct_flags)
+static bool test_QueryUserInfo_lockout(struct dcerpc_binding_handle *b,
+				       struct torture_context *tctx,
+				       struct policy_handle *domain_handle,
+				       const char *acct_name,
+				       uint16_t raw_bad_password_count,
+				       uint16_t effective_bad_password_count,
+				       uint32_t effective_acb_lockout)
 {
 	struct policy_handle user_handle;
-	union samr_UserInfo *info;
+	union samr_UserInfo *i;
 	struct samr_QueryUserInfo r;
 
 	NTSTATUS status = test_OpenUser_byname(b, tctx, domain_handle, acct_name, &user_handle);
@@ -4082,19 +4162,73 @@ static bool test_QueryUserInfo_acct_flags(struct dcerpc_binding_handle *b,
 	}
 
 	r.in.user_handle = &user_handle;
-	r.in.level = 16;
-	r.out.info = &info;
-
+	r.in.level = 3;
+	r.out.info = &i;
 	torture_comment(tctx, "Testing QueryUserInfo level %d", r.in.level);
-
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo_r(b, tctx, &r),
 		"failed to query userinfo");
 	torture_assert_ntstatus_ok(tctx, r.out.result,
 		"failed to query userinfo");
+	torture_comment(tctx, "  (acct_flags: 0x%08x) (raw_bad_pwd_count: %u)\n",
+			i->info3.acct_flags, i->info3.bad_password_count);
+	torture_assert_int_equal(tctx, i->info3.bad_password_count,
+				 raw_bad_password_count,
+				 "raw badpwdcount");
+	torture_assert_int_equal(tctx, i->info3.acct_flags & ACB_AUTOLOCK,
+				 effective_acb_lockout,
+				 "effective acb_lockout");
+	TALLOC_FREE(i);
 
-	*acct_flags = info->info16.acct_flags;
+	r.in.user_handle = &user_handle;
+	r.in.level = 5;
+	r.out.info = &i;
+	torture_comment(tctx, "Testing QueryUserInfo level %d", r.in.level);
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo_r(b, tctx, &r),
+		"failed to query userinfo");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"failed to query userinfo");
+	torture_comment(tctx, "  (acct_flags: 0x%08x) (effective_bad_pwd_count: %u)\n",
+			i->info5.acct_flags, i->info5.bad_password_count);
+	torture_assert_int_equal(tctx, i->info5.bad_password_count,
+				 effective_bad_password_count,
+				 "effective badpwdcount");
+	torture_assert_int_equal(tctx, i->info5.acct_flags & ACB_AUTOLOCK,
+				 effective_acb_lockout,
+				 "effective acb_lockout");
+	TALLOC_FREE(i);
 
-	torture_comment(tctx, "  (acct_flags: 0x%08x)\n", *acct_flags);
+	r.in.user_handle = &user_handle;
+	r.in.level = 16;
+	r.out.info = &i;
+	torture_comment(tctx, "Testing QueryUserInfo level %d", r.in.level);
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo_r(b, tctx, &r),
+		"failed to query userinfo");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"failed to query userinfo");
+	torture_comment(tctx, "  (acct_flags: 0x%08x)\n",
+			i->info16.acct_flags);
+	torture_assert_int_equal(tctx, i->info16.acct_flags & ACB_AUTOLOCK,
+				 effective_acb_lockout,
+				 "effective acb_lockout");
+	TALLOC_FREE(i);
+
+	r.in.user_handle = &user_handle;
+	r.in.level = 21;
+	r.out.info = &i;
+	torture_comment(tctx, "Testing QueryUserInfo level %d", r.in.level);
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo_r(b, tctx, &r),
+		"failed to query userinfo");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"failed to query userinfo");
+	torture_comment(tctx, "  (acct_flags: 0x%08x) (effective_bad_pwd_count: %u)\n",
+			i->info21.acct_flags, i->info21.bad_password_count);
+	torture_assert_int_equal(tctx, i->info21.bad_password_count,
+				 effective_bad_password_count,
+				 "effective badpwdcount");
+	torture_assert_int_equal(tctx, i->info21.acct_flags & ACB_AUTOLOCK,
+				 effective_acb_lockout,
+				 "effective acb_lockout");
+	TALLOC_FREE(i);
 
 	if (!test_samr_handle_Close(b, tctx, &user_handle)) {
 		return false;
@@ -4121,7 +4255,6 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 				  struct samr_DomInfo12 *info12)
 {
 	union samr_DomainInfo info;
-	uint32_t badpwdcount;
 	uint64_t lockout_threshold = 1;
 	uint32_t lockout_seconds = 5;
 	uint64_t delta_time_factor = 10 * 1000 * 1000;
@@ -4209,9 +4342,9 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 	}
 
 	torture_assert(tctx,
-		test_QueryUserInfo_badpwdcount(b, tctx, user_handle, &badpwdcount), "");
-	torture_assert_int_equal(tctx, badpwdcount, 0, "expected badpwdcount to be 0");
-
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			0, 0, 0),
+		"expected account to not be locked");
 
 	/* test with wrong password ==> lockout */
 
@@ -4221,16 +4354,14 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 		torture_fail(tctx, "succeeded to authenticate with wrong password");
 	}
 
+	/*
+	 * curiously, windows does _not_ return fresh values of
+	 * effective bad_password_count and ACB_AUTOLOCK.
+	 */
 	torture_assert(tctx,
-		test_QueryUserInfo_badpwdcount(b, tctx, user_handle, &badpwdcount), "");
-	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
-
-	/* curiously, windows does _not_ set the autlock flag unless you re-open the user */
-	torture_assert(tctx,
-		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
-	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, ACB_AUTOLOCK,
-				 "expected account to be locked");
-
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to not be locked");
 
 	/* test with good password */
 
@@ -4243,15 +4374,30 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 
 	/* bad pwd count should not get updated */
 	torture_assert(tctx,
-		test_QueryUserInfo_badpwdcount(b, tctx, user_handle, &badpwdcount), "");
-	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to be locked");
 
-	/* curiously, windows does _not_ set the autlock flag unless you re-open the user */
 	torture_assert(tctx,
-		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
-	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, ACB_AUTOLOCK,
-				 "expected account to be locked");
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, *password,
+							 NT_STATUS_ACCOUNT_LOCKED_OUT),
+		       "got wrong status from ChangePasswordUser2");
 
+	/* bad pwd count should not get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to be locked");
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, "random_crap", NT_STATUS_ACCOUNT_LOCKED_OUT),
+		       "got wrong status from ChangePasswordUser2");
+
+	/* bad pwd count should not get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to be locked");
 
 	/* with bad password */
 
@@ -4264,20 +4410,19 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 
 	/* bad pwd count should not get updated */
 	torture_assert(tctx,
-		test_QueryUserInfo_badpwdcount(b, tctx, user_handle, &badpwdcount), "");
-	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
-
-	/* curiously, windows does _not_ set the autlock flag untill you re-open the user */
-	torture_assert(tctx,
-		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
-	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, ACB_AUTOLOCK,
-				 "expected account to show ACB_AUTOLOCK");
-
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to be locked");
 
 	/* let lockout duration expire ==> unlock */
 
 	torture_comment(tctx, "let lockout duration expire...\n");
 	sleep(lockout_seconds + 1);
+
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 0, 0),
+		"expected account to not be locked");
 
 	if (!test_SamLogon_with_creds(tctx, np, machine_credentials, acct_name,
 				     *password,
@@ -4286,10 +4431,172 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 		torture_fail(tctx, "failed to authenticate after lockout expired");
 	}
 
+	if (NT_STATUS_IS_OK(expected_success_status)) {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				0, 0, 0),
+			"expected account to not be locked");
+	} else {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				1, 0, 0),
+			"expected account to not be locked");
+	}
+
 	torture_assert(tctx,
-		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
-	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
-				 "expected account not to be locked");
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, "random_crap", NT_STATUS_WRONG_PASSWORD),
+		       "got wrong status from ChangePasswordUser2");
+
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to be locked");
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, *password, NT_STATUS_ACCOUNT_LOCKED_OUT),
+		       "got wrong status from ChangePasswordUser2");
+
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to be locked");
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, "random_crap", NT_STATUS_ACCOUNT_LOCKED_OUT),
+		       "got wrong status from ChangePasswordUser2");
+
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, ACB_AUTOLOCK),
+		"expected account to be locked");
+
+	/* let lockout duration expire ==> unlock */
+
+	torture_comment(tctx, "let lockout duration expire...\n");
+	sleep(lockout_seconds + 1);
+
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 0, 0),
+		"expected account to not be locked");
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials, acct_name,
+				     *password,
+				     expected_success_status, interactive))
+	{
+		torture_fail(tctx, "failed to authenticate after lockout expired");
+	}
+
+	if (NT_STATUS_IS_OK(expected_success_status)) {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				0, 0, 0),
+			"expected account to not be locked");
+	} else {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				1, 0, 0),
+			"expected account to not be locked");
+	}
+
+	/* Testing ChangePasswordUser behaviour with 3 attempts */
+	info.info12.lockout_threshold = 3;
+
+	torture_assert(tctx,
+		       test_SetDomainInfo(b, tctx, domain_handle,
+					  DomainLockoutInformation, &info),
+		       "failed to set lockout threshold to 3");
+
+	if (NT_STATUS_IS_OK(expected_success_status)) {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				0, 0, 0),
+			"expected account to not be locked");
+	} else {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				1, 0, 0),
+			"expected account to not be locked");
+	}
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, "random_crap", NT_STATUS_WRONG_PASSWORD),
+		       "got wrong status from ChangePasswordUser2");
+
+	/* bad pwd count will get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			1, 1, 0),
+		"expected account to not be locked");
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, "random_crap", NT_STATUS_WRONG_PASSWORD),
+		       "got wrong status from ChangePasswordUser2");
+
+	/* bad pwd count will get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			2, 2, 0),
+		"expected account to not be locked");
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, "random_crap", NT_STATUS_WRONG_PASSWORD),
+		       "got wrong status from ChangePasswordUser2");
+
+	/* bad pwd count should get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			3, 3, ACB_AUTOLOCK),
+		"expected account to be locked");
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2_ntstatus(p, tctx, acct_name, *password, NT_STATUS_ACCOUNT_LOCKED_OUT),
+		       "got wrong status from ChangePasswordUser2");
+
+	/* bad pwd count should not get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			3, 3, ACB_AUTOLOCK),
+		"expected account to be locked");
+
+	/* let lockout duration expire ==> unlock */
+
+	torture_comment(tctx, "let lockout duration expire...\n");
+	sleep(lockout_seconds + 1);
+
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			3, 0, 0),
+		"expected account to not be locked");
+
+	torture_assert(tctx,
+		       test_ChangePasswordUser2(p, tctx, acct_name, password, NULL, false),
+		       "got wrong status from ChangePasswordUser2");
+
+	torture_assert(tctx,
+		test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+			3, 0, 0),
+		"expected account to not be locked");
+
+	/* Used to reset the badPwdCount for the other tests */
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials, acct_name,
+				      *password,
+				      expected_success_status, interactive))
+	{
+		torture_fail(tctx, "failed to authenticate after lockout expired");
+	}
+
+	if (NT_STATUS_IS_OK(expected_success_status)) {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				0, 0, 0),
+			"expected account to not be locked");
+	} else {
+		torture_assert(tctx,
+			test_QueryUserInfo_lockout(b, tctx, domain_handle, acct_name,
+				3, 0, 0),
+			"expected account to not be locked");
+	}
 
 	return true;
 }

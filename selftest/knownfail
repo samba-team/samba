@@ -212,6 +212,7 @@
 ^samba3.smb2.compound.interim2 # wrong return code (STATUS_CANCELLED)
 ^samba3.raw.session.*reauth2 # maybe fix this?
 ^samba3.rpc.samr.passwords.badpwdcount.samr.badPwdCount\(s3dc\) # We fail this test currently
+^samba3.rpc.samr.passwords.lockout.*\(s3dc\)$ # We fail this test currently
 ^samba3.rpc.spoolss.printer.addprinter.driver_info_winreg # knownfail or flapping?
 ^samba3.rpc.spoolss.printer.addprinterex.driver_info_winreg # knownfail or flapping?
 ^samba3.rpc.spoolss.printer.*.publish_toggle\(.*\)$ # needs spoolss AD member env
