@@ -79,7 +79,7 @@ create_ganesha_recdirs ()
             fi
         fi
     else
-        if ! ln -s $MNTPT/.ganesha  $GANRECDIR ; then
+        if ! ln -sf $MNTPT/.ganesha  $GANRECDIR ; then
             echo "ln failed"
         fi
     fi
