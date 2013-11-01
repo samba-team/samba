@@ -644,13 +644,12 @@ static void do_break_to_none(struct tevent_context *ctx,
 
 	lck = get_existing_share_mode_lock(talloc_tos(), state->id);
 	if (lck == NULL) {
-		DEBUG(1, ("release_level_2_oplocks_on_change: failed to lock "
-			  "share mode entry for file %s.\n",
-			  file_id_string_tos(&state->id)));
+		DEBUG(1, ("%s: failed to lock share mode entry for file %s.\n",
+			  __func__, file_id_string_tos(&state->id)));
 		goto done;
 	}
 
-	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
+	DEBUG(10,("%s: num_share_modes = %d\n", __func__,
 		  lck->data->num_share_modes ));
 
 	for(i = 0; i < lck->data->num_share_modes; i++) {
@@ -672,8 +671,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 		 * NO_OPLOCK states. JRA.
 		 */
 
-		DEBUG(10,("release_level_2_oplocks_on_change: "
-			  "share_entry[%i]->op_type == %d\n",
+		DEBUG(10,("%s: share_entry[%i]->op_type == %d\n", __func__,
 			  i, share_entry->op_type ));
 
 		if (share_entry->op_type == NO_OPLOCK) {
@@ -682,9 +680,9 @@ static void do_break_to_none(struct tevent_context *ctx,
 
 		/* Paranoia .... */
 		if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
-			DEBUG(0,("release_level_2_oplocks_on_change: PANIC. "
+			DEBUG(0,("%s: PANIC. "
 				 "share mode entry %d is an exlusive "
-				 "oplock !\n", i ));
+				 "oplock !\n", __func__, i ));
 			TALLOC_FREE(lck);
 			abort();
 		}
