@@ -142,7 +142,7 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 									p);
 				if (!NT_STATUS_IS_OK(status)) {
 					close(fd);
-					return status;
+					goto done;
 				}
 			}
 		}
@@ -201,13 +201,15 @@ NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
 								       sizeof(struct sockaddr_storage),
 								       &bind_addr);
 				if (rc < 0) {
-					return NT_STATUS_NO_MEMORY;
+					status = NT_STATUS_NO_MEMORY;
+					goto done;
 				}
 
 				addr = tsocket_address_inet_addr_string(bind_addr,
 									tmp_ctx);
 				if (addr == NULL) {
-					return NT_STATUS_NO_MEMORY;
+					status = NT_STATUS_NO_MEMORY;
+					goto done;
 				}
 
 				status = dcerpc_binding_vector_add_port(iface,
@@ -215,7 +217,7 @@ NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
 									addr,
 									p);
 				if (!NT_STATUS_IS_OK(status)) {
-					return status;
+					goto done;
 				}
 			}
 		}
@@ -247,7 +249,8 @@ NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
 							    &ss,
 							    port);
 			if (p == 0) {
-				return NT_STATUS_UNSUCCESSFUL;
+				status = NT_STATUS_UNSUCCESSFUL;
+				goto done;
 			}
 
 			if (bvec != NULL) {
@@ -256,7 +259,7 @@ NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
 									sock_tok,
 									p);
 				if (!NT_STATUS_IS_OK(status)) {
-					return status;
+					goto done;
 				}
 			}
 		}
