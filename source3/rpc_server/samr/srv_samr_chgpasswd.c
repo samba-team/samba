@@ -1106,6 +1106,8 @@ NTSTATUS pass_oem_change(char *user, const char *rhost,
 	struct samu *sampass = NULL;
 	NTSTATUS nt_status;
 	bool ret = false;
+	bool updated_badpw = false;
+	NTSTATUS update_login_attempts_status;
 
 	if (!(sampass = samu_new(NULL))) {
 		return NT_STATUS_NO_MEMORY;
@@ -1121,6 +1123,13 @@ NTSTATUS pass_oem_change(char *user, const char *rhost,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	/* Quit if the account was locked out. */
+	if (pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK) {
+		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", user));
+		TALLOC_FREE(sampass);
+		return NT_STATUS_ACCOUNT_LOCKED_OUT;
+	}
+
 	nt_status = check_oem_password(user,
 				       password_encrypted_with_lm_hash,
 				       old_lm_hash_encrypted,
@@ -1128,6 +1137,52 @@ NTSTATUS pass_oem_change(char *user, const char *rhost,
 				       old_nt_hash_encrypted,
 				       sampass,
 				       &new_passwd);
+
+	/*
+	 * Notify passdb backend of login success/failure. If not
+	 * NT_STATUS_OK the backend doesn't like the login
+	 */
+	update_login_attempts_status = pdb_update_login_attempts(sampass,
+						NT_STATUS_IS_OK(nt_status));
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		bool increment_bad_pw_count = false;
+
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) &&
+		    (pdb_get_acct_ctrl(sampass) & ACB_NORMAL) &&
+		    NT_STATUS_IS_OK(update_login_attempts_status))
+		{
+			increment_bad_pw_count = true;
+		}
+
+		if (increment_bad_pw_count) {
+			pdb_increment_bad_password_count(sampass);
+			updated_badpw = true;
+		} else {
+			pdb_update_bad_password_count(sampass,
+						      &updated_badpw);
+		}
+	} else {
+
+		if ((pdb_get_acct_ctrl(sampass) & ACB_NORMAL) &&
+		    (pdb_get_bad_password_count(sampass) > 0)){
+			pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
+			pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
+			updated_badpw = true;
+		}
+	}
+
+	if (updated_badpw) {
+		NTSTATUS update_status;
+		become_root();
+		update_status = pdb_update_sam_account(sampass);
+		unbecome_root();
+
+		if (!NT_STATUS_IS_OK(update_status)) {
+			DEBUG(1, ("Failed to modify entry: %s\n",
+				  nt_errstr(update_status)));
+		}
+	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(sampass);

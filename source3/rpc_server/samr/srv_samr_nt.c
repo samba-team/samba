@@ -1722,9 +1722,11 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 	NTSTATUS status;
 	bool ret = false;
 	struct samr_user_info *uinfo;
-	struct samu *pwd;
+	struct samu *pwd = NULL;
 	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
 	struct samr_Password lm_pwd, nt_pwd;
+	bool updated_badpw = false;
+	NTSTATUS update_login_attempts_status;
 
 	uinfo = policy_handle_find(p, r->in.user_handle,
 				   SAMR_USER_ACCESS_SET_PASSWORD, NULL,
@@ -1735,6 +1737,15 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 
 	DEBUG(5,("_samr_ChangePasswordUser: sid:%s\n",
 		  sid_string_dbg(&uinfo->sid)));
+
+	/* basic sanity checking on parameters.  Do this before any database ops */
+	if (!r->in.lm_present || !r->in.nt_present ||
+	    !r->in.old_lm_crypted || !r->in.new_lm_crypted ||
+	    !r->in.old_nt_crypted || !r->in.new_nt_crypted) {
+		/* we should really handle a change with lm not
+		   present */
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	if (!(pwd = samu_new(NULL))) {
 		return NT_STATUS_NO_MEMORY;
@@ -1749,6 +1760,14 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
+	/* Quit if the account was locked out. */
+	if (pdb_get_acct_ctrl(pwd) & ACB_AUTOLOCK) {
+		DEBUG(3, ("Account for user %s was locked out.\n",
+			  pdb_get_username(pwd)));
+		status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+		goto out;
+	}
+
 	{
 		const uint8_t *lm_pass, *nt_pass;
 
@@ -1757,21 +1776,11 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 
 		if (!lm_pass || !nt_pass) {
 			status = NT_STATUS_WRONG_PASSWORD;
-			goto out;
+			goto update_login;
 		}
 
 		memcpy(&lm_pwd.hash, lm_pass, sizeof(lm_pwd.hash));
 		memcpy(&nt_pwd.hash, nt_pass, sizeof(nt_pwd.hash));
-	}
-
-	/* basic sanity checking on parameters.  Do this before any database ops */
-	if (!r->in.lm_present || !r->in.nt_present ||
-	    !r->in.old_lm_crypted || !r->in.new_lm_crypted ||
-	    !r->in.old_nt_crypted || !r->in.new_nt_crypted) {
-		/* we should really handle a change with lm not
-		   present */
-		status = NT_STATUS_INVALID_PARAMETER_MIX;
-		goto out;
 	}
 
 	/* decrypt and check the new lm hash */
@@ -1779,7 +1788,7 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 	D_P16(new_lmPwdHash.hash, r->in.old_lm_crypted->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, lm_pwd.hash, 16) != 0) {
 		status = NT_STATUS_WRONG_PASSWORD;
-		goto out;
+		goto update_login;
 	}
 
 	/* decrypt and check the new nt hash */
@@ -1787,7 +1796,7 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 	D_P16(new_ntPwdHash.hash, r->in.old_nt_crypted->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, nt_pwd.hash, 16) != 0) {
 		status = NT_STATUS_WRONG_PASSWORD;
-		goto out;
+		goto update_login;
 	}
 
 	/* The NT Cross is not required by Win2k3 R2, but if present
@@ -1796,7 +1805,7 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 		D_P16(lm_pwd.hash, r->in.nt_cross->hash, checkHash.hash);
 		if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
 			status = NT_STATUS_WRONG_PASSWORD;
-			goto out;
+			goto update_login;
 		}
 	}
 
@@ -1806,7 +1815,7 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 		D_P16(nt_pwd.hash, r->in.lm_cross->hash, checkHash.hash);
 		if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
 			status = NT_STATUS_WRONG_PASSWORD;
-			goto out;
+			goto update_login;
 		}
 	}
 
@@ -1817,6 +1826,55 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 	}
 
 	status = pdb_update_sam_account(pwd);
+
+update_login:
+
+	/*
+	 * Notify passdb backend of login success/failure. If not
+	 * NT_STATUS_OK the backend doesn't like the login
+	 */
+	update_login_attempts_status = pdb_update_login_attempts(pwd,
+						NT_STATUS_IS_OK(status));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		bool increment_bad_pw_count = false;
+
+		if (NT_STATUS_EQUAL(status,NT_STATUS_WRONG_PASSWORD) &&
+		    (pdb_get_acct_ctrl(pwd) & ACB_NORMAL) &&
+		    NT_STATUS_IS_OK(update_login_attempts_status))
+		{
+			increment_bad_pw_count = true;
+		}
+
+		if (increment_bad_pw_count) {
+			pdb_increment_bad_password_count(pwd);
+			updated_badpw = true;
+		} else {
+			pdb_update_bad_password_count(pwd,
+						      &updated_badpw);
+		}
+	} else {
+
+		if ((pdb_get_acct_ctrl(pwd) & ACB_NORMAL) &&
+		    (pdb_get_bad_password_count(pwd) > 0)){
+			pdb_set_bad_password_count(pwd, 0, PDB_CHANGED);
+			pdb_set_bad_password_time(pwd, 0, PDB_CHANGED);
+			updated_badpw = true;
+		}
+	}
+
+	if (updated_badpw) {
+		NTSTATUS update_status;
+		become_root();
+		update_status = pdb_update_sam_account(pwd);
+		unbecome_root();
+
+		if (!NT_STATUS_IS_OK(update_status)) {
+			DEBUG(1, ("Failed to modify entry: %s\n",
+				  nt_errstr(update_status)));
+		}
+	}
+
  out:
 	TALLOC_FREE(pwd);
 
