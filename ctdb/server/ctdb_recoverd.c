@@ -2643,6 +2643,11 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct election_message *em = (struct election_message *)data.dptr;
 	TALLOC_CTX *mem_ctx;
 
+	/* Ignore election packets from ourself */
+	if (ctdb->pnn == em->pnn) {
+		return;
+	}
+
 	/* we got an election packet - update the timeout for the election */
 	talloc_free(rec->election_timeout);
 	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
