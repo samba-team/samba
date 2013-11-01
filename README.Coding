@@ -377,3 +377,17 @@ do not use them in new code.
 
 The only exception is the test code that depends repeated use of calls
 like CHECK_STATUS, CHECK_VAL and others.
+
+
+Function names in DEBUG statements
+----------------------------------
+
+Many DEBUG statements contain the name of the function they appear in. This is
+not a good idea, as this is prone to bitrot. Function names change, code
+moves, but the DEBUG statements are not adapted. Use %s and __func__ for this:
+
+Bad Example:
+	DEBUG(0, ("strstr_m: src malloc fail\n"));
+
+Good Example:
+	DEBUG(0, ("%s: src malloc fail\n", __func__));
