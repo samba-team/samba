@@ -158,6 +158,11 @@ void cldapd_rootdse_request(struct cldap_socket *cldap,
 	reply.response		= NULL;
 	reply.result		= &result;
 
+	/* Note: The remoteAddress should rather be set on a ldb request.
+	 * We can set this savely on the context here,
+	 * since cldapd_rootdse_fill operates synchronously. */
+	ldb_set_opaque(cldapd->samctx, "remoteAddress", src);
+
 	cldapd_rootdse_fill(cldapd, tmp_ctx, search, &reply.response,
 			    reply.result);
 
