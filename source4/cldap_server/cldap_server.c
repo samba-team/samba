@@ -80,18 +80,6 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 		return;
 	}
 
-	if (search->num_attributes == 1 &&
-	    strcasecmp(search->attributes[0], "netlogon") == 0) {
-		cldapd_netlogon_request(cldap,
-					cldapd,
-					in,
-					in->ldap_msg->messageid,
-					search->tree,
-					in->src);
-		talloc_free(in);
-		return;
-	}
-
 	cldapd_rootdse_request(cldap, cldapd, in,
 			       in->ldap_msg->messageid,
 			       search, in->src);
