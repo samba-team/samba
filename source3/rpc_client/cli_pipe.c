@@ -2301,7 +2301,8 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	if (ndr_syntax_id_equal(&table->syntax_id,
 				&ndr_table_epmapper.syntax_id)) {
 		*pport = 135;
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
 	/* open the connection to the endpoint mapper */
