@@ -463,7 +463,7 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 	if (DEBUGLVL(3)) cldap_dump_results(&search);
 
 	printf("Testing objectClass=* and netlogon\n");
-	search.in.filter = "(objectclass2=*)";
+	search.in.filter = "(objectclass=*)";
 	search.in.attributes = attrs3;
 
 	status = cldap_search(cldap, tctx, &search);
