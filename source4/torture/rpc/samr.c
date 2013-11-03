@@ -4103,6 +4103,10 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 	uint64_t delta_time_factor = 10 * 1000 * 1000;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		lockout_seconds = 60;
+	}
+
 	torture_comment(tctx, "\nTesting account lockout: %s\n", comment);
 
 	/* set policies */
