@@ -1300,7 +1300,7 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_file(struct vfs_handle_struct *handle,
 {
 	struct smb_acl_t *result;
 	char *buf;
-	char *key;
+	const char *key;
 	ssize_t ret;
 
 	switch (type) {
@@ -1363,7 +1363,7 @@ static int vfs_gluster_sys_acl_set_file(struct vfs_handle_struct *handle,
 					SMB_ACL_T theacl)
 {
 	int ret;
-	char *key;
+	const char *key;
 	char *buf;
 	ssize_t size;
 
