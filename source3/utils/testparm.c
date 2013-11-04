@@ -66,6 +66,7 @@ static int do_global_checks(void)
 {
 	int ret = 0;
 	SMB_STRUCT_STAT st;
+	const char *socket_options;
 
 	if (lp_security() >= SEC_DOMAIN && !lp_encrypted_passwords()) {
 		fprintf(stderr, "ERROR: in 'security=domain' mode the "
@@ -130,6 +131,38 @@ static int do_global_checks(void)
 	if (lp_passdb_expand_explicit()) {
 		fprintf(stderr, "WARNING: passdb expand explicit = yes is "
 				"deprecated\n\n");
+	}
+
+	/*
+	 * Socket options.
+	 */
+	socket_options = lp_socket_options();
+	if (socket_options != NULL &&
+	    (strstr(socket_options, "SO_SNDBUF") ||
+	     strstr(socket_options, "SO_RCVBUF") ||
+	     strstr(socket_options, "SO_SNDLOWAT") ||
+	     strstr(socket_options, "SO_RCVLOWAT") ||
+	     strstr(socket_options, "TCP_NODELAY"))) {
+		fprintf(stderr,
+			"WARNING: socket options = %s\n"
+			"This warning is printed because you set one of the\n"
+			"following options: SO_SNDBUF, SO_RCVBUF, SO_SNDLOWAT,\n"
+			"SO_RCVLOWAT, TCP_NODELAY\n"
+			"Modern server operating systems are tuned for\n"
+			"high network performance in the majority of situations;\n"
+			"when you set 'socket options' you are overriding those\n"
+			"settings.\n"
+			"Linux in particular has an auto-tuning mechanism for\n"
+			"buffer sizes (SO_SNDBUF, SO_RCVBUF) that will be\n"
+			"disabled if you specify a socket buffer size. This can\n"
+			"potentially cripple your TCP/IP stack.\n\n"
+			"Getting the 'socket options' correct can make a big\n"
+			"difference to your performance, but getting them wrong\n"
+			"can degrade it by just as much. As with any other low\n"
+			"level setting, if you must make changes to it, make\n "
+			"small changes and test the effect before making any\n"
+			"large changes.\n\n",
+			socket_options);
 	}
 
 	/*
