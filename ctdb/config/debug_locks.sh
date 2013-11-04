@@ -7,9 +7,17 @@
 # This script can be used only if Samba is configured to use fcntl locks
 # rather than mutex locks.
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
+
+. "$CTDB_BASE/functions"
+
+loadconfig ctdb
+
 # Create sed expression to convert inodes to names
-sed_cmd=$( ls -li /var/ctdb/*.tdb.* /var/ctdb/persistent/*.tdb.* |
-	   sed -e "s#/var/ctdb[/persistent]*/\(.*\)#\1#" |
+sed_cmd=$( ls -li "$CTDB_DBDIR"/*.tdb.* "$CTDB_DBDIR_PERSISTENT"/*.tdb.* |
+	   sed -e "s#${CTDB_DBDIR}/\(.*\)#\1#" \
+	       -e "s#${CTDB_DBDIR_PERSISTENT}/\(.*\)#\1#" |
 	   awk '{printf "s#[0-9]*:[0-9]*:%s #%s #\n", $1, $10}' )
 
 # Parse /proc/locks and extract following information
