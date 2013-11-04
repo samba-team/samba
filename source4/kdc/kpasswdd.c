@@ -181,8 +181,13 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 						reply);
 	}
 
-	status = samdb_result_passwords(mem_ctx, kdc->task->lp_ctx, msg,
-					&oldLmHash, &oldNtHash);
+	/*
+	 * No need to check for password lockout here, the KDC will
+	 * have done that when issuing the ticket, which is not based
+	 * on the user's password
+	 */
+	status = samdb_result_passwords_no_lockout(mem_ctx, kdc->task->lp_ctx, msg,
+						   &oldLmHash, &oldNtHash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx,
 						KRB5_KPASSWD_ACCESSDENIED,

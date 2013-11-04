@@ -61,7 +61,10 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res;
-	const char * const attrs[] = { "objectSid", "dBCSPwd", NULL };
+	const char * const attrs[] = { "objectSid", "dBCSPwd",
+				       "userAccountControl",
+				       "msDS-User-Account-Control-Computed",
+				       NULL };
 	struct samr_Password *lm_pwd;
 	DATA_BLOB lm_pwd_blob;
 	uint8_t new_lm_hash[16];
@@ -107,7 +110,9 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 	status = samdb_result_passwords(mem_ctx, dce_call->conn->dce_ctx->lp_ctx,
 					res[0], &lm_pwd, NULL);
-	if (!NT_STATUS_IS_OK(status) || !lm_pwd) {
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	} else if (!lm_pwd) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -202,7 +207,10 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res;
-	const char * const attrs[] = { "unicodePwd", "dBCSPwd", NULL };
+	const char * const attrs[] = { "unicodePwd", "dBCSPwd",
+				       "userAccountControl",
+				       "msDS-User-Account-Control-Computed",
+				       NULL };
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo = NULL;

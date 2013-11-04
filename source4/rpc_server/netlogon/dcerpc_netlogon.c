@@ -461,9 +461,9 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	nt_status = samdb_result_passwords(mem_ctx,
-					   dce_call->conn->dce_ctx->lp_ctx,
-					   res[0], NULL, &oldNtHash);
+	nt_status = samdb_result_passwords_no_lockout(mem_ctx,
+						      dce_call->conn->dce_ctx->lp_ctx,
+						      res[0], NULL, &oldNtHash);
 	if (!NT_STATUS_IS_OK(nt_status) || !oldNtHash) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -531,9 +531,9 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	nt_status = samdb_result_passwords(mem_ctx,
-					   dce_call->conn->dce_ctx->lp_ctx,
-					   res[0], &oldLmHash, &oldNtHash);
+	nt_status = samdb_result_passwords_no_lockout(mem_ctx,
+						      dce_call->conn->dce_ctx->lp_ctx,
+						      res[0], &oldLmHash, &oldNtHash);
 	if (!NT_STATUS_IS_OK(nt_status) || (!oldLmHash && !oldNtHash)) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}

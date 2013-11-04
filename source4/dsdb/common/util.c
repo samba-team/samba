@@ -558,10 +558,14 @@ unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *
 	return count;
 }
 
-NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, struct ldb_message *msg,
-				struct samr_Password **lm_pwd, struct samr_Password **nt_pwd) 
+NTSTATUS samdb_result_passwords_no_lockout(TALLOC_CTX *mem_ctx,
+					   struct loadparm_context *lp_ctx,
+					   struct ldb_message *msg,
+					   struct samr_Password **lm_pwd,
+					   struct samr_Password **nt_pwd)
 {
 	struct samr_Password *lmPwdHash, *ntPwdHash;
+
 	if (nt_pwd) {
 		unsigned int num_nt;
 		num_nt = samdb_result_hashes(mem_ctx, msg, "unicodePwd", &ntPwdHash);
@@ -592,6 +596,27 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp
 		}
 	}
 	return NT_STATUS_OK;
+}
+
+NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx,
+				struct loadparm_context *lp_ctx,
+				struct ldb_message *msg,
+				struct samr_Password **lm_pwd,
+				struct samr_Password **nt_pwd)
+{
+	uint16_t acct_flags;
+
+	acct_flags = samdb_result_acct_flags(msg,
+					     "msDS-User-Account-Control-Computed");
+	/* Quit if the account was locked out. */
+	if (acct_flags & ACB_AUTOLOCK) {
+		DEBUG(3,("samdb_result_passwords: Account for user %s was locked out.\n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return NT_STATUS_ACCOUNT_LOCKED_OUT;
+	}
+
+	return samdb_result_passwords_no_lockout(mem_ctx, lp_ctx, msg,
+						 lm_pwd, nt_pwd);
 }
 
 /*

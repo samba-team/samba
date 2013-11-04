@@ -179,15 +179,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 {
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
-
-	uint16_t acct_flags = samdb_result_acct_flags(msg, "msDS-User-Account-Control-Computed");
-	
-	/* Quit if the account was locked out. */
-	if (acct_flags & ACB_AUTOLOCK) {
-		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", 
-			 user_info->mapped.account_name));
-		return NT_STATUS_ACCOUNT_LOCKED_OUT;
-	}
+	uint16_t acct_flags = samdb_result_acct_flags(msg, NULL);
 
 	/* You can only do an interactive login to normal accounts */
 	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {

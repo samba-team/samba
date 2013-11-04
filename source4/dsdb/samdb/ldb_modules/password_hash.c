@@ -3231,6 +3231,7 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 	struct ldb_context *ldb;
 	static const char * const attrs[] = { "objectClass",
 					      "userAccountControl",
+					      "msDS-User-Account-Control-Computed",
 					      "pwdLastSet",
 					      "sAMAccountName",
 					      "objectSid",
@@ -3293,11 +3294,21 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 		return ret;
 	}
 	
-	/* Get the old password from the database */
-	status = samdb_result_passwords(io.ac,
-					lp_ctx,
-					discard_const_p(struct ldb_message, searched_msg),
-					&io.o.lm_hash, &io.o.nt_hash);
+	if (io.ac->pwd_reset) {
+		/* Get the old password from the database */
+		status = samdb_result_passwords_no_lockout(io.ac,
+							   lp_ctx,
+							   discard_const_p(struct ldb_message, searched_msg),
+							   &io.o.lm_hash,
+							   &io.o.nt_hash);
+	} else {
+		/* Get the old password from the database */
+		status = samdb_result_passwords(io.ac,
+						lp_ctx,
+						discard_const_p(struct ldb_message, searched_msg),
+						&io.o.lm_hash, &io.o.nt_hash);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return ldb_operr(ldb);
 	}
