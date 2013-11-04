@@ -707,12 +707,12 @@ static char *vfs_gluster_getwd(struct vfs_handle_struct *handle)
 	char *cwd;
 	char *ret;
 
-	cwd = calloc(1, PATH_MAX + 1);
+	cwd = SMB_CALLOC_ARRAY(char, PATH_MAX);
 	if (cwd == NULL) {
 		return NULL;
 	}
 
-	ret = glfs_getcwd(handle->data, cwd, PATH_MAX);
+	ret = glfs_getcwd(handle->data, cwd, PATH_MAX - 1);
 	if (ret == 0) {
 		free(cwd);
 	}
