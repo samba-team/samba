@@ -86,7 +86,6 @@ static int do_global_checks(void)
 	if (strequal(lp_workgroup(), lp_netbios_name())) {
 		fprintf(stderr, "WARNING: 'workgroup' and 'netbios name' "
 				"must differ.\n\n");
-		ret = 1;
 	}
 
 	if (!directory_exist_stat(lp_lockdir(), &st)) {
@@ -97,7 +96,6 @@ static int do_global_checks(void)
 		fprintf(stderr, "WARNING: lock directory %s should have "
 				"permissions 0755 for browsing to work\n\n",
 		       lp_lockdir());
-		ret = 1;
 	}
 
 	if (!directory_exist_stat(lp_statedir(), &st)) {
@@ -108,7 +106,6 @@ static int do_global_checks(void)
 		fprintf(stderr, "WARNING: state directory %s should have "
 				"permissions 0755 for browsing to work\n\n",
 		       lp_statedir());
-		ret = 1;
 	}
 
 	if (!directory_exist_stat(lp_cachedir(), &st)) {
@@ -119,7 +116,6 @@ static int do_global_checks(void)
 		fprintf(stderr, "WARNING: cache directory %s should have "
 				"permissions 0755 for browsing to work\n\n",
 		       lp_cachedir());
-		ret = 1;
 	}
 
 	if (!directory_exist_stat(lp_piddir(), &st)) {
