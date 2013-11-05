@@ -35,6 +35,8 @@
 #include "includes.h"
 #include "kdc/kdc-glue.h"
 #include "kdc/db-glue.h"
+#include "auth/auth_sam.h"
+#include <ldb.h>
 
 static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
@@ -165,6 +167,20 @@ hdb_samba4_check_s4u2self(krb5_context context, HDB *db,
 					target_principal);
 }
 
+static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
+					      hdb_entry_ex *entry,
+					      int hdb_auth_status)
+{
+	struct samba_kdc_db_context *kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
+									struct samba_kdc_db_context);
+	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
+
+	if (hdb_auth_status == HDB_AUTH_WRONG_PASSWORD) {
+		authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, ldb_get_default_basedn(kdc_db_ctx->samdb));
+	}
+	return 0;
+}
+
 /* This interface is to be called by the KDC and libnet_keytab_dump,
  * which is expecting Samba calling conventions.
  * It is also called by a wrapper (hdb_samba4_create) from the
@@ -216,7 +232,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb__del = NULL;
 	(*db)->hdb_destroy = hdb_samba4_destroy;
 
-	(*db)->hdb_auth_status = NULL;
+	(*db)->hdb_auth_status = hdb_samba4_auth_status;
 	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_constrained_delegation;
 	(*db)->hdb_check_pkinit_ms_upn_match = hdb_samba4_check_pkinit_ms_upn_match;
 	(*db)->hdb_check_s4u2self = hdb_samba4_check_s4u2self;

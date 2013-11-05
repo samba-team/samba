@@ -213,6 +213,13 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	nt_status = authsam_password_ok(auth_context, mem_ctx, 
 					acct_flags, lm_pwd, nt_pwd,
 					user_info, user_sess_key, lm_sess_key);
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
+		NTSTATUS update_bad_pwd_count_status = authsam_update_bad_pwd_count(auth_context->sam_ctx, msg, domain_dn);
+		if (!NT_STATUS_IS_OK(update_bad_pwd_count_status)) {
+			/* bo! (what can we do here? */
+		}
+	}
+
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = authsam_account_ok(mem_ctx, auth_context->sam_ctx,

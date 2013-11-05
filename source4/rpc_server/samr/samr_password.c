@@ -30,6 +30,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "../lib/util/util_ldb.h"
 #include "rpc_server/samr/proto.h"
+#include "auth/auth_sam.h"
 
 /*
   samr_ChangePasswordUser
@@ -64,6 +65,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	const char * const attrs[] = { "objectSid", "dBCSPwd",
 				       "userAccountControl",
 				       "msDS-User-Account-Control-Computed",
+				       "badPwdCount", "badPasswordTime",
 				       NULL };
 	struct samr_Password *lm_pwd;
 	DATA_BLOB lm_pwd_blob;
@@ -123,6 +125,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 	if (!extract_pw_from_buffer(mem_ctx, pwbuf->data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
+		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -132,6 +135,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 				  new_password.length,
 				  (void **)&new_pass, &converted_size)) {
 		DEBUG(3,("samr: failed to convert incoming password buffer to unix charset\n"));
+		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -141,6 +145,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 					       new_password.length,
 					       (void **)&new_unicode_password.data, &unicode_pw_len)) {
 		DEBUG(3,("samr: failed to convert incoming password buffer to UTF16 charset\n"));
+		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 	new_unicode_password.length = unicode_pw_len;
@@ -148,6 +153,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	E_deshash(new_pass, new_lm_hash);
 	E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
 	if (memcmp(lm_verifier.hash, r->in.hash->hash, 16) != 0) {
+		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -204,13 +210,14 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	NTSTATUS status;
 	DATA_BLOB new_password;
 	struct ldb_context *sam_ctx = NULL;
-	struct ldb_dn *user_dn;
+	struct ldb_dn *user_dn = NULL;
 	int ret;
 	struct ldb_message **res;
 	const char * const attrs[] = { "unicodePwd", "dBCSPwd",
 				       "userAccountControl",
 				       "msDS-User-Account-Control-Computed",
-				       NULL };
+				       "badPwdCount", "badPasswordTime",
+				       "objectSid", NULL };
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo = NULL;
@@ -351,6 +358,11 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 
 failed:
+	/* Only update the badPwdCount if we found the user */
+	if (user_dn != NULL && NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
+	}
+
 	reject = talloc_zero(mem_ctx, struct userPwdChangeFailureInformation);
 	if (reject != NULL) {
 		reject->extendedFailureReason = reason;
