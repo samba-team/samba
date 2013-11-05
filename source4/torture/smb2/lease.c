@@ -262,6 +262,17 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 /**
  * upgrade2 test.
  * full matrix of lease upgrade combinations
+ * (non-contended case)
+ *
+ * The summary of the behaviour is this:
+ * -------------------------------------
+ * An uncontended lease upgrade results in a change
+ * if and only if the requested lease state is
+ * - valid, and
+ * - strictly a superset of the lease state already held.
+ *
+ * In that case the resulting lease state is the one
+ * requested in the upgrade.
  */
 struct lease_upgrade2_test {
 	const char *initial;
