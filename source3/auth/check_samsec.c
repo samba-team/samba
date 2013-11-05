@@ -408,6 +408,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	/* Quit if the account was locked out. */
 	if (pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK) {
 		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", username));
+		TALLOC_FREE(sampass);
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
