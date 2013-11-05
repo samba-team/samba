@@ -7,7 +7,7 @@ bld.SAMBA_LIBRARY('dsdb-module',
 	grouping_library=True)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
-	source='util.c acl_util.c schema_util.c',
+	source='util.c acl_util.c schema_util.c netlogon.c',
 	autoproto='util_proto.h',
 	deps='ldb ndr samdb-common samba-security'
 	)

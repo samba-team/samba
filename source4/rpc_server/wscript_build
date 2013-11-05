@@ -96,7 +96,7 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
 	source='netlogon/dcerpc_netlogon.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_netlogon_init',
-	deps='DCERPC_COMMON RPC_NDR_IRPC COMMON_SCHANNEL ndr-standard auth4_sam samba-hostconfig CLDAPD'
+	deps='DCERPC_COMMON RPC_NDR_IRPC COMMON_SCHANNEL ndr-standard auth4_sam samba-hostconfig DSDB_MODULE_HELPERS'
 	)
 
 

@@ -30,7 +30,7 @@ bld.SAMBA_SUBSYSTEM('NBTD_WINS',
 bld.SAMBA_SUBSYSTEM('NBTD_DGRAM',
 	source='dgram/request.c dgram/netlogon.c dgram/browse.c',
 	autoproto='dgram/proto.h',
-	deps='LIBCLI_DGRAM CLDAPD',
+	deps='LIBCLI_DGRAM DSDB_MODULE_HELPERS',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 

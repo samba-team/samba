@@ -28,7 +28,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "smbd/service_task.h"
-#include "cldap_server/cldap_server.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 #include "libcli/security/security.h"
 #include "nbt_server/dgram/proto.h"
 
