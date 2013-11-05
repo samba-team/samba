@@ -449,6 +449,148 @@ static bool torture_lease_handler(struct smb2_transport *transport,
 	return true;
 }
 
+/**
+ * upgrade3:
+ * full matrix of lease upgrade combinations
+ * (contended case)
+ *
+ * We start with 2 leases, and check how one can
+ * be upgraded
+ *
+ * The summary of the behaviour is this:
+ * -------------------------------------
+ *
+ * If we have two leases (lease1 and lease2) on the same file,
+ * then attempt to upgrade lease1 results in a change if and only
+ * if the requested lease state:
+ * - is valid,
+ * - is strictly a superset of lease1, and
+ * - can held together with lease2.
+ *
+ * In that case, the resuling lease state of the upgraded lease1
+ * is the state requested in the upgrade. lease2 is not broken
+ * and remains unchanged.
+ *
+ * Note that this contrasts the case of directly opening with
+ * an initial requested lease state, in which case you get that
+ * portion of the requested state that can be shared with the
+ * already existing leases (or the states that they get broken to).
+ */
+struct lease_upgrade3_test {
+	const char *held1;
+	const char *held2;
+	const char *upgrade_to;
+	const char *upgraded_to;
+};
+
+#define NUM_UPGRADE3_TESTS ( 20 )
+struct lease_upgrade3_test lease_upgrade3_tests[NUM_UPGRADE3_TESTS] = {
+	{"R", "R", "", "R" },
+	{"R", "R", "R", "R" },
+	{"R", "R", "RW", "R" },
+	{"R", "R", "RH", "RH" },
+	{"R", "R", "RHW", "R" },
+
+	{"R", "RH", "", "R" },
+	{"R", "RH", "R", "R" },
+	{"R", "RH", "RW", "R" },
+	{"R", "RH", "RH", "RH" },
+	{"R", "RH", "RHW", "R" },
+
+	{"RH", "R", "", "RH" },
+	{"RH", "R", "R", "RH" },
+	{"RH", "R", "RW", "RH" },
+	{"RH", "R", "RH", "RH" },
+	{"RH", "R", "RHW", "RH" },
+
+	{"RH", "RH", "", "RH" },
+	{"RH", "RH", "R", "RH" },
+	{"RH", "RH", "RW", "RH" },
+	{"RH", "RH", "RH", "RH" },
+	{"RH", "RH", "RHW", "RH" },
+};
+
+static bool test_lease_upgrade3(struct torture_context *tctx,
+                                struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle h, h2, hnew;
+	NTSTATUS status;
+	struct smb2_create io;
+	struct smb2_lease ls;
+	const char *fname = "upgrade3.dat";
+	bool ret = true;
+	int i;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+
+	smb2_util_unlink(tree, fname);
+
+	for (i = 0; i < NUM_UPGRADE3_TESTS; i++) {
+		struct lease_upgrade3_test t = lease_upgrade3_tests[i];
+
+		smb2_util_unlink(tree, fname);
+
+		ZERO_STRUCT(break_info);
+
+		/* grab first lease */
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state(t.held1));
+		status = smb2_create(tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+		CHECK_LEASE(&io, t.held1, true, LEASE1);
+		h = io.out.file.handle;
+
+		/* grab second lease */
+		smb2_lease_create(&io, &ls, false, fname, LEASE2, smb2_util_lease_state(t.held2));
+		status = smb2_create(tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+		CHECK_LEASE(&io, t.held2, true, LEASE2);
+		h2 = io.out.file.handle;
+
+		/* no break has happened */
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(break_info.failures, 0);
+
+		/* try to upgrade lease1 */
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state(t.upgrade_to));
+		status = smb2_create(tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+		CHECK_LEASE(&io, t.upgraded_to, true, LEASE1);
+		hnew = io.out.file.handle;
+
+		/* no break has happened */
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(break_info.failures, 0);
+
+		smb2_util_close(tree, hnew);
+		smb2_util_close(tree, h);
+		smb2_util_close(tree, h2);
+	}
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_close(tree, hnew);
+	smb2_util_close(tree, h2);
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+
 /*
    Timer handler function notifies the registering function that time is up
 */
@@ -1091,6 +1233,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 	torture_suite_add_1smb2_test(suite, "request", test_lease_request);
 	torture_suite_add_1smb2_test(suite, "upgrade", test_lease_upgrade);
 	torture_suite_add_1smb2_test(suite, "upgrade2", test_lease_upgrade2);
+	torture_suite_add_1smb2_test(suite, "upgrade3", test_lease_upgrade3);
 	torture_suite_add_1smb2_test(suite, "break", test_lease_break);
 	torture_suite_add_1smb2_test(suite, "oplock", test_lease_oplock);
 	torture_suite_add_1smb2_test(suite, "multibreak", test_lease_multibreak);
