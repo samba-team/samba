@@ -330,6 +330,21 @@ static void _pam_log_state_datum(struct pwb_context *ctx,
 #define _PAM_LOG_STATE_ITEM_PASSWORD(ctx, item_type) \
 	_pam_log_state_datum(ctx, item_type, #item_type, \
 			     _LOG_PASSWORD_AS_STRING)
+/*
+ * wrapper to preserve old behaviour of iniparser which ignored
+ * key values that had no value assigned like
+ *    key =
+ * for a key like above newer iniparser will return a zero-length
+ * string, previously iniparser would return NULL
+ */
+static char *iniparser_getstring_nonempty(dictionary *d, char *key, char *def)
+{
+	char *ret = iniparser_getstring(d, key, def);
+	if (ret && strlen(ret) == 0) {
+		ret = NULL;
+	}
+	return ret;
+}
 
 static void _pam_log_state(struct pwb_context *ctx)
 {
@@ -418,13 +433,13 @@ static int _pam_parse(const pam_handle_t *pamh,
 		ctrl |= WINBIND_SILENT;
 	}
 
-	if (iniparser_getstring(d, discard_const_p(char, "global:krb5_ccache_type"), NULL) != NULL) {
+	if (iniparser_getstring_nonempty(d, discard_const_p(char, "global:krb5_ccache_type"), NULL) != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 
-	if ((iniparser_getstring(d, discard_const_p(char, "global:require-membership-of"), NULL)
+	if ((iniparser_getstring_nonempty(d, discard_const_p(char, "global:require-membership-of"), NULL)
 	     != NULL) ||
-	    (iniparser_getstring(d, discard_const_p(char, "global:require_membership_of"), NULL)
+	    (iniparser_getstring_nonempty(d, discard_const_p(char, "global:require_membership_of"), NULL)
 	     != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
@@ -2262,7 +2277,7 @@ static const char *get_conf_item_string(struct pwb_context *ctx,
 			goto out;
 		}
 
-		parm_opt = iniparser_getstring(ctx->dict, key, NULL);
+		parm_opt = iniparser_getstring_nonempty(ctx->dict, key, NULL);
 		TALLOC_FREE(key);
 
 		_pam_log_debug(ctx, LOG_INFO, "CONFIG file: %s '%s'\n",
