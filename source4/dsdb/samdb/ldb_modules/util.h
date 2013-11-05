@@ -25,10 +25,12 @@ struct dsdb_attribute;
 struct dsdb_fsmo_extended_op;
 struct security_descriptor;
 struct dom_sid;
+struct netlogon_samlogon_response;
 
 #include "librpc/gen_ndr/misc.h"
 #include "dsdb/samdb/ldb_modules/util_proto.h"
 #include "dsdb/common/util.h"
+#include "../libcli/netlogon/netlogon.h"
 
 /* extend the dsdb_request_add_controls() flags for module
    specific functions */

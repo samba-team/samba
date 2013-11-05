@@ -33,7 +33,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "../libcli/ldap/ldap_ndr.h"
-#include "cldap_server/cldap_server.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_irpc.h"

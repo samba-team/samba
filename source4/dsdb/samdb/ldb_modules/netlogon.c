@@ -25,11 +25,11 @@
 #include <ldb_errors.h>
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
-#include "cldap_server/cldap_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 #include "auth/auth.h"
 #include "ldb_wrap.h"
 #include "system/network.h"
