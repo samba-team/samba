@@ -32,131 +32,17 @@
 
 /*
   samr_ChangePasswordUser
+
+  So old it is just not worth implementing
+  because it does not supply a plaintext and so we can't do password
+  complexity checking and cannot update all the other password hashes.
+
 */
 NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 					TALLOC_CTX *mem_ctx,
 					struct samr_ChangePasswordUser *r)
 {
-	struct dcesrv_handle *h;
-	struct samr_account_state *a_state;
-	struct ldb_context *sam_ctx;
-	struct ldb_message **res;
-	int ret;
-	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
-	struct samr_Password *lm_pwd, *nt_pwd;
-	NTSTATUS status = NT_STATUS_OK;
-	const char * const attrs[] = { "dBCSPwd", "unicodePwd" , NULL };
-
-	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
-
-	a_state = h->data;
-
-	/* basic sanity checking on parameters.  Do this before any database ops */
-	if (!r->in.lm_present || !r->in.nt_present ||
-	    !r->in.old_lm_crypted || !r->in.new_lm_crypted ||
-	    !r->in.old_nt_crypted || !r->in.new_nt_crypted) {
-		/* we should really handle a change with lm not
-		   present */
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
-	/* Connect to a SAMDB with system privileges for fetching the old pw
-	 * hashes. */
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
-	if (sam_ctx == NULL) {
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-
-	/* fetch the old hashes */
-	ret = gendb_search_dn(sam_ctx, mem_ctx,
-			      a_state->account_dn, &res, attrs);
-	if (ret != 1) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	status = samdb_result_passwords(mem_ctx,
-					dce_call->conn->dce_ctx->lp_ctx,
-					res[0], &lm_pwd, &nt_pwd);
-	if (!NT_STATUS_IS_OK(status) || !nt_pwd) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	/* decrypt and check the new lm hash */
-	if (lm_pwd) {
-		D_P16(lm_pwd->hash, r->in.new_lm_crypted->hash, new_lmPwdHash.hash);
-		D_P16(new_lmPwdHash.hash, r->in.old_lm_crypted->hash, checkHash.hash);
-		if (memcmp(checkHash.hash, lm_pwd, 16) != 0) {
-			return NT_STATUS_WRONG_PASSWORD;
-		}
-	}
-
-	/* decrypt and check the new nt hash */
-	D_P16(nt_pwd->hash, r->in.new_nt_crypted->hash, new_ntPwdHash.hash);
-	D_P16(new_ntPwdHash.hash, r->in.old_nt_crypted->hash, checkHash.hash);
-	if (memcmp(checkHash.hash, nt_pwd, 16) != 0) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	/* The NT Cross is not required by Win2k3 R2, but if present
-	   check the nt cross hash */
-	if (r->in.cross1_present && r->in.nt_cross && lm_pwd) {
-		D_P16(lm_pwd->hash, r->in.nt_cross->hash, checkHash.hash);
-		if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
-			return NT_STATUS_WRONG_PASSWORD;
-		}
-	}
-
-	/* The LM Cross is not required by Win2k3 R2, but if present
-	   check the lm cross hash */
-	if (r->in.cross2_present && r->in.lm_cross && lm_pwd) {
-		D_P16(nt_pwd->hash, r->in.lm_cross->hash, checkHash.hash);
-		if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
-			return NT_STATUS_WRONG_PASSWORD;
-		}
-	}
-
-	/* Start a SAM with user privileges for the password change */
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				dce_call->conn->auth_state.session_info, 0);
-	if (sam_ctx == NULL) {
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-
-	/* Start transaction */
-	ret = ldb_transaction_start(sam_ctx);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(sam_ctx)));
-		return NT_STATUS_TRANSACTION_ABORTED;
-	}
-
-	/* Performs the password modification. We pass the old hashes read out
-	 * from the database since they were already checked against the user-
-	 * provided ones. */
-	status = samdb_set_password(sam_ctx, mem_ctx,
-				    a_state->account_dn,
-				    a_state->domain_state->domain_dn,
-				    NULL, &new_lmPwdHash, &new_ntPwdHash,
-				    lm_pwd, nt_pwd, /* this is a user password change */
-				    NULL,
-				    NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		ldb_transaction_cancel(sam_ctx);
-		return status;
-	}
-
-	/* And this confirms it in a transaction commit */
-	ret = ldb_transaction_commit(sam_ctx);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
-			 ldb_dn_get_linearized(a_state->account_dn),
-			 ldb_errstring(sam_ctx)));
-		return NT_STATUS_TRANSACTION_ABORTED;
-	}
-
-	return NT_STATUS_OK;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /*
