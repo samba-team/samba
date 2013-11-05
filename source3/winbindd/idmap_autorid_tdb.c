@@ -304,6 +304,12 @@ static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 		goto done;
 	}
 
+	if (!idmap_autorid_validate_sid(range->domsid)) {
+		DEBUG(3, ("Invalid SID: '%s'\n", range->domsid));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
 	idmap_autorid_build_keystr(range->domsid, range->domain_range_index,
 				   keystr);
 
