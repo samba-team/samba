@@ -82,6 +82,26 @@ gid_t sec_initial_gid(void)
 	return initial_gid;
 }
 
+/**
+ * @brief Check if we are running in root mode.
+ *
+ * @return If we samba root privileges it returns true, false otehrwise.
+ */
+bool root_mode(void)
+{
+	uid_t euid;
+
+	euid = geteuid();
+
+#ifndef AUTOCONF_TEST
+	if (uid_wrapper_enabled()) {
+		return (euid == initial_uid || euid == (uid_t)0);
+	}
+#endif
+
+	return (initial_uid == euid);
+}
+
 /****************************************************************************
 are we running in non-root mode?
 ****************************************************************************/

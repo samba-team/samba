@@ -511,6 +511,7 @@ bool token_sid_in_ace(const struct security_token *token, const struct security_
 void sec_init(void);
 uid_t sec_initial_uid(void);
 gid_t sec_initial_gid(void);
+bool root_mode(void);
 bool non_root_mode(void);
 void gain_root_privilege(void);
 void gain_root_group_privilege(void);
