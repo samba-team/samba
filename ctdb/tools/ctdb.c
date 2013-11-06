@@ -4254,6 +4254,155 @@ static int control_pdelete(struct ctdb_context *ctdb, int argc, const char **arg
 	return 0;
 }
 
+static const char *ptrans_parse_string(TALLOC_CTX *mem_ctx, const char *s,
+				       TDB_DATA *data)
+{
+	const char *t;
+	size_t n;
+	const char *ret; /* Next byte after successfully parsed value */
+
+	/* Error, unless someone says otherwise */
+	ret = NULL;
+	/* Indicates no value to parse */
+	*data = tdb_null;
+
+	/* Skip whitespace */
+	n = strspn(s, " \t");
+	t = s + n;
+
+	if (t[0] == '"') {
+		/* Quoted ASCII string - no wide characters! */
+		t++;
+		n = strcspn(t, "\"");
+		if (t[n] == '"') {
+			if (n > 0) {
+				data->dsize = n;
+				data->dptr = talloc_memdup(mem_ctx, t, n);
+				CTDB_NOMEM_ABORT(data->dptr);
+			}
+			ret = t + n + 1;
+		} else {
+			DEBUG(DEBUG_WARNING,("Unmatched \" in input %s\n", s));
+		}
+	} else {
+		DEBUG(DEBUG_WARNING,("Unsupported input format in %s\n", s));
+	}
+
+	return ret;
+}
+
+static bool ptrans_get_key_value(TALLOC_CTX *mem_ctx, FILE *file,
+				 TDB_DATA *key, TDB_DATA *value)
+{
+	char line [1024]; /* FIXME: make this more flexible? */
+	const char *t;
+	char *ptr;
+
+	ptr = fgets(line, sizeof(line), file);
+
+	if (ptr == NULL) {
+		return false;
+	}
+
+	/* Get key */
+	t = ptrans_parse_string(mem_ctx, line, key);
+	if (t == NULL || key->dptr == NULL) {
+		/* Line Ignored but not EOF */
+		return true;
+	}
+
+	/* Get value */
+	t = ptrans_parse_string(mem_ctx, t, value);
+	if (t == NULL) {
+		/* Line Ignored but not EOF */
+		talloc_free(key->dptr);
+		*key = tdb_null;
+		return true;
+	}
+
+	return true;
+}
+
+/*
+ * Update a persistent database as per file/stdin
+ */
+static int control_ptrans(struct ctdb_context *ctdb,
+			  int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_transaction_handle *h;
+	TDB_DATA key, value;
+	FILE *file;
+	int ret;
+
+	if (argc != 2) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	file = stdin;
+	if (strcmp(argv[1], "-") != 0) {
+		file = fopen(argv[1], "r");
+		if (file == NULL) {
+			DEBUG(DEBUG_ERR,("Unable to open file for reading '%s'\n", argv[1]));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+	}
+
+	db_name = argv[0];
+
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, true, 0);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		goto error;
+	}
+
+	h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to start transaction on database %s\n", db_name));
+		goto error;
+	}
+
+	while (ptrans_get_key_value(tmp_ctx, file, &key, &value)) {
+		if (key.dsize != 0) {
+			ret = ctdb_transaction_store(h, key, value);
+			/* Minimise memory use */
+			talloc_free(key.dptr);
+			if (value.dptr != NULL) {
+				talloc_free(value.dptr);
+			}
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,("Failed to store record\n"));
+				ctdb_transaction_cancel(h);
+				goto error;
+			}
+		}
+	}
+
+	ret = ctdb_transaction_commit(h);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
+		goto error;
+	}
+
+	if (file != stdin) {
+		fclose(file);
+	}
+	talloc_free(tmp_ctx);
+	return 0;
+
+error:
+	if (file != stdin) {
+		fclose(file);
+	}
+
+	talloc_free(tmp_ctx);
+	return -1;
+}
+
 /*
   check if a service is bound to a port or not
  */
@@ -6115,6 +6264,7 @@ static const struct {
 	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<dbname|dbid> <key> [<file>]" },
 	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<dbname|dbid> <key> <file containing record>" },
 	{ "pdelete", 	     control_pdelete,      	false,	false,  "delete a record from a persistent database", "<dbname|dbid> <key>" },
+	{ "ptrans", 	     control_ptrans,      	false,	false,  "update a persistent database (from stdin)", "<dbname|dbid>" },
 	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file [-v]", "<tdb-file> <key> [<file>]" },
 	{ "tstore", 	     control_tstore,      	false,	true,  "store a record (including ltdb header)", "<tdb-file> <key> <data+header>" },
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
