@@ -2174,7 +2174,12 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* don't let the caller know if an account doesn't exist */
 		status = NT_STATUS_WRONG_PASSWORD;
+	} else if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		status = NT_STATUS_ACCESS_DENIED;
 	} else if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Failed to set password on %s: %s\n",
+			  ldb_dn_get_linearized(msg->dn),
+			  ldb_errstring(ldb)));
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
 
