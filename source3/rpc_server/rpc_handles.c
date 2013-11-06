@@ -505,7 +505,7 @@ void *_policy_handle_find(struct pipes_struct *p,
 		return NULL;
 	}
 	if ((access_required & rpc_hnd->access_granted) != access_required) {
-		if (geteuid() == sec_initial_uid()) {
+		if (root_mode()) {
 			DEBUG(4, ("%s: ACCESS should be DENIED (granted: "
 				  "%#010x; required: %#010x)\n", location,
 				  rpc_hnd->access_granted, access_required));

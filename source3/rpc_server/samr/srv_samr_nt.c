@@ -2644,7 +2644,7 @@ static NTSTATUS get_user_info_18(struct pipes_struct *p,
 	if (ret == False) {
 		DEBUG(4, ("User %s not found\n", sid_string_dbg(user_sid)));
 		TALLOC_FREE(smbpass);
-		return (geteuid() == sec_initial_uid()) ? NT_STATUS_NO_SUCH_USER : NT_STATUS_ACCESS_DENIED;
+		return root_mode() ? NT_STATUS_NO_SUCH_USER : NT_STATUS_ACCESS_DENIED;
 	}
 
 	DEBUG(3,("User:[%s] 0x%x\n", pdb_get_username(smbpass), pdb_get_acct_ctrl(smbpass) ));
@@ -3683,7 +3683,7 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 
 	/* determine which user right we need to check based on the acb_info */
 
-	if (geteuid() == sec_initial_uid()) {
+	if (root_mode()) {
 		can_add_account = true;
 	} else if (acb_info & ACB_WSTRUST) {
 		needed_priv = SEC_PRIV_MACHINE_ACCOUNT;

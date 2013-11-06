@@ -64,7 +64,7 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 	}
 
 	/* Check if we are root */
-	if (geteuid() == sec_initial_uid()) {
+	if (root_mode()) {
 		is_root = true;
 	}
 
