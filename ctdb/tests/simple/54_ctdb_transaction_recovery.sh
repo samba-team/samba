@@ -28,7 +28,7 @@ recovery_loop()
 
 	while true ; do
 		echo Recovery $COUNT
-		ctdb recover
+		try_command_on_node 0 $CTDB recover
 		sleep 2
 		COUNT=$((COUNT + 1))
 	done
