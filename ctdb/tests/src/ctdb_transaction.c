@@ -137,7 +137,7 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 			DEBUG(DEBUG_ERR, ("Failed to start transaction on node %d\n",
 			       ctdb_get_pnn(ctdb)));
 			talloc_free(tmp_ctx);
-			continue;
+			return;
 		}
 		if (verbose) DEBUG(DEBUG_ERR, ("transaction started\n"));
 		do_sleep(delay);
