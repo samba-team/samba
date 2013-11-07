@@ -305,19 +305,25 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		}
 		if (strcasecmp_m(username, state->domain_dns) == 0) { 
 			*authority_name = state->domain_name;
-			*sid =  state->domain_sid;
+			*sid =  dom_sid_dup(mem_ctx, state->domain_sid);
+			if (*sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*rtype = SID_NAME_DOMAIN;
 			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
 		}
 		if (strcasecmp_m(username, state->domain_name) == 0) { 
 			*authority_name = state->domain_name;
-			*sid =  state->domain_sid;
+			*sid =  dom_sid_dup(mem_ctx, state->domain_sid);
+			if (*sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*rtype = SID_NAME_DOMAIN;
 			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
 		}
-		
+
 		/* Perhaps this is a well known user? */
 		name = talloc_asprintf(mem_ctx, "%s\\%s", NAME_NT_AUTHORITY, username);
 		if (!name) {
