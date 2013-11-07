@@ -1741,8 +1741,8 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 
 	r.in.user_handle = &user_handle;
 	r.in.lm_present = 1;
-	/* Break the LM hash */
-	hash1.hash[0]++;
+	/* Break the NT hash */
+	hash3.hash[0]++;
 	r.in.old_lm_crypted = &hash1;
 	r.in.new_lm_crypted = &hash2;
 	r.in.nt_present = 1;
@@ -1769,15 +1769,15 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 			"ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the LM hash");
 	}
 
-	/* Unbreak the LM hash */
-	hash1.hash[0]--;
+	/* Unbreak the NT hash */
+	hash3.hash[0]--;
 
 	r.in.user_handle = &user_handle;
 	r.in.lm_present = 1;
 	r.in.old_lm_crypted = &hash1;
 	r.in.new_lm_crypted = &hash2;
-	/* Break the NT hash */
-	hash3.hash[0]--;
+	/* Break the LM hash */
+	hash1.hash[0]--;
 	r.in.nt_present = 1;
 	r.in.old_nt_crypted = &hash3;
 	r.in.new_nt_crypted = &hash4;
