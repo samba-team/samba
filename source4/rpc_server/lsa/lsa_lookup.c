@@ -284,6 +284,9 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		if (username == NULL) {
 			*authority_name = NAME_BUILTIN;
 			*sid = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN);
+			if (*sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*rtype = SID_NAME_DOMAIN;
 			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
@@ -292,6 +295,9 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		if (strcasecmp_m(username, NAME_NT_AUTHORITY) == 0) { 
 			*authority_name = NAME_NT_AUTHORITY;
 			*sid =  dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHORITY);
+			if (*sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*rtype = SID_NAME_DOMAIN;
 			dom_sid_split_rid(NULL, *sid, NULL, rid);
 			return NT_STATUS_OK;
@@ -299,6 +305,9 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		if (strcasecmp_m(username, NAME_BUILTIN) == 0) { 
 			*authority_name = NAME_BUILTIN;
 			*sid = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN);
+			if (*sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*rtype = SID_NAME_DOMAIN;
 			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
@@ -359,6 +368,9 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		if (!*username) {
 			*authority_name = NAME_NT_AUTHORITY;
 			*sid = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHORITY);
+			if (*sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*rtype = SID_NAME_DOMAIN;
 			dom_sid_split_rid(NULL, *sid, NULL, rid);
 			return NT_STATUS_OK;
