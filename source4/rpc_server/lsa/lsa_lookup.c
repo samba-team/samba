@@ -313,7 +313,11 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 			return NT_STATUS_OK;
 		}
 		if (strcasecmp_m(username, state->domain_dns) == 0) { 
-			*authority_name = state->domain_name;
+			*authority_name = talloc_strdup(mem_ctx,
+							state->domain_name);
+			if (*authority_name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*sid =  dom_sid_dup(mem_ctx, state->domain_sid);
 			if (*sid == NULL) {
 				return NT_STATUS_NO_MEMORY;
@@ -323,7 +327,11 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 			return NT_STATUS_OK;
 		}
 		if (strcasecmp_m(username, state->domain_name) == 0) { 
-			*authority_name = state->domain_name;
+			*authority_name = talloc_strdup(mem_ctx,
+							state->domain_name);
+			if (*authority_name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*sid =  dom_sid_dup(mem_ctx, state->domain_sid);
 			if (*sid == NULL) {
 				return NT_STATUS_NO_MEMORY;
@@ -387,10 +395,18 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		*authority_name = NAME_BUILTIN;
 		domain_dn = state->builtin_dn;
 	} else if (strcasecmp_m(domain, state->domain_dns) == 0) { 
-		*authority_name = state->domain_name;
+		*authority_name = talloc_strdup(mem_ctx,
+						state->domain_name);
+		if (*authority_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		domain_dn = state->domain_dn;
 	} else if (strcasecmp_m(domain, state->domain_name) == 0) { 
-		*authority_name = state->domain_name;
+		*authority_name = talloc_strdup(mem_ctx,
+						state->domain_name);
+		if (*authority_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		domain_dn = state->domain_dn;
 	} else {
 		/* Not local, need to ask winbind in future */
