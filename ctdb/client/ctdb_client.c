@@ -3856,10 +3856,20 @@ static bool g_lock_lock(TALLOC_CTX *mem_ctx,
 	struct ctdb_record_handle *h;
 	struct g_lock_recs *locks;
 	struct server_id id;
+	struct timeval t_start;
 	int i;
 
 	key.dptr = (uint8_t *)discard_const(keyname);
 	key.dsize = strlen(keyname) + 1;
+
+	t_start = timeval_current();
+
+again:
+	/* Keep trying for an hour. */
+	if (timeval_elapsed(&t_start) > 3600) {
+		return false;
+	}
+
 	h = ctdb_fetch_lock(ctdb_db, mem_ctx, key, &data);
 	if (h == NULL) {
 		return false;
@@ -3899,7 +3909,7 @@ static bool g_lock_lock(TALLOC_CTX *mem_ctx,
 				   id.task_id, id.vnn,
 				   (unsigned long long)id.unique_id));
 		talloc_free(h);
-		return false;
+		goto again;
 	}
 
 	locks->lock = talloc_realloc(locks, locks->lock, struct g_lock_rec,
