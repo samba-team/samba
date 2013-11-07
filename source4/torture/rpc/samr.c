@@ -1758,6 +1758,12 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "(%s:%s) old_password[%s] new_password[%s] status[%s]\n",
 			__location__, __FUNCTION__,
 			oldpass, newpass, nt_errstr(r.out.result));
+
+	/* Do not proceed if this call has been removed */
+	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
+		torture_skip(tctx, "ValidatePassword not supported by server\n");
+	}
+
 	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
 		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_WRONG_PASSWORD,
 			"ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the LM hash");
