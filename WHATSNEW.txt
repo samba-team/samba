@@ -1,20 +1,41 @@
                    ==============================
                    Release Notes for Samba 3.6.20
-                         November 06, 2013
+                         November 11, 2013
                    ==============================
 
 
-This is is the latest maintenance release of Samba 3.6.
+This is a security release in order to address
+CVE-2013-4475 (ACLs are not checked on opening an alternate
+data stream on a file or directory).
 
-Please note that this will probably be the last maintenance release
-of the Samba 3.6 release series. With the release of Samba 4.1.0, the
-3.6 release series will be turned into the "security fixes only" mode.
+o  CVE-2013-4475:
+   Samba versions 3.2.0 and above (all versions of 3.2.x, 3.3.x,
+   3.4.x, 3.5.x, 3.6.x, 4.0.x and 4.1.x) do not check the underlying
+   file or directory ACL when opening an alternate data stream.
+
+   According to the SMB1 and SMB2+ protocols the ACL on an underlying
+   file or directory should control what access is allowed to alternate
+   data streams that are associated with the file or directory.
+
+   By default no version of Samba supports alternate data streams
+   on files or directories.
+
+   Samba can be configured to support alternate data streams by loading
+   either one of two virtual file system modues (VFS) vfs_streams_depot or
+   vfs_streams_xattr supplied with Samba, so this bug only affects Samba
+   servers configured this way.
+
+   To determine if your server is vulnerable, check for the strings
+   "streams_depot" or "streams_xattr" inside your smb.conf configuration
+   file.
 
 
 Changes since 3.6.19:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUGs 10234 + 10229: CVE-2013-4475: Fix access check verification on stream
+      files.
 
 
 ######################################################################
