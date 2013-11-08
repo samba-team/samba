@@ -4337,13 +4337,13 @@ static int control_ptrans(struct ctdb_context *ctdb,
 	FILE *file;
 	int ret;
 
-	if (argc != 2) {
+	if (argc < 1) {
 		talloc_free(tmp_ctx);
 		usage();
 	}
 
 	file = stdin;
-	if (strcmp(argv[1], "-") != 0) {
+	if (argc == 2) {
 		file = fopen(argv[1], "r");
 		if (file == NULL) {
 			DEBUG(DEBUG_ERR,("Unable to open file for reading '%s'\n", argv[1]));

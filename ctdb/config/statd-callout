@@ -12,103 +12,69 @@
     export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
 
 . $CTDB_BASE/functions
+
+# Overwrite this so we get some logging
+die ()
+{
+    script_log "statd-callout" "$@"
+    exit 1
+}
+
 loadconfig ctdb
 loadconfig nfs
 
-[ -z $NFS_HOSTNAME ] && {
-	echo NFS_HOSTNAME is not configured. statd-callout failed.
-	exit 0
-}
+[ -n "$NFS_HOSTNAME" ] || \
+    die "NFS_HOSTNAME is not configured. statd-callout failed"
+
+# A handy newline
+nl="
+"
 
 case "$1" in
-  add-client)
-	# the callout does not tell us to which ip the client connected
-	# so we must add it to all the ips that we serve
-	PNN=`ctdb xpnn | sed -e "s/.*://"`
-	ctdb ip -Y | while read LINE; do
-		NODE=`echo $LINE | cut -f3 -d:`
-		[ "$NODE" = "$PNN" ] || {
-			# not us
-			continue
-		} 
-		IP=`echo $LINE | cut -f2 -d:`
-		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
-		touch $CTDB_VARDIR/state/statd/ip/$IP/$2
-	done
+    add-client)
+	# statd does not tell us to which IP the client connected so
+	# we must add it to all the IPs that we serve
+	cip="$2"
+	pnn=$(ctdb xpnn | sed -e 's/.*://')
+	date=$(date '+%s')
+	ctdb ip -Y |
+	tail -n +2 | {
+	    # This all needs to be in the end of the pipe so it
+	    # doesn't get lost
+	    items=""
+	    while IFS=":" read x sip node x ; do
+		[ "$node" = "$pnn" ] || continue # not us
+		key="statd-state@${sip}@${cip}"
+		item="\"${key}\" \"${date}\""
+		items="${items}${items:+${nl}}${item}"
+	    done
+	    if ! echo "$items" | ctdb ptrans "ctdb.tdb" ; then
+		die "Failed to add clients"
+	    fi
+	}
 	;;
   del-client)
-	# the callout does not tell us to which ip the client disconnected
-	# so we must remove it from all the ips that we serve
-	PNN=`ctdb xpnn | sed -e "s/.*://"`
-	ctdb ip -Y | while read LINE; do
-		NODE=`echo $LINE | cut -f3 -d:`
-		[ "$NODE" = "$PNN" ] || {
-			# not us
-			continue
-		} 
-		IP=`echo $LINE | cut -f2 -d:`
-		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
-		rm -f $CTDB_VARDIR/state/statd/ip/$IP/$2
-	done
+	# statd does not tell us from which IP the client disconnected
+	# so we must add it to all the IPs that we serve
+	cip="$2"
+	pnn=$(ctdb xpnn | sed -e 's/.*://')
+	ctdb ip -Y |
+	tail -n +2 | {
+	    # This all needs to be in the end of the pipe so it
+	    # doesn't get lost
+	    items=""
+	    while IFS=":" read x sip node x ; do
+		[ "$node" = "$pnn" ] || continue # not us
+		key="statd-state@${sip}@${cip}"
+		item="\"${key}\" \"\""
+		items="${items}${items:+${nl}}${item}"
+	    done
+	    if ! echo "$items" | ctdb ptrans "ctdb.tdb" ; then
+		die "Failed to delete clients"
+	    fi
+	}
 	;;
-  updatelocal)
-	# For all IPs we serve, collect info and push to the config database
-	PNN=`ctdb xpnn | sed -e "s/.*://"`
-	ctdb ip -Y | tail -n +2 | while read LINE; do
-		NODE=`echo $LINE | cut -f3 -d:`
-		[ "$NODE" = "$PNN" ] || {
-			continue
-		} 
-		IP=`echo $LINE | cut -f2 -d:`
-
-		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
-
-		rm -f $CTDB_VARDIR/state/statd/ip/$IP.tar
-		tar cfP $CTDB_VARDIR/state/statd/ip/$IP.tar $CTDB_VARDIR/state/statd/ip/$IP
-
-		rm -f $CTDB_VARDIR/state/statd/ip/$IP.rec
-		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.rec 2>/dev/null
-		[ "$?" = "0" ] || {
-			# something went wrong,  try storing this data
-			echo No record. Store STATD state data for $IP
-			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.tar 2>/dev/null
-			continue
-		}
-
-		cmp $CTDB_VARDIR/state/statd/ip/$IP.tar $CTDB_VARDIR/state/statd/ip/$IP.rec >/dev/null 2>/dev/null
-		[ "$?" = "0" ] || {
-			# something went wrong,  try storing this data
-			echo Updated record. Store STATD state data for $IP
-			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.tar 2>/dev/null
-			continue
-		}
-	done
-	;;
-
-  updateremote)
-	# For all IPs we dont serve, pull the state from the database
-	PNN=`ctdb xpnn | sed -e "s/.*://"`
-	ctdb ip -Y | tail -n +2 | while read LINE; do
-		NODE=`echo $LINE | cut -f3 -d:`
-		[ "$NODE" = "$PNN" ] && {
-			continue
-		} 
-		IP=`echo $LINE | cut -f2 -d:`
-
-		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
-
-		rm -f $CTDB_VARDIR/state/statd/ip/$IP.rec
-		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.rec 2>/dev/null
-		[ "$?" = "0" ] || {
-			continue
-		}
-
-		rm -f $CTDB_VARDIR/state/statd/ip/$IP/*
-		tar xfP $CTDB_VARDIR/state/statd/ip/$IP.rec
-	done
-	;;
-
-  notify)
+    notify)
 	# we must restart the lockmanager (on all nodes) so that we get
 	# a clusterwide grace period (so other clients dont take out
 	# conflicting locks through other nodes before all locks have been
@@ -131,8 +97,7 @@ case "$1" in
 	# We use epoch and hope the nodes are close enough in clock.
 	# Even numbers mean service is shut down, odd numbers mean
 	# service is started.
-	STATE=$(( $(date '+%s') / 2 * 2))
-
+	state_even=$(( $(date '+%s') / 2 * 2))
 
 	# we must also let some time pass between stopping and restarting the
 	# lockmanager since othervise there is a window where the lockmanager
@@ -174,22 +139,44 @@ case "$1" in
 	# probability that the client will accept the statd notify packet and
 	# not just ignore it.
 	# For all IPs we serve, collect info and push to the config database
-	PNN=`ctdb xpnn | sed -e "s/.*://"`
-	ctdb ip -Y | tail -n +2 | while read LINE; do
-		NODE=`echo $LINE | cut -f3 -d:`
-		[ "$NODE" = "$PNN" ] || {
-			continue
-		} 
-		IP=`echo $LINE | cut -f2 -d:`
+	pnn=$(ctdb xpnn | sed -e 's/.*://')
 
-		ls $CTDB_VARDIR/state/statd/ip/$IP | while read CLIENT; do
-			rm $CTDB_VARDIR/state/statd/ip/$IP/$CLIENT
-			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
-			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
-			STATE=$(($STATE + 1))
-			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
-			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
-		done
+	# Construct a sed expression to take catdb output and produce pairs of:
+	#   server-IP client-IP
+	# but only for the server-IPs that are hosted on this node.
+	sed_expr=$(ctdb ip | tail -n +2 |
+	    awk -v pnn=$pnn 'pnn == $2 { printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", gensub(/\./, "\\\\.", "g", $1) }')
+
+	statd_state=$(ctdb catdb ctdb.tdb | sed -n "$sed_expr" | sort)
+
+	# The following is dangerous if this script times out before
+	# all of the smnotify commands are run.  Revert to individual
+	# pdelete commands for now and consider optimising smnotify to
+	# read all the data from stdin and then run it in the
+	# background.
+	#
+	# Delete all the items from the TDB
+	#if ! echo "$statd_state" | \
+	#    awk '{ printf "\"statd-state@%s@%s\" \"\"\n", $1, $2 }') | \
+	#    ctdb ptrans ctdb.tdb ; then
+
+	#    die "Yikes!"
+	#fi
+
+	prev=""
+	echo "$statd_state" |
+	while read sip cip ; do
+	    # Delete the entry from the DB
+	    ctdb pdelete ctdb.tdb "statd-state@${sip}@${cip}"
+	    # Reset stateval for each serverip
+	    [ "$sip" = "$prev" ] || stateval="$state_even"
+	    # Send notifies for server shutdown
+	    smnotify --client=$cip --ip=$sip --server=$sip --stateval=$stateval
+	    smnotify --client=$cip --ip=$sip --server=$NFS_HOSTNAME --stateval=$stateval
+	    # Send notifies for server startup
+	    stateval=$(($stateval + 1))
+	    smnotify --client=$cip --ip=$sip --server=$sip --stateval=$stateval
+	    smnotify --client=$cip --ip=$sip --server=$NFS_HOSTNAME --stateval=$stateval
 	done
 	;;
 esac

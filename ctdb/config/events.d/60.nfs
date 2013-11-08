@@ -95,10 +95,6 @@ case "$1" in
 	nfs_check_rpc_services
 
 	nfs_check_thread_count
-
-	# Every 10 minutes, update the statd state database for which
-	# clients need notifications
-	nfs_statd_update 600
        	;;
 
     *)
