@@ -1084,6 +1084,10 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_ERR(result)) {
 		return result;
 	}
+	if (sids->num_sids != lsa_names2.count) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1099,6 +1103,16 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 		names->names[i].name.string = talloc_move(
 			names->names, &lsa_names2.names[i].name.string);
 		names->names[i].sid_index = lsa_names2.names[i].sid_index;
+
+		if (names->names[i].sid_index == UINT32_MAX) {
+			continue;
+		}
+		if ((*pdomains) == NULL) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (names->names[i].sid_index >= (*pdomains)->count) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 	}
 	*pnames = names;
 	return result;
@@ -1114,6 +1128,7 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle lsa_policy;
 	uint32_t count;
+	uint32_t i;
 	NTSTATUS status, result;
 
 	status = cm_connect_lsat(domain, mem_ctx, &cli, &lsa_policy);
@@ -1140,6 +1155,23 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_ERR(result)) {
 		return result;
 	}
+
+	if (sids->num_sids != names->count) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	for (i=0; i < names->count; i++) {
+		if (names->names[i].sid_index == UINT32_MAX) {
+			continue;
+		}
+		if ((*pdomains) == NULL) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (names->names[i].sid_index >= (*pdomains)->count) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+	}
+
 	*pnames = names;
 	return result;
 }
