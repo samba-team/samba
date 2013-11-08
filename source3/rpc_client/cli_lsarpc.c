@@ -279,11 +279,26 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 
 	for (i = 0; i < num_sids; i++) {
 		const char *name, *dom_name;
-		uint32_t dom_idx = lsa_names.names[i].sid_index;
+		uint32_t dom_idx;
+
+		if (i >= lsa_names.count) {
+			*presult = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			return status;
+		}
+
+		dom_idx = lsa_names.names[i].sid_index;
 
 		/* Translate optimised name through domain index array */
 
 		if (dom_idx != 0xffffffff) {
+			if (ref_domains == NULL) {
+				*presult = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				return status;
+			}
+			if (dom_idx >= ref_domains->count) {
+				*presult = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				return status;
+			}
 
 			dom_name = ref_domains->domains[dom_idx].name.string;
 			name = lsa_names.names[i].name.string;

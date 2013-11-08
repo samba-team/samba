@@ -260,7 +260,21 @@ NTSTATUS smblsa_lookup_sid(struct smbcli_state *cli,
 	}
 	if (names.count != 1) {
 		talloc_free(mem_ctx2);
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (domains == NULL) {
+		talloc_free(mem_ctx2);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (domains->count != 1) {
+		talloc_free(mem_ctx2);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (names.names[0].sid_index != UINT32_MAX &&
+	    names.names[0].sid_index >= domains->count)
+	{
+		talloc_free(mem_ctx2);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	(*name) = talloc_asprintf(mem_ctx, "%s\\%s", 
