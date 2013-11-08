@@ -662,9 +662,19 @@ NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 		struct dom_sid *sid = &(*sids)[i];
 
 		if (use_lookupnames4) {
+			if (i >= sid_array3.count) {
+				*presult = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				goto done;
+			}
+
 			dom_idx		= sid_array3.sids[i].sid_index;
 			(*types)[i]	= sid_array3.sids[i].sid_type;
 		} else {
+			if (i >= sid_array.count) {
+				*presult = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				goto done;
+			}
+
 			dom_idx		= sid_array.sids[i].sid_index;
 			(*types)[i]	= sid_array.sids[i].sid_type;
 		}
@@ -676,6 +686,14 @@ NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 			ZERO_STRUCTP(sid);
 			(*types)[i] = SID_NAME_UNKNOWN;
 			continue;
+		}
+		if (domains == NULL) {
+			*presult = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto done;
+		}
+		if (dom_idx >= domains->count) {
+			*presult = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto done;
 		}
 
 		if (use_lookupnames4) {

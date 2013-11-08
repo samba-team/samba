@@ -656,9 +656,17 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 							      "samr_LookupNames for [%s] returns %d RIDs",
 							      r->in.account_name, ln.out.rids->count);
 			talloc_free(tmp_ctx);
-			return NT_STATUS_INVALID_PARAMETER;
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
-		
+
+		if (ln.out.types->count != 1) {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+								"samr_LookupNames for [%s] returns %d RID TYPEs",
+								r->in.account_name, ln.out.types->count);
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+
 		/* prepare samr_OpenUser */
 		ZERO_STRUCTP(u_handle);
 		ou.in.domain_handle = &d_handle;

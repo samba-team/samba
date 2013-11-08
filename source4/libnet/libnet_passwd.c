@@ -627,8 +627,16 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupNames for [%s] returns %d RIDs",
 						r->samr.in.account_name, ln.out.rids->count);
-		status = NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto disconnect;	
+	}
+
+	if (ln.out.types->count != 1) {
+		r->samr.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_LookupNames for [%s] returns %d RID TYPEs",
+						r->samr.in.account_name, ln.out.types->count);
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto disconnect;
 	}
 
 	/* prepare samr_OpenUser */
