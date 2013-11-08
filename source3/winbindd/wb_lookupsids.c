@@ -402,6 +402,9 @@ static bool wb_lookupsids_move_name(struct lsa_RefDomainList *src_domains,
 	uint32_t src_domain_index, dst_domain_index;
 
 	src_domain_index = src_name->sid_index;
+	if (src_domain_index >= src_domains->count) {
+		return false;
+	}
 	src_domain = &src_domains->domains[src_domain_index];
 
 	if (!wb_lookupsids_find_dom_idx(
