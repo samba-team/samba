@@ -646,7 +646,8 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (smb_fname_base->st.st_ex_nlink == 1) {
+	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	if (ret == 0) {
 		char *dirname = stream_dir(handle, smb_fname_base,
 					   &smb_fname_base->st, false);
 
@@ -655,8 +656,6 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 		}
 		TALLOC_FREE(dirname);
 	}
-
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 
 	TALLOC_FREE(smb_fname_base);
 	return ret;
@@ -690,7 +689,8 @@ static int streams_depot_rmdir(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	if (smb_fname_base->st.st_ex_nlink == 2) {
+	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+	if (ret == 0) {
 		char *dirname = stream_dir(handle, smb_fname_base,
 					   &smb_fname_base->st, false);
 
@@ -699,8 +699,6 @@ static int streams_depot_rmdir(vfs_handle_struct *handle, const char *path)
 		}
 		TALLOC_FREE(dirname);
 	}
-
-	ret = SMB_VFS_NEXT_RMDIR(handle, path);
 
 	TALLOC_FREE(smb_fname_base);
 	return ret;
