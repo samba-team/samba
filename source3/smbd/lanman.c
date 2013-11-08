@@ -2629,6 +2629,14 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 			  nt_errstr(result)));
 		goto close_domain;
 	}
+	if (rid.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto close_domain;
+	}
+	if (type.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto close_domain;
+	}
 
 	if (type.ids[0] != SID_NAME_USER) {
 		DEBUG(10, ("%s is a %s, not a user\n", UserName,

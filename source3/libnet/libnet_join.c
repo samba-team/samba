@@ -1027,6 +1027,14 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		status = result;
 		goto done;
 	}
+	if (user_rids.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (name_types.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
 
 	if (name_types.ids[0] != SID_NAME_USER) {
 		DEBUG(0,("%s is not a user account (type=%d)\n",
@@ -1420,6 +1428,14 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		status = result;
+		goto done;
+	}
+	if (user_rids.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (name_types.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto done;
 	}
 

@@ -335,7 +335,11 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 	}
 	if (sids.count != 1) {
 		talloc_free(mem_ctx2);
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (domains->count != 1) {
+		talloc_free(mem_ctx2);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	sid = domains->domains[0].sid;

@@ -323,7 +323,7 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 
 	uint32_t num_names;
 	struct lsa_String *names;
-	struct lsa_RefDomainList *domains;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransSidArray3 sids;
 	uint32_t count = 0;
 	int i;
@@ -359,6 +359,10 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
+
+	if (sids.count != num_names) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	for (i = 0; i < sids.count; i++) {
