@@ -58,6 +58,12 @@ static NTSTATUS libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
+	if (user_rids.count != 1) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (name_types.count != 1) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
 
 	switch (name_types.ids[0]) {
 		case SID_NAME_ALIAS:
@@ -1041,7 +1047,7 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 	NT_STATUS_NOT_OK_RETURN(result);
 
 	if (count != 1 || sids.count != 1) {
-		return NT_STATUS_NONE_MAPPED;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	sid_copy(sid, sids.sids[0].sid);

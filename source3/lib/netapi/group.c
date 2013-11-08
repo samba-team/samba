@@ -309,6 +309,15 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	if (rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+
 	if (types.ids[0] != SID_NAME_DOM_GRP) {
 		werr = WERR_INVALID_DATATYPE;
 		goto done;
@@ -509,6 +518,14 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		werr = ntstatus_to_werror(result);
+		goto done;
+	}
+	if (rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
 		goto done;
 	}
 
@@ -781,6 +798,14 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		werr = ntstatus_to_werror(result);
 		goto done;
 	}
+	if (rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
 
 	if (types.ids[0] != SID_NAME_DOM_GRP) {
 		werr = WERR_INVALID_DATATYPE;
@@ -921,6 +946,14 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 		werr = WERR_GROUPNOTFOUND;
 		goto done;
 	}
+	if (rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
 
 	if (types.ids[0] != SID_NAME_DOM_GRP) {
 		werr = WERR_GROUPNOTFOUND;
@@ -957,6 +990,14 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		werr = WERR_USER_NOT_FOUND;
+		goto done;
+	}
+	if (rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
 		goto done;
 	}
 
@@ -1065,6 +1106,14 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 		werr = WERR_GROUPNOTFOUND;
 		goto done;
 	}
+	if (rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
 
 	if (types.ids[0] != SID_NAME_DOM_GRP) {
 		werr = WERR_GROUPNOTFOUND;
@@ -1102,6 +1151,14 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		werr = WERR_USER_NOT_FOUND;
+		goto done;
+	}
+	if (rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
 		goto done;
 	}
 
@@ -1515,6 +1572,14 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 		werr = ntstatus_to_werror(result);
 		goto done;
 	}
+	if (group_rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (name_types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
 
 	status = dcerpc_samr_OpenGroup(b, talloc_tos(),
 				       &domain_handle,
@@ -1691,6 +1756,14 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 		werr = ntstatus_to_werror(result);
 		goto done;
 	}
+	if (group_rids.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (group_types.count != 1) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
 
 	status = dcerpc_samr_OpenGroup(b, talloc_tos(),
 				       &domain_handle,
@@ -1766,6 +1839,15 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		werr = ntstatus_to_werror(result);
+		goto done;
+	}
+
+	if (r->in.num_entries != user_rids.count) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (r->in.num_entries != name_types.count) {
+		werr = WERR_BAD_NET_RESP;
 		goto done;
 	}
 
