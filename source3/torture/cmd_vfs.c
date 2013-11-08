@@ -347,6 +347,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	status = NT_STATUS_OK;
 	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
 	if (ret == -1) {
 		/* If we have an fd, this stat should succeed. */
@@ -359,7 +360,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		errno = EISDIR;
 		status = NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		SMB_VFS_CLOSE(fsp);
 		TALLOC_FREE(fsp);
@@ -1780,7 +1781,7 @@ struct cmd_set vfs_commands[] = {
 	{ "mkdir",   cmd_mkdir,   "VFS mkdir()",    "mkdir <path>" },
 	{ "rmdir",   cmd_pathfunc,   "VFS rmdir()",    "rmdir <path>" },
 	{ "closedir",   cmd_closedir,   "VFS closedir()",    "closedir" },
-	{ "open",   cmd_open,   "VFS open()",    "open <fname>" },
+	{ "open",   cmd_open,   "VFS open()",    "open <fname> <flags> <mode>" },
 	{ "close",   cmd_close,   "VFS close()",    "close <fd>" },
 	{ "read",   cmd_read,   "VFS read()",    "read <fd> <size>" },
 	{ "write",   cmd_write,   "VFS write()",    "write <fd> <size>" },
