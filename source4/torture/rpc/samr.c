@@ -3782,11 +3782,12 @@ static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 
 	info.info1 = *info1;
 	info.info1.password_history_length = password_history_length;
+	info.info1.min_password_age = 0;
 
 	torture_assert(tctx,
 		       test_SetDomainInfo(b, tctx, domain_handle,
 					  DomainPasswordInformation, &info),
-		       "failed to set password history length");
+		       "failed to set password history length and min passwd age");
 
 	info.info12 = *info12;
 	info.info12.lockout_threshold = lockout_threshold;
@@ -4126,6 +4127,9 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 
 	torture_comment(tctx, "setting password history length.\n");
 	info.info1.password_history_length = password_history_length;
+
+	torture_comment(tctx, "setting min password again.\n");
+	info.info1.min_password_age = 0;
 
 	torture_assert(tctx,
 		       test_SetDomainInfo(b, tctx, domain_handle,
