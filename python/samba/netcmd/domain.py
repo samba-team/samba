@@ -1079,8 +1079,11 @@ class cmd_domain_level(Command):
 class cmd_domain_passwordsettings(Command):
     """Set password settings.
 
-    Password complexity, history length, minimum password length, the minimum
-    and maximum password age) on a Samba4 server.
+    Password complexity, password lockout policy, history length,
+    minimum password length, the minimum and maximum password age) on
+    a Samba AD DC server.
+
+    Use against a Windows DC is possible, but group policy will override it.
     """
 
     synopsis = "%prog (show|set <options>) [options]"
@@ -1107,13 +1110,20 @@ class cmd_domain_passwordsettings(Command):
           help="The minimum password age (<integer in days> | default).  Default is 1.", type=str),
         Option("--max-pwd-age",
           help="The maximum password age (<integer in days> | default).  Default is 43.", type=str),
+        Option("--account-lockout-duration",
+          help="The the length of time an account is locked out after exeeding the limit on bad password attempts (<integer in mins> | default).  Default is 30 mins.", type=str),
+        Option("--account-lockout-threshold",
+          help="The number of bad password attempts allowed before locking out the account (<integer> | default).  Default is 0 (never lock out).", type=str),
+        Option("--reset-account-lockout-after",
+          help="After this time is elapsed, the recorded number of attempts restarts from zero (<integer> | default).  Default is 30.", type=str),
           ]
 
     takes_args = ["subcommand"]
 
     def run(self, subcommand, H=None, min_pwd_age=None, max_pwd_age=None,
             quiet=False, complexity=None, store_plaintext=None, history_length=None,
-            min_pwd_length=None, credopts=None, sambaopts=None,
+            min_pwd_length=None, account_lockout_duration=None, account_lockout_threshold=None,
+            reset_account_lockout_after=None, credopts=None, sambaopts=None,
             versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
@@ -1124,7 +1134,8 @@ class cmd_domain_passwordsettings(Command):
         domain_dn = samdb.domain_dn()
         res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
           attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength",
-                 "minPwdAge", "maxPwdAge"])
+                 "minPwdAge", "maxPwdAge", "lockoutDuration", "lockoutThreshold",
+                 "lockOutObservationWindow"])
         assert(len(res) == 1)
         try:
             pwd_props = int(res[0]["pwdProperties"][0])
@@ -1136,6 +1147,13 @@ class cmd_domain_passwordsettings(Command):
                 cur_max_pwd_age = 0
             else:
                 cur_max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
+            cur_account_lockout_threshold = int(res[0]["lockoutThreshold"][0])
+            # ticks -> mins
+            if int(res[0]["lockoutDuration"][0]) == -0x8000000000000000:
+                cur_account_lockout_duration = 0
+            else:
+                cur_account_lockout_duration = abs(int(res[0]["lockoutDuration"][0])) / (1e7 * 60)
+            cur_reset_account_lockout_after = abs(int(res[0]["lockOutObservationWindow"][0])) / (1e7 * 60)
         except Exception, e:
             raise CommandError("Could not retrieve password properties!", e)
 
@@ -1154,6 +1172,9 @@ class cmd_domain_passwordsettings(Command):
             self.message("Minimum password length: %d" % cur_min_pwd_len)
             self.message("Minimum password age (days): %d" % cur_min_pwd_age)
             self.message("Maximum password age (days): %d" % cur_max_pwd_age)
+            self.message("Account lockout duration (mins): %d" % cur_account_lockout_duration)
+            self.message("Account lockout threshold (attempts): %d" % cur_account_lockout_threshold)
+            self.message("Reset account lockout after (mins): %d" % cur_reset_account_lockout_after)
         elif subcommand == "set":
             msgs = []
             m = ldb.Message()
@@ -1239,6 +1260,54 @@ class cmd_domain_passwordsettings(Command):
                 m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age_ticks),
                   ldb.FLAG_MOD_REPLACE, "maxPwdAge")
                 msgs.append("Maximum password age changed!")
+
+            if account_lockout_duration is not None:
+                if account_lockout_duration == "default":
+                    account_lockout_duration = 30
+                else:
+                    account_lockout_duration = int(account_lockout_duration)
+
+                if account_lockout_duration < 0 or account_lockout_duration > 99999:
+                    raise CommandError("Maximum password age must be in the range of 0 to 99999!")
+
+                # days -> ticks
+                if account_lockout_duration == 0:
+                    account_lockout_duration_ticks = -0x8000000000000000
+                else:
+                    account_lockout_duration_ticks = -int(account_lockout_duration * (60 * 1e7))
+
+                m["lockoutDuration"] = ldb.MessageElement(str(account_lockout_duration_ticks),
+                  ldb.FLAG_MOD_REPLACE, "lockoutDuration")
+                msgs.append("Account lockout duration changed!")
+
+            if account_lockout_threshold is not None:
+                if account_lockout_threshold == "default":
+                    account_lockout_threshold = 0
+                else:
+                    account_lockout_threshold = int(account_lockout_threshold)
+
+                m["lockoutThreshold"] = ldb.MessageElement(str(account_lockout_threshold),
+                  ldb.FLAG_MOD_REPLACE, "lockoutThreshold")
+                msgs.append("Account lockout threshold changed!")
+
+            if reset_account_lockout_after is not None:
+                if reset_account_lockout_after == "default":
+                    reset_account_lockout_after = 30
+                else:
+                    reset_account_lockout_after = int(reset_account_lockout_after)
+
+                if reset_account_lockout_after < 0 or reset_account_lockout_after > 99999:
+                    raise CommandError("Maximum password age must be in the range of 0 to 99999!")
+
+                # days -> ticks
+                if reset_account_lockout_after == 0:
+                    reset_account_lockout_after_ticks = -0x8000000000000000
+                else:
+                    reset_account_lockout_after_ticks = -int(reset_account_lockout_after * (60 * 1e7))
+
+                m["lockOutObservationWindow"] = ldb.MessageElement(str(reset_account_lockout_after_ticks),
+                  ldb.FLAG_MOD_REPLACE, "lockOutObservationWindow")
+                msgs.append("Duration to reset account lockout after changed!")
 
             if max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
                 raise CommandError("Maximum password age (%d) must be greater than minimum password age (%d)!" % (max_pwd_age, min_pwd_age))
