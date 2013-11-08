@@ -665,6 +665,7 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 static int streams_depot_rmdir(vfs_handle_struct *handle, const char *path)
 {
 	struct smb_filename *smb_fname_base = NULL;
+	char *dirname;
 	int ret = -1;
 
 	DEBUG(10, ("streams_depot_rmdir called for %s\n", path));
@@ -690,15 +691,14 @@ static int streams_depot_rmdir(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	if (smb_fname_base->st.st_ex_nlink == 2) {
-		char *dirname = stream_dir(handle, smb_fname_base,
-					   &smb_fname_base->st, false);
-
-		if (dirname != NULL) {
-			SMB_VFS_NEXT_RMDIR(handle, dirname);
-		}
-		TALLOC_FREE(dirname);
+	dirname = stream_dir(handle,
+			     smb_fname_base,
+			     &smb_fname_base->st,
+			     false);
+	if (dirname != NULL) {
+		SMB_VFS_NEXT_RMDIR(handle, dirname);
 	}
+	TALLOC_FREE(dirname);
 
 	ret = SMB_VFS_NEXT_RMDIR(handle, path);
 
