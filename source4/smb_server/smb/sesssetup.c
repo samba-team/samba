@@ -415,6 +415,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 {
 	NTSTATUS status;
 	struct smbsrv_session *smb_sess = NULL;
+	bool is_smb_sess_new = false;
 	struct sesssetup_spnego_state *s = NULL;
 	uint16_t vuid;
 	struct tevent_req *subreq;
@@ -465,6 +466,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 			status = NT_STATUS_INSUFFICIENT_RESOURCES;
 			goto failed;
 		}
+		is_smb_sess_new = true;
 	} else {
 		smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
 	}
@@ -510,7 +512,9 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 nomem:
 	status = NT_STATUS_NO_MEMORY;
 failed:
-	talloc_free(smb_sess);
+	if (is_smb_sess_new) {
+		talloc_free(smb_sess);
+	}
 	status = nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
