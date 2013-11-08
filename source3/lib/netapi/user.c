@@ -3113,6 +3113,14 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 		werr = ntstatus_to_werror(result);
 		goto done;
 	}
+	if (names.count != rid_array->count) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != rid_array->count) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
 
 	for (i=0; i < names.count; i++) {
 		status = add_GROUP_USERS_INFO_X_buffer(ctx,
@@ -3712,6 +3720,14 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		werr = ntstatus_to_werror(result);
+		goto done;
+	}
+	if (names.count != num_rids) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (types.count != num_rids) {
+		werr = WERR_BAD_NET_RESP;
 		goto done;
 	}
 

@@ -2223,6 +2223,14 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Display results */
+	if (num_rids != names.count) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (num_rids != types.count) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
 
 	for (i = 0; i < num_rids; i++) {
 		printf("rid 0x%x: %s (%d)\n",
