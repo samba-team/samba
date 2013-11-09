@@ -867,10 +867,8 @@ int cli_NetUserAdd(struct cli_state *cli, struct rap_user_info_1 * userinfo )
 
 	PUTWORD(p, 1); /* info level */
 	PUTWORD(p, 0); /* pwencrypt */
-	if(userinfo->passwrd)
-		PUTWORD(p,MIN(strlen((const char *)userinfo->passwrd), RAP_UPASSWD_LEN));
-	else
-		PUTWORD(p, 0); /* password length */
+	PUTWORD(p, MIN(strlen((const char *)userinfo->passwrd),
+		       RAP_UPASSWD_LEN));
 
 	p = data;
 	memset(data, '\0', soffset);
