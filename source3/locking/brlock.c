@@ -2222,7 +2222,7 @@ static int compare_procids(const void *p1, const void *p2)
 	const struct server_id *i2 = (const struct server_id *)p2;
 
 	if (i1->pid < i2->pid) return -1;
-	if (i2->pid > i2->pid) return 1;
+	if (i1->pid > i2->pid) return 1;
 	return 0;
 }
 
