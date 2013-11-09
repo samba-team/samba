@@ -108,8 +108,6 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 			}
 			break;
 		}
-		default:
-			break;
 		}
 	}
 
