@@ -811,7 +811,7 @@ static int partition_start_trans(struct ldb_module *module)
 	/* Look at base DN */
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialization) */
-	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+	if (ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_start_trans() -> (metadata partition)");
 	}
 	ret = ldb_next_start_trans(module);
