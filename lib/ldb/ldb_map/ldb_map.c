@@ -340,7 +340,7 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
 			break;
 
 		case LDB_MAP_GENERATE:
-			for (j = 0; map->u.generate.remote_names && map->u.generate.remote_names[j]; j++) {
+			for (j = 0; map->u.generate.remote_names[j]; j++) {
 				if (ldb_attr_cmp(map->u.generate.remote_names[j], name) == 0) {
 					return map;
 				}
