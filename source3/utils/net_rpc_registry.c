@@ -1183,7 +1183,10 @@ static void dump_values( REGF_NK_REC *nk )
 		switch ( nk->values[i].type ) {
 			case REG_SZ:
 				blob = data_blob_const(nk->values[i].data, data_size);
-				pull_reg_sz(talloc_tos(), &blob, &data_str);
+				if (!pull_reg_sz(talloc_tos(), &blob,
+						 &data_str)) {
+					data_str = NULL;
+				}
 				if (!data_str) {
 					break;
 				}
