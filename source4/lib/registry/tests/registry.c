@@ -552,14 +552,14 @@ static bool test_list_values(struct torture_context *tctx, void *_data)
 				  "getting missing value");
 
 	error = reg_val_set(subkey, "", REG_SZ,
-			    data_blob_talloc(tctx, data_val, sizeof(data_val)));
+			    data_blob_talloc(tctx, data_val, strlen(data_val)));
 	torture_assert_werr_ok(tctx, error, "set default value");
 
 	error = reg_key_get_value_by_index(tctx, subkey, 0, &name,
 					   &type, &data);
 	torture_assert_werr_ok(tctx, error, "getting default value");
 	torture_assert_int_equal(tctx, REG_SZ, type, "value type ok");
-	torture_assert_int_equal(tctx, sizeof(data_val), data.length, "value length ok");
+	torture_assert_int_equal(tctx, strlen(data_val), data.length, "value length ok");
 	torture_assert_str_equal(tctx, data_val, (char *)data.data, "value ok");
 
 	return true;
