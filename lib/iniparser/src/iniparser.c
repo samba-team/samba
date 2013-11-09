@@ -38,16 +38,18 @@ static void iniparser_add_entry(
     char * val)
 {
     char longkey[2*ASCIILINESZ+1];
+    char *l;
 
     /* Make a key as section:keyword */
     if (key!=NULL) {
-        sprintf(longkey, "%s:%s", sec, key);
+	snprintf(longkey, sizeof(longkey), "%s:%s", sec, key);
+	l = longkey;
     } else {
-        strcpy(longkey, sec);
+	l = sec;
     }
 
     /* Add (key,val) to dictionary */
-    dictionary_set(d, longkey, val);
+    dictionary_set(d, l, val);
     return ;
 }
 
