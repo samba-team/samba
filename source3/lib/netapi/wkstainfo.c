@@ -83,6 +83,7 @@ static NTSTATUS map_wksta_info_to_WKSTA_INFO_buffer(TALLOC_CTX *mem_ctx,
 		i102.wki102_ver_major		= i->info102->version_major;
 		i102.wki102_ver_minor		= i->info102->version_minor;
 		i102.wki102_lanroot		= talloc_strdup(mem_ctx, i->info102->lan_root);
+		i102.wki102_logged_on_users	= i->info102->logged_on_users;
 
 		ADD_TO_ARRAY(mem_ctx, struct WKSTA_INFO_102, i102,
 			     (struct WKSTA_INFO_102 **)buffer,
