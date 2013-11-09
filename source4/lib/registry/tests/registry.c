@@ -502,7 +502,8 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 				  "unsetting missing default value");
 
 	error = reg_val_set(subkey, "", REG_SZ,
-			    data_blob_talloc(tctx, data_val, sizeof(data_val)));
+			    data_blob_talloc(tctx, data_val,
+					     strlen(data_val)));
 	torture_assert_werr_ok(tctx, error, "set default value");
 
 	error = reg_del_value(tctx, subkey, "");
