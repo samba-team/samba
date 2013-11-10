@@ -181,7 +181,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 		return ldb_operr(ldb);
 	}
 
-	remote_message = ldb_msg_copy_shallow(remote_req, req->op.add.message);
+	remote_message = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (remote_message == NULL) {
 		return ldb_operr(ldb);
 	}
