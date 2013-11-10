@@ -127,13 +127,6 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 		break;
 	}
 
-	if (user_sess_key && user_sess_key->data) {
-		talloc_steal(auth_context, user_sess_key->data);
-	}
-	if (lm_sess_key && lm_sess_key->data) {
-		talloc_steal(auth_context, lm_sess_key->data);
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -142,31 +135,45 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
   send a message to the drepl server telling it to initiate a
   REPL_SECRET getncchanges extended op to fetch the users secrets
  */
-static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx, struct auth4_context *auth_context,
+static void auth_sam_trigger_repl_secret(struct auth4_context *auth_context,
 					 struct ldb_dn *user_dn)
 {
 	struct dcerpc_binding_handle *irpc_handle;
 	struct drepl_trigger_repl_secret r;
 	struct tevent_req *req;
+	TALLOC_CTX *tmp_ctx;
 
-	irpc_handle = irpc_binding_handle_by_name(mem_ctx, auth_context->msg_ctx,
+	tmp_ctx = talloc_new(auth_context);
+	if (tmp_ctx == NULL) {
+		return;
+	}
+
+	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, auth_context->msg_ctx,
 						  "dreplsrv",
 						  &ndr_table_irpc);
 	if (irpc_handle == NULL) {
 		DEBUG(1,(__location__ ": Unable to get binding handle for dreplsrv\n"));
+		TALLOC_FREE(tmp_ctx);
 		return;
 	}
 
 	r.in.user_dn = ldb_dn_get_linearized(user_dn);
 
-	req = dcerpc_drepl_trigger_repl_secret_r_send(mem_ctx,
+	/*
+	 * This seem to rely on the current IRPC implementation,
+	 * which delivers the message in the _send function.
+	 *
+	 * TODO: we need a ONE_WAY IRPC handle and register
+	 * a callback and wait for it to be triggered!
+	 */
+	req = dcerpc_drepl_trigger_repl_secret_r_send(tmp_ctx,
 						      auth_context->event_ctx,
 						      irpc_handle,
 						      &r);
 
 	/* we aren't interested in a reply */
 	talloc_free(req);
-	talloc_free(irpc_handle);
+	TALLOC_FREE(tmp_ctx);
 }
 
 
@@ -179,17 +186,27 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 {
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
+	TALLOC_CTX *tmp_ctx;
 	uint16_t acct_flags = samdb_result_acct_flags(msg, NULL);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* You can only do an interactive login to normal accounts */
 	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
 		if (!(acct_flags & ACB_NORMAL)) {
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_SUCH_USER;
 		}
 	}
 
-	nt_status = samdb_result_passwords(mem_ctx, auth_context->lp_ctx, msg, &lm_pwd, &nt_pwd);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	nt_status = samdb_result_passwords(tmp_ctx, auth_context->lp_ctx, msg, &lm_pwd, &nt_pwd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
 
 	if (lm_pwd == NULL && nt_pwd == NULL) {
 		bool am_rodc;
@@ -205,12 +222,13 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 			 * drepl server to tell it to try and
 			 * replicate the secrets for this account.
 			 */
-			auth_sam_trigger_repl_secret(mem_ctx, auth_context, msg->dn);
+			auth_sam_trigger_repl_secret(auth_context, msg->dn);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NOT_IMPLEMENTED;
 		}
 	}
 
-	nt_status = authsam_password_ok(auth_context, mem_ctx, 
+	nt_status = authsam_password_ok(auth_context, tmp_ctx,
 					acct_flags, lm_pwd, nt_pwd,
 					user_info, user_sess_key, lm_sess_key);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -220,9 +238,12 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 		}
 	}
 
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
 
-	nt_status = authsam_account_ok(mem_ctx, auth_context->sam_ctx,
+	nt_status = authsam_account_ok(tmp_ctx, auth_context->sam_ctx,
 				       user_info->logon_parameters,
 				       domain_dn,
 				       msg,
@@ -230,6 +251,19 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 				       user_info->mapped.account_name,
 				       false, false);
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+
+	if (user_sess_key && user_sess_key->data) {
+		talloc_steal(mem_ctx, user_sess_key->data);
+	}
+	if (lm_sess_key && lm_sess_key->data) {
+		talloc_steal(mem_ctx, lm_sess_key->data);
+	}
+
+	TALLOC_FREE(tmp_ctx);
 	return nt_status;
 }
 
