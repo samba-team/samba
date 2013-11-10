@@ -137,6 +137,7 @@ _gsskrb5_create_ctx(
     if (kret) {
 	*minor_status = kret;
 	HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
+	free(ctx);
 	return GSS_S_FAILURE;
     }
 
@@ -145,6 +146,7 @@ _gsskrb5_create_ctx(
 	*minor_status = kret;
 	krb5_auth_con_free(context, ctx->auth_context);
 	HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
+	free(ctx);
 	return GSS_S_FAILURE;
     }
 
@@ -156,7 +158,7 @@ _gsskrb5_create_ctx(
 	krb5_auth_con_free(context, ctx->deleg_auth_context);
 
 	HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
-
+	free(ctx);
 	return GSS_S_BAD_BINDINGS;
     }
 
@@ -168,7 +170,7 @@ _gsskrb5_create_ctx(
 	krb5_auth_con_free(context, ctx->deleg_auth_context);
 
 	HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
-
+	free(ctx);
 	return GSS_S_BAD_BINDINGS;
     }
 
