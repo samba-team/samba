@@ -60,8 +60,8 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 		sess.uid = global->auth_session_info->unix_token->uid;
 		sess.gid = global->auth_session_info->unix_token->gid;
 	}
-	strncpy(sess.machine, global->channels[0].remote_name, sizeof(sess.machine));
-	strncpy(sess.addr, global->channels[0].remote_address, sizeof(sess.addr));
+	fstrcpy(sess.machine, global->channels[0].remote_name);
+	fstrcpy(sess.addr, global->channels[0].remote_address);
 
 	status = dbwrap_store(state->session_by_pid,
 			      make_tdb_data((void*)&id, sizeof(id)),
