@@ -126,6 +126,7 @@ struct ctdb_tunable {
 	uint32_t pulldb_preallocation_size;
 	uint32_t no_ip_host_on_all_disabled;
 	uint32_t samba3_hack;
+	uint32_t mutex_enabled;
 };
 
 /*

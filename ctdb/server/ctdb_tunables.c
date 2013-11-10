@@ -82,6 +82,7 @@ static const struct {
 	{ "PullDBPreallocation", 10*1024*1024,  offsetof(struct ctdb_tunable, pulldb_preallocation_size), false },
 	{ "NoIPHostOnAllDisabled",    0,  offsetof(struct ctdb_tunable, no_ip_host_on_all_disabled), false },
 	{ "Samba3AvoidDeadlocks", 0, offsetof(struct ctdb_tunable, samba3_hack), false },
+	{ "TDBMutexEnabled", 0, offsetof(struct ctdb_tunable, mutex_enabled), false },
 };
 
 /*

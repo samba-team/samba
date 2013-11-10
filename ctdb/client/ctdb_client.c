@@ -1926,6 +1926,12 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32
 		tdb_flags = TDB_INCOMPATIBLE_HASH;
 	}
 
+#ifdef TDB_MUTEX_LOCKING
+	if (!persistent && ctdb->tunable.mutex_enabled == 1) {
+		tdb_flags |= TDB_MUTEX_LOCKING;
+	}
+#endif
+
 	ret = ctdb_control(ctdb, destnode, tdb_flags,
 			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH, 
 			   0, data, 
@@ -2072,6 +2078,12 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	if (!persistent) {
 		tdb_flags |= TDB_INCOMPATIBLE_HASH;
 	}
+
+#ifdef TDB_MUTEX_LOCKING
+	if (!persistent && ctdb->tunable.mutex_enabled == 1) {
+		tdb_flags |= TDB_MUTEX_LOCKING;
+	}
+#endif
 
 	/* tell ctdb daemon to attach */
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, tdb_flags, 

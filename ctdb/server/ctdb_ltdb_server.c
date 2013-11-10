@@ -837,7 +837,8 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 		tdb_flags |= TDB_INCOMPATIBLE_HASH;
 	}
 #ifdef TDB_MUTEX_LOCKING
-	if (mutexes && tdb_runtime_check_for_robust_mutexes()) {
+	if (ctdb->tunable.mutex_enabled && mutexes &&
+	    tdb_runtime_check_for_robust_mutexes()) {
 		tdb_flags |= TDB_MUTEX_LOCKING;
 	}
 #endif
