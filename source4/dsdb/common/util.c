@@ -558,6 +558,43 @@ unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *
 	return count;
 }
 
+NTSTATUS samdb_result_passwords_from_history(TALLOC_CTX *mem_ctx,
+					     struct loadparm_context *lp_ctx,
+					     struct ldb_message *msg,
+					     unsigned int idx,
+					     struct samr_Password **lm_pwd,
+					     struct samr_Password **nt_pwd)
+{
+	struct samr_Password *lmPwdHash, *ntPwdHash;
+
+	if (nt_pwd) {
+		unsigned int num_nt;
+		num_nt = samdb_result_hashes(mem_ctx, msg, "ntPwdHistory", &ntPwdHash);
+		if (num_nt < idx) {
+			*nt_pwd = NULL;
+		} else {
+			*nt_pwd = &ntPwdHash[idx];
+		}
+	}
+	if (lm_pwd) {
+		/* Ensure that if we have turned off LM
+		 * authentication, that we never use the LM hash, even
+		 * if we store it */
+		if (lpcfg_lanman_auth(lp_ctx)) {
+			unsigned int num_lm;
+			num_lm = samdb_result_hashes(mem_ctx, msg, "lmPwdHistory", &lmPwdHash);
+			if (num_lm < idx) {
+				*lm_pwd = NULL;
+			} else {
+				*lm_pwd = &lmPwdHash[idx];
+			}
+		} else {
+			*lm_pwd = NULL;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 NTSTATUS samdb_result_passwords_no_lockout(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
 					   struct ldb_message *msg,
