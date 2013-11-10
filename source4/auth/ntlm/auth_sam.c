@@ -33,6 +33,7 @@
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "lib/messaging/irpc.h"
+#include "libcli/auth/libcli_auth.h"
 
 NTSTATUS auth_sam_init(void);
 
@@ -177,32 +178,45 @@ static void auth_sam_trigger_repl_secret(struct auth4_context *auth_context,
 }
 
 
-static NTSTATUS authsam_authenticate(struct auth4_context *auth_context, 
-				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx, 
-				     struct ldb_dn *domain_dn,
-				     struct ldb_message *msg,
-				     const struct auth_usersupplied_info *user_info, 
-				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key) 
+/*
+ * Check that a password is OK, and update badPwdCount if required.
+ */
+
+static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_context,
+						  TALLOC_CTX *mem_ctx,
+						  struct ldb_dn *domain_dn,
+						  struct ldb_message *msg,
+						  uint16_t acct_flags,
+						  const struct auth_usersupplied_info *user_info,
+						  DATA_BLOB *user_sess_key,
+						  DATA_BLOB *lm_sess_key)
 {
-	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
+	NTSTATUS auth_status;
 	TALLOC_CTX *tmp_ctx;
-	uint16_t acct_flags = samdb_result_acct_flags(msg, NULL);
+	int i, ret;
+	int history_len = 0;
+	struct ldb_context *sam_ctx = auth_context->sam_ctx;
+	const char * const attrs[] = { "pwdHistoryLength", NULL };
+	struct ldb_message *dom_msg;
+	struct samr_Password *lm_pwd;
+	struct samr_Password *nt_pwd;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* You can only do an interactive login to normal accounts */
-	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
-		if (!(acct_flags & ACB_NORMAL)) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_SUCH_USER;
-		}
-	}
-
-	nt_status = samdb_result_passwords(tmp_ctx, auth_context->lp_ctx, msg, &lm_pwd, &nt_pwd);
+	/*
+	 * This call does more than what it appears to do, it also
+	 * checks for the account lockout.
+	 *
+	 * It is done here so that all parts of Samba that read the
+	 * password refuse to even operate on it if the account is
+	 * locked out, to avoid mistakes like CVE-2013-4496.
+	 */
+	nt_status = samdb_result_passwords(tmp_ctx, auth_context->lp_ctx,
+					   msg, &lm_pwd, &nt_pwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
@@ -211,7 +225,8 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	if (lm_pwd == NULL && nt_pwd == NULL) {
 		bool am_rodc;
 		if (samdb_rodc(auth_context->sam_ctx, &am_rodc) == LDB_SUCCESS && am_rodc) {
-			/* we don't have passwords for this
+			/*
+			 * we don't have passwords for this
 			 * account. We are an RODC, and this account
 			 * may be one for which we either are denied
 			 * REPL_SECRET replication or we haven't yet
@@ -228,16 +243,271 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 		}
 	}
 
-	nt_status = authsam_password_ok(auth_context, tmp_ctx,
-					acct_flags, lm_pwd, nt_pwd,
-					user_info, user_sess_key, lm_sess_key);
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
-		NTSTATUS update_bad_pwd_count_status = authsam_update_bad_pwd_count(auth_context->sam_ctx, msg, domain_dn);
-		if (!NT_STATUS_IS_OK(update_bad_pwd_count_status)) {
-			/* bo! (what can we do here? */
+	auth_status = authsam_password_ok(auth_context, tmp_ctx,
+					  acct_flags,
+					  lm_pwd, nt_pwd,
+					  user_info,
+					  user_sess_key, lm_sess_key);
+	if (NT_STATUS_IS_OK(auth_status)) {
+		if (user_sess_key->data) {
+			talloc_steal(mem_ctx, user_sess_key->data);
+		}
+		if (lm_sess_key->data) {
+			talloc_steal(mem_ctx, lm_sess_key->data);
+		}
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+	*user_sess_key = data_blob_null;
+	*lm_sess_key = data_blob_null;
+
+	if (!NT_STATUS_EQUAL(auth_status, NT_STATUS_WRONG_PASSWORD)) {
+		TALLOC_FREE(tmp_ctx);
+		return auth_status;
+	}
+
+	/*
+	 * We only continue if this was a wrong password
+	 * and we'll always return NT_STATUS_WRONG_PASSWORD
+	 * no matter what error happens.
+	 */
+
+	/* pull the domain password property attributes */
+	ret = dsdb_search_one(sam_ctx, tmp_ctx, &dom_msg, domain_dn, LDB_SCOPE_BASE,
+			      attrs, 0, "objectClass=domain");
+	if (ret == LDB_SUCCESS) {
+		history_len = ldb_msg_find_attr_as_uint(dom_msg, "pwdHistoryLength", 0);
+	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(3,("Couldn't find domain %s: %s!\n",
+			 ldb_dn_get_linearized(domain_dn),
+			 ldb_errstring(sam_ctx)));
+	} else {
+		DEBUG(3,("error finding domain %s: %s!\n",
+			 ldb_dn_get_linearized(domain_dn),
+			 ldb_errstring(sam_ctx)));
+	}
+
+	for (i = 1; i < MIN(history_len, 3); i++) {
+		static const struct samr_Password zero_hash;
+		struct samr_Password zero_string_hash;
+		struct samr_Password zero_string_des_hash;
+		struct samr_Password *nt_history_pwd = NULL;
+		struct samr_Password *lm_history_pwd = NULL;
+		NTTIME pwdLastSet;
+		NTTIME now;
+		int allowed_period_mins;
+		NTTIME allowed_period;
+
+		nt_status = samdb_result_passwords_from_history(tmp_ctx,
+							auth_context->lp_ctx,
+							msg, i,
+							&lm_history_pwd,
+							&nt_history_pwd);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			/*
+			 * If we don't find element 'i' we won't find
+			 * 'i+1' ...
+			 */
+			break;
+		}
+
+		/*
+		 * We choose to avoid any issues
+		 * around different LM and NT history
+		 * lengths by only checking the NT
+		 * history
+		 */
+		if (nt_history_pwd == NULL) {
+			/*
+			 * If we don't find element 'i' we won't find
+			 * 'i+1' ...
+			 */
+			break;
+		}
+
+		/* Skip over all-zero hashes in the history */
+		if (memcmp(nt_history_pwd->hash, zero_hash.hash, 16) == 0) {
+			continue;
+		}
+
+		/*
+		 * This looks odd, but the password_hash module writes this in if
+		 * (somehow) we didn't have an old NT hash
+		 */
+
+		E_md4hash("", zero_string_hash.hash);
+		if (memcmp(nt_history_pwd->hash, zero_string_hash.hash, 16) == 0) {
+			continue;
+		}
+
+		E_deshash("", zero_string_des_hash.hash);
+		if (!lm_history_pwd || memcmp(lm_history_pwd->hash, zero_string_des_hash.hash, 16) == 0) {
+			lm_history_pwd = NULL;
+		}
+
+		auth_status = authsam_password_ok(auth_context, tmp_ctx,
+						  acct_flags,
+						  lm_history_pwd,
+						  nt_history_pwd,
+						  user_info,
+						  user_sess_key,
+						  lm_sess_key);
+		if (!NT_STATUS_IS_OK(auth_status)) {
+			/*
+			 * If this was not a correct password, try the next
+			 * one from the history
+			 */
+			*user_sess_key = data_blob_null;
+			*lm_sess_key = data_blob_null;
+			continue;
+		}
+
+		if (i != 1) {
+			/*
+			 * The authentication was OK, but not against
+			 * the previous password, which is stored at index 1.
+			 *
+			 * We just return the original wrong password.
+			 * This skips the update of the bad pwd count,
+			 * because this is almost certainly user error
+			 * (or automatic login on a computer using a cached
+			 * password from before the password change),
+			 * not an attack.
+			 */
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if (user_info->password_state != AUTH_PASSWORD_RESPONSE) {
+			/*
+			 * The authentication was OK against the previous password,
+			 * but it's not a NTLM network authentication.
+			 *
+			 * We just return the original wrong password.
+			 * This skips the update of the bad pwd count,
+			 * because this is almost certainly user error
+			 * (or automatic login on a computer using a cached
+			 * password from before the password change),
+			 * not an attack.
+			 */
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		/*
+		 * If the password was OK, it's a NTLM network authentication
+		 * and it was the previous password.
+		 *
+		 * Now we see if it is within the grace period,
+		 * so that we don't break cached sessions on other computers
+		 * before the user can lock and unlock their other screens
+		 * (resetting their cached password).
+		 *
+		 * See http://support.microsoft.com/kb/906305
+		 * OldPasswordAllowedPeriod ("old password allowed period")
+		 * is specified in minutes. The default is 60.
+		 */
+		allowed_period_mins = lpcfg_old_password_allowed_period(auth_context->lp_ctx);
+		/*
+		 * NTTIME uses 100ns units
+		 */
+		allowed_period = allowed_period_mins * 60 * 1000*1000*10;
+		pwdLastSet = samdb_result_nttime(msg, "pwdLastSet", 0);
+		unix_to_nt_time(&now, time(NULL));
+
+		if (now < pwdLastSet) {
+			/*
+			 * time jump?
+			 *
+			 * We just return the original wrong password.
+			 * This skips the update of the bad pwd count,
+			 * because this is almost certainly user error
+			 * (or automatic login on a computer using a cached
+			 * password from before the password change),
+			 * not an attack.
+			 */
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if ((now - pwdLastSet) >= allowed_period) {
+			/*
+			 * The allowed period is over.
+			 *
+			 * We just return the original wrong password.
+			 * This skips the update of the bad pwd count,
+			 * because this is almost certainly user error
+			 * (or automatic login on a computer using a cached
+			 * password from before the password change),
+			 * not an attack.
+			 */
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		/*
+		 * We finally allow the authentication with the
+		 * previous password within the allowed period.
+		 */
+		if (user_sess_key->data) {
+			talloc_steal(mem_ctx, user_sess_key->data);
+		}
+		if (lm_sess_key->data) {
+			talloc_steal(mem_ctx, lm_sess_key->data);
+		}
+
+		TALLOC_FREE(tmp_ctx);
+		return auth_status;
+	}
+
+	/*
+	 * If we are not in the allowed period or match an old password,
+	 * we didn't return early. Now update the badPwdCount et al.
+	 */
+	nt_status = authsam_update_bad_pwd_count(auth_context->sam_ctx,
+						 msg, domain_dn);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		/*
+		 * We need to return the original
+		 * NT_STATUS_WRONG_PASSWORD error, so there isn't
+		 * anything more we can do than write something into
+		 * the log
+		 */
+		DEBUG(0, ("Failed to note bad password for user [%s]: %s\n",
+			  user_info->mapped.account_name,
+			  nt_errstr(nt_status)));
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return NT_STATUS_WRONG_PASSWORD;
+}
+
+static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
+				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
+				     struct ldb_dn *domain_dn,
+				     struct ldb_message *msg,
+				     const struct auth_usersupplied_info *user_info,
+				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key)
+{
+	NTSTATUS nt_status;
+	uint16_t acct_flags = samdb_result_acct_flags(msg, NULL);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* You can only do an interactive login to normal accounts */
+	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
+		if (!(acct_flags & ACB_NORMAL)) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_SUCH_USER;
 		}
 	}
 
+	nt_status = authsam_password_check_and_record(auth_context, tmp_ctx,
+						      domain_dn, msg, acct_flags,
+						      user_info,
+						      user_sess_key, lm_sess_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
@@ -250,7 +520,6 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 				       user_info->workstation_name,
 				       user_info->mapped.account_name,
 				       false, false);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;

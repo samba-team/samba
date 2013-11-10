@@ -90,6 +90,8 @@ const char *user_attrs[] = {
 	"primaryGroupID",
 	"memberOf",
 	"badPasswordTime",
+	"lmPwdHistory",
+	"ntPwdHistory",
 	NULL,
 };
 
