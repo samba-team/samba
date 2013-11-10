@@ -116,12 +116,12 @@ static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
 
 	key.pid = data.pid = global->server_id;
 	key.cnum = data.cnum = global->tcon_global_id;
-	strncpy(key.name, global->share_name, sizeof(key.name));
-	strncpy(data.servicename, global->share_name, sizeof(data.servicename));
+	fstrcpy(key.name, global->share_name);
+	fstrcpy(data.servicename, global->share_name);
 	data.uid = sess.uid;
 	data.gid = sess.gid;
-	strncpy(data.addr, sess.addr, sizeof(data.addr));
-	strncpy(data.machine, sess.machine, sizeof(data.machine));
+	fstrcpy(data.addr, sess.addr);
+	fstrcpy(data.machine, sess.machine);
 	data.start = nt_time_to_unix(global->creation_time);
 
 	state->count++;
