@@ -414,7 +414,10 @@ do_open:
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	f = talloc(handle, struct svfs_file);
-	NT_STATUS_HAVE_NO_MEMORY(f);
+	if (f == NULL) {
+		close(fd);
+		return NT_STATUS_NO_MEMORY;
+	}
 	f->fd = fd;
 	f->name = talloc_strdup(f, unix_path);
 	NT_STATUS_HAVE_NO_MEMORY(f->name);
