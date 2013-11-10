@@ -256,6 +256,12 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 		return nt_status;
 	}
 
+	nt_status = authsam_zero_bad_pwd_count(auth_context->sam_ctx, msg);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+
 	if (user_sess_key && user_sess_key->data) {
 		talloc_steal(mem_ctx, user_sess_key->data);
 	}

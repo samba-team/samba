@@ -67,6 +67,12 @@ const char *user_attrs[] = {
 
 	"logonHours",
 
+	/*
+	 * To allow us to zero the badPwdCount and lockoutTime on
+	 * successful logon, without database churn
+	 */
+	"lockoutTime",
+
 	/* check 'allowed workstations' */
 	"userWorkstations",
 		       
@@ -747,6 +753,61 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 
 	DEBUG(5, ("Updated badPwdCount on %s after %d wrong passwords\n",
 		  ldb_dn_get_linearized(msg->dn), badPwdCount));
+
+	TALLOC_FREE(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS authsam_zero_bad_pwd_count(struct ldb_context *sam_ctx,
+				    const struct ldb_message *msg)
+{
+	int ret;
+	int badPwdCount;
+	int64_t lockoutTime;
+	struct ldb_message *msg_mod;
+	TALLOC_CTX *mem_ctx;
+
+	lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
+	badPwdCount = ldb_msg_find_attr_as_int(msg, "badPwdCount", 0);
+	if (lockoutTime == 0 && badPwdCount == 0) {
+		return NT_STATUS_OK;
+	}
+
+	mem_ctx = talloc_new(msg);
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg_mod = ldb_msg_new(mem_ctx);
+	if (msg_mod == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg_mod->dn = msg->dn;
+
+	if (lockoutTime != 0) {
+		/*
+		 * This implies "badPwdCount" = 0, see samldb_lockout_time()
+		 */
+		ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod, "lockoutTime", 0);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod, "badPwdCount", 0);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ret = dsdb_replace(sam_ctx, msg_mod, 0);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to set badPwdCount and lockoutTime to 0 on %s: %s\n",
+			  ldb_dn_get_linearized(msg_mod->dn), ldb_errstring(sam_ctx)));
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_OK;
