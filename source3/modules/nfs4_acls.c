@@ -85,16 +85,29 @@ static int smbacl4_get_vfs_params(
 		{ e_merge, "merge" },
 		{ -1 , NULL }
 	};
+	int enumval;
 
 	memset(params, 0, sizeof(smbacl4_vfs_params));
-	params->mode = (enum smbacl4_mode_enum)lp_parm_enum(
-		SNUM(conn), type_name,
-		"mode", enum_smbacl4_modes, e_simple);
+
+	enumval = lp_parm_enum(SNUM(conn), type_name, "mode",
+			       enum_smbacl4_modes, e_simple);
+	if (enumval == -1) {
+		DEBUG(10, ("value for %s:mode unknown\n", type_name));
+		return -1;
+	}
+	params->mode = (enum smbacl4_mode_enum)enumval;
+
 	params->do_chown = lp_parm_bool(SNUM(conn), type_name,
 		"chown", true);
-	params->acedup = (enum smbacl4_acedup_enum)lp_parm_enum(
-		SNUM(conn), type_name,
-		"acedup", enum_smbacl4_acedups, e_dontcare);
+
+	enumval = lp_parm_enum(SNUM(conn), type_name, "acedup",
+			       enum_smbacl4_acedups, e_dontcare);
+	if (enumval == -1) {
+		DEBUG(10, ("value for %s:acedup unknown\n", type_name));
+		return -1;
+	}
+	params->acedup = (enum smbacl4_acedup_enum)enumval;
+
 	params->map_full_control = lp_acl_map_full_control(SNUM(conn));
 
 	DEBUG(10, ("mode:%s, do_chown:%s, acedup: %s map full control:%s\n",
