@@ -29,9 +29,9 @@ struct connections_data {
 	int cnum;
 	uid_t uid;
 	gid_t gid;
-	char servicename[FSTRING_LEN];
-	char addr[FSTRING_LEN];
-	char machine[FSTRING_LEN];
+	fstring servicename;
+	fstring addr;
+	fstring machine;
 	time_t start;
 };
 
