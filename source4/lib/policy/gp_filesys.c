@@ -563,13 +563,12 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name,
 	}
 
 	rv = write(fd, file_content, strlen(file_content));
+	close(fd);
 	if (rv != strlen(file_content)) {
 		DEBUG(0, ("Short write in GPT.INI\n"));
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
-	close(fd);
 
 	/* Upload the GPT to the sysvol share on a DC */
 	status = gp_push_gpt(gp_ctx, policy_dir, file_sys_path);
