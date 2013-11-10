@@ -39,8 +39,8 @@ struct connections_forall_state {
 struct connections_forall_session {
 	uid_t uid;
 	gid_t gid;
-	char machine[FSTRING_LEN];
-	char addr[FSTRING_LEN];
+	fstring machine;
+	fstring addr;
 };
 
 static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
