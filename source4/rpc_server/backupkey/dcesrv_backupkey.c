@@ -864,6 +864,7 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 		talloc_free(uniqueid.data);
 		hx509_name_free(&subject);
 		free_SubjectPublicKeyInfo(&spki);
+		hx509_ca_tbs_free(&tbs);
 		return WERR_INTERNAL_ERROR;
 	}
 	ret = hx509_ca_tbs_set_subject(*hctx, tbs, subject);
