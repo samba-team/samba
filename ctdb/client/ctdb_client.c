@@ -253,7 +253,7 @@ int ctdb_socket_connect(struct ctdb_context *ctdb)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path)-1);
 
 	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctdb->daemon.sd == -1) {
@@ -3443,6 +3443,9 @@ static void async_callback(struct ctdb_client_control_state *state)
 	TDB_DATA outdata;
 	int32_t res = -1;
 	uint32_t destnode = state->c->hdr.destnode;
+
+	outdata.dsize = 0;
+	outdata.dptr = NULL;
 
 	/* one more node has responded with recmode data */
 	data->count--;
