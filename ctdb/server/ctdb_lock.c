@@ -259,7 +259,7 @@ static int ctdb_lockall_unmark(struct ctdb_context *ctdb)
 {
 	uint32_t priority;
 
-	for (priority=NUM_DB_PRIORITIES; priority>=0; priority--) {
+	for (priority=NUM_DB_PRIORITIES; priority>0; priority--) {
 		if (ctdb_db_iterator(ctdb, priority, db_lock_unmark_handler, NULL) != 0) {
 			return -1;
 		}
@@ -448,8 +448,11 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	}
 
 	/* Read the status from the child process */
-	read(lock_ctx->fd[0], &c, 1);
-	locked = (c == 0 ? true : false);
+	if (read(lock_ctx->fd[0], &c, 1) != 1) {
+		locked = false;
+	} else {
+		locked = (c == 0 ? true : false);
+	}
 
 	/* Update statistics */
 	CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
@@ -998,7 +1001,7 @@ struct lock_request *ctdb_lock_alldb_prio(struct ctdb_context *ctdb,
 					  void (*callback)(void *, bool),
 					  void *private_data)
 {
-	if (priority < 0 || priority > NUM_DB_PRIORITIES) {
+	if (priority < 1 || priority > NUM_DB_PRIORITIES) {
 		DEBUG(DEBUG_ERR, ("Invalid db priority: %u\n", priority));
 		return NULL;
 	}

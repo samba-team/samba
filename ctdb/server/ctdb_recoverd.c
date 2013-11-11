@@ -535,15 +535,17 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 				continue;
 			}
 			/* ok so we need to create this database */
-			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), pnn, dbmap->dbs[db].dbid, 
-					    mem_ctx, &name);
+			ret = ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), pnn,
+						  dbmap->dbs[db].dbid, mem_ctx,
+						  &name);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to get dbname from node %u\n", pnn));
 				return -1;
 			}
-			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					   mem_ctx, name,
-					   dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
+			ret = ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(),
+						 nodemap->nodes[j].pnn,
+						 mem_ctx, name,
+						 dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to create remote db:%s\n", name));
 				return -1;
@@ -2035,7 +2037,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* send a message to all clients telling them that the cluster 
 	   has been reconfigured */
-	ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
+	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
+				       CTDB_SRVID_RECONFIGURE, tdb_null);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to send reconfigure message\n"));
+		return -1;
+	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery complete\n"));
 
@@ -2206,9 +2213,7 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 
 	/* send an election message to all active nodes */
 	DEBUG(DEBUG_INFO,(__location__ " Send election request to all active nodes\n"));
-	ctdb_client_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
-
-	return 0;
+	return ctdb_client_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
 }
 
 /*
@@ -2229,7 +2234,12 @@ static void unban_all_nodes(struct ctdb_context *ctdb)
 	for (i=0;i<nodemap->num;i++) {
 		if ( (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED))
 		  && (nodemap->nodes[i].flags & NODE_FLAGS_BANNED) ) {
-			ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn, 0, NODE_FLAGS_BANNED);
+			ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(),
+						 nodemap->nodes[i].pnn, 0,
+						 NODE_FLAGS_BANNED);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR, (__location__ " failed to reset ban state\n"));
+			}
 		}
 	}
 
@@ -2487,13 +2497,11 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
 				 "expecting %lu\n", (long unsigned)data.dsize,
 				 (long unsigned)sizeof(struct srvid_request)));
-		ret = -EINVAL;
-		goto done;
+		return;
 	}
 	if (data.dptr == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " No data received\n"));
-		ret = -EINVAL;
-		goto done;
+		return;
 	}
 
 	r = (struct srvid_request *)data.dptr;

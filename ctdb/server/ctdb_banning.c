@@ -84,7 +84,7 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 	DEBUG(DEBUG_INFO,("SET BAN STATE\n"));
 
 	if (bantime->pnn != ctdb->pnn) {
-		if (bantime->pnn < 0 || bantime->pnn >= ctdb->num_nodes) {
+		if (bantime->pnn >= ctdb->num_nodes) {
 			DEBUG(DEBUG_ERR,(__location__ " ERROR: Invalid ban request. PNN:%d is invalid. Max nodes %d\n", bantime->pnn, ctdb->num_nodes));
 			return -1;
 		}

@@ -38,7 +38,6 @@ struct ctdb_syslog_state {
 
 static int syslogd_is_started = 0;
 
-
 /* called when child is finished
  * this is for the syslog daemon, we can not use DEBUG here
  */
@@ -60,6 +59,10 @@ static void ctdb_syslog_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 	msg = (struct syslog_message *)str;
+	if (msg->len >= (sizeof(str) - offsetof(struct syslog_message, message))) {
+		msg->len = (sizeof(str)-1) - offsetof(struct syslog_message, message);
+	}
+	msg->message[msg->len] = '\0';
 
 	syslog(msg->level, "%s", msg->message);
 }
@@ -401,8 +404,9 @@ static void write_to_log(struct ctdb_log_state *log,
 			do_debug("%*.*s\n", len, len, buf);
 		}
 		/* log it in the eventsystem as well */
-		if (log->logfn)
+		if (log && log->logfn) {
 			log->logfn(log->buf, len, log->logfn_private);
+		}
 	}
 }
 

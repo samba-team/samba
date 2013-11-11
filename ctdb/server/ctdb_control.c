@@ -50,6 +50,12 @@ int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	}
 	talloc_report_full(NULL, f);
 	fsize = ftell(f);
+	if (fsize == -1) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get file size - %s\n",
+				  strerror(errno)));
+		fclose(f);
+		return -1;
+	}
 	rewind(f);
 	outdata->dptr = talloc_size(outdata, fsize);
 	if (outdata->dptr == NULL) {

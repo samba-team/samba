@@ -1147,7 +1147,11 @@ static int store_tdb_record(struct ctdb_context *ctdb,
 
 	data2 = tdb_fetch(ctdb_db->ltdb->tdb, key);
 	if (data2.dptr == NULL || data2.dsize < sizeof(struct ctdb_ltdb_header)) {
-		tdb_store(ctdb_db->ltdb->tdb, key, data, 0);
+		if (tdb_store(ctdb_db->ltdb->tdb, key, data, 0) == -1) {
+			DEBUG(DEBUG_ERR, (__location__ "Failed to store record\n"));
+			ret = -1;
+			goto done;
+		}
 		DEBUG(DEBUG_INFO, (__location__ " Stored record\n"));
 		ret = 0;
 		goto done;

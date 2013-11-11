@@ -3386,7 +3386,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 		if (vnn->iface == cur) {
 			info->active_idx = i;
 		}
-		strcpy(info->ifaces[i].name, cur->name);
+		strncpy(info->ifaces[i].name, cur->name, sizeof(info->ifaces[i].name)-1);
 		info->ifaces[i].link_state = cur->link_up;
 		info->ifaces[i].references = cur->references;
 	}

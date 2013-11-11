@@ -978,7 +978,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path)-1);
 
 	/* First check if an old ctdbd might be running */
 	if (connect(ctdb->daemon.sd,
