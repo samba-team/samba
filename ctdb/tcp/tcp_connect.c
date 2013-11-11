@@ -95,8 +95,14 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	talloc_free(tnode->connect_fde);
 	tnode->connect_fde = NULL;
 
-        setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
-        setsockopt(tnode->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
+        if (setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one)) == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to set TCP_NODELAY on fd - %s\n",
+				      strerror(errno)));
+	}
+        if (setsockopt(tnode->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one)) == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to set KEEPALIVE on fd - %s\n",
+				      strerror(errno)));
+	}
 
 	ctdb_queue_set_fd(tnode->out_queue, tnode->fd);
 
@@ -268,7 +274,10 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d to incoming ctdb connection\n", fd));
 
-        setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
+        if (setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one)) == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to set KEEPALIVE on fd - %s\n",
+				      strerror(errno)));
+	}
 
 	in->queue = ctdb_queue_setup(ctdb, in, in->fd, CTDB_TCP_ALIGNMENT, 
 				     ctdb_tcp_read_cb, in, "ctdbd-%s", incoming_node);
@@ -358,7 +367,11 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 
 		set_close_on_exec(ctcp->listen_fd);
 
-	        setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+	        if (setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,
+			       (char *)&one,sizeof(one)) == -1) {
+			DEBUG(DEBUG_WARNING, ("Failed to set REUSEADDR on fd - %s\n",
+					      strerror(errno)));
+		}
 
 		if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, sock_size) == 0) {
 			break;
@@ -402,8 +415,10 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	
 failed:
 	close(lock_fd);
-	close(ctcp->listen_fd);
-	ctcp->listen_fd = -1;
+	if (ctcp->listen_fd != -1) {
+		close(ctcp->listen_fd);
+		ctcp->listen_fd = -1;
+	}
 	return -1;
 }
 
@@ -458,7 +473,10 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 
 	set_close_on_exec(ctcp->listen_fd);
 
-        setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+        if (setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one)) == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to set REUSEADDR on fd - %s\n",
+				      strerror(errno)));
+	}
 
 	if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, sock_size) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to bind() to socket. %s(%d)\n", strerror(errno), errno));
