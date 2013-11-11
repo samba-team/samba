@@ -2870,6 +2870,7 @@ static struct tevent_req *cli_connect_sock_send(
 	struct tevent_req *req, *subreq;
 	struct cli_connect_sock_state *state;
 	const char *prog;
+	struct sockaddr_storage *addrs;
 	unsigned i, num_addrs;
 	NTSTATUS status;
 
@@ -2893,7 +2894,6 @@ static struct tevent_req *cli_connect_sock_send(
 	}
 
 	if ((pss == NULL) || is_zero_addr(pss)) {
-		struct sockaddr_storage *addrs;
 
 		/*
 		 * Here we cheat. resolve_name_list is not async at all. So
@@ -2907,8 +2907,12 @@ static struct tevent_req *cli_connect_sock_send(
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
-		pss = addrs;
 	} else {
+		addrs = talloc_array(state, struct sockaddr_storage, 1);
+		if (tevent_req_nomem(addrs, req)) {
+			return tevent_req_post(req, ev);
+		}
+		addrs[0] = *pss;
 		num_addrs = 1;
 	}
 
@@ -2931,7 +2935,7 @@ static struct tevent_req *cli_connect_sock_send(
 	}
 
 	subreq = smbsock_any_connect_send(
-		state, ev, pss, state->called_names, state->called_types,
+		state, ev, addrs, state->called_names, state->called_types,
 		state->calling_names, NULL, num_addrs, port);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
