@@ -108,8 +108,10 @@ ltm_dh_generate_key(DH *dh)
 		return 0;
 	    }
 	}
-	if (dh->pub_key)
+	if (dh->pub_key) {
 	    BN_free(dh->pub_key);
+	    dh->pub_key = NULL;
+	}
 
 	mp_init_multi(&pub, &priv_key, &g, &p, NULL);
 
