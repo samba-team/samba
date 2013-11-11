@@ -415,16 +415,34 @@ void ctdb_restore_scheduler(struct ctdb_context *ctdb)
 
 void set_nonblocking(int fd)
 {
-	unsigned v;
+	int v;
+
 	v = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, v | O_NONBLOCK);
+	if (v == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to get file status flags - %s\n",
+				      strerror(errno)));
+		return;
+	}
+        if (fcntl(fd, F_SETFL, v | O_NONBLOCK) == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to set non_blocking on fd - %s\n",
+				      strerror(errno)));
+	}
 }
 
 void set_close_on_exec(int fd)
 {
-	unsigned v;
+	int v;
+
 	v = fcntl(fd, F_GETFD, 0);
-	fcntl(fd, F_SETFD, v | FD_CLOEXEC);
+	if (v == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to get file descriptor flags - %s\n",
+				      strerror(errno)));
+		return;
+	}
+	if (fcntl(fd, F_SETFD, v | FD_CLOEXEC) != 0) {
+		DEBUG(DEBUG_WARNING, ("Failed to set close_on_exec on fd - %s\n",
+				      strerror(errno)));
+	}
 }
 
 
@@ -821,7 +839,7 @@ void ctdb_mkdir_p_or_die(struct ctdb_context *ctdb, const char *dir, int mode)
 		DEBUG(DEBUG_ALERT,
 		      ("ctdb exiting with error: "
 		       "failed to create directory \"%s\" (%s)\n",
-		       dir, strerror(ret)));
+		       dir, strerror(errno)));
 		exit(1);
 	}
 }

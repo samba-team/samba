@@ -98,7 +98,10 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 			*data = d2;
 		}
 		if (ctdb_db->persistent || header->dmaster == ctdb_db->ctdb->pnn) {
-			ctdb_ltdb_store(ctdb_db, key, header, d2);
+			if (ctdb_ltdb_store(ctdb_db, key, header, d2) != 0) {
+				DEBUG(DEBUG_NOTICE,
+				      (__location__ "failed to store initial header\n"));
+			}
 		}
 		return 0;
 	}

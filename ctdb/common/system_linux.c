@@ -83,6 +83,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct ifreq ifr;
 
 	ZERO_STRUCT(sall);
+	ZERO_STRUCT(ifr);
+	ZERO_STRUCT(if_hwaddr);
 
 	switch (addr->ip.sin_family) {
 	case AF_INET:
@@ -93,7 +95,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		}
 
 		DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d for sending arp\n", s));
-		strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
+		strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
 		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
 			DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
 			close(s);
@@ -101,7 +103,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		}
 
 		/* get the mac address */
-		strcpy(if_hwaddr.ifr_name, iface);
+		strncpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name)-1);
 		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
 		if ( ret < 0 ) {
 			close(s);
@@ -195,7 +197,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		}
 
 		/* get the mac address */
-		strcpy(if_hwaddr.ifr_name, iface);
+		strncpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name)-1);
 		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
 		if ( ret < 0 ) {
 			close(s);
@@ -554,7 +556,7 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 		return true;
 	}
 
-	strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
+	strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
 	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0 && errno == ENODEV) {
 		DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
 		close(s);
@@ -587,7 +589,7 @@ char *ctdb_get_process_name(pid_t pid)
 	int n;
 
 	snprintf(path, sizeof(path), "/proc/%d/exe", pid);
-	n = readlink(path, buf, sizeof(buf));
+	n = readlink(path, buf, sizeof(buf)-1);
 	if (n < 0) {
 		return NULL;
 	}
@@ -595,7 +597,7 @@ char *ctdb_get_process_name(pid_t pid)
 	/* Remove any extra fields */
 	buf[n] = '\0';
 	ptr = strtok(buf, " ");
-	return strdup(ptr);
+	return (ptr == NULL ? ptr : strdup(ptr));
 }
 
 /*
@@ -701,14 +703,13 @@ bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info)
 	struct ctdb_lock_info curlock;
 	pid_t pid;
 	char buf[1024];
-	char *ptr;
 	bool status = false;
 
 	if ((fp = fopen("/proc/locks", "r")) == NULL) {
 		DEBUG(DEBUG_ERR, ("Failed to read locks information"));
 		return false;
 	}
-	while ((ptr = fgets(buf, sizeof(buf), fp)) != NULL) {
+	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		if (! parse_proc_locks_line(buf, &pid, &curlock)) {
 			continue;
 		}
@@ -733,14 +734,13 @@ bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid)
 	struct ctdb_lock_info curlock;
 	pid_t pid;
 	char buf[1024];
-	char *ptr;
 	bool status = false;
 
 	if ((fp = fopen("/proc/locks", "r")) == NULL) {
 		DEBUG(DEBUG_ERR, ("Failed to read locks information"));
 		return false;
 	}
-	while ((ptr = fgets(buf, sizeof(buf), fp)) != NULL) {
+	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		if (! parse_proc_locks_line(buf, &pid, &curlock)) {
 			continue;
 		}
