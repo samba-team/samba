@@ -395,6 +395,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 						 lpcfg_netbios_name(lp_ctx),
 						 lpcfg_dnsdomain(lp_ctx));
 		if (hostname == NULL) {
+			ret = GNUTLS_E_MEMORY_ERROR;
 			goto init_failed;
 		}
 		tls_cert_generate(params, hostname, keyfile, certfile, cafile);
