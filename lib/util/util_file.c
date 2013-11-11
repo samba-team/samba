@@ -368,13 +368,11 @@ _PUBLIC_ void file_lines_slashcont(char **lines)
 	}
 }
 
-/**
-  save a lump of data into a file. Mostly used for debugging 
-*/
-_PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length)
+_PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
+			     size_t length, mode_t mode)
 {
 	int fd;
-	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, mode);
 	if (fd == -1) {
 		return false;
 	}
@@ -384,6 +382,14 @@ _PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length)
 	}
 	close(fd);
 	return true;
+}
+
+/**
+  save a lump of data into a file. Mostly used for debugging
+*/
+_PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length)
+{
+	return file_save_mode(fname, packet, length, 0644);
 }
 
 _PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap)
