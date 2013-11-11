@@ -2014,7 +2014,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     if not os.path.exists(paths.private_dir):
         os.mkdir(paths.private_dir)
     if not os.path.exists(os.path.join(paths.private_dir, "tls")):
-        os.mkdir(os.path.join(paths.private_dir, "tls"))
+        os.makedirs(os.path.join(paths.private_dir, "tls"), 0700)
     if not os.path.exists(paths.state_dir):
         os.mkdir(paths.state_dir)
 

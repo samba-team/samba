@@ -1,4 +1,77 @@
                    ==============================
+                   Release Notes for Samba 4.0.11
+                          November 11, 2013
+                   ==============================
+
+
+This is a security release in order to address
+CVE-2013-4475 (ACLs are not checked on opening an alternate
+data stream on a file or directory) and
+CVE-2013-4476 (Private key in key.pem world readable).
+
+o  CVE-2013-4475:
+   Samba versions 3.2.0 and above (all versions of 3.2.x, 3.3.x,
+   3.4.x, 3.5.x, 3.6.x, 4.0.x and 4.1.x) do not check the underlying
+   file or directory ACL when opening an alternate data stream.
+
+   According to the SMB1 and SMB2+ protocols the ACL on an underlying
+   file or directory should control what access is allowed to alternate
+   data streams that are associated with the file or directory.
+
+   By default no version of Samba supports alternate data streams
+   on files or directories.
+
+   Samba can be configured to support alternate data streams by loading
+   either one of two virtual file system modues (VFS) vfs_streams_depot or
+   vfs_streams_xattr supplied with Samba, so this bug only affects Samba
+   servers configured this way.
+
+   To determine if your server is vulnerable, check for the strings
+   "streams_depot" or "streams_xattr" inside your smb.conf configuration
+   file.
+
+o  CVE-2013-4476:
+   In setups which provide ldap(s) and/or https services, the private
+   key for SSL/TLS encryption might be world readable. This typically
+   happens in active directory domain controller setups.
+
+
+Changes since 4.0.10:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUGs 10234 + 10229: CVE-2013-4475: Fix access check verification on stream
+      files.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 10234: CVE-2013-4476: Private key in key.pem world readable.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.10
                            October 8, 2013
                    ==============================
@@ -126,8 +199,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.9

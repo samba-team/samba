@@ -580,6 +580,8 @@ a line
 **/
 _PUBLIC_ void file_lines_slashcont(char **lines);
 
+_PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
+			     size_t length, mode_t mode);
 /**
   save a lump of data into a file. Mostly used for debugging 
 */
@@ -621,6 +623,15 @@ _PUBLIC_ time_t file_modtime(const char *fname);
  Check if a directory exists.
 **/
 _PUBLIC_ bool directory_exist(const char *dname);
+
+/**
+ Check file permissions.
+**/
+struct stat;
+_PUBLIC_ bool file_check_permissions(const char *fname,
+				     uid_t uid,
+				     mode_t file_perms,
+				     struct stat *pst);
 
 /**
  * Try to create the specified directory if it didn't exist.

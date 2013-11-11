@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/tls/tls.h"
@@ -369,6 +370,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 {
 	struct tls_params *params;
 	int ret;
+	struct stat st;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *keyfile = lpcfg_tls_keyfile(tmp_ctx, lp_ctx);
 	const char *certfile = lpcfg_tls_certfile(tmp_ctx, lp_ctx);
@@ -397,6 +399,21 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 		}
 		tls_cert_generate(params, hostname, keyfile, certfile, cafile);
 		talloc_free(hostname);
+	}
+
+	if (file_exist(keyfile) &&
+	    !file_check_permissions(keyfile, geteuid(), 0600, &st))
+	{
+		DEBUG(0, ("Invalid permissions on TLS private key file '%s':\n"
+			  "owner uid %u should be %u, mode 0%o should be 0%o\n"
+			  "This is known as CVE-2013-4476.\n"
+			  "Removing all tls .pem files will cause an "
+			  "auto-regeneration with the correct permissions.\n",
+			  keyfile,
+			  (unsigned int)st.st_uid, geteuid(),
+			  (unsigned int)(st.st_mode & 0777), 0600));
+		talloc_free(tmp_ctx);
+		return NULL;
 	}
 
 	ret = gnutls_global_init();

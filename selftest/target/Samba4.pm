@@ -227,7 +227,9 @@ sub mk_keyblobs($$)
 	my $admincertfile = "$tlsdir/admincert.pem";
 	my $admincertupnfile = "$tlsdir/admincertupn.pem";
 
-	mkdir($tlsdir, 0777);
+	mkdir($tlsdir, 0700);
+	my $oldumask = umask;
+	umask 0077;
 
 	#This is specified here to avoid draining entropy on every run
 	open(DHFILE, ">$dhfile");
@@ -418,6 +420,8 @@ Zd7J9s//rNFNa7waklFkDaY56+QWTFtdvxfE+KoHaqt6X8u6pqi7p3M4wDKQox+9Dx8yWFyq
 Wfz/8alZ5aMezCQzXJyIaJsCLeKABosSwHcpAFmxlQ==
 -----END CERTIFICATE-----
 EOF
+
+	umask $oldumask;
 }
 
 sub provision_raw_prepare($$$$$$$$$$)
