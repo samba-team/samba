@@ -58,7 +58,7 @@ static int socket_server_create(void)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, globals.socketname, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, globals.socketname, sizeof(addr.sun_path)-1);
 
 	if (bind(globals.socket, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		DEBUG(DEBUG_CRIT,("Unable to bind on socket '%s': %s\n", globals.socketname, strerror(errno)));
@@ -129,7 +129,7 @@ static int socket_client_connect(void)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, globals.socketname, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, globals.socketname, sizeof(addr.sun_path)-1);
 	if (connect(client, (struct sockaddr *)&addr, sizeof(addr))==-1) {
 		DEBUG(DEBUG_CRIT,("Unable to connect to '%s': %s\n", globals.socketname, strerror(errno)));
 		close(client);
@@ -172,6 +172,9 @@ static int fork_helper(void)
 	}
 	if (pid == 0) { // Child
 		client = socket_client_connect();
+		if (client < 0) {
+			exit(1);
+		}
 		socket_client_write(client);
 		for (i = 1 ; i <= max_rounds ; i++ ) {
 			DEBUG(DEBUG_DEBUG,("Child process waiting ( %d/%d)\n", i, max_rounds));
@@ -190,14 +193,9 @@ static int fork_helper(void)
 */
 int test_ctdb_sys_check_iface_exists(void)
 {
-	const char *fakename;
+	const char *fakename = "fake";
 	bool test;
 	globals.testcount++;
-	fakename = strdup("fake");
-	if (fakename == NULL) {
-		DEBUG(DEBUG_CRIT,("Unable to allocate memory\n"));
-		return -1;
-	}
 	test = ctdb_sys_check_iface_exists(fakename);
 	if(test == true) {
 		DEBUG(DEBUG_CRIT,("Test failed: Fake interface detected: %s\n", fakename));
@@ -215,17 +213,23 @@ int test_ctdb_get_peer_pid(void)
 	pid_t peer_pid = 0;
 	globals.testcount++;
 	fd = socket_server_wait_peer();
+	if (fd < 0) {
+		return -1;
+	}
 	ret = ctdb_get_peer_pid(fd, &peer_pid);
 	if (ret == -1) {
 		DEBUG(DEBUG_CRIT,("Test failed: Unable to get peer process id\n"));
+		close(fd);
 		return -1;
 	}
 	if (peer_pid <= 0) {
 		DEBUG(DEBUG_CRIT,("Test failed: Invalid peer process id: %d\n", peer_pid));
+		close(fd);
 		return -1;
 	}
 	DEBUG(DEBUG_INFO,("Test OK: Peer process id: %d\n", peer_pid));
 	globals.successcount++;
+	close(fd);
 	return 0;
 }
 
@@ -236,10 +240,12 @@ int test_ctdb_get_process_name(void)
 	process_name = ctdb_get_process_name(globals.helper_pid);
 	if ((process_name == NULL) || !strcmp(process_name, "unknown")) {
 		DEBUG(DEBUG_CRIT,("Test failed: Invalid process name of %d: %s\n", globals.helper_pid, process_name));
+		free(process_name);
 		return -1;
 	}
 	DEBUG(DEBUG_INFO,("Test OK: Name of PID=%d: %s\n", globals.helper_pid, process_name));
 	globals.successcount++;
+	free(process_name);
 	return 0;
 }
 
