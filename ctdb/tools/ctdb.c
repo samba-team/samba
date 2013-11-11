@@ -120,8 +120,9 @@ static const char *pretty_print_flags(uint32_t flags)
 			if (flags_str[0] == '\0') {
 				(void) strcpy(flags_str, flag_names[j].name);
 			} else {
-				(void) strcat(flags_str, "|");
-				(void) strcat(flags_str, flag_names[j].name);
+				(void) strncat(flags_str, "|", sizeof(flags_str)-1);
+				(void) strncat(flags_str, flag_names[j].name,
+					       sizeof(flags_str)-1);
 			}
 		}
 	}
@@ -4246,7 +4247,7 @@ static int control_pdelete(struct ctdb_context *ctdb, int argc, const char **arg
 static int control_chktcpport(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int s, ret;
-	unsigned v;
+	int v;
 	int port;
         struct sockaddr_in sin;
 
@@ -4264,7 +4265,9 @@ static int control_chktcpport(struct ctdb_context *ctdb, int argc, const char **
 	}
 
 	v = fcntl(s, F_GETFL, 0);
-        fcntl(s, F_SETFL, v | O_NONBLOCK);
+	if (v == -1 || fcntl(s, F_SETFL, v | O_NONBLOCK) != 0) {
+		printf("Unable to set socket non-blocking: %s\n", strerror(errno));
+	}
 
 	bzero(&sin, sizeof(sin));
 	sin.sin_family = PF_INET;
@@ -5306,6 +5309,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
+	ZERO_STRUCT(dbhdr);
 	dbhdr.version = DB_VERSION;
 	dbhdr.timestamp = time(NULL);
 	dbhdr.persistent = flags & CTDB_DB_FLAGS_PERSISTENT;
@@ -5314,7 +5318,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		DEBUG(DEBUG_ERR,("Too long dbname\n"));
 		goto done;
 	}
-	strncpy(discard_const(dbhdr.name), argv[0], MAX_DB_NAME);
+	strncpy(discard_const(dbhdr.name), argv[0], MAX_DB_NAME-1);
 	ret = write(fh, &dbhdr, sizeof(dbhdr));
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR,("write failed: %s\n", strerror(errno)));
@@ -5379,6 +5383,7 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	read(fh, &dbhdr, sizeof(dbhdr));
 	if (dbhdr.version != DB_VERSION) {
 		DEBUG(DEBUG_ERR,("Invalid version of database dump. File is version %lu but expected version was %u\n", dbhdr.version, DB_VERSION));
+		close(fh);
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -5574,6 +5579,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 	read(fh, &dbhdr, sizeof(dbhdr));
 	if (dbhdr.version != DB_VERSION) {
 		DEBUG(DEBUG_ERR,("Invalid version of database dump. File is version %lu but expected version was %u\n", dbhdr.version, DB_VERSION));
+		close(fh);
 		talloc_free(tmp_ctx);
 		return -1;
 	}
