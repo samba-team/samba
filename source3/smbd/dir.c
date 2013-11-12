@@ -962,32 +962,6 @@ struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
 	return(dptr);
 }
 
-/****************************************************************************
- Check that a file matches a particular file type.
-****************************************************************************/
-
-bool dir_check_ftype(uint32_t mode, uint32_t dirtype)
-{
-	uint32_t mask;
-
-	/* Check the "may have" search bits. */
-	if (((mode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY)) != 0)
-		return False;
-
-	/* Check the "must have" bits, which are the may have bits shifted eight */
-	/* If must have bit is set, the file/dir can not be returned in search unless the matching
-		file attribute is set */
-	mask = ((dirtype >> 8) & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM)); /* & 0x37 */
-	if(mask) {
-		if((mask & (mode & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM))) == mask)   /* check if matching attribute present */
-			return True;
-		else
-			return False;
-	}
-
-	return True;
-}
-
 static bool mangle_mask_match(connection_struct *conn,
 		const char *filename,
 		const char *mask)
