@@ -112,7 +112,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t2 = finfo.all_info.out.field; \
-	if (t != t2) { \
+	if (abs(t-t2) > 20000) { \
 		torture_result(tctx, TORTURE_FAIL, \
 		       "(%s) wrong time for field %s  %s - %s\n", \
 		       __location__, #field, \
