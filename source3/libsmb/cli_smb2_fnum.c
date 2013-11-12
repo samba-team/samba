@@ -486,6 +486,7 @@ static bool windows_parent_dirname(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 			const char *pathname,
+			uint16_t attribute,
 			NTSTATUS (*fn)(const char *,
 				struct file_info *,
 				const char *,
@@ -497,6 +498,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 	char *parent_dir = NULL;
 	const char *mask = NULL;
 	struct smb2_hnd *ph = NULL;
+	bool processed_file = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 	TALLOC_CTX *subframe = NULL;
 
@@ -590,13 +592,26 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 				goto fail;
 			}
 
-			status = fn(cli->dfs_mountpoint,
+			if (dir_check_ftype((uint32_t)finfo->mode,
+					(uint32_t)attribute)) {
+				/*
+				 * Only process if attributes match.
+				 * On SMB1 server does this, so on
+				 * SMB2 we need to emulate in the
+				 * client.
+				 *
+				 * https://bugzilla.samba.org/show_bug.cgi?id=10260
+				 */
+				processed_file = true;
+
+				status = fn(cli->dfs_mountpoint,
 					finfo,
 					pathname,
 					state);
 
-			if (!NT_STATUS_IS_OK(status)) {
-				break;
+				if (!NT_STATUS_IS_OK(status)) {
+					break;
+				}
 			}
 
 			TALLOC_FREE(finfo);
@@ -614,6 +629,14 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 
 	if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES)) {
 		status = NT_STATUS_OK;
+	}
+
+	if (NT_STATUS_IS_OK(status) && !processed_file) {
+		/*
+		 * In SMB1 findfirst returns NT_STATUS_NO_SUCH_FILE
+		 * if no files match. Emulate this in the client.
+		 */
+		status = NT_STATUS_NO_SUCH_FILE;
 	}
 
   fail:

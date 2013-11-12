@@ -42,6 +42,7 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dirname);
 NTSTATUS cli_smb2_unlink(struct cli_state *cli,const char *fname);
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 			const char *pathname,
+			uint16_t attribute,
 			NTSTATUS (*fn)(const char *,
 				struct file_info *,
 				const char *,

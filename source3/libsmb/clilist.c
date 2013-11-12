@@ -942,7 +942,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 	uint16_t info_level;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_list(cli, mask, fn, state);
+		return cli_smb2_list(cli, mask, attribute, fn, state);
 	}
 
 	frame = talloc_stackframe();
