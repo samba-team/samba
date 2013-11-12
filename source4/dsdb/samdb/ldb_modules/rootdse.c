@@ -1373,6 +1373,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 	int ret;
 	struct ldb_request *req = fsmo->req;
 	struct ldb_context *ldb = fsmo->ldb;
+	struct ldb_module *module = fsmo->module;
 
 	status = dcerpc_drepl_takeFSMORole_recv(treq, fsmo, &werr);
 	talloc_free(fsmo);
@@ -1382,7 +1383,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 		 * Now that it is failed, start the transaction up
 		 * again so the wrappers can close it without additional error
 		 */
-		ldb_next_start_trans(fsmo->module);
+		ldb_next_start_trans(module);
 		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
 		return;
 	}
@@ -1392,7 +1393,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 		 * Now that it is failed, start the transaction up
 		 * again so the wrappers can close it without additional error
 		 */
-		ldb_next_start_trans(fsmo->module);
+		ldb_next_start_trans(module);
 		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
 		return;
 	}
@@ -1401,7 +1402,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 	 * Now that it is done, start the transaction up again so the
 	 * wrappers can close it without error
 	 */
-	ret = ldb_next_start_trans(fsmo->module);
+	ret = ldb_next_start_trans(module);
 	ldb_module_done(req, NULL, NULL, ret);
 }
 
