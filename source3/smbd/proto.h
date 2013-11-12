@@ -218,7 +218,6 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 			       char *buf,int *num);
 struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
 				       int dptr_num);
-bool dir_check_ftype(uint32_t mode, uint32_t dirtype);
 bool get_dir_entry(TALLOC_CTX *ctx,
 		struct dptr_struct *dirptr,
 		const char *mask,

@@ -2393,3 +2393,45 @@ struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct securi
 	}
 	return cpy;
 }
+
+/****************************************************************************
+ Check that a file matches a particular file type.
+****************************************************************************/
+
+bool dir_check_ftype(uint32_t mode, uint32_t dirtype)
+{
+	uint32_t mask;
+
+	/* Check the "may have" search bits. */
+	if (((mode & ~dirtype) &
+			(FILE_ATTRIBUTE_HIDDEN |
+			 FILE_ATTRIBUTE_SYSTEM |
+			 FILE_ATTRIBUTE_DIRECTORY)) != 0) {
+		return false;
+	}
+
+	/* Check the "must have" bits,
+	   which are the may have bits shifted eight */
+	/* If must have bit is set, the file/dir can
+	   not be returned in search unless the matching
+	   file attribute is set */
+	mask = ((dirtype >> 8) & (FILE_ATTRIBUTE_DIRECTORY|
+				    FILE_ATTRIBUTE_ARCHIVE|
+				   FILE_ATTRIBUTE_READONLY|
+				     FILE_ATTRIBUTE_HIDDEN|
+				     FILE_ATTRIBUTE_SYSTEM)); /* & 0x37 */
+	if(mask) {
+		if((mask & (mode & (FILE_ATTRIBUTE_DIRECTORY|
+				      FILE_ATTRIBUTE_ARCHIVE|
+				     FILE_ATTRIBUTE_READONLY|
+				       FILE_ATTRIBUTE_HIDDEN|
+					FILE_ATTRIBUTE_SYSTEM))) == mask) {
+			/* check if matching attribute present */
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	return true;
+}
