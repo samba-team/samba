@@ -450,13 +450,13 @@ copy_etypes (krb5_context context,
 	;
     i++;
 
-    *ret_enctypes = malloc(sizeof(ret_enctypes[0]) * i);
+    *ret_enctypes = malloc(sizeof(enctypes[0]) * i);
     if (*ret_enctypes == NULL) {
 	krb5_set_error_message(context, ENOMEM,
 			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
-    memcpy(*ret_enctypes, enctypes, sizeof(ret_enctypes[0]) * i);
+    memcpy(*ret_enctypes, enctypes, sizeof(enctypes[0]) * i);
     return 0;
 }
 
