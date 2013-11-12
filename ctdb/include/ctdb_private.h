@@ -24,9 +24,14 @@
 #include <sys/socket.h>
 
 /*
- * Structure to support SRVID requests and replies
+ * Structures to support SRVID requests and replies
  */
 struct srvid_request {
+	uint32_t pnn;
+	uint64_t srvid;
+};
+
+struct srvid_request_data {
 	uint32_t pnn;
 	uint64_t srvid;
 	uint32_t data;

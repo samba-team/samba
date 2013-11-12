@@ -1652,7 +1652,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 			    bool banning_credits_on_fail)
 {
 	uint32_t *nodes = NULL;
-	struct srvid_request dtr;
+	struct srvid_request_data dtr;
 	TDB_DATA data;
 	int i;
 	uint32_t *rebalance_nodes = rec->force_rebalance_nodes;
@@ -2470,13 +2470,13 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 {
 	struct ctdb_recoverd *rec = talloc_get_type(private_data,
 						    struct ctdb_recoverd);
-	struct srvid_request *r;
+	struct srvid_request_data *r;
 	uint32_t timeout;
 	TDB_DATA result;
 	int32_t ret = 0;
 
 	/* Validate input data */
-	if (data.dsize != sizeof(struct srvid_request)) {
+	if (data.dsize != sizeof(struct srvid_request_data)) {
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
 				 "expecting %lu\n", (long unsigned)data.dsize,
 				 (long unsigned)sizeof(struct srvid_request)));
@@ -2487,7 +2487,7 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 		return;
 	}
 
-	r = (struct srvid_request *)data.dptr;
+	r = (struct srvid_request_data *)data.dptr;
 	timeout = r->data;
 
 	if (timeout == 0) {
@@ -2537,7 +2537,7 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 done:
 	result.dsize = sizeof(int32_t);
 	result.dptr  = (uint8_t *)&ret;
-	srvid_request_reply(ctdb, r, result);
+	srvid_request_reply(ctdb, (struct srvid_request *)r, result);
 }
 
 /* Backward compatibility for this SRVID - call
@@ -2549,7 +2549,7 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_recoverd *rec = talloc_get_type(private_data,
 						    struct ctdb_recoverd);
 	TDB_DATA data2;
-	struct srvid_request *req;
+	struct srvid_request_data *req;
 
 	if (data.dsize != sizeof(uint32_t)) {
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
@@ -2562,7 +2562,7 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	req = talloc(ctdb, struct srvid_request);
+	req = talloc(ctdb, struct srvid_request_data);
 	CTDB_NO_MEMORY_VOID(ctdb, req);
 
 	req->srvid = 0; /* No reply */

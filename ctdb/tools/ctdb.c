@@ -2128,12 +2128,15 @@ static void srvid_broadcast_reply_handler(struct ctdb_context *ctdb,
  * pass in the srvid_request structure - pass 0 if this isn't needed.
  */
 static int srvid_broadcast(struct ctdb_context *ctdb,
-			   uint64_t srvid, uint32_t arg,
+			   uint64_t srvid, uint32_t *arg,
 			   const char *srvid_str, bool wait_for_all)
 {
 	int ret;
 	TDB_DATA data;
+	uint32_t pnn;
+	uint64_t reply_srvid;
 	struct srvid_request request;
+	struct srvid_request_data request_data;
 	struct srvid_reply_handler_data reply_data;
 	struct timeval tv;
 
@@ -2144,17 +2147,28 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 				timeval_current_ofs(1, 0),
 				ctdb_every_second, ctdb);
 
-	request.pnn = ctdb_get_pnn(ctdb);
-	request.srvid = getpid();
-	request.data = arg;
+	pnn = ctdb_get_pnn(ctdb);
+	reply_srvid = getpid();
+
+	if (arg == NULL) {
+		request.pnn = pnn;
+		request.srvid = reply_srvid;
+
+		data.dptr = (uint8_t *)&request;
+		data.dsize = sizeof(request);
+	} else {
+		request_data.pnn = pnn;
+		request_data.srvid = reply_srvid;
+		request_data.data = *arg;
+
+		data.dptr = (uint8_t *)&request_data;
+		data.dsize = sizeof(request_data);
+	}
 
 	/* Register message port for reply from recovery master */
-	ctdb_client_set_message_handler(ctdb, request.srvid,
+	ctdb_client_set_message_handler(ctdb, reply_srvid,
 					srvid_broadcast_reply_handler,
 					&reply_data);
-
-	data.dptr = (uint8_t *)&request;
-	data.dsize = sizeof(request);
 
 	reply_data.wait_for_all = wait_for_all;
 	reply_data.nodes = NULL;
@@ -2211,7 +2225,7 @@ again:
 		goto again;
 	}
 
-	ctdb_client_remove_message_handler(ctdb, request.srvid, &reply_data);
+	ctdb_client_remove_message_handler(ctdb, reply_srvid, &reply_data);
 
 	talloc_free(reply_data.nodes);
 
@@ -2220,7 +2234,7 @@ again:
 
 static int ipreallocate(struct ctdb_context *ctdb)
 {
-	return srvid_broadcast(ctdb, CTDB_SRVID_TAKEOVER_RUN, 0,
+	return srvid_broadcast(ctdb, CTDB_SRVID_TAKEOVER_RUN, NULL,
 			       "IP reallocation", false);
 }
 
@@ -4409,6 +4423,7 @@ static int control_reloadips(struct ctdb_context *ctdb, int argc, const char **a
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t *nodes;
 	uint32_t pnn_mode;
+	uint32_t timeout;
 	int ret;
 
 	assert_single_node_only();
@@ -4434,7 +4449,8 @@ again:
 	 * there are disconnected nodes.  However, this should
 	 * probably be left up to the administrator.
 	 */
-	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, LONGTIMEOUT,
+	timeout = LONGTIMEOUT;
+	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, &timeout,
 			"Disable takeover runs", true);
 
 	/* Now tell all the desired nodes to reload their public IPs.
@@ -4453,7 +4469,8 @@ again:
 	/* It isn't strictly necessary to wait until takeover runs are
 	 * re-enabled but doing so can't hurt.
 	 */
-	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, 0,
+	timeout = 0;
+	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_TAKEOVER_RUNS, &timeout,
 			"Enable takeover runs", true);
 
 	ipreallocate(ctdb);
