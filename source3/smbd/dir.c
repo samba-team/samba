@@ -966,9 +966,9 @@ struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
  Check that a file matches a particular file type.
 ****************************************************************************/
 
-bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
+bool dir_check_ftype(uint32_t mode, uint32_t dirtype)
 {
-	uint32 mask;
+	uint32_t mask;
 
 	/* Check the "may have" search bits. */
 	if (((mode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY)) != 0)
@@ -1106,7 +1106,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (!dir_check_ftype(conn, mode, dirtype)) {
+		if (!dir_check_ftype(mode, dirtype)) {
 			DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",
 				fname, (unsigned int)mode, (unsigned int)dirtype));
 			TALLOC_FREE(dname);

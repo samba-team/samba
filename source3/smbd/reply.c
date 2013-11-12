@@ -2655,7 +2655,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	if (!dir_check_ftype(conn, fattr, dirtype)) {
+	if (!dir_check_ftype(fattr, dirtype)) {
 		if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 			return NT_STATUS_FILE_IS_A_DIRECTORY;
 		}
