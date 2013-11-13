@@ -31,13 +31,14 @@ usage ()
 Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
   options:
     -c          Run in current working directory on specified nodes.
+    -f          Specify nodes file, overrides CTDB_NODES_FILE.
+    -i          Keep standard input open - the default is to close it.
+    -n          Allow nodes to be specified by name.
     -o <prefix> Save standard output from each node to file <prefix>.<ip>
     -p          Run command in parallel on specified nodes.
-    -q          Do not print node addresses (overrides -v).
-    -n          Allow nodes to be specified by name.
-    -f          Specify nodes file, overrides CTDB_NODES_FILE.
-    -v          Print node address even for a single node.
     -P          Push given files to nodes instead of running commands.
+    -q          Do not print node addresses (overrides -v).
+    -v          Print node address even for a single node.
   <NODES>       "all", "any", "ok" (or "healthy"), "con" (or "connected"),
                 "rm" (or "recmaster"), "lvs" (or "lvsmaster"),
                 "natgw" (or "natgwlist"); or
@@ -64,6 +65,7 @@ quiet=false
 prefix=""
 names_ok=false
 push=false
+stdin=false
 
 ctdb_base="${CTDB_BASE:-/etc/ctdb}"
 
@@ -74,7 +76,7 @@ parse_options ()
     # options ot onnode.
     local temp
     # Not on the previous line - local returns 0!
-    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqvP" -l help -- "$@")
+    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqvPi" -l help -- "$@")
 
     [ $? != 0 ] && usage
 
@@ -90,6 +92,7 @@ parse_options ()
 	    -q) quiet=true ; shift ;;
 	    -v) verbose=true ; shift ;;
 	    -P) push=true ; shift ;;
+	    -i) stdin=true ; shift ;;
 	    --) shift ; break ;;
 	    -h|--help|*) usage ;; # Shouldn't happen, so this is reasonable.
 	esac
@@ -367,7 +370,9 @@ else
 	[ -r "${ctdb_base}/onnode.conf" ] && . "${ctdb_base}/onnode.conf"
 	[ -n "$SSH" ] || SSH=ssh
 	if [ "$SSH" = "ssh" ] ; then
-	    ssh_opts="-n"
+	    if $parallel || ! $stdin ; then
+		ssh_opts="-n"
+	    fi
 	else
 	    : # rsh? All bets are off!
 	fi

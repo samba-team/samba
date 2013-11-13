@@ -68,6 +68,18 @@
         </listitem>
       </varlistentry>
 
+      <varlistentry><term>-i</term>
+        <listitem>
+          <para>
+	    Keep standard input open, allowing data to be piped to
+	    onnode.  Normally onnode closes stdin to avoid surprises
+	    when scripting.  Note that this option is ignored when
+	    using <option>-p</option> or if <envar>SSH</envar> is set
+	    to anything other than "ssh".
+	  </para>
+        </listitem>
+      </varlistentry>
+
       <varlistentry><term>-n</term>
         <listitem>
           <para>
