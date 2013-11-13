@@ -4065,7 +4065,8 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 	struct tdb_validation_status *v_state = (struct tdb_validation_status *)state;
 
 	/* Paranoia check. */
-	if (strncmp("UA/", (const char *)kbuf.dptr, 3) == 0) {
+	if (strncmp("UA/", (const char *)kbuf.dptr, 3) == 0 ||
+	    strncmp("NDR/", (const char *)kbuf.dptr, 4) == 0) {
 		max_key_len = 1024 * 1024;
 	}
 	if (kbuf.dsize > max_key_len) {
