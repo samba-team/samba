@@ -285,13 +285,15 @@ failed:
 /*
  check if a database exists
 */
-static bool db_exists(struct ctdb_context *ctdb, const char *dbarg, uint32_t *dbid, uint8_t *flags)
+static bool db_exists(struct ctdb_context *ctdb, const char *dbarg,
+		      uint32_t *dbid, const char **dbname, uint8_t *flags)
 {
 	int i, ret;
 	struct ctdb_dbid_map *dbmap=NULL;
 	bool dbid_given = false, found = false;
 	uint32_t id;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	const char *name;
 
 	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
 	if (ret != 0) {
@@ -311,7 +313,6 @@ static bool db_exists(struct ctdb_context *ctdb, const char *dbarg, uint32_t *db
 				break;
 			}
 		} else {
-			const char *name;
 			ret = ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, ("Unable to get dbname from dbid %u\n", dbmap->dbs[i].dbid));
@@ -326,8 +327,18 @@ static bool db_exists(struct ctdb_context *ctdb, const char *dbarg, uint32_t *db
 		}
 	}
 
+	if (found && dbid_given && dbname != NULL) {
+		ret = ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get dbname from dbid %u\n", dbmap->dbs[i].dbid));
+			found = false;
+			goto fail;
+		}
+	}
+
 	if (found) {
 		if (dbid) *dbid = id;
+		if (dbname) *dbname = talloc_strdup(ctdb, name);
 		if (flags) *flags = dbmap->dbs[i].flags;
 	} else {
 		DEBUG(DEBUG_ERR,("No database matching '%s' found\n", dbarg));
@@ -657,7 +668,7 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 		usage();
 	}
 
-	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+	if (!db_exists(ctdb, argv[0], &db_id, NULL, NULL)) {
 		return -1;
 	}
 
@@ -3660,9 +3671,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	db_name = argv[0];
-
-	if (!db_exists(ctdb, db_name, NULL, &flags)) {
+	if (!db_exists(ctdb, argv[0], NULL, &db_name, &flags)) {
 		return -1;
 	}
 
@@ -3742,9 +3751,7 @@ static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv
 		usage();
 	}
 
-	db_name = argv[0];
-
-	if (!db_exists(ctdb, db_name, NULL, &flags)) {
+	if (!db_exists(ctdb, argv[0], NULL, &db_name, &flags)) {
 		return -1;
 	}
 
@@ -3783,9 +3790,7 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 		usage();
 	}
 
-	db_name = argv[0];
-
-	if (!db_exists(ctdb, db_name, NULL, &flags)) {
+	if (!db_exists(ctdb, argv[0], NULL, &db_name, &flags)) {
 		return -1;
 	}
 
@@ -3829,9 +3834,7 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 		usage();
 	}
 
-	db_name = argv[0];
-
-	if (!db_exists(ctdb, db_name, NULL, &flags)) {
+	if (!db_exists(ctdb, argv[0], NULL, &db_name, &flags)) {
 		return -1;
 	}
 
@@ -3884,9 +3887,7 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 		usage();
 	}
 
-	db_name = argv[0];
-
-	if (!db_exists(ctdb, db_name, NULL, &flags)) {
+	if (!db_exists(ctdb, argv[0], NULL, &db_name, &flags)) {
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -4193,9 +4194,7 @@ static int control_pdelete(struct ctdb_context *ctdb, int argc, const char **arg
 		usage();
 	}
 
-	db_name = argv[0];
-
-	if (!db_exists(ctdb, db_name, NULL, &flags)) {
+	if (!db_exists(ctdb, argv[0], NULL, &db_name, &flags)) {
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -4547,9 +4546,7 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 		usage();
 	}
 
-	db_name = argv[0];
-
-	if (!db_exists(ctdb, db_name, &db_id, &flags)) {
+	if (!db_exists(ctdb, argv[0], &db_id, &db_name, &flags)) {
 		return -1;
 	}
 
@@ -5025,7 +5022,7 @@ static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **a
 		usage();
 	}
 
-	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+	if (!db_exists(ctdb, argv[0], &db_id, NULL, NULL)) {
 		return -1;
 	}
 
@@ -5053,7 +5050,7 @@ static int control_setdbsticky(struct ctdb_context *ctdb, int argc, const char *
 		usage();
 	}
 
-	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+	if (!db_exists(ctdb, argv[0], &db_id, NULL, NULL)) {
 		return -1;
 	}
 
@@ -5081,7 +5078,7 @@ static int control_setdbreadonly(struct ctdb_context *ctdb, int argc, const char
 		usage();
 	}
 
-	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+	if (!db_exists(ctdb, argv[0], &db_id, NULL, NULL)) {
 		return -1;
 	}
 
@@ -5109,7 +5106,7 @@ static int control_getdbseqnum(struct ctdb_context *ctdb, int argc, const char *
 		usage();
 	}
 
-	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+	if (!db_exists(ctdb, argv[0], &db_id, NULL, NULL)) {
 		return -1;
 	}
 
@@ -5205,6 +5202,7 @@ static int backup_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
  */
 static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **argv)
 {
+	const char *db_name;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct db_file_header dbhdr;
@@ -5223,7 +5221,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
-	if (!db_exists(ctdb, argv[0], &db_id, &flags)) {
+	if (!db_exists(ctdb, argv[0], &db_id, &db_name, &flags)) {
 		return -1;
 	}
 
@@ -5259,7 +5257,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 				     allow_unhealthy));
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], flags & CTDB_DB_FLAGS_PERSISTENT, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
 		talloc_free(tmp_ctx);
@@ -5631,6 +5629,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 static int control_wipedb(struct ctdb_context *ctdb, int argc,
 			  const char **argv)
 {
+	const char *db_name;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA data;
@@ -5650,11 +5649,11 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 		return -1;
 	}
 
-	if (!db_exists(ctdb, argv[0], NULL, &flags)) {
+	if (!db_exists(ctdb, argv[0], NULL, &db_name, &flags)) {
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], flags & CTDB_DB_FLAGS_PERSISTENT, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR, ("Unable to attach to database '%s'\n",
 				  argv[0]));
