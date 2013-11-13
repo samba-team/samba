@@ -4,6 +4,42 @@
 	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <refentry id="ctdb.1">
 
+  <refentryinfo>
+    <author>
+      <contrib>
+	This documentation was written by
+	Ronnie Sahlberg,
+	Amitay Isaacs,
+	Martin Schwenke
+      </contrib>
+    </author>
+
+    <copyright>
+      <year>2007</year>
+      <holder>Andrew Tridgell</holder>
+      <holder>Ronnie Sahlberg</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </refentryinfo>
+
   <refmeta>
     <refentrytitle>ctdb</refentrytitle>
     <manvolnum>1</manvolnum>
@@ -55,6 +91,13 @@
 	  </listitem>
 	</varlistentry>
       </variablelist>
+    </para>
+
+    <para>
+      Commands that reference a database have a
+      <parameter>DB</parameter> argument.  This is either a database
+      name, such as <filename>locking.tdb</filename> or a database ID
+      such as "0x42fe72c5".
     </para>
   </refsect1>
 
@@ -141,7 +184,7 @@
 
 
   <refsect1>
-    <title>Administrative Commands</title>
+    <title>ADMINISTRATIVE COMMANDS</title>
     <para>
       These are commands used to monitor and administer a CTDB cluster.
     </para>
@@ -266,7 +309,7 @@
 
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb status
 Number of nodes:4
 pnn:0 192.168.2.200       OK (THIS NODE)
@@ -332,7 +375,7 @@ Recovery master:0
 
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb nodestatus
 pnn:0 10.0.0.30        OK (THIS NODE)
 
@@ -364,7 +407,7 @@ pnn:1 10.0.0.31        OK
 
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb uptime
 Current time of node          :                Thu Oct 29 10:38:54 2009
 Ctdbd start time              : (000 16:54:28) Wed Oct 28 17:44:26 2009
@@ -382,7 +425,7 @@ Duration of last recovery/failover: 2.248552 seconds
 
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb listnodes
 192.168.2.200
 192.168.2.201
@@ -404,7 +447,7 @@ Duration of last recovery/failover: 2.248552 seconds
 
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb natgwlist
 0 192.168.2.200
 Number of nodes:4
@@ -424,7 +467,7 @@ pnn:3 192.168.2.203       OK
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb ping -n all
 response from 0 time=0.000054 sec  (3 clients)
 response from 1 time=0.000144 sec  (2 clients)
@@ -442,7 +485,7 @@ response from 3 time=0.000114 sec  (2 clients)
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb ifaces
 Interfaces on node 0
 name:eth5 link:up references:2
@@ -467,7 +510,7 @@ name:eth2 link:up references:1
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb ip
 Public IPs on node 0
 172.31.91.82 node[1] active[] available[eth2,eth3] configured[eth2,eth3]
@@ -500,7 +543,7 @@ Public IPs on node 0
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb ipinfo 172.31.92.85
 Public IP[172.31.92.85] info on node 0
 IP:172.31.92.85
@@ -519,7 +562,7 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb scriptstatus
 7 scripts were executed last monitoring cycle
 00.ctdb              Status:OK    Duration:0.056 Tue Mar 24 18:56:57 2009
@@ -564,7 +607,7 @@ OUTPUT:ERROR: Samba tcp port 445 is not responding
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb listvars
 MaxRedirectCount        = 3
 SeqnumInterval          = 1000
@@ -621,7 +664,7 @@ RecoverPDBBySeqNum      = 0
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb getvar MaxRedirectCount
 MaxRedirectCount    = 3
 	</screen>
@@ -674,7 +717,7 @@ MaxRedirectCount    = 3
       <para>
 	Example output:
       </para>
-      <screen format="linespecific">
+      <screen>
 2:10.0.0.13
 3:10.0.0.14
       </screen>
@@ -695,7 +738,7 @@ MaxRedirectCount    = 3
       <para>
 	Example output:
       </para>
-      <screen format="linespecific">
+      <screen>
 RECMASTER: YES
 LMASTER: YES
 LVS: NO
@@ -711,7 +754,7 @@ NATGW: YES
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb statistics
 CTDB version 1
 num_clients                        3
@@ -763,13 +806,13 @@ max_lockwait_latency               0.000000 sec
     </refsect2>
 
     <refsect2>
-      <title>dbstatistics <parameter>DBNAME</parameter>|<parameter>HASH</parameter></title>
+      <title>dbstatistics <parameter>DB</parameter></title>
       <para>
-	Display statistics about the specified database.
+	Display statistics about the database DB.
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb dbstatistics locking.tdb
 DB Statistics: locking.tdb
  ro_delegations                     0
@@ -797,7 +840,7 @@ DB Statistics: locking.tdb
       <para>
 	Example output:
       </para>
-      <screen format="linespecific">
+      <screen>
 	Reclock file:/gpfs/.ctdb/shared
       </screen>
 
@@ -1062,7 +1105,7 @@ DB Statistics: locking.tdb
 
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb getdbmap
 Number of databases:10
 dbid:0x435d3410 name:notify.tdb path:/var/ctdb/notify.tdb.0 
@@ -1088,20 +1131,31 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
     </refsect2>
 
     <refsect2>
-      <title>backupdb <parameter>DBNAME</parameter> <parameter>FILE</parameter></title>
+      <title>
+	backupdb
+	<parameter>DB</parameter>
+	<parameter>FILE</parameter>
+      </title>
       <para>
-	This command can be used to copy the entire content of a database out to a file. This file can later be read back into ctdb using the restoredb command.
-	This is mainly useful for backing up persistent databases such as secrets.tdb and similar.
+	Copy the contents of database DB to FILE.  FILE can later be
+	read back using <command>restoredb</command>.  This is mainly
+	useful for backing up persistent databases such as
+	<filename>secrets.tdb</filename> and similar.
       </para>
     </refsect2>
 
     <refsect2>
-      <title>restoredb <parameter>FILE</parameter> [<parameter>DBNAME</parameter>]</title>
+      <title>
+	restoredb
+	<parameter>FILE</parameter>
+	<optional><parameter>DB</parameter></optional>
+      </title>
       <para>
-	This command restores a persistent database that was previously backed up using backupdb.
-	By default the data will be restored back into the same database as
-	it was created from. By specifying dbname you can restore the data
-	into a different database.
+	This command restores a persistent database that was
+	previously backed up using backupdb.  By default the data will
+	be restored back into the same database as it was created
+	from. By specifying dbname you can restore the data into a
+	different database.
       </para>
     </refsect2>
 
@@ -1144,7 +1198,7 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
     </refsect2>
 
     <refsect2>
-      <title>setdbreadonly <parameter>DBNAME</parameter>|<parameter>HASH</parameter></title>
+      <title>setdbreadonly <parameter>DB</parameter></title>
       <para>
 	This command will enable the read-only record support for a
 	database.  This is an experimental feature to improve
@@ -1155,7 +1209,7 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
     </refsect2>
 
     <refsect2>
-      <title>setdbsticky <parameter>DBNAME</parameter>|<parameter>HASH</parameter></title>
+      <title>setdbsticky <parameter>DB</parameter></title>
       <para>
 	This command will enable the sticky record support for the
 	specified database.  This is an experimental feature to
@@ -1168,13 +1222,98 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
   </refsect1>
 
   <refsect1>
-    <title>Internal commands</title>
+    <title>INTERNAL COMMANDS</title>
 
     <para>
       Internal commands are used by CTDB's scripts and are not
       required for managing a CTDB cluster.  Their parameters and
       behaviour are subject to change.
     </para>
+
+    <refsect2>
+      <title>gettickles <parameter>IPADDR</parameter></title>
+      <para>
+	Show TCP connections that are registered with CTDB to be
+	"tickled" if there is a failover.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>gratiousarp <parameter>IPADDR</parameter> <parameter>INTERFACE</parameter></title>
+      <para>
+	Send out a gratious ARP for the specified interface through
+	the specified interface. This command is mainly used by the
+	ctdb eventscripts.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>killtcp</title>
+      <para>
+	Read a list of TCP connections, one per line, from standard
+	input and terminate each connection.  A connection is
+	specified as:
+      </para>
+      <synopsis>
+	<parameter>SRC-IPADDR</parameter>:<parameter>SRC-PORT</parameter> <parameter>DST-IPADDR</parameter>:<parameter>DST-PORT</parameter>
+      </synopsis>
+      <para>
+	Each connection is terminated by issuing a TCP RST to the
+	SRC-IPADDR:SRC-PORT endpoint.
+      </para>
+      <para>
+	A single connection can be specified on the command-line
+	rather than on standard input.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>
+	pdelete <parameter>DB</parameter> <parameter>KEY</parameter>
+      </title>
+      <para>
+	Delete KEY from DB.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>
+	pfetch <parameter>DB</parameter> <parameter>KEY</parameter>
+      </title>
+      <para>
+	Print the value associated with KEY in DB.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>
+	pstore
+	<parameter>DB</parameter>
+	<parameter>KEY</parameter>
+	<parameter>FILE</parameter>
+      </title>
+      <para>
+	Store KEY in DB with contents of FILE as the associated value.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>
+	ptrans
+	<parameter>DB</parameter>
+	<optional><parameter>FILE</parameter></optional>
+      </title>
+      <para>
+	Read a list of key-value pairs, one per line from FILE, and
+	store them in DB using a single transaction.  An empty value
+	is equivalent to deleting the given key.
+      </para>
+      <para>
+	The key and value should be separated by spaces or tabs. Each
+	key/value should be a printable string enclosed in
+	double-quotes.
+      </para>
+    </refsect2>
 
     <refsect2>
       <title>runstate [setup|first_recovery|startup|running]</title>
@@ -1190,7 +1329,7 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb runstate
 RUNNING
 	</screen>
@@ -1198,76 +1337,14 @@ RUNNING
     </refsect2>
 
     <refsect2>
-      <title>setifacelink <parameter>IFACE</parameter> <parameter>STATUS</parameter></title>
+      <title>setifacelink <parameter>IFACE</parameter> up|down</title>
       <para>
-	This command will set the status of a network interface.
-	The status needs to be "up" or "down". This is typically
-	used in the 10.interfaces script in the "monitor" event.
+	Set the internal state of network interface IFACE.  This is
+	typically used in the <filename>10.interface</filename> script
+	in the "monitor" event.
       </para>
       <para>
 	Example: ctdb setifacelink eth0 up
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>killtcp</title>
-      <para>
-	This command reads a list of TCP connections, one per line,
-	from standard input and terminates each connection.  A connection
-	is specified as:
-      </para>
-      <synopsis>
-	<parameter>SRC-IPADDR</parameter>:<parameter>SRC-PORT</parameter> <parameter>DST-IPADDR</parameter>:<parameter>DST-PORT</parameter>
-      </synopsis>
-      <para>
-	A connection is terminated by issuing a TCP RST to the
-	SRC-IPADDR:SRC-PORT endpoint.
-      </para>
-      <para>
-	A single connection can be specified on the command-line
-	rather than on standard input.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>gratiousarp <parameter>IPADDR</parameter> <parameter>INTERFACE</parameter></title>
-      <para>
-	This command will send out a gratious arp for the specified interface
-	through the specified interface. This command is mainly used by the
-	ctdb eventscripts.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>tickle <parameter>SRC-IPADDR</parameter>:<parameter>SRC-PORT</parameter> <parameter>DST-IPADDR</parameter>:<parameter>DST-PORT</parameter></title>
-      <para>
-	This command will will send a TCP tickle to the source host for the
-	specified TCP connection.
-	A TCP tickle is a TCP ACK packet with an invalid sequence and 
-	acknowledge number and will when received by the source host result
-	in it sending an immediate correct ACK back to the other end.
-      </para>
-      <para>
-	TCP tickles are useful to "tickle" clients after a IP failover has 
-	occured since this will make the client immediately recognize the 
-	TCP connection has been disrupted and that the client will need
-	to reestablish. This greatly speeds up the time it takes for a client
-	to detect and reestablish after an IP failover in the ctdb cluster.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>gettickles <parameter>IPADDR</parameter></title>
-      <para>
-	This command is used to show which TCP connections are registered with
-	CTDB to be "tickled" if there is a failover.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>version</title>
-      <para>
-	Displays the CTDB version.
       </para>
     </refsect2>
 
@@ -1278,10 +1355,35 @@ RUNNING
       </para>
     </refsect2>
 
+    <refsect2>
+      <title>tickle <parameter>SRC-IPADDR</parameter>:<parameter>SRC-PORT</parameter> <parameter>DST-IPADDR</parameter>:<parameter>DST-PORT</parameter></title>
+      <para>
+	Send a TCP tickle to the source host for the specified TCP
+	connection.  A TCP tickle is a TCP ACK packet with an invalid
+	sequence and acknowledge number and will when received by the
+	source host result in it sending an immediate correct ACK back
+	to the other end.
+      </para>
+      <para>
+	TCP tickles are useful to "tickle" clients after a IP failover has
+	occured since this will make the client immediately recognize the
+	TCP connection has been disrupted and that the client will need
+	to reestablish. This greatly speeds up the time it takes for a client
+	to detect and reestablish after an IP failover in the ctdb cluster.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>version</title>
+      <para>
+	Display the CTDB version.
+      </para>
+    </refsect2>
+
   </refsect1>
 
   <refsect1>
-    <title>Debugging Commands</title>
+    <title>DEBUGGING COMMANDS</title>
     <para>
       These commands are primarily used for CTDB development and testing and
       should not be used for normal administration.
@@ -1351,13 +1453,13 @@ RUNNING
     </refsect2>
 
     <refsect2>
-      <title>getdbstatus <parameter>DBNAME</parameter></title>
+      <title>getdbstatus <parameter>DB</parameter></title>
       <para>
 	This command displays more details about a database.
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb getdbstatus test.tdb.0
 dbid: 0x122224da
 name: test.tdb
@@ -1376,31 +1478,31 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
     </refsect2>
 
     <refsect2>
-      <title>catdb <parameter>DBNAME</parameter></title>
+      <title>catdb <parameter>DB</parameter></title>
       <para>
-	This command will dump a clustered TDB database to the screen. This is a debugging command.
+	Print a dump of the clustered TDB database DB.
       </para>
     </refsect2>
 
     <refsect2>
-      <title>cattdb <parameter>DBNAME</parameter></title>
+      <title>cattdb <parameter>DB</parameter></title>
       <para>
-	This command will dump the content of the local TDB database to the screen. This is a debugging command.
+	Print a dump of the contents of the local TDB database DB.
       </para>
     </refsect2>
 
     <refsect2>
-      <title>dumpdbbackup <parameter>BACKUP-FILE</parameter></title>
+      <title>dumpdbbackup <parameter>FILE</parameter></title>
       <para>
-	This command will dump the content of database backup to the screen
-	(similar to ctdb catdb). This is a debugging command.
+	Print a dump of the contents from database backup FILE,
+	similar to <command>catdb</command>.
       </para>
     </refsect2>
 
     <refsect2>
-      <title>wipedb <parameter>DBNAME</parameter></title>
+      <title>wipedb <parameter>DB</parameter></title>
       <para>
-	This command can be used to remove all content of a database.
+	Remove all contents of database DB.
       </para>
     </refsect2>
 
@@ -1532,7 +1634,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
       </para>
       <refsect3>
 	<title>Example</title>
-	<screen format="linespecific">
+	<screen>
 # ctdb check_srvids 1 2 3 14765
 Server id 0:1 does not exist
 Server id 0:2 does not exist
@@ -1611,10 +1713,9 @@ Server id 0:14765 exists
   <!-- UNDOCUMENTED: showban stats disablemonitor enablemonitor
        isnotrecmaster addtickle deltickle regsrvid unregsrvid chksrvid
        getsrvids rebalanceip setdbprio getdbprio msglisten msgsend
-       pfetch pstore pdelete tfetch tstore readkey writekey
+       tfetch tstore readkey writekey
        checktcpport getdbseqnum ipiface
   -->
-
 
   <refsect1>
     <title>SEE ALSO</title>
@@ -1635,40 +1736,5 @@ Server id 0:14765 exists
     </para>
   </refsect1>
 
-  <refentryinfo>
-    <author>
-      <contrib>
-	This documentation was written by
-	Ronnie Sahlberg,
-	Amitay Isaacs,
-	Martin Schwenke
-      </contrib>
-    </author>
-
-    <copyright>
-      <year>2007</year>
-      <holder>Andrew Tridgell</holder>
-      <holder>Ronnie Sahlberg</holder>
-    </copyright>
-    <legalnotice>
-      <para>
-	This program is free software; you can redistribute it and/or
-	modify it under the terms of the GNU General Public License as
-	published by the Free Software Foundation; either version 3 of
-	the License, or (at your option) any later version.
-      </para>
-      <para>
-	This program is distributed in the hope that it will be
-	useful, but WITHOUT ANY WARRANTY; without even the implied
-	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-	PURPOSE.  See the GNU General Public License for more details.
-      </para>
-      <para>
-	You should have received a copy of the GNU General Public
-	License along with this program; if not, see
-	<ulink url="http://www.gnu.org/licenses"/>.
-      </para>
-    </legalnotice>
-  </refentryinfo>
 
 </refentry>
