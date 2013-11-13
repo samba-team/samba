@@ -41,10 +41,10 @@ num_records=1000
 TESTDB="traverse_test.tdb"
 
 echo "create test database $TESTDB"
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb attach $TESTDB
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb attach $TESTDB
 
 echo "wipe test database $TESTDB"
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb wipedb $TESTDB
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb $TESTDB
 
 echo "Add $num_records records to database"
 i=0
@@ -53,13 +53,13 @@ while [ $i -lt $num_records ]; do
 	value="value-$i"
 
 	n=$[ $i % $num_nodes ]
-	try_command_on_node -q $n $CTDB_TEST_WRAPPER ctdb writekey $TESTDB $key $value
+	try_command_on_node $n $CTDB_TEST_WRAPPER ctdb writekey $TESTDB $key $value
 
 	i=$[ $i + 1 ]
 done
 
 echo "Start a traverse and collect records"
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb catdb $TESTDB
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb catdb $TESTDB
 
 num_read=$(echo "$out" | tail -n 1 | cut -d\  -f2)
 if [ $num_read -eq $num_records ]; then

@@ -41,14 +41,14 @@ TDB=persistent_test.tdb
 
 # create a temporary persistent database to test with
 echo create persistent test database $TDB
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb attach $TDB persistent
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb attach $TDB persistent
 
 
 # 3,
 echo wipe the persistent test database
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb wipedb $TDB
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb $TDB
 echo force a recovery
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
 
 # check that the database is wiped
 num_records=$(try_command_on_node -v -pq 1 $CTDB_TEST_WRAPPER ctdb cattdb $TDB | grep key | wc -l)
@@ -60,9 +60,9 @@ echo "OK. database was wiped"
 
 # 4,
 echo Create a new record in the persistent database using UPDATE_RECORD
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database=$TDB --record=Update_Record_Persistent --value=FirstValue
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database=$TDB --record=Update_Record_Persistent --value=FirstValue
 
-try_command_on_node -q 0 "ctdb cattdb $TDB | grep 'FirstValue' | wc -l"
+try_command_on_node 0 "ctdb cattdb $TDB | grep 'FirstValue' | wc -l"
 [ $out != 1 ] && {
     echo "BAD: we did find the record after the create/update"
     exit 1
@@ -70,15 +70,15 @@ try_command_on_node -q 0 "ctdb cattdb $TDB | grep 'FirstValue' | wc -l"
 
 # 5,
 echo Modify an existing record in the persistent database using UPDATE_RECORD
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database=$TDB --record=Update_Record_Persistent --value=SecondValue
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database=$TDB --record=Update_Record_Persistent --value=SecondValue
 
-try_command_on_node -q 0 "ctdb cattdb $TDB | grep 'FirstValue' | wc -l"
+try_command_on_node 0 "ctdb cattdb $TDB | grep 'FirstValue' | wc -l"
 [ $out != 0 ] && {
     echo "BAD: we still found the old record after the modify/update"
     exit 1
 }
 
-try_command_on_node -q 0 "ctdb cattdb $TDB | grep 'SecondValue' | wc -l"
+try_command_on_node 0 "ctdb cattdb $TDB | grep 'SecondValue' | wc -l"
 [ $out != 1 ] && {
     echo "BAD: could not find the record after the modify/update"
     exit 1
@@ -86,4 +86,4 @@ try_command_on_node -q 0 "ctdb cattdb $TDB | grep 'SecondValue' | wc -l"
 
 
 echo wipe the persistent test databases and clean up
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb wipedb $TDB
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb $TDB

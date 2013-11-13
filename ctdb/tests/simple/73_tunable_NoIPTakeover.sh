@@ -45,19 +45,19 @@ fi
 
 echo "Wait until the ips are reallocated"
 sleep 30
-try_command_on_node -q 0 "$CTDB ipreallocate"
+try_command_on_node 0 "$CTDB ipreallocate"
 
 num=`try_command_on_node -v 1 "$CTDB ip" | grep -v Public | egrep " 1$" | wc -l`
 echo "Number of addresses on node 1 : $num"
 
 
 echo "Turning on NoIPTakeover on node 1"
-try_command_on_node -q 1 "$CTDB setvar NoIPTakeover 1"
-try_command_on_node -q 1 "$CTDB ipreallocate"
+try_command_on_node 1 "$CTDB setvar NoIPTakeover 1"
+try_command_on_node 1 "$CTDB ipreallocate"
 
 echo Disable node 1
-try_command_on_node -q 1 "$CTDB disable"
-try_command_on_node -q 1 "$CTDB ipreallocate"
+try_command_on_node 1 "$CTDB disable"
+try_command_on_node 1 "$CTDB ipreallocate"
 num=`try_command_on_node -v 1 "$CTDB ip" | grep -v Public | egrep " 1$" | wc -l`
 echo "Number of addresses on node 1 : $num"
 [ "$num" != "0" ] && {
@@ -67,10 +67,10 @@ echo "Number of addresses on node 1 : $num"
 
 
 echo "Enable node 1 again"
-try_command_on_node -q 1 "$CTDB enable"
+try_command_on_node 1 "$CTDB enable"
 sleep 30
-try_command_on_node -q 1 "$CTDB ipreallocate"
-try_command_on_node -q 1 "$CTDB ipreallocate"
+try_command_on_node 1 "$CTDB ipreallocate"
+try_command_on_node 1 "$CTDB ipreallocate"
 num=`try_command_on_node -v 1 "$CTDB ip" | grep -v Public | egrep " 1$" | wc -l`
 echo "Number of addresses on node 1 : $num"
 [ "$num" != "0" ] && {

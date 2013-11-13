@@ -37,26 +37,26 @@ num_nodes=$(echo "$out" | wc -l)
 
 # create a temporary persistent database to test with
 echo create persistent test database persistent_test.tdb
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb attach persistent_test.tdb persistent
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb attach persistent_test.tdb persistent
 
 
 # 3,
 # add one record to node 0   key==ABC  data==ABC
-TDB=`try_command_on_node -v -q 0 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(ABC) data(ABC) on node 0"
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
 #
 # add one record to node 1   key==DEF  data==DEF
-TDB=`try_command_on_node -v -q 1 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 1 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(DEF) data(DEF) on node 1"
-try_command_on_node -q 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
+try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
 
 
 # 4,
 echo wipe the persistent test database
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb wipedb persistent_test.tdb
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb persistent_test.tdb
 echo force a recovery
-try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
 
 # check that the database is wiped
 num_records=$(try_command_on_node -v -pq 1 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | wc -l)

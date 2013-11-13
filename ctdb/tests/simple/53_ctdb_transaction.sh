@@ -40,4 +40,4 @@ fi
 t="$CTDB_TEST_WRAPPER $VALGRIND ctdb_transaction --timelimit=${CTDB_TEST_TIMELIMIT}"
 
 echo "Running ctdb_transaction on all $num_nodes nodes."
-try_command_on_node -v -pq all "$t & $t"
+try_command_on_node -v -p all "$t & $t"
