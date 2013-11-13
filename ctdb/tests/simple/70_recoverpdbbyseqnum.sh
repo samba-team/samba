@@ -87,7 +87,7 @@ echo force a recovery
 try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v -pq 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "2" ] && {
     echo "BAD: we did not end up with the expected two records after the recovery"
     exit 1
@@ -131,7 +131,7 @@ echo force a recovery
 try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v -pq 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "2" ] && {
     echo "BAD: we did not end up with the expected two records after the recovery"
     exit 1
@@ -172,7 +172,7 @@ echo force a recovery
 try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v -pq 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "2" ] && {
     echo "BAD: we did not end up with the expected two records after the recovery"
     exit 1
@@ -217,7 +217,7 @@ echo force a recovery
 try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v -pq 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "1" ] && {
     echo "BAD: we did not end up with the expected single record after the recovery"
     exit 1
