@@ -155,7 +155,7 @@ try_command_on_node ()
 	if [ "$nodespec" = "-v" ] ; then
 	    verbose=true
 	else
-	    onnode_opts="$nodespec"
+	    onnode_opts="${onnode_opts}${onnode_opts:+ }${nodespec}"
 	fi
 	nodespec="$1" ; shift
     done
