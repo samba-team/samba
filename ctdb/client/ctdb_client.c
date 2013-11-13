@@ -4186,6 +4186,11 @@ static int ctdb_fetch_db_seqnum(struct ctdb_db_context *ctdb_db, uint64_t *seqnu
 		return 0;
 	}
 
+	if (data.dsize == 0) {
+		*seqnum = 0;
+		return 0;
+	}
+
 	if (data.dsize != sizeof(*seqnum)) {
 		DEBUG(DEBUG_ERR, (__location__ " Invalid data recived len=%zi\n",
 				  data.dsize));
