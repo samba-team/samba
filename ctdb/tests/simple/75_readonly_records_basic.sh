@@ -56,7 +56,7 @@ num_nodes=$(echo "$out" | wc -l)
 
 # create a temporary database to test with
 echo create test database test.tdb
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb attach test.tdb
+try_command_on_node 0 $CTDB attach test.tdb
 
 
 # create some records
@@ -69,7 +69,7 @@ echo Try some readonly fetches, these should all be upgraded to full fetchlocks
 try_command_on_node 0,1,2 $CTDB_TEST_WRAPPER "ctdb_fetch_readonly_once </dev/null"
 
 # no delegations should have been created
-numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb | grep READONLY | wc -l`
+numreadonly=`try_command_on_node -v all $CTDB cattdb test.tdb | grep READONLY | wc -l`
 [ "$numreadonly" != "0" ] && {
     echo "BAD: readonly delegations were created, but the feature is not activated on the database"
     exit 1
@@ -82,8 +82,8 @@ numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb 
 
 echo Activating ReadOnly record support for test.tdb ...
 # activate readonly support
-try_command_on_node all $CTDB_TEST_WRAPPER ctdb setdbreadonly test.tdb
-numreadonly=`try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb getdbmap | grep READONLY | wc -l`
+try_command_on_node all $CTDB setdbreadonly test.tdb
+numreadonly=`try_command_on_node -v 0 $CTDB getdbmap | grep READONLY | wc -l`
 [ "$numreadonly" != "1" ] && {
     echo BAD: could not activate readonly support for the test database
     exit 1
@@ -102,7 +102,7 @@ try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb_update_record
 # fetch readonly to node 1
 try_command_on_node -v 0 $CTDB_TEST_WRAPPER "ctdb_fetch_readonly_once </dev/null"
 
-numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb | grep RO_HAVE | wc -l`
+numreadonly=`try_command_on_node -v all $CTDB cattdb test.tdb | grep RO_HAVE | wc -l`
 [ "$numreadonly" != "2" ] && {
     echo BAD: could not create readonly delegation
     exit 1
@@ -119,7 +119,7 @@ echo verify that a fetchlock will revoke the delegations ...
 # fetch record to node 0 and make it dmaster
 try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb_update_record
 
-numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb | grep RO_HAVE | wc -l`
+numreadonly=`try_command_on_node -v all $CTDB cattdb test.tdb | grep RO_HAVE | wc -l`
 [ "$numreadonly" != "0" ] && {
     echo BAD: fetchlock did not revoke delegations
     exit 1
@@ -137,7 +137,7 @@ try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb_update_record
 # fetch readonly to node 1
 try_command_on_node -v 0 $CTDB_TEST_WRAPPER "ctdb_fetch_readonly_once </dev/null"
 
-numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb | grep RO_HAVE | wc -l`
+numreadonly=`try_command_on_node -v all $CTDB cattdb test.tdb | grep RO_HAVE | wc -l`
 [ "$numreadonly" != "2" ] && {
     echo BAD: could not create readonly delegation
     exit 1
@@ -151,9 +151,9 @@ numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb 
 #
 
 echo verify that a recovery will revoke the delegations ...
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB recover
 
-numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb | grep RO_HAVE | wc -l`
+numreadonly=`try_command_on_node -v all $CTDB cattdb test.tdb | grep RO_HAVE | wc -l`
 [ "$numreadonly" != "0" ] && {
     echo BAD: recovery did not revoke delegations
     exit 1

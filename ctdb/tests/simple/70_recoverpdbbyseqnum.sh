@@ -53,12 +53,12 @@ num_nodes=$(echo "$out" | wc -l)
 
 # create a temporary persistent database to test with
 echo create persistent test database persistent_test.tdb
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb attach persistent_test.tdb persistent
+try_command_on_node 0 $CTDB attach persistent_test.tdb persistent
 
 
 # set RecoverPDBBySeqNum=0
 echo "setting RecoverPDBBySeqNum to 0"
-try_command_on_node all $CTDB_TEST_WRAPPER ctdb setvar RecoverPDBBySeqNum 0
+try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 0
 
 
 
@@ -70,24 +70,24 @@ try_command_on_node all $CTDB_TEST_WRAPPER ctdb setvar RecoverPDBBySeqNum 0
 echo
 echo test that RecoverPDBBySeqNum==0 and no __db_sequence_number__ blends the database during recovery
 echo wipe the test database
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb persistent_test.tdb
+try_command_on_node 0 $CTDB wipedb persistent_test.tdb
 
 # add one record to node 0   key==ABC  data==ABC
-TDB=`try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 0 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(ABC) data(ABC) on node 0"
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
+try_command_on_node 0 $CTDB tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
 #
 # add one record to node 1   key==DEF  data==DEF
-TDB=`try_command_on_node -v 1 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 1 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(DEF) data(DEF) on node 1"
-try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
+try_command_on_node 1 $CTDB tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
 
 # force a recovery
 echo force a recovery
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "2" ] && {
     echo "BAD: we did not end up with the expected two records after the recovery"
     exit 1
@@ -104,34 +104,34 @@ echo "OK. databases were blended"
 echo
 echo test that RecoverPDBBySeqNum==0 and __db_sequence_number__ blends the database during recovery
 echo wipe the test database
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb persistent_test.tdb
+try_command_on_node 0 $CTDB wipedb persistent_test.tdb
 
 echo "add __db_sequence_number__==5 record to all nodes"
-try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb nodestatus all | grep pnn | sed -e"s/^pnn://" -e "s/ .*//" | while read PNN; do
-    TDB=`try_command_on_node -v $PNN $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
-    try_command_on_node $PNN $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000500000000000000
+try_command_on_node -v 0 $CTDB nodestatus all | grep pnn | sed -e"s/^pnn://" -e "s/ .*//" | while read PNN; do
+    TDB=`try_command_on_node -v $PNN $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+    try_command_on_node $PNN $CTDB tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000500000000000000
 done
 
 # add one record to node 0   key==ABC  data==ABC
-TDB=`try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 0 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(ABC) data(ABC) on node 0"
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
+try_command_on_node 0 $CTDB tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
 echo "add __db_sequence_number__==7 record to node 0"
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000700000000000000
+try_command_on_node 0 $CTDB tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000700000000000000
 
 # add one record to node 1   key==DEF  data==DEF
-TDB=`try_command_on_node -v 1 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 1 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(DEF) data(DEF) on node 1"
-try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
+try_command_on_node 1 $CTDB tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
 echo "add __db_sequence_number__==8 record to node 1"
-try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000800000000000000
+try_command_on_node 1 $CTDB tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000800000000000000
 
 # force a recovery
 echo force a recovery
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "2" ] && {
     echo "BAD: we did not end up with the expected two records after the recovery"
     exit 1
@@ -143,7 +143,7 @@ echo "OK. databases were blended"
 # set RecoverPDBBySeqNum=1
 echo
 echo "setting RecoverPDBBySeqNum to 1"
-try_command_on_node all $CTDB_TEST_WRAPPER ctdb setvar RecoverPDBBySeqNum 1
+try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 1
 
 
 
@@ -155,24 +155,24 @@ try_command_on_node all $CTDB_TEST_WRAPPER ctdb setvar RecoverPDBBySeqNum 1
 echo
 echo test that RecoverPDBBySeqNum==1 and no __db_sequence_number__ blends the database during recovery
 echo wipe the test database
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb persistent_test.tdb
+try_command_on_node 0 $CTDB wipedb persistent_test.tdb
 
 # add one record to node 0   key==ABC  data==ABC
-TDB=`try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 0 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(ABC) data(ABC) on node 0"
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
+try_command_on_node 0 $CTDB tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
 
 # add one record to node 1   key==DEF  data==DEF
-TDB=`try_command_on_node -v 1 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 1 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(DEF) data(DEF) on node 1"
-try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
+try_command_on_node 1 $CTDB tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
 
 # force a recovery
 echo force a recovery
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "2" ] && {
     echo "BAD: we did not end up with the expected two records after the recovery"
     exit 1
@@ -189,35 +189,35 @@ echo "OK. databases were blended"
 echo
 echo test that RecoverPDBBySeqNum==1 and __db_sequence_number__ does not blend the database during recovery
 echo wipe the test database
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb persistent_test.tdb
+try_command_on_node 0 $CTDB wipedb persistent_test.tdb
 
 echo "add __db_sequence_number__==5 record to all nodes"
-try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb nodestatus all | grep pnn | sed -e"s/^pnn://" -e "s/ .*//" | while read PNN; do
-    TDB=`try_command_on_node -v $PNN $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
-    try_command_on_node $PNN $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000500000000000000
+try_command_on_node -v 0 $CTDB nodestatus all | grep pnn | sed -e"s/^pnn://" -e "s/ .*//" | while read PNN; do
+    TDB=`try_command_on_node -v $PNN $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+    try_command_on_node $PNN $CTDB tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000500000000000000
 done
 
 
 # add one record to node 0   key==ABC  data==ABC
-TDB=`try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 0 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(ABC) data(ABC) on node 0"
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
+try_command_on_node 0 $CTDB tstore $TDB 0x414243 0x070000000000000000000000000000000000000000000000414243
 echo "add __db_sequence_number__==7 record to node 0"
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000700000000000000
+try_command_on_node 0 $CTDB tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000700000000000000
 
 # add one record to node 1   key==DEF  data==DEF
-TDB=`try_command_on_node -v 1 $CTDB_TEST_WRAPPER ctdb getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
+TDB=`try_command_on_node -v 1 $CTDB getdbmap | grep persistent_test.tdb | sed -e "s/.*path://" -e "s/ .*//"`
 echo "store key(DEF) data(DEF) on node 1"
-try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
+try_command_on_node 1 $CTDB tstore $TDB 0x444546 0x070000000000000000000000000000000000000000000000444546
 echo "add __db_sequence_number__==8 record to node 1"
-try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000800000000000000
+try_command_on_node 1 $CTDB tstore $TDB 0x5f5f64625f73657175656e63655f6e756d6265725f5f00 0x0700000000000000000000000000000000000000000000000800000000000000
 
 # force a recovery
 echo force a recovery
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB recover
 
 # check that we now have both records on node 0
-num_records=$(try_command_on_node -v 0 $CTDB_TEST_WRAPPER ctdb cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
+num_records=$(try_command_on_node -v 0 $CTDB cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
 [ $num_records != "1" ] && {
     echo "BAD: we did not end up with the expected single record after the recovery"
     exit 1
@@ -229,4 +229,4 @@ echo "OK. databases were not blended"
 
 # set RecoverPDBBySeqNum=1
 echo "setting RecoverPDBBySeqNum back to 0"
-try_command_on_node all $CTDB_TEST_WRAPPER ctdb setvar RecoverPDBBySeqNum 0
+try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 0

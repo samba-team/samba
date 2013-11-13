@@ -41,17 +41,17 @@ TDB=persistent_test.tdb
 
 # create a temporary persistent database to test with
 echo create persistent test database $TDB
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb attach $TDB persistent
+try_command_on_node 0 $CTDB attach $TDB persistent
 
 
 # 3,
 echo wipe the persistent test database
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb $TDB
+try_command_on_node 0 $CTDB wipedb $TDB
 echo force a recovery
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node 0 $CTDB recover
 
 # check that the database is wiped
-num_records=$(try_command_on_node -v 1 $CTDB_TEST_WRAPPER ctdb cattdb $TDB | grep key | wc -l)
+num_records=$(try_command_on_node -v 1 $CTDB cattdb $TDB | grep key | wc -l)
 [ $num_records != "0" ] && {
     echo "BAD: we did not end up with an empty database"
     exit 1
@@ -86,4 +86,4 @@ try_command_on_node 0 "ctdb cattdb $TDB | grep 'SecondValue' | wc -l"
 
 
 echo wipe the persistent test databases and clean up
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb wipedb $TDB
+try_command_on_node 0 $CTDB wipedb $TDB

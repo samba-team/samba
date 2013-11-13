@@ -53,7 +53,7 @@ status=0
 
 # Make sure node 0 is not the recovery master
 echo "find out which node is recmaster"
-try_command_on_node any $CTDB_TEST_WRAPPER ctdb recmaster
+try_command_on_node any $CTDB recmaster
 recmaster="$out"
 if [ "$recmaster" = "0" ]; then
     echo "node 0 is recmaster, disable recmasterrole on node 0"
@@ -65,13 +65,13 @@ if [ "$recmaster" = "0" ]; then
     # test, so for now use "ctdb stop" and "ctdb continue".
     #
     echo "stop node 0"
-    try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb stop
+    try_command_on_node 0 $CTDB stop
     wait_until_node_has_status 0 stopped
     echo "continue node 0"
-    try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb continue
+    try_command_on_node 0 $CTDB continue
     wait_until_node_has_status 0 notstopped
 
-    try_command_on_node any $CTDB_TEST_WRAPPER ctdb recmaster
+    try_command_on_node any $CTDB recmaster
     recmaster="$out"
     if [ "$recmaster" = "0" ]; then
 	echo "failed to move recmaster to different node"
@@ -83,45 +83,45 @@ echo "Recmaster:$recmaster"
 
 # Create a temporary non-persistent database to test with
 echo "create test database $TESTDB"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb attach $TESTDB
+try_command_on_node $recmaster $CTDB attach $TESTDB
 
 # Wipe Test database
 echo "wipe test database"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb wipedb $TESTDB
+try_command_on_node $recmaster $CTDB wipedb $TESTDB
 
 # Add a record   key=test1 data=value1
 echo "store key(test1) data(value1)"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb writekey $TESTDB test1 value1
+try_command_on_node $recmaster $CTDB writekey $TESTDB test1 value1
 
 # Fetch a record   key=test1
 echo "read key(test1)"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb readkey $TESTDB test1
+try_command_on_node $recmaster $CTDB readkey $TESTDB test1
 echo "$out"
 
 # Do a recovery
 echo "force recovery"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node $recmaster $CTDB recover
 
 wait_until_node_has_status $recmaster recovered
 
 # Add a record   key=test1 data=value2
 echo "store key(test1) data(value2)"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb writekey $TESTDB test1 value2
+try_command_on_node $recmaster $CTDB writekey $TESTDB test1 value2
 
 # Fetch a record   key=test1
 echo "read key(test1)"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb readkey $TESTDB test1
+try_command_on_node $recmaster $CTDB readkey $TESTDB test1
 echo "$out"
 
 # Do a recovery
 echo "force recovery"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb recover
+try_command_on_node $recmaster $CTDB recover
 
 wait_until_node_has_status $recmaster recovered
 
 # Verify record   key=test1
 echo "read key(test1)"
-try_command_on_node $recmaster $CTDB_TEST_WRAPPER ctdb readkey $TESTDB test1
+try_command_on_node $recmaster $CTDB readkey $TESTDB test1
 echo "$out"
 if [ "$out" = "Data: size:6 ptr:[value2]" ]; then
 	echo "GOOD: Recovery did not corrupt database"
