@@ -1,0 +1,50 @@
+<!--#set var="TITLE" value="Downloading CTDB" -->
+<!--#include virtual="header.html" -->
+
+<H2 align="center">Getting the code</h2>
+
+You need two source trees, one is a copy of Samba3 and the other is the
+ctdb code itself.<p>
+
+Both source trees are stored in git repositories.<p>
+
+<h2>CTDB</h2>
+You can download ctdb source code via <a href="ftp://ftp.samba.org/pub/ctdb">ftp</a>
+and <a href="http://ftp.samba.org/pub/ctdb">http</a>. <br><br>
+
+You can also get the latest development version of ctdb using git:
+<pre>
+   git clone git://git.samba.org/ctdb.git ctdb
+</pre>
+
+To update this tree when improvements are made in the upstream code do this:
+<pre>
+    cd ctdb
+    git pull
+</pre>
+
+If you don't have git and can't easily install it, then you can
+instead use the following command to fetch ctdb or update it:
+<pre>
+    rsync -avz samba.org::ftp/unpacked/ctdb .
+</pre>
+
+
+<h2>Samba3 ctdb version</h2>
+<p>
+With Samba version 3.3 all cluster-relevant changes have been merged
+to the mainstream Samba code. Please refer to the <a
+href="http://www.samba.org/">Samba website</a> for the current release
+information.
+</p>
+
+<h2>Binary Packages</h2>
+
+Note that packages are so far only available for RHEL5. Other packages
+may come later. <p>
+
+See <a href="http://ftp.samba.org/pub/ctdb/packages/">packages</a> directory for package
+downloads.
+
+
+<!--#include virtual="footer.html" -->

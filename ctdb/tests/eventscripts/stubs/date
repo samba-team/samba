@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "$FAKE_DATE_OUTPUT" ] ; then
+    echo "$FAKE_DATE_OUTPUT"
+else	
+    /bin/date "$@"
+fi

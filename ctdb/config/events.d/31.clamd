@@ -1,0 +1,52 @@
+#!/bin/sh
+# event script to manage clamd in a cluster environment
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+
+detect_init_style
+
+case $CTDB_INIT_STYLE in
+	redhat)
+		service_name="clamd"
+		service_config="clamd"
+		;;
+	*)
+		service_name="clamav"
+		service_config="clamav"
+		;;
+esac
+
+service_start ()
+{
+    service $service_name stop > /dev/null 2>&1
+    service $service_name start
+}
+
+loadconfig
+
+ctdb_start_stop_service
+
+is_ctdb_managed_service || exit 0
+
+case "$1" in 
+    startup)
+	ctdb_service_start
+        ;;
+
+    shutdown)
+        ctdb_service_stop
+        ;;
+
+    monitor)
+        ctdb_check_unix_socket ${CTDB_CLAMD_SOCKET} || exit $?
+        ;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

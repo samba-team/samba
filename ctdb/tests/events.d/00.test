@@ -1,0 +1,105 @@
+#!/bin/sh
+# event script for 'make test'
+
+cmd="$1"
+shift
+
+case $cmd in 
+    monitor)
+	echo "monitor event"
+	echo "monitor event stderr" >&2
+	exit 0
+	;;
+
+     startrecovery)
+	echo "ctdb startrecovery event"
+	exit 0;	
+	;;
+
+     init)
+	echo "ctdb init event"
+	exit 0;
+	;;
+     setup)
+	echo "ctdb setup event"
+	exit 0;
+	;;
+     startup)
+	echo "ctdb startup event"
+	IFACES=`ctdb ifaces -Y | grep -v '^:Name:LinkStatus:References:'`
+	for I in $IFACES; do
+		IFACE=`echo -n "$I" | cut -d ':' -f2`
+		ctdb setifacelink $IFACE up
+	done
+	exit 0;
+	;;
+	
+     takeip)
+	if [ $# != 3 ]; then
+	   echo "must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+
+	[ -n "$TEST_LOCAL_DAEMONS" ] || {
+	    /sbin/ip addr add $ip/$maskbits dev $iface || {
+		echo "Failed to add $ip/$maskbits on dev $iface"
+		exit 1
+	    }
+	}
+	echo "ctdb takeip event for $1 $2 $3"
+	exit 0;
+	;;
+
+
+     ##################################################
+     # called when ctdbd wants to release an IP address
+     releaseip)
+	if [ $# != 3 ]; then
+	   echo "must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+	[ -n "$TEST_LOCAL_DAEMONS" ] || {
+	    /sbin/ip addr del $ip/$maskbits dev $iface || {
+		echo "Failed to del $ip on dev $iface"
+		exit 1
+	    }
+	}
+	echo "ctdb releaseip event for $1 $2 $3"
+	exit 0
+	;;
+
+     updateip)
+	echo "ctdb updateip event for $1"
+	exit 0
+	;;
+
+     recovered)
+	echo "ctdb recovered event"
+	exit 0
+	;;
+
+     ipreallocated)
+	echo "ctdb ipreallocated event"
+	exit 0
+	;;
+
+
+     shutdown)
+	echo "ctdb shutdown event"
+	exit 0
+	;;
+
+     stopped)
+	echo "ctdb stopped event"
+	exit 0
+	;;
+esac
+
+echo "Invalid command $cmd"
+exit 1

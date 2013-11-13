@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<refentry id="onnode.1">
+
+  <refmeta>
+    <refentrytitle>onnode</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>onnode</refname>
+    <refpurpose>run commands on CTDB cluster nodes</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>onnode</command>
+      <arg rep="repeat"><replaceable>OPTION</replaceable></arg>
+      <arg choice="req"><replaceable>NODES</replaceable></arg>
+      <arg choice="req"><replaceable>COMMAND</replaceable></arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      onnode is a utility to run commands on a specific node of a CTDB
+      cluster, or on all nodes.
+    </para>
+    <para>
+      <replaceable>NODES</replaceable> specifies which node(s) to run
+      a command on.  See section <citetitle>NODES
+      SPECIFICATION</citetitle> for details.
+    </para>
+    <para>
+      <replaceable>COMMAND</replaceable> can be any shell command. The
+      onnode utility uses ssh or rsh to connect to the remote nodes
+      and run the command.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry><term>-c</term>
+        <listitem>
+          <para>
+            Execute COMMAND in the current working directory on the
+            specified nodes.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-f <parameter>FILENAME</parameter></term>
+        <listitem>
+          <para>
+            Specify an alternative nodes FILENAME to use instead of
+            the default.  This option overrides the CTDB_NODES_FILE
+            environment variable.  See the discussion of
+            <filename>/etc/ctdb/nodes</filename> in the FILES section
+            for more details.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-n</term>
+        <listitem>
+          <para>
+            Allow nodes to be specified by name rather than node
+            numbers.  These nodes don't need to be listed in the nodes
+            file.  You can avoid the nodes file entirely by combining
+            this with <code>-f /dev/null</code>.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-o <parameter>PREFIX</parameter></term>
+        <listitem>
+          <para>
+	    Causes standard output from each node to be saved into a
+	    file with name PREFIX.<replaceable>IP</replaceable>.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-p</term>
+        <listitem>
+          <para>
+            Run COMMAND in parallel on the specified nodes.  The
+            default is to run COMMAND sequentially on each node.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-P</term>
+        <listitem>
+          <para>
+            Push files to nodes.  Names of files to push are specified
+            rather than the usual command.  Quoting is fragile/broken
+            - filenames with whitespace in them are not supported.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-q</term>
+        <listitem>
+          <para>
+            Do not print node addresses.  Normally, onnode prints
+            informational node addresses if more than one node is
+            specified.  This overrides -v.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-v</term>
+        <listitem>
+          <para>
+            Print node addresses even if only one node is specified.
+            Normally, onnode prints informational node addresses when
+            more than one node is specified.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-h, --help</term>
+        <listitem>
+          <para>
+            Show a short usage guide.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>NODES SPECIFICATION</title>
+
+    <para>
+      Nodes can be specified via numeric node numbers (from 0 to N-1)
+      or mnemonics.  Multiple nodes are specified using lists of
+      nodes, separated by commas, and ranges of numeric node numbers,
+      separated by dashes.  If nodes are specified multiple times then
+      the command will be executed multiple times on those nodes.  The
+      order of nodes is significant.
+    </para>
+
+    <para>
+      The following mnemonics are available:
+    </para>
+
+    <variablelist>
+      <varlistentry><term>all</term>
+        <listitem>
+          <para>
+            All nodes.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>any</term>
+        <listitem>
+          <para>
+             A node where ctdbd is running.  This semi-random but
+             there is a bias towards choosing a low numbered node.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>ok | healthy</term>
+        <listitem>
+          <para>
+            All nodes that are not disconnected, banned, disabled or
+            unhealthy.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>con | connected</term>
+        <listitem>
+          <para>
+            All nodes that are not disconnected.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>lvs | lvsmaster</term>
+        <listitem>
+          <para>
+            The current LVS master.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>natgw | natgwlist</term>
+        <listitem>
+          <para>
+            The current NAT gateway.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>rm | recmaster</term>
+        <listitem>
+          <para>
+            The current recovery master.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>EXAMPLES</title>
+
+    <para>
+      The following command would show the process ID of ctdbd on all nodes
+    </para>
+    <screen format="linespecific">
+      onnode all ctdb getpid
+    </screen>
+
+    <para>
+      The following command would show the last 5 lines of log on each
+      node, preceded by the node's hostname
+    </para>
+    <screen format="linespecific">
+      onnode all "hostname; tail -5 /var/log/log.ctdb"
+    </screen>
+
+    <para>
+      The following command would restart the ctdb service on all
+      nodes, in parallel.
+    </para>
+    <screen format="linespecific">
+      onnode -p all service ctdb restart
+    </screen>
+
+    <para>
+      The following command would run ./foo in the current working
+      directory, in parallel, on nodes 0, 2, 3 and 4.
+    </para>
+    <screen format="linespecific">
+      onnode -c -p 0,2-4 ./foo
+    </screen>
+  </refsect1>
+
+  <refsect1>
+    <title>ENVIRONMENT</title>
+
+    <variablelist>
+      <varlistentry><term><envar>CTDB_BASE</envar></term>
+        <listitem>
+          <para>
+	    Directory containing CTDB configuration files.  The
+	    default is <filename>/etc/ctdb</filename>.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term><envar>CTDB_NODES_FILE</envar></term>
+        <listitem>
+          <para>
+	    Name of alternative nodes file to use instead of the
+	    default.  See the <citetitle>FILES</citetitle> section for
+	    more details.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>FILES</title>
+
+    <variablelist>
+      <varlistentry><term><filename>/etc/ctdb/nodes</filename></term>
+        <listitem>
+          <para>
+            Default file containing a list of each node's IP address
+            or hostname.
+	  </para>
+	  <para>
+	    Actually, the default is
+	    <filename>$CTDB_BASE/nodes</filename>, where
+	    <envar>CTDB_BASE</envar> defaults to
+	    <filename>/etc/ctdb</filename>.  If a relative path is
+	    given (via the -f option or <envar>CTDB_BASE</envar>) and
+	    no corresponding file exists relative to the current
+	    directory then the file is also searched for in the
+	    <filename>$CTDB_BASE</filename> directory.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term><filename>/etc/ctdb/onnode.conf</filename></term>
+        <listitem>
+          <para>
+            If this file exists it is sourced by onnode.  The main
+            purpose is to allow the administrator to set
+            <envar>SSH</envar> to something other than "ssh".  In this
+            case the -t option is ignored.  For example, the
+            administrator may choose to use use rsh instead of ssh.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+
+    <para>
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
+      <ulink url="http://ctdb.samba.org/"/>
+    </para>
+  </refsect1>
+
+  <refentryinfo>
+    <author>
+      <contrib>
+	This documentation was written by
+	Andrew Tridgell,
+	Martin Schwenke
+      </contrib>
+    </author>
+
+    <copyright>
+      <year>2007</year>
+      <holder>Andrew Tridgell</holder>
+      <holder>Ronnie Sahlberg</holder>
+    </copyright>
+    <copyright>
+      <year>2008</year>
+      <holder>Martin Schwenke</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </refentryinfo>
+
+</refentry>

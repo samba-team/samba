@@ -1,0 +1,2 @@
+CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
+CTDB_DEBUGLEVEL=ERR

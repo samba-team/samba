@@ -1,0 +1,279 @@
+#!/usr/bin/perl -w
+# Nagios plugin to monitor CTDB (Clustered Trivial Database)
+#
+# License: GPL
+# Copyright (c) 2011 Nantes Metropole
+# Author: Mathieu Parent <math.parent@gmail.com>
+# Contributor(s): -
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+use strict;
+use warnings;
+use vars qw($PROGNAME $VERSION $output $values $result);
+use Nagios::Plugin;
+use File::Basename;
+
+$PROGNAME = basename($0);
+$VERSION = '0.4';
+
+my $np = Nagios::Plugin->new(
+  usage => "Usage: %s -i <info>\n"
+    . "    [ -t <timeout> ] [ -w <warn_range> ] [ -c <crit_range> ]\n"
+    . "    [ -H <host> ] [-s] [ -l <login_name> ]\n"
+    . '    [ -V ] [ -h ]',
+  version => $VERSION,
+  plugin  => $PROGNAME,
+  shortname => uc($PROGNAME),
+  blurb => 'CTDB plugin',
+  extra   => "Supported commands:\n"
+    . "    * scriptstatus :\n"
+    . "        check the ctdb scriptstatus command and return CRITICAL if one of the\n"
+    . "        scripts fails.\n"
+    . "        Perfdata count the number of scripts by state (ok, disabled, error,\n"
+    . "        total).\n"
+    . "    * ping :\n"
+    . "        check the ctdb ping command.\n"
+    . "        Perfdata count the number of nodes, the total ping time and the number\n"
+    . "        of clients.\n"
+    . "        Thresholds are checked against the number of nodes.\n"
+    . "\n\nCopyright (c) 2011 Nantes Metropole",
+  timeout => 30,
+);
+
+$np->add_arg(
+  spec => 'info|i=s',
+  help => "-i, --info=<info>\n"
+    . '   Information: One of scriptstatus or ping.',
+  required => 1,
+);
+
+$np->add_arg(
+  spec => 'hostname|H=s',
+  help => "-H, --hostname=<login_name>\n"
+    . '   Host name or IP Address.',
+  required => 0,
+);
+
+$np->add_arg(
+  spec => 'sudo|s',
+  help => "-s, --sudo\n"
+    . '   Use sudo.',
+  required => 0,
+);
+
+$np->add_arg(
+  spec => 'login|l=s',
+  help => "-l, --login=<host>\n"
+    . '   The user to log in as on the remote machine.',
+  required => 0,
+);
+
+$np->add_arg(
+  spec => 'warning|w=s',
+  help => "-w, --warning=THRESHOLD\n"
+    . "   Warning threshold. See\n"
+    . "   http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT\n"
+    . '   for the threshold format.',
+  required => 0,
+);
+
+$np->add_arg(
+  spec => 'critical|c=s',
+  help => "-c, --critical=THRESHOLD\n"
+    . "   Critical threshold. See\n"
+    . "   http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT\n"
+    . '   for the threshold format.',
+  required => 0,
+);
+
+$np->getopts;
+
+my $info = $np->opts->info;
+my $hostname = $np->opts->hostname;
+my $login = $np->opts->login;
+my $sudo = $np->opts->sudo;
+my $warning = $np->opts->warning;
+my $critical = $np->opts->critical;
+my $percw;
+my $percc;
+
+$output = "";
+
+if (defined($critical))
+{
+        ($percc, $critical) = check_percantage($critical);
+        $critical = undef if ($critical eq '');
+}
+
+if (defined($warning))
+{
+        ($percw, $warning) = check_percantage($warning);
+        $warning = undef if ($warning eq '');
+}
+
+$np->set_thresholds(critical => $critical, warning => $warning);
+
+my $stderr;
+
+sub safe_open_command {
+    unshift @_, "sudo" if $sudo;
+    if ($hostname) {
+        unshift @_, $hostname;
+        unshift @_, "-l", $login if $login;
+        unshift @_, "ssh";
+    }
+    open(OLDERR, ">&", \*STDERR) or die "Can't dup STDERR: $!";
+    $stderr = "";
+    close STDERR;
+    open(STDERR, ">>", \$stderr) or die "Can't open STDERR: $!";
+    if ($np->opts->verbose) {
+      print "Executing: @_\n";
+    }
+    if (!open(PIPE, '-|', @_)) {
+        $result = CRITICAL;
+        $output .= "Cannot open command '@_': $! ($stderr). ";
+        # restore STDERR
+        open(STDERR, ">", \*OLDERR) or die "Can't dup OLDERR: $!";
+    }
+}
+
+sub safe_close_command {
+    close(PIPE);
+
+    if ($? == -1) {
+        $result = CRITICAL;
+        $output .= "failed to execute: $!. ";
+    } elsif ($? & 127) {
+        $result = CRITICAL;
+        $output .= sprintf("child died with signal %d, %s coredump. ",
+            ($? & 127), ($? & 128) ? 'with' : 'without');
+    } elsif ($? >> 8) {
+        if (($? >> 8) == 255) {
+            # ctdb returns -1=255 if any node is disconnected
+            $result = WARNING;
+            $output .= sprintf("child exited with value %d. ", $? >> 8) if $output eq "";
+        } else {
+            $result = CRITICAL;
+            $output .= sprintf("child exited with value %d. ", $? >> 8);
+        }
+    }
+    # restore STDERR
+    open(STDERR, ">&OLDERR") or die "Can't dup OLDERR: $!";
+}
+
+# main :
+
+if ($info eq "scriptstatus") {
+    $result = OK;
+    safe_open_command('ctdb', '-Y', 'scriptstatus');
+    if ($result == OK) {
+        my $script_count = 0;
+        my $ok_script_count = 0;
+        my $disabled_script_count = 0;
+        my $error_script_count = 0;
+        while (<PIPE>) {
+            next if $. == 1; # Header
+            $script_count++;
+            chop;
+            my ($col0, $type, $name, $code, $status, $start, $end, @error) = split(":");
+            if ($col0 ne '') {
+              # Old version, before 30 Aug 2011 and commit a779d83a6213
+              ($type, $name, $code, $status, $start, $end, @error) = ($col0, $type, $name, $code, $status, $start, $end, @error);
+            }
+            my $error = join(':', @error);
+            if ($error ne "") {
+                $output = "$output ;; " if $output;
+                $output = "$output$name ($status=$code): $error ";
+                if ($result != CRITICAL) {
+                    $result = WARNING;
+                }
+            }
+            if ($status eq "OK") {
+                $ok_script_count++;
+                next;
+            }
+            if ($status eq "DISABLED") {
+                $disabled_script_count++;
+                next;
+            }
+            $error_script_count++;
+            $result = WARNING;
+        }
+        safe_close_command();
+        $np->add_perfdata(label => "ok", value => $ok_script_count, uom => '',
+            min => 0, max => $script_count);
+        $np->add_perfdata(label => "disabled", value => $disabled_script_count, uom => '',
+            min => 0, max => $script_count);
+        $np->add_perfdata(label => "error", value => $error_script_count, uom => '',
+            min => 0, max => $script_count, warning => '0', critical => '0');
+        $np->add_perfdata(label => "total", value => $script_count, uom => '',
+            min => 0, max => $script_count);
+        if ($result == OK) {
+            $result = $np->check_threshold(check => $error_script_count, warning => '0', critical => '0');
+        }
+     }
+    $np->nagios_exit($result, $output);
+} elsif ($info eq "ping") {
+    # Get expected nodes count
+    $result = OK;
+    safe_open_command('cat', '/etc/ctdb/nodes');
+    1 while( <PIPE> );
+    my $max_nodes_count = $.;
+    safe_close_command();
+    # ctdb ping
+    $result = OK;
+    safe_open_command('ctdb', '-n', 'all', 'ping');
+    if ($result == OK) {
+        my $nodes_count = 0;
+        my $time_total = 0.0;
+        my $clients_count = 0;
+        while (<PIPE>) {
+            chop;
+            if ($_ =~ /^response from (\d+) time=([0-9.]+) sec  \((\d+) clients\)$/) {
+                my ($node_id, $time, $clients) = ($1,$2,$3);
+                $nodes_count += 1;
+                $time_total += $time;
+                $clients_count += $clients;
+            } elsif ($_ =~ /^Unable to get ping response from node (\d+)$/) {
+                #
+            } else {
+                $result = CRITICAL;
+                $output .= "'$_' doesn't match regexp. "
+            }
+        }
+        $output .= sprintf("%d missing nodes. ", $max_nodes_count - $nodes_count) if $nodes_count < $max_nodes_count;
+        safe_close_command();
+        $np->add_perfdata(label => "nodes", value => $nodes_count, uom => '',
+            min => 0, max => $max_nodes_count, warning => $warning, critical => $critical);
+        $np->add_perfdata(label => "ping_time", value => $time_total, uom => 's',
+            min => 0, max => undef);
+        $np->add_perfdata(label => "clients", value => $clients_count, uom => '',
+            min => 0, max => undef);
+        if ($result == OK) {
+            $result = $np->check_threshold(check => $nodes_count);
+        }
+    }
+    $np->nagios_exit($result, $output);
+} else {
+    $np->nagios_exit(UNKNOWN, "Unknown command: '$info'");
+}
+
+sub check_percantage
+{
+        my ($number) = shift(@_);
+        my $perc = $number =~ s/\%//;
+        return ($perc, $number);
+}
+

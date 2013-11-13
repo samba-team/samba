@@ -1,0 +1,44 @@
+#!/bin/sh
+# script to check accessibility to the reclock file on a node
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig
+
+case "$1" in
+    init)
+	ctdb_counter_init
+	;;
+
+    monitor)
+	# Early exit if not using a reclock file
+	[ -n "$CTDB_RECOVERY_LOCK" ] || exit 0
+
+	# Try to stat the reclock file as a background process so that
+	# we don't block in case the cluster filesystem is unavailable
+	(
+	    if stat $CTDB_RECOVERY_LOCK ; then
+		# We could stat the file, reset the counter
+		ctdb_counter_init
+	    fi
+	) >/dev/null 2>&1 &
+
+	ctdb_counter_incr
+	if ! ctdb_check_counter "quiet" -ge 200 ; then
+	    echo "Reclock file \"$CTDB_RECOVERY_LOCK\" can not be accessed. Shutting down."
+	    df
+	    sleep 1
+	    ctdb shutdown
+	fi
+
+	ctdb_check_counter "error" -gt 3
+	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

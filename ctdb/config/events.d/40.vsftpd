@@ -1,0 +1,68 @@
+#!/bin/sh
+# event strict to manage vsftpd in a cluster environment
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+
+service_name="vsftpd"
+# make sure the service is stopped first
+service_start ()
+{
+    service $service_name stop > /dev/null 2>&1
+    service $service_name start
+}
+service_stop ()
+{
+    service $service_name stop
+}
+
+service_reconfigure ()
+{
+    service $service_name restart
+}
+
+service_fail_limit=2
+service_tcp_ports=21
+
+loadconfig
+
+ctdb_start_stop_service
+
+is_ctdb_managed_service || exit 0
+
+ctdb_service_check_reconfigure
+
+case "$1" in 
+    startup)
+	ctdb_service_start
+	;;
+
+    shutdown)
+	ctdb_service_stop
+	;;
+
+    takeip|releaseip)
+	ctdb_service_set_reconfigure
+	;;
+
+    monitor)
+	if [ -n "$service_tcp_ports" ] ; then
+	    if ctdb_check_tcp_ports $service_tcp_ports ; then
+		ctdb_counter_init
+	    else
+		ctdb_counter_incr
+		ctdb_check_counter
+		ctdb_check_counter "quiet" -ge 1 || \
+		    echo "WARNING: vsftpd not listening but less than $service_fail_limit consecutive failures, not unhealthy yet" 
+	    fi
+	fi	
+	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

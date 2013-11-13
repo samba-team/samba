@@ -1,0 +1,109 @@
+#!/bin/sh
+# script to manage nfs in a clustered environment
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+
+service_name="nfs"
+service_start ()
+{
+    startstop_nfs stop
+    startstop_nfs start
+    set_proc "sys/net/ipv4/tcp_tw_recycle" 1
+}
+service_stop ()
+{
+    startstop_nfs stop
+}
+service_reconfigure ()
+{
+    # if the ips have been reallocated, we must restart the lockmanager
+    # across all nodes and ping all statd listeners
+    [ -x $CTDB_BASE/statd-callout ] && {
+	$CTDB_BASE/statd-callout notify &
+    } >/dev/null 2>&1
+}
+
+nfs_check_thread_count ()
+{
+    [ "$CTDB_MONITOR_NFS_THREAD_COUNT" = "yes" ] || return 0
+
+    # If $RPCNFSDCOUNT/$USE_KERNEL_NFSD_NUMBER isn't set then we could
+    # guess the default from the initscript.  However, let's just
+    # assume that those using the default don't care about the number
+    # of threads and that they have switched on this feature in error.
+    _configured_threads="${RPCNFSDCOUNT:-${USE_KERNEL_NFSD_NUMBER}}"
+    [ -n "$_configured_threads" ] || return 0
+
+    # nfsd should be running the configured number of threads.  If
+    # there are a different number of threads then tell nfsd the
+    # correct number.  
+    _running_threads=$(get_proc "fs/nfsd/threads")
+    # Intentionally not arithmetic comparison - avoids extra errors
+    # when get_proc() fails...
+    if [ "$_running_threads" != "$_configured_threads" ] ; then
+	echo "Attempting to correct number of nfsd threads from ${_running_threads} to ${_configured_threads}"
+	set_proc "fs/nfsd/threads" "$_configured_threads"
+    fi
+}
+
+loadconfig
+
+[ "${CTDB_NFS_SERVER_MODE:-${NFS_SERVER_MODE}}" != "ganesha" ] || exit 0
+
+ctdb_setup_service_state_dir
+
+ctdb_start_stop_service
+
+is_ctdb_managed_service || exit 0
+
+ctdb_service_check_reconfigure
+
+case "$1" in 
+     init)
+	# read statd from persistent database
+	;;
+     startup)
+	ctdb_service_start
+	;;
+
+     shutdown)
+	ctdb_service_stop
+	;;
+
+     takeip)
+	ctdb_service_set_reconfigure
+	;;
+
+     releaseip)
+	ctdb_service_set_reconfigure
+	;;
+
+      monitor)
+	# Check that directories for shares actually exist.
+	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
+	    exportfs -v | grep '^/' | 
+	    sed -r -e 's@[[:space:]]+[^[:space:]()]+\([^[:space:]()]+\)$@@' | 
+	    sort -u | 
+	    ctdb_check_directories 
+	} || exit $?
+
+	update_tickles 2049
+
+	nfs_check_rpc_services
+
+	nfs_check_thread_count
+
+	# Every 10 minutes, update the statd state database for which
+	# clients need notifications
+	nfs_statd_update 600
+       	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

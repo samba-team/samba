@@ -1,0 +1,36 @@
+onnode unit tests
+=================
+
+Examples:
+
+* ../run_tests.sh .
+
+  Run all tests, displaying output.
+
+* ../run_tests.sh -s .
+
+  Run all tests, displaying output and a summary.
+
+* ../run_tests.sh -sq .
+
+  Run all tests, displaying only a summary.
+
+* ONNODE=onnode-buggy-001 ../run_tests.sh -s .
+
+  Run against stubs/onnode-buggy-001 instead of default onnode version.
+
+  Add more buggy versions of onnode to this directory as bugs are
+  fixed to enable test validation using this feature.
+
+* ../run_tests.sh ./009*.sh
+
+  Run only the specified tests.
+
+* ONNODE="stubs/onnode-buggy-001" ../run_tests.sh -X ./0090.sh
+  ../run_tests.sh -X ./0090.sh
+
+  Debug the specified test or test failure by tracing onnode with
+  "bash -x".  The test will fail because the bash trace output will be
+  included in the test output.
+
+  To see if the test pases, the -X can be dropped...

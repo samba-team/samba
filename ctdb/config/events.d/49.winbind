@@ -1,0 +1,70 @@
+#!/bin/sh
+# ctdb event script for winbind
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+
+detect_init_style
+
+CTDB_SERVICE_WINBIND=${CTDB_SERVICE_WINBIND:-winbind}
+
+service_name="winbind"
+
+loadconfig
+
+ctdb_setup_service_state_dir
+
+service_start ()
+{
+    service "$CTDB_SERVICE_WINBIND" stop >/dev/null 2>&1
+    killall -0 -q winbindd && {
+	sleep 1
+        # make absolutely sure winbindd is dead
+	killall -q -9 winbindd
+    }
+
+    service "$CTDB_SERVICE_WINBIND" start || \
+	die "Failed to start winbind"
+}
+
+service_stop ()
+{
+    service "$CTDB_SERVICE_WINBIND" stop
+}
+
+###########################
+
+ctdb_start_stop_service
+
+is_ctdb_managed_service || exit 0
+
+###########################
+
+case "$1" in 
+     startup)
+	ctdb_service_start
+	;;
+	
+     shutdown)
+	ctdb_service_stop
+	;;
+
+     monitor)
+	ctdb_check_command wbinfo -p
+	;;
+
+     takeip|releaseip)
+	iface=$2
+	ip=$3
+	maskbits=$4
+
+	smbcontrol winbindd ip-dropped $ip >/dev/null 2>/dev/null
+	;;
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

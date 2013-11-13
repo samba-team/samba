@@ -1,0 +1,195 @@
+#!/bin/sh
+
+# This must run as root as CTDB tool commands need to access CTDB socket
+[ $(id -u) -eq 0 ] || exec sudo "$0" "$@"
+
+# this script needs to be installed so that statd points to it with the -H 
+# command line argument. The easiest way to do that is to put something like this in 
+# /etc/sysconfig/nfs:
+#   STATD_HOSTNAME="myhostname -H /etc/ctdb/statd-callout"
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig ctdb
+loadconfig nfs
+
+[ -z $NFS_HOSTNAME ] && {
+	echo NFS_HOSTNAME is not configured. statd-callout failed.
+	exit 0
+}
+
+case "$1" in
+  add-client)
+	# the callout does not tell us to which ip the client connected
+	# so we must add it to all the ips that we serve
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			# not us
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
+		touch $CTDB_VARDIR/state/statd/ip/$IP/$2
+	done
+	;;
+  del-client)
+	# the callout does not tell us to which ip the client disconnected
+	# so we must remove it from all the ips that we serve
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			# not us
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP/$2
+	done
+	;;
+  updatelocal)
+	# For all IPs we serve, collect info and push to the config database
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | tail -n +2 | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
+
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP.tar
+		tar cfP $CTDB_VARDIR/state/statd/ip/$IP.tar $CTDB_VARDIR/state/statd/ip/$IP
+
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP.rec
+		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.rec 2>/dev/null
+		[ "$?" = "0" ] || {
+			# something went wrong,  try storing this data
+			echo No record. Store STATD state data for $IP
+			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.tar 2>/dev/null
+			continue
+		}
+
+		cmp $CTDB_VARDIR/state/statd/ip/$IP.tar $CTDB_VARDIR/state/statd/ip/$IP.rec >/dev/null 2>/dev/null
+		[ "$?" = "0" ] || {
+			# something went wrong,  try storing this data
+			echo Updated record. Store STATD state data for $IP
+			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.tar 2>/dev/null
+			continue
+		}
+	done
+	;;
+
+  updateremote)
+	# For all IPs we dont serve, pull the state from the database
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | tail -n +2 | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] && {
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
+
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP.rec
+		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.rec 2>/dev/null
+		[ "$?" = "0" ] || {
+			continue
+		}
+
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP/*
+		tar xfP $CTDB_VARDIR/state/statd/ip/$IP.rec
+	done
+	;;
+
+  notify)
+	# we must restart the lockmanager (on all nodes) so that we get
+	# a clusterwide grace period (so other clients dont take out
+	# conflicting locks through other nodes before all locks have been
+	# reclaimed)
+
+	# we need these settings to make sure that no tcp connections survive
+	# across a very fast failover/failback
+	#echo 10 > /proc/sys/net/ipv4/tcp_fin_timeout
+	#echo 0 > /proc/sys/net/ipv4/tcp_max_tw_buckets
+	#echo 0 > /proc/sys/net/ipv4/tcp_max_orphans
+
+	# Delete the notification list for statd, we dont want it to 
+	# ping any clients
+	rm -f /var/lib/nfs/statd/sm/*
+	rm -f /var/lib/nfs/statd/sm.bak/*
+
+	# we must keep a monotonically increasing state variable for the entire
+	# cluster  so state always increases when ip addresses fail from one
+	# node to another
+	# We use epoch and hope the nodes are close enough in clock.
+	# Even numbers mean service is shut down, odd numbers mean
+	# service is started.
+	STATE=$(( $(date '+%s') / 2 * 2))
+
+
+	# we must also let some time pass between stopping and restarting the
+	# lockmanager since othervise there is a window where the lockmanager
+	# will respond "strangely" immediately after restarting it, which
+	# causes clients to fail to reclaim the locks.
+	# 
+	if [ "${CTDB_NFS_SERVER_MODE:-${NFS_SERVER_MODE}}" != "ganesha" ] ; then
+            startstop_nfslock stop >/dev/null 2>&1
+            sleep 2
+            startstop_nfslock start >/dev/null 2>&1
+	fi
+
+	# we now need to send out additional statd notifications to ensure
+	# that clients understand that the lockmanager has restarted.
+	# we have three cases:
+	# 1, clients that ignore the ip address the stat notification came from
+	#    and ONLY care about the 'name' in the notify packet.
+	#    these clients ONLY work with lock failover IFF that name
+	#    can be resolved into an ipaddress that matches the one used
+	#    to mount the share.  (==linux clients)
+	#    This is handled when starting lockmanager above,  but those
+	#    packets are sent from the "wrong" ip address, something linux
+	#    clients are ok with, buth other clients will barf at.
+	# 2, Some clients only accept statd packets IFF they come from the
+	#    'correct' ip address.
+	# 2a,Send out the notification using the 'correct' ip address and also
+	#    specify the 'correct' hostname in the statd packet.
+	#    Some clients require both the correct source address and also the
+	#    correct name. (these clients also ONLY work if the ip addresses
+	#    used to map the share can be resolved into the name returned in
+	#    the notify packet.)
+	# 2b,Other clients require that the source ip address of the notify
+	#    packet matches the ip address used to take out the lock.
+	#    I.e. that the correct source address is used.
+	#    These clients also require that the statd notify packet contains
+	#    the name as the ip address used when the lock was taken out.
+	#
+	# Both 2a and 2b are commonly used in lockmanagers since they maximize
+	# probability that the client will accept the statd notify packet and
+	# not just ignore it.
+	# For all IPs we serve, collect info and push to the config database
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | tail -n +2 | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+
+		ls $CTDB_VARDIR/state/statd/ip/$IP | while read CLIENT; do
+			rm $CTDB_VARDIR/state/statd/ip/$IP/$CLIENT
+			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
+			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
+			STATE=$(($STATE + 1))
+			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
+			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
+		done
+	done
+	;;
+esac

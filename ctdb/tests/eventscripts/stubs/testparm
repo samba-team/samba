@@ -1,0 +1,51 @@
+#!/bin/sh
+
+not_implemented ()
+{
+    echo "testparm: option \"$1\" not implemented in stub" >&2
+    exit 2
+}
+
+# Ensure that testparm always uses our canned configuration instead of
+# the global one, unless some other file is specified. 
+
+file=""
+parameter=""
+for i ; do
+    case "$i" in
+	--parameter-name=*) parameter="${i#--parameter-name=}" ;;
+	-*) : ;;
+	*) file="$i" ;;
+    esac
+done
+
+# Just hard-code parameter requests for now.  Later on they could be
+# parsed out of the file.
+case "$parameter" in
+    security) echo "ADS" ; exit 0 ;;
+    smb*ports) echo "445, 139" ; exit 0 ;;
+    ?*) not_implemented "--parameter-name=$parameter" ;;
+    # Fall through if $parameter not set
+esac
+
+if [ -n "$file" ] ; then
+    # This should include the shares, since this is used when the
+    # samba eventscript caches the output.
+    cat "$file"
+else
+    # We force our own smb.conf and add the shares.
+    cat "${CTDB_ETCDIR}/samba/smb.conf"
+
+    for i in $FAKE_SHARES ; do
+	bi=$(basename "$i")
+cat <<EOF
+
+[${bi}]
+	path		= $i
+	comment		= fake share $bi
+	guest ok  	= no
+	read only	= no
+	browseable	= yes
+EOF
+    done
+fi

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ -z "$1" ] ; then
+    if [ "$FAKE_TDBTOOL_SUPPORTS_CHECK" = "yes" ] ; then
+	echo "check"
+    fi
+fi
+
+if [ "$FAKE_TDB_IS_OK" = "yes" ] ; then
+    echo "Database integrity is OK"
+else
+    echo "Database is busted"
+fi
+
+exit 0

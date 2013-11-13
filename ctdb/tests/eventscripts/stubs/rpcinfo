@@ -1,0 +1,79 @@
+#!/bin/bash
+
+prog="rpcinfo"
+
+usage ()
+{
+    cat >&2 <<EOF
+Usage: $prog -u host program [version]
+
+A fake rpcinfo stub that succeeds for items in FAKE_RPCINFO_SERVICES,
+depending on command-line options.
+
+Note that "-u host" is ignored.
+
+EOF
+    exit 1
+}
+
+parse_options ()
+{
+    # $POSIXLY_CORRECT means that the command passed to onnode can
+    # take options and getopt won't reorder things to make them
+    # options to this script.
+    _temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "u:h" -l unix -l help -- "$@")
+
+    [ $? != 0 ] && usage
+
+    eval set -- "$_temp"
+
+    while true ; do
+	case "$1" in
+	    -u) shift 2 ;;  # ignore
+	    --) shift ; break ;;
+	    -h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
+	esac
+    done
+
+    [ 1 -le $# -a $# -le 2 ] || usage
+
+    p="$1"
+    v="$2"
+}
+
+parse_options "$@"
+
+for i in ${FAKE_RPCINFO_SERVICES} ; do
+    # This is stupidly cummulative, but needs to happen after the
+    # initial split of the list above.
+    IFS="${IFS}:"
+    set -- $i
+    # $1 = program, $2 = low version, $3 = high version
+    
+    if [ "$1" = "$p" ] ; then
+	if [ -n "$v" ] ; then
+	    if [ "$2" -le "$v" -a "$v" -le "$3" ] ; then
+		echo "program ${p} version ${v} ready and waiting"
+		exit 0
+	    else
+		echo "rpcinfo: RPC: Program/version mismatch; low version = ${2}, high version = ${3}" >&2
+		echo "program ${p} version ${v} is not available"
+		exit 1
+	    fi
+	else
+	    for j in $(seq $2 $3) ; do
+		echo "program ${p} version ${j} ready and waiting"
+	    done
+	    exit 0
+	fi
+    fi
+done
+
+echo "rpcinfo: RPC: Program not registered" >&2
+if [ -n "$v" ] ; then
+    echo "program ${p} version ${v} is not available"
+else
+    echo "program ${p} is not available"
+fi
+
+exit 1

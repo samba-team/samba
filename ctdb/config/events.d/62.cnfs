@@ -1,0 +1,78 @@
+#!/bin/sh
+# event script to integrate with gpfs cnfs
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+
+loadconfig
+
+ctdb_setup_service_state_dir "gpfs"
+
+check_if_healthy() {
+        mkdir -p "$service_state_dir/fs"
+
+        [ -f "$service_state_dir/gpfsnoquorum" ] && {
+                logger No GPFS quorum. Node is UNHEALTHY
+                $CTDB_BASE/events.d/62.cnfs unhealthy "No GPFS quorum. Nodfe is UNHEALTHY."
+		exit 0
+	}
+
+        logger All required GPFS resources are available. CNFS part is healthy.
+        $CTDB_BASE/events.d/62.cnfs healthy
+}
+
+case "$1" in
+    startup)
+        check_if_healthy
+        ;;
+
+
+    gpfsquorumreached)
+        rm -f "$service_state_dir/gpfsnoquorum"
+        logger "GPFS quorum has been reached."
+        check_if_healthy
+        ;;
+
+    gpfsquorumloss)
+        touch "$service_state_dir/gpfsnoquorum"
+        logger "GPFS quorum has been lost."
+        $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS quorum was lost! Marking node as UNHEALTHY."
+        ;;
+
+    unhealthy)
+        # Mark the node as UNHEALTHY which means all public addresses
+        # will be migrated off the node.
+        shift
+        echo "$*" | ctdb_setstatus unhealthy -
+
+        # force a monitor event so we pick up immediately that this script
+        # will now fail and make the node unhealthy.
+        ctdb eventscript monitor
+
+        # Wait until we no longer serve any ip addresses at all
+        PNN=`ctdb pnn | cut -d: -f2`
+        while `ctdb -Y ip | cut -d: -f3 | egrep "^$PNN$" >/dev/null`; do
+                sleep 1
+        done
+        ;;
+
+    healthy)
+        # mark the node as healthy
+        ctdb_setstatus healthy
+        ;;
+
+
+    monitor)
+        ctdb_checkstatus
+        exit $?
+        ;;
+
+    *)
+        ctdb_standard_event_handler "$@"
+        ;;
+esac
+
+exit 0
+

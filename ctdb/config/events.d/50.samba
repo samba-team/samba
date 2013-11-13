@@ -1,0 +1,166 @@
+#!/bin/sh
+# ctdb event script for Samba
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+
+detect_init_style
+
+case $CTDB_INIT_STYLE in
+	suse)
+		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-smb}
+		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmb}
+		;;
+	debian)
+		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-samba}
+		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-""}
+		;;
+	*)
+		# Use redhat style as default:
+		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-smb}
+		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-""}
+		;;
+esac
+
+service_name="samba"
+
+loadconfig
+
+ctdb_setup_service_state_dir
+
+service_start ()
+{
+    # make sure samba is not already started
+    service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
+    if [ -n "$CTDB_SERVICE_NMB" ] ; then
+	service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
+    fi
+    killall -0 -q smbd && {
+	sleep 1
+	# make absolutely sure samba is dead
+	killall -q -9 smbd
+    }
+    killall -0 -q nmbd && {
+	sleep 1
+	# make absolutely sure samba is dead
+	killall -q -9 nmbd
+    }
+
+    # start Samba service. Start it reniced, as under very heavy load
+    # the number of smbd processes will mean that it leaves few cycles
+    # for anything else
+    net serverid wipe
+
+    if [ -n "$CTDB_SERVICE_NMB" ] ; then
+	nice_service "$CTDB_SERVICE_NMB" start || die "Failed to start nmbd"
+    fi
+
+    nice_service "$CTDB_SERVICE_SMB" start || die "Failed to start samba"
+}
+
+service_stop ()
+{
+    service "$CTDB_SERVICE_SMB" stop
+    if [ -n "$CTDB_SERVICE_NMB" ] ; then
+	service "$CTDB_SERVICE_NMB" stop
+    fi
+}
+
+######################################################################
+# Show the testparm output using a cached smb.conf to avoid delays due
+# to registry access.
+
+smbconf_cache="$service_state_dir/smb.conf.cache"
+
+testparm_foreground_update ()
+{
+    _timeout="$1"
+
+    if ! _out=$(timeout $_timeout testparm -v -s 2>/dev/null) ; then
+	if [ -f "$smbconf_cache" ] ; then
+	    echo "WARNING: smb.conf cache update failed - using old cache file"
+	    return 1
+	else
+	    die "ERROR: smb.conf cache create failed"
+	fi
+    fi
+
+    _tmpfile="${smbconf_cache}.$$"
+    # Patterns to exclude...
+    pat='^[[:space:]]+(registry[[:space:]]+shares|include|copy|winbind[[:space:]]+separator)[[:space:]]+='    
+    echo "$_out" | grep -Ev "$pat" >"$_tmpfile"
+    mv "$_tmpfile" "$smbconf_cache" # atomic
+
+    return 0
+}
+
+testparm_background_update ()
+{
+    _timeout="$1"
+
+    testparm_foreground_update $_timeout >/dev/null 2>&1 </dev/null &
+}
+
+testparm_cat ()
+{
+    testparm -s "$smbconf_cache" "$@" 2>/dev/null
+}
+
+list_samba_shares ()
+{
+    testparm_cat |
+    sed -n -e 's@^[[:space:]]*path[[:space:]]*=[[:space:]]@@p' |
+    sed -e 's/"//g'
+}
+
+list_samba_ports ()
+{
+    testparm_cat --parameter-name="smb ports" |
+    sed -e 's@,@ @g'
+}
+
+###########################
+
+ctdb_start_stop_service
+
+is_ctdb_managed_service || exit 0
+
+###########################
+
+case "$1" in
+     startup)
+	ctdb_service_start
+	;;
+
+     shutdown)
+	ctdb_service_stop
+	;;
+
+     monitor)
+	testparm_foreground_update 10
+	ret=$?
+
+	smb_ports="$CTDB_SAMBA_CHECK_PORTS"
+	if [ -z "$smb_ports" ] ; then
+	    smb_ports=$(list_samba_ports)
+	    [ -n "$smb_ports" ] || die "Failed to set smb ports"
+	fi
+	ctdb_check_tcp_ports $smb_ports || exit $?
+
+	if [ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] ; then
+	    list_samba_shares | ctdb_check_directories || exit $?
+	fi
+
+	if [ $ret -ne 0 ] ; then
+	    testparm_background_update 10
+	fi
+	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

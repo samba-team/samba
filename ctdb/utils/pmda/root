@@ -1,0 +1,10 @@
+/*
+ * fake "root" for validating the local PMNS subtree
+ */
+
+#include <stdpmid>
+
+root { ctdb }
+
+#include "pmns"
+

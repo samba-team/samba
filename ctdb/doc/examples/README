@@ -1,0 +1,4 @@
+This directory includes sample CTDB cluster configurations.
+
+  o cluster.conf - Basic cluster setup
+  o natgw.conf   - Basic cluster setup with NAT gateway feature

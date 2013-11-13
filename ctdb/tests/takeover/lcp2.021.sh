@@ -1,0 +1,33 @@
+#!/bin/sh
+
+. "${TEST_SCRIPTS_DIR}/unit.sh"
+
+define_test "3 nodes, no IPs assigned, 3->2 unhealthy, NoIPHostOnAllDisabled on 2 others"
+
+export CTDB_TEST_LOGLEVEL=0
+
+required_result <<EOF
+192.168.21.254 0
+192.168.21.253 0
+192.168.21.252 0
+192.168.20.254 0
+192.168.20.253 0
+192.168.20.252 0
+192.168.20.251 0
+192.168.20.250 0
+192.168.20.249 0
+EOF
+
+export CTDB_SET_NoIPHostOnAllDisabled=0,1,1
+
+simple_test 2,2,2 <<EOF
+192.168.21.254 2
+192.168.21.253 2
+192.168.21.252 2
+192.168.20.254 2
+192.168.20.253 2
+192.168.20.252 2
+192.168.20.251 2
+192.168.20.250 2
+192.168.20.249 2
+EOF

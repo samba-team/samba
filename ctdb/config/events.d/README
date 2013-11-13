@@ -1,0 +1,170 @@
+This directory is where you should put any local or application
+specific event scripts for ctdb to call.
+
+All event scripts start with the prefic 'NN.' where N is a digit.
+The event scripts are run in sequence based on NN.
+Thus 10.interfaces will be run before 60.nfs.
+
+Each NN must be unique and duplicates will cause undefined behaviour.
+I.e. having both 10.interfaces and 10.otherstuff is not allowed.
+
+
+As a special case, any eventscript that ends with a '~' character will be 
+ignored since this is a common postfix that some editors will append to 
+older versions of a file.
+
+Only event scripts with executable permissions are run from CTDB. Any event
+script that does not have executable permission is ignored.
+
+The eventscripts are called with varying number of arguments.
+The first argument is the "event" and the rest of the arguments depend
+on which event was triggered.
+
+All of the events except the 'shutdown' and 'startrecovery' events will be
+called with the ctdb daemon in NORMAL mode (ie. not in recovery)
+
+The events currently implemented are
+init
+	This event does not take any additional arguments.
+	This event is only invoked once, when ctdb is starting up.
+	This event is used to do some cleanup work from earlier runs
+	and prepare the basic setup.
+	At this stage 'ctdb' commands won't work.
+
+	Example: 00.ctdb cleans up $CTDB_VARDIR/state
+
+setup
+	This event does not take any additional arguments.
+	This event is only invoked once, after init event is completed.
+	This event is used to do setup any tunables defined in ctdb 
+        configuration file.
+
+startup
+	This event does not take any additional arguments.
+	This event is only invoked once, when ctdb has finished
+	the initial recoveries. This event is used to wait for
+	the service to start and all resources for the service
+	becoming available.
+
+	This is used to prevent ctdb from starting up and advertize its
+	services until all dependent services have become available.
+
+	All services that are managed by ctdb should implement this
+	event and use it to start the service.
+
+	Example: 50.samba uses this event to start the samba daemon
+	and then wait until samba and all its associated services have
+	become available. It then also proceeds to wait until all
+	shares have become available.
+
+shutdown
+	This event is called when the ctdb service is shuting down.
+	
+	All services that are managed by ctdb should implement this event
+	and use it to perform a controlled shutdown of the service.
+
+	Example: 60.nfs uses this event to shut down nfs and all associated
+	services and stop exporting any shares when this event is invoked.
+
+monitor
+	This event is invoked every X number of seconds.
+	The interval can be configured using the MonitorInterval tunable
+	but defaults to 15 seconds.
+
+	This event is triggered by ctdb to continuously monitor that all
+	managed services are healthy.
+	When invoked, the event script will check that the service is healthy
+	and return 0 if so. If the service is not healthy the event script
+	should return non zero.
+
+	If a service returns nonzero from this script this will cause ctdb
+	to consider the node status as UNHEALTHY and will cause the public
+	address and all associated services to be failed over to a different
+	node in the cluster.
+
+	All managed services should implement this event.
+
+	Example: 10.interfaces which checks that the public interface (if used)
+	is healthy, i.e. it has a physical link established.
+
+takeip
+	This event is triggered everytime the node takes over a public ip
+	address during recovery.
+	This event takes three additional arguments :
+	'interface' 'ipaddress' and 'netmask'
+
+	Before this event there will always be a 'startrecovery' event.
+
+	This event will always be followed by a 'recovered' event once
+	all ipaddresses have been reassigned to new nodes and the ctdb database
+	has been recovered.
+	If multiple ip addresses are reassigned during recovery it is
+	possible to get several 'takeip' events followed by a single 
+	'recovered' event.
+
+	Since there might involve substantial work for the service when an ip
+	address is taken over and since multiple ip addresses might be taken 
+	over in a single recovery it is often best to only mark which addresses
+	are being taken over in this event and defer the actual work to 
+	reconfigure or restart the services until the 'recovered' event.
+
+	Example: 60.nfs which just records which ip addresses are being taken
+	over into a local state directory   and which defers the actual
+	restart of the services until the 'recovered' event.
+
+
+releaseip
+	This event is triggered everytime the node releases a public ip
+	address during recovery.
+	This event takes three additional arguments :
+	'interface' 'ipaddress' and 'netmask'
+
+	In all other regards this event is analog to the 'takeip' event above.
+
+	Example: 60.nfs
+
+updateip
+	This event is triggered everytime the node moves a public ip
+	address between interfaces
+	This event takes four additional arguments :
+	'old-interface' 'new-interface' 'ipaddress' and 'netmask'
+
+	Example: 10.interface
+
+startrecovery
+	This event is triggered everytime we start a recovery process
+	or before we start changing ip address allocations.
+
+recovered
+	This event is triggered every time we have finished a full recovery
+	and also after we have finished reallocating the public ip addresses
+	across the cluster.
+
+	Example: 60.nfs which if the ip address configuration has changed
+	during the recovery (i.e. if addresses have been taken over or
+	released) will kill off any tcp connections that exist for that
+	service and also send out statd notifications to all registered 
+	clients.
+	
+ipreallocated
+
+	This event is triggered after releaseip and takeip events in a
+	takeover run.  It can be used to reconfigure services, update
+	routing and many other things.
+
+Additional note for takeip, releaseip, recovered:
+
+ALL services that depend on the ip address configuration of the node must 
+implement all three of these events.
+
+ALL services that use TCP should also implement these events and at least
+kill off any tcp connections to the service if the ip address config has 
+changed in a similar fashion to how 60.nfs does it.
+The reason one must do this is that ESTABLISHED tcp connections may survive
+when an ip address is released and removed from the host until the ip address
+is re-takenover.
+Any tcp connections that survive a release/takeip sequence can potentially
+cause the client/server tcp connection to get out of sync with sequence and 
+ack numbers and cause a disruptive ack storm.
+
+

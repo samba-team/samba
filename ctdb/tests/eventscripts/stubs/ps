@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cat <<EOF
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         2  0.0  0.0      0     0 ?        S    Aug28   0:00 [kthreadd]
+root         3  0.0  0.0      0     0 ?        S    Aug28   0:43  \_ [ksoftirqd/0]
+...
+root         1  0.0  0.0   2976   624 ?        Ss   Aug28   0:07 init [2]  
+root       495  0.0  0.0   3888  1640 ?        Ss   Aug28   0:00 udevd --daemon
+...
+[MORE FAKE ps OUTPUT]
+EOF

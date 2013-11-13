@@ -1,0 +1,141 @@
+<!--#set var="TITLE" value="CTDB" -->
+<!--#include virtual="header.html" -->
+
+<H2 align="center">Welcome to the CTDB web pages</H2>
+
+CTDB is a cluster implementation of the TDB database used by Samba and
+other projects to store temporary data. If an application is already
+using TDB for temporary data it is very easy to convert that
+application to be cluster aware and use CTDB instead.
+
+<p>CTDB provides the same types of functions as TDB but in a clustered
+  fashion, providing a TDB-style database that spans multiple physical
+  hosts in a cluster.
+
+<p>Features include:
+<ul>
+<li>CTDB provides a TDB that has consistent data and consistent locking across
+all nodes in a cluster.
+<li>CTDB is very fast.
+<li>In case of node failures, CTDB will automatically recover and
+  repair all TDB databases that it manages.
+<li>CTDB is the core component that provides <strong>pCIFS</strong>
+("parallel CIFS") with Samba3/4.
+<li>CTDB provides HA features such as node monitoring, node failover,
+  and IP takeover.
+<li>CTDB provides a reliable messaging transport to allow applications
+ linked with CTDB to communicate to other instances of the application
+ running on different nodes in the cluster.
+<li>CTDB has pluggable transport backends. Currently implemented backends are TCP
+ and Infiniband.
+<li>CTDB supports a system of application specific management scripts,
+  allowing applications that depend on network or filesystem resources
+  to be managed in a highly available manner on a cluster.
+</ul>
+
+<h2>Requirements</h2>
+
+CTDB relies on a clustered filesystem being available and shared on
+all nodes that participate in the CTDB cluster. This filesystem must
+be mounted and available on all nodes in the CTDB cluster.
+
+<p>On top of this cluster filesystem, CTDB then provides clustered HA
+features so that data from the clustered filesystem can be exported
+through multiple nodes in the CTDB cluster using various
+services. Currently included with CTDB are the necessary hooks for Samba, NFS
+  and ftp exports. Support for new service types can easily be added.
+
+<h2>TDB</h2>
+
+TDB is a very fast simple database that was originally developed for
+use in Samba. Today several other projects use TDB to store their data.
+
+<p>See the <a
+href="http://samba.org/ftp/unpacked/tdb/docs/README">TDB
+README file</a> for a description of how TDB is used.
+
+<h2>Documentation</h2>
+
+<a href="./documentation.html">CTDB documentation</a><br><br>
+
+Additional documentation on how to install and configure CTDB is available in the
+<a href="http://wiki.samba.org/index.php/CTDB_Setup">CTDB
+  Wiki</a>. Please read all of the documentation carefully.
+
+<h2>High Availability Features</h2>
+
+The CTDB nodes in a cluster designates one node as a recovery master
+through an election process. If the recovery master node fails a
+new election is initiated so that the cluster will always guarantee
+there will be a recovery master. The recovery master will
+continuously monitor the cluster to verify that all nodes contain a
+consistent configuration and view of the cluster and will initiate a
+recovery process when required.
+
+<p>During the recovery phase, the recovery master will automatically
+rebuild/recover all clustered TDB database to ensure that the
+databases are consistent. Recovery typically takes between 1 and 3
+seconds. During the recovery period the databases are 'frozen', and
+all database IO operations by ctdb clients are suspended.
+
+<h3>Is CTDB a HA solution?</h3>
+
+Yes and no.<p>
+
+CTDB alone is not a HA solution, but when you combine CTDB with a clustered 
+filesystem it becomes one.<p>
+
+CTDB is primarily developed around the concept of having a shared
+cluster filesystem across all the nodes in the cluster to provide the
+features required for building a NAS cluster.<p>
+
+Thus CTDB relies on an external component (the cluster filesystem) to
+provide the mechanisms for avoiding split-brain and other core
+clustering tasks.<p>
+
+However, if you do have a clustered filesystem for all the nodes, in
+that scenario CTDB will provide a very easy to install and manage
+solution for your clustering HA needs.
+
+<h3>IP Takeover</h3>
+
+When a node in a cluster fails, CTDB will arrange that a different
+node takes over the IP address of the failed node to ensure that the
+IP addresses for the services provided are always available.
+
+<p>To speed up the process of IP takeover and when clients attached to
+a failed node recovers as fast as possible, CTDB will automatically
+generate gratuitous ARP packets to inform all nodes of the changed MAC
+address for that IP.  CTDB will also send "tickle ACK" packets to all
+attached clients to trigger the clients to immediately recognize that
+the TCP connection needs to be re-established and to shortcut any TCP
+retransmission timeouts that may be active in the clients.
+
+<h2>Discussion and bug reports</h2>
+
+For discussions please use
+the <a href="https://lists.samba.org/mailman/listinfo/samba-technical">samba-technical</a>
+mailing list. To submit a bug report, please use
+the <a href="http://bugzilla.samba.org/">Samba bugzilla</a> bug
+tracking system.
+
+<p>We would be very interested in hearing from and work with other
+projects that want to make their services cluster aware using CTDB.
+
+<p>CTDB discussions also happen on the #ctdb IRC channel on freenode.net
+
+
+<hr>
+<h2>Developers</h2>
+<ul>
+<li><a href="http://samba.org/~tridge/">Andrew Tridgell</a></li>
+<li><a href="http://samba.org/~sahlberg/">Ronnie Sahlberg</a></li>
+<li><a href="http://samba.org/~obnox/">Michael Adam</a></li>
+<li>Peter Somogyi</li>
+<li><a href="http://sernet.de/Samba/">Volker Lendecke</a></li>
+<li>Stefan Metzmacher</li>
+<li><a href="http://meltin.net/people/martin/">Martin Schwenke</a></li>
+<li>Amitay Isaacs</li>
+</ul>
+
+<!--#include virtual="footer.html" -->

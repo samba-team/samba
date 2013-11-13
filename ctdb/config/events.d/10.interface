@@ -1,0 +1,274 @@
+#!/bin/sh
+
+#################################
+# interface event script for ctdb
+# this adds/removes IPs from your 
+# public interface
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig
+
+[ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
+	CTDB_PUBLIC_ADDRESSES=$CTDB_BASE/public_addresses
+}
+
+[ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
+	if [ "$1" = "init" ]; then
+		echo "No public addresses file found. Nothing to do for 10.interfaces"
+	fi
+	exit 0
+}
+
+mark_up ()
+{
+    up_interfaces_found=true
+    ctdb setifacelink $1 up >/dev/null 2>&1
+}
+
+mark_down ()
+{
+    fail=true
+    ctdb setifacelink $1 down >/dev/null 2>&1
+}
+
+# This sets $all_interfaces as a side-effect.
+get_all_interfaces ()
+{
+    # Get all the interfaces listed in the public_addresses file
+    all_interfaces=$(sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//" $CTDB_PUBLIC_ADDRESSES)
+
+    # Add some special interfaces if they're defined
+    [ "$CTDB_PUBLIC_INTERFACE" ] && all_interfaces="$CTDB_PUBLIC_INTERFACE $all_interfaces"
+    [ "$CTDB_NATGW_PUBLIC_IFACE" ] && all_interfaces="$CTDB_NATGW_PUBLIC_IFACE $all_interfaces"
+
+    # Get the interfaces for which CTDB has public IPs configured.
+    # That is, for all but the 1st line, get the 1st field.
+    ctdb_ifaces=$(ctdb -Y ifaces | sed -e '1d' -e 's@^:@@' -e 's@:.*@@')
+
+    # Add $ctdb_interfaces and uniquify
+    all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
+}
+
+monitor_interfaces()
+{
+	get_all_interfaces
+
+	fail=false
+	up_interfaces_found=false
+
+	# Note that this loop must not exit early.  It must process
+	# all interfaces so that the correct state for each interface
+	# is set in CTDB using mark_up/mark_down.  If there is a
+	# problem with an interface then set fail=true and continue.
+	for iface in $all_interfaces ; do
+
+	    ip link show $iface 2>/dev/null >/dev/null || {
+		echo "ERROR: Interface $iface does not exist but it is used by public addresses."
+		mark_down $iface
+		continue
+	    }
+
+	    # These interfaces are sometimes bond devices
+	    # When we use VLANs for bond interfaces, there will only
+	    # be an entry in /proc for the underlying real interface
+	    realiface=`echo $iface |sed -e 's/\..*$//'`
+	    bi=$(get_proc "net/bonding/$realiface" 2>/dev/null) && {
+		echo "$bi" | grep -q 'Currently Active Slave: None' && {
+			echo "ERROR: No active slaves for bond device $realiface"
+			mark_down $iface
+			continue
+		}
+		echo "$bi" | grep -q '^MII Status: up' || {
+			echo "ERROR: public network interface $realiface is down"
+			mark_down $iface
+			continue
+		}
+		echo "$bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
+			# This works around a bug in the driver where the
+			# overall bond status can be up but none of the actual
+			# physical interfaces have a link.
+			echo "$bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
+				echo "ERROR: No active slaves for 802.ad bond device $realiface"
+				mark_down $iface
+				continue
+			}
+		}
+		mark_up $iface
+		continue
+	    }
+
+	    case $iface in
+	    lo*)
+		# loopback is always working
+		mark_up $iface
+		;;
+	    ib*)
+		# we dont know how to test ib links
+		mark_up $iface
+		;;
+	    *)
+		[ -z "$iface" ] || {
+		    [ "$(basename $(readlink /sys/class/net/$iface/device/driver) 2>/dev/null)" = virtio_net ] ||
+		    ethtool $iface | grep -q 'Link detected: yes' || {
+			# On some systems, this is not successful when a
+			# cable is plugged but the interface has not been
+			# brought up previously. Bring the interface up and
+			# try again...
+			ip link set $iface up
+			ethtool $iface | grep -q 'Link detected: yes' || {
+			    echo "ERROR: No link on the public network interface $iface"
+			    mark_down $iface
+			    continue
+			}
+		    }
+		    mark_up $iface
+		}
+		;;
+	    esac
+
+	done
+
+	$fail || return 0
+
+	$up_interfaces_found && \
+	    [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" = "yes" ] && \
+	    return 0
+
+	return 1
+}
+
+ctdb_check_args "$@"
+
+case "$1" in 
+     #############################
+     # called when ctdbd starts up
+     init)
+	# make sure that we only respond to ARP messages from the NIC where
+	# a particular ip address is associated.
+	get_proc sys/net/ipv4/conf/all/arp_filter >/dev/null 2>&1 && {
+	    set_proc sys/net/ipv4/conf/all/arp_filter 1
+	}
+	;;
+
+     #############################
+     # called after ctdbd has done its initial recovery
+     # and we start the services to become healthy
+     startup)
+	monitor_interfaces
+	;;
+
+
+     ################################################
+     # called when ctdbd wants to claim an IP address
+     takeip)
+	iface=$2
+	ip=$3
+	maskbits=$4
+
+	add_ip_to_iface $iface $ip $maskbits || {
+		exit 1;
+	}
+
+	# cope with the script being killed while we have the interface blocked
+	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+
+	# flush our route cache
+	set_proc sys/net/ipv4/route/flush 1
+	;;
+
+
+     ##################################################
+     # called when ctdbd wants to release an IP address
+     releaseip)
+	# releasing an IP is a bit more complex than it seems. Once the IP
+	# is released, any open tcp connections to that IP on this host will end
+	# up being stuck. Some of them (such as NFS connections) will be unkillable
+	# so we need to use the killtcp ctdb function to kill them off. We also
+	# need to make sure that no new connections get established while we are 
+	# doing this! So what we do is this:
+	# 1) firewall this IP, so no new external packets arrive for it
+	# 2) use netstat -tn to find existing connections, and kill them 
+	# 3) remove the IP from the interface
+	# 4) remove the firewall rule
+	iface=$2
+	ip=$3
+	maskbits=$4
+
+	failed=0
+	# we do an extra delete to cope with the script being killed
+	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+	iptables -I INPUT -i $iface -d $ip -j DROP
+	kill_tcp_connections $ip
+
+	delete_ip_from_iface $iface $ip $maskbits || {
+		iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+		exit 1;
+	}
+
+	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+
+	# flush our route cache
+	set_proc sys/net/ipv4/route/flush 1
+	;;
+
+     ##################################################
+     # called when ctdbd wants to update an IP address
+     updateip)
+	# moving an IP is a bit more complex than it seems.
+	# First we drop all traffic on the old interface.
+	# Then we try to add the ip to the new interface and before
+	# we finally remove it from the old interface.
+	#
+	# 1) firewall this IP, so no new external packets arrive for it
+	# 2) add the IP to the new interface
+	# 3) remove the IP from the old interface
+	# 4) remove the firewall rule
+	# 5) use ctdb gratiousarp to propagate the new mac address
+	# 6) use netstat -tn to find existing connections, and tickle them
+	oiface=$2
+	niface=$3
+	ip=$4
+	maskbits=$5
+
+	failed=0
+	# we do an extra delete to cope with the script being killed
+	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+	iptables -I INPUT -i $oiface -d $ip -j DROP
+
+	delete_ip_from_iface $oiface $ip $maskbits 2>/dev/null
+	delete_ip_from_iface $niface $ip $maskbits 2>/dev/null
+
+	add_ip_to_iface $niface $ip $maskbits || {
+		iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+		exit 1;
+	}
+
+	# cope with the script being killed while we have the interface blocked
+	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+
+	# flush our route cache
+	set_proc sys/net/ipv4/route/flush 1
+
+	# propagate the new mac address
+	ctdb gratiousarp $ip $niface
+
+	# tickle all existing connections, so that dropped packets
+	# are retransmited and the tcp streams work
+
+	tickle_tcp_connections $ip
+
+	;;
+
+     monitor)
+	monitor_interfaces || exit 1
+	;;
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0
+

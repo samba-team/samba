@@ -1,0 +1,217 @@
+#!/bin/sh
+
+# Event script for ctdb-specific setup and other things that don't fit
+# elsewhere.
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig
+
+ctdb_setup_service_state_dir "ctdb"
+
+############################################################
+
+select_tdb_checker ()
+{
+    # Find the best TDB consistency check available.
+    use_tdb_tool_check=false
+    if which tdbtool >/dev/null 2>&1 && \
+	echo "help" | tdbtool | grep -q check ; then
+
+	use_tdb_tool_check=true
+    elif which tdbtool >/dev/null 2>&1 && which tdbdump >/dev/null 2>&1 ; then
+	    cat <<EOF
+WARNING: The installed 'tdbtool' does not offer the 'check' subcommand.
+ Using 'tdbdump' for database checks.
+ Consider updating 'tdbtool' for better checks!
+EOF
+    elif which tdbdump >/dev/null 2>&1 ; then
+	cat <<EOF
+WARNING: 'tdbtool' is not available.
+ Using 'tdbdump' to check the databases.
+ Consider installing a recent 'tdbtool' for better checks!
+EOF
+    else
+	cat <<EOF
+WARNING: Cannot check databases since neither
+ 'tdbdump' nor 'tdbtool check' is available.
+ Consider installing tdbtool or at least tdbdump!
+EOF
+        return 1
+    fi
+}
+
+check_tdb ()
+{
+    _db="$1"
+
+    if $use_tdb_tool_check ; then
+	# tdbtool always exits with 0  :-(
+	if tdbtool "$_db" check 2>/dev/null |
+	    grep -q "Database integrity is OK" ; then
+	    return 0
+	else
+	    return 1
+	fi
+    else
+	tdbdump "$_db" >/dev/null 2>/dev/null
+	return $?
+    fi
+}
+
+check_persistent_databases ()
+{
+    _dir="${CTDB_DBDIR_PERSISTENT:-${CTDB_DBDIR:-/var/ctdb}/persistent}"
+    mkdir -p "$_dir" 2>/dev/null
+
+    [ "${CTDB_MAX_PERSISTENT_CHECK_ERRORS:-0}" = "0" ] || return 0
+
+    for _db in $(ls "$_dir/"*.tdb.*[0-9] 2>/dev/null) ; do
+	check_tdb $_db || {
+	    echo "Persistent database $_db is corrupted! CTDB will not start."
+	    return 1
+	}
+    done
+}
+
+check_non_persistent_databases ()
+{
+    _dir="${CTDB_DBDIR:-/var/ctdb}"
+    mkdir -p "$_dir" 2>/dev/null
+
+    for _db in $(ls "${_dir}/"*.tdb.*[0-9] 2>/dev/null) ; do
+	check_tdb $_db || {
+	    _backup="${_db}.$(date +'%Y%m%d.%H%M%S.%N').corrupt"
+	    cat <<EOF
+WARNING: database ${_db} is corrupted.
+ Moving to backup ${_backup} for later analysis.
+EOF
+	    mv "$_db" "$_backup"
+
+	    # Now remove excess backups
+	    ls -td "${_db}."*".corrupt" |
+	    tail -n +$((${CTDB_MAX_CORRUPT_DB_BACKUPS:-10} + 1)) |
+	    xargs rm -f
+	    
+	}
+    done
+}
+
+update_config_from_tdb() {
+
+    # Pull optional ctdb configuration data out of config.tdb
+    _key="public_addresses:node#$(ctdb -t 1 xpnn|sed -e 's/.*://')"
+    _t="$service_state_dir/public_addresses"
+    rm -f "$_t"
+
+    if ctdb pfetch config.tdb "$_key" "$_t" 2>/dev/null && \
+	[ -s "$_t" -a -n "$CTDB_PUBLIC_ADDRESSES"] && \
+	! cmp -s "$_t" "$CTDB_PUBLIC_ADDRESSES" ; then
+
+	echo "CTDB public address configuration has changed."
+	echo "Extracting new configuration from database."
+	diff "$_t" "$CTDB_PUBLIC_ADDRESSES"
+	cp "$_t" "$CTDB_PUBLIC_ADDRESSES"
+	echo "Restarting CTDB"
+	service ctdb restart &
+    fi
+}
+
+set_ctdb_variables () {
+    # set any tunables from the config file
+    set | grep ^CTDB_SET_ | cut -d_ -f3- | 
+    while read v; do
+	varname=`echo $v | cut -d= -f1`
+	value=`echo $v | cut -d= -f2`
+	ctdb setvar $varname $value || return 1
+	echo "Set $varname to $value"
+    done
+}
+
+monitor_system_memory ()
+{
+    # If monitoring free memory then calculate how much there is
+    if [ -n "$CTDB_MONITOR_FREE_MEMORY_WARN" -o \
+	-n "$CTDB_MONITOR_FREE_MEMORY" ] ; then
+	free_mem=$(free -m | awk '$2 == "buffers/cache:" { print $4 }')
+    fi
+
+    # Shutdown CTDB when memory is below the configured limit
+    if [ -n "$CTDB_MONITOR_FREE_MEMORY" ] ; then
+	if [ $free_mem -le $CTDB_MONITOR_FREE_MEMORY ] ; then
+	    echo "CRITICAL: OOM - ${free_mem}MB free <= ${CTDB_MONITOR_FREE_MEMORY}MB (CTDB threshold)"
+	    echo "CRITICAL: Shutting down CTDB!!!"
+	    get_proc "meminfo"
+	    ps auxfww
+	    set_proc "sysrq-trigger" "m"
+	    ctdb disable
+	    sleep 3
+	    ctdb shutdown
+	fi
+    fi
+
+    # Warn when low on memory
+    if [ -n "$CTDB_MONITOR_FREE_MEMORY_WARN" ] ; then
+	if [ $free_mem -le $CTDB_MONITOR_FREE_MEMORY_WARN ] ; then
+	    echo "WARNING: free memory is low - ${free_mem}MB free <=  ${CTDB_MONITOR_FREE_MEMORY_WARN}MB (CTDB threshold)"
+	fi
+    fi
+
+    # We should never enter swap, so SwapTotal == SwapFree.
+    if [ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] ; then
+	set -- $(get_proc "meminfo" | awk '$1 ~ /Swap(Total|Free):/ { print $2 }')
+	if [ "$1" != "$2" ] ; then
+	    echo We are swapping:
+	    get_proc "meminfo"
+	    ps auxfww
+	fi
+    fi
+}
+
+############################################################
+
+ctdb_check_args "$@"
+
+case "$1" in 
+     init)
+        # make sure we have a blank state directory for the scripts to work with
+	rm -rf $CTDB_VARDIR/state
+	# Look at the pattern - this should not be -rf!!!
+	rm -f $ctdb_managed_dir/*
+	mkdir -p $CTDB_VARDIR/state || {
+	    ret=$?
+	    echo "mkdir -p $CTDB_VARDIR/state - failed - $ret"
+	    exit $ret
+	}
+
+	# make sure we drop any ips that might still be held if
+	# previous instance of ctdb got killed with -9 or similar
+	drop_all_public_ips
+
+	if select_tdb_checker ; then
+	    check_persistent_databases || exit $?
+	    check_non_persistent_databases
+	fi
+	;;
+
+     setup)
+	# Set any tunables from the config file
+	set_ctdb_variables || die "Failed to set CTDB tunables"
+	;;
+
+    startup)
+	update_config_from_tdb &
+	;;
+    monitor)
+	monitor_system_memory
+	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+# all OK
+exit 0

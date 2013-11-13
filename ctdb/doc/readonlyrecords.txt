@@ -1,0 +1,343 @@
+Read-Only locks in CTDB
+=======================
+
+Problem
+=======
+CTDB currently only supports exclusive Read-Write locks for clients(samba) accessing the
+TDB databases.
+This mostly works well but when very many clients are accessing the same file,
+at the same time, this causes the exclusive lock as well as the record itself to
+rapidly bounce between nodes and acts as a scalability limitation.
+
+This primarily affects locking.tdb and brlock.tdb, two databases where record access is 
+read-mostly and where writes are semi-rare.
+
+For the common case, if CTDB provided shared non-exlusive Read-Only lock semantincs
+this would greatly improve scaling for these workloads.
+
+
+Desired properties
+==================
+We can not make backward incompatible changes the ctdb_ltdb header for the records.
+
+A Read-Only lock enabled ctdb demon must be able to interoperate with a non-Read-Only
+lock enbled daemon.
+
+Getting a Read-Only lock should not be slower than getting a Read-Write lock.
+
+When revoking Read-Only locks for a record, this should involve only those nodes that
+currently hold a Read-Only lock and should avoid broadcasting opportunistic revocations.
+(must track which nodes are delegated to)
+
+When a Read-Write lock is requested, if there are Read-Only locks delegated to other
+nodes, the DMASTER will defer the record migration until all read-only locks are first
+revoked (synchronous revoke).
+
+Due to the cost of revoking Read-Only locks has on getting a Read-Write lock, the
+implementation should try to avoid creating Read-Only locks unless it has indication
+that there is contention. This may mean that even if client requests a Read-Only lock
+we might still provide a full Read-Write lock in order to avoid the cost of revoking
+the locks in some cases.
+
+Read-Only locks require additional state to be stored in a separate database, containing
+information about which nodes have have been delegated Read-Only locks.
+This database should be kept at minimal size.
+
+Read-Only locks should not significantly complicate the normal record
+create/migration/deletion cycle for normal records.
+
+Read-Only locks should not complicate the recovery process.
+
+Read-Only locks should not complicate the vacuuming process.
+
+We should avoid forking new child processes as far as possible from the main daemon.
+
+Client-side implementation, samba, libctdb, others, should have minimal impact when
+Read-Only locks are implemented.
+Client-side implementation must be possible with only minor conditionals added to the
+existing lock-check-fetch-unlock loop that clients use today for Read-Write locks. So
+that clients only need one single loop that can handle both Read-Write locking as well
+as Read-Only locking. Clients should not need two nearly identical loops.
+
+
+Implementation
+==============
+
+Four new flags are allocated in the ctdb_ltdb record header.
+HAVE_DELEGATIONS, HAVE_READONLY_LOCK, REVOKING_READONLY and REVOKE_COMPLETE
+
+HAVE_DELEGATIONS is a flag that can only be set on the node that is currently the
+DMASTER for the record. When set, this flag indicates that there are Read-Only locks
+delegated to other nodes in the cluster for this record.
+
+HAVE_READONLY is a flag that is only set on nodes that are NOT the DMASTER for the
+record. If set this flag indicates that this record contains an up-to-date Read-Only
+version of this record. A client that only needs to read, but not to write, the record
+can safely use the content of this record as is regardless of the value of the DMASTER
+field of the record.
+
+REVOKING_READONLY is a flag that is used while a set of read only delegations are being
+revoked.
+This flag is only set when HAVE_DELEGATIONS is also set, and is cleared at the same time
+as HAVE_DELEGATIONS is cleared.
+Normal operations is that first the HAVE_DELEGATIONS flag is set when the first
+delegation is generated. When the delegations are about to be revoked, the
+REVOKING_READONLY flag is set too.
+Once all delegations are revoked, both flags are cleared at the same time.
+While REVOKING_READONLY is set, any requests for the record, either normal request or
+request for readonly will be deferred.
+Deferred requests are linked on a list for deferred requests until the time that the
+revokation is completed.
+This flags is set by the main ctdb daemon when it starts revoking this record.
+
+REVOKE_COMPLETE
+The actual revoke of records is done by a child process, spawned from the main ctdb
+daemon when it starts the process to revoke the records.
+Once the child process has finished revoking all delegations it will set the flag
+REVOKE_COMPLETE for this record to signal to the main daemon that the record has been
+successfully revoked.
+At this stage the child process will also trigger an event in the main daemon that
+revoke is complete and that the main dameon should start re-processing all deferred
+requests.
+
+
+
+Once the revoke process is completed there will be at least one deferred request to
+access this record. That is the initical call to for an exclusive fetch_lock() that
+triggered the revoke process to be started.
+In addition to this deferred request there may also be additional requests that have
+also become deferred while the revoke was in process. These can be either exclusive
+fetch_locks() or they can be readonly lock requests.
+Once the revoke is completed the main daemon will reprocess all exclusive fetch_lock()
+requests immediately and respond to these clients.
+Any requests for readadonly lock requests will be deferred for an additional period of
+time before they are re-processed.
+This is to allow the client that needs a fetch_lock() to update the record to get some
+time to access and work on the record without having to compete with the possibly
+very many readonly requests.
+
+
+
+
+
+The ctdb_db structure is expanded so that it contains one extra TDB database for each
+normal, non-persistent datbase.
+This new database is used for tracking delegations for the records.
+A record in the normal database that has "HAVE_DELEGATION" set will always have a
+corresponding record at the same key. This record contains the set of all nodes that
+the record is delegated to.
+This tracking database is lockless, using TDB_NOLOCK, and is only ever accessed by
+the main ctdbd daemon.
+The lockless nature and the fact that no other process ever access this TDB means we
+are guaranteed non-blocking access to records in the tracking database.
+
+The ctdb_call PDU is allocated with a new flag WANT_READONLY and possibly also a new
+callid: CTDB_FETCH_WITH_HEADER_FUNC.
+This new function returns not only the record, as CTDB_FETCH_FUNC does, but also
+returns the full ctdb_ltdb record HEADER prepended to the record.
+This function is optional, clients that do not care what the header is can continue
+using just CTDB_FETCH_FUNC
+
+
+This flag is used to requesting a read-only record from the DMASTER/LMASTER.
+If the record does not yet exist, this is a returned as an error to the client and the
+client will retry the request loop.
+
+A new control is added to make remote nodes remove the HAVE_READONLY_LOCK from a record
+and to invalidate any deferred readonly copies from the databases.
+
+
+
+Client implementation
+=====================
+Clients today use a loop for record fetch lock that looks like this
+    try_again:
+        lock record in tdb
+
+        if record does not exist in tdb,
+            unlock record
+            ask ctdb to migrate record onto the node
+            goto try_again
+
+        if record dmaster != this node pnn
+            unlock record
+            ask ctdb to migrate record onto the node
+            goto try_again
+
+    finished:
+
+where we basically spin, until the record is migrated onto the node and we have managed
+to pin it down.
+
+This will change to instead to something like
+
+    try_again:
+        lock record in tdb
+
+        if record does not exist in tdb,
+            unlock record
+            ask ctdb to migrate record onto the node
+            goto try_again
+
+        if record dmaster == current node pnn
+            goto finished
+
+        if read-only lock
+            if HAVE_READONLY_LOCK or HAVE_DELEGATIONS is set
+                goto finished
+            else
+                unlock record 
+                ask ctdb for read-only copy (WANT_READONLY[|WITH_HEADER])
+                if failed to get read-only copy (*A)
+                    ask ctdb to migrate the record onto the node
+                    goto try_again
+                lock record in tdb
+                goto finished
+
+        unlock record
+        ask ctdb to migrate record onto the node
+        goto try_again
+
+    finished:
+
+If the record does not yet exist in the local TDB, we always perform a full fetch for a
+Read-Write lock even if only a Read-Only lock was requested.
+This means that for first access we always grab a Read-Write lock and thus upgrade any
+requests for Read-Only locks into a Read-Write request.
+This creates the record, migrates it onto the node and makes the local node become
+the DMASTER for the record.
+
+Future reference to this same record by the local samba daemons will still access/lock
+the record locally without triggereing a Read-Only delegation to be created since the
+record is already hosted on the local node as DMASTER.
+
+Only if the record is contended, i.e. it has been created an migrated onto the node but
+we are no longer the DMASTER for this record, only for this case will we create a
+Read-Only delegation.
+This heuristics provide a mechanism where we will not create Read-Only delegations until
+we have some indication that the record may be contended.
+
+This avoids creating and revoking Read-Only delegations when only a single client is
+repeatedly accessing the same set of records.
+This also aims to limit the size of the tracking tdb.
+
+
+Server implementation
+=====================
+When receiving a ctdb_call with the WANT_READONLY flag:
+
+If this is the LMASTER for the record and the record does not yet exist, LMASTER will
+return an error back to the client (*A above) and the client will try to recover.
+In particular, LMASTER will not create a new record for this case.
+
+If this is the LMASTER for the record and the record exists, the PDU will be forwarded to
+the DMASTER for the record.
+
+If this node is not the DMASTER for this record, we forward the PDU back to the
+LMASTER. Just as we always do today.
+
+If this is the DMASTER for the record, we need to create a Read-Only delegation.
+This is done by
+     lock record
+     increase the RSN by one for this record
+     set the HAVE_DELEGATIONS flag for the record
+     write the updated record to the TDB
+     create/update the tracking TDB nd add this new node to the set of delegations
+     send a modified copy of the record back to the requesting client.
+         modifications are that RSN is decremented by one, so delegated records are "older" than on the DMASTER,
+         it has HAVE_DELEGATIONS flag stripped off, and has HAVE_READONLY_LOCK added.
+     unlock record
+
+Important to note is that this does not trigger a record migration.
+
+
+When receiving a ctdb_call without the WANT_READONLY flag:
+
+If this is the DMASTER for the this might trigger a migration. If there exists
+delegations we must first revoke these before allowing the Read-Write request from
+proceeding. So,
+IF the record has HAVE_DELEGATIONS set, we create a child process and defer processing
+of this PDU until the child process has completed.
+
+From the child process we will call out to all nodes that have delegations for this
+record and tell them to invalidate this record by clearing the HAVE_READONLY_LOCK from
+the record.
+Once all delegated nodes respond back, the child process signals back to the main daemon
+the revoke has completed. (child process may not access the tracking tdb since it is
+lockless)
+
+Main process is triggered to re-process the PDU once the child process has finished.
+Main daemon deletes the corresponding record in the tracking database, clears the
+HAVE_DELEGATIONS flag for the record and then proceeds to perform the migration as usual.
+
+When receiving a ctdb_call without the flag we want all delegations to be revoked,
+so we must take care that the delegations are revoked unconditionally before we even
+check if we are already the DMASTER (in which case thie ctdb_call would normally just
+be  no-op  (*B below))
+
+
+
+Recovery process changes
+========================
+A recovery implicitly clears/revokes any read only records and delegations from all
+databases.
+
+During delegations of Read-Only locks, this is done in such way that delegated records
+will have a RSN smaller than the DMASTER. This guarantees that read-only copies always
+have a RSN that is smaller than the DMASTER.
+
+During recoveries we do not need to take any special action other than always picking
+the copy of the record that has the highest RSN, which is what we already do today.
+
+During the recovery process, we strip all flags off all records while writing the new
+content of the database during the PUSH_DB control. 
+
+During processing of the PUSH_DB control and once the new database has been written we
+then also wipe the tracking database.
+
+This makes changes to the recovery process minimal and nonintrusive.
+
+
+
+Vacuuming process
+=================
+Vacuuming needs only minimal changes.
+
+
+When vacuuming runs, it will do a fetch_lock to migrate any remote records back onto the
+LMASTER before the record can be purged. This will automatically force all delegations
+for that record to be revoked before the migration is copied back onto the LMASTER.
+This handles the case where LMASTER is not the DMASTER for the record that will be
+purged.
+The migration in this case does force any delegations to be revoked before the
+vacuuming takes place.
+
+Missing is the case when delegations exist and the LMASTER is also the DMASTER.
+For this case we need to change the vacuuming to unconditionally always try to do a
+fetch_lock when HAVE_DELEGATIONS is set, even if the record is already stored locally.
+(*B)
+This fetch lock will not cause any migrations by the ctdb daemon, but since it does
+not have the WANT_READONLY this will still force the delegations to be revoked but no
+migration will trigger.
+
+
+Traversal process
+=================
+Traversal process is changed to ignore any records with the HAVE_READONLY_LOCK
+
+
+Forward/Backward Compatibility
+==============================
+Non-readonly locking daemons must be able to interoperate with readonly locking enabled daemons.
+
+Non-readonly enabled daemons fetching records from Readonly enabled daemons:
+Non-readonly enabled daemons do not know, and never set the WANT_READONLY flag so these daemons will always request a full migration for a full fetch-lock for all records. Thus a request from a non-readonly enabled daemon will always cause any existing delegations to be immediately revoked. Access will work but performance may be harmed since there will be a lot of revoking of delegations.
+
+Readonly enabled dameons fetching records with WANT_READONLY from non-readonly enabled daemons:
+Non-readonly enabled daemons ingore the WANT_READONLY flag and never return delegations. They always return a full record migration.
+Full record migration is allowed by the protocol, even if the originator only requests the 'hint' WANT_READONLY,
+so this access also interoperates between daemons with different capabilities.
+
+
+
+

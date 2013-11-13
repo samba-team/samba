@@ -1,0 +1,4 @@
+* Make tests know about IPv6.
+* Tests that write to database.
+* Tests that check actual network connectivity on failover.
+* Handle interrupting tests better.

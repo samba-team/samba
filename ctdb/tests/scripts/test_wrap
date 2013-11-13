@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Execute the given command.  The intention is that it is a function
+# from "${TEST_SCRIPTS_DIR}/integration.bash".
+
+PATH="$(dirname $0):${PATH}"
+
+TEST_SCRIPTS_DIR=$(dirname $0)
+
+# We need the test binaries (i.e. tests/bin/) to be in $PATH.  If they
+# aren't already in $PATH then we know that tests/bin/ sits alongside
+# tests/scripts/.
+f="ctdb_bench"
+if [ ! $(which $f >/dev/null 2>&1) ] ; then
+    d=$(dirname "$TEST_SCRIPTS_DIR")/bin
+    [ -x "$d/$f" ] && PATH="$d:$PATH"
+fi
+
+. "${TEST_SCRIPTS_DIR}/integration.bash"
+
+"$@"

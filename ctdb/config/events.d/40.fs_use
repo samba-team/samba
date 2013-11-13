@@ -1,0 +1,55 @@
+#!/bin/sh
+# ctdb event script for checking local file system utilization
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig
+
+case "$1" in 
+    monitor)
+        # check each specified fs to be checked
+        # config format is <fs_mount>:<fs_threshold>
+        for fs in $CTDB_CHECK_FS_USE
+        do
+            # parse fs_mount and fs_threshold
+            fs_mount="${fs%:*}"
+            fs_threshold="${fs#*:}"
+
+            # check if given fs_mount is existing directory
+            if [ ! -d "$fs_mount" ]; then
+                echo "Directory $fs_mount does not exist"
+                exit 1
+            fi
+
+            # check if given fs_threshold is number
+            if ! (echo "$fs_threshold" | egrep -q '^[0-9]+$')  ; then
+                echo "Threshold $fs_threshold is invalid number"
+                exit 1
+            fi
+
+            # get utilization of given fs from df
+            fs_usage=$(df -kP $fs_mount | sed -n -e 's@.*[[:space:]]\([[:digit:]]*\)%.*@\1@p')
+
+            # check if fs_usage is number
+            if [ -z "$fs_usage" ] ; then
+                echo "Unable to get FS utilization for $fs_mount"
+                exit 1
+            fi
+
+            # check if fs_usage is higher than or equal to fs_threshold
+            if [ "$fs_usage" -ge "$fs_threshold" ] ; then
+                echo "ERROR: Utilization of $fs_mount ($fs_usage%) is higher than threshold ($fs_threshold%)"
+                exit 1
+            fi
+        done
+
+	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

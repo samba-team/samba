@@ -1,0 +1,73 @@
+/*
+ * Metrics for CTDB PMDA
+ *
+ * Copyright (c) 2000-2004 Silicon Graphics, Inc.  All Rights Reserved.
+ * Copyright (c) 2011 David Disseldorp
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ */
+
+ctdb {
+	num_clients		CTDB:0:0
+	frozen			CTDB:0:1
+	recovering		CTDB:0:2
+	client_packets_sent	CTDB:0:3
+	client_packets_recv	CTDB:0:4
+	node_packets_sent	CTDB:0:5
+	node_packets_recv	CTDB:0:6
+	keepalive_packets_sent	CTDB:0:7
+	keepalive_packets_recv	CTDB:0:8
+	node
+	client
+	timeouts
+	total_calls		CTDB:0:9
+	pending_calls		CTDB:0:10
+	lockwait_calls		CTDB:0:11
+	pending_lockwait_calls	CTDB:0:12
+	childwrite_calls	CTDB:0:13
+	pending_childwrite_calls CTDB:0:14
+	memory_used		CTDB:0:15
+	max_hop_count		CTDB:0:16
+	max_reclock_ctdbd	CTDB:0:17
+	max_reclock_recd	CTDB:0:18
+	max_call_latency	CTDB:0:19
+	max_lockwait_latency	CTDB:0:20
+	max_childwrite_latency	CTDB:0:21
+	num_recoveries		CTDB:0:22
+}
+
+ctdb.node {
+	req_call	CTDB:1:0
+	reply_call	CTDB:1:1
+	req_dmaster	CTDB:1:2
+	reply_dmaster	CTDB:1:3
+	reply_error	CTDB:1:4
+	req_message	CTDB:1:5
+	req_control	CTDB:1:6
+	reply_control	CTDB:1:7
+}
+
+ctdb.client {
+	req_call	CTDB:2:0
+	req_message	CTDB:2:1
+	req_control	CTDB:2:2
+}
+
+ctdb.timeouts {
+	call		CTDB:3:0
+	control		CTDB:3:1
+	traverse	CTDB:3:2
+}
+

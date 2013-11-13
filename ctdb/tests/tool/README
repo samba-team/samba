@@ -1,0 +1,17 @@
+Unit tests for the ctdb tool (i.e. tools/ctdb).
+
+Test case filenames can take 2 forms:
+
+* func.<some_function>.NNN.sh
+
+  Run <some_function> in the ctdb tool code using the
+  ctdb_tool_functest test program.  This test program uses test stubs
+  for CTDB client functions.
+
+* stubby.<command>.NNN.sh
+
+  Run the ctdb_tool_stubby test program with <command> as the 1st
+  argument - subsequent are passed to simple_test().  ctdb_tool_stubby
+  is linked against the test stubs for CTDB client functions.
+
+To add tests here you may need to add appropriate test stubs.

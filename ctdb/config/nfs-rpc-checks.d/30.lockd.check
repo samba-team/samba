@@ -1,0 +1,2 @@
+-ge 15 verbose restart:b unhealthy
+-eq 10 restart:b

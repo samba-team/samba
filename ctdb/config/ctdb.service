@@ -1,0 +1,15 @@
+[Unit]
+Description=CTDB
+After=network.target
+
+[Service]
+Type=forking
+LimitCORE=infinity
+PIDFile=/run/ctdb/ctdbd.pid
+ExecStart=/usr/sbin/ctdbd_wrapper /run/ctdb/ctdbd.pid start
+ExecStop=/usr/sbin/ctdbd_wrapper /run/ctdb/ctdbd.pid stop
+KillMode=control-group
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

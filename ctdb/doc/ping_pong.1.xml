@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<refentry id="ping_pong.1">
+
+  <refmeta>
+    <refentrytitle>ping_pong</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>ping_pong</refname>
+    <refpurpose>measures the ping-pong byte range lock latency</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>ping_pong</command>
+      <group choice="req">
+	<arg choice="plain">-r</arg>
+	<arg choice="plain">-w</arg>
+	<arg choice="plain">-rw</arg>
+      </group>
+      <arg>-m</arg>
+      <arg>-c</arg>
+      <arg choice="req"><replaceable>FILENAME</replaceable></arg>
+      <arg choice="req"><replaceable>NUM-LOCKS</replaceable></arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      ping_pong measures the byte range lock latency. It is especially
+      useful on a cluster of nodes sharing a common lock manager as it
+      will give some indication of the lock manager's performance
+      under stress.
+    </para>
+
+    <para>
+      FILENAME is a file on shared storage to use for byte range
+      locking tests.
+    </para>
+
+    <para>
+      NUM-LOCKS is the number of byte range locks, so needs to be
+      (strictly) greater than the number of nodes in the cluster.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry>
+	<term>-r</term>
+	<listitem>
+	  <para>
+	    test read performance
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>-w</term>
+        <listitem>
+          <para>
+	    test write performance
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>-m</term>
+        <listitem>
+          <para>
+	    use mmap
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>-c</term>
+	<listitem>
+          <para>
+	    validate the locks
+	  </para>
+        </listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>EXAMPLES</title>
+    <para>
+      Testing lock coherence
+    </para>
+    <screen format="linespecific">
+      ping_pong test.dat N
+    </screen>
+
+    <para>
+      Testing lock coherence with lock validation
+    </para>
+    <screen format="linespecific">
+      ping_pong -c test.dat N
+    </screen>
+
+    <para>
+      Testing IO coherence
+    </para>
+    <screen format="linespecific">
+      ping_pong -rw test.dat N
+    </screen>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+    <para>
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
+      <ulink url="https://wiki.samba.org/index.php/Ping_pong"/>
+
+    </para>
+  </refsect1>
+
+  <refentryinfo>
+    <author>
+      <contrib>
+	This documentation was written by Mathieu Parent
+      </contrib>
+    </author>
+
+    <copyright>
+      <year>2002</year>
+      <holder>Andrew Tridgell</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </refentryinfo>
+
+</refentry>

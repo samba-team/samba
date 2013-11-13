@@ -1,0 +1,89 @@
+#!/bin/sh
+# script to manage the lvs ip multiplexer for a single public address cluster
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+
+loadconfig ctdb
+
+[ -z "$CTDB_LVS_PUBLIC_IP" ] && exit 0
+[ -z "$CTDB_PUBLIC_INTERFACE" ] && exit 0
+
+[ -x /sbin/ipvsadm ] || {
+    echo "LVS configured but /sbin/ipvsadm is not installed."
+    exit 0
+}
+
+case "$1" in 
+     startup)
+	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
+	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
+
+	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo scope host >/dev/null 2>/dev/null
+
+	# do not respond to ARPs that are for ip addresses with scope 'host'
+	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
+	# do not send out arp requests from loopback addresses
+	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
+	;;
+
+     shutdown)
+	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
+	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
+
+	# remove the ip
+	ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+	;;
+
+     recovered|ipreallocated)
+	# kill off any tcp connections
+	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
+	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
+	kill_tcp_connections_local_only $CTDB_LVS_PUBLIC_IP
+
+	PNN=`ctdb pnn | sed -e "s/.*PNN://"`
+	LVSMASTER=`ctdb lvsmaster | sed -e "s/.*Node //" -e "s/ .*//"`
+
+	[ "$PNN" != "$LVSMASTER" ] && {
+	    # we are not the lvs master so we have to
+	    # change the ip address to have scope host so we wont respond
+	    # to arps
+	    ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+	    ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo scope host >/dev/null 2>/dev/null
+	    exit 0
+	}
+
+	# change the scope so we start responding to arps
+	ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+
+	ipvsadm -A -t $CTDB_LVS_PUBLIC_IP:0 -p 1999999 -s lc
+	ipvsadm -A -u $CTDB_LVS_PUBLIC_IP:0 -p 1999999 -s lc
+
+	# add all nodes (except ourselves) to the lvs config
+	ctdb lvs | egrep -v "^$PNN:" | sed -e "s/.*://" | while read IP; do
+		ipvsadm -a -t $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
+		ipvsadm -a -u $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
+	done
+	# and add the localhost too
+	ipvsadm -a -t $CTDB_LVS_PUBLIC_IP:0 -r 127.0.0.1
+	ipvsadm -a -u $CTDB_LVS_PUBLIC_IP:0 -r 127.0.0.1
+
+	# send out a gratious arp so our peers will update their arp tables
+	ctdb gratiousarp $CTDB_LVS_PUBLIC_IP $CTDB_PUBLIC_INTERFACE >/dev/null 2>/dev/null
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

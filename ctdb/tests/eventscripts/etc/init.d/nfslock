@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# This is not used.  The fake "service" script is used instead.  This
+# is only needed to shut up functions like startstop_nfs(), which look
+# for this script.
+
+exit 0

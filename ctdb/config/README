@@ -1,0 +1,31 @@
+This directory contains run-time support scripts for CTDB.
+
+Selected highlights:
+
+  ctdb.init
+
+    An initscript for starting ctdbd at boot time.
+
+  events.d/
+
+    Eventscripts.  See events.d/README for more details.
+
+  functions
+
+    Support functions, sourced by eventscripts and other scripts.
+
+  statd-callout
+
+    rpc.statd high-availability callout to support lock migration on
+    failover.
+
+Notes:
+
+* All of these scripts are written in POSIX Bourne shell.  Please
+  avoid bash-isms, including the use of "local" variables (which are
+  not available in POSIX shell).
+
+* Do not use absolute paths for commands.  Unit tests attempt to
+  replace many commands with stubs and can not do this if commands are
+  specified with absolute paths.  The functions file controls $PATH so
+  absolute paths should not be required.

@@ -1,0 +1,118 @@
+#!/bin/sh
+# Script to set up one of the nodes as a NAT gateway for all other nodes.
+# This is used to ensure that all nodes in the cluster can still originate
+# traffic to the external network even if there are no public addresses
+# available.
+#
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig
+
+[ -n "$CTDB_NATGW_NODES" ] || exit 0
+export CTDB_NATGW_NODES
+
+set_natgw_capability ()
+{
+    # Set NATGW capability depending on configuration
+    if [ "$CTDB_NATGW_SLAVE_ONLY" = "yes" ] ; then
+	ctdb setnatgwstate off
+    else
+	ctdb setnatgwstate on
+    fi
+}
+
+delete_all() {
+	_ip="${CTDB_NATGW_PUBLIC_IP%/*}"
+	_maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
+
+	[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] || {
+	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
+	}
+	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
+
+	# Delete the masquerading setup from a previous iteration where we
+	# were the NAT-GW
+	iptables -D POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
+
+	# remove any iptables rule we may have on this address
+	iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
+}
+
+ensure_natgwmaster ()
+{
+    _event="$1"
+
+    set -- $(ctdb natgwlist)
+    natgwmaster="${1:--1}" # Default is -1 if natgwlist fails
+    natgwip="$2"
+
+    if [ "$natgwmaster" = "-1" ]; then
+	# Fail...
+	die "There is no NATGW master node"
+    fi
+}
+
+case "$1" in 
+    setup)
+	set_natgw_capability
+	;;
+
+    startup)
+	# Error if CTDB_NATGW_PUBLIC_IP is listed in public addresses
+	grep -q "^$CTDB_NATGW_PUBLIC_IP[[:space:]]" "${CTDB_PUBLIC_ADDRESSES:-/etc/ctdb/public_addresses}" && \
+	    die "ERROR: NATGW configured to use a public address. NATGW must not use a public address."
+
+	# do not send out arp requests from loopback addresses
+	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
+	;;
+
+    updatenatgw|ipreallocated)
+	mypnn=$(ctdb pnn | cut -d: -f2)
+
+	set_natgw_capability
+	ensure_natgwmaster "$1"
+
+	delete_all
+
+	if [ "$mypnn" = "$natgwmaster" ]; then
+		# This is the NAT GW
+		echo 1 >/proc/sys/net/ipv4/ip_forward
+		iptables -A POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE
+
+		# block all incoming connections to the natgw address
+		ctdb_natgw_public_ip_host="${CTDB_NATGW_PUBLIC_IP%/*}/32"
+		iptables -D INPUT -p tcp --syn -d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
+		iptables -I INPUT -p tcp --syn -d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
+
+		ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
+		ip route add 0.0.0.0/0 metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
+	else
+		# This is NOT the NAT GW
+		ip route add 0.0.0.0/0 via $natgwip metric 10
+		# Make sure winbindd does not stay bound to this address
+		# if we are no longer natgwmaster
+		smbcontrol winbindd ip-dropped $CTDB_NATGW_PUBLIC_IP >/dev/null 2>/dev/null
+	fi
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+	;;
+
+    shutdown|removenatgw)
+	delete_all
+	;;
+
+    monitor)
+	set_natgw_capability
+	ensure_natgwmaster "$1"
+	;;
+
+    *)
+	ctdb_standard_event_handler "@"
+	;;
+esac
+
+exit 0

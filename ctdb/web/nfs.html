@@ -1,0 +1,96 @@
+<!--#set var="TITLE" value="CTDB and NFS" -->
+<!--#include virtual="header.html" -->
+
+<h1>Setting up clustered NFS</h1>
+
+NFS v2/v3 has been successfully tested with exporting the same
+data/network share from multiple nodes in a CTDB cluster with correct
+file locking behaviour and lock recovery.<br><br>
+
+Also see <a href="http://wiki.samba.org/index.php/CTDB_Setup#Setting_up_CTDB_for_clustered_NFS">Configuring
+NFS for CTDB clustering</a> at samba.org for additional information.
+
+<h2>Prereqs</h2>
+Configure CTDB as above and set it up to use public ipaddresses.<br>
+Verify that the CTDB cluster works.
+
+<h2>/etc/exports</h2>
+
+Export the same directory from all nodes.<br>
+Make sure to specify the fsid export option so that all nodes will present the same fsid to clients.<br>
+
+Clients can get "upset" if the fsid on a mount suddenly changes.<br>
+Example /etc/exports :
+<pre>
+  /gpfs0/data *(rw,fsid=1235)
+</pre>
+
+<h2>/etc/sysconfig/nfs</h2>
+
+This file must be edited to point statd to keep its state directory on 
+shared storage instead of in a local directory.<br><br>
+
+We must also make statd use a fixed port to listen on that is the same for 
+all nodes in the cluster.<br>
+
+If we don't specify a fixed port, the statd port will change during failover 
+which causes problems on some clients.<br>
+(some clients are very slow to realize when the port has changed)<br><br>
+
+This file should look something like :
+<pre>
+  NFS_HOSTNAME=ctdb
+  STATD_PORT=595
+  STATD_OUTGOING_PORT=596
+  MOUNTD_PORT=597
+  RQUOTAD_PORT=598
+  LOCKD_TCPPORT=599
+  LOCKD_UDPPORT=599
+  STATD_HOSTNAME="$NFS_HOSTNAME -H /etc/ctdb/statd-callout -p 97"
+  RPCNFSDARGS="-N 4"
+
+</pre>
+
+You need to make sure that the lock manager runs on the same port on all nodes in the cluster since some clients will have "issues" and take very long to recover if the port suddenly changes.<br>
+599 above is only an example. You can run the lock manager on any available port as long as you use the same port on all nodes.<br><br>
+
+NFS_HOSTNAME is the dns name for the ctdb cluster and which is used when clients map nfs shares. This name must be in DNS and resolve back into the public ip addresses of the cluster.<br>
+Always use the same name here as you use for the samba hostname.
+
+RPCNFSDARGS is used to disable support for NFSv4 which is not yet supported by CTDB.
+
+<h2>/etc/sysconfig/ctdb</h2>
+Add the following line to /etc/sysconfig/ctdb :
+
+<pre>
+  CTDB_MANAGES_NFS=yes
+</pre>
+The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
+
+With this set to yes, CTDB will start/stop/restart these services as required.<br><br>
+
+
+<h2>chkconfig</h2>
+
+Since CTDB will manage and start/stop/restart the nfs and the nfslock services, you must disable them using chkconfig.
+<pre>
+  chkconfig nfs off
+  chkconfig nfslock off
+</pre>
+
+
+<h2>Event scripts</h2>
+
+CTDB clustering for NFS relies on two event scripts /etc/ctdb/events.d/60.nfs and /etc/ctdb/events.d/61.nfstickle.<br>
+
+These two scripts are provided by the RPM package and there should not be any need to change them.
+
+<h2><strong>IMPORTANT</strong></h2>
+
+Never ever mount the same nfs share on a client from two different nodes in the cluster at the same time!<br><br>
+
+The client side caching in NFS is very fragile and assumes/relies on that an object can only be accessed through one single path at a time.
+
+
+<!--#include virtual="footer.html" -->
+

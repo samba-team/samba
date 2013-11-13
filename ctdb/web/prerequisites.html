@@ -1,0 +1,30 @@
+<!--#set var="TITLE" value="CTDB prerequisites" -->
+<!--#include virtual="header.html" -->
+
+<h1>Prerequisites</h1>
+
+Before you can start using CTDB you must first install and configure a
+bunch of linux boxes.<br><br>
+
+After that you need to install and configure a cluster filesystem and
+mount that cluster filesystem on all the linux boxes that will form
+your cluster.<br><br>
+
+Also, ensure that the cluster filesystem supports correct
+posix locking semantics. A simple way to test this is to run <a
+href="https://wiki.samba.org/index.php/Ping_pong">ping_pong</a> utility
+bundled with CTDB.<br><br>
+
+<h1>Cluster filesystems</h1>
+We have primarily used the GPFS filesystem for our testing but any
+cluster filesystem should work as long as it provides correct file
+locking.<br><br>
+
+While we primarily test with GPFS, CTDB should work with almost any
+other cluster filesystem as well.<br><br>
+
+Please let us know your experiences in using other cluster filesystems.
+
+
+<!--#include virtual="footer.html" -->
+

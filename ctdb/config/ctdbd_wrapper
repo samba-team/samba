@@ -1,0 +1,275 @@
+#!/bin/sh
+
+# ctdbd wrapper - start or stop CTDB
+
+usage ()
+{
+    echo "usage: ctdbd_wrapper <pidfile> { start | stop }"
+    exit 1
+}
+
+[ $# -eq 2 ] || usage
+
+pidfile="$1"
+action="$2"
+
+############################################################
+
+[ -n "$CTDB_BASE" ] || export CTDB_BASE="/etc/ctdb"
+
+. "${CTDB_BASE}/functions"
+loadconfig "ctdb"
+
+export CTDB_SOCKET
+
+ctdbd="${CTDBD:-/usr/sbin/ctdbd}"
+
+############################################################
+
+# ctdbd_is_running()
+
+# 1. Check if ctdbd is running.
+#    - If the PID file is being used then, if the PID file is present,
+#      ctdbd is only considered to running if the PID in the file is
+#      active.
+#    - If the PID file is not being used (i.e. we're upgrading from a
+#      version that doesn't support it) then the presence of any ctdbd
+#      processes is enough proof.
+
+# 2. Print a comma-separated list of PIDs that can be
+#    used with "pkill -s".
+#    - If the PID file is being used then this is just the PID in that
+#      file.  This also happens to be the session ID, so can be used
+#      to kill all CTDB processes.
+#    - If the PID file is not being used (i.e. upgrading) then this is
+#      just any ctdbd processes that are running.  Hopefully one of
+#      them is the session ID so that it can be used to kill all CTDB
+#      processes.
+
+# Combining these 2 checks is an optimisation to avoid potentially
+# running too many pgrep/pkill processes on an already loaded system.
+# Trawling through /proc/ can be very expensive.
+
+ctdbd_is_running ()
+{
+    # If the directory for the PID file exists then respect the
+    # existence of a PID file.
+    _pidfile_dir=$(dirname "$pidfile")
+    if [ -d "$_pidfile_dir" ] ; then
+	if read _pid 2>/dev/null <"$pidfile" ; then
+	    echo "$_pid"
+
+	    # Return value of kill is used
+	    kill -0 $_pid 2>/dev/null
+	else
+	    # Missing/empty PID file
+	    return 1
+	fi
+    else
+	if _pid=$(pgrep -f "${ctdbd}\>") ; then
+	    echo $_pid | sed -e 's@ @,@g'
+	    return 0
+	else
+	    return 1
+	fi
+    fi
+}
+
+############################################################
+
+build_ctdb_options ()
+{
+    ctdb_options=""
+
+    maybe_set ()
+    {
+	# If the given variable isn't set then do nothing
+	[ -n "$2" ] || return
+	# If a required value for the variable and it doesn't match,
+	# then do nothing
+	[ -z "$3" -o "$3" = "$2" ] || return
+
+	val="'$2'"
+	case "$1" in
+	    --*) sep="=" ;;
+	    -*)  sep=" " ;;
+	esac
+	# For these options we're only passing a value-less flag.
+	if [ -n "$3" ] ; then
+	    val=""
+	    sep=""
+	fi
+
+	ctdb_options="${ctdb_options}${ctdb_options:+ }${1}${sep}${val}"
+    }
+
+    if [ -z "$CTDB_RECOVERY_LOCK" ] ; then
+        echo "No recovery lock specified. Starting CTDB without split brain preventivon"
+    fi
+    maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
+
+    maybe_set "--pidfile"                "$pidfile"
+
+    # build up ctdb_options variable from optional parameters
+    maybe_set "--logfile"                "$CTDB_LOGFILE"
+    maybe_set "--nlist"                  "$CTDB_NODES"
+    maybe_set "--socket"                 "$CTDB_SOCKET"
+    maybe_set "--public-addresses"       "$CTDB_PUBLIC_ADDRESSES"
+    maybe_set "--public-interface"       "$CTDB_PUBLIC_INTERFACE"
+    maybe_set "--dbdir"                  "$CTDB_DBDIR"
+    maybe_set "--dbdir-persistent"       "$CTDB_DBDIR_PERSISTENT"
+    maybe_set "--dbdir-state"            "$CTDB_DBDIR_STATE"
+    maybe_set "--event-script-dir"       "$CTDB_EVENT_SCRIPT_DIR"
+    maybe_set "--transport"              "$CTDB_TRANSPORT"
+    maybe_set "-d"                       "$CTDB_DEBUGLEVEL"
+    maybe_set "--notification-script"    "$CTDB_NOTIFY_SCRIPT"
+    maybe_set "--start-as-disabled"      "$CTDB_START_AS_DISABLED"    "yes"
+    maybe_set "--start-as-stopped "      "$CTDB_START_AS_STOPPED"     "yes"
+    maybe_set "--no-recmaster"           "$CTDB_CAPABILITY_RECMASTER" "no"
+    maybe_set "--no-lmaster"             "$CTDB_CAPABILITY_LMASTER"   "no"
+    maybe_set "--lvs --single-public-ip" "$CTDB_LVS_PUBLIC_IP"
+    maybe_set "--script-log-level"       "$CTDB_SCRIPT_LOG_LEVEL"
+    maybe_set "--log-ringbuf-size"       "$CTDB_LOG_RINGBUF_SIZE"
+    maybe_set "--syslog"                 "$CTDB_SYSLOG"               "yes"
+    maybe_set "--max-persistent-check-errors" "$CTDB_MAX_PERSISTENT_CHECK_ERRORS"
+}
+
+export_debug_variables ()
+{
+    export CTDB_DEBUG_HUNG_SCRIPT CTDB_EXTERNAL_TRACE CTDB_DEBUG_LOCKS
+}
+
+kill_ctdbd ()
+{
+    _session="$1"
+
+    if [ -n "$_session" ] ; then
+	pkill -9 -s "$_session" 2>/dev/null
+    fi
+    rm -f "$pidfile"
+}
+
+############################################################
+
+start()
+{
+    if _session=$(ctdbd_is_running) ; then
+	echo $"CTDB is already running"
+	return 0
+    fi
+
+    # About to start new $ctdbd.  The main daemon is not running but
+    # there may still be other processes around, so do some cleanup.
+    # Note that starting ctdbd below will destroy the Unix domain
+    # socket, so any processes that aren't yet completely useless soon
+    # will be, so this can really do no harm.
+    kill_ctdbd "$_session"
+
+    build_ctdb_options
+
+    export_debug_variables
+
+    if [ "$CTDB_SUPPRESS_COREFILE" = "yes" ]; then
+	ulimit -c 0
+    else
+	ulimit -c unlimited
+    fi
+
+    mkdir -p $(dirname "$pidfile")
+
+    if [ -n "$CTDB_VALGRIND" -a "$CTDB_VALGRIND" != "no" ] ; then
+	if [ "$CTDB_VALGRIND" = "yes" ] ; then
+	    ctdbd="valgrind -q --log-file=/var/log/ctdb_valgrind ${ctdbd}"
+	else
+	    ctdbd="${CTDB_VALGRIND} ${ctdbd}"
+	fi
+	ctdb_options="${ctdb_options} --valgrinding"
+    fi
+
+    if [ "$CTDB_SYSLOG" != "yes" ] ; then
+	logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGFILE:-/var/log/log.ctdb}"
+    fi
+
+    eval "$ctdbd" "$ctdb_options" || return 1
+
+    # Wait until ctdbd has started and is ready to respond to clients.
+    _pid=""
+    _timeout="${CTDB_STARTUP_TIMEOUT:-10}"
+    _count=0
+    while [ $_count -lt $_timeout ] ; do
+	# If we don't have the PID then try to read it.
+	[ -n "$_pid" ] || read _pid 2>/dev/null <"$pidfile"
+
+	# If we got the PID but the PID file has gone or the process
+	# is no longer running then stop waiting... CTDB is dead.
+	if [ -n "$_pid" ] ; then
+	    if [ ! -e "$pidfile" ] || ! kill -0 "$_pid" 2>/dev/null ; then
+		echo "CTDB exited during initialisation - check logs."
+		kill_ctdbd "$_pid"
+		drop_all_public_ips >/dev/null 2>&1
+		return 1
+	    fi
+
+	    if ctdb runstate first_recovery startup running >/dev/null 2>&1 ; then
+		return 0
+	    fi
+	fi
+
+	_count=$(($_count + 1))
+	sleep 1
+    done
+
+    echo "Timed out waiting for initialisation - check logs - killing CTDB"
+    kill_ctdbd "$_pid"
+    drop_all_public_ips >/dev/null 2>&1
+    return 1
+}
+
+stop()
+{
+    if ! _session=$(ctdbd_is_running) ; then
+	echo "CTDB is not running"
+	return 0
+    fi
+
+    ctdb shutdown
+
+    # Wait for remaining CTDB processes to exit...
+    _timeout=${CTDB_SHUTDOWN_TIMEOUT:-30}
+    _count=0
+    while [ $_count -lt $_timeout ] ; do
+	pkill -0 -s "$_session" 2>/dev/null || return 0
+
+	_count=$(($_count + 1))
+	sleep 1
+    done
+
+    echo "Timed out waiting for CTDB to shutdown.  Killing CTDB processes."
+    kill_ctdbd "$_session"
+    drop_all_public_ips >/dev/null 2>&1
+
+    sleep 1
+
+    if pkill -0 -s "$_session" ; then
+	# If SIGKILL didn't work then things are bad...
+	echo "Failed to kill all CTDB processes.  Giving up."
+	return 1
+    fi
+
+    return 0
+}
+
+############################################################
+
+# Allow notifications for start/stop.
+if [ -x "$CTDB_BASE/rc.ctdb" ] ; then
+    "$CTDB_BASE/rc.ctdb" "$action"
+fi
+
+case "$action" in
+    start) start ;;
+    stop)  stop  ;;
+    *)
+	echo "usage: $0 {start|stop}"
+	exit 1
+esac

@@ -1,0 +1,112 @@
+<!--#set var="TITLE" value="CTDB Testing" -->
+<!--#include virtual="header.html" -->
+
+<H2 align="center">Starting and testing CTDB</h2>
+
+The CTDB log is in /var/log/log.ctdb so look in this file if something
+did not start correctly.<p>
+
+You can ensure that ctdb is running on all nodes using
+<pre>
+  onnode all service ctdb start
+</pre>
+Verify that the CTDB daemon started properly. There should normally be at least 2 processes started for CTDB, one for the main daemon and one for the recovery daemon.
+<pre>
+  onnode all pidof ctdbd
+</pre>
+
+Once all CTDB nodes have started, verify that they are correctly
+talking to each other.<p>
+
+There should be one TCP connection from the private ip address on each
+node to TCP port 4379 on each of the other nodes in the cluster.
+<pre>
+  onnode all netstat -tn | grep 4379
+</pre>
+
+
+<h2>Automatically restarting CTDB</h2>
+
+If you wish to cope with software faults in ctdb, or want ctdb to
+automatically restart when an administration kills it, then you may
+wish to add a cron entry for root like this:
+
+<pre>
+ * * * * * /etc/init.d/ctdb cron > /dev/null 2>&1
+</pre>
+
+
+<h2>Testing CTDB</h2>
+
+Once your cluster is up and running, you may wish to know how to test that it is functioning correctly. The following tests may help with that
+
+<h3>The ctdb tool</h3>
+
+The ctdb package comes with a utility called ctdb that can be used to
+view the behaviour of the ctdb cluster.<p>
+
+If you run it with no options it will provide some terse usage information. The most commonly used commands are:
+<pre>
+ ctdb status
+ ctdb ip
+ ctdb ping
+</pre>
+
+<h3>ctdb status</h3>
+
+The status command provides basic information about the cluster and the status of the nodes. when you run it you will get some output like:
+
+<pre>
+<strong>Number of nodes:4
+vnn:0 10.1.1.1       OK (THIS NODE)
+vnn:1 10.1.1.2       OK
+vnn:2 10.1.1.3       OK
+vnn:3 10.1.1.4       OK</strong>
+Generation:1362079228
+Size:4
+hash:0 lmaster:0
+hash:1 lmaster:1
+hash:2 lmaster:2
+hash:3 lmaster:3
+<strong>Recovery mode:NORMAL (0)</strong>
+Recovery master:0
+</pre>
+
+The important parts are in bold. This tells us that all 4 nodes are in
+a healthy state.<p>
+
+It also tells us that recovery mode is normal, which means that the
+cluster has finished a recovery and is running in a normal fully
+operational state.<p>
+
+Recovery state will briefly change to "RECOVERY" when there ahs been a
+node failure or something is wrong with the cluster.<p>
+
+If the cluster remains in RECOVERY state for very long (many seconds)
+there might be something wrong with the configuration. See
+/var/log/log.ctdb.
+
+<h3>ctdb ip</h3>
+
+This command prints the current status of the public ip addresses and which physical node is currently serving that ip.
+
+<pre>
+Number of nodes:4
+192.168.1.1         0
+192.168.1.2         1
+192.168.2.1         2
+192.168.2.1         3
+</pre>
+
+<h3>ctdb ping</h3>
+this command tries to "ping" each of the CTDB daemons in the cluster.
+<pre>
+  ctdb ping -n all
+
+  response from 0 time=0.000050 sec  (13 clients)
+  response from 1 time=0.000154 sec  (27 clients)
+  response from 2 time=0.000114 sec  (17 clients)
+  response from 3 time=0.000115 sec  (59 clients)
+</pre>
+
+<!--#include virtual="footer.html" -->

@@ -1,0 +1,44 @@
+This directory should contain executable programs to handle CTDB event
+notifications.  The first and only argument passed to each program is
+the event, which is one of:
+
+  init, setup, startup, unhealthy, healthy
+
+To use notifications with this directory then you need to set:
+
+  CTDB_NOTIFY_SCRIPT=/etc/ctdb/notify.sh
+
+in your CTDB configuration file.
+
+An example script that sends SNMP traps for unhealthy/healthy might
+look like this:
+
+  #!/bin/sh
+
+  case "$1" in
+      unhealthy)
+          # Send an SNMP trap saying that the node is unhealthy:
+          snmptrap -m ALL -v 1 -c public 10.1.1.105 ctdb \
+              $(hostname) 0 0 $(date +"%s") ctdb.nodeHealth.0 i 1
+          ;;
+      healthy)
+          # Send an SNMP trap saying that the node is healthy again:
+          snmptrap -m ALL -v 1 -c public 10.1.1.105 ctdb \
+	      $(hostname) 0 0 $(date +"%s") ctdb.nodeHealth.0 i 0
+	  ;;
+  esac
+
+Alternatively, email could be sent:
+
+  #!/bin/sh
+
+  case "$1" in
+      unhealthy)
+          mail -s "$(hostname) is UNHEALTHY" foo@example.com </dev/null >/dev/null 2>&1
+          ;;
+      healthy)
+          mail -s "$(hostname) is HEALTHY" foo@example.com </dev/null >/dev/null 2>&1
+          ;;
+  esac
+
+When adding programs please note the exclusion patterns in notify.sh.

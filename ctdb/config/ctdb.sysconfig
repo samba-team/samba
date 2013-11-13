@@ -1,0 +1,336 @@
+# Options to ctdbd. This is read by /etc/init.d/ctdb
+
+# You must specify the location of a shared lock file across all the
+# nodes for split brain prevention to work.
+# This must be on shared storage.
+# CTDB can operate without a reclock file, but this means that there is no
+# protection against a split brain.
+# It is strongly suggested to NOT run ctdb without a reclock file.
+CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
+
+# when doing IP takeover you also may specify what network interface
+# to use by default for the public addresses. Otherwise you must
+# specify an interface on each line of the public addresses file
+# there is no default
+# CTDB_PUBLIC_INTERFACE=eth0
+
+# Should ctdb do IP takeover? If it should, then specify a file
+# containing the list of public IP addresses that ctdb will manage
+# Note that these IPs must be different from those in $NODES above
+# there is no default.
+# The syntax is one line per public address of the form :
+#   <ipaddress>/<netmask> <interface>
+# Example: 10.1.1.1/24 eth0
+#
+# CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
+
+# Should CTDB present the cluster using a single public ip address to clients
+# and multiplex clients across all CONNECTED nodes ?
+# This is based on LVS 
+# When this is enabled, the entire cluster will present one single ip address
+# which clients will connect to.
+# CTDB_LVS_PUBLIC_IP=10.1.1.1
+
+
+# should ctdb manage starting/stopping the Samba service for you?
+# default is to not manage Samba
+# CTDB_MANAGES_SAMBA=yes
+
+# If there are very many shares it may not be feasible to check that all
+# of them are available during each monitoring interval.
+# In that case this check can be disabled
+# CTDB_SAMBA_SKIP_SHARE_CHECK=yes
+# CTDB_NFS_SKIP_SHARE_CHECK=yes
+
+# specify which ports we should check that there is a daemon listening to
+# by default we use testparm and look in smb.conf to figure out.
+# CTDB_SAMBA_CHECK_PORTS="445"
+
+# should ctdb manage starting/stopping Winbind service?
+# if left comented out then it will be autodetected based on smb.conf
+# CTDB_MANAGES_WINBIND=yes
+
+# should ctdb manage starting/stopping the VSFTPD service
+# CTDB_MANAGES_VSFTPD=yes
+
+# should ctdb manage starting/stopping the ISCSI service
+# CTDB_MANAGES_ISCSI=yes
+
+# should ctdb manage starting/stopping the NFS service
+# CTDB_MANAGES_NFS=yes
+
+# should ctdb manage starting/stopping the Apache web server httpd?
+# CTDB_MANAGES_HTTPD
+
+# The init style (redhat/suse/debian...) is usually auto-detected.
+# The names of init scripts of services managed by CTDB are set
+# based on the detected init style. You can override the init style
+# auto-detection here to explicitly use a scheme. This might be
+# useful when you have installed a packages (for instance samba
+# packages) with a different init script layout.
+# There is no default.
+# CTDB_INIT_STYLE=redhat
+
+# The following are specific Samba init scripts / services that you
+# can override from auto-detection.
+# There are no defaults.
+# CTDB_SERVICE_SMB=smb
+# CTDB_SERVICE_NMB=nmb
+# CTDB_SERVICE_WINBIND=winbind
+
+# you may wish to raise the file descriptor limit for ctdb
+# use a ulimit command here. ctdb needs one file descriptor per
+# connected client (ie. one per connected client in Samba)
+#  ulimit -n 10000
+
+# the NODES file must be specified or ctdb won't start
+# it should contain a list of IPs that ctdb will use
+# it must be exactly the same on all cluster nodes
+# defaults to /etc/ctdb/nodes
+# CTDB_NODES=/etc/ctdb/nodes
+
+# a script to run when node health changes
+# CTDB_NOTIFY_SCRIPT=/etc/ctdb/notify.sh
+
+# a script to collect data when an eventscript has hung
+# CTDB_DEBUG_HUNG_SCRIPT=/etc/ctdb/debug-hung-script.sh
+
+# the directory to put the local ctdb database files in
+# defaults to /var/ctdb
+# CTDB_DBDIR=/var/ctdb
+
+# the directory to put the local persistent ctdb database files in
+# defaults to /var/ctdb/persistent
+# CTDB_DBDIR_PERSISTENT=/var/ctdb/persistent
+
+# the directory where service specific event scripts are stored
+# defaults to /etc/ctdb/events.d
+# CTDB_EVENT_SCRIPT_DIR=/etc/ctdb/events.d
+
+# the location of the local ctdb socket
+# defaults to /var/run/ctdb/ctdbd.socket
+# CTDB_SOCKET=/var/run/ctdb/ctdbd.socket
+
+# what transport to use. Only tcp is currently supported
+# defaults to tcp
+# CTDB_TRANSPORT="tcp"
+
+# These setting allow monitoring for low/out-out of memory conditions.
+#
+# If set, once available memory drops below CTDB_MONITOR_FREE_MEMORY_WARN
+# ctdb will start logging messages that memory is low, but will not
+# take any further action.
+#
+# If the amount of free memory drops below CTDB_MONITOR_FREE_MEMORY 
+# ctdb will fail all service over to a different node and finally shutdown.
+# Once this occurs, the administrator needs to find the reason for the OOM
+# situation, rectify it and restart ctdb with "service ctdb start"
+# The unit is MByte
+# CTDB_MONITOR_FREE_MEMORY_WARN=100
+# CTDB_MONITOR_FREE_MEMORY=10
+
+# Should the 60.nfs monitor event try to correct the number of nfsd
+# threads?  This works around a limitation in some NFS initscripts
+# where some threads can be stuck in host filesystem calls (perhaps
+# due to slow storage), a restart occurs, some threads don't exit, the
+# start only adds the missing number of threads, the stuck threads
+# exit, and the result is a lower than expected thread count.  Note
+# that if you must also set $RPCNFSDCOUNT (RedHat/Debian) or
+# $USE_KERNEL_NFSD_NUMBER (SUSE) in your NFS configuration so the
+# monitoring code knows how many threads there should be - if neither
+# of these are set then this option will be ignored.  The default is
+# to not do this check.
+# CTDB_MONITOR_NFS_THREAD_COUNT="yes"
+
+
+# The number of nfsd threads to dump stack traces for if some are
+# still alive after stopping NFS during a restart.  The default is to
+# dump no stack traces.
+# CTDB_NFS_DUMP_STUCK_THREADS=5
+
+# Host to use for rpcinfo checks.  Using "localhost" causes
+# /etc/services to be read serveral times by rpcinfo, so this allows
+# optimisation.
+CTDB_RPCINFO_LOCALHOST="127.0.0.1"
+
+# When set to yes, the CTDB node will start in DISABLED mode and not host
+# any public ip addresses. The administrator needs to explicitely enable
+# the node with "ctdb enable"
+# CTDB_START_AS_DISABLED="yes"
+
+# LMASTER and RECMASTER capabilities.
+# By default all nodes are capable of both being LMASTER for records and
+# also for taking the RECMASTER role and perform recovery.
+# These parameters can be used to disable these two roles on a node.
+# Note: If there are NO available nodes left in a cluster that can perform
+# the RECMASTER role, the cluster will not be able to recover from a failure
+# and will remain in RECOVERY mode until an RECMASTER capable node becomes
+# available. Same for LMASTER.
+# These parametersd are useful for scenarios where you have one "remote" node
+# in a cluster and you do not want the remote node to be fully participating
+# in the cluster and slow things down.
+# For that case, set both roles to "no" for the remote node on the remote site
+# but leave the roles default to "yes" on the primary nodes in the central
+# datacentre.
+# CTDB_CAPABILITY_RECMASTER=yes
+# CTDB_CAPABILITY_LMASTER=yes
+
+# NAT-GW configuration
+# Some services running on nthe CTDB node may need to originate traffic to
+# remote servers before the node is assigned any IP addresses,
+# This is problematic since before the node has public addresses the node might
+# not be able to route traffic to the public networks.
+# One solution is to have static public addresses assigned with routing
+# in addition to the public address interfaces, thus guaranteeing that
+# a node always can route traffic to the external network.
+# This is the most simple solution but it uses up a large number of 
+# additional ip addresses.
+#
+# A more complex solution is NAT-GW.
+# In this mode we only need one additional ip address for the cluster from
+# the exsternal public network.
+# One of the nodes in the cluster is elected to be hosting this ip address
+# so it can reach the external services. This node is also configured
+# to use NAT MASQUERADING for all traffic from the internal private network
+# to the external network. This node is the NAT-GW node.
+#
+# All other nodes are set up with a default rote with a metric of 10 to point
+# to the nat-gw node.
+# 
+# The effect of this is that only when a node does not have a public address
+# and thus no proper routes to the external world it will instead
+# route all packets through the nat-gw node.
+#
+# CTDB_NATGW_NODES is the list of nodes that belong to this natgw group.
+# You can have multiple natgw groups in one cluster but each node
+# can only belong to one single natgw group.
+#
+# CTDB_NATGW_PUBLIC_IP=10.0.0.227/24
+# CTDB_NATGW_PUBLIC_IFACE=eth0
+# CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
+# CTDB_NATGW_PRIVATE_NETWORK=10.1.1.0/24
+# CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
+#
+# Normally any node in the natgw group can act as the natgw master.
+# In some configurations you may have special nodes that is a part of the
+# cluster/natgw group, but where the node lacks connectivity to the 
+# public network.
+# For these cases, set this variable to make these nodes not able to
+# become natgw master.
+#
+# CTDB_NATGW_SLAVE_ONLY=yes
+
+
+# PER_IP_ROUTING configuration
+#
+# Some setups have multiple network interfaces connected to the
+# same network. By default all traffic for a network is routed
+# through only one interface, while the others are idle.
+#
+# On Linux it possible to use policy based routing to spread the load
+# across all interfaces. The is implemented by using a separate
+# routing table per public ip address.
+#
+# The configuration file configured by CTDB_PER_IP_ROUTING_CONF
+# contains the list of additional routes. The routes are bound to the
+# interface that is holding the public ip address.
+#
+# The format of the config file looks like this:
+# <public_ip_address> <network> [<gateway>]
+# and it's possible to have multiple routes per public ip address.
+#
+# If the special value "__auto_link_local__" is used, the config
+# file autogenerated. Each public ip address gets a special route
+# for its own subnet bound to it's current interface.
+# E.g. 10.1.2.3/24 will result in a config file line
+# 10.1.2.3 10.1.2.0/24
+#
+# The CTDB_PER_IP_ROUTING_RULE_PREF option needs to be configured.
+# The value will be passed as "pref" argument of "ip rule".
+# The value should be between 1 and 32765. So that the rule
+# comes after the rule for "local" routing table and before
+# the rule for the "main" routing table. This way the specific
+# routing table just overloads the "main" routing table,
+# this is useful because with the "__auto_link_local__" setup
+# the default route still comes from the "main" routing table.
+#
+# The routing table ids are automaticly allocated. On
+# Linux the routing table ids must be in the range of 0 to 255.
+# But some are reserved values, see /etc/iproute2/rt_tables.
+# You need to configure a range (CTDB_PER_IP_ROUTING_TABLE_ID_LOW
+# and CTDB_PER_IP_ROUTING_TABLE_ID_HIGH) from which the table ids can be taken.
+#
+# The default value for CTDB_PER_IP_ROUTING_CONF is "",
+# which means the feature is disabled by default.
+#
+# CTDB_PER_IP_ROUTING_CONF="/etc/ctdb/per_ip_routing.conf"
+# CTDB_PER_IP_ROUTING_CONF="__auto_link_local__"
+# CTDB_PER_IP_ROUTING_TABLE_ID_LOW=10
+# CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=250
+# CTDB_PER_IP_ROUTING_RULE_PREF=10000
+
+# Make offline interfaces not a reason for being UNHEALTHY.
+# The CTDB_PARTIALLY_ONLINE_INTERFACES option changes
+# the behavior of the 10.interface monitor event.
+# In some setups it's desired that interfaces without
+# an active link don't change the node to unhealthy.
+# ctdbd is just informed about the interface status
+# and "ctdb status" dislays the node as "PARTIALLYONLINE".
+#
+# CTDB_PARTIALLY_ONLINE_INTERFACES="yes"
+
+# where to log messages
+# the default is /var/log/log.ctdb
+# CTDB_LOGFILE=/var/log/log.ctdb
+
+# what debug level to run at. Higher means more verbose
+# the default is ERR
+CTDB_DEBUGLEVEL=ERR
+
+# whether to suppress core files.  Default is no.
+# CTDB_SUPPRESS_COREFILE=yes
+
+# Write debug messages to syslog instead of logfile?
+# The default is not to use syslog.
+# CTDB_SYSLOG=no
+
+# Should the 99.timeout monitor event script be run?
+# This event script just sleeps long enough to trigger the
+# event script timeout. Might be useful for debugging.
+# The default is "no".
+# CTDB_RUN_TIMEOUT_MONITOR=no
+
+# Should ctdbd start with corrupted/unhealthy persistent databases?
+# This parameter specifies the max error count for persistent health
+# checks before the "startup" event. The value must be a positive
+# interger value, "0" or "-1".
+# The default is "0", which means ctdbd will not start.
+# "-1" means wait forever.
+# CTDB_MAX_PERSISTENT_CHECK_ERRORS=0
+
+# All log entries up to level 9 are also collected into a in-memory ringbuffer
+# in addition to the log that is written to the log file.
+# This parameter controls how many entries we allow for this in memory log
+# CTDB_LOG_RINGBUF_SIZE=500000
+
+# Monitor filesystem useage.
+# when set, and the 40.fs_use eventscript is enabled, this variable
+# allows one to monitor the filesystem use and flag a node as unhealthy when
+# the filesystem becomes too full.
+# This is useful for example when /var grows too big.
+# Example: monitor both / and /var and make the node unhealthy when eitehr go
+# above 90%
+# CTDB_CHECK_FS_USE="/:90 /var:90"
+
+# Should CTDB automatically start and stop services when it is told to
+# newly manage or no longer manage them?
+CTDB_SERVICE_AUTOSTARTSTOP=yes
+
+# 
+#
+# set any default tuning options for ctdb
+# use CTDB_SET_XXXX=value where XXXX is the name of the tuning
+# variable
+# for example
+#    CTDB_SET_TRAVERSETIMEOUT=60
+# you can get a list of variables using "ctdb listvars"

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Fake ctdb client for onnode tests.
+
+cmd=$(echo "$*" | sed -r -e 's@[[:space:]]+@_@g')
+
+out="${ONNODE_TESTS_VAR_DIR}/ctdb.out"
+if [ -r "$out" ] ; then
+    cat "$out"
+
+    rc="${ONNODE_TESTS_VAR_DIR}/ctdb.rc"
+    if [ -r "$rc" ] ; then
+	exit $(cat "$rc")
+    fi
+
+    exit 0
+fi
+
+f="${ONNODE_TESTCASE_DIR}/ctdb.d/${cmd}.sh"
+if [ -x "$f" ] ; then
+    "$f"
+    exit $?
+fi
+
+f="${ONNODE_TESTCASE_DIR}/ctdb.d/${cmd}.out"
+if [ -r "$f" ] ; then
+    cat "$f"
+    exit 0
+fi
+
+echo "fake ctdb: no implementation for \"$*\""
+
+exit 1

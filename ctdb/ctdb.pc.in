@@ -1,0 +1,19 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+includedir=@includedir@
+libdir=@libdir@
+bindir=@bindir@
+sbindir=@sbindir@
+mandir=@mandir@
+localstatedir=@localstatedir@
+srcdir=@srcdir@
+etcdir=@sysconfdir@
+
+Name: ctdb
+Description: A clustered database to store temporary data
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}
+URL: http://ctdb.samba.org/
+

@@ -1,0 +1,102 @@
+<!--#set var="TITLE" value="CTDB and ftp" -->
+<!--#include virtual="header.html" -->
+
+<h1>Setting up clustered FTP</h1>
+
+<h2>Prereqs</h2>
+Configure CTDB as above and set it up to use public ipaddresses.<br>
+Verify that the CTDB cluster works.
+
+<h2>Configuration</h2>
+
+Setting up a vsftpd cluster is really easy.<br>
+Configure vsftpd on each node on the cluster.<br><br>
+Set up vsftpd to export directories from the shared cluster filesystem.
+
+<h2>/etc/sysconfig/ctdb</h2>
+
+Add the following line to the /etc/sysconfig/ctdb configuration file.
+<pre>
+  CTDB_MANAGES_VSFTPD=yes
+</pre>
+
+Disable vsftpd in chkconfig so that it does not start by default. Instead CTDB will start/stop vsftdp as required.
+<pre>
+  chkconfig vsftpd off
+</pre>
+
+<h2>PAM configuration</h2>
+PAM must be configured to allow authentication of CIFS users so that the ftp 
+daemon can authenticate the users logging in.
+
+Make sure the following line is present in /etc/pam.d/system-auth
+<pre>
+auth        sufficient    pam_winbind.so use_first_pass
+
+</pre>
+If this line is missing you must enable winbind authentication by running 
+<pre>
+authconfig  --enablewinbindauth --update
+authconfig  --enablewinbind --update
+</pre>
+
+<h2>Default shell</h2>
+To log in to the ftp server, the user must have a shell configured in smb.conf.
+
+Add the following line to the globals section of /etc/samba/smb.conf 
+<pre>
+	template shell = /bin/bash
+</pre>
+
+<h2>Home directory</h2>
+FTP users must have a home directory configured so they can log in.
+Configure samba to provide home directories for domain users. These home 
+directories should be stored on shared storage so they are available from
+all nodes in the cluster.<br>
+
+
+A simple way to create homedirectories are to add
+<pre>
+	template homedir = /&lt;shared storage&gt;/homedir/%D/%U
+</pre>
+to /etc/samba/smb.conf .<br>
+
+The homedirectory must exist or the user will not be able to log in with FTP.
+
+
+<h2>Events script</h2>
+
+The CTDB distribution already comes with an events script for vsftp in the file /etc/ctdb/events.d/40.vsftpd<br><br>
+There should not be any need to edit this file.
+
+
+<h2>Restart your cluster</h2>
+Next time your cluster restarts, CTDB will start managing the vsftp service.<br><br>
+If the cluster is already in production you may not want to restart the entire cluster since this would disrupt services.<br>
+
+Insted you can just disable/enable the nodes one by one. Once a node becomes enabled again it will start the vsftp service.<br><br>
+
+Follow the procedure below for each node, one node at a time :
+
+<h3>1 Disable the node</h3>
+Use the ctdb command to disable the node :
+<pre>
+  ctdb -n NODE disable
+</pre>
+
+<h3>2 Wait until the cluster has recovered</h3>
+
+Use the ctdb tool to monitor until the cluster has recovered, i.e. Recovery mode is NORMAL. This should happen within seconds of when you disabled the node.
+<pre>
+  ctdb status
+</pre>
+
+<h3>3 Enable the node again</h3>
+
+Re-enable the node again which will start the newly configured vsftp service.
+<pre>
+  ctdb -n NODE enable
+</pre>
+
+<!--#include virtual="footer.html" -->
+

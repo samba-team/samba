@@ -1,0 +1,75 @@
+#!/bin/bash
+
+prog="nmap"
+
+# Pretty that we're the shell and that this command could not be
+# found.
+if [ "$FAKE_NMAP_NOT_FOUND" = "yes" ] ; then
+    echo "sh: ${prog}: command not found" >&2
+    exit 127
+fi
+
+usage ()
+{
+    cat >&2 <<EOF
+Usage: $prog -n -oG - -PS 127.0.0.1 -p <port>[,<port> ...]
+
+A fake nmap stub that prints items depending on the variable
+FAKE_TCP_LISTEN and the ports specified.
+
+Note that all options apart from -p are ignored.
+
+EOF
+    exit 1
+}
+
+ports=""
+
+parse_options ()
+{
+    _temp=$(getopt -n "$prog" -a -o "np:" -l help -l PS: -l oG: -- "$@")
+
+    [ $? != 0 ] && usage
+
+    eval set -- "$_temp"
+
+    while true ; do
+	case "$1" in
+	    -n) shift ;;
+	    --oG|--PS) shift 2 ;;
+	    -p) ports="${ports}${ports:+ }${2//,/ }" ; shift 2 ;;
+	    --) shift ; break ;;
+	    -h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
+	esac
+    done
+
+    [ $# -gt 0 ] && usage
+
+    [ -n "$ports" ] || usage
+}
+
+# For printing out...
+args="$*"
+
+parse_options "$@"
+
+port_states=""
+
+for p in $ports ; do
+    pn=$(getent services "$p" | sed -e 's@[[:space:]].*@@')
+    for i in $FAKE_TCP_LISTEN ; do
+	lp="${i##*:}"
+	if [ "$p" = "$lp" ] ; then
+	    port_states="${port_states}${port_states:+, }${p}/open/tcp//${pn}///"
+	    continue 2
+	fi
+    done
+    port_states="${port_states}${port_states:+, }${p}/closed/tcp//${pn}///"
+done
+
+cat <<EOF
+# Nmap 5.21 scan initiated $(date) as: nmap $args
+Host: 127.0.0.1 ()	Status: Up
+Host: 127.0.0.1 ()	Ports: $port_states
+# Nmap done at $(date) -- 1 IP address (1 host up) scanned in 0.04 seconds
+EOF

@@ -1,0 +1,61 @@
+# Hey Emacs, this is a -*- shell-script -*- !!!  :-)
+
+# Use a "service" command in $PATH if one exists.
+service ()
+{
+    if _t=$(which "service" 2>/dev/null) ; then
+	"$_t" "$@"
+    else
+	_nice=""
+	_service "$@"
+    fi
+}
+
+nice_service ()
+{
+    if _t=$(which "service" 2>/dev/null) ; then
+	nice "$_t" "$@"
+    else
+	_nice="nice"
+	_service "$@"
+    fi
+}
+
+# Always succeeds
+set_proc () { : ; }
+
+get_proc ()
+{
+    case "$1" in
+	net/bonding/*)
+	    cat "$FAKE_PROC_NET_BONDING/${1##*/}"
+	    ;;
+	sys/net/ipv4/conf/all/arp_filter)
+	    echo 1
+	    ;;
+	fs/nfsd/threads)
+	    echo "$FAKE_NFSD_THREAD_PIDS" | wc -w
+	    ;;
+	*/stack)
+	    echo "[<ffffffff87654321>] fake_stack_trace_for_pid_${1}+0x0/0xff"
+	    ;;
+	meminfo)
+	    echo "$FAKE_PROC_MEMINFO"
+	    ;;
+	*)
+	    echo "get_proc: \"$1\" not implemented"
+	    exit 1
+    esac
+}
+
+# Always succeeds
+iptables () { : ; }
+
+# Do not actually background - we want to see the output
+background_with_logging ()
+{
+    "$@" 2>&1 </dev/null | sed -e 's@^@\&@'
+}
+
+CTDB_INIT_STYLE="redhat"
+PATH="${EVENTSCRIPTS_PATH}:$PATH"

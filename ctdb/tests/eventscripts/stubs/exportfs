@@ -1,0 +1,13 @@
+#!/bin/sh
+
+opts="10.0.0.0/16(rw,async,insecure,no_root_squash,no_subtree_check)"
+
+for i in $FAKE_SHARES ; do
+    # Directories longer than 15 characters are printed on their own
+    # line.
+    if [ ${#i} -ge 15 ] ; then
+	printf '%s\n\t\t%s\n' "$i" "$opts"
+    else
+	printf '%s\t%s\n' "$i" "$opts"
+    fi
+done

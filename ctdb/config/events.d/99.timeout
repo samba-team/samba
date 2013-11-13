@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# Event script to just sleep longer than the timeout
+# in the monitor action. The purpose is to trigger
+# the event timeout mechanism.
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig ctdb
+
+[ "$CTDB_RUN_TIMEOUT_MONITOR" = "yes" ] || exit 0
+
+case "$1" in
+    monitor)
+	TIMEOUT=$(ctdb getvar EventScriptTimeout | awk '{print $3}')
+	echo "sleeping for $((TIMEOUT * 2)) seconds..."
+	sleep $((TIMEOUT * 2))
+	;;
+
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0
+

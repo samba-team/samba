@@ -1,0 +1,47 @@
+#!/bin/sh
+# script to add entries to the routing table after we have performed a
+# take ip event
+# (when we do a "releaseip" event and remove an ip address from an interface
+#  the kernel might automatically remove associated entries from
+#  the routing table. This is where we add them back)
+#
+# Routes to add are defined in /etc/ctdb/static-routes.
+# Syntax is :
+# IFACE NET/MASK GATEWAY
+#
+# Example
+# bond1 10.3.3.0/24 10.0.0.1
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig
+
+[ -f $CTDB_BASE/static-routes ] || {
+    exit 0
+}
+
+case "$1" in
+    ipreallocated)
+        while read iface dest gw; do
+            ip route add "$dest" via "$gw" dev "$iface" >/dev/null 2>&1
+        done <"${CTDB_BASE}/static-routes"
+        ;;
+
+    updateip)
+	oiface=$2
+	niface=$3
+	while read iface dest gw; do
+	    if [ "$niface" = "$iface" -o "$oiface" = "$iface" ] ; then
+		ip route add "$dest" via "$gw" dev "$iface" >/dev/null 2>&1
+	    fi
+	done <"${CTDB_BASE}/static-routes"
+	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
+esac
+
+exit 0

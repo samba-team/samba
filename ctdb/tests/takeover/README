@@ -1,0 +1,5 @@
+Unit tests for the CTDB IP allocation algorithm(s).
+
+Test case filenames look like <algorithm>.NNN.sh, where <algorithm>
+indicates the IP allocation algorithm to use.  These use the
+ctdb_takeover_test test program.

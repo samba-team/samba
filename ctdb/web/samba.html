@@ -1,0 +1,97 @@
+<!--#set var="TITLE" value="CTDB and Samba" -->
+<!--#include virtual="header.html" -->
+
+<h1>Setting up clustered samba</h1>
+
+It is assumed tou have already installed the ctdb version of samba and also installed, configured and tested CTDB.
+
+<h2>Create a user account</h2>
+
+First you need to initialise the Samba password database so that you have some user that can authenticate to the samba service.<br>
+Do this by running:
+<pre>
+  smbpasswd -a root
+</pre>
+
+Samba with clustering must use the tdbsam or ldap SAM passdb backends (it must not use the default smbpasswd backend), or must be configured to be a member of a domain.<br>
+The rest of the configuration of Samba is exactly as it is done on a normal system.<br><br>
+See the docs on http://samba.org/ for details.
+
+<h2>Critical smb.conf parameters</h2>
+
+A clustered Samba install must set some specific configuration parameters
+<pre>
+  clustering = yes
+  idmap backend = tdb2
+</pre>
+
+<h2>Using smbcontrol</h2>
+
+You can check for connectivity to the smbd daemons on each node using smbcontrol
+<pre>
+  smbcontrol smbd ping
+</pre>
+
+<h2>Using Samba4 smbtorture</h2>
+
+The Samba4 version of smbtorture has several tests that can be used to
+benchmark a CIFS cluster. You can download Samba 4 from Samba website.
+
+The particular tests that are helpful for cluster benchmarking are the RAW-BENCH-OPEN, RAW-BENCH-LOCK and BENCH-NBENCH tests.<br>
+These tests take a unclist that allows you to spread the workload out over more than one node. For example:
+
+<pre>
+  smbtorture //localhost/data -Uuser%password  RAW-BENCH-LOCK --unclist=unclist.txt --num-progs=32 -t60
+</pre>
+
+The file unclist.txt should contain a list of server names in your cluster prefixed by //. For example
+<pre>
+ //192.168.1.1
+ //192.168.1.2
+ //192.168.2.1
+ //192.168.2.2
+</pre>
+
+For NBENCH testing you need a client.txt file.<br>
+A suitable file can be found in the dbench distribution at http://samba.org/ftp/tridge/dbench/
+
+
+<h3>CTDB_MANAGES_SAMBA</h3>
+This is a parameter in /etc/sysconfig/ctdb<br><br>
+When this parameter is set to "yes" CTDB will start/stop/restart the local samba daemon as the cluster configuration changes.<br><br>
+When this parameter is set you should also make sure that samba is NOT started by default by the linux system when it boots, e.g.
+<pre>
+  chkconfig smb off
+</pre>
+on a Redhat system and
+<pre>
+  chkconfig smb off
+  chkconfig nmb off
+</pre>
+on a SuSE system.
+
+Example:
+<pre>
+  CTDB_MANAGES_SAMBA="yes"
+</pre>
+
+It is strongly recommended that you set this parameter to "yes" if you intend to use clustered samba.
+
+<h3>CTDB_MANAGES_WINBIND</h3>
+This is a parameter in /etc/sysconfig/ctdb<br><br>
+When this parameter is set to "yes" CTDB will start/stop/restart the local winbind daemon as the cluster configuration changes.<br><br>
+When this parameter is set you should also make sure that winbind is NOT started by default by the linux system when it boots:
+<pre>
+  chkconfig winbind off
+</pre>
+
+Example:
+<pre>
+  CTDB_MANAGES_WINBIND="yes"
+</pre>
+
+It is strongly recommended that you set this parameter to "yes" if you
+intend to use clustered samba in DOMAIN or ADS security mode.
+
+<!--#include virtual="footer.html" -->
+

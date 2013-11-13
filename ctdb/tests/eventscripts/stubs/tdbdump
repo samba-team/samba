@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ "$FAKE_TDB_IS_OK" = "yes" ] ; then
+    echo "TDB good"
+    exit 0
+else
+    echo "TDB busted"
+    exit 1
+fi

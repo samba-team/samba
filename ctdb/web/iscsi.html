@@ -1,0 +1,113 @@
+<!--#set var="TITLE" value="CTDB and iSCSI" -->
+<!--#include virtual="header.html" -->
+
+<h1>Setting up HA iSCSI with CTDB</h1>
+
+<p>
+You can use CTDB to create a HA iSCSI Target.
+</p>
+
+<p>
+Since the iSCSI Target is not
+clusterized nor integrated with CTDB in the same sense Samba is, this
+implementation will only create a HA solution for iSCSI where each public address is assinged its own iscsi target name and the LUNs that are created are only accessible through one specific target (i.e. one public address at a time).
+
+</p>
+
+<p>
+! This feature ONLY works when public addresses are used. It is not supported, nor does it work, if you use the LVS feature to present the entire cluster as one single ip address. !
+
+</p>
+
+<h2>Prereqs</h2>
+Configure CTDB as above and set it up to use public ipaddresses.<br>
+Verify that the CTDB cluster works.
+
+<h2>Install the iSCSI target software on all nodes</h2>
+On RHEL5 this package is called "scsi-target-utils" and it needs to be installed
+on all nodes in the cluster. The easiest way to install this package is by using :
+
+<pre>
+onnode all yum install scsi-target-utils -y
+</pre>
+
+Make sure that the service is not started automatically when booting, we want CTDB to start/stop this service :
+<pre>
+onnode all chkconfig tgtd off
+</pre>
+
+<h2>/etc/sysconfig/iscsi</h2>
+
+Create this file and add the following three lines to it :
+
+<pre>
+   CTDB_START_ISCSI_SCRIPTS=/gpfs/iscsi/
+</pre>
+
+<p>
+CTDB_START_ISCSI_SCRIPTS=<directory on shared storage>
+This is a directory on shared storage where the scripts to start and configure the iscsi service are held. There is one script for each public address named <public address>.sh .
+</p>
+
+
+<h2>/etc/sysconfig/ctdb</h2>
+
+Add the following line to /etc/sysconfig/ctdb :
+
+<pre>
+   CTDB_MANAGES_ISCSI=yes
+</pre>
+
+<p>
+CTDB_MANAGES_ISCSI=yes just tells CTDB event script for iSCSI that CTDB should start and stop the iSCSI target service as required.
+</p>
+
+
+<h2>Example: create a LUN that will be hosted on public ip address 10.1.1.1</h2>
+<p>
+Before you cna export a LUN you must create it as a file in the shared filesystem. When doing so, make sure you create it as a real file and not a sparse file!<br />
+While it is much quicker to create a sparse file if you want a file with filesize 100Gb, SCSI has no concept of "disk full" so if you run out of backing space for the sparse file, the scsi initiators will be "surprised" and "unhappy".
+</p>
+<pre>
+dd if=/dev/zero of=/gpfs/iscsi/10.1.1.1.lun.1 bs=1024 count=102400
+</pre>
+<p>
+to create a 100MByte file to export as an iSCSI LUN.
+</p>
+
+<h2>Example: 10.1.1.1.sh</h2>
+<p>
+This example shellscript is used to configure the iscsi target that is hosted onthe public address 10.1.1.1
+</p>
+<pre>
+#!/bin/sh
+# script to set up the iscsi target and luns hosted by public address
+# 10.1.1.1
+
+
+#create a target
+tgtadm --lld iscsi --op new --mode target --tid 1 -T iqn.2007-11.com.ctdb:iscsi.target.10.1.1.1
+
+#attach a lun
+tgtadm --lld iscsi --op new --mode logicalunit --tid 1 --lun 1 -b /gpfs/iscsi/10.1.1.1.lun.1
+
+# no security, allow everyone to access this lun
+tgtadm --lld iscsi --op bind --mode target --tid 1 -I ALL
+</pre>
+
+
+<p>
+iqn.2007-11.com.ctdb:iscsi.target.10.1.1.1 in the example above is the iscsi name that is assigned to the target. Dont use this name, pick your own name!
+</p>
+
+<p>
+See the documentation for the tgtadm command for more information on how you want to set up your environment.
+</p>
+
+<h2>Perform a ctdb recovery to start the iscsi service</h2>
+<pre>
+ctdb recover
+</pre>
+
+<!--#include virtual="footer.html" -->
+

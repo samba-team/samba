@@ -1,0 +1,42 @@
+<!--#set var="TITLE" value="Building CTDB" -->
+<!--#include virtual="header.html" -->
+
+<H2 align="center">Building CTDB and Samba</h2>
+
+<h2>CTDB</h2>
+To build a copy of CTDB code from a git tree you should do this:
+<pre>
+   cd ctdb
+   ./autogen.sh
+   ./configure
+   make
+   make install
+</pre>
+
+To build a copy of CTDB code from a tarball you should do this:
+<pre>
+   tar xf ctdb-x.y.tar.gz
+   cd ctdb-x.y
+   ./configure
+   make
+   make install
+</pre>
+You need to install ctdb on all nodes of your cluster.
+
+
+<h2>Samba3</h2>
+
+To build a copy of Samba3 with clustering and ctdb support you should do this:
+<pre>
+    cd samba_3_0_ctdb/source
+    ./autogen.sh
+    ./configure --with-ctdb=/usr/src/ctdb --with-cluster-support --enable-pie=no
+    make proto
+    make
+</pre>
+
+Once compiled, you should install Samba on all cluster nodes.<br><br>
+
+The /usr/src/ctdb path should be replaced with the path to the ctdb sources that you downloaded above.
+
+<!--#include virtual="footer.html" -->

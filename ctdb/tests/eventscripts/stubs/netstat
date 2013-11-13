@@ -1,0 +1,109 @@
+#!/bin/bash
+
+prog="netstat"
+
+# Pretty that we're the shell and that this command could not be
+# found.
+if [ "$FAKE_NETSTAT_NOT_FOUND" = "yes" ] ; then
+    echo "sh: ${prog}: command not found" >&2
+    exit 127
+fi
+
+usage ()
+{
+    cat >&2 <<EOF
+Usage: $prog [ -t | --unix ] [ -n ] [ -a ] [ -l ]
+
+A fake netstat stub that prints items depending on the variables
+FAKE_NETSTAT_TCP_ESTABLISHED, FAKE_TCP_LISTEN,
+FAKE_NETSTAT_UNIX_LISTEN, depending on command-line options.
+
+Note that -n is ignored.
+
+EOF
+    exit 1
+}
+
+# Defaults.
+tcp=false
+unix=false
+all=false
+listen=false
+
+parse_options ()
+{
+    # $POSIXLY_CORRECT means that the command passed to onnode can
+    # take options and getopt won't reorder things to make them
+    # options to this script.
+    _temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "tnalh" -l unix -l help -- "$@")
+
+    [ $? != 0 ] && usage
+
+    eval set -- "$_temp"
+
+    while true ; do
+	case "$1" in
+	    -n) shift ;;
+	    -a) all=true ; shift ;;
+	    -t) tcp=true ; shift ;;
+	    -l) listen=true ; shift ;;
+	    --unix) unix=true ; shift ;;
+	    --) shift ; break ;;
+	    -h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
+	esac
+    done
+
+    [ $# -gt 0 ] && usage
+
+    # If neither -t or --unix specified then print all.
+    $tcp || $unix || { tcp=true ; unix=true ; }
+}
+
+parse_options "$@"
+
+if $tcp ; then
+    if $listen ; then
+	echo "Active Internet connections (servers only)"
+    elif $all ; then
+	echo "Active Internet connections (servers and established)"
+    else
+	echo "Active Internet connections (w/o servers)"
+    fi
+
+    echo "Proto Recv-Q Send-Q Local Address           Foreign Address         State"
+
+    tcp_fmt="tcp        0      0 %-23s %-23s %s\n"
+    for i in $FAKE_NETSTAT_TCP_ESTABLISHED ; do
+	src="${i%|*}"
+	dst="${i#*|}"
+	printf "$tcp_fmt" $src $dst "ESTABLISHED"
+    done
+    while read src dst ; do
+	printf "$tcp_fmt" $src $dst "ESTABLISHED"
+    done <"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+
+    if $all || $listen ; then
+	for i in $FAKE_TCP_LISTEN ; do
+	    printf "$tcp_fmt" $i "0.0.0.0:*" "LISTEN"
+	done
+    fi
+fi
+
+if $unix ; then
+    if $listen ; then
+	echo "Active UNIX domain sockets (servers only)"
+    elif $all ; then
+	echo "Active UNIX domain sockets (servers and established)"
+    else
+	echo "Active UNIX domain sockets (w/o servers)"
+    fi
+    
+    echo "Proto RefCnt Flags       Type       State         I-Node   Path"
+
+    unix_fmt="unix  2      [ ACC ]     STREAM     LISTENING     %-8d %s\n"
+    if $all || $listen ; then
+	for i in $FAKE_NETSTAT_UNIX_LISTEN ; do
+	    printf "$unix_fmt" 12345 "$i"
+	done
+    fi
+fi
