@@ -7,7 +7,7 @@
     <para>This parameter limits the maximum number of
     open files that one <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> file
-    serving process may have open for a client at any one time. The
+    serving process may have open for a client at any one time.
     This parameter can be set very high (16404) as Samba uses
     only one bit per unopened file. Setting this parameter lower than
     16404 will cause Samba to complain and set this value back to
