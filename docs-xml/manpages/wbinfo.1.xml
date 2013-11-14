@@ -40,6 +40,7 @@
 		<arg choice="opt">-i user</arg>
 		<arg choice="opt">-I ip</arg>
 		<arg choice="opt">-K user%password</arg>
+		<arg choice="opt">--krb5ccname cctype</arg>
 		<arg choice="opt">--lanman</arg>
 		<arg choice="opt">-m</arg>
 		<arg choice="opt">-n name</arg>
@@ -242,6 +243,13 @@
 		<varlistentry>
 		<term>-K|--krb5auth <replaceable>username%password</replaceable></term>
 		<listitem><para>Attempt to authenticate a user via Kerberos.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--krb5ccname <replaceable>KRB5CCNAME</replaceable></term>
+		<listitem><para>Allows to request a sepcific kerberos credential
+				cache type used for authentication.
 		</para></listitem>
 		</varlistentry>
 
