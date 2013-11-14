@@ -57,6 +57,8 @@
 		<arg choice="opt">--pam-logon user%password</arg>
 		<arg choice="opt">-r user</arg>
 		<arg choice="opt">-R|--lookup-rids</arg>
+		<arg choice="opt">--remove-gid-mapping gid,sid</arg>
+		<arg choice="opt">--remove-uid-mapping uid,sid</arg>
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">--separator</arg>
 		<arg choice="opt">--set-auth-user user%password</arg>
@@ -379,6 +381,18 @@
 		<term>-R|--lookup-rids <replaceable>rid1, rid2, rid3...</replaceable></term>
 		<listitem><para>Converts RIDs to names. Uses a comma separated
 				list of rids.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--remove-gid-mapping <replaceable>GID,SID</replaceable></term>
+		<listitem><para>Removes an existing GID to SID mapping from the database.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--remove-uid-mapping <replaceable>UID,SID</replaceable></term>
+		<listitem><para>Removes an existing UID to SID mapping from the database.
 		</para></listitem>
 		</varlistentry>
 
