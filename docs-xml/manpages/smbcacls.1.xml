@@ -21,13 +21,13 @@
 		<command>smbcacls</command>
 		<arg choice="req">//server/share</arg>
 		<arg choice="req">/filename</arg>
-		<arg choice="opt">-D|--delete acls</arg>
-		<arg choice="opt">-M|--modify acls</arg>
-		<arg choice="opt">-a|--add acls</arg>
-		<arg choice="opt">-S|--set acls</arg>
+		<arg choice="opt">-D|--delete acl</arg>
+		<arg choice="opt">-M|--modify acl</arg>
+		<arg choice="opt">-a|--add acl</arg>
+		<arg choice="opt">-S|--set acl</arg>
 		<arg choice="opt">-C|--chown name</arg>
 		<arg choice="opt">-G|--chgrp name</arg>
-		<arg choice="opt">-I allow|romove|copy</arg>
+		<arg choice="opt">-I allow|remove|copy</arg>
 		<arg choice="opt">--numeric</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-U username</arg>
@@ -45,7 +45,9 @@
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>The <command>smbcacls</command> program manipulates NT Access Control
-	Lists (ACLs) on SMB file shares. </para>
+	Lists (ACLs) on SMB file shares. An ACL is comprised zero or more Access
+	Control Entries (ACEs), which define access restrictions for a specific
+	user or group.</para>
 </refsect1>
 
 
@@ -58,37 +60,37 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-a|--add acls</term>
-		<listitem><para>Add the ACLs specified to the ACL list.  Existing 
-		access control entries are unchanged. </para></listitem>
+		<term>-a|--add acl</term>
+		<listitem><para>Add the entries specified to the ACL.  Existing
+		access control entries are unchanged.</para></listitem>
 		</varlistentry>
 		
 		
 		
 		<varlistentry>
-		<term>-M|--modify acls</term>
-		<listitem><para>Modify the mask value (permissions) for the ACLs 
+		<term>-M|--modify acl</term>
+		<listitem><para>Modify the mask value (permissions) for the ACEs
 		specified on the command line.  An error will be printed for each 
-		ACL specified that was not already present in the ACL list
+		ACE specified that was not already present in the object's ACL.
 		</para></listitem>
 		</varlistentry>
 		
 		
 		
 		<varlistentry>
-		<term>-D|--delete acls</term>
-		<listitem><para>Delete any ACLs specified on the command line.  
-		An error will be printed for each ACL specified that was not 
-		already present in the ACL list. </para></listitem>
+		<term>-D|--delete acl</term>
+		<listitem><para>Delete any ACEs specified on the command line.
+		An error will be printed for each ACE specified that was not
+		already present in the object's ACL. </para></listitem>
 		</varlistentry>
 		
 		
 		
 		<varlistentry>
-		<term>-S|--set acls</term>
-		<listitem><para>This command sets the ACLs on the file with 
-		only the ones specified on the command line.  All other ACLs are 
-		erased. Note that the ACL specified must contain at least a revision,
+		<term>-S|--set acl</term>
+		<listitem><para>This command sets the ACL on the object with
+		only what is specified on the command line.  Any existing ACL
+		is erased. Note that the ACL specified must contain at least a revision,
 		type, owner and group for the call to succeed. </para></listitem>
 		</varlistentry>
 		
@@ -130,7 +132,6 @@
 		</para></listitem>
 
 		</varlistentry>
-
 
 
 		<varlistentry>
@@ -184,7 +185,7 @@
 <refsect1>
 	<title>ACL FORMAT</title>
 
-	<para>The format of an ACL is one or more ACL entries separated by 
+	<para>The format of an ACL is one or more entries separated by
 	either commas or newlines.  An ACL entry is one of the following: </para>
 
 <para><programlisting> 
@@ -205,15 +206,15 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 	otherwise the name specified is resolved using the server on which 
 	the file or directory resides. </para>
 
-	<para>ACLs specify permissions granted to the SID.  This SID again 
-	can be specified in S-1-x-y-z format or as a name in which case 
-	it is resolved against the server on which the file or directory 
-	resides.  The type, flags and mask values determine the type of 
-	access granted to the SID. </para>
+	<para>ACEs are specified with an "ACL:" prefix, and define permissions
+	granted to an SID.  The SID again can be specified in S-1-x-y-z format
+	or as a name in which case it is resolved against the server on which
+	the file or directory resides.  The type, flags and mask values
+	determine the type of access granted to the SID. </para>
 
 	<para>The type can be either ALLOWED or	DENIED to allow/deny access 
-	to the SID. The flags values are generally zero for file ACLs and 
-	either 9 or 2 for directory ACLs.  Some common flags are: </para>
+	to the SID. The flags values are generally zero for file ACEs and
+	either 9 or 2 for directory ACEs.  Some common flags are: </para>
 
 	<itemizedlist> 
 		<listitem><para><constant>#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</constant></para></listitem>
@@ -222,7 +223,7 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 		<listitem><para><constant>#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</constant></para></listitem>
  	</itemizedlist>
   
-	<para>At present flags can only be specified as decimal or 
+	<para>At present, flags can only be specified as decimal or
 	hexadecimal values.</para>
  
 	<para>The mask is a value which expresses the access right 
@@ -270,7 +271,7 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 3 of the Samba suite.</para>
+	<para>This man page is correct for version 4 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
