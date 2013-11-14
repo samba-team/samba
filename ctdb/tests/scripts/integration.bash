@@ -514,7 +514,7 @@ daemons_stop ()
     echo "Sleeping for a while..."
     sleep_for 1
 
-    local pat="ctdbd --socket=.* --nlist .* --nopublicipcheck"
+    local pat="ctdbd --socket=${TEST_VAR_DIR}/.* --nlist .* --nopublicipcheck"
     if pgrep -f "$pat" >/dev/null ; then
 	echo "Killing remaining daemons..."
 	pkill -f "$pat"
