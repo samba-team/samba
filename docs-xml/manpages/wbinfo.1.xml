@@ -62,6 +62,8 @@
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">--separator</arg>
 		<arg choice="opt">--set-auth-user user%password</arg>
+		<arg choice="opt">--set-gid-mapping gid,sid</arg>
+		<arg choice="opt">--set-uid-mapping uid,sid</arg>
 		<arg choice="opt">-S sid</arg>
 		<arg choice="opt">--sid-aliases sid</arg>
 		<arg choice="opt">--sid-to-fullname sid</arg>
@@ -419,6 +421,18 @@
 		winbindd to operate in a Windows 2000 domain with Restrict
 		Anonymous turned on (a.k.a. Permissions compatible with
 		Windows 2000 servers only).
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--set-gid-mapping <replaceable>GID,SID</replaceable></term>
+		<listitem><para>Create a GID to SID mapping in the database.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--set-uid-mapping <replaceable>UID,SID</replaceable></term>
+		<listitem><para>Create a UID to SID mapping in the database.
 		</para></listitem>
 		</varlistentry>
 
