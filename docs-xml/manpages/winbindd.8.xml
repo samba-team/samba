@@ -27,6 +27,7 @@
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-n|--no-caching</arg>
+		<arg choice="opt">--no-process-group</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -191,6 +192,12 @@ hosts:		files wins
 		might also temporarily hang winbindd if the DC doesn't respond.
 		This does not disable the samlogon cache, which is required for
 		group membership tracking in trusted environments.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--no-process-group</term>
+		<listitem><para>Do not create a new process group for winbindd.
 		</para></listitem>
 		</varlistentry>
 
