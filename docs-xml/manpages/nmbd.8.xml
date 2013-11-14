@@ -22,7 +22,7 @@
 		<command>nmbd</command>
 		<arg choice="opt">-D|--daemon</arg>
 		<arg choice="opt">-F|--foreground</arg>
-		<arg choice="opt">-S</arg>
+		<arg choice="opt">-S|--log-stdout</arg>
 		<arg choice="opt">-i|--interactive</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
@@ -105,7 +105,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-S</term>
+		<term>-S|--log-stdout</term>
 		<listitem><para>If specified, this parameter causes
 		<command>nmbd</command> to log to standard output rather
 		than a file.</para></listitem>
