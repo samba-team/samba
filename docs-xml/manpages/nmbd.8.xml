@@ -26,7 +26,7 @@
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-H &lt;lmhosts file&gt;</arg>
+		<arg choice="opt">-H|--hosts &lt;lmhosts file&gt;</arg>
 		<arg choice="opt">-l &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
@@ -125,7 +125,7 @@
 		&stdarg.help;
 		
 		<varlistentry>
-		<term>-H &lt;filename&gt;</term>
+		<term>-H|--hosts &lt;filename&gt;</term>
 		<listitem><para>NetBIOS lmhosts file.  The lmhosts 
 		file is a list of NetBIOS names to IP addresses that 
 		is loaded by the nmbd server and used via the name 
