@@ -886,7 +886,8 @@ static void centry_put_time(struct cache_entry *centry, time_t t)
 /*
   start a centry for output. When finished, call centry_end()
 */
-struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status)
+static struct cache_entry *centry_start(struct winbindd_domain *domain,
+					NTSTATUS status)
 {
 	struct cache_entry *centry;
 
