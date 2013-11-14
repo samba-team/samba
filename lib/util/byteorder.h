@@ -35,15 +35,6 @@ Here is a description of this file that I emailed to the samba list once:
 
 sure.
 
-The distinction between 386 and other architectures is only there as
-an optimisation. You can take it out completely and it will make no
-difference. The routines (macros) in byteorder.h are totally byteorder
-independent. The 386 optimsation just takes advantage of the fact that
-the x86 processors don't care about alignment, so we don't have to
-align ints on int boundaries etc. If there are other processors out
-there that aren't alignment sensitive then you could also define
-CAREFUL_ALIGNMENT=0 on those processors as well.
-
 Ok, now to the macros themselves. I'll take a simple example, say we
 want to extract a 2 byte integer from a SMB packet and put it into a
 type called uint16_t that is in the local machines byte order, and you
@@ -130,20 +121,6 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define HAVE_ASM_BYTEORDER 0
 #endif
 
-
-
-#undef CAREFUL_ALIGNMENT
-
-/* we know that the 386 can handle misalignment and has the "right" 
-   byteorder */
-#if defined(__i386__)
-#define CAREFUL_ALIGNMENT 0
-#endif
-
-#ifndef CAREFUL_ALIGNMENT
-#define CAREFUL_ALIGNMENT 1
-#endif
-
 #define CVAL(buf,pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
 #define CVAL_NC(buf,pos) (((uint8_t *)(buf))[pos]) /* Non-const version of CVAL */
 #define PVAL(buf,pos) (CVAL(buf,pos))
@@ -161,7 +138,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define SSVALS(buf,pos,val) SSVAL((buf),(pos),((int16_t)(val)))
 #define SIVALS(buf,pos,val) SIVAL((buf),(pos),((int32_t)(val)))
 
-#elif CAREFUL_ALIGNMENT
+#else /* not HAVE_ASM_BYTEORDER */
 
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 #define IVAL(buf,pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
@@ -174,32 +151,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16_t)(val)))
 #define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32_t)(val)))
 
-#else /* not CAREFUL_ALIGNMENT */
-
-/* this handles things for architectures like the 386 that can handle
-   alignment errors */
-/*
-   WARNING: This section is dependent on the length of int16_t and int32_t
-   being correct 
-*/
-
-/* get single value from an SMB buffer */
-#define SVAL(buf,pos) (*(const uint16_t *)((const char *)(buf) + (pos)))
-#define SVAL_NC(buf,pos) (*(uint16_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
-#define IVAL(buf,pos) (*(const uint32_t *)((const char *)(buf) + (pos)))
-#define IVAL_NC(buf,pos) (*(uint32_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
-#define SVALS(buf,pos) (*(const int16_t *)((const char *)(buf) + (pos)))
-#define SVALS_NC(buf,pos) (*(int16_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
-#define IVALS(buf,pos) (*(const int32_t *)((const char *)(buf) + (pos)))
-#define IVALS_NC(buf,pos) (*(int32_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
-
-/* store single value in an SMB buffer */
-#define SSVAL(buf,pos,val) SVAL_NC(buf,pos)=((uint16_t)(val))
-#define SIVAL(buf,pos,val) IVAL_NC(buf,pos)=((uint32_t)(val))
-#define SSVALS(buf,pos,val) SVALS_NC(buf,pos)=((int16_t)(val))
-#define SIVALS(buf,pos,val) IVALS_NC(buf,pos)=((int32_t)(val))
-
-#endif /* not CAREFUL_ALIGNMENT */
+#endif /* not HAVE_ASM_BYTEORDER */
 
 /* 64 bit macros */
 #define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
