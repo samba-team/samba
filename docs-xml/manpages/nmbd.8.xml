@@ -23,7 +23,7 @@
 		<arg choice="opt">-D|--daemon</arg>
 		<arg choice="opt">-F|--foreground</arg>
 		<arg choice="opt">-S</arg>
-		<arg choice="opt">-i</arg>
+		<arg choice="opt">-i|--interactive</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-H|--hosts &lt;lmhosts file&gt;</arg>
@@ -112,7 +112,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-i</term>
+		<term>-i|--interactive</term>
 		<listitem><para>If this parameter is specified it causes the
 		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
