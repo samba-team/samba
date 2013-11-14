@@ -30,6 +30,7 @@
 		<arg choice="opt">-l &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
+		<arg choice="opt">--no-process-group</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -155,6 +156,12 @@
 		that <command>nmbd</command> responds to name queries on. Don't
 		use this option unless you are an expert, in which case you
 		won't need help!</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--no-process-group</term>
+		<listitem><para>Do not create a new process group for nmbd.
+		</para></listitem>
 		</varlistentry>
 
 	</variablelist>
