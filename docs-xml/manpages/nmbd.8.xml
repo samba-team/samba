@@ -23,10 +23,7 @@
 		<arg choice="opt">-D</arg>
 		<arg choice="opt">-F</arg>
 		<arg choice="opt">-S</arg>
-		<arg choice="opt">-a</arg>
 		<arg choice="opt">-i</arg>
-		<arg choice="opt">-o</arg>
-		<arg choice="opt">-h</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-H &lt;lmhosts file&gt;</arg>
