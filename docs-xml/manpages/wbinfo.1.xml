@@ -54,6 +54,7 @@
 		<arg choice="opt">--own-domain</arg>
 		<arg choice="opt">-p</arg>
 		<arg choice="opt">-P|--ping-dc</arg>
+		<arg choice="opt">--pam-logon user%password</arg>
 		<arg choice="opt">-r user</arg>
 		<arg choice="opt">-R|--lookup-rids</arg>
 		<arg choice="opt">-s sid</arg>
@@ -338,6 +339,13 @@
 		<varlistentry>
 		<term>--own-domain</term>
 		<listitem><para>List own domain.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--pam-logon <replaceable>username%password</replaceable></term>
+		<listitem><para>Attempt to authenticate a user in the same way
+				pam_winbind would do.
 		</para></listitem>
 		</varlistentry>
 
