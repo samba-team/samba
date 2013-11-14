@@ -27,6 +27,7 @@
 		<arg choice="opt">--ccache-save</arg>
 		<arg choice="opt">--change-user-password</arg>
 		<arg choice="opt">-D domain</arg>
+		<arg choice="opt">--dc-info domain</arg>
 		<arg choice="opt">--domain domain</arg>
 		<arg choice="opt">--dsgetdcname domain</arg>
 		<arg choice="opt">-g</arg>
@@ -138,6 +139,12 @@
 		<varlistentry>
 		<term>--change-user-password <replaceable>username</replaceable></term>
 		<listitem><para>Change the password of a user. The old and new password will be prompted.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--dc-info <replaceable>domain</replaceable></term>
+		<listitem><para>Displays information about the current domain controller for a domain.
 		</para></listitem>
 		</varlistentry>
 
