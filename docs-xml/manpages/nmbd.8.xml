@@ -28,7 +28,7 @@
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-H|--hosts &lt;lmhosts file&gt;</arg>
 		<arg choice="opt">-l &lt;log directory&gt;</arg>
-		<arg choice="opt">-p &lt;port number&gt;</arg>
+		<arg choice="opt">-p|--port &lt;port number&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
 		<arg choice="opt">--no-process-group</arg>
 	</cmdsynopsis>
@@ -150,7 +150,7 @@
 		&popt.common.samba;
 		
 		<varlistentry>
-		<term>-p &lt;UDP port number&gt;</term>
+		<term>-p|--port &lt;UDP port number&gt;</term>
 		<listitem><para>UDP port number is a positive integer value.
 		This option changes the default UDP port number (normally 137)
 		that <command>nmbd</command> responds to name queries on. Don't
