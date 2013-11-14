@@ -706,6 +706,7 @@ static int net_idmap_autorid_delete_range(struct net_context *c, int argc,
 	}
 
 	domsid = argv[0];
+	range_index = 0;
 
 	if (argc == 2) {
 		ok = parse_uint32(argv[1], &range_index);
