@@ -40,6 +40,7 @@ tasks = {
                ("configure", "./configure ${PREFIX} --enable-socket-wrapper ", "text/plain"),
                ("make", "make all", "text/plain"),
                ("install", "make install", "text/plain"),
+               ("test", "make autotest", "text/plain"),
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                ("clean", "make clean", "text/plain") ],
 
