@@ -244,7 +244,7 @@ struct tevent_req *msg_read_send(TALLOC_CTX *mem_ctx,
 
 	num_msgs = talloc_array_length(channel->msgs);
 	if (num_msgs != 0) {
-		im = tevent_create_immediate(channel->ev);
+		im = tevent_create_immediate(channel);
 		if (tevent_req_nomem(im, req)) {
 			return tevent_req_post(req, ev);
 		}
