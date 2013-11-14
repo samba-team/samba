@@ -20,7 +20,7 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>nmbd</command>
-		<arg choice="opt">-D</arg>
+		<arg choice="opt">-D|--daemon</arg>
 		<arg choice="opt">-F</arg>
 		<arg choice="opt">-S</arg>
 		<arg choice="opt">-i</arg>
@@ -78,7 +78,7 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-D</term>
+		<term>-D|--daemon</term>
 		<listitem><para>If specified, this parameter causes 
 		<command>nmbd</command> to operate as a daemon. That is, 
 		it detaches itself and runs in the background, fielding 
