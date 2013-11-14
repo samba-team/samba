@@ -21,7 +21,7 @@
 	<cmdsynopsis>
 		<command>nmbd</command>
 		<arg choice="opt">-D|--daemon</arg>
-		<arg choice="opt">-F</arg>
+		<arg choice="opt">-F|--foreground</arg>
 		<arg choice="opt">-S</arg>
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-V</arg>
@@ -90,7 +90,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-F</term>
+		<term>-F|--foreground</term>
 		<listitem><para>If specified, this parameter causes
 		the main <command>nmbd</command> process to not daemonize,
 		i.e. double-fork and disassociate with the terminal.
