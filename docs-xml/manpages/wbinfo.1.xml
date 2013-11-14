@@ -68,6 +68,7 @@
 		<arg choice="opt">-S sid</arg>
 		<arg choice="opt">--sid-aliases sid</arg>
 		<arg choice="opt">--sid-to-fullname sid</arg>
+		<arg choice="opt">--sids-to-unix-ids sidlist</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">--uid-info uid</arg>
@@ -463,6 +464,14 @@
 		<listitem><para>Converts a SID to a full username
 				(DOMAIN\username).
 		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--sids-to-unix-ids <replaceable>sid1,sid2,sid3...</replaceable></term>
+		<listitem><para>Resolve SIDs to Unix IDs.
+		SIDs must be specified as ASCII strings
+		in the traditional Microsoft format. For example,
+		S-1-5-21-1455342024-3071081365-2475485837-500. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
