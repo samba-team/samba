@@ -389,6 +389,9 @@ install_pmda:
 install_tests: all
 	tests/INSTALL --destdir=$(DESTDIR) --datarootdir=$(prefix)/share --libdir=$(libdir) --bindir=$(bindir) --etcdir=$(etcdir)
 
+autotest: all
+	tests/run_tests.sh -e -S -C
+
 test: all
 	tests/run_tests.sh -V tests/var
 
