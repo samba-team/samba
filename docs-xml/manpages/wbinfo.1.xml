@@ -42,6 +42,9 @@
 		<arg choice="opt">-K user%password</arg>
 		<arg choice="opt">--krb5ccname cctype</arg>
 		<arg choice="opt">--lanman</arg>
+		<arg choice="opt">--logoff</arg>
+		<arg choice="opt">--logoff-uid uid</arg>
+		<arg choice="opt">--logoff-user username</arg>
 		<arg choice="opt">-m</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-N netbios-name</arg>
@@ -255,6 +258,24 @@
 		<varlistentry>
 		<term>--lanman</term>
 		<listitem><para>Use lanman cryptography for user authentication.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--logoff</term>
+		<listitem><para>Logoff a user.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--logoff-uid <replaceable>UID</replaceable></term>
+		<listitem><para>Define user uid used during logoff request.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--logoff-user <replaceable>USERNAME</replaceable></term>
+		<listitem><para>Define username used during logoff request.
 		</para></listitem>
 		</varlistentry>
 
