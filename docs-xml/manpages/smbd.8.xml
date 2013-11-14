@@ -19,17 +19,18 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbd</command>
-		<arg choice="opt">-D</arg>
-		<arg choice="opt">-F</arg>
-		<arg choice="opt">-S</arg>
-		<arg choice="opt">-i</arg>
+		<arg choice="opt">-D|--daemon</arg>
+		<arg choice="opt">-F|--foreground</arg>
+		<arg choice="opt">-S|--log-stdout</arg>
+		<arg choice="opt">-i|--interactive</arg>
 		<arg choice="opt">-V</arg>
-		<arg choice="opt">-b</arg>
+		<arg choice="opt">-b|--build-options</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-l &lt;log directory&gt;</arg>
+		<arg choice="opt">-l|--log-basename &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number(s)&gt;</arg>
 		<arg choice="opt">-P &lt;profiling level&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
+		<arg choice="opt">--no-process-group</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -79,7 +80,7 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-D</term>
+		<term>-D|--daemon</term>
 		<listitem><para>If specified, this parameter causes 
 		the server to operate as a daemon. That is, it detaches 
 		itself and runs in the background, fielding requests 
@@ -92,7 +93,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-F</term>
+		<term>-F|--foreground</term>
 		<listitem><para>If specified, this parameter causes
 		the main <command>smbd</command> process to not daemonize,
 		i.e. double-fork and disassociate with the terminal.
@@ -107,14 +108,14 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-S</term>
+		<term>-S|--log-stdout</term>
 		<listitem><para>If specified, this parameter causes
 		<command>smbd</command> to log to standard output rather
 		than a file.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-i</term>
+		<term>-i|--interactive</term>
 		<listitem><para>If this parameter is specified it causes the
 		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
@@ -130,7 +131,13 @@
 		&stdarg.help;
 
 		<varlistentry>
-		<term>-b</term>
+		<term>--no-process-group</term>
+		<listitem><para>Do not create a new process group for smbd.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-b|--build-options</term>
 		<listitem><para>Prints information about how 
 		Samba was built.</para></listitem>
 		</varlistentry>
