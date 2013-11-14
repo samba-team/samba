@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter      2000
    Copyright (C) Jeremy Allison  2000
    Copyright (C) Jelmer Vernooij 2003
+   Copyright (C) Noel Power <noel.power@suse.com> 2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +34,9 @@
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "util_sd.h"
 
+static char DIRSEP_CHAR = '\\';
+
+static int inheritance = 0;
 static int test_args;
 static int sddl;
 static int query_sec_info = -1;
@@ -44,6 +48,17 @@ static const char *domain_sid = NULL;
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP, REQUEST_INHERIT};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
+
+struct cacl_callback_state {
+	struct user_auth_info *auth_info;
+	struct cli_state *cli;
+	struct security_descriptor *aclsd;
+	struct security_acl *acl_to_add;
+	enum acl_mode mode;
+	char *the_acl;
+	bool acl_no_propagate;
+	bool numeric;
+};
 
 static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 					  struct dom_sid *sid)
@@ -130,12 +145,14 @@ static struct dom_sid *get_domain_sid(struct cli_state *cli)
 }
 
 /* add an ACE to a list of ACEs in a struct security_acl */
-static bool add_ace(struct security_acl **the_acl, struct security_ace *ace)
+static bool add_ace_with_ctx(TALLOC_CTX *ctx, struct security_acl **the_acl,
+			     struct security_ace *ace)
+
 {
 	struct security_acl *new_ace;
 	struct security_ace *aces;
 	if (! *the_acl) {
-		return (((*the_acl) = make_sec_acl(talloc_tos(), 3, 1, ace))
+		return (((*the_acl) = make_sec_acl(ctx, 3, 1, ace))
 			!= NULL);
 	}
 
@@ -145,10 +162,16 @@ static bool add_ace(struct security_acl **the_acl, struct security_ace *ace)
 	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(struct
 	security_ace));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(struct security_ace));
-	new_ace = make_sec_acl(talloc_tos(),(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
+	new_ace = make_sec_acl(ctx, (*the_acl)->revision,
+			       1+(*the_acl)->num_aces, aces);
 	SAFE_FREE(aces);
 	(*the_acl) = new_ace;
 	return True;
+}
+
+static bool add_ace(struct security_acl **the_acl, struct security_ace *ace)
+{
+	return add_ace_with_ctx(talloc_tos(), the_acl, ace);
 }
 
 /* parse a ascii version of a security descriptor */
@@ -259,7 +282,9 @@ static uint16_t get_fileinfo(struct cli_state *cli, const char *filename)
 /*****************************************************
 get sec desc for filename
 *******************************************************/
-static struct security_descriptor *get_secdesc(struct cli_state *cli, const char *filename)
+static struct security_descriptor *get_secdesc_with_ctx(TALLOC_CTX *ctx,
+							struct cli_state *cli,
+							const char *filename)
 {
 	uint16_t fnum = (uint16_t)-1;
 	struct security_descriptor *sd;
@@ -293,7 +318,7 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
 	}
 
 	status = cli_query_security_descriptor(cli, fnum, sec_info,
-					       talloc_tos(), &sd);
+					       ctx, &sd);
 
 	cli_close(cli, fnum);
 
@@ -305,6 +330,11 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
         return sd;
 }
 
+static struct security_descriptor *get_secdesc(struct cli_state *cli,
+					       const char *filename)
+{
+	return get_secdesc_with_ctx(talloc_tos(), cli, filename);
+}
 /*****************************************************
 set sec desc for filename
 *******************************************************/
@@ -516,22 +546,17 @@ static void sort_acl(struct security_acl *the_acl)
 }
 
 /***************************************************** 
-set the ACLs on a file given an ascii description
+set the ACLs on a file given a security descriptor
 *******************************************************/
 
-static int cacl_set(struct cli_state *cli, const char *filename,
-		    char *the_acl, enum acl_mode mode, bool numeric)
+static int cacl_set_from_sd(struct cli_state *cli, const char *filename,
+			    struct security_descriptor *sd, enum acl_mode mode,
+			    bool numeric)
 {
-	struct security_descriptor *sd, *old;
+	struct security_descriptor *old = NULL;
 	uint32_t i, j;
 	size_t sd_size;
 	int result = EXIT_OK;
-
-	if (sddl) {
-		sd = sddl_decode(talloc_tos(), the_acl, get_domain_sid(cli));
-	} else {
-		sd = sec_desc_parse(talloc_tos(), cli, the_acl);
-	}
 
 	if (!sd) return EXIT_PARSE_ERROR;
 	if (test_args) return EXIT_OK;
@@ -640,6 +665,30 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 	}
 
 	return result;
+}
+
+/*****************************************************
+set the ACLs on a file given an ascii description
+*******************************************************/
+
+static int cacl_set(struct cli_state *cli, const char *filename,
+		    char *the_acl, enum acl_mode mode, bool numeric)
+{
+	struct security_descriptor *sd = NULL;
+
+	if (sddl) {
+		sd = sddl_decode(talloc_tos(), the_acl, get_global_sam_sid());
+	} else {
+		sd = sec_desc_parse(talloc_tos(), cli, the_acl);
+	}
+
+	if (sd == NULL) {
+		return EXIT_PARSE_ERROR;
+	}
+	if (test_args) {
+		return EXIT_OK;
+	}
+	return cacl_set_from_sd(cli, filename, sd, mode, numeric);
 }
 
 /*****************************************************
@@ -787,6 +836,647 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 	return c;
 }
 
+/*
+ * Process resulting combination of mask & fname ensuring
+ * terminated with wildcard
+ */
+static char *build_dirname(TALLOC_CTX *ctx,
+	const char *mask, char *dir, char *fname)
+{
+	char *mask2 = NULL;
+	char *p = NULL;
+
+	mask2 = talloc_strdup(ctx, mask);
+	if (!mask2) {
+		return NULL;
+	}
+	p = strrchr_m(mask2, DIRSEP_CHAR);
+	if (p) {
+		p[1] = 0;
+	} else {
+		mask2[0] = '\0';
+	}
+	mask2 = talloc_asprintf_append(mask2,
+				"%s\\*",
+				fname);
+	return mask2;
+}
+
+/*
+ * Returns the a copy of the ACL flags in ace modified according
+ * to some inheritance rules.
+ *   a) SEC_ACE_FLAG_INHERITED_ACE is propagated to children
+ *   b) SEC_ACE_FLAG_INHERIT_ONLY is set on container children for OI (only)
+ *   c) SEC_ACE_FLAG_OBJECT_INHERIT & SEC_ACE_FLAG_CONTAINER_INHERIT are
+ *      stripped from flags to be propagated to non-container children
+ *   d) SEC_ACE_FLAG_OBJECT_INHERIT & SEC_ACE_FLAG_CONTAINER_INHERIT are
+ *      stripped from flags to be propagated if the NP flag
+ *      SEC_ACE_FLAG_NO_PROPAGATE_INHERIT is present
+ */
+
+static uint8_t get_flags_to_propagate(bool is_container,
+				struct security_ace *ace)
+{
+	uint8_t newflags = ace->flags;
+	/* OBJECT inheritance */
+	bool acl_objinherit = (ace->flags &
+		SEC_ACE_FLAG_OBJECT_INHERIT) == SEC_ACE_FLAG_OBJECT_INHERIT;
+	/* CONTAINER inheritance */
+	bool acl_cntrinherit = (ace->flags &
+		SEC_ACE_FLAG_CONTAINER_INHERIT) ==
+			SEC_ACE_FLAG_CONTAINER_INHERIT;
+	/* PROHIBIT inheritance */
+	bool prohibit_inheritance = ((ace->flags &
+		SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) ==
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT);
+
+	/* Assume we are not propagating the ACE */
+
+	newflags &= ~SEC_ACE_FLAG_INHERITED_ACE;
+	/* all children need to have the SEC_ACE_FLAG_INHERITED_ACE set */
+	if (acl_cntrinherit || acl_objinherit) {
+		/*
+		 * object inherit ( alone ) on a container needs
+		 * SEC_ACE_FLAG_INHERIT_ONLY
+		 */
+		if (is_container) {
+			if (acl_objinherit && !acl_cntrinherit) {
+				newflags |= SEC_ACE_FLAG_INHERIT_ONLY;
+			}
+			/*
+			 * this is tricky, the only time we would not
+			 * propagate the ace for a container is if
+			 * prohibit_inheritance is set and object inheritance
+			 * alone is set
+			 */
+			if ((prohibit_inheritance
+			    && acl_objinherit
+			    && !acl_cntrinherit) == false) {
+				newflags |= SEC_ACE_FLAG_INHERITED_ACE;
+			}
+		} else {
+			/*
+			 * don't apply object/container inheritance flags to
+			 * non dirs
+			 */
+			newflags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT
+					| SEC_ACE_FLAG_CONTAINER_INHERIT
+					| SEC_ACE_FLAG_INHERIT_ONLY);
+			/*
+			 * only apply ace to file if object inherit
+			 */
+			if (acl_objinherit) {
+				newflags |= SEC_ACE_FLAG_INHERITED_ACE;
+			}
+		}
+
+		/* if NP is specified strip NP and all OI/CI INHERIT flags */
+		if (prohibit_inheritance) {
+			newflags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT
+					| SEC_ACE_FLAG_CONTAINER_INHERIT
+					| SEC_ACE_FLAG_INHERIT_ONLY
+					| SEC_ACE_FLAG_NO_PROPAGATE_INHERIT);
+		}
+	}
+	return newflags;
+}
+
+/*
+ * This function builds a new acl for 'caclfile', first it removes any
+ * existing inheritable ace(s) from the current acl of caclfile, secondly it
+ * applies any inheritable acls of the parent of caclfile ( inheritable acls of
+ * caclfile's parent are passed via acl_to_add member of cbstate )
+ *
+ */
+static NTSTATUS propagate_inherited_aces(char *caclfile,
+			struct cacl_callback_state *cbstate)
+{
+	TALLOC_CTX *aclctx = NULL;
+	NTSTATUS status;
+	int result;
+	int fileattr;
+	struct security_descriptor *old = NULL;
+	bool is_container = false;
+	struct security_acl *acl_to_add = cbstate->acl_to_add;
+	struct security_acl *acl_to_remove = NULL;
+	uint32_t i, j;
+
+	aclctx = talloc_new(NULL);
+	if (aclctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	old = get_secdesc_with_ctx(aclctx, cbstate->cli, caclfile);
+
+	if (!old) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+
+	/* inhibit propagation? */
+	if ((old->type & SEC_DESC_DACL_PROTECTED) ==
+		SEC_DESC_DACL_PROTECTED){
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	fileattr = get_fileinfo(cbstate->cli, caclfile);
+	is_container = (fileattr & FILE_ATTRIBUTE_DIRECTORY);
+
+	/* find acl(s) that are inherited */
+	for (j = 0; old->dacl && j < old->dacl->num_aces; j++) {
+
+		if (old->dacl->aces[j].flags & SEC_ACE_FLAG_INHERITED_ACE) {
+			if (!add_ace_with_ctx(aclctx, &acl_to_remove,
+					      &old->dacl->aces[j])) {
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
+		}
+	}
+
+	/* remove any acl(s) that are inherited */
+	if (acl_to_remove) {
+		for (i = 0; i < acl_to_remove->num_aces; i++) {
+			struct security_ace ace = acl_to_remove->aces[i];
+			for (j = 0; old->dacl && j < old->dacl->num_aces; j++) {
+
+				if (security_ace_equal(&ace,
+						  &old->dacl->aces[j])) {
+					uint32_t k;
+					for (k = j; k < old->dacl->num_aces-1;
+						k++) {
+						old->dacl->aces[k] =
+							old->dacl->aces[k+1];
+					}
+					old->dacl->num_aces--;
+					break;
+				}
+			}
+		}
+	}
+	/* propagate any inheritable ace to be added */
+	if (acl_to_add) {
+		for (i = 0; i < acl_to_add->num_aces; i++) {
+			struct security_ace ace = acl_to_add->aces[i];
+			bool is_objectinherit = (ace.flags &
+				SEC_ACE_FLAG_OBJECT_INHERIT) ==
+					SEC_ACE_FLAG_OBJECT_INHERIT;
+			bool is_inherited;
+			/* don't propagate flags to a file unless OI */
+			if (!is_objectinherit && !is_container) {
+				continue;
+			}
+			/*
+			 * adjust flags according to inheritance
+			 * rules
+			 */
+			ace.flags = get_flags_to_propagate(is_container, &ace);
+			is_inherited = (ace.flags &
+				SEC_ACE_FLAG_INHERITED_ACE) ==
+					SEC_ACE_FLAG_INHERITED_ACE;
+			/* don't propagate non inherited flags */
+			if (!is_inherited) {
+				continue;
+			}
+			if (!add_ace_with_ctx(aclctx, &old->dacl, &ace)) {
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
+		}
+	}
+
+	result = cacl_set_from_sd(cbstate->cli, caclfile,
+				  old,
+				  SMB_ACL_SET, cbstate->numeric);
+	if (result != EXIT_OK) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+
+	status = NT_STATUS_OK;
+out:
+	TALLOC_FREE(aclctx);
+	return status;
+}
+
+/*
+ * Returns true if 'ace' contains SEC_ACE_FLAG_OBJECT_INHERIT or
+ * SEC_ACE_FLAG_CONTAINER_INHERIT
+ */
+static bool is_inheritable_ace(struct security_ace *ace)
+{
+	uint8_t flags = ace->flags;
+	if (flags & (SEC_ACE_FLAG_OBJECT_INHERIT
+			| SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+		return true;
+	}
+	return false;
+}
+
+/* This method does some basic sanity checking with respect to automatic
+ * inheritance. e.g. it checks if it is possible to do a set, it detects illegal
+ * attempts to set inherited permissions directly. Additionally this method
+ * does some basic initialisation for instance it parses the ACL passed on the
+ * command line.
+ */
+static NTSTATUS prepare_inheritance_propagation(TALLOC_CTX *ctx, char *filename,
+			struct cacl_callback_state *cbstate)
+{
+	NTSTATUS result;
+	char *the_acl = cbstate->the_acl;
+	struct cli_state *cli = cbstate->cli;
+	enum acl_mode mode = cbstate->mode;
+	struct security_descriptor *sd = NULL;
+	struct security_descriptor *old = NULL;
+	uint32_t j;
+	bool propagate = false;
+
+	old = get_secdesc_with_ctx(ctx, cli, filename);
+	if (old == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* parse acl passed on the command line */
+	if (sddl) {
+		cbstate->aclsd = sddl_decode(ctx, the_acl,
+					     get_global_sam_sid());
+	} else {
+		cbstate->aclsd = sec_desc_parse(ctx, cli, the_acl);
+	}
+
+	if (!cbstate->aclsd) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+
+	sd = cbstate->aclsd;
+
+	/* set operation if inheritance is enabled doesn't make sense */
+	if (mode == SMB_ACL_SET && ((old->type & SEC_DESC_DACL_PROTECTED) !=
+		SEC_DESC_DACL_PROTECTED)){
+		d_printf("Inheritance enabled at %s, can't apply set operation\n",filename);
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+
+	}
+
+	/*
+	 * search command line acl for any illegal SEC_ACE_FLAG_INHERITED_ACE
+	 * flags that are set
+	 */
+	for (j = 0; sd->dacl && j < sd->dacl->num_aces; j++) {
+		struct security_ace *ace = &sd->dacl->aces[j];
+		if (ace->flags & SEC_ACE_FLAG_INHERITED_ACE) {
+			d_printf("Illegal paramater %s\n", the_acl);
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+		if (!propagate) {
+			if (is_inheritable_ace(ace)) {
+				propagate = true;
+			}
+		}
+	}
+
+	result = NT_STATUS_OK;
+out:
+	cbstate->acl_no_propagate = !propagate;
+	return result;
+}
+
+/*
+ * This method builds inheritable ace(s) from filename (which should be
+ * a container) that need propagating to children in order to provide
+ * automatic inheritance. Those inheritable ace(s) are stored in
+ * acl_to_add member of cbstate for later processing
+ * (see propagate_inherited_aces)
+ */
+static NTSTATUS get_inheritable_aces(TALLOC_CTX *ctx, char *filename,
+			struct cacl_callback_state *cbstate)
+{
+	NTSTATUS result;
+	struct cli_state *cli = NULL;
+	struct security_descriptor *sd = NULL;
+	struct security_acl *acl_to_add = NULL;
+	uint32_t j;
+
+	cli = cbstate->cli;
+	sd = get_secdesc_with_ctx(ctx, cli, filename);
+
+	if (sd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Check if any inheritance related flags are used, if not then
+	 * nothing to do. At the same time populate acls for inheritance
+	 * related ace(s) that need to be added to or deleted from children as
+	 * a result of inheritance propagation.
+	 */
+
+	for (j = 0; sd->dacl && j < sd->dacl->num_aces; j++) {
+		struct security_ace *ace = &sd->dacl->aces[j];
+		if (is_inheritable_ace(ace)) {
+			bool added = add_ace_with_ctx(ctx, &acl_to_add, ace);
+			if (!added) {
+				result = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
+		}
+	}
+	cbstate->acl_to_add = acl_to_add;
+	result = NT_STATUS_OK;
+out:
+	return result;
+}
+
+/*
+ * Callback handler to handle child elements processed by cli_list,  we attempt
+ * to propagate inheritable ace(s) to each child via the function
+ * propagate_inherited_aces. Children that are themselves directories are passed
+ * to cli_list again ( to decend the directory structure )
+ */
+static NTSTATUS cacl_set_cb(const char *mntpoint, struct file_info *f,
+			   const char *mask, void *state)
+{
+	struct cacl_callback_state *cbstate =
+		(struct cacl_callback_state *)state;
+	struct cli_state *cli = NULL;
+	struct user_auth_info *auth_info = NULL;
+
+	TALLOC_CTX *dirctx = NULL;
+	NTSTATUS status;
+	struct cli_state *targetcli = NULL;
+
+	char *dir = NULL;
+	char *dir_end = NULL;
+	char *mask2 = NULL;
+	char *targetpath = NULL;
+	char *caclfile = NULL;
+
+	dirctx = talloc_new(NULL);
+	if (!dirctx) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	cli = cbstate->cli;
+	auth_info = cbstate->auth_info;
+
+	/* Work out the directory. */
+	dir = talloc_strdup(dirctx, mask);
+	if (!dir) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	dir_end = strrchr(dir, DIRSEP_CHAR);
+	if (dir_end != NULL) {
+		*dir_end = '\0';
+	}
+
+	if (!f->name || !f->name[0]) {
+		d_printf("Empty dir name returned. Possible server misconfiguration.\n");
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+
+	if (f->attr & FILE_ATTRIBUTE_DIRECTORY) {
+		struct cacl_callback_state dir_cbstate;
+		uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY
+			| FILE_ATTRIBUTE_SYSTEM
+			| FILE_ATTRIBUTE_HIDDEN;
+		dir_end = NULL;
+
+		/* ignore special '.' & '..' */
+		if (!f->name || strequal(f->name, ".") ||
+			strequal(f->name, "..")) {
+			status = NT_STATUS_OK;
+			goto out;
+		}
+
+		mask2 = build_dirname(dirctx, mask, dir, f->name);
+		if (mask2 == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		/* check for dfs */
+		status = cli_resolve_path(dirctx, "", auth_info, cli,
+			mask2, &targetcli, &targetpath);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		/*
+		 * prepare path to caclfile, remove any existing wildcard
+		 * chars and convert path separators.
+		 */
+
+		caclfile = talloc_strdup(dirctx, targetpath);
+		if (!caclfile) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+		dir_end = strrchr(caclfile, '*');
+		if (dir_end != NULL) {
+			*dir_end = '\0';
+		}
+
+		string_replace(caclfile, '/', '\\');
+		/*
+		 * make directory specific copy of cbstate here
+		 * (for this directory level) to be available as
+		 * the parent cbstate for the children of this directory.
+		 * Note: cbstate is overwritten for the current file being
+		 *       processed.
+		 */
+		dir_cbstate = *cbstate;
+		dir_cbstate.cli = targetcli;
+
+		/*
+		 * propagate any inherited ace from our parent
+		 */
+		status = propagate_inherited_aces(caclfile, &dir_cbstate);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		/*
+		 * get inheritable ace(s) for this dir/container
+		 * that will be propagated to its children
+		 */
+		status = get_inheritable_aces(dirctx, caclfile,
+						      &dir_cbstate);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		/*
+		 * ensure cacl_set_cb gets called for children
+		 * of this directory (targetpath)
+		 */
+		status = cli_list(targetcli, targetpath,
+			attribute, cacl_set_cb,
+			(void *)&dir_cbstate);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+	} else {
+		/*
+		 * build full path to caclfile and replace '/' with '\' so
+		 * other utility functions can deal with it
+		 */
+
+		targetpath = talloc_asprintf(dirctx, "%s/%s", dir, f->name);
+		if (!targetpath) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+		string_replace(targetpath, '/', '\\');
+
+		/* attempt to propagate any inherited ace to file caclfile */
+		status = propagate_inherited_aces(targetpath, cbstate);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+	status = NT_STATUS_OK;
+out:
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("error %s: processing %s\n",
+			nt_errstr(status),
+			targetpath);
+	}
+	TALLOC_FREE(dirctx);
+	return status;
+}
+
+
+/*
+ * Wrapper around cl_list to decend the directory tree pointed to by 'filename',
+ * helper callback function 'cacl_set_cb' handles the child elements processed
+ * by cli_list.
+ */
+static int inheritance_cacl_set(char *filename,
+			struct cacl_callback_state *cbstate)
+{
+	int result;
+	NTSTATUS ntstatus;
+	int fileattr;
+	char *mask = NULL;
+	struct cli_state *cli = cbstate->cli;
+	TALLOC_CTX *ctx = NULL;
+	bool isdirectory = false;
+	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM
+				| FILE_ATTRIBUTE_HIDDEN;
+	ctx = talloc_init("inherit_set");
+	if (ctx == NULL) {
+		d_printf("out of memory\n");
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	/* ensure we have a filename that starts with '\' */
+	if (!filename || *filename != DIRSEP_CHAR) {
+		/* illegal or no filename */
+		result = EXIT_FAILED;
+		d_printf("illegal or missing name '%s'\n", filename);
+		goto out;
+	}
+
+
+	fileattr = get_fileinfo(cli, filename);
+	isdirectory = (fileattr & FILE_ATTRIBUTE_DIRECTORY)
+		== FILE_ATTRIBUTE_DIRECTORY;
+
+	/*
+	 * if we've got as far as here then we have already evaluated
+	 * the args.
+	 */
+	if (test_args) {
+		result = EXIT_OK;
+		goto out;
+	}
+
+	mask = NULL;
+	/* make sure we have a trailing '\*' for directory */
+	if (!isdirectory) {
+		mask = talloc_strdup(ctx, filename);
+	} else if (strlen(filename) > 1) {
+		/*
+		 * if the passed file name doesn't have a trailing '\'
+		 * append it.
+		 */
+		char *name_end = strrchr(filename, DIRSEP_CHAR);
+		if (name_end != filename + strlen(filename) + 1) {
+			mask = talloc_asprintf(ctx, "%s\\*", filename);
+		} else {
+			mask = talloc_strdup(ctx, filename);
+		}
+	} else {
+		/* filename is a single '\', just append '*' */
+		mask = talloc_asprintf_append(mask, "%s*", filename);
+	}
+
+	if (!mask) {
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	/*
+	 * prepare for automatic propagation of the acl passed on the
+	 * cmdline.
+	 */
+	ntstatus = prepare_inheritance_propagation(ctx, filename,
+							   cbstate);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		d_printf("error: %s processing %s\n",
+			 nt_errstr(ntstatus), filename);
+		result = EXIT_FAILED;
+		goto out;
+	}
+	result = cacl_set_from_sd(cli, filename, cbstate->aclsd,
+				cbstate->mode, cbstate->numeric);
+
+	/*
+	 * strictly speaking it could be considered an error if a file was
+	 * specificied with '--propagate-inheritance'. However we really want
+	 * to eventually get rid of '--propagate-inheritance' so we will be
+	 * more forgiving here and instead just exit early.
+	 */
+	if (!isdirectory || (result != EXIT_OK)) {
+		goto out;
+	}
+
+	/* check if there is actually any need to propagate */
+	if (cbstate->acl_no_propagate) {
+		goto out;
+	}
+	/* get inheritable attributes this parent container (e.g. filename) */
+	ntstatus = get_inheritable_aces(ctx, filename, cbstate);
+	if (NT_STATUS_IS_OK(ntstatus)) {
+		/* process children */
+		ntstatus = cli_list(cli, mask, attribute,
+				cacl_set_cb,
+				(void *)cbstate);
+	}
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		d_printf("error: %s processing %s\n",
+			 nt_errstr(ntstatus), filename);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+out:
+	TALLOC_FREE(ctx);
+	return result;
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -872,6 +1562,14 @@ int main(int argc, char *argv[])
 			.arg        = NULL,
 			.val        = 'I',
 			.descrip    = "Inherit allow|remove|copy",
+		},
+		{
+			.longName   = "propagate-inheritance",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &inheritance,
+			.val        = 1,
+			.descrip    = "Supports propagation of inheritable ACE(s) when used in conjunction with add, delete, set or modify",
 		},
 		{
 			.longName   = "numeric",
@@ -1008,8 +1706,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+	if (inheritance && !the_acl) {
+		poptPrintUsage(pc, stderr, 0);
+		return -1;
+	}
 
-	/* Make connection to server */
 	if(!poptPeekArg(pc)) {
 		poptPrintUsage(pc, stderr, 0);
 		return -1;
@@ -1049,6 +1750,7 @@ int main(int argc, char *argv[])
 	*share = 0;
 	share++;
 
+	/* Make connection to server */
 	if (!test_args) {
 		cli = connect_one(popt_get_cmdline_auth_info(), server, share);
 		if (!cli) {
@@ -1088,7 +1790,24 @@ int main(int argc, char *argv[])
 	} else if (change_mode != REQUEST_NONE) {
 		result = owner_set(targetcli, change_mode, targetfile, owner_username);
 	} else if (the_acl) {
-		result = cacl_set(targetcli, targetfile, the_acl, mode, numeric);
+		if (inheritance) {
+			struct cacl_callback_state cbstate;
+			cbstate.auth_info = popt_get_cmdline_auth_info();
+			cbstate.cli = targetcli;
+			cbstate.aclsd = NULL;
+			cbstate.acl_to_add = NULL;
+			cbstate.mode = mode;
+			cbstate.the_acl = the_acl;
+			cbstate.acl_no_propagate = false;
+			cbstate.numeric = numeric;
+			result = inheritance_cacl_set(targetfile, &cbstate);
+		} else {
+			result =  cacl_set(targetcli,
+					   targetfile,
+					   the_acl,
+					   mode,
+					   numeric);
+		}
 	} else {
 		result = cacl_dump(targetcli, targetfile, numeric);
 	}
