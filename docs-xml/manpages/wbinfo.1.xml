@@ -45,6 +45,7 @@
 		<arg choice="opt">--logoff</arg>
 		<arg choice="opt">--logoff-uid uid</arg>
 		<arg choice="opt">--logoff-user username</arg>
+		<arg choice="opt">--lookup-sids</arg>
 		<arg choice="opt">-m</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-N netbios-name</arg>
@@ -276,6 +277,13 @@
 		<varlistentry>
 		<term>--logoff-user <replaceable>USERNAME</replaceable></term>
 		<listitem><para>Define username used during logoff request.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--lookup-sids <replaceable>SID1,SID2...</replaceable></term>
+		<listitem><para>Looks up SIDs. SIDs must be specified as ASCII strings in the traditional Microsoft
+				format. For example, S-1-5-21-1455342024-3071081365-2475485837-500.
 		</para></listitem>
 		</varlistentry>
 
