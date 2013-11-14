@@ -28,6 +28,7 @@
 		<arg choice="opt">-C|--chown name</arg>
 		<arg choice="opt">-G|--chgrp name</arg>
 		<arg choice="opt">-I allow|remove|copy</arg>
+		<arg choice="opt">--propagate-inheritance</arg>
 		<arg choice="opt">--numeric</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-U username</arg>
@@ -132,11 +133,18 @@
 		permissions" check box using the <parameter>-I</parameter>
 		option.  To set the check box pass allow. To unset the check
 		box pass either remove or copy. Remove will remove all
-		inherited acls. Copy will copy all the inherited acls.
+		inherited ACEs. Copy will copy all the inherited ACEs.
 		</para></listitem>
 
 		</varlistentry>
 
+		<varlistentry>
+		<term>--propagate-inheritance</term>
+		<listitem><para>Add, modify, delete or set ACEs on an entire
+		directory tree according to the inheritance flags. Refer to the
+		INHERITANCE section for details.
+		</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>--numeric</term>
@@ -238,18 +246,22 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 	determine the type of access granted to the SID. </para>
 
 	<para>The type can be either ALLOWED or	DENIED to allow/deny access 
-	to the SID. The flags values are generally zero for file ACEs and
-	either 9 or 2 for directory ACEs.  Some common flags are: </para>
+	to the SID.</para>
+
+	<para>The flags field defines how the ACE should be considered when
+	performing inheritance. <command>smbcacls</command> uses these flags
+	when run with <parameter>--propagate-inheritance</parameter>.</para>
+
+	<para>Flags can be specified as decimal or hexadecimal values, or with
+	the respective (XX) aliases, separated by a vertical bar "|".</para>
 
 	<itemizedlist> 
-		<listitem><para><constant>#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</constant></para></listitem>
-		<listitem><para><constant>#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2</constant></para></listitem>
-		<listitem><para><constant>#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT     0x4</constant></para></listitem>
-		<listitem><para><constant>#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</constant></para></listitem>
+		<listitem><para><emphasis>(OI)</emphasis> Object Inherit	0x1</para></listitem>
+		<listitem><para><emphasis>(CI)</emphasis> Container Inherit  	0x2</para></listitem>
+		<listitem><para><emphasis>(NP)</emphasis> No Propagate Inherit	0x4</para></listitem>
+		<listitem><para><emphasis>(IO)</emphasis> Inherit Only       	0x8</para></listitem>
  	</itemizedlist>
   
-	<para>At present, flags can only be specified as decimal or
-	hexadecimal values.</para>
  
 	<para>The mask is a value which expresses the access right 
 	granted to the SID. It can be given as a decimal or hexadecimal value, 
@@ -278,6 +290,24 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 		permissions</para></listitem>
 	</itemizedlist>
 	</refsect1>
+
+<refsect1>
+	<title>INHERITANCE</title>
+
+	<para>Per-ACE inheritance flags can be set in the ACE flags field. By
+	default, ACEs marked for object inheritance (OI) or container
+	inheritance (CI) are not propagated to sub-files or folders. However,
+	with the <parameter>--propagate-inheritance</parameter> arguement
+	specified, such ACEs are recursively applied to all applicable child
+	objects in the directory tree.</para>
+
+	<para>Any ACEs applied to sub-files of folders are marked with the
+	inherited (I) flag.</para>
+
+	<para>Files and folders with protected ACLs do not allow inheritable
+	permissions (set with <parameter>-I</parameter>). Such objects will
+	not receive ACEs flagged for inheritance with (CI) or (OI).</para>
+</refsect1>
 
 <refsect1>
 	<title>EXIT STATUS</title>
