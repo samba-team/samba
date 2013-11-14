@@ -37,7 +37,7 @@ defaulttasks = [ "ctdb", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntd
 tasks = {
     "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
                ("autogen", "./autogen.sh", "text/plain"),
-               ("configure", "./configure ${PREFIX}", "text/plain"),
+               ("configure", "./configure ${PREFIX} --enable-socket-wrapper ", "text/plain"),
                ("make", "make all", "text/plain"),
                ("install", "make install", "text/plain"),
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
