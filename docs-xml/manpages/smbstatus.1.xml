@@ -32,6 +32,7 @@
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
 		<arg choice="opt">-u &lt;username&gt;</arg>
 		<arg choice="opt">-n|--numeric</arg>
+		<arg choice="opt">-R|--profile-rates</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -51,9 +52,16 @@
 	<variablelist>
 		<varlistentry>
 		<term>-P|--profile</term>
-		<listitem><para>If samba has been compiled with the 
-		profiling option, print only the contents of the profiling 
+		<listitem><para>If samba has been compiled with the
+		profiling option, print only the contents of the profiling
 		shared memory area.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-R|--profile-rates</term>
+		<listitem><para>If samba has been compiled with the
+		profiling option, print the contents of the profiling
+		shared memory area and the call rates.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
