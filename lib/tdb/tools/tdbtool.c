@@ -119,6 +119,33 @@ static double _end_timer(void)
 }
 
 #ifdef PRINTF_ATTRIBUTE
+static void tdb_log_open(struct tdb_context *tdb, enum tdb_debug_level level,
+			 const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+static void tdb_log_open(struct tdb_context *tdb, enum tdb_debug_level level,
+			 const char *format, ...)
+{
+	const char *mutex_msg =
+		"Can use mutexes only with MUTEX_LOCKING or NOLOCK\n";
+	char *p;
+	va_list ap;
+
+	p = strstr(format, mutex_msg);
+	if (p != NULL) {
+		/*
+		 * Yes, this is a hack, but we don't want to see this
+		 * message on first open, but we want to see
+		 * everything else.
+		 */
+		return;
+	}
+
+	va_start(ap, format);
+	vfprintf(stderr, format, ap);
+	va_end(ap);
+}
+
+#ifdef PRINTF_ATTRIBUTE
 static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
 static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...)
@@ -240,7 +267,7 @@ static void create_tdb(const char *tdbname)
 static void open_tdb(const char *tdbname)
 {
 	struct tdb_logging_context log_ctx = { NULL, NULL };
-	log_ctx.log_fn = tdb_log;
+	log_ctx.log_fn = tdb_log_open;
 
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open_ex(tdbname, 0,
@@ -248,6 +275,23 @@ static void open_tdb(const char *tdbname)
 			  (disable_lock?TDB_NOLOCK:0),
 			  O_RDWR, 0600,
 			  &log_ctx, NULL);
+
+	log_ctx.log_fn = tdb_log;
+	if (tdb != NULL) {
+		tdb_set_logging_function(tdb, &log_ctx);
+	}
+
+	if ((tdb == NULL) && (errno == EINVAL)) {
+		/*
+		 * Retry NOLOCK and readonly. There we want to see all
+		 * error messages.
+		 */
+		tdb = tdb_open_ex(tdbname, 0,
+				  (disable_mmap?TDB_NOMMAP:0) |TDB_NOLOCK,
+				  O_RDONLY, 0600,
+				  &log_ctx, NULL);
+	}
+
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tdbname, strerror(errno));
 	}
