@@ -113,17 +113,29 @@ EOF
     fi
 }
 
+# Result filtering is (usually) used to replace the date/time/PID
+# prefix on some CTDB tool/client log messages with the literal string
+# "DATE TIME [PID]".  This allows tests to loosely match this output,
+# since it can't otherwise be matched.
+result_filter_default ()
+{
+    _date_time_pid='[0-9/][0-9/]*\ [0-9:\.][0-9:\.]*\ \[[\ 0-9][\ 0-9]*\]'
+    sed -e "s@^${_date_time_pid}:@DATE\ TIME\ \[PID\]:@"
+}
+
+# Override this function to customise output filtering.
+result_filter ()
+{
+    result_filter_default
+}
+
 result_check ()
 {
     _rc=$?
 
     _extra_header="$1"
 
-    if [ -n "$OUT_FILTER" ] ; then
-	_fout=$(echo "$_out" | eval sed -r $OUT_FILTER)
-    else
-	_fout="$_out"
-    fi
+    _fout=$(echo "$_out" | result_filter)
 
     if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	_passed=true

@@ -44,12 +44,6 @@ setup_natgw ()
 
 simple_test ()
 {
-    # Most of the tests when the tool fails will have a date/time/pid
-    # prefix.  Strip that because it isn't possible to match it.
-    if [ $required_rc -ne 0 ]  ; then
-	OUT_FILTER='s@^[0-9/]+\ [0-9:\.]+\ \[[\ 0-9]+\]:@DATE\ TIME\ \[PID\]:@'
-    fi
-
     _out=$($VALGRIND $test_prog "$@" 2>&1)
 
     result_check

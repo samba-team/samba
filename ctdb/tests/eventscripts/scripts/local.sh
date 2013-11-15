@@ -1012,11 +1012,7 @@ iterate_test ()
 	_out=$($_shell "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
 	_rc=$?
 
-    if [ -n "$OUT_FILTER" ] ; then
-	_fout=$(echo "$_out" | eval sed -r $OUT_FILTER)
-    else
-	_fout="$_out"
-    fi
+	_fout=$(echo "$_out" | result_filter)
 
 	if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	    _passed=true
