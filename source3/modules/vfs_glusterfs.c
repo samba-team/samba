@@ -1397,7 +1397,6 @@ static int vfs_gluster_sys_acl_set_fd(struct vfs_handle_struct *handle,
 				      SMB_ACL_T theacl)
 {
 	int ret;
-	char *key;
 	char *buf;
 	ssize_t size;
 
