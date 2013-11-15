@@ -186,7 +186,7 @@ static bool parse_ace(struct security_ace *ace, const char *orig_str)
 	p++;
 	/* Try to parse numeric form */
 
-	if (sscanf(p, "%i/%i/%i", &atype, &aflags, &amask) == 3 &&
+	if (sscanf(p, "%u/%u/%u", &atype, &aflags, &amask) == 3 &&
 	    string_to_sid(&sid, str)) {
 		goto done;
 	}
@@ -226,7 +226,7 @@ static bool parse_ace(struct security_ace *ace, const char *orig_str)
 	/* no flags on share permissions */
 
 	if (!(next_token_talloc(frame, &cp, &tok, "/") &&
-	      sscanf(tok, "%i", &aflags) && aflags == 0)) {
+	      sscanf(tok, "%u", &aflags) && aflags == 0)) {
 		fprintf(stderr, "ACE '%s': bad integer flags entry at '%s'\n",
 			orig_str, tok);
 		SAFE_FREE(str);
@@ -243,7 +243,7 @@ static bool parse_ace(struct security_ace *ace, const char *orig_str)
 	}
 
 	if (strncmp(tok, "0x", 2) == 0) {
-		if (sscanf(tok, "%i", &amask) != 1) {
+		if (sscanf(tok, "%u", &amask) != 1) {
 			fprintf(stderr, "ACE '%s': bad hex number at '%s'\n",
 				orig_str, tok);
 			TALLOC_FREE(frame);
