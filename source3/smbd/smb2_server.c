@@ -2924,8 +2924,7 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 	}
 
 	DEBUG(10,("Doing recvfile write len = %u\n",
-		(unsigned int)(state->pktlen -
-		SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN)));
+		(unsigned int)(state->pktfull - state->pktlen)));
 
 	return true;
 }
@@ -3263,10 +3262,21 @@ again:
 			 * Read the rest of the data.
 			 */
 			state->doing_receivefile = false;
+
+			state->pktbuf = talloc_realloc(state->req,
+						       state->pktbuf,
+						       uint8_t,
+						       state->pktfull);
+			if (state->pktbuf == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
 			state->vector.iov_base = (void *)(state->pktbuf +
-				SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN);
-			state->vector.iov_len = (state->pktlen -
-				SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN);
+				state->pktlen);
+			state->vector.iov_len = (state->pktfull -
+				state->pktlen);
+
+			state->pktlen = state->pktfull;
 			goto again;
 		}
 
@@ -3283,24 +3293,17 @@ again:
 	if (state->hdr.nbt[0] != 0x00) {
 		state->min_recv_size = 0;
 	}
-	state->pktlen = smb2_len(state->hdr.nbt);
-	if (state->pktlen == 0) {
+	state->pktfull = smb2_len(state->hdr.nbt);
+	if (state->pktfull == 0) {
 		goto got_full;
 	}
-
-	state->pktbuf = talloc_array(state->req, uint8_t, state->pktlen);
-	if (state->pktbuf == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	state->vector.iov_base = (void *)state->pktbuf;
 
 	if (state->min_recv_size != 0) {
 		min_recvfile_size = SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN;
 		min_recvfile_size += state->min_recv_size;
 	}
 
-	if (state->pktlen > min_recvfile_size) {
+	if (state->pktfull > min_recvfile_size) {
 		/*
 		 * Might be a receivefile write. Read the SMB2 HEADER +
 		 * SMB2_WRITE header first. Set 'doing_receivefile'
@@ -3309,11 +3312,19 @@ again:
 		 * not suitable then we'll just read the rest of the data
 		 * the next time this function is called.
 		 */
-		state->vector.iov_len = SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN;
+		state->pktlen = SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN;
 		state->doing_receivefile = true;
 	} else {
-		state->vector.iov_len = state->pktlen;
+		state->pktlen = state->pktfull;
 	}
+
+	state->pktbuf = talloc_array(state->req, uint8_t, state->pktlen);
+	if (state->pktbuf == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->vector.iov_base = (void *)state->pktbuf;
+	state->vector.iov_len = state->pktlen;
 
 	goto again;
 
@@ -3353,8 +3364,7 @@ got_full:
 		if (req->smb1req == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		req->smb1req->unread_bytes =
-			state->pktlen - SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN;
+		req->smb1req->unread_bytes = state->pktfull - state->pktlen;
 	}
 
 	ZERO_STRUCTP(state);

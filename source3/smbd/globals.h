@@ -768,6 +768,7 @@ struct smbd_server_connection {
 			struct iovec vector;
 			bool doing_receivefile;
 			size_t min_recv_size;
+			size_t pktfull;
 			size_t pktlen;
 			uint8_t *pktbuf;
 		} request_read_state;
