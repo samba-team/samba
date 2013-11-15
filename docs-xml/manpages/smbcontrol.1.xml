@@ -51,6 +51,7 @@
 	<variablelist>
 		&stdarg.help;
 		&stdarg.configfile;
+		&popt.common.samba;
 		<varlistentry>
 		<term>-i</term>
 		<listitem><para>Run interactively. Individual commands 
