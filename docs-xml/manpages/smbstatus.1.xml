@@ -31,6 +31,7 @@
 		<arg choice="opt">-f</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
 		<arg choice="opt">-u &lt;username&gt;</arg>
+		<arg choice="opt">-n|--numeric</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -118,6 +119,13 @@
 		<varlistentry>
 		<term>-u|--user=&lt;username&gt;</term>
 		<listitem><para>selects information relevant to <parameter>username</parameter> only.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-n|--numeric</term>
+		<listitem><para>causes smbstatus to display numeric UIDs and GIDs instead of
+				resolving them to names.</para>
 		</listitem>
 		</varlistentry>
 
