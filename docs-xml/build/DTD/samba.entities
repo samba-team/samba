@@ -496,13 +496,6 @@ Try to use the credentials cached by winbind.
 </varlistentry>
 '>
 
-<!ENTITY stdarg.help '
-<varlistentry>
-<term>-?|--help</term>
-<listitem><para>Print a summary of command line options.
-</para></listitem>
-</varlistentry>'>
-
 <!ENTITY popt.common.credentials '
 &stdarg.nopass;
 &stdarg.kerberos;
@@ -513,6 +506,27 @@ Try to use the credentials cached by winbind.
 &stdarg.machinepass;
 &stdarg.encrypt;
 &stdarg.pwnthash;
+'>
+
+<!ENTITY stdarg.help '
+<varlistentry>
+<term>-?|--help</term>
+<listitem><para>Print a summary of command line options.
+</para></listitem>
+</varlistentry>
+'>
+
+<!ENTITY stdarg.usage '
+<varlistentry>
+<term>--usage</term>
+<listitem><para>Display brief usage message.
+</para></listitem>
+</varlistentry>
+'>
+
+<!ENTITY popt.autohelp '
+&stdarg.help;
+&stdarg.usage;
 '>
 
 <!-- Entities for the various programs -->
