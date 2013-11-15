@@ -295,18 +295,80 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 	<title>INHERITANCE</title>
 
 	<para>Per-ACE inheritance flags can be set in the ACE flags field. By
-	default, ACEs marked for object inheritance (OI) or container
-	inheritance (CI) are not propagated to sub-files or folders. However,
-	with the <parameter>--propagate-inheritance</parameter> arguement
-	specified, such ACEs are recursively applied to all applicable child
-	objects in the directory tree.</para>
-
-	<para>Any ACEs applied to sub-files of folders are marked with the
-	inherited (I) flag.</para>
-
+	default, inheritable ACEs e.g. those marked for object inheritance (OI)
+	or container inheritance (CI), are not propagated to sub-files or
+	folders. However, with the
+	<parameter>--propagate-inheritance</parameter> argument specified, such
+	ACEs are automatically propagated according to some inheritance
+	rules.
+	<itemizedlist>
+		<listitem><para>Inheritable (OI)(OI) ACE flags can only be
+		applied to folders. </para></listitem>
+		<listitem><para>Any inheritable ACEs applied to sub-files or
+		folders are marked with the inherited (I) flag. Inheritable
+		ACE(s) are applied to folders unless the no propagation (NP)
+		flag is set. </para>
+		</listitem>
+		<listitem><para>When an ACE with the (OI) flag alone set is
+		progagated to a child folder the inheritance only flag (IO) is
+		also applied. This indicates the permissions associated with
+		the ACE don't apply to the folder itself (only to it's
+		child files). When applying the ACE to a child file the ACE is
+		inherited as normal.</para></listitem>
+		<listitem><para>When an ace with the (CI) flag alone set is
+		propagated to a child file there is no effect, when propagated
+		to a child folder it is inherited as normal.
+		</para></listitem>
+		<listitem><para>When an ACE that has both (OI) &amp; (CI) flags
+		set the ACE is inherited as normal by both folders and
+		files.</para></listitem>
+	</itemizedlist></para>
+<para>(OI)(READ) added to parent folder</para>
+<para><programlisting>
++-parent/        (OI)(READ)
+| +-file.1       (I)(READ)
+| +-nested/      (OI)(IO)(I)(READ)
+  |   +-file.2   (I)(READ)
+</programlisting></para>
+<para>(CI)(READ) added to parent folder</para>
+<para><programlisting>
++-parent/        (CI)(READ)
+| +-file.1
+| +-nested/      (CI)(I)(READ)
+  |   +-file.2
+</programlisting></para>
+<para>(OI)(CI)(READ) added to parent folder</para>
+<para><programlisting>
++-parent/        (OI)(CI)(READ)
+| +-file.1       (I)(READ)
+| +-nested/      (OI)(CI)(I)(READ)
+  |   +-file.2   (I)(READ)
+</programlisting></para>
+<para>(OI)(NP)(READ) added to parent folder</para>
+<para><programlisting>
++-oi_dir/        (OI)(NP)(READ)
+| +-file.1       (I)(READ)
+| +-nested/
+|   +-file.2
+</programlisting></para>
+<para>(CI)(NP)(READ) added to parent folder</para>
+<para><programlisting>
++-oi_dir/        (CI)(NP)(READ)
+| +-file.1
+| +-nested/      (I)(READ)
+|   +-file.2
+</programlisting></para>
+<para>(OI)(CI)(NP)(READ) added to parent folder</para>
+<para><programlisting>
++-parent/        (CI)(OI)(NP)(READ)
+| +-file.1       (I)(READ)
+| +-nested/      (I)(READ)
+|   +-file.2
+</programlisting></para>
 	<para>Files and folders with protected ACLs do not allow inheritable
 	permissions (set with <parameter>-I</parameter>). Such objects will
 	not receive ACEs flagged for inheritance with (CI) or (OI).</para>
+
 </refsect1>
 
 <refsect1>
