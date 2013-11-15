@@ -449,7 +449,7 @@ static ADS_STATUS libnet_join_set_machine_upn(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!r->in.upn) {
-		char *realm = r->out.dns_domain_name;
+		const char *realm = r->out.dns_domain_name;
 
 		/* in case we are about to generate a keytab during the join
 		 * make sure the default upn we create is usable with kinit -k.
