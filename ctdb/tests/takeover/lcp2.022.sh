@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "3 nodes, no IPs assigned, 3->2 unhealthy, NoIPTakeover on 2 others"
+define_test "3 nodes, 2->3 unhealthy, all IPs assigned, split NoIPTakeover"
 
 export CTDB_TEST_LOGLEVEL=0
 
