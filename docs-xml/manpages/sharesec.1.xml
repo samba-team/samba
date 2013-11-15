@@ -35,6 +35,7 @@
 		<arg choice="opt">-V, --version</arg>
 		<arg choice="opt">-?, --help</arg>
 		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-S, --setsddl=STRING</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -110,6 +111,13 @@
 		<term>--view-all</term>
 		<listitem><para>
 		List all share acls
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-S|--setsddl=STRING</term>
+		<listitem><para>
+		Set security descriptor by providing ACL in SDDL format.
 		</para></listitem>
 		</varlistentry>
 
