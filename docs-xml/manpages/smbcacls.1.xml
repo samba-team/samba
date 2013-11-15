@@ -178,6 +178,7 @@
 		&stdarg.server.debug;
 		&popt.common.samba;
 		&popt.common.credentials;
+		&popt.common.connection;
 	</variablelist>
 </refsect1>
 
