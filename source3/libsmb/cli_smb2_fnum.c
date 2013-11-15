@@ -1313,7 +1313,7 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 	inbuf.length = sizeof(inbuf_store);
 	data_blob_clear(&inbuf);
 
-	SIVAL(inbuf.data,32,attr);
+	SSVAL(inbuf.data, 32, attr);
 	if (mtime != 0) {
 		put_long_date((char *)inbuf.data + 16,mtime);
 	}
