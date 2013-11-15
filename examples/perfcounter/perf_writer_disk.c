@@ -132,7 +132,7 @@ void get_diskinfo(PERF_DATA_BLOCK *data)
 	int status, num;
 	char buf[LARGE_BUF], *start;
 	FILE *diskstats;
-	long reads, writes, discard;
+	unsigned long reads, writes, discard;
 
 	diskstats = fopen("/proc/diskstats", "r");
 	rewind(diskstats);
@@ -147,10 +147,10 @@ void get_diskinfo(PERF_DATA_BLOCK *data)
 		p->freeMegs = (statfsbuf.f_bfree*statfsbuf.f_bsize)/1048576;
 		start = strstr(buf, data->diskInfo.mdata[i].name);
 		start += strlen(data->diskInfo.mdata[i].name) + 1;
-		num = sscanf(start, "%u %u %u %u",
+		num = sscanf(start, "%lu %lu %lu %lu",
 			     &reads,
-			     &discard, 
-			     &writes, 
+			     &discard,
+			     &writes,
 			     &discard);
 		p->writesPerSec = writes;
 		p->readsPerSec = reads;
