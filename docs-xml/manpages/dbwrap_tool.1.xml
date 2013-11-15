@@ -19,7 +19,7 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>dbwrap_tool</command>
-		<arg choice="opt">--persistent</arg>
+		<arg choice="opt">-p|--persistent</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;config file&gt;</arg>
 		<arg choice="opt">-l &lt;log file base&gt;</arg>
@@ -70,7 +70,7 @@
 
 	<variablelist>
 		<varlistentry>
-			<term>--persistent</term>
+			<term>-p|--persistent</term>
 			<listitem><para>Open the database as a persistent database.
 			If this option is not specified, the database is opened as
 			non-persistent.
