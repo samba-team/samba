@@ -145,7 +145,7 @@ static struct glfs_preopened {
 } *glfs_preopened;
 
 
-int glfs_set_preopened(const char *volume, glfs_t *fs)
+static int glfs_set_preopened(const char *volume, glfs_t *fs)
 {
 	struct glfs_preopened *entry = NULL;
 
