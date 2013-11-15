@@ -6754,10 +6754,9 @@ static void torture_createdel_created(struct tevent_req *subreq)
 
 	status = cli_ntcreate_recv(subreq, &fnum);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		DEBUG(10, ("cli_ntcreate_recv returned %s\n",
 			   nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -6775,9 +6774,8 @@ static void torture_createdel_closed(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_close_recv(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		DEBUG(10, ("cli_close_recv returned %s\n", nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 	tevent_req_done(req);
