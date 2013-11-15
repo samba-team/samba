@@ -56,19 +56,12 @@
 	<title>OPTIONS</title>
 	<variablelist>
 		&stdarg.help;
+		&stdarg.client.debug;
 		<varlistentry>
 		<term>--usage</term>
 		<listitem><para>Display brief usage message.</para></listitem>
 		</varlistentry>
-		<varlistentry>
-		<term>-d|--debuglevel=&lt;debuglevel&gt;</term>
-		<listitem><para>Set debug level.</para></listitem>
-		</varlistentry>
 		&popt.common.samba;
-		<varlistentry>
-		<term>--option=&lt;parameter&gt;=&lt;value&gt;</term>
-		<listitem><para>Set smb.conf option from command line.</para></listitem>
-		</varlistentry>
 		&popt.common.connection;
 		&popt.common.credentials;
 	</variablelist>
