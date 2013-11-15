@@ -70,25 +70,7 @@
 		<listitem><para>Set smb.conf option from command line.</para></listitem>
 		</varlistentry>
 		&popt.common.connection;
-		<varlistentry>
-		<term>-S|--signing</term>
-		<listitem><para>Set the client signing state.</para></listitem>
-		</varlistentry>
-		<varlistentry>
-		<term>-P|--machine-pass</term>
-		<listitem><para>Use stored machine account password.</para></listitem>
-		</varlistentry>
 		&popt.common.credentials;
-		<varlistentry>
-		<term>-e|--encrypt</term>
-		<listitem><para>Encrypt SMB transport (UNIX extended servers only).</para>
-		</listitem>
-		</varlistentry>
-		<varlistentry>
-		<term>--pw-nt-hash</term>
-		<listitem><para>The supplied password is the NT hash.</para>
-		</listitem>
-		</varlistentry>
 	</variablelist>
 </refsect1>
 
