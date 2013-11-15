@@ -464,6 +464,37 @@ Try to use the credentials cached by winbind.
 </varlistentry>
 '>
 
+<!ENTITY stdarg.signing '
+<varlistentry>
+<term>-S|--signing on|off|required</term>
+<listitem><para>Set the client signing state.
+</para></listitem>
+</varlistentry>
+'>
+
+<!ENTITY stdarg.machinepass '
+<varlistentry>
+<term>-P|--machine-pass</term>
+<listitem><para>Use stored machine account password.
+</para></listitem>
+</varlistentry>
+'>
+
+<!ENTITY stdarg.encrypt '
+<varlistentry>
+<term>-e|--encrypt</term>
+<listitem><para>Encrypt SMB transport (UNIX extended servers only).
+</para></listitem>
+</varlistentry>
+'>
+
+<!ENTITY stdarg.pwnthash '
+<varlistentry>
+<term>--pw-nt-hash</term>
+<listitem><para>The supplied password is the NT hash.
+</para></listitem>
+</varlistentry>
+'>
 
 <!ENTITY stdarg.help '
 <varlistentry>
@@ -478,6 +509,10 @@ Try to use the credentials cached by winbind.
 &stdarg.useccache;
 &stdarg.authfile;
 &stdarg.username;
+&stdarg.signing;
+&stdarg.machinepass;
+&stdarg.encrypt;
+&stdarg.pwnthash;
 '>
 
 <!-- Entities for the various programs -->
