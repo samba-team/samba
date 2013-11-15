@@ -44,7 +44,7 @@ fi
 
 
 echo "Wait until the ips are reallocated"
-sleep 30
+sleep_for 30
 try_command_on_node 0 "$CTDB ipreallocate"
 
 num=`try_command_on_node -v 1 "$CTDB ip" | grep -v Public | egrep " 1$" | wc -l`
@@ -68,7 +68,7 @@ echo "Number of addresses on node 1 : $num"
 
 echo "Enable node 1 again"
 try_command_on_node 1 "$CTDB enable"
-sleep 30
+sleep_for 30
 try_command_on_node 1 "$CTDB ipreallocate"
 try_command_on_node 1 "$CTDB ipreallocate"
 num=`try_command_on_node -v 1 "$CTDB ip" | grep -v Public | egrep " 1$" | wc -l`
