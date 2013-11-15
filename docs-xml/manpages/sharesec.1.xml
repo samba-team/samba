@@ -32,10 +32,11 @@
 		<arg choice="opt">-d, --debuglevel=DEBUGLEVEL</arg>
 		<arg choice="opt">-s, --configfile=CONFIGFILE</arg>
 		<arg choice="opt">-l, --log-basename=LOGFILEBASE</arg>
-		<arg choice="opt">-V, --version</arg>
+		<arg choice="opt">--version</arg>
 		<arg choice="opt">-?, --help</arg>
 		<arg choice="opt">--usage</arg>
 		<arg choice="opt">-S, --setsddl=STRING</arg>
+		<arg choice="opt">-V, --viewsddl</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -118,6 +119,13 @@
 		<term>-S|--setsddl=STRING</term>
 		<listitem><para>
 		Set security descriptor by providing ACL in SDDL format.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-V|--viewsddl</term>
+		<listitem><para>
+		List a share acl in SDDL format.
 		</para></listitem>
 		</varlistentry>
 
