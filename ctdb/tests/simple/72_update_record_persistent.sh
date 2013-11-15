@@ -51,7 +51,8 @@ echo force a recovery
 try_command_on_node 0 $CTDB recover
 
 # check that the database is wiped
-num_records=$(try_command_on_node -v 1 $CTDB cattdb $TDB | grep key | wc -l)
+num_records=$(try_command_on_node -v 1 $CTDB cattdb $TDB | \
+    grep key | grep -v '__db_sequence_number__' | wc -l)
 [ $num_records != "0" ] && {
     echo "BAD: we did not end up with an empty database"
     exit 1

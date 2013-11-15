@@ -48,6 +48,9 @@ set -e
 
 cluster_is_healthy
 
+# Reset configuration
+ctdb_restart_when_done
+
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
@@ -149,11 +152,11 @@ try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 1
 
 # 5,
 # If RecoverPDBBySeqNum==1  and no __db_sequence_number__
-# recover record by record
+# recover whole database
 #
 # wipe database
 echo
-echo test that RecoverPDBBySeqNum==1 and no __db_sequence_number__ blends the database during recovery
+echo test that RecoverPDBBySeqNum==1 and no __db_sequence_number__ does not blend the database during recovery
 echo wipe the test database
 try_command_on_node 0 $CTDB wipedb persistent_test.tdb
 
@@ -173,11 +176,11 @@ try_command_on_node 0 $CTDB recover
 
 # check that we now have both records on node 0
 num_records=$(try_command_on_node -v 0 $CTDB cattdb persistent_test.tdb | grep key | egrep "ABC|DEF" | wc -l)
-[ $num_records != "2" ] && {
-    echo "BAD: we did not end up with the expected two records after the recovery"
+[ $num_records != "1" ] && {
+    echo "BAD: we did not end up with the expected single record after the recovery"
     exit 1
 }
-echo "OK. databases were blended"
+echo "OK. databases were not blended"
 
 
 
@@ -224,9 +227,3 @@ num_records=$(try_command_on_node -v 0 $CTDB cattdb persistent_test.tdb | grep k
 }
 
 echo "OK. databases were not blended"
-
-
-
-# set RecoverPDBBySeqNum=1
-echo "setting RecoverPDBBySeqNum back to 0"
-try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 0

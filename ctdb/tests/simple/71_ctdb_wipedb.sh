@@ -55,11 +55,13 @@ try_command_on_node 1 $CTDB tstore $TDB 0x444546 0x07000000000000000000000000000
 # 4,
 echo wipe the persistent test database
 try_command_on_node 0 $CTDB wipedb persistent_test.tdb
+
 echo force a recovery
 try_command_on_node 0 $CTDB recover
 
 # check that the database is wiped
-num_records=$(try_command_on_node -v 1 $CTDB cattdb persistent_test.tdb | grep key | wc -l)
+num_records=$(try_command_on_node -v 1 $CTDB cattdb persistent_test.tdb | \
+    grep key | grep -v '__db_sequence_number__' | wc -l)
 [ $num_records != "0" ] && {
     echo "BAD: we did not end up with an empty database"
     exit 1
