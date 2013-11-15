@@ -490,7 +490,7 @@ static bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	p++;
 	/* Try to parse numeric form */
 
-	if (sscanf(p, "%i/%i/%i", &atype, &aflags, &amask) == 3 &&
+	if (sscanf(p, "%u/%u/%u", &atype, &aflags, &amask) == 3 &&
 	    StringToSid(cli, &sid, str)) {
 		goto done;
 	}
@@ -553,7 +553,7 @@ static bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 			return False;
 		}
 	} else {
-		if (!sscanf(tok, "%i", &aflags)) {
+		if (!sscanf(tok, "%u", &aflags)) {
 			printf("ACE '%s': bad integer flags entry at '%s'\n",
 				orig_str, tok);
 			SAFE_FREE(str);
@@ -571,7 +571,7 @@ static bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	}
 
 	if (strncmp(tok, "0x", 2) == 0) {
-		if (sscanf(tok, "%i", &amask) != 1) {
+		if (sscanf(tok, "%u", &amask) != 1) {
 			printf("ACE '%s': bad hex number at '%s'\n",
 				orig_str, tok);
 			SAFE_FREE(str);
