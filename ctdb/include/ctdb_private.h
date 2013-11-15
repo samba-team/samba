@@ -556,7 +556,6 @@ struct ctdb_context {
 	struct trbt_tree *child_processes; 
 
 	/* Used for locking record/db/alldb */
-	int lock_num_current;
 	int lock_num_pending;
 	struct lock_context *lock_current;
 	struct lock_context *lock_pending;
@@ -596,6 +595,8 @@ struct ctdb_db_context {
 	struct trbt_tree *deferred_fetch;
 
 	struct ctdb_db_statistics statistics;
+
+	int lock_num_current;
 };
 
 

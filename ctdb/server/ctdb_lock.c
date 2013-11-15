@@ -279,7 +279,9 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 	if (lock_ctx->child > 0) {
 		ctdb_kill(lock_ctx->ctdb, lock_ctx->child, SIGKILL);
 		DLIST_REMOVE(lock_ctx->ctdb->lock_current, lock_ctx);
-		lock_ctx->ctdb->lock_num_current--;
+		if (lock_ctx->ctdb_db) {
+			lock_ctx->ctdb_db->lock_num_current--;
+		}
 		CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_current);
 		if (lock_ctx->type == LOCK_RECORD || lock_ctx->type == LOCK_DB) {
 			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
@@ -741,10 +743,6 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		CTDB_NO_MEMORY_VOID(ctdb, prog);
 	}
 
-	if (ctdb->lock_num_current >= MAX_LOCK_PROCESSES_PER_DB) {
-		return;
-	}
-
 	if (ctdb->lock_pending == NULL) {
 		return;
 	}
@@ -767,8 +765,11 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 						       lock_ctx->key, lock_ctx->priority,
 						       lock_ctx->type);
 			if (active_ctx == NULL) {
-				/* Found a lock context with lock requests */
-				break;
+				if (lock_ctx->ctdb_db == NULL ||
+				    lock_ctx->ctdb_db->lock_num_current < MAX_LOCK_PROCESSES_PER_DB) {
+					/* Found a lock context with lock requests */
+					break;
+				}
 			}
 
 			/* There is already a child waiting for the
@@ -874,7 +875,9 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
 	ctdb->lock_num_pending--;
 	DLIST_ADD_END(ctdb->lock_current, lock_ctx, NULL);
-	ctdb->lock_num_current++;
+	if (lock_ctx->ctdb_db) {
+		lock_ctx->ctdb_db->lock_num_current++;
+	}
 }
 
 
