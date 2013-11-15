@@ -32,7 +32,7 @@ void dump_grent(char *id)
     setgrent();
         
     while((gr = getgrent()) != NULL) {
-        fprintf(fptr,"%s:%s:%d:%d\n", gr->gr_name, gr->gr_passwd,
+        fprintf(fptr,"%s:%s:%d\n", gr->gr_name, gr->gr_passwd,
                 gr->gr_gid);
     }
         
