@@ -739,7 +739,8 @@ static void pull_seqnum_cb(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t
 
 	seqnum = *((uint64_t *)outdata.dptr);
 
-	if (seqnum > cb_data->seqnum) {
+	if (seqnum > cb_data->seqnum ||
+	    (cb_data->pnn == -1 && seqnum == 0)) {
 		cb_data->seqnum = seqnum;
 		cb_data->pnn = node_pnn;
 	}
@@ -802,7 +803,7 @@ static int pull_highest_seqnum_pdb(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (cb_data->seqnum == 0 || cb_data->pnn == -1) {
+	if (cb_data->pnn == -1) {
 		DEBUG(DEBUG_NOTICE, ("Failed to find a node with highest sequence numbers for DB 0x%08x\n", dbid));
 		talloc_free(tmp_ctx);
 		return -1;
