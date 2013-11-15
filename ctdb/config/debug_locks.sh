@@ -14,15 +14,20 @@
 
 loadconfig ctdb
 
-# Create sed expression to convert inodes to names
-sed_cmd=$( ls -li "$CTDB_DBDIR"/*.tdb.* "$CTDB_DBDIR_PERSISTENT"/*.tdb.* |
+(
+    flock -n 9 || exit 1
+
+    echo "===== Start of debug locks PID=$$ ====="
+
+    # Create sed expression to convert inodes to names
+    sed_cmd=$( ls -li "$CTDB_DBDIR"/*.tdb.* "$CTDB_DBDIR_PERSISTENT"/*.tdb.* |
 	   sed -e "s#${CTDB_DBDIR}/\(.*\)#\1#" \
 	       -e "s#${CTDB_DBDIR_PERSISTENT}/\(.*\)#\1#" |
 	   awk '{printf "s#[0-9]*:[0-9]*:%s #%s #\n", $1, $10}' )
 
-# Parse /proc/locks and extract following information
-#    pid process_name tdb_name offsets [W]
-out=$( cat /proc/locks |
+    # Parse /proc/locks and extract following information
+    #    pid process_name tdb_name offsets [W]
+    out=$( cat /proc/locks |
     grep -F "POSIX  ADVISORY  WRITE" |
     awk '{ if($2 == "->") { print $6, $7, $8, $9, "W" } else { print $5, $6, $7, $8 } }' |
     while read pid rest ; do
@@ -30,24 +35,29 @@ out=$( cat /proc/locks |
 	echo $pid $pname $rest
     done | sed -e "$sed_cmd" | grep "\.tdb" )
 
-if [ -n "$out" ]; then
-    # Log information about locks
-    echo "$out" | logger -t "ctdbd-lock"
+    if [ -n "$out" ]; then
+	# Log information about locks
+	echo "$out"
 
-    # Find processes that are waiting for locks
-    dbs=$(echo "$out" | grep "W$" | awk '{print $3}')
-    all_pids=""
-    for db in $dbs ; do
-	pids=$(echo "$out" | grep -v "W$" | grep "$db" | grep -v ctdbd | awk '{print $1}')
-	all_pids="$all_pids $pids"
-    done
-    pids=$(echo $all_pids | sort -u)
+	# Find processes that are waiting for locks
+	dbs=$(echo "$out" | grep "W$" | awk '{print $3}')
+	all_pids=""
+	for db in $dbs ; do
+	    pids=$(echo "$out" | grep -v "W$" | grep "$db" | grep -v ctdbd | awk '{print $1}')
+	    all_pids="$all_pids $pids"
+	done
+	pids=$(echo $all_pids | sort -u)
 
-    # For each process waiting, log stack trace
-    for pid in $pids ; do
-	gstack $pid | logger -t "ctdbd-lock $pid"
-#	gcore -o /var/log/core-deadlock-ctdb $pid
-    done
-fi
+	# For each process waiting, log stack trace
+	for pid in $pids ; do
+	    echo "----- Stack trace for PID=$pid -----"
+	    gstack $pid
+	    # gcore -o /var/log/core-deadlock-ctdb $pid
+	done
+    fi
+
+    echo "===== End of debug locks PID=$$ ====="
+
+) 9>"${CTDB_VARDIR}/debug_locks.lock" | script_log "ctdbd-lock"
 
 exit 0
