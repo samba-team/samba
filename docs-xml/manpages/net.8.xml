@@ -22,20 +22,25 @@
 	<cmdsynopsis>
 		<command>net</command>
 		<arg choice="req">&lt;ads|rap|rpc&gt;</arg>
-		<arg choice="opt">-h</arg>
-		<arg choice="opt">-w workgroup</arg>
-		<arg choice="opt">-W myworkgroup</arg>
-		<arg choice="opt">-U user</arg>
-		<arg choice="opt">-I ip-address</arg>
-		<arg choice="opt">-p port</arg>
+		<arg choice="opt">-h|--help</arg>
+		<arg choice="opt">-w|--workgroup workgroup</arg>
+		<arg choice="opt">-W|--myworkgroup myworkgroup</arg>
+		<arg choice="opt">-U|--user user</arg>
+		<arg choice="opt">-I|--ipaddress ip-address</arg>
+		<arg choice="opt">-p|--port port</arg>
 		<arg choice="opt">-n myname</arg>
 		<arg choice="opt">-s conffile</arg>
-		<arg choice="opt">-S server</arg>
-		<arg choice="opt">-l</arg>
-		<arg choice="opt">-P</arg>
+		<arg choice="opt">-S|--server server</arg>
+		<arg choice="opt">-l|--long</arg>
+		<arg choice="opt">-v|--verbose</arg>
+		<arg choice="opt">-f|--force</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">--request-timeout seconds</arg>
+		<arg choice="opt">-t|--timeout seconds</arg>
+		<arg choice="opt">-i|--stdin</arg>
+		<arg choice="opt">--tallocreport</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -64,7 +69,7 @@
 		&stdarg.kerberos;
 		
 		<varlistentry>
-		<term>-w target-workgroup</term>
+		<term>-w|--workgroup target-workgroup</term>
 		<listitem><para>
 		Sets target workgroup or domain. You have to specify 
 		either this option or the IP address or the name of a server.
@@ -72,21 +77,21 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-W workgroup</term>
+		<term>-W|--myworkgroup workgroup</term>
 		<listitem><para>
 		Sets client workgroup or domain
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-U user</term>
+		<term>-U|--user user</term>
 		<listitem><para>
 		User name to use
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-I ip-address</term>
+		<term>-I|--ipaddress ip-address</term>
 		<listitem><para>
 		IP address of target server to use. You have to
 		specify either this option or a target workgroup or
@@ -95,7 +100,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-p port</term>
+		<term>-p|--port port</term>
 		<listitem><para>
 		Port on the target server to connect to (usually 139 or 445). 
 		Defaults to trying 445 first, then 139.
@@ -106,7 +111,7 @@
 		&stdarg.configfile;
 
 		<varlistentry>
-		<term>-S server</term>
+		<term>-S|--server server</term>
 		<listitem><para>
 		Name of target server. You should specify either 
 		this option or a target workgroup or a target IP address.
@@ -114,14 +119,28 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-l</term>
+		<term>-l|--long</term>
 		<listitem><para>
 		When listing data, give more information on each item.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-P</term>
+		<term>-v|--verbose</term>
+		<listitem><para>
+		When listing data, give more verbose information on each item.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-f|--force</term>
+		<listitem><para>
+				Enforcing a net command.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-P|--machine-pass</term>
 		<listitem><para>
 		Make queries to the external server using the machine account of the local server.
 		</para></listitem>
@@ -135,7 +154,38 @@
 		</para></listitem>
 		</varlistentry>
 
-		&stdarg.server.debug;
+		<varlistentry>
+		<term>-t|--timeout 30</term>
+		<listitem><para>
+				Set timeout for client operations to 30 seconds.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--use-ccache</term>
+		<listitem><para>
+		Try to use the credentials cached by winbind.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-i|--stdin</term>
+		<listitem><para>
+				Take input for net commands from standard input.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--tallocreport</term>
+		<listitem><para>
+				Generate a talloc report while processing a net
+				command.
+		</para></listitem>
+		</varlistentry>
+
+		&stdarg.encrypt;
+		&popt.common.samba.client;
+
 	</variablelist>
 </refsect1>
 
