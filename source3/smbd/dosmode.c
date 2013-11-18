@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
+#include "librpc/gen_ndr/ioctl.h"
 #include "../libcli/security/security.h"
 #include "smbd/smbd.h"
 #include "lib/param/loadparm.h"
@@ -49,6 +50,9 @@ static void dos_mode_debug_print(uint32_t mode)
 	}
 	if (mode & FILE_ATTRIBUTE_OFFLINE) {
 		DEBUG(8, ("[offline]"));
+	}
+	if (mode & FILE_ATTRIBUTE_COMPRESSED) {
+		DEBUG(8, ("[compressed]"));
 	}
 
 	DEBUG(8,("\n"));
@@ -646,6 +650,40 @@ static bool set_stat_dos_flags(connection_struct *conn,
 }
 #endif /* HAVE_STAT_DOS_FLAGS */
 
+/*
+ * check whether a file or directory is flagged as compressed.
+ */
+static NTSTATUS dos_mode_check_compressed(connection_struct *conn,
+					  struct smb_filename *smb_fname,
+					  bool *is_compressed)
+{
+	NTSTATUS status;
+	uint16_t compression_fmt;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+
+	status = SMB_VFS_GET_COMPRESSION(conn, tmp_ctx, NULL, smb_fname,
+					 &compression_fmt);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto err_ctx_free;
+	}
+
+	if (compression_fmt == COMPRESSION_FORMAT_LZNT1) {
+		*is_compressed = true;
+	} else {
+		*is_compressed = false;
+	}
+	status = NT_STATUS_OK;
+
+err_ctx_free:
+	talloc_free(tmp_ctx);
+err_out:
+	return status;
+}
+
 /****************************************************************************
  Change a unix mode to a dos mode.
  May also read the create timespec into the stat struct in smb_fname
@@ -693,6 +731,15 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	offline = SMB_VFS_IS_OFFLINE(conn, smb_fname, &smb_fname->st);
 	if (S_ISREG(smb_fname->st.st_ex_mode) && offline) {
 		result |= FILE_ATTRIBUTE_OFFLINE;
+	}
+
+	if (conn->fs_capabilities & FILE_FILE_COMPRESSION) {
+		bool compressed = false;
+		NTSTATUS status = dos_mode_check_compressed(conn, smb_fname,
+							    &compressed);
+		if (NT_STATUS_IS_OK(status) && compressed) {
+			result |= FILE_ATTRIBUTE_COMPRESSED;
+		}
 	}
 
 	/* Optimization : Only call is_hidden_path if it's not already
