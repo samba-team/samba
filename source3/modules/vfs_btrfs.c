@@ -18,11 +18,16 @@
  */
 
 #include <linux/ioctl.h>
+#include <linux/fs.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "includes.h"
-#include "system/filesys.h"
 #include "smbd/smbd.h"
-#include "../librpc/gen_ndr/smbXsrv.h"
+#include "librpc/gen_ndr/smbXsrv.h"
+#include "librpc/gen_ndr/ioctl.h"
 #include "lib/util/tevent_ntstatus.h"
 
 struct btrfs_ioctl_clone_range_args {
@@ -187,9 +192,119 @@ static NTSTATUS btrfs_copy_chunk_recv(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+/*
+ * caller must pass a non-null fsp or smb_fname. If fsp is null, then
+ * fall back to opening the corresponding file to issue the ioctl.
+ */
+static NTSTATUS btrfs_get_compression(struct vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      struct files_struct *fsp,
+				      struct smb_filename *smb_fname,
+				      uint16_t *_compression_fmt)
+{
+	int ret;
+	long flags = 0;
+	int fd;
+	bool opened = false;
+	NTSTATUS status;
+
+	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
+		fd = fsp->fh->fd;
+	} else if (smb_fname != NULL) {
+		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+			DIR *dir = opendir(smb_fname->base_name);
+			if (dir == NULL) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			fd = dirfd(dir);
+		} else {
+			fd = open(smb_fname->base_name, O_RDONLY);
+		}
+		if (fd < 0) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		opened = true;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ret = ioctl(fd, FS_IOC_GETFLAGS, &flags);
+	if (ret < 0) {
+		DEBUG(1, ("FS_IOC_GETFLAGS failed: %s, fd %lld\n",
+			  strerror(errno), (long long)fd));
+		status = map_nt_error_from_unix(errno);
+		goto err_close;
+	}
+	if (flags & FS_COMPR_FL) {
+		*_compression_fmt = COMPRESSION_FORMAT_LZNT1;
+	} else {
+		*_compression_fmt = COMPRESSION_FORMAT_NONE;
+	}
+	status = NT_STATUS_OK;
+err_close:
+	if (opened) {
+		close(fd);
+	}
+
+	return status;
+}
+
+static NTSTATUS btrfs_set_compression(struct vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      struct files_struct *fsp,
+				      uint16_t compression_fmt)
+{
+	int ret;
+	long flags = 0;
+	int fd;
+	NTSTATUS status;
+
+	if ((fsp == NULL) || (fsp->fh->fd == -1)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto err_out;
+	}
+	fd = fsp->fh->fd;
+
+	ret = ioctl(fd, FS_IOC_GETFLAGS, &flags);
+	if (ret < 0) {
+		DEBUG(1, ("FS_IOC_GETFLAGS failed: %s, fd %d\n",
+			  strerror(errno), fd));
+		status = map_nt_error_from_unix(errno);
+		goto err_out;
+	}
+
+	if (compression_fmt == COMPRESSION_FORMAT_NONE) {
+		DEBUG(5, ("setting compression\n"));
+		flags &= (~FS_COMPR_FL);
+	} else if ((compression_fmt == COMPRESSION_FORMAT_DEFAULT)
+		|| (compression_fmt == COMPRESSION_FORMAT_LZNT1)) {
+		DEBUG(5, ("clearing compression\n"));
+		flags |= FS_COMPR_FL;
+	} else {
+		DEBUG(1, ("invalid compression format 0x%x\n",
+			  (int)compression_fmt));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto err_out;
+	}
+
+	ret = ioctl(fd, FS_IOC_SETFLAGS, &flags);
+	if (ret < 0) {
+		DEBUG(1, ("FS_IOC_SETFLAGS failed: %s, fd %d\n",
+			  strerror(errno), fd));
+		status = map_nt_error_from_unix(errno);
+		goto err_out;
+	}
+	status = NT_STATUS_OK;
+err_out:
+	return status;
+}
+
+
 static struct vfs_fn_pointers btrfs_fns = {
 	.copy_chunk_send_fn = btrfs_copy_chunk_send,
 	.copy_chunk_recv_fn = btrfs_copy_chunk_recv,
+	.get_compression_fn = btrfs_get_compression,
+	.set_compression_fn = btrfs_set_compression,
 };
 
 NTSTATUS vfs_btrfs_init(void);
