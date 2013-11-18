@@ -2223,6 +2223,132 @@ static bool test_ioctl_compress_set_file_attr(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_compress_perms(struct torture_context *torture,
+				      struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	uint16_t compression_fmt;
+	union smb_fileinfo io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	smb2_util_close(tree, fh);
+	if (!ok) {
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
+	/* attempt get compression without READ_ATTR permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+			(SEC_RIGHTS_FILE_READ & ~(SEC_FILE_READ_ATTRIBUTE
+							| SEC_STD_READ_CONTROL
+							| SEC_FILE_READ_EA)),
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "compression set after create");
+	smb2_util_close(tree, fh);
+
+	/* set compression without WRITE_ATTR permission should succeed */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+			(SEC_RIGHTS_FILE_WRITE & ~(SEC_FILE_WRITE_ATTRIBUTE
+							| SEC_STD_WRITE_DAC
+							| SEC_FILE_WRITE_EA)),
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
+					 COMPRESSION_FORMAT_DEFAULT);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_COMPRESSION");
+	smb2_util_close(tree, fh);
+
+	ok = test_setup_open(torture, tree, tmp_ctx,
+				    FNAME, &fh, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	io.generic.in.file.handle = fh;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FILE");
+
+	torture_assert(torture,
+		       (io.all_info2.out.attrib & FILE_ATTRIBUTE_COMPRESSED),
+		       "incorrect compression attr");
+	smb2_util_close(tree, fh);
+
+	/* attempt get compression without READ_DATA permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+			(SEC_RIGHTS_FILE_READ & ~SEC_FILE_READ_DATA),
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "compression enabled after set");
+	smb2_util_close(tree, fh);
+
+	/* attempt get compression with only SYNCHRONIZE permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+				    SEC_STD_SYNCHRONIZE,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "compression not enabled after set");
+	smb2_util_close(tree, fh);
+
+	/* attempt to set compression without WRITE_DATA permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+			(SEC_RIGHTS_FILE_WRITE & (~SEC_FILE_WRITE_DATA)),
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
+					 COMPRESSION_FORMAT_DEFAULT);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+				      "FSCTL_SET_COMPRESSION permission");
+	smb2_util_close(tree, fh);
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+			(SEC_RIGHTS_FILE_WRITE & (~SEC_FILE_WRITE_DATA)),
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
+					 COMPRESSION_FORMAT_NONE);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+				      "FSCTL_SET_COMPRESSION permission");
+	smb2_util_close(tree, fh);
+
+	talloc_free(tmp_ctx);
+	return true;
+}
 
 /*
    basic testing of SMB2 ioctls
@@ -2285,6 +2411,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_compress_inherit_disable);
 	torture_suite_add_1smb2_test(suite, "compress_set_file_attr",
 				     test_ioctl_compress_set_file_attr);
+	torture_suite_add_1smb2_test(suite, "compress_perms",
+				     test_ioctl_compress_perms);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
