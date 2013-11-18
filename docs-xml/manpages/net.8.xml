@@ -183,6 +183,48 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>-T|--test</term>
+		<listitem><para>Only test command sequence, dry-run.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-F|--flags FLAGS</term>
+		<listitem><para>Pass down integer flags to a net subcommand.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-C|--comment COMMENT</term>
+		<listitem><para>Pass down a comment string to a net subcommand.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-n|--myname MYNAME</term>
+		<listitem><para>Use MYNAME as a requester name for a net subcommand.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-c|--container CONTAINER</term>
+		<listitem><para>Use a specific AD container for net ads operations.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-M|--maxusers MAXUSERS</term>
+		<listitem><para>Fill in the maxusers field in net rpc share operations.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-r|--reboot</term>
+		<listitem><para>Reboot a remote machine after a command has been successfully executed (e.g. in remote join operations).
+		</para></listitem>
+		</varlistentry>
+
 		<!-- Options for net rpc vampire -->
 
 		<varlistentry>
