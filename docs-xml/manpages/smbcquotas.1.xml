@@ -20,13 +20,13 @@
 	<cmdsynopsis>
 		<command>smbcquotas</command>
 		<arg choice="req">//server/share</arg>
-		<arg choice="opt">-u user</arg>
-		<arg choice="opt">-L</arg>
-		<arg choice="opt">-F</arg>
-		<arg choice="opt">-S QUOTA_SET_COMMAND</arg>
-		<arg choice="opt">-n</arg>
-		<arg choice="opt">-t</arg>
-		<arg choice="opt">-v</arg>
+		<arg choice="opt">-u|--user user</arg>
+		<arg choice="opt">-L|--list</arg>
+		<arg choice="opt">-F|--fs</arg>
+		<arg choice="opt">-S|--set QUOTA_SET_COMMAND</arg>
+		<arg choice="opt">-n|--numeric</arg>
+		<arg choice="opt">-t|--test-args</arg>
+		<arg choice="opt">-v|--verbose</arg>
 
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-s configfile</arg>
@@ -60,7 +60,7 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-u user</term>
+		<term>-u|--user user</term>
 		<listitem><para> Specifies the user of whom the quotas are get or set.
 		By default the current user's username will be used.</para></listitem>
 		</varlistentry>
@@ -68,51 +68,53 @@
 		
 		
 		<varlistentry>
-		<term>-L</term>
+		<term>-L|--list</term>
 		<listitem><para>Lists all quota records of the share.</para></listitem>
 		</varlistentry>
 
 		
 		
 		<varlistentry>
-		<term>-F</term>
+		<term>-F|--fs</term>
 		<listitem><para>Show the share quota status and default limits.</para></listitem>
 		</varlistentry>
 		
 		
 		
 		<varlistentry>
-		<term>-S QUOTA_SET_COMMAND</term>
+		<term>-S|--set QUOTA_SET_COMMAND</term>
 		<listitem><para>This command sets/modifies quotas for a user or on the share,
 		depending on the QUOTA_SET_COMMAND parameter which is described later.</para></listitem>
 		</varlistentry>
 
 		
 		<varlistentry>
-		<term>-n</term>
+		<term>-n|--numeric</term>
 		<listitem><para>This option displays all QUOTA information in numeric 
 		format.  The default is to convert SIDs to names and QUOTA limits 
 		to a readable string format.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-t</term>
+		<term>-t|--test-args</term>
 		<listitem><para>
 		Don't actually do anything, only validate the correctness of the arguments.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-v</term>
+		<term>-v|--verbose</term>
 		<listitem><para>
 		Be verbose.
 		</para></listitem>
 		</varlistentry>
 				
-		&stdarg.help;
+
 		&stdarg.server.debug;
 		&popt.common.samba;
 		&popt.common.credentials;
+		&popt.autohelp;
+
 	</variablelist>
 </refsect1>
 
