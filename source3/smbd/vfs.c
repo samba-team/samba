@@ -2200,6 +2200,27 @@ NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,
 	return handle->fns->copy_chunk_recv_fn(handle, req, copied);
 }
 
+NTSTATUS smb_vfs_call_get_compression(vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      struct files_struct *fsp,
+				      struct smb_filename *smb_fname,
+				      uint16_t *_compression_fmt)
+{
+	VFS_FIND(get_compression);
+	return handle->fns->get_compression_fn(handle, mem_ctx, fsp, smb_fname,
+					       _compression_fmt);
+}
+
+NTSTATUS smb_vfs_call_set_compression(vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      struct files_struct *fsp,
+				      uint16_t compression_fmt)
+{
+	VFS_FIND(set_compression);
+	return handle->fns->set_compression_fn(handle, mem_ctx, fsp,
+					       compression_fmt);
+}
+
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,

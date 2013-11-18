@@ -1489,6 +1489,23 @@ static NTSTATUS vfswrap_copy_chunk_recv(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS vfswrap_get_compression(struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					struct files_struct *fsp,
+					struct smb_fname *smb_fname,
+					uint16_t *_compression_fmt)
+{
+	return NT_STATUS_INVALID_DEVICE_REQUEST;
+}
+
+static NTSTATUS vfswrap_set_compression(struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					struct files_struct *fsp,
+					uint16_t compression_fmt)
+{
+	return NT_STATUS_INVALID_DEVICE_REQUEST;
+}
+
 /********************************************************************
  Given a stat buffer return the allocated size on disk, taking into
  account sparse files.
@@ -2535,6 +2552,8 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fsctl_fn = vfswrap_fsctl,
 	.copy_chunk_send_fn = vfswrap_copy_chunk_send,
 	.copy_chunk_recv_fn = vfswrap_copy_chunk_recv,
+	.get_compression_fn = vfswrap_get_compression,
+	.set_compression_fn = vfswrap_set_compression,
 
 	/* NT ACL operations. */
 

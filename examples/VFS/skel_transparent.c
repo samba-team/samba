@@ -645,6 +645,25 @@ static NTSTATUS skel_copy_chunk_recv(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS skel_get_compression(struct vfs_handle_struct *handle,
+				     TALLOC_CTX *mem_ctx,
+				     struct files_struct *fsp,
+				     struct smb_filename *smb_fname,
+				     uint16_t *_compression_fmt)
+{
+	return SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp, smb_fname,
+					    _compression_fmt);
+}
+
+static NTSTATUS skel_set_compression(struct vfs_handle_struct *handle,
+				     TALLOC_CTX *mem_ctx,
+				     struct files_struct *fsp,
+				     uint16_t compression_fmt)
+{
+	return SMB_VFS_NEXT_SET_COMPRESSION(handle, mem_ctx, fsp,
+					    compression_fmt);
+}
+
 static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const char *fname,
@@ -973,6 +992,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.file_id_create_fn = skel_file_id_create,
 	.copy_chunk_send_fn = skel_copy_chunk_send,
 	.copy_chunk_recv_fn = skel_copy_chunk_recv,
+	.get_compression_fn = skel_get_compression,
+	.set_compression_fn = skel_set_compression,
 
 	.streaminfo_fn = skel_streaminfo,
 	.get_real_filename_fn = skel_get_real_filename,

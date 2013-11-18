@@ -1751,6 +1751,57 @@ static NTSTATUS smb_time_audit_copy_chunk_recv(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS smb_time_audit_get_compression(vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       struct files_struct *fsp,
+					       struct smb_filename *smb_fname,
+					       uint16_t *_compression_fmt)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp, smb_fname,
+					      _compression_fmt);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		if (fsp !=  NULL) {
+			smb_time_audit_log_fsp("get_compression",
+					       timediff, fsp);
+		} else {
+			smb_time_audit_log_smb_fname("get_compression",
+						     timediff, smb_fname);
+		}
+	}
+
+	return result;
+}
+
+static NTSTATUS smb_time_audit_set_compression(vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       struct files_struct *fsp,
+					       uint16_t compression_fmt)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_SET_COMPRESSION(handle, mem_ctx, fsp,
+					      compression_fmt);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("set_compression", timediff, fsp);
+	}
+
+	return result;
+}
+
 static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
 					   uint32 security_info,
@@ -2370,6 +2421,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.translate_name_fn = smb_time_audit_translate_name,
 	.copy_chunk_send_fn = smb_time_audit_copy_chunk_send,
 	.copy_chunk_recv_fn = smb_time_audit_copy_chunk_recv,
+	.get_compression_fn = smb_time_audit_get_compression,
+	.set_compression_fn = smb_time_audit_set_compression,
 	.fget_nt_acl_fn = smb_time_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_time_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_time_audit_fset_nt_acl,

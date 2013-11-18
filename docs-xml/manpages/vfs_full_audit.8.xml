@@ -62,6 +62,7 @@
         <member>fstat</member>
         <member>fsync</member>
         <member>ftruncate</member>
+        <member>get_compression</member>
         <member>get_nt_acl</member>
         <member>get_quota</member>
         <member>get_shadow_copy_data</member>
@@ -91,6 +92,7 @@
         <member>rmdir</member>
         <member>seekdir</member>
         <member>sendfile</member>
+        <member>set_compression</member>
         <member>set_nt_acl</member>
         <member>set_quota</member>
         <member>setxattr</member>

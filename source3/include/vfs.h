@@ -154,6 +154,7 @@
 /* Leave at 31 - not yet released. add SMB_VFS_COPY_CHUNK() */
 /* Leave at 31 - not yet released. Remove the unused
 		fsp->pending_break_messages array */
+/* Leave at 31 - not yet released. add SMB_VFS_[GET/SET]_COMPRESSION() */
 
 #define SMB_VFS_INTERFACE_VERSION 31
 
@@ -626,6 +627,15 @@ struct vfs_fn_pointers {
 	NTSTATUS (*copy_chunk_recv_fn)(struct vfs_handle_struct *handle,
 				       struct tevent_req *req,
 				       off_t *copied);
+	NTSTATUS (*get_compression_fn)(struct vfs_handle_struct *handle,
+				       TALLOC_CTX *mem_ctx,
+				       struct files_struct *fsp,
+				       struct smb_filename *smb_fname,
+				       uint16_t *_compression_fmt);
+	NTSTATUS (*set_compression_fn)(struct vfs_handle_struct *handle,
+				       TALLOC_CTX *mem_ctx,
+				       struct files_struct *fsp,
+				       uint16_t compression_fmt);
 
 	NTSTATUS (*streaminfo_fn)(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
@@ -1109,6 +1119,15 @@ struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle
 NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,
 				      struct tevent_req *req,
 				      off_t *copied);
+NTSTATUS smb_vfs_call_get_compression(struct vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      struct files_struct *fsp,
+				      struct smb_filename *smb_fname,
+				      uint16_t *_compression_fmt);
+NTSTATUS smb_vfs_call_set_compression(struct vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      struct files_struct *fsp,
+				      uint16_t compression_fmt);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,
