@@ -149,21 +149,15 @@ static bool check_pattern(struct torture_context *torture,
 	return true;
 }
 
-static bool test_setup_create_fill(struct torture_context *torture,
-				   struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
-				   const char *fname,
-				   struct smb2_handle *fh,
-				   uint64_t size,
-				   uint32_t desired_access,
-				   uint32_t file_attributes)
+static bool test_setup_open(struct torture_context *torture,
+			    struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+			    const char *fname,
+			    struct smb2_handle *fh,
+			    uint32_t desired_access,
+			    uint32_t file_attributes)
 {
 	struct smb2_create io;
 	NTSTATUS status;
-	uint64_t i;
-	uint8_t *buf = talloc_zero_size(mem_ctx, size);
-	torture_assert(torture, (buf != NULL), "no memory for file data buf");
-
-	smb2_util_unlink(tree, fname);
 
 	ZERO_STRUCT(io);
 	io.in.desired_access = desired_access;
@@ -182,6 +176,32 @@ static bool test_setup_create_fill(struct torture_context *torture,
 	torture_assert_ntstatus_ok(torture, status, "file create");
 
 	*fh = io.out.file.handle;
+
+	return true;
+}
+
+static bool test_setup_create_fill(struct torture_context *torture,
+				   struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+				   const char *fname,
+				   struct smb2_handle *fh,
+				   uint64_t size,
+				   uint32_t desired_access,
+				   uint32_t file_attributes)
+{
+	NTSTATUS status;
+	bool ok;
+	uint64_t i;
+	uint8_t *buf = talloc_zero_size(mem_ctx, size);
+	torture_assert(torture, (buf != NULL), "no memory for file data buf");
+
+	smb2_util_unlink(tree, fname);
+
+	ok = test_setup_open(torture, tree, mem_ctx,
+			     fname,
+			     fh,
+			     desired_access,
+			     file_attributes);
+	torture_assert(torture, ok, "file open");
 
 	if (size > 0) {
 		uint64_t cur_off = 0;
