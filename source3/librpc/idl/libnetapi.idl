@@ -1779,6 +1779,19 @@ interface libnetapi
 	} SHARE_INFO_501;
 
 	typedef struct {
+		string shi502_netname;
+		uint32 shi502_type;
+		string shi502_remark;
+		uint32 shi502_permissions;
+		uint32 shi502_max_uses;
+		uint32 shi502_current_uses;
+		string shi502_path;
+		string shi502_passwd;
+		uint32 shi502_reserved;
+		security_descriptor *shi502_security_descriptor;
+	} SHARE_INFO_502;
+
+	typedef struct {
 		string shi1004_remark;
 	} SHARE_INFO_1004;
 

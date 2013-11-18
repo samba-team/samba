@@ -1233,6 +1233,19 @@ struct SHARE_INFO_501 {
 	uint32_t shi501_flags;
 };
 
+struct SHARE_INFO_502 {
+	const char * shi502_netname;
+	uint32_t shi502_type;
+	const char * shi502_remark;
+	uint32_t shi502_permissions;
+	uint32_t shi502_max_uses;
+	uint32_t shi502_current_uses;
+	const char * shi502_path;
+	const char * shi502_passwd;
+	uint32_t shi502_reserved;
+	struct security_descriptor * shi502_security_descriptor;
+};
+
 struct SHARE_INFO_1004 {
 	const char * shi1004_remark;
 };

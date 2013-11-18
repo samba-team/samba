@@ -124,6 +124,7 @@ NET_API_STATUS netapitest_share(struct libnetapi_ctx *ctx,
 	const char *sharename, *comment;
 	uint8_t *buffer = NULL;
 	struct SHARE_INFO_2 i2;
+	struct SHARE_INFO_502 i502;
 	struct SHARE_INFO_1004 i1004;
 	struct SHARE_INFO_501 *i501 = NULL;
 	uint32_t parm_err = 0;
@@ -141,6 +142,23 @@ NET_API_STATUS netapitest_share(struct libnetapi_ctx *ctx,
 	/* add a share */
 
 	printf("testing NetShareAdd\n");
+
+	ZERO_STRUCT(i502);
+
+	i502.shi502_netname = sharename;
+	i502.shi502_path = "c:\\";
+
+	status = NetShareAdd(hostname, 502, (uint8_t *)&i502, &parm_err);
+	if (status) {
+		NETAPI_STATUS(ctx, status, "NetShareAdd");
+		goto out;
+	};
+
+	status = NetShareDel(hostname, sharename, 0);
+	if (status) {
+		NETAPI_STATUS(ctx, status, "NetShareDel");
+		goto out;
+	};
 
 	ZERO_STRUCT(i2);
 

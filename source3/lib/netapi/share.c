@@ -24,6 +24,7 @@
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /****************************************************************
 ****************************************************************/
@@ -129,8 +130,10 @@ static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
 							   union srvsvc_NetShareInfo *info)
 {
 	struct SHARE_INFO_2 *i2 = NULL;
+	struct SHARE_INFO_502 *i502 = NULL;
 	struct SHARE_INFO_1004 *i1004 = NULL;
 	struct srvsvc_NetShareInfo2 *s2 = NULL;
+	struct srvsvc_NetShareInfo502 *s502 = NULL;
 	struct srvsvc_NetShareInfo1004 *s1004 = NULL;
 
 	if (!buffer) {
@@ -156,6 +159,29 @@ static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
 			info->info2 = s2;
 
 			break;
+
+		case 502:
+			i502 = (struct SHARE_INFO_502 *)buffer;
+
+			s502 = talloc(mem_ctx, struct srvsvc_NetShareInfo502);
+			NT_STATUS_HAVE_NO_MEMORY(s502);
+
+			s502->name		= i502->shi502_netname;
+			s502->type		= i502->shi502_type;
+			s502->comment		= i502->shi502_remark;
+			s502->permissions	= i502->shi502_permissions;
+			s502->max_users		= i502->shi502_max_uses;
+			s502->current_users	= i502->shi502_current_uses;
+			s502->path		= i502->shi502_path;
+			s502->password		= i502->shi502_passwd;
+			s502->sd_buf.sd_size	=
+				ndr_size_security_descriptor(i502->shi502_security_descriptor, 0);
+			s502->sd_buf.sd		= i502->shi502_security_descriptor;
+
+			info->info502 = s502;
+
+			break;
+
 		case 1004:
 			i1004 = (struct SHARE_INFO_1004 *)buffer;
 
@@ -191,8 +217,8 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 2:
-			break;
 		case 502:
+			break;
 		case 503:
 			return WERR_NOT_SUPPORTED;
 		default:
