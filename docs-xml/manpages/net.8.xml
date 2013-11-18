@@ -235,6 +235,38 @@
 		</para></listitem>
 		</varlistentry>
 
+		<!-- Options for net rpc share migrate -->
+
+		<varlistentry>
+		<term>--acls</term>
+		<listitem><para>Includes ACLs to be copied in "net rpc share migrate".
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--attrs</term>
+		<listitem><para>Includes file attributes to be copied in "net rpc share migrate".
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--timestamps</term>
+		<listitem><para>Includes timestamps to be copied in "net rpc share migrate".
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-X|--exclude DIRECTORY</term>
+		<listitem><para>Allows to exclude directories when copying with "net rpc share migrate".
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--destination SERVERNAME</term>
+		<listitem><para>Defines the target servername of migration process (defaults to localhost).
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
