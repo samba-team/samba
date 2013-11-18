@@ -34,6 +34,8 @@
 		<arg choice="opt">-d</arg>
 		<arg choice="opt">-e</arg>
 		<arg choice="opt">-m|--max-protocol LEVEL</arg>
+		<arg choice="opt">--query-security-info FLAGS</arg>
+		<arg choice="opt">--set-security-info FLAGS</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -160,7 +162,19 @@
 		the arguments.
 		</para></listitem>
 		</varlistentry>
-				
+
+		<varlistentry>
+		<term>--query-security-info FLAGS</term>
+		<listitem><para>The security-info flags for queries.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--set-security-info FLAGS</term>
+		<listitem><para>The security-info flags for queries.
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.server.debug;
 		&popt.common.samba;
 		&popt.common.credentials;
