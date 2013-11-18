@@ -25,6 +25,35 @@
 #include "smbd/smbd.h"
 #include "lib/param/loadparm.h"
 
+static void dos_mode_debug_print(uint32_t mode)
+{
+	DEBUG(8,("dos_mode returning "));
+
+	if (mode & FILE_ATTRIBUTE_HIDDEN) {
+		DEBUG(8, ("h"));
+	}
+	if (mode & FILE_ATTRIBUTE_READONLY) {
+		DEBUG(8, ("r"));
+	}
+	if (mode & FILE_ATTRIBUTE_SYSTEM) {
+		DEBUG(8, ("s"));
+	}
+	if (mode & FILE_ATTRIBUTE_DIRECTORY) {
+		DEBUG(8, ("d"));
+	}
+	if (mode & FILE_ATTRIBUTE_ARCHIVE) {
+		DEBUG(8, ("a"));
+	}
+	if (mode & FILE_ATTRIBUTE_SPARSE) {
+		DEBUG(8, ("[sparse]"));
+	}
+	if (mode & FILE_ATTRIBUTE_OFFLINE) {
+		DEBUG(8, ("[offline]"));
+	}
+
+	DEBUG(8,("\n"));
+}
+
 static uint32_t filter_mode_by_protocol(uint32_t mode)
 {
 	if (get_Protocol() <= PROTOCOL_LANMAN2) {
@@ -679,19 +708,9 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 
 	result = filter_mode_by_protocol(result);
 
-	DEBUG(8,("dos_mode returning "));
+	dos_mode_debug_print(result);
 
-	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
-	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
-	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (result & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
-	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
-	if (result & FILE_ATTRIBUTE_OFFLINE ) DEBUG(8, ("[offline]"));
-
-	DEBUG(8,("\n"));
-
-	return(result);
+	return result;
 }
 
 /*******************************************************************
