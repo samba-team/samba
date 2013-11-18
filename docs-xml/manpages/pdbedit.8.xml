@@ -503,7 +503,7 @@ account policy value for bad lockout attempt is now 3
 		</listitem>
 		</varlistentry>
 
-		&stdarg.help;
+		&popt.autohelp;
 		&stdarg.server.debug;
 		&popt.common.samba;
 
