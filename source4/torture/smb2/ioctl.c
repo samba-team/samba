@@ -173,6 +173,9 @@ static bool test_setup_create_fill(struct torture_context *torture,
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
 		NTCREATEX_SHARE_ACCESS_WRITE;
+	if (file_attributes & FILE_ATTRIBUTE_DIRECTORY) {
+		io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	}
 	io.in.fname = fname;
 
 	status = smb2_create(tree, mem_ctx, &io);
@@ -1059,7 +1062,8 @@ static bool test_ioctl_copy_chunk_src_is_dest(struct torture_context *torture,
  * default (vfs_cc_state.buf).
  *
  * This test uses an 8-byte overlap at 2040-2048, so that it passes against
- * Windows 2008, 2012 and Samba servers.
+ * Windows 2008r2, 2012 and Samba servers. Note, 2008GM fails, as it appears
+ * to use a different copy algorithm to 2008r2.
  */
 static bool
 test_ioctl_copy_chunk_src_is_dest_overlap(struct torture_context *torture,
@@ -1728,9 +1732,6 @@ static bool test_ioctl_compress_dir_inherit(struct torture_context *torture,
 	char path_buf[PATH_MAX];
 
 	smb2_deltree(tree, DNAME);
-	status = smb2_util_mkdir(tree, DNAME);
-	torture_assert_ntstatus_ok(torture, status, "mkdir");
-
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
 				    DNAME, &dirh, 0, SEC_RIGHTS_FILE_ALL,
 				    FILE_ATTRIBUTE_DIRECTORY);
@@ -2005,7 +2006,6 @@ static bool test_ioctl_compress_inherit_disable(struct torture_context *torture,
 	struct smb2_create io;
 
 	smb2_deltree(tree, DNAME);
-	smb2_util_mkdir(tree, DNAME);
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
 				    DNAME, &dirh, 0, SEC_RIGHTS_FILE_ALL,
 				    FILE_ATTRIBUTE_DIRECTORY);
@@ -2034,7 +2034,6 @@ static bool test_ioctl_compress_inherit_disable(struct torture_context *torture,
 	smb2_util_close(tree, dirh);
 
 	snprintf(path_buf, PATH_MAX, "%s\\%s", DNAME, FNAME);
-	torture_comment(torture, "path is: %s\n", path_buf);
 	ok = test_setup_create_fill(torture, tree, tmp_ctx,
 				    path_buf, &fh, 0, SEC_RIGHTS_FILE_ALL,
 				    FILE_ATTRIBUTE_NORMAL);
@@ -2054,7 +2053,7 @@ static bool test_ioctl_compress_inherit_disable(struct torture_context *torture,
 	ZERO_STRUCT(io);
 	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
 	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
-	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.create_disposition = NTCREATEX_DISP_CREATE;
 	io.in.create_options = NTCREATEX_OPTIONS_NO_COMPRESSION;
 	io.in.share_access =
 		NTCREATEX_SHARE_ACCESS_DELETE|
@@ -2073,8 +2072,36 @@ static bool test_ioctl_compress_inherit_disable(struct torture_context *torture,
 
 	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
 		       "compression attr inherited by NO_COMPRESSION file");
-
 	smb2_util_close(tree, fh);
+
+
+	snprintf(path_buf, PATH_MAX, "%s\\%s", DNAME, DNAME);
+	ZERO_STRUCT(io);
+	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.in.create_options = (NTCREATEX_OPTIONS_NO_COMPRESSION
+				| NTCREATEX_OPTIONS_DIRECTORY);
+	io.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.fname = path_buf;
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "dir create");
+
+	dirh = io.out.file.handle;
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, dirh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "compression attr inherited by NO_COMPRESSION dir");
+	smb2_util_close(tree, dirh);
+	smb2_deltree(tree, DNAME);
+
 	talloc_free(tmp_ctx);
 	return true;
 }
