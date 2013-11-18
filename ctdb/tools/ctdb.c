@@ -4037,8 +4037,9 @@ static int control_tstore(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	const char *tdb_file;
 	TDB_CONTEXT *tdb;
-	TDB_DATA key, data;
+	TDB_DATA key, value, data;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	struct ctdb_ltdb_header header;
 
 	if (argc < 3) {
 		usage();
@@ -4064,20 +4065,37 @@ static int control_tstore(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if (!strncmp(argv[2], "0x", 2)) {
-		data = hextodata(tmp_ctx, argv[2] + 2);
-		if (data.dsize == 0) {
+		value = hextodata(tmp_ctx, argv[2] + 2);
+		if (value.dsize == 0) {
 			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[2]);
 			return -1;
 		}
 	} else {
-		data.dptr  = discard_const(argv[2]);
-		data.dsize = strlen(argv[2]);
+		value.dptr  = discard_const(argv[2]);
+		value.dsize = strlen(argv[2]);
 	}
 
-	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		printf("Not enough data. You must specify the full ctdb_ltdb_header too when storing\n");
+	ZERO_STRUCT(header);
+	if (argc > 3) {
+		header.rsn = atoll(argv[3]);
+	}
+	if (argc > 4) {
+		header.dmaster = atoi(argv[4]);
+	}
+	if (argc > 5) {
+		header.flags = atoi(argv[5]);
+	}
+
+	data.dsize = sizeof(struct ctdb_ltdb_header) + value.dsize;
+	data.dptr = talloc_size(tmp_ctx, data.dsize);
+	if (data.dptr == NULL) {
+		printf("Failed to allocate header+value\n");
 		return -1;
 	}
+
+	*(struct ctdb_ltdb_header *)data.dptr = header;
+	memcpy(data.dptr + sizeof(struct ctdb_ltdb_header), value.dptr, value.dsize);
+
 	if (tdb_store(tdb, key, data, TDB_REPLACE) != 0) {
 		printf("Failed to write record %s to tdb %s\n", argv[1], tdb_file);
 		tdb_close(tdb);
@@ -6266,7 +6284,7 @@ static const struct {
 	{ "pdelete", 	     control_pdelete,      	false,	false,  "delete a record from a persistent database", "<dbname|dbid> <key>" },
 	{ "ptrans", 	     control_ptrans,      	false,	false,  "update a persistent database (from stdin)", "<dbname|dbid>" },
 	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file [-v]", "<tdb-file> <key> [<file>]" },
-	{ "tstore", 	     control_tstore,      	false,	true,  "store a record (including ltdb header)", "<tdb-file> <key> <data+header>" },
+	{ "tstore", 	     control_tstore,      	false,	true,  "store a record (including ltdb header)", "<tdb-file> <key> <data> [<rsn> <dmaster> <flags>]" },
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
