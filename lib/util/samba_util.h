@@ -27,6 +27,9 @@
 /* for TALLOC_CTX */
 #include <talloc.h>
 
+/* for struct stat */
+#include <sys/stat.h>
+
 /**
  * @file
  * @brief Helpful macros
@@ -627,7 +630,6 @@ _PUBLIC_ bool directory_exist(const char *dname);
 /**
  Check file permissions.
 **/
-struct stat;
 _PUBLIC_ bool file_check_permissions(const char *fname,
 				     uid_t uid,
 				     mode_t file_perms,
