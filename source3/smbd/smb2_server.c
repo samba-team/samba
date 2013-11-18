@@ -1870,6 +1870,15 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 	case SMB2_OP_GETINFO:
 		min_dyn_size = 0;
 		break;
+	case SMB2_OP_WRITE:
+		if (req->smb1req != NULL && req->smb1req->unread_bytes > 0) {
+			if (req->smb1req->unread_bytes < min_dyn_size) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			min_dyn_size = 0;
+		}
+		break;
 	}
 
 	/*
