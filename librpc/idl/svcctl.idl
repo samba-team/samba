@@ -484,7 +484,8 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_OpenServiceA(
 		[in,ref] policy_handle *scmanager_handle,
 		[in,unique] [string,charset(UTF16)] uint16 *ServiceName,
-		[in] uint32 access_mask
+		[in] uint32 access_mask,
+		[out,ref] policy_handle *handle
 	);
 
 	/*****************/
