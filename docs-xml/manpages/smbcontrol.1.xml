@@ -19,8 +19,8 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbcontrol</command>
-		<arg>-i</arg>
 		<arg>-s</arg>
+		<arg>-t|--timeout</arg>
 	</cmdsynopsis>
 	
 	<cmdsynopsis>
@@ -49,15 +49,14 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
-		&stdarg.help;
+		&popt.autohelp;
 		&stdarg.configfile;
-		&popt.common.samba;
+		&popt.common.samba.client;
 		<varlistentry>
-		<term>-i</term>
-		<listitem><para>Run interactively. Individual commands 
-		of the form destination message-type parameters can be entered 
-		on STDIN. An empty command line or a "q" will quit the 
-		program.</para></listitem>
+		<term>-t|--timeout</term>
+		<listitem><para>
+				Set timeout to seconds.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
