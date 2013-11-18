@@ -1873,10 +1873,12 @@ doma_done:
 		gidstr = talloc_asprintf(tc, "%u", (unsigned int)domadmins_gid);
 		dir = talloc_sub_specified(tc, lp_template_homedir(),
 						"Administrator",
+						NULL,
 						get_global_sam_name(),
 						uid, domadmins_gid);
 		shell = talloc_sub_specified(tc, lp_template_shell(),
 						"Administrator",
+						NULL,
 						get_global_sam_name(),
 						uid, domadmins_gid);
 

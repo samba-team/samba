@@ -613,6 +613,7 @@ done:
 char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			const char *input_string,
 			const char *username,
+			const char *grpname,
 			const char *domain,
 			uid_t uid,
 			gid_t gid)
@@ -648,9 +649,18 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			break;
 		case 'G' :
 			if (gid != -1) {
-				a_string = talloc_string_sub(
-					tmp_ctx, a_string, "%G",
-					gidtoname(gid));
+				const char *name;
+
+				if (grpname != NULL) {
+					name = grpname;
+				} else {
+					name = gidtoname(gid);
+				}
+
+				a_string = talloc_string_sub(tmp_ctx,
+							     a_string,
+							     "%G",
+							     name);
 			} else {
 				a_string = talloc_string_sub(
 					tmp_ctx, a_string,
@@ -659,9 +669,18 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			break;
 		case 'g' :
 			if (gid != -1) {
-				a_string = talloc_string_sub(
-					tmp_ctx, a_string, "%g",
-					gidtoname(gid));
+				const char *name;
+
+				if (grpname != NULL) {
+					name = grpname;
+				} else {
+					name = gidtoname(gid);
+				}
+
+				a_string = talloc_string_sub(tmp_ctx,
+							     a_string,
+							     "%g",
+							     name);
 			} else {
 				a_string = talloc_string_sub(
 					tmp_ctx, a_string, "%g", "NO_GROUP");

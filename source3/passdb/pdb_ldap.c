@@ -5316,11 +5316,29 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 
 		if (is_machine) {
 			/* TODO: choose a more appropriate default for machines */
-			homedir = talloc_sub_specified(tmp_ctx, lp_template_homedir(), "SMB_workstations_home", ldap_state->domain_name, uid, gid);
+			homedir = talloc_sub_specified(tmp_ctx,
+						       lp_template_homedir(),
+						       "SMB_workstations_home",
+						       NULL,
+						       ldap_state->domain_name,
+						       uid,
+						       gid);
 			shell = talloc_strdup(tmp_ctx, "/bin/false");
 		} else {
-			homedir = talloc_sub_specified(tmp_ctx, lp_template_homedir(), name, ldap_state->domain_name, uid, gid);
-			shell = talloc_sub_specified(tmp_ctx, lp_template_shell(), name, ldap_state->domain_name, uid, gid);
+			homedir = talloc_sub_specified(tmp_ctx,
+						       lp_template_homedir(),
+						       name,
+						       NULL,
+						       ldap_state->domain_name,
+						       uid,
+						       gid);
+			shell = talloc_sub_specified(tmp_ctx,
+						     lp_template_shell(),
+						     name,
+						     NULL,
+						     ldap_state->domain_name,
+						     uid,
+						     gid);
 		}
 		uidstr = talloc_asprintf(tmp_ctx, "%u", (unsigned int)uid);
 		gidstr = talloc_asprintf(tmp_ctx, "%u", (unsigned int)gid);
