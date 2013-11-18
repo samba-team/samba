@@ -893,7 +893,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 					       enum lock_type type,
 					       bool auto_mark)
 {
-	struct lock_context *lock_ctx;
+	struct lock_context *lock_ctx = NULL;
 	struct lock_request *request;
 
 	if (callback == NULL) {
@@ -901,9 +901,14 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
+#if 0
+	/* Disable this optimization to ensure first-in-first-out fair
+	 * scheduling of lock requests */
+
 	/* get a context for this key - search only the pending contexts,
 	 * current contexts might in the middle of processing callbacks */
 	lock_ctx = find_lock_context(ctdb->lock_pending, ctdb_db, key, priority, type);
+#endif
 
 	/* No existing context, create one */
 	if (lock_ctx == NULL) {
