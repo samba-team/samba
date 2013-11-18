@@ -214,11 +214,11 @@ static bool fillup_pw_field(const char *lp_template,
 
 	if ((in != NULL) && (in[0] != '\0') && (lp_security() == SEC_ADS)) {
 		templ = talloc_sub_specified(talloc_tos(), in,
-					     username, domname,
+					     username, NULL, domname,
 					     uid, gid);
 	} else {
 		templ = talloc_sub_specified(talloc_tos(), lp_template,
-					     username, domname,
+					     username, NULL, domname,
 					     uid, gid);
 	}
 

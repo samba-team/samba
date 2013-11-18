@@ -6552,7 +6552,7 @@ static bool subst_test(const char *str, const char *user, const char *domain,
 	char *subst;
 	bool result = true;
 
-	subst = talloc_sub_specified(talloc_tos(), str, user, domain, uid, gid);
+	subst = talloc_sub_specified(talloc_tos(), str, user, NULL, domain, uid, gid);
 
 	if (strcmp(subst, expected) != 0) {
 		printf("sub_specified(%s, %s, %s, %d, %d) returned [%s], expected "
