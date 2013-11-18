@@ -36,6 +36,8 @@
 		<arg choice="opt">-m|--max-protocol LEVEL</arg>
 		<arg choice="opt">--query-security-info FLAGS</arg>
 		<arg choice="opt">--set-security-info FLAGS</arg>
+		<arg choice="opt">--sddl</arg>
+		<arg choice="opt">--domain-sid SID</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -171,6 +173,18 @@
 		<varlistentry>
 		<term>--set-security-info FLAGS</term>
 		<listitem><para>The security-info flags for queries.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--sddl</term>
+		<listitem><para>Output and input acls in sddl format.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--domain-sid SID</term>
+		<listitem><para>SID used for sddl processing.
 		</para></listitem>
 		</varlistentry>
 
