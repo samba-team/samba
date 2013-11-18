@@ -140,18 +140,6 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-e</term>
-		<listitem><para>This command line parameter requires the remote
-		server support the UNIX extensions or that the SMB3 protocol has been selected.
-		Requests that the connection be encrypted. Negotiates SMB encryption using either
-		SMB3 or POSIX extensions via GSSAPI. Uses the given credentials for
-		the encryption negotiation (either kerberos or NTLMv1/v2 if given
-		domain/username/password triple. Fails the connection if encryption
-		cannot be negotiated.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>-m|--max-protocol PROTOCOL_NAME</term>
 		<listitem><para>This allows the user to select the
 		highest SMB protocol level that smbcacls will use to
