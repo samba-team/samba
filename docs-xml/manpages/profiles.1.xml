@@ -63,8 +63,9 @@
 		</para></listitem>
 		</varlistentry>
 
-		&stdarg.help;
-		
+		&popt.common.samba.client;
+		&popt.autohelp;
+
 	</variablelist>
 </refsect1>
 
