@@ -967,7 +967,43 @@ nfs_test_cleanup ()
     onnode -q $test_node rmdir "$nfs_test_dir"
 }
 
+#######################################
 
+# $1: pnn, $2: DB name
+db_get_path ()
+{
+    try_command_on_node -v $1 $CTDB getdbstatus "$2" |
+    sed -n -e "s@^path: @@p"
+}
+
+# $1: pnn, $2: DB name
+db_ctdb_cattdb_count_records ()
+{
+    try_command_on_node -v $1 $CTDB cattdb "$2" |
+    grep '^key' | grep -v '__db_sequence_number__' |
+    wc -l
+}
+
+# $1: pnn, $2: DB name, $3: key string, $4: value string, $5: RSN (default 7)
+db_ctdb_tstore ()
+{
+    _tdb=$(db_get_path $1 "$2")
+    _rsn="${5:-7}"
+    try_command_on_node $1 $CTDB tstore "$_tdb" "$3" "$4" "$_rsn"
+}
+
+# $1: pnn, $2: DB name, $3: dbseqnum (must be < 255!!!!!)
+db_ctdb_tstore_dbseqnum ()
+{
+    # "__db_sequence_number__" + trailing 0x00
+    _key='0x5f5f64625f73657175656e63655f6e756d6265725f5f00'
+
+    # Construct 8 byte (unit64_t) database sequence number.  This
+    # probably breaks if $3 > 255
+    _value=$(printf "0x%02x%014x" $3 0)
+
+    db_ctdb_tstore $1 "$2" "$_key" "$_value"
+}
 
 #######################################
 

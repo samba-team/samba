@@ -37,54 +37,59 @@ cluster_is_healthy
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
-TDB=persistent_test.tdb
+test_db="persistent_test.tdb"
 
 # create a temporary persistent database to test with
-echo create persistent test database $TDB
-try_command_on_node 0 $CTDB attach $TDB persistent
+echo "Create persistent test database \"$test_db\""
+try_command_on_node 0 $CTDB attach "$test_db" persistent
 
 
 # 3,
-echo wipe the persistent test database
-try_command_on_node 0 $CTDB wipedb $TDB
-echo force a recovery
+echo "Wipe the persistent test database"
+try_command_on_node 0 $CTDB wipedb "$test_db"
+echo "Force a recovery"
 try_command_on_node 0 $CTDB recover
 
 # check that the database is wiped
-num_records=$(try_command_on_node -v 1 $CTDB cattdb $TDB | \
-    grep key | grep -v '__db_sequence_number__' | wc -l)
-[ $num_records != "0" ] && {
+num_records=$(db_ctdb_cattdb_count_records 1 "$test_db")
+if [ $num_records = "0" ] ; then
+    echo "OK: database was wiped"
+else
     echo "BAD: we did not end up with an empty database"
     exit 1
-}
-echo "OK. database was wiped"
+fi
 
 # 4,
-echo Create a new record in the persistent database using UPDATE_RECORD
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database=$TDB --record=Update_Record_Persistent --value=FirstValue
+echo "Create a new record in the persistent database using UPDATE_RECORD"
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database="$test_db" --record=Update_Record_Persistent --value=FirstValue
 
-try_command_on_node 0 "ctdb cattdb $TDB | grep 'FirstValue' | wc -l"
-[ $out != 1 ] && {
+try_command_on_node 0 "$CTDB cattdb "$test_db" | grep 'FirstValue' | wc -l"
+if [ "$out" = 1 ] ; then
+    echo "GOOD: we did not find the record after the create/update"
+else
     echo "BAD: we did find the record after the create/update"
     exit 1
-}
+fi
 
 # 5,
 echo Modify an existing record in the persistent database using UPDATE_RECORD
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database=$TDB --record=Update_Record_Persistent --value=SecondValue
+try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database="$test_db" --record=Update_Record_Persistent --value=SecondValue
 
-try_command_on_node 0 "ctdb cattdb $TDB | grep 'FirstValue' | wc -l"
-[ $out != 0 ] && {
+try_command_on_node 0 "$CTDB cattdb "$test_db" | grep 'FirstValue' | wc -l"
+if [ "$out" = 0 ] ; then
+    echo "GOOD: did not find old record after the modify/update"
+else
     echo "BAD: we still found the old record after the modify/update"
     exit 1
-}
+fi
 
-try_command_on_node 0 "ctdb cattdb $TDB | grep 'SecondValue' | wc -l"
-[ $out != 1 ] && {
+try_command_on_node 0 "$CTDB cattdb "$test_db" | grep 'SecondValue' | wc -l"
+if [ "$out" = 1 ] ; then
+    echo "GOOD: found the record after the modify/update"
+else
     echo "BAD: could not find the record after the modify/update"
     exit 1
-}
+fi
 
-
-echo wipe the persistent test databases and clean up
-try_command_on_node 0 $CTDB wipedb $TDB
+echo "Wipe the persistent test databases and clean up"
+try_command_on_node 0 $CTDB wipedb "$test_db"
