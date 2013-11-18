@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/open_files.h"
 #include "../librpc/gen_ndr/idmap.h"
+#include "../librpc/gen_ndr/ioctl.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "serverid.h"
@@ -4064,6 +4065,17 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					fsp_str_dbg(fsp),
 					nt_errstr(status) ));
 			}
+		}
+	}
+
+	if ((conn->fs_capabilities & FILE_FILE_COMPRESSION)
+	 && (create_options & FILE_NO_COMPRESSION)
+	 && (info == FILE_WAS_CREATED)) {
+		status = SMB_VFS_SET_COMPRESSION(conn, fsp, fsp,
+						 COMPRESSION_FORMAT_NONE);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("failed to disable compression: %s\n",
+				  nt_errstr(status)));
 		}
 	}
 
