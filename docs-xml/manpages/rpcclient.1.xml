@@ -23,7 +23,6 @@
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-c &lt;command string&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-h</arg>
 		<arg choice="opt">-l logdir</arg>
 		<arg choice="opt">-N</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
@@ -98,7 +97,7 @@
 		&popt.common.samba;
 		&popt.common.credentials;		
 		&popt.common.connection;
-		&stdarg.help;
+		&popt.autohelp;
 	</variablelist>
 </refsect1>
 
