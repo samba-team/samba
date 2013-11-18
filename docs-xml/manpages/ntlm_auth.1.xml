@@ -19,9 +19,6 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>ntlm_auth</command>
-		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-l logdir</arg>
-		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -363,10 +360,41 @@
 	    </listitem>
 	</varlistentry>
 
-	  &stdarg.server.debug;
-	  &popt.common.samba;
-	  &stdarg.help;
-	
+	<varlistentry>
+	<term>--pam-winbind-conf=FILENAME</term>
+	<listitem><para>Define the path to the pam_winbind.conf file.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--target-hostname=HOSTNAME</term>
+	<listitem><para>Define the target hostname.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--target-service=SERVICE</term>
+	<listitem><para>Define the target service.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--use-cached-creds</term>
+	<listitem><para>Whether to use credentials cached by winbindd.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--configfile=&lt;configuration file&gt;</term>
+	<listitem><para>The file specified contains the
+	configuration details required by the server.  The
+	information in this file includes server-specific
+	information such as what printcap file to use, as well
+	as descriptions of all the services that the server is
+	to provide. See &smb.conf; for more information.
+	The default configuration file name is determined at
+	compile time.</para></listitem>
+	</varlistentry>
+
+	&stdarg.version;
+	&popt.autohelp;
+
 	</variablelist>
 </refsect1>
 
