@@ -228,16 +228,16 @@ static NTSTATUS samu_set_unix_internal(struct pdb_methods *methods,
 		/* set some basic attributes */
 
 		pdb_set_profile_path(user, talloc_sub_specified(user, 
-			lp_logon_path(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid), 
+			lp_logon_path(), pwd->pw_name, NULL, domain, pwd->pw_uid, pwd->pw_gid),
 			PDB_DEFAULT);		
 		pdb_set_homedir(user, talloc_sub_specified(user, 
-			lp_logon_home(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid),
+			lp_logon_home(), pwd->pw_name, NULL, domain, pwd->pw_uid, pwd->pw_gid),
 			PDB_DEFAULT);
 		pdb_set_dir_drive(user, talloc_sub_specified(user, 
-			lp_logon_drive(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid),
+			lp_logon_drive(), pwd->pw_name, NULL, domain, pwd->pw_uid, pwd->pw_gid),
 			PDB_DEFAULT);
 		pdb_set_logon_script(user, talloc_sub_specified(user, 
-			lp_logon_script(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid), 
+			lp_logon_script(), pwd->pw_name, NULL, domain, pwd->pw_uid, pwd->pw_gid),
 			PDB_DEFAULT);
 	}
 

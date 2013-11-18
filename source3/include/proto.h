@@ -217,6 +217,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name,
 char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			const char *input_string,
 			const char *username,
+			const char *grpname,
 			const char *domain,
 			uid_t uid,
 			gid_t gid);
