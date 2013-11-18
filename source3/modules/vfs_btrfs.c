@@ -30,6 +30,20 @@
 #include "librpc/gen_ndr/ioctl.h"
 #include "lib/util/tevent_ntstatus.h"
 
+static uint32_t btrfs_fs_capabilities(struct vfs_handle_struct *handle,
+				      enum timestamp_set_resolution *_ts_res)
+{
+	uint32_t fs_capabilities;
+	enum timestamp_set_resolution ts_res;
+
+	/* inherit default capabilities, expose compression support */
+	fs_capabilities = SMB_VFS_NEXT_FS_CAPABILITIES(handle, &ts_res);
+	fs_capabilities |= FILE_FILE_COMPRESSION;
+	*_ts_res = ts_res;
+
+	return fs_capabilities;
+}
+
 struct btrfs_ioctl_clone_range_args {
 	int64_t src_fd;
 	uint64_t src_offset;
@@ -301,6 +315,7 @@ err_out:
 
 
 static struct vfs_fn_pointers btrfs_fns = {
+	.fs_capabilities_fn = btrfs_fs_capabilities,
 	.copy_chunk_send_fn = btrfs_copy_chunk_send,
 	.copy_chunk_recv_fn = btrfs_copy_chunk_recv,
 	.get_compression_fn = btrfs_get_compression,

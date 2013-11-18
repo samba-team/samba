@@ -46,6 +46,11 @@
 	</para>
 
 	<para>
+		This module also exposes Btrfs per-file compression support to
+		SMB clients via the get/set compression fsctls.
+	</para>
+
+	<para>
 		This module is stackable.
 	</para>
 </refsect1>
