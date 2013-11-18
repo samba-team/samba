@@ -31,7 +31,6 @@
 		<arg choice="opt">--numeric</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-U username</arg>
-		<arg choice="opt">-h</arg>
 		<arg choice="opt">-d</arg>
 		<arg choice="opt">-e</arg>
 		<arg choice="opt">-m|--max-protocol LEVEL</arg>
