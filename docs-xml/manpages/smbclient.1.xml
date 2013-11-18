@@ -276,8 +276,6 @@
 		</para></listitem>
 		</varlistentry>
 
-		&stdarg.help;
-
 		<varlistentry>
 		<term>-I|--ip-address IP-address</term>
 		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to.
@@ -332,19 +330,6 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-e|--encrypt</term>
-		<listitem><para>
-		This command line parameter requires the remote
-		server support the UNIX extensions or that the SMB3 protocol has been selected.
-		Requests that the connection be encrypted. Negotiates SMB encryption using either
-		SMB3 or POSIX extensions via GSSAPI. Uses the given credentials for
-		the encryption negotiation (either kerberos or NTLMv1/v2 if given
-		domain/username/password triple. Fails the connection if encryption
-		cannot be negotiated.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>-B|--browse</term>
 		<listitem><para>Browse SMB servers using DNS.</para>
 		</listitem>
@@ -354,6 +339,7 @@
 		&popt.common.samba;
 		&popt.common.credentials;
 		&popt.common.connection;
+		&popt.autohelp;
 		
 		<varlistentry>
 		<term>-t|--timeout &lt;timeout-seconds&gt;</term>
