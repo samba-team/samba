@@ -20,10 +20,9 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>testparm</command>
-		<arg choice="opt">-s</arg>
-		<arg choice="opt">-h</arg>
-		<arg choice="opt">-v</arg>
-		<arg choice="opt">-t &lt;encoding&gt;</arg>
+		<arg choice="opt">-s|--suppress-prompt</arg>
+		<arg choice="opt">--help</arg>
+		<arg choice="opt">-v|--verbose</arg>
 		<arg choice="req">config filename</arg>
 		<arg choice="opt">hostname hostIP</arg>
 	</cmdsynopsis>
@@ -63,28 +62,23 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-s</term>
+		<term>-s|--suppress-prompt</term>
 		<listitem><para>Without this option, <command>testparm</command> 
 		will prompt for a carriage return after printing the service 
 		names and before dumping the service definitions.</para></listitem>
 		</varlistentry>
 
-		&stdarg.help;
 		&stdarg.version;
-		
+		&stdarg.option;
+		&popt.autohelp;
+		&stdarg.client.debug;
+
 		<varlistentry>
-		<term>-v</term>
+		<term>-v|--verbose</term>
 		<listitem><para>If this option is specified, testparm 
 		will also output all options that were not used in <citerefentry>
 		<refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
 		</citerefentry> and are thus set to their defaults.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-t encoding</term>
-		<listitem><para>
-		Output data in specified encoding.
-		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -103,6 +97,20 @@
 		<term>--section-name sectionname</term>
 		<listitem><para>
 		Dumps the named section.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--show-all-parameters</term>
+		<listitem><para>
+				Show the parameters, type, possible values.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-l|--skip-logic-checks</term>
+		<listitem><para>
+				Skip the global checks.
 		</para></listitem>
 		</varlistentry>
 
