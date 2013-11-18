@@ -1912,7 +1912,6 @@ static bool test_ioctl_compress_query_file_attr(struct torture_context *torture,
 		torture_skip(torture, "FS compression not supported\n");
 	}
 
-	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	ZERO_STRUCT(io);
 	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
 	io.generic.in.file.handle = fh;
@@ -1976,7 +1975,6 @@ static bool test_ioctl_compress_create_with_attr(struct torture_context *torture
 	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
 		       "initial compression state not NONE");
 
-	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	ZERO_STRUCT(io);
 	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
 	io.generic.in.file.handle = fh2;
@@ -2106,6 +2104,105 @@ static bool test_ioctl_compress_inherit_disable(struct torture_context *torture,
 	return true;
 }
 
+/* attempting to set compression via SetInfo should not stick */
+static bool test_ioctl_compress_set_file_attr(struct torture_context *torture,
+					      struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	struct smb2_handle dirh;
+	union smb_fileinfo io;
+	union smb_setfileinfo set_io;
+	uint16_t compression_fmt;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	io.generic.in.file.handle = fh;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FILE");
+
+	torture_assert(torture,
+		((io.basic_info.out.attrib & FILE_ATTRIBUTE_COMPRESSED) == 0),
+		       "compression attr before set");
+
+	ZERO_STRUCT(set_io);
+	set_io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	set_io.basic_info.in.file.handle = fh;
+	set_io.basic_info.in.create_time = io.basic_info.out.create_time;
+	set_io.basic_info.in.access_time = io.basic_info.out.access_time;
+	set_io.basic_info.in.write_time = io.basic_info.out.write_time;
+	set_io.basic_info.in.change_time = io.basic_info.out.change_time;
+	set_io.basic_info.in.attrib = (io.basic_info.out.attrib
+						| FILE_ATTRIBUTE_COMPRESSED);
+	status = smb2_setinfo_file(tree, &set_io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_SETINFO_FILE");
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	io.generic.in.file.handle = fh;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FILE");
+
+	torture_assert(torture,
+		((io.basic_info.out.attrib & FILE_ATTRIBUTE_COMPRESSED) == 0),
+		"compression attr after set");
+
+	smb2_util_close(tree, fh);
+	smb2_deltree(tree, DNAME);
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    DNAME, &dirh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_DIRECTORY);
+	torture_assert(torture, ok, "setup compression directory");
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	io.generic.in.file.handle = dirh;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FILE");
+
+	torture_assert(torture,
+		((io.basic_info.out.attrib & FILE_ATTRIBUTE_COMPRESSED) == 0),
+		       "compression attr before set");
+
+	ZERO_STRUCT(set_io);
+	set_io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	set_io.basic_info.in.file.handle = dirh;
+	set_io.basic_info.in.create_time = io.basic_info.out.create_time;
+	set_io.basic_info.in.access_time = io.basic_info.out.access_time;
+	set_io.basic_info.in.write_time = io.basic_info.out.write_time;
+	set_io.basic_info.in.change_time = io.basic_info.out.change_time;
+	set_io.basic_info.in.attrib = (io.basic_info.out.attrib
+						| FILE_ATTRIBUTE_COMPRESSED);
+	status = smb2_setinfo_file(tree, &set_io);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_SETINFO_FILE");
+
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, dirh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "dir compression set after SetInfo");
+
+	smb2_util_close(tree, dirh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 
 /*
    basic testing of SMB2 ioctls
@@ -2166,6 +2263,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_compress_create_with_attr);
 	torture_suite_add_1smb2_test(suite, "compress_inherit_disable",
 				     test_ioctl_compress_inherit_disable);
+	torture_suite_add_1smb2_test(suite, "compress_set_file_attr",
+				     test_ioctl_compress_set_file_attr);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
