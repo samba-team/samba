@@ -29,6 +29,7 @@ struct wb_fill_pwent_state {
 
 static bool fillup_pw_field(const char *lp_template,
 			    const char *username,
+			    const char *grpname,
 			    const char *domname,
 			    uid_t uid,
 			    gid_t gid,
@@ -36,7 +37,7 @@ static bool fillup_pw_field(const char *lp_template,
 			    fstring out);
 
 static void wb_fill_pwent_sid2uid_done(struct tevent_req *subreq);
-static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq);
+static void wb_fill_pwent_getgrsid_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_fill_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
@@ -90,47 +91,45 @@ static void wb_fill_pwent_sid2uid_done(struct tevent_req *subreq)
 
 	state->pw->pw_uid = (uid_t)xid.id;
 
-	subreq = wb_sids2xids_send(state, state->ev, &state->info->group_sid, 1);
+	subreq = wb_getgrsid_send(state, state->ev, &state->info->group_sid, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, wb_fill_pwent_sid2gid_done, req);
+	tevent_req_set_callback(subreq, wb_fill_pwent_getgrsid_done, req);
 }
 
-static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq)
+static void wb_fill_pwent_getgrsid_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	struct wb_fill_pwent_state *state = tevent_req_data(
 		req, struct wb_fill_pwent_state);
 	struct winbindd_domain *domain;
-	char *dom_name;
+	const char *dom_name;
+	const char *grp_name;
 	fstring user_name, output_username;
 	char *mapped_name = NULL;
+	struct talloc_dict *members;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
-	struct unixid xid;
+	bool ok;
 
-	status = wb_sids2xids_recv(subreq, &xid);
+	/* xid handling is done in getgrsid() */
+	status = wb_getgrsid_recv(subreq,
+				  tmp_ctx,
+				  &dom_name,
+				  &grp_name,
+				  &state->pw->pw_gid,
+				  &members);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		talloc_free(tmp_ctx);
 		return;
 	}
-
-	/*
-	 * We are filtering further down in sids2xids, but that filtering
-	 * depends on the actual type of the sid handed in (as determined
-	 * by lookupsids). Here we need to filter for the type of object
-	 * actually requested, in this case gid.
-	 */
-	if (!(xid.type == ID_TYPE_GID || xid.type == ID_TYPE_BOTH)) {
-		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
-		return;
-	}
-
-	state->pw->pw_gid = (gid_t)xid.id;
 
 	domain = find_domain_from_sid_noinit(&state->info->user_sid);
 	if (domain == NULL) {
+		talloc_free(tmp_ctx);
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
@@ -166,17 +165,30 @@ static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq)
 	fstrcpy(state->pw->pw_gecos, state->info->full_name);
 
 	/* Home directory and shell */
-
-	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name,
-			     state->pw->pw_uid, state->pw->pw_gid,
-			     state->info->homedir, state->pw->pw_dir)) {
+	ok = fillup_pw_field(lp_template_homedir(),
+			     user_name,
+			     grp_name,
+			     dom_name,
+			     state->pw->pw_uid,
+			     state->pw->pw_gid,
+			     state->info->homedir,
+			     state->pw->pw_dir);
+	if (!ok) {
+		talloc_free(tmp_ctx);
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
 
-	if (!fillup_pw_field(lp_template_shell(), user_name, dom_name,
-			     state->pw->pw_uid, state->pw->pw_gid,
-			     state->info->shell, state->pw->pw_shell)) {
+	ok = fillup_pw_field(lp_template_shell(),
+			     user_name,
+			     grp_name,
+			     dom_name,
+			     state->pw->pw_uid,
+			     state->pw->pw_gid,
+			     state->info->shell,
+			     state->pw->pw_shell);
+	talloc_free(tmp_ctx);
+	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
@@ -195,6 +207,7 @@ NTSTATUS wb_fill_pwent_recv(struct tevent_req *req)
 
 static bool fillup_pw_field(const char *lp_template,
 			    const char *username,
+			    const char *grpname,
 			    const char *domname,
 			    uid_t uid,
 			    gid_t gid,
@@ -214,11 +227,11 @@ static bool fillup_pw_field(const char *lp_template,
 
 	if ((in != NULL) && (in[0] != '\0') && (lp_security() == SEC_ADS)) {
 		templ = talloc_sub_specified(talloc_tos(), in,
-					     username, NULL, domname,
+					     username, grpname, domname,
 					     uid, gid);
 	} else {
 		templ = talloc_sub_specified(talloc_tos(), lp_template,
-					     username, NULL, domname,
+					     username, grpname, domname,
 					     uid, gid);
 	}
 
