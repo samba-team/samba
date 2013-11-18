@@ -21,8 +21,8 @@
 	<cmdsynopsis>
 		<command>profiles</command>
 		<arg choice="opt">-v</arg>
-		<arg choice="opt">-c SID</arg>
-		<arg choice="opt">-n SID</arg>
+		<arg choice="opt">-c|--change-sid SID</arg>
+		<arg choice="opt">-n|--new-sid SID</arg>
 		<arg choice="req">file</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -58,6 +58,7 @@
 
 		<varlistentry>
 		<term>-c SID1 -n SID2</term>
+		<term>--change-sid SID1 --new-sid SID2</term>
 		<listitem><para>Change all occurrences of SID1 in <filename>file</filename> by SID2.
 		</para></listitem>
 		</varlistentry>
