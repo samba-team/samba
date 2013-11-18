@@ -20,19 +20,18 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>nmblookup</command>
-		<arg choice="opt">-M</arg>
-		<arg choice="opt">-R</arg>
-		<arg choice="opt">-S</arg>
-		<arg choice="opt">-r</arg>
-		<arg choice="opt">-A</arg>
-		<arg choice="opt">-h</arg>
-		<arg choice="opt">-B &lt;broadcast address&gt;</arg>
-		<arg choice="opt">-U &lt;unicast address&gt;</arg>
+		<arg choice="opt">-M|--master-browser</arg>
+		<arg choice="opt">-R|--recursion</arg>
+		<arg choice="opt">-S|--status</arg>
+		<arg choice="opt">-r|--root-port</arg>
+		<arg choice="opt">-A|--lookup-by-ip</arg>
+		<arg choice="opt">-B|--broadcast &lt;broadcast address&gt;</arg>
+		<arg choice="opt">-U|--unicast &lt;unicast address&gt;</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-i &lt;NetBIOS scope&gt;</arg>
-		<arg choice="opt">-T</arg>
-		<arg choice="opt">-f</arg>
+		<arg choice="opt">-T|--translate</arg>
+		<arg choice="opt">-f|--flags</arg>
 		<arg choice="req">name</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -55,8 +54,8 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-M</term>
-		<listitem><para>Searches for a master browser by looking 
+		<term>-M|--master-browser</term>
+		<listitem><para>Searches for a master browser by looking
 		up the NetBIOS <replaceable>name</replaceable> with a
 		type of <constant>0x1d</constant>. If <replaceable>
 		name</replaceable> is "-" then it does a lookup on the special name 
@@ -67,7 +66,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-R</term>
+		<term>-R|--recursion</term>
 		<listitem><para>Set the recursion desired bit in the packet 
 		to do a recursive lookup. This is used when sending a name 
 		query to a machine running a WINS server and the user wishes 
@@ -78,7 +77,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-S</term>
+		<term>-S|--status</term>
 		<listitem><para>Once the name query has returned an IP 
 		address then do a node status query as well. A node status 
 		query returns the NetBIOS names registered by a host.
@@ -87,7 +86,7 @@
 
 
 		<varlistentry>
-		<term>-r</term> 
+		<term>-r|--root-port</term>
 		<listitem><para>Try and bind to UDP port 137 to send and receive UDP
 		datagrams. The reason for this option is a bug in Windows 95 
 		where it ignores the source port of the requesting packet 
@@ -100,7 +99,7 @@
 
 
 		<varlistentry>
-		<term>-A</term>
+		<term>-A|--lookup-by-ip</term>
 		<listitem><para>Interpret <replaceable>name</replaceable> as 
 		an IP Address and do a node status query on this address.</para>
 		</listitem>
@@ -109,10 +108,10 @@
 
 
 		&popt.common.connection;
-		&stdarg.help;
+		&popt.autohelp;
 
 		<varlistentry>
-		<term>-B &lt;broadcast address&gt;</term> 
+		<term>-B|--broadcast &lt;broadcast address&gt;</term>
 		<listitem><para>Send the query to the given broadcast address. Without 
 		this option the default behavior of nmblookup is to send the 
 		query to the broadcast address of the network interfaces as 
@@ -126,7 +125,7 @@
 
 
 		<varlistentry>
-		<term>-U &lt;unicast address&gt;</term>
+		<term>-U|--unicast &lt;unicast address&gt;</term>
 		<listitem><para>Do a unicast query to the specified address or 
 		host <replaceable>unicast address</replaceable>. This option 
 		(along with the <parameter>-R</parameter> option) is needed to 
@@ -137,7 +136,7 @@
 		&popt.common.samba;
 
 		<varlistentry>
-		<term>-T</term> 
+		<term>-T|--translate</term>
 		<listitem><para>This causes any IP addresses found in the 
 		lookup to be looked up via a reverse DNS lookup into a 
 		DNS name, and printed out before each</para>
@@ -148,7 +147,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-f</term>
+		<term>-f|--flags</term>
 		<listitem><para>
 		Show which flags apply to the name that has been looked up. Possible 
 		answers are zero or more of: Response, Authoritative, 
