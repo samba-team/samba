@@ -209,6 +209,32 @@
 		</para></listitem>
 		</varlistentry>
 
+		<!-- Options for net idmap -->
+
+		<varlistentry>
+		<term>--db</term>
+		<listitem><para>Define dbfile for "net idmap" commands.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--lock</term>
+		<listitem><para>Activates locking of the dbfile for "net idmap check" command.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-a|--auto</term>
+		<listitem><para>Activates noninteractive mode in "net idmap check".
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--repair</term>
+		<listitem><para>Activates repair mode in "net idmap check".
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
