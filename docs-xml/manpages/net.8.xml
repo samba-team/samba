@@ -297,6 +297,29 @@
 		</para></listitem>
 		</varlistentry>
 
+		<!-- Options for net registry check -->
+
+		<varlistentry>
+		<term>--reg-version REG_VERSION</term>
+		<listitem><para>Assume database version {n|1,2,3}
+				(used in "net registry check").
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-o|--output FILENAME</term>
+		<listitem><para>Output database file
+				(used in "net registry check").
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--wipe</term>
+		<listitem><para>Createa a new database from scratch
+				(used in "net registry check").
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
