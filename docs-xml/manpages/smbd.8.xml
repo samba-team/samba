@@ -128,7 +128,7 @@
 		
 		&stdarg.server.debug;
 		&popt.common.samba;
-		&stdarg.help;
+		&popt.autohelp;
 
 		<varlistentry>
 		<term>--no-process-group</term>
