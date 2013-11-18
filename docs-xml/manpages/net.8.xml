@@ -267,6 +267,36 @@
 		</para></listitem>
 		</varlistentry>
 
+		<!-- Options for net groupmap set -->
+
+		<varlistentry>
+		<term>-L|--local</term>
+		<listitem><para>Sets the type of group mapping to local
+				(used in "net groupmap set").
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-D|--domain</term>
+		<listitem><para>Sets the type of group mapping to domain
+				(used in "net groupmap set").
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-N|--ntname NTNAME</term>
+		<listitem><para>Sets the ntname of a group mapping
+				(used in "net groupmap set").
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-R|--rid RID</term>
+		<listitem><para>Sets the rid of a group mapping
+				(used in "net groupmap set").
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
