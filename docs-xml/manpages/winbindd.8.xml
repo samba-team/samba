@@ -169,7 +169,7 @@ hosts:		files wins
 
 		&stdarg.server.debug;
 		&popt.common.samba;
-		&stdarg.help;
+		&popt.autohelp;
 
 		<varlistentry>
 		<term>-i|--interactive</term>
