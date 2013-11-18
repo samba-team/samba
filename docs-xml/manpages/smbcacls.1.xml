@@ -173,11 +173,11 @@
 		</para></listitem>
 		</varlistentry>
 				
-		&stdarg.help;
 		&stdarg.server.debug;
 		&popt.common.samba;
 		&popt.common.credentials;
 		&popt.common.connection;
+		&popt.autohelp;
 	</variablelist>
 </refsect1>
 
