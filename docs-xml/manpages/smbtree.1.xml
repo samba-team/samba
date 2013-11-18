@@ -70,7 +70,7 @@
 		&stdarg.server.debug;
 		&popt.common.samba;
 		&popt.common.credentials;
-		&stdarg.help;
+		&popt.autohelp;
 		
 	</variablelist>
 </refsect1>
