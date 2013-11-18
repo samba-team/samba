@@ -183,6 +183,32 @@
 		</para></listitem>
 		</varlistentry>
 
+		<!-- Options for net rpc vampire -->
+
+		<varlistentry>
+		<term>--force-full-repl</term>
+		<listitem><para>
+				When calling "net rpc vampire keytab" this option
+				enforces a full re-creation of the generated keytab file.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--single-obj-repl</term>
+		<listitem><para>
+				When calling "net rpc vampire keytab" this option
+				allows to replicate just a single object to the generated keytab file.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--clean-old-entries</term>
+		<listitem><para>
+				When calling "net rpc vampire keytab" this option
+				allows to cleanup old entries from the generated keytab file.
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
