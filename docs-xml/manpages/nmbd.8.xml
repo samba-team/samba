@@ -123,7 +123,7 @@
 		given. </para></listitem>
 		</varlistentry>
 
-		&stdarg.help;
+		&popt.autohelp;
 		
 		<varlistentry>
 		<term>-H|--hosts &lt;filename&gt;</term>
