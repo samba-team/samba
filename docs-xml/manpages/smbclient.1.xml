@@ -343,7 +343,13 @@
 		cannot be negotiated.
 		</para></listitem>
 		</varlistentry>
-		
+
+		<varlistentry>
+		<term>-B|--browse</term>
+		<listitem><para>Browse SMB servers using DNS.</para>
+		</listitem>
+		</varlistentry>
+
 		&stdarg.client.debug;
 		&popt.common.samba;
 		&popt.common.credentials;
