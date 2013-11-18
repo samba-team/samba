@@ -148,7 +148,7 @@
 		</varlistentry>
 
 		&popt.common.samba.server;
-		&stdarg.help;
+		&popt.autohelp;
 	</variablelist>
 </refsect1>
 
