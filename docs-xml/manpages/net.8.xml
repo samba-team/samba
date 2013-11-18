@@ -320,6 +320,15 @@
 		</para></listitem>
 		</varlistentry>
 
+		<!-- Options for net registry import -->
+
+		<varlistentry>
+		<term>--precheck PRECHECK_DB_FILENAME</term>
+		<listitem><para>Defines filename for database prechecking
+				(used in "net registry import").
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
