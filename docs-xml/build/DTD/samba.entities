@@ -483,7 +483,14 @@ Try to use the credentials cached by winbind.
 <!ENTITY stdarg.encrypt '
 <varlistentry>
 <term>-e|--encrypt</term>
-<listitem><para>Encrypt SMB transport (UNIX extended servers only).
+<listitem><para>
+This command line parameter requires the remote
+server support the UNIX extensions or that the SMB3 protocol has been selected.
+Requests that the connection be encrypted. Negotiates SMB encryption using either
+SMB3 or POSIX extensions via GSSAPI. Uses the given credentials for
+the encryption negotiation (either kerberos or NTLMv1/v2 if given
+domain/username/password triple. Fails the connection if encryption
+cannot be negotiated.
 </para></listitem>
 </varlistentry>
 '>
