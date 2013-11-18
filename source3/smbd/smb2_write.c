@@ -48,6 +48,8 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	uint64_t in_file_id_volatile;
 	struct files_struct *in_fsp;
 	uint32_t in_flags;
+	size_t in_dyn_len = 0;
+	uint8_t *in_dyn_ptr = NULL;
 	struct tevent_req *subreq;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x31);
@@ -67,7 +69,15 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (in_data_length > SMBD_SMB2_IN_DYN_LEN(req)) {
+	if (req->smb1req != NULL && req->smb1req->unread_bytes > 0) {
+		in_dyn_ptr = NULL;
+		in_dyn_len = req->smb1req->unread_bytes;
+	} else {
+		in_dyn_ptr = SMBD_SMB2_IN_DYN_PTR(req);
+		in_dyn_len = SMBD_SMB2_IN_DYN_LEN(req);
+	}
+
+	if (in_data_length > in_dyn_len) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -79,7 +89,10 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_data_buffer.data = SMBD_SMB2_IN_DYN_PTR(req);
+	/*
+	 * Note: that in_dyn_ptr is NULL for the recvfile case.
+	 */
+	in_data_buffer.data = in_dyn_ptr;
 	in_data_buffer.length = in_data_length;
 
 	status = smbd_smb2_request_verify_creditcharge(req, in_data_length);
@@ -340,6 +353,9 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * Note: in_data.data is NULL for the recvfile case.
+	 */
 	nwritten = write_file(smbreq, fsp,
 			      (const char *)in_data.data,
 			      in_offset,
