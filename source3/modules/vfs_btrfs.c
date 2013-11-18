@@ -112,7 +112,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 	cr_args.src_length = (uint64_t)num;
 
 	ret = ioctl(dest_fsp->fh->fd, BTRFS_IOC_CLONE_RANGE, &cr_args);
-	SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &dest_lck);
+	SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &dest_lck);
 	SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
 	if (ret < 0) {
 		/*
