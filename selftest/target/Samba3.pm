@@ -29,6 +29,25 @@ sub have_ads($) {
 	return $found_ads;
 }
 
+# return smb.conf parameters applicable to @path, based on the underlying
+# filesystem type
+sub get_fs_specific_conf($$)
+{
+	my ($self, $path) = @_;
+	my $mods = "";
+	my $stat_out = `stat --file-system $path` or return "";
+
+	if ($stat_out =~ m/Type:\s+btrfs/) {
+		$mods .= "btrfs ";
+	}
+
+	if ($mods) {
+		return "vfs objects = $mods";
+	}
+
+	return undef;
+}
+
 sub new($$) {
 	my ($classname, $bindir, $binary_mapping, $srcdir, $server_maxtime) = @_;
 	my $self = { vars => {},
@@ -45,7 +64,7 @@ sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
 	my $count = 0;
-	
+
 	# This should cause smbd to terminate gracefully
 	close($envvars->{STDIN_PIPE});
 
@@ -832,6 +851,8 @@ sub provision($$$$$$)
 	my $nmbdsockdir="$prefix_abs/nmbd";
 	unlink($nmbdsockdir);
 
+	my $fs_specific_conf = $self->get_fs_specific_conf($shrdir);
+
 	## 
 	## create the test directory layout
 	##
@@ -1070,6 +1091,9 @@ sub provision($$$$$$)
 	kernel share modes = no
 	kernel oplocks = no
 	posix locking = no
+[fs_specific]
+	copy = tmp
+	$fs_specific_conf
 [print1]
 	copy = tmp
 	printable = yes
