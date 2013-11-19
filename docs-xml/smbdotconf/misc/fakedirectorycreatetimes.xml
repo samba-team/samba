@@ -20,7 +20,7 @@
 	timestamp than the object files it contains.</para>
 
 	<para>However, Unix time semantics mean that the create time 
-	reported by Samba will be updated whenever a file is created or 
+	reported by Samba will be updated whenever a file is created
 	or deleted in the directory.  NMAKE finds all object files in 
 	the object directory.  The timestamp of the last one built is then 
 	compared to the timestamp of the object directory.  If the 
