@@ -84,7 +84,7 @@
 
 <refsect1>
 	<title>CAVEATS</title>
-	<para><command>cacheprime</command> is not a a substitute for
+	<para><command>cacheprime</command> is not a substitute for
 	a general-purpose readahead mechanism. It is intended for use
 	only in very specific environments where disk operations must
 	be aligned and sized to known values (as much as that is possible).
