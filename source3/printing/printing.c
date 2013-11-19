@@ -2228,14 +2228,10 @@ WERROR print_job_delete(const struct auth_session_info *server_info,
 	if (!owner &&
 	    !W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
 					      JOB_ACCESS_ADMINISTER))) {
-		DEBUG(3, ("delete denied by security descriptor\n"));
-
-		sys_adminlog(LOG_ERR,
-			     "Permission denied-- user not allowed to delete, "
-			     "pause, or resume print job. User name: %s. "
-			     "Printer name: %s.",
-			     uidtoname(server_info->unix_token->uid),
-			     lp_printername(tmp_ctx, snum) );
+		DEBUG(0, ("print job delete denied."
+			  "User name: %s, Printer name: %s.",
+			  uidtoname(server_info->unix_token->uid),
+			  lp_printername(tmp_ctx, snum)));
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
@@ -2317,14 +2313,10 @@ WERROR print_job_pause(const struct auth_session_info *server_info,
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
 	    !W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
 					      JOB_ACCESS_ADMINISTER))) {
-		DEBUG(3, ("pause denied by security descriptor\n"));
-
-		sys_adminlog(LOG_ERR,
-			     "Permission denied-- user not allowed to delete, "
-			     "pause, or resume print job. User name: %s. "
-			     "Printer name: %s.",
-			     uidtoname(server_info->unix_token->uid),
-			     lp_printername(tmp_ctx, snum) );
+		DEBUG(0, ("print job pause denied."
+			  "User name: %s, Printer name: %s.",
+			  uidtoname(server_info->unix_token->uid),
+			  lp_printername(tmp_ctx, snum)));
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
@@ -2388,14 +2380,10 @@ WERROR print_job_resume(const struct auth_session_info *server_info,
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
 	    !W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
 					      JOB_ACCESS_ADMINISTER))) {
-		DEBUG(3, ("resume denied by security descriptor\n"));
-
-		sys_adminlog(LOG_ERR,
-			     "Permission denied-- user not allowed to delete, "
-			     "pause, or resume print job. User name: %s. "
-			     "Printer name: %s.",
-			     uidtoname(server_info->unix_token->uid),
-			     lp_printername(tmp_ctx, snum));
+		DEBUG(0, ("print job resume denied."
+			  "User name: %s, Printer name: %s.",
+			  uidtoname(server_info->unix_token->uid),
+			  lp_printername(tmp_ctx, snum)));
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
