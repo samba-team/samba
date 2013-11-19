@@ -1749,9 +1749,12 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	set_current_user_info(session_info->unix_info->sanitized_username,
-			      session_info->unix_info->unix_name,
-			      session_info->info->domain_name);
+	if (in_session_id != req->sconn->conn->last_session_id) {
+		req->sconn->conn->last_session_id = in_session_id;
+		set_current_user_info(session_info->unix_info->sanitized_username,
+				      session_info->unix_info->unix_name,
+				      session_info->info->domain_name);
+	}
 
 	return NT_STATUS_OK;
 }
