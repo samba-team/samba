@@ -1434,10 +1434,10 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 		}
 	}
 
-	if (session_tag != sconn->smb1.sessions.last_session_tag) {
+	if (session_tag != sconn->conn->last_session_id) {
 		struct user_struct *vuser = NULL;
 
-		sconn->smb1.sessions.last_session_tag = session_tag;
+		sconn->conn->last_session_id = session_tag;
 		if (session) {
 			vuser = session->compat;
 		}
@@ -3593,7 +3593,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	sconn->smb1.sessions.done_sesssetup = false;
 	sconn->smb1.sessions.max_send = BUFFER_SIZE;
-	sconn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
 
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");
