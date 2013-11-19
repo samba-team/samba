@@ -871,13 +871,19 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 
 	/* Copy result into array.  The talloc system will take
 	   care of freeing the temporary arrays later on. */
-	if (tmp_names.count != tmp_types.count) {
-		return NT_STATUS_UNSUCCESSFUL;
+	if (tmp_names.count != num_names) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (tmp_types.count != num_names) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	for (r = 0; r < tmp_names.count; r++) {
 		if (tmp_types.ids[r] == SID_NAME_UNKNOWN) {
 			continue;
+		}
+		if (total_names >= num_names) {
+			break;
 		}
 		names[total_names] = fill_domain_username_talloc(names,
 								 domain_name,

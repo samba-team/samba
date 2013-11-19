@@ -2889,7 +2889,12 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 		if (!NT_STATUS_IS_OK(result)) {
 			return result;
 		}
-
+		if (names.count != this_time) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (types.count != this_time) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 		/* We only have users as members, but make the output
 		   the same as the output of alias members */
 

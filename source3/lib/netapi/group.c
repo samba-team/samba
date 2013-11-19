@@ -395,6 +395,14 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		werr = ntstatus_to_werror(result);
 		goto done;
 	}
+	if (names.count != rid_array->count) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (member_types.count != rid_array->count) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
 	}
 
 	for (i=0; i < rid_array->count; i++) {
@@ -1621,6 +1629,14 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		werr = ntstatus_to_werror(result);
+		goto done;
+	}
+	if (names.count != rid_array->count) {
+		werr = WERR_BAD_NET_RESP;
+		goto done;
+	}
+	if (member_types.count != rid_array->count) {
+		werr = WERR_BAD_NET_RESP;
 		goto done;
 	}
 
