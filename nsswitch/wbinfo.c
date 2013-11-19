@@ -1380,11 +1380,28 @@ static bool wbinfo_lookup_sids(const char *arg)
 	}
 
 	for (i=0; i<num_sids; i++) {
+		const char *domain = NULL;
+
 		wbcSidToStringBuf(&sids[i], sidstr, sizeof(sidstr));
 
-		d_printf("%s -> %s\\%s %d\n", sidstr,
-			 domains[names[i].domain_index].short_name,
-			 names[i].name, names[i].type);
+		if (names[i].domain_index >= num_domains) {
+			domain = "<none>";
+		} else if (names[i].domain_index < 0) {
+			domain = "<none>";
+		} else {
+			domain = domains[names[i].domain_index].short_name;
+		}
+
+		if (names[i].type == WBC_SID_NAME_DOMAIN) {
+			d_printf("%s -> %s %d\n", sidstr,
+				domain,
+				names[i].type);
+		} else {
+			d_printf("%s -> %s%c%s %d\n", sidstr,
+				domain,
+				winbind_separator(),
+				names[i].name, names[i].type);
+		}
 	}
 	return true;
 }

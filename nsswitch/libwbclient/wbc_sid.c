@@ -421,6 +421,13 @@ wbcErr wbcLookupSids(const struct wbcDomainSid *sids, int num_sids,
 	for (i=0; i<num_names; i++) {
 
 		names[i].domain_index = strtoul(p, &q, 10);
+		if (names[i].domain_index < 0) {
+			goto wbc_err_invalid;
+		}
+		if (names[i].domain_index >= num_domains) {
+			goto wbc_err_invalid;
+		}
+
 		if (*q != ' ') {
 			goto wbc_err_invalid;
 		}
