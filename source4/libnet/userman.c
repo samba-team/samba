@@ -236,14 +236,12 @@ static void continue_userdel_name_found(struct tevent_req *subreq)
 
 	/* what to do when there's no user account to delete
 	   and what if there's more than one rid resolved */
-	if (!s->lookupname.out.rids->count) {
-		c->status = NT_STATUS_NO_SUCH_USER;
-		composite_error(c, c->status);
+	if (s->lookupname.out.rids->count != s->lookupname.in.num_names) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
-
-	} else if (!s->lookupname.out.rids->count > 1) {
-		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
-		composite_error(c, c->status);
+	}
+	if (s->lookupname.out.types->count != s->lookupname.in.num_names) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
@@ -511,14 +509,12 @@ static void continue_usermod_name_found(struct tevent_req *subreq)
 
 	/* what to do when there's no user account to delete
 	   and what if there's more than one rid resolved */
-	if (!s->lookupname.out.rids->count) {
-		c->status = NT_STATUS_NO_SUCH_USER;
-		composite_error(c, c->status);
+	if (s->lookupname.out.rids->count != s->lookupname.in.num_names) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
-
-	} else if (!s->lookupname.out.rids->count > 1) {
-		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
-		composite_error(c, c->status);
+	}
+	if (s->lookupname.out.types->count != s->lookupname.in.num_names) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 

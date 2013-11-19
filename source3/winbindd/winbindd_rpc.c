@@ -1039,7 +1039,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 				     struct lsa_TransNameArray **pnames)
 {
 	struct lsa_TransNameArray2 lsa_names2;
-	struct lsa_TransNameArray *names;
+	struct lsa_TransNameArray *names = *pnames;
 	uint32_t i, count;
 	NTSTATUS status, result;
 
@@ -1064,10 +1064,6 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
-	if (names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 	names->count = lsa_names2.count;
 	names->names = talloc_array(names, struct lsa_TranslatedName,
 				    names->count);
@@ -1090,7 +1086,6 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 	}
-	*pnames = names;
 	return result;
 }
 
@@ -1100,7 +1095,7 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 			 struct lsa_RefDomainList **pdomains,
 			 struct lsa_TransNameArray **pnames)
 {
-	struct lsa_TransNameArray *names;
+	struct lsa_TransNameArray *names = *pnames;
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle lsa_policy;
 	uint32_t count;
@@ -1117,10 +1112,6 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 					    pdomains, pnames);
 	}
 
-	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
-	if (names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 	status = dcerpc_lsa_LookupSids(cli->binding_handle, mem_ctx,
 				       &lsa_policy, sids, pdomains,
 				       names, LSA_LOOKUP_NAMES_ALL,
@@ -1148,6 +1139,5 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	*pnames = names;
 	return result;
 }

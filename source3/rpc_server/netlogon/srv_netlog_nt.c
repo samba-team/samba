@@ -586,7 +586,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_SUCH_USER;
 		goto out;
 	}
-	if (rids.count != types.count) {
+	if (types.count != 1) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}

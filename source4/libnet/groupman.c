@@ -212,13 +212,13 @@ static void continue_groupdel_name_found(struct tevent_req *subreq)
 
 	/* what to do when there's no group account to delete
 	   and what if there's more than one rid resolved */
-	if (!s->lookupname.out.rids->count) {
-		c->status = NT_STATUS_NO_SUCH_GROUP;
+	if (s->lookupname.out.rids->count != s->lookupname.in.num_names) {
+		c->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		composite_error(c, c->status);
 		return;
-
-	} else if (!s->lookupname.out.rids->count > 1) {
-		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
+	}
+	if (s->lookupname.out.types->count != s->lookupname.in.num_names) {
+		c->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		composite_error(c, c->status);
 		return;
 	}

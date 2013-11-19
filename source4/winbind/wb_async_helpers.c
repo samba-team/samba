@@ -283,6 +283,12 @@ static void lsa_lookupnames_recv_sids(struct tevent_req *subreq)
 		return;
 	}
 
+	if (state->sids.count != state->num_names) {
+		composite_error(state->ctx,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	state->result = talloc_array(state, struct wb_sid_object *,
 				     state->num_names);
 	if (composite_nomem(state->result, state->ctx)) return;
@@ -301,9 +307,14 @@ static void lsa_lookupnames_recv_sids(struct tevent_req *subreq)
 			continue;
 		}
 
+		if (domains == NULL) {
+			composite_error(state->ctx,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
 		if (sid->sid_index >= domains->count) {
 			composite_error(state->ctx,
-					NT_STATUS_INVALID_PARAMETER);
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
 		}
 

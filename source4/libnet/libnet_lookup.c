@@ -363,6 +363,11 @@ static void continue_name_found(struct tevent_req *subreq)
 	c->status = s->lookup.out.result;
 	if (!composite_is_ok(c)) return;
 
+	if (s->lookup.out.sids->count != s->lookup.in.num_names) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	composite_done(c);
 }
 
