@@ -148,6 +148,7 @@ case "$1" in
 	    awk -v pnn=$pnn 'pnn == $2 { printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", gensub(/\./, "\\\\.", "g", $1) }')
 
 	statd_state=$(ctdb catdb ctdb.tdb | sed -n "$sed_expr" | sort)
+	[ -n "$statd_state" ] || exit 0
 
 	# The following is dangerous if this script times out before
 	# all of the smnotify commands are run.  Revert to individual
