@@ -528,10 +528,12 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		}
 	}
 	if (debug_locks != NULL) {
-		pid = fork();
+		pid = vfork();
 		if (pid == 0) {
 			execl(debug_locks, debug_locks, NULL);
+			_exit(0);
 		}
+		ctdb_track_child(ctdb, pid);
 	} else {
 		DEBUG(DEBUG_WARNING,
 		      (__location__
@@ -810,7 +812,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		return;
 	}
 
-	lock_ctx->child = ctdb_fork(ctdb);
+	lock_ctx->child = vfork();
 
 	if (lock_ctx->child == (pid_t)-1) {
 		DEBUG(DEBUG_ERR, ("Failed to create a child in ctdb_lock_schedule\n"));
@@ -832,6 +834,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	}
 
 	/* Parent process */
+	ctdb_track_child(ctdb, lock_ctx->child);
 	close(lock_ctx->fd[1]);
 
 	talloc_set_destructor(lock_ctx, ctdb_lock_context_destructor);
