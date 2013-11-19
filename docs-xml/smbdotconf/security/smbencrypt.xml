@@ -21,7 +21,7 @@
     and <emphasis>disabled</emphasis>. This may be set on a per-share
     basis, but clients may chose to encrypt the entire session, not
     just traffic to a specific share. If this is set to mandatory
-    then all traffic to a share <emphasis>must</emphasis> must
+    then all traffic to a share <emphasis>must</emphasis>
     be encrypted once the connection has been made to the share.
     The server would return "access denied" to all non-encrypted
     requests on such a share. Selecting encrypted traffic reduces
