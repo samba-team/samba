@@ -24,7 +24,7 @@
 
 	<para>
 	This parameter is best used with the <smbconfoption name="inherit owner"/> option and also
-	on on a share containing directories with the UNIX <emphasis>setgid bit</emphasis> set
+	on a share containing directories with the UNIX <emphasis>setgid bit</emphasis> set
 	on them, which causes new files and directories created within it to inherit the group
 	ownership from the containing directory. 
 	</para>
