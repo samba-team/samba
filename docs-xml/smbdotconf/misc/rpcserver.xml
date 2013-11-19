@@ -59,7 +59,7 @@
 		Currently in Samba3 we support three daemons, spoolssd, epmd and
 		lsasd. These daemons can be enabled using the
 		<emphasis>rpc_daemon</emphasis> option. For spoolssd you have
-		to to enable the daemon and proxy the named pipe with:
+		to enable the daemon and proxy the named pipe with:
 	</para>
 
 	<para>
