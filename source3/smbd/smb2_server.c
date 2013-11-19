@@ -297,10 +297,11 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 					       NTTIME now,
 					       uint8_t *buf,
 					       size_t buflen,
-					       TALLOC_CTX *mem_ctx,
+					       struct smbd_smb2_request *req,
 					       struct iovec **piov,
 					       int *pnum_iov)
 {
+	TALLOC_CTX *mem_ctx = req;
 	struct iovec *iov;
 	int num_iov = 1;
 	size_t taken = 0;
@@ -312,10 +313,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 	/*
 	 * Note: index '0' is reserved for the transport protocol
 	 */
-	iov = talloc_zero_array(mem_ctx, struct iovec, num_iov);
-	if (iov == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	iov = req->in._vector;
 
 	while (taken < buflen) {
 		size_t len = buflen - taken;
@@ -327,7 +325,6 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 		uint8_t *body = NULL;
 		uint32_t dyn_size;
 		uint8_t *dyn = NULL;
-		struct iovec *iov_tmp;
 
 		if (verified_buflen > taken) {
 			len = verified_buflen - taken;
@@ -458,13 +455,31 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 		dyn = body + body_size;
 		dyn_size = full_size - (SMB2_HDR_BODY + body_size);
 
-		iov_tmp = talloc_realloc(mem_ctx, iov, struct iovec,
-					 num_iov + SMBD_SMB2_NUM_IOV_PER_REQ);
-		if (iov_tmp == NULL) {
-			TALLOC_FREE(iov);
-			return NT_STATUS_NO_MEMORY;
+		if (num_iov >= ARRAY_SIZE(req->in._vector)) {
+			struct iovec *iov_tmp = NULL;
+			struct iovec *iov_alloc = NULL;
+
+			if (iov != req->in._vector) {
+				iov_alloc = iov;
+			}
+
+			iov_tmp = talloc_realloc(mem_ctx, iov_alloc,
+						 struct iovec,
+						 num_iov +
+						 SMBD_SMB2_NUM_IOV_PER_REQ);
+			if (iov_tmp == NULL) {
+				TALLOC_FREE(iov_alloc);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			if (iov_alloc == NULL) {
+				memcpy(iov_tmp,
+				       req->in._vector,
+				       sizeof(req->in._vector));
+			}
+
+			iov = iov_tmp;
 		}
-		iov = iov_tmp;
 		cur = &iov[num_iov];
 		num_iov += SMBD_SMB2_NUM_IOV_PER_REQ;
 
@@ -485,7 +500,9 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 	return NT_STATUS_OK;
 
 inval:
-	TALLOC_FREE(iov);
+	if (iov != req->in._vector) {
+		TALLOC_FREE(iov);
+	}
 	return NT_STATUS_INVALID_PARAMETER;
 }
 

@@ -586,6 +586,7 @@ struct smbd_smb2_request {
 		 */
 		struct iovec *vector;
 		int vector_count;
+		struct iovec _vector[1 + SMBD_SMB2_NUM_IOV_PER_REQ];
 	} in;
 	struct {
 		/* the NBT header is not allocated */
