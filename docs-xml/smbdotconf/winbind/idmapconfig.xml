@@ -17,7 +17,7 @@
 
 	<para>
 	The idmap configuration is hence divided into groups, one group
-	for each domain to be configured, and one group with the the
+	for each domain to be configured, and one group with the
 	asterisk instead of a proper domain name, which specifies the
 	default configuration that is used to catch all domains that do
 	not have an explicit idmap configuration of their own.
