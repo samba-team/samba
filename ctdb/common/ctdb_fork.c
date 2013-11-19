@@ -45,6 +45,19 @@ bool ctdb_is_child_process(void)
 	return is_child;
 }
 
+void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid)
+{
+	char *process;
+
+	/* Only CTDB main daemon should track child processes */
+	if (getpid() != ctdb->ctdbd_pid) {
+		return;
+	}
+
+	process = talloc_asprintf(ctdb->child_processes, "process:%d", (int)pid);
+	trbt_insert32(ctdb->child_processes, pid, process);
+}
+
 /*
  * This function forks a child process and drops the realtime 
  * scheduler for the child process.
@@ -52,7 +65,6 @@ bool ctdb_is_child_process(void)
 pid_t ctdb_fork_no_free_ringbuffer(struct ctdb_context *ctdb)
 {
 	pid_t pid;
-	char *process;
 
 	pid = fork();
 	if (pid == -1) {
@@ -87,13 +99,7 @@ pid_t ctdb_fork_no_free_ringbuffer(struct ctdb_context *ctdb)
 		return 0;
 	}
 
-	if (getpid() != ctdb->ctdbd_pid) {
-		return pid;
-	}
-
-	process = talloc_asprintf(ctdb->child_processes, "process:%d", (int)pid);
-	trbt_insert32(ctdb->child_processes, pid, process);
-
+	ctdb_track_child(ctdb, pid);
 	return pid;
 }
 
