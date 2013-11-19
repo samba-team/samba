@@ -8,7 +8,7 @@
 	<smbconfoption name="username map"/> parameter.  This parameter 
 	specifies and external program or script that must accept a single 
 	command line option (the username transmitted in the authentication
-	request) and return a line line on standard output (the name to which 
+	request) and return a line on standard output (the name to which
 	the account should mapped).  In this way, it is possible to store
 	username map tables in an LDAP or NIS directory services.
 	</para>
