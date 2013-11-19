@@ -1305,31 +1305,6 @@ int sys_pclose(int fd)
 	return wstatus;
 }
 
-/**************************************************************************
- Wrapper for Admin Logs.
-****************************************************************************/
-
- void sys_adminlog(int priority, const char *format_str, ...) 
-{
-	va_list ap;
-	int ret;
-	char *msgbuf = NULL;
-
-	va_start( ap, format_str );
-	ret = vasprintf( &msgbuf, format_str, ap );
-	va_end( ap );
-
-	if (ret == -1)
-		return;
-
-#if defined(HAVE_SYSLOG)
-	syslog( priority, "%s", msgbuf );
-#else
-	DEBUG(0,("%s", msgbuf ));
-#endif
-	SAFE_FREE(msgbuf);
-}
-
 /****************************************************************************
  Return the major devicenumber for UNIX extensions.
 ****************************************************************************/
