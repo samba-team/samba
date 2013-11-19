@@ -6,7 +6,7 @@
 <description>
 	<para> controls the algorithm used for the generating
 	the mangled names. Can take two different values, &quot;hash&quot; and
-	&quot;hash2&quot;. &quot;hash&quot; is the algorithm that was used
+	&quot;hash2&quot;. &quot;hash&quot; is the algorithm that was
 	used in Samba for many years and was the default in Samba 2.2.x &quot;hash2&quot; is
         now the default and is newer and considered a better algorithm (generates less collisions) in
         the names. Many Win32 applications store the mangled names and so
