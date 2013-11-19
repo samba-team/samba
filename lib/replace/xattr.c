@@ -25,6 +25,7 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#define UID_WRAPPER_NOT_REPLACE
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/dir.h"
