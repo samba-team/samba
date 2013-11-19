@@ -367,6 +367,7 @@ struct smbXsrv_connection {
 	 * this session_table is used for SMB1 and SMB2,
 	 */
 	struct smbXsrv_session_table *session_table;
+	uint64_t last_session_id;
 	/*
 	 * this tcon_table is only used for SMB1.
 	 */
@@ -731,7 +732,6 @@ struct smbd_server_connection {
 			 *  Set by us for CORE protocol.
 			 */
 			int max_send;
-			uint64_t last_session_tag;
 		} sessions;
 		struct smb_signing_state *signing_state;
 
