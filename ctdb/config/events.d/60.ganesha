@@ -215,10 +215,6 @@ case "$1" in
 	    grep Path /etc/ganesha/$CTDB_CLUSTER_FILESYSTEM_TYPE.ganesha.exports.conf |
  	    cut -f2 -d\" | ctdb_check_directories
 	} || exit $?
-
-	# once every 60 seconds, update the statd state database for which
-	# clients need notifications
-	nfs_statd_update 60
 	;;
 
      *)
