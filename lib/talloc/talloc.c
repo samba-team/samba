@@ -235,12 +235,14 @@ struct talloc_memlimit {
 	size_t cur_size;
 };
 
-static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size);
-static void talloc_memlimit_grow(struct talloc_memlimit *limit,
+static inline bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size);
+static inline void talloc_memlimit_grow(struct talloc_memlimit *limit,
 				size_t size);
-static void talloc_memlimit_shrink(struct talloc_memlimit *limit,
+static inline void talloc_memlimit_shrink(struct talloc_memlimit *limit,
 				size_t size);
-static void talloc_memlimit_update_on_free(struct talloc_chunk *tc);
+static inline void talloc_memlimit_update_on_free(struct talloc_chunk *tc);
+
+static inline void _talloc_set_name_const(const void *ptr, const char *name);
 
 typedef int (*talloc_destructor_t)(void *);
 
@@ -466,41 +468,41 @@ struct talloc_pool_hdr {
 
 #define TP_HDR_SIZE TC_ALIGN16(sizeof(struct talloc_pool_hdr))
 
-static struct talloc_pool_hdr *talloc_pool_from_chunk(struct talloc_chunk *c)
+static inline struct talloc_pool_hdr *talloc_pool_from_chunk(struct talloc_chunk *c)
 {
 	return (struct talloc_pool_hdr *)((char *)c - TP_HDR_SIZE);
 }
 
-static struct talloc_chunk *talloc_chunk_from_pool(struct talloc_pool_hdr *h)
+static inline struct talloc_chunk *talloc_chunk_from_pool(struct talloc_pool_hdr *h)
 {
 	return (struct talloc_chunk *)((char *)h + TP_HDR_SIZE);
 }
 
-static void *tc_pool_end(struct talloc_pool_hdr *pool_hdr)
+static inline void *tc_pool_end(struct talloc_pool_hdr *pool_hdr)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_pool(pool_hdr);
 	return (char *)tc + TC_HDR_SIZE + pool_hdr->poolsize;
 }
 
-static size_t tc_pool_space_left(struct talloc_pool_hdr *pool_hdr)
+static inline size_t tc_pool_space_left(struct talloc_pool_hdr *pool_hdr)
 {
 	return (char *)tc_pool_end(pool_hdr) - (char *)pool_hdr->end;
 }
 
 /* If tc is inside a pool, this gives the next neighbour. */
-static void *tc_next_chunk(struct talloc_chunk *tc)
+static inline void *tc_next_chunk(struct talloc_chunk *tc)
 {
 	return (char *)tc + TC_ALIGN16(TC_HDR_SIZE + tc->size);
 }
 
-static void *tc_pool_first_chunk(struct talloc_pool_hdr *pool_hdr)
+static inline void *tc_pool_first_chunk(struct talloc_pool_hdr *pool_hdr)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_pool(pool_hdr);
 	return tc_next_chunk(tc);
 }
 
 /* Mark the whole remaining pool as not accessable */
-static void tc_invalidate_pool(struct talloc_pool_hdr *pool_hdr)
+static inline void tc_invalidate_pool(struct talloc_pool_hdr *pool_hdr)
 {
 	size_t flen = tc_pool_space_left(pool_hdr);
 
@@ -517,8 +519,8 @@ static void tc_invalidate_pool(struct talloc_pool_hdr *pool_hdr)
   Allocate from a pool
 */
 
-static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
-					      size_t size, size_t prefix_len)
+static inline struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
+						     size_t size, size_t prefix_len)
 {
 	struct talloc_pool_hdr *pool_hdr = NULL;
 	size_t space_left;
@@ -657,7 +659,7 @@ static inline void *__talloc(const void *context, size_t size)
  * Create a talloc pool
  */
 
-_PUBLIC_ void *talloc_pool(const void *context, size_t size)
+static inline void *_talloc_pool(const void *context, size_t size)
 {
 	struct talloc_chunk *tc;
 	struct talloc_pool_hdr *pool_hdr;
@@ -682,6 +684,11 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 	tc_invalidate_pool(pool_hdr);
 
 	return result;
+}
+
+_PUBLIC_ void *talloc_pool(const void *context, size_t size)
+{
+	return _talloc_pool(context, size);
 }
 
 /*
@@ -727,7 +734,7 @@ _PUBLIC_ void *_talloc_pooled_object(const void *ctx,
 	}
 	poolsize = tmp;
 
-	ret = talloc_pool(ctx, poolsize);
+	ret = _talloc_pool(ctx, poolsize);
 	if (ret == NULL) {
 		return NULL;
 	}
@@ -743,7 +750,7 @@ _PUBLIC_ void *_talloc_pooled_object(const void *ctx,
 
 	pool_hdr->end = ((char *)pool_hdr->end + TC_ALIGN16(type_size));
 
-	talloc_set_name_const(ret, type_name);
+	_talloc_set_name_const(ret, type_name);
 	return ret;
 
 overflow:
@@ -1858,7 +1865,7 @@ enum talloc_mem_count_type {
 	TOTAL_MEM_LIMIT,
 };
 
-static size_t _talloc_total_mem_internal(const void *ptr,
+static inline size_t _talloc_total_mem_internal(const void *ptr,
 					 enum talloc_mem_count_type type,
 					 struct talloc_memlimit *old_limit,
 					 struct talloc_memlimit *new_limit)
@@ -2666,7 +2673,7 @@ _PUBLIC_ int talloc_is_parent(const void *context, const void *ptr)
 /*
   return the total size of memory used by this context and all children
 */
-static size_t _talloc_total_limit_size(const void *ptr,
+static inline size_t _talloc_total_limit_size(const void *ptr,
 					struct talloc_memlimit *old_limit,
 					struct talloc_memlimit *new_limit)
 {
@@ -2674,7 +2681,7 @@ static size_t _talloc_total_limit_size(const void *ptr,
 					  old_limit, new_limit);
 }
 
-static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size)
+static inline bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size)
 {
 	struct talloc_memlimit *l;
 
