@@ -80,6 +80,7 @@ manpages='''
          manpages/vfs_syncops.8
          manpages/vfs_time_audit.8
          manpages/vfs_tsmsm.8
+         manpages/vfs_worm.8
          manpages/vfs_xattr_tdb.8
          manpages/vfstest.1
          manpages/wbinfo.1
