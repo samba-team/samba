@@ -37,8 +37,6 @@ static void smbd_smb2_connection_handler(struct tevent_context *ev,
 static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
 				     uint16_t fde_flags);
 
-#define OUTVEC_ALLOC_SIZE (SMB2_HDR_BODY + 9)
-
 static const struct smbd_smb2_dispatch_table {
 	uint16_t opcode;
 	const char *name;
@@ -948,10 +946,14 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 			next_command_ofs = SMB2_HDR_BODY + 9;
 		}
 
-		outhdr = talloc_zero_array(vector, uint8_t,
-				      OUTVEC_ALLOC_SIZE);
-		if (outhdr == NULL) {
-			return NT_STATUS_NO_MEMORY;
+		if (idx == 1) {
+			outhdr = req->out._hdr;
+		} else {
+			outhdr = talloc_zero_array(vector, uint8_t,
+						   OUTVEC_ALLOC_SIZE);
+			if (outhdr == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		outbody = outhdr + SMB2_HDR_BODY;
