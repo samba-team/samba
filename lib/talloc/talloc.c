@@ -2655,7 +2655,10 @@ static int _talloc_is_parent(const void *context, const void *ptr, int depth)
 	}
 
 	tc = talloc_chunk_from_ptr(context);
-	while (tc && depth > 0) {
+	while (tc) {
+		if (depth <= 0) {
+			return 0;
+		}
 		if (TC_PTR_FROM_CHUNK(tc) == ptr) return 1;
 		while (tc && tc->prev) tc = tc->prev;
 		if (tc) {
