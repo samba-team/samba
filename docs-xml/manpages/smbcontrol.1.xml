@@ -61,7 +61,9 @@
 
 		<varlistentry>
 		<term>destination</term>
-		<listitem><para>One of <parameter>nmbd</parameter>, <parameter>smbd</parameter> or a process ID.</para>
+		<listitem><para>One of <parameter>nmbd</parameter>,
+		<parameter>smbd</parameter>, <parameter>winbindd</parameter>
+		or a process ID.</para>
 
 		<para>The <parameter>all</parameter> destination causes the 
 		message to "broadcast" to all running daemons including nmbd and
