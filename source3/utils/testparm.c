@@ -137,13 +137,13 @@ static int do_global_checks(void)
 	    (strstr(socket_options, "SO_SNDBUF") ||
 	     strstr(socket_options, "SO_RCVBUF") ||
 	     strstr(socket_options, "SO_SNDLOWAT") ||
-	     strstr(socket_options, "SO_RCVLOWAT") ||
-	     strstr(socket_options, "TCP_NODELAY"))) {
+	     strstr(socket_options, "SO_RCVLOWAT")))
+	{
 		fprintf(stderr,
 			"WARNING: socket options = %s\n"
 			"This warning is printed because you set one of the\n"
 			"following options: SO_SNDBUF, SO_RCVBUF, SO_SNDLOWAT,\n"
-			"SO_RCVLOWAT, TCP_NODELAY\n"
+			"SO_RCVLOWAT\n"
 			"Modern server operating systems are tuned for\n"
 			"high network performance in the majority of situations;\n"
 			"when you set 'socket options' you are overriding those\n"
