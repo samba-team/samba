@@ -247,6 +247,16 @@ double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2);
 double timeval_elapsed(const struct timeval *tv);
 
 /**
+  return the number of seconds elapsed between two times
+*/
+double timespec_elapsed2(const struct timespec *ts1,
+			 const struct timespec *ts2);
+/**
+  return the number of seconds elapsed since a given time
+*/
+double timespec_elapsed(const struct timespec *ts);
+
+/**
   return the lesser of two timevals
 */
 struct timeval timeval_min(const struct timeval *tv1,

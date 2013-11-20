@@ -652,6 +652,24 @@ _PUBLIC_ double timeval_elapsed(const struct timeval *tv)
 	struct timeval tv2 = timeval_current();
 	return timeval_elapsed2(tv, &tv2);
 }
+/**
+ *   return the number of seconds elapsed between two times
+ **/
+_PUBLIC_ double timespec_elapsed2(const struct timespec *ts1,
+				const struct timespec *ts2)
+{
+	return (ts2->tv_sec - ts1->tv_sec) +
+	       (ts2->tv_nsec - ts1->tv_nsec)*1.0e-9;
+}
+
+/**
+ *   return the number of seconds elapsed since a given time
+ */
+_PUBLIC_ double timespec_elapsed(const struct timespec *ts)
+{
+	struct timespec ts2 = timespec_current();
+	return timespec_elapsed2(ts, &ts2);
+}
 
 /**
   return the lesser of two timevals
