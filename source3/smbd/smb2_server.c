@@ -253,8 +253,12 @@ static void smb2_setup_nbt_length(struct iovec *vector, int count)
 
 static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
 {
-	data_blob_clear_free(&req->first_key);
-	data_blob_clear_free(&req->last_key);
+	if (req->first_key.length > 0) {
+		data_blob_clear_free(&req->first_key);
+	}
+	if (req->last_key.length > 0) {
+		data_blob_clear_free(&req->last_key);
+	}
 	return 0;
 }
 
@@ -1343,7 +1347,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		data_blob_clear_free(&req->first_key);
+		if (req->first_key.length > 0) {
+			data_blob_clear_free(&req->first_key);
+		}
 
 		req->current_idx = 1;
 
@@ -1374,7 +1380,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 			SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
 		}
 	}
-	data_blob_clear_free(&req->last_key);
+	if (req->last_key.length > 0) {
+		data_blob_clear_free(&req->last_key);
+	}
 
 	defer_endtime = timeval_current_ofs_usec(defer_time);
 	req->async_te = tevent_add_timer(req->sconn->ev_ctx,
@@ -2364,7 +2372,9 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			return status;
 		}
 	}
-	data_blob_clear_free(&req->last_key);
+	if (req->last_key.length > 0) {
+		data_blob_clear_free(&req->last_key);
+	}
 
 	req->current_idx += SMBD_SMB2_NUM_IOV_PER_REQ;
 
@@ -2438,7 +2448,9 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			return status;
 		}
 	}
-	data_blob_clear_free(&req->first_key);
+	if (req->first_key.length > 0) {
+		data_blob_clear_free(&req->first_key);
+	}
 
 	/* I am a sick, sick man... :-). Sendfile hack ... JRA. */
 	if (req->out.vector_count < (2*SMBD_SMB2_NUM_IOV_PER_REQ) &&
