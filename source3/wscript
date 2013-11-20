@@ -1786,6 +1786,7 @@ main() {
                                       vfs_smb_traffic_analyzer vfs_preopen vfs_catia vfs_scannedonly
 				      vfs_media_harmony
 				      vfs_commit
+				      vfs_worm
                                       vfs_crossrename vfs_linux_xfs_sgid
                                       vfs_time_audit idmap_autorid idmap_tdb2
                                       idmap_rid idmap_hash idmap_rfc2307'''))
