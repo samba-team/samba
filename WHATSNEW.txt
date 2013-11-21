@@ -1,4 +1,96 @@
                    =============================
+                   Release Notes for Samba 4.1.2
+                         November 22, 2013
+                   =============================
+
+
+This is is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.1:
+--------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10187: Missing talloc_free can leak stackframe in error path.
+    * BUG 10196: RW Deny for a specific user is not overriding RW Allow for a
+      group.
+
+
+o   Anand Avati <avati@redhat.com>
+    * BUG 10224: vfs_glusterfs: Implement proper mashalling/unmarshalling of
+      ACLs.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10052: dfs_server: Use dsdb_search_one to catch 0 results as well as
+      NO_SUCH_OBJECT errors.
+
+
+o   Samuel Cabrero <scabrero@zentyal.com>
+    * BUG 9091: s4-dns: dlz_bind9: Create dns-HOSTNAME account disabled.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 10264: s3-winbindd: Fix cache_traverse_validate_fn failure for
+      NDR cache entries.
+
+
+o   Christopher R. Hertel <crh@redhat.com>
+    * BUG 10224: vfs_glusterfs: Fix excessive debug output from
+      vfs_gluster_open().
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 10247: xattr: Fix listing EAs on *BSD for non-root users.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10190: Fix memset used with constant zero length parameter.
+    * BUG 10195: nsswitch: Fix short writes in winbind_write_sock.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10193: s4:dsdb/rootdse: report 'dnsHostName' instead of 'dNSHostName'.
+    * BUG 10232: libcli/smb: Fix smb2cli_ioctl*() against Windows 2008.
+
+
+o   Susant Kumar Palai <spalai@redhat.com>
+    * BUG 10224: VFS plugin was sending the actual size of the volume instead of
+      the total number of block units because of which windows was getting the
+      wrong volume capacity.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10194: Make offline logon cache updating for cross child domain group
+      membership.
+    * BUG 10269: util: Remove 32bit macros breaking strict aliasing.
+    * BUG 10253: Fix the build of vfs_glusterfs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.1.1
                          November 11, 2013
                    =============================
@@ -68,8 +160,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.1.0
