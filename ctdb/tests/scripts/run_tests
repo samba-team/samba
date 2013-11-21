@@ -211,6 +211,8 @@ find_and_run_one_test ()
 		break
 	    fi
 	done
+	# No tests found?  Not a tests directory!  Not found...
+	[ -n "$status" ] || status=127
     elif [ -f "$_f" ] ; then
 	run_one_test "$_f"
     else
