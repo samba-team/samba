@@ -5769,7 +5769,13 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 	 */
 
 	if (info_1->datatype) {
-		if (strcmp(info_1->datatype, "RAW") != 0) {
+		/*
+		 * The v4 driver model used in Windows 8 declares print jobs
+		 * intended to bypass the XPS processing layer by setting
+		 * datatype to "XPS_PASS" instead of "RAW".
+		 */
+                if ((strcmp(info_1->datatype, "RAW") != 0)
+                 && (strcmp(info_1->datatype, "XPS_PASS") != 0)) {
 			*r->out.job_id = 0;
 			return WERR_INVALID_DATATYPE;
 		}
