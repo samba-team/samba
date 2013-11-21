@@ -91,11 +91,13 @@ class cmd_rodc_preload(Command):
         destination_dsa_guid = misc.GUID(local_samdb.get_ntds_GUID())
 
         local_samdb.transaction_start()
-        repl = drs_Replicate("ncacn_ip_tcp:%s[seal,print]" % server, lp, creds, local_samdb)
+        repl = drs_Replicate("ncacn_ip_tcp:%s[seal,print]" % server, lp, creds,
+                             local_samdb, destination_dsa_guid)
         try:
             repl.replicate(dn, source_dsa_invocation_id, destination_dsa_guid,
                            exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
         except Exception, e:
+            local_samdb.transaction_cancel()
             raise CommandError("Error replicating DN %s" % dn, e)
         local_samdb.transaction_commit()
 
