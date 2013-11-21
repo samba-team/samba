@@ -129,3 +129,89 @@ bool run_msg_test(int dummy)
 	TALLOC_FREE(ev);
 	return (ret == 0);
 }
+
+/*
+ * Reproducer for bug 10284
+ */
+
+static void msg_callback(struct tevent_req *subreq);
+
+struct msg_test2_state {
+	struct tevent_context *ev;
+	struct messaging_context *msg;
+	struct msg_channel *channel;
+	struct messaging_rec *rec;
+	struct tevent_req *req;
+};
+
+bool run_msg_test2(int dummy)
+{
+	struct msg_test2_state s;
+	NTSTATUS status;
+	int i, ret;
+
+	s.ev = samba_tevent_context_init(talloc_tos());
+	if (s.ev == NULL) {
+		fprintf(stderr, "tevent_context_init failed\n");
+		return false;
+	}
+
+	s.msg = messaging_init(s.ev, s.ev);
+	if (s.msg == NULL) {
+		fprintf(stderr, "messaging_init failed\n");
+		return false;
+	}
+
+	ret = msg_channel_init(s.ev, s.msg, MSG_PING, &s.channel);
+	if (ret != 0) {
+		fprintf(stderr, "msg_channel_init returned %s\n",
+			strerror(ret));
+		return false;
+	}
+
+	status = messaging_send(s.msg, messaging_server_id(s.msg), MSG_PING,
+				&data_blob_null);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "messaging_send returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	ret = tevent_loop_once(s.ev);
+	if (ret == -1) {
+		fprintf(stderr, "tevent_loop_once failed: %s\n",
+			strerror(errno));
+		return false;
+	}
+
+	s.req = msg_read_send(s.ev, s.ev, s.channel);
+	if (s.req == NULL) {
+		fprintf(stderr, "msg_read_send failed\n");
+		return false;
+	}
+	tevent_req_set_callback(s.req, msg_callback, &s);
+
+	status = messaging_send(s.msg, messaging_server_id(s.msg), MSG_PING,
+				&data_blob_null);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "messaging_send returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	for (i=0; i<5; i++) {
+		tevent_loop_once(s.ev);
+	}
+
+	return true;
+}
+
+static void msg_callback(struct tevent_req *subreq)
+{
+	struct msg_test2_state *s = _tevent_req_callback_data(subreq);
+	struct messaging_rec *rec;
+	msg_read_recv(subreq, NULL, &rec);
+	TALLOC_FREE(subreq);
+	subreq = msg_read_send(s->ev, s->ev, s->channel);
+	tevent_req_set_callback(subreq, msg_callback, s);
+}
