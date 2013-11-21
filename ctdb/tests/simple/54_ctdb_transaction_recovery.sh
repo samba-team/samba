@@ -36,7 +36,7 @@ recovery_loop()
 
 recovery_loop_start()
 {
-	recovery_loop > /tmp/recloop.out &
+	recovery_loop >/dev/null &
 	RECLOOP_PID=$!
 	ctdb_test_exit_hook_add "kill $RECLOOP_PID >/dev/null 2>&1"
 }
