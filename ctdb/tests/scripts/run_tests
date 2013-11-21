@@ -16,6 +16,7 @@ Options:
   -X		Trace certain scripts run by tests using -x (only some tests)
   -d		Print descriptions of tests instead of filenames (dodgy!)
   -H		No headers - for running single test with other wrapper
+  -S            Enable socket wrapper
   -q		Quiet - don't show tests being run (hint: use with -s)
   -x		Trace this script with the -x option
 EOF
@@ -35,6 +36,7 @@ with_desc=false
 quiet=false
 exit_on_fail=false
 no_header=false
+socket_wrapper=false
 
 export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=false
@@ -44,7 +46,7 @@ export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
 export TEST_VAR_DIR=""
 export TEST_CLEANUP=false
 
-temp=$(getopt -n "$prog" -o "xdehlqsvV:XACDH" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "xdehlqsvV:XACDHS" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -65,6 +67,7 @@ while true ; do
 	-C) TEST_CLEANUP=true ; shift ;;
 	-D) TEST_DIFF_RESULTS=true ; shift ;;
 	-H) no_header=true ; shift ;;
+	-S) socket_wrapper=true ; shift ;;
 	--) shift ; break ;;
 	*) usage ;;
     esac
@@ -220,6 +223,11 @@ mkdir -p "$TEST_VAR_DIR"
 # Must be absolute
 TEST_VAR_DIR=$(cd "$TEST_VAR_DIR"; echo "$PWD")
 echo "TEST_VAR_DIR=$TEST_VAR_DIR"
+
+if $socket_wrapper ; then
+    export SOCKET_WRAPPER_DIR="${TEST_VAR_DIR}/sw"
+    mkdir -p "$SOCKET_WRAPPER_DIR"
+fi
 
 export TEST_SCRIPTS_DIR=$(dirname "$0")
 
