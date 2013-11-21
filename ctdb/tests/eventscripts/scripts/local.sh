@@ -889,6 +889,7 @@ _extra_header ()
 CTDB_BASE="$CTDB_BASE"
 CTDB_ETCDIR="$CTDB_ETCDIR"
 ctdb client is "$(which ctdb)"
+ip command is "$(which ip)"
 EOF
 }
 
