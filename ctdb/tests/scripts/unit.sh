@@ -4,6 +4,8 @@
 
 # Common variables and functions for CTDB unit tests.
 
+trap -- '' PIPE
+
 # Set the required result for a test.
 # - Argument 1 is exit code.
 # - Argument 2, if present is the required test output but "--"
