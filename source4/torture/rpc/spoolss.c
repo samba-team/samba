@@ -3368,11 +3368,11 @@ static bool test_JobPropertyDelete(struct torture_context *tctx,
 	return true;
 }
 
-
-static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
+static bool test_DoPrintTest_add_one_job_common(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
 					 struct policy_handle *handle,
 					 const char *document_name,
+					 const char *datatype,
 					 uint32_t *job_id)
 {
 	NTSTATUS status;
@@ -3394,7 +3394,7 @@ static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
 
 	info1.document_name	= document_name;
 	info1.output_file	= NULL;
-	info1.datatype		= "RAW";
+	info1.datatype		= datatype;
 
 	info_ctr.level		= 1;
 	info_ctr.info.info1	= &info1;
@@ -3442,6 +3442,25 @@ static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 struct policy_handle *handle,
+					 const char *document_name,
+					 uint32_t *job_id)
+{
+	test_DoPrintTest_add_one_job_common(tctx, b, handle, document_name, "RAW", job_id);
+}
+
+static bool test_DoPrintTest_add_one_job_v4(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 struct policy_handle *handle,
+					 const char *document_name,
+					 uint32_t *job_id)
+{
+	test_DoPrintTest_add_one_job_common(tctx, b, handle, document_name, "XPS_PASS", job_id);
+}
+
 
 static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
 					struct dcerpc_binding_handle *b,
@@ -3539,6 +3558,14 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 
 	for (i=0; i < num_jobs; i++) {
 		ret &= test_DoPrintTest_add_one_job(tctx, b, handle, "TorturePrintJob", &job_ids[i]);
+	}
+
+	for (i=0; i < num_jobs; i++) {
+		ret &= test_SetJob(tctx, b, handle, job_ids[i], NULL, SPOOLSS_JOB_CONTROL_DELETE);
+	}
+
+	for (i=0; i < num_jobs; i++) {
+		ret &= test_DoPrintTest_add_one_job_v4(tctx, b, handle, "TorturePrintJob v4", &job_ids[i]);
 	}
 
 	for (i=0; i < num_jobs; i++) {
