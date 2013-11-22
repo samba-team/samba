@@ -600,14 +600,7 @@ void get_file_infos(struct file_id id,
 	}
 
 	if (write_time) {
-		struct timespec wt;
-
-		wt = lck->data->changed_write_time;
-		if (null_timespec(wt)) {
-			wt = lck->data->old_write_time;
-		}
-
-		*write_time = wt;
+		*write_time = get_share_mode_write_time(lck);
 	}
 
 	TALLOC_FREE(lck);
@@ -1087,4 +1080,14 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 
 	TALLOC_FREE(lck);
 	return True;
+}
+
+struct timespec get_share_mode_write_time(struct share_mode_lock *lck)
+{
+	struct share_mode_data *d = lck->data;
+
+	if (!null_timespec(d->changed_write_time)) {
+		return d->changed_write_time;
+	}
+	return d->old_write_time;
 }
