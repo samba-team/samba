@@ -17,7 +17,6 @@
 */
 #include "private.h"
 #ifndef HAVE_LIBREPLACE
-#include <ccan/asprintf/asprintf.h>
 #include <stdarg.h>
 #endif
 

@@ -31,10 +31,20 @@ extern "C" {
 
 #ifdef HAVE_LIBREPLACE
 #include <replace.h>
+#include <system/filesys.h>
 #else
 #if HAVE_FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
 #endif
+
+#ifndef _PUBLIC_
+#ifdef HAVE_VISIBILITY_ATTR
+#define _PUBLIC_ __attribute__((visibility("default")))
+#else
+#define _PUBLIC_
+#endif
+#endif
+
 /* For mode_t */
 #include <sys/types.h>
 /* For O_* flags. */
