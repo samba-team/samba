@@ -209,12 +209,18 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 {
 	const char *volfile_server;
 	const char *volume;
-	const char *logfile;
+	char *logfile;
 	int loglevel;
-	glfs_t *fs;
-	int ret;
+	glfs_t *fs = NULL;
+	TALLOC_CTX *tmp_ctx;
+	int ret = 0;
 
-	logfile = lp_parm_const_string(SNUM(handle->conn), "glusterfs",
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		ret = -1;
+		goto done;
+	}
+	logfile = lp_parm_talloc_string(tmp_ctx, SNUM(handle->conn), "glusterfs",
 				       "logfile", NULL);
 
 	loglevel = lp_parm_int(SNUM(handle->conn), "glusterfs", "loglevel", -1);
@@ -233,57 +239,60 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 
 	fs = glfs_find_preopened(volume);
 	if (fs) {
-		goto found;
+		goto done;
 	}
 
 	fs = glfs_new(volume);
 	if (fs == NULL) {
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
 	ret = glfs_set_volfile_server(fs, "tcp", volfile_server, 0);
 	if (ret < 0) {
 		DEBUG(0, ("Failed to set volfile_server %s\n", volfile_server));
-		glfs_fini(fs);
-		return -1;
+		goto done;
 	}
 
 	ret = glfs_set_xlator_option(fs, "*-md-cache", "cache-posix-acl",
 				     "true");
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to set xlator options\n", volume));
-		glfs_fini(fs);
-		return -1;
+		goto done;
 	}
 
 	ret = glfs_set_logging(fs, logfile, loglevel);
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to set logfile %s loglevel %d\n",
 			  volume, logfile, loglevel));
-		glfs_fini(fs);
-		return -1;
+		goto done;
 	}
 
 	ret = glfs_init(fs);
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to initialize volume (%s)\n",
 			  volume, strerror(errno)));
-		glfs_fini(fs);
-		return -1;
+		goto done;
 	}
 
 	ret = glfs_set_preopened(volume, fs);
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to register volume (%s)\n",
 			  volume, strerror(errno)));
-		glfs_fini(fs);
-		return -1;
+		goto done;
 	}
-found:
-	DEBUG(0, ("%s: Initialized volume from server %s\n",
-		  volume, volfile_server));
-	handle->data = fs;
-	return 0;
+done:
+	talloc_free(tmp_ctx);
+	if (ret < 0) {
+		if (fs)
+			glfs_fini(fs);
+		return -1;
+	} else {
+		DEBUG(0, ("%s: Initialized volume from server %s\n",
+                         volume, volfile_server));
+		handle->data = fs;
+		return 0;
+	}
 }
 
 static void vfs_gluster_disconnect(struct vfs_handle_struct *handle)
