@@ -35,6 +35,7 @@
 #include "system/select.h"
 #include "system/wait.h"
 #else
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -47,6 +48,10 @@
 #include <stdio.h>
 #include <utime.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <time.h>
 #endif
 #include <assert.h>
 
