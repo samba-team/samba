@@ -19,10 +19,8 @@
 #ifndef __ASYS_H__
 #define __ASYS_H__
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include "replace.h"
+#include "system/filesys.h"
 
 /**
  * @defgroup asys The async syscall library
