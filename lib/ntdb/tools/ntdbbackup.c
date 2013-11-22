@@ -42,7 +42,7 @@
 
 #include "config.h"
 #include "ntdb.h"
-#include "system/filesys.h"
+#include "private.h"
 
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>

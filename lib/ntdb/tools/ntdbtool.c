@@ -22,23 +22,7 @@
 
 #include "config.h"
 #include "ntdb.h"
-#ifdef HAVE_LIBREPLACE
-#include <replace.h>
-#include <system/filesys.h>
-#include <system/time.h>
-#include <system/locale.h>
-#else
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string.h>
-#include <stdarg.h>
-#endif
+#include "private.h"
 
 static int do_command(void);
 const char *cmdname;

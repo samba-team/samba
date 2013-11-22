@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <ccan/err/err.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 static void logfn(struct ntdb_context *ntdb,
 		  enum ntdb_log_level level,

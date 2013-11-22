@@ -1,8 +1,6 @@
 /* Simple speed test for NTDB */
 #include <ccan/err/err.h>
 #include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <fcntl.h>

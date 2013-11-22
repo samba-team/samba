@@ -20,17 +20,8 @@
 
 #include "config.h"
 #include "ntdb.h"
+#include "private.h"
 #include <assert.h>
-#ifdef HAVE_LIBREPLACE
-#include <replace.h>
-#include <system/filesys.h>
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#endif
 
 static int read_linehead(FILE *f)
 {
