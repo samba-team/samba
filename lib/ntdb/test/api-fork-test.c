@@ -12,14 +12,8 @@
  */
 #include "config.h"
 #include "ntdb.h"
+#include "private.h"
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include "logging.h"
 
 static bool am_child = false;

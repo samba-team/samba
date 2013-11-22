@@ -2,9 +2,6 @@
 #include "config.h"
 #include "ntdb.h"
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "logging.h"
 #include "../private.h" /* To establish size, esp. for NTDB_INTERNAL dbs */
 

@@ -1,8 +1,5 @@
 #include "private.h" // For NTDB_TOPLEVEL_HASH_BITS
 #include <ccan/hash/hash.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "ntdb.h"
 #include "tap-interface.h"
 #include "logging.h"

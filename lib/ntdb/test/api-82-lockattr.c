@@ -1,9 +1,6 @@
 #include "private.h" // for ntdb_fcntl_unlock
 #include "ntdb.h"
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <errno.h>
 #include "logging.h"
 

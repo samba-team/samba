@@ -1,9 +1,6 @@
 #include "private.h" // for ntdb_context
 #include "ntdb.h"
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "logging.h"
 
 int main(int argc, char *argv[])

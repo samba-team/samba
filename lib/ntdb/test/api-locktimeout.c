@@ -1,13 +1,8 @@
 #include "config.h"
 #include "ntdb.h"
+#include "private.h"
 #include "tap-interface.h"
-#include "system/wait.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <fcntl.h>
 #include <limits.h>
-#include <errno.h>
 #include "logging.h"
 #include "external-agent.h"
 

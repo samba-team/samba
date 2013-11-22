@@ -1,11 +1,9 @@
 /* Another test revealed that we lost an entry.  This reproduces it. */
 #include "config.h"
 #include "ntdb.h"
+#include "private.h"
 #include <ccan/hash/hash.h>
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "logging.h"
 
 #define NUM_RECORDS 1189

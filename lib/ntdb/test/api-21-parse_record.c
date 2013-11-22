@@ -1,9 +1,7 @@
 #include "config.h"
 #include "ntdb.h"
+#include "private.h"
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "logging.h"
 
 static enum NTDB_ERROR parse(NTDB_DATA key, NTDB_DATA data, NTDB_DATA *expected)

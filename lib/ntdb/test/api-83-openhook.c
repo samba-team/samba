@@ -1,13 +1,7 @@
 #include "config.h"
 #include "ntdb.h"
+#include "private.h"
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <unistd.h>
 #include "external-agent.h"
 #include "logging.h"
 

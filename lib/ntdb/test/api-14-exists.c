@@ -1,9 +1,7 @@
 #include "config.h"
 #include "ntdb.h"
+#include "private.h"
 #include "tap-interface.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "logging.h"
 
 static bool test_records(struct ntdb_context *ntdb)
