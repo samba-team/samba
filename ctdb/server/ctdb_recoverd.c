@@ -2606,8 +2606,17 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	TDB_DATA result;
 	int32_t ret;
 	uint32_t culprit;
+	struct srvid_requests *current;
 
 	DEBUG(DEBUG_INFO, ("recovery master forced ip reallocation\n"));
+
+	/* Only process requests that are currently pending.  More
+	 * might come in while the takeover run is in progress and
+	 * they will need to be processed later since they might
+	 * be in response flag changes.
+	 */
+	current = rec->reallocate_requests;
+	rec->reallocate_requests = NULL;
 
 	/* update the list of public ips that a node can handle for
 	   all connected nodes
@@ -2629,7 +2638,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	result.dsize = sizeof(int32_t);
 	result.dptr  = (uint8_t *)&ret;
 
-	srvid_requests_reply(ctdb, &rec->reallocate_requests, result);
+	srvid_requests_reply(ctdb, &current, result);
 }
 
 
