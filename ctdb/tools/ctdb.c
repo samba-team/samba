@@ -223,7 +223,14 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 			tok = strtok(ns, ",");
 			while (tok != NULL) {
 				uint32_t pnn;
-				i = (uint32_t)strtoul(tok, NULL, 0);
+				char *endptr;
+				i = (uint32_t)strtoul(tok, &endptr, 0);
+				if (i == 0 && tok == endptr) {
+					DEBUG(DEBUG_ERR,
+					      ("Invalid node %s\n", tok));
+					talloc_free(tmp_ctx);
+					exit(ERR_NONODE);
+				}
 				if (i >= nodemap->num) {
 					DEBUG(DEBUG_ERR, ("Node %u does not exist\n", i));
 					talloc_free(tmp_ctx);
