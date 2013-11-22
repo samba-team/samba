@@ -1967,18 +1967,6 @@ void reply_open(struct smb_request *req)
 	size = smb_fname->st.st_ex_size;
 	fattr = dos_mode(conn, smb_fname);
 
-	/* Deal with other possible opens having a modified
-	   write time. JRA. */
-	if (ask_sharemode) {
-		struct timespec write_time_ts;
-
-		ZERO_STRUCT(write_time_ts);
-		get_file_infos(fsp->file_id, 0, NULL, &write_time_ts);
-		if (!null_timespec(write_time_ts)) {
-			update_stat_ex_mtime(&smb_fname->st, write_time_ts);
-		}
-	}
-
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 
 	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {

@@ -2845,6 +2845,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				  (unsigned int)new_unx_mode));
 	}
 
+	{
+		/*
+		 * Deal with other opens having a modified write time.
+		 */
+		struct timespec write_time = get_share_mode_write_time(lck);
+
+		if (!null_timespec(write_time)) {
+			update_stat_ex_mtime(&fsp->fsp_name->st, write_time);
+		}
+	}
+
 	TALLOC_FREE(lck);
 
 	return NT_STATUS_OK;
@@ -3278,6 +3289,18 @@ static NTSTATUS open_directory(connection_struct *conn,
 			/* Note that here we set the *inital* delete on close flag,
 			   not the regular one. The magic gets handled in close. */
 			fsp->initial_delete_on_close = True;
+		}
+	}
+
+	{
+		/*
+		 * Deal with other opens having a modified write time. Is this
+		 * possible for directories?
+		 */
+		struct timespec write_time = get_share_mode_write_time(lck);
+
+		if (!null_timespec(write_time)) {
+			update_stat_ex_mtime(&fsp->fsp_name->st, write_time);
 		}
 	}
 

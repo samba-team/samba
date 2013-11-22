@@ -411,7 +411,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb_request *smb1req = NULL;
 	files_struct *result = NULL;
 	int info;
-	struct timespec write_time_ts;
 	struct smb2_create_blobs out_context_blobs;
 	int requested_oplock_level;
 	struct smb2_create_blob *dhnc = NULL;
@@ -1066,13 +1065,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 	state->out_file_attributes = dos_mode(result->conn,
 					   result->fsp_name);
-	/* Deal with other possible opens having a modified
-	   write time. JRA. */
-	ZERO_STRUCT(write_time_ts);
-	get_file_infos(result->file_id, 0, NULL, &write_time_ts);
-	if (!null_timespec(write_time_ts)) {
-		update_stat_ex_mtime(&result->fsp_name->st, write_time_ts);
-	}
 
 	unix_timespec_to_nt_time(&state->out_creation_time,
 			get_create_timespec(smb1req->conn, result,
