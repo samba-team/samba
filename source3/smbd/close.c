@@ -148,7 +148,7 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (fsp->fh->fd != -1) {
-		if(flush_write_cache(fsp, CLOSE_FLUSH) == -1) {
+		if(flush_write_cache(fsp, SAMBA_CLOSE_FLUSH) == -1) {
 			status = map_nt_error_from_unix(errno);
 		}
 		delete_write_cache(fsp);

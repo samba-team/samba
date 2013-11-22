@@ -870,7 +870,7 @@ struct profile_stats {
 	unsigned writecache_non_oplock_writes;
 	unsigned writecache_direct_writes;
 	unsigned writecache_init_writes;
-	unsigned writecache_flushed_writes[NUM_FLUSH_REASONS];
+	unsigned writecache_flushed_writes[SAMBA_NUM_FLUSH_REASONS];
 	unsigned writecache_num_perfect_writes;
 	unsigned writecache_num_write_caches;
 	unsigned writecache_allocated_write_caches;

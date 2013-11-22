@@ -82,7 +82,7 @@ ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 		return n;
 	}
 
-	flush_write_cache(fsp, READ_FLUSH);
+	flush_write_cache(fsp, SAMBA_READ_FLUSH);
 
 	fsp->fh->pos = pos;
 
@@ -379,13 +379,13 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 			profile_p->writecache_read_hits ));
 
 		DEBUG(3,("WRITECACHE: Flushes SEEK=%d, READ=%d, WRITE=%d, READRAW=%d, OPLOCK=%d, CLOSE=%d, SYNC=%d\n",
-			profile_p->writecache_flushed_writes[SEEK_FLUSH],
-			profile_p->writecache_flushed_writes[READ_FLUSH],
-			profile_p->writecache_flushed_writes[WRITE_FLUSH],
-			profile_p->writecache_flushed_writes[READRAW_FLUSH],
-			profile_p->writecache_flushed_writes[OPLOCK_RELEASE_FLUSH],
-			profile_p->writecache_flushed_writes[CLOSE_FLUSH],
-			profile_p->writecache_flushed_writes[SYNC_FLUSH] ));
+			profile_p->writecache_flushed_writes[SAMBA_SEEK_FLUSH],
+			profile_p->writecache_flushed_writes[SAMBA_READ_FLUSH],
+			profile_p->writecache_flushed_writes[SAMBA_WRITE_FLUSH],
+			profile_p->writecache_flushed_writes[SAMBA_READRAW_FLUSH],
+			profile_p->writecache_flushed_writes[SAMBA_OPLOCK_RELEASE_FLUSH],
+			profile_p->writecache_flushed_writes[SAMBA_CLOSE_FLUSH],
+			profile_p->writecache_flushed_writes[SAMBA_SYNC_FLUSH] ));
 	}
 #endif
 
@@ -393,7 +393,7 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 		/* If we're using receivefile don't
 		 * deal with a write cache.
 		 */
-		flush_write_cache(fsp, WRITE_FLUSH);
+		flush_write_cache(fsp, SAMBA_WRITE_FLUSH);
 		delete_write_cache(fsp);
 		wcp = NULL;
 	}
@@ -689,7 +689,7 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
                                  +-----------------------+--------+
                         */
 
-			flush_write_cache(fsp, WRITE_FLUSH);
+			flush_write_cache(fsp, SAMBA_WRITE_FLUSH);
 			wcp->offset = wcp->file_size;
 			wcp->data_size = pos - wcp->file_size + 1;
 			memset(wcp->data, '\0', wcp->data_size);
@@ -793,12 +793,12 @@ cache: fd = %d, off=%.0f, size=%u\n", fsp->fh->fd, (double)wcp->offset, (unsigne
 		}
 
 		if (cache_flush_needed) {
-			DEBUG(3,("WRITE_FLUSH:%d: due to noncontinuous write: fd = %d, size = %.0f, pos = %.0f, \
+			DEBUG(3,("SAMBA_WRITE_FLUSH:%d: due to noncontinuous write: fd = %d, size = %.0f, pos = %.0f, \
 n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 				write_path, fsp->fh->fd, (double)wcp->file_size, (double)pos, (unsigned int)n,
 				(double)wcp->offset, (unsigned int)wcp->data_size ));
 
-			flush_write_cache(fsp, WRITE_FLUSH);
+			flush_write_cache(fsp, SAMBA_WRITE_FLUSH);
 		}
 	}
 
@@ -1027,7 +1027,7 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 
 	if (lp_strict_sync(SNUM(conn)) &&
 	    (lp_syncalways(SNUM(conn)) || write_through)) {
-		int ret = flush_write_cache(fsp, SYNC_FLUSH);
+		int ret = flush_write_cache(fsp, SAMBA_SYNC_FLUSH);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}

@@ -3390,7 +3390,7 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
-	flush_write_cache(fsp, READRAW_FLUSH);
+	flush_write_cache(fsp, SAMBA_READRAW_FLUSH);
 
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+1, 0);
 	if(req->wct == 10) {
@@ -4888,7 +4888,7 @@ void reply_lseek(struct smb_request *req)
 		return;
 	}
 
-	flush_write_cache(fsp, SEEK_FLUSH);
+	flush_write_cache(fsp, SAMBA_SEEK_FLUSH);
 
 	mode = SVAL(req->vwv+1, 0) & 3;
 	/* NB. This doesn't use IVAL_TO_SMB_OFF_T as startpos can be signed in this case. */

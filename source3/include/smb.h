@@ -897,15 +897,15 @@ struct smb_extended_info {
  */
 
 enum flush_reason_enum {
-    SEEK_FLUSH,
-    READ_FLUSH,
-    WRITE_FLUSH,
-    READRAW_FLUSH,
-    OPLOCK_RELEASE_FLUSH,
-    CLOSE_FLUSH,
-    SYNC_FLUSH,
-    SIZECHANGE_FLUSH,
+    SAMBA_SEEK_FLUSH,
+    SAMBA_READ_FLUSH,
+    SAMBA_WRITE_FLUSH,
+    SAMBA_READRAW_FLUSH,
+    SAMBA_OPLOCK_RELEASE_FLUSH,
+    SAMBA_CLOSE_FLUSH,
+    SAMBA_SYNC_FLUSH,
+    SAMBA_SIZECHANGE_FLUSH,
     /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
-    NUM_FLUSH_REASONS};
+    SAMBA_NUM_FLUSH_REASONS};
 
 #endif /* _SMB_H */
