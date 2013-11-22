@@ -20,10 +20,9 @@
 #include <linux/ioctl.h>
 #include <linux/fs.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "system/filesys.h"
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "librpc/gen_ndr/smbXsrv.h"
