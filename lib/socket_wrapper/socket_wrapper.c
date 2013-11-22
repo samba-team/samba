@@ -56,7 +56,9 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
+#endif
 #include <errno.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -67,8 +69,26 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <arpa/inet.h>
+
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+
+#ifndef discard_const_p
+#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+#endif
+
+/**
+ * zero a structure
+ */
+#ifndef ZERO_STRUCT
+#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+#endif
 
 #endif /* HAVE_LIBREPLACE */
+
+#include "socket_wrapper.h"
 
 #ifndef _PUBLIC_
 #define _PUBLIC_
