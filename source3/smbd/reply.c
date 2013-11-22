@@ -1960,6 +1960,10 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
+	/* Ensure we're pointing at the correct stat struct. */
+	TALLOC_FREE(smb_fname);
+	smb_fname = fsp->fsp_name;
+
 	size = smb_fname->st.st_ex_size;
 	fattr = dos_mode(conn, smb_fname);
 
@@ -2007,7 +2011,6 @@ void reply_open(struct smb_request *req)
 		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
  out:
-	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBopen);
 	return;
 }
