@@ -972,8 +972,7 @@ static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *re
 /* Return an error when we fail to generate a certificate */
 static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_call, struct ldb_context *ldb_ctx, const char *dn)
 {
-
-	struct heim_octet_string data;
+	heim_octet_string data;
 	WERROR w_err;
 	RSA *rsa;
 	hx509_context hctx;
