@@ -78,7 +78,7 @@ static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, 
  * The <address> is the string form of a pointer to a talloced struct hdb_samba_context
  */
 struct hdb_method hdb_samba4_interface = {
-	.interface_version = HDB_INTERFACE_VERSION,
+	HDB_INTERFACE_VERSION,
 	.prefix = "samba4",
 	.create = hdb_samba4_create
 };
