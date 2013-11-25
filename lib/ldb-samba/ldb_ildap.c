@@ -791,7 +791,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 {
 	struct ldb_module *module;
 	struct ildb_private *ildb;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct cli_credentials *creds;
 	struct loadparm_context *lp_ctx;
 
@@ -862,6 +862,14 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 
 failed:
 	talloc_free(module);
+	if (NT_STATUS_IS_LDAP(status)) {
+		return NT_STATUS_LDAP_CODE(status);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)
+		   || NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
+		   || NT_STATUS_EQUAL(status, NT_STATUS_LOGON_FAILURE)
+		   || NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+		return LDB_ERR_INVALID_CREDENTIALS;
+	}
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
