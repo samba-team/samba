@@ -705,7 +705,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	spnego_state->sub_sec_security = NULL;
 
 	DEBUG(1, ("Failed to setup SPNEGO negTokenInit request: %s\n", nt_errstr(nt_status)));
-	return NT_STATUS_INVALID_PARAMETER;
+	return nt_status;
 }
 
 
