@@ -462,7 +462,7 @@ class LDAPObject(object):
 
     def log(self, msg):
         """
-        Log on the screen if there is no --quiet oprion set
+        Log on the screen if there is no --quiet option set
         """
         if not self.quiet:
             self.outf.write(msg+"\n")
@@ -679,7 +679,7 @@ class LDAPBundel(object):
 
     def log(self, msg):
         """
-        Log on the screen if there is no --quiet oprion set
+        Log on the screen if there is no --quiet option set
         """
         if not self.quiet:
             self.outf.write(msg+"\n")
