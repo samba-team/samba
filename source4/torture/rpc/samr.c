@@ -4055,13 +4055,20 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 
 static bool test_QueryUserInfo_acct_flags(struct dcerpc_binding_handle *b,
 					  struct torture_context *tctx,
-					  struct policy_handle *handle,
+					  struct policy_handle *domain_handle,
+					  const char *acct_name,
 					  uint32_t *acct_flags)
 {
+	struct policy_handle user_handle;
 	union samr_UserInfo *info;
 	struct samr_QueryUserInfo r;
 
-	r.in.user_handle = handle;
+	NTSTATUS status = test_OpenUser_byname(b, tctx, domain_handle, acct_name, &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	r.in.user_handle = &user_handle;
 	r.in.level = 16;
 	r.out.info = &info;
 
@@ -4075,6 +4082,10 @@ static bool test_QueryUserInfo_acct_flags(struct dcerpc_binding_handle *b,
 	*acct_flags = info->info16.acct_flags;
 
 	torture_comment(tctx, "  (acct_flags: 0x%08x)\n", *acct_flags);
+
+	if (!test_samr_handle_Close(b, tctx, &user_handle)) {
+		return false;
+	}
 
 	return true;
 }
@@ -4198,9 +4209,10 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 		test_QueryUserInfo_badpwdcount(b, tctx, user_handle, &badpwdcount), "");
 	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
 
+	/* curiously, windows does _not_ set the autlock flag unless you re-open the user */
 	torture_assert(tctx,
-		test_QueryUserInfo_acct_flags(b, tctx, user_handle, &acct_flags), "");
-	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
+		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
+	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, ACB_AUTOLOCK,
 				 "expected account to be locked");
 
 
@@ -4218,10 +4230,10 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 		test_QueryUserInfo_badpwdcount(b, tctx, user_handle, &badpwdcount), "");
 	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
 
-	/* curiously, windows does _not_ set the autlock flag */
+	/* curiously, windows does _not_ set the autlock flag unless you re-open the user */
 	torture_assert(tctx,
-		test_QueryUserInfo_acct_flags(b, tctx, user_handle, &acct_flags), "");
-	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
+		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
+	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, ACB_AUTOLOCK,
 				 "expected account to be locked");
 
 
@@ -4239,11 +4251,11 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 		test_QueryUserInfo_badpwdcount(b, tctx, user_handle, &badpwdcount), "");
 	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
 
-	/* curiously, windows does _not_ set the autlock flag */
+	/* curiously, windows does _not_ set the autlock flag untill you re-open the user */
 	torture_assert(tctx,
-		test_QueryUserInfo_acct_flags(b, tctx, user_handle, &acct_flags), "");
-	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
-				 "expected account to be locked");
+		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
+	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, ACB_AUTOLOCK,
+				 "expected account to show ACB_AUTOLOCK");
 
 
 	/* let lockout duration expire ==> unlock */
@@ -4259,7 +4271,7 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 	}
 
 	torture_assert(tctx,
-		test_QueryUserInfo_acct_flags(b, tctx, user_handle, &acct_flags), "");
+		       test_QueryUserInfo_acct_flags(b, tctx, domain_handle, acct_name, &acct_flags), "");
 	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
 				 "expected account not to be locked");
 
