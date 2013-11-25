@@ -753,7 +753,7 @@ kdc_check_flags(krb5_context context,
 	if (client->flags.locked_out) {
 	    kdc_log(context, config, 0,
 		    "Client (%s) is locked out", client_name);
-	    return KRB5KDC_ERR_POLICY;
+	    return KRB5KDC_ERR_CLIENT_REVOKED;
 	}
 
 	if (client->flags.invalid) {
