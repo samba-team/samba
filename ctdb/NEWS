@@ -1,3 +1,41 @@
+Changes in CTDB 2.5.1
+=====================
+
+Important bug fixes
+-------------------
+
+* The locking code now correctly implements a per-database active
+  locks limit.  Whole database lock requests can no longer be denied
+  because there are too many active locks - this is particularly
+  important for freezing databases during recovery.
+
+* The debug_locks.sh script locks against itself.  If it is already
+  running then subsequent invocations will exit immediately.
+
+* ctdb tool commands that operate on databases now work correctly when
+  a database ID is given.
+
+* Various code fixes for issues found by Coverity.
+
+Important internal changes
+--------------------------
+
+* statd-callout has been updated so that statd client information is
+  always up-to-date across the cluster.  This is implemented by
+  storing the client information in a persistent database using a new
+  "ctdb ptrans" command.
+
+* The transaction code for persistent databases now retries until it
+  is able to take the transaction lock.  This makes the transation
+  semantics compatible with Samba's implementation.
+
+* Locking helpers are created with vfork(2) instead of fork(2),
+  providing a performance improvement.
+
+* config.guess has been updated to the latest upstream version so CTDB
+  should build on more platforms.
+
+
 Changes in CTDB 2.5
 ===================
 
