@@ -2552,6 +2552,23 @@ static void iprealloc_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
 	struct iprealloc_callback_data *cd =
 		(struct iprealloc_callback_data *)callback;
 
+	numnodes = talloc_array_length(cd->retry_nodes);
+	if (pnn > numnodes) {
+		DEBUG(DEBUG_ERR,
+		      ("ipreallocated failure from node %d, "
+		       "but only %d nodes in nodemap\n",
+		       pnn, numnodes));
+		return;
+	}
+
+	/* Can't run the "ipreallocated" event on a INACTIVE node */
+	if (cd->nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(DEBUG_WARNING,
+		      ("ipreallocated failed on inactive node %d, ignoring\n",
+		       pnn));
+		return;
+	}
+
 	switch (res) {
 	case -ETIME:
 		/* If the control timed out then that's a real error,
@@ -2568,23 +2585,6 @@ static void iprealloc_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
 		 * because the error codes are all folded down to -1.
 		 * Consider retrying using EVENTSCRIPT control...
 		 */
-
-		numnodes = talloc_array_length(cd->retry_nodes);
-		if (pnn > numnodes) {
-			DEBUG(DEBUG_ERR,
-			      ("ipreallocated failure from node %d, but only %d nodes in nodemap\n",
-			       pnn, numnodes));
-			return;
-		}
-
-		/* Can't run the "ipreallocated" event on a INACTIVE node */
-		if (cd->nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE) {
-			DEBUG(DEBUG_ERR,
-			      ("ipreallocated failure from node %d, but node is inactive - not flagging a retry\n",
-			       pnn));
-			return;
-		}
-
 		DEBUG(DEBUG_WARNING,
 		      ("ipreallocated failure from node %d, flagging retry\n",
 		       pnn));
