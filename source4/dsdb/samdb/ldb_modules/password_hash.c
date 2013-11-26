@@ -1895,18 +1895,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		/* The password modify through the NT hash is encouraged and
 		   has no problems at all */
 		if (io->og.nt_hash) {
-			if (!io->o.nt_hash) {
-				ret = LDB_ERR_CONSTRAINT_VIOLATION;
-				ldb_asprintf_errstring(ldb,
-					"%08X: %s - check_password_restrictions: "
-					"There's no old nt_hash, which is needed "
-					"in order to change your password!",
-					W_ERROR_V(WERR_INVALID_PASSWORD),
-					ldb_strerror(ret));
-				return ret;
-			}
-
-			if (memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
+			if (!io->o.nt_hash || memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
 					"%08X: %s - check_password_restrictions: "
@@ -1924,19 +1913,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		 * the NT hash was already checked - otherwise it's mandatory.
 		 * (as the SAMR operations request it). */
 		if (io->og.lm_hash) {
-			if (!io->o.lm_hash && !nt_hash_checked) {
-				ret = LDB_ERR_CONSTRAINT_VIOLATION;
-				ldb_asprintf_errstring(ldb,
-					"%08X: %s - check_password_restrictions: "
-					"There's no old lm_hash, which is needed "
-					"in order to change your password!",
-					W_ERROR_V(WERR_INVALID_PASSWORD),
-					ldb_strerror(ret));
-				return ret;
-			}
-
-			if (io->o.lm_hash &&
-			    memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0) {
+			if ((!io->o.lm_hash && !nt_hash_checked)
+			    || (io->o.lm_hash && memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0)) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
 					"%08X: %s - check_password_restrictions: "
