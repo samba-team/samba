@@ -187,6 +187,12 @@ case "$1" in
 	;;
 
      monitor)
+	# Check that directories for shares actually exist.
+	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
+	    grep Path /etc/ganesha/$CTDB_CLUSTER_FILESYSTEM_TYPE.ganesha.exports.conf |
+	    cut -f2 -d\" | sort -u | ctdb_check_directories
+	} || exit $?
+
 	update_tickles 2049
 
 	# check that statd responds to rpc requests
@@ -209,12 +215,6 @@ case "$1" in
 	# not a critical service so we dont flag the node as unhealthy
 	nfs_check_rpc_service "rquotad" \
 	    -gt 0 "verbose restart:b"
-
-	# Check that directories for shares actually exist.
-	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-	    grep Path /etc/ganesha/$CTDB_CLUSTER_FILESYSTEM_TYPE.ganesha.exports.conf |
- 	    cut -f2 -d\" | ctdb_check_directories
-	} || exit $?
 	;;
 
      *)
