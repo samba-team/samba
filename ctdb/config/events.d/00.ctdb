@@ -63,7 +63,7 @@ check_tdb ()
 
 check_persistent_databases ()
 {
-    _dir="${CTDB_DBDIR_PERSISTENT:-${CTDB_DBDIR:-/var/ctdb}/persistent}"
+    _dir="${CTDB_DBDIR_PERSISTENT:-${CTDB_DBDIR:-${CTDB_VARDIR}}/persistent}"
     mkdir -p "$_dir" 2>/dev/null
 
     [ "${CTDB_MAX_PERSISTENT_CHECK_ERRORS:-0}" = "0" ] || return 0
@@ -78,7 +78,7 @@ check_persistent_databases ()
 
 check_non_persistent_databases ()
 {
-    _dir="${CTDB_DBDIR:-/var/ctdb}"
+    _dir="${CTDB_DBDIR:-${CTDB_VARDIR}}"
     mkdir -p "$_dir" 2>/dev/null
 
     for _db in $(ls "${_dir}/"*.tdb.*[0-9] 2>/dev/null) ; do
