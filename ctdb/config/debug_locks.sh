@@ -51,7 +51,7 @@ loadconfig ctdb
 	    pids=$(echo "$out" | grep -v "W$" | grep "$db" | grep -v ctdbd | awk '{print $1}')
 	    all_pids="$all_pids $pids"
 	done
-	pids=$(echo $all_pids | sort -u)
+	pids=$(echo $all_pids | tr " " "\n" | sort -u)
 
 	# For each process waiting, log stack trace
 	for pid in $pids ; do
