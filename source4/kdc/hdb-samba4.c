@@ -177,6 +177,8 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
 
 	if (hdb_auth_status == HDB_AUTH_WRONG_PASSWORD) {
 		authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, ldb_get_default_basedn(kdc_db_ctx->samdb));
+	} else if (hdb_auth_status == HDB_AUTH_SUCCESS) {
+		authsam_zero_bad_pwd_count(kdc_db_ctx->samdb, p->msg);
 	}
 	return 0;
 }
