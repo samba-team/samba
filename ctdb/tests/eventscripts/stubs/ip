@@ -166,25 +166,19 @@ ip_addr_show ()
 	    read local <"$pf"
 	    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
 		calc_brd
-		cat <<EOF
-    inet ${local} brd ${brd} scope global ${dev}
-EOF
+		echo "    inet ${local} brd ${brd} scope global ${dev}"
 	    fi
 	fi
 	if $secondary && [ -r "$sf" ] ; then
 	    while read local ; do
 		if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
 		    calc_brd
-		    cat <<EOF
-    inet ${local} brd ${brd} scope global secondary ${dev}
-EOF
+		    echo "    inet ${local} brd ${brd} scope global secondary ${dev}"
 		fi
 	    done <"$sf"
 	fi
 	if [ -z "$_to" ] ; then
-	    cat <<EOF
-       valid_lft forever preferred_lft forever
-EOF
+	    echo "       valid_lft forever preferred_lft forever"
 	fi
     }
     n=1
