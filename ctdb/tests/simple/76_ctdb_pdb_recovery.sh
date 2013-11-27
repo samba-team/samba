@@ -102,7 +102,7 @@ try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 1
 
 do_test
 if try_command_on_node 0 $CTDB pfetch $TESTDB test1 ; then
-	echo "GOOD: Record was not deleted (recovery by sequnce number worked)"
+	echo "GOOD: Record was not deleted (recovery by sequence number worked)"
 else
 	echo "BAD: Record was deleted"
 	status=1
