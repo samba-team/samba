@@ -1885,7 +1885,6 @@ void reply_open(struct smb_request *req)
 	uint32 create_options = 0;
 	uint32_t private_flags = 0;
 	NTSTATUS status;
-	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopen);
