@@ -47,8 +47,7 @@ try_command_on_node 0 $CTDB wipedb $TESTDB
 # and update values
 for value in value1 value2 value3 value4 value5 ; do
 	echo "store key(test1) data($value)"
-	try_command_on_node 0 "(echo -ne $value > /tmp/test_data)"
-	try_command_on_node 0 $CTDB pstore $TESTDB test1 /tmp/test_data
+	echo "\"test1\" \"$value\"" | try_command_on_node -i 0 $CTDB ptrans "$TESTDB"
 done
 
 # Delete record
@@ -63,8 +62,7 @@ wait_until_node_has_status 1 stopped
 
 # Add a record   key=test1 data=value2
 echo "store key(test1) data(newvalue1)"
-try_command_on_node 0 "(echo -ne newvalue1 > /tmp/test_data)"
-try_command_on_node 0 $CTDB pstore $TESTDB test1 /tmp/test_data
+echo '"test1" "newvalue1"' | try_command_on_node -i 0 $CTDB ptrans "$TESTDB"
 
 # Continue node
 echo "contine node 1"
