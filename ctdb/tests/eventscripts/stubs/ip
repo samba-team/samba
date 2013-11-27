@@ -64,10 +64,8 @@ ip_link_show ()
 	_state="DOWN"
 	_flags=""
     fi
-    cat <<EOF
-${n}: ${dev}: <BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000
-    link/ether ${mac} brd ff:ff:ff:ff:ff:ff
-EOF
+    echo "${n}: ${dev}: <BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
+    echo "    link/ether ${mac} brd ff:ff:ff:ff:ff:ff"
 }
 
 # This is incomplete because it doesn't actually look up table ids in
