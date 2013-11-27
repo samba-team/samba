@@ -1527,6 +1527,31 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
     s4_passdb = None
 
     if not use_ntvfs:
+        s3conf = s3param.get_context()
+        s3conf.load(lp.configfile)
+
+        file = tempfile.NamedTemporaryFile(dir=os.path.abspath(sysvol))
+        try:
+            try:
+                smbd.set_simple_acl(file.name, 0755, gid)
+            except Exception:
+                if not smbd.have_posix_acls():
+                    # This clue is only strictly correct for RPM and
+                    # Debian-like Linux systems, but hopefully other users
+                    # will get enough clue from it.
+                    raise ProvisioningError("Samba was compiled without the posix ACL support that s3fs requires.  "
+                                            "Try installing libacl1-dev or libacl-devel, then re-run configure and make.")
+
+                raise ProvisioningError("Your filesystem or build does not support posix ACLs, which s3fs requires.  "
+                                        "Try the mounting the filesystem with the 'acl' option.")
+            try:
+                smbd.chown(file.name, uid, gid)
+            except Exception:
+                raise ProvisioningError("Unable to chown a file on your filesystem.  "
+                                        "You may not be running provision as root.")
+        finally:
+            file.close()
+
         # This will ensure that the smbd code we are running when setting ACLs
         # is initialised with the smb.conf
         s3conf = s3param.get_context()
@@ -2031,32 +2056,6 @@ def provision(logger, session_info, smbconf=None,
 
     if paths.sysvol and not os.path.exists(paths.sysvol):
         os.makedirs(paths.sysvol, 0775)
-
-    if not use_ntvfs and serverrole == "active directory domain controller":
-        s3conf = s3param.get_context()
-        s3conf.load(lp.configfile)
-
-        if paths.sysvol is None:
-            raise MissingShareError("sysvol", paths.smbconf)
-
-        file = tempfile.NamedTemporaryFile(dir=os.path.abspath(paths.sysvol))
-        try:
-            try:
-                smbd.set_simple_acl(file.name, 0755, root_gid)
-            except Exception:
-                if not smbd.have_posix_acls():
-                    # This clue is only strictly correct for RPM and
-                    # Debian-like Linux systems, but hopefully other users
-                    # will get enough clue from it.
-                    raise ProvisioningError("Samba was compiled without the posix ACL support that s3fs requires.  Try installing libacl1-dev or libacl-devel, then re-run configure and make.")
-
-                raise ProvisioningError("Your filesystem or build does not support posix ACLs, which s3fs requires.  Try the mounting the filesystem with the 'acl' option.")
-            try:
-                smbd.chown(file.name, root_uid, root_gid)
-            except Exception:
-                raise ProvisioningError("Unable to chown a file on your filesystem.  You may not be running provision as root.")
-        finally:
-            file.close()
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
 
