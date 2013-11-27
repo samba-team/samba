@@ -1727,7 +1727,8 @@ main() {
     if conf.CHECK_HEADERS('gpfs_gpl.h'):
         conf.DEFINE('HAVE_GPFS', '1')
 
-    if conf.CHECK_HEADERS('linux/ioctl.h sys/ioctl.h linux/fs.h'):
+    if (conf.CHECK_HEADERS('linux/ioctl.h sys/ioctl.h linux/fs.h') and
+	conf.CHECK_DECLS('FS_IOC_GETFLAGS FS_COMPR_FL', headers='linux/fs.h')):
 	    conf.DEFINE('HAVE_LINUX_IOCTL', '1')
 
     conf.env['CCFLAGS_CEPHFS'] = "-D_FILE_OFFSET_BITS=64"
