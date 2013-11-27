@@ -499,10 +499,20 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 			break;
 		case 'G' : {
 			struct passwd *pass;
-			r = talloc_strdup(tmp_ctx, smb_name);
+
+			if (domain_name != NULL && domain_name[0] != '\0') {
+				r = talloc_asprintf(tmp_ctx,
+						    "%s%c%s",
+						    domain_name,
+						    *lp_winbind_separator(),
+						    smb_name);
+			} else {
+				r = talloc_strdup(tmp_ctx, smb_name);
+			}
 			if (r == NULL) {
 				goto error;
 			}
+
 			pass = Get_Pwnam_alloc(tmp_ctx, r);
 			if (pass != NULL) {
 				a_string = realloc_string_sub(
