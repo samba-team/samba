@@ -92,7 +92,7 @@ do_test
 if try_command_on_node 0 $CTDB pfetch $TESTDB test1 ; then
 	echo "GOOD: Record was not deleted (recovery by RSN worked)"
 else
-	echo "BAD: Record was not deleted"
+	echo "BAD: Record was deleted"
 	status=1
 fi
 
