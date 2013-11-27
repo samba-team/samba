@@ -21,7 +21,7 @@
 /*
   this is the change notify database. It implements mechanisms for
   storing current change notify waiters in a tdb, and checking if a
-  given event matches any of the stored notify waiiters.
+  given event matches any of the stored notify waiters.
 */
 
 #include "includes.h"
