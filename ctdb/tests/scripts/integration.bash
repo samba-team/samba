@@ -449,54 +449,11 @@ _restart_ctdb ()
     fi
 }
 
-_ctdb_start ()
-{
-    _ctdb_hack_options "$@"
-
-    /etc/init.d/ctdb start
-}
-
 setup_ctdb ()
 {
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
 	daemons_setup
     fi
-}
-
-# Common things to do after starting one or more nodes.
-_ctdb_start_post ()
-{
-    onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
-
-    echo "Setting RerecoveryTimeout to 1"
-    onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
-
-    # In recent versions of CTDB, forcing a recovery like this blocks
-    # until the recovery is complete.  Hopefully this will help the
-    # cluster to stabilise before a subsequent test.
-    echo "Forcing a recovery..."
-    onnode -q 0 $CTDB recover
-    sleep_for 1
-
-    echo "ctdb is ready"
-}
-
-# This assumes that ctdbd is not running on the given node.
-ctdb_start_1 ()
-{
-    local pnn="$1"
-    shift # "$@" is passed to ctdbd start.
-
-    echo -n "Starting CTDB on node ${pnn}..."
-
-    if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	daemons_start_1 $pnn "$@"
-    else
-	onnode $pnn $CTDB_TEST_WRAPPER _ctdb_start "$@"
-    fi
-
-    # If we're starting only 1 node then we're doing something weird.
-    ctdb_restart_when_done
 }
 
 restart_ctdb ()
