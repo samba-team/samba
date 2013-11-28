@@ -4649,3 +4649,116 @@ _PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 			       guid->node[2], guid->node[3],
 			       guid->node[4], guid->node[5]);
 }
+
+/*
+ * Prepare an update to the badPwdCount and associated attributes.
+ *
+ * This requires that the user_msg have (if present):
+ *  - objectSid
+ *  - badPasswordTime
+ *  - badPwdCount
+ *
+ * This also requires that the domain_msg have (if present):
+ *  - pwdProperties
+ *  - lockoutThreshold
+ *  - lockOutObservationWindow
+ */
+NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
+				   struct ldb_context *sam_ctx,
+				   struct ldb_message *user_msg,
+				   struct ldb_message *domain_msg,
+				   struct ldb_message **_mod_msg)
+{
+	int i, ret, badPwdCount;
+	int64_t lockoutThreshold, lockOutObservationWindow, badPasswordTime;
+	struct dom_sid *sid;
+	struct timeval tv_now = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv_now);
+	NTSTATUS status;
+	uint32_t pwdProperties, rid = 0;
+	struct ldb_message *mod_msg;
+
+	sid = samdb_result_dom_sid(mem_ctx, user_msg, "objectSid");
+
+	pwdProperties = ldb_msg_find_attr_as_uint(domain_msg,
+						  "pwdProperties", -1);
+	if (sid && !(pwdProperties & DOMAIN_PASSWORD_LOCKOUT_ADMINS)) {
+		status = dom_sid_split_rid(NULL, sid, NULL, &rid);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * This can't happen anyway, but always try
+			 * and update the badPwdCount on failure
+			 */
+			rid = 0;
+		}
+	}
+	TALLOC_FREE(sid);
+
+	/*
+	 * Work out if we are doing password lockout on the domain.
+	 * Also, the built in administrator account is exempt:
+	 * http://msdn.microsoft.com/en-us/library/windows/desktop/aa375371%28v=vs.85%29.aspx
+	 */
+	lockoutThreshold = ldb_msg_find_attr_as_int(domain_msg,
+						    "lockoutThreshold", 0);
+	if (lockoutThreshold == 0 || (rid == DOMAIN_RID_ADMINISTRATOR)) {
+		DEBUG(5, ("Not updating badPwdCount on %s after wrong password\n",
+			  ldb_dn_get_linearized(user_msg->dn)));
+		return NT_STATUS_OK;
+	}
+
+	lockOutObservationWindow = ldb_msg_find_attr_as_int64(domain_msg,
+						"lockOutObservationWindow", 0);
+
+	badPasswordTime = ldb_msg_find_attr_as_int64(user_msg, "badPasswordTime", 0);
+
+	mod_msg = ldb_msg_new(mem_ctx);
+	if (mod_msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	mod_msg->dn = ldb_dn_copy(mod_msg, user_msg->dn);
+	if (mod_msg->dn == NULL) {
+		TALLOC_FREE(mod_msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (badPasswordTime - lockOutObservationWindow >= now) {
+		badPwdCount = ldb_msg_find_attr_as_int(user_msg, "badPwdCount", 0);
+	} else {
+		badPwdCount = 0;
+	}
+
+	badPwdCount++;
+
+	ret = samdb_msg_add_int(sam_ctx, mod_msg, mod_msg, "badPwdCount", badPwdCount);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(mod_msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = samdb_msg_add_int64(sam_ctx, mod_msg, mod_msg, "badPasswordTime", now);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(mod_msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (badPwdCount >= lockoutThreshold) {
+		ret = samdb_msg_add_int64(sam_ctx, mod_msg, mod_msg, "lockoutTime", now);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(mod_msg);
+			return NT_STATUS_NO_MEMORY;
+		}
+		DEBUG(5, ("Locked out user %s after %d wrong passwords\n",
+			  ldb_dn_get_linearized(user_msg->dn), badPwdCount));
+	} else {
+		DEBUG(5, ("Updated badPwdCount on %s after %d wrong passwords\n",
+			  ldb_dn_get_linearized(user_msg->dn), badPwdCount));
+	}
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0; i< mod_msg->num_elements; i++) {
+		mod_msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	*_mod_msg = mod_msg;
+	return NT_STATUS_OK;
+}
