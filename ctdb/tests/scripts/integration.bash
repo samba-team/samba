@@ -23,54 +23,6 @@ PATH="${TEST_SCRIPTS_DIR}:${PATH}"
 
 ######################################################################
 
-ctdb_check_time_logs ()
-{
-    local threshold=20
-
-    local jump=false
-    local prev=""
-    local ds_prev=""
-    local node=""
-
-    out=$(onnode all tail -n 20 "${TEST_VAR_DIR}/ctdb.test.time.log" 2>&1)
-
-    if [ $? -eq 0 ] ; then
-	local line
-	while read line ; do
-	    case "$line" in
-		\>\>\ NODE:\ *\ \<\<)
-		    node="${line#>> NODE: }"
-		    node=${node% <<*}
-		    ds_prev=""
-		    ;;
-		*\ *)
-		    set -- $line
-		    ds_curr="$1${2:0:1}"
-		    if [ -n "$ds_prev" ] && \
-			[ $(($ds_curr - $ds_prev)) -ge $threshold ] ; then
-			echo "Node $node had time jump of $(($ds_curr - $ds_prev))ds between $(date +'%T' -d @${ds_prev%?}) and $(date +'%T' -d @${ds_curr%?})"
-			jump=true
-		    fi
-		    prev="$line"
-		    ds_prev="$ds_curr"
-		    ;;
-	    esac
-	done <<<"$out"
-    else
-	echo Error getting time logs
-    fi
-    if $jump ; then
-	echo "Check time sync (test client first):"
-	date
-	onnode -p all date
-	echo "Information from test client:"
-	hostname
-	top -b -n 1
-	echo "Information from cluster nodes:"
-	onnode all "top -b -n 1 ; echo '/proc/slabinfo' ; cat /proc/slabinfo"
-    fi
-}
-
 ctdb_test_exit ()
 {
     local status=$?
@@ -85,11 +37,6 @@ ctdb_test_exit ()
     set +e
 
     echo "*** TEST COMPLETED (RC=$status) AT $(date '+%F %T'), CLEANING UP..."
-
-    if [ -z "$TEST_LOCAL_DAEMONS" -a -n "$CTDB_TEST_TIME_LOGGING" -a \
-	$status -ne 0 ] ; then
-	ctdb_check_time_logs
-    fi
 
     eval "$ctdb_test_exit_hook" || true
     unset ctdb_test_exit_hook
