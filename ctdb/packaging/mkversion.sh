@@ -34,10 +34,10 @@ fi
 #
 # If we're not directly on a tag, this is a devel release; we append
 # .0.<patchnum>.<checksum>.devel to the release.
-TAG=`git describe`
+TAG=`git describe --match "samba-*"`
 case "$TAG" in
-    ctdb-*)
-	TAG=${TAG##ctdb-}
+    samba-*)
+	TAG=${TAG##samba-}
 	case "$TAG" in
 	    *-*-g*) # 0.9-168-ge6cf0e8
 		# Not exactly on tag: devel version.
