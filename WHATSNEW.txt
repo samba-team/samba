@@ -1,4 +1,63 @@
                    ==============================
+                   Release Notes for Samba 3.6.21
+                         November 29, 2013
+                   ==============================
+
+
+This is is the latest stable release of Samba 3.6.
+
+
+Changes since 3.6.20:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10139: Valid utf8 filenames cause "invalid conversion error"
+      messages.
+    * BUG 10167: s3-smb2 server: smb2 breaks "smb encryption = mandatory".
+    * BUG 10187: Missing talloc_free can leak stackframe in error path.
+    * BUG 10247: xattr: Fix listing EAs on *BSD for non-root users.
+
+
+o   Korobkin <korobkin+samba@gmail.com>
+    * BUG 10118: Raise debug level for being unable to open a printer.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10195: nsswitch: Fix short writes in winbind_write_sock.
+
+
+o   Arvid Requate <requate@univention.de>
+    * BUG 10267: Fix Windows 8 printing via local printer drivers.
+
+
+o   Andreas Schneider <asn@cryptomilk.org>
+    * BUG 10194: Make offline logon cache updating for cross child domain
+      group membership.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.6 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.6.20
                          November 11, 2013
                    ==============================
@@ -57,8 +116,9 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-Release notes for older releases follow:
-----------------------------------------
+
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.6.19
