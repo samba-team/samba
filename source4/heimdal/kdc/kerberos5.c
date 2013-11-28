@@ -1175,6 +1175,14 @@ _kdc_as_rep(krb5_context context,
 	}
     ts_enc:
 #endif
+
+	if (client->entry.flags.locked_out) {
+	    ret = KRB5KDC_ERR_CLIENT_REVOKED;
+	    kdc_log(context, config, 0,
+		    "Client (%s) is locked out", client_name);
+	    goto out;
+	}
+
 	kdc_log(context, config, 5, "Looking for ENC-TS pa-data -- %s",
 		client_name);
 
