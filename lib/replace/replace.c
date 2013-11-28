@@ -84,7 +84,7 @@ size_t rep_strlcpy(char *d, const char *s, size_t bufsize)
    be one more than the maximum resulting string length */
 size_t rep_strlcat(char *d, const char *s, size_t bufsize)
 {
-	size_t len1 = strlen(d);
+	size_t len1 = strnlen(d, bufsiz);
 	size_t len2 = strlen(s);
 	size_t ret = len1 + len2;
 
