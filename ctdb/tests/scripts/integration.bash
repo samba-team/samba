@@ -449,11 +449,10 @@ _restart_ctdb ()
     fi
 }
 
+# Nothing needed for a cluster.  Override for local daemons.
 setup_ctdb ()
 {
-    if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	daemons_setup
-    fi
+    :
 }
 
 restart_ctdb ()

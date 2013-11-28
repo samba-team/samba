@@ -39,7 +39,7 @@ daemons_stop ()
     rm -rf "${TEST_VAR_DIR}/test.db"
 }
 
-daemons_setup ()
+setup_ctdb ()
 {
     mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
 
