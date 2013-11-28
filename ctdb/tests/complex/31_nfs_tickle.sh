@@ -52,11 +52,7 @@ cluster_is_healthy
 # Reset configuration
 ctdb_restart_when_done
 
-ctdb_test_exit_hook_add ctdb_test_eventscript_uninstall
-
-ctdb_test_eventscript_install
-
-# We need this for later, so we know how long to sleep.
+# We need this for later, so we know how long to run nc for.
 try_command_on_node any $CTDB getvar MonitorInterval
 monitor_interval="${out#*= }"
 #echo "Monitor interval on node $test_node is $monitor_interval seconds."
@@ -81,27 +77,7 @@ echo "Sleeping until tickles are synchronised across nodes..."
 try_command_on_node $test_node $CTDB getvar TickleUpdateInterval
 sleep_for "${out#*= }"
 
-if try_command_on_node any "test -r /etc/ctdb/events.d/61.nfstickle" ; then
-    echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
-    if [ -f /etc/sysconfig/nfs ]; then
-	f="/etc/sysconfig/nfs"
-    elif [ -f /etc/default/nfs ]; then
-	f="/etc/default/nfs"
-    elif [ -f /etc/ctdb/sysconfig/nfs ]; then
-	f="/etc/ctdb/sysconfig/nfs"
-    fi
-    try_command_on_node -v any "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
-
-    nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
-
-    try_command_on_node $test_node hostname
-    test_hostname=$out
-
-    try_command_on_node -v any cat "${nfs_tickle_shared_directory}/$test_hostname/$test_ip"
-else
-    echo "That's OK, we'll use \"ctdb gettickles\", which is newer..."
-    try_command_on_node -v any "ctdb -Y gettickles $test_ip $test_port"
-fi
+try_command_on_node -v any "ctdb -Y gettickles $test_ip $test_port"
 
 if [ "${out/${src_socket}/}" != "$out" ] ; then
     echo "GOOD: NFS connection tracked OK."

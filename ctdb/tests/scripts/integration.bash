@@ -767,165 +767,30 @@ get_ctdbd_command_line_option ()
 
 #######################################
 
-install_eventscript ()
-{
-    local script_name="$1"
-    local script_contents="$2"
-
-    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
-	# The quoting here is *very* fragile.  However, we do
-	# experience the joy of installing a short script using
-	# onnode, and without needing to know the IP addresses of the
-	# nodes.
-	onnode all "f=\"\${CTDB_BASE:-/etc/ctdb}/events.d/${script_name}\" ; echo \"Installing \$f\" ; echo '${script_contents}' > \"\$f\" ; chmod 755 \"\$f\""
-    else
-	f="${TEST_VAR_DIR}/events.d/${script_name}"
-	echo "$script_contents" >"$f"
-	chmod 755 "$f"
-    fi
-}
-
-uninstall_eventscript ()
-{
-    local script_name="$1"
-
-    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
-	onnode all "rm -vf \"\${CTDB_BASE:-/etc/ctdb}/events.d/${script_name}\""
-    else
-	rm -vf "${TEST_VAR_DIR}/events.d/${script_name}"
-    fi
-}
-
-#######################################
-
-# This section deals with the 99.ctdb_test eventscript.
-
-# Metafunctions: Handle a ctdb-test file on a node.
-# given event.
-ctdb_test_eventscript_file_create ()
-{
-    local pnn="$1"
-    local type="$2"
-
-    try_command_on_node $pnn touch "/tmp/ctdb-test-${type}.${pnn}"
-}
-
-ctdb_test_eventscript_file_remove ()
-{
-    local pnn="$1"
-    local type="$2"
-
-    try_command_on_node $pnn rm -f "/tmp/ctdb-test-${type}.${pnn}"
-}
-
-ctdb_test_eventscript_file_exists ()
-{
-    local pnn="$1"
-    local type="$2"
-
-    try_command_on_node $pnn test -f "/tmp/ctdb-test-${type}.${pnn}" >/dev/null 2>&1
-}
-
-
-# Handle a flag file on a node that is removed by 99.ctdb_test on the
-# given event.
-ctdb_test_eventscript_flag ()
-{
-    local cmd="$1"
-    local pnn="$2"
-    local event="$3"
-
-    ctdb_test_eventscript_file_${cmd} "$pnn" "flag-${event}"
-}
-
-
-# Handle a trigger that causes 99.ctdb_test to fail it's monitor
-# event.
-ctdb_test_eventscript_unhealthy_trigger ()
-{
-    local cmd="$1"
-    local pnn="$2"
-
-    ctdb_test_eventscript_file_${cmd} "$pnn" "unhealthy-trigger"
-}
-
-# Handle the file that 99.ctdb_test created to show that it has marked
-# a node unhealthy because it detected the above trigger.
-ctdb_test_eventscript_unhealthy_detected ()
-{
-    local cmd="$1"
-    local pnn="$2"
-
-    ctdb_test_eventscript_file_${cmd} "$pnn" "unhealthy-detected"
-}
-
-# Handle a trigger that causes 99.ctdb_test to timeout it's monitor
-# event.  This should cause the node to be banned.
-ctdb_test_eventscript_timeout_trigger ()
-{
-    local cmd="$1"
-    local pnn="$2"
-    local event="$3"
-
-    ctdb_test_eventscript_file_${cmd} "$pnn" "${event}-timeout"
-}
-
-# Note that the eventscript can't use the above functions!
-ctdb_test_eventscript_install ()
-{
-
-    local script='#!/bin/sh
-out=$(ctdb pnn)
-pnn="${out#PNN:}"
-
-rm -vf "/tmp/ctdb-test-flag-${1}.${pnn}"
-
-trigger="/tmp/ctdb-test-unhealthy-trigger.${pnn}"
-detected="/tmp/ctdb-test-unhealthy-detected.${pnn}"
-timeout_trigger="/tmp/ctdb-test-${1}-timeout.${pnn}"
-case "$1" in
-    monitor)
-        if [ -e "$trigger" ] ; then
-            echo "${0}: Unhealthy because \"$trigger\" detected"
-            touch "$detected"
-            exit 1
-        elif [ -e "$detected" -a ! -e "$trigger" ] ; then
-            echo "${0}: Healthy again, \"$trigger\" no longer detected"
-            rm "$detected"
-        fi
-
-	;;
-    *)
-        if [ -e "$timeout_trigger" ] ; then
-            echo "${0}: Sleeping for a long time because \"$timeout_trigger\" detected"
-            sleep 9999
-        fi
-	;;
-	*)
-
-esac
-
-exit 0
-'
-    install_eventscript "99.ctdb_test" "$script"
-}
-
-ctdb_test_eventscript_uninstall ()
-{
-    uninstall_eventscript "99.ctdb_test"
-}
-
-# Note that this only works if you know all other monitor events will
-# succeed.  You also need to install the eventscript before using it.
 wait_for_monitor_event ()
 {
     local pnn="$1"
+    local timeout=120
 
     echo "Waiting for a monitor event on node ${pnn}..."
-    ctdb_test_eventscript_flag create $pnn "monitor"
 
-    wait_until 120 ! ctdb_test_eventscript_flag exists $pnn "monitor"
+    try_command_on_node "$pnn" $CTDB scriptstatus || {
+	echo "Unable to get scriptstatus from node $pnn"
+	return 1
+    }
 
+    local ctdb_scriptstatus_original="$out"
+    wait_until 120 _ctdb_scriptstatus_changed
+}
+
+_ctdb_scriptstatus_changed ()
+{
+    try_command_on_node "$pnn" $CTDB scriptstatus || {
+	echo "Unable to get scriptstatus from node $pnn"
+	return 1
+    }
+
+    [ "$out" != "$ctdb_scriptstatus_original" ]
 }
 
 #######################################
