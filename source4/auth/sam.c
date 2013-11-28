@@ -642,40 +642,24 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
-				      struct ldb_message *msg,
-				      struct ldb_dn *domain_dn)
+NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
+				   struct ldb_context *sam_ctx,
+				   struct ldb_message *user_msg,
+				   struct ldb_message *domain_msg,
+				   struct ldb_message **_mod_msg)
 {
-	const char *attrs[] = { "lockoutThreshold",
-				"lockOutObservationWindow",
-				"lockoutDuration",
-				"pwdProperties",
-				NULL };
-	int ret, badPwdCount;
+	int i, ret, badPwdCount;
 	int64_t lockoutThreshold, lockOutObservationWindow, badPasswordTime;
 	struct dom_sid *sid;
-	struct ldb_result *domain_res;
-	struct ldb_message *msg_mod;
 	struct timeval tv_now = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv_now);
 	NTSTATUS status;
 	uint32_t pwdProperties, rid = 0;
-	TALLOC_CTX *mem_ctx;
+	struct ldb_message *mod_msg;
 
-	mem_ctx = talloc_new(msg);
-	if (mem_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	sid = samdb_result_dom_sid(mem_ctx, user_msg, "objectSid");
 
-	sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
-
-	ret = dsdb_search_dn(sam_ctx, mem_ctx, &domain_res, domain_dn, attrs, 0);
-	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	pwdProperties = ldb_msg_find_attr_as_uint(domain_res->msgs[0],
+	pwdProperties = ldb_msg_find_attr_as_uint(domain_msg,
 						  "pwdProperties", -1);
 	if (sid && !(pwdProperties & DOMAIN_PASSWORD_LOCKOUT_ADMINS)) {
 		status = dom_sid_split_rid(NULL, sid, NULL, &rid);
@@ -687,72 +671,119 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 			rid = 0;
 		}
 	}
+	TALLOC_FREE(sid);
 
 	/*
 	 * Work out if we are doing password lockout on the domain.
 	 * Also, the built in administrator account is exempt:
 	 * http://msdn.microsoft.com/en-us/library/windows/desktop/aa375371%28v=vs.85%29.aspx
 	 */
-	lockoutThreshold = ldb_msg_find_attr_as_int(domain_res->msgs[0],
+	lockoutThreshold = ldb_msg_find_attr_as_int(domain_msg,
 						    "lockoutThreshold", 0);
 	if (lockoutThreshold == 0 || (rid == DOMAIN_RID_ADMINISTRATOR)) {
 		DEBUG(5, ("Not updating badPwdCount on %s after wrong password\n",
-			  ldb_dn_get_linearized(msg->dn)));
-		TALLOC_FREE(mem_ctx);
+			  ldb_dn_get_linearized(user_msg->dn)));
 		return NT_STATUS_OK;
 	}
 
-	lockOutObservationWindow = ldb_msg_find_attr_as_int64(domain_res->msgs[0],
+	lockOutObservationWindow = ldb_msg_find_attr_as_int64(domain_msg,
 						"lockOutObservationWindow", 0);
 
-	badPasswordTime = ldb_msg_find_attr_as_int64(msg, "badPasswordTime", 0);
+	badPasswordTime = ldb_msg_find_attr_as_int64(user_msg, "badPasswordTime", 0);
 
-	msg_mod = ldb_msg_new(mem_ctx);
-	if (msg_mod == NULL) {
-		TALLOC_FREE(mem_ctx);
+	mod_msg = ldb_msg_new(mem_ctx);
+	if (mod_msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	msg_mod->dn = msg->dn;
+	mod_msg->dn = ldb_dn_copy(mod_msg, user_msg->dn);
+	if (mod_msg->dn == NULL) {
+		TALLOC_FREE(mod_msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (badPasswordTime - lockOutObservationWindow >= now) {
-		badPwdCount = ldb_msg_find_attr_as_int(msg, "badPwdCount", 0);
+		badPwdCount = ldb_msg_find_attr_as_int(user_msg, "badPwdCount", 0);
 	} else {
 		badPwdCount = 0;
 	}
 
 	badPwdCount++;
 
-	ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod, "badPwdCount", badPwdCount);
+	ret = samdb_msg_add_int(sam_ctx, mod_msg, mod_msg, "badPwdCount", badPwdCount);
 	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(mem_ctx);
+		TALLOC_FREE(mod_msg);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = samdb_msg_add_int64(sam_ctx, msg_mod, msg_mod, "badPasswordTime", now);
+	ret = samdb_msg_add_int64(sam_ctx, mod_msg, mod_msg, "badPasswordTime", now);
 	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(mem_ctx);
+		TALLOC_FREE(mod_msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (badPwdCount >= lockoutThreshold) {
-		ret = samdb_msg_add_int64(sam_ctx, msg_mod, msg_mod, "lockoutTime", now);
+		ret = samdb_msg_add_int64(sam_ctx, mod_msg, mod_msg, "lockoutTime", now);
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(mem_ctx);
+			TALLOC_FREE(mod_msg);
 			return NT_STATUS_NO_MEMORY;
 		}
 		DEBUG(5, ("Locked out user %s after %d wrong passwords\n",
-			  ldb_dn_get_linearized(msg->dn), badPwdCount));
+			  ldb_dn_get_linearized(user_msg->dn), badPwdCount));
+	} else {
+		DEBUG(5, ("Updated badPwdCount on %s after %d wrong passwords\n",
+			  ldb_dn_get_linearized(user_msg->dn), badPwdCount));
 	}
 
-	ret = dsdb_replace(sam_ctx, msg_mod, 0);
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0; i< mod_msg->num_elements; i++) {
+		mod_msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	*_mod_msg = mod_msg;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
+				      struct ldb_message *msg,
+				      struct ldb_dn *domain_dn)
+{
+	const char *attrs[] = { "lockoutThreshold",
+				"lockOutObservationWindow",
+				"lockoutDuration",
+				"pwdProperties",
+				NULL };
+	int ret;
+	NTSTATUS status;
+	struct ldb_result *domain_res;
+	struct ldb_message *msg_mod = NULL;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(msg);
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dsdb_search_dn(sam_ctx, mem_ctx, &domain_res, domain_dn, attrs, 0);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Failed to upate badPwdCount, badPasswordTime or set lockoutTime on %s: %s\n",
-			  ldb_dn_get_linearized(msg_mod->dn), ldb_errstring(sam_ctx)));
 		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	DEBUG(5, ("Updated badPwdCount on %s after %d wrong passwords\n",
-		  ldb_dn_get_linearized(msg->dn), badPwdCount));
+	status = dsdb_update_bad_pwd_count(mem_ctx, sam_ctx,
+					   msg, domain_res->msgs[0], &msg_mod);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(mem_ctx);
+		return status;
+	}
+
+	if (msg_mod != NULL) {
+		ret = dsdb_modify(sam_ctx, msg_mod, 0);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("Failed to update badPwdCount, badPasswordTime or set lockoutTime on %s: %s\n",
+				  ldb_dn_get_linearized(msg_mod->dn), ldb_errstring(sam_ctx)));
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
 
 	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_OK;
