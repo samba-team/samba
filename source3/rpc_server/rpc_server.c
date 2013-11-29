@@ -37,19 +37,6 @@
 #define SERVER_TCP_LOW_PORT  1024
 #define SERVER_TCP_HIGH_PORT 1300
 
-static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
-					    struct auth_session_info **session_info)
-{
-	NTSTATUS status;
-
-	status = make_session_info_guest(mem_ctx, session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
 int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
@@ -1068,11 +1055,14 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	}
 
 	if (ncacn_conn->session_info == NULL) {
-		status = auth_anonymous_session_info(ncacn_conn,
-						     &ncacn_conn->session_info);
+		/*
+		 * TODO: use auth_anonymous_session_info() here?
+		 */
+		status = make_session_info_guest(ncacn_conn,
+						 &ncacn_conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2, ("Failed to create "
-				  "auth_anonymous_session_info - %s\n",
+				  "make_session_info_guest - %s\n",
 				  nt_errstr(status)));
 			talloc_free(ncacn_conn);
 			return;
