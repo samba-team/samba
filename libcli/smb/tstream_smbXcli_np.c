@@ -47,9 +47,9 @@ static const struct tstream_context_ops tstream_cli_np_ops;
  * otherwise we may get NT_STATUS_PIPE_BUSY on the SMBtrans request
  * from NT4 servers. (See bug #8195)
  */
-#define TSTREAM_CLI_NP_MAX_BUF_SIZE 4280
+#define TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE 4280
 
-#define TSTREAM_CLI_NP_DESIRED_ACCESS ( \
+#define TSTREAM_SMBXCLI_NP_DESIRED_ACCESS ( \
 	SEC_STD_READ_CONTROL | \
 	SEC_FILE_READ_DATA | \
 	SEC_FILE_WRITE_DATA | \
@@ -229,7 +229,7 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 						smb1_npipe,
 						0, /* CreatFlags */
 						0, /* RootDirectoryFid */
-						TSTREAM_CLI_NP_DESIRED_ACCESS,
+						TSTREAM_SMBXCLI_NP_DESIRED_ACCESS,
 						0, /* AllocationSize */
 						0, /* FileAttributes */
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -244,7 +244,7 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 					     npipe,
 					     SMB2_OPLOCK_LEVEL_NONE,
 					     SMB2_IMPERSONATION_IMPERSONATION,
-					     TSTREAM_CLI_NP_DESIRED_ACCESS,
+					     TSTREAM_SMBXCLI_NP_DESIRED_ACCESS,
 					     0, /* file_attributes */
 					     FILE_SHARE_READ|FILE_SHARE_WRITE,
 					     FILE_OPEN,
@@ -501,7 +501,7 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 	}
 
 	cli_nps->write.ofs = 0;
-	cli_nps->write.left = MIN(left, TSTREAM_CLI_NP_MAX_BUF_SIZE);
+	cli_nps->write.left = MIN(left, TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE);
 	cli_nps->write.buf = talloc_realloc(cli_nps, cli_nps->write.buf,
 					    uint8_t, cli_nps->write.left);
 	if (tevent_req_nomem(cli_nps->write.buf, req)) {
@@ -848,14 +848,14 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 					    cli_nps->session,
 					    cli_nps->fnum,
 					    0, /* offset */
-					    TSTREAM_CLI_NP_MAX_BUF_SIZE);
+					    TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE);
 	} else {
 		subreq = smb2cli_read_send(state, state->ev,
 					   cli_nps->conn,
 					   cli_nps->timeout,
 					   cli_nps->session,
 					   cli_nps->tcon,
-					   TSTREAM_CLI_NP_MAX_BUF_SIZE, /* length */
+					   TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE, /* length */
 					   0, /* offset */
 					   cli_nps->fid_persistent,
 					   cli_nps->fid_volatile,
@@ -903,7 +903,7 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 					    NULL, 0, 0,
 					    cli_nps->write.buf,
 					    cli_nps->write.ofs,
-					    TSTREAM_CLI_NP_MAX_BUF_SIZE);
+					    TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE);
 	} else {
 		DATA_BLOB in_input_buffer = data_blob_null;
 		DATA_BLOB in_output_buffer = data_blob_null;
@@ -922,7 +922,7 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 					    0, /* in_max_input_length */
 					    &in_input_buffer,
 					    /* in_max_output_length */
-					    TSTREAM_CLI_NP_MAX_BUF_SIZE,
+					    TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE,
 					    &in_output_buffer,
 					    SMB2_IOCTL_FLAG_IS_FSCTL);
 	}
@@ -978,7 +978,7 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (received > TSTREAM_CLI_NP_MAX_BUF_SIZE) {
+	if (received > TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE) {
 		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
 	}
@@ -1062,7 +1062,7 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (received > TSTREAM_CLI_NP_MAX_BUF_SIZE) {
+	if (received > TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE) {
 		TALLOC_FREE(subreq);
 		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
