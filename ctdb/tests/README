@@ -19,12 +19,30 @@ also pass options, which are then passed to run_tests.  However, if
 you just try to pass options to run_tests then you lose the default
 list of tests that are run.  You can't have everything...
 
-scripts/run_tests
------------------
+tests/run_tests.sh
+------------------
 
-The above scripts invoke tests/scripts/run_tests.  This script has a
-lot of command-line switches.  Some of the more useful options
-include:
+This script can be used to manually run all or selected unit tests and
+simple integration tests against local daemons. Test selection is done
+by specifying optional call parameters. If no parameter is given,
+all unit tests and simple integration tests are run.
+
+This runs all unit tests of the "tool" category:
+
+  ./tests/run_tests.sh tool
+
+In order to run a single test, one simply specifies the path of the
+test script to run as the last parameter, e.g.:
+
+  ./tests/run_tests.sh ./tests/eventscripts/00.ctdb.monitor.001
+  ./tests/run_tests.sh ./tests/simple/76_ctdb_pdb_recovery.sh
+
+One can also specify multiple test suites and tests:
+
+  ./tests/run_tests.sh eventscripts tool ./tests/onnode/0001.sh
+
+The script also has number of command-line switches.
+Some of the more useful options include:
 
   -s  Print a summary of tests results after running all tests
 
