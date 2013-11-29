@@ -786,6 +786,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 			account_name = talloc_asprintf(mem_ctx, "%s$", _account_name);
 			if (account_name == NULL) {
+				DEBUG(0, ("Out of memory creating account name to connect to %s.\n",
+					  cmd_entry->table->name));
+				TALLOC_FREE(cmd_entry->rpc_pipe);
 				SAFE_FREE(previous_nt_hash);
 				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_NO_MEMORY;
@@ -799,6 +802,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 						talloc_autofree_context(),
 						&rpcclient_netlogon_creds);
 			if (!NT_STATUS_IS_OK(ntresult)) {
+				DEBUG(0, ("Could not initialise credentials for %s.\n",
+					  cmd_entry->table->name));
+				TALLOC_FREE(cmd_entry->rpc_pipe);
 				SAFE_FREE(previous_nt_hash);
 				TALLOC_FREE(mem_ctx);
 				return ntresult;
