@@ -449,6 +449,12 @@ _restart_ctdb ()
     fi
 }
 
+# Restart CTDB on all nodes.  Override for local daemons.
+_restart_ctdb_all ()
+{
+    onnode -p all $CTDB_TEST_WRAPPER _restart_ctdb "$@"
+}
+
 # Nothing needed for a cluster.  Override for local daemons.
 setup_ctdb ()
 {
@@ -457,7 +463,7 @@ setup_ctdb ()
 
 restart_ctdb ()
 {
-    # "$@" is passed to ctdbd start.
+    # "$@" is passed to restart_ctdb_all.
 
     echo -n "Restarting CTDB"
     if $ctdb_test_restart_scheduled ; then
@@ -467,12 +473,7 @@ restart_ctdb ()
 
     local i
     for i in $(seq 1 5) ; do
-	if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	    daemons_stop
-	    daemons_start "$@"
-	else
-	    onnode -p all $CTDB_TEST_WRAPPER _restart_ctdb "$@"
-	fi || {
+	_restart_ctdb_all "$@" || {
 	    echo "Restart failed.  Trying again in a few seconds..."
 	    sleep_for 5
 	    continue
