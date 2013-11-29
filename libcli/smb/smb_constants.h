@@ -383,6 +383,56 @@ enum csc_policy {
 #define FILE_NAMED_STREAMS              0x00040000
 #define FILE_READ_ONLY_VOLUME           0x00080000
 
+/* ShareAccess field. */
+#define FILE_SHARE_NONE 0 /* Cannot be used in bitmask. */
+#define FILE_SHARE_READ 1
+#define FILE_SHARE_WRITE 2
+#define FILE_SHARE_DELETE 4
+
+/* Flags - combined with attributes. */
+#define FILE_FLAG_WRITE_THROUGH    0x80000000L
+#define FILE_FLAG_NO_BUFFERING     0x20000000L
+#define FILE_FLAG_RANDOM_ACCESS    0x10000000L
+#define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000L
+#define FILE_FLAG_DELETE_ON_CLOSE  0x04000000L
+#define FILE_FLAG_BACKUP_SEMANTICS 0x02000000L
+#define FILE_FLAG_POSIX_SEMANTICS  0x01000000L
+
+/* CreateDisposition field. */
+#define FILE_SUPERSEDE 0		/* File exists overwrite/supersede. File not exist create. */
+#define FILE_OPEN 1			/* File exists open. File not exist fail. */
+#define FILE_CREATE 2			/* File exists fail. File not exist create. */
+#define FILE_OPEN_IF 3			/* File exists open. File not exist create. */
+#define FILE_OVERWRITE 4		/* File exists overwrite. File not exist fail. */
+#define FILE_OVERWRITE_IF 5		/* File exists overwrite. File not exist create. */
+
+/* CreateOptions field. */
+#define FILE_DIRECTORY_FILE       0x0001
+#define FILE_WRITE_THROUGH        0x0002
+#define FILE_SEQUENTIAL_ONLY      0x0004
+#define FILE_NO_INTERMEDIATE_BUFFERING 0x0008
+#define FILE_SYNCHRONOUS_IO_ALERT      0x0010	/* may be ignored */
+#define FILE_SYNCHRONOUS_IO_NONALERT   0x0020	/* may be ignored */
+#define FILE_NON_DIRECTORY_FILE   0x0040
+#define FILE_CREATE_TREE_CONNECTION    0x0080	/* ignore, should be zero */
+#define FILE_COMPLETE_IF_OPLOCKED      0x0100	/* ignore, should be zero */
+#define FILE_NO_EA_KNOWLEDGE      0x0200
+#define FILE_EIGHT_DOT_THREE_ONLY 0x0400 /* aka OPEN_FOR_RECOVERY: ignore, should be zero */
+#define FILE_RANDOM_ACCESS        0x0800
+#define FILE_DELETE_ON_CLOSE      0x1000
+#define FILE_OPEN_BY_FILE_ID	  0x2000
+#define FILE_OPEN_FOR_BACKUP_INTENT    0x4000
+#define FILE_NO_COMPRESSION       0x8000
+#define FILE_RESERVER_OPFILTER    0x00100000	/* ignore, should be zero */
+#define FILE_OPEN_REPARSE_POINT   0x00200000
+#define FILE_OPEN_NO_RECALL       0x00400000
+#define FILE_OPEN_FOR_FREE_SPACE_QUERY 0x00800000 /* ignore should be zero */
+
+/* Responses when opening a file. */
+#define FILE_WAS_SUPERSEDED 0
+#define FILE_WAS_OPENED 1
+#define FILE_WAS_CREATED 2
+#define FILE_WAS_OVERWRITTEN 3
 
 /* ioctl codes */
 #define IOCTL_QUERY_JOB_INFO      0x530060
