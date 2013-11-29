@@ -769,6 +769,10 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					       trust_password, &machine_account,
 					       &sec_channel_type))
 			{
+				DEBUG(0, ("Failed to fetch trust password for %s to connect to %s.\n",
+					  get_cmdline_auth_info_domain(auth_info),
+					  cmd_entry->table->name));
+				TALLOC_FREE(cmd_entry->rpc_pipe);
 				talloc_free(mem_ctx);
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 			}
@@ -785,6 +789,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
 					  cmd_entry->table->name));
+				TALLOC_FREE(cmd_entry->rpc_pipe);
 				talloc_free(mem_ctx);
 				return ntresult;
 			}
