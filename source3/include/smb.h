@@ -266,40 +266,6 @@ Offset  Data			length.
 #define smb_vwv16	(smb_vwv+(16*2))
 #define smb_vwv17	(smb_vwv+(17*2))
 
-/* These are the trans subcommands */
-#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 
-#define TRANSACT_DCERPCCMD                0x26
-#define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
-
-/* These are the TRANS2 sub commands */
-#define TRANSACT2_OPEN				0x00
-#define TRANSACT2_FINDFIRST			0x01
-#define TRANSACT2_FINDNEXT			0x02
-#define TRANSACT2_QFSINFO			0x03
-#define TRANSACT2_SETFSINFO			0x04
-#define TRANSACT2_QPATHINFO			0x05
-#define TRANSACT2_SETPATHINFO			0x06
-#define TRANSACT2_QFILEINFO			0x07
-#define TRANSACT2_SETFILEINFO			0x08
-#define TRANSACT2_FSCTL				0x09
-#define TRANSACT2_IOCTL				0x0A
-#define TRANSACT2_FINDNOTIFYFIRST		0x0B
-#define TRANSACT2_FINDNOTIFYNEXT		0x0C
-#define TRANSACT2_MKDIR				0x0D
-#define TRANSACT2_SESSION_SETUP			0x0E
-#define TRANSACT2_GET_DFS_REFERRAL		0x10
-#define TRANSACT2_REPORT_DFS_INCONSISTANCY	0x11
-
-/* These are the NT transact sub commands. */
-#define NT_TRANSACT_CREATE                1
-#define NT_TRANSACT_IOCTL                 2
-#define NT_TRANSACT_SET_SECURITY_DESC     3
-#define NT_TRANSACT_NOTIFY_CHANGE         4
-#define NT_TRANSACT_RENAME                5
-#define NT_TRANSACT_QUERY_SECURITY_DESC   6
-#define NT_TRANSACT_GET_USER_QUOTA	  7
-#define NT_TRANSACT_SET_USER_QUOTA	  8
-
 /* These are the NT transact_get_user_quota sub commands */
 #define TRANSACT_GET_USER_QUOTA_LIST_CONTINUE	0x0000
 #define TRANSACT_GET_USER_QUOTA_LIST_START	0x0100

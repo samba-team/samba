@@ -434,6 +434,40 @@ enum csc_policy {
 #define FILE_WAS_CREATED 2
 #define FILE_WAS_OVERWRITTEN 3
 
+/* These are the trans subcommands */
+#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01
+#define TRANSACT_DCERPCCMD                0x26
+#define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
+
+/* These are the TRANS2 sub commands */
+#define TRANSACT2_OPEN                        0
+#define TRANSACT2_FINDFIRST                   1
+#define TRANSACT2_FINDNEXT                    2
+#define TRANSACT2_QFSINFO                     3
+#define TRANSACT2_SETFSINFO                   4
+#define TRANSACT2_QPATHINFO                   5
+#define TRANSACT2_SETPATHINFO                 6
+#define TRANSACT2_QFILEINFO                   7
+#define TRANSACT2_SETFILEINFO                 8
+#define TRANSACT2_FSCTL                       9
+#define TRANSACT2_IOCTL                     0xA
+#define TRANSACT2_FINDNOTIFYFIRST           0xB
+#define TRANSACT2_FINDNOTIFYNEXT            0xC
+#define TRANSACT2_MKDIR                     0xD
+#define TRANSACT2_SESSION_SETUP             0xE
+#define TRANSACT2_GET_DFS_REFERRAL         0x10
+#define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
+
+/* These are the NT transact sub commands. */
+#define NT_TRANSACT_CREATE                1
+#define NT_TRANSACT_IOCTL                 2
+#define NT_TRANSACT_SET_SECURITY_DESC     3
+#define NT_TRANSACT_NOTIFY_CHANGE         4
+#define NT_TRANSACT_RENAME                5
+#define NT_TRANSACT_QUERY_SECURITY_DESC   6
+#define NT_TRANSACT_GET_USER_QUOTA        7
+#define NT_TRANSACT_SET_USER_QUOTA        8
+
 /* ioctl codes */
 #define IOCTL_QUERY_JOB_INFO      0x530060
 

@@ -22,25 +22,6 @@
 #ifndef _TRANS2_H_
 #define _TRANS2_H_
 
-/* These are the TRANS2 sub commands */
-#define TRANSACT2_OPEN                        0
-#define TRANSACT2_FINDFIRST                   1
-#define TRANSACT2_FINDNEXT                    2
-#define TRANSACT2_QFSINFO                     3
-#define TRANSACT2_SETFSINFO                   4
-#define TRANSACT2_QPATHINFO                   5
-#define TRANSACT2_SETPATHINFO                 6
-#define TRANSACT2_QFILEINFO                   7
-#define TRANSACT2_SETFILEINFO                 8
-#define TRANSACT2_FSCTL                       9
-#define TRANSACT2_IOCTL                     0xA
-#define TRANSACT2_FINDNOTIFYFIRST           0xB
-#define TRANSACT2_FINDNOTIFYNEXT            0xC
-#define TRANSACT2_MKDIR                     0xD
-#define TRANSACT2_SESSION_SETUP             0xE
-#define TRANSACT2_GET_DFS_REFERRAL         0x10
-#define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
-
 
 /* trans2 Query FS info levels */
 /*

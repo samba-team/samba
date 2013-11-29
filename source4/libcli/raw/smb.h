@@ -206,19 +206,6 @@
    incorrect parameters - what does it mean? maybe created temporary file? */
 #define NTCREATEX_ACTION_UNKNOWN 5
 
-/* These are the trans subcommands */
-#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 
-#define TRANSACT_DCERPCCMD                0x26
-#define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
-
-/* These are the NT transact sub commands. */
-#define NT_TRANSACT_CREATE                1
-#define NT_TRANSACT_IOCTL                 2
-#define NT_TRANSACT_SET_SECURITY_DESC     3
-#define NT_TRANSACT_NOTIFY_CHANGE         4
-#define NT_TRANSACT_RENAME                5
-#define NT_TRANSACT_QUERY_SECURITY_DESC   6
-
 /* Named pipe write mode flags. Used in writeX calls. */
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8
