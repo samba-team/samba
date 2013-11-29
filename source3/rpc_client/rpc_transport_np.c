@@ -71,8 +71,9 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 		pipe_name++;
 	}
 
-	subreq = tstream_cli_np_open_send(state, ev, cli->conn, session, tcon,
-					  pid, cli->timeout, pipe_name);
+	subreq = tstream_smbXcli_np_open_send(state, ev, cli->conn,
+					      session, tcon, pid,
+					      cli->timeout, pipe_name);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -90,7 +91,7 @@ static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct tstream_context *stream;
 
-	status = tstream_cli_np_open_recv(subreq, state, &stream);
+	status = tstream_smbXcli_np_open_recv(subreq, state, &stream);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);

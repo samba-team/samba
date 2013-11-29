@@ -27,7 +27,7 @@
 #include "tstream_smbXcli_np.h"
 #include "libcli/security/security.h"
 
-static const struct tstream_context_ops tstream_cli_np_ops;
+static const struct tstream_context_ops tstream_smbXcli_np_ops;
 
 /*
  * Windows uses 4280 (the max xmit/recv size negotiated on DCERPC).
@@ -60,10 +60,10 @@ static const struct tstream_context_ops tstream_cli_np_ops;
 	SEC_FILE_WRITE_ATTRIBUTE | \
 0)
 
-struct tstream_cli_np_ref;
+struct tstream_smbXcli_np_ref;
 
-struct tstream_cli_np {
-	struct tstream_cli_np_ref *ref;
+struct tstream_smbXcli_np {
+	struct tstream_smbXcli_np_ref *ref;
 	struct smbXcli_conn *conn;
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
@@ -90,11 +90,11 @@ struct tstream_cli_np {
 	} read, write;
 };
 
-struct tstream_cli_np_ref {
-	struct tstream_cli_np *cli_nps;
+struct tstream_smbXcli_np_ref {
+	struct tstream_smbXcli_np *cli_nps;
 };
 
-static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
+static int tstream_smbXcli_np_destructor(struct tstream_smbXcli_np *cli_nps)
 {
 	NTSTATUS status;
 
@@ -137,7 +137,7 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 				       cli_nps->fid_volatile);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("tstream_cli_np_destructor: cli_close "
+		DEBUG(1, ("tstream_smbXcli_np_destructor: cli_close "
 			  "failed on pipe %s. Error was %s\n",
 			  cli_nps->npipe, nt_errstr(status)));
 	}
@@ -147,7 +147,7 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 	return 0;
 }
 
-static int tstream_cli_np_ref_destructor(struct tstream_cli_np_ref *ref)
+static int tstream_smbXcli_np_ref_destructor(struct tstream_smbXcli_np_ref *ref)
 {
 	if (ref->cli_nps == NULL) {
 		return 0;
@@ -161,7 +161,7 @@ static int tstream_cli_np_ref_destructor(struct tstream_cli_np_ref *ref)
 	return 0;
 };
 
-struct tstream_cli_np_open_state {
+struct tstream_smbXcli_np_open_state {
 	struct smbXcli_conn *conn;
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
@@ -175,22 +175,23 @@ struct tstream_cli_np_open_state {
 	const char *npipe;
 };
 
-static void tstream_cli_np_open_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_open_done(struct tevent_req *subreq);
 
-struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    struct smbXcli_conn *conn,
-					    struct smbXcli_session *session,
-					    struct smbXcli_tcon *tcon,
-					    uint16_t pid, unsigned int timeout,
-					    const char *npipe)
+struct tevent_req *tstream_smbXcli_np_open_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct smbXcli_conn *conn,
+						struct smbXcli_session *session,
+						struct smbXcli_tcon *tcon,
+						uint16_t pid,
+						unsigned int timeout,
+						const char *npipe)
 {
 	struct tevent_req *req;
-	struct tstream_cli_np_open_state *state;
+	struct tstream_smbXcli_np_open_state *state;
 	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct tstream_cli_np_open_state);
+				struct tstream_smbXcli_np_open_state);
 	if (!req) {
 		return NULL;
 	}
@@ -254,17 +255,17 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, tstream_cli_np_open_done, req);
+	tevent_req_set_callback(subreq, tstream_smbXcli_np_open_done, req);
 
 	return req;
 }
 
-static void tstream_cli_np_open_done(struct tevent_req *subreq)
+static void tstream_smbXcli_np_open_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq, struct tevent_req);
-	struct tstream_cli_np_open_state *state =
-		tevent_req_data(req, struct tstream_cli_np_open_state);
+	struct tstream_smbXcli_np_open_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_open_state);
 	NTSTATUS status;
 
 	if (state->is_smb1) {
@@ -284,15 +285,15 @@ static void tstream_cli_np_open_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
-				   TALLOC_CTX *mem_ctx,
-				   struct tstream_context **_stream,
-				   const char *location)
+NTSTATUS _tstream_smbXcli_np_open_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       struct tstream_context **_stream,
+				       const char *location)
 {
-	struct tstream_cli_np_open_state *state =
-		tevent_req_data(req, struct tstream_cli_np_open_state);
+	struct tstream_smbXcli_np_open_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_open_state);
 	struct tstream_context *stream;
-	struct tstream_cli_np *cli_nps;
+	struct tstream_smbXcli_np *cli_nps;
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -301,9 +302,9 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	}
 
 	stream = tstream_context_create(mem_ctx,
-					&tstream_cli_np_ops,
+					&tstream_smbXcli_np_ops,
 					&cli_nps,
-					struct tstream_cli_np,
+					struct tstream_smbXcli_np,
 					location);
 	if (!stream) {
 		tevent_req_received(req);
@@ -311,7 +312,7 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	}
 	ZERO_STRUCTP(cli_nps);
 
-	cli_nps->ref = talloc_zero(state->conn, struct tstream_cli_np_ref);
+	cli_nps->ref = talloc_zero(state->conn, struct tstream_smbXcli_np_ref);
 	if (cli_nps->ref == NULL) {
 		TALLOC_FREE(cli_nps);
 		tevent_req_received(req);
@@ -329,8 +330,8 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	cli_nps->fid_persistent = state->fid_persistent;
 	cli_nps->fid_volatile = state->fid_volatile;
 
-	talloc_set_destructor(cli_nps, tstream_cli_np_destructor);
-	talloc_set_destructor(cli_nps->ref, tstream_cli_np_ref_destructor);
+	talloc_set_destructor(cli_nps, tstream_smbXcli_np_destructor);
+	talloc_set_destructor(cli_nps->ref, tstream_smbXcli_np_ref_destructor);
 
 	cli_nps->trans.active = false;
 	cli_nps->trans.read_req = NULL;
@@ -343,10 +344,10 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-static ssize_t tstream_cli_np_pending_bytes(struct tstream_context *stream)
+static ssize_t tstream_smbXcli_np_pending_bytes(struct tstream_context *stream)
 {
-	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
-					 struct tstream_cli_np);
+	struct tstream_smbXcli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_smbXcli_np);
 
 	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		errno = ENOTCONN;
@@ -356,11 +357,11 @@ static ssize_t tstream_cli_np_pending_bytes(struct tstream_context *stream)
 	return cli_nps->read.left;
 }
 
-bool tstream_is_cli_np(struct tstream_context *stream)
+bool tstream_is_smbXcli_np(struct tstream_context *stream)
 {
-	struct tstream_cli_np *cli_nps =
+	struct tstream_smbXcli_np *cli_nps =
 		talloc_get_type(_tstream_context_data(stream),
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 
 	if (!cli_nps) {
 		return false;
@@ -369,10 +370,10 @@ bool tstream_is_cli_np(struct tstream_context *stream)
 	return true;
 }
 
-NTSTATUS tstream_cli_np_use_trans(struct tstream_context *stream)
+NTSTATUS tstream_smbXcli_np_use_trans(struct tstream_context *stream)
 {
-	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
-					 struct tstream_cli_np);
+	struct tstream_smbXcli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_smbXcli_np);
 
 	if (cli_nps->trans.read_req) {
 		return NT_STATUS_PIPE_BUSY;
@@ -391,18 +392,18 @@ NTSTATUS tstream_cli_np_use_trans(struct tstream_context *stream)
 	return NT_STATUS_OK;
 }
 
-unsigned int tstream_cli_np_set_timeout(struct tstream_context *stream,
-					unsigned int timeout)
+unsigned int tstream_smbXcli_np_set_timeout(struct tstream_context *stream,
+					    unsigned int timeout)
 {
-	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
-					 struct tstream_cli_np);
+	struct tstream_smbXcli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_smbXcli_np);
 	unsigned int old_timeout = cli_nps->timeout;
 
 	cli_nps->timeout = timeout;
 	return old_timeout;
 }
 
-struct tstream_cli_np_writev_state {
+struct tstream_smbXcli_np_writev_state {
 	struct tstream_context *stream;
 	struct tevent_context *ev;
 
@@ -417,32 +418,32 @@ struct tstream_cli_np_writev_state {
 	} error;
 };
 
-static int tstream_cli_np_writev_state_destructor(struct tstream_cli_np_writev_state *state)
+static int tstream_smbXcli_np_writev_state_destructor(struct tstream_smbXcli_np_writev_state *state)
 {
-	struct tstream_cli_np *cli_nps =
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 
 	cli_nps->trans.write_req = NULL;
 
 	return 0;
 }
 
-static void tstream_cli_np_writev_write_next(struct tevent_req *req);
+static void tstream_smbXcli_np_writev_write_next(struct tevent_req *req);
 
-static struct tevent_req *tstream_cli_np_writev_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *tstream_smbXcli_np_writev_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct tstream_context *stream,
 					const struct iovec *vector,
 					size_t count)
 {
 	struct tevent_req *req;
-	struct tstream_cli_np_writev_state *state;
-	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
-					 struct tstream_cli_np);
+	struct tstream_smbXcli_np_writev_state *state;
+	struct tstream_smbXcli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_smbXcli_np);
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct tstream_cli_np_writev_state);
+				struct tstream_smbXcli_np_writev_state);
 	if (!req) {
 		return NULL;
 	}
@@ -450,7 +451,7 @@ static struct tevent_req *tstream_cli_np_writev_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->ret = 0;
 
-	talloc_set_destructor(state, tstream_cli_np_writev_state_destructor);
+	talloc_set_destructor(state, tstream_smbXcli_np_writev_state_destructor);
 
 	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		tevent_req_error(req, ENOTCONN);
@@ -467,7 +468,7 @@ static struct tevent_req *tstream_cli_np_writev_send(TALLOC_CTX *mem_ctx,
 	memcpy(state->vector, vector, sizeof(struct iovec) * count);
 	state->count = count;
 
-	tstream_cli_np_writev_write_next(req);
+	tstream_smbXcli_np_writev_write_next(req);
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -475,17 +476,17 @@ static struct tevent_req *tstream_cli_np_writev_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void tstream_cli_np_readv_trans_start(struct tevent_req *req);
-static void tstream_cli_np_writev_write_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_readv_trans_start(struct tevent_req *req);
+static void tstream_smbXcli_np_writev_write_done(struct tevent_req *subreq);
 
-static void tstream_cli_np_writev_write_next(struct tevent_req *req)
+static void tstream_smbXcli_np_writev_write_next(struct tevent_req *req)
 {
-	struct tstream_cli_np_writev_state *state =
+	struct tstream_smbXcli_np_writev_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_writev_state);
-	struct tstream_cli_np *cli_nps =
+		struct tstream_smbXcli_np_writev_state);
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 	struct tevent_req *subreq;
 	size_t i;
 	size_t left = 0;
@@ -540,7 +541,7 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 
 	if (cli_nps->trans.read_req && state->count == 0) {
 		cli_nps->trans.write_req = req;
-		tstream_cli_np_readv_trans_start(cli_nps->trans.read_req);
+		tstream_smbXcli_np_readv_trans_start(cli_nps->trans.read_req);
 		return;
 	}
 
@@ -574,23 +575,23 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 		return;
 	}
 	tevent_req_set_callback(subreq,
-				tstream_cli_np_writev_write_done,
+				tstream_smbXcli_np_writev_write_done,
 				req);
 }
 
-static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
+static void tstream_smbXcli_np_writev_disconnect_now(struct tevent_req *req,
 						 int error,
 						 const char *location);
 
-static void tstream_cli_np_writev_write_done(struct tevent_req *subreq)
+static void tstream_smbXcli_np_writev_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq, struct tevent_req);
-	struct tstream_cli_np_writev_state *state =
-		tevent_req_data(req, struct tstream_cli_np_writev_state);
-	struct tstream_cli_np *cli_nps =
+	struct tstream_smbXcli_np_writev_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_writev_state);
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 	uint32_t written;
 	NTSTATUS status;
 
@@ -601,30 +602,30 @@ static void tstream_cli_np_writev_write_done(struct tevent_req *subreq)
 	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		tstream_cli_np_writev_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_writev_disconnect_now(req, EIO, __location__);
 		return;
 	}
 
 	if (written != cli_nps->write.ofs) {
-		tstream_cli_np_writev_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_writev_disconnect_now(req, EIO, __location__);
 		return;
 	}
 
-	tstream_cli_np_writev_write_next(req);
+	tstream_smbXcli_np_writev_write_next(req);
 }
 
-static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_writev_disconnect_done(struct tevent_req *subreq);
 
-static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
+static void tstream_smbXcli_np_writev_disconnect_now(struct tevent_req *req,
 						 int error,
 						 const char *location)
 {
-	struct tstream_cli_np_writev_state *state =
+	struct tstream_smbXcli_np_writev_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_writev_state);
-	struct tstream_cli_np *cli_nps =
+		struct tstream_smbXcli_np_writev_state);
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 	struct tevent_req *subreq;
 
 	state->error.val = error;
@@ -660,18 +661,18 @@ static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
 		return;
 	}
 	tevent_req_set_callback(subreq,
-				tstream_cli_np_writev_disconnect_done,
+				tstream_smbXcli_np_writev_disconnect_done,
 				req);
 }
 
-static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq)
+static void tstream_smbXcli_np_writev_disconnect_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq, struct tevent_req);
-	struct tstream_cli_np_writev_state *state =
-		tevent_req_data(req, struct tstream_cli_np_writev_state);
-	struct tstream_cli_np *cli_nps =
-		tstream_context_data(state->stream, struct tstream_cli_np);
+	struct tstream_smbXcli_np_writev_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_writev_state);
+	struct tstream_smbXcli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_smbXcli_np);
 
 	if (cli_nps->is_smb1) {
 		smb1cli_close_recv(subreq);
@@ -688,12 +689,12 @@ static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq)
 	_tevent_req_error(req, state->error.val, state->error.location);
 }
 
-static int tstream_cli_np_writev_recv(struct tevent_req *req,
+static int tstream_smbXcli_np_writev_recv(struct tevent_req *req,
 				      int *perrno)
 {
-	struct tstream_cli_np_writev_state *state =
+	struct tstream_smbXcli_np_writev_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_writev_state);
+		struct tstream_smbXcli_np_writev_state);
 	int ret;
 
 	ret = tsocket_simple_int_recv(req, perrno);
@@ -705,7 +706,7 @@ static int tstream_cli_np_writev_recv(struct tevent_req *req,
 	return ret;
 }
 
-struct tstream_cli_np_readv_state {
+struct tstream_smbXcli_np_readv_state {
 	struct tstream_context *stream;
 	struct tevent_context *ev;
 
@@ -724,32 +725,32 @@ struct tstream_cli_np_readv_state {
 	} error;
 };
 
-static int tstream_cli_np_readv_state_destructor(struct tstream_cli_np_readv_state *state)
+static int tstream_smbXcli_np_readv_state_destructor(struct tstream_smbXcli_np_readv_state *state)
 {
-	struct tstream_cli_np *cli_nps =
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 
 	cli_nps->trans.read_req = NULL;
 
 	return 0;
 }
 
-static void tstream_cli_np_readv_read_next(struct tevent_req *req);
+static void tstream_smbXcli_np_readv_read_next(struct tevent_req *req);
 
-static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *tstream_smbXcli_np_readv_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct tstream_context *stream,
 					struct iovec *vector,
 					size_t count)
 {
 	struct tevent_req *req;
-	struct tstream_cli_np_readv_state *state;
-	struct tstream_cli_np *cli_nps =
-		tstream_context_data(stream, struct tstream_cli_np);
+	struct tstream_smbXcli_np_readv_state *state;
+	struct tstream_smbXcli_np *cli_nps =
+		tstream_context_data(stream, struct tstream_smbXcli_np);
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct tstream_cli_np_readv_state);
+				struct tstream_smbXcli_np_readv_state);
 	if (!req) {
 		return NULL;
 	}
@@ -757,7 +758,7 @@ static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->ret = 0;
 
-	talloc_set_destructor(state, tstream_cli_np_readv_state_destructor);
+	talloc_set_destructor(state, tstream_smbXcli_np_readv_state_destructor);
 
 	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		tevent_req_error(req, ENOTCONN);
@@ -774,7 +775,7 @@ static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
 	memcpy(state->vector, vector, sizeof(struct iovec) * count);
 	state->count = count;
 
-	tstream_cli_np_readv_read_next(req);
+	tstream_smbXcli_np_readv_read_next(req);
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -782,16 +783,16 @@ static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void tstream_cli_np_readv_read_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_readv_read_done(struct tevent_req *subreq);
 
-static void tstream_cli_np_readv_read_next(struct tevent_req *req)
+static void tstream_smbXcli_np_readv_read_next(struct tevent_req *req)
 {
-	struct tstream_cli_np_readv_state *state =
+	struct tstream_smbXcli_np_readv_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_readv_state);
-	struct tstream_cli_np *cli_nps =
+		struct tstream_smbXcli_np_readv_state);
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 	struct tevent_req *subreq;
 
 	/*
@@ -835,7 +836,7 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 
 	if (cli_nps->trans.write_req) {
 		cli_nps->trans.read_req = req;
-		tstream_cli_np_readv_trans_start(req);
+		tstream_smbXcli_np_readv_trans_start(req);
 		return;
 	}
 
@@ -866,20 +867,20 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 		return;
 	}
 	tevent_req_set_callback(subreq,
-				tstream_cli_np_readv_read_done,
+				tstream_smbXcli_np_readv_read_done,
 				req);
 }
 
-static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_readv_trans_done(struct tevent_req *subreq);
 
-static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
+static void tstream_smbXcli_np_readv_trans_start(struct tevent_req *req)
 {
-	struct tstream_cli_np_readv_state *state =
+	struct tstream_smbXcli_np_readv_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_readv_state);
-	struct tstream_cli_np *cli_nps =
+		struct tstream_smbXcli_np_readv_state);
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 	struct tevent_req *subreq;
 
 	state->trans.im = tevent_create_immediate(state);
@@ -930,25 +931,25 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 		return;
 	}
 	tevent_req_set_callback(subreq,
-				tstream_cli_np_readv_trans_done,
+				tstream_smbXcli_np_readv_trans_done,
 				req);
 }
 
-static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
+static void tstream_smbXcli_np_readv_disconnect_now(struct tevent_req *req,
 						int error,
 						const char *location);
-static void tstream_cli_np_readv_trans_next(struct tevent_context *ctx,
-					    struct tevent_immediate *im,
-					    void *private_data);
+static void tstream_smbXcli_np_readv_trans_next(struct tevent_context *ctx,
+						struct tevent_immediate *im,
+						void *private_data);
 
-static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
+static void tstream_smbXcli_np_readv_trans_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq, struct tevent_req);
-	struct tstream_cli_np_readv_state *state =
-		tevent_req_data(req, struct tstream_cli_np_readv_state);
-	struct tstream_cli_np *cli_nps =
-		tstream_context_data(state->stream, struct tstream_cli_np);
+	struct tstream_smbXcli_np_readv_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_readv_state);
+	struct tstream_smbXcli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_smbXcli_np);
 	uint8_t *rcvbuf;
 	uint32_t received;
 	NTSTATUS status;
@@ -974,17 +975,17 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 		status = NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
 	}
 
 	if (received > TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE) {
-		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
 	}
 
 	if (received == 0) {
-		tstream_cli_np_readv_disconnect_now(req, EPIPE, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EPIPE, __location__);
 		return;
 	}
 
@@ -999,17 +1000,17 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 	memcpy(cli_nps->read.buf, rcvbuf, received);
 
 	if (cli_nps->trans.write_req == NULL) {
-		tstream_cli_np_readv_read_next(req);
+		tstream_smbXcli_np_readv_read_next(req);
 		return;
 	}
 
 	tevent_schedule_immediate(state->trans.im, state->ev,
-				  tstream_cli_np_readv_trans_next, req);
+				  tstream_smbXcli_np_readv_trans_next, req);
 
 	tevent_req_done(cli_nps->trans.write_req);
 }
 
-static void tstream_cli_np_readv_trans_next(struct tevent_context *ctx,
+static void tstream_smbXcli_np_readv_trans_next(struct tevent_context *ctx,
 					    struct tevent_immediate *im,
 					    void *private_data)
 {
@@ -1017,17 +1018,17 @@ static void tstream_cli_np_readv_trans_next(struct tevent_context *ctx,
 		talloc_get_type_abort(private_data,
 		struct tevent_req);
 
-	tstream_cli_np_readv_read_next(req);
+	tstream_smbXcli_np_readv_read_next(req);
 }
 
-static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
+static void tstream_smbXcli_np_readv_read_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq, struct tevent_req);
-	struct tstream_cli_np_readv_state *state =
-		tevent_req_data(req, struct tstream_cli_np_readv_state);
-	struct tstream_cli_np *cli_nps =
-		tstream_context_data(state->stream, struct tstream_cli_np);
+	struct tstream_smbXcli_np_readv_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_readv_state);
+	struct tstream_smbXcli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_smbXcli_np);
 	uint8_t *rcvbuf;
 	uint32_t received;
 	NTSTATUS status;
@@ -1058,19 +1059,19 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
-		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
 	}
 
 	if (received > TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE) {
 		TALLOC_FREE(subreq);
-		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
 	}
 
 	if (received == 0) {
 		TALLOC_FREE(subreq);
-		tstream_cli_np_readv_disconnect_now(req, EPIPE, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EPIPE, __location__);
 		return;
 	}
 
@@ -1085,23 +1086,23 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 	memcpy(cli_nps->read.buf, rcvbuf, received);
 	TALLOC_FREE(subreq);
 
-	tstream_cli_np_readv_read_next(req);
+	tstream_smbXcli_np_readv_read_next(req);
 }
 
-static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_readv_disconnect_done(struct tevent_req *subreq);
 
-static void tstream_cli_np_readv_error(struct tevent_req *req);
+static void tstream_smbXcli_np_readv_error(struct tevent_req *req);
 
-static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
+static void tstream_smbXcli_np_readv_disconnect_now(struct tevent_req *req,
 						int error,
 						const char *location)
 {
-	struct tstream_cli_np_readv_state *state =
+	struct tstream_smbXcli_np_readv_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_readv_state);
-	struct tstream_cli_np *cli_nps =
+		struct tstream_smbXcli_np_readv_state);
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 	struct tevent_req *subreq;
 
 	state->error.val = error;
@@ -1109,7 +1110,7 @@ static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
 
 	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
 		/* return the original error */
-		tstream_cli_np_readv_error(req);
+		tstream_smbXcli_np_readv_error(req);
 		return;
 	}
 
@@ -1133,22 +1134,22 @@ static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
 	}
 	if (subreq == NULL) {
 		/* return the original error */
-		tstream_cli_np_readv_error(req);
+		tstream_smbXcli_np_readv_error(req);
 		return;
 	}
 	tevent_req_set_callback(subreq,
-				tstream_cli_np_readv_disconnect_done,
+				tstream_smbXcli_np_readv_disconnect_done,
 				req);
 }
 
-static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq)
+static void tstream_smbXcli_np_readv_disconnect_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq, struct tevent_req);
-	struct tstream_cli_np_readv_state *state =
-		tevent_req_data(req, struct tstream_cli_np_readv_state);
-	struct tstream_cli_np *cli_nps =
-		tstream_context_data(state->stream, struct tstream_cli_np);
+	struct tstream_smbXcli_np_readv_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_readv_state);
+	struct tstream_smbXcli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_smbXcli_np);
 
 	if (cli_nps->is_smb1) {
 		smb1cli_close_recv(subreq);
@@ -1161,21 +1162,21 @@ static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq)
 	cli_nps->session = NULL;
 	cli_nps->tcon = NULL;
 
-	tstream_cli_np_readv_error(req);
+	tstream_smbXcli_np_readv_error(req);
 }
 
-static void tstream_cli_np_readv_error_trigger(struct tevent_context *ctx,
-					       struct tevent_immediate *im,
-					       void *private_data);
+static void tstream_smbXcli_np_readv_error_trigger(struct tevent_context *ctx,
+						   struct tevent_immediate *im,
+						   void *private_data);
 
-static void tstream_cli_np_readv_error(struct tevent_req *req)
+static void tstream_smbXcli_np_readv_error(struct tevent_req *req)
 {
-	struct tstream_cli_np_readv_state *state =
+	struct tstream_smbXcli_np_readv_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_readv_state);
-	struct tstream_cli_np *cli_nps =
+		struct tstream_smbXcli_np_readv_state);
+	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream,
-		struct tstream_cli_np);
+		struct tstream_smbXcli_np);
 
 	if (cli_nps->trans.write_req == NULL) {
 		/* return the original error */
@@ -1190,33 +1191,33 @@ static void tstream_cli_np_readv_error(struct tevent_req *req)
 	}
 
 	tevent_schedule_immediate(state->trans.im, state->ev,
-				  tstream_cli_np_readv_error_trigger, req);
+				  tstream_smbXcli_np_readv_error_trigger, req);
 
 	/* return the original error for writev */
 	_tevent_req_error(cli_nps->trans.write_req,
 			  state->error.val, state->error.location);
 }
 
-static void tstream_cli_np_readv_error_trigger(struct tevent_context *ctx,
-					       struct tevent_immediate *im,
-					       void *private_data)
+static void tstream_smbXcli_np_readv_error_trigger(struct tevent_context *ctx,
+						   struct tevent_immediate *im,
+						   void *private_data)
 {
 	struct tevent_req *req =
 		talloc_get_type_abort(private_data,
 		struct tevent_req);
-	struct tstream_cli_np_readv_state *state =
+	struct tstream_smbXcli_np_readv_state *state =
 		tevent_req_data(req,
-		struct tstream_cli_np_readv_state);
+		struct tstream_smbXcli_np_readv_state);
 
 	/* return the original error */
 	_tevent_req_error(req, state->error.val, state->error.location);
 }
 
-static int tstream_cli_np_readv_recv(struct tevent_req *req,
-				   int *perrno)
+static int tstream_smbXcli_np_readv_recv(struct tevent_req *req,
+					 int *perrno)
 {
-	struct tstream_cli_np_readv_state *state =
-		tevent_req_data(req, struct tstream_cli_np_readv_state);
+	struct tstream_smbXcli_np_readv_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_readv_state);
 	int ret;
 
 	ret = tsocket_simple_int_recv(req, perrno);
@@ -1228,24 +1229,24 @@ static int tstream_cli_np_readv_recv(struct tevent_req *req,
 	return ret;
 }
 
-struct tstream_cli_np_disconnect_state {
+struct tstream_smbXcli_np_disconnect_state {
 	struct tstream_context *stream;
 };
 
-static void tstream_cli_np_disconnect_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_disconnect_done(struct tevent_req *subreq);
 
-static struct tevent_req *tstream_cli_np_disconnect_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *tstream_smbXcli_np_disconnect_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct tstream_context *stream)
 {
-	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
-					 struct tstream_cli_np);
+	struct tstream_smbXcli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_smbXcli_np);
 	struct tevent_req *req;
-	struct tstream_cli_np_disconnect_state *state;
+	struct tstream_smbXcli_np_disconnect_state *state;
 	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct tstream_cli_np_disconnect_state);
+				struct tstream_smbXcli_np_disconnect_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -1276,19 +1277,19 @@ static struct tevent_req *tstream_cli_np_disconnect_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, tstream_cli_np_disconnect_done, req);
+	tevent_req_set_callback(subreq, tstream_smbXcli_np_disconnect_done, req);
 
 	return req;
 }
 
-static void tstream_cli_np_disconnect_done(struct tevent_req *subreq)
+static void tstream_smbXcli_np_disconnect_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(subreq,
 							  struct tevent_req);
-	struct tstream_cli_np_disconnect_state *state =
-		tevent_req_data(req, struct tstream_cli_np_disconnect_state);
-	struct tstream_cli_np *cli_nps =
-		tstream_context_data(state->stream, struct tstream_cli_np);
+	struct tstream_smbXcli_np_disconnect_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_disconnect_state);
+	struct tstream_smbXcli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_smbXcli_np);
 	NTSTATUS status;
 
 	if (cli_nps->is_smb1) {
@@ -1309,8 +1310,8 @@ static void tstream_cli_np_disconnect_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static int tstream_cli_np_disconnect_recv(struct tevent_req *req,
-					  int *perrno)
+static int tstream_smbXcli_np_disconnect_recv(struct tevent_req *req,
+					      int *perrno)
 {
 	int ret;
 
@@ -1320,17 +1321,17 @@ static int tstream_cli_np_disconnect_recv(struct tevent_req *req,
 	return ret;
 }
 
-static const struct tstream_context_ops tstream_cli_np_ops = {
-	.name			= "cli_np",
+static const struct tstream_context_ops tstream_smbXcli_np_ops = {
+	.name			= "smbXcli_np",
 
-	.pending_bytes		= tstream_cli_np_pending_bytes,
+	.pending_bytes		= tstream_smbXcli_np_pending_bytes,
 
-	.readv_send		= tstream_cli_np_readv_send,
-	.readv_recv		= tstream_cli_np_readv_recv,
+	.readv_send		= tstream_smbXcli_np_readv_send,
+	.readv_recv		= tstream_smbXcli_np_readv_recv,
 
-	.writev_send		= tstream_cli_np_writev_send,
-	.writev_recv		= tstream_cli_np_writev_recv,
+	.writev_send		= tstream_smbXcli_np_writev_send,
+	.writev_recv		= tstream_smbXcli_np_writev_recv,
 
-	.disconnect_send	= tstream_cli_np_disconnect_send,
-	.disconnect_recv	= tstream_cli_np_disconnect_recv,
+	.disconnect_send	= tstream_smbXcli_np_disconnect_send,
+	.disconnect_recv	= tstream_smbXcli_np_disconnect_recv,
 };
