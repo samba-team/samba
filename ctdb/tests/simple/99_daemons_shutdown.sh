@@ -18,6 +18,6 @@ EOF
 # Do not call ctdb_test_init() here.  It will setup ctdb_test_exit()
 # to run and that will find the daemons missing and restart them!
 
-if [ -n "$TEST_LOCAL_DAEMONS" ] && $TEST_CLEANUP ; then
-    daemons_stop
-fi
+# We only want to consider stopping CTDB if we're running local
+# daemons.  This function will do the right thing.
+maybe_stop_ctdb

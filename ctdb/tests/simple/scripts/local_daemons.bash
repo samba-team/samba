@@ -120,3 +120,10 @@ daemons_start ()
 	daemons_start_1 $i "$@"
     done
 }
+
+maybe_stop_ctdb ()
+{
+    if $TEST_CLEANUP ; then
+	daemons_stop
+    fi
+}
