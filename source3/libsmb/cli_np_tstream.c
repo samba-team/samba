@@ -26,6 +26,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/tsocket/tsocket_internal.h"
 #include "cli_np_tstream.h"
+#include "libcli/security/security.h"
 
 static const struct tstream_context_ops tstream_cli_np_ops;
 
@@ -48,6 +49,17 @@ static const struct tstream_context_ops tstream_cli_np_ops;
  * from NT4 servers. (See bug #8195)
  */
 #define TSTREAM_CLI_NP_MAX_BUF_SIZE 4280
+
+#define TSTREAM_CLI_NP_DESIRED_ACCESS ( \
+	SEC_STD_READ_CONTROL | \
+	SEC_FILE_READ_DATA | \
+	SEC_FILE_WRITE_DATA | \
+	SEC_FILE_APPEND_DATA | \
+	SEC_FILE_READ_EA | \
+	SEC_FILE_WRITE_EA | \
+	SEC_FILE_READ_ATTRIBUTE | \
+	SEC_FILE_WRITE_ATTRIBUTE | \
+0)
 
 struct tstream_cli_np_ref;
 
@@ -218,7 +230,7 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 						smb1_npipe,
 						0, /* CreatFlags */
 						0, /* RootDirectoryFid */
-						DESIRED_ACCESS_PIPE,
+						TSTREAM_CLI_NP_DESIRED_ACCESS,
 						0, /* AllocationSize */
 						0, /* FileAttributes */
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -233,7 +245,7 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 					     npipe,
 					     SMB2_OPLOCK_LEVEL_NONE,
 					     SMB2_IMPERSONATION_IMPERSONATION,
-					     DESIRED_ACCESS_PIPE,
+					     TSTREAM_CLI_NP_DESIRED_ACCESS,
 					     0, /* file_attributes */
 					     FILE_SHARE_READ|FILE_SHARE_WRITE,
 					     FILE_OPEN,
