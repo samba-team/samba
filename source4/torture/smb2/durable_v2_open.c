@@ -573,6 +573,115 @@ done:
 }
 
 /**
+ * Basic test for doing a durable open
+ * and do a session reconnect while the first
+ * session is still active and the handle is
+ * still open in the client.
+ * This closes the original session and  a
+ * durable reconnect on the new session succeeds.
+ */
+bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io, io2;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	struct smb2_tree *tree2 = NULL;
+	uint64_t previous_session_id;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_v2_open_reopen1a_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, io.in.timeout);
+
+	/*
+	 * a session reconnect on a second tcp connection
+	 */
+
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree2))
+	{
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * check that this has deleted the old session
+	 */
+
+	ZERO_STRUCT(io);
+	io.in.fname = "";
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
+
+	/*
+	 * but a durable reconnect on the new session succeeds:
+	 */
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = "";
+	io2.in.durable_handle_v2 = h;
+	io2.in.create_guid = create_guid;
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io2.out.durable_open, false);
+	CHECK_VAL(io2.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io2.out.persistent_open, false);
+	CHECK_VAL(io2.out.timeout, io.in.timeout);
+	_h = io2.out.file.handle;
+	h = &_h;
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
  * basic test for doing a durable open
  * tcp disconnect, reconnect, do a durable reopen (succeeds)
  */
@@ -1664,6 +1773,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(void)
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_v2_open_oplock);
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_v2_open_lease);
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
+	torture_suite_add_1smb2_test(suite, "reopen1a", test_durable_v2_open_reopen1a);
 	torture_suite_add_1smb2_test(suite, "reopen2", test_durable_v2_open_reopen2);
 	torture_suite_add_1smb2_test(suite, "reopen2b", test_durable_v2_open_reopen2b);
 	torture_suite_add_1smb2_test(suite, "reopen2c", test_durable_v2_open_reopen2c);
