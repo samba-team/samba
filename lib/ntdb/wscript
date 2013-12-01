@@ -257,13 +257,13 @@ def testonly(ctx):
         if not env.disable_python:
             for f in env.NTDB_TEST_API_PY:
                 print("..." + f)
-                cmd = "cd " + testdir + " && PYTHONPATH=%s %s %s" % (
+                cmd = "cd " + testdir + " && PYTHONPATH=%s %s %s > test-output 2>&1" % (
                     os.path.abspath(os.path.join(Utils.g_module.blddir, "python")),
                         env["PYTHON"], os.path.abspath(f))
-                print cmd
                 ret = samba_utils.RUN_COMMAND(cmd)
                 if ret != 0:
                     print("%s (%s) failed:" % (name, f))
+                    samba_utils.RUN_COMMAND("cat " + os.path.join(testdir, 'test-output'))
                     ecode = ret
                     break
 
