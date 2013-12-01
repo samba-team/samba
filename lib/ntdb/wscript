@@ -92,6 +92,7 @@ def configure(conf):
                                 'test/api-record-expand.c',
                                 'test/api-simple-delete.c',
                                 'test/api-summary.c']
+    conf.env.NTDB_TEST_API_PY=['test/python-api.py']
     conf.env.NTDB_TEST_API_HELPER_SRC=['test/helpapi-external-agent.c']
     conf.env.NTDB_TEST_RUN_HELPER_SRC=['test/helprun-external-agent.c',
                                        'test/helprun-layout.c']
@@ -253,6 +254,18 @@ def testonly(ctx):
                 samba_utils.RUN_COMMAND("cat " + os.path.join(testdir, 'test-output'))
                 ecode = ret;
                 break;
+        if not env.disable_python:
+            for f in env.NTDB_TEST_API_PY:
+                print("..." + f)
+                cmd = "cd " + testdir + " && PYTHONPATH=%s %s %s" % (
+                    os.path.abspath(os.path.join(Utils.g_module.blddir, "python")),
+                        env["PYTHON"], os.path.abspath(f))
+                print cmd
+                ret = samba_utils.RUN_COMMAND(cmd)
+                if ret != 0:
+                    print("%s (%s) failed:" % (name, f))
+                    ecode = ret
+                    break
 
     sys.exit(ecode)
 
