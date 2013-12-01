@@ -79,7 +79,6 @@ static PyObject *PyString_FromNtdb_Data(NTDB_DATA data)
 		return NULL; \
 	}
 
-
 static void stderr_log(struct ntdb_context *ntdb,
 		       enum ntdb_log_level level,
 		       enum NTDB_ERROR ecode,
@@ -104,6 +103,7 @@ static PyObject *py_ntdb_open(PyTypeObject *type, PyObject *args, PyObject *kwar
 
 	if (name == NULL) {
 		ntdb_flags |= NTDB_INTERNAL;
+		name = "<internal>";
 	}
 
 	logattr.log.base.attr = NTDB_ATTRIBUTE_LOG;
