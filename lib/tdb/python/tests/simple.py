@@ -20,13 +20,8 @@ class OpenTdbTests(TestCase):
 class CloseTdbTests(TestCase):
 
     def test_double_close(self):
-        # No hash size in tdb2.
-        if tdb.__version__.startswith("2"):
-            self.tdb = tdb.Tdb(tempfile.mkstemp()[1], tdb.DEFAULT,
-                               os.O_CREAT|os.O_RDWR)
-        else:
-            self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT,
-                               os.O_CREAT|os.O_RDWR)
+        self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT,
+                           os.O_CREAT|os.O_RDWR)
         self.assertNotEqual(None, self.tdb)
 
         # ensure that double close does not crash python
@@ -52,12 +47,8 @@ class SimpleTdbTests(TestCase):
 
     def setUp(self):
         super(SimpleTdbTests, self).setUp()
-        if tdb.__version__.startswith("2"):
-            self.tdb = tdb.Tdb(tempfile.mkstemp()[1], tdb.DEFAULT,
-                               os.O_CREAT|os.O_RDWR)
-        else:
-            self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT,
-                               os.O_CREAT|os.O_RDWR)
+        self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT,
+                           os.O_CREAT|os.O_RDWR)
         self.assertNotEqual(None, self.tdb)
 
     def tearDown(self):
@@ -70,8 +61,7 @@ class SimpleTdbTests(TestCase):
         self.tdb.lock_all()
 
     def test_max_dead(self):
-        if not tdb.__version__.startswith("2"):
-            self.tdb.max_dead = 20
+        self.tdb.max_dead = 20
 
     def test_unlockall(self):
         self.tdb.lock_all()
@@ -82,8 +72,7 @@ class SimpleTdbTests(TestCase):
         self.tdb.read_unlock_all()
 
     def test_reopen(self):
-        if not tdb.__version__.startswith("2"):
-            self.tdb.reopen()
+        self.tdb.reopen()
 
     def test_store(self):
         self.tdb.store("bar", "bla")
@@ -91,15 +80,14 @@ class SimpleTdbTests(TestCase):
 
     def test_getitem(self):
         self.tdb["bar"] = "foo"
-        if not tdb.__version__.startswith("2"):
-            self.tdb.reopen()
+        self.tdb.reopen()
         self.assertEquals("foo", self.tdb["bar"])
 
     def test_delete(self):
         self.tdb["bar"] = "foo"
         del self.tdb["bar"]
         self.assertRaises(KeyError, lambda: self.tdb["bar"])
-    
+
     def test_contains(self):
         self.tdb["bla"] = "bloe"
         self.assertTrue("bla" in self.tdb)
@@ -108,16 +96,13 @@ class SimpleTdbTests(TestCase):
         self.assertRaises(KeyError, lambda: self.tdb["bla"])
 
     def test_hash_size(self):
-        if not tdb.__version__.startswith("2"):
-            self.tdb.hash_size
+        self.tdb.hash_size
 
     def test_map_size(self):
-        if not tdb.__version__.startswith("2"):
-            self.tdb.map_size
+        self.tdb.map_size
 
     def test_freelist_size(self):
-        if not tdb.__version__.startswith("2"):
-            self.tdb.freelist_size
+        self.tdb.freelist_size
 
     def test_name(self):
         self.tdb.filename
@@ -165,19 +150,17 @@ class SimpleTdbTests(TestCase):
         self.assertEquals(0, len(list(self.tdb)))
 
     def test_repack(self):
-        if not tdb.__version__.startswith("2"):
-            self.tdb["foo"] = "abc"
-            self.tdb["bar"] = "def"
-            del self.tdb["foo"]
-            self.tdb.repack()
+        self.tdb["foo"] = "abc"
+        self.tdb["bar"] = "def"
+        del self.tdb["foo"]
+        self.tdb.repack()
 
     def test_seqnum(self):
-        if not tdb.__version__.startswith("2"):
-            self.tdb.enable_seqnum()
-            seq1 = self.tdb.seqnum
-            self.tdb.increment_seqnum_nonblock()
-            seq2 = self.tdb.seqnum
-            self.assertEquals(seq2-seq1, 1)
+        self.tdb.enable_seqnum()
+        seq1 = self.tdb.seqnum
+        self.tdb.increment_seqnum_nonblock()
+        seq2 = self.tdb.seqnum
+        self.assertEquals(seq2-seq1, 1)
 
     def test_len(self):
         self.assertEquals(0, len(list(self.tdb)))
@@ -185,12 +168,8 @@ class SimpleTdbTests(TestCase):
         self.assertEquals(1, len(list(self.tdb)))
 
     def test_add_flags(self):
-        if tdb.__version__.startswith("2"):
-            self.tdb.add_flag(tdb.NOMMAP)
-            self.tdb.remove_flag(tdb.NOMMAP)
-        else:
-            self.tdb.add_flags(tdb.NOMMAP)
-            self.tdb.remove_flags(tdb.NOMMAP)
+        self.tdb.add_flags(tdb.NOMMAP)
+        self.tdb.remove_flags(tdb.NOMMAP)
 
 
 class VersionTests(TestCase):
