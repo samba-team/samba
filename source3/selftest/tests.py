@@ -167,6 +167,9 @@ for env in ["s3dc", "member", "s3member"]:
 
     plantestsuite("samba3.ntlm_auth.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, ntlm_auth3,  '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
 
+for env in ["member", "s3member"]:
+    plantestsuite("samba3.blackbox.net_cred_change.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_net_cred_change.sh"), configuration])
+
 env = "s3member"
 t = "--krb5auth=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_s3.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
