@@ -5,20 +5,20 @@ usage() {
 Usage: run_tests [OPTIONS] [TESTS]
 
 Options:
-  -s		Print a summary of tests results after running all tests
-  -l		Use local daemons for integration tests
-  -e		Exit on the first test failure
-  -V <dir>	Use <dir> as TEST_VAR_DIR
-  -C		Clean up - kill daemons and remove TEST_VAR_DIR when done
-  -v		Verbose - print test output for non-failures (only some tests)
   -A		Use "cat -A" to print test output (only some tests)
-  -D		Show diff between failed/expected test output (some tests only)
-  -X		Trace certain scripts run by tests using -x (only some tests)
+  -C		Clean up - kill daemons and remove TEST_VAR_DIR when done
   -d		Print descriptions of tests instead of filenames (dodgy!)
+  -D		Show diff between failed/expected test output (some tests only)
+  -e		Exit on the first test failure
   -H		No headers - for running single test with other wrapper
-  -S            Enable socket wrapper
+  -l		Use local daemons for integration tests
   -q		Quiet - don't show tests being run (hint: use with -s)
+  -s		Print a summary of tests results after running all tests
+  -S            Enable socket wrapper
+  -v		Verbose - print test output for non-failures (only some tests)
+  -V <dir>	Use <dir> as TEST_VAR_DIR
   -x		Trace this script with the -x option
+  -X		Trace certain scripts run by tests using -x (only some tests)
 EOF
     exit 1
 }
@@ -46,7 +46,7 @@ export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
 export TEST_VAR_DIR=""
 export TEST_CLEANUP=false
 
-temp=$(getopt -n "$prog" -o "xdehlqsvV:XACDHS" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "ACdDehHlqsSvV:xX" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -54,20 +54,20 @@ eval set -- "$temp"
 
 while true ; do
     case "$1" in
-	-x) set -x; shift ;;
+	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
+	-C) TEST_CLEANUP=true ; shift ;;
 	-d) with_desc=true ; shift ;;  # 4th line of output is description
+	-D) TEST_DIFF_RESULTS=true ; shift ;;
 	-e) exit_on_fail=true ; shift ;;
+	-H) no_header=true ; shift ;;
 	-l) TEST_LOCAL_DAEMONS="3" ; shift ;;
 	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
+	-S) socket_wrapper=true ; shift ;;
 	-v) TEST_VERBOSE=true ; shift ;;
 	-V) TEST_VAR_DIR="$2" ; shift 2 ;;
+	-x) set -x; shift ;;
 	-X) TEST_COMMAND_TRACE=true ; shift ;;
-	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
-	-C) TEST_CLEANUP=true ; shift ;;
-	-D) TEST_DIFF_RESULTS=true ; shift ;;
-	-H) no_header=true ; shift ;;
-	-S) socket_wrapper=true ; shift ;;
 	--) shift ; break ;;
 	*) usage ;;
     esac
