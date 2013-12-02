@@ -2153,8 +2153,11 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	ret = dsdb_autotransaction_request(ldb, req);
 
 	if (req->context != NULL) {
-		pwd_stat = talloc_steal(mem_ctx,
-					((struct ldb_control *)req->context)->data);
+		struct ldb_control *control = talloc_get_type_abort(req->context,
+								    struct ldb_control);
+		pwd_stat = talloc_get_type_abort(control->data,
+						 struct dsdb_control_password_change_status);
+		talloc_steal(mem_ctx, pwd_stat);
 	}
 
 	talloc_free(req);
