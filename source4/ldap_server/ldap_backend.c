@@ -285,7 +285,7 @@ static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 static int ldapsrv_add_with_controls(struct ldapsrv_call *call,
 				     const struct ldb_message *message,
 				     struct ldb_control **controls,
-				     void *context)
+				     struct ldb_result *res)
 {
 	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
@@ -299,7 +299,7 @@ static int ldapsrv_add_with_controls(struct ldapsrv_call *call,
 	ret = ldb_build_add_req(&req, ldb, ldb,
 					message,
 					controls,
-					context,
+					res,
 					ldb_modify_default_callback,
 					NULL);
 
@@ -341,7 +341,7 @@ static int ldapsrv_add_with_controls(struct ldapsrv_call *call,
 static int ldapsrv_mod_with_controls(struct ldapsrv_call *call,
 				     const struct ldb_message *message,
 				     struct ldb_control **controls,
-				     void *context)
+				     struct ldb_result *res)
 {
 	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
@@ -355,7 +355,7 @@ static int ldapsrv_mod_with_controls(struct ldapsrv_call *call,
 	ret = ldb_build_mod_req(&req, ldb, ldb,
 					message,
 					controls,
-					context,
+					res,
 					ldb_modify_default_callback,
 					NULL);
 
@@ -399,7 +399,7 @@ static int ldapsrv_mod_with_controls(struct ldapsrv_call *call,
 static int ldapsrv_del_with_controls(struct ldapsrv_call *call,
 				     struct ldb_dn *dn,
 				     struct ldb_control **controls,
-				     void *context)
+				     struct ldb_result *res)
 {
 	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
@@ -408,7 +408,7 @@ static int ldapsrv_del_with_controls(struct ldapsrv_call *call,
 	ret = ldb_build_del_req(&req, ldb, ldb,
 					dn,
 					controls,
-					context,
+					res,
 					ldb_modify_default_callback,
 					NULL);
 
@@ -450,7 +450,7 @@ static int ldapsrv_rename_with_controls(struct ldapsrv_call *call,
 					struct ldb_dn *olddn,
 					struct ldb_dn *newdn,
 					struct ldb_control **controls,
-					void *context)
+					struct ldb_result *res)
 {
 	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
@@ -460,7 +460,7 @@ static int ldapsrv_rename_with_controls(struct ldapsrv_call *call,
 					olddn,
 					newdn,
 					NULL,
-					context,
+					res,
 					ldb_modify_default_callback,
 					NULL);
 
