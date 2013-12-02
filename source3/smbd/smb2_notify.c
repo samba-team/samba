@@ -195,7 +195,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 	state->smbreq = smbreq;
 	smbreq->async_priv = (void *)req;
 
-	{
+	if (DEBUGLEVEL >= 3) {
 		char *filter_string;
 
 		filter_string = notify_filter_string(NULL, in_completion_filter);
