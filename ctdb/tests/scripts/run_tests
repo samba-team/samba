@@ -2,18 +2,18 @@
 
 usage() {
     cat <<EOF
-Usage: run_tests [OPTIONS] [TESTS]
+Usage: $0 [OPTIONS] [TESTS]
 
 Options:
   -A		Use "cat -A" to print test output (only some tests)
+  -c		Run integration tests on a cluster
   -C		Clean up - kill daemons and remove TEST_VAR_DIR when done
   -d		Print descriptions of tests instead of filenames (dodgy!)
   -D		Show diff between failed/expected test output (some tests only)
   -e		Exit on the first test failure
   -H		No headers - for running single test with other wrapper
-  -l		Use local daemons for integration tests
+  -N		Don't print summary of tests results after running all tests
   -q		Quiet - don't show tests being run (hint: use with -s)
-  -s		Print a summary of tests results after running all tests
   -S            Enable socket wrapper
   -v		Verbose - print test output for non-failures (only some tests)
   -V <dir>	Use <dir> as TEST_VAR_DIR
@@ -31,7 +31,7 @@ die ()
 
 ######################################################################
 
-with_summary=false
+with_summary=true
 with_desc=false
 quiet=false
 exit_on_fail=false
@@ -42,11 +42,12 @@ export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=false
 export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
-export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
+export TEST_LOCAL_DAEMONS
+[ -n "$TEST_LOCAL_DAEMONS" ] || TEST_LOCAL_DAEMONS=3
 export TEST_VAR_DIR=""
 export TEST_CLEANUP=false
 
-temp=$(getopt -n "$prog" -o "ACdDehHlqsSvV:xX" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "AcCdDehHNqSvV:xX" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -55,14 +56,14 @@ eval set -- "$temp"
 while true ; do
     case "$1" in
 	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
+	-c) TEST_LOCAL_DAEMONS="" ; shift ;;
 	-C) TEST_CLEANUP=true ; shift ;;
 	-d) with_desc=true ; shift ;;  # 4th line of output is description
 	-D) TEST_DIFF_RESULTS=true ; shift ;;
 	-e) exit_on_fail=true ; shift ;;
 	-H) no_header=true ; shift ;;
-	-l) TEST_LOCAL_DAEMONS="3" ; shift ;;
+	-N) with_summary=false ; shift ;;
 	-q) quiet=true ; shift ;;
-	-s) with_summary=true ; shift ;;
 	-S) socket_wrapper=true ; shift ;;
 	-v) TEST_VERBOSE=true ; shift ;;
 	-V) TEST_VAR_DIR="$2" ; shift 2 ;;
@@ -72,6 +73,13 @@ while true ; do
 	*) usage ;;
     esac
 done
+
+case $(basename "$0") in
+    *run_cluster_tests*)
+	# Running on a cluster...  same as -c
+	TEST_LOCAL_DAEMONS=""
+	;;
+esac
 
 if $quiet ; then
     show_progress() { cat >/dev/null ; }
@@ -220,8 +228,19 @@ find_and_run_one_test ()
     fi
 }
 
-[ -n "$TEST_VAR_DIR" ] || TEST_VAR_DIR=$(mktemp -d)
+# Following 2 lines may be modified by installation script
+export CTDB_TESTS_ARE_INSTALLED=false
+test_dir=$(dirname "$0")
+
+if [ -z "$TEST_VAR_DIR" ] ; then
+    if $CTDB_TESTS_ARE_INSTALLED ; then
+	TEST_VAR_DIR=$(mktemp -d)
+    else
+	TEST_VAR_DIR="${test_dir}/var"
+    fi
+fi
 mkdir -p "$TEST_VAR_DIR"
+
 # Must be absolute
 TEST_VAR_DIR=$(cd "$TEST_VAR_DIR"; echo "$PWD")
 echo "TEST_VAR_DIR=$TEST_VAR_DIR"
@@ -231,7 +250,16 @@ if $socket_wrapper ; then
     mkdir -p "$SOCKET_WRAPPER_DIR"
 fi
 
-export TEST_SCRIPTS_DIR=$(dirname "$0")
+export TEST_SCRIPTS_DIR="${test_dir}/scripts"
+
+# If no tests specified then run some defaults
+if [ -z "$1" ] ; then
+    if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
+	set -- onnode takeover tool eventscripts simple
+    else
+	set -- simple complex
+    fi
+fi
 
 for f ; do
     find_and_run_one_test "$f"
