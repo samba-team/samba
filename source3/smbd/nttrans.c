@@ -539,7 +539,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				(create_disposition == FILE_CREATE)
-				  ? UCF_CREATING_FILE : 0,
+				  ? UCF_PREP_CREATEFILE : 0,
 				NULL,
 				&smb_fname);
 
@@ -1068,7 +1068,7 @@ static void call_nt_transact_create(connection_struct *conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				(create_disposition == FILE_CREATE)
-				  ? UCF_CREATING_FILE : 0,
+				  ? UCF_PREP_CREATEFILE : 0,
 				NULL,
 				&smb_fname);
 

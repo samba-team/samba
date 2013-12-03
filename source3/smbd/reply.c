@@ -1918,7 +1918,7 @@ void reply_open(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				(create_disposition == FILE_CREATE)
-				  ? UCF_CREATING_FILE : 0,
+				  ? UCF_PREP_CREATEFILE : 0,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2087,7 +2087,7 @@ void reply_open_and_X(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				(create_disposition == FILE_CREATE)
-				  ? UCF_CREATING_FILE : 0,
+				  ? UCF_PREP_CREATEFILE : 0,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2320,7 +2320,7 @@ void reply_mknew(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				UCF_CREATING_FILE,
+				UCF_PREP_CREATEFILE,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2461,7 +2461,7 @@ void reply_ctemp(struct smb_request *req)
 		status = filename_convert(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				UCF_CREATING_FILE,
+				UCF_PREP_CREATEFILE,
 				NULL,
 				&smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -5820,7 +5820,7 @@ void reply_mkdir(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
-				 UCF_CREATING_FILE,
+				 UCF_PREP_CREATEFILE,
 				 NULL,
 				 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {

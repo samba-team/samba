@@ -892,7 +892,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						  smb1req->flags2 & FLAGS2_DFS_PATHNAMES,
 						  fname,
 						  (in_create_disposition == FILE_CREATE) ?
-						  UCF_CREATING_FILE : 0,
+						  UCF_PREP_CREATEFILE : 0,
 						  NULL, /* ppath_contains_wcards */
 						  &smb_fname);
 			if (!NT_STATUS_IS_OK(status)) {

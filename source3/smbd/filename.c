@@ -722,7 +722,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 */
 
 				if (errno == EACCES) {
-					if ((ucf_flags & UCF_CREATING_FILE) == 0) {
+					if ((ucf_flags & UCF_PREP_CREATEFILE) == 0) {
 						status = NT_STATUS_ACCESS_DENIED;
 						goto fail;
 					} else {
