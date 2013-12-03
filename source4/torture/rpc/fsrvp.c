@@ -42,9 +42,8 @@
 #include "librpc/gen_ndr/ndr_fsrvp.h"
 #include "librpc/gen_ndr/ndr_fsrvp_c.h"
 
-#define FSHARE	"hyper"
+#define FSHARE	"fsrvp_share"
 #define FNAME	"testfss.dat"
-#define FNAME2	"testfss2.dat"
 
 uint8_t fsrvp_magic[] = {0x8a, 0xe3, 0x13, 0x71, 0x02, 0xf4, 0x36, 0x71,
 			 0x02, 0x40, 0x28, 0x00, 0x3c, 0x65, 0xe0, 0xa8,
@@ -516,6 +515,103 @@ static bool test_fsrvp_sc_share_io(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_fsrvp_enum_snaps(struct torture_context *tctx,
+				  TALLOC_CTX *mem_ctx,
+				  struct smb2_tree *tree,
+				  struct smb2_handle fh,
+				  int *_count)
+{
+	struct smb2_ioctl io;
+	NTSTATUS status;
+
+	ZERO_STRUCT(io);
+	io.level = RAW_IOCTL_SMB2;
+	io.in.file.handle = fh;
+	io.in.function = FSCTL_SRV_ENUM_SNAPS;
+	io.in.max_response_size = 16;
+	io.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok(tctx, status, "enum ioctl");
+
+	*_count = IVAL(io.out.out.data, 0);
+
+	return true;
+}
+
+static bool test_fsrvp_enum_created(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	struct fssagent_share_mapping_1 *sc_map;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
+	char *share_unc = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+					  dcerpc_server_name(p), FSHARE);
+	extern struct cli_credentials *cmdline_credentials;
+	struct smb2_tree *tree_base;
+	struct smbcli_options options;
+	struct smb2_handle base_fh;
+	int count;
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+	status = smb2_connect(tmp_ctx,
+			      dcerpc_server_name(p),
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      FSHARE,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      cmdline_credentials,
+			      &tree_base,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Failed to connect to SMB2 share");
+
+	smb2_util_unlink(tree_base, FNAME);
+	status = torture_smb2_testfile(tree_base, FNAME, &base_fh);
+	torture_assert_ntstatus_ok(tctx, status, "base write open");
+
+	status = smb2_util_write(tree_base, base_fh, "pre-snap", 0,
+				 sizeof("pre-snap"));
+	torture_assert_ntstatus_ok(tctx, status, "src write");
+
+	torture_assert(tctx,
+		       test_fsrvp_enum_snaps(tctx, tmp_ctx, tree_base, base_fh,
+					     &count),
+		       "count");
+	torture_assert_int_equal(tctx, count, 0, "num snaps");
+
+	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
+		       "sc create");
+	talloc_free(sc_map);
+
+	torture_assert(tctx,
+		       test_fsrvp_enum_snaps(tctx, tmp_ctx, tree_base, base_fh,
+					     &count),
+		       "count");
+	/*
+	 * Snapshots created via FSRVP on Windows Server 2012 are not added to
+	 * the previous versions list, so it will fail here...
+	 */
+	torture_assert_int_equal(tctx, count, 1, "num snaps");
+
+	smb_msleep(1100);	/* @GMT tokens have a 1 second resolution */
+	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
+		       "sc create");
+	talloc_free(sc_map);
+
+	torture_assert(tctx,
+		       test_fsrvp_enum_snaps(tctx, tmp_ctx, tree_base, base_fh,
+					     &count),
+		       "count");
+	torture_assert_int_equal(tctx, count, 2, "num snaps");
+
+	talloc_free(tmp_ctx);
+
+	return true;
+}
+
 static bool fsrvp_rpc_setup (struct torture_context *tctx, void **data)
 {
 	NTSTATUS status;
@@ -552,6 +648,8 @@ struct torture_suite *torture_rpc_fsrvp(TALLOC_CTX *mem_ctx)
 	/* override torture_rpc_setup() to set DCERPC_NDR_REF_ALLOC */
 	tcase->tcase.setup = fsrvp_rpc_setup;
 
+	torture_rpc_tcase_add_test(tcase, "enum_created",
+				   test_fsrvp_enum_created);
 	torture_rpc_tcase_add_test(tcase, "sc_share_io",
 				   test_fsrvp_sc_share_io);
 	torture_rpc_tcase_add_test(tcase, "bad_id",
