@@ -572,8 +572,8 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	struct tevent_context *ev;
 	int ret;
 
-	if (!handle) {
-		return ldb_error(handle->ldb, LDB_ERR_UNAVAILABLE, NULL);
+	if (handle == NULL) {
+		return LDB_ERR_UNAVAILABLE;
 	}
 
 	if (handle->state == LDB_ASYNC_DONE) {
