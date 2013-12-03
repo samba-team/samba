@@ -722,7 +722,10 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 */
 
 				if (errno == EACCES) {
-					if (ucf_flags & UCF_CREATING_FILE) {
+					if ((ucf_flags & UCF_CREATING_FILE) == 0) {
+						status = NT_STATUS_ACCESS_DENIED;
+						goto fail;
+					} else {
 						/*
 						 * This is the dropbox
 						 * behaviour. A dropbox is a
@@ -734,11 +737,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						 * nevertheless want to allow
 						 * users creating a file.
 						 */
-						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-					} else {
-						status = NT_STATUS_ACCESS_DENIED;
+						errno = 0;
 					}
-					goto fail;
 				}
 
 				if ((errno != 0) && (errno != ENOENT)) {
