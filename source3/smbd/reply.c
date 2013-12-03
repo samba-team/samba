@@ -1918,8 +1918,7 @@ void reply_open(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				(create_disposition == FILE_CREATE)
-				  ? UCF_PREP_CREATEFILE : 0,
+				UCF_PREP_CREATEFILE,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2096,8 +2095,7 @@ void reply_open_and_X(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				(create_disposition == FILE_CREATE)
-				  ? UCF_PREP_CREATEFILE : 0,
+				UCF_PREP_CREATEFILE,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
