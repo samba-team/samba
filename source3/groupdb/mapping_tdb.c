@@ -119,17 +119,15 @@ static bool init_group_mapping(void)
 
 static char *group_mapping_key(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
-	char *sidstr, *result;
+	char sidstr[DOM_SID_STR_BUFLEN];
+	int len;
 
-	sidstr = sid_string_talloc(talloc_tos(), sid);
-	if (sidstr == NULL) {
+	len = dom_sid_string_buf(sid, sidstr, sizeof(sidstr));
+	if (len >= sizeof(sidstr)) {
 		return NULL;
 	}
 
-	result = talloc_asprintf(mem_ctx, "%s%s", GROUP_PREFIX, sidstr);
-
-	TALLOC_FREE(sidstr);
-	return result;
+	return talloc_asprintf(mem_ctx, "%s%s", GROUP_PREFIX, sidstr);
 }
 
 /****************************************************************************
