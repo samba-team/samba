@@ -178,7 +178,7 @@ static void smbd_smb2_request_getinfo_done(struct tevent_req *subreq)
 
 	out_output_buffer_offset = SMB2_HDR_BODY + 0x08;
 
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x08);
+	outbody = smbd_smb2_generate_outbody(req, 0x08);
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
