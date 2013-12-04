@@ -78,10 +78,6 @@ struct dcecli_connection {
 		enum dcerpc_transport_t transport;
 		void *private_data;
 
-		/* a callback to the dcerpc code when a full fragment
-		   has been received */
-		void (*recv_data)(struct dcecli_connection *, DATA_BLOB *, NTSTATUS status);
-
 		struct tstream_context *stream;
 		/** to serialize write events */
 		struct tevent_queue *write_queue;

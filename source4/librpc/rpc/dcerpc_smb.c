@@ -162,8 +162,6 @@ static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq)
 	c->transport.transport       = NCACN_NP;
 	c->transport.private_data    = NULL;
 
-	c->transport.recv_data       = NULL;
-
 	/*
 	 * Windows uses 4280 for ncacn_np,
 	 * so we also use it, this is what our

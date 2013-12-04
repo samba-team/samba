@@ -1029,8 +1029,6 @@ static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS stat
 	TALLOC_FREE(conn->io_trigger);
 	conn->io_trigger_pending = false;
 
-	conn->transport.recv_data = NULL;
-
 	dcerpc_shutdown_pipe(conn, status);
 
 	/* all pending requests get the error */
@@ -1076,6 +1074,10 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 static void dcerpc_recv_data(struct dcecli_connection *conn, DATA_BLOB *blob, NTSTATUS status)
 {
 	struct ncacn_packet pkt;
+
+	if (conn->dead) {
+		return;
+	}
 
 	if (NT_STATUS_IS_OK(status) && blob->length == 0) {
 		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
@@ -1191,8 +1193,6 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
-
-	p->conn->transport.recv_data = dcerpc_recv_data;
 
 	/*
 	 * we allocate a dcerpc_request so we can be in the same
@@ -1530,8 +1530,6 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 					       DATA_BLOB *stub_data)
 {
 	struct rpc_request *req;
-
-	p->conn->transport.recv_data = dcerpc_recv_data;
 
 	req = talloc_zero(mem_ctx, struct rpc_request);
 	if (req == NULL) {
@@ -2080,8 +2078,6 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	p->conn->transport.recv_data = dcerpc_recv_data;
-
 	/*
 	 * we allocate a dcerpc_request so we can be in the same
 	 * request queue as normal requests
@@ -2271,9 +2267,7 @@ static void dcerpc_transport_dead(struct dcecli_connection *c, NTSTATUS status)
 		status = NT_STATUS_END_OF_FILE;
 	}
 
-	if (c->transport.recv_data) {
-		c->transport.recv_data(c, NULL, status);
-	}
+	dcerpc_recv_data(c, NULL, status);
 }
 
 
@@ -2412,9 +2406,7 @@ static void dcerpc_send_read_done(struct tevent_req *subreq)
 		}
 	}
 
-	if (p->transport.recv_data) {
-		p->transport.recv_data(p, &blob, NT_STATUS_OK);
-	}
+	dcerpc_recv_data(p, &blob, NT_STATUS_OK);
 }
 
 struct dcerpc_send_request_state {

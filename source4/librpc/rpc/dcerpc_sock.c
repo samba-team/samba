@@ -90,8 +90,6 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->transport.transport       = s->transport;
 	conn->transport.private_data    = NULL;
 
-	conn->transport.recv_data       = NULL;
-
 	/*
 	 * Windows uses 5840 for ncacn_ip_tcp,
 	 * so we also use it (for every transport which uses bsd sockets)
