@@ -1,5 +1,5 @@
 /*
- * Third attempt at a shadow copy module
+ * shadow_copy2: a shadow copy module (second implementation)
  *
  * Copyright (C) Andrew Tridgell   2007 (portions taken from shadow_copy2)
  * Copyright (C) Ed Plese          2009
