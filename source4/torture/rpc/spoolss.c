@@ -585,7 +585,7 @@ static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
 		"failed to enumerate printer drivers");
 
 	for (i=0; i < count; i++) {
-		const char *driver_name_ret;
+		const char *driver_name_ret = "";
 		switch (level) {
 		case 1:
 			driver_name_ret = info[i].info1.driver_name;
@@ -1439,8 +1439,6 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 	bool ret = true;
 	int i;
 
-	torture_skip(tctx, "Printer Info test is currently broken, skipping");
-
 	uint32_t status_list[] = {
 		/* these do not stick
 		PRINTER_STATUS_PAUSED,
@@ -1518,6 +1516,9 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 		0x40000000,
 		0x80000000 */
 	};
+
+	torture_skip(tctx, "Printer Info test is currently broken, skipping");
+
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
@@ -2132,7 +2133,6 @@ static bool test_devicemode_full(struct torture_context *tctx,
 {
 	struct spoolss_SetPrinter s;
 	struct spoolss_GetPrinter q;
-	struct spoolss_GetPrinter q0;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_SetPrinterInfo8 info8;
 	union spoolss_PrinterInfo info;
@@ -2184,7 +2184,6 @@ static bool test_devicemode_full(struct torture_context *tctx,
 
 	q.in.handle = handle;
 	q.out.info = &info;
-	q0 = q;
 
 #if 0
 	const char *devicename;/* [charset(UTF16)] */
@@ -3450,6 +3449,8 @@ static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
 					 uint32_t *job_id)
 {
 	test_DoPrintTest_add_one_job_common(tctx, b, handle, document_name, "RAW", job_id);
+
+	return true;
 }
 
 static bool test_DoPrintTest_add_one_job_v4(struct torture_context *tctx,
@@ -3459,6 +3460,8 @@ static bool test_DoPrintTest_add_one_job_v4(struct torture_context *tctx,
 					 uint32_t *job_id)
 {
 	test_DoPrintTest_add_one_job_common(tctx, b, handle, document_name, "XPS_PASS", job_id);
+
+	return true;
 }
 
 
