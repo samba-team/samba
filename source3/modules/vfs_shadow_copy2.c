@@ -23,83 +23,10 @@
  */
 
 /*
-
-  This is a 3rd implemetation of a shadow copy module for exposing
-  snapshots to windows clients as shadow copies. This version has the
-  following features:
-
-     1) you don't need to populate your shares with symlinks to the
-     snapshots. This can be very important when you have thousands of
-     shares, or use [homes]
-
-     2) the inode number of the files is altered so it is different
-     from the original. This allows the 'restore' button to work
-     without a sharing violation
-
-     3) shadow copy results can be sorted before being sent to the
-     client.  This is beneficial for filesystems that don't read
-     directories alphabetically (the default unix).
-
-     4) vanity naming for snapshots. Snapshots can be named in any
-     format compatible with str[fp]time conversions.
-
-     5) time stamps in snapshot names can be represented in localtime
-     rather than UTC.
-
-  Module options:
-
-      shadow:snapdir = <directory where snapshots are kept>
-
-      This is the directory containing the @GMT-* snapshot directories. If it is an absolute
-      path it is used as-is. If it is a relative path, then it is taken relative to the mount
-      point of the filesystem that the root of this share is on
-
-      shadow:basedir = <base directory that snapshots are from>
-
-      This is an optional parameter that specifies the directory that
-      the snapshots are relative to. It defaults to the filesystem
-      mount point
-
-      shadow:fixinodes = yes/no
-
-      If you enable shadow:fixinodes then this module will modify the
-      apparent inode number of files in the snapshot directories using
-      a hash of the files path. This is needed for snapshot systems
-      where the snapshots have the same device:inode number as the
-      original files (such as happens with GPFS snapshots). If you
-      don't set this option then the 'restore' button in the shadow
-      copy UI will fail with a sharing violation.
-
-      shadow:sort = asc/desc, or not specified for unsorted (default)
-
-      This is an optional parameter that specifies that the shadow
-      copy directories should be sorted before sending them to the
-      client.  This can be beneficial as unix filesystems are usually
-      not listed alphabetically sorted.  If enabled, you typically
-      want to specify descending order.
-
-      shadow:format = <format specification for snapshot names>
-
-      This is an optional parameter that specifies the format
-      specification for the naming of snapshots.  The format must
-      be compatible with the conversion specifications recognized
-      by str[fp]time.  The default value is "@GMT-%Y.%m.%d-%H.%M.%S".
-
-      shadow:sscanf = yes/no (default is no)
-
-      The time is the unsigned long integer (%lu) in the format string
-      rather than a time strptime() can parse.  The result must be a unix time_t
-      time.
-
-      shadow:localtime = yes/no (default is no)
-
-      This is an optional parameter that indicates whether the
-      snapshot names are in UTC/GMT or the local time.
-
-
-  The following command would generate a correctly formatted directory name
-  for use with the default parameters:
-     date -u +@GMT-%Y.%m.%d-%H.%M.%S
+ * This is a second implemetation of a shadow copy module for exposing
+ * file system snapshots to windows clients as shadow copies.
+ *
+ * See the manual page for documentation.
  */
 
 #include "includes.h"
