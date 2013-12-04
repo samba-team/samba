@@ -933,14 +933,21 @@ DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size)
 
 static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 {
+	TALLOC_CTX *mem_ctx;
 	struct iovec *vector;
 	int count;
 	int idx;
 
 	count = req->in.vector_count;
-	vector = talloc_zero_array(req, struct iovec, count);
-	if (vector == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (count <= ARRAY_SIZE(req->out._vector)) {
+		mem_ctx = req;
+		vector = req->out._vector;
+	} else {
+		vector = talloc_zero_array(req, struct iovec, count);
+		if (vector == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		mem_ctx = vector;
 	}
 
 	vector[0].iov_base	= req->out.nbt_hdr;
@@ -964,7 +971,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		if (idx == 1) {
 			outhdr = req->out._hdr;
 		} else {
-			outhdr = talloc_zero_array(vector, uint8_t,
+			outhdr = talloc_zero_array(mem_ctx, uint8_t,
 						   OUTVEC_ALLOC_SIZE);
 			if (outhdr == NULL) {
 				return NT_STATUS_NO_MEMORY;

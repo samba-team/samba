@@ -613,6 +613,7 @@ struct smbd_smb2_request {
 		 */
 		struct iovec *vector;
 		int vector_count;
+		struct iovec _vector[1 + SMBD_SMB2_NUM_IOV_PER_REQ];
 #define OUTVEC_ALLOC_SIZE (SMB2_HDR_BODY + 9)
 		uint8_t _hdr[OUTVEC_ALLOC_SIZE];
 		uint8_t _body[0x58];
