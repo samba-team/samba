@@ -4970,7 +4970,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 				      struct policy_handle *hive_handle,
 				      const char *server_name_slash)
 {
-	WERROR result;
+	WERROR result = WERR_OK;
 	union spoolss_DriverInfo info;
 	const char *driver_key;
 	struct policy_handle key_handle;
@@ -4986,6 +4986,8 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 
 	const char *driver_version;
 	const char *inbox_driver_version;
+
+	ZERO_STRUCT(key_handle);
 
 	torture_comment(tctx, "Testing Driver Info and winreg consistency\n");
 
