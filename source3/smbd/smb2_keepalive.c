@@ -35,7 +35,7 @@ NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req)
 
 	/* TODO: update some time stamps */
 
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x04);
+	outbody = smbd_smb2_generate_outbody(req, 0x04);
 	if (outbody.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
