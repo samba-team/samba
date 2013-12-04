@@ -2632,6 +2632,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    const char *location)
 {
 	DATA_BLOB body;
+	DATA_BLOB _dyn;
 	uint8_t *outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 	size_t unread_bytes = smbd_smb2_unread_bytes(req);
 
@@ -2673,12 +2674,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 		 * *MUST BE* OUTVEC_ALLOC_SIZE. So we have room for
 		 * 1 byte without having to do an alloc.
 		 */
-		info = talloc_zero_array(req->out.vector,
-					DATA_BLOB,
-					1);
-		if (!info) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		info = &_dyn;
 		info->data = ((uint8_t *)outhdr) +
 			OUTVEC_ALLOC_SIZE - 1;
 		info->length = 1;
