@@ -323,6 +323,7 @@ static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
 	n = SMB_STRDUP(name);
 	n[strlen(n)-1] = 0;
 	if (asprintf(&s, "%s%s", n, finfo->name) == -1) {
+		free(n);
 		printf("asprintf failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -330,12 +331,15 @@ static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
 		char *s2;
 		if (asprintf(&s2, "%s\\*", s) == -1) {
 			printf("asprintf failed\n");
+			free(s);
+			free(n);
 			return NT_STATUS_NO_MEMORY;
 		}
 		status = cli_list(c, s2, FILE_ATTRIBUTE_DIRECTORY, delete_fn, NULL);
+		free(s2);
 		if (!NT_STATUS_IS_OK(status)) {
+			free(s);
 			free(n);
-			free(s2);
 			return status;
 		}
 		nb_rmdir(s);
