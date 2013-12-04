@@ -36,7 +36,6 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	bool ret = true;
 	int fnum = -1;
 	char *fnum_fname;
-	char *fnum_fname_new;
 	char *path_fname;
 	char *path_fname_new;
 	union smb_fileinfo finfo1, finfo2;
@@ -47,10 +46,9 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	bool check_fnum;
 	int n = time(NULL) % 100;
 	
-	asprintf(&path_fname, BASEDIR "\\fname_test_%d.txt", n);
-	asprintf(&path_fname_new, BASEDIR "\\fname_test_new_%d.txt", n);
-	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
-	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
+	path_fname = talloc_asprintf(torture, BASEDIR "\\fname_test_%d.txt", n);
+	path_fname_new = talloc_asprintf(torture, BASEDIR "\\fname_test_new_%d.txt", n);
+	fnum_fname = talloc_asprintf(torture, BASEDIR "\\fnum_test_%d.txt", n);
 
 	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
@@ -481,13 +479,13 @@ torture_raw_sfileinfo_rename(struct torture_context *torture,
 	const char *call_name;
 	bool check_fnum;
 	int n = time(NULL) % 100;
-	
-	asprintf(&path_fname, BASEDIR "\\fname_test_%d.txt", n);
-	asprintf(&path_fname_new, BASEDIR "\\fname_test_new_%d.txt", n);
-	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
-	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
-	asprintf(&path_dname, BASEDIR "\\dname_test_%d", n);
-	asprintf(&path_dname_new, BASEDIR "\\dname_test_new_%d", n);
+
+	path_fname = talloc_asprintf(torture, BASEDIR "\\fname_test_%d.txt", n);
+	path_fname_new = talloc_asprintf(torture, BASEDIR "\\fname_test_new_%d.txt", n);
+	fnum_fname = talloc_asprintf(torture, BASEDIR "\\fnum_test_%d.txt", n);
+	fnum_fname_new = talloc_asprintf(torture, BASEDIR "\\fnum_test_new_%d.txt", n);
+	path_dname = talloc_asprintf(torture, BASEDIR "\\dname_test_%d", n);
+	path_dname_new = talloc_asprintf(torture, BASEDIR "\\dname_test_new_%d", n);
 
 	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
