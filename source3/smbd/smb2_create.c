@@ -318,7 +318,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 		out_context_buffer_offset = SMB2_HDR_BODY + 0x58;
 	}
 
-	outbody = data_blob_talloc(smb2req->out.vector, NULL, 0x58);
+	outbody = smbd_smb2_generate_outbody(smb2req, 0x58);
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
