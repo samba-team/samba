@@ -230,3 +230,12 @@ bool smb2_util_handle_equal(const struct smb2_handle h1,
 {
 	return (h1.data[0] == h2.data[0]) && (h1.data[1] == h2.data[1]);
 }
+
+bool smb2_util_handle_empty(const struct smb2_handle h)
+{
+	struct smb2_handle empty;
+
+	ZERO_STRUCT(empty);
+
+	return smb2_util_handle_equal(h, empty);
+}
