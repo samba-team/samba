@@ -306,7 +306,8 @@ void nb_flush(int fnum)
 {
 	int i;
 	i = find_handle(fnum);
-	/* hmmm, we don't have cli_flush() yet */
+
+	cli_flush(NULL, c, i);
 }
 
 static int total_deleted;
