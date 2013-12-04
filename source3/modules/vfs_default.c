@@ -1492,7 +1492,7 @@ static NTSTATUS vfswrap_copy_chunk_recv(struct vfs_handle_struct *handle,
 static NTSTATUS vfswrap_get_compression(struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					struct files_struct *fsp,
-					struct smb_fname *smb_fname,
+					struct smb_filename *smb_fname,
 					uint16_t *_compression_fmt)
 {
 	return NT_STATUS_INVALID_DEVICE_REQUEST;
