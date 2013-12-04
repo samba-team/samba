@@ -920,6 +920,11 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 	}
 }
 
+DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size)
+{
+	return data_blob_talloc(req->out.vector, NULL, size);
+}
+
 static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 {
 	struct iovec *vector;

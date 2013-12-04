@@ -225,6 +225,8 @@ void reply_smb20ff(struct smb_request *req, uint16_t choice);
 void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 			     uint8_t *inbuf, size_t size);
 
+DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size);
+
 NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status,
 				    DATA_BLOB *info,
