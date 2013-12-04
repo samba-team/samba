@@ -159,6 +159,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		char *newname;
 		if(!strcmp(dirent->name, ".") || !strcmp(dirent->name, ".."))continue;
 		if (asprintf(&newname, "%s/%s", tmpname, dirent->name) == -1) {
+			free(tmpname);
 			return 1;
 		}
 		switch(dirent->smbc_type) {
