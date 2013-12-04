@@ -39,91 +39,6 @@ struct sock_private {
 	struct socket_address *peer_addr;
 };
 
-
-/*
-  Mark the socket dead.
-  The following functions are declared here because they are going to be private.
-*/
-void dcerpc_transport_dead(struct dcecli_connection *p, NTSTATUS status);
-NTSTATUS dcerpc_send_read(struct dcecli_connection *p);
-
-/* 
-   send an initial pdu in a multi-pdu sequence
-*/
-
-struct sock_send_request_state {
-	struct dcecli_connection *p;
-	DATA_BLOB blob;
-	struct iovec iov;
-};
-
-static void sock_send_request_done(struct tevent_req *subreq);
-
-static NTSTATUS sock_send_request(struct dcecli_connection *p, DATA_BLOB *data, 
-				  bool trigger_read)
-{
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
-	struct sock_send_request_state *state;
-	struct tevent_req *subreq;
-
-	if (p->transport.stream == NULL) {
-		return NT_STATUS_CONNECTION_DISCONNECTED;
-	}
-
-	state = talloc_zero(sock, struct sock_send_request_state);
-	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	state->p = p;
-
-	state->blob = data_blob_talloc(state, data->data, data->length);
-	if (state->blob.data == NULL) {
-		TALLOC_FREE(state);
-		return NT_STATUS_NO_MEMORY;
-	}
-	state->iov.iov_base = (void *)state->blob.data;
-	state->iov.iov_len = state->blob.length;
-
-	subreq = tstream_writev_queue_send(state, p->event_ctx,
-					   p->transport.stream,
-					   p->transport.write_queue,
-					   &state->iov, 1);
-	if (subreq == NULL) {
-		TALLOC_FREE(state);
-		return NT_STATUS_NO_MEMORY;
-	}
-	tevent_req_set_callback(subreq, sock_send_request_done, state);
-
-	if (trigger_read) {
-		dcerpc_send_read(p);
-	}
-
-	return NT_STATUS_OK;
-}
-
-static void sock_send_request_done(struct tevent_req *subreq)
-{
-	struct sock_send_request_state *state =
-		tevent_req_callback_data(subreq,
-		struct sock_send_request_state);
-	int ret;
-	int error;
-
-	ret = tstream_writev_queue_recv(subreq, &error);
-	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		struct dcecli_connection *p = state->p;
-		NTSTATUS status = map_nt_error_from_unix_common(error);
-
-		TALLOC_FREE(state);
-		dcerpc_transport_dead(p, status);
-		return;
-	}
-
-	TALLOC_FREE(state);
-}
-
 struct pipe_open_socket_state {
 	struct dcecli_connection *conn;
 	struct socket_context *socket_ctx;
@@ -175,7 +90,6 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->transport.transport       = s->transport;
 	conn->transport.private_data    = NULL;
 
-	conn->transport.send_request    = sock_send_request;
 	conn->transport.recv_data       = NULL;
 
 	/*

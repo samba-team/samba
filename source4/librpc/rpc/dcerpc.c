@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc.h"
@@ -32,6 +33,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/rpc_common.h"
 #include "lib/tsocket/tsocket.h"
+#include "libcli/smb/tstream_smbXcli_np.h"
 
 
 enum rpc_request_state {
@@ -99,6 +101,10 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcecli_connection *c,
 					ndr_push_flags_fn_t ndr_push,
 					ndr_pull_flags_fn_t ndr_pull,
 					ndr_print_function_t ndr_print);
+static NTSTATUS dcerpc_shutdown_pipe(struct dcecli_connection *p, NTSTATUS status);
+static NTSTATUS dcerpc_send_request(struct dcecli_connection *p, DATA_BLOB *data,
+			     bool trigger_read);
+static NTSTATUS dcerpc_send_read(struct dcecli_connection *p);
 
 /* destroy a dcerpc connection */
 static int dcerpc_connection_destructor(struct dcecli_connection *conn)
@@ -1011,7 +1017,6 @@ static int dcerpc_req_dequeue(struct rpc_request *req)
 }
 
 
-static NTSTATUS dcerpc_shutdown_pipe(struct dcecli_connection *p, NTSTATUS status);
 /*
   mark the dcerpc connection dead. All outstanding requests get an error
 */
@@ -1207,7 +1212,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	DLIST_ADD_END(p->conn->pending, subreq, struct rpc_request *);
 	talloc_set_destructor(subreq, dcerpc_req_dequeue);
 
-	status = p->conn->transport.send_request(p->conn, &blob, true);
+	status = dcerpc_send_request(p->conn, &blob, true);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1377,7 +1382,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	}
 
 	/* send it on its way */
-	status = p->conn->transport.send_request(p->conn, &blob, false);
+	status = dcerpc_send_request(p->conn, &blob, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1687,7 +1692,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 			do_trans = true;
 		}
 
-		req->status = p->conn->transport.send_request(p->conn, &blob, do_trans);
+		req->status = dcerpc_send_request(p->conn, &blob, do_trans);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);
@@ -2095,7 +2100,7 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 	DLIST_ADD_END(p->conn->pending, subreq, struct rpc_request *);
 	talloc_set_destructor(subreq, dcerpc_req_dequeue);
 
-	status = p->conn->transport.send_request(p->conn, &blob, true);
+	status = dcerpc_send_request(p->conn, &blob, true);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2248,7 +2253,7 @@ _PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 	return dcerpc_alter_context_recv(subreq);
 }
 
-void dcerpc_transport_dead(struct dcecli_connection *c, NTSTATUS status)
+static void dcerpc_transport_dead(struct dcecli_connection *c, NTSTATUS status)
 {
 	if (c->transport.stream == NULL) {
 		return;
@@ -2343,7 +2348,7 @@ static int dcerpc_send_read_state_destructor(struct dcerpc_send_read_state *stat
 
 static void dcerpc_send_read_done(struct tevent_req *subreq);
 
-NTSTATUS dcerpc_send_read(struct dcecli_connection *p)
+static NTSTATUS dcerpc_send_read(struct dcecli_connection *p)
 {
 	struct dcerpc_send_read_state *state;
 
@@ -2410,4 +2415,148 @@ static void dcerpc_send_read_done(struct tevent_req *subreq)
 	if (p->transport.recv_data) {
 		p->transport.recv_data(p, &blob, NT_STATUS_OK);
 	}
+}
+
+struct dcerpc_send_request_state {
+	struct dcecli_connection *p;
+	DATA_BLOB blob;
+	struct iovec iov;
+};
+
+static int dcerpc_send_request_state_destructor(struct dcerpc_send_request_state *state)
+{
+	struct dcecli_connection *p = state->p;
+
+	p->transport.read_subreq = NULL;
+
+	return 0;
+}
+
+static void dcerpc_send_request_wait_done(struct tevent_req *subreq);
+static void dcerpc_send_request_done(struct tevent_req *subreq);
+
+static NTSTATUS dcerpc_send_request(struct dcecli_connection *p, DATA_BLOB *data,
+				    bool trigger_read)
+{
+	struct dcerpc_send_request_state *state;
+	struct tevent_req *subreq;
+	bool use_trans = trigger_read;
+
+	if (p->transport.stream == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
+
+	state = talloc_zero(p, struct dcerpc_send_request_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->p = p;
+
+	state->blob = data_blob_talloc(state, data->data, data->length);
+	if (state->blob.data == NULL) {
+		TALLOC_FREE(state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->iov.iov_base = (void *)state->blob.data;
+	state->iov.iov_len = state->blob.length;
+
+	if (p->transport.read_subreq != NULL) {
+		use_trans = false;
+	}
+
+	if (!tstream_is_smbXcli_np(p->transport.stream)) {
+		use_trans = false;
+	}
+
+	if (use_trans) {
+		/*
+		 * we need to block reads until our write is
+		 * the next in the write queue.
+		 */
+		p->transport.read_subreq = tevent_queue_wait_send(state, p->event_ctx,
+							     p->transport.write_queue);
+		if (p->transport.read_subreq == NULL) {
+			TALLOC_FREE(state);
+			return NT_STATUS_NO_MEMORY;
+		}
+		tevent_req_set_callback(p->transport.read_subreq,
+					dcerpc_send_request_wait_done,
+					state);
+
+		talloc_set_destructor(state, dcerpc_send_request_state_destructor);
+
+		trigger_read = false;
+	}
+
+	subreq = tstream_writev_queue_send(state, p->event_ctx,
+					   p->transport.stream,
+					   p->transport.write_queue,
+					   &state->iov, 1);
+	if (subreq == NULL) {
+		TALLOC_FREE(state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, dcerpc_send_request_done, state);
+
+	if (trigger_read) {
+		dcerpc_send_read(p);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void dcerpc_send_request_wait_done(struct tevent_req *subreq)
+{
+	struct dcerpc_send_request_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcerpc_send_request_state);
+	struct dcecli_connection *p = state->p;
+	NTSTATUS status;
+	bool ok;
+
+	p->transport.read_subreq = NULL;
+	talloc_set_destructor(state, NULL);
+
+	ok = tevent_queue_wait_recv(subreq);
+	if (!ok) {
+		TALLOC_FREE(state);
+		dcerpc_transport_dead(p, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	if (tevent_queue_length(p->transport.write_queue) <= 2) {
+		status = tstream_smbXcli_np_use_trans(p->transport.stream);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(state);
+			dcerpc_transport_dead(p, status);
+			return;
+		}
+	}
+
+	/* we free subreq after tstream_cli_np_use_trans */
+	TALLOC_FREE(subreq);
+
+	dcerpc_send_read(p);
+}
+
+static void dcerpc_send_request_done(struct tevent_req *subreq)
+{
+	struct dcerpc_send_request_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcerpc_send_request_state);
+	int ret;
+	int error;
+
+	ret = tstream_writev_queue_recv(subreq, &error);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		struct dcecli_connection *p = state->p;
+		NTSTATUS status = map_nt_error_from_unix_common(error);
+
+		TALLOC_FREE(state);
+		dcerpc_transport_dead(p, status);
+		return;
+	}
+
+	TALLOC_FREE(state);
 }

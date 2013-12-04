@@ -78,9 +78,6 @@ struct dcecli_connection {
 		enum dcerpc_transport_t transport;
 		void *private_data;
 
-		/* send a request to the server */
-		NTSTATUS (*send_request)(struct dcecli_connection *, DATA_BLOB *, bool trigger_read);
-
 		/* a callback to the dcerpc code when a full fragment
 		   has been received */
 		void (*recv_data)(struct dcecli_connection *, DATA_BLOB *, NTSTATUS status);
