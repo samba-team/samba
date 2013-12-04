@@ -1355,7 +1355,7 @@ _PUBLIC_ void *talloc_named(const void *context, size_t size, const char *fmt, .
 /*
   return the name of a talloc ptr, or "UNNAMED"
 */
-_PUBLIC_ const char *talloc_get_name(const void *ptr)
+static inline const char *__talloc_get_name(const void *ptr)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	if (unlikely(tc->name == TALLOC_MAGIC_REFERENCE)) {
@@ -1367,6 +1367,10 @@ _PUBLIC_ const char *talloc_get_name(const void *ptr)
 	return "UNNAMED";
 }
 
+_PUBLIC_ const char *talloc_get_name(const void *ptr)
+{
+	return __talloc_get_name(ptr);
+}
 
 /*
   check if a pointer has the given name. If it does, return the pointer,
@@ -1376,7 +1380,7 @@ _PUBLIC_ void *talloc_check_name(const void *ptr, const char *name)
 {
 	const char *pname;
 	if (unlikely(ptr == NULL)) return NULL;
-	pname = talloc_get_name(ptr);
+	pname = __talloc_get_name(ptr);
 	if (likely(pname == name || strcmp(pname, name) == 0)) {
 		return discard_const_p(void, ptr);
 	}
@@ -1410,7 +1414,7 @@ _PUBLIC_ void *_talloc_get_type_abort(const void *ptr, const char *name, const c
 		return NULL;
 	}
 
-	pname = talloc_get_name(ptr);
+	pname = __talloc_get_name(ptr);
 	if (likely(pname == name || strcmp(pname, name) == 0)) {
 		return discard_const_p(void, ptr);
 	}
@@ -2028,7 +2032,7 @@ _PUBLIC_ void talloc_report_depth_cb(const void *ptr, int depth, int max_depth,
 
 static void talloc_report_depth_FILE_helper(const void *ptr, int depth, int max_depth, int is_ref, void *_f)
 {
-	const char *name = talloc_get_name(ptr);
+	const char *name = __talloc_get_name(ptr);
 	struct talloc_chunk *tc;
 	FILE *f = (FILE *)_f;
 
@@ -2628,9 +2632,9 @@ _PUBLIC_ void talloc_show_parents(const void *context, FILE *file)
 	}
 
 	tc = talloc_chunk_from_ptr(context);
-	fprintf(file, "talloc parents of '%s'\n", talloc_get_name(context));
+	fprintf(file, "talloc parents of '%s'\n", __talloc_get_name(context));
 	while (tc) {
-		fprintf(file, "\t'%s'\n", talloc_get_name(TC_PTR_FROM_CHUNK(tc)));
+		fprintf(file, "\t'%s'\n", __talloc_get_name(TC_PTR_FROM_CHUNK(tc)));
 		while (tc && tc->prev) tc = tc->prev;
 		if (tc) {
 			tc = tc->parent;
