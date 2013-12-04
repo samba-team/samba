@@ -3059,6 +3059,100 @@ static bool test_delayed_write_update7(struct torture_context *tctx, struct smbc
 }
 
 /*
+   Test if creating a file in a directory with an open handle updates the
+   write timestamp (it should).
+*/
+static bool test_directory_update8(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_fileinfo dir_info1, dir_info2;
+	union smb_open open_parms;
+	const char *fname = BASEDIR "\\torture_file.txt";
+	NTSTATUS status;
+	int fnum1 = -1;
+	int fnum2 = -1;
+	bool ret = true;
+	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	int normal_delay = 2000000;
+	double sec = ((double)used_delay) / ((double)normal_delay);
+	int msec = 1000 * sec;
+	TALLOC_CTX *mem_ctx = talloc_init("test_delayed_write_update8");
+
+        if (!mem_ctx) return false;
+
+	torture_comment(tctx, "\nRunning test directory write update\n");
+
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
+
+	/* Open a handle on the directory - and leave it open. */
+	ZERO_STRUCT(open_parms);
+        open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
+        open_parms.ntcreatex.in.flags = 0;
+        open_parms.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ;
+        open_parms.ntcreatex.in.file_attr = 0;
+        open_parms.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE|
+                                        NTCREATEX_SHARE_ACCESS_READ|
+                                        NTCREATEX_SHARE_ACCESS_WRITE;
+        open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+        open_parms.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+        open_parms.ntcreatex.in.fname = BASEDIR;
+
+        status = smb_raw_open(cli->tree, mem_ctx, &open_parms);
+        talloc_free(mem_ctx);
+
+        if (!NT_STATUS_IS_OK(status)) {
+                torture_result(tctx, TORTURE_FAIL,
+                        "failed to open directory handle");
+                ret = false;
+		goto done;
+        }
+
+        fnum1 = open_parms.ntcreatex.out.file.fnum;
+
+        /* Store the returned write time. */
+	ZERO_STRUCT(dir_info1);
+	dir_info1.basic_info.out.write_time = open_parms.ntcreatex.out.write_time;
+
+	torture_comment(tctx, "Initial write time %s\n",
+	       nt_time_string(tctx, dir_info1.basic_info.out.write_time));
+
+	/* sleep */
+	smb_msleep(3 * msec);
+
+	/* Now create a file within the directory. */
+	fnum2 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum2 == -1) {
+		torture_result(tctx, TORTURE_FAIL, "Failed to open %s", fname);
+                ret = false;
+		goto done;
+	}
+	smbcli_close(cli->tree, fnum2);
+
+	/* Read the directory write time again. */
+	ZERO_STRUCT(dir_info2);
+	dir_info2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	dir_info2.basic_info.in.file.fnum = fnum1;
+
+	status = smb_raw_fileinfo(cli->tree, tctx, &dir_info2);
+
+	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
+
+	/* Ensure it's been incremented. */
+	COMPARE_WRITE_TIME_GREATER(dir_info2, dir_info1);
+
+	torture_comment(tctx, "Updated write time %s\n",
+	       nt_time_string(tctx, dir_info2.basic_info.out.write_time));
+
+ done:
+
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+/*
    testing of delayed update of write_time
 */
 struct torture_suite *torture_delay_write(void)
@@ -3082,6 +3176,7 @@ struct torture_suite *torture_delay_write(void)
 	torture_suite_add_2smb_test(suite, "delayed update of write time 6", test_delayed_write_update6);
 	torture_suite_add_1smb_test(suite, "timestamp resolution test", test_delayed_write_update7);
 	torture_suite_add_1smb_test(suite, "timestamp resolution test", test_delayed_write_update7);
+	torture_suite_add_1smb_test(suite, "directory timestamp update test", test_directory_update8);
 
 	return suite;
 }
