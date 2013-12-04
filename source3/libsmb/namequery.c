@@ -2976,6 +2976,7 @@ bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 					       &count,
 					       lp_name_resolve_order());
 		if (!NT_STATUS_IS_OK(status)) {
+			SAFE_FREE(ip_list);
 			return false;
 		}
 	}
