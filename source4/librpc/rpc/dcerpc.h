@@ -36,12 +36,14 @@ struct tevent_context;
 struct tevent_req;
 struct dcerpc_binding_handle;
 struct tstream_context;
+struct ndr_interface_table;
 
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.
 */
 struct dcecli_connection;
 struct gensec_settings;
+struct cli_credentials;
 struct dcecli_security {
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
@@ -136,17 +138,6 @@ struct dcerpc_pipe {
 
 /* default timeout for all rpc requests, in seconds */
 #define DCERPC_REQUEST_TIMEOUT 60
-
-
-struct dcerpc_pipe_connect {
-	struct dcerpc_pipe *pipe;
-	struct dcerpc_binding *binding;
-	const char *pipe_name;
-	const struct ndr_interface_table *interface;
-	struct cli_credentials *creds;
-	struct resolve_context *resolve_ctx;
-};
-
 
 struct epm_tower;
 struct epm_floor;

@@ -36,6 +36,14 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
+struct dcerpc_pipe_connect {
+	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding *binding;
+	const char *pipe_name;
+	const struct ndr_interface_table *interface;
+	struct cli_credentials *creds;
+	struct resolve_context *resolve_ctx;
+};
 
 struct pipe_np_smb_state {
 	struct smb_composite_connect conn;
