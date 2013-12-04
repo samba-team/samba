@@ -603,6 +603,9 @@ static bool test_stream_delete(struct torture_context *tctx,
 		goto done;
 	}
 
+	ZERO_STRUCT(h);
+	ZERO_STRUCT(h1);
+
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
 
 	/* clean slate .. */
@@ -696,6 +699,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_DELETE_PENDING);
 
 	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
 
 	/*
 	 * After closing the stream the file is really gone.
@@ -707,7 +711,9 @@ static bool test_stream_delete(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 done:
-	smb2_util_close(tree, h1);
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
 	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, DNAME);
 	talloc_free(mem_ctx);
