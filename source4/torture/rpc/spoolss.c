@@ -3109,6 +3109,7 @@ static bool test_GetJob_args(struct torture_context *tctx,
 	return true;
 }
 
+#if 0
 static bool test_GetJob(struct torture_context *tctx,
 			struct dcerpc_binding_handle *b,
 			struct policy_handle *handle,
@@ -3125,6 +3126,7 @@ static bool test_GetJob(struct torture_context *tctx,
 
 	return true;
 }
+#endif
 
 static bool test_SetJob(struct torture_context *tctx,
 			struct dcerpc_binding_handle *b,
@@ -6933,7 +6935,7 @@ static bool test_EnumPrinters_servername(struct torture_context *tctx,
 	return true;
 }
 
-
+#if 0
 static bool test_GetPrinterDriver(struct torture_context *tctx,
 				  struct dcerpc_binding_handle *b,
 				  struct policy_handle *handle,
@@ -6968,6 +6970,7 @@ static bool test_GetPrinterDriver(struct torture_context *tctx,
 
 	return true;
 }
+#endif
 
 static bool test_GetPrinterDriver2_level(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
@@ -7668,6 +7671,7 @@ static bool compose_local_driver_directory(struct torture_context *tctx,
 	return true;
 }
 
+#if 0
 static struct spoolss_DeviceMode *torture_devicemode(TALLOC_CTX *mem_ctx,
 						     const char *devicename)
 {
@@ -7708,6 +7712,7 @@ static struct spoolss_DeviceMode *torture_devicemode(TALLOC_CTX *mem_ctx,
 
 	return r;
 }
+#endif
 
 static bool test_architecture_buffer(struct torture_context *tctx,
 				     void *private_data)
@@ -8039,6 +8044,7 @@ static bool torture_rpc_spoolss_printerexwkn_setup(struct torture_context *tctx,
 	return torture_rpc_spoolss_printer_setup_common(tctx, t);
 }
 
+#if 0
 static bool torture_rpc_spoolss_printerdm_setup(struct torture_context *tctx, void **data)
 {
 	struct torture_printer_context *t;
@@ -8052,6 +8058,7 @@ static bool torture_rpc_spoolss_printerdm_setup(struct torture_context *tctx, vo
 
 	return torture_rpc_spoolss_printer_setup_common(tctx, t);
 }
+#endif
 
 static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *tctx, struct torture_printer_context *t)
 {
