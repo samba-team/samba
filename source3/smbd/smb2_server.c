@@ -928,7 +928,7 @@ DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size)
 		}
 	}
 
-	return data_blob_talloc(req->out.vector, NULL, size);
+	return data_blob_talloc(req, NULL, size);
 }
 
 static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
@@ -2348,7 +2348,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		tf = talloc_zero_array(req->out.vector, uint8_t,
+		tf = talloc_zero_array(req, uint8_t,
 				       SMB2_TF_HDR_SIZE);
 		if (tf == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -2582,7 +2582,7 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 			 */
 			uint8_t *pad;
 
-			pad = talloc_zero_array(req->out.vector,
+			pad = talloc_zero_array(req,
 						uint8_t, pad_size);
 			if (pad == NULL) {
 				return smbd_smb2_request_error(req,
@@ -2605,7 +2605,7 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 			old_dyn = SMBD_SMB2_OUT_DYN_PTR(req);
 
 			new_size = old_size + pad_size;
-			new_dyn = talloc_zero_array(req->out.vector,
+			new_dyn = talloc_zero_array(req,
 					       uint8_t, new_size);
 			if (new_dyn == NULL) {
 				return smbd_smb2_request_error(req,
