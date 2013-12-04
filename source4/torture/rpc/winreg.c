@@ -2577,7 +2577,10 @@ static bool test_volatile_keys(struct torture_context *tctx,
 			       int hkey)
 {
 	struct policy_handle new_handle, hive_handle;
-	enum winreg_CreateAction action_taken;
+	enum winreg_CreateAction action_taken = REG_ACTION_NONE;
+
+	ZERO_STRUCT(new_handle);
+	ZERO_STRUCT(hive_handle);
 
 	torture_comment(tctx, "Testing VOLATILE key\n");
 
