@@ -81,9 +81,6 @@ struct dcecli_connection {
 		/* send a request to the server */
 		NTSTATUS (*send_request)(struct dcecli_connection *, DATA_BLOB *, bool trigger_read);
 
-		/* send a read request to the server */
-		NTSTATUS (*send_read)(struct dcecli_connection *);
-
 		/* a callback to the dcerpc code when a full fragment
 		   has been received */
 		void (*recv_data)(struct dcecli_connection *, DATA_BLOB *, NTSTATUS status);

@@ -1487,7 +1487,7 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 
 	if (!(pkt->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 		data_blob_free(raw_packet);
-		c->transport.send_read(c);
+		dcerpc_send_read(c);
 		return;
 	}
 
@@ -1695,7 +1695,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 		}		
 
 		if (last_frag && !do_trans) {
-			req->status = p->conn->transport.send_read(p->conn);
+			req->status = dcerpc_send_read(p->conn);
 			if (!NT_STATUS_IS_OK(req->status)) {
 				req->state = RPC_REQUEST_DONE;
 				DLIST_REMOVE(p->conn->pending, req);
@@ -2324,4 +2324,90 @@ static void dcerpc_shutdown_pipe_done(struct tevent_req *subreq)
 	TALLOC_FREE(state);
 
 	dcerpc_transport_dead(c, status);
+}
+
+
+
+struct dcerpc_send_read_state {
+	struct dcecli_connection *p;
+};
+
+static int dcerpc_send_read_state_destructor(struct dcerpc_send_read_state *state)
+{
+	struct dcecli_connection *p = state->p;
+
+	p->transport.read_subreq = NULL;
+
+	return 0;
+}
+
+static void dcerpc_send_read_done(struct tevent_req *subreq);
+
+NTSTATUS dcerpc_send_read(struct dcecli_connection *p)
+{
+	struct dcerpc_send_read_state *state;
+
+	if (p->transport.read_subreq != NULL) {
+		p->transport.pending_reads++;
+		return NT_STATUS_OK;
+	}
+
+	state = talloc_zero(p, struct dcerpc_send_read_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->p = p;
+
+	talloc_set_destructor(state, dcerpc_send_read_state_destructor);
+
+	p->transport.read_subreq = dcerpc_read_ncacn_packet_send(state,
+							  p->event_ctx,
+							  p->transport.stream);
+	if (p->transport.read_subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(p->transport.read_subreq, dcerpc_send_read_done, state);
+
+	return NT_STATUS_OK;
+}
+
+static void dcerpc_send_read_done(struct tevent_req *subreq)
+{
+	struct dcerpc_send_read_state *state =
+		tevent_req_callback_data(subreq,
+					 struct dcerpc_send_read_state);
+	struct dcecli_connection *p = state->p;
+	NTSTATUS status;
+	struct ncacn_packet *pkt;
+	DATA_BLOB blob;
+
+	status = dcerpc_read_ncacn_packet_recv(subreq, state,
+					       &pkt, &blob);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(state);
+		dcerpc_transport_dead(p, status);
+		return;
+	}
+
+	/*
+	 * here we steal into thet connection context,
+	 * but p->transport.recv_data() will steal or free it again
+	 */
+	talloc_steal(p, blob.data);
+	TALLOC_FREE(state);
+
+	if (p->transport.pending_reads > 0) {
+		p->transport.pending_reads--;
+
+		status = dcerpc_send_read(p);
+		if (!NT_STATUS_IS_OK(status)) {
+			dcerpc_transport_dead(p, status);
+			return;
+		}
+	}
+
+	if (p->transport.recv_data) {
+		p->transport.recv_data(p, &blob, NT_STATUS_OK);
+	}
 }

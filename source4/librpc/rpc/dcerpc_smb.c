@@ -49,95 +49,10 @@ struct smb_private {
 
 /*
   Tell the dcerpc layer that the transport is dead.
-  This function is declared here because it is going to be private.
+  The following functions are declared here because they are going to be private.
 */
 void dcerpc_transport_dead(struct dcecli_connection *c, NTSTATUS status);
-
-struct smb_send_read_state {
-	struct dcecli_connection *p;
-};
-
-static int smb_send_read_state_destructor(struct smb_send_read_state *state)
-{
-	struct dcecli_connection *p = state->p;
-
-	p->transport.read_subreq = NULL;
-
-	return 0;
-}
-
-static void smb_send_read_done(struct tevent_req *subreq);
-
-static NTSTATUS smb_send_read(struct dcecli_connection *p)
-{
-	struct smb_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct smb_private);
-	struct smb_send_read_state *state;
-
-	if (p->transport.read_subreq != NULL) {
-		p->transport.pending_reads++;
-		return NT_STATUS_OK;
-	}
-
-	state = talloc_zero(sock, struct smb_send_read_state);
-	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	state->p = p;
-
-	talloc_set_destructor(state, smb_send_read_state_destructor);
-
-	p->transport.read_subreq = dcerpc_read_ncacn_packet_send(state,
-							  p->event_ctx,
-							  p->transport.stream);
-	if (p->transport.read_subreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tevent_req_set_callback(p->transport.read_subreq, smb_send_read_done, state);
-
-	return NT_STATUS_OK;
-}
-
-static void smb_send_read_done(struct tevent_req *subreq)
-{
-	struct smb_send_read_state *state =
-		tevent_req_callback_data(subreq,
-					 struct smb_send_read_state);
-	struct dcecli_connection *p = state->p;
-	NTSTATUS status;
-	struct ncacn_packet *pkt;
-	DATA_BLOB blob;
-
-	status = dcerpc_read_ncacn_packet_recv(subreq, state,
-					       &pkt, &blob);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(state);
-		dcerpc_transport_dead(p, status);
-		return;
-	}
-
-	/*
-	 * here we steal into thet connection context,
-	 * but p->transport.recv_data() will steal or free it again
-	 */
-	talloc_steal(p, blob.data);
-	TALLOC_FREE(state);
-
-	if (p->transport.pending_reads > 0) {
-		p->transport.pending_reads--;
-
-		status = smb_send_read(p);
-		if (!NT_STATUS_IS_OK(status)) {
-			dcerpc_transport_dead(p, status);
-			return;
-		}
-	}
-
-	if (p->transport.recv_data) {
-		p->transport.recv_data(p, &blob, NT_STATUS_OK);
-	}
-}
+NTSTATUS dcerpc_send_read(struct dcecli_connection *p);
 
 /*
    send an initial pdu in a multi-pdu sequence
@@ -221,7 +136,7 @@ static NTSTATUS smb_send_request(struct dcecli_connection *p, DATA_BLOB *data,
 	tevent_req_set_callback(subreq, smb_send_request_done, state);
 
 	if (trigger_read) {
-		smb_send_read(p);
+		dcerpc_send_read(p);
 	}
 
 	return NT_STATUS_OK;
@@ -258,7 +173,7 @@ static void smb_send_request_wait_done(struct tevent_req *subreq)
 	/* we free subreq after tstream_smbXcli_np_use_trans */
 	TALLOC_FREE(subreq);
 
-	smb_send_read(p);
+	dcerpc_send_read(p);
 }
 
 static void smb_send_request_done(struct tevent_req *subreq)
@@ -400,7 +315,6 @@ static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq)
 	c->transport.private_data    = NULL;
 
 	c->transport.send_request    = smb_send_request;
-	c->transport.send_read       = smb_send_read;
 	c->transport.recv_data       = NULL;
 
 	/*
