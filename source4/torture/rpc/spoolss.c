@@ -681,7 +681,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 
 		for (j=0;j<ctx->driver_count[level - 1];j++) {
 			union spoolss_DriverInfo *cur = &ctx->drivers[level - 1][j];
-			union spoolss_DriverInfo *ref = &ctx->drivers[8][j];
+			union spoolss_DriverInfo *ref = &ctx->drivers[7][j];
 
 			switch (level) {
 			case 1:
