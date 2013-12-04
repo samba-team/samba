@@ -106,7 +106,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
 
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x18);
+	outbody = smbd_smb2_generate_outbody(req, 0x18);
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
