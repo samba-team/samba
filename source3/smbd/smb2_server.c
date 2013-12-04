@@ -3035,9 +3035,13 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 				size += e->vector[i].iov_len;
 			}
 
-			buf = talloc_array(e->mem_ctx, uint8_t, size);
-			if (buf == NULL) {
-				return NT_STATUS_NO_MEMORY;
+			if (size <= e->sendfile_header->length) {
+				buf = e->sendfile_header->data;
+			} else {
+				buf = talloc_array(e->mem_ctx, uint8_t, size);
+				if (buf == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
 			}
 
 			size = 0;
@@ -3054,6 +3058,10 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 
 			sconn->smb2.send_queue_len--;
 			DLIST_REMOVE(sconn->smb2.send_queue, e);
+			/*
+			 * This triggers the sendfile path via
+			 * the destructor.
+			 */
 			talloc_free(e->mem_ctx);
 			continue;
 		}

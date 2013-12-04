@@ -167,9 +167,15 @@ struct smbd_smb2_read_state {
 	uint64_t in_offset;
 	uint32_t in_minimum;
 	DATA_BLOB out_headers;
+	uint8_t _out_hdr_buf[NBT_HDR_SIZE + SMB2_HDR_BODY + 0x10];
 	DATA_BLOB out_data;
 	uint32_t out_remaining;
 };
+
+static int smb2_smb2_read_state_deny_destructor(struct smbd_smb2_read_state *state)
+{
+	return -1;
+}
 
 /* struct smbd_smb2_read_state destructor. Send the SMB2_READ data. */
 static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
@@ -258,7 +264,6 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 					struct smbd_smb2_read_state *state)
 {
-	struct smbd_smb2_read_state *state_copy = NULL;
 	files_struct *fsp = state->fsp;
 
 	/*
@@ -293,16 +298,8 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	state->out_data.length = state->in_length;
 	state->out_remaining = 0;
 
-	/* Make a copy of state attached to the smb2req. Attach
-	   the destructor here as this will trigger the sendfile
-	   call when the request is destroyed. */
-	state_copy = talloc(smb2req, struct smbd_smb2_read_state);
-	if (!state_copy) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*state_copy = *state;
-	talloc_set_destructor(state_copy, smb2_sendfile_send_data);
-	state->smb2req->queue_entry.sendfile_header = &state_copy->out_headers;
+	state->out_headers = data_blob_const(state->_out_hdr_buf,
+					     sizeof(state->_out_hdr_buf));
 	return NT_STATUS_OK;
 }
 
@@ -582,6 +579,15 @@ static NTSTATUS smbd_smb2_read_recv(struct tevent_req *req,
 	talloc_steal(mem_ctx, out_data->data);
 	*out_remaining = state->out_remaining;
 
-	tevent_req_received(req);
+	if (state->out_headers.length > 0) {
+		talloc_steal(mem_ctx, state);
+		talloc_set_destructor(state, smb2_smb2_read_state_deny_destructor);
+		tevent_req_received(req);
+		state->smb2req->queue_entry.sendfile_header = &state->out_headers;
+		talloc_set_destructor(state, smb2_sendfile_send_data);
+	} else {
+		tevent_req_received(req);
+	}
+
 	return NT_STATUS_OK;
 }
