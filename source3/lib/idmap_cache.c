@@ -188,6 +188,39 @@ bool idmap_cache_find_sid2gid(const struct dom_sid *sid, gid_t *pgid,
 	return true;
 }
 
+struct idmap_cache_xid2sid_state {
+	struct dom_sid *sid;
+	bool *expired;
+	bool ret;
+};
+
+static void idmap_cache_xid2sid_parser(time_t timeout, DATA_BLOB blob,
+				       void *private_data)
+{
+	struct idmap_cache_xid2sid_state *state =
+		(struct idmap_cache_xid2sid_state *)private_data;
+	char *value;
+
+	ZERO_STRUCTP(state->sid);
+	state->ret = false;
+
+	if ((blob.length == 0) || (blob.data[blob.length-1] != 0)) {
+		/*
+		 * Not a string, can't be a valid mapping
+		 */
+		return;
+	}
+
+	value = (char *)blob.data;
+
+	if (value[0] != '-') {
+		state->ret = string_to_sid(state->sid, value);
+	}
+	if (state->ret) {
+		*state->expired = (timeout <= time(NULL));
+	}
+}
+
 /**
  * Find a uid2sid mapping
  * @param[in] uid		the uid to map
@@ -201,25 +234,16 @@ bool idmap_cache_find_sid2gid(const struct dom_sid *sid, gid_t *pgid,
 bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 {
 	fstring key;
-	char *value;
-	time_t timeout;
-	bool ret = true;
+	struct idmap_cache_xid2sid_state state;
 
 	fstr_sprintf(key, "IDMAP/UID2SID/%d", (int)uid);
 
-	ret = gencache_get(key, talloc_tos(), &value, &timeout);
-	if (!ret) {
-		return false;
-	}
-	ZERO_STRUCTP(sid);
-	if (value[0] != '-') {
-		ret = string_to_sid(sid, value);
-	}
-	TALLOC_FREE(value);
-	if (ret) {
-		*expired = (timeout <= time(NULL));
-	}
-	return ret;
+	state.sid = sid;
+	state.expired = expired;
+	state.ret = false;
+
+	gencache_parse(key, idmap_cache_xid2sid_parser, &state);
+	return state.ret;
 }
 
 /**
@@ -235,25 +259,16 @@ bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 {
 	fstring key;
-	char *value;
-	time_t timeout;
-	bool ret = true;
+	struct idmap_cache_xid2sid_state state;
 
 	fstr_sprintf(key, "IDMAP/GID2SID/%d", (int)gid);
 
-	ret = gencache_get(key, talloc_tos(), &value, &timeout);
-	if (!ret) {
-		return false;
-	}
-	ZERO_STRUCTP(sid);
-	if (value[0] != '-') {
-		ret = string_to_sid(sid, value);
-	}
-	TALLOC_FREE(value);
-	if (ret) {
-		*expired = (timeout <= time(NULL));
-	}
-	return ret;
+	state.sid = sid;
+	state.expired = expired;
+	state.ret = false;
+
+	gencache_parse(key, idmap_cache_xid2sid_parser, &state);
+	return state.ret;
 }
 
 /**
