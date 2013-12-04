@@ -893,7 +893,7 @@ void *_talloc_pooled_object(const void *ctx,
  *
  * @param[in]  ctx      The chunk to be freed.
  */
-#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
+#define TALLOC_FREE(ctx) do { if (ctx != NULL) { talloc_free(ctx); ctx=NULL; } } while(0)
 
 /* @} ******************************************************************/
 
