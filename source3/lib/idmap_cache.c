@@ -200,17 +200,14 @@ bool idmap_cache_find_sid2gid(const struct dom_sid *sid, gid_t *pgid,
 
 bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 {
-	char *key;
+	fstring key;
 	char *value;
 	time_t timeout;
 	bool ret = true;
 
-	key = talloc_asprintf(talloc_tos(), "IDMAP/UID2SID/%d", (int)uid);
-	if (key == NULL) {
-		return false;
-	}
+	fstr_sprintf(key, "IDMAP/UID2SID/%d", (int)uid);
+
 	ret = gencache_get(key, talloc_tos(), &value, &timeout);
-	TALLOC_FREE(key);
 	if (!ret) {
 		return false;
 	}
@@ -237,17 +234,14 @@ bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 
 bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 {
-	char *key;
+	fstring key;
 	char *value;
 	time_t timeout;
 	bool ret = true;
 
-	key = talloc_asprintf(talloc_tos(), "IDMAP/GID2SID/%d", (int)gid);
-	if (key == NULL) {
-		return false;
-	}
+	fstr_sprintf(key, "IDMAP/GID2SID/%d", (int)gid);
+
 	ret = gencache_get(key, talloc_tos(), &value, &timeout);
-	TALLOC_FREE(key);
 	if (!ret) {
 		return false;
 	}
