@@ -1334,6 +1334,15 @@ static krb5_error_code smb_krb5_get_credentials_for_user_opt(krb5_context contex
 #endif /* HAVE_KRB5_GET_CREDS_OPT_SET_IMPERSONATE */
 
 #ifdef HAVE_KRB5_GET_CREDENTIALS_FOR_USER
+
+#if !HAVE_DECL_KRB5_GET_CREDENTIALS_FOR_USER
+krb5_error_code KRB5_CALLCONV
+krb5_get_credentials_for_user(krb5_context context, krb5_flags options,
+                              krb5_ccache ccache, krb5_creds *in_creds,
+                              krb5_data *subject_cert,
+                              krb5_creds **out_creds);
+#endif /* !HAVE_DECL_KRB5_GET_CREDENTIALS_FOR_USER */
+
 static krb5_error_code smb_krb5_get_credentials_for_user(krb5_context context,
 							 krb5_ccache ccache,
 							 krb5_principal me,
@@ -1343,14 +1352,6 @@ static krb5_error_code smb_krb5_get_credentials_for_user(krb5_context context,
 {
 	krb5_error_code ret;
 	krb5_creds in_creds;
-
-#if !HAVE_DECL_KRB5_GET_CREDENTIALS_FOR_USER
-krb5_error_code KRB5_CALLCONV
-krb5_get_credentials_for_user(krb5_context context, krb5_flags options,
-                              krb5_ccache ccache, krb5_creds *in_creds,
-                              krb5_data *subject_cert,
-                              krb5_creds **out_creds);
-#endif /* !HAVE_DECL_KRB5_GET_CREDENTIALS_FOR_USER */
 
 	ZERO_STRUCT(in_creds);
 
