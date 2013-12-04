@@ -135,7 +135,7 @@ static void smbd_smb2_request_tcon_done(struct tevent_req *subreq)
 
 	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x10);
+	outbody = smbd_smb2_generate_outbody(req, 0x10);
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
@@ -438,7 +438,7 @@ NTSTATUS smbd_smb2_request_process_tdis(struct smbd_smb2_request *req)
 
 	TALLOC_FREE(req->tcon);
 
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x04);
+	outbody = smbd_smb2_generate_outbody(req, 0x04);
 	if (outbody.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
