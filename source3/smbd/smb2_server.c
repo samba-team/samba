@@ -922,6 +922,12 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 
 DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size)
 {
+	if (req->current_idx <= 1) {
+		if (size <= sizeof(req->out._body)) {
+			return data_blob_const(req->out._body, size);
+		}
+	}
+
 	return data_blob_talloc(req->out.vector, NULL, size);
 }
 
