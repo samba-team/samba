@@ -133,8 +133,9 @@ static void tevent_queue_immediate_trigger(struct tevent_context *ev,
 					   struct tevent_immediate *im,
 					   void *private_data)
 {
-	struct tevent_queue *q = talloc_get_type(private_data,
-				  struct tevent_queue);
+	struct tevent_queue *q =
+		talloc_get_type_abort(private_data,
+		struct tevent_queue);
 
 	if (!q->running) {
 		return;
