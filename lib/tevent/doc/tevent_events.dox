@@ -45,7 +45,7 @@ struct state {
 static void callback(struct tevent_context *ev, struct tevent_timer *tim,
                      struct timeval current_time, void *private_data)
 {
-    struct state *data = talloc_get_type(private_data, struct state);
+    struct state *data = talloc_get_type_abort(private_data, struct state);
     struct tevent_timer *time_event;
     struct timeval schedule;
 
@@ -153,7 +153,7 @@ struct info_struct {
 static void foo(struct tevent_context *ev, struct tevent_immediate *im,
                 void *private_data)
 {
-    struct info_struct *data = talloc_get_type(private_data, struct info_struct);
+    struct info_struct *data = talloc_get_type_abort(private_data, struct info_struct);
     printf("Data value: %d\n", data->counter);
 }
 
