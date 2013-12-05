@@ -3,7 +3,7 @@
 
    test suite for File Server Remote VSS Protocol operations
 
-   Copyright (C) David Disseldorp 2012
+   Copyright (C) David Disseldorp 2012-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -138,7 +138,8 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	struct fss_GetSupportedVersion r_version_get;
 	struct fss_SetContext r_context_set;
 	struct fss_StartShadowCopySet r_scset_start;
-	struct fss_AddToShadowCopySet r_scset_add;
+	struct fss_AddToShadowCopySet r_scset_add1;
+	struct fss_AddToShadowCopySet r_scset_add2;
 	struct fss_PrepareShadowCopySet r_scset_prep;
 	struct fss_CommitShadowCopySet r_scset_commit;
 	struct fss_ExposeShadowCopySet r_scset_expose;
@@ -189,19 +190,31 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	torture_comment(tctx, "%s: shadow-copy set created\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId));
 
-	ZERO_STRUCT(r_scset_add);
-	r_scset_add.in.ClientShadowCopyId = GUID_random();
-	r_scset_add.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
-	r_scset_add.in.ShareName = share;
-	status = dcerpc_fss_AddToShadowCopySet_r(b, tmp_ctx, &r_scset_add);
+	ZERO_STRUCT(r_scset_add1);
+	r_scset_add1.in.ClientShadowCopyId = GUID_random();
+	r_scset_add1.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
+	r_scset_add1.in.ShareName = share;
+	status = dcerpc_fss_AddToShadowCopySet_r(b, tmp_ctx, &r_scset_add1);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "AddToShadowCopySet failed");
-	torture_assert_int_equal(tctx, r_scset_add.out.result, 0,
+	torture_assert_int_equal(tctx, r_scset_add1.out.result, 0,
 				 "failed AddToShadowCopySet response");
 	torture_comment(tctx, "%s(%s): %s added to shadow-copy set\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
-			GUID_string(tmp_ctx, r_scset_add.out.pShadowCopyId),
-			r_scset_add.in.ShareName);
+			GUID_string(tmp_ctx, r_scset_add1.out.pShadowCopyId),
+			r_scset_add1.in.ShareName);
+
+	/* attempts to add the same share twice should fail */
+	ZERO_STRUCT(r_scset_add2);
+	r_scset_add2.in.ClientShadowCopyId = GUID_random();
+	r_scset_add2.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
+	r_scset_add2.in.ShareName = share;
+	status = dcerpc_fss_AddToShadowCopySet_r(b, tmp_ctx, &r_scset_add2);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "AddToShadowCopySet failed");
+	torture_assert_int_equal(tctx, r_scset_add2.out.result,
+				 FSRVP_E_OBJECT_ALREADY_EXISTS,
+				 "failed AddToShadowCopySet response");
 
 	start_time = time_mono(NULL);
 	ZERO_STRUCT(r_scset_prep);
@@ -244,9 +257,9 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 			(unsigned long long)(time_mono(NULL) - start_time));
 
 	ZERO_STRUCT(r_sharemap_get);
-	r_sharemap_get.in.ShadowCopyId = *r_scset_add.out.pShadowCopyId;
+	r_sharemap_get.in.ShadowCopyId = *r_scset_add1.out.pShadowCopyId;
 	r_sharemap_get.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
-	r_sharemap_get.in.ShareName = r_scset_add.in.ShareName;
+	r_sharemap_get.in.ShareName = r_scset_add1.in.ShareName;
 	r_sharemap_get.in.Level = 1;
 	status = dcerpc_fss_GetShareMapping_r(b, tmp_ctx, &r_sharemap_get);
 	torture_assert_ntstatus_ok(tctx, status, "GetShareMapping failed");
