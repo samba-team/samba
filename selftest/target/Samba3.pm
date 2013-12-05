@@ -1004,6 +1004,10 @@ sub provision($$$$$$)
 	directory mask = 0777
 	force directory mode = 0
 	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so
+[aio]
+	copy = tmp
+	aio read size = 1
+	aio write size = 1
 
 [print\$]
 	copy = tmp
