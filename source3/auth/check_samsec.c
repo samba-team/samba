@@ -458,15 +458,21 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 		goto done;
 	}
 
-	if ((acct_ctrl & ACB_NORMAL) &&
-	    (pdb_get_bad_password_count(sampass) > 0)){
-		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
-		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
-		updated_badpw = True;
+	/*
+	 * We must only reset the bad password count if the login was
+	 * successful, including checking account policies
+	 */
+	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		goto done;
 	}
 
-	if (updated_badpw){
+	if ((acct_ctrl & ACB_NORMAL) &&
+	    (pdb_get_bad_password_count(sampass) > 0)){
 		NTSTATUS status;
+
+		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
+		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
 
 		become_root();
 		status = pdb_update_sam_account(sampass);
@@ -476,12 +482,6 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 			DEBUG(1, ("Failed to modify entry: %s\n",
 				  nt_errstr(status)));
 		}
-	}
-
-	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		goto done;
 	}
 
 	become_root();
