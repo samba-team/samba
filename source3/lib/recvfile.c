@@ -51,7 +51,7 @@ static ssize_t default_sys_recvfile(int fromfd,
 	size_t total = 0;
 	size_t bufsize = MIN(TRANSFER_BUF_SIZE,count);
 	size_t total_written = 0;
-	char *buffer = NULL;
+	char buffer[bufsize];
 
 	DEBUG(10,("default_sys_recvfile: from = %d, to = %d, "
 		"offset=%.0f, count = %lu\n",
@@ -70,11 +70,6 @@ static ssize_t default_sys_recvfile(int fromfd,
 		}
 	}
 
-	buffer = SMB_MALLOC_ARRAY(char, bufsize);
-	if (buffer == NULL) {
-		return -1;
-	}
-
 	while (total < count) {
 		size_t num_written = 0;
 		ssize_t read_ret;
@@ -84,7 +79,6 @@ static ssize_t default_sys_recvfile(int fromfd,
 		read_ret = sys_read(fromfd, buffer, toread);
 		if (read_ret <= 0) {
 			/* EOF or socket error. */
-			free(buffer);
 			return -1;
 		}
 
@@ -119,7 +113,6 @@ static ssize_t default_sys_recvfile(int fromfd,
 		total += read_ret;
 	}
 
-	free(buffer);
 	if (saved_errno) {
 		/* Return the correct write error. */
 		errno = saved_errno;
@@ -247,21 +240,15 @@ ssize_t drain_socket(int sockfd, size_t count)
 {
 	size_t total = 0;
 	size_t bufsize = MIN(TRANSFER_BUF_SIZE,count);
-	char *buffer = NULL;
+	char buffer[bufsize];
 	int old_flags = 0;
 
 	if (count == 0) {
 		return 0;
 	}
 
-	buffer = SMB_MALLOC_ARRAY(char, bufsize);
-	if (buffer == NULL) {
-		return -1;
-	}
-
 	old_flags = fcntl(sockfd, F_GETFL, 0);
 	if (set_blocking(sockfd, true) == -1) {
-		free(buffer);
 		return -1;
 	}
 
@@ -281,7 +268,6 @@ ssize_t drain_socket(int sockfd, size_t count)
 
   out:
 
-	free(buffer);
 	if (fcntl(sockfd, F_SETFL, old_flags) == -1) {
 		return -1;
 	}
