@@ -3770,7 +3770,13 @@ static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 	uint32_t badpwdcount, tmp;
 	uint32_t password_history_length = 12;
 	uint32_t lockout_threshold = 15;
+	uint32_t lockout_seconds = 5;
+	uint64_t delta_time_factor = 10 * 1000 * 1000;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		lockout_seconds = 60;
+	}
 
 	torture_comment(tctx, "\nTesting bad pwd count with: %s\n", comment);
 
@@ -3791,6 +3797,10 @@ static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 
 	info.info12 = *info12;
 	info.info12.lockout_threshold = lockout_threshold;
+
+	/* set lockout duration of 5 seconds */
+	info.info12.lockout_duration = ~(lockout_seconds * delta_time_factor);
+	info.info12.lockout_window = ~(lockout_seconds * delta_time_factor);
 
 	torture_assert(tctx,
 		       test_SetDomainInfo(b, tctx, domain_handle,
