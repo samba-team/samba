@@ -167,8 +167,9 @@ static void tevent_req_trigger(struct tevent_context *ev,
 			       struct tevent_immediate *im,
 			       void *private_data)
 {
-	struct tevent_req *req = talloc_get_type(private_data,
-				 struct tevent_req);
+	struct tevent_req *req =
+		talloc_get_type_abort(private_data,
+		struct tevent_req);
 
 	tevent_req_finish(req, req->internal.state,
 			  req->internal.finish_location);
@@ -242,8 +243,9 @@ static void tevent_req_timedout(struct tevent_context *ev,
 			       struct timeval now,
 			       void *private_data)
 {
-	struct tevent_req *req = talloc_get_type(private_data,
-				 struct tevent_req);
+	struct tevent_req *req =
+		talloc_get_type_abort(private_data,
+		struct tevent_req);
 
 	TALLOC_FREE(req->internal.timer);
 
