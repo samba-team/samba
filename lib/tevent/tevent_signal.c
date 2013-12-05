@@ -170,9 +170,9 @@ static int tevent_common_signal_list_destructor(struct tevent_common_signal_list
 */
 static int tevent_signal_destructor(struct tevent_signal *se)
 {
-	struct tevent_common_signal_list *sl;
-	sl = talloc_get_type(se->additional_data,
-			     struct tevent_common_signal_list);
+	struct tevent_common_signal_list *sl =
+		talloc_get_type_abort(se->additional_data,
+		struct tevent_common_signal_list);
 
 	if (se->event_ctx) {
 		struct tevent_context *ev = se->event_ctx;
@@ -480,9 +480,9 @@ int tevent_common_check_signal(struct tevent_context *ev)
 
 void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se)
 {
-	struct tevent_common_signal_list *sl;
-	sl = talloc_get_type(se->additional_data,
-			     struct tevent_common_signal_list);
+	struct tevent_common_signal_list *sl =
+		talloc_get_type_abort(se->additional_data,
+		struct tevent_common_signal_list);
 
 	tevent_common_signal_list_destructor(sl);
 
