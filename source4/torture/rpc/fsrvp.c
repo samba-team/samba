@@ -415,7 +415,7 @@ static bool test_fsrvp_bad_id(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "DeleteShareMapping failed");
 	torture_assert_int_equal(tctx, r_sharemap_del.out.result,
-				 FSRVP_E_BAD_ID,
+				 FSRVP_E_OBJECT_NOT_FOUND,
 				 "incorrect DeleteShareMapping response");
 
 	r_sharemap_del.in.ShadowCopySetId = sc_map->ShadowCopySetId;
@@ -424,7 +424,7 @@ static bool test_fsrvp_bad_id(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "DeleteShareMapping failed");
 	torture_assert_int_equal(tctx, r_sharemap_del.out.result,
-				 FSRVP_E_BAD_ID,
+				 E_INVALIDARG,
 				 "incorrect DeleteShareMapping response");
 
 	torture_assert(tctx, test_fsrvp_sc_delete(tctx, p, sc_map), "sc del");
@@ -625,7 +625,7 @@ static bool test_fsrvp_enum_created(struct torture_context *tctx,
 	return true;
 }
 
-static bool fsrvp_rpc_setup (struct torture_context *tctx, void **data)
+static bool fsrvp_rpc_setup(struct torture_context *tctx, void **data)
 {
 	NTSTATUS status;
 	struct torture_rpc_tcase *tcase = talloc_get_type(
