@@ -120,17 +120,10 @@ _PRIVATE_ bool tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 				bool (*panic_fallback)(struct tevent_context *ev,
 						       bool replay))
 {
-	struct epoll_event_context *epoll_ev;
+	struct epoll_event_context *epoll_ev =
+		talloc_get_type_abort(ev->additional_data,
+		struct epoll_event_context);
 
-	if (ev->additional_data == NULL) {
-		return false;
-	}
-
-	epoll_ev = talloc_get_type(ev->additional_data,
-				struct epoll_event_context);
-	if (epoll_ev == NULL) {
-		return false;
-	}
 	epoll_ev->panic_fallback = panic_fallback;
 	return true;
 }
@@ -843,8 +836,9 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 					    const char *handler_name,
 					    const char *location)
 {
-	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
-							   struct epoll_event_context);
+	struct epoll_event_context *epoll_ev =
+		talloc_get_type_abort(ev->additional_data,
+		struct epoll_event_context);
 	struct tevent_fd *fde;
 	bool panic_triggered = false;
 
@@ -879,7 +873,8 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 	if (fde->flags == flags) return;
 
 	ev = fde->event_ctx;
-	epoll_ev = talloc_get_type(ev->additional_data, struct epoll_event_context);
+	epoll_ev = talloc_get_type_abort(ev->additional_data,
+					 struct epoll_event_context);
 
 	fde->flags = flags;
 
@@ -898,8 +893,9 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 */
 static int epoll_event_loop_once(struct tevent_context *ev, const char *location)
 {
-	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
-		 					   struct epoll_event_context);
+	struct epoll_event_context *epoll_ev =
+		talloc_get_type_abort(ev->additional_data,
+		struct epoll_event_context);
 	struct timeval tval;
 	bool panic_triggered = false;
 
