@@ -383,10 +383,13 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 
 		if (!sconn->smb1.sessions.done_sesssetup) {
-			sconn->smb1.sessions.max_send =
-				MIN(sconn->smb1.sessions.max_send,smb_bufsize);
+			if (smb_bufsize < SMB_BUFFER_SIZE_MIN) {
+				reply_force_doserror(req, ERRSRV, ERRerror);
+				return;
+			}
+			sconn->smb1.sessions.max_send = smb_bufsize;
+			sconn->smb1.sessions.done_sesssetup = true;
 		}
-		sconn->smb1.sessions.done_sesssetup = true;
 
 		/* current_user_info is changed on new vuid */
 		reload_services(sconn, conn_snum_used, true);
@@ -1088,10 +1091,14 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	req->vuid = sess_vuid;
 
 	if (!sconn->smb1.sessions.done_sesssetup) {
-		sconn->smb1.sessions.max_send =
-			MIN(sconn->smb1.sessions.max_send,smb_bufsize);
+		if (smb_bufsize < SMB_BUFFER_SIZE_MIN) {
+			reply_force_doserror(req, ERRSRV, ERRerror);
+			END_PROFILE(SMBsesssetupX);
+			return;
+		}
+		sconn->smb1.sessions.max_send = smb_bufsize;
+		sconn->smb1.sessions.done_sesssetup = true;
 	}
-	sconn->smb1.sessions.done_sesssetup = true;
 
 	END_PROFILE(SMBsesssetupX);
 }
