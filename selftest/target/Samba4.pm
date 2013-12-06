@@ -786,6 +786,7 @@ sub provision($$$$$$$$$)
 	server max protocol = SMB2
 	host msdfs = $msdfs
 	lanman auth = yes
+	allow nt4 crypto = yes
 
 	$extra_smbconf_options
 
