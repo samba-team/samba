@@ -688,6 +688,45 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 	return fsp_set_smb_fname(to, from->fsp_name);
 }
 
+/*
+ * This routine improves performance for operations temporarily acting on a
+ * full path. It is equivalent to the much more expensive
+ *
+ * talloc_asprintf(talloc_tos(), "%s/%s", dir, name)
+ *
+ * This actually does make a difference in metadata-heavy workloads (i.e. the
+ * "standard" client.txt nbench run.
+ */
+
+ssize_t full_path_tos(const char *dir, const char *name,
+		      char *tmpbuf, size_t tmpbuf_len,
+		      char **pdst, char **to_free)
+{
+	size_t dirlen, namelen, len;
+	char *dst;
+
+	dirlen = strlen(dir);
+	namelen = strlen(name);
+	len = dirlen + namelen + 1;
+
+	if (len < tmpbuf_len) {
+		dst = tmpbuf;
+		*to_free = NULL;
+	} else {
+		dst = talloc_array(talloc_tos(), char, len+1);
+		if (dst == NULL) {
+			return -1;
+		}
+		*to_free = dst;
+	}
+
+	memcpy(dst, dir, dirlen);
+	dst[dirlen] = '/';
+	memcpy(dst+dirlen+1, name, namelen+1);
+	*pdst = dst;
+	return len;
+}
+
 /**
  * Return a jenkins hash of a pathname on a connection.
  */
@@ -695,23 +734,24 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 NTSTATUS file_name_hash(connection_struct *conn,
 			const char *name, uint32_t *p_name_hash)
 {
-	char *fullpath = NULL;
+	char tmpbuf[1024];
+	char *fullpath, *to_free;
+	size_t len;
 
 	/* Set the hash of the full pathname. */
-	fullpath = talloc_asprintf(talloc_tos(),
-			"%s/%s",
-			conn->connectpath,
-			name);
-	if (!fullpath) {
+
+	len = full_path_tos(conn->connectpath, name, tmpbuf, sizeof(tmpbuf),
+			    &fullpath, &to_free);
+	if (len == -1) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	*p_name_hash = hash(fullpath, talloc_get_size(fullpath), 0);
+	*p_name_hash = hash(fullpath, len+1, 0);
 
 	DEBUG(10,("file_name_hash: %s hash 0x%x\n",
-		fullpath,
+		  fullpath,
 		(unsigned int)*p_name_hash ));
 
-	TALLOC_FREE(fullpath);
+	TALLOC_FREE(to_free);
 	return NT_STATUS_OK;
 }
 
