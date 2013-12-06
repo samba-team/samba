@@ -3396,6 +3396,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	const char *remaddr = NULL;
 	char *rhost;
 	int ret;
+	int tmp;
 
 	conn = talloc_zero(ev_ctx, struct smbXsrv_connection);
 	if (conn == NULL) {
@@ -3692,7 +3693,11 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	sconn->nbt.got_session = false;
 
-	sconn->smb1.negprot.max_recv = MIN(lp_max_xmit(),BUFFER_SIZE);
+	tmp = lp_max_xmit();
+	tmp = MAX(tmp, SMB_BUFFER_SIZE_MIN);
+	tmp = MIN(tmp, SMB_BUFFER_SIZE_MAX);
+
+	sconn->smb1.negprot.max_recv = tmp;
 
 	sconn->smb1.sessions.done_sesssetup = false;
 	sconn->smb1.sessions.max_send = BUFFER_SIZE;
