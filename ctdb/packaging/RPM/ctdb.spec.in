@@ -202,9 +202,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/onnode
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
+%{_mandir}/man1/ctdbd_wrapper.1.gz
 %{_mandir}/man1/onnode.1.gz
 %{_mandir}/man1/ltdbtool.1.gz
 %{_mandir}/man1/ping_pong.1.gz
+%{_mandir}/man5/ctdbd.conf.5.gz
+%{_mandir}/man7/ctdb.7.gz
+%{_mandir}/man7/ctdb-tunables.7.gz
 %{_libdir}/pkgconfig/ctdb.pc
 
 
