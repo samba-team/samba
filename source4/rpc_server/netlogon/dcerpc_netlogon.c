@@ -93,6 +93,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	const char *account_name;
 	uint32_t server_flags = 0;
 	uint32_t negotiate_flags = 0;
+	bool allow_nt4_crypto = lpcfg_allow_nt4_crypto(dce_call->conn->dce_ctx->lp_ctx);
+	bool reject_des_client = !allow_nt4_crypto;
+	bool reject_md5_client = lpcfg_reject_md5_clients(dce_call->conn->dce_ctx->lp_ctx);
 
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
@@ -124,6 +127,23 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		       NETLOGON_NEG_AUTHENTICATED_RPC;
 
 	negotiate_flags = *r->in.negotiate_flags & server_flags;
+
+	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
+		reject_des_client = false;
+	}
+
+	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		reject_des_client = false;
+		reject_md5_client = false;
+	}
+
+	if (reject_des_client || reject_md5_client) {
+		/*
+		 * Here we match Windows 2012 and return no flags.
+		 */
+		*r->out.negotiate_flags = 0;
+		return NT_STATUS_DOWNGRADE_DETECTED;
+	}
 
 	/*
 	 * According to Microsoft (see bugid #6099)
