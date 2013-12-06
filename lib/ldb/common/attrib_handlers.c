@@ -254,7 +254,7 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 	if (n2 == 0 && n1 != 0) {
 		return (int)toupper(*s1);
 	}
-	if (n2 == 0 && n2 == 0) {
+	if (n1 == 0 && n2 == 0) {
 		return 0;
 	}
 	return (int)toupper(*s1) - (int)toupper(*s2);
