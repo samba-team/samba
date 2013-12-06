@@ -22,7 +22,7 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
-#define CLI_BUFFER_SIZE (0xFFFF)
+#define CLI_BUFFER_SIZE SMB_BUFFER_SIZE_MAX
 
 /* default client timeout to 20 seconds on most commands */
 #define CLIENT_TIMEOUT (20 * 1000)
