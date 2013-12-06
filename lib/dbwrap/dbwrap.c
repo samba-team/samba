@@ -220,21 +220,18 @@ static struct db_record *dbwrap_fetch_locked_internal(
 {
 	struct db_record *rec;
 	struct dbwrap_lock_order_state *lock_order;
-	TALLOC_CTX *frame = talloc_stackframe();
 
-	lock_order = dbwrap_check_lock_order(db, frame);
+	lock_order = dbwrap_check_lock_order(db, mem_ctx);
 	if (lock_order == NULL) {
-		TALLOC_FREE(frame);
 		return NULL;
 	}
 	rec = db_fn(db, mem_ctx, key);
 	if (rec == NULL) {
-		TALLOC_FREE(frame);
+		TALLOC_FREE(lock_order);
 		return NULL;
 	}
 	(void)talloc_steal(rec, lock_order);
 	rec->db = db;
-	TALLOC_FREE(frame);
 	return rec;
 }
 
