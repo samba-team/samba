@@ -4316,6 +4316,15 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL
 	},
+	{
+		.label		= "allow nt4 crypto",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bAllowNT4Crypto),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 
 	{N_("TLS options"), P_SEP, P_SEPARATOR},
 

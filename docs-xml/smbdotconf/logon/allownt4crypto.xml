@@ -1,0 +1,26 @@
+<samba:parameter name="allow nt4 crypto"
+                 context="G"
+                 type="boolean"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether the netlogon server (currently
+	only in 'active directory domain controller' mode), will
+	reject clients which does not support NETLOGON_NEG_STRONG_KEYS
+	nor NETLOGON_NEG_SUPPORTS_AES.</para>
+
+	<para>This option was added with Samba 4.2.0. It may lock out clients
+	which worked fine with Samba versions up to 4.1.x. as the effective default
+	was "yes" there, while it is "no" now.</para>
+
+	<para>If you have clients without RequireStrongKey = 1 in the registry,
+	you may need to set "allow nt4 crypto = yes", until you have fixed all clients.
+	</para>
+
+	<para>"allow nt4 crypto = yes" allows weak crypto to be negotiated, maybe via downgrade attacks.</para>
+
+	<para>This option yields precedence to the 'reject md5 clients' option.</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

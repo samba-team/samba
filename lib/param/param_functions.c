@@ -154,6 +154,7 @@ FN_LOCAL_PARM_BOOL(kernel_change_notify, bKernelChangeNotify)
 FN_LOCAL_BOOL(durable_handles, bDurableHandles)
 
 FN_GLOBAL_BOOL(allow_insecure_widelinks, bAllowInsecureWidelinks)
+FN_GLOBAL_BOOL(allow_nt4_crypto, bAllowNT4Crypto)
 FN_GLOBAL_BOOL(allow_trusted_domains, bAllowTrustedDomains)
 FN_GLOBAL_BOOL(async_smb_echo_handler, bAsyncSMBEchoHandler)
 FN_GLOBAL_BOOL(bind_interfaces_only, bBindInterfacesOnly)
