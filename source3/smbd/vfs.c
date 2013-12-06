@@ -828,7 +828,7 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 		LastDir = SMB_STRDUP("");
 	}
 
-	if (strcsequal(path,".")) {
+	if (ISDOT(path)) {
 		return 0;
 	}
 
