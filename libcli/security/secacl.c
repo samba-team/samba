@@ -54,9 +54,12 @@ struct security_acl *make_sec_acl(TALLOC_CTX *ctx,
 	   entries in it.  This is achieved by checking that num_aces is a
 	   positive number. */
 
-	if ((num_aces) &&
-            ((dst->aces = talloc_array(dst, struct security_ace, num_aces))
-             == NULL)) {
+	if (num_aces == 0) {
+		return dst;
+	}
+
+	dst->aces = talloc_array(dst, struct security_ace, num_aces);
+	if (dst->aces == NULL) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}
