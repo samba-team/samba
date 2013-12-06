@@ -38,12 +38,15 @@ struct security_acl *make_sec_acl(TALLOC_CTX *ctx,
 	struct security_acl *dst;
 	int i;
 
-	if((dst = talloc_zero(ctx, struct security_acl)) == NULL)
+	dst = talloc(ctx, struct security_acl);
+	if (dst == NULL) {
 		return NULL;
+	}
 
 	dst->revision = revision;
 	dst->num_aces = num_aces;
 	dst->size = SEC_ACL_HEADER_SIZE;
+	dst->aces = NULL;
 
 	/* Now we need to return a non-NULL address for the ace list even
 	   if the number of aces required is zero.  This is because there
