@@ -1,4 +1,97 @@
                    ==============================
+                   Release Notes for Samba 3.6.22
+                          December 9, 2013
+                   ==============================
+
+
+This is a security release in order to address
+CVE-2013-4408 (DCE-RPC fragment length field is incorrectly checked) and
+CVE-2012-6150 (pam_winbind login without require_membership_of restrictions).
+
+o  CVE-2013-4408:
+   Samba versions 3.4.0 and above (versions 3.4.0 - 3.4.17, 3.5.0 -
+   3.5.22, 3.6.0 - 3.6.21, 4.0.0 - 4.0.12 and including 4.1.2) are
+   vulnerable to buffer overrun exploits in the client processing of
+   DCE-RPC packets. This is due to incorrect checking of the DCE-RPC
+   fragment length in the client code.
+
+   This is a critical vulnerability as the DCE-RPC client code is part of
+   the winbindd authentication and identity mapping daemon, which is
+   commonly configured as part of many server installations (when joined
+   to an Active Directory Domain). A malicious Active Directory Domain
+   Controller or man-in-the-middle attacker impersonating an Active
+   Directory Domain Controller could achieve root-level access by
+   compromising the winbindd process.
+
+   Samba server versions 3.4.0 - 3.4.17 and versions 3.5.0 - 3.5.22 are
+   also vulnerable to a denial of service attack (server crash) due to a
+   similar error in the server code of those versions.
+
+   Samba server versions 3.6.0 and above (including all 3.6.x versions,
+   all 4.0.x versions and 4.1.x) are not vulnerable to this problem.
+
+   In addition range checks were missing on arguments returned from calls
+   to the DCE-RPC functions LookupSids (lsa and samr), LookupNames (lsa and samr)
+   and LookupRids (samr) which could also cause similar problems.
+
+   As this was found during an internal audit of the Samba code there are
+   no currently known exploits for this problem (as of December 9th 2013).
+
+o  CVE-2012-6150:
+   Winbind allows for the further restriction of authenticated PAM logins using
+   the require_membership_of parameter. System administrators may specify a list
+   of SIDs or groups for which an authenticated user must be a member of. If an
+   authenticated user does not belong to any of the entries, then login should
+   fail. Invalid group name entries are ignored.
+
+   Samba versions 3.3.10, 3.4.3, 3.5.0 and later incorrectly allow login from
+   authenticated users if the require_membership_of parameter specifies only
+   invalid group names.
+
+   This is a vulnerability with low impact. All require_membership_of group
+   names must be invalid for this bug to be encountered.
+
+
+Changes since 3.6.21:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10185: CVE-2013-4408: Correctly check DCE-RPC fragment length field.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10185: CVE-2013-4408: Correctly check DCE-RPC fragment length field.
+
+
+o   Noel Power <noel.power@suse.com>
+    * BUGs 10300, 10306: CVE-2012-6150: Fail authentication if user isn't
+      member of *any* require_membership_of specified groups.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.6 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.6.21
                          November 29, 2013
                    ==============================
@@ -54,8 +147,9 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-Release notes for older releases follow:
-----------------------------------------
+
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.6.20
