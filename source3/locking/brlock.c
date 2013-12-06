@@ -1699,9 +1699,15 @@ static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
 	unsigned int i;
 	unsigned int num_valid_entries = 0;
 	struct lock_struct *locks = *pplocks;
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame;
 	struct server_id *ids;
 	bool *exists;
+
+	if (*pnum_entries == 0) {
+		return true;
+	}
+
+	frame = talloc_stackframe();
 
 	ids = talloc_array(frame, struct server_id, *pnum_entries);
 	if (ids == NULL) {
