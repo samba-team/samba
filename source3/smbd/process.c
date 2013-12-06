@@ -245,7 +245,7 @@ static bool valid_packet_size(size_t len)
 	 * of header. Don't print the error if this fits.... JRA.
 	 */
 
-	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
+	if (len > (LARGE_WRITEX_BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
 		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
 					(unsigned long)len));
 		return false;
