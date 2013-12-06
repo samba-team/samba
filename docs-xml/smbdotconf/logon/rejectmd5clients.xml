@@ -1,0 +1,18 @@
+<samba:parameter name="reject md5 clients"
+                 context="G"
+                 type="boolean"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether the netlogon server (currently
+	only in 'active directory domain controller' mode), will
+	reject clients which does not support NETLOGON_NEG_SUPPORTS_AES.</para>
+
+	<para>You can set this to yes if all domain members support aes.
+	This will prevent downgrade attacks.</para>
+
+	<para>This option takes precedence to the 'allow nt4 crypto' option.</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
