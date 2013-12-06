@@ -83,9 +83,6 @@ fi
 
 export CC
 
-## always run autogen.sh
-./autogen.sh
-
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 %if %with_included_talloc
 	--with-included-talloc \
