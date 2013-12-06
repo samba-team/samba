@@ -22,7 +22,7 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
-#define CLI_BUFFER_SIZE (0xFFFF)
+#define CLI_BUFFER_SIZE SMB_BUFFER_SIZE_MAX
 
 /*
  * These definitions depend on smb.h
