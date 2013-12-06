@@ -209,6 +209,14 @@ enum smb_signing_setting {
 #define NEGOTIATE_SECURITY_SIGNATURES_ENABLED	0x04
 #define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
 
+/*
+ * The negotiated buffer size for non LARGE_READX/WRITEX
+ * should be limited to uint16_t and has to be at least
+ * 500, which is the default for MinClientBufferSize on Windows.
+ */
+#define SMB_BUFFER_SIZE_MIN 500
+#define SMB_BUFFER_SIZE_MAX 65535
+
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
 #define CAP_RAW_MODE		0x00000001
