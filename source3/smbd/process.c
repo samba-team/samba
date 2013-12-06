@@ -3700,7 +3700,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->smb1.negprot.max_recv = tmp;
 
 	sconn->smb1.sessions.done_sesssetup = false;
-	sconn->smb1.sessions.max_send = BUFFER_SIZE;
+	sconn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;
 
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");
