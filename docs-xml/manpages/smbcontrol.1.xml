@@ -131,6 +131,15 @@
 	</varlistentry>
 
 	<varlistentry>
+	<term>kill-client-ip</term>
+	<listitem><para>Order smbd to close the client connections from a
+	given IP address. This message-type takes an argument of the IP
+	address from which client connections will be closed. This message
+	can only be sent to <constant>smbd</constant>.</para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
 	<term>force-election</term>
 	<listitem><para>This message causes the <command>nmbd</command> daemon to 
 	force a new browse master election. </para>
