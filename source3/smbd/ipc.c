@@ -109,12 +109,14 @@ void send_trans_reply(connection_struct *conn,
 	int lparam = rparam ? rparam_len : 0;
 	struct smbd_server_connection *sconn = req->sconn;
 	int max_send = sconn->smb1.sessions.max_send;
+	/* HACK: make sure we send at least 128 byte in one go */
+	int hdr_overhead = SMB_BUFFER_SIZE_MIN - 128;
 
 	if (buffer_too_large)
 		DEBUG(5,("send_trans_reply: buffer %d too large\n", ldata ));
 
-	this_lparam = MIN(lparam,max_send - 500); /* hack */
-	this_ldata  = MIN(ldata,max_send - (500+this_lparam));
+	this_lparam = MIN(lparam,max_send - hdr_overhead);
+	this_ldata  = MIN(ldata,max_send - (hdr_overhead+this_lparam));
 
 	align = ((this_lparam)%4);
 
@@ -163,9 +165,9 @@ void send_trans_reply(connection_struct *conn,
 	while (tot_data_sent < ldata || tot_param_sent < lparam)
 	{
 		this_lparam = MIN(lparam-tot_param_sent,
-				  max_send - 500); /* hack */
+				  max_send - hdr_overhead);
 		this_ldata  = MIN(ldata -tot_data_sent,
-				  max_send - (500+this_lparam));
+				  max_send - (hdr_overhead+this_lparam));
 
 		if(this_lparam < 0)
 			this_lparam = 0;
