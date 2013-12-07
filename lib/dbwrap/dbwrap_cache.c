@@ -69,12 +69,12 @@ static NTSTATUS dbwrap_cache_parse_record(
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (dbwrap_exists(ctx->negative, key)) {
+		return NT_STATUS_NOT_FOUND;
+	}
 	status = dbwrap_parse_record(ctx->positive, key, parser, private_data);
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-	if (dbwrap_exists(ctx->negative, key)) {
-		return NT_STATUS_NOT_FOUND;
 	}
 
 	status = dbwrap_fetch(ctx->backing, talloc_tos(), key, &value);
