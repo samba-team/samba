@@ -258,8 +258,8 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	DEBUG(10, ("get_ea_list_from_file: ea_namelist size = %u\n",
-		   (unsigned int)sizeret));
+	DEBUG(10, ("%s: ea_namelist size = %u\n",
+		   __func__, (unsigned int)sizeret));
 
 	if (sizeret == 0) {
 		TALLOC_FREE(names);
