@@ -197,6 +197,7 @@ struct tdb_context {
 	struct tdb_lock_type allrecord_lock; /* .offset == upgradable */
 	int num_lockrecs;
 	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
+	int lockrecs_array_length;
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	uint32_t hash_size;
 	uint32_t flags; /* the flags passed to tdb_open */

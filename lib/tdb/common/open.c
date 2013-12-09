@@ -629,6 +629,7 @@ static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 	/* We may still think we hold the active lock. */
 	tdb->num_lockrecs = 0;
 	SAFE_FREE(tdb->lockrecs);
+	tdb->lockrecs_array_length = 0;
 
 	if (active_lock && tdb_nest_lock(tdb, ACTIVE_LOCK, F_RDLCK, TDB_LOCK_WAIT) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: failed to obtain active lock\n"));

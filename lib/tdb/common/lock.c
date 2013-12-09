@@ -297,14 +297,17 @@ int tdb_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,
 		return 0;
 	}
 
-	new_lck = (struct tdb_lock_type *)realloc(
-		tdb->lockrecs,
-		sizeof(*tdb->lockrecs) * (tdb->num_lockrecs+1));
-	if (new_lck == NULL) {
-		errno = ENOMEM;
-		return -1;
+	if (tdb->num_lockrecs == tdb->lockrecs_array_length) {
+		new_lck = (struct tdb_lock_type *)realloc(
+			tdb->lockrecs,
+			sizeof(*tdb->lockrecs) * (tdb->num_lockrecs+1));
+		if (new_lck == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+		tdb->lockrecs_array_length = tdb->num_lockrecs+1;
+		tdb->lockrecs = new_lck;
 	}
-	tdb->lockrecs = new_lck;
 
 	/* Since fcntl locks don't nest, we do a lock for the first one,
 	   and simply bump the count for future ones */
@@ -312,9 +315,11 @@ int tdb_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,
 		return -1;
 	}
 
-	tdb->lockrecs[tdb->num_lockrecs].off = offset;
-	tdb->lockrecs[tdb->num_lockrecs].count = 1;
-	tdb->lockrecs[tdb->num_lockrecs].ltype = ltype;
+	new_lck = &tdb->lockrecs[tdb->num_lockrecs];
+
+	new_lck->off = offset;
+	new_lck->count = 1;
+	new_lck->ltype = ltype;
 	tdb->num_lockrecs++;
 
 	return 0;
@@ -480,10 +485,6 @@ int tdb_nest_unlock(struct tdb_context *tdb, uint32_t offset, int ltype,
 	 * We don't bother with realloc when the array shrinks, but if we have
 	 * a completely idle tdb we should get rid of the locked array.
 	 */
-
-	if (tdb->num_lockrecs == 0) {
-		SAFE_FREE(tdb->lockrecs);
-	}
 
 	if (ret)
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: An error occurred unlocking!\n"));
@@ -894,9 +895,6 @@ void tdb_release_transaction_locks(struct tdb_context *tdb)
 		}
 	}
 	tdb->num_lockrecs = active;
-	if (tdb->num_lockrecs == 0) {
-		SAFE_FREE(tdb->lockrecs);
-	}
 }
 
 /* Following functions are added specifically to support CTDB. */
