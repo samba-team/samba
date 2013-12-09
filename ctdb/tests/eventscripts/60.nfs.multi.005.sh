@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "takeip, monitor -> reconfigure, replay disabled"
+define_test "takeip, take reconfigure lock, monitor -> reconfigure, replay disabled"
 
 setup_nfs
 
@@ -16,8 +16,9 @@ simple_test_event "takeip" $public_address
 
 ctdb_fake_scriptstatus -8 "DISABLED" "$err"
 
+eventscript_call ctdb_reconfigure_try_lock
+
 ok <<EOF
-Reconfiguring service "nfs"...
 Replaying previous status for this script due to reconfigure...
 [Replay of DISABLED scriptstatus - note incorrect return code.] $err
 EOF

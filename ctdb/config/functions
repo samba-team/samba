@@ -1195,16 +1195,6 @@ ctdb_service_check_reconfigure ()
 		    ctdb_service_reconfigure
 		fi
 		;;
-	    monitor)
-		if ctdb_service_needs_reconfigure ; then
-		    ctdb_service_reconfigure
-		    # Given that the reconfigure might not have
-		    # resulted in the service being stable yet, we
-		    # replay the previous status since that's the best
-		    # information we have.
-		    ctdb_replay_monitor_status
-		fi
-		;;
 	esac
     else
 	# Somebody else is running an event we don't want to collide
