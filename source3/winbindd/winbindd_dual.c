@@ -626,7 +626,7 @@ void winbind_msg_offline(struct messaging_context *msg_ctx,
 		   we only set it online / offline for that domain. */
 
 		DEBUG(10,("winbind_msg_offline: sending message to pid %u for domain %s.\n",
-			(unsigned int)child->pid, domain->name ));
+			(unsigned int)child->pid, child->domain->name ));
 
 		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
 				   MSG_WINBIND_OFFLINE,
