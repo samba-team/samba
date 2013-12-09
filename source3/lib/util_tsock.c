@@ -110,6 +110,11 @@ static void tstream_read_packet_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (total + more < total) {
+		tevent_req_error(req, EMSGSIZE);
+		return;
+	}
+
 	tmp = talloc_realloc(state, state->buf, uint8_t, total+more);
 	if (tevent_req_nomem(tmp, req)) {
 		return;

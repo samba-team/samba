@@ -220,6 +220,11 @@ static ssize_t ctdb_packet_more(uint8_t *buf, size_t buflen, void *p)
 		return 0;
 	}
 	memcpy(&len, buf, sizeof(len));
+
+	if (len < sizeof(uint32_t)) {
+		return -1;
+	}
+
 	return (len - sizeof(uint32_t));
 }
 

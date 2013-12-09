@@ -223,6 +223,15 @@ static int dcerpc_read_ncacn_packet_next_vector(struct tstream_context *stream,
 
 		ofs = state->buffer.length;
 
+		if (frag_len < ofs) {
+			/*
+			 * something is wrong, let the caller deal with it
+			 */
+			*_vector = NULL;
+			*_count = 0;
+			return 0;
+		}
+
 		state->buffer.data = talloc_realloc(state,
 						    state->buffer.data,
 						    uint8_t, frag_len);
@@ -289,6 +298,11 @@ static void dcerpc_read_ncacn_packet_done(struct tevent_req *subreq)
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (state->pkt->frag_length != state->buffer.length) {
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
 		return;
 	}
 

@@ -385,7 +385,17 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+
 		if (NT_STATUS_IS_OK(result)) {
+			if (rids.count != 1) {
+				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				goto done;
+			}
+			if (types.count != 1) {
+				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				goto done;
+			}
+
 			status = dcerpc_samr_OpenUser(b, mem_ctx,
 						      &domain_pol,
 						      access_mask,
@@ -1453,6 +1463,15 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 			goto done;
 		}
 		if (NT_STATUS_IS_OK(result)) {
+			if (rids.count != 1) {
+				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				goto done;
+			}
+			if (types.count != 1) {
+				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+				goto done;
+			}
+
 			status = dcerpc_samr_OpenAlias(b, mem_ctx,
 						       &domain_pol,
 						       access_mask,
@@ -2115,6 +2134,14 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 		status = result;
 		goto done;
 	}
+	if (rids.count != num_names) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (name_types.count != num_names) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
 
 	/* Display results */
 
@@ -2196,6 +2223,14 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Display results */
+	if (num_rids != names.count) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (num_rids != types.count) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
 
 	for (i = 0; i < num_rids; i++) {
 		printf("rid 0x%x: %s (%d)\n",
@@ -2270,6 +2305,14 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 		}
 		if (!NT_STATUS_IS_OK(result)) {
 			status = result;
+			goto done;
+		}
+		if (group_rids.count != 1) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto done;
+		}
+		if (name_types.count != 1) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 			goto done;
 		}
 
@@ -2373,6 +2416,14 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 		}
 		if (!NT_STATUS_IS_OK(result)) {
 			status = result;
+			goto done;
+		}
+		if (user_rids.count != 1) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto done;
+		}
+		if (name_types.count != 1) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 			goto done;
 		}
 
@@ -2761,6 +2812,14 @@ static NTSTATUS cmd_samr_chgpasswd(struct rpc_pipe_client *cli,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		status = result;
+		goto done;
+	}
+	if (rids.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (types.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto done;
 	}
 
@@ -3166,7 +3225,12 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(result)) {
 			return result;
 		}
-
+		if (rids.count != 1) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (types.count != 1) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 
 		status = dcerpc_samr_OpenUser(b, mem_ctx,
 					      &domain_pol,

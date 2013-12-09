@@ -1184,6 +1184,12 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 		_make_remark_format(ctx, PAM_TEXT_INFO, _("Cannot convert group %s "
 				"to sid, please contact your administrator to see "
 				"if group %s is valid."), search_location, search_location);
+
+		/* If no valid groups were converted we should fail outright */
+		if (name_list != NULL && strlen(sid_list_buffer) == 0) {
+			result = false;
+			goto out;
+		}
 		/*
 		 * The lookup of the last name failed..
 		 * It results in require_member_of_sid ends with ','
