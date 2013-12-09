@@ -3903,7 +3903,9 @@ static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 			if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
 						      acct_name, passwords[i],
 						      expected_success_status, interactive)) {
-				torture_fail(tctx, talloc_asprintf(tctx, "succeeded to authenticate with old password (#%d of #%d in history)", i, password_history_length));
+				torture_fail(tctx, talloc_asprintf(tctx, "did not successfully to obtain %s for %s login with old password (#%d of #%d in history)",
+								   nt_errstr(expected_success_status),
+								   interactive ? "interactive" : "network", i, password_history_length));
 			}
 
 			torture_assert(tctx,
@@ -4030,16 +4032,16 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 			continue;
 		}
 
-		ret &= test_Password_badpwdcount(p, np, tctx, acct_flags, acct_name,
-						 domain_handle, user_handle, password,
-						 machine_credentials,
-						 creds[i].comment,
-						 creds[i].disabled,
-						 creds[i].interactive,
-						 creds[i].expected_success_status,
-						 &_info1, &_info12);
-		if (!ret) {
+		if (!test_Password_badpwdcount(p, np, tctx, acct_flags, acct_name,
+					       domain_handle, user_handle, password,
+					       machine_credentials,
+					       creds[i].comment,
+					       creds[i].disabled,
+					       creds[i].interactive,
+					       creds[i].expected_success_status,
+					       &_info1, &_info12)) {
 			torture_result(tctx, TORTURE_FAIL, "TEST #%d (%s) failed\n", i, creds[i].comment);
+			ret = false;
 		} else {
 			torture_comment(tctx, "TEST #%d (%s) succeeded\n", i, creds[i].comment);
 		}
