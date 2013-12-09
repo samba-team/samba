@@ -802,6 +802,7 @@ static void init_globals(bool reinit_globals)
 	Globals.read_raw = true;
 	Globals.write_raw = true;
 	Globals.null_passwords = false;
+	Globals.old_password_allowed_period = 60;
 	Globals.obey_pam_restrictions = false;
 	Globals.syslog = 1;
 	Globals.syslog_only = false;

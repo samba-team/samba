@@ -490,6 +490,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
+		.label		= "old password allowed period",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(old_password_allowed_period),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "obey pam restrictions",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,

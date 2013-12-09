@@ -2082,6 +2082,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "ReadRaw", "True");
 	lpcfg_do_global_parameter(lp_ctx, "WriteRaw", "True");
 	lpcfg_do_global_parameter(lp_ctx, "NullPasswords", "False");
+	lpcfg_do_global_parameter(lp_ctx, "old password allowed period", "60");
 	lpcfg_do_global_parameter(lp_ctx, "ObeyPamRestrictions", "False");
 
 	lpcfg_do_global_parameter(lp_ctx, "TimeServer", "False");
