@@ -35,7 +35,7 @@
   wrap to work correctly. Thanks to Petr Vandrovec <petr@vandrovec.name>
   for this. */
 
-#define TEVENT_SA_INFO_QUEUE_COUNT 64
+#define TEVENT_SA_INFO_QUEUE_COUNT 256
 
 struct tevent_sigcounter {
 	uint32_t count;
