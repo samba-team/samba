@@ -37,6 +37,16 @@
 
 #define TEVENT_SA_INFO_QUEUE_COUNT 256
 
+size_t tevent_num_signals(void)
+{
+	return TEVENT_NUM_SIGNALS;
+}
+
+size_t tevent_sa_info_queue_count(void)
+{
+	return TEVENT_SA_INFO_QUEUE_COUNT;
+}
+
 struct tevent_sigcounter {
 	uint32_t count;
 	uint32_t seen;
