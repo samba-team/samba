@@ -323,7 +323,7 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 
 	uint32_t num_names;
 	struct lsa_String *names;
-	struct lsa_RefDomainList *domains;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransSidArray3 sids;
 	uint32_t count = 0;
 	int i;
@@ -359,6 +359,10 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
+
+	if (sids.count != num_names) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	for (i = 0; i < sids.count; i++) {
@@ -450,7 +454,7 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL, result;
 	int i;
 	struct lsa_SidArray sids;
-	struct lsa_RefDomainList *domains;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransNameArray2 names;
 	uint32_t count = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -506,9 +510,12 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 
 	/* Print results */
 
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < names.count; i++) {
 		fstring sid_str;
 
+		if (i >= sids.num_sids) {
+			break;
+		}
 		sid_to_fstring(sid_str, sids.sids[i].sid);
 		printf("%s %s (%d)\n", sid_str,
 		       names.names[i].name.string,

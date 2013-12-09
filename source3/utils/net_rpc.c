@@ -1667,6 +1667,14 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 		d_fprintf(stderr, _("Lookup of '%s' failed\n"),argv[0]);
 		goto done;
 	}
+	if (group_rids.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (name_types.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
 
 	switch (name_types.ids[0])
 	{
@@ -2074,6 +2082,14 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 			  member);
 		goto done;
 	}
+	if (rids.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (rid_types.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
 
 	status = dcerpc_samr_OpenGroup(b, mem_ctx,
 				       &domain_pol,
@@ -2327,6 +2343,14 @@ static NTSTATUS rpc_del_groupmem(struct net_context *c,
 		status = result;
 		d_fprintf(stderr, _("Could not lookup up group member %s\n"),
 			  member);
+		goto done;
+	}
+	if (rids.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (rid_types.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto done;
 	}
 
@@ -2876,7 +2900,12 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 		if (!NT_STATUS_IS_OK(result)) {
 			return result;
 		}
-
+		if (names.count != this_time) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (types.count != this_time) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 		/* We only have users as members, but make the output
 		   the same as the output of alias members */
 
@@ -3112,8 +3141,14 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 	if (rids.count != 1) {
 		d_fprintf(stderr, _("Couldn't find group %s\n"),
 			  argv[0]);
-		return result;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
+	if (rid_types.count != 1) {
+		d_fprintf(stderr, _("Couldn't find group %s\n"),
+			  argv[0]);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 
 	if (rid_types.ids[0] == SID_NAME_DOM_GRP) {
 		return rpc_list_group_members(c, pipe_hnd, mem_ctx, domain_name,
@@ -6062,6 +6097,14 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 		d_printf(_("net rpc trustdom del: LookupNames on user %s "
 			   "failed %s\n"),
 			acct_name, nt_errstr(result) );
+		goto done;
+	}
+	if (user_rids.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+	if (name_types.count != 1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto done;
 	}
 

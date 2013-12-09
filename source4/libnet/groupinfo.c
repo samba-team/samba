@@ -88,11 +88,14 @@ static void continue_groupinfo_lookup(struct tevent_req *subreq)
 		s->monitor_fn(&msg);
 	}
 	
-
 	/* have we actually got name resolved
 	   - we're looking for only one at the moment */
-	if (s->lookup.out.rids->count == 0) {
-		composite_error(c, NT_STATUS_NO_SUCH_USER);
+	if (s->lookup.out.rids->count != s->lookup.in.num_names) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+	if (s->lookup.out.types->count != s->lookup.in.num_names) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 

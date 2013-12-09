@@ -871,13 +871,19 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 
 	/* Copy result into array.  The talloc system will take
 	   care of freeing the temporary arrays later on. */
-	if (tmp_names.count != tmp_types.count) {
-		return NT_STATUS_UNSUCCESSFUL;
+	if (tmp_names.count != num_names) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (tmp_types.count != num_names) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	for (r = 0; r < tmp_names.count; r++) {
 		if (tmp_types.ids[r] == SID_NAME_UNKNOWN) {
 			continue;
+		}
+		if (total_names >= num_names) {
+			break;
 		}
 		names[total_names] = fill_domain_username_talloc(names,
 								 domain_name,
@@ -1063,7 +1069,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 				     struct lsa_TransNameArray **pnames)
 {
 	struct lsa_TransNameArray2 lsa_names2;
-	struct lsa_TransNameArray *names;
+	struct lsa_TransNameArray *names = *pnames;
 	uint32_t i, count;
 	NTSTATUS status, result;
 
@@ -1084,10 +1090,10 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_ERR(result)) {
 		return result;
 	}
-	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
-	if (names == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (sids->num_sids != lsa_names2.count) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
+
 	names->count = lsa_names2.count;
 	names->names = talloc_array(names, struct lsa_TranslatedName,
 				    names->count);
@@ -1099,8 +1105,17 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 		names->names[i].name.string = talloc_move(
 			names->names, &lsa_names2.names[i].name.string);
 		names->names[i].sid_index = lsa_names2.names[i].sid_index;
+
+		if (names->names[i].sid_index == UINT32_MAX) {
+			continue;
+		}
+		if ((*pdomains) == NULL) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (names->names[i].sid_index >= (*pdomains)->count) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 	}
-	*pnames = names;
 	return result;
 }
 
@@ -1110,10 +1125,11 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 			 struct lsa_RefDomainList **pdomains,
 			 struct lsa_TransNameArray **pnames)
 {
-	struct lsa_TransNameArray *names;
+	struct lsa_TransNameArray *names = *pnames;
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle lsa_policy;
 	uint32_t count;
+	uint32_t i;
 	NTSTATUS status, result;
 
 	status = cm_connect_lsat(domain, mem_ctx, &cli, &lsa_policy);
@@ -1126,10 +1142,6 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 					    pdomains, pnames);
 	}
 
-	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
-	if (names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 	status = dcerpc_lsa_LookupSids(cli->binding_handle, mem_ctx,
 				       &lsa_policy, sids, pdomains,
 				       names, LSA_LOOKUP_NAMES_ALL,
@@ -1140,6 +1152,22 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_ERR(result)) {
 		return result;
 	}
-	*pnames = names;
+
+	if (sids->num_sids != names->count) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	for (i=0; i < names->count; i++) {
+		if (names->names[i].sid_index == UINT32_MAX) {
+			continue;
+		}
+		if ((*pdomains) == NULL) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (names->names[i].sid_index >= (*pdomains)->count) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+	}
+
 	return result;
 }
