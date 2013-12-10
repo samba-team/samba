@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/locale.h"
 #include "lib/util/util_net.h"
+#include "libcli/nbt/libnbt.h"
 
 /*
   decompress a 'compressed' name component
