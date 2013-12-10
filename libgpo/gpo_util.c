@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-#define TALLOC_DEPRECATED 1
+
 #include "includes.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -762,24 +762,29 @@ char *gpo_flag_str(TALLOC_CTX *ctx, uint32_t flags)
 		return NULL;
 	}
 
+	str = talloc_strdup(ctx, "");
+	if (!str) {
+		return NULL;
+	}
+
 	if (flags & GPO_INFO_FLAG_SLOWLINK)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_SLOWLINK ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_SLOWLINK ");
 	if (flags & GPO_INFO_FLAG_VERBOSE)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_VERBOSE ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_VERBOSE ");
 	if (flags & GPO_INFO_FLAG_SAFEMODE_BOOT)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_SAFEMODE_BOOT ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_SAFEMODE_BOOT ");
 	if (flags & GPO_INFO_FLAG_NOCHANGES)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_NOCHANGES ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_NOCHANGES ");
 	if (flags & GPO_INFO_FLAG_MACHINE)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_MACHINE ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_MACHINE ");
 	if (flags & GPO_INFO_FLAG_LOGRSOP_TRANSITION)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_LOGRSOP_TRANSITION ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_LOGRSOP_TRANSITION ");
 	if (flags & GPO_INFO_FLAG_LINKTRANSITION)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_LINKTRANSITION ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_LINKTRANSITION ");
 	if (flags & GPO_INFO_FLAG_FORCED_REFRESH)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_FORCED_REFRESH ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_FORCED_REFRESH ");
 	if (flags & GPO_INFO_FLAG_BACKGROUND)
-		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_BACKGROUND ");
+		str = talloc_strdup_append(str, "GPO_INFO_FLAG_BACKGROUND ");
 
 	return str;
 }
