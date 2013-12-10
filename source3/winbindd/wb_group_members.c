@@ -139,7 +139,7 @@ static struct tevent_req *wb_groups_members_send(TALLOC_CTX *mem_ctx,
 						 int num_groups,
 						 struct wbint_Principal *groups)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req, *subreq = NULL;
 	struct wb_groups_members_state *state;
 	NTSTATUS status;
 
@@ -290,7 +290,7 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 					 enum lsa_SidType type,
 					 int max_depth)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req, *subreq = NULL;
 	struct wb_group_members_state *state;
 	NTSTATUS status;
 
