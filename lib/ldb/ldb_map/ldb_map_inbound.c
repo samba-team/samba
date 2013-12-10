@@ -476,7 +476,7 @@ static int map_add_do_local(struct map_context *ac)
 int ldb_map_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.mod.message;
-	struct ldb_request *search_req;
+	struct ldb_request *search_req = NULL;
 	struct ldb_message *remote_msg;
 	struct ldb_context *ldb;
 	struct map_context *ac;
@@ -699,7 +699,7 @@ static int map_delete_do_local(struct map_context *ac)
 /* Rename a record. */
 int ldb_map_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_request *search_req;
+	struct ldb_request *search_req = NULL;
 	struct ldb_context *ldb;
 	struct map_context *ac;
 	int ret;
