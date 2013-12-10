@@ -55,7 +55,7 @@ struct gpttmpl_table {
 
 #define GPTTMPL_PARAMETER_REVISION "Revision"
 #define GPTTMPL_PARAMETER_SIGNATURE "signature"
-#define GPTTMPL_VALUE_CHICAGO "$CHICAGO$" /* whatever this is good for... */
+#define GPTTMPL_VALUE_CHICAGO "\"$CHICAGO$\"" /* whatever this is good for... */
 #define GPTTMPL_PARAMETER_UNICODE "Unicode"
 
 static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
