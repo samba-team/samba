@@ -930,8 +930,7 @@ char *cldap_netlogon_create_filter(TALLOC_CTX *mem_ctx,
 	}
 	if (io->in.domain_guid) {
 		struct GUID guid;
-		NTSTATUS status;
-		status = GUID_from_string(io->in.domain_guid, &guid);
+		GUID_from_string(io->in.domain_guid, &guid);
 		if (filter == NULL) {
 			return NULL;
 		}
