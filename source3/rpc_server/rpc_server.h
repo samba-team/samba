@@ -77,7 +77,7 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			     int *perrno);
 
 void set_incoming_fault(struct pipes_struct *p);
-void process_complete_pdu(struct pipes_struct *p);
+void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt);
 int create_named_pipe_socket(const char *pipe_name);
 bool setup_named_pipe_socket(const char *pipe_name,
 			     struct tevent_context *ev_ctx,

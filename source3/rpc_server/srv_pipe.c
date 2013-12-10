@@ -1486,45 +1486,9 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 	return True;
 }
 
-/****************************************************************************
- Processes a finished PDU stored in p->in_data.pdu.
-****************************************************************************/
-
-void process_complete_pdu(struct pipes_struct *p)
+void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
-	struct ncacn_packet *pkt = NULL;
-	NTSTATUS status;
-	bool reply = False;
-
-	if(p->fault_state) {
-		DEBUG(10,("RPC connection in fault state.\n"));
-		goto done;
-	}
-
-	pkt = talloc(p->mem_ctx, struct ncacn_packet);
-	if (!pkt) {
-		DEBUG(0, ("Out of memory!\n"));
-		goto done;
-	}
-
-	/*
-	 * Ensure we're using the corrent endianness for both the
-	 * RPC header flags and the raw data we will be reading from.
-	 */
-	if (dcerpc_get_endian_flag(&p->in_data.pdu) & DCERPC_DREP_LE) {
-		p->endian = RPC_LITTLE_ENDIAN;
-	} else {
-		p->endian = RPC_BIG_ENDIAN;
-	}
-	DEBUG(10, ("PDU is in %s Endian format!\n", p->endian?"Big":"Little"));
-
-	status = dcerpc_pull_ncacn_packet(pkt, &p->in_data.pdu,
-					  pkt, p->endian);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to unmarshal rpc packet: %s!\n",
-			  nt_errstr(status)));
-		goto done;
-	}
+	bool reply = false;
 
 	/* Store the call_id */
 	p->call_id = pkt->call_id;
@@ -1644,21 +1608,11 @@ void process_complete_pdu(struct pipes_struct *p)
 		break;
 	}
 
-done:
 	if (!reply) {
 		DEBUG(3,("DCE/RPC fault sent!"));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		TALLOC_FREE(pkt);
-	} else {
-		/*
-		 * Reset the lengths. We're ready for a new pdu.
-		 */
-		TALLOC_FREE(p->in_data.pdu.data);
-		p->in_data.pdu_needed_len = 0;
-		p->in_data.pdu.length = 0;
 	}
-
-	TALLOC_FREE(pkt);
+	/* pkt and p->in_data.pdu.data freed by caller */
 }
 

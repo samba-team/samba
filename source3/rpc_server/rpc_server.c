@@ -432,9 +432,6 @@ void named_pipe_packet_process(struct tevent_req *subreq)
 	DATA_BLOB recv_buffer = data_blob_null;
 	struct ncacn_packet *pkt;
 	NTSTATUS status;
-	ssize_t data_left;
-	ssize_t data_used;
-	char *data;
 	uint32_t to_send;
 	size_t i;
 	bool ok;
@@ -445,23 +442,20 @@ void named_pipe_packet_process(struct tevent_req *subreq)
 		goto fail;
 	}
 
-	data_left = recv_buffer.length;
-	data = (char *)recv_buffer.data;
-
-	while (data_left) {
-
-		data_used = process_incoming_data(npc->p, data, data_left);
-		if (data_used < 0) {
-			DEBUG(3, ("Failed to process dceprc request!\n"));
-			status = NT_STATUS_UNEXPECTED_IO_ERROR;
-			goto fail;
-		}
-
-		data_left -= data_used;
-		data += data_used;
+	/* dcerpc_read_ncacn_packet_recv() returns a full PDU */
+	npc->p->in_data.pdu_needed_len = 0;
+	npc->p->in_data.pdu = recv_buffer;
+	if (dcerpc_get_endian_flag(&recv_buffer) & DCERPC_DREP_LE) {
+		npc->p->endian = RPC_LITTLE_ENDIAN;
+	} else {
+		npc->p->endian = RPC_BIG_ENDIAN;
 	}
+	DEBUG(10, ("PDU is in %s Endian format!\n",
+		   npc->p->endian ? "Big" : "Little"));
+	process_complete_pdu(npc->p, pkt);
 
-	/* Do not leak this buffer, npc is a long lived context */
+	/* reset pipe state and free PDU */
+	npc->p->in_data.pdu.length = 0;
 	talloc_free(recv_buffer.data);
 	talloc_free(pkt);
 
@@ -1134,10 +1128,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	struct _output_data *out = &ncacn_conn->p->out_data;
 	DATA_BLOB recv_buffer = data_blob_null;
 	struct ncacn_packet *pkt;
-	ssize_t data_left;
-	ssize_t data_used;
 	uint32_t to_send;
-	char *data;
 	NTSTATUS status;
 	bool ok;
 
@@ -1153,22 +1144,20 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 		goto fail;
 	}
 
-	data_left = recv_buffer.length;
-	data = (char *) recv_buffer.data;
-
-	while (data_left) {
-		data_used = process_incoming_data(ncacn_conn->p, data, data_left);
-		if (data_used < 0) {
-			DEBUG(3, ("Failed to process dcerpc request!\n"));
-			status = NT_STATUS_UNEXPECTED_IO_ERROR;
-			goto fail;
-		}
-
-		data_left -= data_used;
-		data += data_used;
+	/* dcerpc_read_ncacn_packet_recv() returns a full PDU */
+	ncacn_conn->p->in_data.pdu_needed_len = 0;
+	ncacn_conn->p->in_data.pdu = recv_buffer;
+	if (dcerpc_get_endian_flag(&recv_buffer) & DCERPC_DREP_LE) {
+		ncacn_conn->p->endian = RPC_LITTLE_ENDIAN;
+	} else {
+		ncacn_conn->p->endian = RPC_BIG_ENDIAN;
 	}
+	DEBUG(10, ("PDU is in %s Endian format!\n",
+		   ncacn_conn->p->endian ? "Big" : "Little"));
+	process_complete_pdu(ncacn_conn->p, pkt);
 
-	/* Do not leak this buffer */
+	/* reset pipe state and free PDU */
+	ncacn_conn->p->in_data.pdu.length = 0;
 	talloc_free(recv_buffer.data);
 	talloc_free(pkt);
 

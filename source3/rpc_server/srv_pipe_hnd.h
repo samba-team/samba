@@ -46,6 +46,4 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 		      bool *is_data_outstanding);
 
-ssize_t process_incoming_data(struct pipes_struct *p, const char *data, size_t n);
-
 #endif /* _RPC_SERVER_SRV_PIPE_HND_H_ */
