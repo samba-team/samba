@@ -2614,7 +2614,7 @@ static int get_domain_data_callback(struct ldb_request *req,
 	struct ldb_context *ldb;
 	struct ph_context *ac;
 	struct loadparm_context *lp_ctx;
-	int ret;
+	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct ph_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -3151,7 +3151,7 @@ static int ph_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
-	int ret;
+	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct ph_context);
 	ldb = ldb_module_get_ctx(ac->module);
