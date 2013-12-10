@@ -676,7 +676,7 @@ static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 		return STATUS_SOME_UNMAPPED;
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
