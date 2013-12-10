@@ -372,7 +372,7 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 {
 	struct spoolss_children_data *data;
 	bool ok;
-	int ret;
+	int ret = 0;
 
 	ok = spoolss_child_init(ev_ctx, child_id, pf);
 	if (!ok) {
