@@ -157,10 +157,9 @@ static void echo_udp_call_sendto_done(struct tevent_req *subreq)
 {
 	struct echo_udp_call *call = tevent_req_callback_data(subreq,
 				     struct echo_udp_call);
-	ssize_t ret;
 	int sys_errno;
 
-	ret = tdgram_sendto_queue_recv(subreq, &sys_errno);
+	tdgram_sendto_queue_recv(subreq, &sys_errno);
 
 	/*
 	 * We don't actually care about the error, just get on with our life.
