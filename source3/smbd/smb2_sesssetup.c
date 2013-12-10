@@ -111,8 +111,8 @@ static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
 	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
-	uint16_t out_session_flags;
-	uint64_t out_session_id;
+	uint16_t out_session_flags = 0;
+	uint64_t out_session_id = 0;
 	uint16_t out_security_offset;
 	DATA_BLOB out_security_buffer = data_blob_null;
 	NTSTATUS status;

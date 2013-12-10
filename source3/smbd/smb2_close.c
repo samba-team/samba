@@ -83,14 +83,14 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct smbd_smb2_request);
 	DATA_BLOB outbody;
-	uint16_t out_flags;
-	NTTIME out_creation_time;
-	NTTIME out_last_access_time;
-	NTTIME out_last_write_time;
-	NTTIME out_change_time;
-	uint64_t out_allocation_size;
-	uint64_t out_end_of_file;
-	uint32_t out_file_attributes;
+	uint16_t out_flags = 0;
+	NTTIME out_creation_time = 0;
+	NTTIME out_last_access_time = 0;
+	NTTIME out_last_write_time = 0;
+	NTTIME out_change_time = 0;
+	uint64_t out_allocation_size = 0;
+	uint64_t out_end_of_file = 0;
+	uint32_t out_file_attributes = 0;
 	NTSTATUS status;
 	NTSTATUS error;
 
