@@ -2002,7 +2002,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 
 	/* Create a temporary message for fetching the "sAMAccountName" */
 	if (el2 != NULL) {
-		char *tempstr, *tempstr2;
+		char *tempstr, *tempstr2 = NULL;
 		const char *acct_attrs[] = { "sAMAccountName", NULL };
 
 		msg = ldb_msg_new(ac->msg);
