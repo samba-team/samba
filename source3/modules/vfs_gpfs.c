@@ -1411,6 +1411,46 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
         return 4;
 }
 
+#if defined(HAVE_FSTATAT)
+static int stat_with_capability(struct vfs_handle_struct *handle,
+				struct smb_filename *smb_fname, int flag)
+{
+	int fd = -1;
+	bool b;
+	char *dir_name;
+	const char *rel_name = NULL;
+	struct stat st;
+	int ret = -1;
+
+	b = parent_dirname(talloc_tos(), smb_fname->base_name,
+			   &dir_name, &rel_name);
+	if (!b) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	fd = open(dir_name, O_RDONLY, 0);
+	TALLOC_FREE(dir_name);
+	if (fd == -1) {
+		return -1;
+	}
+
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	ret = fstatat(fd, rel_name, &st, flag);
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+	close(fd);
+
+	if (ret == 0) {
+		init_stat_ex_from_stat(
+			&smb_fname->st, &st,
+			lp_fake_dir_create_times(SNUM(handle->conn)));
+	}
+
+	return ret;
+}
+#endif
+
 static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
 {
@@ -1425,6 +1465,13 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 				return -1);
 
 	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
+#if defined(HAVE_FSTATAT)
+	if (ret == -1 && errno == EACCES) {
+		DEBUG(10, ("Trying stat with capability for %s\n",
+			   smb_fname->base_name));
+		ret = stat_with_capability(handle, smb_fname, 0);
+	}
+#endif
 	if (ret == -1) {
 		return -1;
 	}
@@ -1494,6 +1541,15 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 				return -1);
 
 	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+#if defined(HAVE_FSTATAT)
+	if (ret == -1 && errno == EACCES) {
+		DEBUG(10, ("Trying lstat with capability for %s\n",
+			   smb_fname->base_name));
+		ret = stat_with_capability(handle, smb_fname,
+					   AT_SYMLINK_NOFOLLOW);
+	}
+#endif
+
 	if (ret == -1) {
 		return -1;
 	}
