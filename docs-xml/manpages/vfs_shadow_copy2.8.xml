@@ -57,12 +57,12 @@
 	<listitem><para>
 	Snapshot directories need not be in one fixed central place but
 	can be located anywhere in the directory tree. This mode helps to
-	support file systems that offer snapshotting of particutlar
+	support file systems that offer snapshotting of particular
 	subtrees, for example the GPFS independent file sets.
 	</para></listitem>
 	<listitem><para>
 	Vanity naming for snapshots: snapshots can be named in any format
-	compatible with with str[fp]time conversions.
+	compatible with str[fp]time conversions.
 	</para></listitem>
 	<listitem><para>
 	Timestamps can be represented in localtime rather than UTC.
