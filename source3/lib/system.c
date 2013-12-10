@@ -785,6 +785,10 @@ static bool set_process_capability(enum smbd_capability capability,
 			cap_vals[num_cap_vals++] = CAP_LEASE;
 #endif
 			break;
+		case DAC_OVERRIDE_CAPABILITY:
+#ifdef CAP_DAC_OVERRIDE
+			cap_vals[num_cap_vals++] = CAP_DAC_OVERRIDE;
+#endif
 	}
 
 	SMB_ASSERT(num_cap_vals <= ARRAY_SIZE(cap_vals));

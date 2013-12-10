@@ -743,7 +743,8 @@ minimum length == 24.
 enum smbd_capability {
     KERNEL_OPLOCK_CAPABILITY,
     DMAPI_ACCESS_CAPABILITY,
-    LEASE_CAPABILITY
+    LEASE_CAPABILITY,
+    DAC_OVERRIDE_CAPABILITY
 };
 
 /*
