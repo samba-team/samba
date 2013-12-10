@@ -29,7 +29,6 @@
 static bool test_lzxpress(struct torture_context *test)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(test);
-	uint8_t *data;
 	const char *fixed_data = "this is a test. and this is a test too";
 	const uint8_t fixed_out[] = { 0x00, 0x20, 0x00, 0x04, 0x74, 0x68, 0x69, 0x73,
 				      0x20, 0x10, 0x00, 0x61, 0x20, 0x74, 0x65, 0x73,
@@ -39,7 +38,6 @@ static bool test_lzxpress(struct torture_context *test)
 	ssize_t c_size;
 	uint8_t *out, *out2;
 
-	data = talloc_size(tmp_ctx, 1023);
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
 
