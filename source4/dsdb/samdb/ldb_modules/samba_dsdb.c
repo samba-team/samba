@@ -232,7 +232,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	int ret, len, i;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_result *res;
-	struct ldb_message *rootdse_msg, *partition_msg;
+	struct ldb_message *rootdse_msg = NULL, *partition_msg;
 	struct ldb_dn *samba_dsdb_dn, *partition_dn;
 	struct ldb_module *backend_module, *module_chain;
 	const char **final_module_list, **reverse_module_list;
