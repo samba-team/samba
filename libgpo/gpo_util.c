@@ -23,7 +23,8 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../libgpo/gpo.h"
 #include "../libcli/security/security.h"
-#undef strdup
+#include "registry.h"
+#include "libgpo/gpo_proto.h"
 
 #if 0
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"
@@ -549,9 +550,8 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 	struct gp_extension *gp_ext = NULL;
 	struct registry_key *root_key = NULL;
 	struct gp_registry_context *reg_ctx = NULL;
-#if 0
 	WERROR werr;
-#endif
+
 	status = ADS_ERROR_NT(init_gp_extensions(mem_ctx));
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -561,8 +561,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 	if (!gp_ext_list) {
 		return ADS_ERROR_NT(NT_STATUS_DLL_INIT_FAILED);
 	}
-/* FIXME Needs to be replaced with new patchfile_preg calls */
-#if 0
+
 	/* get the key here */
 	if (flags & GPO_LIST_FLAG_MACHINE) {
 		werr = gp_init_reg_ctx(mem_ctx, KEY_HKLM, REG_KEY_WRITE,
@@ -577,7 +576,6 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 		talloc_free(reg_ctx);
 		return ADS_ERROR_NT(werror_to_ntstatus(werr));
 	}
-#endif
 
 	root_key = reg_ctx->curr_key;
 
