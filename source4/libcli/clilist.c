@@ -111,7 +111,7 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	int num_received = 0;
 	int max_matches = 512;
 	char *mask;
-	int ff_eos = 0, i, ff_searchcount;
+	int ff_eos = 0, i;
 	int ff_dir_handle=0;
 
 	/* initialize state for search */
@@ -154,7 +154,6 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			}
 		
 			ff_dir_handle = first_parms.t2ffirst.out.handle;
-			ff_searchcount = first_parms.t2ffirst.out.count;
 			ff_eos = first_parms.t2ffirst.out.end_of_search;
 			
 			received = first_parms.t2ffirst.out.count;
@@ -181,7 +180,6 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			if (!NT_STATUS_IS_OK(status)) {
 				return -1;
 			}
-			ff_searchcount = next_parms.t2fnext.out.count;
 			ff_eos = next_parms.t2fnext.out.end_of_search;
 			received = next_parms.t2fnext.out.count;
 			if (received <= 0) break;
