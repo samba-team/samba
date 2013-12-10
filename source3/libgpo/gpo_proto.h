@@ -32,13 +32,6 @@ NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx,
 			      const char *nt_path,
 			      const char *local_path);
 
-/* The following definitions come from libgpo/gpo_ini.c  */
-
-NTSTATUS parse_gpt_ini(TALLOC_CTX *mem_ctx,
-		       const char *filename,
-		       uint32_t *version,
-		       char **display_name);
-
 /* The following definitions come from libgpo/gpo_reg.c  */
 
 struct security_token *registry_create_system_token(TALLOC_CTX *mem_ctx);
