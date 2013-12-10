@@ -165,6 +165,30 @@ NTSTATUS gp_inifile_getint(struct gp_inifile_context *ctx, const char *key, int 
 /****************************************************************
 ****************************************************************/
 
+NTSTATUS gp_inifile_getbool(struct gp_inifile_context *ctx, const char *key, bool *ret)
+{
+	char *value;
+	NTSTATUS result;
+
+	result = gp_inifile_getstring(ctx,key, &value);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	if (strequal(value, "Yes")) {
+		*ret = true;
+		return NT_STATUS_OK;
+	} else if (strequal(value, "No")) {
+		*ret = false;
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_NOT_FOUND;
+}
+
+/****************************************************************
+****************************************************************/
+
 NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
 				 const char *unix_path,
