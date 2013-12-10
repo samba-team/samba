@@ -285,7 +285,7 @@ static WERROR gp_store_reg_gpovals(TALLOC_CTX *mem_ctx,
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	werr = gp_store_reg_val_sz(mem_ctx, key, "SOM",
-				   gpo->link);
+				   gpo->link ? gpo->link : "");
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	werr = gp_store_reg_val_sz(mem_ctx, key, "DisplayName",
@@ -293,7 +293,7 @@ static WERROR gp_store_reg_gpovals(TALLOC_CTX *mem_ctx,
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	werr = gp_store_reg_val_sz(mem_ctx, key, "WQL-Id",
-				   NULL);
+				   "");
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	return werr;
@@ -542,7 +542,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 		werr = gp_store_reg_gpovals(mem_ctx, key, gpo);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("gp_reg_state_store: "
-				"gpo_store_reg_gpovals failed for %s: %s\n",
+				"gp_store_reg_gpovals failed for %s: %s\n",
 				gpo->display_name, win_errstr(werr)));
 			goto done;
 		}
