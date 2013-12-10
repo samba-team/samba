@@ -70,7 +70,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 					bool referral)
 {
 	struct ldb_context *ldb;
-	uint64_t val;
+	uint64_t val = 0;
 	enum ndr_err_code ndr_err;
 	uint32_t n;
 	int i;
