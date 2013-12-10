@@ -88,7 +88,7 @@ static size_t get_hash_length(struct tdb_context *tdb, unsigned int i)
 _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 {
 	tdb_off_t off, rec_off;
-	struct tally freet, keys, data, dead, extra, hash, uncoal;
+	struct tally freet, keys, data, dead, extra, hashval, uncoal;
 	struct tdb_record rec;
 	char *ret = NULL;
 	bool locked;
@@ -114,7 +114,7 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 	tally_init(&data);
 	tally_init(&dead);
 	tally_init(&extra);
-	tally_init(&hash);
+	tally_init(&hashval);
 	tally_init(&uncoal);
 
 	for (off = TDB_DATA_START(tdb->hash_size);
@@ -161,7 +161,7 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 		tally_add(&uncoal, unc - 1);
 
 	for (off = 0; off < tdb->hash_size; off++)
-		tally_add(&hash, get_hash_length(tdb, off));
+		tally_add(&hashval, get_hash_length(tdb, off));
 
 	/* 20 is max length of a %zu. */
 	len = strlen(SUMMARY_FORMAT) + 35*20 + 1;
@@ -180,8 +180,8 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 		 dead.min, tally_mean(&dead), dead.max,
 		 freet.num,
 		 freet.min, tally_mean(&freet), freet.max,
-		 hash.num,
-		 hash.min, tally_mean(&hash), hash.max,
+		 hashval.num,
+		 hashval.min, tally_mean(&hashval), hashval.max,
 		 uncoal.total,
 		 uncoal.min, tally_mean(&uncoal), uncoal.max,
 		 keys.total * 100.0 / tdb->map_size,
