@@ -64,7 +64,7 @@ static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
 	char *signature = NULL;
 	NTSTATUS result;
 	int version;
-	int is_unicode;
+	bool is_unicode = false;
 
 	if (!ini_ctx) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -89,7 +89,7 @@ static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
 		*version_out = version;
 	}
 
-	result = gp_inifile_getint(ini_ctx, GPTTMPL_SECTION_UNICODE
+	result = gp_inifile_getbool(ini_ctx, GPTTMPL_SECTION_UNICODE
 			":"GPTTMPL_PARAMETER_UNICODE, &is_unicode);
 	if (!NT_STATUS_IS_OK(result) || !is_unicode) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
