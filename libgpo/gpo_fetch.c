@@ -118,7 +118,7 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_ctx,
+static NTSTATUS gpo_connect_server(ADS_STRUCT *ads,
                                    const char *server, const char *service, void *ret_cli)
 {
 	NTSTATUS result;
@@ -150,7 +150,6 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
 
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
                          ADS_STRUCT *ads,
-                         struct loadparm_context *lp_ctx,
                          const char *cache_dir,
 			 struct GROUP_POLICY_OBJECT *gpo)
 {
@@ -166,9 +165,8 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 	NT_STATUS_NOT_OK_RETURN(result);
 
 
-	result = gpo_connect_server(ads, lp_ctx, server, service, &cli);
+	result = gpo_connect_server(ads, server, service, &cli);
 	NT_STATUS_NOT_OK_RETURN(result);
-
 
 	result = gpo_prepare_local_store(mem_ctx, cache_dir, unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);

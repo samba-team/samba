@@ -78,7 +78,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 
 	d_printf(_("* fetching token "));
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
-		status = gp_get_machine_token(ads, mem_ctx, NULL, dn, &token);
+		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
 	} else {
 		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
 	}
@@ -101,7 +101,6 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	d_printf(_("* Refreshing Group Policy Data "));
 	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx,
 	                                                     cache_path(GPO_CACHE_DIR),
-	                                                     NULL,
 							     flags,
 							     gpo_list))) {
 		d_printf(_("failed: %s\n"), nt_errstr(result));
@@ -337,7 +336,7 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 		argv[0], dn);
 
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
-		status = gp_get_machine_token(ads, mem_ctx, NULL, dn, &token);
+		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
 	} else {
 		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
 	}
@@ -420,7 +419,7 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 		argv[0], dn);
 
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
-		status = gp_get_machine_token(ads, mem_ctx, NULL, dn, &token);
+		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
 	} else {
 		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
 	}

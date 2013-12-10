@@ -626,7 +626,6 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
                            const char *cache_dir,
-                           struct loadparm_context *lp_ctx,
 			   uint32_t flags,
 			   struct GROUP_POLICY_OBJECT *gpo)
 {
@@ -666,7 +665,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 
 		DEBUG(1,("check_refresh_gpo: need to refresh GPO\n"));
 
-		result = gpo_fetch_files(mem_ctx, ads, lp_ctx, cache_dir, gpo);
+		result = gpo_fetch_files(mem_ctx, ads, cache_dir, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
@@ -713,7 +712,6 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				const char *cache_dir,
-                                struct loadparm_context *lp_ctx,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list)
 {
@@ -726,7 +724,7 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
-		result = check_refresh_gpo(ads, mem_ctx, cache_dir, lp_ctx, flags, gpo);
+		result = check_refresh_gpo(ads, mem_ctx, cache_dir, flags, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
@@ -834,7 +832,6 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 
 ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				struct loadparm_context *lp_ctx,
 				const char *dn,
 				struct security_token **token)
 {

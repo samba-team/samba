@@ -20,7 +20,6 @@
 #ifndef __GPO_H__
 #define __GPO_H__
 
-struct loadparm_context;
 #include "ads.h"
 
 enum GPO_LINK_TYPE {
@@ -176,7 +175,6 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 				 char **unix_path);
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
                          ADS_STRUCT *ads,
-                         struct loadparm_context *lp_ctx,
                          const char *cache_dir,
 			 struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
@@ -255,13 +253,11 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
                            const char *cache_dir,
-                           struct loadparm_context *lp_ctx,
 			   uint32_t flags,
 			   struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
                                 const char *cache_dir,
-                                struct loadparm_context *lp_ctx,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list);
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
@@ -276,7 +272,6 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		      const char **filename_out);
 ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				struct loadparm_context *lp_ctx,
 				const char *dn,
 				struct security_token **token);
 
