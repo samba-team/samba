@@ -164,8 +164,9 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 					 &unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);
 
+	/* for now reuse the existing ds connection */
 
-	result = gpo_connect_server(ads, server, service, &cli);
+	result = gpo_connect_server(ads, ads->server.ldap_server, service, &cli);
 	NT_STATUS_NOT_OK_RETURN(result);
 
 	result = gpo_prepare_local_store(mem_ctx, cache_dir, unix_path);
