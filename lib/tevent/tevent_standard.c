@@ -206,10 +206,7 @@ static int std_event_context_init(struct tevent_context *ev)
 			goto fallback;
 		}
 #ifdef HAVE_EPOLL
-		if (!tevent_epoll_set_panic_fallback(ev, std_fallback_to_poll)) {
-			TALLOC_FREE(ev->additional_data);
-			goto fallback;
-		}
+		tevent_epoll_set_panic_fallback(ev, std_fallback_to_poll);
 #endif
 
 		return ret;

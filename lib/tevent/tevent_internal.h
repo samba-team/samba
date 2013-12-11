@@ -335,7 +335,7 @@ void tevent_poll_event_add_fd_internal(struct tevent_context *ev,
 bool tevent_poll_mt_init(void);
 #ifdef HAVE_EPOLL
 bool tevent_epoll_init(void);
-bool tevent_epoll_set_panic_fallback(struct tevent_context *ev,
+void tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 			bool (*panic_fallback)(struct tevent_context *ev,
 					       bool replay));
 #endif

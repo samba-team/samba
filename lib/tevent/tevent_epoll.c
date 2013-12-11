@@ -116,7 +116,7 @@ static int epoll_wait_panic_fallback(struct epoll_event_context *epoll_ev,
 /*
   called to set the panic fallback function.
 */
-_PRIVATE_ bool tevent_epoll_set_panic_fallback(struct tevent_context *ev,
+_PRIVATE_ void tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 				bool (*panic_fallback)(struct tevent_context *ev,
 						       bool replay))
 {
