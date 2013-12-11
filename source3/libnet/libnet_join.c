@@ -1957,10 +1957,6 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (IS_DC) {
-		return WERR_SETUP_DOMAIN_CONTROLLER;
-	}
-
 	if (!r->in.admin_domain) {
 		char *admin_domain = NULL;
 		char *admin_account = NULL;
