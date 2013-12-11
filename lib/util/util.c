@@ -234,7 +234,7 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname,
  * @brief Try to create a specified directory if it doesn't exist.
  *
  * The function creates a directory with the given uid and permissions if it
- * doesn't exixt. If it exists it makes sure the uid and permissions are
+ * doesn't exist. If it exists it makes sure the uid and permissions are
  * correct and it will fail if they are different.
  *
  * @param[in]  dname  The directory to create.
