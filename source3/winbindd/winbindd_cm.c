@@ -896,6 +896,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
  */
 static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
+				      bool netlogon,
 				      struct cli_credentials **_creds)
 {
 	const struct winbindd_domain *creds_domain = NULL;
@@ -904,7 +905,7 @@ static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 
 	/* If we are a DC and this is not our own domain */
 
-	if (IS_DC) {
+	if (IS_DC && netlogon) {
 		creds_domain = domain;
 	} else {
 		creds_domain = find_our_domain();
@@ -946,6 +947,10 @@ static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 
  ipc_fallback:
+	if (netlogon) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
 	status = cm_get_ipc_credentials(mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1055,7 +1060,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	if (try_ipc_auth) {
-		result = get_trust_credentials(domain, talloc_tos(), &creds);
+		result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(1, ("get_trust_credentials(%s) failed: %s\n",
 				  domain->name, nt_errstr(result)));
@@ -2722,7 +2727,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	 * anonymous.
 	 */
 
-	result = get_trust_credentials(domain, talloc_tos(), &creds);
+	result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("cm_connect_sam: No no user available for "
 			   "domain %s, trying schannel\n", conn->cli->domain));
@@ -2980,7 +2985,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(conn->lsa_pipe);
 
-	result = get_trust_credentials(domain, talloc_tos(), &creds);
+	result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("cm_connect_sam: No no user available for "
 			   "domain %s, trying schannel\n", conn->cli->domain));
@@ -3180,10 +3185,10 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	conn->netlogon_flags = 0;
 	TALLOC_FREE(conn->netlogon_creds);
 
-	result = get_trust_credentials(domain, talloc_tos(), &creds);
+	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("cm_connect_sam: No no user available for "
-			   "domain %s, trying schannel\n", conn->cli->domain));
+			   "domain %s when trying schannel\n", conn->cli->domain));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
