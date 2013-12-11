@@ -2383,21 +2383,23 @@ static void smbd_server_connection_read_handler(
 	NTSTATUS status;
 	uint32_t seqnum;
 
-	bool from_client;
+	bool async_echo = lp_async_smb_echo_handler();
+	bool from_client = false;
 
-	if (lp_async_smb_echo_handler()
-	    && fd_is_readable(sconn->smb1.echo_handler.trusted_fd)) {
-		/*
-		 * This is the super-ugly hack to prefer the packets
-		 * forwarded by the echo handler over the ones by the
-		 * client directly
-		 */
-		fd = sconn->smb1.echo_handler.trusted_fd;
+	if (async_echo) {
+		if (fd_is_readable(sconn->smb1.echo_handler.trusted_fd)) {
+			/*
+			 * This is the super-ugly hack to prefer the packets
+			 * forwarded by the echo handler over the ones by the
+			 * client directly
+			 */
+			fd = sconn->smb1.echo_handler.trusted_fd;
+		}
 	}
 
 	from_client = (sconn->sock == fd);
 
-	if (from_client) {
+	if (async_echo && from_client) {
 		smbd_lock_socket(sconn);
 
 		if (!fd_is_readable(fd)) {
@@ -2416,7 +2418,7 @@ static void smbd_server_connection_read_handler(
 				    &inbuf_len, &seqnum,
 				    !from_client /* trusted channel */);
 
-	if (from_client) {
+	if (async_echo && from_client) {
 		smbd_unlock_socket(sconn);
 	}
 
