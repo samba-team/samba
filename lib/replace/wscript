@@ -367,6 +367,7 @@ removeea setea
                         headers='netinet/in.h arpa/nameser.h resolv.h')
 
 
+    # try to find libintl (if --without-gettext is not given)
     conf.env.intl_libs=''
     if not Options.options.disable_gettext:
         conf.CHECK_HEADERS('libintl.h')
@@ -398,10 +399,10 @@ removeea setea
             if conf.env['HAVE_GETTEXT'] and conf.env['HAVE_DGETTEXT']:
                 # save for dependency definitions
                 conf.env.intl_libs='iconv intl'
-            else:
-                conf.fatal('library gettext not found, try specifying the path to ' +
-                           'it with --with-gettext=</path/to/gettext> or ' +
-                           '--without-gettext to build without''')
+
+    # did the user insist on gettext (--with-gettext)?
+    if Options.options.gettext_location != 'None' and (not conf.env['HAVE_GETTEXT'] or not conf.env['HAVE_DGETTEXT']):
+        conf.fatal('library gettext not found at specified location')
 
     conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True, headers='pthread.h')
 
