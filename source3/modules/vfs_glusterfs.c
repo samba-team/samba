@@ -19,6 +19,24 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/**
+ * @file   vfs_glusterfs.c
+ * @author Anand Avati <avati@redhat.com>
+ * @date   May 2013
+ * @brief  Samba VFS module for glusterfs
+ *
+ * @todo
+ *   - AIO support\n
+ *     See, for example \c vfs_aio_linux.c in the \c sourc3/modules directory
+ *   - sendfile/recvfile support
+ *
+ * A Samba VFS module for GlusterFS, based on Gluster's libgfapi.
+ * This is a "bottom" vfs module (not something to be stacked on top of
+ * another module), and translates (most) calls to the closest actions
+ * available in libgfapi.
+ *
+ */
+
 #include "includes.h"
 #include "smbd/smbd.h"
 #include <stdio.h>
@@ -26,14 +44,6 @@
 #include "lib/util/dlinklist.h"
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
-
-/*
-  TODO
-  ----
-  Short term:
-  - AIO support
-  - sendfile/recvfile support
-*/
 
 /* Helpers to provide 'integer' fds */
 
