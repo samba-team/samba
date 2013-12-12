@@ -370,6 +370,13 @@ removeea setea
     # try to find libintl (if --without-gettext is not given)
     conf.env.intl_libs=''
     if not Options.options.disable_gettext:
+        # any extra path given to look at?
+        if not Options.options.gettext_location == 'None':
+           conf.env['CFLAGS'].extend(["-I%s" % Options.options.gettext_location]);
+           conf.env['LDFLAGS'].extend(["-L%s" % Options.options.gettext_location]);
+        else:
+           conf.env['CFLAGS'].extend(["-I/usr/local"]);
+           conf.env['LDFLAGS'].extend(["-L/usr/local"]);
         conf.CHECK_HEADERS('libintl.h')
         conf.CHECK_LIB('intl')
         conf.CHECK_DECLS('dgettext gettext bindtextdomain textdomain bind_textdomain_codeset', headers="libintl.h")
