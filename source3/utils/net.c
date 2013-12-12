@@ -105,6 +105,11 @@ static int net_changesecretpw(struct net_context *c, int argc,
 		}
 
 		trust_pw = get_pass(_("Enter machine password: "), c->opt_stdin);
+		if (trust_pw == NULL) {
+			    d_fprintf(stderr,
+				      _("Error in reading machine password\n"));
+			    return 1;
+		}
 
 		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
 			    d_fprintf(stderr,

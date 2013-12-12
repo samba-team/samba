@@ -216,11 +216,17 @@ static char *prompt_for_new_password(bool stdin_get)
 	ZERO_ARRAY(new_pw);
 
 	p = get_pass("New SMB password:", stdin_get);
+	if (p == NULL) {
+		return NULL;
+	}
 
 	fstrcpy(new_pw, p);
 	SAFE_FREE(p);
 
 	p = get_pass("Retype new SMB password:", stdin_get);
+	if (p == NULL) {
+		return NULL;
+	}
 
 	if (strcmp(p, new_pw)) {
 		fprintf(stderr, "Mismatch - password unchanged.\n");
@@ -310,6 +316,10 @@ static int process_root(int local_flags)
 		printf("Setting stored password for \"%s\" in secrets.tdb\n", ldap_admin_dn);
 		if ( ! *ldap_secret ) {
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
+			if (new_passwd == NULL) {
+				fprintf(stderr, "Failed to read new password!\n");
+				exit(1);
+			}
 			fstrcpy(ldap_secret, new_passwd);
 		}
 		if (!store_ldap_admin_pw(ldap_secret)) {
@@ -537,6 +547,10 @@ static int process_nonroot(int local_flags)
 
 	if (remote_machine != NULL) {
 		old_pw = get_pass("Old SMB password:",stdin_passwd_get);
+		if (old_pw == NULL) {
+			fprintf(stderr, "Unable to get old password.\n");
+			exit(1);
+		}
 	}
 
 	if (!new_passwd) {
