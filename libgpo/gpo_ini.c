@@ -32,6 +32,9 @@ static bool change_section(const char *section, void *ctx_ptr)
 		talloc_free(ctx->current_section);
 	}
 	ctx->current_section = talloc_strdup(ctx, section);
+	if (!ctx->current_section) {
+		return false;
+	}
 	return true;
 }
 
@@ -41,10 +44,25 @@ static bool change_section(const char *section, void *ctx_ptr)
 static bool store_keyval_pair(const char *key, const char *value, void *ctx_ptr)
 {
 	struct gp_inifile_context *ctx = (struct gp_inifile_context *) ctx_ptr;
+
 	ctx->data = talloc_realloc(ctx, ctx->data, struct keyval_pair *, ctx->keyval_count+1);
+	if (!ctx->data) {
+		return false;
+	}
+
 	ctx->data[ctx->keyval_count] = talloc_zero(ctx, struct keyval_pair);
+	if (!ctx->data[ctx->keyval_count]) {
+		return false;
+	}
+
 	ctx->data[ctx->keyval_count]->key = talloc_asprintf(ctx, "%s:%s", ctx->current_section, key);
 	ctx->data[ctx->keyval_count]->val = talloc_strdup(ctx, value);
+
+	if (!ctx->data[ctx->keyval_count]->key ||
+	    !ctx->data[ctx->keyval_count]->val) {
+		return false;
+	}
+
 	ctx->keyval_count++;
 	return true;
 }
