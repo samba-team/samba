@@ -80,8 +80,7 @@ def set_options(opt):
                    match = ['Checking for library iconv', 'Checking for iconv_open', 'Checking for header iconv.h'])
     opt.add_option('--with-gettext',
                    help='additional directory to search for gettext',
-                   action='store', dest='gettext_location', default='/usr/local',
-                   match = ['Checking for library intl', 'Checking for header libintl.h'])
+                   action='store', dest='gettext_location', default='None')
     opt.add_option('--without-gettext',
                    help=("Disable use of gettext"),
                    action="store_true", dest='disable_gettext', default=False)
