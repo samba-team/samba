@@ -550,7 +550,7 @@ Offset  Data			length.
 
 /*
  * Timestamp format used in "previous versions":
- * The is the windows-level format of the @GMT- token.
+ * This is the windows-level format of the @GMT- token.
  * It is a fixed format not to be confused with the
  * format for the POSIX-Level token of the shadow_copy2
  * VFS module that can be configured via the "shadow:format"

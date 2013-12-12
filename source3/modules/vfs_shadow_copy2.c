@@ -86,7 +86,7 @@ static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
 }
 
 /**
- * Given a timstamp, build the posix level GTM-tag string
+ * Given a timestamp, build the posix level GMT-tag string
  * based on the configurable format.
  */
 static size_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
@@ -136,7 +136,7 @@ static size_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
 }
 
 /**
- * Given a timstamp, build the string to insert into a path
+ * Given a timestamp, build the string to insert into a path
  * as a path component for creating the local path to the
  * snapshot at the given timestamp of the input path.
  *
@@ -218,7 +218,7 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * Strip a snapshot component from an filename as
+ * Strip a snapshot component from a filename as
  * handed in via the smb layer.
  * Returns the parsed timestamp and the stripped filename.
  */
