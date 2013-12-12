@@ -156,7 +156,9 @@ NTSTATUS gp_inifile_getstring(struct gp_inifile_context *ctx, const char *key, c
 
 	for (i = 0; i < ctx->keyval_count; i++) {
 		if (strcmp(ctx->data[i]->key, key) == 0) {
-			*ret = ctx->data[i]->val;
+			if (ret) {
+				*ret = ctx->data[i]->val;
+			}
 			return NT_STATUS_OK;
 		}
 	}
@@ -176,7 +178,9 @@ NTSTATUS gp_inifile_getint(struct gp_inifile_context *ctx, const char *key, int 
 		return result;
 	}
 
-	*ret = (int)strtol(value, NULL, 10);
+	if (ret) {
+		*ret = (int)strtol(value, NULL, 10);
+	}
 	return NT_STATUS_OK;
 }
 
@@ -194,10 +198,14 @@ NTSTATUS gp_inifile_getbool(struct gp_inifile_context *ctx, const char *key, boo
 	}
 
 	if (strequal(value, "Yes")) {
-		*ret = true;
+		if (ret) {
+			*ret = true;
+		}
 		return NT_STATUS_OK;
 	} else if (strequal(value, "No")) {
-		*ret = false;
+		if (ret) {
+			*ret = false;
+		}
 		return NT_STATUS_OK;
 	}
 
