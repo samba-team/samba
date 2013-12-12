@@ -111,8 +111,9 @@ static glfs_fd_t *glfd_fd_clear(int i)
 	return glfd;
 }
 
-/* Helper to convert stat to stat_ex */
-
+/**
+ * Helper to convert struct stat to struct stat_ex.
+ */
 static void smb_stat_ex_from_stat(struct stat_ex *dst, const struct stat *src)
 {
 	ZERO_STRUCTP(dst);
@@ -126,23 +127,17 @@ static void smb_stat_ex_from_stat(struct stat_ex *dst, const struct stat *src)
 	dst->st_ex_rdev = src->st_rdev;
 	dst->st_ex_size = src->st_size;
 	dst->st_ex_atime.tv_sec = src->st_atime;
-#ifdef STAT_HAVE_NSEC
-	dst->st_ex_atime.tv_nsec = src->st_atime_nsec;
-#endif
 	dst->st_ex_mtime.tv_sec = src->st_mtime;
-#ifdef STAT_HAVE_NSEC
-	dst->st_ex_mtime.tv_nsec = src->st_mtime_nsec;
-#endif
 	dst->st_ex_ctime.tv_sec = src->st_ctime;
-#ifdef STAT_HAVE_NSEC
-	dst->st_ex_ctime.tv_nsec = src->st_ctime_nsec;
-#endif
 	dst->st_ex_btime.tv_sec = src->st_mtime;
-#ifdef STAT_HAVE_NSEC
-	dst->st_ex_btime.tv_nsec = src->st_mtime_nsec;
-#endif
 	dst->st_ex_blksize = src->st_blksize;
 	dst->st_ex_blocks = src->st_blocks;
+#ifdef STAT_HAVE_NSEC
+	dst->st_ex_atime.tv_nsec = src->st_atime_nsec;
+	dst->st_ex_mtime.tv_nsec = src->st_mtime_nsec;
+	dst->st_ex_ctime.tv_nsec = src->st_ctime_nsec;
+	dst->st_ex_btime.tv_nsec = src->st_mtime_nsec;
+#endif
 }
 
 /* pre-opened glfs_t */
