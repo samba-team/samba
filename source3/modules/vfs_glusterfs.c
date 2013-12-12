@@ -45,72 +45,6 @@
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
 
-/* Helpers to provide 'integer' fds */
-
-/* This is global. gfapi's FD operations do not
-   require filesystem context.
-*/
-
-static glfs_fd_t **glfd_fd;
-static int glfd_fd_size;
-static int glfd_fd_used;
-
-static int glfd_fd_store(glfs_fd_t *glfd)
-{
-	int i;
-	void *tmp;
-
-	if (glfd_fd_size == glfd_fd_used) {
-		if (glfd_fd_size >= INT_MAX - 1) {
-			errno = ENOMEM;
-			return -1;
-		}
-
-		tmp = talloc_realloc(glfd_fd, glfd_fd, glfs_fd_t *,
-				     glfd_fd_size + 1);
-		if (tmp == NULL) {
-			errno = ENOMEM;
-			return -1;
-		}
-
-		glfd_fd = tmp;
-		glfd_fd[glfd_fd_size] = 0;
-		glfd_fd_size++;
-	}
-
-	for (i = 0; i < glfd_fd_size; i++) {
-		if (glfd_fd[i] == NULL) {
-			break;
-		}
-	}
-	glfd_fd_used++;
-	glfd_fd[i] = glfd;
-	return i;
-}
-
-static glfs_fd_t *glfd_fd_get(int i)
-{
-	if (i < 0 || i >= glfd_fd_size) {
-		return NULL;
-	}
-	return glfd_fd[i];
-}
-
-static glfs_fd_t *glfd_fd_clear(int i)
-{
-	glfs_fd_t *glfd = NULL;
-
-	if (i < 0 || i >= glfd_fd_size) {
-		return NULL;
-	}
-
-	glfd = glfd_fd[i];
-
-	glfd_fd[i] = 0;
-	glfd_fd_used--;
-	return glfd;
-}
-
 /**
  * Helper to convert struct stat to struct stat_ex.
  */
@@ -412,7 +346,7 @@ static DIR *vfs_gluster_fdopendir(struct vfs_handle_struct *handle,
 				  files_struct *fsp, const char *mask,
 				  uint32 attributes)
 {
-	return (DIR *) glfd_fd_get(fsp->fh->fd);
+	return (DIR *) *(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 }
 
 static int vfs_gluster_closedir(struct vfs_handle_struct *handle, DIR *dirp)
@@ -484,6 +418,7 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 			    int flags, mode_t mode)
 {
 	glfs_fd_t *glfd;
+	glfs_fd_t **p_tmp;
 
 	if (flags & O_DIRECTORY) {
 		glfd = glfs_opendir(handle->data, smb_fname->base_name);
@@ -497,26 +432,33 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 	if (glfd == NULL) {
 		return -1;
 	}
-	return glfd_fd_store(glfd);
+	p_tmp = (glfs_fd_t **)VFS_ADD_FSP_EXTENSION(handle, fsp,
+							  glfs_fd_t *, NULL);
+	*p_tmp = glfd;
+	/* An arbitrary value for error reporting, so you know its us. */
+	return 13371337;
 }
 
 static int vfs_gluster_close(struct vfs_handle_struct *handle,
 			     files_struct *fsp)
 {
-	return glfs_close(glfd_fd_clear(fsp->fh->fd));
+	glfs_fd_t *glfd;
+	glfd = *(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	VFS_REMOVE_FSP_EXTENSION(handle, fsp);
+	return glfs_close(glfd);
 }
 
 static ssize_t vfs_gluster_read(struct vfs_handle_struct *handle,
 				files_struct *fsp, void *data, size_t n)
 {
-	return glfs_read(glfd_fd_get(fsp->fh->fd), data, n, 0);
+	return glfs_read(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, 0);
 }
 
 static ssize_t vfs_gluster_pread(struct vfs_handle_struct *handle,
 				 files_struct *fsp, void *data, size_t n,
 				 off_t offset)
 {
-	return glfs_pread(glfd_fd_get(fsp->fh->fd), data, n, offset, 0);
+	return glfs_pread(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, offset, 0);
 }
 
 static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
@@ -538,14 +480,14 @@ static ssize_t vfs_gluster_pread_recv(struct tevent_req *req, int *err)
 static ssize_t vfs_gluster_write(struct vfs_handle_struct *handle,
 				 files_struct *fsp, const void *data, size_t n)
 {
-	return glfs_write(glfd_fd_get(fsp->fh->fd), data, n, 0);
+	return glfs_write(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, 0);
 }
 
 static ssize_t vfs_gluster_pwrite(struct vfs_handle_struct *handle,
 				  files_struct *fsp, const void *data,
 				  size_t n, off_t offset)
 {
-	return glfs_pwrite(glfd_fd_get(fsp->fh->fd), data, n, offset, 0);
+	return glfs_pwrite(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, offset, 0);
 }
 
 static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
@@ -568,7 +510,7 @@ static ssize_t vfs_gluster_pwrite_recv(struct tevent_req *req, int *err)
 static off_t vfs_gluster_lseek(struct vfs_handle_struct *handle,
 			       files_struct *fsp, off_t offset, int whence)
 {
-	return glfs_lseek(glfd_fd_get(fsp->fh->fd), offset, whence);
+	return glfs_lseek(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), offset, whence);
 }
 
 static ssize_t vfs_gluster_sendfile(struct vfs_handle_struct *handle, int tofd,
@@ -599,7 +541,7 @@ static int vfs_gluster_rename(struct vfs_handle_struct *handle,
 static int vfs_gluster_fsync(struct vfs_handle_struct *handle,
 			     files_struct *fsp)
 {
-	return glfs_fsync(glfd_fd_get(fsp->fh->fd));
+	return glfs_fsync(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp));
 }
 
 static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
@@ -640,7 +582,7 @@ static int vfs_gluster_fstat(struct vfs_handle_struct *handle,
 	struct stat st;
 	int ret;
 
-	ret = glfs_fstat(glfd_fd_get(fsp->fh->fd), &st);
+	ret = glfs_fstat(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), &st);
 	if (ret == 0) {
 		smb_stat_ex_from_stat(sbuf, &st);
 	}
@@ -690,7 +632,7 @@ static int vfs_gluster_chmod(struct vfs_handle_struct *handle,
 static int vfs_gluster_fchmod(struct vfs_handle_struct *handle,
 			      files_struct *fsp, mode_t mode)
 {
-	return glfs_fchmod(glfd_fd_get(fsp->fh->fd), mode);
+	return glfs_fchmod(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), mode);
 }
 
 static int vfs_gluster_chown(struct vfs_handle_struct *handle,
@@ -702,7 +644,7 @@ static int vfs_gluster_chown(struct vfs_handle_struct *handle,
 static int vfs_gluster_fchown(struct vfs_handle_struct *handle,
 			      files_struct *fsp, uid_t uid, gid_t gid)
 {
-	return glfs_fchown(glfd_fd_get(fsp->fh->fd), uid, gid);
+	return glfs_fchown(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), uid, gid);
 }
 
 static int vfs_gluster_lchown(struct vfs_handle_struct *handle,
@@ -768,7 +710,7 @@ static int vfs_gluster_ntimes(struct vfs_handle_struct *handle,
 static int vfs_gluster_ftruncate(struct vfs_handle_struct *handle,
 				 files_struct *fsp, off_t offset)
 {
-	return glfs_ftruncate(glfd_fd_get(fsp->fh->fd), offset);
+	return glfs_ftruncate(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), offset);
 }
 
 static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
@@ -799,7 +741,7 @@ static bool vfs_gluster_lock(struct vfs_handle_struct *handle,
 	flock.l_len = count;
 	flock.l_pid = 0;
 
-	ret = glfs_posix_lock(glfd_fd_get(fsp->fh->fd), op, &flock);
+	ret = glfs_posix_lock(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), op, &flock);
 
 	if (op == F_GETLK) {
 		/* lock query, true if someone else has locked */
@@ -846,7 +788,7 @@ static bool vfs_gluster_getlock(struct vfs_handle_struct *handle,
 	flock.l_len = *pcount;
 	flock.l_pid = 0;
 
-	ret = glfs_posix_lock(glfd_fd_get(fsp->fh->fd), F_GETLK, &flock);
+	ret = glfs_posix_lock(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), F_GETLK, &flock);
 
 	if (ret == -1) {
 		return false;
@@ -954,7 +896,7 @@ static ssize_t vfs_gluster_fgetxattr(struct vfs_handle_struct *handle,
 				     files_struct *fsp, const char *name,
 				     void *value, size_t size)
 {
-	return glfs_fgetxattr(glfd_fd_get(fsp->fh->fd), name, value, size);
+	return glfs_fgetxattr(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), name, value, size);
 }
 
 static ssize_t vfs_gluster_listxattr(struct vfs_handle_struct *handle,
@@ -967,7 +909,7 @@ static ssize_t vfs_gluster_flistxattr(struct vfs_handle_struct *handle,
 				      files_struct *fsp, char *list,
 				      size_t size)
 {
-	return glfs_flistxattr(glfd_fd_get(fsp->fh->fd), list, size);
+	return glfs_flistxattr(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), list, size);
 }
 
 static int vfs_gluster_removexattr(struct vfs_handle_struct *handle,
@@ -979,7 +921,7 @@ static int vfs_gluster_removexattr(struct vfs_handle_struct *handle,
 static int vfs_gluster_fremovexattr(struct vfs_handle_struct *handle,
 				    files_struct *fsp, const char *name)
 {
-	return glfs_fremovexattr(glfd_fd_get(fsp->fh->fd), name);
+	return glfs_fremovexattr(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), name);
 }
 
 static int vfs_gluster_setxattr(struct vfs_handle_struct *handle,
@@ -993,7 +935,7 @@ static int vfs_gluster_fsetxattr(struct vfs_handle_struct *handle,
 				 files_struct *fsp, const char *name,
 				 const void *value, size_t size, int flags)
 {
-	return glfs_fsetxattr(glfd_fd_get(fsp->fh->fd), name, value, size,
+	return glfs_fsetxattr(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), name, value, size,
 			      flags);
 }
 
@@ -1370,16 +1312,16 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_fd(struct vfs_handle_struct *handle,
 	struct smb_acl_t *result;
 	int ret;
 	char *buf;
+	glfs_fd_t *glfd;
 
-	ret = glfs_fgetxattr(glfd_fd_get(fsp->fh->fd),
-			     "system.posix_acl_access", 0, 0);
+	glfd = *(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ret = glfs_fgetxattr(glfd, "system.posix_acl_access", 0, 0);
 	if (ret <= 0) {
 		return NULL;
 	}
 
 	buf = alloca(ret);
-	ret = glfs_fgetxattr(glfd_fd_get(fsp->fh->fd),
-			     "system.posix_acl_access", buf, ret);
+	ret = glfs_fgetxattr(glfd, "system.posix_acl_access", buf, ret);
 	if (ret <= 0) {
 		return NULL;
 	}
@@ -1440,7 +1382,7 @@ static int vfs_gluster_sys_acl_set_fd(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = glfs_fsetxattr(glfd_fd_get(fsp->fh->fd),
+	ret = glfs_fsetxattr(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp),
 			     "system.posix_acl_access", buf, size, 0);
 	return ret;
 }
