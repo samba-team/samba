@@ -69,7 +69,11 @@ cleanup() {
 rm -f $basedir/$SERVERNAME.status $basedir/$SERVERNAME.log
 echo $$ > $basedir/$SERVERNAME.parent.pid
 trap cleanup SIGINT SIGTERM SIGPIPE
-screen -r -X screen -t test:$SERVERNAME bash $basedir/$SERVERNAME.launch
+if [[ "$TMUX" ]]; then
+    tmux new-window -n test:$SERVERNAME "bash $basedir/$SERVERNAME.launch"
+else
+    screen -r -X screen -t test:$SERVERNAME bash $basedir/$SERVERNAME.launch
+fi
 echo "$(date) waiting in $$" >> $basedir/$SERVERNAME.log
 read stdin_var
 echo "$(date) EOF on stdin" >> $basedir/$SERVERNAME.log
