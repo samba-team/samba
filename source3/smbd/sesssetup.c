@@ -258,7 +258,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	become_root();
 	status = gensec_update(session->gensec,
-			       talloc_tos(), NULL,
+			       talloc_tos(),
 			       in_blob, &out_blob);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status) &&

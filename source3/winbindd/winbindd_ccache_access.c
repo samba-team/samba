@@ -109,7 +109,7 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 	dummy_msg = data_blob_null;
 	reply = data_blob_null;
 	status = gensec_update(auth_generic_state->gensec_security,
-			       talloc_tos(), NULL, dummy_msg, &reply);
+			       talloc_tos(), dummy_msg, &reply);
 	data_blob_free(&reply);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -120,7 +120,7 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 
 	/* Now we are ready to handle the server's actual response. */
 	status = gensec_update(auth_generic_state->gensec_security,
-			       NULL, NULL, challenge_msg, &reply);
+			       NULL, challenge_msg, &reply);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		DEBUG(1, ("We didn't get a response to the challenge! [%s]\n",
 			nt_errstr(status)));

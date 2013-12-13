@@ -276,7 +276,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Do a client-server update dance */
-	status = gensec_update(gensec_server_context, tmp_ctx, NULL, tkt_wrapped, &ap_rep);
+	status = gensec_update(gensec_server_context, tmp_ctx, tkt_wrapped, &ap_rep);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("gensec_update() failed: %s\n", nt_errstr(status)));
 		goto out;

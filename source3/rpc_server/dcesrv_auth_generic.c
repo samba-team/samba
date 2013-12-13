@@ -49,7 +49,7 @@ static NTSTATUS auth_generic_server_authtype_start_as_root(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = gensec_update(gensec_security, mem_ctx, NULL, *token_in, token_out);
+	status = gensec_update(gensec_security, mem_ctx, *token_in, token_out);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DEBUG(2, (__location__ ": gensec_update failed: %s\n",
 			  nt_errstr(status)));
@@ -92,7 +92,7 @@ NTSTATUS auth_generic_server_step(struct gensec_security *gensec_security,
 
 	/* this has to be done as root in order to verify the password */
 	become_root();
-	status = gensec_update(gensec_security, mem_ctx, NULL, *token_in, token_out);
+	status = gensec_update(gensec_security, mem_ctx, *token_in, token_out);
 	unbecome_root();
 
 	return status;

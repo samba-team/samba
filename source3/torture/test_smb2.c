@@ -440,7 +440,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), data_blob_null, &in_blob);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		printf("gensec_update returned %s\n", nt_errstr(status));
 		return false;
@@ -477,7 +478,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;
@@ -953,7 +955,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), data_blob_null, &in_blob);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		printf("gensec_update returned %s\n", nt_errstr(status));
 		return false;
@@ -987,7 +990,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;
@@ -1079,7 +1083,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), data_blob_null, &in_blob);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		printf("gensec_update returned %s\n", nt_errstr(status));
 		return false;
@@ -1113,7 +1118,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;
@@ -1263,7 +1269,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), data_blob_null, &in_blob);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		printf("gensec_update returned %s\n", nt_errstr(status));
 		return false;
@@ -1297,7 +1304,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;
@@ -1578,7 +1586,8 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), data_blob_null, &in_blob);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		printf("gensec_update returned %s\n", nt_errstr(status));
 		return false;
@@ -1612,7 +1621,8 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;

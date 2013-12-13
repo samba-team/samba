@@ -1011,7 +1011,7 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 					struct gensec_security);
 
 	DEBUG(5, ("create_generic_auth_rpc_bind_req: generate first token\n"));
-	status = gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
+	status = gensec_update(gensec_security, mem_ctx, null_blob, auth_token);
 
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
@@ -1895,7 +1895,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 			}
 		}
 
-		status = gensec_update(gensec_security, state, NULL,
+		status = gensec_update(gensec_security, state,
 				       auth.credentials, &auth_token);
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {

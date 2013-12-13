@@ -177,7 +177,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 
 	do {
 		nt_status = gensec_update(auth_generic_state->gensec_security,
-					  talloc_tos(), NULL, blob_in, &blob_out);
+					  talloc_tos(), blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if ((NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
 		     || NT_STATUS_IS_OK(nt_status))

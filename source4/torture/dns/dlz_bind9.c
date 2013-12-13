@@ -170,7 +170,7 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 	server_to_client = data_blob(NULL, 0);
 
 	/* Do one step of the client-server update dance */
-	status = gensec_update(gensec_client_context, tctx, tctx->ev, server_to_client, &client_to_server);
+	status = gensec_update(gensec_client_context, tctx, server_to_client, &client_to_server);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 		torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 	}

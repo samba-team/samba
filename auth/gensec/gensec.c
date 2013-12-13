@@ -321,10 +321,9 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 
 _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security,
 				TALLOC_CTX *out_mem_ctx,
-				struct tevent_context *ev,
 				const DATA_BLOB in, DATA_BLOB *out)
 {
-	return gensec_update_ev(gensec_security, out_mem_ctx, ev, in, out);
+	return gensec_update_ev(gensec_security, out_mem_ctx, NULL, in, out);
 }
 
 struct gensec_update_state {

@@ -415,7 +415,7 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	in.data = (uint8_t *)PyString_AsString(py_in);
 	in.length = PyString_Size(py_in);
 
-	status = gensec_update(security, mem_ctx, NULL, in, &out);
+	status = gensec_update(security, mem_ctx, in, &out);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)
 	    && !NT_STATUS_IS_OK(status)) {

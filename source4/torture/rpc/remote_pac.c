@@ -195,12 +195,12 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	do {
 		/* Do a client-server update dance */
-		status = gensec_update(gensec_client_context, tmp_ctx, tctx->ev, server_to_client, &client_to_server);
+		status = gensec_update(gensec_client_context, tmp_ctx, server_to_client, &client_to_server);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 		}
 
-		status = gensec_update(gensec_server_context, tmp_ctx, tctx->ev, client_to_server, &server_to_client);
+		status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
 		}
@@ -589,12 +589,12 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	do {
 		/* Do a client-server update dance */
-		status = gensec_update(gensec_client_context, tmp_ctx, tctx->ev, server_to_client, &client_to_server);
+		status = gensec_update(gensec_client_context, tmp_ctx, server_to_client, &client_to_server);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 		}
 
-		status = gensec_update(gensec_server_context, tmp_ctx, tctx->ev, client_to_server, &server_to_client);
+		status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
 		}
@@ -646,12 +646,12 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	do {
 		/* Do a client-server update dance */
-		status = gensec_update(gensec_client_context, tmp_ctx, tctx->ev, server_to_client, &client_to_server);
+		status = gensec_update(gensec_client_context, tmp_ctx, server_to_client, &client_to_server);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 		}
 
-		status = gensec_update(gensec_server_context, tmp_ctx, tctx->ev, client_to_server, &server_to_client);
+		status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
 		}

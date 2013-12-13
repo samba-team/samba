@@ -225,7 +225,7 @@ NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 	/* Second step. */
 	become_root();
 	status = gensec_update(es->gensec_security,
-			       talloc_tos(), NULL,
+			       talloc_tos(),
 			       blob, &response);
 	unbecome_root();
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&

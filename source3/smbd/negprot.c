@@ -177,7 +177,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 		status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
 		if (NT_STATUS_IS_OK(status)) {
 			status = gensec_update(gensec_security, ctx,
-					       NULL, data_blob_null, &blob);
+					       data_blob_null, &blob);
 			/* If we get the list of OIDs, the 'OK' answer
 			 * is NT_STATUS_MORE_PROCESSING_REQUIRED */
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {

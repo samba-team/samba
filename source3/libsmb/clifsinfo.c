@@ -615,7 +615,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 
 	do {
 		status = gensec_update(auth_generic_state->gensec_security, auth_generic_state,
-				       NULL, blob_in, &blob_out);
+				       blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		data_blob_free(&param_out);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(status)) {
@@ -700,7 +700,7 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	}
 
 	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(),
-			       NULL, blob_recv, &blob_send);
+			       blob_recv, &blob_send);
 
 	do {
 		data_blob_free(&blob_recv);
@@ -710,7 +710,7 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 		}
 		data_blob_free(&blob_send);
 		status = gensec_update(auth_generic_state->gensec_security, talloc_tos(),
-				       NULL, blob_recv, &blob_send);
+				       blob_recv, &blob_send);
 	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 	data_blob_free(&blob_recv);
 
