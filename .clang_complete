@@ -11,6 +11,11 @@
 -Ibin/default/dynconfig -Idynconfig
 -Ibin/default/include -Iinclude
 -Ibin/default/include/public
+-Ibin/default/include/public/core
+-Ibin/default/include/public/gen_ndr
+-Ibin/default/include/public/ndr
+-Ibin/default/include/public/samba
+-Ibin/default/include/public/util
 -Ibin/default/lib
 -Ibin/default/lib/addns -Ilib/addns
 -Ibin/default/lib/async_req -Ilib/async_req
