@@ -154,7 +154,7 @@ static void bind_auth_next_step(struct composite_context *c)
 	state->pipe->inhibit_timeout_processing = true;
 	state->pipe->timed_out = false;
 
-	c->status = gensec_update(sec->generic_state, state,
+	c->status = gensec_update_ev(sec->generic_state, state,
 				  state->pipe->conn->event_ctx,
 				  sec->auth_info->credentials,
 				  &state->credentials);
@@ -375,7 +375,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	state->pipe->inhibit_timeout_processing = true;
 	state->pipe->timed_out = false;
-	c->status = gensec_update(sec->generic_state, state,
+	c->status = gensec_update_ev(sec->generic_state, state,
 				  p->conn->event_ctx,
 				  sec->auth_info->credentials,
 				  &state->credentials);
