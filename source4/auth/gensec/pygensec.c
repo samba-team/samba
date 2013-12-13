@@ -401,7 +401,6 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	PyObject *ret, *py_in;
 	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	PyObject *finished_processing;
-	struct tevent_context *ev;
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
 		return NULL;
@@ -416,14 +415,7 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	in.data = (uint8_t *)PyString_AsString(py_in);
 	in.length = PyString_Size(py_in);
 
-	ev = samba_tevent_context_init(mem_ctx);
-	if (ev == NULL) {
-		PyErr_NoMemory();
-		PyObject_Del(self);
-		return NULL;
-	}
-
-	status = gensec_update(security, mem_ctx, ev, in, &out);
+	status = gensec_update(security, mem_ctx, NULL, in, &out);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)
 	    && !NT_STATUS_IS_OK(status)) {
