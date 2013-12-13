@@ -678,7 +678,7 @@ void debug_gpext_header(int lvl,
 	TALLOC_FREE(flags_str);
 }
 
-NTSTATUS process_gpo_list_with_extension(ADS_STRUCT *ads,
+NTSTATUS process_gpo_list_with_extension(
 			   TALLOC_CTX *mem_ctx,
 			   uint32_t flags,
 			   const struct security_token *token,
@@ -692,8 +692,7 @@ NTSTATUS process_gpo_list_with_extension(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gpext_process_extension(ADS_STRUCT *ads,
-				 TALLOC_CTX *mem_ctx,
+NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
 				 const struct security_token *token,
 				 struct registry_key *root_key,

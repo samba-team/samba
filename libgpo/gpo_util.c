@@ -485,7 +485,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			continue;
 		}
 
-		ntstatus = gpext_process_extension(ads, mem_ctx,
+		ntstatus = gpext_process_extension(mem_ctx,
 						   flags, token, root_key, gpo,
 						   gp_ext->extensions_guid[i],
 						   gp_ext->snapins_guid[i]);
