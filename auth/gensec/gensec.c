@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#define TEVENT_DEPRECATED 1
 #include <tevent.h>
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/tevent_ntstatus.h"
@@ -225,8 +226,25 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
 
 	if (ops->update_send == NULL) {
 
+		if (ev == NULL) {
+			frame = talloc_stackframe();
+
+			ev = samba_tevent_context_init(frame);
+			if (ev == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+
+			/*
+			 * TODO: remove this hack once the backends
+			 * are fixed.
+			 */
+			tevent_loop_allow_nesting(ev);
+		}
+
 		status = ops->update(gensec_security, out_mem_ctx,
 				     ev, in, out);
+		TALLOC_FREE(frame);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -270,6 +288,20 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
 	}
 
 	frame = talloc_stackframe();
+
+	if (ev == NULL) {
+		ev = samba_tevent_context_init(frame);
+		if (ev == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		/*
+		 * TODO: remove this hack once the backends
+		 * are fixed.
+		 */
+		tevent_loop_allow_nesting(ev);
+	}
 
 	subreq = ops->update_send(frame, ev, gensec_security, in);
 	if (subreq == NULL) {
