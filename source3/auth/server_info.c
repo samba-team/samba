@@ -489,10 +489,28 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		/*
-		 * Winbind is not running, create the group_sid from the
-		 * group id.
+		 * Winbind is not running, try to create the group_sid from the
+		 * passwd group id.
+		 */
+
+		/*
+		 * This can lead to a primary group of S-1-22-2-XX which
+		 * will be rejected by other Samba code.
 		 */
 		gid_to_sid(&group_sid, pwd->pw_gid);
+
+		ZERO_STRUCT(domain_sid);
+
+		/*
+		 * If we are a unix group, set the group_sid to the
+		 * 'Domain Users' RID of 513 which will always resolve to a
+		 * name.
+		 */
+		if (sid_check_is_in_unix_groups(&group_sid)) {
+			sid_compose(&group_sid,
+				    get_global_sam_sid(),
+				    DOMAIN_RID_USERS);
+		}
 	}
 
 	/* Make sure we have a valid group sid */

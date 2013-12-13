@@ -645,98 +645,43 @@ NTSTATUS make_server_info_pw(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS status;
-	struct samu *sampass = NULL;
-	char *qualified_name = NULL;
-	TALLOC_CTX *tmp_ctx;
-	struct dom_sid u_sid;
-	enum lsa_SidType type;
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct auth_serversupplied_info *result;
-
-	/*
-	 * The SID returned in server_info->sam_account is based
-	 * on our SAM sid even though for a pure UNIX account this should
-	 * not be the case as it doesn't really exist in the SAM db.
-	 * This causes lookups on "[in]valid users" to fail as they
-	 * will lookup this name as a "Unix User" SID to check against
-	 * the user token. Fix this by adding the "Unix User"\unix_username
-	 * SID to the sid array. The correct fix should probably be
-	 * changing the server_info->sam_account user SID to be a
-	 * S-1-22 Unix SID, but this might break old configs where
-	 * plaintext passwords were used with no SAM backend.
-	 */
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	qualified_name = talloc_asprintf(tmp_ctx, "%s\\%s",
-					unix_users_domain_name(),
-					unix_username );
-	if (!qualified_name) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!lookup_name(tmp_ctx, qualified_name, LOOKUP_NAME_ALL,
-						NULL, NULL,
-						&u_sid, &type)) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	TALLOC_FREE(tmp_ctx);
-
-	if (type != SID_NAME_USER) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if ( !(sampass = samu_new( NULL )) ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = samu_set_unix( sampass, pwd );
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* In pathological cases the above call can set the account
-	 * name to the DOMAIN\username form. Reset the account name
-	 * using unix_username */
-	pdb_set_username(sampass, unix_username, PDB_SET);
-
-	/* set the user sid to be the calculated u_sid */
-	pdb_set_user_sid(sampass, &u_sid, PDB_SET);
-
-	result = make_server_info(mem_ctx);
+	result = make_server_info(tmp_ctx);
 	if (result == NULL) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
-	status = samu_to_SamInfo3(result, sampass, lp_netbios_name(),
-				  &result->info3, &result->extra);
-	TALLOC_FREE(sampass);
+	status = passwd_to_SamInfo3(result,
+				    unix_username,
+				    pwd,
+				    &result->info3);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Failed to convert samu to info3: %s\n",
-			   nt_errstr(status)));
-		TALLOC_FREE(result);
-		return status;
+		goto done;
 	}
 
 	result->unix_name = talloc_strdup(result, unix_username);
-
 	if (result->unix_name == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	result->utok.uid = pwd->pw_uid;
 	result->utok.gid = pwd->pw_gid;
 
-	*server_info = result;
+	*server_info = talloc_steal(mem_ctx, result);
+	status = NT_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
