@@ -24,6 +24,7 @@
 #include "../libcli/security/security.h"
 #include "rpc_client/util_netlogon.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "lib/winbind_util.h"
 #include "passdb.h"
 
 #undef DBGC_CLASS
@@ -434,6 +435,121 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 
 	*_info3 = info3;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
+			    const char *unix_username,
+			    const struct passwd *pwd,
+			    struct netr_SamInfo3 **pinfo3)
+{
+	struct netr_SamInfo3 *info3;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+	const char *domain_name = NULL;
+	const char *user_name = NULL;
+	struct dom_sid domain_sid;
+	struct dom_sid user_sid;
+	struct dom_sid group_sid;
+	enum lsa_SidType type;
+	uint32_t num_sids = 0;
+	struct dom_sid *user_sids = NULL;
+	bool ok;
+
+	tmp_ctx = talloc_stackframe();
+
+	ok = lookup_name_smbconf(tmp_ctx,
+				 unix_username,
+				 LOOKUP_NAME_ALL,
+				 &domain_name,
+				 &user_name,
+				 &user_sid,
+				 &type);
+	if (!ok) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	if (type != SID_NAME_USER) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	ok = winbind_lookup_usersids(tmp_ctx,
+				     &user_sid,
+				     &num_sids,
+				     &user_sids);
+	/* Check if winbind is running */
+	if (ok) {
+		/*
+		 * Winbind is running and the first element of the user_sids
+		 * is the primary group.
+		 */
+		if (num_sids > 0) {
+			group_sid = user_sids[0];
+		}
+	} else {
+		/*
+		 * Winbind is not running, create the group_sid from the
+		 * group id.
+		 */
+		gid_to_sid(&group_sid, pwd->pw_gid);
+	}
+
+	/* Make sure we have a valid group sid */
+	ok = !is_null_sid(&group_sid);
+	if (!ok) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	/* Construct a netr_SamInfo3 from the information we have */
+	info3 = talloc_zero(tmp_ctx, struct netr_SamInfo3);
+	if (!info3) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	info3->base.account_name.string = talloc_strdup(info3, unix_username);
+	if (info3->base.account_name.string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ZERO_STRUCT(domain_sid);
+
+	sid_copy(&domain_sid, &user_sid);
+	sid_split_rid(&domain_sid, &info3->base.rid);
+	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);
+
+	ok = sid_peek_check_rid(&domain_sid, &group_sid,
+				&info3->base.primary_gid);
+	if (!ok) {
+		DEBUG(1, ("The primary group domain sid(%s) does not "
+			  "match the domain sid(%s) for %s(%s)\n",
+			  sid_string_dbg(&group_sid),
+			  sid_string_dbg(&domain_sid),
+			  unix_username,
+			  sid_string_dbg(&user_sid)));
+		status = NT_STATUS_INVALID_SID;
+		goto done;
+	}
+
+	info3->base.acct_flags = ACB_NORMAL;
+
+	if (num_sids) {
+		status = group_sids_to_info3(info3, user_sids, num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
+
+	*pinfo3 = talloc_steal(mem_ctx, info3);
+
+	status = NT_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+
+	return status;
 }
 
 #undef RET_NOMEM

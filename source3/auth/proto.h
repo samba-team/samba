@@ -286,6 +286,10 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			  const char *login_server,
 			  struct netr_SamInfo3 **_info3,
 			  struct extra_auth_info *extra);
+NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
+			    const char *unix_username,
+			    const struct passwd *pwd,
+			    struct netr_SamInfo3 **pinfo3);
 struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 					 struct netr_SamInfo3 *orig);
 struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
