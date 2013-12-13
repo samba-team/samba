@@ -340,6 +340,10 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 			   #handler, __location__)
 #endif
 
+size_t tevent_num_signals(void);
+
+size_t tevent_sa_info_queue_count(void);
+
 #ifdef DOXYGEN
 /**
  * @brief Pass a single time through the mainloop
