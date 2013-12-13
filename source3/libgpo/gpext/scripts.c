@@ -335,8 +335,7 @@ static WERROR scripts_apply(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS scripts_process_group_policy(ADS_STRUCT *ads,
-					     TALLOC_CTX *mem_ctx,
+static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 					     uint32_t flags,
 					     struct registry_key *root_key,
 					     const struct security_token *token,

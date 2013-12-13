@@ -61,8 +61,7 @@ struct gp_extension_methods {
 
 	NTSTATUS (*initialize)(TALLOC_CTX *mem_ctx);
 
-	NTSTATUS (*process_group_policy)(ADS_STRUCT *ads,
-					 TALLOC_CTX *mem_ctx,
+	NTSTATUS (*process_group_policy)(TALLOC_CTX *mem_ctx,
 					 uint32_t flags,
 					 struct registry_key *root_key,
 					 const struct security_token *token,
@@ -70,8 +69,7 @@ struct gp_extension_methods {
 					 const char *extension_guid,
 					 const char *snapin_guid);
 
-	NTSTATUS (*process_group_policy2)(ADS_STRUCT *ads,
-					 TALLOC_CTX *mem_ctx,
+	NTSTATUS (*process_group_policy2)(TALLOC_CTX *mem_ctx,
 					 uint32_t flags,
 					 const struct security_token *token,
 					 struct GROUP_POLICY_OBJECT *gpo_list,

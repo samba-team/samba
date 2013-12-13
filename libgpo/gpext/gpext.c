@@ -733,8 +733,7 @@ NTSTATUS gpext_process_extension(ADS_STRUCT *ads,
 	status = ext->methods->initialize(mem_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = ext->methods->process_group_policy(ads,
-						    mem_ctx,
+	status = ext->methods->process_group_policy(mem_ctx,
 						    flags,
 						    root_key,
 						    token,

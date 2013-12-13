@@ -140,8 +140,7 @@ static NTSTATUS gpttmpl_process(struct gp_inifile_context *ini_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS security_process_group_policy(ADS_STRUCT *ads,
-					      TALLOC_CTX *mem_ctx,
+static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct registry_key *root_key,
 					      const struct security_token *token,
