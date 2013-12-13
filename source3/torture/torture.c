@@ -8921,7 +8921,7 @@ static bool run_local_wbclient(int dummy)
 
 	BlockSignals(True, SIGPIPE);
 
-	ev = tevent_context_init_byname(talloc_tos(), "epoll");
+	ev = tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}
