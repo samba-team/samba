@@ -184,7 +184,7 @@ static void request_handler(struct smbcli_request *req)
 			 * host/attacker might avoid mutal authentication
 			 * requirements */
 			
-			state->gensec_status = gensec_update(session->gensec, state, c->event_ctx,
+			state->gensec_status = gensec_update_ev(session->gensec, state, c->event_ctx,
 							 state->setup.spnego.out.secblob,
 							 &state->setup.spnego.in.secblob);
 			c->status = state->gensec_status;
@@ -516,12 +516,12 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	}
 
 	if (strequal(chosen_oid, GENSEC_OID_SPNEGO)) {
-		status = gensec_update(session->gensec, state,
+		status = gensec_update_ev(session->gensec, state,
 				       c->event_ctx,
 				       session->transport->negotiate.secblob,
 				       &state->setup.spnego.in.secblob);
 	} else {
-		status = gensec_update(session->gensec, state,
+		status = gensec_update_ev(session->gensec, state,
 				       c->event_ctx,
 				       data_blob(NULL, 0),
 				       &state->setup.spnego.in.secblob);

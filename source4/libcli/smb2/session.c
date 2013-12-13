@@ -152,7 +152,7 @@ struct tevent_req *smb2_session_setup_spnego_send(
 		return tevent_req_post(req, ev);
 	}
 
-	status = gensec_update(session->gensec, state,
+	status = gensec_update_ev(session->gensec, state,
 			       state->ev,
 			       negprot_secblob,
 			       &state->in_secblob);
@@ -209,7 +209,7 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 	peer_status = status;
 
 	if (NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		status = gensec_update(session->gensec, state,
+		status = gensec_update_ev(session->gensec, state,
 				       state->ev,
 				       state->out_secblob,
 				       &state->in_secblob);
