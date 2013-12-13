@@ -571,7 +571,7 @@ enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 	}
 
 	/* Accept the AP-REQ and generate teh AP-REP we need for the reply */
-	nt_status = gensec_update(gensec_security, tmp_ctx, kdc->task->event_ctx, ap_req, &ap_rep);
+	nt_status = gensec_update_ev(gensec_security, tmp_ctx, kdc->task->event_ctx, ap_req, &ap_rep);
 	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 
 		ret = kpasswdd_make_unauth_error_reply(kdc, mem_ctx,
