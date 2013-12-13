@@ -414,8 +414,8 @@ static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	status = gensec_update(tkey->gensec, mem_ctx, dns->task->event_ctx,
-			       *key, reply);
+	status = gensec_update_ev(tkey->gensec, mem_ctx, dns->task->event_ctx,
+				  *key, reply);
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
 		*dns_auth_error = DNS_RCODE_OK;
