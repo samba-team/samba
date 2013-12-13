@@ -203,20 +203,10 @@ _PUBLIC_ size_t gensec_max_update_size(struct gensec_security *gensec_security)
 	return gensec_security->max_update_size;
 }
 
-/**
- * Next state function for the GENSEC state machine
- *
- * @param gensec_security GENSEC State
- * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
- * @param in The request, as a DATA_BLOB
- * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
- * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent,
- *                or NT_STATUS_OK if the user is authenticated.
- */
-
-_PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
-				struct tevent_context *ev,
-				const DATA_BLOB in, DATA_BLOB *out)
+_PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
+				   TALLOC_CTX *out_mem_ctx,
+				   struct tevent_context *ev,
+				   const DATA_BLOB in, DATA_BLOB *out)
 {
 	NTSTATUS status;
 	const struct gensec_security_ops *ops = gensec_security->ops;
@@ -316,6 +306,25 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
  fail:
 	TALLOC_FREE(frame);
 	return status;
+}
+
+/**
+ * Next state function for the GENSEC state machine
+ *
+ * @param gensec_security GENSEC State
+ * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
+ * @param in The request, as a DATA_BLOB
+ * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent,
+ *                or NT_STATUS_OK if the user is authenticated.
+ */
+
+_PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security,
+				TALLOC_CTX *out_mem_ctx,
+				struct tevent_context *ev,
+				const DATA_BLOB in, DATA_BLOB *out)
+{
+	return gensec_update_ev(gensec_security, out_mem_ctx, ev, in, out);
 }
 
 struct gensec_update_state {
