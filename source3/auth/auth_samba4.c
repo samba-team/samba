@@ -31,6 +31,16 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+/*
+ * This module is not an ordinary authentication module.  It is really
+ * a way to redirect the whole authentication and authorization stack
+ * to use the source4 auth code, not a way to just handle NTLM
+ * authentication.
+ *
+ * See the comments above each function for how that hook changes the
+ * behaviour.
+ */
+
 /* 
  * This hook is currently unused, as all NTLM logins go via the hooks
  * provided by make_auth4_context_s4() below.
@@ -39,6 +49,9 @@
  * in future.  Importantly, this routine returns the information
  * needed for a NETLOGON SamLogon, not what is needed to establish a
  * session.
+ *
+ * We expect we may use this hook in the source3/ winbind when this
+ * services the AD DC.  It is tested via pdbtest.
  */
 
 static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
@@ -105,8 +118,23 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	return nt_status;
 }
 
-/* Hook to allow GENSEC to handle blob-based authentication
- * mechanisms, without directly linking the mechanism code */
+/*
+ * Hook to allow the source4 set of GENSEC modules to handle
+ * blob-based authentication mechanisms, without directly linking the
+ * mechanism code.
+ *
+ * This may eventually go away, when the GSSAPI acceptors are merged,
+ * when we will just rely on the make_auth4_context_s4 hook instead.
+ *
+ * Even for NTLMSSP, which has a common module, significant parts of
+ * the behaviour are overridden here, because it uses the source4 NTLM
+ * stack and the source4 mapping between the PAC/SamLogon response and
+ * the local token.
+ *
+ * It is important to override all this to ensure that the exact same
+ * token is generated and used in the SMB and LDAP servers, for NTLM
+ * and for Kerberos.
+ */
 static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 			       struct gensec_security **gensec_context)
 {
@@ -190,8 +218,15 @@ static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-/* Hook to allow handling of NTLM authentication for AD operation
- * without directly linking the s4 auth stack */
+/*
+ * Hook to allow handling of NTLM authentication for AD operation
+ * without directly linking the s4 auth stack
+ *
+ * This ensures we use the source4 authentication stack, as well as
+ * the authorization stack to create the user's token.  This ensures
+ * consistency between NTLM logins and NTLMSSP logins, as NTLMSSP is
+ * handled by the hook above.
+ */
 static NTSTATUS make_auth4_context_s4(TALLOC_CTX *mem_ctx,
 				      struct auth4_context **auth4_context)
 {
