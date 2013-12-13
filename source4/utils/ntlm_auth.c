@@ -635,7 +635,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		return;
 	}
 
-	nt_status = gensec_update(state->gensec_state, mem_ctx, ev, in, &out);
+	nt_status = gensec_update_ev(state->gensec_state, mem_ctx, ev, in, &out);
 	
 	/* don't leak 'bad password'/'no such user' info to the network client */
 	nt_status = nt_status_squash(nt_status);
