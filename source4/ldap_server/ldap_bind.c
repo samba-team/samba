@@ -202,8 +202,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			input = *req->creds.SASL.secblob;
 		}
 
-		status = gensec_update(conn->gensec, reply, conn->connection->event.ctx,
-				       input, &output);
+		status = gensec_update_ev(conn->gensec, reply, conn->connection->event.ctx,
+					  input, &output);
 
 		/* Windows 2000 mmc doesn't like secblob == NULL and reports a decoding error */
 		resp->SASL.secblob = talloc(reply, DATA_BLOB);
