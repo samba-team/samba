@@ -118,7 +118,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 		want_header_signing = false;
 	}
 
-	status = gensec_update(dce_conn->auth_state.gensec_security,
+	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
 			       call, call->event_ctx,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
@@ -198,7 +198,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	}
 
 	/* Pass the extra data we got from the client down to gensec for processing */
-	status = gensec_update(dce_conn->auth_state.gensec_security,
+	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
 			       call, call->event_ctx,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
@@ -277,7 +277,7 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = gensec_update(dce_conn->auth_state.gensec_security,
+	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
 			       call, call->event_ctx,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
