@@ -443,12 +443,12 @@ static bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-ADS_STATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
-			     const struct security_token *token,
-			     struct registry_key *root_key,
-			     struct GROUP_POLICY_OBJECT *gpo,
-			     const char *extension_guid_filter,
-			     uint32_t flags)
+NTSTATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
+			   const struct security_token *token,
+			   struct registry_key *root_key,
+			   struct GROUP_POLICY_OBJECT *gpo,
+			   const char *extension_guid_filter,
+			   uint32_t flags)
 {
 	struct GP_EXT *gp_ext = NULL;
 	int i;
@@ -462,7 +462,7 @@ ADS_STATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!gpo_get_gp_ext_from_gpo(mem_ctx, flags, gpo, &gp_ext)) {
-		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!gp_ext || !gp_ext->num_exts) {
@@ -471,7 +471,7 @@ ADS_STATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
 				"no policies in %s (%s) for this extension\n",
 				gpo->name, gpo->display_name));
 		}
-		return ADS_SUCCESS;
+		return NT_STATUS_OK;
 	}
 
 	for (i=0; i<gp_ext->num_exts; i++) {
@@ -489,24 +489,24 @@ ADS_STATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
 						   gp_ext->extensions_guid[i],
 						   gp_ext->snapins_guid[i]);
 		if (!NT_STATUS_IS_OK(ntstatus)) {
-			ADS_ERROR_NT(ntstatus);
+			return ntstatus;
 		}
 	}
 
-	return ADS_SUCCESS;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
 ****************************************************************/
 
-static ADS_STATUS gpo_process_gpo_list_by_ext(TALLOC_CTX *mem_ctx,
-					      const struct security_token *token,
-					      struct registry_key *root_key,
-					      struct GROUP_POLICY_OBJECT *gpo_list,
-					      const char *extensions_guid,
-					      uint32_t flags)
+static NTSTATUS gpo_process_gpo_list_by_ext(TALLOC_CTX *mem_ctx,
+					    const struct security_token *token,
+					    struct registry_key *root_key,
+					    struct GROUP_POLICY_OBJECT *gpo_list,
+					    const char *extensions_guid,
+					    uint32_t flags)
 {
-	ADS_STATUS status;
+	NTSTATUS status;
 	struct GROUP_POLICY_OBJECT *gpo;
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
@@ -523,40 +523,40 @@ static ADS_STATUS gpo_process_gpo_list_by_ext(TALLOC_CTX *mem_ctx,
 		status = gpo_process_a_gpo(mem_ctx, token, root_key,
 					   gpo, extensions_guid, flags);
 
-		if (!ADS_ERR_OK(status)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("failed to process gpo by ext: %s\n",
-				ads_errstr(status)));
+				nt_errstr(status)));
 			return status;
 		}
 	}
 
-	return ADS_SUCCESS;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
 ****************************************************************/
 
-ADS_STATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
-				const struct security_token *token,
-				struct GROUP_POLICY_OBJECT *gpo_list,
-				const char *extensions_guid_filter,
-				uint32_t flags)
+NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
+			      const struct security_token *token,
+			      struct GROUP_POLICY_OBJECT *gpo_list,
+			      const char *extensions_guid_filter,
+			      uint32_t flags)
 {
-	ADS_STATUS status = ADS_SUCCESS;
+	NTSTATUS status = NT_STATUS_OK;
 	struct gp_extension *gp_ext_list = NULL;
 	struct gp_extension *gp_ext = NULL;
 	struct registry_key *root_key = NULL;
 	struct gp_registry_context *reg_ctx = NULL;
 	WERROR werr;
 
-	status = ADS_ERROR_NT(init_gp_extensions(mem_ctx));
-	if (!ADS_ERR_OK(status)) {
+	status = init_gp_extensions(mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	gp_ext_list = get_gp_extension_list();
 	if (!gp_ext_list) {
-		return ADS_ERROR_NT(NT_STATUS_DLL_INIT_FAILED);
+		return NT_STATUS_DLL_INIT_FAILED;
 	}
 
 	/* get the key here */
@@ -571,7 +571,7 @@ ADS_STATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		talloc_free(reg_ctx);
-		return ADS_ERROR_NT(werror_to_ntstatus(werr));
+		return werror_to_ntstatus(werr);
 	}
 
 	root_key = reg_ctx->curr_key;
@@ -582,7 +582,7 @@ ADS_STATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 
 		guid_str = GUID_string(mem_ctx, gp_ext->guid);
 		if (!guid_str) {
-			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
@@ -599,7 +599,7 @@ ADS_STATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 		status = gpo_process_gpo_list_by_ext(mem_ctx, token,
 						     root_key, gpo_list,
 						     guid_str, flags);
-		if (!ADS_ERR_OK(status)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	}

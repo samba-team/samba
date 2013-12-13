@@ -237,17 +237,17 @@ void dump_gpo_list(ADS_STRUCT *ads,
 		   struct GROUP_POLICY_OBJECT *gpo_list,
 		   int debuglevel);
 void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link);
-ADS_STATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
-			     const struct security_token *token,
-			     struct registry_key *root_key,
-			     struct GROUP_POLICY_OBJECT *gpo,
-			     const char *extension_guid_filter,
-			     uint32_t flags);
-ADS_STATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
-				const struct security_token *token,
-				struct GROUP_POLICY_OBJECT *gpo_list,
-				const char *extensions_guid_filter,
-				uint32_t flags);
+NTSTATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
+			   const struct security_token *token,
+			   struct registry_key *root_key,
+			   struct GROUP_POLICY_OBJECT *gpo,
+			   const char *extension_guid_filter,
+			   uint32_t flags);
+NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
+			      const struct security_token *token,
+			      struct GROUP_POLICY_OBJECT *gpo_list,
+			      const char *extensions_guid_filter,
+			      uint32_t flags);
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
                            const char *cache_dir,
