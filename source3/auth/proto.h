@@ -206,9 +206,10 @@ bool user_in_group_sid(const char *username, const struct dom_sid *group_sid);
 bool user_sid_in_group_sid(const struct dom_sid *sid, const struct dom_sid *group_sid);
 bool user_in_group(const char *username, const char *groupname);
 struct passwd;
-NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
-                             char *unix_username,
-			     struct passwd *pwd);
+NTSTATUS make_server_info_pw(TALLOC_CTX *mem_ctx,
+			     const char *unix_username,
+			     const struct passwd *pwd,
+			     struct auth_serversupplied_info **server_info);
 NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 					 const char *username,
 					 bool is_guest,

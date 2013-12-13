@@ -242,7 +242,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 			 */
 			DEBUG(10, ("didn't find user %s in passdb, calling "
 				   "make_server_info_pw\n", username));
-			status = make_server_info_pw(&tmp, username, pw);
+			status = make_server_info_pw(mem_ctx, username, pw, &tmp);
 		}
 
 		TALLOC_FREE(sampass);
@@ -252,9 +252,6 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				  nt_errstr(status)));
 			return status;
                 }
-
-		/* Steal tmp server info into the server_info pointer. */
-		server_info = talloc_move(mem_ctx, &tmp);
 
 		/* make_server_info_pw does not set the domain. Without this
 		 * we end up with the local netbios name in substitutions for

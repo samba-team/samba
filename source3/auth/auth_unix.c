@@ -67,8 +67,11 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	unbecome_root();
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		if (pass) {
-			make_server_info_pw(server_info, pass->pw_name, pass);
+		if (pass != NULL) {
+			nt_status = make_server_info_pw(mem_ctx,
+							pass->pw_name,
+							pass,
+							server_info);
 		} else {
 			/* we need to do somthing more useful here */
 			nt_status = NT_STATUS_NO_SUCH_USER;

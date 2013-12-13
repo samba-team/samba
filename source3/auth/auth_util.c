@@ -639,14 +639,15 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
  to a struct samu
 ***************************************************************************/
 
-NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
-                             char *unix_username,
-			     struct passwd *pwd)
+NTSTATUS make_server_info_pw(TALLOC_CTX *mem_ctx,
+			     const char *unix_username,
+			     const struct passwd *pwd,
+			     struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS status;
 	struct samu *sampass = NULL;
 	char *qualified_name = NULL;
-	TALLOC_CTX *mem_ctx = NULL;
+	TALLOC_CTX *tmp_ctx;
 	struct dom_sid u_sid;
 	enum lsa_SidType type;
 	struct auth_serversupplied_info *result;
@@ -664,27 +665,27 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	 * plaintext passwords were used with no SAM backend.
 	 */
 
-	mem_ctx = talloc_init("make_server_info_pw_tmp");
-	if (!mem_ctx) {
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
+	qualified_name = talloc_asprintf(tmp_ctx, "%s\\%s",
 					unix_users_domain_name(),
 					unix_username );
 	if (!qualified_name) {
-		TALLOC_FREE(mem_ctx);
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!lookup_name(mem_ctx, qualified_name, LOOKUP_NAME_ALL,
+	if (!lookup_name(tmp_ctx, qualified_name, LOOKUP_NAME_ALL,
 						NULL, NULL,
 						&u_sid, &type)) {
-		TALLOC_FREE(mem_ctx);
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(tmp_ctx);
 
 	if (type != SID_NAME_USER) {
 		return NT_STATUS_NO_SUCH_USER;
@@ -707,7 +708,7 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	/* set the user sid to be the calculated u_sid */
 	pdb_set_user_sid(sampass, &u_sid, PDB_SET);
 
-	result = make_server_info(NULL);
+	result = make_server_info(mem_ctx);
 	if (result == NULL) {
 		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_MEMORY;
@@ -992,25 +993,36 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 	struct passwd *pwd;
 	NTSTATUS status;
 	struct auth_serversupplied_info *result;
+	TALLOC_CTX *tmp_ctx;
 
-	pwd = Get_Pwnam_alloc(talloc_tos(), username);
-	if (pwd == NULL) {
-		return NT_STATUS_NO_SUCH_USER;
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = make_server_info_pw(&result, pwd->pw_name, pwd);
+	pwd = Get_Pwnam_alloc(tmp_ctx, username);
+	if (pwd == NULL) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
 
+	status = make_server_info_pw(tmp_ctx, pwd->pw_name, pwd, &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 
 	result->nss_token = true;
 	result->guest = is_guest;
 
 	/* Now turn the server_info into a session_info with the full token etc */
-	status = create_local_token(mem_ctx, result, NULL, pwd->pw_name, session_info);
-	TALLOC_FREE(result);
-	TALLOC_FREE(pwd);
+	status = create_local_token(mem_ctx,
+				    result,
+				    NULL,
+				    pwd->pw_name,
+				    session_info);
+
+done:
+	talloc_free(tmp_ctx);
 
 	return status;
 }
