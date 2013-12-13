@@ -65,11 +65,12 @@ get_cluster_fs_state  ()
 
 create_ganesha_recdirs ()
 {
-    if [ -z "$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)" ]; then
+    MOUNTS=$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)
+    if [ -z "$MOUNTS" ]; then
       echo "startup $CTDB_CLUSTER_FILESYSTEM_TYPE not ready"
-      exit 1
+      exit 0
     fi
-    MNTPT=`mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE | sort | awk '{print $3}' | head -n 1`
+    MNTPT=$(echo "$MOUNTS" | sort | awk 'NR == 1 {print $3}')
     mkdir -p $MNTPT/.ganesha
     if [ -e $GANRECDIR ]; then
         if [ ! -L $GANRECDIR ] ; then
