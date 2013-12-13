@@ -394,7 +394,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			/* Get and push the proposed OID list into the packets */
-			nt_status = gensec_update(gensec_security, req, req->smb_conn->connection->event.ctx, null_data_blob, &blob);
+			nt_status = gensec_update_ev(gensec_security, req, req->smb_conn->connection->event.ctx, null_data_blob, &blob);
 
 			if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 				DEBUG(1, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));

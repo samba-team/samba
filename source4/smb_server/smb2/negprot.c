@@ -79,7 +79,7 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 		return nt_status;
 	}
 
-	nt_status = gensec_update(gensec_security, req, req->smb_conn->connection->event.ctx, null_data_blob, &blob);
+	nt_status = gensec_update_ev(gensec_security, req, req->smb_conn->connection->event.ctx, null_data_blob, &blob);
 	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DEBUG(0, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));
 		smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO - no first token\n");
