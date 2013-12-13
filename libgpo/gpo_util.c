@@ -443,8 +443,7 @@ static bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
-			     TALLOC_CTX *mem_ctx,
+ADS_STATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
 			     const struct security_token *token,
 			     struct registry_key *root_key,
 			     struct GROUP_POLICY_OBJECT *gpo,
@@ -500,8 +499,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
-static ADS_STATUS gpo_process_gpo_list_by_ext(ADS_STRUCT *ads,
-					      TALLOC_CTX *mem_ctx,
+static ADS_STATUS gpo_process_gpo_list_by_ext(TALLOC_CTX *mem_ctx,
 					      const struct security_token *token,
 					      struct registry_key *root_key,
 					      struct GROUP_POLICY_OBJECT *gpo_list,
@@ -522,7 +520,7 @@ static ADS_STATUS gpo_process_gpo_list_by_ext(ADS_STRUCT *ads,
 		 * extension, otherwise we cannot store the e.g. the *list* of
 		 * logon-scripts correctly (for more then one GPO) */
 
-		status = gpo_process_a_gpo(ads, mem_ctx, token, root_key,
+		status = gpo_process_a_gpo(mem_ctx, token, root_key,
 					   gpo, extensions_guid, flags);
 
 		if (!ADS_ERR_OK(status)) {
@@ -538,8 +536,7 @@ static ADS_STATUS gpo_process_gpo_list_by_ext(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
-ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
-				TALLOC_CTX *mem_ctx,
+ADS_STATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 				const struct security_token *token,
 				struct GROUP_POLICY_OBJECT *gpo_list,
 				const char *extensions_guid_filter,
@@ -599,7 +596,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 			gp_ext->name, guid_str));
 
 
-		status = gpo_process_gpo_list_by_ext(ads, mem_ctx, token,
+		status = gpo_process_gpo_list_by_ext(mem_ctx, token,
 						     root_key, gpo_list,
 						     guid_str, flags);
 		if (!ADS_ERR_OK(status)) {

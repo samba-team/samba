@@ -433,7 +433,7 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 		goto out;
 	}
 
-	status = gpo_process_gpo_list(ads, mem_ctx, token, gpo_list,
+	status = gpo_process_gpo_list(mem_ctx, token, gpo_list,
 				      filter, flags);
 	if (!ADS_ERR_OK(status)) {
 		d_printf("failed to process gpo list: %s\n",
