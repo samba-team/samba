@@ -734,7 +734,7 @@ ssize_t full_path_tos(const char *dir, const char *name,
 NTSTATUS file_name_hash(connection_struct *conn,
 			const char *name, uint32_t *p_name_hash)
 {
-	char tmpbuf[1024];
+	char tmpbuf[PATH_MAX];
 	char *fullpath, *to_free;
 	size_t len;
 

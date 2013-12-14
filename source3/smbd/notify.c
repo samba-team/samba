@@ -419,7 +419,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 {
 	struct notify_context *notify_ctx = conn->sconn->notify_ctx;
 	char *fullpath, *to_free;
-	char tmpbuf[1024];
+	char tmpbuf[PATH_MAX];
 	ssize_t len;
 
 	if (path[0] == '.' && path[1] == '/') {
