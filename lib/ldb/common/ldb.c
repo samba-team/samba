@@ -112,6 +112,10 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	 * having to provide their own private one explicitly */
 	if (ev_ctx == NULL) {
 		ev_ctx = tevent_context_init(ldb);
+		if (ev_ctx == NULL) {
+			talloc_free(ldb);
+			return NULL;
+		}
 		tevent_set_debug(ev_ctx, ldb_tevent_debug, ldb);
 		tevent_loop_allow_nesting(ev_ctx);
 	}
