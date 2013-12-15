@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    TDB wrap functions
 
    Copyright (C) Andrew Tridgell 2004
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -28,10 +28,10 @@
 /*
  Log tdb messages via DEBUG().
 */
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
+static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 			 const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
+static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 			 const char *format, ...)
 {
 	va_list ap;
@@ -54,7 +54,7 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 		break;
 	default:
 		debuglevel = 0;
-	}		
+	}
 
 	va_start(ap, format);
 	ret = vasprintf(&ptr, format, ap);
@@ -81,7 +81,7 @@ static int tdb_wrap_private_destructor(struct tdb_wrap_private *w)
 	tdb_close(w->tdb);
 	DLIST_REMOVE(tdb_list, w);
 	return 0;
-}				 
+}
 
 static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 						      const char *name,
