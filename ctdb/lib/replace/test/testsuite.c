@@ -166,6 +166,7 @@ static int test_strdup(void)
 	if (strcmp("bla", x) != 0) {
 		printf("failure: strdup [\nfailed: expected \"bla\", got \"%s\"\n]\n",
 			   x);
+		free(x);
 		return false;
 	}
 	free(x);
