@@ -2963,10 +2963,12 @@ static int socket_error_from_errno(int ret,
 	}
 
 #ifdef EWOULDBLOCK
+#if EWOULDBLOCK != EAGAIN
 	if (sys_errno == EWOULDBLOCK) {
 		*retry = true;
 		return sys_errno;
 	}
+#endif
 #endif
 
 	return sys_errno;
