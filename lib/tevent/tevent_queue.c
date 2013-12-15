@@ -325,7 +325,7 @@ struct tevent_req *tevent_queue_wait_send(TALLOC_CTX *mem_ctx,
 			      tevent_queue_wait_trigger,
 			      NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
