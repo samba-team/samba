@@ -497,7 +497,7 @@ static bool pvfs_group_member(struct pvfs_state *pvfs, gid_t gid)
 		return true;
 	}
 	ngroups = getgroups(0, NULL);
-	if (ngroups == 0) {
+	if (ngroups <= 0) {
 		return false;
 	}
 	groups = talloc_array(pvfs, gid_t, ngroups);
