@@ -228,10 +228,12 @@ static int connect_to_scanner(vfs_handle_struct * handle)
 	    large directory with lots of unscanned files. */
 		int sndsize;
 		socklen_t size = sizeof(int);
-		getsockopt(so->socket, SOL_SOCKET, SO_RCVBUF,
-			   (char *)&sndsize, &size);
-		DEBUG(SCANNEDONLY_DEBUG, ("current socket buffer size=%d\n",
-					  sndsize));
+		if (getsockopt(so->socket, SOL_SOCKET, SO_RCVBUF,
+			       (char *)&sndsize, &size) == 0) {
+			DEBUG(SCANNEDONLY_DEBUG,
+			      ("current socket buffer size=%d\n",
+			       sndsize));
+		}
 		sndsize = 262144;
 		if (setsockopt(so->socket, SOL_SOCKET, SO_RCVBUF,
 			       (char *)&sndsize,
