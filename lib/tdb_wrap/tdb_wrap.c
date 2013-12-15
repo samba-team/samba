@@ -120,6 +120,8 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 	}
 
 	lctx.log_fn = tdb_wrap_log;
+	lctx.log_private = NULL;
+
 	result->tdb = tdb_open_ex(name, hash_size, tdb_flags,
 				  open_flags, mode, &lctx, NULL);
 	if (result->tdb == NULL) {
