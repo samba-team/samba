@@ -141,6 +141,7 @@ static const char **sldb_string_list_option(TALLOC_CTX *mem_ctx, struct share_co
 		name[colon-opt_name] = '-';
 
 		el = ldb_msg_find_element(msg, name);
+		TALLOC_FREE(name);
 	} else {
 		el = ldb_msg_find_element(msg, opt_name);
 	}
