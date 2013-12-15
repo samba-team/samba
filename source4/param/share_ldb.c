@@ -123,21 +123,22 @@ static const char **sldb_string_list_option(TALLOC_CTX *mem_ctx, struct share_co
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
 	const char **list;
+	const char *colon;
 	int i;
 
 	if (scfg == NULL) return NULL;
 
 	msg = talloc_get_type(scfg->opaque, struct ldb_message);
 
-	if (strchr(opt_name, ':')) {
-		char *name, *p;
+	colon = strchr(opt_name, ':');
+	if (colon != NULL) {
+		char *name;
 
 		name = talloc_strdup(scfg, opt_name);
 		if (!name) {
 			return NULL;
 		}
-		p = strchr(name, ':');
-		*p = '-';
+		name[colon-opt_name] = '-';
 
 		el = ldb_msg_find_element(msg, name);
 	} else {
