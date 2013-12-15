@@ -62,20 +62,21 @@ static const char *sldb_string_option(struct share_config *scfg, const char *opt
 {
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
+	const char *colon;
 
 	if (scfg == NULL) return defval;
 
 	msg = talloc_get_type(scfg->opaque, struct ldb_message);
 
-	if (strchr(opt_name, ':')) {
-		char *name, *p;
+	colon = strchr(opt_name, ':');
+	if (colon != NULL) {
+		char *name;
 
 		name = talloc_strdup(scfg, opt_name);
 		if (!name) {
 			return NULL;
 		}
-		p = strchr(name, ':');
-		*p = '-';
+		name[colon-opt_name] = '-';
 
 		el = ldb_msg_find_element(msg, name);
 	} else {
