@@ -428,7 +428,12 @@ utimensat vsyslog _write __write __xstat
                 conf.DEFINE('HAVE_TRU64_ACLS',1)
                 default_static_modules.extend(TO_LIST('vfs_tru64acl'))
         elif (host_os.rfind('darwin') > -1):
-            Logs.warn('ACLs on Dwarwin currently not supported')
+            Logs.warn('ACLs on Darwin currently not supported')
+            conf.fatal("ACL support not available on Darwin/MacOS. "
+                       "Use --without-acl-support for building without "
+                       "ACL support. "
+                       "ACL support is required to change permissions "
+                       "from Windows clients.")
         else:
             conf.CHECK_FUNCS_IN('acl_get_file', 'acl')
             if conf.CHECK_CODE('''
@@ -449,7 +454,13 @@ return acl_get_perm_np(permset_d, perm);
                         headers='sys/types.h sys/acl.h', link=True,
                         msg="Checking whether acl_get_perm_np() is available")
                 default_static_modules.extend(TO_LIST('vfs_posixacl'))
-
+            else:
+                conf.fatal("ACL support not found. Try installing libacl1-dev "
+                           "or libacl-devel.  "
+                           "Otherwise, use --without-acl-support to build "
+                           "without ACL support. "
+                           "ACL support is required to change permissions from "
+                           "Windows clients.")
 
     if conf.CHECK_FUNCS('dirfd'):
         conf.DEFINE('HAVE_DIRFD_DECL', 1)
