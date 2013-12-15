@@ -79,6 +79,7 @@ static const char *sldb_string_option(struct share_config *scfg, const char *opt
 		name[colon-opt_name] = '-';
 
 		el = ldb_msg_find_element(msg, name);
+		TALLOC_FREE(name);
 	} else {
 		el = ldb_msg_find_element(msg, opt_name);
 	}
