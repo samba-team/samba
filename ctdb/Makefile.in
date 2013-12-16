@@ -120,7 +120,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool \
-       bin/ctdb_lock_helper @CTDB_PMDA@
+       bin/ctdb_lock_helper bin/ctdb_event_helper @CTDB_PMDA@
 
 SBINS = bin/ctdbd
 
@@ -177,6 +177,10 @@ bin/ltdbtool: tools/ltdbtool.o $(TDB_OBJ)
 bin/ctdb_lock_helper: server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ) $(TDB_LIBS) $(LIB_FLAGS)
+
+bin/ctdb_event_helper: server/ctdb_event_helper.o $(SOCKET_WRAPPER_OBJ)
+	@echo Linking $@
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_event_helper.o  $(SOCKET_WRAPPER_OBJ) $(LIB_FLAGS)
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o $(POPT_OBJ)
 	@echo Linking $@
@@ -332,6 +336,7 @@ install: all manpages $(PMDA_INSTALL)
 	$(INSTALLCMD) -m 755 bin/ping_pong $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ltdbtool $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ctdb_lock_helper $(DESTDIR)$(bindir)
+	$(INSTALLCMD) -m 755 bin/ctdb_event_helper $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_client.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_protocol.h $(DESTDIR)$(includedir)
