@@ -538,7 +538,7 @@ done:
 
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
-	if (gensec_security->want_features & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL)) {
+	if (gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		nt_status = ntlmssp_sign_init(ntlmssp_state);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n",
