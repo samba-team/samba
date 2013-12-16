@@ -766,7 +766,7 @@ msg.msg_acctrightslen = sizeof(fd);
         if not use_ads_krb5:
             Logs.warn("Active Directory support not available: krb5 libs don't have all required features")
         if not use_ads_ldap:
-            Logs.warn("Active Directory support not available: LDAP support ist not available.")
+            Logs.warn("Active Directory support not available: LDAP support is not available.")
         if Options.options.with_ads:
             conf.fatal("Active Directory support not found. Use --without-ads "
                        "for building without Active Directory support. "
