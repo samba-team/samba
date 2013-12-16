@@ -140,7 +140,7 @@ static const char *_pam_error_code_str(int err)
 #define _PAM_LOG_FUNCTION_LEAVE(function, ctx, retval) \
 	do { \
 		_pam_log_debug(ctx, LOG_DEBUG, "[pamh: %p] LEAVE: " \
-			       function " returning %d (%s)", ctx->pamh, retval, \
+			       function " returning %d (%s)", ctx ? ctx->pamh : NULL, retval, \
 			       _pam_error_code_str(retval)); \
 		_pam_log_state(ctx); \
 	} while (0)
@@ -261,7 +261,7 @@ static void _pam_log_debug(struct pwb_context *r, int err, const char *format, .
 {
 	va_list args;
 
-	if (!_pam_log_is_debug_enabled(r->ctrl)) {
+	if (!r || !_pam_log_is_debug_enabled(r->ctrl)) {
 		return;
 	}
 
@@ -348,7 +348,7 @@ static char *iniparser_getstring_nonempty(dictionary *d, char *key, char *def)
 
 static void _pam_log_state(struct pwb_context *ctx)
 {
-	if (!_pam_log_is_debug_state_enabled(ctx->ctrl)) {
+	if (!ctx || !_pam_log_is_debug_state_enabled(ctx->ctrl)) {
 		return;
 	}
 
