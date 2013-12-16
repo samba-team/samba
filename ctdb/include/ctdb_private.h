@@ -1461,6 +1461,15 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 					      const char *log_prefix,
 					      void (*logfn)(const char *, uint16_t, void *),
 					      void *logfn_private, pid_t *pid);
+struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
+					       struct ctdb_context *ctdb,
+					       const char *log_prefix,
+					       const char *helper,
+					       int helper_argc,
+					       const char **helper_argv,
+					       void (*logfn)(const char *, uint16_t, void *),
+					       void *logfn_private, pid_t *pid);
+
 
 int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid);
