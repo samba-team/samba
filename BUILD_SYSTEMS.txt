@@ -66,20 +66,15 @@ Optional Libraries
 ------------------
 
 To assist users and distributors to build Samba with the full feature
-set, we hope to in the future the build system will abort if our
-dependent libraries and their header files are not found on the target
-system.  This will mean for example, that xattr, acl and ldap headers
-must be installed for the default build to complete.  The configure
-system will check for these headers, and the error message will
-indicate:
- - the required header and library
- - the option (such as --without-acl-support) that can be specified to
-   skip this requirement, and
- - the feature (ACL support optional for file servers, mandatory for AD
-   Domain Controller) being skipped. 
+set, the build system will abort if our dependent libraries and their
+header files are not found on the target system.  This will mean for
+example, that xattr, acl and ldap headers must be installed for the
+default build to complete.  The configure system will check for these
+headers, and the error message will indicate the option (such as
+--without-acl-support) that can be specified to skip this requirement.
 
 This will assist users and in particular distributors in building fully
 functional packages, while allowing those on systems truly without these
 facilities to continue to build Samba after careful consideration.
 
-Sadly this feature is still pending implementation.
+This feature is not currently supported for xattr.
