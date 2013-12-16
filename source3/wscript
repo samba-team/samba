@@ -23,7 +23,7 @@ def set_options(opt):
                    action="store", dest='shared_modules', default=None)
 
     opt.SAMBA3_ADD_OPTION('winbind')
-    opt.SAMBA3_ADD_OPTION('ads', default=None) # None means autodetection
+    opt.SAMBA3_ADD_OPTION('ads')
     opt.SAMBA3_ADD_OPTION('ldap')
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
@@ -768,7 +768,10 @@ msg.msg_acctrightslen = sizeof(fd);
         if not use_ads_ldap:
             Logs.warn("Active Directory support not available: LDAP support ist not available.")
         if Options.options.with_ads:
-            conf.fatal("Active Directory support not found. Use --without-ads for building without Active Directory support.")
+            conf.fatal("Active Directory support not found. Use --without-ads "
+                       "for building without Active Directory support. "
+                       "ADS support improves communication with "
+                       "Active Directory domain controllers.")
         else:
             # this is the auto-mode case
             Logs.warn("Building without Active Directory support.")
