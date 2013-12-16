@@ -598,7 +598,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		talloc_steal(ntlmssp_state, session_key.data);
 	}
 
-	if (ntlmssp_state->session_key.length) {
+	if (gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		nt_status = ntlmssp_sign_init(ntlmssp_state);
 	}
 
