@@ -69,12 +69,6 @@ struct gp_extension_methods {
 					 const char *extension_guid,
 					 const char *snapin_guid);
 
-	NTSTATUS (*process_group_policy2)(TALLOC_CTX *mem_ctx,
-					 uint32_t flags,
-					 const struct security_token *token,
-					 struct GROUP_POLICY_OBJECT *gpo_list,
-					 const char *extension_guid);
-
 	NTSTATUS (*get_reg_config)(TALLOC_CTX *mem_ctx,
 				   struct gp_extension_reg_info **info);
 
