@@ -1245,9 +1245,8 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
-			       bool from_user,
 			       enum ctdb_eventscript_call call,
-			       const char *fmt, ...) PRINTF_ATTRIBUTE(7,8);
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 void set_nonblocking(int fd);

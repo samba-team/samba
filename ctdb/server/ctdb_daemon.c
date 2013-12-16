@@ -1312,7 +1312,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 					 ctdb,
 					 ctdb_setup_event_callback,
 					 ctdb,
-					 false,
 					 CTDB_EVENT_SETUP,
 					 "%s",
 					 "");

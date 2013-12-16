@@ -944,7 +944,6 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_end_recovery_callback, 
 					 state, 
-					 false,
 					 CTDB_EVENT_RECOVERED, "%s", "");
 
 	if (ret != 0) {
@@ -998,7 +997,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_start_recovery_callback, 
-					 state, false,
+					 state,
 					 CTDB_EVENT_START_RECOVERY,
 					 "%s", "");
 

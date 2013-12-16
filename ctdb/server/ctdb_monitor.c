@@ -337,7 +337,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 		DEBUG(DEBUG_NOTICE,("Recoveries finished. Running the \"startup\" event.\n"));
 		ret = ctdb_event_script_callback(ctdb, 
 						 ctdb->monitor->monitor_context, ctdb_startup_callback, 
-						 ctdb, false,
+						 ctdb,
 						 CTDB_EVENT_STARTUP, "%s", "");
 	} else {
 		int i;
@@ -362,7 +362,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 		} else {
 			ret = ctdb_event_script_callback(ctdb, 
 					ctdb->monitor->monitor_context, ctdb_health_callback,
-					ctdb, false,
+					ctdb,
 					CTDB_EVENT_MONITOR, "%s", "");
 		}
 	}
