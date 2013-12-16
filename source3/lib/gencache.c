@@ -723,7 +723,11 @@ bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
 		return false;
 	}
 	if (value) {
-		*value = talloc_move(mem_ctx, (char **)&blob.data);
+		/*
+		 * talloc_move generates a type-punned warning here. As we
+		 * leave the function immediately, do a simple talloc_steal.
+		 */
+		*value = (char *)talloc_steal(mem_ctx, blob.data);
 		return true;
 	}
 	data_blob_free(&blob);
