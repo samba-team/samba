@@ -659,6 +659,15 @@ msg.msg_acctrightslen = sizeof(fd);
             if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
                     conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
                 conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
+        else:
+            conf.fatal("LDAP support not found. "
+                       "Try installing libldap2-dev or openldap-devel. "
+                       "Otherwise, use --without-ldap to build without "
+                       "LDAP support. "
+                       "LDAP support is required for the LDAP passdb backend, "
+                       "LDAP idmap backends and ADS. "
+                       "ADS support improves communication with "
+                       "Active Directory domain controllers.")
     else:
         conf.SET_TARGET_TYPE('ldap', 'EMPTY')
         conf.SET_TARGET_TYPE('lber', 'EMPTY')
