@@ -342,6 +342,40 @@ bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+bool winbind_lookup_usersids(TALLOC_CTX *mem_ctx,
+			     const struct dom_sid *user_sid,
+			     uint32_t *p_num_sids,
+			     struct dom_sid **p_sids)
+{
+	wbcErr ret;
+	struct wbcDomainSid dom_sid;
+	struct wbcDomainSid *sid_list = NULL;
+	uint32_t num_sids;
+
+	memcpy(&dom_sid, user_sid, sizeof(dom_sid));
+
+	ret = wbcLookupUserSids(&dom_sid,
+				false,
+				&num_sids,
+				&sid_list);
+	if (ret != WBC_ERR_SUCCESS) {
+		return false;
+	}
+
+	*p_sids = talloc_array(mem_ctx, struct dom_sid, num_sids);
+	if (*p_sids == NULL) {
+		wbcFreeMemory(sid_list);
+		return false;
+	}
+
+	memcpy(*p_sids, sid_list, sizeof(dom_sid) * num_sids);
+
+	*p_num_sids = num_sids;
+	wbcFreeMemory(sid_list);
+
+	return true;
+}
+
 #else      /* WITH_WINBIND */
 
 struct passwd * winbind_getpwnam(const char * name)

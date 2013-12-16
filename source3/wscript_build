@@ -172,7 +172,7 @@ bld.SAMBA3_LIBRARY('pdb',
                    passdb/lookup_sid.h''',
                    abi_match=private_pdb_match,
                    abi_directory='passdb/ABI',
-                   vnum='0')
+                   vnum='0.1.0')
 
 bld.SAMBA3_LIBRARY('smbldaphelper',
                    source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',
