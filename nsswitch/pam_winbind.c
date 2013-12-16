@@ -14,6 +14,17 @@
 
 #include "pam_winbind.h"
 
+enum pam_winbind_request_type 
+{
+	PAM_WINBIND_AUTHENTICATE,
+	PAM_WINBIND_SETCRED,
+	PAM_WINBIND_ACCT_MGMT,
+	PAM_WINBIND_OPEN_SESSION,
+	PAM_WINBIND_CLOSE_SESSION,
+	PAM_WINBIND_CHAUTHTOK,
+	PAM_WINBIND_CLEANUP
+};
+
 static int wbc_error_to_pam_error(wbcErr status)
 {
 	switch (status) {
@@ -384,6 +395,7 @@ static int _pam_parse(const pam_handle_t *pamh,
 		      int flags,
 		      int argc,
 		      const char **argv,
+		      enum pam_winbind_request_type type,
 		      dictionary **result_d)
 {
 	int ctrl = 0;
@@ -475,11 +487,15 @@ config_from_pam:
 			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 		else if (!strcasecmp(*v, "unknown_ok"))
 			ctrl |= WINBIND_UNKNOWN_OK_ARG;
-		else if (!strncasecmp(*v, "require_membership_of",
-				      strlen("require_membership_of")))
+		else if ((type == PAM_WINBIND_AUTHENTICATE
+			  || type == PAM_WINBIND_SETCRED) 
+			 && !strncasecmp(*v, "require_membership_of",
+					 strlen("require_membership_of")))
 			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
-		else if (!strncasecmp(*v, "require-membership-of",
-				      strlen("require-membership-of")))
+		else if ((type == PAM_WINBIND_AUTHENTICATE 
+			  || type == PAM_WINBIND_SETCRED) 
+			 && !strncasecmp(*v, "require-membership-of",
+					 strlen("require-membership-of")))
 			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 		else if (!strcasecmp(*v, "krb5_auth"))
 			ctrl |= WINBIND_KRB5_AUTH;
@@ -490,7 +506,7 @@ config_from_pam:
 			ctrl |= WINBIND_CACHED_LOGIN;
 		else if (!strcasecmp(*v, "mkhomedir"))
 			ctrl |= WINBIND_MKHOMEDIR;
-		else {
+		else if (type != PAM_WINBIND_CLEANUP) {
 			__pam_log(pamh, ctrl, LOG_ERR,
 				 "pam_parse: unknown option: %s", *v);
 			return -1;
@@ -526,6 +542,7 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 				     int flags,
 				     int argc,
 				     const char **argv,
+				     enum pam_winbind_request_type type,
 				     struct pwb_context **ctx_p)
 {
 	struct pwb_context *r = NULL;
@@ -545,7 +562,7 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 	r->flags = flags;
 	r->argc = argc;
 	r->argv = argv;
-	r->ctrl = _pam_parse(pamh, flags, argc, argv, &r->dict);
+	r->ctrl = _pam_parse(pamh, flags, argc, argv, type, &r->dict);
 	if (r->ctrl == -1) {
 		TALLOC_FREE(r);
 		return PAM_SYSTEM_ERR;
@@ -560,7 +577,7 @@ static void _pam_winbind_cleanup_func(pam_handle_t *pamh,
 				      void *data,
 				      int error_status)
 {
-	int ctrl = _pam_parse(pamh, 0, 0, NULL, NULL);
+	int ctrl = _pam_parse(pamh, 0, 0, NULL, PAM_WINBIND_CLEANUP, NULL);
 	if (_pam_log_is_debug_state_enabled(ctrl)) {
 		__pam_log_debug(pamh, ctrl, LOG_DEBUG,
 			       "[pamh: %p] CLEAN: cleaning up PAM data %p "
@@ -2449,7 +2466,8 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 }
 
 static int _pam_delete_cred(pam_handle_t *pamh, int flags,
-			 int argc, const char **argv)
+			    int argc, enum pam_winbind_request_type type, 
+			    const char **argv)
 {
 	int retval = PAM_SUCCESS;
 	struct pwb_context *ctx = NULL;
@@ -2460,7 +2478,7 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 
 	ZERO_STRUCT(logoff);
 
-	retval = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
+	retval = _pam_winbind_init_context(pamh, flags, argc, argv, type, &ctx);
 	if (retval) {
 		goto out;
 	}
@@ -2595,7 +2613,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	char *real_username = NULL;
 	struct pwb_context *ctx = NULL;
 
-	retval = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
+	retval = _pam_winbind_init_context(pamh, flags, argc, argv,
+					   PAM_WINBIND_AUTHENTICATE, &ctx);
 	if (retval) {
 		goto out;
 	}
@@ -2747,7 +2766,8 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 	int ret = PAM_SYSTEM_ERR;
 	struct pwb_context *ctx = NULL;
 
-	ret = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
+	ret = _pam_winbind_init_context(pamh, flags, argc, argv,
+					PAM_WINBIND_SETCRED, &ctx);
 	if (ret) {
 		goto out;
 	}
@@ -2757,7 +2777,8 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 	switch (flags & ~PAM_SILENT) {
 
 		case PAM_DELETE_CRED:
-			ret = _pam_delete_cred(pamh, flags, argc, argv);
+			ret = _pam_delete_cred(pamh, flags, argc,
+					       PAM_WINBIND_SETCRED, argv);
 			break;
 		case PAM_REFRESH_CRED:
 			_pam_log_debug(ctx, LOG_WARNING,
@@ -2801,7 +2822,8 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	const char *tmp = NULL;
 	struct pwb_context *ctx = NULL;
 
-	ret = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
+	ret = _pam_winbind_init_context(pamh, flags, argc, argv,
+					PAM_WINBIND_ACCT_MGMT, &ctx);
 	if (ret) {
 		goto out;
 	}
@@ -2896,7 +2918,8 @@ int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	int ret = PAM_SUCCESS;
 	struct pwb_context *ctx = NULL;
 
-	ret = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
+	ret = _pam_winbind_init_context(pamh, flags, argc, argv,
+					PAM_WINBIND_OPEN_SESSION, &ctx);
 	if (ret) {
 		goto out;
 	}
@@ -2922,7 +2945,8 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 	int ret = PAM_SUCCESS;
 	struct pwb_context *ctx = NULL;
 
-	ret = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
+	ret = _pam_winbind_init_context(pamh, flags, argc, argv,
+					PAM_WINBIND_CLOSE_SESSION, &ctx);
 	if (ret) {
 		goto out;
 	}
@@ -3008,7 +3032,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	struct wbcAuthErrorInfo *error = NULL;
 	struct pwb_context *ctx = NULL;
 
-	ret = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
+	ret = _pam_winbind_init_context(pamh, flags, argc, argv,
+					PAM_WINBIND_CHAUTHTOK, &ctx);
 	if (ret) {
 		goto out;
 	}

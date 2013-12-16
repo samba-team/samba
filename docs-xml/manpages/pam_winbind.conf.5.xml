@@ -72,7 +72,9 @@
 		<parameter>MYDOMAIN\\myuser</parameter>.  pam_winbind will, in that case, lookup the SID internally. Note that
 		NAME may not contain any spaces. It is thus recommended to only use SIDs. You can verify the list of SIDs a
 		user is a member of with <command>wbinfo --user-sids=SID</command>. This setting is empty by default.
-		</para></listitem>
+		</para>
+		<para>This option only operates during password authentication, and will not restrict access if a password is not required for any reason (such as SSH key-based login).</para>
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>

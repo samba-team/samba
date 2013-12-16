@@ -87,7 +87,14 @@
 		<parameter>MYDOMAIN\\myuser</parameter>.  pam_winbind will, in that case, lookup the SID internally. Note that
 		NAME may not contain any spaces. It is thus recommended to only use SIDs. You can verify the list of SIDs a
 		user is a member of with <command>wbinfo --user-sids=SID</command>.
-		</para></listitem>
+		</para>
+
+		<para>
+		This option must only be specified on a auth
+		module declaration, as it only operates in conjunction
+		with password authentication.
+		</para>
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
