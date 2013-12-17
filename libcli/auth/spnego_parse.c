@@ -203,7 +203,9 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 
 	while (!asn1_has_error(asn1) && 0 < asn1_tag_remaining(asn1)) {
 		uint8_t context;
+		uint8_t neg_result;
 		char *oid;
+
 		if (!asn1_peek_uint8(asn1, &context)) {
 			asn1_set_error(asn1);
 			break;
@@ -213,7 +215,8 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		case ASN1_CONTEXT(0):
 			if (!asn1_start_tag(asn1, ASN1_CONTEXT(0))) return false;
 			if (!asn1_start_tag(asn1, ASN1_ENUMERATED)) return false;
-			if (!asn1_read_uint8(asn1, &token->negResult)) return false;
+			if (!asn1_read_uint8(asn1, &neg_result)) return false;
+			token->negResult = neg_result;
 			if (!asn1_end_tag(asn1)) return false;
 			if (!asn1_end_tag(asn1)) return false;
 			break;
