@@ -473,8 +473,6 @@ NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState 
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* TODO: this may allow the a replay attack on a non-signed
-	   connection. Should we check that this is increasing? */
 	creds->sequence = received_authenticator->timestamp;
 	netlogon_creds_step(creds);
 	if (netlogon_creds_server_check_internal(creds, &received_authenticator->cred)) {
