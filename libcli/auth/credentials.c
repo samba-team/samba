@@ -479,7 +479,7 @@ NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState 
 	netlogon_creds_step(creds);
 	if (netlogon_creds_server_check_internal(creds, &received_authenticator->cred)) {
 		return_authenticator->cred = creds->server;
-		return_authenticator->timestamp = creds->sequence;
+		return_authenticator->timestamp = 0;
 		return NT_STATUS_OK;
 	} else {
 		ZERO_STRUCTP(return_authenticator);
