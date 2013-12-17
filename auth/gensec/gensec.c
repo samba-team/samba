@@ -30,6 +30,16 @@
 #include "auth/gensec/gensec_internal.h"
 #include "librpc/gen_ndr/dcerpc.h"
 
+_PRIVATE_ NTSTATUS gensec_may_reset_crypto(struct gensec_security *gensec_security,
+					   bool full_reset)
+{
+	if (!gensec_security->ops->may_reset_crypto) {
+		return NT_STATUS_OK;
+	}
+
+	return gensec_security->ops->may_reset_crypto(gensec_security, full_reset);
+}
+
 /*
   wrappers for the gensec function pointers
 */
