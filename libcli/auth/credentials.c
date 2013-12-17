@@ -344,7 +344,29 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init_session_key(TA
 void netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds,
 				struct netr_Authenticator *next)
 {
+	uint32_t t32n = (uint32_t)time(NULL);
+
+	/*
+	 * we always increment and ignore an overflow here
+	 */
 	creds->sequence += 2;
+
+	if (t32n > creds->sequence) {
+		/*
+		 * we may increment more
+		 */
+		creds->sequence = t32n;
+	} else {
+		uint32_t d = creds->sequence - t32n;
+
+		if (d >= INT32_MAX) {
+			/*
+			 * got an overflow of time_t vs. uint32_t
+			 */
+			creds->sequence = t32n;
+		}
+	}
+
 	netlogon_creds_step(creds);
 
 	next->cred = creds->client;
