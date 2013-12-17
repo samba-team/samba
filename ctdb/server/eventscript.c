@@ -354,8 +354,72 @@ out:
 	return ret;
 }
 
+/* There cannot be more than 10 arguments to command helper. */
+#define MAX_HELPER_ARGS		(10)
+
+static bool child_helper_args(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
+			      enum ctdb_eventscript_call call,
+			      const char *options,
+			      struct ctdb_script_wire *current, int fd,
+			      int *argc, const char ***argv)
+{
+	const char **tmp;
+	int n, i;
+	char *t, *saveptr, *opt;
+
+	tmp = talloc_array(mem_ctx, const char *, 10+1);
+	if (tmp == NULL)  goto failed;
+
+	tmp[0] = talloc_asprintf(tmp, "%d", fd);
+	tmp[1] = talloc_asprintf(tmp, "%s/%s", ctdb->event_script_dir, current->name);
+	tmp[2] = talloc_asprintf(tmp, "%s", ctdb_eventscript_call_names[call]);
+	n = 3;
+
+	/* Split options into individual arguments */
+	opt = talloc_strdup(mem_ctx, options);
+	if (opt == NULL) {
+		goto failed;
+	}
+
+	t = strtok_r(opt, " ", &saveptr);
+	while (t != NULL) {
+		tmp[n++] = talloc_strdup(tmp, t);
+		if (n > MAX_HELPER_ARGS) {
+			goto args_failed;
+		}
+		t = strtok_r(NULL, " ", &saveptr);
+	}
+
+	for (i=0; i<n; i++) {
+		if (tmp[i] == NULL) {
+			goto failed;
+		}
+	}
+
+	/* Last argument should be NULL */
+	tmp[n++] = NULL;
+
+	*argc = n;
+	*argv = tmp;
+	return true;
+
+
+args_failed:
+	DEBUG(DEBUG_ERR, (__location__ " too many arguments '%s' to eventscript '%s'\n",
+			  options, ctdb_eventscript_call_names[call]));
+
+failed:
+	if (tmp) {
+		talloc_free(tmp);
+	}
+	return false;
+
+}
+
 static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde,
 				      uint16_t flags, void *p);
+
+static const char *helper_prog = NULL;
 
 static int fork_child_for_script(struct ctdb_context *ctdb,
 				 struct ctdb_event_script_state *state)
@@ -363,6 +427,18 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	int r;
 	struct tevent_fd *fde;
 	struct ctdb_script_wire *current = get_current_script(state);
+	int argc;
+	const char **argv;
+	static const char *helper = BINDIR "/ctdb_event_helper";
+
+	if (helper_prog == NULL) {
+		const char *t = getenv("CTDB_EVENT_HELPER");
+		if (t != NULL) {
+			helper_prog = t;
+		} else {
+			helper_prog = helper;
+		}
+	}
 
 	current->start = timeval_current();
 
@@ -372,37 +448,31 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 		return -errno;
 	}
 
- 	if (!ctdb_fork_with_logging(state, ctdb, current->name, log_event_script_output,
-				    state, &state->child)) {
+	/* Arguments for helper */
+	if (!child_helper_args(state, ctdb, state->call, state->options, current,
+			       state->fd[1], &argc, &argv)) {
+		DEBUG(DEBUG_ERR, (__location__ " failed to create arguments for eventscript helper\n"));
+		r = -ENOMEM;
+		close(state->fd[0]);
+		close(state->fd[1]);
+		return r;
+	}
+
+	if (!ctdb_vfork_with_logging(state, ctdb, current->name,
+				     helper_prog, argc, argv,
+				     log_event_script_output,
+				     state, &state->child)) {
+		talloc_free(argv);
 		r = -errno;
 		close(state->fd[0]);
 		close(state->fd[1]);
 		return r;
 	}
 
-	/* If we are the child, do the work. */
-	if (state->child == 0) {
-		int rt;
-
-		debug_extra = talloc_asprintf(NULL, "eventscript-%s-%s:",
-					      current->name,
-					      ctdb_eventscript_call_names[state->call]);
-		close(state->fd[0]);
-		set_close_on_exec(state->fd[1]);
-		ctdb_set_process_name("ctdb_eventscript");
-
-		rt = child_run_script(ctdb, state->call, state->options, current);
-		/* We must be able to write PIPEBUF bytes at least; if this
-		   somehow fails, the read above will be short. */
-		write(state->fd[1], &rt, sizeof(rt));
-		close(state->fd[1]);
-		_exit(rt);
-	}
+	talloc_free(argv);
 
 	close(state->fd[1]);
 	set_close_on_exec(state->fd[0]);
-
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
 
 	/* Set ourselves up to be called when that's done. */
 	fde = event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ,
