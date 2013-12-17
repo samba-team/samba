@@ -1426,7 +1426,14 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 	data_blob_free(&spnego_state->in_frag);
 	spnego_state->in_needed = 0;
 	if (NT_STATUS_IS_OK(status)) {
+		bool reset_full = true;
+
 		gensec_security->child_security = spnego_state->sub_sec_security;
+
+		reset_full = !spnego_state->done_mic_check;
+
+		status = gensec_may_reset_crypto(spnego_state->sub_sec_security,
+						 reset_full);
 	}
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
