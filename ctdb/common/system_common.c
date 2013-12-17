@@ -169,6 +169,10 @@ int mkdir_p(const char *dir, int mode)
 		return 0;
 	}
 
+	if (strcmp(dir, ".") == 0) {
+		return 0;
+	}
+
 	t = talloc_strdup(NULL, dir);
 	if (t == NULL) {
 		return ENOMEM;
