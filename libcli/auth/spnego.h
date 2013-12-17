@@ -58,7 +58,7 @@ struct spnego_negTokenInit {
 };
 
 struct spnego_negTokenTarg {
-	uint8_t negResult;
+	enum spnego_negResult negResult;
 	const char *supportedMech;
 	DATA_BLOB responseToken;
 	DATA_BLOB mechListMIC;
