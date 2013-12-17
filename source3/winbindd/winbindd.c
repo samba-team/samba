@@ -31,6 +31,7 @@
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "secrets.h"
+#include "rpc_client/cli_netlogon.h"
 #include "idmap.h"
 #include "lib/addrchange.h"
 #include "serverid.h"
@@ -1505,6 +1506,13 @@ int main(int argc, char **argv, char **envp)
 
 		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
 		return False;
+	}
+
+	status = rpccli_pre_open_netlogon_creds();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("rpccli_pre_open_netlogon_creds() - %s\n",
+			  nt_errstr(status)));
+		exit(1);
 	}
 
 	/* Unblock all signals we are interested in as they may have been
