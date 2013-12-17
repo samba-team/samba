@@ -37,6 +37,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				     const unsigned char machine_pwd[16],
 				     enum netr_SchannelType sec_chan_type,
 				     uint32_t *neg_flags_inout);
+NTSTATUS rpccli_pre_open_netlogon_creds(void);
 NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 				      const char *server_netbios_domain,
 				      const char *client_account,

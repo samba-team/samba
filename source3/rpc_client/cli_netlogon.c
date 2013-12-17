@@ -128,6 +128,27 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS rpccli_pre_open_netlogon_creds(void)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx;
+	NTSTATUS status;
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = netlogon_creds_cli_open_global_db(lp_ctx);
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 				      const char *server_netbios_domain,
 				      const char *client_account,
