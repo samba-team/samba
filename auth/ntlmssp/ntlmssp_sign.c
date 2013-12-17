@@ -503,20 +503,14 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_state,
 /**
    Initialise the state for NTLMSSP signing.
 */
-NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
+NTSTATUS ntlmssp_sign_reset(struct ntlmssp_state *ntlmssp_state,
+			    bool reset_seqnums)
 {
 	DEBUG(3, ("NTLMSSP Sign/Seal - Initialising with flags:\n"));
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
-	if (ntlmssp_state->session_key.length < 8) {
-		DEBUG(3, ("NO session key, cannot intialise signing\n"));
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	ntlmssp_state->crypt = talloc_zero(ntlmssp_state,
-					   union ntlmssp_crypt_state);
 	if (ntlmssp_state->crypt == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	if (ntlmssp_state->force_wrap_seal &&
@@ -606,7 +600,9 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 				&ntlmssp_state->crypt->ntlm2.sending.seal_state);
 
 		/* SEND: seq num */
-		ntlmssp_state->crypt->ntlm2.sending.seq_num = 0;
+		if (reset_seqnums) {
+			ntlmssp_state->crypt->ntlm2.sending.seq_num = 0;
+		}
 
 		/* RECV: sign key */
 		calc_ntlmv2_key(ntlmssp_state->crypt->ntlm2.receiving.sign_key,
@@ -626,7 +622,9 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 				&ntlmssp_state->crypt->ntlm2.receiving.seal_state);
 
 		/* RECV: seq num */
-		ntlmssp_state->crypt->ntlm2.receiving.seq_num = 0;
+		if (reset_seqnums) {
+			ntlmssp_state->crypt->ntlm2.receiving.seq_num = 0;
+		}
 	} else {
 		uint8_t weak_session_key[8];
 		DATA_BLOB seal_session_key = ntlmssp_state->session_key;
@@ -676,8 +674,26 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		dump_arc4_state("NTLMv1 arc4 state:\n",
 				&ntlmssp_state->crypt->ntlm.seal_state);
 
-		ntlmssp_state->crypt->ntlm.seq_num = 0;
+		if (reset_seqnums) {
+			ntlmssp_state->crypt->ntlm.seq_num = 0;
+		}
 	}
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
+{
+	if (ntlmssp_state->session_key.length < 8) {
+		DEBUG(3, ("NO session key, cannot intialise signing\n"));
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	ntlmssp_state->crypt = talloc_zero(ntlmssp_state,
+					   union ntlmssp_crypt_state);
+	if (ntlmssp_state->crypt == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return ntlmssp_sign_reset(ntlmssp_state, true);
 }
