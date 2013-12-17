@@ -29,23 +29,6 @@
 
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
 
-/*
-  ctdbd sends us a SIGTERM when we should die.
- */
-static void sigterm(int sig)
-{
-	pid_t pid;
-
-	/* all the child processes will be running in the same process group */
-	pid = getpgrp();
-	if (pid == -1) {
-		kill(-getpid(), SIGKILL);
-	} else {
-		kill(-pid, SIGKILL);
-	}
-	_exit(1);
-}
-
 /* This is attached to the event script state. */
 struct event_script_callback {
 	struct event_script_callback *next, *prev;
@@ -266,93 +249,6 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 	return scripts;
 }
 
-static int child_setup(struct ctdb_context *ctdb)
-{
-	if (setpgid(0,0) != 0) {
-		int ret = -errno;
-		DEBUG(DEBUG_ERR,("Failed to create process group for event scripts - %s\n",
-			 strerror(errno)));
-		return ret;
-	}
-
-	signal(SIGTERM, sigterm);
-	return 0;
-}
-
-static char *child_command_string(struct ctdb_context *ctdb,
-				       TALLOC_CTX *ctx,
-				       const char *scriptname,
-				       enum ctdb_eventscript_call call,
-				       const char *options)
-{
-	return talloc_asprintf(ctx, "%s/%s %s %s",
-			       ctdb->event_script_dir,
-			       scriptname,
-			       ctdb_eventscript_call_names[call],
-			       options);
-}
-
-static int child_run_one(struct ctdb_context *ctdb,
-			 const char *scriptname, const char *cmdstr)
-{
-	int ret;
-
-	ret = system(cmdstr);
-	/* if the system() call was successful, translate ret into the
-	   return code from the command
-	*/
-	if (ret != -1) {
-		ret = WEXITSTATUS(ret);
-	} else {
-		ret = -errno;
-	}
-
-	/* 127 could mean it does not exist, 126 non-executable. */
-	if (ret == 127 || ret == 126) {
-		/* Re-check it... */
-		if (!check_executable(ctdb->event_script_dir, scriptname)) {
-			DEBUG(DEBUG_ERR,("Script %s returned status %u. Someone just deleted it?\n",
-					 cmdstr, ret));
-			ret = -errno;
-		}
-	}
-	return ret;
-}
-
-/*
-  Actually run one event script
-  this function is called and run in the context of a forked child
-  which allows it to do blocking calls such as system()
- */
-static int child_run_script(struct ctdb_context *ctdb,
-			    enum ctdb_eventscript_call call,
-			    const char *options,
-			    struct ctdb_script_wire *current)
-{
-	char *cmdstr;
-	int ret;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-
-	ret = child_setup(ctdb);
-	if (ret != 0)
-		goto out;
-
-	cmdstr = child_command_string(ctdb, tmp_ctx,
-				      current->name, call, options);
-	CTDB_NO_MEMORY(ctdb, cmdstr);
-
-	DEBUG(DEBUG_DEBUG,("Executing event script %s\n",cmdstr));
-
-	if (current->status) {
-		ret = current->status;
-		goto out;
-	}
-
-	ret = child_run_one(ctdb, current->name, cmdstr);
-out:
-	talloc_free(tmp_ctx);
-	return ret;
-}
 
 /* There cannot be more than 10 arguments to command helper. */
 #define MAX_HELPER_ARGS		(10)
