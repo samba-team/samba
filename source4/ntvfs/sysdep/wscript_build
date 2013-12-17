@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('sys_notify_inotify',
                  source='inotify.c',
                  subsystem='sys_notify',
                  init_function='sys_notify_inotify_init',
-                 deps='events',
+                 deps='events inotify',
                  enabled = bld.CONFIG_SET('HAVE_LINUX_INOTIFY')
                  )
 

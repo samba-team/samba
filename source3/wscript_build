@@ -578,6 +578,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    vfs
                    vfs_default
                    vfs_posixacl
+		   inotify
                    popt_samba3
                    samba3core
                    smbd_conn

@@ -91,7 +91,11 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
     conf.CHECK_HEADERS('errno.h')
     conf.CHECK_HEADERS('gcrypt.h getopt.h iconv.h')
-    conf.CHECK_HEADERS('sys/inotify.h memory.h nss.h sasl/sasl.h')
+    conf.CHECK_HEADERS('memory.h nss.h sasl/sasl.h')
+
+    conf.CHECK_FUNCS_IN('inotify_init', 'inotify', checklibc=True,
+                        headers='sys/inotify.h')
+
     conf.CHECK_HEADERS('security/pam_appl.h zlib.h asm/unistd.h')
     conf.CHECK_HEADERS('aio.h sys/unistd.h rpc/rpc.h rpc/nettype.h alloca.h float.h')
 
