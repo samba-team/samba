@@ -179,6 +179,30 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS gensec_ntlmssp_may_reset_crypto(struct gensec_security *gensec_security,
+						bool full_reset)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	NTSTATUS status;
+	bool reset_seqnums = full_reset;
+
+	if (!gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		return NT_STATUS_OK;
+	}
+
+	status = ntlmssp_sign_reset(ntlmssp_state, reset_seqnums);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not reset NTLMSSP signing/sealing system (error was: %s)\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static const char *gensec_ntlmssp_oids[] = {
 	GENSEC_OID_NTLMSSP,
 	NULL
@@ -193,6 +217,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.server_start   = gensec_ntlmssp_server_start,
 	.magic 	        = gensec_ntlmssp_magic,
 	.update 	= gensec_ntlmssp_update,
+	.may_reset_crypto= gensec_ntlmssp_may_reset_crypto,
 	.sig_size	= gensec_ntlmssp_sig_size,
 	.sign_packet	= gensec_ntlmssp_sign_packet,
 	.check_packet	= gensec_ntlmssp_check_packet,

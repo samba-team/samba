@@ -130,6 +130,8 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_stae,
 			TALLOC_CTX *out_mem_ctx,
 			const DATA_BLOB *in,
 			DATA_BLOB *out);
+NTSTATUS ntlmssp_sign_reset(struct ntlmssp_state *ntlmssp_state,
+			    bool reset_seqnums);
 NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
 
 bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob);
