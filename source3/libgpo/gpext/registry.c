@@ -273,7 +273,8 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct registry_key *root_key,
 					      const struct security_token *token,
-					      struct GROUP_POLICY_OBJECT *gpo,
+					      struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+					      struct GROUP_POLICY_OBJECT *changed_gpo_list,
 					      const char *extension_guid,
 					      const char *snapin_guid)
 {
@@ -282,32 +283,48 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 	struct gp_registry_entry *entries = NULL;
 	size_t num_entries = 0;
 	char *unix_path = NULL;
+	struct GROUP_POLICY_OBJECT *gpo;
 
-	gpext_debug_header(0, "registry_process_group_policy", flags, gpo,
-			   extension_guid, snapin_guid);
+	/* implementation of the policy callback function, see
+	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx
+	 * for details - gd */
 
-	status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR), gpo, &unix_path);
-	NT_STATUS_NOT_OK_RETURN(status);
+	/* for now do not process the list of deleted group policies
 
-	status = reg_parse_registry(mem_ctx,
-				    flags,
-				    unix_path,
-				    &entries,
-				    &num_entries);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("failed to parse registry: %s\n",
-			nt_errstr(status)));
-		return status;
+	for (gpo = deleted_gpo_list; gpo; gpo = gpo->next) {
 	}
 
-	dump_reg_entries(flags, "READ", entries, num_entries);
+	*/
 
-	werr = reg_apply_registry(mem_ctx, token, root_key, flags,
-				  entries, num_entries);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("failed to apply registry: %s\n",
-			win_errstr(werr)));
-		return werror_to_ntstatus(werr);
+	for (gpo = changed_gpo_list; gpo; gpo = gpo->next) {
+
+		gpext_debug_header(0, "registry_process_group_policy", flags,
+				   gpo, extension_guid, snapin_guid);
+
+		status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR),
+					   gpo, &unix_path);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		status = reg_parse_registry(mem_ctx,
+					    flags,
+					    unix_path,
+					    &entries,
+					    &num_entries);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("failed to parse registry: %s\n",
+				nt_errstr(status)));
+			return status;
+		}
+
+		dump_reg_entries(flags, "READ", entries, num_entries);
+
+		werr = reg_apply_registry(mem_ctx, token, root_key, flags,
+					  entries, num_entries);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,("failed to apply registry: %s\n",
+				win_errstr(werr)));
+			return werror_to_ntstatus(werr);
+		}
 	}
 
 	return NT_STATUS_OK;

@@ -144,33 +144,53 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct registry_key *root_key,
 					      const struct security_token *token,
-					      struct GROUP_POLICY_OBJECT *gpo,
+					      struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+					      struct GROUP_POLICY_OBJECT *changed_gpo_list,
 					      const char *extension_guid,
 					      const char *snapin_guid)
 {
 	NTSTATUS status;
 	char *unix_path = NULL;
 	struct gp_inifile_context *ini_ctx = NULL;
+	struct GROUP_POLICY_OBJECT *gpo;
 
-	gpext_debug_header(0, "security_process_group_policy", flags, gpo,
-			   extension_guid, snapin_guid);
+	/* implementation of the policy callback function, see
+	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx
+	 * for details - gd */
 
-	/* this handler processes the gpttmpl files and merge output to the
-	 * registry */
+	/* for now do not process the list of deleted group policies
 
-	status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR), gpo, &unix_path);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+	for (gpo = deleted_gpo_list; gpo; gpo = gpo->next) {
 	}
 
-	status = gpttmpl_init_context(mem_ctx, flags, unix_path, &ini_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
+	*/
 
-	status = gpttmpl_process(ini_ctx, root_key, flags);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+	for (gpo = changed_gpo_list; gpo; gpo = gpo->next) {
+
+		gpext_debug_header(0, "security_process_group_policy", flags,
+				   gpo, extension_guid, snapin_guid);
+
+		/* this handler processes the gpttmpl files and merge output to the
+		 * registry */
+
+		status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR),
+					   gpo, &unix_path);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		status = gpttmpl_init_context(mem_ctx, flags, unix_path,
+					      &ini_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		status = gpttmpl_process(ini_ctx, root_key, flags);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		TALLOC_FREE(ini_ctx);
 	}
 
  out:

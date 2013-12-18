@@ -339,7 +339,8 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 					     uint32_t flags,
 					     struct registry_key *root_key,
 					     const struct security_token *token,
-					     struct GROUP_POLICY_OBJECT *gpo,
+					     struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+					     struct GROUP_POLICY_OBJECT *changed_gpo_list,
 					     const char *extension_guid,
 					     const char *snapin_guid)
 {
@@ -356,44 +357,61 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 		GP_SCRIPTS_INI_LOGON,
 		GP_SCRIPTS_INI_LOGOFF
 	};
+	struct GROUP_POLICY_OBJECT *gpo;
 
-	gpext_debug_header(0, "scripts_process_group_policy", flags, gpo,
-			   extension_guid, snapin_guid);
+	/* implementation of the policy callback function, see
+	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx
+	 * for details - gd */
 
-	status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR), gpo, &unix_path);
-	NT_STATUS_NOT_OK_RETURN(status);
+	/* for now do not process the list of deleted group policies
 
-	status = gp_inifile_init_context(mem_ctx, flags, unix_path,
-					 GP_SCRIPTS_INI, &ini_ctx);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	for (i = 0; i < ARRAY_SIZE(list); i++) {
-
-		TALLOC_FREE(entries);
-		num_entries = 0;
-
-		status = scripts_parse_ini_section(ini_ctx, flags, list[i],
-						   &entries, &num_entries);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			continue;
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		dump_reg_entries(flags, "READ", entries, num_entries);
-
-		werr = scripts_apply(ini_ctx->mem_ctx, token, root_key,
-				     flags, list[i], gpo, entries, num_entries);
-		if (!W_ERROR_IS_OK(werr)) {
-			continue; /* FIXME: finally fix storing emtpy strings and REG_QWORD! */
-			TALLOC_FREE(ini_ctx);
-			return werror_to_ntstatus(werr);
-		}
+	for (gpo = deleted_gpo_list; gpo; gpo = gpo->next) {
 	}
 
-	TALLOC_FREE(ini_ctx);
+	*/
+
+	for (gpo = changed_gpo_list; gpo; gpo = gpo->next) {
+
+		gpext_debug_header(0, "scripts_process_group_policy", flags,
+				   gpo, extension_guid, snapin_guid);
+
+		status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR),
+					   gpo, &unix_path);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		status = gp_inifile_init_context(mem_ctx, flags, unix_path,
+						 GP_SCRIPTS_INI, &ini_ctx);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		for (i = 0; i < ARRAY_SIZE(list); i++) {
+
+			TALLOC_FREE(entries);
+			num_entries = 0;
+
+			status = scripts_parse_ini_section(ini_ctx, flags, list[i],
+							   &entries, &num_entries);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				continue;
+			}
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			dump_reg_entries(flags, "READ", entries, num_entries);
+
+			werr = scripts_apply(ini_ctx->mem_ctx, token, root_key,
+					     flags, list[i], gpo, entries, num_entries);
+			if (!W_ERROR_IS_OK(werr)) {
+				continue; /* FIXME: finally fix storing emtpy strings and REG_QWORD! */
+				TALLOC_FREE(ini_ctx);
+				return werror_to_ntstatus(werr);
+			}
+		}
+
+		TALLOC_FREE(ini_ctx);
+	}
+
 	return NT_STATUS_OK;
 }
 

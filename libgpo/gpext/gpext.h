@@ -65,7 +65,8 @@ struct gp_extension_methods {
 					 uint32_t flags,
 					 struct registry_key *root_key,
 					 const struct security_token *token,
-					 struct GROUP_POLICY_OBJECT *gpo,
+					 struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+					 struct GROUP_POLICY_OBJECT *changed_gpo_list,
 					 const char *extension_guid,
 					 const char *snapin_guid);
 
@@ -108,7 +109,8 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
 				 const struct security_token *token,
 				 struct registry_key *root_key,
-				 struct GROUP_POLICY_OBJECT *gpo,
+				 const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+				 const struct GROUP_POLICY_OBJECT *changed_gpo_list,
 				 const char *extension_guid,
 				 const char *snapin_guid);
 

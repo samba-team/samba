@@ -744,14 +744,14 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
 				 const struct security_token *token,
 				 struct registry_key *root_key,
-				 struct GROUP_POLICY_OBJECT *gpo,
+				 const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+				 const struct GROUP_POLICY_OBJECT *changed_gpo_list,
 				 const char *extension_guid,
 				 const char *snapin_guid)
 {
 	NTSTATUS status;
 	struct gp_extension *ext = NULL;
-	struct GUID guid;
-	bool cse_found = false;
+	const struct GROUP_POLICY_OBJECT *gpo;
 
 	status = gpext_init_gp_extensions(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -760,47 +760,76 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = GUID_from_string(extension_guid, &guid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	for (ext = extensions; ext; ext = ext->next) {
 
-		if (GUID_equal(ext->guid, &guid)) {
-			cse_found = true;
-			break;
+		struct GROUP_POLICY_OBJECT *deleted_gpo_list_filtered = NULL;
+		struct GROUP_POLICY_OBJECT *changed_gpo_list_filtered = NULL;
+
+		for (gpo = deleted_gpo_list; gpo; gpo = gpo->next) {
+
+			bool is_present = false;
+
+			status = gpext_check_gpo_for_gpext_presence(mem_ctx,
+								    flags,
+								    gpo,
+								    ext->guid,
+								    &is_present);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			if (is_present) {
+				struct GROUP_POLICY_OBJECT *new_gpo;
+
+				status = gpo_copy(mem_ctx, gpo, &new_gpo);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
+
+				DLIST_ADD(deleted_gpo_list_filtered, new_gpo);
+			}
+		}
+
+		for (gpo = changed_gpo_list; gpo; gpo = gpo->next) {
+
+			bool is_present = false;
+
+			status = gpext_check_gpo_for_gpext_presence(mem_ctx,
+								    flags,
+								    gpo,
+								    ext->guid,
+								    &is_present);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			if (is_present) {
+				struct GROUP_POLICY_OBJECT *new_gpo;
+
+				status = gpo_copy(mem_ctx, gpo, &new_gpo);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
+
+				DLIST_ADD(changed_gpo_list_filtered, new_gpo);
+			}
+		}
+
+		status = ext->methods->initialize(mem_ctx);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		status = ext->methods->process_group_policy(mem_ctx,
+							    flags,
+							    root_key,
+							    token,
+							    deleted_gpo_list_filtered,
+							    changed_gpo_list_filtered,
+							    extension_guid,
+							    snapin_guid);
+		if (!NT_STATUS_IS_OK(status)) {
+			ext->methods->shutdown();
 		}
 	}
 
-	if (!cse_found) {
-		goto no_ext;
-	}
-
-	status = ext->methods->initialize(mem_ctx);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	status = ext->methods->process_group_policy(mem_ctx,
-						    flags,
-						    root_key,
-						    token,
-						    gpo,
-						    extension_guid,
-						    snapin_guid);
-	if (!NT_STATUS_IS_OK(status)) {
-		ext->methods->shutdown();
-	}
-
 	return status;
-
- no_ext:
-	if (flags & GPO_INFO_FLAG_VERBOSE) {
-		DEBUG(0,("process_extension: no extension available for:\n"));
-		DEBUGADD(0,("%s (%s) (snapin: %s)\n",
-			extension_guid,
-			cse_gpo_guid_string_to_name(extension_guid),
-			snapin_guid));
-	}
-
-	return NT_STATUS_OK;
 }
