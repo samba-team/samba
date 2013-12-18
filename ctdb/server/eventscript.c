@@ -602,44 +602,46 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct debug_h
 	int fd[2];
 	struct tevent_timer *ttimer;
 	struct tevent_fd *tfd;
+	const char **argv;
+	int i;
+
+	if (helper_prog == NULL) {
+		return;
+	}
 
 	if (pipe(fd) < 0) {
 		DEBUG(DEBUG_ERR,("Failed to create pipe fd for debug hung script\n"));
 		return;
 	}
 
-	if (!ctdb_fork_with_logging(ctdb, ctdb, "Hung script", NULL, NULL, &pid)) {
-		DEBUG(DEBUG_ERR,("Failed to fork a child process with logging to track hung event script\n"));
-		close(fd[0]);
-		close(fd[1]);
-		return;
-	}
-	if (pid == -1) {
-		DEBUG(DEBUG_ERR,("Fork for debug script failed : %s\n",
-				 strerror(errno)));
-		close(fd[0]);
-		close(fd[1]);
-		return;
-	}
-	if (pid == 0) {
-		char *buf;
+	argv = talloc_array(state, const char *, 5);
 
-		ctdb_set_process_name("ctdb_debug_hung_script");
-		if (getenv("CTDB_DEBUG_HUNG_SCRIPT") != NULL) {
-			debug_hung_script = getenv("CTDB_DEBUG_HUNG_SCRIPT");
+	argv[0] = talloc_asprintf(argv, "%d", fd[1]);
+	argv[1] = talloc_strdup(argv, debug_hung_script);
+	argv[2] = talloc_asprintf(argv, "%d", state->child);
+	argv[3] = talloc_strdup(argv, ctdb_eventscript_call_names[state->call]);
+	argv[4] = NULL;
+
+	for (i=0; i<4; i++) {
+		if (argv[i] == NULL) {
+			close(fd[0]);
+			close(fd[1]);
+			talloc_free(argv);
+			return;
 		}
-
-		close(fd[0]);
-
-		buf = talloc_asprintf(NULL, "%s %d %s",
-				      debug_hung_script, state->child,
-				      ctdb_eventscript_call_names[state->call]);
-		system(buf);
-		talloc_free(buf);
-
-		_exit(0);
 	}
 
+
+	if (!ctdb_vfork_with_logging(state, ctdb, "Hung-script",
+				     helper_prog, 5, argv, NULL, NULL, &pid)) {
+		DEBUG(DEBUG_ERR,("Failed to fork a child to track hung event script\n"));
+		talloc_free(argv);
+		close(fd[0]);
+		close(fd[1]);
+		return;
+	}
+
+	talloc_free(argv);
 	close(fd[1]);
 
 	ttimer = tevent_add_timer(ctdb->ev, state,
