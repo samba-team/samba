@@ -228,15 +228,14 @@ void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel)
 /****************************************************************
 ****************************************************************/
 
-void dump_gpo(ADS_STRUCT *ads,
-	      TALLOC_CTX *mem_ctx,
-	      struct GROUP_POLICY_OBJECT *gpo,
+void dump_gpo(const struct GROUP_POLICY_OBJECT *gpo,
 	      int debuglevel)
 {
 	int lvl = debuglevel;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (gpo == NULL) {
-		return;
+		goto out;
 	}
 
 	DEBUG(lvl,("---------------------\n\n"));
@@ -300,9 +299,9 @@ void dump_gpo(ADS_STRUCT *ads,
 
 		struct GP_EXT *gp_ext = NULL;
 
-		if (!ads_parse_gp_ext(mem_ctx, gpo->machine_extensions,
+		if (!ads_parse_gp_ext(frame, gpo->machine_extensions,
 				      &gp_ext)) {
-			return;
+			goto out;
 		}
 		dump_gp_ext(gp_ext, lvl);
 	}
@@ -313,9 +312,9 @@ void dump_gpo(ADS_STRUCT *ads,
 
 		struct GP_EXT *gp_ext = NULL;
 
-		if (!ads_parse_gp_ext(mem_ctx, gpo->user_extensions,
+		if (!ads_parse_gp_ext(frame, gpo->user_extensions,
 				      &gp_ext)) {
-			return;
+			goto out;
 		}
 		dump_gp_ext(gp_ext, lvl);
 	}
@@ -324,29 +323,28 @@ void dump_gpo(ADS_STRUCT *ads,
 
 		NDR_PRINT_DEBUG(security_descriptor, gpo->security_descriptor);
 	}
+ out:
+	talloc_free(frame);
 }
 
 /****************************************************************
 ****************************************************************/
 
-void dump_gpo_list(ADS_STRUCT *ads,
-		   TALLOC_CTX *mem_ctx,
-		   struct GROUP_POLICY_OBJECT *gpo_list,
+void dump_gpo_list(const struct GROUP_POLICY_OBJECT *gpo_list,
 		   int debuglevel)
 {
-	struct GROUP_POLICY_OBJECT *gpo = NULL;
+	const struct GROUP_POLICY_OBJECT *gpo = NULL;
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
-		dump_gpo(ads, mem_ctx, gpo, debuglevel);
+		dump_gpo(gpo, debuglevel);
 	}
 }
 
 /****************************************************************
 ****************************************************************/
 
-void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
+void dump_gplink(const struct GP_LINK *gp_link)
 {
-	ADS_STATUS status;
 	int i;
 	int lvl = 10;
 
@@ -386,22 +384,6 @@ void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 			DEBUGADD(lvl,("GPO_LINK_OPT_DISABLED"));
 		}
 		DEBUGADD(lvl,("\n"));
-
-		if (ads != NULL && mem_ctx != NULL) {
-
-			struct GROUP_POLICY_OBJECT gpo;
-
-			status = ads_get_gpo(ads, mem_ctx,
-					     gp_link->link_names[i],
-					     NULL, NULL, &gpo);
-			if (!ADS_ERR_OK(status)) {
-				DEBUG(lvl,("get gpo for %s failed: %s\n",
-					gp_link->link_names[i],
-					ads_errstr(status)));
-				return;
-			}
-			dump_gpo(ads, mem_ctx, &gpo, lvl);
-		}
 	}
 }
 

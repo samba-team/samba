@@ -127,7 +127,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 
 		for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
-			dump_gpo(ads, mem_ctx, gpo, 0);
+			dump_gpo(gpo, 0);
 #if 0
 		char *server, *share, *nt_path, *unix_path;
 
@@ -172,7 +172,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 
 		for (gpo = read_list; gpo; gpo = gpo->next) {
 
-			dump_gpo(ads, mem_ctx, gpo, 0);
+			dump_gpo(gpo, 0);
 
 #if 0
 		char *server, *share, *nt_path, *unix_path;
@@ -278,7 +278,7 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 			goto out;
 		}
 
-		dump_gpo(ads, mem_ctx, &gpo, 0);
+		dump_gpo(&gpo, 0);
 	}
 
 out:
@@ -350,7 +350,7 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 		goto out;
 	}
 
-	dump_gpo_list(ads, mem_ctx, gpo_list, 0);
+	dump_gpo_list(gpo_list, 0);
 
 out:
 	ads_msgfree(ads, res);
@@ -480,7 +480,7 @@ static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **ar
 		goto out;
 	}
 
-	dump_gplink(ads, mem_ctx, &gp_link);
+	dump_gplink(&gp_link);
 
 out:
 	talloc_destroy(mem_ctx);
@@ -615,7 +615,7 @@ static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **arg
 		goto out;
 	}
 
-	dump_gpo(ads, mem_ctx, &gpo, 1);
+	dump_gpo(&gpo, 1);
 
 out:
 	talloc_destroy(mem_ctx);

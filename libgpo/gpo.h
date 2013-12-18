@@ -228,15 +228,11 @@ const char *cse_gpo_guid_string_to_name(const char *guid);
 const char *cse_gpo_name_to_guid_string(const char *name);
 const char *cse_snapin_gpo_guid_string_to_name(const char *guid);
 void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel);
-void dump_gpo(ADS_STRUCT *ads,
-	      TALLOC_CTX *mem_ctx,
-	      struct GROUP_POLICY_OBJECT *gpo,
+void dump_gpo(const struct GROUP_POLICY_OBJECT *gpo,
 	      int debuglevel);
-void dump_gpo_list(ADS_STRUCT *ads,
-		   TALLOC_CTX *mem_ctx,
-		   struct GROUP_POLICY_OBJECT *gpo_list,
+void dump_gpo_list(const struct GROUP_POLICY_OBJECT *gpo_list,
 		   int debuglevel);
-void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link);
+void dump_gplink(const struct GP_LINK *gp_link);
 NTSTATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
 			   const struct security_token *token,
 			   struct registry_key *root_key,
