@@ -986,12 +986,12 @@ ctdb_check_counter () {
 
 ########################################################
 
-ctdb_status_dir="$CTDB_VARDIR/status"
-ctdb_fail_dir="$CTDB_VARDIR/failcount"
+ctdb_status_dir="$CTDB_VARDIR/state/service_status"
+ctdb_fail_dir="$CTDB_VARDIR/state/failcount"
 
 ctdb_setup_service_state_dir ()
 {
-    service_state_dir="$CTDB_VARDIR/state/${1:-${service_name}}"
+    service_state_dir="$CTDB_VARDIR/state/service_state/${1:-${service_name}}"
     mkdir -p "$service_state_dir" || {
 	echo "Error creating state dir \"$service_state_dir\""
 	exit 1
@@ -1001,7 +1001,7 @@ ctdb_setup_service_state_dir ()
 ########################################################
 # Managed status history, for auto-start/stop
 
-ctdb_managed_dir="$CTDB_VARDIR/managed_history"
+ctdb_managed_dir="$CTDB_VARDIR/state/managed_history"
 
 _ctdb_managed_common ()
 {
