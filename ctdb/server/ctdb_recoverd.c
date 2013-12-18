@@ -2498,13 +2498,6 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 		goto done;
 	}
 
-	if (rec->node_flags & NODE_FLAGS_INACTIVE) {
-		DEBUG(DEBUG_ERR,
-		      ("Refusing to disable takeover runs on inactive node\n"));
-		ret = -EHOSTDOWN;
-		goto done;
-	}
-
 	if (rec->takeover_run_in_progress) {
 		DEBUG(DEBUG_ERR,
 		      ("Unable to disable takeover runs - in progress\n"));
