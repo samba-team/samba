@@ -221,9 +221,11 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
  Fake up a connection struct for the VFS layer, for use in
  applications (such as the python bindings), that do not want the
  global working directory changed under them.
+
+ SMB_VFS_CONNECT requires root privileges.
 *********************************************************/
 
-NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
+static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 			    struct tevent_context *ev,
 			    struct messaging_context *msg,
 			    connection_struct **pconn,
@@ -343,6 +345,33 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	*pconn = conn;
 
 	return NT_STATUS_OK;
+}
+
+/********************************************************
+ Fake up a connection struct for the VFS layer, for use in
+ applications (such as the python bindings), that do not want the
+ global working directory changed under them.
+
+ SMB_VFS_CONNECT requires root privileges.
+*********************************************************/
+
+NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
+			    struct tevent_context *ev,
+			    struct messaging_context *msg,
+			    connection_struct **pconn,
+			    int snum,
+			    const char *path,
+			    const struct auth_session_info *session_info)
+{
+	NTSTATUS status;
+	become_root();
+	status = create_conn_struct_as_root(ctx, ev,
+					    msg, pconn,
+					    snum, path,
+					    session_info);
+	unbecome_root();
+
+	return status;
 }
 
 /********************************************************
