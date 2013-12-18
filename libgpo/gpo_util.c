@@ -392,10 +392,10 @@ void dump_gplink(const struct GP_LINK *gp_link)
 /****************************************************************
 ****************************************************************/
 
-static bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
-				    uint32_t flags,
-				    struct GROUP_POLICY_OBJECT *gpo,
-				    struct GP_EXT **gp_ext)
+bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
+			     uint32_t flags,
+			     const struct GROUP_POLICY_OBJECT *gpo,
+			     struct GP_EXT **gp_ext)
 {
 	ZERO_STRUCTP(*gp_ext);
 

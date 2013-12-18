@@ -256,6 +256,10 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				const char *dn,
 				struct security_token **token);
 
+bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
+			     uint32_t flags,
+			     const struct GROUP_POLICY_OBJECT *gpo,
+			     struct GP_EXT **gp_ext);
 
 #include "../libgpo/gpext/gpext.h"
 
