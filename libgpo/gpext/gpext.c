@@ -694,6 +694,52 @@ NTSTATUS gpext_process_gpo_list_with_extension(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS gpext_check_gpo_for_gpext_presence(TALLOC_CTX *mem_ctx,
+						   uint32_t flags,
+						   const struct GROUP_POLICY_OBJECT *gpo,
+						   const struct GUID *guid,
+						   bool *gpext_guid_present)
+{
+	struct GP_EXT *gp_ext = NULL;
+	int i;
+	bool ok;
+
+	*gpext_guid_present = false;
+
+
+	if (gpo->link_type == GP_LINK_LOCAL) {
+		return NT_STATUS_OK;
+	}
+
+	ok = gpo_get_gp_ext_from_gpo(mem_ctx, flags, gpo, &gp_ext);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (gp_ext == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	for (i = 0; i < gp_ext->num_exts; i++) {
+		struct GUID guid2;
+		NTSTATUS status;
+
+		status = GUID_from_string(gp_ext->extensions_guid[i], &guid2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (GUID_equal(guid, &guid2)) {
+			*gpext_guid_present = true;
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
 				 const struct security_token *token,
