@@ -32,7 +32,7 @@ static struct gp_extension *extensions = NULL;
 /****************************************************************
 ****************************************************************/
 
-struct gp_extension *get_gp_extension_list(void)
+struct gp_extension *gpext_get_gp_extension_list(void)
 {
 	return extensions;
 }
@@ -101,7 +101,7 @@ static struct gp_extension_methods *get_methods_by_name(struct gp_extension *be,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS unregister_gp_extension(const char *name)
+NTSTATUS gpext_unregister_gp_extension(const char *name)
 {
 	struct gp_extension *ext;
 
@@ -121,11 +121,11 @@ NTSTATUS unregister_gp_extension(const char *name)
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS register_gp_extension(TALLOC_CTX *gpext_ctx,
-			       int version,
-			       const char *name,
-			       const char *guid,
-			       struct gp_extension_methods *methods)
+NTSTATUS gpext_register_gp_extension(TALLOC_CTX *gpext_ctx,
+				     int version,
+				     const char *name,
+				     const char *guid,
+				     struct gp_extension_methods *methods)
 {
 	struct gp_extension_methods *test;
 	struct gp_extension *entry;
@@ -340,11 +340,11 @@ static NTSTATUS gp_ext_info_add_reg_table(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gp_ext_info_add_entry(TALLOC_CTX *mem_ctx,
-			       const char *module,
-			       const char *ext_guid,
-			       struct gp_extension_reg_table *table,
-			       struct gp_extension_reg_info *info)
+NTSTATUS gpext_info_add_entry(TALLOC_CTX *mem_ctx,
+			      const char *module,
+			      const char *ext_guid,
+			      struct gp_extension_reg_table *table,
+			      struct gp_extension_reg_info *info)
 {
 	NTSTATUS status;
 	struct gp_extension_reg_info_entry *entry = NULL;
@@ -538,7 +538,7 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS shutdown_gp_extensions(void)
+NTSTATUS gpext_shutdown_gp_extensions(void)
 {
 	struct gp_extension *ext = NULL;
 
@@ -554,7 +554,7 @@ NTSTATUS shutdown_gp_extensions(void)
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx)
+NTSTATUS gpext_init_gp_extensions(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	WERROR werr;
@@ -564,7 +564,7 @@ NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx)
 	struct gp_extension *gpext = NULL;
 	struct gp_registry_context *reg_ctx = NULL;
 
-	if (get_gp_extension_list()) {
+	if (gpext_get_gp_extension_list()) {
 		return NT_STATUS_OK;
 	}
 
@@ -637,7 +637,7 @@ NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx)
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS free_gp_extensions(void)
+NTSTATUS gpext_free_gp_extensions(void)
 {
 	struct gp_extension *ext, *ext_next = NULL;
 
@@ -678,13 +678,15 @@ void gpext_debug_header(int lvl,
 	TALLOC_FREE(flags_str);
 }
 
-NTSTATUS process_gpo_list_with_extension(
-			   TALLOC_CTX *mem_ctx,
-			   uint32_t flags,
-			   const struct security_token *token,
-			   struct GROUP_POLICY_OBJECT *gpo_list,
-			   const char *extension_guid,
-			   const char *snapin_guid)
+/****************************************************************
+****************************************************************/
+
+NTSTATUS gpext_process_gpo_list_with_extension(TALLOC_CTX *mem_ctx,
+					       uint32_t flags,
+					       const struct security_token *token,
+					       struct GROUP_POLICY_OBJECT *gpo_list,
+					       const char *extension_guid,
+					       const char *snapin_guid)
 {
 	return NT_STATUS_OK;
 }
@@ -705,9 +707,9 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 	struct GUID guid;
 	bool cse_found = false;
 
-	status = init_gp_extensions(mem_ctx);
+	status = gpext_init_gp_extensions(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("init_gp_extensions failed: %s\n",
+		DEBUG(1,("gpext_init_gp_extensions failed: %s\n",
 			nt_errstr(status)));
 		return status;
 	}

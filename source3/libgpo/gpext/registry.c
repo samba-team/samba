@@ -329,9 +329,9 @@ static NTSTATUS registry_get_reg_config(TALLOC_CTX *mem_ctx,
 	info = talloc_zero(mem_ctx, struct gp_extension_reg_info);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
-	status = gp_ext_info_add_entry(mem_ctx, GP_EXT_NAME,
-				       GP_EXT_GUID_REGISTRY,
-				       table, info);
+	status = gpext_info_add_entry(mem_ctx, GP_EXT_NAME,
+				      GP_EXT_GUID_REGISTRY,
+				      table, info);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*reg_info = info;
@@ -354,7 +354,7 @@ static NTSTATUS registry_shutdown(void)
 {
 	NTSTATUS status;
 
-	status = unregister_gp_extension(GP_EXT_NAME);
+	status = gpext_unregister_gp_extension(GP_EXT_NAME);
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -384,9 +384,9 @@ NTSTATUS gpext_registry_init(void)
 	ctx = talloc_init("gpext_registry_init");
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
-	status = register_gp_extension(ctx, SMB_GPEXT_INTERFACE_VERSION,
-				       GP_EXT_NAME, GP_EXT_GUID_REGISTRY,
-				       &registry_methods);
+	status = gpext_register_gp_extension(ctx, SMB_GPEXT_INTERFACE_VERSION,
+					     GP_EXT_NAME, GP_EXT_GUID_REGISTRY,
+					     &registry_methods);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(ctx);
 	}

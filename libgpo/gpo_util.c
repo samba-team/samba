@@ -549,12 +549,12 @@ NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 	struct gp_registry_context *reg_ctx = NULL;
 	WERROR werr;
 
-	status = init_gp_extensions(mem_ctx);
+	status = gpext_init_gp_extensions(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	gp_ext_list = get_gp_extension_list();
+	gp_ext_list = gpext_get_gp_extension_list();
 	if (!gp_ext_list) {
 		return NT_STATUS_DLL_INIT_FAILED;
 	}
@@ -607,7 +607,7 @@ NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
  done:
 	talloc_free(reg_ctx);
 	talloc_free(root_key);
-	free_gp_extensions();
+	gpext_free_gp_extensions();
 
 	return status;
 }

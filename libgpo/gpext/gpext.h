@@ -77,34 +77,33 @@ struct gp_extension_methods {
 
 /* The following definitions come from libgpo/gpext/gpext.c  */
 
-struct gp_extension *get_gp_extension_list(void);
-NTSTATUS unregister_gp_extension(const char *name);
-NTSTATUS register_gp_extension(TALLOC_CTX *gpext_ctx,
-			       int version,
-			       const char *name,
-			       const char *guid,
-			       struct gp_extension_methods *methods);
-NTSTATUS gp_ext_info_add_entry(TALLOC_CTX *mem_ctx,
-			       const char *module,
-			       const char *ext_guid,
-			       struct gp_extension_reg_table *table,
-			       struct gp_extension_reg_info *info);
-NTSTATUS shutdown_gp_extensions(void);
-NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx);
-NTSTATUS free_gp_extensions(void);
+struct gp_extension *gpext_get_gp_extension_list(void);
+NTSTATUS gpext_unregister_gp_extension(const char *name);
+NTSTATUS gpext_register_gp_extension(TALLOC_CTX *gpext_ctx,
+				     int version,
+				     const char *name,
+				     const char *guid,
+				     struct gp_extension_methods *methods);
+NTSTATUS gpext_info_add_entry(TALLOC_CTX *mem_ctx,
+			      const char *module,
+			      const char *ext_guid,
+			      struct gp_extension_reg_table *table,
+			      struct gp_extension_reg_info *info);
+NTSTATUS gpext_shutdown_gp_extensions(void);
+NTSTATUS gpext_init_gp_extensions(TALLOC_CTX *mem_ctx);
+NTSTATUS gpext_free_gp_extensions(void);
 void gpext_debug_header(int lvl,
 			const char *name,
 			uint32_t flags,
 			struct GROUP_POLICY_OBJECT *gpo,
 			const char *extension_guid,
 			const char *snapin_guid);
-NTSTATUS process_gpo_list_with_extension(
-			   TALLOC_CTX *mem_ctx,
-			   uint32_t flags,
-			   const struct security_token *token,
-			   struct GROUP_POLICY_OBJECT *gpo_list,
-			   const char *extension_guid,
-			   const char *snapin_guid);
+NTSTATUS gpext_process_gpo_list_with_extension(TALLOC_CTX *mem_ctx,
+					       uint32_t flags,
+					       const struct security_token *token,
+					       struct GROUP_POLICY_OBJECT *gpo_list,
+					       const char *extension_guid,
+					       const char *snapin_guid);
 NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
 				 const struct security_token *token,
