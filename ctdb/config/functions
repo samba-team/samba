@@ -1106,7 +1106,7 @@ service_reconfigure ()
     :
 }
 
-ctdb_reconfigure_try_lock ()
+ctdb_reconfigure_take_lock ()
 {
     _ctdb_service_reconfigure_common
     _lock="${_d}/reconfigure_lock"
@@ -1131,6 +1131,14 @@ ctdb_reconfigure_try_lock ()
 	printf "%s\n%s\n" "$event_name" $$ >"$_lock"
 	exit 0
     ) <"$_lock"
+}
+
+ctdb_reconfigure_release_lock ()
+{
+    _ctdb_service_reconfigure_common
+    _lock="${_d}/reconfigure_lock"
+
+    rm -f "$_lock"
 }
 
 ctdb_replay_monitor_status ()
@@ -1182,7 +1190,7 @@ ctdb_service_check_reconfigure ()
 	*) return 0 ;;
     esac
 
-    if ctdb_reconfigure_try_lock ; then
+    if ctdb_reconfigure_take_lock ; then
 	# No events covered by this function are running, so proceed
 	# with gay abandon.
 	case "$event_name" in
@@ -1196,6 +1204,8 @@ ctdb_service_check_reconfigure ()
 		fi
 		;;
 	esac
+
+	ctdb_reconfigure_release_lock
     else
 	# Somebody else is running an event we don't want to collide
 	# with.  We proceed with caution.

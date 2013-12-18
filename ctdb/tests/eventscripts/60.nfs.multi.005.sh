@@ -16,7 +16,7 @@ simple_test_event "takeip" $public_address
 
 ctdb_fake_scriptstatus -8 "DISABLED" "$err"
 
-eventscript_call ctdb_reconfigure_try_lock
+eventscript_call ctdb_reconfigure_take_lock
 
 ok <<EOF
 Replaying previous status for this script due to reconfigure...
