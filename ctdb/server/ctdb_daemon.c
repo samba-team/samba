@@ -84,9 +84,6 @@ static void ctdb_start_periodic_events(struct ctdb_context *ctdb)
 	/* start monitoring for connected/disconnected nodes */
 	ctdb_start_keepalive(ctdb);
 
-	/* start monitoring for node health */
-	ctdb_start_monitoring(ctdb);
-
 	/* start periodic update of tcp tickle lists */
        	ctdb_start_tcp_tickle_update(ctdb);
 
@@ -1048,8 +1045,6 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 	}
 	ctdb_run_notification_script(ctdb, "setup");
 
-	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_FIRST_RECOVERY);
-
 	/* tell all other nodes we've just started up */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
 				 0, CTDB_CONTROL_STARTUP, 0,
@@ -1063,6 +1058,8 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 	}
 
 	ctdb_start_periodic_events(ctdb);
+
+	ctdb_wait_for_first_recovery(ctdb);
 }
 
 static struct timeval tevent_before_wait_ts;

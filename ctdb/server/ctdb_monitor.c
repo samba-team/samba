@@ -196,6 +196,8 @@ after_change_status:
 }
 
 
+static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
+			     struct timeval t, void *private_data);
 /*
   called when the startup event script finishes
  */
@@ -203,18 +205,58 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 {
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,("startup event failed\n"));
-	} else if (status == 0) {
-		DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
-		ctdb_set_runstate(ctdb, CTDB_RUNSTATE_RUNNING);
-		ctdb->monitor->next_interval = 2;
-		ctdb_run_notification_script(ctdb, "startup");
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				timeval_current_ofs(5, 0),
+				ctdb_run_startup, ctdb);
+		return;
 	}
 
-	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context, 
+	DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_RUNNING);
+	ctdb->monitor->next_interval = 2;
+	ctdb_run_notification_script(ctdb, "startup");
+
+	ctdb->monitor->monitoring_mode = CTDB_MONITORING_ACTIVE;
+
+	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 			timeval_current_ofs(ctdb->monitor->next_interval, 0),
 			ctdb_check_health, ctdb);
 }
 
+static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
+			     struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data,
+						    struct ctdb_context);
+	int ret;
+
+	/* This is necessary to avoid the "startup" event colliding
+	 * with the "ipreallocated" event from the takeover run
+	 * following the first recovery.  We might as well serialise
+	 * these things if we can.
+	 */
+	if (ctdb->runstate < CTDB_RUNSTATE_STARTUP) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Not yet in startup runstate. Wait one more second\n"));
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				timeval_current_ofs(1, 0),
+				ctdb_run_startup, ctdb);
+		return;
+	}
+
+	DEBUG(DEBUG_NOTICE,("Running the \"startup\" event.\n"));
+	ret = ctdb_event_script_callback(ctdb,
+					 ctdb->monitor->monitor_context,
+					 ctdb_startup_callback,
+					 ctdb, CTDB_EVENT_STARTUP, "%s", "");
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to launch startup event script\n"));
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				timeval_current_ofs(5, 0),
+				ctdb_run_startup, ctdb);
+	}
+}
 
 /*
   wait until we have finished initial recoveries before we start the
@@ -302,8 +344,7 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	ctdb->db_persistent_check_errors = 0;
 
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			     timeval_current(),
-			     ctdb_check_health, ctdb);
+			timeval_current(), ctdb_run_startup, ctdb);
 }
 
 
@@ -314,65 +355,41 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 			      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	bool skip_monitoring = false;
 	int ret = 0;
 
-	if (ctdb->runstate < CTDB_RUNSTATE_STARTUP) {
-		DEBUG(DEBUG_NOTICE,("Not yet in startup runstate. Wait one more second\n"));
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				timeval_current_ofs(1, 0), 
-				ctdb_check_health, ctdb);
-		return;
-	}
-	
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL ||
-	    (ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED &&
-	     ctdb->runstate == CTDB_RUNSTATE_RUNNING)) {
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				timeval_current_ofs(ctdb->monitor->next_interval, 0), 
-				ctdb_check_health, ctdb);
-		return;
-	}
-	
-	if (ctdb->runstate == CTDB_RUNSTATE_STARTUP) {
-		DEBUG(DEBUG_NOTICE,("Recoveries finished. Running the \"startup\" event.\n"));
-		ret = ctdb_event_script_callback(ctdb, 
-						 ctdb->monitor->monitor_context, ctdb_startup_callback, 
-						 ctdb,
-						 CTDB_EVENT_STARTUP, "%s", "");
+	    ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED) {
+		skip_monitoring = true;
 	} else {
 		int i;
-		int skip_monitoring = 0;
-		
-		if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-			skip_monitoring = 1;
-			DEBUG(DEBUG_ERR,("Skip monitoring during recovery\n"));
-		}
 		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
 			if (ctdb->freeze_handles[i] != NULL) {
-				DEBUG(DEBUG_ERR,("Skip monitoring since databases are frozen\n"));
-				skip_monitoring = 1;
+				DEBUG(DEBUG_ERR,
+				      ("Skip monitoring since databases are frozen\n"));
+				skip_monitoring = true;
 				break;
 			}
 		}
-		if (skip_monitoring != 0) {
-			event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-					timeval_current_ofs(ctdb->monitor->next_interval, 0), 
-					ctdb_check_health, ctdb);
-			return;
-		} else {
-			ret = ctdb_event_script_callback(ctdb, 
-					ctdb->monitor->monitor_context, ctdb_health_callback,
-					ctdb,
-					CTDB_EVENT_MONITOR, "%s", "");
-		}
 	}
 
+	if (skip_monitoring) {
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				timeval_current_ofs(ctdb->monitor->next_interval, 0),
+				ctdb_check_health, ctdb);
+		return;
+	}
+
+	ret = ctdb_event_script_callback(ctdb,
+					 ctdb->monitor->monitor_context,
+					 ctdb_health_callback,
+					 ctdb, CTDB_EVENT_MONITOR, "%s", "");
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to launch monitor event script\n"));
 		ctdb->monitor->next_interval = 5;
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context, 
-			timeval_current_ofs(5, 0), 
-			ctdb_check_health, ctdb);
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				timeval_current_ofs(5, 0),
+				ctdb_check_health, ctdb);
 	}
 }
 
@@ -412,26 +429,19 @@ void ctdb_stop_monitoring(struct ctdb_context *ctdb)
 /*
   start watching for nodes that might be dead
  */
-void ctdb_start_monitoring(struct ctdb_context *ctdb)
+void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb)
 {
-	if (ctdb->monitor != NULL) {
-		return;
-	}
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_FIRST_RECOVERY);
 
 	ctdb->monitor = talloc(ctdb, struct ctdb_monitor_state);
 	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor);
-
-	ctdb->monitor->next_interval = 5;
 
 	ctdb->monitor->monitor_context = talloc_new(ctdb->monitor);
 	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor->monitor_context);
 
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			     timeval_current_ofs(1, 0), 
-			     ctdb_wait_until_recovered, ctdb);
-
-	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ACTIVE;
-	DEBUG(DEBUG_NOTICE,("Monitoring has been started\n"));
+			timeval_current_ofs(1, 0),
+			ctdb_wait_until_recovered, ctdb);
 }
 
 
