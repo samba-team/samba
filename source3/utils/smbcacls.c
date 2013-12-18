@@ -991,7 +991,7 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 		return EXIT_FAILED;
 	}
 
-	sd = make_sec_desc(talloc_tos(),old->revision, old->type,
+	sd = make_sec_desc(talloc_tos(),old->revision, SEC_DESC_SELF_RELATIVE,
 				(change_mode == REQUEST_CHOWN) ? &sid : NULL,
 				(change_mode == REQUEST_CHGRP) ? &sid : NULL,
 			   NULL, NULL, &sd_size);
