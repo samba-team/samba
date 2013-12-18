@@ -425,12 +425,12 @@ static bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
-			   const struct security_token *token,
-			   struct registry_key *root_key,
-			   struct GROUP_POLICY_OBJECT *gpo,
-			   const char *extension_guid_filter,
-			   uint32_t flags)
+static NTSTATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
+				  const struct security_token *token,
+				  struct registry_key *root_key,
+				  struct GROUP_POLICY_OBJECT *gpo,
+				  const char *extension_guid_filter,
+				  uint32_t flags)
 {
 	struct GP_EXT *gp_ext = NULL;
 	int i;
