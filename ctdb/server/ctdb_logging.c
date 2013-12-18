@@ -469,66 +469,6 @@ static int log_context_destructor(struct ctdb_log_state *log)
 }
 
 /*
-   fork(), redirecting child output to logging and specified callback.
-*/
-struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
-					      struct ctdb_context *ctdb,
-					      const char *log_prefix,
-					      void (*logfn)(const char *, uint16_t, void *),
-					      void *logfn_private, pid_t *pid)
-{
-	int p[2];
-	struct ctdb_log_state *log;
-	struct tevent_fd *fde;
-
-	log = talloc_zero(mem_ctx, struct ctdb_log_state);
-	CTDB_NO_MEMORY_NULL(ctdb, log);
-	log->ctdb = ctdb;
-	log->prefix = log_prefix;
-	log->logfn = logfn;
-	log->logfn_private = (void *)logfn_private;
-
-	if (pipe(p) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to setup for child logging pipe\n"));
-		goto free_log;
-	}
-
-	*pid = ctdb_fork(ctdb);
-
-	/* Child? */
-	if (*pid == 0) {
-		close(STDOUT_FILENO);
-		close(STDERR_FILENO);
-		dup2(p[1], STDOUT_FILENO);
-		dup2(p[1], STDERR_FILENO);
-		close(p[0]);
-		close(p[1]);
-		return log;
-	}
-	close(p[1]);
-
-	/* We failed? */
-	if (*pid < 0) {
-		DEBUG(DEBUG_ERR, (__location__ " fork failed for child process\n"));
-		close(p[0]);
-		goto free_log;
-	}
-
-	log->pfd = p[0];
-	set_close_on_exec(log->pfd);
-	talloc_set_destructor(log, log_context_destructor);
-	fde = event_add_fd(ctdb->ev, log, log->pfd,
-			   EVENT_FD_READ, ctdb_log_handler, log);
-	tevent_fd_set_auto_close(fde);
-
-	return log;
-
-free_log:
-	talloc_free(log);
-	return NULL;
-}
-
-/*
  * vfork + exec, redirecting child output to logging and specified callback.
  */
 struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
