@@ -92,7 +92,7 @@ NTSTATUS gp_ext_info_add_entry(TALLOC_CTX *mem_ctx,
 NTSTATUS shutdown_gp_extensions(void);
 NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx);
 NTSTATUS free_gp_extensions(void);
-void debug_gpext_header(int lvl,
+void gpext_debug_header(int lvl,
 			const char *name,
 			uint32_t flags,
 			struct GROUP_POLICY_OBJECT *gpo,

@@ -283,7 +283,7 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 	size_t num_entries = 0;
 	char *unix_path = NULL;
 
-	debug_gpext_header(0, "registry_process_group_policy", flags, gpo,
+	gpext_debug_header(0, "registry_process_group_policy", flags, gpo,
 			   extension_guid, snapin_guid);
 
 	status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR), gpo, &unix_path);

@@ -152,7 +152,7 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 	char *unix_path = NULL;
 	struct gp_inifile_context *ini_ctx = NULL;
 
-	debug_gpext_header(0, "security_process_group_policy", flags, gpo,
+	gpext_debug_header(0, "security_process_group_policy", flags, gpo,
 			   extension_guid, snapin_guid);
 
 	/* this handler processes the gpttmpl files and merge output to the
