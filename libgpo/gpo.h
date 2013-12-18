@@ -138,13 +138,6 @@ struct gp_registry_value {
 	struct registry_value *data;
 };
 
-struct gp_registry_entry2 {
-	enum gp_reg_action action;
-	const char *key;
-	size_t num_values;
-	struct gp_registry_value **values;
-};
-
 struct gp_registry_entries {
 	size_t num_entries;
 	struct gp_registry_entry **entries;
