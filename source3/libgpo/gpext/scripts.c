@@ -102,7 +102,7 @@ static NTSTATUS generate_gp_registry_entry(TALLOC_CTX *mem_ctx,
 			SBVAL(data->data.data, 0, *(uint64_t *)data_p);
 			break;
 		case REG_SZ:
-			if (!push_reg_sz(mem_ctx, &data->data, (char *)data_p)) {
+			if (!push_reg_sz(mem_ctx, &data->data, (const char *)data_p)) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			break;
