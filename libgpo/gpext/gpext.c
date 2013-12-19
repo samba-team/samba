@@ -733,12 +733,12 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 				 struct registry_key *root_key,
 				 const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
 				 const struct GROUP_POLICY_OBJECT *changed_gpo_list,
-				 const char *extension_guid,
-				 const char *snapin_guid)
+				 const char *extension_guid_filter)
 {
 	NTSTATUS status;
 	struct gp_extension *ext = NULL;
 	const struct GROUP_POLICY_OBJECT *gpo;
+	struct GUID extension_guid_filter_guid;
 
 	status = gpext_init_gp_extensions(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -747,10 +747,24 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
+	if (extension_guid_filter) {
+		status = GUID_from_string(extension_guid_filter,
+					  &extension_guid_filter_guid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
 	for (ext = extensions; ext; ext = ext->next) {
 
 		struct GROUP_POLICY_OBJECT *deleted_gpo_list_filtered = NULL;
 		struct GROUP_POLICY_OBJECT *changed_gpo_list_filtered = NULL;
+
+		if (extension_guid_filter) {
+			if (!GUID_equal(&extension_guid_filter_guid, ext->guid)) {
+				continue;
+			}
+		}
 
 		for (gpo = deleted_gpo_list; gpo; gpo = gpo->next) {
 

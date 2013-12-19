@@ -103,8 +103,7 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 				 struct registry_key *root_key,
 				 const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
 				 const struct GROUP_POLICY_OBJECT *changed_gpo_list,
-				 const char *extension_guid,
-				 const char *snapin_guid);
+				 const char *extension_guid);
 
 
 #endif /* __GPEXT_H__ */

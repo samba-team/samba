@@ -469,8 +469,7 @@ static NTSTATUS gpo_process_a_gpo(TALLOC_CTX *mem_ctx,
 		ntstatus = gpext_process_extension(mem_ctx,
 						   flags, token, root_key,
 						   NULL, gpo,
-						   gp_ext->extensions_guid[i],
-						   gp_ext->snapins_guid[i]);
+						   gp_ext->extensions_guid[i]);
 		if (!NT_STATUS_IS_OK(ntstatus)) {
 			return ntstatus;
 		}
