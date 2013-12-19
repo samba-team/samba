@@ -681,19 +681,6 @@ void gpext_debug_header(int lvl,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gpext_process_gpo_list_with_extension(TALLOC_CTX *mem_ctx,
-					       uint32_t flags,
-					       const struct security_token *token,
-					       struct GROUP_POLICY_OBJECT *gpo_list,
-					       const char *extension_guid,
-					       const char *snapin_guid)
-{
-	return NT_STATUS_OK;
-}
-
-/****************************************************************
-****************************************************************/
-
 static NTSTATUS gpext_check_gpo_for_gpext_presence(TALLOC_CTX *mem_ctx,
 						   uint32_t flags,
 						   const struct GROUP_POLICY_OBJECT *gpo,
