@@ -1040,7 +1040,7 @@ static WERROR reg_deletekey_recursive_trans(struct registry_key *parent,
 				  "error committing transaction: %s\n",
 				  win_errstr(werr)));
 		} else {
-			DEBUG(5, ("reg_reletekey_recursive_trans: deleted key '%s' from '%s'\n",
+			DEBUG(5, ("reg_deletekey_recursive_trans: deleted key '%s' from '%s'\n",
 				  path, parent->key->name));
 
 		}
