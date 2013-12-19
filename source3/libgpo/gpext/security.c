@@ -145,9 +145,7 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 					      struct registry_key *root_key,
 					      const struct security_token *token,
 					      struct GROUP_POLICY_OBJECT *deleted_gpo_list,
-					      struct GROUP_POLICY_OBJECT *changed_gpo_list,
-					      const char *extension_guid,
-					      const char *snapin_guid)
+					      struct GROUP_POLICY_OBJECT *changed_gpo_list)
 {
 	NTSTATUS status;
 	char *unix_path = NULL;
@@ -168,7 +166,7 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 	for (gpo = changed_gpo_list; gpo; gpo = gpo->next) {
 
 		gpext_debug_header(0, "security_process_group_policy", flags,
-				   gpo, extension_guid, snapin_guid);
+				   gpo, GP_EXT_GUID_SECURITY, NULL);
 
 		/* this handler processes the gpttmpl files and merge output to the
 		 * registry */

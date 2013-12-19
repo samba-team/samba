@@ -340,9 +340,7 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 					     struct registry_key *root_key,
 					     const struct security_token *token,
 					     struct GROUP_POLICY_OBJECT *deleted_gpo_list,
-					     struct GROUP_POLICY_OBJECT *changed_gpo_list,
-					     const char *extension_guid,
-					     const char *snapin_guid)
+					     struct GROUP_POLICY_OBJECT *changed_gpo_list)
 {
 	NTSTATUS status;
 	WERROR werr;
@@ -373,7 +371,7 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 	for (gpo = changed_gpo_list; gpo; gpo = gpo->next) {
 
 		gpext_debug_header(0, "scripts_process_group_policy", flags,
-				   gpo, extension_guid, snapin_guid);
+				   gpo, GP_EXT_GUID_SCRIPTS, NULL);
 
 		status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR),
 					   gpo, &unix_path);

@@ -823,9 +823,7 @@ NTSTATUS gpext_process_extension(TALLOC_CTX *mem_ctx,
 							    root_key,
 							    token,
 							    deleted_gpo_list_filtered,
-							    changed_gpo_list_filtered,
-							    extension_guid,
-							    snapin_guid);
+							    changed_gpo_list_filtered);
 		if (!NT_STATUS_IS_OK(status)) {
 			ext->methods->shutdown();
 		}
