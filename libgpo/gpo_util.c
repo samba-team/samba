@@ -525,21 +525,9 @@ NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 			      uint32_t flags)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	struct gp_extension *gp_ext_list = NULL;
-	struct gp_extension *gp_ext = NULL;
 	struct registry_key *root_key = NULL;
 	struct gp_registry_context *reg_ctx = NULL;
 	WERROR werr;
-
-	status = gpext_init_gp_extensions(mem_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	gp_ext_list = gpext_get_gp_extension_list();
-	if (!gp_ext_list) {
-		return NT_STATUS_DLL_INIT_FAILED;
-	}
 
 	/* get the key here */
 	if (flags & GPO_LIST_FLAG_MACHINE) {
@@ -558,35 +546,11 @@ NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 
 	root_key = reg_ctx->curr_key;
 
-	for (gp_ext = gp_ext_list; gp_ext; gp_ext = gp_ext->next) {
-
-		const char *guid_str = NULL;
-
-		guid_str = GUID_string(mem_ctx, gp_ext->guid);
-		if (!guid_str) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		if (extensions_guid_filter &&
-		    (!strequal(guid_str, extensions_guid_filter)))  {
-			continue;
-		}
-
-		DEBUG(0,("-------------------------------------------------\n"));
-		DEBUG(0,("gpo_process_gpo_list: processing ext: %s {%s}\n",
-			gp_ext->name, guid_str));
-
-
-		status = gpo_process_gpo_list_by_ext(mem_ctx, token,
-						     root_key, gpo_list,
-						     guid_str, flags);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-	}
-
- done:
+	status = gpext_process_extension(mem_ctx,
+					 flags, token, root_key,
+					 NULL,
+					 gpo_list,
+					 extensions_guid_filter);
 	talloc_free(reg_ctx);
 	talloc_free(root_key);
 	gpext_free_gp_extensions();
