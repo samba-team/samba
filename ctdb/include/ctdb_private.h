@@ -526,6 +526,7 @@ struct ctdb_context {
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 
 	TALLOC_CTX *event_script_ctx;
+	int active_events;
 
 	struct ctdb_event_script_state *current_monitor;
 	struct ctdb_scripts_wire *last_status[CTDB_EVENT_MAX];

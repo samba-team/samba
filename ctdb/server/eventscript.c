@@ -645,6 +645,11 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 		status = 0;
 	}
 
+	state->ctdb->active_events--;
+	if (state->ctdb->active_events < 0) {
+		ctdb_fatal(state->ctdb, "Active events < 0");
+	}
+
 	/* This is allowed to free us; talloc will prevent double free anyway,
 	 * but beware if you call this outside the destructor!
 	 * the callback hangs off a different context so we walk the list
@@ -750,6 +755,14 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		}
 	}
 
+	/* Do not run new monitor events if some event is already running */
+	if (call == CTDB_EVENT_MONITOR && ctdb->active_events > 0) {
+		if (callback != NULL) {
+			callback(ctdb, -ECANCELED, private_data);
+		}
+		return 0;
+	}
+
 	/* Kill off any running monitor events to run this event. */
 	if (ctdb->current_monitor) {
 		struct ctdb_event_script_state *ms = talloc_get_type(ctdb->current_monitor, struct ctdb_event_script_state);
@@ -815,6 +828,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	talloc_set_destructor(state, event_script_destructor);
+
+	ctdb->active_events++;
 
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
