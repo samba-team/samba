@@ -145,13 +145,13 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct registry_key *root_key,
 					      const struct security_token *token,
-					      struct GROUP_POLICY_OBJECT *deleted_gpo_list,
-					      struct GROUP_POLICY_OBJECT *changed_gpo_list)
+					      const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+					      const struct GROUP_POLICY_OBJECT *changed_gpo_list)
 {
 	NTSTATUS status;
 	char *unix_path = NULL;
 	struct gp_inifile_context *ini_ctx = NULL;
-	struct GROUP_POLICY_OBJECT *gpo;
+	const struct GROUP_POLICY_OBJECT *gpo;
 
 	/* implementation of the policy callback function, see
 	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx

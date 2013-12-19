@@ -228,7 +228,7 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 
 static WERROR scripts_store_reg_gpovals(TALLOC_CTX *mem_ctx,
 					struct registry_key *key,
-					struct GROUP_POLICY_OBJECT *gpo)
+					const struct GROUP_POLICY_OBJECT *gpo)
 {
 	WERROR werr;
 
@@ -267,7 +267,7 @@ static WERROR scripts_apply(TALLOC_CTX *mem_ctx,
 			    struct registry_key *root_key,
 			    uint32_t flags,
 			    const char *section,
-			    struct GROUP_POLICY_OBJECT *gpo,
+			    const struct GROUP_POLICY_OBJECT *gpo,
 			    struct gp_registry_entry *entries,
 			    size_t num_entries)
 {
@@ -340,8 +340,8 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 					     uint32_t flags,
 					     struct registry_key *root_key,
 					     const struct security_token *token,
-					     struct GROUP_POLICY_OBJECT *deleted_gpo_list,
-					     struct GROUP_POLICY_OBJECT *changed_gpo_list)
+					     const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+					     const struct GROUP_POLICY_OBJECT *changed_gpo_list)
 {
 	NTSTATUS status;
 	WERROR werr;
@@ -356,7 +356,7 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 		GP_SCRIPTS_INI_LOGON,
 		GP_SCRIPTS_INI_LOGOFF
 	};
-	struct GROUP_POLICY_OBJECT *gpo;
+	const struct GROUP_POLICY_OBJECT *gpo;
 
 	/* implementation of the policy callback function, see
 	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx

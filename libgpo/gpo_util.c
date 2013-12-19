@@ -477,7 +477,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
                            const char *cache_dir,
 			   uint32_t flags,
-			   struct GROUP_POLICY_OBJECT *gpo)
+			   const struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
 	char *server = NULL;
@@ -563,10 +563,10 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				const char *cache_dir,
 				uint32_t flags,
-				struct GROUP_POLICY_OBJECT *gpo_list)
+				const struct GROUP_POLICY_OBJECT *gpo_list)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct GROUP_POLICY_OBJECT *gpo;
+	const struct GROUP_POLICY_OBJECT *gpo;
 
 	if (!gpo_list) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -593,7 +593,7 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
                            const char *cache_dir,
-			   struct GROUP_POLICY_OBJECT *gpo,
+			   const struct GROUP_POLICY_OBJECT *gpo,
 			   char **unix_path)
 {
 	char *server, *share, *nt_path;

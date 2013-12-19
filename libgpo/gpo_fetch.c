@@ -151,7 +151,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads,
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
                          ADS_STRUCT *ads,
                          const char *cache_dir,
-			 struct GROUP_POLICY_OBJECT *gpo)
+			 const struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
 	char *server, *service, *nt_path, *unix_path;

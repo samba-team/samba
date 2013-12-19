@@ -658,7 +658,7 @@ NTSTATUS gpext_free_gp_extensions(void)
 void gpext_debug_header(int lvl,
 			const char *name,
 			uint32_t flags,
-			struct GROUP_POLICY_OBJECT *gpo,
+			const struct GROUP_POLICY_OBJECT *gpo,
 			const char *extension_guid,
 			const char *snapin_guid)
 {
