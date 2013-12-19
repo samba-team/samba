@@ -463,7 +463,7 @@ if __name__ == '__main__':
         create_samdb_copy(ldbs.sam, logger, paths, names, domainsid,
                           domainguid)
 
-        create_named_conf(paths, names.realm, dnsdomain, opts.dns_backend)
+        create_named_conf(paths, names.realm, dnsdomain, opts.dns_backend, logger)
 
         create_named_txt(paths.namedtxt, names.realm, dnsdomain, dnsname,
                          paths.private_dir, paths.dns_keytab)

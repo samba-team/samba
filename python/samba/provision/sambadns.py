@@ -26,6 +26,7 @@ import shutil
 import time
 import ldb
 from base64 import b64encode
+import subprocess
 import samba
 from samba.tdb_util import tdb_copy
 from samba.ndr import ndr_pack, ndr_unpack
@@ -870,7 +871,7 @@ def create_dns_update_list(lp, logger, paths):
     setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
 
 
-def create_named_conf(paths, realm, dnsdomain, dns_backend):
+def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
 
@@ -879,7 +880,15 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend):
     :param dnsdomain: DNS Domain name
     :param dns_backend: DNS backend type
     :param keytab_name: File name of DNS keytab file
+    :param logger: Logger object
     """
+
+    # TODO: This really should have been done as a top level import.
+    # It is done here to avoid a depencency loop.  That is, we move
+    # ProvisioningError to another file, and have all the provision
+    # scripts import it from there.
+
+    from samba.provision import ProvisioningError
 
     if dns_backend == "BIND9_FLATFILE":
         setup_file(setup_path("named.conf"), paths.namedconf, {
@@ -894,9 +903,25 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend):
         setup_file(setup_path("named.conf.update"), paths.namedconf_update)
 
     elif dns_backend == "BIND9_DLZ":
+        bind_info = subprocess.Popen(['named -V'], shell=True,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT,
+                                     cwd='.').communicate()[0]
+        bind98 = '#'
+        bind99 = '#'
+        if bind_info.upper().find('BIND 9.8') != -1:
+            bind98 = ''
+        elif bind_info.upper().find('BIND 9.9') != -1:
+            bind99 = ''
+        elif bind_info.upper().find('BIND 9.7') != -1:
+            raise ProvisioningError("DLZ option incompatible with BIND 9.7.")
+        else:
+            logger.warning("BIND version unknown, please modify %s manually." % paths.namedconf)
         setup_file(setup_path("named.conf.dlz"), paths.namedconf, {
                     "NAMED_CONF": paths.namedconf,
                     "MODULESDIR" : samba.param.modules_dir(),
+                    "BIND98" : bind98,
+                    "BIND99" : bind99
                     })
 
 
@@ -1151,7 +1176,8 @@ def setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
         create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid)
 
     create_named_conf(paths, realm=names.realm,
-                      dnsdomain=names.dnsdomain, dns_backend=dns_backend)
+                      dnsdomain=names.dnsdomain, dns_backend=dns_backend,
+                      logger=logger)
 
     create_named_txt(paths.namedtxt,
                      realm=names.realm, dnsdomain=names.dnsdomain,
