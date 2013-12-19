@@ -836,3 +836,55 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 #endif
 }
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS gpo_copy(TALLOC_CTX *mem_ctx,
+		  const struct GROUP_POLICY_OBJECT *gpo_src,
+		  struct GROUP_POLICY_OBJECT **gpo_dst)
+{
+	struct GROUP_POLICY_OBJECT *gpo;
+
+	gpo = talloc_zero(mem_ctx, struct GROUP_POLICY_OBJECT);
+	NT_STATUS_HAVE_NO_MEMORY(gpo);
+
+	gpo->options		= gpo_src->options;
+	gpo->version		= gpo_src->version;
+
+	gpo->ds_path		= talloc_strdup(gpo, gpo_src->ds_path);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->ds_path, gpo);
+
+	gpo->file_sys_path	= talloc_strdup(gpo, gpo_src->file_sys_path);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->file_sys_path, gpo);
+
+	gpo->display_name	= talloc_strdup(gpo, gpo_src->display_name);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->display_name, gpo);
+
+	gpo->name		= talloc_strdup(gpo, gpo_src->name);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->name, gpo);
+
+	gpo->link		= talloc_strdup(gpo, gpo_src->link);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->link, gpo);
+
+	gpo->link_type		= gpo_src->link_type;
+
+	if (gpo_src->user_extensions) {
+		gpo->user_extensions = talloc_strdup(gpo, gpo_src->user_extensions);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->user_extensions, gpo);
+	}
+
+	if (gpo_src->machine_extensions) {
+		gpo->machine_extensions = talloc_strdup(gpo, gpo_src->machine_extensions);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->machine_extensions, gpo);
+	}
+
+	gpo->security_descriptor = dup_sec_desc(gpo, gpo_src->security_descriptor);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->security_descriptor, gpo);
+
+	gpo->next = gpo->prev = NULL;
+
+	*gpo_dst = gpo;
+
+	return NT_STATUS_OK;
+}
