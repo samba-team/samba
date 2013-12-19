@@ -228,7 +228,8 @@ void dump_gpo_list(const struct GROUP_POLICY_OBJECT *gpo_list,
 void dump_gplink(const struct GP_LINK *gp_link);
 NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 			      const struct security_token *token,
-			      struct GROUP_POLICY_OBJECT *gpo_list,
+			      const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+			      const struct GROUP_POLICY_OBJECT *changed_gpo_list,
 			      const char *extensions_guid_filter,
 			      uint32_t flags);
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,

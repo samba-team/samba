@@ -427,7 +427,8 @@ bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
 
 NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 			      const struct security_token *token,
-			      struct GROUP_POLICY_OBJECT *gpo_list,
+			      const struct GROUP_POLICY_OBJECT *deleted_gpo_list,
+			      const struct GROUP_POLICY_OBJECT *changed_gpo_list,
 			      const char *extensions_guid_filter,
 			      uint32_t flags)
 {
@@ -455,8 +456,8 @@ NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 
 	status = gpext_process_extension(mem_ctx,
 					 flags, token, root_key,
-					 NULL,
-					 gpo_list,
+					 deleted_gpo_list,
+					 changed_gpo_list,
 					 extensions_guid_filter);
 	talloc_free(reg_ctx);
 	talloc_free(root_key);
