@@ -23,6 +23,7 @@
 #include "libgpo/gpo_proto.h"
 #include "registry.h"
 #include "../librpc/gen_ndr/ndr_preg.h"
+#include "libgpo/gpext/gpext.h"
 
 #define GP_EXT_NAME "registry"
 

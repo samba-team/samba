@@ -25,6 +25,7 @@
 #include "../libcli/security/security.h"
 #include "registry.h"
 #include "libgpo/gpo_proto.h"
+#include "libgpo/gpext/gpext.h"
 
 #if 0
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"

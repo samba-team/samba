@@ -24,6 +24,7 @@
 #include "registry.h"
 #include "registry/reg_api.h"
 #include "../libcli/registry/util_reg.h"
+#include "libgpo/gpext/gpext.h"
 
 #define GP_EXT_NAME "scripts"
 

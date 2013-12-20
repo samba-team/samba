@@ -265,6 +265,4 @@ NTSTATUS gpo_copy(TALLOC_CTX *mem_ctx,
 		  const struct GROUP_POLICY_OBJECT *gpo_src,
 		  struct GROUP_POLICY_OBJECT **gpo_dst);
 
-#include "../libgpo/gpext/gpext.h"
-
 #endif
