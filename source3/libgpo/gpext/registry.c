@@ -175,6 +175,10 @@ static NTSTATUS reg_parse_registry(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
+	if (flags & GPO_INFO_FLAG_VERBOSE) {
+		NDR_PRINT_DEBUG(preg_file, &r);
+	}
+
 	if (!strequal(r.header.signature, "PReg")) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;

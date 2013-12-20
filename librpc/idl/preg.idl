@@ -17,7 +17,7 @@ import "misc.idl";
 ]
 	interface preg
 {
-	typedef [public] struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		[charset(DOS),value("["),noprint] uint8 _opening_bracket[2];
 		nstring keyname;
 		[charset(DOS),value(";"),noprint] uint8 _sep1[2];
