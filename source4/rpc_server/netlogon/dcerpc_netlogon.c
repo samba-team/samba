@@ -140,6 +140,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	case SEC_CHAN_BDC:
 	case SEC_CHAN_RODC:
 		break;
+	case SEC_CHAN_NULL:
+		return NT_STATUS_INVALID_PARAMETER;
 	default:
 		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
 			  r->in.secure_channel_type));
