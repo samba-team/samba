@@ -99,7 +99,10 @@
 	
 	<para>Note that this mode does NOT make Samba operate as a Active Directory Domain 
 		Controller. </para>
-	
+
+	<para>Note that this forces <smbconfoption name="require strong key">yes</smbconfoption>
+	and <smbconfoption name="client schannel">yes</smbconfoption> for the primary domain.</para>
+
 	<para>Read the chapter about Domain Membership in the HOWTO for details.</para>
 </description>
 
