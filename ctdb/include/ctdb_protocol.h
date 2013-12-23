@@ -240,9 +240,9 @@ enum ctdb_eventscript_call {
 	CTDB_EVENT_RELEASE_IP,		/* IP released: interface, IP address, netmask bits. */
 	CTDB_EVENT_STOPPED,		/* Deprecated, do not use. */
 	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
-	CTDB_EVENT_STATUS,		/* Report service status: no args. */
+	CTDB_EVENT_STATUS,		/* Deprecated, do not use. */
 	CTDB_EVENT_SHUTDOWN,		/* CTDB shutting down: no args. */
-	CTDB_EVENT_RELOAD,		/* magic */
+	CTDB_EVENT_RELOAD,		/* Deprecated, do not use */
 	CTDB_EVENT_UPDATE_IP,		/* IP updating: old interface, new interface, IP address, netmask bits. */
 	CTDB_EVENT_IPREALLOCATED,	/* when a takeover_run() completes */
 	CTDB_EVENT_MAX
