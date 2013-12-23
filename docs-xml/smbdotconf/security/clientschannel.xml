@@ -12,6 +12,11 @@
     enforce it, and <smbconfoption name="client schannel">yes</smbconfoption> denies access 
     if the server is not able to speak netlogon schannel. 
     </para>
+
+    <para>Note that for active directory domains this is hardcoded to
+    <smbconfoption name="client schannel">yes</smbconfoption>.</para>
+
+    <para>This option yields precedence to the <smbconfoption name="require strong key"/> option.</para>
 </description>
 <value type="default">auto</value>
 <value type="example">yes</value>
