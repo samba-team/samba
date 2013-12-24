@@ -272,9 +272,9 @@ static struct loadparm_service sDefault =
 	.aio_write_size = 0,
 	.map_readonly = MAP_READONLY_YES,
 #ifdef BROKEN_DIRECTORY_HANDLING
-	.iDirectoryNameCacheSize = 0,
+	.directory_name_cache_size = 0,
 #else
-	.iDirectoryNameCacheSize = 100,
+	.directory_name_cache_size = 100,
 #endif
 	.ismb_encrypt = SMB_SIGNING_DEFAULT,
 	.kernel_share_modes = true,
