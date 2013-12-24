@@ -183,7 +183,7 @@ static struct loadparm_service sDefault =
 	.volume = NULL,
 	.fstype = NULL,
 	.vfs_objects = NULL,
-	.szMSDfsProxy = NULL,
+	.msdfs_proxy = NULL,
 	.szAioWriteBehind = NULL,
 	.szDfree = NULL,
 	.iMinPrintSpace = 0,
@@ -2349,7 +2349,7 @@ bool service_ok(int iService)
 
 	if (ServicePtrs[iService]->pathname[0] == '\0' &&
 	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0 &&
-	    ServicePtrs[iService]->szMSDfsProxy[0] == '\0'
+	    ServicePtrs[iService]->msdfs_proxy[0] == '\0'
 	    ) {
 		DEBUG(0, ("WARNING: No path in service %s - making it unavailable!\n",
 			ServicePtrs[iService]->szService));
