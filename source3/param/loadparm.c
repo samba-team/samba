@@ -750,7 +750,7 @@ static void init_globals(bool reinit_globals)
 	/* Must manually force to upper case here, as this does not go via the handler */
 	string_set(&Globals.netbios_name, myhostname_upper());
 
-	string_set(&Globals.szSMBPasswdFile, get_dyn_SMB_PASSWD_FILE());
+	string_set(&Globals.smb_passwd_file, get_dyn_SMB_PASSWD_FILE());
 	string_set(&Globals.private_dir, get_dyn_PRIVATE_DIR());
 
 	/* use the new 'hash2' method by default, with a prefix of 1 */
