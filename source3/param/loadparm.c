@@ -893,7 +893,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bUnicode = true;
 	Globals.bUnixExtensions = true;
 	Globals.bResetOnZeroVC = false;
-	Globals.bLogWriteableFilesOnExit = false;
+	Globals.log_writeable_files_on_exit = false;
 	Globals.create_krb5_conf = true;
 	Globals.winbindMaxDomainConnections = 1;
 
