@@ -756,7 +756,7 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 		service->comment = talloc_asprintf(service, "Home directory of %s", user);
 	}
 	service->bAvailable = default_service->bAvailable;
-	service->bBrowseable = default_service->bBrowseable;
+	service->browseable = default_service->browseable;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n",
 		  pszHomename, user, service->pathname));
@@ -787,7 +787,7 @@ bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
 	/* the printer name is set to the service name. */
 	lpcfg_string_set(service, &service->szPrintername, pszPrintername);
 	lpcfg_string_set(service, &service->comment, comment);
-	service->bBrowseable = default_service->bBrowseable;
+	service->browseable = default_service->browseable;
 	/* Printers cannot be read_only. */
 	service->bRead_only = false;
 	/* Printer services must be printable. */
@@ -1017,8 +1017,8 @@ static bool lpcfg_service_ok(struct loadparm_service *service)
 			service->bPrint_ok = true;
 		}
 		/* [printers] service must also be non-browsable. */
-		if (service->bBrowseable)
-			service->bBrowseable = false;
+		if (service->browseable)
+			service->browseable = false;
 	}
 
 	/* If a service is flagged unavailable, log the fact at level 0. */
@@ -2050,7 +2050,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lp_ctx->sDefault->iMaxPrintJobs = 1000;
 	lp_ctx->sDefault->bAvailable = true;
-	lp_ctx->sDefault->bBrowseable = true;
+	lp_ctx->sDefault->browseable = true;
 	lp_ctx->sDefault->bRead_only = true;
 	lp_ctx->sDefault->bMap_archive = true;
 	lp_ctx->sDefault->iStrictLocking = true;

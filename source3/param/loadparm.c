@@ -210,7 +210,7 @@ static struct loadparm_service sDefault =
 	.bHideSpecialFiles = false,
 	.bHideUnReadable = false,
 	.bHideUnWriteableFiles = false,
-	.bBrowseable = true,
+	.browseable = true,
 	.bAccessBasedShareEnum = false,
 	.bAvailable = true,
 	.bRead_only = true,
@@ -1695,7 +1695,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 
 	/* set the browseable flag from the global default */
 
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->browseable = sDefault.browseable;
 	ServicePtrs[i]->bAccessBasedShareEnum = sDefault.bAccessBasedShareEnum;
 
 	ServicePtrs[i]->autoloaded = true;
@@ -1747,7 +1747,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->bAdministrative_share = true;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
 	ServicePtrs[i]->bPrint_ok = false;
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->browseable = sDefault.browseable;
 
 	DEBUG(3, ("adding IPC service\n"));
 
@@ -1777,7 +1777,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	string_set(&ServicePtrs[i]->comment, comment);
 
 	/* set the browseable flag from the gloabl default */
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->browseable = sDefault.browseable;
 
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = false;
@@ -2343,8 +2343,8 @@ bool service_ok(int iService)
 			ServicePtrs[iService]->bPrint_ok = true;
 		}
 		/* [printers] service must also be non-browsable. */
-		if (ServicePtrs[iService]->bBrowseable)
-			ServicePtrs[iService]->bBrowseable = false;
+		if (ServicePtrs[iService]->browseable)
+			ServicePtrs[iService]->browseable = false;
 	}
 
 	if (ServicePtrs[iService]->pathname[0] == '\0' &&
