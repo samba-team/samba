@@ -838,7 +838,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bReadRaw = true;
 	Globals.bWriteRaw = true;
 	Globals.null_passwords = false;
-	Globals.bObeyPamRestrictions = false;
+	Globals.obey_pam_restrictions = false;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = false;
 	Globals.bTimestampLogs = true;
