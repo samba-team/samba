@@ -2314,7 +2314,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	 * future here */
 	settings.syslog = lp_ctx->globals->syslog;
 	settings.syslog_only = lp_ctx->globals->syslog_only;
-	settings.timestamp_logs = lp_ctx->globals->bTimestampLogs;
+	settings.timestamp_logs = lp_ctx->globals->timestamp_logs;
 	settings.debug_prefix_timestamp = lp_ctx->globals->debug_prefix_timestamp;
 	settings.debug_hires_timestamp = lp_ctx->globals->debug_hires_timestamp;
 	settings.debug_pid = lp_ctx->globals->debug_pid;
