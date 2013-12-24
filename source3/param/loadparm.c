@@ -1008,7 +1008,7 @@ static void init_globals(bool reinit_globals)
 
 	Globals.bEnablePrivileges = true;
 	Globals.bHostMSDfs        = true;
-	Globals.bASUSupport       = false;
+	Globals.enable_asu_support       = false;
 
 	/* User defined shares. */
 	if (asprintf(&s, "%s/usershares", get_dyn_STATEDIR()) < 0) {
