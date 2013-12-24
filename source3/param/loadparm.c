@@ -216,7 +216,7 @@ static struct loadparm_service sDefault =
 	.readonly = true,
 	.bGuest_only = false,
 	.bAdministrative_share = false,
-	.bGuest_ok = false,
+	.guest_ok = false,
 	.print_ok = false,
 	.bPrintNotifyBackchannel = false,
 	.map_system = false,
@@ -1745,7 +1745,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->readonly = true;
 	ServicePtrs[i]->bGuest_only = false;
 	ServicePtrs[i]->bAdministrative_share = true;
-	ServicePtrs[i]->bGuest_ok = guest_ok;
+	ServicePtrs[i]->guest_ok = guest_ok;
 	ServicePtrs[i]->print_ok = false;
 	ServicePtrs[i]->browseable = sDefault.browseable;
 
@@ -4465,7 +4465,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* Set guest access. */
 	if (lp_usershare_allow_guests()) {
-		ServicePtrs[iService]->bGuest_ok = guest_ok;
+		ServicePtrs[iService]->guest_ok = guest_ok;
 	}
 
 	/* And note when it was loaded. */
