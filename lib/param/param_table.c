@@ -4287,7 +4287,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "dcerpc endpoint servers",
 		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(dcerpc_ep_servers),
+		.offset		= GLOBAL_VAR(dcerpc_endpoint_servers),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
