@@ -856,7 +856,7 @@ static void init_globals(bool reinit_globals)
 	Globals.lm_announce = Auto;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
-	Globals.bNISHomeMap = false;
+	Globals.nis_home_map = false;
 #ifdef WITH_NISPLUS_HOME
 	string_set(&Globals.szNISHomeMapName, "auto_home.org_dir");
 #else
