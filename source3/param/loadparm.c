@@ -1021,7 +1021,7 @@ static void init_globals(bool reinit_globals)
 	/* By default disallow sharing of directories not owned by the sharer. */
 	Globals.bUsershareOwnerOnly = true;
 	/* By default disallow guest access to usershares. */
-	Globals.bUsershareAllowGuests = false;
+	Globals.usershare_allow_guests = false;
 
 	Globals.iKeepalive = DEFAULT_KEEPALIVE;
 
