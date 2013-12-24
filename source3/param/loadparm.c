@@ -161,7 +161,7 @@ static struct loadparm_service sDefault =
 	.printcommand = NULL,
 	.lpqcommand = NULL,
 	.lprmcommand = NULL,
-	.szLppausecommand = NULL,
+	.lppausecommand = NULL,
 	.szLpresumecommand = NULL,
 	.szQueuepausecommand = NULL,
 	.szQueueresumecommand = NULL,
@@ -397,7 +397,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->printcommand, "lpr -r -P'%p' %s");
 			string_set(&pService->szQueuepausecommand, "lpc stop '%p'");
 			string_set(&pService->szQueueresumecommand, "lpc start '%p'");
-			string_set(&pService->szLppausecommand, "lpc hold '%p' %j");
+			string_set(&pService->lppausecommand, "lpc hold '%p' %j");
 			string_set(&pService->szLpresumecommand, "lpc release '%p' %j");
 			break;
 
@@ -408,7 +408,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->lpqcommand, "%p");
 			string_set(&pService->lprmcommand, "");
 			string_set(&pService->printcommand, "");
-			string_set(&pService->szLppausecommand, "");
+			string_set(&pService->lppausecommand, "");
 			string_set(&pService->szLpresumecommand, "");
 			string_set(&pService->szQueuepausecommand, "");
 			string_set(&pService->szQueueresumecommand, "");
@@ -422,7 +422,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->szQueuepausecommand, "disable %p");
 			string_set(&pService->szQueueresumecommand, "enable %p");
 #ifndef HPUX
-			string_set(&pService->szLppausecommand, "lp -i %p-%j -H hold");
+			string_set(&pService->lppausecommand, "lp -i %p-%j -H hold");
 			string_set(&pService->szLpresumecommand, "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
@@ -466,7 +466,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lppause %%p %%j",
 				      tdbfile);
-		string_set(&pService->szLppausecommand,
+		string_set(&pService->lppausecommand,
 			   tmp ? tmp : "vlp lppause %p %j");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpresume %%p %%j",
