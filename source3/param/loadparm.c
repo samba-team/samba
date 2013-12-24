@@ -227,7 +227,7 @@ static struct loadparm_service sDefault =
 	.bLocking = true,
 	.iStrictLocking = Auto,
 	.bPosixLocking = true,
-	.bOpLocks = true,
+	.oplocks = true,
 	.bKernelOplocks = false,
 	.bLevel2OpLocks = true,
 	.bOnlyUser = false,
@@ -1782,7 +1782,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->readonly = false;
 	/* No oplocks on printer services. */
-	ServicePtrs[i]->bOpLocks = false;
+	ServicePtrs[i]->oplocks = false;
 	/* Printer services must be printable. */
 	ServicePtrs[i]->print_ok = true;
 
