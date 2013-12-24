@@ -214,7 +214,7 @@ static struct loadparm_service sDefault =
 	.access_based_share_enum = false,
 	.bAvailable = true,
 	.readonly = true,
-	.bGuest_only = false,
+	.guest_only = false,
 	.bAdministrative_share = false,
 	.guest_ok = false,
 	.print_ok = false,
@@ -1743,7 +1743,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->max_connections = 0;
 	ServicePtrs[i]->bAvailable = true;
 	ServicePtrs[i]->readonly = true;
-	ServicePtrs[i]->bGuest_only = false;
+	ServicePtrs[i]->guest_only = false;
 	ServicePtrs[i]->bAdministrative_share = true;
 	ServicePtrs[i]->guest_ok = guest_ok;
 	ServicePtrs[i]->print_ok = false;
