@@ -982,7 +982,7 @@ static void init_globals(bool reinit_globals)
 	Globals.winbind_max_clients = 200;
 	Globals.winbind_enum_users = false;
 	Globals.winbind_enum_groups = false;
-	Globals.bWinbindUseDefaultDomain = false;
+	Globals.winbind_use_default_domain = false;
 	Globals.winbind_trusted_domains_only = false;
 	Globals.winbind_nested_groups = true;
 	Globals.winbind_expand_groups = 1;
