@@ -1006,7 +1006,7 @@ static void init_globals(bool reinit_globals)
 	Globals.defer_sharing_violations = true;
 	Globals.smb_ports = (const char **)str_list_make_v3(NULL, SMB_PORTS, NULL);
 
-	Globals.bEnablePrivileges = true;
+	Globals.enable_privileges = true;
 	Globals.bHostMSDfs        = true;
 	Globals.enable_asu_support       = false;
 
