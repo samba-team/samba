@@ -816,7 +816,7 @@ static void init_globals(bool reinit_globals)
 	Globals.max_xmit = 0x4104;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
 	Globals.lpqcachetime = 30;	/* changed to handle large print servers better -- jerry */
-	Globals.bDisableSpoolss = false;
+	Globals._disable_spoolss = false;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
