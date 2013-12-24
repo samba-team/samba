@@ -1033,7 +1033,7 @@ static void init_globals(bool reinit_globals)
 	Globals.map_untrusted_to_domain = false;
 	Globals.multicast_dns_register = true;
 
-	Globals.ismb2_max_read = DEFAULT_SMB2_MAX_READ;
+	Globals.smb2_max_read = DEFAULT_SMB2_MAX_READ;
 	Globals.ismb2_max_write = DEFAULT_SMB2_MAX_WRITE;
 	Globals.ismb2_max_trans = DEFAULT_SMB2_MAX_TRANSACT;
 	Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
