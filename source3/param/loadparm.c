@@ -803,7 +803,7 @@ static void init_globals(bool reinit_globals)
 	Globals.szNameResolveOrder = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
 	string_set(&Globals.passwordserver, "*");
 
-	Globals.AlgorithmicRidBase = BASE_RID;
+	Globals.algorithmic_rid_base = BASE_RID;
 
 	Globals.load_printers = true;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
