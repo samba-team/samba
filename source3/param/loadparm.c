@@ -146,7 +146,7 @@ static struct loadparm_service sDefault =
 	.usershare = 0,
 	.usershare_last_mod = {0, 0},
 	.szService = NULL,
-	.szPath = NULL,
+	.pathname = NULL,
 	.szUsername = NULL,
 	.szInvalidUsers = NULL,
 	.szValidUsers = NULL,
@@ -1678,10 +1678,10 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	if (i < 0)
 		return false;
 
-	if (!(*(ServicePtrs[iDefaultService]->szPath))
-	    || strequal(ServicePtrs[iDefaultService]->szPath,
+	if (!(*(ServicePtrs[iDefaultService]->pathname))
+	    || strequal(ServicePtrs[iDefaultService]->pathname,
 			lp_pathname(talloc_tos(), GLOBAL_SECTION_SNUM))) {
-		string_set(&ServicePtrs[i]->szPath, pszHomedir);
+		string_set(&ServicePtrs[i]->pathname, pszHomedir);
 	}
 
 	if (!(*(ServicePtrs[i]->comment))) {
@@ -1701,7 +1701,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	ServicePtrs[i]->autoloaded = true;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
-	       user, ServicePtrs[i]->szPath ));
+	       user, ServicePtrs[i]->pathname ));
 
 	return true;
 }
@@ -1736,7 +1736,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 		return false;
 	}
 
-	string_set(&ServicePtrs[i]->szPath, tmpdir());
+	string_set(&ServicePtrs[i]->pathname, tmpdir());
 	string_set(&ServicePtrs[i]->szUsername, "");
 	string_set(&ServicePtrs[i]->comment, comment);
 	string_set(&ServicePtrs[i]->fstype, "IPC");
@@ -2347,7 +2347,7 @@ bool service_ok(int iService)
 			ServicePtrs[iService]->bBrowseable = false;
 	}
 
-	if (ServicePtrs[iService]->szPath[0] == '\0' &&
+	if (ServicePtrs[iService]->pathname[0] == '\0' &&
 	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0 &&
 	    ServicePtrs[iService]->szMSDfsProxy[0] == '\0'
 	    ) {
@@ -4197,7 +4197,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (snum != -1 && (strcmp(sharepath, ServicePtrs[snum]->szPath) == 0)) {
+	if (snum != -1 && (strcmp(sharepath, ServicePtrs[snum]->pathname) == 0)) {
 		/* Path didn't change, no checks needed. */
 		*pp_sharepath = sharepath;
 		*pp_comment = comment;
@@ -4470,7 +4470,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* And note when it was loaded. */
 	ServicePtrs[iService]->usershare_last_mod = sbuf.st_ex_mtime;
-	string_set(&ServicePtrs[iService]->szPath, sharepath);
+	string_set(&ServicePtrs[iService]->pathname, sharepath);
 	string_set(&ServicePtrs[iService]->comment, comment);
 
 	ret = iService;

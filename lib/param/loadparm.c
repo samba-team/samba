@@ -745,11 +745,11 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 	if (service == NULL)
 		return false;
 
-	if (!(*(default_service->szPath))
-	    || strequal(default_service->szPath, lp_ctx->sDefault->szPath)) {
-		service->szPath = talloc_strdup(service, pszHomedir);
+	if (!(*(default_service->pathname))
+	    || strequal(default_service->pathname, lp_ctx->sDefault->pathname)) {
+		service->pathname = talloc_strdup(service, pszHomedir);
 	} else {
-		service->szPath = string_sub_talloc(service, lpcfg_pathname(default_service, lp_ctx->sDefault), "%H", pszHomedir);
+		service->pathname = string_sub_talloc(service, lpcfg_pathname(default_service, lp_ctx->sDefault), "%H", pszHomedir);
 	}
 
 	if (!(*(service->comment))) {
@@ -759,7 +759,7 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 	service->bBrowseable = default_service->bBrowseable;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n",
-		  pszHomename, user, service->szPath));
+		  pszHomename, user, service->pathname));
 
 	return true;
 }
