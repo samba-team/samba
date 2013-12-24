@@ -872,7 +872,7 @@ static void init_globals(bool reinit_globals)
 	Globals.nt_pipe_support = true;	/* Do NT pipes by default. */
 	Globals.nt_status_support = true; /* Use NT status by default. */
 	Globals.stat_cache = true;	/* use stat cache by default */
-	Globals.iMaxStatCacheSize = 256; /* 256k by default */
+	Globals.max_stat_cache_size = 256; /* 256k by default */
 	Globals.restrict_anonymous = 0;
 	Globals.client_lanman_auth = false;	/* Do NOT use the LanMan hash if it is available */
 	Globals.client_plaintext_auth = false;	/* Do NOT use a plaintext password even if is requested by the server */
