@@ -269,7 +269,7 @@ static struct loadparm_service sDefault =
 	.bKernelChangeNotify = true,
 	.allocation_roundup_size = SMB_ROUNDUP_ALLOCATION_SIZE,
 	.aio_read_size = 0,
-	.iAioWriteSize = 0,
+	.aio_write_size = 0,
 	.iMap_readonly = MAP_READONLY_YES,
 #ifdef BROKEN_DIRECTORY_HANDLING
 	.iDirectoryNameCacheSize = 0,
