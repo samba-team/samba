@@ -795,7 +795,7 @@ static void init_globals(bool reinit_globals)
 
 	string_set(&Globals.socket_options, DEFAULT_SOCKET_OPTIONS);
 
-	string_set(&Globals.szLogonDrive, "");
+	string_set(&Globals.logon_drive, "");
 	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
 	string_set(&Globals.szLogonHome, "\\\\%N\\%U");
 	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
