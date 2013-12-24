@@ -194,7 +194,7 @@ static struct loadparm_service sDefault =
 	.iCreate_force_mode = 0,
 	.iDir_mask = 0755,
 	.iDir_force_mode = 0,
-	.iMaxConnections = 0,
+	.max_connections = 0,
 	.iDefaultCase = CASE_LOWER,
 	.iPrinting = DEFAULT_PRINTING,
 	.iOplockContentionLimit = 2,
@@ -1740,7 +1740,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	string_set(&ServicePtrs[i]->szUsername, "");
 	string_set(&ServicePtrs[i]->comment, comment);
 	string_set(&ServicePtrs[i]->fstype, "IPC");
-	ServicePtrs[i]->iMaxConnections = 0;
+	ServicePtrs[i]->max_connections = 0;
 	ServicePtrs[i]->bAvailable = true;
 	ServicePtrs[i]->readonly = true;
 	ServicePtrs[i]->bGuest_only = false;
