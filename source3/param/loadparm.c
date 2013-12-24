@@ -843,7 +843,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bSyslogOnly = false;
 	Globals.bTimestampLogs = true;
 	string_set(&Globals.loglevel, "0");
-	Globals.bDebugPrefixTimestamp = false;
+	Globals.debug_prefix_timestamp = false;
 	Globals.debug_hires_timestamp = true;
 	Globals.debug_pid = false;
 	Globals.bDebugUid = false;
