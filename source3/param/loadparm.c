@@ -964,7 +964,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.winbindd_socket_directory, dyn_WINBINDD_SOCKET_DIR);
 
 	string_set(&Globals.cups_server, "");
-	string_set(&Globals.szIPrintServer, "");
+	string_set(&Globals.iprint_server, "");
 
 #ifdef CLUSTER_SUPPORT
 	string_set(&Globals.ctdbd_socket, CTDB_PATH);
