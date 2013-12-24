@@ -211,7 +211,7 @@ static struct loadparm_service sDefault =
 	.hideunreadable = false,
 	.hideunwriteable_files = false,
 	.browseable = true,
-	.bAccessBasedShareEnum = false,
+	.access_based_share_enum = false,
 	.bAvailable = true,
 	.readonly = true,
 	.bGuest_only = false,
@@ -1696,7 +1696,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	/* set the browseable flag from the global default */
 
 	ServicePtrs[i]->browseable = sDefault.browseable;
-	ServicePtrs[i]->bAccessBasedShareEnum = sDefault.bAccessBasedShareEnum;
+	ServicePtrs[i]->access_based_share_enum = sDefault.access_based_share_enum;
 
 	ServicePtrs[i]->autoloaded = true;
 
