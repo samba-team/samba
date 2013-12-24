@@ -926,7 +926,7 @@ static void init_globals(bool reinit_globals)
 	/* This is what we tell the afs client. in reality we set the token 
 	 * to never expire, though, when this runs out the afs client will 
 	 * forget the token. Set to 0 to get NEVERDATE.*/
-	Globals.iAfsTokenLifetime = 604800;
+	Globals.afs_token_lifetime = 604800;
 	Globals.cups_connection_timeout = CUPS_DEFAULT_CONNECTION_TIMEOUT;
 
 /* these parameters are set to defaults that are more appropriate
