@@ -866,7 +866,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bTimeServer = false;
 	Globals.bind_interfaces_only = false;
 	Globals.bUnixPasswdSync = false;
-	Globals.bPamPasswordChange = false;
+	Globals.pam_password_change = false;
 	Globals.bPasswdChatDebug = false;
 	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
 	Globals.nt_pipe_support = true;	/* Do NT pipes by default. */
