@@ -256,7 +256,7 @@ static struct loadparm_service sDefault =
 	.force_printername = false,
 	.nt_acl_support = true,
 	.force_unknown_acl_user = false,
-	.bUseSendfile = false,
+	._use_sendfile = false,
 	.bProfileAcls = false,
 	.bMap_acl_inherit = false,
 	.bAfs_Share = false,
@@ -5373,9 +5373,9 @@ bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state)
 void set_use_sendfile(int snum, bool val)
 {
 	if (LP_SNUM_OK(snum))
-		ServicePtrs[snum]->bUseSendfile = val;
+		ServicePtrs[snum]->_use_sendfile = val;
 	else
-		sDefault.bUseSendfile = val;
+		sDefault._use_sendfile = val;
 }
 
 /*******************************************************************
