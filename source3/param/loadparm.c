@@ -988,7 +988,7 @@ static void init_globals(bool reinit_globals)
 	Globals.winbind_expand_groups = 1;
 	Globals.szWinbindNssInfo = (const char **)str_list_make_v3(NULL, "template", NULL);
 	Globals.bWinbindRefreshTickets = false;
-	Globals.bWinbindOfflineLogon = false;
+	Globals.winbind_offline_logon = false;
 
 	Globals.iIdmapCacheTime = 86400 * 7; /* a week by default */
 	Globals.iIdmapNegativeCacheTime = 120; /* 2 minutes by default */
