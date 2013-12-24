@@ -845,7 +845,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.loglevel, "0");
 	Globals.bDebugPrefixTimestamp = false;
 	Globals.debug_hires_timestamp = true;
-	Globals.bDebugPid = false;
+	Globals.debug_pid = false;
 	Globals.bDebugUid = false;
 	Globals.debug_class = false;
 	Globals.bEnableCoreFiles = true;
