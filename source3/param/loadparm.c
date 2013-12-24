@@ -1017,7 +1017,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szUsersharePath, s);
 	SAFE_FREE(s);
 	string_set(&Globals.szUsershareTemplateShare, "");
-	Globals.iUsershareMaxShares = 0;
+	Globals.usershare_max_shares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
 	Globals.usershare_owner_only = true;
 	/* By default disallow guest access to usershares. */
@@ -4525,7 +4525,7 @@ int load_usershare_service(const char *servicename)
 {
 	SMB_STRUCT_STAT sbuf;
 	const char *usersharepath = Globals.szUsersharePath;
-	int max_user_shares = Globals.iUsershareMaxShares;
+	int max_user_shares = Globals.usershare_max_shares;
 	int snum_template = -1;
 
 	if (*usersharepath == 0 ||  max_user_shares == 0) {
@@ -4597,7 +4597,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 	SMB_STRUCT_STAT sbuf;
 	struct dirent *de;
 	int num_usershares = 0;
-	int max_user_shares = Globals.iUsershareMaxShares;
+	int max_user_shares = Globals.usershare_max_shares;
 	unsigned int num_dir_entries, num_bad_dir_entries, num_tmp_dir_entries;
 	unsigned int allowed_bad_entries = ((2*max_user_shares)/10);
 	unsigned int allowed_tmp_entries = ((2*max_user_shares)/10);
