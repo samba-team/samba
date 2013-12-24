@@ -782,7 +782,7 @@ static void init_globals(bool reinit_globals)
 	 * By default support explicit binding to broadcast
  	 * addresses.
  	 */
-	Globals.bNmbdBindExplicitBroadcast = true;
+	Globals.nmbd_bind_explicit_broadcast = true;
 
 	if (asprintf(&s, "Samba %s", samba_version_string()) < 0) {
 		smb_panic("init_globals: ENOMEM");
