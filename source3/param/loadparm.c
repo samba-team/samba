@@ -831,7 +831,7 @@ static void init_globals(bool reinit_globals)
 	Globals.cli_minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
 	Globals.encrypted_passwords = true;
-	Globals.clientSchannel = Auto;
+	Globals.client_schannel = Auto;
 	Globals.winbind_sealed_pipes = true;
 	Globals.require_strong_key = true;
 	Globals.serverSchannel = Auto;
