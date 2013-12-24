@@ -832,7 +832,7 @@ static void init_globals(bool reinit_globals)
 	Globals.security = SEC_USER;
 	Globals.encrypted_passwords = true;
 	Globals.clientSchannel = Auto;
-	Globals.bWinbindSealedPipes = true;
+	Globals.winbind_sealed_pipes = true;
 	Globals.require_strong_key = true;
 	Globals.serverSchannel = Auto;
 	Globals.bReadRaw = true;
