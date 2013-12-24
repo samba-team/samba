@@ -846,7 +846,7 @@ static void init_globals(bool reinit_globals)
 	Globals.debug_prefix_timestamp = false;
 	Globals.debug_hires_timestamp = true;
 	Globals.debug_pid = false;
-	Globals.bDebugUid = false;
+	Globals.debug_uid = false;
 	Globals.debug_class = false;
 	Globals.bEnableCoreFiles = true;
 	Globals.max_ttl = 60 * 60 * 24 * 3;	/* 3 days default. */

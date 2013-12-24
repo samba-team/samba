@@ -2318,7 +2318,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	settings.debug_prefix_timestamp = lp_ctx->globals->debug_prefix_timestamp;
 	settings.debug_hires_timestamp = lp_ctx->globals->debug_hires_timestamp;
 	settings.debug_pid = lp_ctx->globals->debug_pid;
-	settings.debug_uid = lp_ctx->globals->bDebugUid;
+	settings.debug_uid = lp_ctx->globals->debug_uid;
 	settings.debug_class = lp_ctx->globals->debug_class;
 	debug_set_settings(&settings);
 
