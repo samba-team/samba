@@ -908,7 +908,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szLdapGroupSuffix, "");
 	string_set(&Globals.szLdapIdmapSuffix, "");
 
-	string_set(&Globals.szLdapAdminDn, "");
+	string_set(&Globals.ldap_admin_dn, "");
 	Globals.ldap_ssl = LDAP_SSL_START_TLS;
 	Globals.ldap_ssl_ads = false;
 	Globals.ldap_deref = -1;
