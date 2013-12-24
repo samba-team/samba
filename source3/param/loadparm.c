@@ -983,7 +983,7 @@ static void init_globals(bool reinit_globals)
 	Globals.winbind_enum_users = false;
 	Globals.winbind_enum_groups = false;
 	Globals.bWinbindUseDefaultDomain = false;
-	Globals.bWinbindTrustedDomainsOnly = false;
+	Globals.winbind_trusted_domains_only = false;
 	Globals.winbind_nested_groups = true;
 	Globals.winbind_expand_groups = 1;
 	Globals.szWinbindNssInfo = (const char **)str_list_make_v3(NULL, "template", NULL);
