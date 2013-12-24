@@ -2755,7 +2755,7 @@ static bool handle_realm(struct loadparm_context *unused, int snum, const char *
 
 	ret &= string_set(&Globals.szRealm, pszParmValue);
 	ret &= string_set(&Globals.szRealm_upper, realm);
-	ret &= string_set(&Globals.szRealm_lower, dnsdomain);
+	ret &= string_set(&Globals.dnsdomain, dnsdomain);
 	TALLOC_FREE(frame);
 
 	return ret;
