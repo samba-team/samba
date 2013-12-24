@@ -959,7 +959,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szIdmapBackend, "tdb");
 
 	string_set(&Globals.szTemplateShell, "/bin/false");
-	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
+	string_set(&Globals.template_homedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szWinbinddSocketDirectory, dyn_WINBINDD_SOCKET_DIR);
 
