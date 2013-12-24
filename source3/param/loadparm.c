@@ -891,7 +891,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bUseMmap = true;
 #endif
 	Globals.unicode = true;
-	Globals.bUnixExtensions = true;
+	Globals.unix_extensions = true;
 	Globals.reset_on_zero_vc = false;
 	Globals.log_writeable_files_on_exit = false;
 	Globals.create_krb5_conf = true;
