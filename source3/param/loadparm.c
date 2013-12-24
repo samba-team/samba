@@ -222,7 +222,7 @@ static struct loadparm_service sDefault =
 	.map_system = false,
 	.map_hidden = false,
 	.map_archive = true,
-	.bStoreDosAttributes = false,
+	.store_dos_attributes = false,
 	.bDmapiSupport = false,
 	.bLocking = true,
 	.iStrictLocking = Auto,
@@ -5386,7 +5386,7 @@ void set_store_dos_attributes(int snum, bool val)
 {
 	if (!LP_SNUM_OK(snum))
 		return;
-	ServicePtrs[(snum)]->bStoreDosAttributes = val;
+	ServicePtrs[(snum)]->store_dos_attributes = val;
 }
 
 void lp_set_mangling_method(const char *new_method)
