@@ -2319,7 +2319,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	settings.debug_hires_timestamp = lp_ctx->globals->bDebugHiresTimestamp;
 	settings.debug_pid = lp_ctx->globals->bDebugPid;
 	settings.debug_uid = lp_ctx->globals->bDebugUid;
-	settings.debug_class = lp_ctx->globals->bDebugClass;
+	settings.debug_class = lp_ctx->globals->debug_class;
 	debug_set_settings(&settings);
 
 	/* FIXME: This is a bit of a hack, but we can't use a global, since 
