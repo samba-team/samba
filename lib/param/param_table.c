@@ -4304,7 +4304,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "share backend",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szShareBackend),
+		.offset		= GLOBAL_VAR(share_backend),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
