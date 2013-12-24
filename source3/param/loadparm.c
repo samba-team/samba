@@ -800,7 +800,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.logon_home, "\\\\%N\\%U");
 	string_set(&Globals.logon_path, "\\\\%N\\%U\\profile");
 
-	Globals.szNameResolveOrder = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
+	Globals.name_resolve_order = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
 	string_set(&Globals.passwordserver, "*");
 
 	Globals.algorithmic_rid_base = BASE_RID;
