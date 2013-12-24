@@ -899,7 +899,7 @@ static void init_globals(bool reinit_globals)
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
-	Globals.bHostnameLookups = false;
+	Globals.hostname_lookups = false;
 
 	string_set(&Globals.passdb_backend, "tdbsam");
 	string_set(&Globals.szLdapSuffix, "");
