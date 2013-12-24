@@ -1035,7 +1035,7 @@ static void init_globals(bool reinit_globals)
 
 	Globals.smb2_max_read = DEFAULT_SMB2_MAX_READ;
 	Globals.ismb2_max_write = DEFAULT_SMB2_MAX_WRITE;
-	Globals.ismb2_max_trans = DEFAULT_SMB2_MAX_TRANSACT;
+	Globals.smb2_max_trans = DEFAULT_SMB2_MAX_TRANSACT;
 	Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
 
 	string_set(&Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
