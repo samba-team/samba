@@ -961,7 +961,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.template_shell, "/bin/false");
 	string_set(&Globals.template_homedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
-	string_set(&Globals.szWinbinddSocketDirectory, dyn_WINBINDD_SOCKET_DIR);
+	string_set(&Globals.winbindd_socket_directory, dyn_WINBINDD_SOCKET_DIR);
 
 	string_set(&Globals.szCupsServer, "");
 	string_set(&Globals.szIPrintServer, "");
