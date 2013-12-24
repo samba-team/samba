@@ -808,7 +808,7 @@ static void init_globals(bool reinit_globals)
 	Globals.load_printers = true;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
-	Globals.ConfigBackend = config_backend;
+	Globals.config_backend = config_backend;
 	Globals.server_role = ROLE_AUTO;
 
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
@@ -4865,7 +4865,7 @@ static bool lp_load_ex(const char *pszFname,
 			/*
 			 * We need to use this extra global variable here to
 			 * survive restart: init_globals uses this as a default
-			 * for ConfigBackend. Otherwise, init_globals would
+			 * for config_backend. Otherwise, init_globals would
 			 *  send us into an endless loop here.
 			 */
 			config_backend = CONFIG_BACKEND_REGISTRY;
