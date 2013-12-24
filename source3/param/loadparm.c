@@ -773,7 +773,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szWorkgroup, DEFAULT_WORKGROUP);
 
 	string_set(&Globals.szPasswdProgram, "");
-	string_set(&Globals.szLockDir, get_dyn_LOCKDIR());
+	string_set(&Globals.lockdir, get_dyn_LOCKDIR());
 	string_set(&Globals.szStateDir, get_dyn_STATEDIR());
 	string_set(&Globals.szCacheDir, get_dyn_CACHEDIR());
 	string_set(&Globals.szPidDir, get_dyn_PIDDIR());
@@ -1131,8 +1131,8 @@ const char *lp_statedir(void) {
 		return(*(char **)(&Globals.szStateDir) ?
 		       *(char **)(&Globals.szStateDir) : "");
 	else
-		return(*(char **)(&Globals.szLockDir) ?
-		       *(char **)(&Globals.szLockDir) : "");
+		return(*(char **)(&Globals.lockdir) ?
+		       *(char **)(&Globals.lockdir) : "");
 }
 const char *lp_cachedir(void) {
 	if ((strcmp(get_dyn_CACHEDIR(), get_dyn_LOCKDIR()) != 0) ||
@@ -1140,8 +1140,8 @@ const char *lp_cachedir(void) {
 		return(*(char **)(&Globals.szCacheDir) ?
 		       *(char **)(&Globals.szCacheDir) : "");
 	else
-		return(*(char **)(&Globals.szLockDir) ?
-		       *(char **)(&Globals.szLockDir) : "");
+		return(*(char **)(&Globals.lockdir) ?
+		       *(char **)(&Globals.lockdir) : "");
 }
 static FN_GLOBAL_INTEGER(winbind_max_domain_connections_int,
 		  winbindMaxDomainConnections)
