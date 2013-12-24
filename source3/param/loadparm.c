@@ -801,7 +801,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.logon_path, "\\\\%N\\%U\\profile");
 
 	Globals.szNameResolveOrder = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
-	string_set(&Globals.szPasswordServer, "*");
+	string_set(&Globals.passwordserver, "*");
 
 	Globals.AlgorithmicRidBase = BASE_RID;
 
