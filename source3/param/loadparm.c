@@ -894,7 +894,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bUnixExtensions = true;
 	Globals.bResetOnZeroVC = false;
 	Globals.bLogWriteableFilesOnExit = false;
-	Globals.bCreateKrb5Conf = true;
+	Globals.create_krb5_conf = true;
 	Globals.winbindMaxDomainConnections = 1;
 
 	/* hostname lookups can be very expensive and are broken on
