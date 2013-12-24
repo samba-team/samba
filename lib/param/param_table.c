@@ -1711,7 +1711,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "rpc big endian",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bRpcBigEndian),
+		.offset		= GLOBAL_VAR(rpc_big_endian),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
