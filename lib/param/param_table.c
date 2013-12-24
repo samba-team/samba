@@ -1385,7 +1385,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "unicode",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bUnicode),
+		.offset		= GLOBAL_VAR(unicode),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
