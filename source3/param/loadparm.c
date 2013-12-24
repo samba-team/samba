@@ -1007,7 +1007,7 @@ static void init_globals(bool reinit_globals)
 	Globals.smb_ports = (const char **)str_list_make_v3(NULL, SMB_PORTS, NULL);
 
 	Globals.enable_privileges = true;
-	Globals.bHostMSDfs        = true;
+	Globals.host_msdfs        = true;
 	Globals.enable_asu_support       = false;
 
 	/* User defined shares. */
