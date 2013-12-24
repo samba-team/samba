@@ -991,7 +991,7 @@ static void init_globals(bool reinit_globals)
 	Globals.winbind_offline_logon = false;
 
 	Globals.idmap_cache_time = 86400 * 7; /* a week by default */
-	Globals.iIdmapNegativeCacheTime = 120; /* 2 minutes by default */
+	Globals.idmap_negative_cache_time = 120; /* 2 minutes by default */
 
 	Globals.passdb_expand_explicit = false;
 
