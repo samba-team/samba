@@ -1388,6 +1388,7 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 	struct smbXsrv_open_global0 *op = NULL;
 	uint8_t key_buf[SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE];
 	TDB_DATA key;
+	TDB_DATA val;
 	struct db_record *rec;
 	bool delete_open = false;
 	uint32_t global_id = persistent_id & UINT32_MAX;
@@ -1400,6 +1401,14 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 			  "failed to fetch record from %s - %s\n",
 			   global_id, dbwrap_name(smbXsrv_open_global_db_ctx),
 			   nt_errstr(status)));
+		goto done;
+	}
+
+	val = dbwrap_record_get_value(rec);
+	if (val.dsize == 0) {
+		DEBUG(10, ("smbXsrv_open_cleanup[global: 0x%08x] "
+			  "empty record in %s, skipping...\n",
+			   global_id, dbwrap_name(smbXsrv_open_global_db_ctx)));
 		goto done;
 	}
 
