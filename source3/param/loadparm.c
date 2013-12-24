@@ -869,7 +869,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bPamPasswordChange = false;
 	Globals.bPasswdChatDebug = false;
 	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
-	Globals.bNTPipeSupport = true;	/* Do NT pipes by default. */
+	Globals.nt_pipe_support = true;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = true; /* Use NT status by default. */
 	Globals.bStatCache = true;	/* use stat cache by default */
 	Globals.iMaxStatCacheSize = 256; /* 256k by default */
