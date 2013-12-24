@@ -2052,7 +2052,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->bAvailable = true;
 	lp_ctx->sDefault->browseable = true;
 	lp_ctx->sDefault->readonly = true;
-	lp_ctx->sDefault->bMap_archive = true;
+	lp_ctx->sDefault->map_archive = true;
 	lp_ctx->sDefault->iStrictLocking = true;
 	lp_ctx->sDefault->bOpLocks = true;
 	lp_ctx->sDefault->iCreate_mask = 0744;
