@@ -217,7 +217,7 @@ static struct loadparm_service sDefault =
 	.bGuest_only = false,
 	.bAdministrative_share = false,
 	.bGuest_ok = false,
-	.bPrint_ok = false,
+	.print_ok = false,
 	.bPrintNotifyBackchannel = false,
 	.bMap_system = false,
 	.bMap_hidden = false,
@@ -1746,7 +1746,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->bGuest_only = false;
 	ServicePtrs[i]->bAdministrative_share = true;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
-	ServicePtrs[i]->bPrint_ok = false;
+	ServicePtrs[i]->print_ok = false;
 	ServicePtrs[i]->browseable = sDefault.browseable;
 
 	DEBUG(3, ("adding IPC service\n"));
@@ -1784,7 +1784,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* No oplocks on printer services. */
 	ServicePtrs[i]->bOpLocks = false;
 	/* Printer services must be printable. */
-	ServicePtrs[i]->bPrint_ok = true;
+	ServicePtrs[i]->print_ok = true;
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
@@ -2337,10 +2337,10 @@ bool service_ok(int iService)
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
 	if (strwicmp(ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
-		if (!ServicePtrs[iService]->bPrint_ok) {
+		if (!ServicePtrs[iService]->print_ok) {
 			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
 			       ServicePtrs[iService]->szService));
-			ServicePtrs[iService]->bPrint_ok = true;
+			ServicePtrs[iService]->print_ok = true;
 		}
 		/* [printers] service must also be non-browsable. */
 		if (ServicePtrs[iService]->browseable)
