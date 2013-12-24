@@ -748,7 +748,7 @@ static void init_globals(bool reinit_globals)
 	DEBUG(3, ("Initialising global parameters\n"));
 
 	/* Must manually force to upper case here, as this does not go via the handler */
-	string_set(&Globals.szNetbiosName, myhostname_upper());
+	string_set(&Globals.netbios_name, myhostname_upper());
 
 	string_set(&Globals.szSMBPasswdFile, get_dyn_SMB_PASSWD_FILE());
 	string_set(&Globals.szPrivateDir, get_dyn_PRIVATE_DIR());
