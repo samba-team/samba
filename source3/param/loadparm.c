@@ -830,7 +830,7 @@ static void init_globals(bool reinit_globals)
 	Globals.cli_maxprotocol = PROTOCOL_NT1;
 	Globals.cli_minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
-	Globals.bEncryptPasswords = true;
+	Globals.encrypted_passwords = true;
 	Globals.clientSchannel = Auto;
 	Globals.bWinbindSealedPipes = true;
 	Globals.bRequireStrongKey = true;
