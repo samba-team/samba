@@ -29,7 +29,7 @@
 
 FN_LOCAL_STRING(pathname, pathname)
 FN_LOCAL_LIST(hostsallow, hostsallow)
-FN_LOCAL_LIST(hostsdeny, szHostsdeny)
+FN_LOCAL_LIST(hostsdeny, hostsdeny)
 FN_LOCAL_STRING(fstype, fstype)
 FN_LOCAL_LIST(ntvfs_handler, ntvfs_handler)
 FN_LOCAL_BOOL(msdfs_root, bMSDfsRoot)
