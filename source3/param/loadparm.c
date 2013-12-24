@@ -902,7 +902,7 @@ static void init_globals(bool reinit_globals)
 	Globals.hostname_lookups = false;
 
 	string_set(&Globals.passdb_backend, "tdbsam");
-	string_set(&Globals.szLdapSuffix, "");
+	string_set(&Globals.ldap_suffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
 	string_set(&Globals.szLdapGroupSuffix, "");
@@ -2986,7 +2986,7 @@ static const char *append_ldap_suffix(TALLOC_CTX *ctx, const char *str )
 	const char *suffix_string;
 
 	suffix_string = talloc_asprintf(ctx, "%s,%s", str,
-					Globals.szLdapSuffix );
+					Globals.ldap_suffix );
 	if ( !suffix_string ) {
 		DEBUG(0,("append_ldap_suffix: talloc_asprintf() failed!\n"));
 		return "";
@@ -3000,7 +3000,7 @@ const char *lp_ldap_machine_suffix(TALLOC_CTX *ctx)
 	if (Globals.szLdapMachineSuffix[0])
 		return append_ldap_suffix(ctx, Globals.szLdapMachineSuffix);
 
-	return lp_string(ctx, Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.ldap_suffix);
 }
 
 const char *lp_ldap_user_suffix(TALLOC_CTX *ctx)
@@ -3008,7 +3008,7 @@ const char *lp_ldap_user_suffix(TALLOC_CTX *ctx)
 	if (Globals.szLdapUserSuffix[0])
 		return append_ldap_suffix(ctx, Globals.szLdapUserSuffix);
 
-	return lp_string(ctx, Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.ldap_suffix);
 }
 
 const char *lp_ldap_group_suffix(TALLOC_CTX *ctx)
@@ -3016,7 +3016,7 @@ const char *lp_ldap_group_suffix(TALLOC_CTX *ctx)
 	if (Globals.szLdapGroupSuffix[0])
 		return append_ldap_suffix(ctx, Globals.szLdapGroupSuffix);
 
-	return lp_string(ctx, Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.ldap_suffix);
 }
 
 const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
@@ -3024,7 +3024,7 @@ const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
 	if (Globals.szLdapIdmapSuffix[0])
 		return append_ldap_suffix(ctx, Globals.szLdapIdmapSuffix);
 
-	return lp_string(ctx, Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.ldap_suffix);
 }
 
 /****************************************************************************
