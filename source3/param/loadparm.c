@@ -278,7 +278,7 @@ static struct loadparm_service sDefault =
 #endif
 	.smb_encrypt = SMB_SIGNING_DEFAULT,
 	.kernel_share_modes = true,
-	.bDurableHandles = true,
+	.durable_handles = true,
 	.param_opt = NULL,
 	.dummy = ""
 };

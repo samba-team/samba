@@ -151,7 +151,7 @@ FN_LOCAL_PARM_CHAR(magicchar, magicchar)
 FN_LOCAL_STRING(cups_options, cups_options)
 FN_LOCAL_PARM_BOOL(change_notify, change_notify)
 FN_LOCAL_PARM_BOOL(kernel_change_notify, kernel_change_notify)
-FN_LOCAL_BOOL(durable_handles, bDurableHandles)
+FN_LOCAL_BOOL(durable_handles, durable_handles)
 
 FN_GLOBAL_BOOL(allow_insecure_widelinks, bAllowInsecureWidelinks)
 FN_GLOBAL_BOOL(allow_nt4_crypto, bAllowNT4Crypto)
