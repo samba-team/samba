@@ -886,9 +886,9 @@ static void init_globals(bool reinit_globals)
 	Globals.enhanced_browsing = true;
 	Globals.iLockSpinTime = WINDOWS_MINIMUM_LOCK_TIMEOUT_MS; /* msec. */
 #ifdef MMAP_BLACKLIST
-	Globals.bUseMmap = false;
+	Globals.use_mmap = false;
 #else
-	Globals.bUseMmap = true;
+	Globals.use_mmap = true;
 #endif
 	Globals.unicode = true;
 	Globals.unix_extensions = true;
