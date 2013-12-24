@@ -863,7 +863,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szNISHomeMapName, "auto.home");
 #endif
 #endif
-	Globals.bTimeServer = false;
+	Globals.time_server = false;
 	Globals.bind_interfaces_only = false;
 	Globals.bUnixPasswdSync = false;
 	Globals.pam_password_change = false;
