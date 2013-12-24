@@ -2297,7 +2297,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	struct debug_settings settings;
 	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx));
 
-	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
+	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->we_are_a_wins_server) {
 		lpcfg_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 

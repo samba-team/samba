@@ -947,7 +947,7 @@ static void init_globals(bool reinit_globals)
 	Globals.domain_master = Auto;	/* depending on _domain_logons */
 	Globals._domain_logons = false;
 	Globals.browse_list = true;
-	Globals.bWINSsupport = false;
+	Globals.we_are_a_wins_server = false;
 	Globals.bWINSproxy = false;
 
 	TALLOC_FREE(Globals.szInitLogonDelayedHosts);
@@ -4919,9 +4919,9 @@ static bool lp_load_ex(const char *pszFname,
 
 	bLoaded = true;
 
-	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
-	/* if bWINSsupport is true and we are in the client            */
-	if (lp_is_in_client() && Globals.bWINSsupport) {
+	/* Now we check we_are_a_wins_server and set szWINSserver to 127.0.0.1 */
+	/* if we_are_a_wins_server is true and we are in the client            */
+	if (lp_is_in_client() && Globals.we_are_a_wins_server) {
 		lp_do_parameter(GLOBAL_SECTION_SNUM, "wins server", "127.0.0.1");
 	}
 
