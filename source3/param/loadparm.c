@@ -790,7 +790,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szServerString, s);
 	SAFE_FREE(s);
 #ifdef DEVELOPER
-	string_set(&Globals.szPanicAction, "/bin/sleep 999999999");
+	string_set(&Globals.panic_action, "/bin/sleep 999999999");
 #endif
 
 	string_set(&Globals.socket_options, DEFAULT_SOCKET_OPTIONS);

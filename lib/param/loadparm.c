@@ -95,8 +95,7 @@ static bool defaults_saved = false;
 	char *tls_cafile;						\
 	char *tls_crlfile;						\
 	char *tls_dhpfile;						\
-	char *loglevel;							\
-	char *panic_action;						
+	char *loglevel;
 
 #include "lib/param/param_global.h"
 
@@ -2305,7 +2304,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 		return true;
 	}
 
-	panic_action = lp_ctx->globals->szPanicAction;
+	panic_action = lp_ctx->globals->panic_action;
 
 	reload_charcnv(lp_ctx);
 
