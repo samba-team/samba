@@ -159,7 +159,7 @@ static struct loadparm_service sDefault =
 	.rootpostexec = NULL,
 	.szCupsOptions = NULL,
 	.printcommand = NULL,
-	.szLpqcommand = NULL,
+	.lpqcommand = NULL,
 	.szLprmcommand = NULL,
 	.szLppausecommand = NULL,
 	.szLpresumecommand = NULL,
@@ -385,14 +385,14 @@ static void init_printer_values(struct loadparm_service *pService)
 		case PRINT_AIX:
 		case PRINT_LPRNT:
 		case PRINT_LPROS2:
-			string_set(&pService->szLpqcommand, "lpq -P'%p'");
+			string_set(&pService->lpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
 			string_set(&pService->printcommand, "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
-			string_set(&pService->szLpqcommand, "lpq -P'%p'");
+			string_set(&pService->lpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
 			string_set(&pService->printcommand, "lpr -r -P'%p' %s");
 			string_set(&pService->szQueuepausecommand, "lpc stop '%p'");
@@ -405,7 +405,7 @@ static void init_printer_values(struct loadparm_service *pService)
 		case PRINT_IPRINT:
 			/* set the lpq command to contain the destination printer
 			   name only.  This is used by cups_queue_get() */
-			string_set(&pService->szLpqcommand, "%p");
+			string_set(&pService->lpqcommand, "%p");
 			string_set(&pService->szLprmcommand, "");
 			string_set(&pService->printcommand, "");
 			string_set(&pService->szLppausecommand, "");
@@ -416,7 +416,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		case PRINT_SYSV:
 		case PRINT_HPUX:
-			string_set(&pService->szLpqcommand, "lpstat -o%p");
+			string_set(&pService->lpqcommand, "lpstat -o%p");
 			string_set(&pService->szLprmcommand, "cancel %p-%j");
 			string_set(&pService->printcommand, "lp -c -d%p %s; rm %s");
 			string_set(&pService->szQueuepausecommand, "disable %p");
@@ -428,7 +428,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			break;
 
 		case PRINT_QNX:
-			string_set(&pService->szLpqcommand, "lpq -P%p");
+			string_set(&pService->lpqcommand, "lpq -P%p");
 			string_set(&pService->szLprmcommand, "lprm -P%p %j");
 			string_set(&pService->printcommand, "lp -r -P%p %s");
 			break;
@@ -456,7 +456,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpq %%p",
 				      tdbfile);
-		string_set(&pService->szLpqcommand,
+		string_set(&pService->lpqcommand,
 			   tmp ? tmp : "vlp lpq %p");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lprm %%p %%j",
