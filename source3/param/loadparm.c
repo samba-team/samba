@@ -948,7 +948,7 @@ static void init_globals(bool reinit_globals)
 	Globals._domain_logons = false;
 	Globals.browse_list = true;
 	Globals.we_are_a_wins_server = false;
-	Globals.bWINSproxy = false;
+	Globals.wins_proxy = false;
 
 	TALLOC_FREE(Globals.szInitLogonDelayedHosts);
 	Globals.InitLogonDelay = 100; /* 100 ms default delay */
