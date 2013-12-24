@@ -1014,7 +1014,7 @@ static void init_globals(bool reinit_globals)
 	if (asprintf(&s, "%s/usershares", get_dyn_STATEDIR()) < 0) {
 		smb_panic("init_globals: ENOMEM");
 	}
-	string_set(&Globals.szUsersharePath, s);
+	string_set(&Globals.usershare_path, s);
 	SAFE_FREE(s);
 	string_set(&Globals.szUsershareTemplateShare, "");
 	Globals.usershare_max_shares = 0;
@@ -4493,7 +4493,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 static bool usershare_exists(int iService, struct timespec *last_mod)
 {
 	SMB_STRUCT_STAT lsbuf;
-	const char *usersharepath = Globals.szUsersharePath;
+	const char *usersharepath = Globals.usershare_path;
 	char *fname;
 
 	if (asprintf(&fname, "%s/%s",
@@ -4524,7 +4524,7 @@ static bool usershare_exists(int iService, struct timespec *last_mod)
 int load_usershare_service(const char *servicename)
 {
 	SMB_STRUCT_STAT sbuf;
-	const char *usersharepath = Globals.szUsersharePath;
+	const char *usersharepath = Globals.usershare_path;
 	int max_user_shares = Globals.usershare_max_shares;
 	int snum_template = -1;
 
@@ -4603,7 +4603,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 	unsigned int allowed_tmp_entries = ((2*max_user_shares)/10);
 	int iService;
 	int snum_template = -1;
-	const char *usersharepath = Globals.szUsersharePath;
+	const char *usersharepath = Globals.usershare_path;
 	int ret = lp_numservices();
 	TALLOC_CTX *tmp_ctx;
 
