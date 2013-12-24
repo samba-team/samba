@@ -2313,7 +2313,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	/* Add any more debug-related smb.conf parameters created in
 	 * future here */
 	settings.syslog = lp_ctx->globals->syslog;
-	settings.syslog_only = lp_ctx->globals->bSyslogOnly;
+	settings.syslog_only = lp_ctx->globals->syslog_only;
 	settings.timestamp_logs = lp_ctx->globals->bTimestampLogs;
 	settings.debug_prefix_timestamp = lp_ctx->globals->debug_prefix_timestamp;
 	settings.debug_hires_timestamp = lp_ctx->globals->debug_hires_timestamp;

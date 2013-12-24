@@ -840,7 +840,7 @@ static void init_globals(bool reinit_globals)
 	Globals.null_passwords = false;
 	Globals.obey_pam_restrictions = false;
 	Globals.syslog = 1;
-	Globals.bSyslogOnly = false;
+	Globals.syslog_only = false;
 	Globals.bTimestampLogs = true;
 	string_set(&Globals.loglevel, "0");
 	Globals.debug_prefix_timestamp = false;
