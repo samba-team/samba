@@ -993,7 +993,7 @@ static void init_globals(bool reinit_globals)
 	Globals.iIdmapCacheTime = 86400 * 7; /* a week by default */
 	Globals.iIdmapNegativeCacheTime = 120; /* 2 minutes by default */
 
-	Globals.bPassdbExpandExplicit = false;
+	Globals.passdb_expand_explicit = false;
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
