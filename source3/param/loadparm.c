@@ -834,7 +834,7 @@ static void init_globals(bool reinit_globals)
 	Globals.client_schannel = Auto;
 	Globals.winbind_sealed_pipes = true;
 	Globals.require_strong_key = true;
-	Globals.serverSchannel = Auto;
+	Globals.server_schannel = Auto;
 	Globals.bReadRaw = true;
 	Globals.bWriteRaw = true;
 	Globals.null_passwords = false;
