@@ -150,7 +150,7 @@ FN_LOCAL_INTEGER(smb_encrypt, smb_encrypt)
 FN_LOCAL_PARM_CHAR(magicchar, magicchar)
 FN_LOCAL_STRING(cups_options, cups_options)
 FN_LOCAL_PARM_BOOL(change_notify, change_notify)
-FN_LOCAL_PARM_BOOL(kernel_change_notify, bKernelChangeNotify)
+FN_LOCAL_PARM_BOOL(kernel_change_notify, kernel_change_notify)
 FN_LOCAL_BOOL(durable_handles, bDurableHandles)
 
 FN_GLOBAL_BOOL(allow_insecure_widelinks, bAllowInsecureWidelinks)
