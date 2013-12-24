@@ -276,7 +276,7 @@ static struct loadparm_service sDefault =
 #else
 	.directory_name_cache_size = 100,
 #endif
-	.ismb_encrypt = SMB_SIGNING_DEFAULT,
+	.smb_encrypt = SMB_SIGNING_DEFAULT,
 	.kernel_share_modes = true,
 	.bDurableHandles = true,
 	.param_opt = NULL,
