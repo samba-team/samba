@@ -1030,7 +1030,7 @@ static void init_globals(bool reinit_globals)
 
 	Globals.iminreceivefile = 0;
 
-	Globals.bMapUntrustedToDomain = false;
+	Globals.map_untrusted_to_domain = false;
 	Globals.bMulticastDnsRegister = true;
 
 	Globals.ismb2_max_read = DEFAULT_SMB2_MAX_READ;
