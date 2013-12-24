@@ -1026,7 +1026,7 @@ static void init_globals(bool reinit_globals)
 	Globals.iKeepalive = DEFAULT_KEEPALIVE;
 
 	/* By default no shares out of the registry */
-	Globals.bRegistryShares = false;
+	Globals.registry_shares = false;
 
 	Globals.iminreceivefile = 0;
 
