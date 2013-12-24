@@ -972,7 +972,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.ctdbd_socket, "");
 #endif
 
-	Globals.szClusterAddresses = NULL;
+	Globals.cluster_addresses = NULL;
 	Globals.clustering = false;
 	Globals.ctdb_timeout = 0;
 	Globals.ctdb_locktime_warn_threshold = 0;
