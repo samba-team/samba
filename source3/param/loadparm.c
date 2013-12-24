@@ -1019,7 +1019,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szUsershareTemplateShare, "");
 	Globals.iUsershareMaxShares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
-	Globals.bUsershareOwnerOnly = true;
+	Globals.usershare_owner_only = true;
 	/* By default disallow guest access to usershares. */
 	Globals.usershare_allow_guests = false;
 
