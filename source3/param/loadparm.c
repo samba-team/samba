@@ -215,7 +215,7 @@ static struct loadparm_service sDefault =
 	.bAvailable = true,
 	.readonly = true,
 	.guest_only = false,
-	.bAdministrative_share = false,
+	.administrative_share = false,
 	.guest_ok = false,
 	.print_ok = false,
 	.bPrintNotifyBackchannel = false,
@@ -1744,7 +1744,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->bAvailable = true;
 	ServicePtrs[i]->readonly = true;
 	ServicePtrs[i]->guest_only = false;
-	ServicePtrs[i]->bAdministrative_share = true;
+	ServicePtrs[i]->administrative_share = true;
 	ServicePtrs[i]->guest_ok = guest_ok;
 	ServicePtrs[i]->print_ok = false;
 	ServicePtrs[i]->browseable = sDefault.browseable;
