@@ -166,7 +166,7 @@ static struct loadparm_service sDefault =
 	.queuepausecommand = NULL,
 	.queueresumecommand = NULL,
 	.szPrintername = NULL,
-	.szPrintjobUsername = NULL,
+	.printjob_username = NULL,
 	.dontdescend = NULL,
 	.hostsallow = NULL,
 	.hostsdeny = NULL,
@@ -740,7 +740,7 @@ static void init_globals(bool reinit_globals)
 
 
 	string_set(&sDefault.fstype, FSTYPE_STRING);
-	string_set(&sDefault.szPrintjobUsername, "%U");
+	string_set(&sDefault.printjob_username, "%U");
 
 	init_printer_values(&sDefault);
 
