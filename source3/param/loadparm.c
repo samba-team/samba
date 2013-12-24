@@ -875,7 +875,7 @@ static void init_globals(bool reinit_globals)
 	Globals.iMaxStatCacheSize = 256; /* 256k by default */
 	Globals.restrict_anonymous = 0;
 	Globals.client_lanman_auth = false;	/* Do NOT use the LanMan hash if it is available */
-	Globals.bClientPlaintextAuth = false;	/* Do NOT use a plaintext password even if is requested by the server */
+	Globals.client_plaintext_auth = false;	/* Do NOT use a plaintext password even if is requested by the server */
 	Globals.bLanmanAuth = false;	/* Do NOT use the LanMan hash, even if it is supplied */
 	Globals.bNTLMAuth = true;	/* Do use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
 	Globals.client_ntlmv2_auth = true; /* Client should always use use NTLMv2, as we can't tell that the server supports it, but most modern servers do */
@@ -4041,7 +4041,7 @@ static void set_allowed_client_auth(void)
 		Globals.client_lanman_auth = false;
 	}
 	if (!Globals.client_lanman_auth) {
-		Globals.bClientPlaintextAuth = false;
+		Globals.client_plaintext_auth = false;
 	}
 }
 
