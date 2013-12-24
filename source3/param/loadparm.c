@@ -946,7 +946,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bLocalMaster = true;
 	Globals.domain_master = Auto;	/* depending on bDomainLogons */
 	Globals.bDomainLogons = false;
-	Globals.bBrowseList = true;
+	Globals.browse_list = true;
 	Globals.bWINSsupport = false;
 	Globals.bWINSproxy = false;
 
