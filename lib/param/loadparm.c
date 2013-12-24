@@ -74,7 +74,7 @@ static bool defaults_saved = false;
 
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
-	char *szRealm;							\
+	char *realm_original;						\
 	char *szConfigFile;						\
 	int iminreceivefile;						\
 	char *szPrintcapname;						\
@@ -1110,10 +1110,10 @@ static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
 {
 	lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 
-	talloc_free(lp_ctx->globals->szRealm_upper);
+	talloc_free(lp_ctx->globals->realm);
 	talloc_free(lp_ctx->globals->dnsdomain);
 
-	lp_ctx->globals->szRealm_upper = strupper_talloc(lp_ctx, pszParmValue);
+	lp_ctx->globals->realm = strupper_talloc(lp_ctx, pszParmValue);
 	lp_ctx->globals->dnsdomain = strlower_talloc(lp_ctx, pszParmValue);
 
 	return true;

@@ -109,7 +109,7 @@ static bool defaults_saved = false;
 
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
-	char *szRealm;							\
+	char *realm_original;						\
 	char *loglevel;							\
 	int iminreceivefile;						\
 	char *szPrintcapname;						\
@@ -2753,8 +2753,8 @@ static bool handle_realm(struct loadparm_context *unused, int snum, const char *
 	char *realm = strupper_talloc(frame, pszParmValue);
 	char *dnsdomain = strlower_talloc(realm, pszParmValue);
 
-	ret &= string_set(&Globals.szRealm, pszParmValue);
-	ret &= string_set(&Globals.szRealm_upper, realm);
+	ret &= string_set(&Globals.realm_original, pszParmValue);
+	ret &= string_set(&Globals.realm, realm);
 	ret &= string_set(&Globals.dnsdomain, dnsdomain);
 	TALLOC_FREE(frame);
 
