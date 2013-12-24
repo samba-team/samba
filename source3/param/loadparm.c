@@ -196,7 +196,7 @@ static struct loadparm_service sDefault =
 	.force_dir_mode = 0,
 	.max_connections = 0,
 	.defaultcase = CASE_LOWER,
-	.iPrinting = DEFAULT_PRINTING,
+	.printing = DEFAULT_PRINTING,
 	.iOplockContentionLimit = 2,
 	.csc_policy = 0,
 	.iBlock_size = 1024,
@@ -380,7 +380,7 @@ static bool string_set(char **dest,const char *src)
 static void init_printer_values(struct loadparm_service *pService)
 {
 	/* choose defaults depending on the type of printing */
-	switch (pService->iPrinting) {
+	switch (pService->printing) {
 		case PRINT_BSD:
 		case PRINT_AIX:
 		case PRINT_LPRNT:
@@ -5314,11 +5314,11 @@ const char *lp_printcapname(void)
 	    (Globals.szPrintcapname[0] != '\0'))
 		return Globals.szPrintcapname;
 
-	if (sDefault.iPrinting == PRINT_CUPS) {
+	if (sDefault.printing == PRINT_CUPS) {
 		return "cups";
 	}
 
-	if (sDefault.iPrinting == PRINT_BSD)
+	if (sDefault.printing == PRINT_BSD)
 		return "/etc/printcap";
 
 	return PRINTCAP_NAME;
