@@ -751,7 +751,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.netbios_name, myhostname_upper());
 
 	string_set(&Globals.szSMBPasswdFile, get_dyn_SMB_PASSWD_FILE());
-	string_set(&Globals.szPrivateDir, get_dyn_PRIVATE_DIR());
+	string_set(&Globals.private_dir, get_dyn_PRIVATE_DIR());
 
 	/* use the new 'hash2' method by default, with a prefix of 1 */
 	string_set(&Globals.szManglingMethod, "hash2");
