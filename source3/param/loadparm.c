@@ -955,7 +955,7 @@ static void init_globals(bool reinit_globals)
 
 	Globals.bWINSdnsProxy = true;
 
-	Globals.bAllowTrustedDomains = true;
+	Globals.allow_trusted_domains = true;
 	string_set(&Globals.szIdmapBackend, "tdb");
 
 	string_set(&Globals.szTemplateShell, "/bin/false");

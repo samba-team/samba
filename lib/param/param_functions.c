@@ -155,7 +155,7 @@ FN_LOCAL_BOOL(durable_handles, durable_handles)
 
 FN_GLOBAL_BOOL(allow_insecure_widelinks, allow_insecure_widelinks)
 FN_GLOBAL_BOOL(allow_nt4_crypto, allow_nt4_crypto)
-FN_GLOBAL_BOOL(allow_trusted_domains, bAllowTrustedDomains)
+FN_GLOBAL_BOOL(allow_trusted_domains, allow_trusted_domains)
 FN_GLOBAL_BOOL(async_smb_echo_handler, bAsyncSMBEchoHandler)
 FN_GLOBAL_BOOL(bind_interfaces_only, bBindInterfacesOnly)
 FN_GLOBAL_BOOL(browse_list, bBrowseList)
