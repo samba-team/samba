@@ -772,7 +772,7 @@ static void init_globals(bool reinit_globals)
 
 	string_set(&Globals.workgroup, DEFAULT_WORKGROUP);
 
-	string_set(&Globals.szPasswdProgram, "");
+	string_set(&Globals.passwd_program, "");
 	string_set(&Globals.lockdir, get_dyn_LOCKDIR());
 	string_set(&Globals.szStateDir, get_dyn_STATEDIR());
 	string_set(&Globals.szCacheDir, get_dyn_CACHEDIR());
