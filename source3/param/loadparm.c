@@ -874,7 +874,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bStatCache = true;	/* use stat cache by default */
 	Globals.iMaxStatCacheSize = 256; /* 256k by default */
 	Globals.restrict_anonymous = 0;
-	Globals.bClientLanManAuth = false;	/* Do NOT use the LanMan hash if it is available */
+	Globals.client_lanman_auth = false;	/* Do NOT use the LanMan hash if it is available */
 	Globals.bClientPlaintextAuth = false;	/* Do NOT use a plaintext password even if is requested by the server */
 	Globals.bLanmanAuth = false;	/* Do NOT use the LanMan hash, even if it is supplied */
 	Globals.bNTLMAuth = true;	/* Do use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
@@ -4038,9 +4038,9 @@ static void lp_save_defaults(void)
 static void set_allowed_client_auth(void)
 {
 	if (Globals.bClientNTLMv2Auth) {
-		Globals.bClientLanManAuth = false;
+		Globals.client_lanman_auth = false;
 	}
-	if (!Globals.bClientLanManAuth) {
+	if (!Globals.client_lanman_auth) {
 		Globals.bClientPlaintextAuth = false;
 	}
 }
