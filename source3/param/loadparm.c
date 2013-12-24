@@ -1023,7 +1023,7 @@ static void init_globals(bool reinit_globals)
 	/* By default disallow guest access to usershares. */
 	Globals.usershare_allow_guests = false;
 
-	Globals.iKeepalive = DEFAULT_KEEPALIVE;
+	Globals.keepalive = DEFAULT_KEEPALIVE;
 
 	/* By default no shares out of the registry */
 	Globals.registry_shares = false;
