@@ -776,7 +776,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.lockdir, get_dyn_LOCKDIR());
 	string_set(&Globals.szStateDir, get_dyn_STATEDIR());
 	string_set(&Globals.szCacheDir, get_dyn_CACHEDIR());
-	string_set(&Globals.szPidDir, get_dyn_PIDDIR());
+	string_set(&Globals.piddir, get_dyn_PIDDIR());
 	string_set(&Globals.nbt_client_socket_address, "0.0.0.0");
 	/*
 	 * By default support explicit binding to broadcast
