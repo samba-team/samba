@@ -848,7 +848,7 @@ static void init_globals(bool reinit_globals)
 	Globals.debug_pid = false;
 	Globals.debug_uid = false;
 	Globals.debug_class = false;
-	Globals.bEnableCoreFiles = true;
+	Globals.enable_core_files = true;
 	Globals.max_ttl = 60 * 60 * 24 * 3;	/* 3 days default. */
 	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
 	Globals.min_wins_ttl = 60 * 60 * 6;	/* 6 hours default. */
