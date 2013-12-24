@@ -953,7 +953,7 @@ static void init_globals(bool reinit_globals)
 	TALLOC_FREE(Globals.szInitLogonDelayedHosts);
 	Globals.InitLogonDelay = 100; /* 100 ms default delay */
 
-	Globals.bWINSdnsProxy = true;
+	Globals.wins_dns_proxy = true;
 
 	Globals.allow_trusted_domains = true;
 	string_set(&Globals.szIdmapBackend, "tdb");
