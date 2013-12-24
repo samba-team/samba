@@ -754,7 +754,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.private_dir, get_dyn_PRIVATE_DIR());
 
 	/* use the new 'hash2' method by default, with a prefix of 1 */
-	string_set(&Globals.szManglingMethod, "hash2");
+	string_set(&Globals.mangling_method, "hash2");
 	Globals.mangle_prefix = 1;
 
 	string_set(&Globals.guestaccount, GUEST_ACCOUNT);
@@ -5391,7 +5391,7 @@ void set_store_dos_attributes(int snum, bool val)
 
 void lp_set_mangling_method(const char *new_method)
 {
-	string_set(&Globals.szManglingMethod, new_method);
+	string_set(&Globals.mangling_method, new_method);
 }
 
 /*******************************************************************
