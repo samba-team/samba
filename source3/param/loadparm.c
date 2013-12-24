@@ -213,7 +213,7 @@ static struct loadparm_service sDefault =
 	.browseable = true,
 	.bAccessBasedShareEnum = false,
 	.bAvailable = true,
-	.bRead_only = true,
+	.readonly = true,
 	.bGuest_only = false,
 	.bAdministrative_share = false,
 	.bGuest_ok = false,
@@ -1742,7 +1742,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	string_set(&ServicePtrs[i]->fstype, "IPC");
 	ServicePtrs[i]->iMaxConnections = 0;
 	ServicePtrs[i]->bAvailable = true;
-	ServicePtrs[i]->bRead_only = true;
+	ServicePtrs[i]->readonly = true;
 	ServicePtrs[i]->bGuest_only = false;
 	ServicePtrs[i]->bAdministrative_share = true;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
@@ -1780,7 +1780,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	ServicePtrs[i]->browseable = sDefault.browseable;
 
 	/* Printers cannot be read_only. */
-	ServicePtrs[i]->bRead_only = false;
+	ServicePtrs[i]->readonly = false;
 	/* No oplocks on printer services. */
 	ServicePtrs[i]->bOpLocks = false;
 	/* Printer services must be printable. */
@@ -4446,7 +4446,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		added_service = true;
 
 		/* Read only is controlled by usershare ACL below. */
-		ServicePtrs[iService]->bRead_only = false;
+		ServicePtrs[iService]->readonly = false;
 	}
 
 	/* Write the ACL of the new/modified share. */

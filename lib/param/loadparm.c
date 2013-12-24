@@ -789,7 +789,7 @@ bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
 	lpcfg_string_set(service, &service->comment, comment);
 	service->browseable = default_service->browseable;
 	/* Printers cannot be read_only. */
-	service->bRead_only = false;
+	service->readonly = false;
 	/* Printer services must be printable. */
 	service->bPrint_ok = true;
 
@@ -2051,7 +2051,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->iMaxPrintJobs = 1000;
 	lp_ctx->sDefault->bAvailable = true;
 	lp_ctx->sDefault->browseable = true;
-	lp_ctx->sDefault->bRead_only = true;
+	lp_ctx->sDefault->readonly = true;
 	lp_ctx->sDefault->bMap_archive = true;
 	lp_ctx->sDefault->iStrictLocking = true;
 	lp_ctx->sDefault->bOpLocks = true;
