@@ -768,7 +768,7 @@ static void init_globals(bool reinit_globals)
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
-	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
+	string_set(&Globals.passwd_chat, DEFAULT_PASSWD_CHAT);
 
 	string_set(&Globals.workgroup, DEFAULT_WORKGROUP);
 
