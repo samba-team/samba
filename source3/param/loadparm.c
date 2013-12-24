@@ -963,7 +963,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.winbind_separator, "\\");
 	string_set(&Globals.winbindd_socket_directory, dyn_WINBINDD_SOCKET_DIR);
 
-	string_set(&Globals.szCupsServer, "");
+	string_set(&Globals.cups_server, "");
 	string_set(&Globals.szIPrintServer, "");
 
 #ifdef CLUSTER_SUPPORT
