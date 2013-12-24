@@ -981,7 +981,7 @@ static void init_globals(bool reinit_globals)
 	Globals.winbind_reconnect_delay = 30;	/* 30 seconds */
 	Globals.winbind_max_clients = 200;
 	Globals.bWinbindEnumUsers = false;
-	Globals.bWinbindEnumGroups = false;
+	Globals.winbind_enum_groups = false;
 	Globals.bWinbindUseDefaultDomain = false;
 	Globals.bWinbindTrustedDomainsOnly = false;
 	Globals.bWinbindNestedGroups = true;
