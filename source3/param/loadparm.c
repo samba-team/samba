@@ -1003,7 +1003,7 @@ static void init_globals(bool reinit_globals)
 	Globals.client_signing = SMB_SIGNING_DEFAULT;
 	Globals.server_signing = SMB_SIGNING_DEFAULT;
 
-	Globals.bDeferSharingViolations = true;
+	Globals.defer_sharing_violations = true;
 	Globals.smb_ports = (const char **)str_list_make_v3(NULL, SMB_PORTS, NULL);
 
 	Globals.bEnablePrivileges = true;
