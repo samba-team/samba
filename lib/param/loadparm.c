@@ -2055,7 +2055,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->map_archive = true;
 	lp_ctx->sDefault->iStrictLocking = true;
 	lp_ctx->sDefault->oplocks = true;
-	lp_ctx->sDefault->iCreate_mask = 0744;
+	lp_ctx->sDefault->create_mask = 0744;
 	lp_ctx->sDefault->iCreate_force_mode = 0000;
 	lp_ctx->sDefault->iDir_mask = 0755;
 	lp_ctx->sDefault->iDir_force_mode = 0000;
