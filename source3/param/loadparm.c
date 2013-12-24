@@ -806,7 +806,7 @@ static void init_globals(bool reinit_globals)
 	Globals.algorithmic_rid_base = BASE_RID;
 
 	Globals.load_printers = true;
-	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
+	Globals.printcap_cache_time = 750; 	/* 12.5 minutes */
 
 	Globals.config_backend = config_backend;
 	Globals.server_role = ROLE_AUTO;
