@@ -798,7 +798,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.logon_drive, "");
 	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
 	string_set(&Globals.logon_home, "\\\\%N\\%U");
-	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
+	string_set(&Globals.logon_path, "\\\\%N\\%U\\profile");
 
 	Globals.szNameResolveOrder = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
 	string_set(&Globals.szPasswordServer, "*");
