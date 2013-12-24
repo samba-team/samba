@@ -837,7 +837,7 @@ static void init_globals(bool reinit_globals)
 	Globals.serverSchannel = Auto;
 	Globals.bReadRaw = true;
 	Globals.bWriteRaw = true;
-	Globals.bNullPasswords = false;
+	Globals.null_passwords = false;
 	Globals.bObeyPamRestrictions = false;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = false;
