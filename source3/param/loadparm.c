@@ -787,7 +787,7 @@ static void init_globals(bool reinit_globals)
 	if (asprintf(&s, "Samba %s", samba_version_string()) < 0) {
 		smb_panic("init_globals: ENOMEM");
 	}
-	string_set(&Globals.szServerString, s);
+	string_set(&Globals.serverstring, s);
 	SAFE_FREE(s);
 #ifdef DEVELOPER
 	string_set(&Globals.panic_action, "/bin/sleep 999999999");
@@ -1732,7 +1732,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 		return false;
 
 	if (asprintf(&comment, "IPC Service (%s)",
-				Globals.szServerString) < 0) {
+				Globals.serverstring) < 0) {
 		return false;
 	}
 
