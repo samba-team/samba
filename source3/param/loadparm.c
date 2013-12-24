@@ -864,7 +864,7 @@ static void init_globals(bool reinit_globals)
 #endif
 #endif
 	Globals.bTimeServer = false;
-	Globals.bBindInterfacesOnly = false;
+	Globals.bind_interfaces_only = false;
 	Globals.bUnixPasswdSync = false;
 	Globals.bPamPasswordChange = false;
 	Globals.bPasswdChatDebug = false;
