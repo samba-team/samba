@@ -967,9 +967,9 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szIPrintServer, "");
 
 #ifdef CLUSTER_SUPPORT
-	string_set(&Globals.ctdbdSocket, CTDB_PATH);
+	string_set(&Globals.ctdbd_socket, CTDB_PATH);
 #else
-	string_set(&Globals.ctdbdSocket, "");
+	string_set(&Globals.ctdbd_socket, "");
 #endif
 
 	Globals.szClusterAddresses = NULL;
