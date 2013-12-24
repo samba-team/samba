@@ -997,7 +997,7 @@ static void init_globals(bool reinit_globals)
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
-	Globals.bUseSpnego = true;
+	Globals.use_spnego = true;
 	Globals.client_use_spnego = true;
 
 	Globals.client_signing = SMB_SIGNING_DEFAULT;
