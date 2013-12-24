@@ -865,7 +865,7 @@ static void init_globals(bool reinit_globals)
 #endif
 	Globals.time_server = false;
 	Globals.bind_interfaces_only = false;
-	Globals.bUnixPasswdSync = false;
+	Globals.unix_password_sync = false;
 	Globals.pam_password_change = false;
 	Globals.passwd_chat_debug = false;
 	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
