@@ -125,7 +125,6 @@ _PRIVATE_ void tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 		struct epoll_event_context);
 
 	epoll_ev->panic_fallback = panic_fallback;
-	return true;
 }
 
 /*
