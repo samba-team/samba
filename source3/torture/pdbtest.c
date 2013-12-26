@@ -117,7 +117,7 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 		DEBUG(0, ("Password history is not set\n"));
 	} else if (d1_buf == NULL) {
 		/* Do nothing */
-	} else if (s1_len != s1_len) {
+	} else if (s1_len != s2_len) {
 		DEBUG(0, ("Password history not written correctly, lengths differ, want %d, got %d\n",
 					s1_len, s2_len));
 		ret = False;
