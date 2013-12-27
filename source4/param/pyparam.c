@@ -288,6 +288,41 @@ static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
+{
+	PyObject *py_stream;
+	char *param_name;
+	char *section_name = NULL;
+	FILE *f;
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+	struct loadparm_service *service;
+
+	if (!PyArg_ParseTuple(args, "Os|z", &py_stream, &param_name, &section_name))
+		return NULL;
+
+	f = PyFile_AsFile(py_stream);
+	if (f == NULL) {
+		return NULL;
+	}
+
+	if (section_name != NULL && strwicmp(section_name, GLOBAL_NAME) &&
+		strwicmp(section_name, GLOBAL_NAME2)) {
+		/* it's a share parameter */
+		service = lpcfg_service(lp_ctx, section_name);
+		if (service == NULL) {
+			Py_RETURN_NONE;
+		}
+	} else {
+		/* it's global */
+		service = NULL;
+	}
+
+	lpcfg_dump_a_parameter(lp_ctx, service, param_name, f);
+
+	Py_RETURN_NONE;
+
+}
+
 static PyObject *py_samdb_url(PyObject *self)
 {
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
@@ -323,6 +358,8 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"Get the server role." },
 	{ "dump", (PyCFunction)py_lp_dump, METH_VARARGS, 
 		"S.dump(stream, show_defaults=False)" },
+	{ "dump_a_parameter", (PyCFunction)py_lp_dump_a_parameter, METH_VARARGS,
+		"S.dump_a_parameter(stream, name, service_name)" },
 	{ "samdb_url", (PyCFunction)py_samdb_url, METH_NOARGS,
 	        "S.samdb_url() -> string\n"
 	        "Returns the current URL for sam.ldb." },
