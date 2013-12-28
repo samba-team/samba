@@ -106,6 +106,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	lp_ctx = loadparm_init_s3(result, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		TALLOC_FREE(result);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
