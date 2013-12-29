@@ -9,5 +9,5 @@
 	<para>If this option is set to false, the use of ASCII will be forced.</para>
 </description>
 
-<value type="default">True</value>
+<value type="default">yes</value>
 </samba:parameter>
