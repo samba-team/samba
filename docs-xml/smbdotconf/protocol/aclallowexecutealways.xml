@@ -22,5 +22,5 @@
     default after a certain transition period.
     </para>
 </description>
-<value type="default">False</value>
+<value type="default">no</value>
 </samba:parameter>
