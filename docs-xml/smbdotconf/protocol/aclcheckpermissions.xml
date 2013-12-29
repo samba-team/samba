@@ -29,5 +29,5 @@
     with slightly different semantics was introduced in 3.0.20. That older version is not documented here.
     </para>
 </description>
-<value type="default">True</value>
+<value type="default">yes</value>
 </samba:parameter>
