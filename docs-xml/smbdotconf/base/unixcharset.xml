@@ -14,6 +14,6 @@
 	</para>
 </description>
 
-<value type="default">UTF8</value>
+<value type="default">UTF-8</value>
 <value type="example">ASCII</value>
 </samba:parameter>
