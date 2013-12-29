@@ -12,5 +12,5 @@
 	<para>The behaviour is independent of the endianness of the host machine.</para>
 </description>
 
-<value type="default">False</value>
+<value type="default">no</value>
 </samba:parameter>
