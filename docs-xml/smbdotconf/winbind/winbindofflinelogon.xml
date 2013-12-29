@@ -13,6 +13,6 @@
 
 </description>
 
-<value type="default">false</value>
+<value type="default">no</value>
 <value type="example">true</value>
 </samba:parameter>
