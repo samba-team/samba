@@ -724,6 +724,9 @@ bool validate_net_name( const char *name,
 		int max_len);
 char *escape_shell_string(const char *src);
 char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
+ssize_t full_path_tos(const char *dir, const char *name,
+		      char *tmpbuf, size_t tmpbuf_len,
+		      char **pdst, char **to_free);
 
 /* The following definitions come from lib/version.c  */
 
