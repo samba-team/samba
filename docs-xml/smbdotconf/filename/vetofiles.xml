@@ -48,5 +48,5 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 <related>hide files</related>
 <related>case sensitive</related>
 
-<value type="default">No files or directories are vetoed.</value>
+<value type="default"><comment>No files or directories are vetoed</comment></value>
 </samba:parameter>
