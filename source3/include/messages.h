@@ -80,6 +80,9 @@ struct messaging_context {
 	struct tevent_context *event_ctx;
 	struct messaging_callback *callbacks;
 
+	struct tevent_req **waiters;
+	unsigned num_waiters;
+
 	struct messaging_backend *local;
 	struct messaging_backend *remote;
 };
@@ -139,6 +142,13 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 			    const uint8_t *buf, size_t len);
 void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			    struct messaging_rec *rec);
+
+struct tevent_req *messaging_read_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct messaging_context *msg,
+				       uint32_t msg_type);
+int messaging_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			struct messaging_rec **presult);
 
 #include "librpc/gen_ndr/ndr_messaging.h"
 

@@ -22,7 +22,6 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap_watch.h"
 #include "dbwrap_open.h"
-#include "msg_channel.h"
 #include "lib/util/util_tdb.h"
 #include "lib/util/tevent_ntstatus.h"
 
