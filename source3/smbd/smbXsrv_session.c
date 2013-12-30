@@ -37,7 +37,6 @@
 #include "librpc/gen_ndr/ndr_smbXsrv.h"
 #include "serverid.h"
 #include "lib/util/tevent_ntstatus.h"
-#include "msg_channel.h"
 
 struct smbXsrv_session_table {
 	struct {
@@ -50,7 +49,6 @@ struct smbXsrv_session_table {
 	struct {
 		struct db_context *db_ctx;
 	} global;
-	struct msg_channel *close_channel;
 };
 
 static struct db_context *smbXsrv_session_global_db_ctx = NULL;
@@ -168,7 +166,6 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 	struct smbXsrv_session_table *table;
 	NTSTATUS status;
 	struct tevent_req *subreq;
-	int ret;
 	uint64_t max_range;
 
 	if (lowest_id > highest_id) {
@@ -207,16 +204,8 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 
 	dbwrap_watch_db(table->global.db_ctx, conn->msg_ctx);
 
-	ret = msg_channel_init(table, conn->msg_ctx,
-			       MSG_SMBXSRV_SESSION_CLOSE,
-			       &table->close_channel);
-	if (ret != 0) {
-		status = map_nt_error_from_unix_common(errno);
-		TALLOC_FREE(table);
-		return status;
-	}
-
-	subreq = msg_read_send(table, conn->ev_ctx, table->close_channel);
+	subreq = messaging_read_send(table, conn->ev_ctx, conn->msg_ctx,
+				     MSG_SMBXSRV_SESSION_CLOSE);
 	if (subreq == NULL) {
 		TALLOC_FREE(table);
 		return NT_STATUS_NO_MEMORY;
@@ -243,7 +232,7 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
 
-	ret = msg_read_recv(subreq, talloc_tos(), &rec);
+	ret = messaging_read_recv(subreq, talloc_tos(), &rec);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		goto next;
@@ -348,7 +337,8 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 next:
 	TALLOC_FREE(rec);
 
-	subreq = msg_read_send(table, conn->ev_ctx, table->close_channel);
+	subreq = messaging_read_send(table, conn->ev_ctx, conn->msg_ctx,
+				     MSG_SMBXSRV_SESSION_CLOSE);
 	if (subreq == NULL) {
 		smbd_server_connection_terminate(conn->sconn,
 						 "msg_read_send() failed");
