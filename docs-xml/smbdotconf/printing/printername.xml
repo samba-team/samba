@@ -21,6 +21,6 @@
 	</para>
 </description>
 
-<value type="default">none</value>
+<value type="default"></value>
 <value type="example">laserwriter</value>
 </samba:parameter>
