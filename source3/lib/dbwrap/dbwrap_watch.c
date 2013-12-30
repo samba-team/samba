@@ -230,7 +230,6 @@ struct dbwrap_record_watch_state {
 	struct db_context *db;
 	struct tevent_req *req;
 	struct messaging_context *msg;
-	struct msg_channel *channel;
 	TDB_DATA key;
 	TDB_DATA w_key;
 };
@@ -248,7 +247,6 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 	struct dbwrap_record_watch_state *state;
 	struct db_context *watchers_db;
 	NTSTATUS status;
-	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dbwrap_record_watch_state);
@@ -272,12 +270,12 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = msg_channel_init(state, state->msg, MSG_DBWRAP_MODIFIED,
-			       &state->channel);
-	if (ret != 0) {
-		tevent_req_nterror(req, map_nt_error_from_unix(ret));
+	subreq = messaging_read_send(state, ev, state->msg,
+				     MSG_DBWRAP_MODIFIED);
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, dbwrap_record_watch_done, req);
 
 	status = dbwrap_record_add_watcher(
 		state->w_key, messaging_server_id(state->msg));
@@ -286,11 +284,6 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(state, dbwrap_record_watch_state_destructor);
 
-	subreq = msg_read_send(state, state->ev, state->channel);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, dbwrap_record_watch_done, req);
 	return req;
 }
 
@@ -365,7 +358,7 @@ static void dbwrap_record_watch_done(struct tevent_req *subreq)
 	struct messaging_rec *rec;
 	int ret;
 
-	ret = msg_read_recv(subreq, talloc_tos(), &rec);
+	ret = messaging_read_recv(subreq, talloc_tos(), &rec);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		tevent_req_nterror(req, map_nt_error_from_unix(ret));
@@ -381,7 +374,8 @@ static void dbwrap_record_watch_done(struct tevent_req *subreq)
 	/*
 	 * Not our record, wait for the next one
 	 */
-	subreq = msg_read_send(state, state->ev, state->channel);
+	subreq = messaging_read_send(state, state->ev, state->msg,
+				     MSG_DBWRAP_MODIFIED);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
