@@ -10,5 +10,5 @@
 	parameter to fill in the login shell for that user.</para>
 </description>
 
-<value type="string">/bin/false</value>
+<value type="default">/bin/false</value>
 </samba:parameter>
