@@ -20,5 +20,5 @@
 	</para>
 
 </description>
-<value type="boolean">no</value>
+<value type="default">no</value>
 </samba:parameter>
