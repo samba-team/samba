@@ -500,3 +500,19 @@ if __name__ == '__main__':
                 logger.info("Failed to delete %s from sam.ldb" % dn)
 
     logger.info("Finished upgrading DNS")
+
+    services = lp.get("server services")
+    for service in services:
+        if service == "dns":
+            if opts.dns_backend.startswith("BIND"):
+                logger.info("You have switched to using %s as your dns backend,"
+                        " but still have the internal dns starting. Please"
+                        " make sure you add '-dns' to your server services"
+                        " line in your smb.conf." % opts.dns_backend)
+            break
+    else:
+        if opts.dns_backend == "SAMBA_INTERNAL":
+            logger.info("You have switched to using %s as your dns backend,"
+                    " but you still have samba starting looking for a"
+                    " BIND backend. Please remove the -dns from your"
+                    " server services line." % opts.dns_backend)
