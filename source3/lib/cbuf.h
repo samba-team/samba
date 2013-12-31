@@ -222,7 +222,7 @@ char* cbuf_gets(cbuf* b, size_t idx);
  * @param[out] ost outstream
  * @param[in]  s '\0' terminated string of printable characters.
  *
- * @return numner of bytes written, -1 on error
+ * @return number of bytes written, -1 on error
  */
 int cbuf_print_quoted_string(cbuf* ost, const char* s);
 
@@ -237,7 +237,7 @@ int cbuf_print_quoted_string(cbuf* ost, const char* s);
  * @param[in]  s string of bytes
  * @param[in]  len number of bytes
  *
- * @return numner of bytes written, -1 on error
+ * @return number of bytes written, -1 on error
  */
 int cbuf_print_quoted(cbuf* ost, const char* s, size_t len);
 
