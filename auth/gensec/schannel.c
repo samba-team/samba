@@ -34,6 +34,7 @@
 #include "lib/crypto/crypto.h"
 
 struct schannel_state {
+	struct gensec_security *gensec;
 	uint64_t seq_num;
 	bool initiator;
 	struct netlogon_creds_CredentialState *creds;
@@ -50,17 +51,19 @@ struct schannel_state {
 	RSIVAL(_buf, 4, _seq_num_high); \
 } while(0)
 
-static struct schannel_state *netsec_create_state(TALLOC_CTX *mem_ctx,
+static struct schannel_state *netsec_create_state(
+				struct gensec_security *gensec,
 				struct netlogon_creds_CredentialState *creds,
 				bool initiator)
 {
 	struct schannel_state *state;
 
-	state = talloc(mem_ctx, struct schannel_state);
+	state = talloc(gensec, struct schannel_state);
 	if (state == NULL) {
 		return NULL;
 	}
 
+	state->gensec = gensec;
 	state->initiator = initiator;
 	state->seq_num = 0;
 	state->creds = netlogon_creds_copy(state, creds);
@@ -68,6 +71,8 @@ static struct schannel_state *netsec_create_state(TALLOC_CTX *mem_ctx,
 		talloc_free(state);
 		return NULL;
 	}
+
+	gensec->private_data = state;
 
 	return state;
 }
@@ -273,6 +278,7 @@ static void netsec_do_sign(struct schannel_state *state,
 static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 				bool do_unseal,
 				uint8_t *data, size_t length,
+				const uint8_t *whole_pdu, size_t pdu_length,
 				const DATA_BLOB *sig)
 {
 	uint32_t min_sig_size = 0;
@@ -284,6 +290,8 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 	uint32_t confounder_ofs = 0;
 	uint8_t seq_num[8];
 	int ret;
+	const uint8_t *sign_data = NULL;
+	size_t sign_length = 0;
 
 	netsec_offset_and_sizes(state,
 				do_unseal,
@@ -312,8 +320,16 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 			       false);
 	}
 
+	if (state->gensec->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		sign_data = whole_pdu;
+		sign_length = pdu_length;
+	} else {
+		sign_data = data;
+		sign_length = length;
+	}
+
 	netsec_do_sign(state, confounder,
-		       data, length,
+		       sign_data, sign_length,
 		       header, checksum);
 
 	ret = memcmp(checksum, sig->data+16, checksum_length);
@@ -353,6 +369,7 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 				TALLOC_CTX *mem_ctx,
 				bool do_seal,
 				uint8_t *data, size_t length,
+				const uint8_t *whole_pdu, size_t pdu_length,
 				DATA_BLOB *sig)
 {
 	uint32_t min_sig_size = 0;
@@ -364,6 +381,8 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 	uint8_t *confounder = NULL;
 	uint32_t confounder_ofs = 0;
 	uint8_t seq_num[8];
+	const uint8_t *sign_data = NULL;
+	size_t sign_length = 0;
 
 	netsec_offset_and_sizes(state,
 				do_seal,
@@ -381,8 +400,16 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 		confounder = NULL;
 	}
 
+	if (state->gensec->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		sign_data = whole_pdu;
+		sign_length = pdu_length;
+	} else {
+		sign_data = data;
+		sign_length = length;
+	}
+
 	netsec_do_sign(state, confounder,
-		       data, length,
+		       sign_data, sign_length,
 		       header, checksum);
 
 	if (do_seal) {
@@ -457,7 +484,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		if (state == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		gensec_security->private_data = state;
 
 		bind_schannel.MessageType = NL_NEGOTIATE_REQUEST;
 #if 0
@@ -553,7 +579,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		if (state == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		gensec_security->private_data = state;
 
 		bind_schannel_ack.MessageType = NL_NEGOTIATE_RESPONSE;
 		bind_schannel_ack.Flags = 0;
@@ -608,6 +633,9 @@ static bool schannel_have_feature(struct gensec_security *gensec_security,
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return true;
 	}
+	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		return true;
+	}
 	return false;
 }
 
@@ -625,7 +653,9 @@ static NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 
 	return netsec_incoming_packet(state, true,
 				      discard_const_p(uint8_t, data),
-				      length, sig);
+				      length,
+				      whole_pdu, pdu_length,
+				      sig);
 }
 
 /*
@@ -642,7 +672,9 @@ static NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 
 	return netsec_incoming_packet(state, false,
 				      discard_const_p(uint8_t, data),
-				      length, sig);
+				      length,
+				      whole_pdu, pdu_length,
+				      sig);
 }
 /*
   seal a packet
@@ -658,7 +690,9 @@ static NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
 		struct schannel_state);
 
 	return netsec_outgoing_packet(state, mem_ctx, true,
-				      data, length, sig);
+				      data, length,
+				      whole_pdu, pdu_length,
+				      sig);
 }
 
 /*
@@ -676,7 +710,9 @@ static NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security,
 
 	return netsec_outgoing_packet(state, mem_ctx, false,
 				      discard_const_p(uint8_t, data),
-				      length, sig);
+				      length,
+				      whole_pdu, pdu_length,
+				      sig);
 }
 
 static const struct gensec_security_ops gensec_schannel_security_ops = {
