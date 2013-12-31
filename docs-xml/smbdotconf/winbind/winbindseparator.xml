@@ -16,6 +16,6 @@
 	is used as a special character for NIS in /etc/group.</para>
 </description>
 
-<value type="default">'\'</value>
+<value type="default">\</value>
 <value type="example">+</value>
 </samba:parameter>
