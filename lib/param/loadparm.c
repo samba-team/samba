@@ -2170,7 +2170,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "nt status support", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "max wins ttl", "518400"); /* 6 days */
-	lpcfg_do_global_parameter(lp_ctx, "min wins ttl", "10");
+	lpcfg_do_global_parameter(lp_ctx, "min wins ttl", "21600");
 
 	lpcfg_do_global_parameter(lp_ctx, "tls enabled", "True");
 	lpcfg_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
