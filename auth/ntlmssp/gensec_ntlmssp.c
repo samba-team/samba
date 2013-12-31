@@ -102,6 +102,10 @@ bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 			return true;
 		}
 	}
+	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		return true;
+	}
+
 	return false;
 }
 
