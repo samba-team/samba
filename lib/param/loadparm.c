@@ -2130,7 +2130,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "registry:HKEY_USERS", "hku.ldb");
 
 	/* using UTF8 by default allows us to support all chars */
-	lpcfg_do_global_parameter(lp_ctx, "unix charset", "UTF8");
+	lpcfg_do_global_parameter(lp_ctx, "unix charset", "UTF-8");
 
 	/* Use codepage 850 as a default for the dos character set */
 	lpcfg_do_global_parameter(lp_ctx, "dos charset", "CP850");
