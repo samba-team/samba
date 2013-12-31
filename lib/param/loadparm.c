@@ -1911,6 +1911,10 @@ bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 		return false;
 	}
 
+	if (service != NULL && parm->p_class == P_GLOBAL) {
+		return false;
+	}
+
 	ptr = lpcfg_parm_ptr(lp_ctx, service,parm);
 
 	print_parameter(parm, ptr, f);
