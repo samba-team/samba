@@ -1276,6 +1276,18 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
 		return true;
 	}
+	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+			/* TODO: implement this using gss_wrap_iov() */
+			return false;
+		}
+
+		if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+			return true;
+		}
+
+		return false;
+	}
 	return false;
 }
 
