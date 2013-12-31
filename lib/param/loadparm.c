@@ -2063,7 +2063,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	myname = get_myname(lp_ctx);
 	lpcfg_do_global_parameter(lp_ctx, "netbios name", myname);
 	talloc_free(myname);
-	lpcfg_do_global_parameter(lp_ctx, "name resolve order", "wins host bcast");
+	lpcfg_do_global_parameter(lp_ctx, "name resolve order", "lmhosts wins host bcast");
 
 	lpcfg_do_global_parameter(lp_ctx, "fstype", "NTFS");
 
