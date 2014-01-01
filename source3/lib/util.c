@@ -1504,7 +1504,7 @@ static char *xx_path(const char *name, const char *rootpath)
 		}
 	}
 
-	return talloc_asprintf_append(fname, "/%s", name);
+	return talloc_asprintf_append_buffer(fname, "/%s", name);
 }
 
 /**
