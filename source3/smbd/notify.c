@@ -442,21 +442,12 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path)
 {
 	struct notify_context *notify_ctx = conn->sconn->notify_ctx;
-	char *fullpath, *to_free;
-	char tmpbuf[PATH_MAX];
-	ssize_t len;
 
 	if (path[0] == '.' && path[1] == '/') {
 		path += 2;
 	}
-	len = full_path_tos(conn->connectpath, path, tmpbuf, sizeof(tmpbuf),
-			    &fullpath, &to_free);
-	if (len == -1) {
-		DEBUG(0, ("full_path_tos failed\n"));
-		return;
-	}
-	notify_trigger(notify_ctx, action, filter, fullpath);
-	TALLOC_FREE(to_free);
+
+	notify_trigger(notify_ctx, action, filter, conn->connectpath, path);
 }
 
 static void notify_fsp(files_struct *fsp, struct timespec when,

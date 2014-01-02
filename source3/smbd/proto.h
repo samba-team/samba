@@ -554,7 +554,8 @@ NTSTATUS notify_add(struct notify_context *notify,
 		    void *private_data);
 NTSTATUS notify_remove(struct notify_context *notify, void *private_data);
 void notify_trigger(struct notify_context *notify,
-		    uint32_t action, uint32_t filter, const char *path);
+		    uint32_t action, uint32_t filter,
+		    const char *dir, const char *path);
 void notify_walk_idx(struct notify_context *notify,
 		     void (*fn)(const char *path,
 				uint32_t *vnns, size_t num_vnns,

@@ -616,7 +616,8 @@ static bool notify_pull_remote_blob(TALLOC_CTX *mem_ctx,
 }
 
 void notify_trigger(struct notify_context *notify,
-		    uint32_t action, uint32_t filter, const char *path)
+		    uint32_t action, uint32_t filter,
+		    const char *dir, const char *name)
 {
 	struct ctdbd_connection *ctdbd_conn;
 	struct notify_trigger_index_state idx_state;
@@ -625,19 +626,30 @@ void notify_trigger(struct notify_context *notify,
 	uint32_t last_vnn;
 	uint8_t *remote_blob = NULL;
 	size_t remote_blob_len = 0;
+	char *path, *to_free;
+	char tmpbuf[PATH_MAX];
+	ssize_t len;
 
 	DEBUG(10, ("notify_trigger called action=0x%x, filter=0x%x, "
-		   "path=%s\n", (unsigned)action, (unsigned)filter, path));
+		   "dir=%s, name=%s\n", (unsigned)action, (unsigned)filter,
+		   dir, name));
 
 	/* see if change notify is enabled at all */
 	if (notify == NULL) {
 		return;
 	}
 
-	if (path[0] != '/') {
+	if (dir[0] != '/') {
 		/*
 		 * The rest of this routine assumes an absolute path.
 		 */
+		return;
+	}
+
+	len = full_path_tos(dir, name, tmpbuf, sizeof(tmpbuf),
+			    &path, &to_free);
+	if (len == -1) {
+		DEBUG(1, ("full_path_tos failed\n"));
 		return;
 	}
 
@@ -708,6 +720,7 @@ void notify_trigger(struct notify_context *notify,
 done:
 	TALLOC_FREE(remote_blob);
 	TALLOC_FREE(idx_state.vnns);
+	TALLOC_FREE(to_free);
 }
 
 static void notify_trigger_local(struct notify_context *notify,
