@@ -17,7 +17,7 @@
     read/write/execute bits set for the 'user'.</para>
 </description>
 
-<value type="default">000</value>
+<value type="default">0000</value>
 <value type="example">0755</value>
 
 <related>directory mask</related>

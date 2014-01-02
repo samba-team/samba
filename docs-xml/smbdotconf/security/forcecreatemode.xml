@@ -20,6 +20,6 @@
 <related>create mask</related>
 <related>inherit permissions</related>
 
-<value type="default">000</value>
+<value type="default">0000</value>
 <value type="example">0755</value>
 </samba:parameter>

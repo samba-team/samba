@@ -1665,7 +1665,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			if (val == -1) {
 				fprintf(f, "-1");
 			} else {
-				fprintf(f, "0%o", val);
+				fprintf(f, "0%03o", val);
 			}
 			break;
 		}
