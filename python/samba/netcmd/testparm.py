@@ -156,6 +156,14 @@ class cmd_testparm(Command):
                 "membership.")
             valid = False
 
+        role = lp.get("server role")
+        charset = lp.get("unix charset").upper()
+
+        if role in ["active directory domain controller", "domain controller", "dc"] and charset not in ["UTF-8", "UTF8"]:
+            logger.warning(
+                "When acting as Active Directory domain controller, "
+                "unix charset is expected to be UTF-8.")
+
         return valid
 
     def allow_access(self, deny_list, allow_list, cname, caddr):
