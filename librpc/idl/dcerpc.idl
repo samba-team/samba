@@ -19,6 +19,8 @@
 */
 import "misc.idl";
 
+cpp_quote("extern const uint8_t DCERPC_SEC_VT_MAGIC[8];")
+
 interface dcerpc
 {
 	typedef struct {
@@ -514,4 +516,69 @@ interface dcerpc
 		uint8 serial_low;
 		[switch_is(ptype)] dcerpc_payload u;
 	} ncadg_packet;
+
+	typedef [bitmap16bit] bitmap {
+		DCERPC_SEC_VT_COMMAND_ENUM  = 0x3FFF,
+		DCERPC_SEC_VT_COMMAND_END   = 0x4000,
+		DCERPC_SEC_VT_MUST_PROCESS  = 0x8000
+	} dcerpc_sec_vt_command;
+
+	typedef [enum16bit] enum {
+		DCERPC_SEC_VT_COMMAND_BITMASK1  = 0x0001,
+		DCERPC_SEC_VT_COMMAND_PCONTEXT  = 0x0002,
+		DCERPC_SEC_VT_COMMAND_HEADER2   = 0x0003
+	} dcerpc_sec_vt_command_enum;
+
+	typedef [bitmap32bit] bitmap {
+		DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING = 0x00000001
+	} dcerpc_sec_vt_bitmask1;
+
+	typedef struct {
+		ndr_syntax_id abstract_syntax;
+		ndr_syntax_id transfer_syntax;
+	} dcerpc_sec_vt_pcontext;
+
+	typedef struct {
+		dcerpc_pkt_type ptype;  /* Packet type */
+		[value(0)] uint8 reserved1;
+		[value(0)] uint16 reserved2;
+		uint8 drep[4];          /* NDR data representation */
+		uint32 call_id;         /* Call identifier */
+		uint16 context_id;
+		uint16 opnum;
+	} dcerpc_sec_vt_header2;
+
+	typedef [switch_type(dcerpc_sec_vt_command_enum),nodiscriminant] union {
+	[case(DCERPC_SEC_VT_COMMAND_BITMASK1)] dcerpc_sec_vt_bitmask1 bitmask1;
+	[case(DCERPC_SEC_VT_COMMAND_PCONTEXT)] dcerpc_sec_vt_pcontext pcontext;
+	[case(DCERPC_SEC_VT_COMMAND_HEADER2)] dcerpc_sec_vt_header2 header2;
+	[default,flag(NDR_REMAINING)] DATA_BLOB _unknown;
+	} dcerpc_sec_vt_union;
+
+	typedef struct {
+		dcerpc_sec_vt_command command;
+		[switch_is(command & DCERPC_SEC_VT_COMMAND_ENUM)]
+			[subcontext(2),flag(NDR_SUBCONTEXT_NO_UNREAD_BYTES)]
+			dcerpc_sec_vt_union u;
+	} dcerpc_sec_vt;
+
+	typedef [public,nopush,nopull] struct {
+		uint16 count;
+	} dcerpc_sec_vt_count;
+
+	/*
+	 * We assume that the whole verification trailer fits into
+	 * the last 1024 bytes after the stub data.
+	 *
+	 * There're currently only 3 commands defined and each should
+	 * only be used once.
+	 */
+	const uint16 DCERPC_SEC_VT_MAX_SIZE = 1024;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
+		[value(DCERPC_SEC_VT_MAGIC)] uint8 magic[8];
+		dcerpc_sec_vt_count count;
+		dcerpc_sec_vt commands[count.count];
+	} dcerpc_sec_verification_trailer;
 }
