@@ -291,10 +291,11 @@ static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
 {
 	PyObject *py_stream;
 	char *param_name;
-	char *section_name = NULL;
+	const char *section_name = NULL;
 	FILE *f;
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
 	struct loadparm_service *service;
+	bool ret;
 
 	if (!PyArg_ParseTuple(args, "Os|z", &py_stream, &param_name, &section_name))
 		return NULL;
@@ -309,14 +310,21 @@ static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
 		/* it's a share parameter */
 		service = lpcfg_service(lp_ctx, section_name);
 		if (service == NULL) {
-			Py_RETURN_NONE;
+			PyErr_Format(PyExc_RuntimeError, "Unknown section %s", section_name);
+			return NULL;
 		}
 	} else {
 		/* it's global */
 		service = NULL;
+		section_name = "global";
 	}
 
-	lpcfg_dump_a_parameter(lp_ctx, service, param_name, f);
+	ret = lpcfg_dump_a_parameter(lp_ctx, service, param_name, f);
+
+	if (!ret) {
+		PyErr_Format(PyExc_RuntimeError, "Parameter %s unknown for section %s", param_name, section_name);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 
