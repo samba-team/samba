@@ -24,6 +24,7 @@
 #include "bin/default/librpc/gen_ndr/ndr_dcerpc.h"
 
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "lib/util/bitmap.h"
 
 const uint8_t DCERPC_SEC_VT_MAGIC[] = {0x8a,0xe3,0x13,0x71,0x02,0xf4,0x36,0x71};
 
@@ -62,5 +63,125 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_sec_vt_count(struct ndr_pull *ndr, in
 	}
 
 	ndr->offset = _saved_ofs;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pop_dcerpc_sec_verification_trailer(
+	struct ndr_pull *ndr, TALLOC_CTX *mem_ctx,
+	struct dcerpc_sec_verification_trailer **_r)
+{
+	enum ndr_err_code ndr_err;
+	uint32_t ofs;
+	uint32_t min_ofs = 0;
+	struct dcerpc_sec_verification_trailer *r;
+	DATA_BLOB sub_blob = data_blob_null;
+	struct ndr_pull *sub_ndr = NULL;
+	uint32_t remaining;
+
+	*_r = NULL;
+
+	r = talloc_zero(mem_ctx, struct dcerpc_sec_verification_trailer);
+	if (r == NULL) {
+		return NDR_ERR_ALLOC;
+	}
+
+	if (ndr->data_size < sizeof(DCERPC_SEC_VT_MAGIC)) {
+		/*
+		 * we return with r->count = 0
+		 */
+		*_r = r;
+		return NDR_ERR_SUCCESS;
+	}
+
+	ofs = ndr->data_size - sizeof(DCERPC_SEC_VT_MAGIC);
+	/* the magic is 4 byte aligned */
+	ofs &= ~3;
+
+	if (ofs > DCERPC_SEC_VT_MAX_SIZE) {
+		/*
+		 * We just scan the last 1024 bytes.
+		 */
+		min_ofs = ofs - DCERPC_SEC_VT_MAX_SIZE;
+	} else {
+		min_ofs = 0;
+	}
+
+	while (true) {
+		int ret;
+
+		ret = memcmp(&ndr->data[ofs],
+			     DCERPC_SEC_VT_MAGIC,
+			     sizeof(DCERPC_SEC_VT_MAGIC));
+		if (ret == 0) {
+			sub_blob = data_blob_const(&ndr->data[ofs],
+						   ndr->data_size - ofs);
+			break;
+		}
+
+		if (ofs <= min_ofs) {
+			break;
+		}
+
+		ofs -= 4;
+	}
+
+	if (sub_blob.length == 0) {
+		/*
+		 * we return with r->count = 0
+		 */
+		*_r = r;
+		return NDR_ERR_SUCCESS;
+	}
+
+	sub_ndr = ndr_pull_init_blob(&sub_blob, r);
+	if (sub_ndr == NULL) {
+		TALLOC_FREE(r);
+		return NDR_ERR_ALLOC;
+	}
+
+	ndr_err = ndr_pull_dcerpc_sec_verification_trailer(sub_ndr,
+							   NDR_SCALARS | NDR_BUFFERS,
+							   r);
+	if (ndr_err == NDR_ERR_ALLOC) {
+		TALLOC_FREE(r);
+		return NDR_ERR_ALLOC;
+	}
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto ignore_error;
+	}
+
+	remaining = sub_ndr->data_size - sub_ndr->offset;
+	if (remaining > 16) {
+		/*
+		 * we expect not more than 16 byte of additional
+		 * padding after the verification trailer.
+		 */
+		goto ignore_error;
+	}
+
+	/*
+	 * We assume that we got a real verification trailer.
+	 *
+	 * We remove it from the available stub data.
+	 */
+	ndr->data_size = ofs;
+
+	TALLOC_FREE(sub_ndr);
+
+	*_r = r;
+	return NDR_ERR_SUCCESS;
+
+ignore_error:
+	TALLOC_FREE(sub_ndr);
+	/*
+	 * just ignore the error, it's likely
+	 * that the magic we found belongs to
+	 * the stub data.
+	 *
+	 * we return with r->count = 0
+	 */
+	ZERO_STRUCTP(r);
+	*_r = r;
 	return NDR_ERR_SUCCESS;
 }

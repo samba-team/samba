@@ -303,8 +303,8 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP',
 bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
     source='gen_ndr/ndr_dcerpc.c ndr/ndr_dcerpc.c',
     public_deps='ndr',
-    public_headers='gen_ndr/ndr_dcerpc.h gen_ndr/dcerpc.h',
-    header_path= [ ('*gen_ndr*', 'gen_ndr') ],
+    public_headers='gen_ndr/ndr_dcerpc.h gen_ndr/dcerpc.h ndr/ndr_dcerpc.h',
+    header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')]
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSUAPI',

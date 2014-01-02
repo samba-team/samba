@@ -21,6 +21,9 @@ import "misc.idl";
 
 cpp_quote("extern const uint8_t DCERPC_SEC_VT_MAGIC[8];")
 
+[
+  helper("../librpc/ndr/ndr_dcerpc.h")
+]
 interface dcerpc
 {
 	typedef struct {
