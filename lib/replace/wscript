@@ -371,6 +371,7 @@ removeea setea
     if not Options.options.disable_gettext:
         conf.CHECK_HEADERS('libintl.h')
         conf.CHECK_LIB('intl')
+        conf.CHECK_DECLS('dgettext gettext bindtextdomain textdomain bind_textdomain_codeset', headers="libintl.h")
         # *textdomain functions are not strictly necessary
         conf.CHECK_FUNCS_IN('bindtextdomain textdomain bind_textdomain_codeset',
                             '', checklibc=True, headers='libintl.h')
