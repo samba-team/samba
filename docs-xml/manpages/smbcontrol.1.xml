@@ -304,6 +304,13 @@
 	</variablelist>
 	</varlistentry>
 
+	<varlistentry>
+	<term>num-children</term>
+	<listitem><para>Query the number of smbd child processes. This
+	message can only be sent
+	to <constant>smbd</constant>.</para></listitem>
+	</varlistentry>
+
 </variablelist>
 </refsect1>
 
