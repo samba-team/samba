@@ -999,16 +999,31 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
-						 DATA_BLOB *auth_token)
+						 DATA_BLOB *auth_token,
+						 bool *client_hdr_signing)
 {
 	struct gensec_security *gensec_security;
 	DATA_BLOB null_blob = data_blob_null;
+	NTSTATUS status;
 
 	gensec_security = talloc_get_type_abort(cli->auth->auth_ctx,
 					struct gensec_security);
 
 	DEBUG(5, ("create_generic_auth_rpc_bind_req: generate first token\n"));
-	return gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
+	status = gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
+
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		return status;
+	}
+
+	if (client_hdr_signing != NULL) {
+		*client_hdr_signing = gensec_have_feature(gensec_security,
+						GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
+
+	return status;
 }
 
 /*******************************************************************
@@ -1021,15 +1036,21 @@ static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 						const struct ndr_syntax_id *abstract,
 						const struct ndr_syntax_id *transfer,
 						const DATA_BLOB *auth_info,
+						bool client_hdr_signing,
 						DATA_BLOB *blob)
 {
 	uint16 auth_len = auth_info->length;
 	NTSTATUS status;
 	union dcerpc_payload u;
 	struct dcerpc_ctx_list ctx_list;
+	uint8_t pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 
 	if (auth_len) {
 		auth_len -= DCERPC_AUTH_TRAILER_LENGTH;
+	}
+
+	if (client_hdr_signing) {
+		pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
 	ctx_list.context_id = 0;
@@ -1045,9 +1066,7 @@ static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 	u.bind.auth_info	= *auth_info;
 
 	status = dcerpc_push_ncacn_packet(mem_ctx,
-					  ptype,
-					  DCERPC_PFC_FLAG_FIRST |
-					  DCERPC_PFC_FLAG_LAST,
+					  ptype, pfc_flags,
 					  auth_len,
 					  rpc_call_id,
 					  &u,
@@ -1081,7 +1100,9 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx, &auth_token);
+		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx,
+						       &auth_token,
+						       &auth->client_hdr_signing);
 
 		if (!NT_STATUS_IS_OK(ret) &&
 		    !NT_STATUS_EQUAL(ret, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -1123,6 +1144,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 					      abstract,
 					      transfer,
 					      &auth_info,
+					      auth->client_hdr_signing,
 					      rpc_out);
 	return ret;
 }
@@ -1504,6 +1526,7 @@ static NTSTATUS create_rpc_alter_context(TALLOC_CTX *mem_ctx,
 						 abstract,
 						 transfer,
 						 &auth_info,
+					         false, /* client_hdr_signing */
 						 rpc_out);
 	data_blob_free(&auth_info);
 	return status;
@@ -1673,6 +1696,15 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		gensec_security = talloc_get_type_abort(pauth->auth_ctx,
 						struct gensec_security);
+
+		if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
+			if (pauth->client_hdr_signing) {
+				pauth->hdr_signing = true;
+				gensec_want_feature(gensec_security,
+						    GENSEC_FEATURE_SIGN_PKT_HEADER);
+			}
+		}
+
 		status = gensec_update(gensec_security, state, NULL,
 				       auth.credentials, &auth_token);
 		if (NT_STATUS_EQUAL(status,
