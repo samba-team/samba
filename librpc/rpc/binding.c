@@ -88,7 +88,6 @@ static const struct {
 	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
 	{"bigendian", DCERPC_PUSH_BIGENDIAN},
 	{"smb2", DCERPC_SMB2},
-	{"hdrsign", DCERPC_HEADER_SIGNING},
 	{"ndr64", DCERPC_NDR64},
 	{"localaddress", DCERPC_LOCALADDRESS}
 };

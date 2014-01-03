@@ -98,7 +98,7 @@ struct dcerpc_binding {
 /* this triggers the DCERPC_PFC_FLAG_CONC_MPX flag in the bind request */
 #define DCERPC_CONCURRENT_MULTIPLEX     (1<<19)
 
-/* this triggers the DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN flag in the bind request */
+/* this indicates DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN flag was negotiated */
 #define DCERPC_HEADER_SIGNING          (1<<20)
 
 /* use NDR64 transport */
@@ -112,6 +112,9 @@ struct dcerpc_binding {
 
 /* use aes schannel with hmac-sh256 session key */
 #define DCERPC_SCHANNEL_AES            (1<<24)
+
+/* this triggers the DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN flag in the bind request */
+#define DCERPC_PROPOSE_HEADER_SIGNING          (1<<25)
 
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 

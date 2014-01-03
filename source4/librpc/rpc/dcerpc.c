@@ -1162,7 +1162,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 	}
 
-	if (p->binding->flags & DCERPC_HEADER_SIGNING) {
+	if (p->conn->flags & DCERPC_PROPOSE_HEADER_SIGNING) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
@@ -1304,7 +1304,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		conn->flags |= DCERPC_CONCURRENT_MULTIPLEX;
 	}
 
-	if ((state->p->binding->flags & DCERPC_HEADER_SIGNING) &&
+	if ((conn->flags & DCERPC_PROPOSE_HEADER_SIGNING) &&
 	    (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN)) {
 		conn->flags |= DCERPC_HEADER_SIGNING;
 	}
@@ -1350,10 +1350,6 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 
 	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
-	}
-
-	if (p->binding->flags & DCERPC_HEADER_SIGNING) {
-		pkt.pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
 	/* construct the NDR form of the packet */
@@ -2044,10 +2040,6 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 
 	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
-	}
-
-	if (p->binding->flags & DCERPC_HEADER_SIGNING) {
-		pkt.pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
 	pkt.u.alter.max_xmit_frag = 5840;

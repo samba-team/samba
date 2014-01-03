@@ -173,10 +173,6 @@ static void bind_auth_next_step(struct composite_context *c)
 
 	if (!composite_is_ok(c)) return;
 
-	if (state->pipe->conn->flags & DCERPC_HEADER_SIGNING) {
-		gensec_want_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER);
-	}
-
 	if (state->credentials.length == 0) {
 		composite_done(c);
 		return;
@@ -233,6 +229,12 @@ static void bind_auth_recv_bindreply(struct tevent_req *subreq)
 	c->status = dcerpc_bind_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
+
+	if (state->pipe->conn->flags & DCERPC_HEADER_SIGNING) {
+		struct dcecli_security *sec = &state->pipe->conn->security_state;
+
+		gensec_want_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
 
 	if (!state->more_processing) {
 		/* The first gensec_update has not requested a second run, so
@@ -394,6 +396,10 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	sec->auth_info->credentials = state->credentials;
+
+	if (gensec_have_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER)) {
+		state->pipe->conn->flags |= DCERPC_PROPOSE_HEADER_SIGNING;
+	}
 
 	/* The first request always is a dcerpc_bind. The subsequent ones
 	 * depend on gensec results */
