@@ -1,6 +1,6 @@
 <samba:parameter name="msdfs root"
                  context="S"
-				 tye="boolean"
+				 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If set to <constant>yes</constant>, Samba treats the
