@@ -1,6 +1,6 @@
 <samba:parameter name="share backend"
                  context="G"
-                 type="choice"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
