@@ -5,8 +5,17 @@
   but given that pidl can handle it nicely it simplifies things a lot
   to do it this way
 
-  see http://www.opengroup.org/onlinepubs/9629399/chap12.htm for packet
-  layouts
+  See [C706 - DCE 1.1: Remote Procedure Call] for the OpenGroup
+  DCERPC specification:
+  http://pubs.opengroup.org/onlinepubs/9629399/toc.htm
+
+  See C706 - Chapter 12: RPC PDU Encodings for packet layouts:
+  http://www.opengroup.org/onlinepubs/9629399/chap12.htm
+
+  See also [MS-RPCE] for the Microsoft
+  "Remote Procedure Call Protocol Extensions".
+  http://msdn.microsoft.com/en-us/library/cc243560.aspx
+
 */
 import "misc.idl";
 
