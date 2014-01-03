@@ -92,10 +92,6 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	if (call->conn->state_flags & DCESRV_CALL_STATE_FLAG_HEADER_SIGNING) {
-		gensec_want_feature(auth->gensec_security, GENSEC_FEATURE_SIGN_PKT_HEADER);
-	}
-
 	return true;
 }
 
@@ -107,9 +103,18 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
+	bool want_header_signing = false;
 
 	if (!call->conn->auth_state.gensec_security) {
 		return NT_STATUS_OK;
+	}
+
+	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
+		want_header_signing = true;
+	}
+
+	if (!lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","header signing", true)) {
+		want_header_signing = false;
 	}
 
 	status = gensec_update(dce_conn->auth_state.gensec_security,
@@ -126,9 +131,17 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 			return status;
 		}
 
-		if (dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_HEADER_SIGNING) {
+		if (!gensec_have_feature(dce_conn->auth_state.gensec_security,
+					 GENSEC_FEATURE_SIGN_PKT_HEADER))
+		{
+			want_header_signing = false;
+		}
+
+		if (want_header_signing) {
 			gensec_want_feature(dce_conn->auth_state.gensec_security,
 					    GENSEC_FEATURE_SIGN_PKT_HEADER);
+			call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
+			pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 		}
 
 		/* Now that we are authenticated, go back to the generic session key... */
@@ -137,6 +150,20 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		dce_conn->auth_state.auth_info->auth_pad_length = 0;
 		dce_conn->auth_state.auth_info->auth_reserved = 0;
+
+		if (!gensec_have_feature(dce_conn->auth_state.gensec_security,
+					 GENSEC_FEATURE_SIGN_PKT_HEADER))
+		{
+			want_header_signing = false;
+		}
+
+		if (want_header_signing) {
+			gensec_want_feature(dce_conn->auth_state.gensec_security,
+					    GENSEC_FEATURE_SIGN_PKT_HEADER);
+			call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
+			pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
+		}
+
 		return NT_STATUS_OK;
 	} else {
 		DEBUG(4, ("GENSEC mech rejected the incoming authentication at bind_ack: %s\n",

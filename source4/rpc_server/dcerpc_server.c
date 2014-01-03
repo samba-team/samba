@@ -610,12 +610,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		call->conn->cli_max_recv_frag = MIN(0x2000, call->pkt.u.bind.max_recv_frag);
 	}
 
-	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) &&
-	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","header signing", false)) {
-		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
-		extra_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
-	}
-
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
 		talloc_free(call->context);
