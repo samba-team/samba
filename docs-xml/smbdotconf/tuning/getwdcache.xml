@@ -1,5 +1,6 @@
 <samba:parameter name="getwd cache"
                  context="G"
+                 type="boolean"
                  developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
