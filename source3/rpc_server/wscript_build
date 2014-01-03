@@ -50,6 +50,10 @@ bld.SAMBA3_SUBSYSTEM('RPC_EPMAPPER',
                     ../../librpc/gen_ndr/srv_epmapper.c''',
                     deps='samba-util')
 
+bld.SAMBA3_SUBSYSTEM('RPC_FSS_STATE',
+                    source='''fss/srv_fss_state.c''',
+                    deps='samba-util NDR_FSRVP_STATE')
+
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',
                     source='''eventlog/srv_eventlog_nt.c
                     eventlog/srv_eventlog_reg.c
