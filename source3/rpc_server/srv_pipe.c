@@ -42,6 +42,7 @@
 #include "rpc_server/rpc_contexts.h"
 #include "lib/param/param.h"
 #include "librpc/ndr/ndr_table.h"
+#include "auth/gensec/gensec.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -418,10 +419,11 @@ bool is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
 *******************************************************************/
 
 static bool pipe_auth_generic_bind(struct pipes_struct *p,
-				   TALLOC_CTX *mem_ctx,
+				   struct ncacn_packet *pkt,
 				   struct dcerpc_auth *auth_info,
 				   DATA_BLOB *response)
 {
+	TALLOC_CTX *mem_ctx = pkt;
 	struct gensec_security *gensec_security = NULL;
         NTSTATUS status;
 
@@ -443,6 +445,17 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 
 	p->auth.auth_ctx = gensec_security;
 	p->auth.auth_type = auth_info->auth_type;
+
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
+		p->auth.client_hdr_signing = true;
+		p->auth.hdr_signing = gensec_have_feature(gensec_security,
+						GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
+
+	if (p->auth.hdr_signing) {
+		gensec_want_feature(gensec_security,
+				    GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
 
 	return true;
 }
@@ -548,6 +561,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 	NTSTATUS status;
 	struct ndr_syntax_id id;
+	uint8_t pfc_flags = 0;
 	union dcerpc_payload u;
 	struct dcerpc_ack_ctx bind_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
@@ -792,10 +806,15 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	 * header and are never sending more than one PDU here.
 	 */
 
+	pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+
+	if (p->auth.hdr_signing) {
+		pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
+	}
+
 	status = dcerpc_push_ncacn_packet(p->mem_ctx,
 					  DCERPC_PKT_BIND_ACK,
-					  DCERPC_PFC_FLAG_FIRST |
-						DCERPC_PFC_FLAG_LAST,
+					  pfc_flags,
 					  auth_resp.length,
 					  pkt->call_id,
 					  &u,
