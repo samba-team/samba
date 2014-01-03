@@ -638,6 +638,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_end(struct ndr_pull *ndr,
 				 ssize_t size_is)
 {
 	uint32_t advance;
+	uint32_t highest_ofs;
+
 	if (size_is >= 0) {
 		advance = size_is;
 	} else if (header_size > 0) {
@@ -645,6 +647,24 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_end(struct ndr_pull *ndr,
 	} else {
 		advance = subndr->offset;
 	}
+
+	if (subndr->offset > ndr->relative_highest_offset) {
+		highest_ofs = subndr->offset;
+	} else {
+		highest_ofs = subndr->relative_highest_offset;
+	}
+	if (!(subndr->flags & LIBNDR_FLAG_SUBCONTEXT_NO_UNREAD_BYTES)) {
+		/*
+		 * avoid an error unless SUBCONTEXT_NO_UNREAD_BYTES is specified
+		 */
+		highest_ofs = advance;
+	}
+	if (highest_ofs < advance) {
+		return ndr_pull_error(subndr, NDR_ERR_UNREAD_BYTES,
+				      "not all bytes consumed ofs[%u] advance[%u]",
+				      highest_ofs, advance);
+	}
+
 	NDR_CHECK(ndr_pull_advance(ndr, advance));
 	return NDR_ERR_SUCCESS;
 }

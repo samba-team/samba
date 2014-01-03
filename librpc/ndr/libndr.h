@@ -123,6 +123,12 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_RAW8		(1<<13)
 #define LIBNDR_STRING_FLAGS		(0x7FFC)
 
+/*
+ * This lets ndr_pull_subcontext_end() return
+ * NDR_ERR_UNREAD_BYTES.
+ */
+#define LIBNDR_FLAG_SUBCONTEXT_NO_UNREAD_BYTES (1<<17)
+
 /* set if relative pointers should *not* be marshalled in reverse order */
 #define LIBNDR_FLAG_NO_RELATIVE_REVERSE	(1<<18)
 
