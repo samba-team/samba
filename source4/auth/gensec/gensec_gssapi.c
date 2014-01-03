@@ -1029,6 +1029,12 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 	int conf_state;
 	ssize_t sig_length;
 
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		DEBUG(1, ("gensec_gssapi_seal_packet: "
+			  "GENSEC_FEATURE_SIGN_PKT_HEADER not supported\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	input_token.length = length;
 	input_token.value = data;
 	
@@ -1082,6 +1088,12 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 	DATA_BLOB in;
 
 	dump_data_pw("gensec_gssapi_unseal_packet: sig\n", sig->data, sig->length);
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		DEBUG(1, ("gensec_gssapi_unseal_packet: "
+			  "GENSEC_FEATURE_SIGN_PKT_HEADER not supported\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	in = data_blob_talloc(gensec_security, NULL, sig->length + length);
 
