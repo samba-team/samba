@@ -1,5 +1,6 @@
 <samba:parameter name="force create mode"
                  context="S"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter specifies a set of UNIX mode bit
