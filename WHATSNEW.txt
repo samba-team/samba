@@ -1,4 +1,81 @@
                    ==============================
+                   Release Notes for Samba 4.0.14
+                           January 7, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.0.
+
+Major enhancements in Samba 4.0.14 include:
+
+o  Fix segfault in smbd (bug #10284).
+o  Fix SMB2 server panic when a smb2 brlock times out (bug #10311).
+
+
+Changes since 4.0.13:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9870: smbd: Allow updates on directory write times on open handles.
+    * BUG 10297: smbd: Fix writing to a directory with -wx permissions
+      on a share.
+    * BUG 10305: ldb: Fix bad if test in ldb_comparison_fold().
+    * BUG 10320: s3:smbpasswd: Fix crashes on invalid input.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10271: Send correct job-ID in print job notifications.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10250: smbd: Fix a talloc hierarchy problem in msg_channel.
+    * BUG 10284: smbd: Fix segfault.
+    * BUG 10297: smbd: Fix writing to a directory with -wx permissions
+      on a share.
+    * BUG 10311: Fix SMB2 server panic when a smb2 brlock times out.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10298: Reduce smb2_server processing overhead.
+    * BUG 10330: s3:configure: Require tevent >= 0.9.18 as external library.
+
+
+o   Arvid Requate <requate@univention.de>
+    * BUG 10267: spoolss: Accept XPS_PASS datatype used by Windows 8.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 10310: Fix AIO with SMB2 and locks.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 2191: Fix substution of %G/%g in 'template * homedir'.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.13
                           December 9, 2013
                    ==============================
@@ -88,8 +165,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.0.12
