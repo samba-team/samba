@@ -1163,12 +1163,17 @@ struct rpc_api_pipe_req_state {
 	uint32_t call_id;
 	const DATA_BLOB *req_data;
 	uint32_t req_data_sent;
+	DATA_BLOB req_trailer;
+	uint32_t req_trailer_sent;
+	bool verify_bitmask1;
+	bool verify_pcontext;
 	DATA_BLOB rpc_out;
 	DATA_BLOB reply_pdu;
 };
 
 static void rpc_api_pipe_req_write_done(struct tevent_req *subreq);
 static void rpc_api_pipe_req_done(struct tevent_req *subreq);
+static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *state);
 static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 				  bool *is_last_frag);
 
@@ -1201,6 +1206,11 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					+ RPC_MAX_SIGN_SIZE) {
 		/* Server is screwed up ! */
 		status = NT_STATUS_INVALID_PARAMETER;
+		goto post_status;
+	}
+
+	status = prepare_verification_trailer(state);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto post_status;
 	}
 
@@ -1238,25 +1248,164 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
+static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *state)
+{
+	struct pipe_auth_data *a = state->cli->auth;
+	struct dcerpc_sec_verification_trailer *t;
+	struct dcerpc_sec_vt *c = NULL;
+	struct ndr_push *ndr = NULL;
+	enum ndr_err_code ndr_err;
+	size_t align = 0;
+	size_t pad = 0;
+
+	if (a == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (a->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		return NT_STATUS_OK;
+	}
+
+	t = talloc_zero(state, struct dcerpc_sec_verification_trailer);
+	if (t == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!a->verified_bitmask1) {
+		t->commands = talloc_realloc(t, t->commands,
+					     struct dcerpc_sec_vt,
+					     t->count.count + 1);
+		if (t->commands == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		c = &t->commands[t->count.count++];
+		ZERO_STRUCTP(c);
+
+		c->command = DCERPC_SEC_VT_COMMAND_BITMASK1;
+		if (a->client_hdr_signing) {
+			c->u.bitmask1 = DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING;
+		}
+		state->verify_bitmask1 = true;
+	}
+
+	if (!state->cli->verified_pcontext) {
+		t->commands = talloc_realloc(t, t->commands,
+					     struct dcerpc_sec_vt,
+					     t->count.count + 1);
+		if (t->commands == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		c = &t->commands[t->count.count++];
+		ZERO_STRUCTP(c);
+
+		c->command = DCERPC_SEC_VT_COMMAND_PCONTEXT;
+		c->u.pcontext.abstract_syntax = state->cli->abstract_syntax;
+		c->u.pcontext.transfer_syntax = state->cli->transfer_syntax;
+
+		state->verify_pcontext = true;
+	}
+
+	if (!a->hdr_signing) {
+		t->commands = talloc_realloc(t, t->commands,
+					     struct dcerpc_sec_vt,
+					     t->count.count + 1);
+		if (t->commands == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		c = &t->commands[t->count.count++];
+		ZERO_STRUCTP(c);
+
+		c->command = DCERPC_SEC_VT_COMMAND_HEADER2;
+		c->u.header2.ptype = DCERPC_PKT_REQUEST;
+		c->u.header2.drep[0] = DCERPC_DREP_LE;
+		c->u.header2.drep[1] = 0;
+		c->u.header2.drep[2] = 0;
+		c->u.header2.drep[3] = 0;
+		c->u.header2.call_id = state->call_id;
+		c->u.header2.context_id = 0;
+		c->u.header2.opnum = state->op_num;
+	}
+
+	if (t->count.count == 0) {
+		TALLOC_FREE(t);
+		return NT_STATUS_OK;
+	}
+
+	c = &t->commands[t->count.count - 1];
+	c->command |= DCERPC_SEC_VT_COMMAND_END;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(dcerpc_sec_verification_trailer, t);
+	}
+
+	ndr = ndr_push_init_ctx(state);
+	if (ndr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ndr_err = ndr_push_dcerpc_sec_verification_trailer(ndr,
+						NDR_SCALARS | NDR_BUFFERS,
+						t);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+	state->req_trailer = ndr_push_blob(ndr);
+
+	align = state->req_data->length & 0x3;
+	if (align > 0) {
+		pad = 4 - align;
+	}
+	if (pad > 0) {
+		bool ok;
+		uint8_t *p;
+		const uint8_t zeros[4] = { 0, };
+
+		ok = data_blob_append(ndr, &state->req_trailer, zeros, pad);
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* move the padding to the start */
+		p = state->req_trailer.data;
+		memmove(p + pad, p, state->req_trailer.length - pad);
+		memset(p, 0, pad);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 				  bool *is_last_frag)
 {
-	size_t data_sent_thistime;
 	size_t auth_len;
 	size_t frag_len;
 	uint8_t flags = 0;
 	size_t pad_len;
 	size_t data_left;
+	size_t data_thistime;
+	size_t trailer_left;
+	size_t trailer_thistime = 0;
+	size_t total_left;
+	size_t total_thistime;
 	NTSTATUS status;
+	bool ok;
 	union dcerpc_payload u;
 
 	data_left = state->req_data->length - state->req_data_sent;
+	trailer_left = state->req_trailer.length - state->req_trailer_sent;
+	total_left = data_left + trailer_left;
+	if ((total_left < data_left) || (total_left < trailer_left)) {
+		/*
+		 * overflow
+		 */
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	status = dcerpc_guess_sizes(state->cli->auth,
-				    DCERPC_REQUEST_LENGTH, data_left,
+				    DCERPC_REQUEST_LENGTH, total_left,
 				    state->cli->max_xmit_frag,
 				    CLIENT_NDR_PADDING_SIZE,
-				    &data_sent_thistime,
+				    &total_thistime,
 				    &frag_len, &auth_len, &pad_len);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1266,15 +1415,20 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		flags = DCERPC_PFC_FLAG_FIRST;
 	}
 
-	if (data_sent_thistime == data_left) {
+	if (total_thistime == total_left) {
 		flags |= DCERPC_PFC_FLAG_LAST;
+	}
+
+	data_thistime = MIN(total_thistime, data_left);
+	if (data_thistime < total_thistime) {
+		trailer_thistime = total_thistime - data_thistime;
 	}
 
 	data_blob_free(&state->rpc_out);
 
 	ZERO_STRUCT(u.request);
 
-	u.request.alloc_hint	= data_left;
+	u.request.alloc_hint	= total_left;
 	u.request.context_id	= 0;
 	u.request.opnum		= state->op_num;
 
@@ -1294,11 +1448,26 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	 * at this stage */
 	dcerpc_set_frag_length(&state->rpc_out, frag_len);
 
-	/* Copy in the data. */
-	if (!data_blob_append(NULL, &state->rpc_out,
+	if (data_thistime > 0) {
+		/* Copy in the data. */
+		ok = data_blob_append(NULL, &state->rpc_out,
 				state->req_data->data + state->req_data_sent,
-				data_sent_thistime)) {
-		return NT_STATUS_NO_MEMORY;
+				data_thistime);
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		state->req_data_sent += data_thistime;
+	}
+
+	if (trailer_thistime > 0) {
+		/* Copy in the verification trailer. */
+		ok = data_blob_append(NULL, &state->rpc_out,
+				state->req_trailer.data + state->req_trailer_sent,
+				trailer_thistime);
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		state->req_trailer_sent += trailer_thistime;
 	}
 
 	switch (state->cli->auth->auth_level) {
@@ -1318,7 +1487,6 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	state->req_data_sent += data_sent_thistime;
 	*is_last_frag = ((flags & DCERPC_PFC_FLAG_LAST) != 0);
 
 	return status;
@@ -1382,6 +1550,20 @@ static void rpc_api_pipe_req_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
+
+	if (state->cli->auth == NULL) {
+		tevent_req_done(req);
+		return;
+	}
+
+	if (state->verify_bitmask1) {
+		state->cli->auth->verified_bitmask1 = true;
+	}
+
+	if (state->verify_pcontext) {
+		state->cli->verified_pcontext = true;
+	}
+
 	tevent_req_done(req);
 }
 

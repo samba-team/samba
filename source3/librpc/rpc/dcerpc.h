@@ -41,6 +41,7 @@ struct pipe_auth_data {
 	enum dcerpc_AuthLevel auth_level;
 	bool client_hdr_signing;
 	bool hdr_signing;
+	bool verified_bitmask1;
 
 	void *auth_ctx;
 
