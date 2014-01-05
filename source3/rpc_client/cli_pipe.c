@@ -1150,7 +1150,7 @@ static void rpc_api_pipe_req_done(struct tevent_req *subreq);
 static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 				  bool *is_last_frag);
 
-struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct rpc_pipe_client *cli,
 					 uint8_t op_num,
@@ -1363,7 +1363,7 @@ static void rpc_api_pipe_req_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       DATA_BLOB *reply_pdu)
 {
 	struct rpc_api_pipe_req_state *state = tevent_req_data(

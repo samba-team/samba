@@ -27,16 +27,6 @@
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
-struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct rpc_pipe_client *cli,
-					 uint8_t op_num,
-					 DATA_BLOB *req_data);
-
-NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req,
-			       TALLOC_CTX *mem_ctx,
-			       DATA_BLOB *reply_pdu);
-
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct rpc_pipe_client *cli,
