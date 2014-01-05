@@ -1624,11 +1624,11 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case DCERPC_AUTH_TYPE_NONE:
 	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
-	case DCERPC_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
 		tevent_req_done(req);
 		return;
 
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_SPNEGO:
 	case DCERPC_AUTH_TYPE_KRB5:
@@ -1663,11 +1663,11 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case DCERPC_AUTH_TYPE_NONE:
 	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
-	case DCERPC_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
 		tevent_req_done(req);
 		return;
 
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_SPNEGO:
