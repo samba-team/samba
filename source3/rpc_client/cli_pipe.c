@@ -2100,7 +2100,7 @@ NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 {
 	struct pipe_auth_data *result;
 
-	result = talloc(mem_ctx, struct pipe_auth_data);
+	result = talloc_zero(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2124,7 +2124,7 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 {
 	struct pipe_auth_data *result;
 
-	result = talloc(mem_ctx, struct pipe_auth_data);
+	result = talloc_zero(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2159,7 +2159,7 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 	struct pipe_auth_data *result;
 	NTSTATUS status;
 
-	result = talloc(mem_ctx, struct pipe_auth_data);
+	result = talloc_zero(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
