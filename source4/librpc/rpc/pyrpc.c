@@ -288,54 +288,38 @@ static PyMethodDef dcerpc_interface_methods[] = {
 static void dcerpc_interface_dealloc(PyObject* self)
 {
 	dcerpc_InterfaceObject *interface = (dcerpc_InterfaceObject *)self;
-	talloc_free(interface->mem_ctx);
+	interface->binding_handle = NULL;
+	interface->pipe = NULL;
+	TALLOC_FREE(interface->mem_ctx);
 	self->ob_type->tp_free(self);
 }
 
 static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	dcerpc_InterfaceObject *ret;
-	const char *binding_string;
-	struct cli_credentials *credentials;
-	struct loadparm_context *lp_ctx = NULL;
-	PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None;
-	TALLOC_CTX *mem_ctx;
-	struct tevent_context *event_ctx;
-	NTSTATUS status;
-
-	PyObject *syntax, *py_basis = Py_None;
+	const char *binding_string = NULL;
+	PyObject *py_lp_ctx = Py_None;
+	PyObject *py_credentials = Py_None;
+	PyObject *syntax = Py_None;
+	PyObject *py_basis = Py_None;
 	const char *kwnames[] = {
 		"binding", "syntax", "lp_ctx", "credentials", "basis_connection", NULL
 	};
 	struct ndr_interface_table *table;
+	NTSTATUS status;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OOO:connect", discard_const_p(char *, kwnames), &binding_string, &syntax, &py_lp_ctx, &py_credentials, &py_basis)) {
 		return NULL;
 	}
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
+	ret = PyObject_New(dcerpc_InterfaceObject, type);
+	ret->pipe = NULL;
+	ret->binding_handle = NULL;
+	ret->mem_ctx = talloc_new(NULL);
+	if (ret->mem_ctx == NULL) {
 		PyErr_NoMemory();
 		return NULL;
 	}
-
-	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
-	if (lp_ctx == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	credentials = cli_credentials_from_py_object(py_credentials);
-	if (credentials == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-	ret = PyObject_New(dcerpc_InterfaceObject, type);
-	ret->mem_ctx = mem_ctx;
-
-	event_ctx = s4_event_context_init(ret->mem_ctx);
 
 	/* Create a dummy interface table struct. TODO: In the future, we should
 	 * rather just allow connecting without requiring an interface table.
@@ -345,24 +329,21 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 
 	if (table == NULL) {
 		PyErr_SetString(PyExc_MemoryError, "Allocating interface table");
-		talloc_free(mem_ctx);
+		TALLOC_FREE(ret->mem_ctx);
 		return NULL;
 	}
 
 	if (!ndr_syntax_from_py_object(syntax, &table->syntax_id)) {
-		talloc_free(mem_ctx);
+		TALLOC_FREE(ret->mem_ctx);
 		return NULL;
 	}
-
-	ret->pipe = NULL;
-	ret->binding_handle = NULL;
 
 	if (py_basis != Py_None) {
 		struct dcerpc_pipe *base_pipe;
 
 		if (!PyObject_TypeCheck(py_basis, &dcerpc_InterfaceType)) {
 			PyErr_SetString(PyExc_ValueError, "basis_connection must be a DCE/RPC connection");
-			talloc_free(mem_ctx);
+			TALLOC_FREE(ret->mem_ctx);
 			return NULL;
 		}
 
@@ -373,13 +354,43 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 
 		ret->pipe = talloc_steal(ret->mem_ctx, ret->pipe);
 	} else {
+		struct tevent_context *event_ctx;
+		struct loadparm_context *lp_ctx;
+		struct cli_credentials *credentials;
+
+		event_ctx = s4_event_context_init(ret->mem_ctx);
+		if (event_ctx == NULL) {
+			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+			TALLOC_FREE(ret->mem_ctx);
+			return NULL;
+		}
+
+		lp_ctx = lpcfg_from_py_object(event_ctx, py_lp_ctx);
+		if (lp_ctx == NULL) {
+			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+			TALLOC_FREE(ret->mem_ctx);
+			return NULL;
+		}
+
+		credentials = cli_credentials_from_py_object(py_credentials);
+		if (credentials == NULL) {
+			PyErr_SetString(PyExc_TypeError, "Expected credentials");
+			TALLOC_FREE(ret->mem_ctx);
+			return NULL;
+		}
 		status = dcerpc_pipe_connect(ret->mem_ctx, &ret->pipe, binding_string, 
 			     table, credentials, event_ctx, lp_ctx);
+
+		/*
+		 * the event context is cached under the connection,
+		 * so let it be a child of it.
+		 */
+		talloc_steal(ret->pipe->conn, event_ctx);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetDCERPCStatus(ret->pipe, status);
-		talloc_free(ret->mem_ctx);
+		TALLOC_FREE(ret->mem_ctx);
 		return NULL;
 	}
 	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
