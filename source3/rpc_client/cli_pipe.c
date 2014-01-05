@@ -1274,7 +1274,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 
 	ZERO_STRUCT(u.request);
 
-	u.request.alloc_hint	= state->req_data->length;
+	u.request.alloc_hint	= data_left;
 	u.request.context_id	= 0;
 	u.request.opnum		= state->op_num;
 
