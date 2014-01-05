@@ -1139,7 +1139,7 @@ struct rpc_api_pipe_req_state {
 	struct rpc_pipe_client *cli;
 	uint8_t op_num;
 	uint32_t call_id;
-	DATA_BLOB *req_data;
+	const DATA_BLOB *req_data;
 	uint32_t req_data_sent;
 	DATA_BLOB rpc_out;
 	DATA_BLOB reply_pdu;
@@ -1154,7 +1154,7 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct rpc_pipe_client *cli,
 					 uint8_t op_num,
-					 DATA_BLOB *req_data)
+					 const DATA_BLOB *req_data)
 {
 	struct tevent_req *req, *subreq;
 	struct rpc_api_pipe_req_state *state;
