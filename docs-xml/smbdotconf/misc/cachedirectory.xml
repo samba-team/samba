@@ -17,6 +17,6 @@
 	</para>
 </description>
 
-<value type="default">${prefix}/var/locks</value>
+<value type="default">${prefix}/var/cache</value>
 <value type="example">/var/run/samba/locks/cache</value>
 </samba:parameter>
