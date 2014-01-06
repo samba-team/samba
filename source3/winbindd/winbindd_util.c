@@ -99,6 +99,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	char *idmap_config_option;
 	const char *param;
 	const char **ignored_domains, **dom;
+	int role = lp_server_role();
 
 	ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
 	for (dom=ignored_domains; dom && *dom; dom++) {
@@ -190,6 +191,15 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->dc_probe_pid = (pid_t)-1;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
+	}
+
+	/* Is this our primary domain ? */
+	if (strequal(domain_name, get_global_sam_name()) &&
+			(role != ROLE_DOMAIN_MEMBER)) {
+		domain->primary = true;
+	} else if (strequal(domain_name, lp_workgroup()) &&
+			(role == ROLE_DOMAIN_MEMBER)) {
+		domain->primary = true;
 	}
 
 	/* Link to domain list */
@@ -620,9 +630,6 @@ bool init_domain_list(void)
 	domain = add_trusted_domain(get_global_sam_name(), NULL,
 				    &cache_methods, get_global_sam_sid());
 	if (domain) {
-		if ( role != ROLE_DOMAIN_MEMBER ) {
-			domain->primary = True;
-		}
 		setup_domain_child(domain);
 	}
 
@@ -639,7 +646,6 @@ bool init_domain_list(void)
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
 					     &cache_methods, &our_sid);
 		if (domain) {
-			domain->primary = True;
 			setup_domain_child(domain);
 
 			/* Even in the parent winbindd we'll need to
