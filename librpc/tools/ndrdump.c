@@ -23,6 +23,7 @@
 #include "system/locale.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 
@@ -221,6 +222,7 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	const struct ndr_interface_call_pipes *in_pipes = NULL;
 	const struct ndr_interface_call_pipes *out_pipes = NULL;
 	uint32_t highest_ofs;
+	struct dcerpc_sec_verification_trailer *sec_vt = NULL;
 
 	ndr_table_init();
 
@@ -399,6 +401,25 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
 	ndr_print->print = ndr_print_printf_helper;
 	ndr_print->depth = 1;
+
+	ndr_err = ndr_pop_dcerpc_sec_verification_trailer(ndr_pull, mem_ctx, &sec_vt);
+	status = ndr_map_error2ntstatus(ndr_err);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ndr_pop_dcerpc_sec_verification_trailer returned %s\n",
+		       nt_errstr(status));
+	}
+
+	if (sec_vt != NULL && sec_vt->count.count > 0) {
+		printf("SEC_VT: consumed %d bytes\n",
+		       (int)(blob.length - ndr_pull->data_size));
+		if (dumpdata) {
+			ndrdump_data(blob.data + ndr_pull->data_size,
+				     blob.length - ndr_pull->data_size,
+				     dumpdata);
+		}
+		ndr_print_dcerpc_sec_verification_trailer(ndr_print, "SEC_VT", sec_vt);
+	}
+	TALLOC_FREE(sec_vt);
 
 	if (out_pipes) {
 		status = ndrdump_pull_and_print_pipes(function, ndr_pull, ndr_print, out_pipes);
