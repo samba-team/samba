@@ -1051,6 +1051,8 @@ static void init_globals(bool reinit_globals)
 
 	Globals.iPreferredMaster = Auto;
 
+	Globals.allow_dns_updates = DNS_UPDATE_SIGNED;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
