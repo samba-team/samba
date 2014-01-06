@@ -8,10 +8,10 @@
     open files that one <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> file
     serving process may have open for a client at any one time.
-    This parameter can be set very high (16404) as Samba uses
+    This parameter can be set very high (16384) as Samba uses
     only one bit per unopened file. Setting this parameter lower than
-    16404 will cause Samba to complain and set this value back to
-    the minimum of 16404, as Windows 7 depends on this number of
+    16384 will cause Samba to complain and set this value back to
+    the minimum of 16384, as Windows 7 depends on this number of
     open file handles being available.</para>
 
     <para>The limit of the number of open files is usually set
@@ -19,5 +19,5 @@
     this parameter so you should never need to touch this parameter.</para>
 </description>
 
-<value type="default">16404</value>
+<value type="default">16384</value>
 </samba:parameter>
