@@ -7,6 +7,6 @@
 	<para>Specifies which DCE/RPC endpoint servers should be run.</para>
 </description>
 
-<value type="example">epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey</value>
-<value type="default">rpcecho</value>
+<value type="default">epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey dnsserver</value>
+<value type="example">rpcecho</value>
 </samba:parameter>
