@@ -27,7 +27,7 @@
  */
 
 #ifndef MAX_OPEN_FUDGEFACTOR
-#define MAX_OPEN_FUDGEFACTOR 20
+#define MAX_OPEN_FUDGEFACTOR 40
 #endif
 
 /*
