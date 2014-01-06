@@ -744,6 +744,7 @@ static void init_globals(bool reinit_globals)
 
 	init_printer_values(&sDefault);
 
+	sDefault.ntvfs_handler = (const char **)str_list_make_v3(NULL, "unixuid default", NULL);
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
