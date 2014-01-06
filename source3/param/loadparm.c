@@ -1049,6 +1049,8 @@ static void init_globals(bool reinit_globals)
 
 	string_set(&Globals.share_backend, "classic");
 
+	Globals.iPreferredMaster = Auto;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
