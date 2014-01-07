@@ -100,7 +100,7 @@ def smbdotconf_generate_parameter_list(task):
 
     t = '<section xmlns:xi="http://www.w3.org/2001/XInclude">\n'
     for article in articles:
-        t += "<xi:include href='file://" + article.abspath(task.env) + "' parse='xml'/>\n"
+        t += "<xi:include href='" + article.abspath(task.env) + "' parse='xml'/>\n"
     t += "</section>\n"
     save_file(parameter_all, t , create_dir=True)
     return 0
