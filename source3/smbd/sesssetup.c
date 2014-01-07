@@ -46,10 +46,14 @@ static int push_signature(uint8 **outbuf)
 {
 	char *lanman;
 	int result, tmp;
+	fstring native_os;
 
 	result = 0;
 
-	tmp = message_push_string(outbuf, "Unix", STR_TERMINATE);
+	fstr_sprintf(native_os, "Windows %d.%d", SAMBA_MAJOR_NBT_ANNOUNCE_VERSION,
+		SAMBA_MINOR_NBT_ANNOUNCE_VERSION);
+
+	tmp = message_push_string(outbuf, native_os, STR_TERMINATE);
 
 	if (tmp == -1) return -1;
 	result += tmp;
