@@ -39,6 +39,8 @@ static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 static int (*gpfs_prealloc_fn)(int fd, gpfs_off64_t startOffset, gpfs_off64_t bytesToPrealloc);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
+static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
+				     gpfs_timestruc_t times[4]);
 static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufferP);
 static int (*gpfs_fcntl_fn)(gpfs_file_t fileDesc, void *fcntlArgP);
 static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idP);
@@ -290,6 +292,49 @@ void smbd_gpfs_lib_init()
 	}
 }
 
+static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
+				  int idx, int *flags)
+{
+	if (!null_timespec(ts)) {
+		*flags |= 1 << idx;
+		gt[idx].tv_sec = ts.tv_sec;
+		gt[idx].tv_nsec = ts.tv_nsec;
+		DEBUG(10, ("Setting GPFS time %d, flags 0x%x\n", idx, *flags));
+	}
+}
+
+int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft)
+{
+	gpfs_timestruc_t gpfs_times[4];
+	int flags = 0;
+	int rc;
+
+	if (!gpfs_set_times_path_fn) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	ZERO_ARRAY(gpfs_times);
+	timespec_to_gpfs_time(ft->atime, gpfs_times, 0, &flags);
+	timespec_to_gpfs_time(ft->mtime, gpfs_times, 1, &flags);
+	/* No good mapping from LastChangeTime to ctime, not storing */
+	timespec_to_gpfs_time(ft->create_time, gpfs_times, 3, &flags);
+
+	if (!flags) {
+		DEBUG(10, ("nothing to do, return to avoid EINVAL\n"));
+		return 0;
+	}
+
+	rc = gpfs_set_times_path_fn(path, flags, gpfs_times);
+
+	if (rc != 0) {
+		DEBUG(1,("gpfs_set_times() returned with error %s\n",
+			strerror(errno)));
+	}
+
+	return rc;
+}
+
 static bool init_gpfs_function_lib(void *plibhandle_pointer,
 				   const char *libname,
 				   void *pfn_pointer, const char *fn_name)
@@ -354,6 +399,7 @@ void init_gpfs(void)
 	init_gpfs_function(&gpfs_prealloc_fn, "gpfs_prealloc");
 	init_gpfs_function(&gpfs_ftruncate_fn, "gpfs_ftruncate");
         init_gpfs_function(&gpfs_lib_init_fn,"gpfs_lib_init");
+	init_gpfs_function(&gpfs_set_times_path_fn, "gpfs_set_times_path");
 	init_gpfs_function(&gpfs_quotactl_fn, "gpfs_quotactl");
 	init_gpfs_function(&gpfs_fcntl_fn, "gpfs_fcntl");
 	init_gpfs_function(&gpfs_getfilesetid_fn, "gpfs_getfilesetid");

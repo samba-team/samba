@@ -42,6 +42,7 @@ int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length);
 int get_gpfs_quota(const char *pathname, int type, int id,
 		   struct gpfs_quotaInfo *qi);
 int get_gpfs_fset_id(const char *pathname, int *fset_id);
+int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft);
 
 void init_gpfs(void);
 void smbd_gpfs_lib_init(void);

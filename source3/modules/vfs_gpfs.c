@@ -48,6 +48,7 @@ struct gpfs_config_data {
 	bool dfreequota;
 	bool prealloc;
 	bool acl;
+	bool settimes;
 };
 
 
@@ -1588,6 +1589,24 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 				struct gpfs_config_data,
 				return -1);
 
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	/* Try to use gpfs_set_times if it is enabled and available */
+	if (config->settimes) {
+		ret = smbd_gpfs_set_times_path(path, ft);
+
+		if (ret == 0 || (ret == -1 && errno != ENOSYS)) {
+			return ret;
+		}
+	}
+
+	DEBUG(10,("gpfs_set_times() not available or disabled, "
+		  "use ntimes and winattr\n"));
+
         ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
         if(ret == -1){
 		/* don't complain if access was denied */
@@ -1606,12 +1625,6 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 	if (!config->winattr) {
 		return 0;
 	}
-
-        status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
-        if (!NT_STATUS_IS_OK(status)) {
-                errno = map_errno_from_nt_status(status);
-                return -1;
-        }
 
         attrs.winAttrs = 0;
         attrs.creationTime.tv_sec = ft->create_time.tv_sec;
@@ -1794,6 +1807,9 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 				   "prealloc", true);
 
 	config->acl = lp_parm_bool(SNUM(handle->conn), "gpfs", "acl", true);
+
+	config->settimes = lp_parm_bool(SNUM(handle->conn), "gpfs",
+					"settimes", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,

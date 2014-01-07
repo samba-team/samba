@@ -318,6 +318,29 @@
 
 		<varlistentry>
 
+		<term>gpfs:settimes = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Use the gpfs_set_times API when changing the
+		timestamps of a file or directory. If the GPFS API is
+		not available the old method of using utime and the
+		GPFS winattr call will be used instead.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>yes(default)</command> - Use gpfs_set_times.
+		Fall back to utime and winattr when it is not available.
+		</para></listitem>
+		<listitem><para>
+		<command>no</command> - Do not use gpfs_set_times.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>nfs4:mode = [ simple | special ]</term>
 		<listitem>
 		<para>
