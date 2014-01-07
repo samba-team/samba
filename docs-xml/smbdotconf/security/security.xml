@@ -109,6 +109,6 @@
 <related>realm</related>
 <related>encrypt passwords</related>
 
-<value type="default">USER</value>
+<value type="default">AUTO</value>
 <value type="example">DOMAIN</value>
 </samba:parameter>
