@@ -937,6 +937,10 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					*(int *)dest_ptr = *(int *)src_ptr;
 					break;
 
+				case P_CHAR:
+					*(char *)dest_ptr = *(char *)src_ptr;
+					break;
+
 				case P_STRING:
 					lpcfg_string_set(pserviceDest,
 						   (char **)dest_ptr,
