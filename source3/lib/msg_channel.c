@@ -310,6 +310,9 @@ static void msg_read_got_ctdb(struct tevent_req *subreq)
 	/*
 	 * Got some unexpected msg type, wait for the next one
 	 */
+
+	TALLOC_FREE(state->rec);
+
 	subreq = ctdb_msg_read_send(state, state->ev,
 				    state->channel->ctdb_channel);
 	if (tevent_req_nomem(subreq, req)) {
