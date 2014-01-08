@@ -55,6 +55,6 @@
 <related>passwd chat debug</related>
 <related>pam password change</related>
 
-<value type="default">*new*password* %n\n*new*password* %n\n *changed*</value>
+<value type="default">*new*password* %n\n *new*password* %n\n *changed*</value>
 <value type="example">&quot;*Enter NEW password*&quot; %n\n &quot;*Reenter NEW password*&quot; %n\n &quot;*Password changed*&quot;</value>
 </samba:parameter>
