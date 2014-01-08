@@ -15,5 +15,5 @@ smb passwd file = /etc/samba/smbpasswd
     </para>
 </description>
 
-<value type="default">${prefix}/private/smbpasswd</value>
+<value type="default">&pathconfig.SMB_PASSWD_FILE;</value>
 </samba:parameter>
