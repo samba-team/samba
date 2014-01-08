@@ -10,6 +10,6 @@
 	</para>
 </description>
 
-<value type="default">$prefix/sbin/samba_dnsupdate</value>
+<value type="default">&pathconfig.SCRIPTSBINDIR;/samba_dnsupdate</value>
 <value type="example">/usr/local/sbin/dnsupdate</value>
 </samba:parameter>
