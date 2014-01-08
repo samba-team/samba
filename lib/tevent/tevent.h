@@ -319,6 +319,8 @@ void _tevent_schedule_immediate(struct tevent_immediate *im,
  *
  * @note To cancel a signal handler, call talloc_free() on the event returned
  * from this function.
+ *
+ * @see tevent_num_signals, tevent_sa_info_queue_count
  */
 struct tevent_signal *tevent_add_signal(struct tevent_context *ev,
                      TALLOC_CTX *mem_ctx,
@@ -340,8 +342,29 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 			   #handler, __location__)
 #endif
 
+/**
+ * @brief the number of supported signals
+ *
+ * This returns value of the configure time TEVENT_NUM_SIGNALS constant.
+ *
+ * The 'signum' argument of tevent_add_signal() must be less than
+ * TEVENT_NUM_SIGNALS.
+ *
+ * @see tevent_add_signal
+ */
 size_t tevent_num_signals(void);
 
+/**
+ * @brief the number of pending realtime signals
+ *
+ * This returns value of TEVENT_SA_INFO_QUEUE_COUNT.
+ *
+ * The tevent internals remember the last TEVENT_SA_INFO_QUEUE_COUNT
+ * siginfo_t structures for SA_SIGINFO signals. If the system generates
+ * more some signals get lost.
+ *
+ * @see tevent_add_signal
+ */
 size_t tevent_sa_info_queue_count(void);
 
 #ifdef DOXYGEN
