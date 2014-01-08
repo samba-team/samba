@@ -338,4 +338,22 @@ struct dcerpc_sec_vt_header2 dcerpc_sec_vt_header2_from_ncacn_packet(const struc
 bool dcerpc_sec_vt_header2_equal(const struct dcerpc_sec_vt_header2 *v1,
 				 const struct dcerpc_sec_vt_header2 *v2);
 
+/**
+ * Check for consistency of the security verification trailer with the PDU header.
+ * See <a href="http://msdn.microsoft.com/en-us/library/cc243559.aspx">MS-RPCE 2.2.2.13</a>.
+ * A check with an empty trailer succeeds.
+ *
+ * @param[in] vt a pointer to the security verification trailer.
+ * @param[in] bitmask1 which flags were negotiated on the connection.
+ * @param[in] pcontext the syntaxes negotiatied for the presentation context.
+ * @param[in] header2 some fields from the PDU header.
+ *
+ * @retval true on success.
+ */
+bool dcerpc_sec_verification_trailer_check(
+		const struct dcerpc_sec_verification_trailer *vt,
+		const uint32_t *bitmask1,
+		const struct dcerpc_sec_vt_pcontext *pcontext,
+		const struct dcerpc_sec_vt_header2 *header2);
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */
