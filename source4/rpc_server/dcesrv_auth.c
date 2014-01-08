@@ -140,7 +140,6 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 		if (want_header_signing) {
 			gensec_want_feature(dce_conn->auth_state.gensec_security,
 					    GENSEC_FEATURE_SIGN_PKT_HEADER);
-			call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
 			pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 		}
 
@@ -160,7 +159,6 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 		if (want_header_signing) {
 			gensec_want_feature(dce_conn->auth_state.gensec_security,
 					    GENSEC_FEATURE_SIGN_PKT_HEADER);
-			call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
 			pkt->pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 		}
 

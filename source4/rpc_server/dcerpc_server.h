@@ -101,7 +101,6 @@ struct dcesrv_call_state {
 	 */
 #define DCESRV_CALL_STATE_FLAG_ASYNC (1<<0)
 #define DCESRV_CALL_STATE_FLAG_MAY_ASYNC (1<<1)
-#define DCESRV_CALL_STATE_FLAG_HEADER_SIGNING (1<<2)
 	uint32_t state_flags;
 
 	/* the time the request arrived in the server */
