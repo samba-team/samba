@@ -2290,6 +2290,126 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "guest account", GUEST_ACCOUNT);
 
+	lpcfg_do_global_parameter(lp_ctx, "client schannel", "auto");
+
+	lpcfg_do_global_parameter(lp_ctx, "smb encrypt", "default");
+
+	lpcfg_do_global_parameter(lp_ctx, "max log size", "5000");
+
+	lpcfg_do_global_parameter(lp_ctx, "idmap negative cache time", "120");
+
+	lpcfg_do_global_parameter(lp_ctx, "ldap follow referral", "auto");
+
+	lpcfg_do_global_parameter(lp_ctx, "multicast dns register", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "winbind reconnect delay", "30");
+
+	lpcfg_do_global_parameter(lp_ctx, "nt acl support", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "acl check permissions", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "keepalive", "300");
+
+	lpcfg_do_global_parameter(lp_ctx, "winbind cache time", "300");
+
+	lpcfg_do_global_parameter(lp_ctx, "level2 oplocks", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "show add printer wizard", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "allocation roundup size", "1048576");
+
+	lpcfg_do_global_parameter(lp_ctx, "ldap page size", "1024");
+
+	lpcfg_do_global_parameter(lp_ctx, "kernel share modes", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "strict locking", "Auto");
+
+	lpcfg_do_global_parameter(lp_ctx, "map readonly", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "allow trusted domains", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "default devmode", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "os level", "20");
+
+	lpcfg_do_global_parameter(lp_ctx, "dos filetimes", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "mangling char", "~");
+
+	lpcfg_do_global_parameter(lp_ctx, "printcap cache time", "750");
+
+	lpcfg_do_global_parameter(lp_ctx, "create krb5 conf", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "winbind max clients", "200");
+
+	lpcfg_do_global_parameter(lp_ctx, "acl map full control", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "nt pipe support", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "ldap debug threshold", "10");
+
+	lpcfg_do_global_parameter(lp_ctx, "follow symlinks", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "machine password timeout", "604800");
+
+	lpcfg_do_global_parameter(lp_ctx, "ldap connection timeout", "2");
+
+	lpcfg_do_global_parameter(lp_ctx, "winbind expand groups", "1");
+
+	lpcfg_do_global_parameter(lp_ctx, "stat cache", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "lpq cache time", "30");
+
+	lpcfg_do_global_parameter(lp_ctx, "smb2 max trans", "1048576");
+
+	lpcfg_do_global_parameter(lp_ctx, "smb2 max read", "1048576");
+
+	lpcfg_do_global_parameter(lp_ctx, "durable handles", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "max stat cache size", "256");
+
+	lpcfg_do_global_parameter(lp_ctx, "ldap passwd sync", "no");
+
+	lpcfg_do_global_parameter(lp_ctx, "kernel change notify", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "max ttl", "259200");
+
+	lpcfg_do_global_parameter(lp_ctx, "blocking locks", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "oplock contention limit", "2");
+
+	lpcfg_do_global_parameter(lp_ctx, "load printers", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "idmap cache time", "604800");
+
+	lpcfg_do_global_parameter(lp_ctx, "preserve case", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "lm announce", "auto");
+
+	lpcfg_do_global_parameter(lp_ctx, "afs token lifetime", "604800");
+
+	lpcfg_do_global_parameter(lp_ctx, "enable core files", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "winbind max domain connections", "1");
+
+	lpcfg_do_global_parameter(lp_ctx, "case sensitive", "auto");
+
+	lpcfg_do_global_parameter(lp_ctx, "ldap timeout", "15");
+
+	lpcfg_do_global_parameter(lp_ctx, "mangle prefix", "1");
+
+	lpcfg_do_global_parameter(lp_ctx, "posix locking", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "lock spin time", "200");
+
+	lpcfg_do_global_parameter(lp_ctx, "directory name cache size", "100");
+
+	lpcfg_do_global_parameter(lp_ctx, "nmbd bind explicit broadcast", "yes");
+
+	lpcfg_do_global_parameter(lp_ctx, "init logon delay", "100");
+
+	lpcfg_do_global_parameter(lp_ctx, "usershare owner only", "yes");
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;
