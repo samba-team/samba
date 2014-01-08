@@ -378,7 +378,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	p = talloc(mem_ctx, struct dcesrv_connection);
+	p = talloc_zero(mem_ctx, struct dcesrv_connection);
 	NT_STATUS_HAVE_NO_MEMORY(p);
 
 	if (!talloc_reference(p, session_info)) {
@@ -386,27 +386,15 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p->prev = NULL;
-	p->next = NULL;
 	p->dce_ctx = dce_ctx;
 	p->endpoint = ep;
-	p->contexts = NULL;
-	p->call_list = NULL;
 	p->packet_log_dir = lpcfg_lockdir(dce_ctx->lp_ctx);
-	p->incoming_fragmented_call_list = NULL;
-	p->pending_call_list = NULL;
-	p->cli_max_recv_frag = 0;
-	p->partial_input = data_blob(NULL, 0);
-	p->auth_state.auth_info = NULL;
-	p->auth_state.gensec_security = NULL;
 	p->auth_state.session_info = session_info;
 	p->auth_state.session_key = dcesrv_generic_session_key;
 	p->event_ctx = event_ctx;
 	p->msg_ctx = msg_ctx;
 	p->server_id = server_id;
-	p->terminate = NULL;
 	p->state_flags = state_flags;
-	ZERO_STRUCT(p->transport);
 
 	*_p = p;
 	return NT_STATUS_OK;
