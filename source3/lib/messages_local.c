@@ -354,15 +354,6 @@ static NTSTATUS message_notify(struct server_id procid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-struct messaging_tdb_self_state {
-	struct messaging_context *msg;
-	struct messaging_rec rec;
-};
-
-static void messaging_tdb_trigger_self(struct tevent_context *ev,
-				       struct tevent_immediate *im,
-				       void *private_data);
-
 static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 				   struct server_id pid, int msg_type,
 				   const DATA_BLOB *data,
@@ -388,41 +379,6 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	 */
 
 	SMB_ASSERT(procid_to_pid(&pid) > 0);
-
-	if (server_id_equal(&msg_ctx->id, &pid)) {
-		struct messaging_tdb_self_state *state;
-		struct tevent_immediate *im;
-
-		TALLOC_FREE(frame);
-
-		im = tevent_create_immediate(msg_ctx);
-		if (im == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		state = talloc(im, struct messaging_tdb_self_state);
-		if (state == NULL) {
-			TALLOC_FREE(im);
-			return NT_STATUS_NO_MEMORY;
-		}
-		state->msg = msg_ctx;
-		state->rec.msg_version = MESSAGE_VERSION;
-		state->rec.msg_type = msg_type & MSG_TYPE_MASK;
-		state->rec.dest = pid;
-		state->rec.src = msg_ctx->id;
-
-		state->rec.buf = data_blob_talloc(
-			state, data->data, data->length);
-		if ((state->rec.buf.length != 0) &&
-		    (state->rec.buf.data == NULL)) {
-			TALLOC_FREE(im);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		tevent_schedule_immediate(im, msg_ctx->event_ctx,
-					  messaging_tdb_trigger_self, state);
-		return NT_STATUS_OK;
-	}
 
 	key = message_key_pid(frame, pid);
 
@@ -480,16 +436,6 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	TALLOC_FREE(frame);
 	return status;
 }
-
-static void messaging_tdb_trigger_self(struct tevent_context *ev,
-				       struct tevent_immediate *im,
-				       void *private_data)
-{
-	struct messaging_tdb_self_state *state = talloc_get_type_abort(
-		private_data, struct messaging_tdb_self_state);
-	messaging_dispatch_rec(state->msg, &state->rec);
-}
-
 
 /****************************************************************************
  Retrieve all messages for a process.

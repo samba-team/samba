@@ -344,6 +344,15 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 	}
 }
 
+struct messaging_selfsend_state {
+	struct messaging_context *msg;
+	struct messaging_rec rec;
+};
+
+static void messaging_trigger_self(struct tevent_context *ev,
+				   struct tevent_immediate *im,
+				   void *private_data);
+
 /*
   Send a message to a particular server
 */
@@ -362,8 +371,51 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 						msg_ctx->remote);
 	}
 #endif
+
+	if (server_id_equal(&msg_ctx->id, &server)) {
+		struct messaging_selfsend_state *state;
+		struct tevent_immediate *im;
+
+		im = tevent_create_immediate(msg_ctx);
+		if (im == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		state = talloc(im, struct messaging_selfsend_state);
+		if (state == NULL) {
+			TALLOC_FREE(im);
+			return NT_STATUS_NO_MEMORY;
+		}
+		state->msg = msg_ctx;
+		state->rec.msg_version = MESSAGE_VERSION;
+		state->rec.msg_type = msg_type & MSG_TYPE_MASK;
+		state->rec.dest = server;
+		state->rec.src = msg_ctx->id;
+
+		state->rec.buf = data_blob_talloc(
+			state, data->data, data->length);
+		if ((state->rec.buf.length != 0) &&
+		    (state->rec.buf.data == NULL)) {
+			TALLOC_FREE(im);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		tevent_schedule_immediate(im, msg_ctx->event_ctx,
+					  messaging_trigger_self, state);
+		return NT_STATUS_OK;
+	}
+
 	return msg_ctx->local->send_fn(msg_ctx, server, msg_type, data,
 				       msg_ctx->local);
+}
+
+static void messaging_trigger_self(struct tevent_context *ev,
+				   struct tevent_immediate *im,
+				   void *private_data)
+{
+	struct messaging_selfsend_state *state = talloc_get_type_abort(
+		private_data, struct messaging_selfsend_state);
+	messaging_dispatch_rec(state->msg, &state->rec);
 }
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
