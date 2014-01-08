@@ -122,7 +122,8 @@ static int fncall_next_job_id(struct fncall_context *ctx)
 }
 
 static void fncall_unset_pending(struct tevent_req *req);
-static int fncall_destructor(struct tevent_req *req);
+static void fncall_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state);
 
 static bool fncall_set_pending(struct tevent_req *req,
 			       struct fncall_context *ctx,
@@ -141,12 +142,12 @@ static bool fncall_set_pending(struct tevent_req *req,
 	pending[num_pending] = req;
 	num_pending += 1;
 	ctx->pending = pending;
-	talloc_set_destructor(req, fncall_destructor);
+	tevent_req_set_cleanup_fn(req, fncall_cleanup);
 
 	/*
 	 * Make sure that the orphaned array of fncall_state structs has
 	 * enough space. A job can change from pending to orphaned in
-	 * fncall_destructor, and to fail in a talloc destructor should be
+	 * fncall_cleanup, and to fail in a talloc destructor should be
 	 * avoided if possible.
 	 */
 
@@ -184,6 +185,8 @@ static void fncall_unset_pending(struct tevent_req *req)
 	int num_pending = talloc_array_length(ctx->pending);
 	int i;
 
+	tevent_req_set_cleanup_fn(req, NULL);
+
 	if (num_pending == 1) {
 		TALLOC_FREE(ctx->fde);
 		TALLOC_FREE(ctx->pending);
@@ -205,16 +208,24 @@ static void fncall_unset_pending(struct tevent_req *req)
 				      num_pending - 1);
 }
 
-static int fncall_destructor(struct tevent_req *req)
+static void fncall_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state)
 {
 	struct fncall_state *state = tevent_req_data(
 		req, struct fncall_state);
 	struct fncall_context *ctx = state->ctx;
 
+	switch (req_state) {
+	case TEVENT_REQ_RECEIVED:
+		break;
+	default:
+		return;
+	}
+
 	fncall_unset_pending(req);
 
 	if (state->done) {
-		return 0;
+		return;
 	}
 
 	/*
@@ -223,8 +234,6 @@ static int fncall_destructor(struct tevent_req *req)
 	 */
 	ctx->orphaned[ctx->num_orphaned] = talloc_move(ctx->orphaned, &state);
 	ctx->num_orphaned += 1;
-
-	return 0;
 }
 
 struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
