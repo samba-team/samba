@@ -1390,7 +1390,7 @@ struct netlogon_creds_cli_check_state {
 };
 
 static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
-						     NTSTATUS status);
+					     NTSTATUS status);
 static void netlogon_creds_cli_check_locked(struct tevent_req *subreq);
 
 struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
@@ -1582,7 +1582,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		 * with the next request as the sequence number processing
 		 * gets out of sync.
 		 */
-		netlogon_creds_cli_check_cleanup(req, result);
+		netlogon_creds_cli_check_cleanup(req, status);
 		tevent_req_done(req);
 		return;
 	}
