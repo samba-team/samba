@@ -17,6 +17,6 @@
 	</para>
 </description>
 
-<value type="default">${prefix}/var/locks</value>
+<value type="default">&pathconfig.STATEDIR;</value>
 <value type="example">/var/run/samba/locks/state</value>
 </samba:parameter>
