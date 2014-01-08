@@ -806,9 +806,6 @@ static int map_parameter(const char *pszParmName)
 {
 	int iIndex;
 
-	if (*pszParmName == '-')
-		return -1;
-
 	for (iIndex = 0; parm_table[iIndex].label; iIndex++)
 		if (strwicmp(parm_table[iIndex].label, pszParmName) == 0)
 			return iIndex;
