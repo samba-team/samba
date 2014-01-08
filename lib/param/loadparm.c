@@ -2146,7 +2146,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "cache directory", dyn_CACHEDIR);
 	lpcfg_do_global_parameter(lp_ctx, "ncalrpc dir", dyn_NCALRPCDIR);
 
-	lpcfg_do_global_parameter(lp_ctx, "nbt client socket address", "");
+	lpcfg_do_global_parameter(lp_ctx, "nbt client socket address", "0.0.0.0");
 	lpcfg_do_global_parameter_var(lp_ctx, "server string",
 				   "Samba %s", SAMBA_VERSION_STRING);
 
