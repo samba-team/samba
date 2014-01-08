@@ -16,6 +16,6 @@
 	</para>
 </description>
 
-<value type="default">${prefix}/var/locks</value>
+<value type="default">&pathconfig.LOCKDIR;</value>
 <value type="example">/var/run/samba/locks</value>
 </samba:parameter>
