@@ -60,6 +60,13 @@ struct sess_file_count {
 	int count;
 };
 
+struct sess_file_info {
+	struct srvsvc_NetSessCtr1 *ctr;
+	struct sessionid *session_list;
+	uint32_t resume_handle;
+	uint32_t num_entries;
+};
+
 /*******************************************************************
 ********************************************************************/
 
@@ -835,6 +842,54 @@ static int net_count_files( uid_t uid, struct server_id pid )
 	share_mode_forall( sess_file_fn, &s_file_cnt );
 
 	return s_file_cnt.count;
+}
+
+/***********************************************************************
+ * find out the session on which this file is open and bump up its count
+ **********************************************************************/
+
+static void count_sess_files_fn(const struct share_mode_entry *e,
+				const char *sharepath, const char *fname,
+				void *data)
+{
+	struct sess_file_info *info = data;
+	uint32_t rh = info->resume_handle;
+	int i;
+
+	for (i=0; i < info->num_entries; i++) {
+		/* rh+info->num_entries is safe, as we've
+		   ensured that:
+		   *total_entries > resume_handle &&
+		   info->num_entries = *total_entries - resume_handle;
+		   inside init_srv_sess_info_1() below.
+		*/
+		struct sessionid *sess = &info->session_list[rh + i];
+		if ((e->uid == sess->uid) &&
+		     serverid_equal(&e->pid, &sess->pid)) {
+
+			info->ctr->array[i].num_open++;
+			return;
+		}
+	}
+}
+
+/*******************************************************************
+ * count the num of open files on all sessions
+ *******************************************************************/
+
+static void net_count_files_for_all_sess(struct srvsvc_NetSessCtr1 *ctr1,
+					 struct sessionid *session_list,
+					 uint32_t resume_handle,
+					 uint32_t num_entries)
+{
+	struct sess_file_info s_file_info;
+
+	s_file_info.ctr = ctr1;
+	s_file_info.session_list = session_list;
+	s_file_info.resume_handle = resume_handle;
+	s_file_info.num_entries = num_entries;
+
+	share_mode_forall(count_sess_files_fn, &s_file_info);
 }
 
 /*******************************************************************
