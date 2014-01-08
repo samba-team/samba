@@ -148,6 +148,8 @@ struct dcesrv_auth {
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
 	NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
+	bool client_hdr_signing;
+	bool hdr_signing;
 };
 
 struct dcesrv_connection_context {
