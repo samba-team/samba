@@ -40,6 +40,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/rpc/rpc_common.h"
 #include "lib/util/samba_modules.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 
 /* this is only used when the client asks for an unknown interface */
 #define DUMMY_ASSOC_GROUP 0x0FFFFFFF
@@ -893,6 +894,42 @@ static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 #endif
 }
 
+static NTSTATUS dcesrv_check_verification_trailer(struct dcesrv_call_state *call)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const uint32_t bitmask1 = call->conn->auth_state.client_hdr_signing ?
+		DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING : 0;
+	const struct dcerpc_sec_vt_pcontext pcontext = {
+		.abstract_syntax = call->context->iface->syntax_id,
+		.transfer_syntax = ndr_transfer_syntax_ndr,
+	};
+	const struct dcerpc_sec_vt_header2 header2 =
+		dcerpc_sec_vt_header2_from_ncacn_packet(&call->pkt);
+	enum ndr_err_code ndr_err;
+	struct dcerpc_sec_verification_trailer *vt = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	bool ok;
+
+	SMB_ASSERT(call->pkt.ptype == DCERPC_PKT_REQUEST);
+
+	ndr_err = ndr_pop_dcerpc_sec_verification_trailer(call->ndr_pull,
+							  frame, &vt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto done;
+	}
+
+	ok = dcerpc_sec_verification_trailer_check(vt, &bitmask1,
+						   &pcontext, &header2);
+	if (!ok) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+done:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /*
   handle a dcerpc request packet
 */
@@ -923,6 +960,17 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	if (!(call->pkt.drep[0] & DCERPC_DREP_LE)) {
 		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	status = dcesrv_check_verification_trailer(call);
+	if (!NT_STATUS_IS_OK(status)) {
+		uint32_t faultcode = DCERPC_FAULT_OTHER;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			faultcode = DCERPC_FAULT_ACCESS_DENIED;
+		}
+		DEBUG(10, ("dcesrv_check_verification_trailer failed: %s\n",
+			   nt_errstr(status)));
+		return dcesrv_fault(call, faultcode);
 	}
 
 	/* unravel the NDR for the packet */
