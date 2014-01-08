@@ -20,10 +20,6 @@
 #include <Python.h>
 #include "librpc/gen_ndr/misc.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static int py_GUID_cmp(PyObject *py_self, PyObject *py_other)
 {
 	int ret;

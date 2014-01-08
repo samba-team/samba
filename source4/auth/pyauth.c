@@ -43,10 +43,6 @@ typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
 #endif
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
 {
 	return py_return_ndr_struct("samba.dcerpc.auth", "session_info", session, session);

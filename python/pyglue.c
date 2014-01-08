@@ -25,10 +25,6 @@
 
 void init_glue(void);
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
 	int len;

@@ -20,10 +20,6 @@
 #include <Python.h>
 #include "libcli/security/security.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 {
 	PyObject *dict;

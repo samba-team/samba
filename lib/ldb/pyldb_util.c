@@ -36,11 +36,6 @@ typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
 #endif
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
-
 /**
  * Find out PyTypeObject in ldb module for a given typename
  */

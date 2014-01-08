@@ -26,10 +26,6 @@
 #include "auth/credentials/pycredentials.h"
 #include "librpc/rpc/pyrpc_util.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static void PyType_AddGetSet(PyTypeObject *type, PyGetSetDef *getset)
 {
 	PyObject *dict;

@@ -33,10 +33,6 @@ typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
 #endif
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE	return Py_INCREF(Py_None), Py_None
-#endif
-
 #ifndef Py_TYPE /* Py_TYPE is only available on Python > 2.6 */
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
 #endif

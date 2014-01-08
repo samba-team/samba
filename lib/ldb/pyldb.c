@@ -64,10 +64,6 @@ typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
 #endif
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 #define SIGN(a) (((a) == 0)?0:((a) < 0?-1:1))
 
 
