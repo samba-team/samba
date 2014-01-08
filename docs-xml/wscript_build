@@ -98,9 +98,19 @@ def smbdotconf_generate_parameter_list(task):
     parameter_all = task.outputs[0].bldpath(task.env)
     articles = task.inputs
 
-    t = '<section xmlns:xi="http://www.w3.org/2001/XInclude">\n'
+    entities = bld.pathconfig_entities()
+    t = "<!DOCTYPE section [\n"
+
+    for entity in entities:
+        t += "%s\n" % entity
+
+    t += "]>\n"
+    t += "<section>\n"
     for article in articles:
-        t += "<xi:include href='" + article.abspath(task.env) + "' parse='xml'/>\n"
+        f = open(article.abspath(task.env), 'r')
+        t += f.read()
+        f.close()
+
     t += "</section>\n"
     save_file(parameter_all, t , create_dir=True)
     return 0
@@ -112,8 +122,9 @@ def SMBDOTCONF_MANPAGE(bld, target):
     bld.SAMBA_GENERATOR(parameter_all,
                         source=articles,
                         target=parameter_all,
-                        rule=smbdotconf_generate_parameter_list)
-    bld.SAMBAMANPAGES(target)
+                        rule=smbdotconf_generate_parameter_list,
+                        always=True)
+    bld.SAMBAMANPAGES(target, parameter_all)
 
 if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
 
