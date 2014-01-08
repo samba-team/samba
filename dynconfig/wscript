@@ -345,28 +345,47 @@ def configure(conf):
         conf.start_msg("Dynconfig[%s]: " % (varname))
         conf.end_msg("'%s'" % (value), 'GREEN')
 
-def dynconfig_cflags(bld, list=None):
-    '''work out the extra CFLAGS for dynconfig.c'''
-    cflags = []
-    # override some paths when running from the build directory
+def get_override(bld):
     override = { 'MODULESDIR'    : 'bin/modules',
                  'PYTHONDIR'     : 'bin/python',
                  'PYTHONARCHDIR' : 'bin/python',
                  'BINDIR'        : 'bin',
                  'SBINDIR'       : 'bin',
-                 'CODEPAGEDIR'   : os.path.join(bld.env.srcdir, 'codepages'),
-                 'SCRIPTSBINDIR' : os.path.join(bld.env.srcdir, 'source4/scripting/bin'),
-                 'SETUPDIR'      : os.path.join(bld.env.srcdir, 'source4/setup') }
+                 'CODEPAGEDIR'   : 'codepages',
+                 'SCRIPTSBINDIR' : 'source4/scripting/bin',
+                 'SETUPDIR'      : 'source4/setup'
+                 }
+    return override
+
+def dynconfig_cflags(bld, list=None):
+    '''work out the extra CFLAGS for dynconfig.c'''
+    cflags = []
     for varname in dynconfig.keys():
         if list and not varname in list:
             continue
         value = bld.env[varname]
         if not Options.is_install:
+            override = get_override(bld)
             if varname in override:
-                value = os.path.join(os.getcwd(), override[varname])
+                value = os.path.join(bld.env.srcdir, override[varname])
         cflags.append('-D%s="%s"' % (varname, value))
     return cflags
 Build.BuildContext.dynconfig_cflags = dynconfig_cflags
+
+def pathconfig_entities(bld, list=None):
+    '''work out the extra entities for the docs'''
+    entities = []
+    for varname in dynconfig.keys():
+        if list and not varname in list:
+            continue
+        value = bld.env[varname]
+        if not Options.is_install:
+            override = get_override(bld)
+            if varname in override:
+                value = os.path.join(bld.env.srcdir, override[varname])
+        entities.append("<!ENTITY pathconfig.%s   '%s'>" % (varname, value))
+    return entities
+Build.BuildContext.pathconfig_entities = pathconfig_entities
 
 def build(bld):
     cflags = bld.dynconfig_cflags()
