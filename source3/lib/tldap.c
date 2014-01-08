@@ -444,6 +444,8 @@ static void tldap_msg_unset_pending(struct tevent_req *req)
 	int num_pending = talloc_array_length(ld->pending);
 	int i;
 
+	tevent_req_set_cleanup_fn(req, NULL);
+
 	if (num_pending == 1) {
 		TALLOC_FREE(ld->pending);
 		return;
@@ -479,10 +481,17 @@ static void tldap_msg_unset_pending(struct tevent_req *req)
 	return;
 }
 
-static int tldap_msg_destructor(struct tevent_req *req)
+static void tldap_msg_cleanup(struct tevent_req *req,
+			      enum tevent_req_state req_state)
 {
-	tldap_msg_unset_pending(req);
-	return 0;
+	switch (req_state) {
+	case TEVENT_REQ_USER_ERROR:
+	case TEVENT_REQ_RECEIVED:
+		tldap_msg_unset_pending(req);
+		return;
+	default:
+		return;
+	}
 }
 
 static bool tldap_msg_set_pending(struct tevent_req *req)
@@ -504,7 +513,7 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	}
 	pending[num_pending] = req;
 	ld->pending = pending;
-	talloc_set_destructor(req, tldap_msg_destructor);
+	tevent_req_set_cleanup_fn(req, tldap_msg_cleanup);
 
 	if (num_pending > 0) {
 		return true;
@@ -618,7 +627,6 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	state->inbuf = talloc_move(state, &inbuf);
 	state->data = talloc_move(state, &data);
 
-	talloc_set_destructor(req, NULL);
 	tldap_msg_unset_pending(req);
 	num_pending = talloc_array_length(ld->pending);
 
@@ -652,8 +660,6 @@ static void tldap_msg_received(struct tevent_req *subreq)
 		req = ld->pending[0];
 		state = tevent_req_data(req, struct tldap_msg_state);
 		tevent_req_defer_callback(req, state->ev);
-		talloc_set_destructor(req, NULL);
-		tldap_msg_destructor(req);
 		tevent_req_error(req, status);
 	}
 }
