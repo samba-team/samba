@@ -14,5 +14,5 @@
 
 <related>winbindd privileged socket directory</related>
 
-<value type="default">$prefix/run/samba/winbindd</value>
+<value type="default">&pathconfig.WINBINDD_SOCKET_DIR;</value>
 </samba:parameter>
