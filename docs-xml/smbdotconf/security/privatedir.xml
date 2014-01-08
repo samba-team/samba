@@ -11,5 +11,5 @@
 </para>
 </description>
 
-<value type="default">${prefix}/private</value>
+<value type="default">&pathconfig.PRIVATE_DIR;</value>
 </samba:parameter>
