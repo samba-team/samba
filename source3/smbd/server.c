@@ -1071,7 +1071,6 @@ extern void build_options(bool screen);
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
 	{"profiling-level", 'P', POPT_ARG_STRING, &profile_level, 0, "Set profiling level","PROFILE_LEVEL"},
 	POPT_COMMON_SAMBA
-	POPT_COMMON_DYNCONFIG
 	POPT_TABLEEND
 	};
 	struct smbd_parent_context *parent = NULL;
