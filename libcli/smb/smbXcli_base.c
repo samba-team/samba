@@ -785,7 +785,7 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 		return;
 	}
 
-	talloc_set_destructor(req, NULL);
+	tevent_req_set_cleanup_fn(req, NULL);
 
 	if (num_pending == 1) {
 		/*
@@ -828,19 +828,25 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 	return;
 }
 
-static int smbXcli_req_destructor(struct tevent_req *req)
+static void smbXcli_req_cleanup(struct tevent_req *req,
+				enum tevent_req_state req_state)
 {
 	struct smbXcli_req_state *state =
 		tevent_req_data(req,
 		struct smbXcli_req_state);
 
-	/*
-	 * Make sure we really remove it from
-	 * the pending array on destruction.
-	 */
-	state->smb1.mid = 0;
-	smbXcli_req_unset_pending(req);
-	return 0;
+	switch (req_state) {
+	case TEVENT_REQ_RECEIVED:
+		/*
+		 * Make sure we really remove it from
+		 * the pending array on destruction.
+		 */
+		state->smb1.mid = 0;
+		smbXcli_req_unset_pending(req);
+		return;
+	default:
+		return;
+	}
 }
 
 static bool smb1cli_req_cancel(struct tevent_req *req);
@@ -893,7 +899,7 @@ bool smbXcli_req_set_pending(struct tevent_req *req)
 	}
 	pending[num_pending] = req;
 	conn->pending = pending;
-	talloc_set_destructor(req, smbXcli_req_destructor);
+	tevent_req_set_cleanup_fn(req, smbXcli_req_cleanup);
 	tevent_req_set_cancel_fn(req, smbXcli_req_cancel);
 
 	if (!smbXcli_conn_receive_next(conn)) {
