@@ -650,6 +650,8 @@ static void tldap_msg_received(struct tevent_req *subreq)
  fail:
 	while (talloc_array_length(ld->pending) > 0) {
 		req = ld->pending[0];
+		state = tevent_req_data(req, struct tldap_msg_state);
+		tevent_req_defer_callback(req, state->ev);
 		talloc_set_destructor(req, NULL);
 		tldap_msg_destructor(req);
 		tevent_req_error(req, status);
