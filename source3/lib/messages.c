@@ -376,15 +376,10 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 		struct messaging_selfsend_state *state;
 		struct tevent_immediate *im;
 
-		im = tevent_create_immediate(msg_ctx);
-		if (im == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		state = talloc_pooled_object(
-			im, struct messaging_selfsend_state, 1, data->length);
+			msg_ctx, struct messaging_selfsend_state,
+			1, data->length);
 		if (state == NULL) {
-			TALLOC_FREE(im);
 			return NT_STATUS_NO_MEMORY;
 		}
 		state->msg = msg_ctx;
@@ -396,6 +391,12 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 		/* Can't fail, it's a pooled_object */
 		state->rec.buf = data_blob_talloc(
 			state, data->data, data->length);
+
+		im = tevent_create_immediate(state);
+		if (im == NULL) {
+			TALLOC_FREE(state);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		tevent_schedule_immediate(im, msg_ctx->event_ctx,
 					  messaging_trigger_self, state);
@@ -413,6 +414,7 @@ static void messaging_trigger_self(struct tevent_context *ev,
 	struct messaging_selfsend_state *state = talloc_get_type_abort(
 		private_data, struct messaging_selfsend_state);
 	messaging_dispatch_rec(state->msg, &state->rec);
+	TALLOC_FREE(state);
 }
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
