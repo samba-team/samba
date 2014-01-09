@@ -827,7 +827,7 @@ static void init_globals(bool reinit_globals)
 	Globals.srv_minprotocol = PROTOCOL_LANMAN1;
 	Globals.cli_maxprotocol = PROTOCOL_NT1;
 	Globals.cli_minprotocol = PROTOCOL_CORE;
-	Globals.security = SEC_AUTO;
+	Globals._security = SEC_AUTO;
 	Globals.encrypted_passwords = true;
 	Globals.client_schannel = Auto;
 	Globals.winbind_sealed_pipes = true;
