@@ -998,6 +998,23 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS dcerpc_map_ack_reason(const struct dcerpc_ack_ctx *ack)
+{
+	if (ack == NULL) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	switch (ack->reason) {
+	case DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED:
+		return NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX;
+	case DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED:
+		return NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX;
+	default:
+		break;
+	}
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
 /*
   remove requests from the pending or queued queues
  */
@@ -2159,7 +2176,7 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
 	    pkt->u.alter_resp.num_results == 1 &&
 	    pkt->u.alter_resp.ctx_list[0].result != 0) {
-		status = dcerpc_map_reason(pkt->u.alter_resp.ctx_list[0].reason);
+		status = dcerpc_map_ack_reason(&pkt->u.alter_resp.ctx_list[0]);
 		DEBUG(2,("dcerpc: alter_resp failed - reason %d - %s\n",
 			 pkt->u.alter_resp.ctx_list[0].reason,
 			 nt_errstr(status)));
