@@ -950,7 +950,7 @@ static void init_globals(bool reinit_globals)
 	Globals.we_are_a_wins_server = false;
 	Globals.wins_proxy = false;
 
-	TALLOC_FREE(Globals.szinit_logon_delayedHosts);
+	TALLOC_FREE(Globals.init_logon_delayed_hosts);
 	Globals.init_logon_delay = 100; /* 100 ms default delay */
 
 	Globals.wins_dns_proxy = true;
