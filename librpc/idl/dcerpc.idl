@@ -61,10 +61,36 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB stub_and_verifier;
 	} dcerpc_request;
 
-	const int DCERPC_BIND_REASON_ASYNTAX                 = 1;
-	const int DCERPC_BIND_PROVIDER_REJECT                = 2;
-	const int DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED = 4;
-	const int DCERPC_BIND_REASON_INVALID_AUTH_TYPE       = 8;
+	typedef [enum16bit] enum {
+		DCERPC_BIND_ACK_RESULT_ACCEPTANCE          = 0,
+		DCERPC_BIND_ACK_RESULT_USER_REJECTION      = 1,
+		DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION  = 2,
+		DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK       = 3
+	} dcerpc_bind_ack_result;
+
+	const int DCERPC_BIND_PROVIDER_REJECT =
+		DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
+
+	typedef [enum16bit] enum {
+		DCERPC_BIND_ACK_REASON_NOT_SPECIFIED                   = 0,
+		DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED   = 1,
+		DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED = 2,
+		DCERPC_BIND_ACK_REASON_LOCAL_LIMIT_EXCEEDED            = 3
+	} dcerpc_bind_ack_reason_values;
+
+	const int DCERPC_BIND_REASON_ASYNTAX =
+		DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED;
+
+	typedef [bitmap16bit] bitmap {
+		DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING = 0x0001,
+		DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN     = 0x0002
+	} dcerpc_bind_time_features;
+
+	typedef [nodiscriminant] union {
+		[case(DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)]
+			dcerpc_bind_time_features negotiate;
+		[default] dcerpc_bind_ack_reason_values value;
+	} dcerpc_bind_ack_reason;
 
 	typedef struct {
 		uint16 result;
@@ -83,6 +109,20 @@ interface dcerpc
 		dcerpc_ack_ctx ctx_list[num_results];
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind_ack;
+
+	typedef [enum16bit] enum {
+		DCERPC_BIND_NAK_REASON_NOT_SPECIFIED                  = 0,
+		DCERPC_BIND_NAK_REASON_TEMPORARY_CONGESTION           = 1,
+		DCERPC_BIND_NAK_REASON_LOCAL_LIMIT_EXCEEDED           = 2,
+		DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED = 4,
+		DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE              = 8,
+		DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM               = 9
+	} dcerpc_bind_nak_reason;
+
+	const int DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED =
+		DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED;
+	const int DCERPC_BIND_REASON_INVALID_AUTH_TYPE =
+		DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE;
 
 	typedef struct {
 		uint32 num_versions;
