@@ -1073,6 +1073,12 @@ static void init_globals(bool reinit_globals)
 	Globals.dns_update_command = (const char **)str_list_make_v3(NULL, s, NULL);
 	SAFE_FREE(s);
 
+	if (asprintf(&s, "%s/samba_spnupdate", get_dyn_SCRIPTSBINDIR()) < 0) {
+		smb_panic("init_globals: ENOMEM");
+	}
+	Globals.spn_update_command = (const char **)str_list_make_v3(NULL, s, NULL);
+	SAFE_FREE(s);
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
