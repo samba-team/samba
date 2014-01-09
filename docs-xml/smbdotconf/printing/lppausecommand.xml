@@ -24,16 +24,19 @@
 
     <para>Note that it is good practice to include the absolute path 
     in the lppause command as the PATH may not be available to the server.</para>
-</description>
 
-<related>printing</related>
-
-<value type="default"><comment>Currently no default value is given to 
+    <para>Currently no default value is given to
     this string, unless the value of the <smbconfoption name="printing"/> 
     parameter is <constant>SYSV</constant>, in which case the default is : 
     <command moreinfo="none">lp -i %p-%j -H hold</command> or if the value of the 
     <parameter moreinfo="none">printing</parameter> parameter is 
     <constant>SOFTQ</constant>, then the default is: 
-    <command moreinfo="none">qstat -s -j%j -h</command>. </comment></value>
+    <command moreinfo="none">qstat -s -j%j -h</command>. </para>
+
+</description>
+
+<related>printing</related>
+
+<value type="default"><comment>determined by printing parameter</comment></value>
 <value type="example">/usr/bin/lpalt %p-%j -p0</value>
 </samba:parameter>

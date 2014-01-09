@@ -32,5 +32,5 @@ lprm command = /usr/bin/cancel %p-%j
 </description>
 <related>printing</related>
 
-<value type="default"> determined by printing parameter</value>
+<value type="default"><comment>determined by printing parameter</comment></value>
 </samba:parameter>

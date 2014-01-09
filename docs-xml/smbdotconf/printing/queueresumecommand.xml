@@ -26,6 +26,6 @@
 	server.</para>
 </description>
 
-<value type="default"></value>
+<value type="default"><comment>determined by printing parameter</comment></value>
 <value type="example">enable %p</value>
 </samba:parameter>

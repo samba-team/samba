@@ -38,5 +38,5 @@
 <related>printing</related>
 
 <value type="example">/usr/bin/lpq -P%p</value>
-<value type="default"></value>
+<value type="default"><comment>determined by printing parameter</comment></value>
 </samba:parameter>
