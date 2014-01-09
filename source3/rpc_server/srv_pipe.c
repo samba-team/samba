@@ -1432,11 +1432,22 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 {
 	NTSTATUS status;
 	DATA_BLOB data;
+	struct dcerpc_sec_vt_header2 hdr2;
 
 	if (!p->pipe_bound) {
 		DEBUG(0,("process_request_pdu: rpc request with no bind.\n"));
 		set_incoming_fault(p);
 		return False;
+	}
+
+	hdr2 = dcerpc_sec_vt_header2_from_ncacn_packet(pkt);
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_FIRST) {
+		p->header2 = hdr2;
+	} else {
+		if (!dcerpc_sec_vt_header2_equal(&hdr2, &p->header2)) {
+			set_incoming_fault(p);
+			return false;
+		}
 	}
 
 	/* Store the opnum */

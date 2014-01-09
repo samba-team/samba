@@ -164,6 +164,9 @@ struct pipes_struct {
 	/* operation number retrieved from the rpc header */
 	uint16_t opnum;
 
+	/* rpc header information to check fragments for consistency */
+	struct dcerpc_sec_vt_header2 header2;
+
 	/* private data for the interface implementation */
 	void *private_data;
 
