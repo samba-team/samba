@@ -93,7 +93,7 @@ interface dcerpc
 	} dcerpc_bind_ack_reason;
 
 	typedef struct {
-		uint16 result;
+		dcerpc_bind_ack_result result;
 		uint16 reason;
 		ndr_syntax_id syntax;
 	} dcerpc_ack_ctx;
