@@ -55,12 +55,14 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	if (strlcpy(ret,field, len) >= len) {
 		/* Truncate ! */
 		free(r);
+		free(ret);
 		return NULL;
 	}
 	p=strtok_r(r, sep, &saveptr);
 	if (p) {
 		if (strlcat(ret, p, len) >= len) {
 			free(r);
+			free(ret);
 			return NULL;
 		}
 
