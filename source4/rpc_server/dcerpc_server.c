@@ -1041,7 +1041,19 @@ NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 
 		if (call->pkt.ptype != call2->pkt.ptype) {
 			/* trying to play silly buggers are we? */
-			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
+			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+		}
+		if (memcmp(call->pkt.drep, call2->pkt.drep, sizeof(pkt->drep)) != 0) {
+			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+		}
+		if (call->pkt.call_id != call2->pkt.call_id) {
+			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+		}
+		if (call->pkt.u.request.context_id != call2->pkt.u.request.context_id)  {
+			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+		}
+		if (call->pkt.u.request.opnum != call2->pkt.u.request.opnum)  {
+			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
 		}
 
 		alloc_size = call->pkt.u.request.stub_and_verifier.length +
