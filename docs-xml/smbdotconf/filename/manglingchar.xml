@@ -1,6 +1,7 @@
 <samba:parameter name="mangling char"
                  context="S"
 				 type="string"
+                 parm="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>This controls what character is used as 
