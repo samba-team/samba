@@ -2,6 +2,7 @@
                  context="G"
 				 type="boolean"
                  advanced="1" developer="1"
+                 function="_domain_logons"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
