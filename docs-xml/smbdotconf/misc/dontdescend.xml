@@ -1,6 +1,6 @@
 <samba:parameter name="dont descend"
 	         context="S"
-			 type="boolean"
+		 type="string"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>There are certain directories on some systems 
