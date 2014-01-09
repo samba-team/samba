@@ -1083,6 +1083,18 @@ static void init_globals(bool reinit_globals)
 
 	Globals.rndc_command = (const char **)str_list_make_v3(NULL, "/usr/sbin/rndc", NULL);
 
+	Globals.cldap_port = 389;
+
+	Globals.dgram_port = 138;
+
+	Globals.nbt_port = 137;
+
+	Globals.krb5_port = 88;
+
+	Globals.kpasswd_port = 464;
+
+	Globals.web_port = 901;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
