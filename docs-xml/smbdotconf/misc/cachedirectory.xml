@@ -17,6 +17,6 @@
 	</para>
 </description>
 
-<value type="default">${prefix}/var/cache</value>
+<value type="default">&pathconfig.CACHEDIR;</value>
 <value type="example">/var/run/samba/locks/cache</value>
 </samba:parameter>
