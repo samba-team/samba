@@ -2,6 +2,7 @@
                  context="G"
 				 type="list"
                  basic="1" advanced="1" wizard="1" developer="1"
+                 function="wins_server_list"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This specifies the IP address (or DNS name: IP 
