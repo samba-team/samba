@@ -808,7 +808,7 @@ static void init_globals(bool reinit_globals)
 	Globals.printcap_cache_time = 750; 	/* 12.5 minutes */
 
 	Globals.config_backend = config_backend;
-	Globals.server_role = ROLE_AUTO;
+	Globals._server_role = ROLE_AUTO;
 
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
