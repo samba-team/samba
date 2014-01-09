@@ -2,6 +2,7 @@
                  context="G"
 				 type="boolean"
                  advanced="1" developer="1"
+                 function="wins_dns_proxy"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies that <citerefentry><refentrytitle>nmbd</refentrytitle>
