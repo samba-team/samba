@@ -2366,6 +2366,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "-valid", "yes");
 
+	lpcfg_do_global_parameter_var(lp_ctx, "usershare path", "%s/usershares", get_dyn_STATEDIR());
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;
