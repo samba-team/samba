@@ -1,5 +1,5 @@
 <samba:parameter name="domain master"
-				 type="boolean"
+				 type="enum"
                  context="G"
                  basic="1" advanced="1" developer="1"
                  function="_domain_master"
