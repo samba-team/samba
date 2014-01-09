@@ -1,6 +1,6 @@
 <samba:parameter name="force directory mode"
                  context="S"
-				 type="string"
+		 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter specifies a set of UNIX mode bit 
