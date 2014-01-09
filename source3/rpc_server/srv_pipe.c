@@ -1485,24 +1485,19 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 		}
 	}
 
-	if (pkt->pfc_flags & DCERPC_PFC_FLAG_LAST) {
-		bool ret = False;
-		/*
-		 * Ok - we finally have a complete RPC stream.
-		 * Call the rpc command to process it.
-		 */
-
-		/*
-		 * Process the complete data stream here.
-		 */
-		if (pipe_init_outgoing_data(p)) {
-			ret = api_pipe_request(p, pkt);
-		}
-
-		return ret;
+	if (!(pkt->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		return true;
 	}
 
-	return True;
+	/*
+	 * Ok - we finally have a complete RPC stream.
+	 * Call the rpc command to process it.
+	 */
+	if (!pipe_init_outgoing_data(p)) {
+		return false;
+	}
+
+	return api_pipe_request(p, pkt);
 }
 
 void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt)
