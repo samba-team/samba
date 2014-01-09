@@ -2372,6 +2372,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter_var(lp_ctx, "panic action", "/bin/sleep 999999999");
 #endif
 
+	lpcfg_do_global_parameter(lp_ctx, "smb passwd file", get_dyn_SMB_PASSWD_FILE());
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;
