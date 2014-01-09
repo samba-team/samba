@@ -2,6 +2,7 @@
                  context="G"
                  type="string"
                  advanced="1"
+                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This setting controls the location of the socket that
