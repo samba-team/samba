@@ -2,6 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="string"
+                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>lock dir</synonym>
 <description>
