@@ -1,6 +1,6 @@
 <samba:parameter name="case sensitive"
                  context="S"
-				 type="boolean"
+		 type="enum"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>casesignames</synonym>
 
