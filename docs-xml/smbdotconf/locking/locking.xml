@@ -1,6 +1,7 @@
 <samba:parameter name="locking"
 				 type="boolean"
                  context="S"
+                 parm="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This controls whether or not locking will be 
