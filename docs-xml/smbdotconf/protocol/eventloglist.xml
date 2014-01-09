@@ -1,5 +1,5 @@
 <samba:parameter name="eventlog list"
-		 type="string"
+		 type="list"
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
