@@ -1079,6 +1079,8 @@ static void init_globals(bool reinit_globals)
 	Globals.spn_update_command = (const char **)str_list_make_v3(NULL, s, NULL);
 	SAFE_FREE(s);
 
+	Globals.nsupdate_command = (const char **)str_list_make_v3(NULL, "/usr/bin/nsupdate -g", NULL);
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
