@@ -1053,6 +1053,8 @@ static void init_globals(bool reinit_globals)
 
 	Globals.allow_dns_updates = DNS_UPDATE_SIGNED;
 
+	string_set(&Globals.ntp_signd_socket_directory, get_dyn_NTP_SIGND_SOCKET_DIR());
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
