@@ -7,7 +7,9 @@
 	 <para>This option can be set to a file with Diffie-Hellman parameters
 		 which will be used with EDH ciphers.
 	 </para>
- </description>
+	 <para>This path is relative to <smbconfoption name="private dir"/> if the path
+	 does not start with a /.</para>
+</description>
 
  <related>tls certfile</related>
  <related>tls crlfile</related>

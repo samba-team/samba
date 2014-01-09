@@ -6,7 +6,9 @@
  <description>
 	 <para>This option can be set to a file containing a certificate
 		 revocation list (CRL).</para>
- </description>
+	 <para>This path is relative to <smbconfoption name="private dir"/> if the path
+	 does not start with a /.</para>
+</description>
 
  <related>tls certfile</related>
  <related>tls crlfile</related>

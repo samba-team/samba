@@ -6,12 +6,14 @@
  <description>
 	 <para>This option can be set to a file (PEM format)
 		 containing the RSA certificate. </para>
- </description>
+	 <para>This path is relative to <smbconfoption name="private dir"/> if the path
+	 does not start with a /.</para>
+</description>
 
  <related>tls keyfile</related>
  <related>tls crlfile</related>
  <related>tls dh params file</related>
  <related>tls enabled</related>
  <related>tls cafile</related>
- <value type="default"></value>
+ <value type="default">tls/cert.pem</value>
 </samba:parameter>
