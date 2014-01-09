@@ -1,6 +1,6 @@
 <samba:parameter name="lm announce"
                  context="G"
-				 type="boolean-auto"
+				 type="enum"
                  advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
