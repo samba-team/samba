@@ -9,5 +9,5 @@
 	</para>
 </description>
 
-<value type="default">$prefix/sbin/nsupdate -g</value>
+<value type="default">/usr/bin/nsupdate -g</value>
 </samba:parameter>
