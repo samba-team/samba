@@ -9,6 +9,6 @@
 	</para>
 </description>
 
-<value type="default">$prefix/sbin/samba_spnupdate</value>
+<value type="default">&pathconfig.SCRIPTSBINDIR;/samba_spnupdate</value>
 <value type="example">/usr/local/sbin/spnupdate</value>
 </samba:parameter>
