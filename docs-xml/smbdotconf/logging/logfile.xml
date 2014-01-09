@@ -2,6 +2,7 @@
                  context="G"
 				 type="string"
                  developer="1" advanced="1"
+                 function="logfile"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
