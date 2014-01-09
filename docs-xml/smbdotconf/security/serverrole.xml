@@ -2,6 +2,7 @@
                  context="G"
 				 type="enum"
                  basic="1" advanced="1" wizard="1" developer="1"
+                 function="_server_role"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option determines the basic operating mode of a Samba
