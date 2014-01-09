@@ -2,6 +2,7 @@
                  context="S"
 				 type="boolean"
                  advanced="1"
+                 parm="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies whether Samba should reply
