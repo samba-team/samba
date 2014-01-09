@@ -838,6 +838,7 @@ static bool wbinfo_ping_dc(void)
 		 dcname ? dcname : "",
 		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
+	wbcFreeMemory(dcname);
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr, "error code was %s (0x%x)\n",
 			  error->nt_string, error->nt_status);
