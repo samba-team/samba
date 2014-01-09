@@ -987,13 +987,15 @@ static void init_ncacn_hdr(struct dcecli_connection *c, struct ncacn_packet *pkt
 /*
   map a bind nak reason to a NTSTATUS
 */
-static NTSTATUS dcerpc_map_reason(uint16_t reason)
+static NTSTATUS dcerpc_map_nak_reason(enum dcerpc_bind_nak_reason reason)
 {
 	switch (reason) {
-	case DCERPC_BIND_REASON_ASYNTAX:
-		return NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX;
-	case DCERPC_BIND_REASON_INVALID_AUTH_TYPE:
+	case DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED:
+		return NT_STATUS_REVISION_MISMATCH;
+	case DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE:
 		return NT_STATUS_INVALID_PARAMETER;
+	default:
+		break;
 	}
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -1301,7 +1303,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 	tevent_req_defer_callback(req, state->ev);
 
 	if (pkt->ptype == DCERPC_PKT_BIND_NAK) {
-		status = dcerpc_map_reason(pkt->u.bind_nak.reject_reason);
+		status = dcerpc_map_nak_reason(pkt->u.bind_nak.reject_reason);
 
 		DEBUG(2,("dcerpc: bind_nak reason %d - %s\n",
 			 pkt->u.bind_nak.reject_reason, nt_errstr(status)));
