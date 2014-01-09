@@ -2,6 +2,7 @@
 	type="boolean"
                  context="G"
                  basic="1" advanced="1" wizard="1" developer="1"
+                 function="we_are_a_wins_server"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>This boolean controls if the <citerefentry><refentrytitle>nmbd</refentrytitle>
