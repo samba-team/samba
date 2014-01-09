@@ -1,6 +1,7 @@
 <samba:parameter name="mangled names"
 				 type="boolean"
                  context="S"
+                 parm="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This controls whether non-DOS names under UNIX 
