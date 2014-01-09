@@ -13,5 +13,5 @@
 		directive in <filename>ntp.conf</filename>.</para>
 </description>
 
-<value type="default">$prefix/run/samba/ntp_signd</value>
+<value type="default">&pathconfig.NTP_SIGND_SOCKET_DIR;</value>
 </samba:parameter>
