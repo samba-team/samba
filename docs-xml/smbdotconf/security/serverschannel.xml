@@ -1,6 +1,6 @@
 <samba:parameter name="server schannel"
                  context="G"
-				 type="boolean-auto"
+				 type="enum"
                  basic="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
