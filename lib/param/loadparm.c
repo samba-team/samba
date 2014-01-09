@@ -2649,7 +2649,7 @@ const char *lpcfg_volume_label(struct loadparm_service *service, struct loadparm
 }
 
 /**
- * If we are PDC then prefer us as DMB
+ * Return the correct printer name.
  */
 const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
