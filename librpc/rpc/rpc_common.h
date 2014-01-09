@@ -371,6 +371,36 @@ bool dcerpc_sec_verification_trailer_check(
 		const struct dcerpc_sec_vt_pcontext *pcontext,
 		const struct dcerpc_sec_vt_header2 *header2);
 
+/**
+ * @brief check and optionally extract the Bind Time Features from
+ * the given ndr_syntax_id.
+ *
+ * <a href="http://msdn.microsoft.com/en-us/library/cc243715.aspx">MS-RPCE 3.3.1.5.3 Bind Time Feature Negotiation</a>.
+ *
+ * @param[in]  s the syntax that should be checked.
+ *
+ * @param[out] features This is optional, it will be filled with the extracted
+ *                      features the on success, otherwise it's filled with 0.
+ *
+ * @return true if the syntax matches the 6CB71C2C-9812-4540 prefix with version 1, false otherwise.
+ *
+ * @see dcerpc_construct_bind_time_features
+ */
+bool dcerpc_extract_bind_time_features(struct ndr_syntax_id syntax, uint64_t *features);
+
+/**
+ * @brief Construct a ndr_syntax_id used for Bind Time Features Negotiation.
+ *
+ * <a href="http://msdn.microsoft.com/en-us/library/cc243715.aspx">MS-RPCE 3.3.1.5.3 Bind Time Feature Negotiation</a>.
+ *
+ * @param[in] features The supported features.
+ *
+ * @return The ndr_syntax_id with the given features.
+ *
+ * @see dcerpc_extract_bind_time_features
+ */
+struct ndr_syntax_id dcerpc_construct_bind_time_features(uint64_t features);
+
 #define DCERPC_AUTH_PAD_LENGTH(stub_length) (\
 	(((stub_length) % DCERPC_AUTH_PAD_ALIGNMENT) > 0)?\
 	(DCERPC_AUTH_PAD_ALIGNMENT - (stub_length) % DCERPC_AUTH_PAD_ALIGNMENT):\

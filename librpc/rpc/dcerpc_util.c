@@ -652,3 +652,66 @@ bool dcerpc_sec_verification_trailer_check(
 
 	return true;
 }
+
+static const struct ndr_syntax_id dcerpc_bind_time_features_prefix  = {
+	.uuid = {
+		.time_low = 0x6cb71c2c,
+		.time_mid = 0x9812,
+		.time_hi_and_version = 0x4540,
+		.clock_seq = {0x00, 0x00},
+		.node = {0x00,0x00,0x00,0x00,0x00,0x00}
+	},
+	.if_version = 1,
+};
+
+bool dcerpc_extract_bind_time_features(struct ndr_syntax_id s, uint64_t *_features)
+{
+	uint8_t values[8];
+	uint64_t features = 0;
+
+	values[0] = s.uuid.clock_seq[0];
+	values[1] = s.uuid.clock_seq[1];
+	values[2] = s.uuid.node[0];
+	values[3] = s.uuid.node[1];
+	values[4] = s.uuid.node[2];
+	values[5] = s.uuid.node[3];
+	values[6] = s.uuid.node[4];
+	values[7] = s.uuid.node[5];
+
+	ZERO_STRUCT(s.uuid.clock_seq);
+	ZERO_STRUCT(s.uuid.node);
+
+	if (!ndr_syntax_id_equal(&s, &dcerpc_bind_time_features_prefix)) {
+		if (_features != NULL) {
+			*_features = 0;
+		}
+		return false;
+	}
+
+	features = BVAL(values, 0);
+
+	if (_features != NULL) {
+		*_features = features;
+	}
+
+	return true;
+}
+
+struct ndr_syntax_id dcerpc_construct_bind_time_features(uint64_t features)
+{
+	struct ndr_syntax_id s = dcerpc_bind_time_features_prefix;
+	uint8_t values[8];
+
+	SBVAL(values, 0, features);
+
+	s.uuid.clock_seq[0] = values[0];
+	s.uuid.clock_seq[1] = values[1];
+	s.uuid.node[0]      = values[2];
+	s.uuid.node[1]      = values[3];
+	s.uuid.node[2]      = values[4];
+	s.uuid.node[3]      = values[5];
+	s.uuid.node[4]      = values[6];
+	s.uuid.node[5]      = values[7];
+
+	return s;
+}
