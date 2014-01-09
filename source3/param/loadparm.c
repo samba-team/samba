@@ -944,7 +944,7 @@ static void init_globals(bool reinit_globals)
 	Globals.ms_add_printer_wizard = true;
 	Globals.os_level = 20;
 	Globals.local_master = true;
-	Globals.domain_master = Auto;	/* depending on _domain_logons */
+	Globals._domain_master = Auto;	/* depending on _domain_logons */
 	Globals._domain_logons = false;
 	Globals.browse_list = true;
 	Globals.we_are_a_wins_server = false;
@@ -5219,10 +5219,10 @@ int lp_default_server_announce(void)
 
 bool lp_domain_master(void)
 {
-	if (Globals.domain_master == Auto)
+	if (Globals._domain_master == Auto)
 		return (lp_server_role() == ROLE_DOMAIN_PDC);
 
-	return (bool)Globals.domain_master;
+	return (bool)Globals._domain_master;
 }
 
 /***********************************************************
@@ -5231,7 +5231,7 @@ bool lp_domain_master(void)
 
 static bool lp_domain_master_true_or_auto(void)
 {
-	if (Globals.domain_master) /* auto or yes */
+	if (Globals._domain_master) /* auto or yes */
 		return true;
 
 	return false;
