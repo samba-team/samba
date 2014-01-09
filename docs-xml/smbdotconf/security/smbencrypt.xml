@@ -35,10 +35,10 @@
     as the GSSAPI flags use select both signing and sealing of the data.
     </para>
 
-    <para>When set to auto, SMB encryption is offered, but not enforced. 
+    <para>When set to auto or default, SMB encryption is offered, but not enforced.
     When set to mandatory, SMB encryption is required and if set 
     to disabled, SMB encryption can not be negotiated.</para>
 </description>
 
-<value type="default">auto</value>
+<value type="default">default</value>
 </samba:parameter>
