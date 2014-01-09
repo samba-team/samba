@@ -13,6 +13,6 @@
 	</para></warning>
 </description>
 
-<value type="default">&lt;magic script name&gt;.out</value>
+<value type="default"><comment>&lt;magic script name&gt;.out</comment></value>
 <value type="example">myfile.txt</value>
 </samba:parameter>
