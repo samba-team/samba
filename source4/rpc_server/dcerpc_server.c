@@ -640,7 +640,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 	pkt.u.bind_ack.ctx_list[0].result = result;
-	pkt.u.bind_ack.ctx_list[0].reason = reason;
+	pkt.u.bind_ack.ctx_list[0].reason.value = reason;
 	pkt.u.bind_ack.ctx_list[0].syntax = ndr_transfer_syntax_ndr;
 	pkt.u.bind_ack.auth_info = data_blob(NULL, 0);
 
@@ -829,7 +829,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 	pkt.u.alter_resp.ctx_list[0].result = result;
-	pkt.u.alter_resp.ctx_list[0].reason = reason;
+	pkt.u.alter_resp.ctx_list[0].reason.value = reason;
 	pkt.u.alter_resp.ctx_list[0].syntax = ndr_transfer_syntax_ndr;
 	pkt.u.alter_resp.auth_info = data_blob(NULL, 0);
 	pkt.u.alter_resp.secondary_address = "";

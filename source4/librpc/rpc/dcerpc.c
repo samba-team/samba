@@ -1006,7 +1006,17 @@ static NTSTATUS dcerpc_map_ack_reason(const struct dcerpc_ack_ctx *ack)
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
-	switch (ack->reason) {
+	switch (ack->result) {
+	case DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK:
+		/*
+		 * We have not asked for this...
+		 */
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	default:
+		break;
+	}
+
+	switch (ack->reason.value) {
 	case DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED:
 		return NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX;
 	case DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED:
@@ -2180,7 +2190,7 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 	    pkt->u.alter_resp.ctx_list[0].result != 0) {
 		status = dcerpc_map_ack_reason(&pkt->u.alter_resp.ctx_list[0]);
 		DEBUG(2,("dcerpc: alter_resp failed - reason %d - %s\n",
-			 pkt->u.alter_resp.ctx_list[0].reason,
+			 pkt->u.alter_resp.ctx_list[0].reason.value,
 			 nt_errstr(status)));
 		tevent_req_nterror(req, status);
 		return;

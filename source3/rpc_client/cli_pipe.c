@@ -1620,7 +1620,7 @@ static bool check_bind_response(const struct dcerpc_bind_ack *r,
 
 	if (r->num_results != 0x1 || ctx.result != 0) {
 		DEBUG(2,("bind_rpc_pipe: bind denied results: %d reason: %x\n",
-		          r->num_results, ctx.reason));
+		          r->num_results, ctx.reason.value));
 	}
 
 	DEBUG(5,("check_bind_response: accepted!\n"));

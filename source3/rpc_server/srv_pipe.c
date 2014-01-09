@@ -651,13 +651,13 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			pkt->u.bind.ctx_list[0].context_id)) {
 
 		bind_ack_ctx.result = 0;
-		bind_ack_ctx.reason = 0;
+		bind_ack_ctx.reason.value = 0;
 		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
 	} else {
 		p->pipe_bound = False;
 		/* Rejection reason: abstract syntax not supported */
 		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
-		bind_ack_ctx.reason = DCERPC_BIND_REASON_ASYNTAX;
+		bind_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
 		bind_ack_ctx.syntax = ndr_syntax_id_null;
 	}
 
@@ -1009,13 +1009,13 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			pkt->u.bind.ctx_list[0].context_id)) {
 
 		bind_ack_ctx.result = 0;
-		bind_ack_ctx.reason = 0;
+		bind_ack_ctx.reason.value = 0;
 		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
 	} else {
 		p->pipe_bound = False;
 		/* Rejection reason: abstract syntax not supported */
 		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
-		bind_ack_ctx.reason = DCERPC_BIND_REASON_ASYNTAX;
+		bind_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
 		bind_ack_ctx.syntax = ndr_syntax_id_null;
 	}
 
