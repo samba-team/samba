@@ -319,6 +319,9 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security) {
+		if (pkt->auth_length != 0) {
+			return false;
+		}
 		return true;
 	}
 
@@ -350,6 +353,18 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 					  &pkt->u.request.stub_and_verifier,
 					  &auth, &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	if (auth.auth_type != dce_conn->auth_state.auth_info->auth_type) {
+		return false;
+	}
+
+	if (auth.auth_level != dce_conn->auth_state.auth_info->auth_level) {
+		return false;
+	}
+
+	if (auth.auth_context_id != dce_conn->auth_state.auth_info->auth_context_id) {
 		return false;
 	}
 
