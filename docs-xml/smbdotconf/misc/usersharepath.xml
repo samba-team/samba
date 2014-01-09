@@ -28,5 +28,5 @@
 	</para>
 
 </description>
-<value type="default">STATEDIR/usershare</value> with the compile time value of STATEDIR.
+<value type="default">&pathconfig.STATEDIR;/usershares</value>
 </samba:parameter>
