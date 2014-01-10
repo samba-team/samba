@@ -202,28 +202,28 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
-			    uint32_t negotiate_flags,
-			    struct cli_credentials *machine_credentials,
-			    enum netr_SchannelType sec_chan_type,
-			    struct netlogon_creds_CredentialState **creds_out)
+bool test_SetupCredentials2ex(struct dcerpc_pipe *p, struct torture_context *tctx,
+			      uint32_t negotiate_flags,
+			      struct cli_credentials *machine_credentials,
+			      const char *computer_name,
+			      enum netr_SchannelType sec_chan_type,
+			      NTSTATUS expected_result,
+			      struct netlogon_creds_CredentialState **creds_out)
 {
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	struct netlogon_creds_CredentialState *creds;
 	const struct samr_Password *mach_password;
-	const char *machine_name;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *account_name = cli_credentials_get_username(machine_credentials);
 
 	mach_password = cli_credentials_get_nt_hash(machine_credentials, tctx);
-	machine_name = cli_credentials_get_workstation(machine_credentials);
 
 	torture_comment(tctx, "Testing ServerReqChallenge\n");
 
-
 	r.in.server_name = NULL;
-	r.in.computer_name = machine_name;
+	r.in.computer_name = computer_name;
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
@@ -234,9 +234,9 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result, "ServerReqChallenge failed");
 
 	a.in.server_name = NULL;
-	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
+	a.in.account_name = account_name;
 	a.in.secure_channel_type = sec_chan_type;
-	a.in.computer_name = machine_name;
+	a.in.computer_name = computer_name;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
 	a.in.credentials = &credentials3;
@@ -255,10 +255,16 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerAuthenticate2_r(b, tctx, &a),
 		"ServerAuthenticate2 failed");
-	torture_assert_ntstatus_ok(tctx, a.out.result, "ServerAuthenticate2 failed");
+	torture_assert_ntstatus_equal(tctx, a.out.result, expected_result,
+				      "ServerAuthenticate2 unexpected");
 
-	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3),
-		"Credential chaining failed");
+	if (NT_STATUS_IS_OK(expected_result)) {
+		torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3),
+			       "Credential chaining failed");
+	} else {
+		torture_assert(tctx, !netlogon_creds_client_check(creds, &credentials3),
+			       "Credential chaining passed unexptected");
+	}
 
 	torture_comment(tctx, "negotiate_flags=0x%08x\n", negotiate_flags);
 
@@ -266,6 +272,22 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
+bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
+			    uint32_t negotiate_flags,
+			    struct cli_credentials *machine_credentials,
+			    enum netr_SchannelType sec_chan_type,
+			    struct netlogon_creds_CredentialState **creds_out)
+{
+	const char *computer_name =
+		cli_credentials_get_workstation(machine_credentials);
+
+	return test_SetupCredentials2ex(p, tctx, negotiate_flags,
+					machine_credentials,
+					computer_name,
+					sec_chan_type,
+					NT_STATUS_OK,
+					creds_out);
+}
 
 bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 			    uint32_t negotiate_flags,
@@ -1042,6 +1064,43 @@ static bool test_SamLogon(struct torture_context *tctx,
 	}
 
 	return test_netlogon_ops(p, tctx, credentials, creds);
+}
+
+static bool test_invalidAuthenticate2(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      struct cli_credentials *credentials)
+{
+	struct netlogon_creds_CredentialState *creds;
+	uint32_t flags = NETLOGON_NEG_AUTH2_FLAGS | NETLOGON_NEG_SUPPORTS_AES;
+
+	torture_comment(tctx, "Testing invalidAuthenticate2\n");
+
+	if (!test_SetupCredentials2(p, tctx, flags,
+				    credentials,
+				    cli_credentials_get_secure_channel_type(credentials),
+				    &creds)) {
+		return false;
+	}
+
+	if (!test_SetupCredentials2ex(p, tctx, flags,
+				      credentials,
+				      "1234567890123456",
+				      cli_credentials_get_secure_channel_type(credentials),
+				      STATUS_BUFFER_OVERFLOW,
+				      &creds)) {
+		return false;
+	}
+
+	if (!test_SetupCredentials2ex(p, tctx, flags,
+				      credentials,
+				      "123456789012345",
+				      cli_credentials_get_secure_channel_type(credentials),
+				      NT_STATUS_OK,
+				      &creds)) {
+		return false;
+	}
+
+	return true;
 }
 
 static bool test_SamLogon_NULL_domain(struct torture_context *tctx,
@@ -3883,6 +3942,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogoff", test_LogonUasLogoff);
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
+	torture_rpc_tcase_add_test_creds(tcase, "invalidAuthenticate2", test_invalidAuthenticate2);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2_AES", test_SetPassword2_AES);
