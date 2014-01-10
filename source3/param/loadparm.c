@@ -122,7 +122,6 @@ static bool defaults_saved = false;
 	char *szLdapGroupSuffix;					\
 	char *szStateDir;						\
 	char *szCacheDir;						\
-	char *szUsershareTemplateShare;					\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\
@@ -1010,7 +1009,7 @@ static void init_globals(bool reinit_globals)
 	}
 	string_set(&Globals.usershare_path, s);
 	SAFE_FREE(s);
-	string_set(&Globals.szUsershareTemplateShare, "");
+	string_set(&Globals.usershare_template_share, "");
 	Globals.usershare_max_shares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
 	Globals.usershare_owner_only = true;
@@ -4370,13 +4369,13 @@ int load_usershare_service(const char *servicename)
 	}
 
 	/* Ensure the template share exists if it's set. */
-	if (Globals.szUsershareTemplateShare[0]) {
+	if (Globals.usershare_template_share[0]) {
 		/* We can't use lp_servicenumber here as we are recommending that
 		   template shares have -valid=false set. */
 		for (snum_template = iNumServices - 1; snum_template >= 0; snum_template--) {
 			if (ServicePtrs[snum_template]->szService &&
 					strequal(ServicePtrs[snum_template]->szService,
-						Globals.szUsershareTemplateShare)) {
+						Globals.usershare_template_share)) {
 				break;
 			}
 		}
@@ -4384,7 +4383,7 @@ int load_usershare_service(const char *servicename)
 		if (snum_template == -1) {
 			DEBUG(0,("load_usershare_service: usershare template share %s "
 				"does not exist.\n",
-				Globals.szUsershareTemplateShare ));
+				Globals.usershare_template_share ));
 			return -1;
 		}
 	}
@@ -4443,13 +4442,13 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 	}
 
 	/* Ensure the template share exists if it's set. */
-	if (Globals.szUsershareTemplateShare[0]) {
+	if (Globals.usershare_template_share[0]) {
 		/* We can't use lp_servicenumber here as we are recommending that
 		   template shares have -valid=false set. */
 		for (snum_template = iNumServices - 1; snum_template >= 0; snum_template--) {
 			if (ServicePtrs[snum_template]->szService &&
 					strequal(ServicePtrs[snum_template]->szService,
-						Globals.szUsershareTemplateShare)) {
+						Globals.usershare_template_share)) {
 				break;
 			}
 		}
@@ -4457,7 +4456,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 		if (snum_template == -1) {
 			DEBUG(0,("load_usershare_shares: usershare template share %s "
 				"does not exist.\n",
-				Globals.szUsershareTemplateShare ));
+				Globals.usershare_template_share ));
 			return ret;
 		}
 	}

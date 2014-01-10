@@ -84,7 +84,6 @@ static bool defaults_saved = false;
 	char *szLdapUserSuffix;						\
 	char *szLdapIdmapSuffix;					\
 	char *szLdapGroupSuffix;					\
-	char *szUsershareTemplateShare;					\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\
