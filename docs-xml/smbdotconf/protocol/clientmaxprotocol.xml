@@ -76,6 +76,6 @@
 <related>server max protocol</related>
 <related>client mn protocol</related>
 
-<value type="default">SMB3</value>
+<value type="default">NT1</value>
 <value type="example">LANMAN1</value>
 </samba:parameter>
