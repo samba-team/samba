@@ -263,10 +263,6 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		capabilities |= CAP_EXTENDED_SECURITY;
 	}
 	
-	if (lpcfg_unix_extensions(req->smb_conn->lp_ctx)) {
-		capabilities |= CAP_UNIX;
-	}
-	
 	if (lpcfg_large_readwrite(req->smb_conn->lp_ctx)) {
 		capabilities |= CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS;
 	}
