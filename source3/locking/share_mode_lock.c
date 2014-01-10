@@ -64,7 +64,7 @@ static bool locking_init_internal(bool read_only)
 		return True;
 
 	lock_db = db_open(NULL, lock_path("locking.tdb"),
-			  lp_open_files_db_hash_size(),
+			  SMB_OPEN_DATABASE_TDB_HASH_SIZE,
 			  TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644,
 			  DBWRAP_LOCK_ORDER_1);

@@ -326,7 +326,7 @@ void brl_init(bool read_only)
 	}
 
 	brlock_db = db_open(NULL, lock_path("brlock.tdb"),
-			    lp_open_files_db_hash_size(), tdb_flags,
+			    SMB_OPEN_DATABASE_TDB_HASH_SIZE, tdb_flags,
 			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644,
 			    DBWRAP_LOCK_ORDER_2);
 	if (!brlock_db) {
