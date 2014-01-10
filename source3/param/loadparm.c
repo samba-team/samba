@@ -111,7 +111,6 @@ static bool defaults_saved = false;
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
 	char *realm_original;						\
-	char *loglevel;							\
 	int iminreceivefile;						\
 	char *szPrintcapname;						\
 	int CupsEncrypt;						\
@@ -835,7 +834,7 @@ static void init_globals(bool reinit_globals)
 	Globals.syslog = 1;
 	Globals.syslog_only = false;
 	Globals.timestamp_logs = true;
-	string_set(&Globals.loglevel, "0");
+	string_set(&Globals.log_level, "0");
 	Globals.debug_prefix_timestamp = false;
 	Globals.debug_hires_timestamp = true;
 	Globals.debug_pid = false;
