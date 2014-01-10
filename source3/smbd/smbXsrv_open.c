@@ -600,7 +600,7 @@ static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
 	}
 
 	DEBUG(10,("smbXsrv_open_global_verify_record\n"));
-	if (DEBUGLVL(10)) {
+	if (CHECK_DEBUGLVL(10)) {
 		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
 	}
 
@@ -626,7 +626,7 @@ static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
 			 "key '%s' server_id %s does not exist.\n",
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
 			 server_id_str(frame, &global->server_id)));
-		if (DEBUGLVL(2)) {
+		if (CHECK_DEBUGLVL(2)) {
 			NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
 		}
 		TALLOC_FREE(frame);
@@ -692,7 +692,7 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 		return status;
 	}
 
-	if (DEBUGLVL(10)) {
+	if (CHECK_DEBUGLVL(10)) {
 		DEBUG(10,("smbXsrv_open_global_store: key '%s' stored\n",
 			 hex_encode_talloc(global->db_rec, key.dptr, key.dsize)));
 		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
@@ -859,7 +859,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 		return status;
 	}
 
-	if (DEBUGLVL(10)) {
+	if (CHECK_DEBUGLVL(10)) {
 		struct smbXsrv_openB open_blob;
 
 		ZERO_STRUCT(open_blob);
@@ -930,7 +930,7 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 		return status;
 	}
 
-	if (DEBUGLVL(10)) {
+	if (CHECK_DEBUGLVL(10)) {
 		struct smbXsrv_openB open_blob;
 
 		ZERO_STRUCT(open_blob);
@@ -1008,7 +1008,7 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 			error = status;
 		}
 
-		if (NT_STATUS_IS_OK(status) && DEBUGLVL(10)) {
+		if (NT_STATUS_IS_OK(status) && CHECK_DEBUGLVL(10)) {
 			struct smbXsrv_openB open_blob;
 
 			ZERO_STRUCT(open_blob);
@@ -1270,7 +1270,7 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 		return status;
 	}
 
-	if (DEBUGLVL(10)) {
+	if (CHECK_DEBUGLVL(10)) {
 		struct smbXsrv_openB open_blob;
 
 		ZERO_STRUCT(open_blob);
