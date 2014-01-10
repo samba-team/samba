@@ -41,7 +41,7 @@ bool torture_async_bind(struct torture_context *torture)
 	extern int torture_numasync;
 
 	struct composite_context **bind_req;
-	struct dcerpc_pipe **pipe;
+	struct dcerpc_pipe **pipes;
 	const struct ndr_interface_table **table;
 
 	if (!torture_setting_bool(torture, "async", false)) {
@@ -57,8 +57,8 @@ bool torture_async_bind(struct torture_context *torture)
 
 	bind_req = talloc_array(torture, struct composite_context*, torture_numasync);
 	if (bind_req == NULL) return false;
-	pipe     = talloc_array(torture, struct dcerpc_pipe*, torture_numasync);
-	if (pipe == NULL) return false;
+	pipes    = talloc_array(torture, struct dcerpc_pipe*, torture_numasync);
+	if (pipes == NULL) return false;
 	table    = talloc_array(torture, const struct ndr_interface_table*, torture_numasync);
 	if (table == NULL) return false;
 	
@@ -74,7 +74,7 @@ bool torture_async_bind(struct torture_context *torture)
 
 	/* recv bind requests */
 	for (i = 0; i < torture_numasync; i++) {
-		status = dcerpc_pipe_connect_recv(bind_req[i], mem_ctx, &pipe[i]);
+		status = dcerpc_pipe_connect_recv(bind_req[i], mem_ctx, &pipes[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("async rpc connection failed: %s\n", nt_errstr(status));
 			return false;
