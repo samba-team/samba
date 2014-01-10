@@ -30,8 +30,6 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	struct dcerpc_pipe *p, *p2, *p3;
 	struct policy_handle *handle;
 	struct ndr_interface_table tmptbl;
-	struct ndr_syntax_id syntax;
-	struct ndr_syntax_id transfer_syntax;
 	bool ret = true;
 
 	torture_comment(torture, "opening LSA connection\n");
@@ -71,9 +69,6 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	if (handle) {
 		ret &= test_lsa_Close(p->binding_handle, torture, handle);
 	}
-
-	syntax = p->syntax;
-	transfer_syntax = p->transfer_syntax;
 
 	torture_comment(torture, "Testing change of primary context\n");
 	status = dcerpc_alter_context(p, torture, &p->syntax, &p->transfer_syntax);
