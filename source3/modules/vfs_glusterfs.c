@@ -734,10 +734,28 @@ static int vfs_gluster_ntimes(struct vfs_handle_struct *handle,
 {
 	struct timespec times[2];
 
-	times[0].tv_sec = ft->atime.tv_sec;
-	times[0].tv_nsec = ft->atime.tv_nsec;
-	times[1].tv_sec = ft->mtime.tv_sec;
-	times[1].tv_nsec = ft->mtime.tv_nsec;
+	if (null_timespec(ft->atime)) {
+		times[0].tv_sec = smb_fname->st.st_ex_atime.tv_sec;
+		times[0].tv_nsec = smb_fname->st.st_ex_atime.tv_nsec;
+	} else {
+		times[0].tv_sec = ft->atime.tv_sec;
+		times[0].tv_nsec = ft->atime.tv_nsec;
+	}
+
+	if (null_timespec(ft->mtime)) {
+		times[1].tv_sec = smb_fname->st.st_ex_mtime.tv_sec;
+		times[1].tv_nsec = smb_fname->st.st_ex_mtime.tv_nsec;
+	} else {
+		times[1].tv_sec = ft->mtime.tv_sec;
+		times[1].tv_nsec = ft->mtime.tv_nsec;
+	}
+
+	if ((timespec_compare(&times[0],
+			      &smb_fname->st.st_ex_atime) == 0) &&
+	    (timespec_compare(&times[1],
+			      &smb_fname->st.st_ex_mtime) == 0)) {
+		return 0;
+	}
 
 	return glfs_utimens(handle->data, smb_fname->base_name, times);
 }
