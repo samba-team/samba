@@ -80,11 +80,6 @@
    NT file manager window? */
 #define FSTYPE_STRING "NTFS"
 
-/* the default guest account - normally set in the Makefile or smb.conf */
-#ifndef GUEST_ACCOUNT
-#define GUEST_ACCOUNT "nobody"
-#endif
-
 /* user to test password server with as invalid in security=server mode. */
 #ifndef INVALID_USER_PREFIX
 #define INVALID_USER_PREFIX "sambatest"

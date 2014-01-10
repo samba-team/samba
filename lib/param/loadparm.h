@@ -203,6 +203,11 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define PRINT_MAX_JOBID 10000
 #endif
 
+/* the default guest account - allow override via CFLAGS */
+#ifndef GUEST_ACCOUNT
+#define GUEST_ACCOUNT "nobody"
+#endif
+
 #define LOADPARM_EXTRA_LOCALS						\
 	bool valid;						        \
 	int usershare;							\
