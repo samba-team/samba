@@ -78,6 +78,14 @@ NTSTATUS schannel_store_session_key_tdb(struct db_context *db_sc,
 	char *name_upper;
 	NTSTATUS status;
 
+	if (strlen(creds->computer_name) > 15) {
+		/*
+		 * We may want to check for a completely
+		 * valid netbios name.
+		 */
+		return STATUS_BUFFER_OVERFLOW;
+	}
+
 	name_upper = strupper_talloc(mem_ctx, creds->computer_name);
 	if (!name_upper) {
 		return NT_STATUS_NO_MEMORY;
