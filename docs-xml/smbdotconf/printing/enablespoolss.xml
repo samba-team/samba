@@ -1,6 +1,7 @@
 <samba:parameter name="enable spoolss"
                  context="G"
 		 type="boolean"
+                 synonym="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>Inverted synonym for <smbconfoption name="disable spoolss"/>.</para>
