@@ -132,8 +132,7 @@ static bool defaults_saved = false;
 	char *tls_certfile;						\
 	char *tls_cafile;						\
 	char *tls_crlfile;						\
-	char *tls_dhpfile;						\
-	int bPreferredMaster;
+	char *tls_dhpfile;
 
 #include "param/param_global.h"
 
