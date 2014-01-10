@@ -70,6 +70,18 @@ static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, 
 	return EINVAL;
 }
 
+#if HDB_INTERFACE_VERSION >= 8
+static krb5_error_code hdb_samba4_init(krb5_context context, void **ctx)
+{
+	*ctx = NULL;
+	return 0;
+}
+
+static void hdb_samba4_fini(void *ctx)
+{
+}
+#endif
+
 /* Only used in the hdb-backed keytab code
  * for a keytab of 'samba4&<address>' or samba4, to find
  * kpasswd's key in the main DB, and to
@@ -79,6 +91,10 @@ static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, 
  */
 struct hdb_method hdb_samba4_interface = {
 	HDB_INTERFACE_VERSION,
+#if HDB_INTERFACE_VERSION >= 8
+	.init = hdb_samba4_init,
+	.fini = hdb_samba4_fini,
+#endif
 	.prefix = "samba4",
 	.create = hdb_samba4_create
 };
