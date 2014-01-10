@@ -2,6 +2,7 @@
                  context="G"
 				 type="string"
                  basic="1" advanced="1" wizard="1" developer="1"
+                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
         <para>This option specifies the kerberos realm to use. The realm is 
