@@ -34,6 +34,11 @@
 #define START_OF_DIRECTORY_OFFSET ((long)0)
 #define DOT_DOT_DIRECTORY_OFFSET ((long)0x80000000)
 
+/* "Special" directory offsets in 32-bit wire format. */
+#define WIRE_END_OF_DIRECTORY_OFFSET ((uint32_t)0xFFFFFFFF)
+#define WIRE_START_OF_DIRECTORY_OFFSET ((uint32_t)0)
+#define WIRE_DOT_DOT_DIRECTORY_OFFSET ((uint32_t)0x80000000)
+
 /* Make directory handle internals available. */
 
 struct name_cache_entry {
