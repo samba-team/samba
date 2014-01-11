@@ -1018,6 +1018,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	talloc_unlink(p->mem_ctx, lp_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		ZERO_STRUCTP(r->out.return_credentials);
 		goto out;
 	}
 
