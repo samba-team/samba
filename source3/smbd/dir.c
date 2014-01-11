@@ -947,6 +947,22 @@ bool dptr_fill(struct smbd_server_connection *sconn,
 }
 
 /****************************************************************************
+ Map a 32-bit wire cookie to a native directory offset.
+****************************************************************************/
+
+static long map_wire_to_dir_offset(struct dptr_struct *dptr, uint32_t wire_offset)
+{
+	if (wire_offset == WIRE_END_OF_DIRECTORY_OFFSET) {
+		return END_OF_DIRECTORY_OFFSET;
+	} else if(wire_offset == WIRE_START_OF_DIRECTORY_OFFSET) {
+		return START_OF_DIRECTORY_OFFSET;
+	} else if (wire_offset == WIRE_DOT_DOT_DIRECTORY_OFFSET) {
+		return DOT_DOT_DIRECTORY_OFFSET;
+	}
+	return (long)wire_offset;
+}
+
+/****************************************************************************
  Fetch the dir ptr and seek it given the 5 byte server field.
 ****************************************************************************/
 
@@ -964,11 +980,7 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 	}
 	*num = key;
 	wire_offset = IVAL(buf,1);
-	if (wire_offset == (uint32_t)-1) {
-		seekoff = END_OF_DIRECTORY_OFFSET;
-	} else {
-		seekoff = (long)wire_offset;
-	}
+	seekoff = map_wire_to_dir_offset(dptr, wire_offset);
 	SeekDir(dptr->dir_hnd,seekoff);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
 		key, dptr->path, (int)seekoff));
