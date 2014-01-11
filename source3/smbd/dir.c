@@ -914,6 +914,13 @@ void dptr_init_search_op(struct dptr_struct *dptr)
 
 static uint32_t map_dir_offset_to_wire(struct dptr_struct *dptr, long offset)
 {
+	if (offset == END_OF_DIRECTORY_OFFSET) {
+		return WIRE_END_OF_DIRECTORY_OFFSET;
+	} else if(offset == START_OF_DIRECTORY_OFFSET) {
+		return WIRE_START_OF_DIRECTORY_OFFSET;
+	} else if (offset == DOT_DOT_DIRECTORY_OFFSET) {
+		return WIRE_DOT_DOT_DIRECTORY_OFFSET;
+	}
 	return (uint32_t)offset;
 }
 
