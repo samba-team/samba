@@ -912,16 +912,16 @@ bool dptr_fill(struct smbd_server_connection *sconn,
 {
 	unsigned char *buf = (unsigned char *)buf1;
 	struct dptr_struct *dptr = dptr_get(sconn, key, false);
-	uint32 offset;
+	uint32_t wire_offset;
 	if (!dptr) {
 		DEBUG(1,("filling null dirptr %d\n",key));
 		return(False);
 	}
-	offset = (uint32)TellDir(dptr->dir_hnd);
+	wire_offset = (uint32_t)TellDir(dptr->dir_hnd);
 	DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
-		(long)dptr->dir_hnd,(int)offset));
+		(long)dptr->dir_hnd,(int)wire_offset));
 	buf[0] = key;
-	SIVAL(buf,1,offset);
+	SIVAL(buf,1,wire_offset);
 	return(True);
 }
 
@@ -934,7 +934,7 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 {
 	unsigned int key = *(unsigned char *)buf;
 	struct dptr_struct *dptr = dptr_get(sconn, key, false);
-	uint32 offset;
+	uint32_t wire_offset;
 	long seekoff;
 
 	if (!dptr) {
@@ -942,11 +942,11 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 		return(NULL);
 	}
 	*num = key;
-	offset = IVAL(buf,1);
-	if (offset == (uint32)-1) {
+	wire_offset = IVAL(buf,1);
+	if (wire_offset == (uint32_t)-1) {
 		seekoff = END_OF_DIRECTORY_OFFSET;
 	} else {
-		seekoff = (long)offset;
+		seekoff = (long)wire_offset;
 	}
 	SeekDir(dptr->dir_hnd,seekoff);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
