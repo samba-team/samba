@@ -904,6 +904,15 @@ void dptr_init_search_op(struct dptr_struct *dptr)
 }
 
 /****************************************************************************
+ Map a native directory offset to a 32-bit cookie.
+****************************************************************************/
+
+static uint32_t map_dir_offset_to_wire(struct dptr_struct *dptr, long offset)
+{
+	return (uint32_t)offset;
+}
+
+/****************************************************************************
  Fill the 5 byte server reserved dptr field.
 ****************************************************************************/
 
@@ -917,7 +926,7 @@ bool dptr_fill(struct smbd_server_connection *sconn,
 		DEBUG(1,("filling null dirptr %d\n",key));
 		return(False);
 	}
-	wire_offset = (uint32_t)TellDir(dptr->dir_hnd);
+	wire_offset = map_dir_offset_to_wire(dptr,TellDir(dptr->dir_hnd));
 	DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
 		(long)dptr->dir_hnd,(int)wire_offset));
 	buf[0] = key;
