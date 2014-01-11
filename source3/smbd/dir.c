@@ -24,6 +24,7 @@
 #include "smbd/globals.h"
 #include "libcli/security/security.h"
 #include "lib/util/bitmap.h"
+#include "memcache.h"
 
 /*
    This module implements directory related functions for Samba.
@@ -72,6 +73,8 @@ struct dptr_struct {
 	bool has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
 	bool did_stat; /* Optimisation for non-wcard searches. */
 	bool priv;     /* Directory handle opened with privilege. */
+	uint32_t counter;
+	struct memcache *dptr_cache;
 };
 
 static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
@@ -158,6 +161,8 @@ static void dptr_idle(struct dptr_struct *dptr)
 	if (dptr->dir_hnd) {
 		DEBUG(4,("Idling dptr dnum %d\n",dptr->dnum));
 		TALLOC_FREE(dptr->dir_hnd);
+		TALLOC_FREE(dptr->dptr_cache);
+		dptr->counter = 0;
 	}
 }
 
@@ -905,6 +910,9 @@ void dptr_init_search_op(struct dptr_struct *dptr)
 
 static uint32_t map_dir_offset_to_wire(struct dptr_struct *dptr, long offset)
 {
+	DATA_BLOB key;
+	DATA_BLOB val;
+
 	if (offset == END_OF_DIRECTORY_OFFSET) {
 		return WIRE_END_OF_DIRECTORY_OFFSET;
 	} else if(offset == START_OF_DIRECTORY_OFFSET) {
@@ -912,7 +920,58 @@ static uint32_t map_dir_offset_to_wire(struct dptr_struct *dptr, long offset)
 	} else if (offset == DOT_DOT_DIRECTORY_OFFSET) {
 		return WIRE_DOT_DOT_DIRECTORY_OFFSET;
 	}
-	return (uint32_t)offset;
+	if (sizeof(long) == 4) {
+		/* 32-bit machine. We can cheat... */
+		return (uint32_t)offset;
+	}
+	if (dptr->dptr_cache == NULL) {
+		/* Lazy initialize cache. */
+		dptr->dptr_cache = memcache_init(dptr, 0);
+		if (dptr->dptr_cache == NULL) {
+			return WIRE_END_OF_DIRECTORY_OFFSET;
+		}
+	} else {
+		/* Have we seen this offset before ? */
+		key.data = (void *)&offset;
+		key.length = sizeof(offset);
+		if (memcache_lookup(dptr->dptr_cache,
+					SMB1_SEARCH_OFFSET_MAP,
+					key,
+					&val)) {
+			uint32_t wire_offset;
+			SMB_ASSERT(val.length == sizeof(wire_offset));
+			memcpy(&wire_offset, val.data, sizeof(wire_offset));
+			DEBUG(10,("found wire %u <-> offset %ld\n",
+				(unsigned int)wire_offset,
+				(long)offset));
+			return wire_offset;
+		}
+	}
+	/* Allocate a new wire cookie. */
+	do {
+		dptr->counter++;
+	} while (dptr->counter == WIRE_START_OF_DIRECTORY_OFFSET ||
+		 dptr->counter == WIRE_END_OF_DIRECTORY_OFFSET ||
+		 dptr->counter == WIRE_DOT_DOT_DIRECTORY_OFFSET);
+	/* Store it in the cache. */
+	key.data = (void *)&offset;
+	key.length = sizeof(offset);
+	val.data = (void *)&dptr->counter;
+	val.length = sizeof(dptr->counter); /* MUST BE uint32_t ! */
+	memcache_add(dptr->dptr_cache,
+			SMB1_SEARCH_OFFSET_MAP,
+			key,
+			val);
+	/* And the reverse mapping for lookup from
+	   map_wire_to_dir_offset(). */
+	memcache_add(dptr->dptr_cache,
+			SMB1_SEARCH_OFFSET_MAP,
+			val,
+			key);
+	DEBUG(10,("stored wire %u <-> offset %ld\n",
+		(unsigned int)dptr->counter,
+		(long)offset));
+	return dptr->counter;
 }
 
 /****************************************************************************
@@ -943,6 +1002,9 @@ bool dptr_fill(struct smbd_server_connection *sconn,
 
 static long map_wire_to_dir_offset(struct dptr_struct *dptr, uint32_t wire_offset)
 {
+	DATA_BLOB key;
+	DATA_BLOB val;
+
 	if (wire_offset == WIRE_END_OF_DIRECTORY_OFFSET) {
 		return END_OF_DIRECTORY_OFFSET;
 	} else if(wire_offset == WIRE_START_OF_DIRECTORY_OFFSET) {
@@ -950,7 +1012,30 @@ static long map_wire_to_dir_offset(struct dptr_struct *dptr, uint32_t wire_offse
 	} else if (wire_offset == WIRE_DOT_DOT_DIRECTORY_OFFSET) {
 		return DOT_DOT_DIRECTORY_OFFSET;
 	}
-	return (long)wire_offset;
+	if (sizeof(long) == 4) {
+		/* 32-bit machine. We can cheat... */
+		return (long)wire_offset;
+	}
+	if (dptr->dptr_cache == NULL) {
+		/* Logic error, cache should be initialized. */
+		return END_OF_DIRECTORY_OFFSET;
+	}
+	key.data = (void *)&wire_offset;
+	key.length = sizeof(wire_offset);
+	if (memcache_lookup(dptr->dptr_cache,
+				SMB1_SEARCH_OFFSET_MAP,
+				key,
+				&val)) {
+		/* Found mapping. */
+		long offset;
+		SMB_ASSERT(val.length == sizeof(offset));
+		memcpy(&offset, val.data, sizeof(offset));
+		DEBUG(10,("lookup wire %u <-> offset %ld\n",
+			(unsigned int)wire_offset,
+			(long)offset));
+		return offset;
+	}
+	return END_OF_DIRECTORY_OFFSET;
 }
 
 /****************************************************************************
