@@ -268,9 +268,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0],
-						"objectSid", 0);
-
 	mach_pwd = samdb_result_hash(mem_ctx, msgs[0], "unicodePwd");
 	if (mach_pwd == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -300,8 +297,15 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	nt_status = schannel_save_creds_state(mem_ctx,
 					      dce_call->conn->dce_ctx->lp_ctx,
 					      creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ZERO_STRUCTP(r->out.return_credentials);
+		return nt_status;
+	}
 
-	return nt_status;
+	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0],
+						"objectSid", 0);
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS dcesrv_netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
