@@ -2,6 +2,7 @@
 		type="integer"
 		context="G"
 		advanced="1" developer="1"
+                 generated_function="0"
 		xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 <para>This option changes the behavior of <citerefentry><refentrytitle>smbd</refentrytitle>
