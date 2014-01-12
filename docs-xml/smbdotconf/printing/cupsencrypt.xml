@@ -2,6 +2,7 @@
 	context="G"
 	type="enum"
 	advanced="1" print="1"
+                 generated_function="0"
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
