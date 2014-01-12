@@ -1,6 +1,7 @@
 <samba:parameter name="wide links"
 		 context="S"
 		 type="boolean"
+                 generated_function="0"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter controls whether or not links 
