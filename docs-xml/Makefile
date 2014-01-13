@@ -37,7 +37,6 @@ help:
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
 	@echo " htmlman - Build HTML version of manpages"
-	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
 
 $(PDFDIR)/Samba3-ByExample.pdf $(PSDIR)/Samba3-ByExample.ps $(DOCBOOKDIR)/Samba3-ByExample.xml Samba3-ByExample.tex: $(wildcard Samba3-ByExample/*.xml)
@@ -261,10 +260,6 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 # Validation verification
 %-validate: %/index.xml
 	cd $(<D) && $(XMLLINT) --xinclude --noent --postvalid --noout $(<F)
-
-# Find undocumented parameters
-undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_manpages
-	$(PERL) scripts/find_missing_manpages $(SRCDIR)/source3
 
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
 	@mkdir -p examples
