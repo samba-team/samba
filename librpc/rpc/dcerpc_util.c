@@ -393,3 +393,59 @@ const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
 	talloc_free(frame);
 	return endpoint;
 }
+
+struct dcerpc_sec_vt_header2 dcerpc_sec_vt_header2_from_ncacn_packet(const struct ncacn_packet *pkt)
+{
+	struct dcerpc_sec_vt_header2 ret;
+
+	ZERO_STRUCT(ret);
+	ret.ptype = pkt->ptype;
+	memcpy(&ret.drep, pkt->drep, sizeof(ret.drep));
+	ret.call_id = pkt->call_id;
+
+	switch (pkt->ptype) {
+	case DCERPC_PKT_REQUEST:
+		ret.context_id = pkt->u.request.context_id;
+		ret.opnum      = pkt->u.request.opnum;
+		break;
+
+	case DCERPC_PKT_RESPONSE:
+		ret.context_id = pkt->u.response.context_id;
+		break;
+
+	case DCERPC_PKT_FAULT:
+		ret.context_id = pkt->u.fault.context_id;
+		break;
+
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+bool dcerpc_sec_vt_header2_equal(const struct dcerpc_sec_vt_header2 *v1,
+				 const struct dcerpc_sec_vt_header2 *v2)
+{
+	if (v1->ptype != v2->ptype) {
+		return false;
+	}
+
+	if (memcmp(v1->drep, v2->drep, sizeof(v1->drep)) != 0) {
+		return false;
+	}
+
+	if (v1->call_id != v2->call_id) {
+		return false;
+	}
+
+	if (v1->context_id != v2->context_id) {
+		return false;
+	}
+
+	if (v1->opnum != v2->opnum) {
+		return false;
+	}
+
+	return true;
+}

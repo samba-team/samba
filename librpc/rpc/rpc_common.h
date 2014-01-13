@@ -315,4 +315,27 @@ NTSTATUS dcerpc_binding_handle_call(struct dcerpc_binding_handle *h,
 				    TALLOC_CTX *r_mem,
 				    void *r_ptr);
 
+/**
+ * Extract header information from a ncacn_packet
+ * as a dcerpc_sec_vt_header2 as used by the security verification trailer.
+ *
+ * @param[in] pkt a packet
+ *
+ * @return a dcerpc_sec_vt_header2
+ */
+struct dcerpc_sec_vt_header2 dcerpc_sec_vt_header2_from_ncacn_packet(const struct ncacn_packet *pkt);
+
+
+/**
+ * Test if two dcerpc_sec_vt_header2 structures are equal
+ * without consideration of reserved fields.
+ *
+ * @param v1 a pointer to a dcerpc_sec_vt_header2 structure
+ * @param v2 a pointer to a dcerpc_sec_vt_header2 structure
+ *
+ * @retval true if *v1 equals *v2
+ */
+bool dcerpc_sec_vt_header2_equal(const struct dcerpc_sec_vt_header2 *v1,
+				 const struct dcerpc_sec_vt_header2 *v2);
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */
