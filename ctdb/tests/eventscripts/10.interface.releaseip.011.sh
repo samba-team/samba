@@ -34,7 +34,7 @@ $out
 Waiting for 1 connections to be killed for IP ${ip}
 Waiting for 1 connections to be killed for IP ${ip}
 Waiting for 1 connections to be killed for IP ${ip}
-Timed out killing tcp connections for IP $ip
+Timed out killing tcp connections for IP $ip (1 remaining)
 EOF
 
     simple_test $dev $ip $bits

@@ -601,7 +601,7 @@ kill_tcp_connections ()
 
 	    _count=$(($_count + 1))
 	    if [ $_count -gt 3 ] ; then
-		echo "Timed out killing tcp connections for IP $_ip"
+		echo "Timed out killing tcp connections for IP $_ip ($_remaining remaining)"
 		return
 	    fi
 
