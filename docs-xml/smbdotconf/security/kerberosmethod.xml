@@ -35,5 +35,5 @@
 	</para>
 </description>
 <related>dedicated keytab file</related>
-<value type="default">secrets only</value>
+<value type="default">default</value>
 </samba:parameter>
