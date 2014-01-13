@@ -1469,7 +1469,6 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
                                      TALLOC_CTX *mem_ctx, int argc,
                                      const char **argv)
 {
-	struct policy_handle pol;
 	NTSTATUS status, result;
 	const char *servername = cli->desthost;
 	struct lsa_String *account_name = NULL;
@@ -1479,14 +1478,6 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 	if (argc > 2) {
 		printf("Usage: %s servername\n", argv[0]);
 		return NT_STATUS_OK;
-	}
-
-	status = rpccli_lsa_open_policy(cli, mem_ctx, true,
-					SEC_FLAG_MAXIMUM_ALLOWED,
-					&pol);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
 	}
 
 	status = dcerpc_lsa_GetUserName(b, mem_ctx,
@@ -1508,7 +1499,6 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 		account_name->string, authority_name ? authority_name->string :
 		"");
 
-	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
  done:
 	return status;
 }
