@@ -33,15 +33,6 @@
 # see bug 8412
 ^samba3.smb2.rename.*.simple_nodelete
 ^samba3.smb2.rename.*.no_share_delete_no_delete_access
-#These rpcclient combinations (pipe-level authentication but without sign or seal) need fixing in s3
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego\]
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego,bigendian\]
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect\]
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,bigendian\]
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego,smb2\]
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego,smb2,bigendian\]
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2\]
-^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2,bigendian\]
 ^samba3.blackbox.smbclient_machine_auth.plain \(s3dc:local\)# the S3dc does not currently set up a self-join
 ^samba3.raw.samba3hide.samba3hide\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
