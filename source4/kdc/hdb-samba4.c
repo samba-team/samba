@@ -176,6 +176,11 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	struct samba_kdc_db_context *kdc_db_ctx;
 	NTSTATUS nt_status;
 
+	if (hdb_interface_version != HDB_INTERFACE_VERSION) {
+		krb5_set_error_message(context, EINVAL, "Heimdal HDB interface version mismatch between build-time and run-time libraries!");
+		return NT_STATUS_ERROR_DS_INCOMPATIBLE_VERSION;
+	}
+
 	*db = talloc(base_ctx, HDB);
 	if (!*db) {
 		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
