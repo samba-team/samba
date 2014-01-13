@@ -7,5 +7,5 @@
 	<para>Specifies which ports the server should listen on for SMB traffic.</para>
 </description>
 
-<value type="default">445 139</value>
+<value type="default">445, 139</value>
 </samba:parameter>

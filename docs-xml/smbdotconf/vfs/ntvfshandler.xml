@@ -25,5 +25,5 @@
 	</para>
 </description>
 
-<value type="default">unixuid default</value>
+<value type="default">unixuid, default</value>
 </samba:parameter>

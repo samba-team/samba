@@ -13,6 +13,6 @@
 		<constant>-</constant>.  </para>
 </description>
 
-<value type="default">s3fs rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd kcc dnsupdate dns</value>
-<value type="example">-s3fs +smb</value>
+<value type="default">s3fs, rpc, nbt, wrepl, ldap, cldap, kdc, drepl, winbind, ntp_signd, kcc, dnsupdate, dns</value>
+<value type="example">-s3fs, +smb</value>
 </samba:parameter>
