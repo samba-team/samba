@@ -30,11 +30,18 @@
 #define DefaultStreamTestLen	6
 #define DefaultStreamTest		":$DATA"
 #define AFPDATA_STREAM 			"::$DATA"
-#define AFPINFO_STREAM 			":AFP_AfpInfo:$DATA"
-#define AFPRESOURCE_STREAM 		":AFP_Resource:$DATA"
-#define AFPCOMMENTS_STREAM 		":Comments:$DATA"
-#define AFPDESKTOP_STREAM 		":AFP_DeskTop:$DATA"
-#define AFPIDINDEX_STREAM 		":AFP_IdIndex:$DATA"
+
+#define AFPINFO_STREAM_NAME		":AFP_AfpInfo"
+#define AFPRESOURCE_STREAM_NAME		":AFP_Resource"
+#define AFPCOMMENTS_STREAM_NAME		":Comments"
+#define AFPDESKTOP_STREAM_NAME 		":AFP_DeskTop"
+#define AFPIDINDEX_STREAM_NAME 		":AFP_IdIndex"
+
+#define AFPINFO_STREAM 			AFPINFO_STREAM_NAME ":$DATA"
+#define AFPRESOURCE_STREAM 		AFPRESOURCE_STREAM_NAME ":$DATA"
+#define AFPCOMMENTS_STREAM 		AFPCOMMENTS_STREAM_NAME ":$DATA"
+#define AFPDESKTOP_STREAM 		AFPDESKTOP_STREAM_NAME ":$DATA"
+#define AFPIDINDEX_STREAM 		AFPIDINDEX_STREAM_NAME ":$DATA"
 
 /*
 ** NT's AFP_AfpInfo stream structure
