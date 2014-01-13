@@ -11,8 +11,6 @@ configure
 test.d
 tmp
 smbdotconf/parameters.all.xml
-smbdotconf/parameters.global.xml
-smbdotconf/parameters.service.xml
 *.d
 output/manpages
 Samba3-ByExample.tex

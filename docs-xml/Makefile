@@ -221,18 +221,10 @@ $(MANPAGEDIR)/smb.conf.5.xml: parameters
 # any smbdotconf/*/*.xml file ...
 .PHONY: parameters
 
-parameters: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
+parameters: $(SMBDOTCONFDOC)/parameters.all.xml
 
 $(SMBDOTCONFDOC)/parameters.all.xml: $(wildcard $(SMBDOTCONFDOC)/*/*.xml) $(SMBDOTCONFDOC)/generate-file-list.sh
 	$(SMBDOTCONFDOC)/generate-file-list.sh $(SMBDOTCONFDOC) > $@
-
-$(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	@echo "Generating list of global smb.conf options" 
-	$(XSLTPROC) --xinclude --param smb.context "'G'" --output $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
-
-$(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	@echo "Generating list of share-mode smb.conf options" 
-	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
 $(OUTPUTDIR):
 	test -d $@ || mkdir $@
