@@ -28,7 +28,7 @@
 
 
 struct groupadd_state {
-	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding_handle *binding_handle;
 	struct policy_handle domain_handle;
 	struct samr_CreateDomainGroup creategroup;
 	struct policy_handle group_handle;
@@ -41,8 +41,9 @@ struct groupadd_state {
 static void continue_groupadd_created(struct tevent_req *subreq);
 
 
-struct composite_context* libnet_rpc_groupadd_send(struct dcerpc_pipe *p,
-						   TALLOC_CTX *mem_ctx,
+struct composite_context* libnet_rpc_groupadd_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct dcerpc_binding_handle *b,
 						   struct libnet_rpc_groupadd *io,
 						   void (*monitor)(struct monitor_msg*))
 {
@@ -50,9 +51,9 @@ struct composite_context* libnet_rpc_groupadd_send(struct dcerpc_pipe *p,
 	struct groupadd_state *s;
 	struct tevent_req *subreq;
 
-	if (!p || !io) return NULL;
+	if (!b || !io) return NULL;
 
-	c = composite_create(mem_ctx, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct groupadd_state);
@@ -61,7 +62,7 @@ struct composite_context* libnet_rpc_groupadd_send(struct dcerpc_pipe *p,
 	c->private_data = s;
 
 	s->domain_handle = io->in.domain_handle;
-	s->pipe          = p;
+	s->binding_handle= b;
 	s->monitor_fn    = monitor;
 
 	s->creategroup.in.domain_handle  = &s->domain_handle;
@@ -78,7 +79,7 @@ struct composite_context* libnet_rpc_groupadd_send(struct dcerpc_pipe *p,
 	s->creategroup.out.rid           = &s->group_rid;
  	
 	subreq = dcerpc_samr_CreateDomainGroup_r_send(s, c->event_ctx,
-						      s->pipe->binding_handle,
+						      s->binding_handle,
 						      &s->creategroup);
 	if (composite_nomem(subreq, c)) return c;
 
@@ -131,7 +132,8 @@ NTSTATUS libnet_rpc_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c;
 
-	c = libnet_rpc_groupadd_send(p, mem_ctx, io, NULL);
+	c = libnet_rpc_groupadd_send(mem_ctx, p->conn->event_ctx,
+				     p->binding_handle, io, NULL);
 	return libnet_rpc_groupadd_recv(c, mem_ctx, io);
 }
 
