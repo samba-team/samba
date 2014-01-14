@@ -73,6 +73,12 @@ struct db_ctdb_ctx {
 	uint32_t db_id;
 	struct db_ctdb_transaction_handle *transaction;
 	struct g_lock_ctx *lock_ctx;
+
+	/* thresholds for warning messages */
+	int warn_unlock_msecs;
+	int warn_migrate_msecs;
+	int warn_migrate_attempts;
+	int warn_locktime_msecs;
 };
 
 struct db_ctdb_rec {
@@ -962,7 +968,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 	timediff = timeval_elapsed(&before);
 	timediff *= 1000;	/* get us milliseconds */
 
-	if (timediff > lp_parm_int(-1, "ctdb", "unlock_warn_threshold", 5)) {
+	if (timediff > crec->ctdb_ctx->warn_unlock_msecs) {
 		char *key;
 		key = hex_encode_talloc(talloc_tos(),
 					(unsigned char *)data->key.dptr,
@@ -978,7 +984,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 		return -1;
 	}
 
-	threshold = lp_ctdb_locktime_warn_threshold();
+	threshold = crec->ctdb_ctx->warn_locktime_msecs;
 	if (threshold != 0) {
 		timediff = timeval_elapsed(&crec->lock_time);
 		if ((timediff * 1000) > threshold) {
@@ -1161,8 +1167,8 @@ again:
 		duration_msecs = duration * 1000;
 	}
 
-	if ((migrate_attempts > lp_parm_int(-1, "ctdb", "migrate_attempts", 10)) ||
-	    (duration_msecs > lp_parm_int(-1, "ctdb", "migrate_duration", 5000))) {
+	if ((migrate_attempts > ctx->warn_migrate_attempts) ||
+	    (duration_msecs > ctx->warn_migrate_msecs)) {
 		int chain = 0;
 
 		if (tdb_get_flags(ctx->wtdb->tdb) & TDB_INCOMPATIBLE_HASH) {
@@ -1662,6 +1668,14 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
+
+	db_ctdb->warn_unlock_msecs = lp_parm_int(-1, "ctdb",
+						 "unlock_warn_threshold", 5);
+	db_ctdb->warn_migrate_attempts = lp_parm_int(-1, "ctdb",
+						     "migrate_attempts", 10);
+	db_ctdb->warn_migrate_msecs = lp_parm_int(-1, "ctdb",
+						  "migrate_duration", 5000);
+	db_ctdb->warn_locktime_msecs = lp_ctdb_locktime_warn_threshold();
 
 	result->private_data = (void *)db_ctdb;
 	result->fetch_locked = db_ctdb_fetch_locked;
