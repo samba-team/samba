@@ -3732,7 +3732,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 
 		/* even with this flush per request a w2k3 server seems to
 		   clag with multiple outstanding requests. bleergh. */
-		torture_assert_int_equal(tctx, tevent_loop_once(dcerpc_event_context(p)), 0,
+		torture_assert_int_equal(tctx, tevent_loop_once(tctx->ev), 0,
 					 "tevent_loop_once failed");
 	}
 

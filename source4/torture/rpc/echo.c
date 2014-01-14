@@ -236,7 +236,6 @@ static bool test_sleep(struct torture_context *tctx,
 	struct timeval snd[ASYNC_COUNT];
 	struct timeval rcv[ASYNC_COUNT];
 	struct timeval diff[ASYNC_COUNT];
-	struct tevent_context *ctx;
 	int total_done = 0;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -256,9 +255,8 @@ static bool test_sleep(struct torture_context *tctx,
 		tevent_req_set_callback(req[i], test_sleep_done, &done1[i]);
 	}
 
-	ctx = dcerpc_event_context(p);
 	while (total_done < ASYNC_COUNT) {
-		torture_assert(tctx, tevent_loop_once(ctx) == 0, 
+		torture_assert(tctx, tevent_loop_once(tctx->ev) == 0,
 					   "Event context loop failed");
 		for (i=0;i<ASYNC_COUNT;i++) {
 			if (done2[i] == false && done1[i] == true) {
