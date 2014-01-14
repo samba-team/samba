@@ -963,7 +963,7 @@ static bool do_num_children(struct tevent_context *ev_ctx,
 	if (num_replies == 0)
 		printf("No replies received\n");
 
-	messaging_deregister(msg_ctx, MSG_SMB_TELL_NUM_CHILDREN, NULL);
+	messaging_deregister(msg_ctx, MSG_SMB_NUM_CHILDREN, NULL);
 
 	return num_replies;
 }
