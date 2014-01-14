@@ -218,9 +218,6 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 	ctx->lsa.name        = domain_name.string;
 	ctx->lsa.access_mask = access_mask;
 	ctx->lsa.handle      = h;
-	/* we have to use pipe's event context, otherwise the call will
-	   hang indefinitely */
-	ctx->event_ctx       = p->conn->event_ctx;
 
 	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_LSA;
@@ -348,10 +345,6 @@ bool torture_domain_close_samr(struct torture_context *torture)
 	ctx->samr.access_mask = access_mask;
 	ctx->samr.handle      = h;
 	ctx->samr.sid         = talloc_steal(ctx, sid);
-	/* we have to use pipe's event context, otherwise the call will
-	   hang indefinitely - this wouldn't be the case if pipe was opened
-	   by means of libnet call */
-	ctx->event_ctx       = p->conn->event_ctx;
 
 	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_SAMR;
