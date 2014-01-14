@@ -23,6 +23,7 @@
 #define __WB_ASYNC_HELPERS_H__
 
 struct dcerpc_pipe;
+struct dcerpc_binding_handle;
 
 #include "librpc/gen_ndr/lsa.h"
 

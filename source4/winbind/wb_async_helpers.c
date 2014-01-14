@@ -46,7 +46,8 @@ struct lsa_lookupsids_state {
 static void lsa_lookupsids_recv_names(struct tevent_req *subreq);
 
 struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
-						 struct dcerpc_pipe *lsa_pipe,
+						 struct tevent_context *ev,
+						 struct dcerpc_binding_handle *lsa_binding,
 						 struct policy_handle *handle,
 						 uint32_t num_sids,
 						 const struct dom_sid **sids)
@@ -56,7 +57,7 @@ struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 	uint32_t i;
 	struct tevent_req *subreq;
 
-	result = composite_create(mem_ctx, lsa_pipe->conn->event_ctx);
+	result = composite_create(mem_ctx, ev);
 	if (result == NULL) goto failed;
 
 	state = talloc(result, struct lsa_lookupsids_state);
@@ -91,9 +92,8 @@ struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 	state->r.out.count = &state->count;
 	state->r.out.domains = &state->domains;
 
-	subreq = dcerpc_lsa_LookupSids_r_send(state,
-					      result->event_ctx,
-					      lsa_pipe->binding_handle,
+	subreq = dcerpc_lsa_LookupSids_r_send(state, ev,
+					      lsa_binding,
 					      &state->r);
 	if (subreq == NULL) goto failed;
 	tevent_req_set_callback(subreq, lsa_lookupsids_recv_names, state);
