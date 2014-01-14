@@ -796,7 +796,7 @@ static void continue_epm_map_binding_send(struct composite_context *c)
 	if (composite_nomem(talloc_reference(s->final_binding, s->lsa_pipe->binding), c)) return;
 
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->final_binding, s->r.in.dcerpc_iface,
-						  s->lsa_pipe->conn->event_ctx, s->ctx->lp_ctx);
+						  s->ctx->event_ctx, s->ctx->lp_ctx);
 	if (composite_nomem(epm_map_req, c)) return;
 
 	composite_continue(c, epm_map_req, continue_epm_map_binding, c);
