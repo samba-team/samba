@@ -31,7 +31,7 @@
  */
 
 struct useradd_state {
-	struct dcerpc_pipe       *pipe;
+	struct dcerpc_binding_handle *binding_handle;
 	struct policy_handle     domain_handle;
 	struct samr_CreateUser   createuser;
 	struct policy_handle     user_handle;
@@ -94,8 +94,9 @@ static void continue_useradd_create(struct tevent_req *subreq)
  * @param monitor monitor function for providing information about the progress
  */
 
-struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
-						  TALLOC_CTX *mem_ctx,
+struct composite_context *libnet_rpc_useradd_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct dcerpc_binding_handle *b,
 						  struct libnet_rpc_useradd *io,
 						  void (*monitor)(struct monitor_msg*))
 {
@@ -103,10 +104,10 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 	struct useradd_state *s;
 	struct tevent_req *subreq;
 
-	if (!p || !io) return NULL;
+	if (!b || !io) return NULL;
 
 	/* composite allocation and setup */
-	c = composite_create(mem_ctx, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return NULL;
 	
 	s = talloc_zero(c, struct useradd_state);
@@ -116,7 +117,7 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 
 	/* put passed arguments to the state structure */
 	s->domain_handle = io->in.domain_handle;
-	s->pipe          = p;
+	s->binding_handle= b;
 	s->monitor_fn    = monitor;
 	
 	/* preparing parameters to send rpc request */
@@ -133,7 +134,7 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 
 	/* send the request */
 	subreq = dcerpc_samr_CreateUser_r_send(s, c->event_ctx,
-					       p->binding_handle,
+					       s->binding_handle,
 					       &s->createuser);
 	if (composite_nomem(subreq, c)) return c;
 
@@ -183,7 +184,8 @@ NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_useradd *io)
 {
-	struct composite_context *c = libnet_rpc_useradd_send(p, mem_ctx, io, NULL);
+	struct composite_context *c = libnet_rpc_useradd_send(mem_ctx, p->conn->event_ctx,
+							      p->binding_handle, io, NULL);
 	return libnet_rpc_useradd_recv(c, mem_ctx, io);
 }
 

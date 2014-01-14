@@ -88,7 +88,9 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 	s->user_add.in.domain_handle  = ctx->samr.handle;
 
 	/* send the request */
-	create_req = libnet_rpc_useradd_send(ctx->samr.pipe, s, &s->user_add, monitor);
+	create_req = libnet_rpc_useradd_send(s, s->ctx->event_ctx,
+					     ctx->samr.samr_handle,
+					     &s->user_add, monitor);
 	if (composite_nomem(create_req, c)) return c;
 
 	/* set the next stage */
@@ -123,7 +125,9 @@ static void continue_domain_open_create(struct composite_context *ctx)
 	s->user_add.in.domain_handle  = s->ctx->samr.handle;
 
 	/* send the request */
-	create_req = libnet_rpc_useradd_send(s->ctx->samr.pipe, s, &s->user_add, s->monitor_fn);
+	create_req = libnet_rpc_useradd_send(s, s->ctx->event_ctx,
+					     s->ctx->samr.samr_handle,
+					     &s->user_add, s->monitor_fn);
 	if (composite_nomem(create_req, c)) return;
 
 	/* set the next stage */
