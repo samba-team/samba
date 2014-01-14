@@ -23,6 +23,7 @@
 #include "libnet/libnet.h"
 #include "libcli/libcli.h"
 #include "torture/rpc/torture_rpc.h"
+#include "torture/libnet/proto.h"
 #include "param/param.h"
 
 
