@@ -27,7 +27,8 @@
 #include "torture/libnet/proto.h"
 
 
-static bool test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_groupadd(struct torture_context *tctx,
+			  struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *domain_handle,
 			  const char *name)
 {
@@ -35,12 +36,15 @@ static bool test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	bool ret = true;
 	struct libnet_rpc_groupadd group;
 
+	ZERO_STRUCT(group);
+
 	group.in.domain_handle = *domain_handle;
 	group.in.groupname     = name;
 
 	printf("Testing libnet_rpc_groupadd\n");
 
-	status = libnet_rpc_groupadd(p, mem_ctx, &group);
+	status = libnet_rpc_groupadd(tctx->ev, p->binding_handle,
+				     mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_groupadd - %s\n", nt_errstr(status));
 		return false;
@@ -77,7 +81,7 @@ bool torture_groupadd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_groupadd(p, mem_ctx, &h, name)) {
+	if (!test_groupadd(torture, p, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}

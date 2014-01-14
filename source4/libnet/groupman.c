@@ -127,13 +127,14 @@ static void continue_groupadd_created(struct tevent_req *subreq)
 }
 
 
-NTSTATUS libnet_rpc_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+NTSTATUS libnet_rpc_groupadd(struct tevent_context *ev,
+			     struct dcerpc_binding_handle *b,
+			     TALLOC_CTX *mem_ctx,
 			     struct libnet_rpc_groupadd *io)
 {
 	struct composite_context *c;
 
-	c = libnet_rpc_groupadd_send(mem_ctx, p->conn->event_ctx,
-				     p->binding_handle, io, NULL);
+	c = libnet_rpc_groupadd_send(mem_ctx, ev, b, io, NULL);
 	return libnet_rpc_groupadd_recv(c, mem_ctx, io);
 }
 
