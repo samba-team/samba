@@ -295,6 +295,7 @@ static struct spoolss_NotifyOption *setup_printserver_NotifyOption(struct tortur
 	return o;
 }
 
+#if 0
 static struct spoolss_NotifyOption *setup_printer_NotifyOption(struct torture_context *tctx)
 {
 	struct spoolss_NotifyOption *o;
@@ -314,7 +315,7 @@ static struct spoolss_NotifyOption *setup_printer_NotifyOption(struct torture_co
 
 	return o;
 }
-
+#endif
 
 static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tctx,
 						      struct dcerpc_binding_handle *b,
@@ -365,6 +366,7 @@ static bool test_RouterRefreshPrinterChangeNotify(struct torture_context *tctx,
 	return true;
 }
 
+#if 0
 static bool test_SetPrinter(struct torture_context *tctx,
 			    struct dcerpc_pipe *p,
 			    struct policy_handle *handle)
@@ -418,6 +420,7 @@ static bool test_SetPrinter(struct torture_context *tctx,
 
 	return true;
 }
+#endif
 
 static bool test_start_dcerpc_server(struct torture_context *tctx,
 				     struct tevent_context *event_ctx,
