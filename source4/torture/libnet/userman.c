@@ -208,7 +208,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 	torture_comment(tctx, "]\n");
 
-	status = libnet_rpc_usermod(p, mem_ctx, mod);
+	status = libnet_rpc_usermod(tctx->ev, p->binding_handle, mem_ctx, mod);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to call sync libnet_rpc_usermod");
 
 	return true;
