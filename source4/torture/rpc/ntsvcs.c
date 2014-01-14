@@ -172,19 +172,18 @@ struct torture_suite *torture_rpc_ntsvcs(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "ntsvcs");
-	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "ntsvcs",
 						  &ndr_table_ntsvcs);
 
-	test = torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceRegProp",
-					  test_PNP_GetDeviceRegProp);
-	test = torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceList",
-					  test_PNP_GetDeviceList);
-	test = torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceListSize",
-					  test_PNP_GetDeviceListSize);
-	test = torture_rpc_tcase_add_test(tcase, "PNP_GetVersion",
-					  test_PNP_GetVersion);
+	torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceRegProp",
+				   test_PNP_GetDeviceRegProp);
+	torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceList",
+				   test_PNP_GetDeviceList);
+	torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceListSize",
+				   test_PNP_GetDeviceListSize);
+	torture_rpc_tcase_add_test(tcase, "PNP_GetVersion",
+				   test_PNP_GetVersion);
 
 	return suite;
 }
