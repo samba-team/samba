@@ -75,7 +75,8 @@ static void lookupname_recv_domain(struct composite_context *ctx)
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
 
-	ctx = wb_lsa_lookupnames_send(state, domain->libnet_ctx->lsa.pipe,
+	ctx = wb_lsa_lookupnames_send(state, state->ctx->event_ctx,
+				      domain->libnet_ctx->lsa.lsa_handle,
 				      &domain->libnet_ctx->lsa.handle, 1, &state->name);
 	composite_continue(state->ctx, ctx, lookupname_recv_sids, state);
 }
