@@ -81,7 +81,8 @@ static void userdomgroups_recv_domain(struct composite_context *ctx)
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
 
-	ctx = wb_samr_userdomgroups_send(state, domain->libnet_ctx->samr.pipe,
+	ctx = wb_samr_userdomgroups_send(state, state->ctx->event_ctx,
+					 domain->libnet_ctx->samr.samr_handle,
 					 &domain->libnet_ctx->samr.handle,
 					 state->user_rid);
 	composite_continue(state->ctx, ctx, userdomgroups_recv_rids, state);
