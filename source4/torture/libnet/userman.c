@@ -222,10 +222,12 @@ static bool test_userdel(struct torture_context *tctx,
 	NTSTATUS status;
 	struct libnet_rpc_userdel user;
 
+	ZERO_STRUCT(user);
+
 	user.in.domain_handle = *handle;
 	user.in.username = username;
 
-	status = libnet_rpc_userdel(p, mem_ctx, &user);
+	status = libnet_rpc_userdel(tctx->ev, p->binding_handle, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to call sync libnet_rpc_userdel - %s\n", nt_errstr(status));
 		return false;
