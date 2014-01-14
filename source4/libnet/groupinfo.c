@@ -31,7 +31,7 @@
 
 
 struct groupinfo_state {
-	struct dcerpc_pipe         *pipe;
+	struct dcerpc_binding_handle *binding_handle;
 	struct policy_handle       domain_handle;
 	struct policy_handle       group_handle;
 	uint16_t                   level;
@@ -109,7 +109,7 @@ static void continue_groupinfo_lookup(struct tevent_req *subreq)
 
 	/* send request */
 	subreq = dcerpc_samr_OpenGroup_r_send(s, c->event_ctx,
-					      s->pipe->binding_handle,
+					      s->binding_handle,
 					      &s->opengroup);
 	if (composite_nomem(subreq, c)) return;
 
@@ -161,7 +161,7 @@ static void continue_groupinfo_opengroup(struct tevent_req *subreq)
 	/* queue rpc call, set event handling and new state */
 	subreq = dcerpc_samr_QueryGroupInfo_r_send(s,
 						   c->event_ctx,
-						   s->pipe->binding_handle,
+						   s->binding_handle,
 						   &s->querygroupinfo);
 	if (composite_nomem(subreq, c)) return;
 	
@@ -212,7 +212,7 @@ static void continue_groupinfo_getgroup(struct tevent_req *subreq)
 	
 	/* queue rpc call, set event handling and new state */
 	subreq = dcerpc_samr_Close_r_send(s, c->event_ctx,
-					  s->pipe->binding_handle,
+					  s->binding_handle,
 					  &s->samrclose);
 	if (composite_nomem(subreq, c)) return;
 	
@@ -264,8 +264,9 @@ static void continue_groupinfo_closegroup(struct tevent_req *subreq)
  * @param p dce/rpc call pipe 
  * @param io arguments and results of the call
  */
-struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
-						    TALLOC_CTX *mem_ctx,
+struct composite_context *libnet_rpc_groupinfo_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct dcerpc_binding_handle *b,
 						    struct libnet_rpc_groupinfo *io,
 						    void (*monitor)(struct monitor_msg*))
 {
@@ -274,9 +275,9 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 	struct dom_sid *sid;
 	struct tevent_req *subreq;
 
-	if (!p || !io) return NULL;
+	if (!b || !io) return NULL;
 	
-	c = composite_create(mem_ctx, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return c;
 	
 	s = talloc_zero(c, struct groupinfo_state);
@@ -285,7 +286,7 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 	c->private_data = s;
 
 	s->level         = io->in.level;
-	s->pipe          = p;
+	s->binding_handle= b;
 	s->domain_handle = io->in.domain_handle;
 	s->monitor_fn    = monitor;
 
@@ -300,7 +301,7 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 		
 		/* send request */
 		subreq = dcerpc_samr_OpenGroup_r_send(s, c->event_ctx,
-						      p->binding_handle,
+						      s->binding_handle,
 						      &s->opengroup);
 		if (composite_nomem(subreq, c)) return c;
 
@@ -322,7 +323,7 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 
 		/* send request */
 		subreq = dcerpc_samr_LookupNames_r_send(s, c->event_ctx,
-							p->binding_handle,
+							s->binding_handle,
 							&s->lookup);
 		if (composite_nomem(subreq, c)) return c;
 		
@@ -376,6 +377,9 @@ NTSTATUS libnet_rpc_groupinfo(struct dcerpc_pipe *p,
 			      TALLOC_CTX *mem_ctx,
 			      struct libnet_rpc_groupinfo *io)
 {
-	struct composite_context *c = libnet_rpc_groupinfo_send(p, mem_ctx, io, NULL);
+	struct composite_context *c = libnet_rpc_groupinfo_send(mem_ctx,
+								p->conn->event_ctx,
+								p->binding_handle,
+								io, NULL);
 	return libnet_rpc_groupinfo_recv(c, mem_ctx, io);
 }
