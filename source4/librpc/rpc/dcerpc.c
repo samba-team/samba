@@ -1558,7 +1558,7 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 	dcerpc_schedule_io_trigger(p->conn);
 
 	if (p->request_timeout) {
-		tevent_add_timer(dcerpc_event_context(p), req,
+		tevent_add_timer(p->conn->event_ctx, req,
 				timeval_current_ofs(p->request_timeout, 0), 
 				dcerpc_timeout_handler, req);
 	}
@@ -1752,17 +1752,6 @@ static void dcerpc_schedule_io_trigger(struct dcecli_connection *c)
 }
 
 /*
-  return the event context for a dcerpc pipe
-  used by callers who wish to operate asynchronously
-*/
-_PUBLIC_ struct tevent_context *dcerpc_event_context(struct dcerpc_pipe *p)
-{
-	return p->conn->event_ctx;
-}
-
-
-
-/*
   perform the receive side of a async dcerpc request
 */
 static NTSTATUS dcerpc_request_recv(struct rpc_request *req,
@@ -1772,7 +1761,7 @@ static NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 	NTSTATUS status;
 
 	while (req->state != RPC_REQUEST_DONE) {
-		struct tevent_context *ctx = dcerpc_event_context(req->p);
+		struct tevent_context *ctx = req->p->conn->event_ctx;
 		if (tevent_loop_once(ctx) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}
@@ -2233,7 +2222,7 @@ _PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 
 	/* TODO: create a new event context here */
 
-	subreq = dcerpc_alter_context_send(mem_ctx, p->conn->event_ctx,
+	subreq = dcerpc_alter_context_send(mem_ctx, ev,
 					   p, syntax, transfer_syntax);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
