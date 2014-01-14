@@ -260,7 +260,9 @@ struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 	s->user_del.in.domain_handle  = ctx->samr.handle;
 
 	/* send request */
-	delete_req = libnet_rpc_userdel_send(ctx->samr.pipe, s, &s->user_del, monitor);
+	delete_req = libnet_rpc_userdel_send(s, s->ctx->event_ctx,
+					     ctx->samr.samr_handle,
+					     &s->user_del, monitor);
 	if (composite_nomem(delete_req, c)) return c;
 	
 	/* set the next stage */
@@ -295,7 +297,9 @@ static void continue_domain_open_delete(struct composite_context *ctx)
 	s->user_del.in.domain_handle  = s->ctx->samr.handle;
 
 	/* send request */
-	delete_req = libnet_rpc_userdel_send(s->ctx->samr.pipe, s, &s->user_del, s->monitor_fn);
+	delete_req = libnet_rpc_userdel_send(s, s->ctx->event_ctx,
+					     s->ctx->samr.samr_handle,
+					     &s->user_del, s->monitor_fn);
 	if (composite_nomem(delete_req, c)) return;
 
 	/* set the next stage */

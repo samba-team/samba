@@ -197,7 +197,7 @@ NTSTATUS libnet_rpc_useradd(struct tevent_context *ev,
 
 
 struct userdel_state {
-	struct dcerpc_pipe        *pipe;
+	struct dcerpc_binding_handle *binding_handle;
 	struct policy_handle      domain_handle;
 	struct policy_handle      user_handle;
 	struct samr_LookupNames   lookupname;
@@ -269,7 +269,7 @@ static void continue_userdel_name_found(struct tevent_req *subreq)
 
 	/* send rpc request */
 	subreq = dcerpc_samr_OpenUser_r_send(s, c->event_ctx,
-					     s->pipe->binding_handle,
+					     s->binding_handle,
 					     &s->openuser);
 	if (composite_nomem(subreq, c)) return;
 
@@ -319,7 +319,7 @@ static void continue_userdel_user_opened(struct tevent_req *subreq)
 	
 	/* send rpc request */
 	subreq = dcerpc_samr_DeleteUser_r_send(s, c->event_ctx,
-					       s->pipe->binding_handle,
+					       s->binding_handle,
 					       &s->deleteuser);
 	if (composite_nomem(subreq, c)) return;
 
@@ -372,8 +372,9 @@ static void continue_userdel_deleted(struct tevent_req *subreq)
  * @param monitor monitor function for providing information about the progress
  */
 
-struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
-						  TALLOC_CTX *mem_ctx,
+struct composite_context *libnet_rpc_userdel_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct dcerpc_binding_handle *b,
 						  struct libnet_rpc_userdel *io,
 						  void (*monitor)(struct monitor_msg*))
 {
@@ -382,7 +383,7 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	struct tevent_req *subreq;
 
 	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct userdel_state);
@@ -391,7 +392,7 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	c->private_data  = s;
 
 	/* store function parameters in the state structure */
-	s->pipe          = p;
+	s->binding_handle= b;
 	s->domain_handle = io->in.domain_handle;
 	s->monitor_fn    = monitor;
 	
@@ -407,7 +408,7 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 
 	/* send the request */
 	subreq = dcerpc_samr_LookupNames_r_send(s, c->event_ctx,
-						p->binding_handle,
+						s->binding_handle,
 						&s->lookupname);
 	if (composite_nomem(subreq, c)) return c;
 
@@ -457,7 +458,8 @@ NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_userdel *io)
 {
-	struct composite_context *c = libnet_rpc_userdel_send(p, mem_ctx, io, NULL);
+	struct composite_context *c = libnet_rpc_userdel_send(mem_ctx, p->conn->event_ctx,
+							      p->binding_handle, io, NULL);
 	return libnet_rpc_userdel_recv(c, mem_ctx, io);
 }
 
