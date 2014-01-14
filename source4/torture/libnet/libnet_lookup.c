@@ -167,6 +167,7 @@ bool torture_lookup_sam_name(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_LookupName r;
+	bool ret = true;
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
@@ -178,9 +179,12 @@ bool torture_lookup_sam_name(struct torture_context *torture)
 	r.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
 
 	status = libnet_LookupName(ctx, mem_ctx, &r);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"libnet_LookupName: failed");
 
+done:
 	talloc_free(mem_ctx);
 	talloc_free(ctx);
 
-	return true;
+	return ret;
 }
