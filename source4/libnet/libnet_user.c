@@ -423,7 +423,9 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 	s->user_info.in.domain_handle = ctx->samr.handle;
 	s->user_info.in.level         = level;
 
-	userinfo_req = libnet_rpc_userinfo_send(ctx->samr.pipe, s, &s->user_info, monitor);
+	userinfo_req = libnet_rpc_userinfo_send(s, s->ctx->event_ctx,
+						ctx->samr.samr_handle,
+						&s->user_info, monitor);
 	if (composite_nomem(userinfo_req, c)) return c;
 
 	composite_continue(c, userinfo_req, continue_rpc_userinfo, c);
@@ -455,7 +457,9 @@ static void continue_domain_open_modify(struct composite_context *ctx)
 	s->user_info.in.username       = s->r.in.user_name;
 	s->user_info.in.level          = level;
 
-	userinfo_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe, s, &s->user_info, s->monitor_fn);
+	userinfo_req = libnet_rpc_userinfo_send(s, s->ctx->event_ctx,
+						s->ctx->samr.samr_handle,
+						&s->user_info, s->monitor_fn);
 	if (composite_nomem(userinfo_req, c)) return;
 	
 	composite_continue(c, userinfo_req, continue_rpc_userinfo, c);
@@ -686,8 +690,8 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 		s->userinfo.in.level = 21;
 
 		/* send the request */
-		info_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe,
-						    s,
+		info_req = libnet_rpc_userinfo_send(s, s->ctx->event_ctx,
+						    s->ctx->samr.samr_handle,
 						    &s->userinfo,
 						    s->monitor_fn);
 		if (composite_nomem(info_req, c)) return c;
@@ -743,8 +747,8 @@ static void continue_domain_open_info(struct composite_context *ctx)
 		s->userinfo.in.level = 21;
 
 		/* send the request */
-		info_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe,
-						    s,
+		info_req = libnet_rpc_userinfo_send(s, s->ctx->event_ctx,
+						    s->ctx->samr.samr_handle,
 						    &s->userinfo,
 						    s->monitor_fn);
 		if (composite_nomem(info_req, c)) return;
@@ -784,7 +788,9 @@ static void continue_name_found(struct composite_context *ctx)
 	s->userinfo.in.level = 21;
 
 	/* send the request */
-	info_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe, s, &s->userinfo, s->monitor_fn);
+	info_req = libnet_rpc_userinfo_send(s, s->ctx->event_ctx,
+					    s->ctx->samr.samr_handle,
+					    &s->userinfo, s->monitor_fn);
 	if (composite_nomem(info_req, c)) return;
 
 	/* set the next stage */
