@@ -42,7 +42,7 @@ static bool test_useradd(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing libnet_rpc_useradd\n");
 
-	status = libnet_rpc_useradd(p, mem_ctx, &user);
+	status = libnet_rpc_useradd(tctx->ev, p->binding_handle, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to call libnet_rpc_useradd - %s\n", nt_errstr(status));
 		return false;

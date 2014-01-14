@@ -180,12 +180,12 @@ NTSTATUS libnet_rpc_useradd_recv(struct composite_context *c, TALLOC_CTX *mem_ct
  * @return nt status code of execution
  */
 
-NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *p,
+NTSTATUS libnet_rpc_useradd(struct tevent_context *ev,
+			    struct dcerpc_binding_handle *b,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_useradd *io)
 {
-	struct composite_context *c = libnet_rpc_useradd_send(mem_ctx, p->conn->event_ctx,
-							      p->binding_handle, io, NULL);
+	struct composite_context *c = libnet_rpc_useradd_send(mem_ctx, ev, b, io, NULL);
 	return libnet_rpc_useradd_recv(c, mem_ctx, io);
 }
 
