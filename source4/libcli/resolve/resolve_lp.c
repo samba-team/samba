@@ -41,6 +41,8 @@ struct resolve_context *lpcfg_resolve_context(struct loadparm_context *lp_ctx)
 			}
 		} else if (!strcmp(methods[i], "file")) {
 			resolve_context_add_file_method_lp(ret, lp_ctx);
+		} else if (!strcmp(methods[i], "lmhosts")) {
+			resolve_context_add_lmhosts_method(ret);
 		} else if (!strcmp(methods[i], "host")) {
 			resolve_context_add_host_method(ret);
 		} else {
