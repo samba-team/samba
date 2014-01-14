@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
+bld.SAMBA_GENERATOR('param_functions.c',
+                    source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
+                    target='param_functions.c',
+                    group='build_source',
+                    rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT}')
+
 bld.SAMBA_GENERATOR('param_local_h',
-                    source= '../../script/mkparamdefs.pl param_functions.c ',
+                    source= '../../script/mkparamdefs.pl loadparm.c param_functions.c ',
                     target='param_local.h',
                     group='build_source',
-                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} --file ${TGT} --generate-scope=LOCAL')
+                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=LOCAL')
 
 
 bld.SAMBA_GENERATOR('s3_param_h',

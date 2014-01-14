@@ -11,8 +11,8 @@ Adding a parameter
 ------------------
 
 To add or change an smb.conf option, you only have to modify
-lib/param/param_table.c and lib/param/param_functions.c.  The rest is
-generated for you.
+lib/param/param_table.c and add the documentation to docs-xml/smbdotconf.
+The rest is generated for you.
 
 
 Using smb.conf parameters in the code

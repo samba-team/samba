@@ -324,6 +324,10 @@ FN_GLOBAL_BOOL(writeraw, bWriteRaw)
 FN_GLOBAL_CONST_STRING(cachedir, szCacheDir)
 FN_GLOBAL_CONST_STRING(statedir, szStateDir)
 
+/* These functions cannot be auto-generated */
+FN_LOCAL_BOOL(autoloaded, autoloaded)
+FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)
+
 /* local prototypes */
 static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName);

@@ -1238,6 +1238,10 @@ FN_GLOBAL_STRING(configfile, szConfigFile)
 FN_LOCAL_STRING(servicename, szService)
 FN_LOCAL_CONST_STRING(const_servicename, szService)
 
+/* These functions cannot be auto-generated */
+FN_LOCAL_BOOL(autoloaded, autoloaded)
+FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)
+
 /* local prototypes */
 
 static int map_parameter_canonical(const char *pszParmName, bool *inverse);
