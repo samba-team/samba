@@ -26,6 +26,7 @@
 
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "winbind/wb_server.h"
+#include "smbd/service_task.h"
 
 /* Helper to initialize LSA with a specific auth methods. Verify by opening
  * the LSA policy. */
@@ -51,7 +52,7 @@ struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct init_lsa_state *state;
 
-	result = composite_create(mem_ctx, domain->netlogon_pipe->conn->event_ctx);
+	result = composite_create(mem_ctx, domain->service->task->event_ctx);
 	if (result == NULL) goto failed;
 
 	state = talloc(result, struct init_lsa_state);

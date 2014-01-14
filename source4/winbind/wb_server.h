@@ -56,6 +56,8 @@ struct wb_dom_info {
 struct wbsrv_domain {
 	struct wbsrv_domain *next, *prev;
 
+	struct wbsrv_service *service;
+
 	struct wb_dom_info *info;
 
 	/* Details for the server we are currently talking to */

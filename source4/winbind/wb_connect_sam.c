@@ -26,6 +26,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "winbind/wb_server.h"
+#include "smbd/service_task.h"
 
 
 /* Helper to initialize SAMR with a specific auth methods. Verify by opening
@@ -53,7 +54,7 @@ struct composite_context *wb_connect_samr_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct connect_samr_state *state;
 
-	result = composite_create(mem_ctx, domain->netlogon_pipe->conn->event_ctx);
+	result = composite_create(mem_ctx, domain->service->task->event_ctx);
 	if (result == NULL) goto failed;
 
 	state = talloc(result, struct connect_samr_state);

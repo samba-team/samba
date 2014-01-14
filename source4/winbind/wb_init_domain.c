@@ -136,6 +136,8 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	state->domain = talloc(state, struct wbsrv_domain);
 	if (state->domain == NULL) goto failed;
 
+	state->domain->service = service;
+
 	state->domain->info = talloc_reference(state->domain, dom_info);
 	if (state->domain->info == NULL) goto failed;
 
