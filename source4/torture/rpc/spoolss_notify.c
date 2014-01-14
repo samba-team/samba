@@ -502,7 +502,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	received_packets = NULL;
 
 	/* Start DCE/RPC server */
-	torture_assert(tctx, test_start_dcerpc_server(tctx, p->conn->event_ctx, &dce_ctx, &address), "");
+	torture_assert(tctx, test_start_dcerpc_server(tctx, tctx->ev, &dce_ctx, &address), "");
 
 	printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
