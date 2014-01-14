@@ -42,12 +42,14 @@ static bool test_userinfo(struct torture_context *tctx,
 
 	user_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
 
+	ZERO_STRUCT(user);
+
 	user.in.domain_handle = *domain_handle;
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
 	user.in.level         = level;       /* this should be extended */
 
 	torture_comment(tctx, "Testing sync libnet_rpc_userinfo (SID argument)\n");
-	status = libnet_rpc_userinfo(p, mem_ctx, &user);
+	status = libnet_rpc_userinfo(tctx->ev, p->binding_handle, mem_ctx, &user);
 	torture_assert_ntstatus_ok(tctx, status, "Calling sync libnet_rpc_userinfo() failed");
 
 	ZERO_STRUCT(user);
@@ -58,7 +60,7 @@ static bool test_userinfo(struct torture_context *tctx,
 	user.in.level         = level;
 
 	torture_comment(tctx, "Testing sync libnet_rpc_userinfo (username argument)\n");
-	status = libnet_rpc_userinfo(p, mem_ctx, &user);
+	status = libnet_rpc_userinfo(tctx->ev, p->binding_handle, mem_ctx, &user);
 	torture_assert_ntstatus_ok(tctx, status, "Calling sync libnet_rpc_userinfo failed");
 
 	return true;

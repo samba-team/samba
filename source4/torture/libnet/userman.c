@@ -284,7 +284,7 @@ static bool test_compare(struct torture_context *tctx,
 	info.in.domain_handle = *handle;
 	info.in.level = 21;             /* the most rich infolevel available */
 
-	status = libnet_rpc_userinfo(p, mem_ctx, &info);
+	status = libnet_rpc_userinfo(tctx->ev, p->binding_handle, mem_ctx, &info);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to call sync libnet_rpc_userinfo");
 
 	i = &info.out.info.info21;
