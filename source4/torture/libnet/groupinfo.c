@@ -42,12 +42,14 @@ static bool test_groupinfo(struct torture_context *tctx,
 
 	group_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
 
+	ZERO_STRUCT(group);
+
 	group.in.domain_handle = *domain_handle;
 	group.in.sid           = dom_sid_string(mem_ctx, group_sid);
 	group.in.level         = level;       /* this should be extended */
 
 	torture_comment(tctx, "Testing sync libnet_rpc_groupinfo (SID argument)\n");
-	status = libnet_rpc_groupinfo(p, mem_ctx, &group);
+	status = libnet_rpc_groupinfo(tctx->ev, p->binding_handle, mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
 		return false;
@@ -61,7 +63,7 @@ static bool test_groupinfo(struct torture_context *tctx,
 	group.in.level          = level;
 
 	printf("Testing sync libnet_rpc_groupinfo (groupname argument)\n");
-	status = libnet_rpc_groupinfo(p, mem_ctx, &group);
+	status = libnet_rpc_groupinfo(tctx->ev, p->binding_handle, mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to call sync libnet_rpc_groupinfo - %s\n", nt_errstr(status));
 		return false;
