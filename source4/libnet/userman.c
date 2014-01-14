@@ -475,7 +475,7 @@ static void continue_usermod_user_changed(struct tevent_req *subreq);
 
 
 struct usermod_state {
-	struct dcerpc_pipe         *pipe;
+	struct dcerpc_binding_handle *binding_handle;
 	struct policy_handle       domain_handle;
 	struct policy_handle       user_handle;
 	struct usermod_change      change;
@@ -545,7 +545,7 @@ static void continue_usermod_name_found(struct tevent_req *subreq)
 
 	/* send the rpc request */
 	subreq = dcerpc_samr_OpenUser_r_send(s, c->event_ctx,
-					     s->pipe->binding_handle,
+					     s->binding_handle,
 					     &s->openuser);
 	if (composite_nomem(subreq, c)) return;
 
@@ -701,7 +701,7 @@ static NTSTATUS usermod_change(struct composite_context *c,
 		/* send query user info request to retrieve complete data of
 		   a particular info level */
 		subreq = dcerpc_samr_QueryUserInfo_r_send(s, c->event_ctx,
-							  s->pipe->binding_handle,
+							  s->binding_handle,
 							  &s->queryuser);
 		if (composite_nomem(subreq, c)) return NT_STATUS_NO_MEMORY;
 		tevent_req_set_callback(subreq, continue_usermod_user_queried, c);
@@ -713,7 +713,7 @@ static NTSTATUS usermod_change(struct composite_context *c,
 
 		/* send set user info request after making required change */
 		subreq = dcerpc_samr_SetUserInfo_r_send(s, c->event_ctx,
-							s->pipe->binding_handle,
+							s->binding_handle,
 							&s->setuser);
 		if (composite_nomem(subreq, c)) return NT_STATUS_NO_MEMORY;
 		tevent_req_set_callback(subreq, continue_usermod_user_changed, c);
@@ -787,7 +787,7 @@ static void continue_usermod_user_queried(struct tevent_req *subreq)
 
 	/* send the rpc request */
 	subreq = dcerpc_samr_SetUserInfo_r_send(s, c->event_ctx,
-						s->pipe->binding_handle,
+						s->binding_handle,
 						&s->setuser);
 	if (composite_nomem(subreq, c)) return;
 	tevent_req_set_callback(subreq, continue_usermod_user_changed, c);
@@ -836,8 +836,9 @@ static void continue_usermod_user_changed(struct tevent_req *subreq)
  * @param monitor monitor function for providing information about the progress
  */
 
-struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
-						  TALLOC_CTX *mem_ctx,
+struct composite_context *libnet_rpc_usermod_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct dcerpc_binding_handle *b,
 						  struct libnet_rpc_usermod *io,
 						  void (*monitor)(struct monitor_msg*))
 {
@@ -846,7 +847,7 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	struct tevent_req *subreq;
 
 	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return NULL;
 	s = talloc_zero(c, struct usermod_state);
 	if (composite_nomem(s, c)) return c;
@@ -854,7 +855,7 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	c->private_data = s;
 
 	/* store parameters in the call structure */
-	s->pipe          = p;
+	s->binding_handle= b;
 	s->domain_handle = io->in.domain_handle;
 	s->change        = io->in.change;
 	s->monitor_fn    = monitor;
@@ -871,7 +872,7 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 
 	/* send the rpc request */
 	subreq = dcerpc_samr_LookupNames_r_send(s, c->event_ctx,
-						p->binding_handle,
+						s->binding_handle,
 						&s->lookupname);
 	if (composite_nomem(subreq, c)) return c;
 	
@@ -915,6 +916,7 @@ NTSTATUS libnet_rpc_usermod(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_usermod *io)
 {
-	struct composite_context *c = libnet_rpc_usermod_send(p, mem_ctx, io, NULL);
+	struct composite_context *c = libnet_rpc_usermod_send(mem_ctx, p->conn->event_ctx,
+							      p->binding_handle, io, NULL);
 	return libnet_rpc_usermod_recv(c, mem_ctx, io);
 }

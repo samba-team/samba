@@ -495,7 +495,9 @@ static void continue_rpc_userinfo(struct composite_context *ctx)
 
 	c->status = set_user_changes(c, &s->user_mod.in.change, &s->user_info, &s->r);
 
-	usermod_req = libnet_rpc_usermod_send(s->ctx->samr.pipe, s, &s->user_mod, s->monitor_fn);
+	usermod_req = libnet_rpc_usermod_send(s, s->ctx->event_ctx,
+					      s->ctx->samr.samr_handle,
+					      &s->user_mod, s->monitor_fn);
 	if (composite_nomem(usermod_req, c)) return;
 
 	composite_continue(c, usermod_req, continue_rpc_usermod, c);
