@@ -3683,13 +3683,12 @@ static void dump_a_service(struct loadparm_service *pService, FILE * f)
 
 bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 {
-	int i;
 	bool result = false;
-	parm_class p_class;
-	unsigned flag = 0;
+	struct parm_struct *p_struct;
 	fstring local_parm_name;
 	char *parm_opt;
 	const char *parm_opt_value;
+	void *ptr;
 
 	/* check for parametrical option */
 	fstrcpy( local_parm_name, parm_name);
@@ -3709,36 +3708,24 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 		return result;
 	}
 
-	/* check for a key and print the value */
-	if (isGlobal) {
-		p_class = P_GLOBAL;
-		flag = FLAG_GLOBAL;
-	} else
-		p_class = P_LOCAL;
+	p_struct = lp_get_parameter(parm_name);
 
-	for (i = 0; parm_table[i].label; i++) {
-		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
-		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag))
-		{
-			void *ptr;
-
-			if (isGlobal) {
-				ptr = lp_parm_ptr(NULL, 
-						  &parm_table[i]);
-			} else {
-				ptr = lp_parm_ptr(ServicePtrs[snum], 
-						  &parm_table[i]);
-			}
-
-			lpcfg_print_parameter(&parm_table[i],
-					ptr, f);
-			fprintf(f, "\n");
-			result = true;
-			break;
-		}
+	if (p_struct == NULL) {
+		return false;
 	}
 
-	return result;
+	if (isGlobal) {
+		ptr = lp_parm_ptr(NULL,
+				  p_struct);
+	} else {
+		ptr = lp_parm_ptr(ServicePtrs[snum],
+				  p_struct);
+	}
+
+	lpcfg_print_parameter(p_struct,
+			      ptr, f);
+	fprintf(f, "\n");
+	return true;
 }
 
 /***************************************************************************
