@@ -12,12 +12,11 @@ bld.SAMBA_GENERATOR('param_functions.h',
                     group='build_source',
                     rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=LIBPROTO')
 
-bld.SAMBA_GENERATOR('param_local_h',
-                    source= '../../script/mkparamdefs.pl loadparm.c param_functions.c ',
+bld.SAMBA_GENERATOR('param_local.h',
+                    source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
                     target='param_local.h',
                     group='build_source',
-                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=LOCAL')
-
+                    rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=PARAMDEFS --scope=LOCAL')
 
 bld.SAMBA_GENERATOR('s3_param_h',
                     source= ' ../../script/mks3param.pl loadparm.c param_functions.c',
@@ -41,7 +40,7 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
 	deps='DYNCONFIG server-role',
-	public_deps='samba-util param_local_h',
+	public_deps='samba-util param_local.h',
 	public_headers='param.h',
 	autoproto='param_proto.h'
 	)
