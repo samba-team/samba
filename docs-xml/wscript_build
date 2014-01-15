@@ -115,15 +115,16 @@ def smbdotconf_generate_parameter_list(task):
     save_file(parameter_all, t , create_dir=True)
     return 0
 
+articles = bld.path.ant_glob("smbdotconf/**/*.xml")
+parameter_all = 'smbdotconf/parameters.all.xml'
+bld.SAMBA_GENERATOR(parameter_all,
+                    source=articles,
+                    target=parameter_all,
+                    rule=smbdotconf_generate_parameter_list,
+                    always=True)
+
 def SMBDOTCONF_MANPAGE(bld, target):
     ''' assemble and build smb.conf.5 manual page'''
-    articles = bld.path.ant_glob("smbdotconf/**/*.xml")
-    parameter_all = 'smbdotconf/parameters.all.xml'
-    bld.SAMBA_GENERATOR(parameter_all,
-                        source=articles,
-                        target=parameter_all,
-                        rule=smbdotconf_generate_parameter_list,
-                        always=True)
     bld.SAMBAMANPAGES(target, parameter_all)
 
 if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
