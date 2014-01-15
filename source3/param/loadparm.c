@@ -3391,46 +3391,6 @@ bool lp_set_option(const char *option)
 }
 
 /***************************************************************************
- Check if two parameters are equal.
-***************************************************************************/
-
-static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
-{
-	switch (type) {
-		case P_BOOL:
-		case P_BOOLREV:
-			return (*((bool *)ptr1) == *((bool *)ptr2));
-
-		case P_INTEGER:
-		case P_ENUM:
-		case P_OCTAL:
-		case P_BYTES:
-			return (*((int *)ptr1) == *((int *)ptr2));
-
-		case P_CHAR:
-			return (*((char *)ptr1) == *((char *)ptr2));
-
-		case P_LIST:
-		case P_CMDLIST:
-			return str_list_equal(*(const char ***)ptr1, *(const char ***)ptr2);
-
-		case P_STRING:
-		case P_USTRING:
-		{
-			char *p1 = *(char **)ptr1, *p2 = *(char **)ptr2;
-			if (p1 && !*p1)
-				p1 = NULL;
-			if (p2 && !*p2)
-				p2 = NULL;
-			return (p1 == p2 || strequal(p1, p2));
-		}
-		case P_SEP:
-			break;
-	}
-	return false;
-}
-
-/***************************************************************************
  Initialize any local variables in the sDefault table, after parsing a
  [globals] section.
 ***************************************************************************/
@@ -3602,9 +3562,9 @@ static void dump_globals(FILE *f)
 
 bool lp_is_default(int snum, struct parm_struct *parm)
 {
-	return equal_parameter(parm->type,
-			       lp_parm_ptr(ServicePtrs[snum], parm),
-			       lp_parm_ptr(NULL, parm));
+	return lpcfg_equal_parameter(parm->type,
+				     lp_parm_ptr(ServicePtrs[snum], parm),
+				     lp_parm_ptr(NULL, parm));
 }
 
 /***************************************************************************
@@ -3630,9 +3590,9 @@ static void dump_a_service(struct loadparm_service *pService, FILE * f)
 				if (defaults_saved && is_default(i))
 					continue;
 			} else {
-				if (equal_parameter(parm_table[i].type,
-						    lp_parm_ptr(pService, &parm_table[i]),
-						    lp_parm_ptr(NULL, &parm_table[i])))
+				if (lpcfg_equal_parameter(parm_table[i].type,
+							  lp_parm_ptr(pService, &parm_table[i]),
+							  lp_parm_ptr(NULL, &parm_table[i])))
 					continue;
 			}
 
@@ -3757,11 +3717,11 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			      parm_table[(*i) - 1].offset)))
 			{
 				if (allparameters ||
-				    !equal_parameter(parm_table[*i].type,
-						     lp_parm_ptr(pService, 
-								 &parm_table[*i]),
-						     lp_parm_ptr(NULL, 
-								 &parm_table[*i])))
+				    !lpcfg_equal_parameter(parm_table[*i].type,
+							   lp_parm_ptr(pService,
+								       &parm_table[*i]),
+							   lp_parm_ptr(NULL,
+								       &parm_table[*i])))
 				{
 					return &parm_table[(*i)++];
 				}

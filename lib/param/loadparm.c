@@ -1705,7 +1705,7 @@ void lpcfg_print_parameter(struct parm_struct *p, void *ptr, FILE * f)
  * Check if two parameters are equal.
  */
 
-static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
+ bool lpcfg_equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
 	switch (type) {
 		case P_BOOL:
@@ -1886,11 +1886,11 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 					}
 				}
 			} else {
-				if (equal_parameter(parm_table[i].type,
-						    ((char *)pService) +
-						    parm_table[i].offset,
-						    ((char *)sDefault) +
-						    parm_table[i].offset))
+				if (lpcfg_equal_parameter(parm_table[i].type,
+							  ((char *)pService) +
+							  parm_table[i].offset,
+							  ((char *)sDefault) +
+							  parm_table[i].offset))
 					continue;
 			}
 
@@ -1966,11 +1966,11 @@ struct parm_struct *lpcfg_next_parameter(struct loadparm_context *lp_ctx, int sn
 			      parm_table[(*i) - 1].offset)))
 			{
 				if (allparameters ||
-				    !equal_parameter(parm_table[*i].type,
-						     ((char *)pService) +
-						     parm_table[*i].offset,
-						     ((char *)lp_ctx->sDefault) +
-						     parm_table[*i].offset))
+				    !lpcfg_equal_parameter(parm_table[*i].type,
+							   ((char *)pService) +
+							   parm_table[*i].offset,
+							   ((char *)lp_ctx->sDefault) +
+							   parm_table[*i].offset))
 				{
 					return &parm_table[(*i)++];
 				}
