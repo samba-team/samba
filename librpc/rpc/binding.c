@@ -425,6 +425,38 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
+						      const char *name)
+{
+	size_t i;
+
+	if (b->options == NULL) {
+		return NULL;
+	}
+
+	for (i=0; b->options[i]; i++) {
+		const char *o = b->options[i];
+		const char *vs = NULL;
+		size_t name_len = strlen(name);
+		int ret;
+
+		ret = strncmp(name, o, name_len);
+		if (ret != 0) {
+			continue;
+		}
+
+		if (o[name_len] != '=') {
+			continue;
+		}
+
+		vs = &o[name_len + 1];
+
+		return vs;
+	}
+
+	return NULL;
+}
+
 _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 					    struct ndr_syntax_id *syntax)
 {

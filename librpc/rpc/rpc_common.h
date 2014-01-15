@@ -136,6 +136,8 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding **b_out);
 NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out);
 char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
+const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
+					     const char *name);
 NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
 const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
 enum dcerpc_transport_t dcerpc_transport_by_name(const char *name);
