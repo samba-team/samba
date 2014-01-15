@@ -130,7 +130,7 @@ static bool defaults_saved = false;
 	char *tls_crlfile;						\
 	char *tls_dhpfile;
 
-#include "param/param_global.h"
+#include "lib/param/param_global.h"
 
 static struct loadparm_global Globals;
 

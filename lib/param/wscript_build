@@ -25,12 +25,11 @@ bld.SAMBA_GENERATOR('s3_param_h',
                     group='build_source',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT}')
 
-
-bld.SAMBA_GENERATOR('param_global_h',
-                    source= '../../script/mkparamdefs.pl loadparm.c param_functions.c',
+bld.SAMBA_GENERATOR('param_global.h',
+                    source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
                     target='param_global.h',
                     group='build_source',
-                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)}  ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
+                    rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=PARAMDEFS --scope=GLOBAL')
 
 bld.SAMBA_LIBRARY('server-role',
                   source='loadparm_server_role.c',
