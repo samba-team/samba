@@ -417,8 +417,9 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 		}
 	}
 
-	if (b->options[0] == NULL)
-		b->options = NULL;
+	if (b->options[0] == NULL) {
+		TALLOC_FREE(b->options);
+	}
 
 	*b_out = b;
 	return NT_STATUS_OK;
