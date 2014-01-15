@@ -407,7 +407,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 		}
 	}
 
-	if (b->options[0]) {
+	if (b->options[0] && strchr(b->options[0], '=') == NULL) {
 		/* Endpoint is first option */
 		b->endpoint = b->options[0];
 		if (strlen(b->endpoint) == 0) b->endpoint = NULL;
