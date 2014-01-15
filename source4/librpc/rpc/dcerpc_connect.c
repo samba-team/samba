@@ -74,13 +74,13 @@ static void continue_pipe_open_smb(struct composite_context *ctx)
 	composite_done(c);
 }
 
+static void continue_smb_open(struct composite_context *c);
 
 /*
   Stage 2 of ncacn_np_smb: Open a named pipe after successful smb connection
 */
 static void continue_smb_connect(struct composite_context *ctx)
 {
-	struct composite_context *open_ctx;
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
@@ -100,6 +100,15 @@ static void continue_smb_connect(struct composite_context *ctx)
 	smb1cli_tcon_set_id(s->io.smb.tcon, t->tid);
 	s->io.smb.pipe_name = dcerpc_binding_get_string_option(s->io.binding,
 							       "endpoint");
+
+	continue_smb_open(c);
+}
+
+static void continue_smb_open(struct composite_context *c)
+{
+	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
+						      struct pipe_np_smb_state);
+	struct composite_context *open_ctx;
 
 	/* send named pipe open request */
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.conn,
@@ -192,27 +201,10 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb_recv(struct composite_context *
 }
 
 /*
-  Stage 3 of ncacn_np_smb: Named pipe opened (or not)
-*/
-static void continue_pipe_open_smb2(struct composite_context *ctx)
-{
-	struct composite_context *c = talloc_get_type(ctx->async.private_data,
-						      struct composite_context);
-
-	/* receive result of named pipe open request on smb2 */
-	c->status = dcerpc_pipe_open_smb_recv(ctx);
-	if (!composite_is_ok(c)) return;
-
-	composite_done(c);
-}
-
-
-/*
   Stage 2 of ncacn_np_smb2: Open a named pipe after successful smb2 connection
 */
 static void continue_smb2_connect(struct tevent_req *subreq)
 {
-	struct composite_context *open_req;
 	struct composite_context *c =
 		tevent_req_callback_data(subreq,
 		struct composite_context);
@@ -231,16 +223,7 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	s->io.smb.pipe_name = dcerpc_binding_get_string_option(s->io.binding,
 							       "endpoint");
 
-	/* send named pipe open request */
-	open_req = dcerpc_pipe_open_smb_send(s->io.conn,
-					     s->io.smb.conn,
-					     s->io.smb.session,
-					     s->io.smb.tcon,
-					     DCERPC_REQUEST_TIMEOUT * 1000,
-					     s->io.smb.pipe_name);
-	if (composite_nomem(open_req, c)) return;
-
-	composite_continue(c, open_req, continue_pipe_open_smb2, c);
+	continue_smb_open(c);
 }
 
 
