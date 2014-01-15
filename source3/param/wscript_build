@@ -15,10 +15,10 @@ bld.SAMBA_GENERATOR('s3_param_global_h',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
 
 bld.SAMBA_GENERATOR('s3_param_proto_h',
-                    source= '../../script/mks3param_proto.pl loadparm.c ../../lib/param/param_functions.c',
+                    source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
                     target='param_proto.h',
                     group='build_source',
-                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT}')
+                    rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=S3PROTO')
 
 bld.SAMBA_GENERATOR('s3_loadparm_ctx_table_c',
                     source= ' ../../script/mks3param_ctx_table.pl ../../lib/param/loadparm.c ../../lib/param/param_functions.c',

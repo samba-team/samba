@@ -987,6 +987,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 #include "source3/param/param_proto.h"
 
+char *lp_configfile(TALLOC_CTX *ctx);
+char *lp_servicename(TALLOC_CTX *ctx, int);
+const char *lp_const_servicename(int);
+bool lp_autoloaded(int);
+const char *lp_dnsdomain(void);
 int lp_winbind_max_domain_connections(void);
 bool lp_idmap_range(const char *domain_name, uint32_t *low, uint32_t *high);
 bool lp_idmap_default_range(uint32_t *low, uint32_t *high);
