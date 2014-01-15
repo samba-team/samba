@@ -191,12 +191,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb_recv(struct composite_context *
 	return status;
 }
 
-
-struct pipe_np_smb2_state {
-	struct dcerpc_pipe_connect io;
-};
-
-
 /*
   Stage 3 of ncacn_np_smb: Named pipe opened (or not)
 */
@@ -222,8 +216,8 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	struct composite_context *c =
 		tevent_req_callback_data(subreq,
 		struct composite_context);
-	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
-						       struct pipe_np_smb2_state);
+	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
+						      struct pipe_np_smb_state);
 	struct smb2_tree *t;
 
 	/* receive result of smb2 connect request */
@@ -260,7 +254,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 					struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
-	struct pipe_np_smb2_state *s;
+	struct pipe_np_smb_state *s;
 	struct tevent_req *subreq;
 	struct smbcli_options options;
 	const char *host;
@@ -270,7 +264,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	c = composite_create(mem_ctx, io->conn->event_ctx);
 	if (c == NULL) return NULL;
 
-	s = talloc_zero(c, struct pipe_np_smb2_state);
+	s = talloc_zero(c, struct pipe_np_smb_state);
 	if (composite_nomem(s, c)) return c;
 	c->private_data = s;
 
