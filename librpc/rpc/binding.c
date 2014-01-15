@@ -374,13 +374,18 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	}
 
 	for (i=0; (p = strchr(options, ',')); i++) {
-		b->options[i] = talloc_strndup(b, options, PTR_DIFF(p, options));
+		b->options[i] = talloc_strndup(b->options,
+					       options,
+					       PTR_DIFF(p, options));
 		if (!b->options[i]) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		options = p+1;
 	}
-	b->options[i] = options;
+	b->options[i] = talloc_strdup(b->options, options);
+	if (!b->options[i]) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	b->options[i+1] = NULL;
 
 	/* some options are pre-parsed for convenience */
@@ -388,6 +393,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 		for (j=0;j<ARRAY_SIZE(ncacn_options);j++) {
 			size_t opt_len = strlen(ncacn_options[j].name);
 			if (strncasecmp(ncacn_options[j].name, b->options[i], opt_len) == 0) {
+				char *o = discard_const_p(char, b->options[i]);
 				int k;
 				char c = b->options[i][opt_len];
 
@@ -398,6 +404,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 				}
 
 				b->flags |= ncacn_options[j].flag;
+				talloc_free(o);
 				for (k=i;b->options[k];k++) {
 					b->options[k] = b->options[k+1];
 				}
@@ -409,8 +416,12 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 
 	if (b->options[0] && strchr(b->options[0], '=') == NULL) {
 		/* Endpoint is first option */
-		b->endpoint = b->options[0];
-		if (strlen(b->endpoint) == 0) b->endpoint = NULL;
+		b->endpoint = talloc_steal(b, b->options[0]);
+		if (strlen(b->endpoint) == 0) {
+			char *e = discard_const_p(char, b->endpoint);
+			talloc_free(e);
+			b->endpoint = NULL;
+		}
 
 		for (i=0;b->options[i];i++) {
 			b->options[i] = b->options[i+1];
