@@ -1213,46 +1213,45 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 static bool api_pipe_request(struct pipes_struct *p,
 				struct ncacn_packet *pkt)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = False;
 	struct pipe_rpc_fns *pipe_fns;
 
 	if (!p->pipe_bound) {
 		DEBUG(1, ("Pipe not bound!\n"));
 		data_blob_free(&p->out_data.rdata);
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	/* get the set of RPC functions for this context */
+	pipe_fns = find_pipe_fns_by_context(p->contexts,
+					    pkt->u.request.context_id);
+	if (pipe_fns == NULL) {
+		DEBUG(0, ("No rpc function table associated with context "
+			  "[%d]\n",
+			  pkt->u.request.context_id));
+		data_blob_free(&p->out_data.rdata);
+		TALLOC_FREE(frame);
 		return false;
 	}
 
 	if (!become_authenticated_pipe_user(p->session_info)) {
 		DEBUG(1, ("Failed to become pipe user!\n"));
 		data_blob_free(&p->out_data.rdata);
+		TALLOC_FREE(frame);
 		return false;
 	}
 
-	/* get the set of RPC functions for this context */
+	DEBUG(5, ("Requested %s rpc service\n",
+		  ndr_interface_name(&pipe_fns->syntax.uuid,
+				     pipe_fns->syntax.if_version)));
 
-	pipe_fns = find_pipe_fns_by_context(p->contexts,
-					    pkt->u.request.context_id);
-
-	if ( pipe_fns ) {
-		TALLOC_CTX *frame = talloc_stackframe();
-
-		DEBUG(5, ("Requested %s rpc service\n",
-			  ndr_interface_name(&pipe_fns->syntax.uuid,
-					     pipe_fns->syntax.if_version)));
-
-		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
-				 &pipe_fns->syntax);
-
-		TALLOC_FREE(frame);
-	}
-	else {
-		DEBUG(0, ("No rpc function table associated with context "
-			  "[%d]\n",
-			  pkt->u.request.context_id));
-	}
-
+	ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
+			 &pipe_fns->syntax);
 	unbecome_authenticated_pipe_user();
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
