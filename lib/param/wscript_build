@@ -18,11 +18,11 @@ bld.SAMBA_GENERATOR('param_local.h',
                     group='build_source',
                     rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=PARAMDEFS --scope=LOCAL')
 
-bld.SAMBA_GENERATOR('s3_param_h',
-                    source= ' ../../script/mks3param.pl loadparm.c param_functions.c',
+bld.SAMBA_GENERATOR('s3_param.h',
+                    source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
                     target='s3_param.h',
                     group='build_source',
-                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT}')
+                    rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=S3PARAM')
 
 bld.SAMBA_GENERATOR('param_global.h',
                     source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
