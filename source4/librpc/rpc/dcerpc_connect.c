@@ -146,6 +146,11 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	s->io  = *io;
 	conn   = &s->conn;
 
+	if (smbXcli_conn_is_connected(s->io.smb.conn)) {
+		continue_smb_open(c);
+		return c;
+	}
+
 	/* prepare smb connection parameters: we're connecting to IPC$ share on
 	   remote rpc server */
 	conn->in.dest_host = dcerpc_binding_get_string_option(s->io.binding, "host");
@@ -252,6 +257,11 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	c->private_data = s;
 
 	s->io = *io;
+
+	if (smbXcli_conn_is_connected(s->io.smb.conn)) {
+		continue_smb_open(c);
+		return c;
+	}
 
 	host = dcerpc_binding_get_string_option(s->io.binding, "host");
 	flags = dcerpc_binding_get_flags(s->io.binding);
