@@ -88,7 +88,13 @@ this any more it probably doesn't matter
 ****************************************************************************/
 static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 {
-	uint16_t raw = (lpcfg_readraw(req->smb_conn->lp_ctx)?1:0) | (lpcfg_writeraw(req->smb_conn->lp_ctx)?2:0);
+	uint16_t raw;
+	if (lpcfg_async_smb_echo_handler(req->smb_conn->lp_ctx)) {
+		raw = 0;
+	} else {
+		raw = (lpcfg_read_raw(req->smb_conn->lp_ctx)?1:0) |
+		      (lpcfg_write_raw(req->smb_conn->lp_ctx)?2:0);
+	}
 
 	smbsrv_setup_reply(req, 13, 0);
 
@@ -119,7 +125,13 @@ static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 ****************************************************************************/
 static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 {
-	int raw = (lpcfg_readraw(req->smb_conn->lp_ctx)?1:0) | (lpcfg_writeraw(req->smb_conn->lp_ctx)?2:0);
+	uint16_t raw;
+	if (lpcfg_async_smb_echo_handler(req->smb_conn->lp_ctx)) {
+		raw = 0;
+	} else {
+		raw = (lpcfg_read_raw(req->smb_conn->lp_ctx)?1:0) |
+		      (lpcfg_write_raw(req->smb_conn->lp_ctx)?2:0);
+	}
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
 
@@ -174,9 +186,15 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 ****************************************************************************/
 static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 {
-	int raw = (lpcfg_readraw(req->smb_conn->lp_ctx)?1:0) | (lpcfg_writeraw(req->smb_conn->lp_ctx)?2:0);
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
+	uint16_t raw;
+	if (lpcfg_async_smb_echo_handler(req->smb_conn->lp_ctx)) {
+		raw = 0;
+	} else {
+		raw = (lpcfg_read_raw(req->smb_conn->lp_ctx)?1:0) |
+		      (lpcfg_write_raw(req->smb_conn->lp_ctx)?2:0);
+	}
 
 	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypt_passwords(req->smb_conn->lp_ctx);
   
@@ -272,8 +290,9 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		capabilities |= CAP_LARGE_FILES;
 	}
 
-	if (lpcfg_readraw(req->smb_conn->lp_ctx) &&
-	    lpcfg_writeraw(req->smb_conn->lp_ctx)) {
+	if (!lpcfg_async_smb_echo_handler(req->smb_conn->lp_ctx) &&
+	    lpcfg_read_raw(req->smb_conn->lp_ctx) &&
+	    lpcfg_write_raw(req->smb_conn->lp_ctx)) {
 		capabilities |= CAP_RAW_MODE;
 	}
 	

@@ -62,10 +62,15 @@ static void get_challenge(struct smbd_server_connection *sconn, uint8 buff[8])
 
 static void reply_lanman1(struct smb_request *req, uint16 choice)
 {
-	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
 	time_t t = time(NULL);
 	struct smbd_server_connection *sconn = req->sconn;
+	uint16_t raw;
+	if (lp_async_smb_echo_handler()) {
+		raw = 0;
+	} else {
+		raw = (lp_read_raw()?1:0) | (lp_write_raw()?2:0);
+	}
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
@@ -107,10 +112,15 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 
 static void reply_lanman2(struct smb_request *req, uint16 choice)
 {
-	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
 	time_t t = time(NULL);
 	struct smbd_server_connection *sconn = req->sconn;
+	uint16_t raw;
+	if (lp_async_smb_echo_handler()) {
+		raw = 0;
+	} else {
+		raw = (lp_read_raw()?1:0) | (lp_write_raw()?2:0);
+	}
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
@@ -289,7 +299,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 
 	capabilities |= CAP_LARGE_FILES;
 
-	if (lp_readraw() && lp_writeraw())
+	if (!lp_async_smb_echo_handler() && lp_read_raw() && lp_write_raw())
 		capabilities |= CAP_RAW_MODE;
 
 	if (lp_nt_status_support())

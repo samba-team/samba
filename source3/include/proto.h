@@ -994,8 +994,6 @@ bool lp_idmap_range(const char *domain_name, uint32_t *low, uint32_t *high);
 bool lp_idmap_default_range(uint32_t *low, uint32_t *high);
 const char *lp_idmap_backend(const char *domain_name);
 const char *lp_idmap_default_backend (void);
-bool lp_readraw(void);
-bool lp_writeraw(void);
 int lp_security(void);
 int lp_smb2_max_credits(void);
 int lp_cups_encrypt(void);

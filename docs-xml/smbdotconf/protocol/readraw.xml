@@ -2,15 +2,13 @@
                  context="G"
 				 type="boolean"
                  developer="1"
-                 generated_function="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This parameter controls whether or not the server 
-    will support the raw read SMB requests when transferring data 
-    to clients.</para>
+    <para>This is ignored if <smbconfoption name="async echo handler"/> is set,
+    because this feature is incompatible with raw read SMB requests</para>
 
     <para>If enabled, raw reads allow reads of 65535 bytes in 
-    one packet. This typically provides a major performance benefit.
+    one packet. This typically provides a major performance benefit for some very, very old clients.
     </para>
 
     <para>However, some clients either negotiate the allowable 
@@ -24,4 +22,5 @@
 <value type="default">yes</value>
 
 <related>write raw</related>
+<related>async echo handler</related>
 </samba:parameter>

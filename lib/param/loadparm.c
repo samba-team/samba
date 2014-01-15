@@ -319,8 +319,6 @@ static struct loadparm_context *global_loadparm_context;
 #include "lib/param/param_functions.c"
 
 /* These functions remain only in lib/param for now */
-FN_GLOBAL_BOOL(readraw, bReadRaw)
-FN_GLOBAL_BOOL(writeraw, bWriteRaw)
 FN_GLOBAL_CONST_STRING(cachedir, szCacheDir)
 FN_GLOBAL_CONST_STRING(statedir, szStateDir)
 

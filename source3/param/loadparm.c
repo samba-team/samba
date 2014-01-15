@@ -827,8 +827,8 @@ static void init_globals(bool reinit_globals)
 	Globals.winbind_sealed_pipes = true;
 	Globals.require_strong_key = true;
 	Globals.server_schannel = Auto;
-	Globals.bReadRaw = true;
-	Globals.bWriteRaw = true;
+	Globals.read_raw = true;
+	Globals.write_raw = true;
 	Globals.null_passwords = false;
 	Globals.obey_pam_restrictions = false;
 	Globals.syslog = 1;
@@ -1164,9 +1164,6 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
 #define FN_LOCAL_PARM_CHAR(fn_name,val) \
  char lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
-
-static FN_GLOBAL_BOOL(_readraw, bReadRaw)
-static FN_GLOBAL_BOOL(_writeraw, bWriteRaw)
 
 /* If lp_statedir() and lp_cachedir() are explicitely set during the
  * build process or in smb.conf, we use that value.  Otherwise they
@@ -5299,22 +5296,6 @@ bool lp_widelinks(int snum)
 	}
 
 	return lp_widelinks_internal(snum);
-}
-
-bool lp_writeraw(void)
-{
-	if (lp_async_smb_echo_handler()) {
-		return false;
-	}
-	return lp__writeraw();
-}
-
-bool lp_readraw(void)
-{
-	if (lp_async_smb_echo_handler()) {
-		return false;
-	}
-	return lp__readraw();
 }
 
 int lp_server_role(void)
