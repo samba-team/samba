@@ -84,7 +84,6 @@ static void continue_smb_connect(struct composite_context *ctx)
 	struct smbXcli_conn *conn;
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
-	uint32_t timeout_msec;
 
 	/* receive result of smb connect request */
 	c->status = smb_composite_connect_recv(ctx, s->io.conn);
@@ -102,12 +101,11 @@ static void continue_smb_connect(struct composite_context *ctx)
 	session = t->session->smbXcli;
 	tcon = t->smbXcli;
 	smb1cli_tcon_set_id(tcon, t->tid);
-	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
 	/* send named pipe open request */
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.conn,
-					     conn, session,
-					     tcon, timeout_msec,
+					     conn, session, tcon,
+					     DCERPC_REQUEST_TIMEOUT * 1000,
 					     s->io.pipe_name);
 	if (composite_nomem(open_ctx, c)) return;
 
@@ -229,7 +227,6 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	struct smbXcli_conn *conn;
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
-	uint32_t timeout_msec;
 
 	/* receive result of smb2 connect request */
 	c->status = smb2_connect_recv(subreq, s->io.conn, &t);
@@ -246,12 +243,11 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	conn = t->session->transport->conn;
 	session = t->session->smbXcli;
 	tcon = t->smbXcli;
-	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
 	/* send named pipe open request */
 	open_req = dcerpc_pipe_open_smb_send(s->io.conn,
-					     conn, session,
-					     tcon, timeout_msec,
+					     conn, session, tcon,
+					     DCERPC_REQUEST_TIMEOUT * 1000,
 					     s->io.pipe_name);
 	if (composite_nomem(open_req, c)) return;
 

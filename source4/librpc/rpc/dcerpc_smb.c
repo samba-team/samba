@@ -192,14 +192,12 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 	struct smbXcli_conn *conn;
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
-	uint32_t timeout_msec;
 	struct composite_context *ctx;
 
 	conn = t->session->transport->conn;
 	session = t->session->smbXcli;
 	tcon = t->smbXcli;
 	smb1cli_tcon_set_id(tcon, t->tid);
-	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
 	/* if we don't have a binding on this pipe yet, then create one */
 	if (p->binding == NULL) {
@@ -221,8 +219,8 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 	}
 
 	ctx = dcerpc_pipe_open_smb_send(p->conn,
-					conn, session,
-					tcon, timeout_msec,
+					conn, session, tcon,
+					DCERPC_REQUEST_TIMEOUT * 1000,
 					pipe_name);
 	if (ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -238,13 +236,11 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
 	struct smbXcli_conn *conn;
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
-	uint32_t timeout_msec;
 	struct composite_context *ctx;
 
 	conn = t->session->transport->conn;
 	session = t->session->smbXcli;
 	tcon = t->smbXcli;
-	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
 	/* if we don't have a binding on this pipe yet, then create one */
 	if (p->binding == NULL) {
@@ -266,8 +262,8 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
 	}
 
 	ctx = dcerpc_pipe_open_smb_send(p->conn,
-					conn, session,
-					tcon, timeout_msec,
+					conn, session, tcon,
+					DCERPC_REQUEST_TIMEOUT * 1000,
 					pipe_name);
 	if (ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
