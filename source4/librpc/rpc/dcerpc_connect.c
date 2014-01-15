@@ -39,13 +39,18 @@
 struct dcerpc_pipe_connect {
 	struct dcecli_connection *conn;
 	struct dcerpc_binding *binding;
-	const char *pipe_name;
 	const struct ndr_interface_table *interface;
 	struct cli_credentials *creds;
 	struct resolve_context *resolve_ctx;
 	struct {
 		const char *dir;
 	} ncalrpc;
+	struct {
+		struct smbXcli_conn *conn;
+		struct smbXcli_session *session;
+		struct smbXcli_tcon *tcon;
+		const char *pipe_name;
+	} smb;
 };
 
 struct pipe_np_smb_state {
@@ -81,32 +86,28 @@ static void continue_smb_connect(struct composite_context *ctx)
 	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
 						      struct pipe_np_smb_state);
 	struct smbcli_tree *t;
-	struct smbXcli_conn *conn;
-	struct smbXcli_session *session;
-	struct smbXcli_tcon *tcon;
 
 	/* receive result of smb connect request */
 	c->status = smb_composite_connect_recv(ctx, s->io.conn);
 	if (!composite_is_ok(c)) return;
 
-	/* prepare named pipe open parameters */
-	s->io.pipe_name = dcerpc_binding_get_string_option(s->io.binding, "endpoint");
-	if (s->io.pipe_name == NULL) {
-		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
-		return;
-	}
-
 	t = s->conn.out.tree;
-	conn = t->session->transport->conn;
-	session = t->session->smbXcli;
-	tcon = t->smbXcli;
-	smb1cli_tcon_set_id(tcon, t->tid);
+
+	/* prepare named pipe open parameters */
+	s->io.smb.conn = t->session->transport->conn;
+	s->io.smb.session = t->session->smbXcli;
+	s->io.smb.tcon = t->smbXcli;
+	smb1cli_tcon_set_id(s->io.smb.tcon, t->tid);
+	s->io.smb.pipe_name = dcerpc_binding_get_string_option(s->io.binding,
+							       "endpoint");
 
 	/* send named pipe open request */
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.conn,
-					     conn, session, tcon,
+					     s->io.smb.conn,
+					     s->io.smb.session,
+					     s->io.smb.tcon,
 					     DCERPC_REQUEST_TIMEOUT * 1000,
-					     s->io.pipe_name);
+					     s->io.smb.pipe_name);
 	if (composite_nomem(open_ctx, c)) return;
 
 	composite_continue(c, open_ctx, continue_pipe_open_smb, c);
@@ -224,31 +225,25 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
 						       struct pipe_np_smb2_state);
 	struct smb2_tree *t;
-	struct smbXcli_conn *conn;
-	struct smbXcli_session *session;
-	struct smbXcli_tcon *tcon;
 
 	/* receive result of smb2 connect request */
 	c->status = smb2_connect_recv(subreq, s->io.conn, &t);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
-	/* prepare named pipe open parameters */
-	s->io.pipe_name = dcerpc_binding_get_string_option(s->io.binding, "endpoint");
-	if (s->io.pipe_name == NULL) {
-		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
-		return;
-	}
-
-	conn = t->session->transport->conn;
-	session = t->session->smbXcli;
-	tcon = t->smbXcli;
+	s->io.smb.conn = t->session->transport->conn;
+	s->io.smb.session = t->session->smbXcli;
+	s->io.smb.tcon = t->smbXcli;
+	s->io.smb.pipe_name = dcerpc_binding_get_string_option(s->io.binding,
+							       "endpoint");
 
 	/* send named pipe open request */
 	open_req = dcerpc_pipe_open_smb_send(s->io.conn,
-					     conn, session, tcon,
+					     s->io.smb.conn,
+					     s->io.smb.session,
+					     s->io.smb.tcon,
 					     DCERPC_REQUEST_TIMEOUT * 1000,
-					     s->io.pipe_name);
+					     s->io.smb.pipe_name);
 	if (composite_nomem(open_req, c)) return;
 
 	composite_continue(c, open_req, continue_pipe_open_smb2, c);
@@ -624,7 +619,6 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	ZERO_STRUCT(pc);
 	pc.conn         = s->pipe->conn;
 	pc.binding      = s->binding;
-	pc.pipe_name    = NULL;
 	pc.interface    = s->table;
 	pc.creds        = s->credentials;
 	pc.resolve_ctx  = lpcfg_resolve_context(s->lp_ctx);
