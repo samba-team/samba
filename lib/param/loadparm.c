@@ -924,6 +924,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
+				case P_BOOLREV:
 					*(bool *)dest_ptr = *(bool *)src_ptr;
 					break;
 
