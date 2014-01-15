@@ -6,6 +6,12 @@ bld.SAMBA_GENERATOR('param_functions.c',
                     group='build_source',
                     rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=FUNCTIONS')
 
+bld.SAMBA_GENERATOR('param_functions.h',
+                    source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
+                    target='param_functions.h',
+                    group='build_source',
+                    rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=LIBPROTO')
+
 bld.SAMBA_GENERATOR('param_local_h',
                     source= '../../script/mkparamdefs.pl loadparm.c param_functions.c ',
                     target='param_local.h',
@@ -38,8 +44,7 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 	deps='DYNCONFIG server-role',
 	public_deps='samba-util param_local_h',
 	public_headers='param.h',
-	autoproto='param_proto.h',
-	autoproto_extra_source='param_functions.c'
+	autoproto='param_proto.h'
 	)
 
 

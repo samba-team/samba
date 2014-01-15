@@ -49,6 +49,7 @@ struct gensec_settings;
 
 #ifdef CONFIG_H_IS_FROM_SAMBA
 #include "lib/param/param_proto.h"
+#include "lib/param/param_functions.h"
 #endif
 
 const char **lpcfg_interfaces(struct loadparm_context *);
@@ -61,13 +62,15 @@ int lpcfg_allow_dns_updates(struct loadparm_context *);
 void reload_charcnv(struct loadparm_context *lp_ctx);
 
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx);
-
+bool lpcfg_autoloaded(struct loadparm_service *, struct loadparm_service *);
 
 char *lpcfg_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
 char *lpcfg_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
 char *lpcfg_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
 char *lpcfg_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
 char *lpcfg_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
+
+const char *lpcfg_dnsdomain(struct loadparm_context *);
 
 const char *lpcfg_servicename(const struct loadparm_service *service);
 

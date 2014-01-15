@@ -20,7 +20,7 @@ bld.env.build_public_headers = 'include/public'
 
 # these are includes which appear in public headers, but with #ifdef conditional
 # compilation, so they are safe
-bld.env.public_headers_skip = ['lib/param/param_proto.h']
+bld.env.public_headers_skip = ['lib/param/param_proto.h', 'lib/param/param_functions.h']
 
 samba_version.load_version(bld.env, is_install=bld.is_install)
 bld.SAMBA_MKVERSION('version.h')
