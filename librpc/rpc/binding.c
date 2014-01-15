@@ -178,51 +178,80 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 {
 	char *s = talloc_strdup(mem_ctx, "");
+	char *o = s;
 	int i;
 	const char *t_name = NULL;
 
 	if (b->transport != NCA_UNKNOWN) {
 		t_name = derpc_transport_string_by_transport(b->transport);
 		if (!t_name) {
+			talloc_free(o);
 			return NULL;
 		}
 	}
 
 	if (!GUID_all_zero(&b->object.uuid)) { 
-		s = talloc_asprintf(s, "%s@",
+		o = s;
+		s = talloc_asprintf_append_buffer(s, "%s@",
 				    GUID_string(mem_ctx, &b->object.uuid));
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
+		}
 	}
 
 	if (t_name != NULL) {
+		o = s;
 		s = talloc_asprintf_append_buffer(s, "%s:", t_name);
 		if (s == NULL) {
+			talloc_free(o);
 			return NULL;
 		}
 	}
 
 	if (b->host) {
+		o = s;
 		s = talloc_asprintf_append_buffer(s, "%s", b->host);
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
+		}
 	}
 
 	if (!b->endpoint && !b->options && !b->flags) {
 		return s;
 	}
 
+	o = s;
 	s = talloc_asprintf_append_buffer(s, "[");
+	if (s == NULL) {
+		talloc_free(o);
+		return NULL;
+	}
 
 	if (b->endpoint) {
+		o = s;
 		s = talloc_asprintf_append_buffer(s, "%s", b->endpoint);
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
+		}
 	}
 
 	/* this is a *really* inefficent way of dealing with strings,
 	   but this is rarely called and the strings are always short,
 	   so I don't care */
 	for (i=0;b->options && b->options[i];i++) {
+		o = s;
 		s = talloc_asprintf_append_buffer(s, ",%s", b->options[i]);
-		if (!s) return NULL;
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
+		}
 	}
 
 	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
+		o = s;
 		if (b->flags & ncacn_options[i].flag) {
 			if (ncacn_options[i].flag == DCERPC_LOCALADDRESS && b->localaddress) {
 				s = talloc_asprintf_append_buffer(s, ",%s=%s", ncacn_options[i].name,
@@ -230,11 +259,19 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 			} else {
 				s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
 			}
-			if (!s) return NULL;
+		}
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
 		}
 	}
 
+	o = s;
 	s = talloc_asprintf_append_buffer(s, "]");
+	if (s == NULL) {
+		talloc_free(o);
+		return NULL;
+	}
 
 	return s;
 }
