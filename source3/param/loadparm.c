@@ -57,6 +57,7 @@
 #include "system/filesys.h"
 #include "util_tdb.h"
 #include "lib/param/loadparm.h"
+#include "lib/param/param.h"
 #include "printing.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
@@ -3413,86 +3414,6 @@ bool lp_set_option(const char *option)
 	return ret;
 }
 
-/**************************************************************************
- Print a parameter of the specified type.
-***************************************************************************/
-
-static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
-{
-	/* For the seperation of lists values that we print below */
-	const char *list_sep = ", ";
-	int i;
-	switch (p->type)
-	{
-		case P_ENUM:
-			for (i = 0; p->enum_list[i].name; i++) {
-				if (*(int *)ptr == p->enum_list[i].value) {
-					fprintf(f, "%s",
-						p->enum_list[i].name);
-					break;
-				}
-			}
-			break;
-
-		case P_BOOL:
-			fprintf(f, "%s", BOOLSTR(*(bool *)ptr));
-			break;
-
-		case P_BOOLREV:
-			fprintf(f, "%s", BOOLSTR(!*(bool *)ptr));
-			break;
-
-		case P_INTEGER:
-		case P_BYTES:
-			fprintf(f, "%d", *(int *)ptr);
-			break;
-
-		case P_CHAR:
-			fprintf(f, "%c", *(char *)ptr);
-			break;
-
-		case P_OCTAL: {
-			int val = *(int *)ptr; 
-			if (val == -1) {
-				fprintf(f, "-1");
-			} else {
-				fprintf(f, "0%03o", val);
-			}
-			break;
-		}
-
-		case P_CMDLIST:
-			list_sep = " ";
-			/* fall through */
-		case P_LIST:
-			if ((char ***)ptr && *(char ***)ptr) {
-				char **list = *(char ***)ptr;
-				for (; *list; list++) {
-					/* surround strings with whitespace in double quotes */
-					if (*(list+1) == NULL) {
-						/* last item, no extra separator */
-						list_sep = "";
-					}
-					if ( strchr_m( *list, ' ' ) ) {
-						fprintf(f, "\"%s\"%s", *list, list_sep);
-					} else {
-						fprintf(f, "%s%s", *list, list_sep);
-					}
-				}
-			}
-			break;
-
-		case P_STRING:
-		case P_USTRING:
-			if (*(char **)ptr) {
-				fprintf(f, "%s", *(char **)ptr);
-			}
-			break;
-		case P_SEP:
-			break;
-	}
-}
-
 /***************************************************************************
  Check if two parameters are equal.
 ***************************************************************************/
@@ -3684,8 +3605,8 @@ static void dump_globals(FILE *f)
 			if (defaults_saved && is_default(i))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], lp_parm_ptr(NULL, 
-								    &parm_table[i]),
+			lpcfg_print_parameter(&parm_table[i], lp_parm_ptr(NULL,
+									  &parm_table[i]),
 					f);
 			fprintf(f, "\n");
 	}
@@ -3740,7 +3661,7 @@ static void dump_a_service(struct loadparm_service *pService, FILE * f)
 			}
 
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i],
+			lpcfg_print_parameter(&parm_table[i],
 					lp_parm_ptr(pService, &parm_table[i]),
 					f);
 			fprintf(f, "\n");
@@ -3809,7 +3730,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 						  &parm_table[i]);
 			}
 
-			print_parameter(&parm_table[i],
+			lpcfg_print_parameter(&parm_table[i],
 					ptr, f);
 			fprintf(f, "\n");
 			result = true;

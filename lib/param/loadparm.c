@@ -1626,7 +1626,7 @@ bool lpcfg_set_option(struct loadparm_context *lp_ctx, const char *option)
  * Print a parameter of the specified type.
  */
 
-static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
+void lpcfg_print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
 	/* For the seperation of lists values that we print below */
 	const char *list_sep = ", ";
@@ -1844,7 +1844,7 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 			if (!show_defaults && (lp_ctx->flags[i] & FLAG_DEFAULT))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
+			lpcfg_print_parameter(&parm_table[i], lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
 			fprintf(f, "\n");
 	}
 	if (lp_ctx->globals->param_opt != NULL) {
@@ -1896,7 +1896,7 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 			}
 
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i],
+			lpcfg_print_parameter(&parm_table[i],
 					((char *)pService) + parm_table[i].offset, f);
 			fprintf(f, "\n");
 		}
@@ -1926,7 +1926,7 @@ bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 
 	ptr = lpcfg_parm_ptr(lp_ctx, service,parm);
 
-	print_parameter(parm, ptr, f);
+	lpcfg_print_parameter(parm, ptr, f);
 	fprintf(f, "\n");
 	return true;
 }
