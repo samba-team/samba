@@ -327,7 +327,6 @@ FN_GLOBAL_CONST_STRING(cachedir, szCacheDir)
 FN_GLOBAL_CONST_STRING(statedir, szStateDir)
 
 /* local prototypes */
-static int map_parameter(const char *pszParmName);
 static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName);
 static void copy_service(struct loadparm_service *pserviceDest,
@@ -802,7 +801,7 @@ bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
  * Returns False if the parameter string is not recognised, else TRUE.
  */
 
-static int map_parameter(const char *pszParmName)
+int lpcfg_map_parameter(const char *pszParmName)
 {
 	int iIndex;
 
@@ -831,7 +830,7 @@ struct parm_struct *lpcfg_parm_struct(struct loadparm_context *lp_ctx, const cha
 		return lp_ctx->s3_fns->get_parm_struct(name);
 	}
 
-	parmnum = map_parameter(name);
+	parmnum = lpcfg_map_parameter(name);
 	if (parmnum == -1) return NULL;
 	return &parm_table[parmnum];
 }
@@ -872,7 +871,7 @@ bool lpcfg_parm_is_cmdline(struct loadparm_context *lp_ctx, const char *name)
 		return false;
 	}
 
-	parmnum = map_parameter(name);
+	parmnum = lpcfg_map_parameter(name);
 	if (parmnum == -1) return false;
 
 	return lp_ctx->flags[parmnum] & FLAG_CMDLINE;
@@ -1431,7 +1430,7 @@ mark_non_default:
 bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 			       const char *pszParmName, const char *pszParmValue)
 {
-	int parmnum = map_parameter(pszParmName);
+	int parmnum = lpcfg_map_parameter(pszParmName);
 	void *parm_ptr;
 
 	if (parmnum < 0) {
@@ -1460,7 +1459,7 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
 {
 	void *parm_ptr;
 	int i;
-	int parmnum = map_parameter(pszParmName);
+	int parmnum = lpcfg_map_parameter(pszParmName);
 
 	if (parmnum < 0) {
 		if (strchr(pszParmName, ':')) {
@@ -1550,7 +1549,7 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 		return lp_ctx->s3_fns->set_cmdline(pszParmName, pszParmValue);
 	}
 
-	parmnum = map_parameter(pszParmName);
+	parmnum = lpcfg_map_parameter(pszParmName);
 
 	while (isspace((unsigned char)*pszParmValue)) pszParmValue++;
 

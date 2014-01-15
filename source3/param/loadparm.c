@@ -634,8 +634,6 @@ static void free_global_parameters(void)
 	TALLOC_FREE(Globals.ctx);
 }
 
-static int map_parameter(const char *pszParmName);
-
 struct lp_stored_option {
 	struct lp_stored_option *prev, *next;
 	const char *label;
@@ -1855,7 +1853,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 
 bool lp_parameter_is_valid(const char *pszParmName)
 {
-	return ((map_parameter(pszParmName) != -1) ||
+	return ((lpcfg_map_parameter(pszParmName) != -1) ||
 		(strchr(pszParmName, ':') != NULL));
 }
 
@@ -1868,7 +1866,7 @@ bool lp_parameter_is_valid(const char *pszParmName)
 
 bool lp_parameter_is_global(const char *pszParmName)
 {
-	int num = map_parameter(pszParmName);
+	int num = lpcfg_map_parameter(pszParmName);
 
 	if (num >= 0) {
 		return (parm_table[num].p_class == P_GLOBAL);
@@ -1889,7 +1887,7 @@ bool lp_parameter_is_canonical(const char *parm_name)
 		return false;
 	}
 
-	return (map_parameter(parm_name) ==
+	return (lpcfg_map_parameter(parm_name) ==
 		map_parameter_canonical(parm_name, NULL));
 }
 
@@ -1967,28 +1965,6 @@ bool lp_canonicalize_parameter_with_value(const char *parm_name,
 }
 
 /***************************************************************************
- Map a parameter's string representation to something we can use. 
- Returns false if the parameter string is not recognised, else TRUE.
-***************************************************************************/
-
-static int map_parameter(const char *pszParmName)
-{
-	int iIndex;
-
-	for (iIndex = 0; parm_table[iIndex].label; iIndex++)
-		if (strwicmp(parm_table[iIndex].label, pszParmName) == 0)
-			return (iIndex);
-
-	/* Warn only if it isn't parametric option */
-	if (strchr(pszParmName, ':') == NULL)
-		DEBUG(1, ("Unknown parameter encountered: \"%s\"\n", pszParmName));
-	/* We do return 'fail' for parametric options as well because they are
-	   stored in different storage
-	 */
-	return (-1);
-}
-
-/***************************************************************************
  Map a parameter's string representation to the index of the canonical
  form of the parameter (it might be a synonym).
  Returns -1 if the parameter string is not recognised.
@@ -1999,7 +1975,7 @@ static int map_parameter_canonical(const char *pszParmName, bool *inverse)
 	int parm_num, canon_num;
 	bool loc_inverse = false;
 
-	parm_num = map_parameter(pszParmName);
+	parm_num = lpcfg_map_parameter(pszParmName);
 	if ((parm_num < 0) || !(parm_table[parm_num].flags & FLAG_HIDE)) {
 		/* invalid, parametric or no canidate for synonyms ... */
 		goto done;
@@ -3108,7 +3084,7 @@ static bool handle_printing(struct loadparm_context *unused, int snum, const cha
 	struct loadparm_service *s;
 
 	if ( parm_num == -1 )
-		parm_num = map_parameter( "printing" );
+		parm_num = lpcfg_map_parameter( "printing" );
 
 	lp_set_enum_parm( &parm_table[parm_num], pszParmValue, (int*)ptr );
 
@@ -3179,7 +3155,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	struct parmlist_entry **opt_list;
 
-	parmnum = map_parameter(pszParmName);
+	parmnum = lpcfg_map_parameter(pszParmName);
 
 	if (parmnum < 0) {
 		if (strchr(pszParmName, ':') == NULL) {
@@ -3321,7 +3297,7 @@ FLAG_CMDLINE won't be overridden by loads from smb.conf.
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values)
 {
 	int parmnum, i;
-	parmnum = map_parameter(pszParmName);
+	parmnum = lpcfg_map_parameter(pszParmName);
 	if (parmnum >= 0) {
 		parm_table[parmnum].flags &= ~FLAG_CMDLINE;
 		if (!lp_do_parameter(-1, pszParmName, pszParmValue)) {
@@ -3729,7 +3705,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 
 struct parm_struct *lp_get_parameter(const char *param_name)
 {
-	int num = map_parameter(param_name);
+	int num = lpcfg_map_parameter(param_name);
 
 	if (num < 0) {
 		return NULL;
