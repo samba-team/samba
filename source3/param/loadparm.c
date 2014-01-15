@@ -119,8 +119,6 @@ static bool defaults_saved = false;
 	char *szLdapUserSuffix;						\
 	char *szLdapIdmapSuffix;					\
 	char *szLdapGroupSuffix;					\
-	char *szStateDir;						\
-	char *szCacheDir;						\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\
@@ -767,8 +765,8 @@ static void init_globals(bool reinit_globals)
 
 	string_set(&Globals.passwd_program, "");
 	string_set(&Globals.lock_directory, get_dyn_LOCKDIR());
-	string_set(&Globals.szStateDir, get_dyn_STATEDIR());
-	string_set(&Globals.szCacheDir, get_dyn_CACHEDIR());
+	string_set(&Globals.state_directory, get_dyn_STATEDIR());
+	string_set(&Globals.cache_directory, get_dyn_CACHEDIR());
 	string_set(&Globals.pid_directory, get_dyn_PIDDIR());
 	string_set(&Globals.nbt_client_socket_address, "0.0.0.0");
 	/*
@@ -1164,28 +1162,6 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
 #define FN_LOCAL_PARM_CHAR(fn_name,val) \
  char lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
-
-/* If lp_statedir() and lp_cachedir() are explicitely set during the
- * build process or in smb.conf, we use that value.  Otherwise they
- * default to the value of lp_lock_directory(). */
-const char *lp_statedir(void) {
-	if ((strcmp(get_dyn_STATEDIR(), get_dyn_LOCKDIR()) != 0) ||
-	    (strcmp(get_dyn_STATEDIR(), Globals.szStateDir) != 0))
-		return(*(char **)(&Globals.szStateDir) ?
-		       *(char **)(&Globals.szStateDir) : "");
-	else
-		return(*(char **)(&Globals.lock_directory) ?
-		       *(char **)(&Globals.lock_directory) : "");
-}
-const char *lp_cachedir(void) {
-	if ((strcmp(get_dyn_CACHEDIR(), get_dyn_LOCKDIR()) != 0) ||
-	    (strcmp(get_dyn_CACHEDIR(), Globals.szCacheDir) != 0))
-		return(*(char **)(&Globals.szCacheDir) ?
-		       *(char **)(&Globals.szCacheDir) : "");
-	else
-		return(*(char **)(&Globals.lock_directory) ?
-		       *(char **)(&Globals.lock_directory) : "");
-}
 static FN_GLOBAL_INTEGER(winbind_max_domain_connections_int,
 		  winbindMaxDomainConnections)
 

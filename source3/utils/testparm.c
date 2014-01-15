@@ -98,24 +98,24 @@ static int do_global_checks(void)
 		       lp_lock_directory());
 	}
 
-	if (!directory_exist_stat(lp_statedir(), &st)) {
+	if (!directory_exist_stat(lp_state_directory(), &st)) {
 		fprintf(stderr, "ERROR: state directory %s does not exist\n\n",
-		       lp_statedir());
+		       lp_state_directory());
 		ret = 1;
 	} else if ((st.st_ex_mode & 0777) != 0755) {
 		fprintf(stderr, "WARNING: state directory %s should have "
 				"permissions 0755 for browsing to work\n\n",
-		       lp_statedir());
+		       lp_state_directory());
 	}
 
-	if (!directory_exist_stat(lp_cachedir(), &st)) {
+	if (!directory_exist_stat(lp_cache_directory(), &st)) {
 		fprintf(stderr, "ERROR: cache directory %s does not exist\n\n",
-		       lp_cachedir());
+		       lp_cache_directory());
 		ret = 1;
 	} else if ((st.st_ex_mode & 0777) != 0755) {
 		fprintf(stderr, "WARNING: cache directory %s should have "
 				"permissions 0755 for browsing to work\n\n",
-		       lp_cachedir());
+		       lp_cache_directory());
 	}
 
 	if (!directory_exist_stat(lp_pid_directory(), &st)) {

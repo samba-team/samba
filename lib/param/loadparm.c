@@ -318,10 +318,6 @@ static struct loadparm_context *global_loadparm_context;
 
 #include "lib/param/param_functions.c"
 
-/* These functions remain only in lib/param for now */
-FN_GLOBAL_CONST_STRING(cachedir, szCacheDir)
-FN_GLOBAL_CONST_STRING(statedir, szStateDir)
-
 /* These functions cannot be auto-generated */
 FN_LOCAL_BOOL(autoloaded, autoloaded)
 FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)

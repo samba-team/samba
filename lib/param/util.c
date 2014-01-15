@@ -123,7 +123,7 @@ char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 char *lpcfg_state_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 		       const char *name)
 {
-	return lpcfg_common_path(mem_ctx, lpcfg_statedir(lp_ctx), name);
+	return lpcfg_common_path(mem_ctx, lpcfg_state_directory(lp_ctx), name);
 }
 
 /**
@@ -132,7 +132,7 @@ char *lpcfg_state_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 char *lpcfg_cache_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 		       const char *name)
 {
-	return lpcfg_common_path(mem_ctx, lpcfg_cachedir(lp_ctx), name);
+	return lpcfg_common_path(mem_ctx, lpcfg_cache_directory(lp_ctx), name);
 }
 
 /**

@@ -1530,7 +1530,7 @@ char *lock_path(const char *name)
 
 char *state_path(const char *name)
 {
-	return xx_path(name, lp_statedir());
+	return xx_path(name, lp_state_directory());
 }
 
 /**
@@ -1543,7 +1543,7 @@ char *state_path(const char *name)
 
 char *cache_path(const char *name)
 {
-	return xx_path(name, lp_cachedir());
+	return xx_path(name, lp_cache_directory());
 }
 
 /*******************************************************************
