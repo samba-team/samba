@@ -396,7 +396,7 @@ static bool reload_nmbd_services(bool test)
 	set_remote_machine_name("nmbd", False);
 
 	if ( lp_loaded() ) {
-		char *fname = lp_configfile(talloc_tos());
+		char *fname = lp_next_configfile(talloc_tos());
 		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 			test = False;

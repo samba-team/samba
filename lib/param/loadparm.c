@@ -75,7 +75,6 @@ static bool defaults_saved = false;
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
 	char *realm_original;						\
-	char *szConfigFile;						\
 	int iminreceivefile;						\
 	char *szPrintcapname;						\
 	int CupsEncrypt;						\

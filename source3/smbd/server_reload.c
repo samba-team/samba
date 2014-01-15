@@ -142,7 +142,7 @@ bool reload_services(struct smbd_server_connection *sconn,
 	bool ret;
 
 	if (lp_loaded()) {
-		char *fname = lp_configfile(talloc_tos());
+		char *fname = lp_next_configfile(talloc_tos());
 		if (file_exist(fname) &&
 		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);

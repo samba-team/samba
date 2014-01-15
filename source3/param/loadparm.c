@@ -1204,8 +1204,6 @@ int lp_cups_encrypt(void)
 
 /* These functions remain in source3/param for now */
 
-FN_GLOBAL_STRING(configfile, szConfigFile)
-
 #include "lib/param/param_functions.c"
 
 FN_LOCAL_STRING(servicename, szService)
