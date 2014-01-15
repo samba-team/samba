@@ -1,15 +1,20 @@
 #!/bin/sh
-# script to add entries to the routing table after we have performed a
-# take ip event
-# (when we do a "releaseip" event and remove an ip address from an interface
-#  the kernel might automatically remove associated entries from
-#  the routing table. This is where we add them back)
+
+# Attempt to add a set of static routes.
 #
-# Routes to add are defined in /etc/ctdb/static-routes.
-# Syntax is :
+# Do this in "ipreallocated" rather than just "startup" because some
+# of the routes might be missing because the corresponding interface
+# has not previously had any IPs assigned or IPs were previously
+# released and corresponding routes were dropped.
+#
+# Addition of some routes might fail, errors go to /dev/null.
+#
+# Routes to add are defined in $CTDB_BASE/static-routes. Syntax is:
+#
 # IFACE NET/MASK GATEWAY
 #
-# Example
+# Example:
+#
 # bond1 10.3.3.0/24 10.0.0.1
 
 [ -n "$CTDB_BASE" ] || \
