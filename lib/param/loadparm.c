@@ -2206,7 +2206,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "enable privileges", "True");
 
-	lpcfg_do_global_parameter(lp_ctx, "smb2 max write", "1048576");
+	lpcfg_do_global_parameter_var(lp_ctx, "smb2 max write", "%u", DEFAULT_SMB2_MAX_WRITE);
 
 	lpcfg_do_global_parameter(lp_ctx, "passdb backend", "tdbsam");
 
@@ -2216,7 +2216,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "mangled names", "True");
 
-	lpcfg_do_global_parameter(lp_ctx, "smb2 max credits", "8192");
+	lpcfg_do_global_parameter_var(lp_ctx, "smb2 max credits", "%u", DEFAULT_SMB2_MAX_CREDITS);
 
 	lpcfg_do_global_parameter(lp_ctx, "ldap ssl", "start tls");
 
@@ -2304,9 +2304,9 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "lpq cache time", "30");
 
-	lpcfg_do_global_parameter(lp_ctx, "smb2 max trans", "1048576");
+	lpcfg_do_global_parameter_var(lp_ctx, "smb2 max trans", "%u", DEFAULT_SMB2_MAX_TRANSACT);
 
-	lpcfg_do_global_parameter(lp_ctx, "smb2 max read", "1048576");
+	lpcfg_do_global_parameter_var(lp_ctx, "smb2 max read", "%u", DEFAULT_SMB2_MAX_READ);
 
 	lpcfg_do_global_parameter(lp_ctx, "durable handles", "yes");
 

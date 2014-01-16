@@ -208,6 +208,12 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define GUEST_ACCOUNT "nobody"
 #endif
 
+/* SMB2 defaults */
+#define DEFAULT_SMB2_MAX_READ (1024*1024)
+#define DEFAULT_SMB2_MAX_WRITE (1024*1024)
+#define DEFAULT_SMB2_MAX_TRANSACT (1024*1024)
+#define DEFAULT_SMB2_MAX_CREDITS 8192
+
 #define LOADPARM_EXTRA_LOCALS						\
 	bool valid;						        \
 	int usershare;							\
