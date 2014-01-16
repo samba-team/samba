@@ -233,6 +233,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	}
 
 	state->domain->libnet_ctx->lsa.pipe = NULL;
+	state->domain->libnet_ctx->lsa.lsa_handle = NULL;
 
 	/* this will make the secondary connection on the same IPC$ share, 
 	   secured with SPNEGO or NTLMSSP */
@@ -297,6 +298,8 @@ static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 
 	talloc_steal(state->domain->libnet_ctx, state->domain->libnet_ctx->lsa.pipe);
 	talloc_reparent(state, state->domain->libnet_ctx->lsa.pipe, state->domain->lsa_binding);
+	state->domain->libnet_ctx->lsa.lsa_handle =
+		state->domain->libnet_ctx->lsa.pipe->binding_handle;
 	state->domain->libnet_ctx->lsa.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->domain->libnet_ctx->lsa.name = state->domain->info->name;
 
@@ -398,6 +401,7 @@ static void init_domain_recv_queryinfo(struct tevent_req *subreq)
 	state->domain->samr_binding->flags = state->domain->lsa_binding->flags;
 
 	state->domain->libnet_ctx->samr.pipe = NULL;
+	state->domain->libnet_ctx->samr.samr_handle = NULL;
 
 	ctx = wb_connect_samr_send(state, state->domain);
 	composite_continue(state->ctx, ctx, init_domain_recv_samr, state);
@@ -419,6 +423,8 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	talloc_reparent(state, state->domain->libnet_ctx->samr.pipe, state->domain->samr_binding);
+	state->domain->libnet_ctx->samr.samr_handle =
+		state->domain->libnet_ctx->samr.pipe->binding_handle;
 	state->domain->libnet_ctx->samr.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->domain->libnet_ctx->samr.name = state->domain->info->name;
 	state->domain->libnet_ctx->samr.sid = dom_sid_dup(
