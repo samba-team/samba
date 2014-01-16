@@ -134,26 +134,11 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, torture->ev);
-	if (lsa_pipe == NULL) {
-		torture_comment(torture, "dcerpc_pipe_init failed\n");
-		goto done;
-	}
+	status = pipe_bind_smb(torture, mem_ctx, cli->tree, "\\lsarpc",
+			       &ndr_table_lsarpc, &lsa_pipe);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"pipe_bind_smb failed");
 	lsa_handle = lsa_pipe->binding_handle;
-
-	status = dcerpc_pipe_open_smb(lsa_pipe, cli->tree, "\\lsarpc");
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "dcerpc_pipe_open_smb failed: %s\n",
-			 nt_errstr(status));
-		goto done;
-	}
-
-	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "dcerpc_bind_auth_none failed: %s\n",
-			 nt_errstr(status));
-		goto done;
-	}
 
 	openpolicy.in.system_name =talloc_asprintf(
 		mem_ctx, "\\\\%s", dcerpc_server_name(lsa_pipe));
@@ -1007,26 +992,11 @@ static bool auth2(struct torture_context *tctx,
 		return false;
 	}
 
-	net_pipe = dcerpc_pipe_init(mem_ctx, tctx->ev);
-	if (net_pipe == NULL) {
-		torture_comment(tctx, "dcerpc_pipe_init failed\n");
-		goto done;
-	}
+	status = pipe_bind_smb(tctx, mem_ctx, cli->tree, "\\netlogon",
+			       &ndr_table_netlogon, &net_pipe);
+	torture_assert_ntstatus_ok_goto(tctx, status, result, done,
+					"pipe_bind_smb failed");
 	net_handle = net_pipe->binding_handle;
-
-	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "dcerpc_pipe_open_smb failed: %s\n",
-			 nt_errstr(status));
-		goto done;
-	}
-
-	status = dcerpc_bind_auth_none(net_pipe, &ndr_table_netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "dcerpc_bind_auth_none failed: %s\n",
-			 nt_errstr(status));
-		goto done;
-	}
 
 	r.in.computer_name = cli_credentials_get_workstation(wks_cred);
 	r.in.server_name = talloc_asprintf(
@@ -2103,25 +2073,11 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!(net_pipe = dcerpc_pipe_init(mem_ctx, torture->ev))) {
-		torture_comment(torture, "dcerpc_pipe_init failed\n");
-		goto done;
-	}
+	status = pipe_bind_smb(torture, mem_ctx, cli->tree, "\\netlogon",
+			       &ndr_table_netlogon, &net_pipe);
+	torture_assert_ntstatus_ok_goto(torture, status, result, done,
+					"pipe_bind_smb failed");
 	net_handle = net_pipe->binding_handle;
-
-	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "dcerpc_pipe_open_smb failed: %s\n",
-			 nt_errstr(status));
-		goto done;
-	}
-
-	status = dcerpc_bind_auth_none(net_pipe, &ndr_table_netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "dcerpc_bind_auth_none failed: %s\n",
-			 nt_errstr(status));
-		goto done;
-	}
 
 	r.in.computer_name = wksname;
 	r.in.server_name = talloc_asprintf(
@@ -3436,18 +3392,11 @@ static bool torture_rpc_smb_reauth1(struct torture_context *torture)
 	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
 					"smbcli_full_connection failed");
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, torture->ev);
-	torture_assert_goto(torture, (lsa_pipe != NULL), ret, done,
-			    "dcerpc_pipe_init failed");
+	status = pipe_bind_smb(torture, mem_ctx, cli->tree, "\\lsarpc",
+			       &ndr_table_lsarpc, &lsa_pipe);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"pipe_bind_smb failed");
 	lsa_handle = lsa_pipe->binding_handle;
-
-	status = dcerpc_pipe_open_smb(lsa_pipe, cli->tree, "\\lsarpc");
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_pipe_open failed");
-
-	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_bind_auth_none failed");
 
 	/* lsa getusername */
 
@@ -3619,18 +3568,11 @@ static bool torture_rpc_smb_reauth2(struct torture_context *torture)
 
 	/* open the lsa pipe */
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, torture->ev);
-	torture_assert_goto(torture, (lsa_pipe != NULL), ret, done,
-			    "dcerpc_pipe_init failed");
+	status = pipe_bind_smb(torture, mem_ctx, cli->tree, "\\lsarpc",
+			       &ndr_table_lsarpc, &lsa_pipe);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"pipe_bind_smb failed");
 	lsa_handle = lsa_pipe->binding_handle;
-
-	status = dcerpc_pipe_open_smb(lsa_pipe, cli->tree, "\\lsarpc");
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_pipe_open failed");
-
-	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_bind_auth_none failed");
 
 	/* lsa getusername */
 
