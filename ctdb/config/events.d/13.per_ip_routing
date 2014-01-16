@@ -19,6 +19,11 @@ table_id_prefix="ctdb."
 [ "$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" -lt "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] 2>/dev/null || \
     die "error: CTDB_PER_IP_ROUTING_TABLE_ID_LOW[$CTDB_PER_IP_ROUTING_TABLE_ID_LOW] and/or CTDB_PER_IP_ROUTING_TABLE_ID_HIGH[$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH] improperly configured"
 
+if [ "$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" -le 253 -a \
+    255 -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] ; then
+    die "error: range CTDB_PER_IP_ROUTING_TABLE_ID_LOW[$CTDB_PER_IP_ROUTING_TABLE_ID_LOW]..CTDB_PER_IP_ROUTING_TABLE_ID_HIGH[$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH] must not include 253-255"
+fi
+
 have_link_local_config ()
 {
     [ "$CTDB_PER_IP_ROUTING_CONF" = "__auto_link_local__" ]
