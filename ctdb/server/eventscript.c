@@ -100,10 +100,33 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
 	return 0;
 }
 
-struct ctdb_script_tree_item {
-	const char *name;
-	int error;
-};
+/* To ignore directory entry return 0, else return non-zero */
+static int script_filter(const struct dirent *de)
+{
+	int namelen = strlen(de->d_name);
+
+	/* Ignore . and .. */
+	if (namelen < 3) {
+		return 0;
+	}
+
+	/* Skip temporary files left behind by emacs */
+	if (de->d_name[namelen-1] == '~') {
+		return 0;
+	}
+
+	/* Filename should start with [0-9][0-9]. */
+	if (!isdigit(de->d_name[0]) || !isdigit(de->d_name[1]) ||
+	    de->d_name[2] != '.') {
+		return 0;
+	}
+
+	if (namelen > MAX_SCRIPT_NAME) {
+		return 0;
+	}
+
+	return 1;
+}
 
 /* Return true if OK, otherwise set errno. */
 static bool check_executable(const char *dir, const char *name)
@@ -135,117 +158,40 @@ static bool check_executable(const char *dir, const char *name)
 
 static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
 {
-	DIR *dir;
-	struct dirent *de;
-	struct stat st;
-	trbt_tree_t *tree;
+	struct dirent **namelist;
 	struct ctdb_scripts_wire *scripts;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_script_tree_item *tree_item;
 	int count;
-
-	/*
-	  the service specific event scripts 
-	*/
-	if (stat(ctdb->event_script_dir, &st) != 0 && 
-	    errno == ENOENT) {
-		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
-		talloc_free(tmp_ctx);
-		return NULL;
-	}
-
-	/* create a tree to store all the script names in */
-	tree = trbt_create(tmp_ctx, 0);
 
 	/* scan all directory entries and insert all valid scripts into the 
 	   tree
 	*/
-	dir = opendir(ctdb->event_script_dir);
-	if (dir == NULL) {
-		DEBUG(DEBUG_CRIT,("Failed to open event script directory '%s'\n", ctdb->event_script_dir));
-		talloc_free(tmp_ctx);
+	count = scandir(ctdb->event_script_dir, &namelist, script_filter, alphasort);
+	if (count == -1) {
+		DEBUG(DEBUG_CRIT, ("Failed to read event script directory '%s' - %s\n",
+				   ctdb->event_script_dir, strerror(errno)));
 		return NULL;
 	}
 
-	count = 0;
-	while ((de=readdir(dir)) != NULL) {
-		int namlen;
-		unsigned num;
-
-		namlen = strlen(de->d_name);
-
-		if (namlen < 3) {
-			continue;
-		}
-
-		if (de->d_name[namlen-1] == '~') {
-			/* skip files emacs left behind */
-			continue;
-		}
-
-		if (de->d_name[2] != '.') {
-			continue;
-		}
-
-		if (sscanf(de->d_name, "%02u.", &num) != 1) {
-			continue;
-		}
-
-		if (strlen(de->d_name) > MAX_SCRIPT_NAME) {
-			DEBUG(DEBUG_ERR,("Script name %s too long! %u chars max",
-					 de->d_name, MAX_SCRIPT_NAME));
-			continue;
-		}
-
-		tree_item = talloc(tree, struct ctdb_script_tree_item);
-		if (tree_item == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new tree item\n"));
-			closedir(dir);
-			talloc_free(tmp_ctx);
-			return NULL;
-		}
-	
-		tree_item->error = 0;
-		if (!check_executable(ctdb->event_script_dir, de->d_name)) {
-			tree_item->error = errno;
-		}
-
-		tree_item->name = talloc_strdup(tree_item, de->d_name);
-		if (tree_item->name == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to allocate script name.\n"));
-			closedir(dir);
-			talloc_free(tmp_ctx);
-			return NULL;
-		}
-
-		/* store the event script in the tree */
-		trbt_insert32(tree, (num<<16)|count++, tree_item);
-	}
-	closedir(dir);
-
 	/* Overallocates by one, but that's OK */
-	scripts = talloc_zero_size(tmp_ctx,
+	scripts = talloc_zero_size(mem_ctx,
 				   sizeof(*scripts)
 				   + sizeof(scripts->scripts[0]) * count);
 	if (scripts == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate scripts\n"));
-		talloc_free(tmp_ctx);
+		free(namelist);
 		return NULL;
 	}
 	scripts->num_scripts = count;
 
 	for (count = 0; count < scripts->num_scripts; count++) {
-		tree_item = trbt_findfirstarray32(tree, 1);
-
-		strcpy(scripts->scripts[count].name, tree_item->name);
-		scripts->scripts[count].status = -tree_item->error;
-
-		/* remove this script from the tree */
-		talloc_free(tree_item);
+		strcpy(scripts->scripts[count].name, namelist[count]->d_name);
+		scripts->scripts[count].status = 0;
+		if (!check_executable(ctdb->event_script_dir, namelist[count]->d_name)) {
+			scripts->scripts[count].status = -errno;
+		}
 	}
 
-	talloc_steal(mem_ctx, scripts);
-	talloc_free(tmp_ctx);
+	free(namelist);
 	return scripts;
 }
 
