@@ -170,7 +170,7 @@ static enum srvsvc_ShareType get_share_type(int snum)
 		type = lp_administrative_share(snum)
 			? STYPE_PRINTQ_HIDDEN : STYPE_PRINTQ;
 	}
-	if (strequal(lp_fstype(talloc_tos(), snum), "IPC")) {
+	if (strequal(lp_fstype(snum), "IPC")) {
 		type = lp_administrative_share(snum)
 			? STYPE_IPC_HIDDEN : STYPE_IPC;
 	}

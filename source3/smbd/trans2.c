@@ -3077,7 +3077,7 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	int data_len = 0, len;
 	const char *vname = volume_label(talloc_tos(), SNUM(conn));
 	int snum = SNUM(conn);
-	char *fstype = lp_fstype(talloc_tos(), SNUM(conn));
+	char *fstype = lp_fstype(SNUM(conn));
 	const char *filename = NULL;
 	uint32 additional_flags = 0;
 	struct smb_filename smb_fname;
@@ -3626,7 +3626,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 * Thursby MAC extension... ONLY on NTFS filesystems
 			 * once we do streams then we don't need this
 			 */
-			if (strequal(lp_fstype(talloc_tos(), SNUM(conn)),"NTFS")) {
+			if (strequal(lp_fstype(SNUM(conn)),"NTFS")) {
 				data_len = 88;
 				SIVAL(pdata,84,0x100); /* Don't support mac... */
 				break;

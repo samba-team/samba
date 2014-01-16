@@ -971,7 +971,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		}
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
-		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(ctx, SNUM(conn));
+		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_RESPONSE) {
 			/* Return permissions. */

@@ -256,7 +256,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 	if (dev[0] == '?' || !dev[0]) {
 		if (lp_printable(snum)) {
 			fstrcpy(dev,"LPT1:");
-		} else if (strequal(lp_fstype(talloc_tos(), snum), "IPC")) {
+		} else if (strequal(lp_fstype(snum), "IPC")) {
 			fstrcpy(dev, "IPC");
 		} else {
 			fstrcpy(dev,"A:");
@@ -272,7 +272,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 		if (!strequal(dev, "LPT1:")) {
 			return NT_STATUS_BAD_DEVICE_TYPE;
 		}
-	} else if (strequal(lp_fstype(talloc_tos(), snum), "IPC")) {
+	} else if (strequal(lp_fstype(snum), "IPC")) {
 		if (!strequal(dev, "IPC")) {
 			return NT_STATUS_BAD_DEVICE_TYPE;
 		}

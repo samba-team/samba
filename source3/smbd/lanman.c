@@ -1948,7 +1948,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		if (lp_printable(snum)) {
 			type = STYPE_PRINTQ;
 		}
-		if (strequal("IPC",lp_fstype(talloc_tos(),snum))) {
+		if (strequal("IPC",lp_fstype(snum))) {
 			type = STYPE_IPC;
 		}
 		SSVAL(p,14,type);		/* device type */
