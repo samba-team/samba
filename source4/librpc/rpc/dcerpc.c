@@ -2224,7 +2224,8 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 			tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
 		} else {
 			state->p->last_fault_code = pkt->u.fault.status;
-			tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+			status = dcerpc_fault_to_nt_status(pkt->u.fault.status);
+			tevent_req_nterror(req, status);
 		}
 		return;
 	}
