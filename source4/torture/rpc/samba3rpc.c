@@ -3720,18 +3720,11 @@ static bool torture_rpc_smb2_reauth1(struct torture_context *torture)
 	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
 					"smb2_connect failed");
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, torture->ev);
-	torture_assert_goto(torture, (lsa_pipe != NULL), ret, done,
-			    "dcerpc_pipe_init failed");
+	status = pipe_bind_smb2(torture, mem_ctx, tree, "lsarpc",
+			        &ndr_table_lsarpc, &lsa_pipe);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"pipe_bind_smb2 failed");
 	lsa_handle = lsa_pipe->binding_handle;
-
-	status = dcerpc_pipe_open_smb2(lsa_pipe, tree, "lsarpc");
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_pipe_open_smb2 failed");
-
-	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_bind_auth_none failed");
 
 	/* lsa getusername */
 
@@ -3889,18 +3882,11 @@ static bool torture_rpc_smb2_reauth2(struct torture_context *torture)
 
 	/* open the lsa pipe */
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, torture->ev);
-	torture_assert_goto(torture, (lsa_pipe != NULL), ret, done,
-			    "dcerpc_pipe_init failed");
+	status = pipe_bind_smb2(torture, mem_ctx, tree, "lsarpc",
+			        &ndr_table_lsarpc, &lsa_pipe);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"pipe_bind_smb2 failed");
 	lsa_handle = lsa_pipe->binding_handle;
-
-	status = dcerpc_pipe_open_smb2(lsa_pipe, tree, "lsarpc");
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_pipe_open_smb2 failed");
-
-	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
-	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
-					"dcerpc_bind_auth_none failed");
 
 	/* lsa getusername */
 
