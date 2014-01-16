@@ -371,22 +371,6 @@ def import_wins(samba4_winsdb, samba3_winsdb):
                        "maxVersion": str(version_id)})
 
 
-def enable_samba3sam(samdb, ldapurl):
-    """Enable Samba 3 LDAP URL database.
-
-    :param samdb: SAM Database.
-    :param ldapurl: Samba 3 LDAP URL
-    """
-    samdb.modify_ldif("""
-dn: @MODULES
-changetype: modify
-replace: @LIST
-@LIST: samldb,operational,objectguid,rdn_name,samba3sam
-""")
-
-    samdb.add({"dn": "@MAP=samba3sam", "@MAP_URL": ldapurl})
-
-
 smbconf_keep = [
     "dos charset",
     "unix charset",
