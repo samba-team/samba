@@ -383,10 +383,8 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 
 	/* store input parameters in state structure */
 	s->io               = *io;
-	if (io->binding->localaddress != NULL) {
-		s->localaddr = talloc_strdup(s, io->binding->localaddress);
-		if (composite_nomem(s->localaddr, c)) return c;
-	}
+	s->localaddr = dcerpc_binding_get_string_option(io->binding,
+							"localaddress");
 	if (io->binding->host != NULL) {
 		s->host = talloc_strdup(s, io->binding->host);
 		if (composite_nomem(s->host, c)) return c;

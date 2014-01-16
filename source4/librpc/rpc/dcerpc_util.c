@@ -225,6 +225,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	struct epm_map_binding_state *s;
 	struct composite_context *pipe_connect_req;
 	struct cli_credentials *anon_creds;
+	const char *localaddress;
 
 	NTSTATUS status;
 	struct dcerpc_binding *epmapper_binding;
@@ -295,6 +296,13 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 
 	/* basic endpoint mapping data */
 	epmapper_binding->options		= NULL;
+	localaddress = dcerpc_binding_get_string_option(binding, "localaddress");
+	if (localaddress != NULL) {
+		c->status = dcerpc_binding_set_string_option(epmapper_binding,
+							     "localaddress",
+							     localaddress);
+		if (!composite_is_ok(c)) return c;
+	}
 	epmapper_binding->flags			= 0;
 	epmapper_binding->assoc_group_id	= 0;
 	epmapper_binding->endpoint		= NULL;

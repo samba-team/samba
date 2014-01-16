@@ -38,6 +38,7 @@ struct sec_conn_state {
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
 	struct socket_address *peer_addr;
+	const char *localaddress;
 };
 
 
@@ -93,8 +94,11 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 			return c;
 		}
 
+		s->localaddress = dcerpc_binding_get_string_option(s->binding,
+								"localaddress");
+
 		pipe_tcp_req = dcerpc_pipe_open_tcp_send(s->pipe2->conn,
-							 s->binding->localaddress,
+							 s->localaddress,
 							 s->peer_addr->addr,
 							 s->binding->target_hostname,
 							 atoi(s->binding->endpoint),
