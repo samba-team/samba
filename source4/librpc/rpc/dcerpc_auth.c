@@ -398,7 +398,9 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	sec->auth_info->credentials = state->credentials;
 
 	if (gensec_have_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER)) {
-		state->pipe->conn->flags |= DCERPC_PROPOSE_HEADER_SIGNING;
+		if (auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+			state->pipe->conn->flags |= DCERPC_PROPOSE_HEADER_SIGNING;
+		}
 	}
 
 	/* The first request always is a dcerpc_bind. The subsequent ones
