@@ -108,23 +108,6 @@ static int config_backend = CONFIG_BACKEND_FILE;
 
 static bool defaults_saved = false;
 
-#define LOADPARM_EXTRA_GLOBALS \
-	struct parmlist_entry *param_opt;				\
-	char *realm_original;						\
-	int iminreceivefile;						\
-	char *szPrintcapname;						\
-	int CupsEncrypt;						\
-	int  iPreferredMaster;						\
-	char *szLdapMachineSuffix;					\
-	char *szLdapUserSuffix;						\
-	char *szLdapIdmapSuffix;					\
-	char *szLdapGroupSuffix;					\
-	char *szIdmapUID;						\
-	char *szIdmapGID;						\
-	char *szIdmapBackend;						\
-	int winbindMaxDomainConnections;				\
-	int ismb2_max_credits;
-
 #include "lib/param/param_global.h"
 
 static struct loadparm_global Globals;

@@ -230,6 +230,23 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #include "lib/param/param_local.h"
 
+#define LOADPARM_EXTRA_GLOBALS \
+	struct parmlist_entry *param_opt;				\
+	char *realm_original;						\
+	int iminreceivefile;						\
+	char *szPrintcapname;						\
+	int CupsEncrypt;						\
+	int  iPreferredMaster;						\
+	char *szLdapMachineSuffix;					\
+	char *szLdapUserSuffix;						\
+	char *szLdapIdmapSuffix;					\
+	char *szLdapGroupSuffix;					\
+	char *szIdmapUID;						\
+	char *szIdmapGID;						\
+	char *szIdmapBackend;						\
+	int winbindMaxDomainConnections;				\
+	int ismb2_max_credits;
+
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master);
 int lp_find_security(int server_role, int security);
