@@ -862,7 +862,25 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 
 	*total_entries = list_sessions(p->mem_ctx, &session_list);
 
-	for (; resume_handle < *total_entries; resume_handle++) {
+	if (resume_handle >= *total_entries) {
+		if (resume_handle_p) {
+			*resume_handle_p = 0;
+		}
+		return WERR_OK;
+	}
+
+	/* We know num_entries must be positive, due to
+	   the check resume_handle >= *total_entries above. */
+
+	num_entries = *total_entries - resume_handle;
+
+	ctr1->array = talloc_zero_array(p->mem_ctx,
+				   struct srvsvc_NetSessInfo1,
+				   num_entries);
+
+	W_ERROR_HAVE_NO_MEMORY(ctr1->array);
+
+	for (num_entries = 0; resume_handle < *total_entries; num_entries++, resume_handle++) {
 		uint32 num_files;
 		uint32 connect_time;
 		struct passwd *pw = getpwnam(session_list[resume_handle].username);
@@ -871,18 +889,13 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 		if ( !pw ) {
 			DEBUG(10,("init_srv_sess_info_1: failed to find owner: %s\n",
 				session_list[resume_handle].username));
-			continue;
+			num_files = 0;
+		} else {
+			num_files = net_count_files(pw->pw_uid, session_list[resume_handle].pid);
 		}
 
 		connect_time = (uint32_t)(now - session_list[resume_handle].connect_start);
-		num_files = net_count_files(pw->pw_uid, session_list[resume_handle].pid);
 		guest = strequal( session_list[resume_handle].username, lp_guestaccount() );
-
-		ctr1->array = talloc_realloc(p->mem_ctx,
-						   ctr1->array,
-						   struct srvsvc_NetSessInfo1,
-						   num_entries+1);
-		W_ERROR_HAVE_NO_MEMORY(ctr1->array);
 
 		ctr1->array[num_entries].client		= session_list[resume_handle].remote_machine;
 		ctr1->array[num_entries].user		= session_list[resume_handle].username;
@@ -890,8 +903,6 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 		ctr1->array[num_entries].time		= connect_time;
 		ctr1->array[num_entries].idle_time	= 0;
 		ctr1->array[num_entries].user_flags	= guest;
-
-		num_entries++;
 	}
 
 	ctr1->count = num_entries;
