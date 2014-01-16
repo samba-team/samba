@@ -4349,7 +4349,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "tls keyfile",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_keyfile),
+		.offset		= GLOBAL_VAR(_tls_keyfile),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -4357,7 +4357,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "tls certfile",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_certfile),
+		.offset		= GLOBAL_VAR(_tls_certfile),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -4365,7 +4365,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "tls cafile",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_cafile),
+		.offset		= GLOBAL_VAR(_tls_cafile),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -4373,7 +4373,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "tls crlfile",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_crlfile),
+		.offset		= GLOBAL_VAR(_tls_crlfile),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -4381,7 +4381,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "tls dh params file",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_dhpfile),
+		.offset		= GLOBAL_VAR(_tls_dhpfile),
 		.special	= NULL,
 		.enum_list	= NULL
 	},

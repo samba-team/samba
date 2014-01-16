@@ -123,12 +123,7 @@ static bool defaults_saved = false;
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\
 	int winbindMaxDomainConnections;				\
-	int ismb2_max_credits;						\
-	char *tls_keyfile;						\
-	char *tls_certfile;						\
-	char *tls_cafile;						\
-	char *tls_crlfile;						\
-	char *tls_dhpfile;
+	int ismb2_max_credits;
 
 #include "lib/param/param_global.h"
 
@@ -1036,9 +1031,9 @@ static void init_globals(bool reinit_globals)
 
 	Globals.tls_enabled = true;
 
-	string_set(&Globals.tls_keyfile, "tls/key.pem");
-	string_set(&Globals.tls_certfile, "tls/cert.pem");
-	string_set(&Globals.tls_cafile, "tls/ca.pem");
+	string_set(&Globals._tls_keyfile, "tls/key.pem");
+	string_set(&Globals._tls_certfile, "tls/cert.pem");
+	string_set(&Globals._tls_cafile, "tls/ca.pem");
 
 	string_set(&Globals.share_backend, "classic");
 

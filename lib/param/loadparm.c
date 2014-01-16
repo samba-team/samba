@@ -87,12 +87,7 @@ static bool defaults_saved = false;
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\
 	int winbindMaxDomainConnections;				\
-	int ismb2_max_credits;						\
-	char *tls_keyfile;						\
-	char *tls_certfile;						\
-	char *tls_cafile;						\
-	char *tls_crlfile;						\
-	char *tls_dhpfile;
+	int ismb2_max_credits;
 
 #include "lib/param/param_global.h"
 
@@ -2710,27 +2705,27 @@ _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 
 _PUBLIC_ char *lpcfg_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_keyfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lpcfg__tls_keyfile(lp_ctx));
 }
 
 _PUBLIC_ char *lpcfg_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_certfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lpcfg__tls_certfile(lp_ctx));
 }
 
 _PUBLIC_ char *lpcfg_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_cafile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lpcfg__tls_cafile(lp_ctx));
 }
 
 _PUBLIC_ char *lpcfg_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_crlfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lpcfg__tls_crlfile(lp_ctx));
 }
 
 _PUBLIC_ char *lpcfg_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_dhpfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lpcfg__tls_dhpfile(lp_ctx));
 }
 
 struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
