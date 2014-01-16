@@ -54,12 +54,6 @@ struct file_enum_count {
 	struct srvsvc_NetFileCtr3 *ctr3;
 };
 
-struct sess_file_count {
-	struct server_id pid;
-	uid_t uid;
-	int count;
-};
-
 struct sess_file_info {
 	struct srvsvc_NetSessCtr1 *ctr;
 	struct sessionid *session_list;
@@ -812,38 +806,6 @@ static WERROR init_srv_sess_info_0(struct pipes_struct *p,
 	return WERR_OK;
 }
 
-/*******************************************************************
-********************************************************************/
-
-static void sess_file_fn( const struct share_mode_entry *e,
-                          const char *sharepath, const char *fname,
-			  void *data )
-{
-	struct sess_file_count *sess = (struct sess_file_count *)data;
-
-	if (serverid_equal(&e->pid, &sess->pid) && (sess->uid == e->uid)) {
-		sess->count++;
-	}
-
-	return;
-}
-
-/*******************************************************************
-********************************************************************/
-
-static int net_count_files( uid_t uid, struct server_id pid )
-{
-	struct sess_file_count s_file_cnt;
-
-	s_file_cnt.count = 0;
-	s_file_cnt.uid = uid;
-	s_file_cnt.pid = pid;
-
-	share_mode_forall( sess_file_fn, &s_file_cnt );
-
-	return s_file_cnt.count;
-}
-
 /***********************************************************************
  * find out the session on which this file is open and bump up its count
  **********************************************************************/
@@ -936,31 +898,26 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 	W_ERROR_HAVE_NO_MEMORY(ctr1->array);
 
 	for (num_entries = 0; resume_handle < *total_entries; num_entries++, resume_handle++) {
-		uint32 num_files;
 		uint32 connect_time;
-		struct passwd *pw = getpwnam(session_list[resume_handle].username);
 		bool guest;
-
-		if ( !pw ) {
-			DEBUG(10,("init_srv_sess_info_1: failed to find owner: %s\n",
-				session_list[resume_handle].username));
-			num_files = 0;
-		} else {
-			num_files = net_count_files(pw->pw_uid, session_list[resume_handle].pid);
-		}
 
 		connect_time = (uint32_t)(now - session_list[resume_handle].connect_start);
 		guest = strequal( session_list[resume_handle].username, lp_guestaccount() );
 
 		ctr1->array[num_entries].client		= session_list[resume_handle].remote_machine;
 		ctr1->array[num_entries].user		= session_list[resume_handle].username;
-		ctr1->array[num_entries].num_open	= num_files;
+		ctr1->array[num_entries].num_open	= 0;/* computed later */
 		ctr1->array[num_entries].time		= connect_time;
 		ctr1->array[num_entries].idle_time	= 0;
 		ctr1->array[num_entries].user_flags	= guest;
 	}
 
 	ctr1->count = num_entries;
+
+	/* count open files on all sessions in single tdb traversal */
+	net_count_files_for_all_sess(ctr1, session_list,
+				     resume_handle_p ? *resume_handle_p : 0,
+				     num_entries);
 
 	if (resume_handle_p) {
 		if (*resume_handle_p >= *total_entries) {
