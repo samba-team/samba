@@ -49,42 +49,34 @@ static struct winbindd_child *winbindd_children = NULL;
 
 /* Read some data from a client connection */
 
-static NTSTATUS child_read_request(struct winbindd_cli_state *state)
+static NTSTATUS child_read_request(int sock, struct winbindd_request *wreq)
 {
 	NTSTATUS status;
 
-	/* Read data */
-
-	status = read_data(state->sock, (char *)state->request,
-			   sizeof(*state->request));
-
+	status = read_data(sock, (char *)wreq, sizeof(*wreq));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("child_read_request: read_data failed: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
 
-	if (state->request->extra_len == 0) {
-		state->request->extra_data.data = NULL;
+	if (wreq->extra_len == 0) {
+		wreq->extra_data.data = NULL;
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request->extra_len));
+	DEBUG(10, ("Need to read %d extra bytes\n", (int)wreq->extra_len));
 
-	state->request->extra_data.data =
-		SMB_MALLOC_ARRAY(char, state->request->extra_len + 1);
-
-	if (state->request->extra_data.data == NULL) {
+	wreq->extra_data.data = SMB_MALLOC_ARRAY(char, wreq->extra_len + 1);
+	if (wreq->extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Ensure null termination */
-	state->request->extra_data.data[state->request->extra_len] = '\0';
+	wreq->extra_data.data[wreq->extra_len] = '\0';
 
-	status= read_data(state->sock, state->request->extra_data.data,
-			  state->request->extra_len);
-
+	status = read_data(sock, wreq->extra_data.data, wreq->extra_len);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not read extra data: %s\n",
 			  nt_errstr(status)));
@@ -1327,7 +1319,7 @@ static void child_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	int iov_count;
 
 	/* fetch a request from the main daemon */
-	status = child_read_request(&state->cli);
+	status = child_read_request(state->cli.sock, state->cli.request);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* we lost contact with our parent */
