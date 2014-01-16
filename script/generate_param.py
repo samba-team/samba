@@ -177,7 +177,7 @@ def make_lib_proto(path_in, path_out):
                 continue
 
             output_string = ""
-            if parameter['constant'] or parameter['type'] == 'string':
+            if parameter['constant']:
                 output_string += 'const '
             param_type = mapping.get(parameter['type'])
             if param_type is None:
@@ -186,12 +186,20 @@ def make_lib_proto(path_in, path_out):
 
             output_string += "lpcfg_%s" % parameter['function']
 
-            if parameter['context'] == 'G':
-                output_string += '(struct loadparm_context *);\n'
-            elif parameter['context'] == 'S':
-                output_string += '(struct loadparm_service *, struct loadparm_service *);\n'
+            if parameter['type'] == 'string' and not parameter['constant']:
+                if parameter['context'] == 'G':
+                    output_string += '(struct loadparm_context *, TALLOC_CTX *ctx);\n'
+                elif parameter['context'] == 'S':
+                    output_string += '(struct loadparm_service *, struct loadparm_service *, TALLOC_CTX *ctx);\n'
+                else:
+                    raise Exception(parameter['name'] + " has an invalid param type " + parameter['type'])
             else:
-                raise Exception(parameter['name'] + " has an invalid param type " + parameter['type'])
+                if parameter['context'] == 'G':
+                    output_string += '(struct loadparm_context *);\n'
+                elif parameter['context'] == 'S':
+                    output_string += '(struct loadparm_service *, struct loadparm_service *);\n'
+                else:
+                    raise Exception(parameter['name'] + " has an invalid param type " + parameter['type'])
 
             
             file_out.write(output_string)
@@ -277,9 +285,6 @@ def make_s3_param(path_in, path_out):
                 continue
             if parameter['context'] != 'G':
                 continue
-            # STRING isn't handle yet properly
-            if parameter['type'] == 'string' and not parameter['constant']:
-                continue
             output_string = "\t"
             if parameter['constant'] or parameter['type'] == 'string':
                 output_string += 'const '
@@ -288,7 +293,10 @@ def make_s3_param(path_in, path_out):
                raise Exception(parameter['name'] + " has an invalid context " + parameter['context'])
             output_string += param_type
 
-            output_string += " (*%s)(void);\n" % parameter['function']
+            if parameter['type'] == 'string' and not parameter['constant']:
+                output_string += " (*%s)(TALLOC_CTX *);\n" % parameter['function']
+            else:
+                output_string += " (*%s)(void);\n" % parameter['function']
             file_out.write(output_string)
 
         file_out.write("};\n")
@@ -320,9 +328,6 @@ def make_s3_param_ctx_table(path_in, path_out):
             if ':' in parameter['name']:
                 continue
             if parameter['context'] != 'G':
-                continue
-            # STRING isn't handle yet properly
-            if parameter['type'] == 'string' and not parameter['constant']:
                 continue
             output_string = "\t.%s" % parameter['function']
             output_string += " = lp_%s,\n" % parameter['function']

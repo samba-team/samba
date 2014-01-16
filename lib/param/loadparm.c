@@ -207,12 +207,13 @@ static struct loadparm_context *global_loadparm_context;
 #define lpcfg_global_service(i) global_loadparm_context->services[i]
 
 #define FN_GLOBAL_STRING(fn_name,var_name) \
- _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {\
+ _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx, TALLOC_CTX *ctx) {\
 	 if (lp_ctx == NULL) return NULL;				\
 	 if (lp_ctx->s3_fns) {						\
-	         smb_panic( __location__ ": " #fn_name " not implemented because it is an allocated and substiuted string"); \
+		 SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
+		 return lp_ctx->s3_fns->fn_name(ctx);			\
 	 }								\
-	 return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : ""; \
+	 return lp_ctx->globals->var_name ? talloc_strdup(ctx, lp_string(lp_ctx->globals->var_name)) : talloc_strdup(ctx, ""); \
 }
 
 #define FN_GLOBAL_CONST_STRING(fn_name,var_name)				\
@@ -258,12 +259,16 @@ static struct loadparm_context *global_loadparm_context;
  * loadparm_service is shared and lpcfg_service() checks the ->s3_fns
  * hook */
 #define FN_LOCAL_STRING(fn_name,val) \
- _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, \
-					struct loadparm_service *sDefault) { \
-	 return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val))); \
+ _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_service *service, \
+					struct loadparm_service *sDefault, TALLOC_CTX *ctx) { \
+	 return(talloc_strdup(ctx, lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)))); \
  }
 
-#define FN_LOCAL_CONST_STRING(fn_name,val) FN_LOCAL_STRING(fn_name, val)
+#define FN_LOCAL_CONST_STRING(fn_name,val) \
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, \
+					struct loadparm_service *sDefault) { \
+	 return((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)); \
+ }
 
 #define FN_LOCAL_LIST(fn_name,val) \
  _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_service *service, \
@@ -720,7 +725,7 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 	    || strequal(default_service->path, lp_ctx->sDefault->path)) {
 		service->path = talloc_strdup(service, pszHomedir);
 	} else {
-		service->path = string_sub_talloc(service, lpcfg_path(default_service, lp_ctx->sDefault), "%H", pszHomedir);
+		service->path = string_sub_talloc(service, lpcfg_path(default_service, lp_ctx->sDefault, service), "%H", pszHomedir);
 	}
 
 	if (!(*(service->comment))) {
@@ -2421,13 +2426,21 @@ const char *lp_default_path(void)
 static bool lpcfg_update(struct loadparm_context *lp_ctx)
 {
 	struct debug_settings settings;
-	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx));
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(lp_ctx);
+	if (tmp_ctx == NULL) {
+		return false;
+	}
+
+	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx, tmp_ctx));
 
 	if (!lp_ctx->globals->wins_server_list && lp_ctx->globals->we_are_a_wins_server) {
 		lpcfg_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 
 	if (!lp_ctx->global) {
+		TALLOC_FREE(tmp_ctx);
 		return true;
 	}
 
@@ -2456,6 +2469,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 		unsetenv("SOCKET_TESTNONBLOCK");
 	}
 
+	TALLOC_FREE(tmp_ctx);
 	return true;
 }
 

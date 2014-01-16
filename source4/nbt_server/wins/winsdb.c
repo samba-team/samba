@@ -994,7 +994,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 	if (!h->ldb) goto failed;
 
 	h->caller = caller;
-	h->hook_script = lpcfg_wins_hook(lp_ctx);
+	h->hook_script = lpcfg_wins_hook(lp_ctx, h);
 
 	h->local_owner = talloc_strdup(h, owner);
 	if (!h->local_owner) goto failed;

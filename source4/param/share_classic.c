@@ -77,11 +77,11 @@ static char *sclassic_string_option(TALLOC_CTX *mem_ctx,
 	}
 
 	if (strcmp(opt_name, SHARE_PATH) == 0) {
-		return lpcfg_path(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_path(s, lpcfg_default_service(lp_ctx), mem_ctx);
 	}
 
 	if (strcmp(opt_name, SHARE_COMMENT) == 0) {
-		return lpcfg_comment(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_comment(s, lpcfg_default_service(lp_ctx), mem_ctx);
 	}
 
 	if (strcmp(opt_name, SHARE_VOLUME) == 0) {
