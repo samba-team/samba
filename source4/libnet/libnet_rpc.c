@@ -203,9 +203,11 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 		   mem_ctx is freed */
 		if (r->in.dcerpc_iface == &ndr_table_samr) {
 			ctx->samr.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+			ctx->samr.samr_handle = ctx->samr.pipe->binding_handle;
 
 		} else if (r->in.dcerpc_iface == &ndr_table_lsarpc) {
 			ctx->lsa.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+			ctx->lsa.lsa_handle = ctx->lsa.pipe->binding_handle;
 		}
 
 		r->out.error_string = talloc_strdup(mem_ctx, "Success");
@@ -424,9 +426,10 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 		   mem_ctx is freed */
 		if (r->in.dcerpc_iface == &ndr_table_samr) {
 			ctx->samr.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
-
+			ctx->samr.samr_handle = ctx->samr.pipe->binding_handle;
 		} else if (r->in.dcerpc_iface == &ndr_table_lsarpc) {
 			ctx->lsa.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+			ctx->lsa.lsa_handle = ctx->lsa.pipe->binding_handle;
 		}
 
 	} else {
