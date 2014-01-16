@@ -910,7 +910,7 @@ bool torture_raw_qfileinfo_pipe(struct torture_context *torture,
 	op.ntcreatex.in.fname = fname;
 
 	status = smb_raw_open(cli->tree, torture, &op);
-	torture_assert_ntstatus_ok(torture, status, "dcerpc_pipe_open_smb failed");
+	torture_assert_ntstatus_ok(torture, status, "smb_raw_open failed");
 
 	fnum = op.ntcreatex.out.file.fnum;
 
