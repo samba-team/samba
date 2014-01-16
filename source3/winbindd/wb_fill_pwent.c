@@ -91,7 +91,7 @@ static void wb_fill_pwent_sid2uid_done(struct tevent_req *subreq)
 
 	state->pw->pw_uid = (uid_t)xid.id;
 
-	subreq = wb_getgrsid_send(state, state->ev, &state->info->group_sid, 1);
+	subreq = wb_getgrsid_send(state, state->ev, &state->info->group_sid, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
