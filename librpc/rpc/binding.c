@@ -457,6 +457,73 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 	return NULL;
 }
 
+_PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
+						   const char *name,
+						   const char *value)
+{
+	const char *opt = NULL;
+	char *tmp;
+	size_t name_len = strlen(name);
+	size_t i;
+
+	/*
+	 * Note: value == NULL, means delete it.
+	 * value != NULL means add or reset.
+	 */
+
+	for (i=0; b->options && b->options[i]; i++) {
+		const char *o = b->options[i];
+		int ret;
+
+		ret = strncmp(name, o, name_len);
+		if (ret != 0) {
+			continue;
+		}
+
+		if (o[name_len] != '=') {
+			continue;
+		}
+
+		opt = o;
+		break;
+	}
+
+	if (opt == NULL) {
+		const char **n;
+
+		if (value == NULL) {
+			return NT_STATUS_OK;
+		}
+
+		n = talloc_realloc(b, b->options, const char *, i + 2);
+		if (n == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		n[i] = NULL;
+		n[i + 1] = NULL;
+		b->options = n;
+	}
+
+	tmp = discard_const_p(char, opt);
+
+	if (value == NULL) {
+		for (;b->options[i];i++) {
+			b->options[i] = b->options[i+1];
+		}
+		talloc_free(tmp);
+		return NT_STATUS_OK;
+	}
+
+	b->options[i] = talloc_asprintf(b->options, "%s=%s",
+					name, value);
+	if (b->options[i] == NULL) {
+		b->options[i] = tmp;
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 					    struct ndr_syntax_id *syntax)
 {
