@@ -49,6 +49,43 @@
 #include "libcli/smb/smbXcli_base.h"
 
 /*
+ * open pipe and bind, given an IPC$ context
+ */
+
+static NTSTATUS pipe_bind_smb(struct torture_context *tctx,
+			      TALLOC_CTX *mem_ctx,
+			      struct smbcli_tree *tree,
+			      const char *pipe_name,
+			      const struct ndr_interface_table *iface,
+			      struct dcerpc_pipe **p)
+{
+	struct dcerpc_pipe *result;
+	NTSTATUS status;
+
+	if (!(result = dcerpc_pipe_init(mem_ctx, tctx->ev))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_pipe_open_smb(result, tree, pipe_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "dcerpc_pipe_open_smb failed: %s\n",
+			 nt_errstr(status));
+		talloc_free(result);
+		return status;
+	}
+
+	status = dcerpc_bind_auth_none(result, iface);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "dcerpc_bind_auth_none failed: %s\n", nt_errstr(status));
+		talloc_free(result);
+		return status;
+	}
+
+	*p = result;
+	return NT_STATUS_OK;
+}
+
+/*
  * This tests a RPC call using an invalid vuid
  */
 
@@ -1512,43 +1549,6 @@ static bool torture_samba3_sessionkey(struct torture_context *torture)
 		"join using anonymous bind on an authenticated smb connection failed");
 
 	return true;
-}
-
-/*
- * open pipe and bind, given an IPC$ context
- */
-
-static NTSTATUS pipe_bind_smb(struct torture_context *tctx,
-			      TALLOC_CTX *mem_ctx,
-			      struct smbcli_tree *tree,
-			      const char *pipe_name,
-			      const struct ndr_interface_table *iface,
-			      struct dcerpc_pipe **p)
-{
-	struct dcerpc_pipe *result;
-	NTSTATUS status;
-
-	if (!(result = dcerpc_pipe_init(mem_ctx, tctx->ev))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcerpc_pipe_open_smb(result, tree, pipe_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "dcerpc_pipe_open_smb failed: %s\n",
-			 nt_errstr(status));
-		talloc_free(result);
-		return status;
-	}
-
-	status = dcerpc_bind_auth_none(result, iface);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "schannel bind failed: %s\n", nt_errstr(status));
-		talloc_free(result);
-		return status;
-	}
-
-	*p = result;
-	return NT_STATUS_OK;
 }
 
 /*
