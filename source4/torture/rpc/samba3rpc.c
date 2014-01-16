@@ -118,6 +118,44 @@ static NTSTATUS pipe_bind_smb2(struct torture_context *tctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS pipe_bind_smb_auth(struct torture_context *tctx,
+				   TALLOC_CTX *mem_ctx,
+				   struct smbcli_tree *tree,
+				   struct cli_credentials *creds,
+				   uint8_t auth_type,
+				   uint8_t auth_level,
+				   const char *pipe_name,
+				   const struct ndr_interface_table *iface,
+				   struct dcerpc_pipe **p)
+{
+	struct dcerpc_pipe *result;
+	NTSTATUS status;
+
+	if (!(result = dcerpc_pipe_init(mem_ctx, tctx->ev))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_pipe_open_smb(result, tree, pipe_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "dcerpc_pipe_open_smb failed: %s\n",
+			 nt_errstr(status));
+		talloc_free(result);
+		return status;
+	}
+
+	status = dcerpc_bind_auth(result, iface, creds,
+			 lpcfg_gensec_settings(tctx->lp_ctx, tctx->lp_ctx),
+			 auth_type, auth_level, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "dcerpc_bind_auth failed: %s\n", nt_errstr(status));
+		talloc_free(result);
+		return status;
+	}
+
+	*p = result;
+	return NT_STATUS_OK;
+}
+
 /*
  * This tests a RPC call using an invalid vuid
  */
