@@ -440,6 +440,12 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 						      const char *name)
 {
 	size_t i;
+	int ret;
+
+	ret = strcmp(name, "localaddress");
+	if (ret == 0) {
+		return b->localaddress;
+	}
 
 	if (b->options == NULL) {
 		return NULL;
@@ -449,7 +455,6 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 		const char *o = b->options[i];
 		const char *vs = NULL;
 		size_t name_len = strlen(name);
-		int ret;
 
 		ret = strncmp(name, o, name_len);
 		if (ret != 0) {
@@ -497,15 +502,37 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 	char *tmp;
 	size_t name_len = strlen(name);
 	size_t i;
+	int ret;
 
 	/*
 	 * Note: value == NULL, means delete it.
 	 * value != NULL means add or reset.
 	 */
 
+	ret = strcmp(name, "localaddress");
+	if (ret == 0) {
+		tmp = discard_const_p(char, b->localaddress);
+
+		if (value == NULL) {
+			talloc_free(tmp);
+			b->localaddress = NULL;
+			b->flags &= ~DCERPC_LOCALADDRESS;
+			return NT_STATUS_OK;
+		}
+
+		b->localaddress = talloc_strdup(b, value);
+		if (b->localaddress == NULL) {
+			b->localaddress = tmp;
+			return NT_STATUS_NO_MEMORY;
+		}
+		talloc_free(tmp);
+
+		b->flags |= DCERPC_LOCALADDRESS;
+		return NT_STATUS_OK;
+	}
+
 	for (i=0; b->options && b->options[i]; i++) {
 		const char *o = b->options[i];
-		int ret;
 
 		ret = strncmp(name, o, name_len);
 		if (ret != 0) {
