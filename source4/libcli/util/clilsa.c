@@ -35,7 +35,7 @@
 #include "libcli/smb/smbXcli_base.h"
 
 struct smblsa_state {
-	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding_handle *binding_handle;
 	struct smbcli_tree *ipc_tree;
 	struct policy_handle handle;
 };
@@ -46,6 +46,7 @@ struct smblsa_state {
 static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 {
 	struct smblsa_state *lsa;
+	struct dcerpc_pipe *lsa_pipe;
 	NTSTATUS status;
 	struct lsa_OpenPolicy r;
 	uint16_t system_name = '\\';
@@ -85,26 +86,26 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 		smb1cli_session_protect_session_key(cli->session->smbXcli);
 	}
 
-	lsa->pipe = dcerpc_pipe_init(lsa, cli->transport->ev);
-	if (lsa->pipe == NULL) {
+	lsa_pipe = dcerpc_pipe_init(lsa, cli->transport->ev);
+	if (lsa_pipe == NULL) {
 		talloc_free(lsa);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* open the LSA pipe */
-	status = dcerpc_pipe_open_smb(lsa->pipe, lsa->ipc_tree, NDR_LSARPC_NAME);
+	status = dcerpc_pipe_open_smb(lsa_pipe, lsa->ipc_tree, NDR_LSARPC_NAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lsa);
 		return status;
 	}
 
 	/* bind to the LSA pipe */
-	status = dcerpc_bind_auth_none(lsa->pipe, &ndr_table_lsarpc);
+	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lsa);
                 return status;
         }
-
+	lsa->binding_handle = lsa_pipe->binding_handle;
 
 	/* open a lsa policy handle */
 	qos.len = 0;
@@ -124,7 +125,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &lsa->handle;
 
-	status = dcerpc_lsa_OpenPolicy_r(lsa->pipe->binding_handle, lsa, &r);
+	status = dcerpc_lsa_OpenPolicy_r(lsa->binding_handle, lsa, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lsa);
 		return status;
@@ -160,7 +161,7 @@ NTSTATUS smblsa_sid_privileges(struct smbcli_state *cli, struct dom_sid *sid,
 	r.in.sid = sid;
 	r.out.rights = rights;
 
-	status = dcerpc_lsa_EnumAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	status = dcerpc_lsa_EnumAccountRights_r(cli->lsa->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -249,7 +250,7 @@ NTSTATUS smblsa_lookup_sid(struct smbcli_state *cli,
 	r.out.names = &names;
 	r.out.domains = &domains;
 
-	status = dcerpc_lsa_LookupSids_r(cli->lsa->pipe->binding_handle, mem_ctx2, &r);
+	status = dcerpc_lsa_LookupSids_r(cli->lsa->binding_handle, mem_ctx2, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx2);
 		return status;
@@ -324,7 +325,7 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 	r.out.sids = &sids;
 	r.out.domains = &domains;
 
-	status = dcerpc_lsa_LookupNames_r(cli->lsa->pipe->binding_handle, mem_ctx2, &r);
+	status = dcerpc_lsa_LookupNames_r(cli->lsa->binding_handle, mem_ctx2, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx2);
 		return status;
@@ -373,7 +374,7 @@ NTSTATUS smblsa_sid_add_privileges(struct smbcli_state *cli, struct dom_sid *sid
 	r.in.sid = sid;
 	r.in.rights = rights;
 
-	status = dcerpc_lsa_AddAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	status = dcerpc_lsa_AddAccountRights_r(cli->lsa->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -401,7 +402,7 @@ NTSTATUS smblsa_sid_del_privileges(struct smbcli_state *cli, struct dom_sid *sid
 	r.in.remove_all = 0;
 	r.in.rights = rights;
 
-	status = dcerpc_lsa_RemoveAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	status = dcerpc_lsa_RemoveAccountRights_r(cli->lsa->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
