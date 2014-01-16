@@ -84,6 +84,31 @@ static NTSTATUS child_read_request(int sock, struct winbindd_request *wreq)
 	return status;
 }
 
+static NTSTATUS child_write_response(int sock, struct winbindd_response *wrsp)
+{
+	struct iovec iov[2];
+	int iov_count;
+
+	iov[0].iov_base = (void *)wrsp;
+	iov[0].iov_len = sizeof(struct winbindd_response);
+	iov_count = 1;
+
+	if (wrsp->length > sizeof(struct winbindd_response)) {
+		iov[1].iov_base = (void *)wrsp->extra_data.data;
+		iov[1].iov_len = wrsp->length-iov[0].iov_len;
+		iov_count = 2;
+	}
+
+	DEBUG(10, ("Writing %d bytes to parent\n", (int)wrsp->length));
+
+	if (write_data_iov(sock, iov, iov_count) != wrsp->length) {
+		DEBUG(0, ("Could not write result\n"));
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
  * Do winbind child async request. This is not simply wb_simple_trans. We have
  * to do the queueing ourselves because while a request is queued, the child
@@ -1315,8 +1340,6 @@ static void child_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	struct child_handler_state *state =
 		(struct child_handler_state *)private_data;
 	NTSTATUS status;
-	struct iovec iov[2];
-	int iov_count;
 
 	/* fetch a request from the main daemon */
 	status = child_read_request(state->cli.sock, state->cli.request);
@@ -1339,24 +1362,8 @@ static void child_handler(struct tevent_context *ev, struct tevent_fd *fde,
 
 	SAFE_FREE(state->cli.request->extra_data.data);
 
-	iov[0].iov_base = (void *)state->cli.response;
-	iov[0].iov_len = sizeof(struct winbindd_response);
-	iov_count = 1;
-
-	if (state->cli.response->length >
-	    sizeof(struct winbindd_response)) {
-		iov[1].iov_base =
-			(void *)state->cli.response->extra_data.data;
-		iov[1].iov_len = state->cli.response->length-iov[0].iov_len;
-		iov_count = 2;
-	}
-
-	DEBUG(10, ("Writing %d bytes to parent\n",
-		   (int)state->cli.response->length));
-
-	if (write_data_iov(state->cli.sock, iov, iov_count) !=
-	    state->cli.response->length) {
-		DEBUG(0, ("Could not write result\n"));
+	status = child_write_response(state->cli.sock, state->cli.response);
+	if (!NT_STATUS_IS_OK(status)) {
 		exit(1);
 	}
 }
