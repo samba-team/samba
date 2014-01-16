@@ -241,7 +241,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	enum ntvfs_type type;
 	const char *service = io->smb2.in.path;
 	struct share_config *scfg;
-	const char *sharetype;
+	char *sharetype;
 	uint64_t ntvfs_caps = 0;
 
 	if (strncmp(service, "\\\\", 2) == 0) {
@@ -265,7 +265,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	}
 
 	/* work out what sort of connection this is */
-	sharetype = share_string_option(scfg, SHARE_TYPE, "DISK");
+	sharetype = share_string_option(req, scfg, SHARE_TYPE, "DISK");
 	if (sharetype && strcmp(sharetype, "IPC") == 0) {
 		type = NTVFS_IPC;
 	} else if (sharetype && strcmp(sharetype, "PRINTER") == 0) {
@@ -273,6 +273,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	} else {
 		type = NTVFS_DISK;
 	}
+	TALLOC_FREE(sharetype);
 
 	tcon = smbsrv_smb2_tcon_new(req->session, scfg->name);
 	if (!tcon) {

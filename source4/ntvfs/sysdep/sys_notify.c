@@ -62,7 +62,7 @@ _PUBLIC_ struct sys_notify_context *sys_notify_context_create(struct share_confi
 
 	ctx->ev = ev;
 
-	bname = share_string_option(scfg, NOTIFY_BACKEND, NULL);
+	bname = share_string_option(ctx, scfg, NOTIFY_BACKEND, NULL);
 	if (!bname) {
 		if (num_backends) {
 			bname = backends[0].name;

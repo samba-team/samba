@@ -53,23 +53,26 @@ enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct d
 	 * this ones are hidden in NetShareEnum, but shown in NetShareEnumAll
 	 */
 	enum srvsvc_ShareType share_type = 0;
-	const char *sharetype;
+	char *sharetype;
 
 	if (!share_bool_option(scfg, SHARE_BROWSEABLE, SHARE_BROWSEABLE_DEFAULT)) {
 		share_type |= STYPE_HIDDEN;
 	}
 
-	sharetype = share_string_option(scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
+	sharetype = share_string_option(mem_ctx, scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
 	if (sharetype && strcasecmp(sharetype, "IPC") == 0) {
 		share_type |= STYPE_IPC;
+		TALLOC_FREE(sharetype);
 		return share_type;
 	}
 
 	if (sharetype && strcasecmp(sharetype, "PRINTER") == 0) {
 		share_type |= STYPE_PRINTQ;
+		TALLOC_FREE(sharetype);
 		return share_type;
 	}
 
+	TALLOC_FREE(sharetype);
 	share_type |= STYPE_DISKTREE;
 
 	return share_type;
@@ -78,16 +81,20 @@ enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct d
 /* This hardcoded value should go into a ldb database! */
 const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
-	const char *sharetype;
+	char *sharetype;
 	char *p;
-	
-	sharetype = share_string_option(scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
+	char *path;
+
+	sharetype = share_string_option(mem_ctx, scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
 	
 	if (sharetype && strcasecmp(sharetype, "IPC") == 0) {
+		TALLOC_FREE(sharetype);
 		return talloc_strdup(mem_ctx, "");
 	}
 
-	p = talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_PATH, ""));
+	TALLOC_FREE(sharetype);
+
+	p = share_string_option(mem_ctx, scfg, SHARE_PATH, "");
 	if (!p) {
 		return NULL;
 	}
@@ -96,7 +103,9 @@ const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_cont
 	}
 	all_string_sub(p, "/", "\\", 0);
 	
-	return talloc_asprintf(mem_ctx, "C:%s", p);
+	path = talloc_asprintf(mem_ctx, "C:%s", p);
+	TALLOC_FREE(p);
+	return path;
 }
 
 /* This hardcoded value should go into a ldb database! */

@@ -45,7 +45,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	enum ntvfs_type type;
 	struct share_context *sctx;
 	struct share_config *scfg;
-	const char *sharetype;
+	char *sharetype;
 	union smb_tcon tcon;
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
@@ -71,7 +71,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 #endif
 
 	/* work out what sort of connection this is */
-	sharetype = share_string_option(scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
+	sharetype = share_string_option(mem_ctx, scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
 	if (sharetype && strcmp(sharetype, "IPC") == 0) {
 		type = NTVFS_IPC;
 	} else if (sharetype && strcmp(sharetype, "PRINTER")) {
@@ -79,6 +79,8 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	} else {
 		type = NTVFS_DISK;
 	}
+
+	TALLOC_FREE(sharetype);
 
 	c = talloc(mem_ctx, struct srvsvc_ntvfs_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(c);

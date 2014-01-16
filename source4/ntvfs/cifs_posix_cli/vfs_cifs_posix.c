@@ -81,7 +81,7 @@ static NTSTATUS cifspsx_connect(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(p);
 	p->ntvfs = ntvfs;
 	p->next_search_handle = 0;
-	p->connectpath = talloc_strdup(p, share_string_option(scfg, SHARE_PATH, ""));
+	p->connectpath = share_string_option(p, scfg, SHARE_PATH, "");
 	p->open_files = NULL;
 	p->search = NULL;
 

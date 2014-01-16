@@ -24,9 +24,9 @@
 #include "param/param.h"
 #include "lib/util/samba_modules.h"
 
-const char *share_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
+char *share_string_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name, const char *defval)
 {
-	return scfg->ctx->ops->string_option(scfg, opt_name, defval);
+	return scfg->ctx->ops->string_option(mem_ctx, scfg, opt_name, defval);
 }
 
 int share_int_option(struct share_config *scfg, const char *opt_name, int defval)

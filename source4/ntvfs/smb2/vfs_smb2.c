@@ -167,6 +167,12 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct cli_credentials *credentials;
 	bool machine_account;
 	struct smbcli_options options;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(req);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	switch (tcon->generic.level) {
 	case RAW_TCON_TCON:
@@ -179,6 +185,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		sharename = tcon->smb2.in.path;
 		break;
 	default:
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
@@ -192,11 +199,11 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
 	 */
-	host = share_string_option(scfg, SMB2_SERVER, NULL);
-	user = share_string_option(scfg, SMB2_USER, NULL);
-	pass = share_string_option(scfg, SMB2_PASSWORD, NULL);
-	domain = share_string_option(scfg, SMB2_DOMAIN, NULL);
-	remote_share = share_string_option(scfg, SMB2_SHARE, NULL);
+	host = share_string_option(tmp_ctx, scfg, SMB2_SERVER, NULL);
+	user = share_string_option(tmp_ctx, scfg, SMB2_USER, NULL);
+	pass = share_string_option(tmp_ctx, scfg, SMB2_PASSWORD, NULL);
+	domain = share_string_option(tmp_ctx, scfg, SMB2_DOMAIN, NULL);
+	remote_share = share_string_option(tmp_ctx, scfg, SMB2_SHARE, NULL);
 	if (!remote_share) {
 		remote_share = sharename;
 	}
@@ -205,6 +212,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	p = talloc_zero(ntvfs, struct cvfs_private);
 	if (!p) {
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -212,6 +220,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	if (!host) {
 		DEBUG(1,("CIFS backend: You must supply server\n"));
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	} 
 	
@@ -219,6 +228,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		DEBUG(5, ("CIFS backend: Using specified password\n"));
 		credentials = cli_credentials_init(p);
 		if (!credentials) {
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
@@ -236,6 +246,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		}
 		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(tmp_ctx);
 			return status;
 		}
 	} else if (req->session_info->credentials) {
@@ -243,6 +254,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		credentials = req->session_info->credentials;
 	} else {
 		DEBUG(1,("CIFS backend: NO delegated credentials found: You must supply server, user and password or the client must supply delegated credentials\n"));
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -257,19 +269,31 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 			ntvfs->ctx->event_ctx, &options,
 			lpcfg_socket_options(ntvfs->ctx->lp_ctx),
 			lpcfg_gensec_settings(p, ntvfs->ctx->lp_ctx));
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
 	status = smb2_get_roothandle(tree, &p->roothandle);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
 	p->tree = tree;
 	p->transport = p->tree->session->transport;
 	p->ntvfs = ntvfs;
 
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
-	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
+	if (!ntvfs->ctx->fs_type) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
-	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
+	if (!ntvfs->ctx->dev_type) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (tcon->generic.level == RAW_TCON_TCONX) {
 		tcon->tconx.out.fs_type = ntvfs->ctx->fs_type;
@@ -280,6 +304,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	/* TODO: enable oplocks 
 	smbcli_oplock_handler(p->transport, oplock_handler, p);
 	*/
+
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 

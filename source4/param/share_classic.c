@@ -43,9 +43,10 @@ static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static const char *sclassic_string_option(struct share_config *scfg, 
-					  const char *opt_name, 
-					  const char *defval)
+static char *sclassic_string_option(TALLOC_CTX *mem_ctx,
+				    struct share_config *scfg,
+				    const char *opt_name,
+				    const char *defval)
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
@@ -68,11 +69,11 @@ static const char *sclassic_string_option(struct share_config *scfg,
 			ret = defval;
 		}
 		talloc_free(parm);
-		return ret;
+		return talloc_strdup(mem_ctx, ret);
 	}
 
 	if (strcmp(opt_name, SHARE_NAME) == 0) {
-		return scfg->name;
+		return talloc_strdup(mem_ctx, scfg->name);
 	}
 
 	if (strcmp(opt_name, SHARE_PATH) == 0) {
@@ -84,27 +85,27 @@ static const char *sclassic_string_option(struct share_config *scfg,
 	}
 
 	if (strcmp(opt_name, SHARE_VOLUME) == 0) {
-		return lpcfg_volume_label(s, lpcfg_default_service(lp_ctx));
+		return talloc_strdup(mem_ctx, lpcfg_volume_label(s, lpcfg_default_service(lp_ctx)));
 	}
 
 	if (strcmp(opt_name, SHARE_TYPE) == 0) {
 		if (lpcfg_printable(s, lpcfg_default_service(lp_ctx))) {
-			return "PRINTER";
+			return talloc_strdup(mem_ctx, "PRINTER");
 		}
 		if (strcmp("NTFS", lpcfg_fstype(s, lpcfg_default_service(lp_ctx))) == 0) {
-			return "DISK";
+			return talloc_strdup(mem_ctx, "DISK");
 		}
-		return lpcfg_fstype(s, lpcfg_default_service(lp_ctx));
+		return talloc_strdup(mem_ctx, lpcfg_fstype(s, lpcfg_default_service(lp_ctx)));
 	}
 
 	if (strcmp(opt_name, SHARE_PASSWORD) == 0) {
-		return defval;
+		return talloc_strdup(mem_ctx, defval);
 	}
 
 	DEBUG(0,("request for unknown share string option '%s'\n",
 		 opt_name));
 
-	return defval;
+	return talloc_strdup(mem_ctx, defval);
 }
 
 static int sclassic_int_option(struct share_config *scfg, const char *opt_name, int defval)

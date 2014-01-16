@@ -48,6 +48,7 @@ _PUBLIC_ struct sys_lease_context *sys_lease_context_create(struct share_config 
 	const char *bname;
 	int i;
 	NTSTATUS status;
+	TALLOC_CTX * tmp_ctx;
 
 	if (num_backends == 0) {
 		return NULL;
@@ -62,11 +63,16 @@ _PUBLIC_ struct sys_lease_context *sys_lease_context_create(struct share_config 
 		return NULL;
 	}
 
+	tmp_ctx = talloc_new(ctx);
+	if (tmp_ctx == NULL) {
+		return NULL;
+	}
+
 	ctx->event_ctx = ev;
 	ctx->msg_ctx = msg;
 	ctx->break_send = break_send;
 
-	bname = share_string_option(scfg, LEASE_BACKEND, NULL);
+	bname = share_string_option(tmp_ctx, scfg, LEASE_BACKEND, NULL);
 	if (!bname) {
 		talloc_free(ctx);
 		return NULL;
@@ -90,6 +96,7 @@ _PUBLIC_ struct sys_lease_context *sys_lease_context_create(struct share_config 
 		return NULL;
 	}
 
+	TALLOC_FREE(tmp_ctx);
 	return ctx;
 }
 

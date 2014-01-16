@@ -72,7 +72,7 @@ NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 			sizeof(r->out.info[0].info1.share_name));
 		r->out.info[i].info1.reserved1 = 0;
 		r->out.info[i].info1.share_type = dcesrv_common_get_share_type(mem_ctx, NULL, scfg);
-		r->out.info[i].info1.comment = talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_COMMENT, ""));
+		r->out.info[i].info1.comment = share_string_option(mem_ctx, scfg, SHARE_COMMENT, "");
 		talloc_free(scfg);
 		j++;
 	}

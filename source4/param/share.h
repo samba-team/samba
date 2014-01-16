@@ -54,7 +54,7 @@ struct share_ops {
 	NTSTATUS (*init)(TALLOC_CTX *, const struct share_ops*, struct tevent_context *ev_ctx,
 			 struct loadparm_context *lp_ctx,
 			 struct share_context **);
-	const char *(*string_option)(struct share_config *, const char *, const char *);
+	char *(*string_option)(TALLOC_CTX *, struct share_config *, const char *, const char *);
 	int (*int_option)(struct share_config *, const char *, int);
 	bool (*bool_option)(struct share_config *, const char *, bool);
 	const char **(*string_list_option)(TALLOC_CTX *, struct share_config *, const char *);
@@ -67,7 +67,7 @@ struct share_ops {
 
 struct loadparm_context;
 
-const char *share_string_option(struct share_config *scfg, const char *opt_name, const char *defval);
+char *share_string_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name, const char *defval);
 int share_int_option(struct share_config *scfg, const char *opt_name, int defval);
 bool share_bool_option(struct share_config *scfg, const char *opt_name, bool defval);
 const char **share_string_list_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name);
