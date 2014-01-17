@@ -399,17 +399,13 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
-	status = dcerpc_secondary_connection(p, &p_netlogon,
-					     b);
-	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
-	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon,
-				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				  DCERPC_AUTH_TYPE_SCHANNEL,
-				  dcerpc_auth_level(p->conn),
-				  NULL);
-
-	torture_assert_ntstatus_ok(tctx, status, "bind auth");
+	status = dcerpc_secondary_auth_connection(p, b, &ndr_table_netlogon,
+						  credentials, tctx->lp_ctx,
+						  tctx, &p_netlogon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
 	creds = cli_credentials_get_netlogon_creds(credentials);
 	torture_assert(tctx, (creds != NULL), "schannel creds");
@@ -491,18 +487,13 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm");
 
-	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2,
-					     b);
-	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
-	/* and now setup an SCHANNEL bind on netlogon */
-	status = dcerpc_bind_auth(p_netlogon2, &ndr_table_netlogon,
-				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				  DCERPC_AUTH_TYPE_SCHANNEL,
-				  dcerpc_auth_level(p_samr2->conn),
-				  NULL);
-
-	torture_assert_ntstatus_ok(tctx, status, "auth failed");
+	status = dcerpc_secondary_auth_connection(p_samr2, b, &ndr_table_netlogon,
+						  credentials, tctx->lp_ctx,
+						  tctx, &p_netlogon2);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
 	/* checks the capabilities */
 	torture_assert(tctx, test_netlogon_capabilities(p_netlogon2, tctx, credentials, creds),
