@@ -899,4 +899,6 @@ int usleep(useconds_t);
 void rep_setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
 #endif
 
+bool uid_wrapper_enabled(void);
+
 #endif /* _LIBREPLACE_REPLACE_H */
