@@ -266,6 +266,23 @@ static void normalise_sd_flags(struct security_descriptor *sd, uint32_t secinfo_
 	}
 }
 
+static bool pvfs_privileged_access(uid_t uid)
+{
+	uid_t euid;
+
+	if (uid_wrapper_enabled()) {
+		setenv("UID_WRAPPER_MYUID", "1", 1);
+	}
+
+	euid = geteuid();
+
+	if (uid_wrapper_enabled()) {
+		unsetenv("UID_WRAPPER_MYUID");
+	}
+
+	return (uid == euid);
+}
+
 /*
   answer a setfileinfo for an ACL
 */
@@ -395,7 +412,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 			ret = fchown(fd, new_uid, new_gid);
 		}
 		if (errno == EPERM) {
-			if (uid_wrapper_enabled()) {
+			if (pvfs_privileged_access(name->st.st_uid)) {
 				ret = 0;
 			} else {
 				/* try again as root if we have SEC_PRIV_RESTORE or
@@ -521,7 +538,6 @@ static NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 				       struct pvfs_filename *name,
 				       uint32_t *access_mask)
 {
-	uid_t uid = geteuid();
 	uint32_t max_bits = 0;
 	struct security_token *token = req->session_info->security_token;
 
@@ -531,7 +547,7 @@ static NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 
 	if (name == NULL) {
 		max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;
-	} else if (uid == name->st.st_uid || uid_wrapper_enabled()) {
+	} else if (pvfs_privileged_access(name->st.st_uid)) {
 		/* use the IxUSR bits */
 		if ((name->st.st_mode & S_IWUSR)) {
 			max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;
