@@ -576,6 +576,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	time_t time_offset = 0;
 	const char *user_ccache_file;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	const char *local_service;
 
 	*info3 = NULL;
 
@@ -632,6 +633,13 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	local_service = talloc_asprintf(mem_ctx, "%s$@%s",
+					lp_netbios_name(), lp_realm());
+	if (local_service == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
 	/* if this is a user ccache, we need to act as the user to let the krb5
 	 * library handle the chown, etc. */
 
@@ -653,6 +661,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 				     true,
 				     WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
 				     NULL,
+				     local_service,
 				     &logon_info);
 	if (user_ccache_file != NULL) {
 		gain_root_privilege();

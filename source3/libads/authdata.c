@@ -101,13 +101,13 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     bool add_netbios_addr,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
+			     const char *local_service,
 			     struct PAC_LOGON_INFO **_logon_info)
 {
 	krb5_error_code ret;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	DATA_BLOB tkt, tkt_wrapped, ap_rep, sesskey1;
 	const char *auth_princ = NULL;
-	const char *local_service = NULL;
 	const char *cc = "MEMORY:kerberos_return_pac";
 	struct auth_session_info *session_info;
 	struct gensec_security *gensec_server_context;
@@ -140,10 +140,6 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		auth_princ = name;
 	}
 	NT_STATUS_HAVE_NO_MEMORY(auth_princ);
-
-	local_service = talloc_asprintf(mem_ctx, "%s$@%s",
-					lp_netbios_name(), lp_realm());
-	NT_STATUS_HAVE_NO_MEMORY(local_service);
 
 	ret = kerberos_kinit_password_ext(auth_princ,
 					  pass,

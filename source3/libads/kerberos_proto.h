@@ -77,6 +77,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     bool add_netbios_addr,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
+			     const char *local_service,
 			     struct PAC_LOGON_INFO **logon_info);
 
 /* The following definitions come from libads/krb5_setpw.c  */
