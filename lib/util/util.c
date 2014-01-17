@@ -146,7 +146,7 @@ _PUBLIC_ bool file_check_permissions(const char *fname,
 		return false;
 	}
 
-	if (pst->st_uid != uid && !uwrap_enabled()) {
+	if (pst->st_uid != uid && !uid_wrapper_enabled()) {
 		DEBUG(0, ("invalid ownership of file '%s': "
 			 "owned by uid %u, should be %u\n",
 			 fname, (unsigned int)pst->st_uid,
@@ -271,7 +271,7 @@ _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 			dname));
 		return false;
 	}
-	if (st.st_uid != uid && !uwrap_enabled()) {
+	if (st.st_uid != uid && !uid_wrapper_enabled()) {
 		DEBUG(0, ("invalid ownership on directory "
 			  "%s\n", dname));
 		return false;

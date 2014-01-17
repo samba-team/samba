@@ -42,7 +42,6 @@ def set_options(opt):
     opt.RECURSE('source4/lib/tls')
     opt.RECURSE('lib/nss_wrapper')
     opt.RECURSE('lib/socket_wrapper')
-    opt.RECURSE('lib/uid_wrapper')
     opt.RECURSE('pidl')
     opt.RECURSE('source3')
     opt.RECURSE('lib/util')

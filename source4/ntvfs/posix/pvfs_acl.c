@@ -395,7 +395,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 			ret = fchown(fd, new_uid, new_gid);
 		}
 		if (errno == EPERM) {
-			if (uwrap_enabled()) {
+			if (uid_wrapper_enabled()) {
 				ret = 0;
 			} else {
 				/* try again as root if we have SEC_PRIV_RESTORE or
@@ -531,7 +531,7 @@ static NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 
 	if (name == NULL) {
 		max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;
-	} else if (uid == name->st.st_uid || uwrap_enabled()) {
+	} else if (uid == name->st.st_uid || uid_wrapper_enabled()) {
 		/* use the IxUSR bits */
 		if ((name->st.st_mode & S_IWUSR)) {
 			max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;

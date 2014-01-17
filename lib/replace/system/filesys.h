@@ -206,17 +206,6 @@
 #define mkdir(d,m) _mkdir(d)
 #endif
 
-#ifdef UID_WRAPPER
-# ifndef UID_WRAPPER_DISABLE
-#  ifndef UID_WRAPPER_NOT_REPLACE
-#   define UID_WRAPPER_REPLACE
-#  endif /* UID_WRAPPER_NOT_REPLACE */
-#  include "../uid_wrapper/uid_wrapper.h"
-# endif /* UID_WRAPPER_DISABLE */
-#else /* UID_WRAPPER */
-# define uwrap_enabled() 0
-#endif /* UID_WRAPPER */
-
 /*
    this allows us to use a uniform error handling for our xattr
    wrappers
