@@ -261,28 +261,12 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	bool seal_secure_channel = true;
 	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	bool neutralize_nt4_emulation = false;
-	struct server_id self = {
-		.vnn = NONCLUSTER_VNN,
-		.unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY,
-	};
-
-	if (msg_ctx != NULL) {
-		self = messaging_server_id(msg_ctx);
-	}
 
 	*_context = NULL;
 
-	if (self.vnn != NONCLUSTER_VNN) {
-		client_computer = talloc_asprintf(frame,
-						  "%s_cluster_vnn_%u",
-						  lpcfg_netbios_name(lp_ctx),
-						  (unsigned)self.vnn);
-		if (client_computer == NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		client_computer = lpcfg_netbios_name(lp_ctx);
+	client_computer = lpcfg_netbios_name(lp_ctx);
+	if (strlen(client_computer) > 15) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	/*
