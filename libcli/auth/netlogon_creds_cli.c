@@ -199,6 +199,16 @@ static NTSTATUS netlogon_creds_cli_context_common(
 
 static struct db_context *netlogon_creds_cli_global_db;
 
+NTSTATUS netlogon_creds_cli_set_global_db(struct db_context **db)
+{
+	if (netlogon_creds_cli_global_db != NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	netlogon_creds_cli_global_db = talloc_move(talloc_autofree_context(), db);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 {
 	char *fname;
