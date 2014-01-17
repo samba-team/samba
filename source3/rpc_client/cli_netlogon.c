@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "libsmb/libsmb.h"
 #include "rpc_client/rpc_client.h"
 #include "rpc_client/cli_pipe.h"
@@ -34,13 +35,25 @@
 #include "../libcli/security/security.h"
 #include "lib/param/param.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
+#include "util_tdb.h"
 
 
 NTSTATUS rpccli_pre_open_netlogon_creds(void)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	static bool already_open = false;
+	TALLOC_CTX *frame;
 	struct loadparm_context *lp_ctx;
+	char *fname;
+	struct db_context *global_db;
 	NTSTATUS status;
+
+	if (already_open) {
+		return NT_STATUS_OK;
+	}
+
+	frame = talloc_stackframe();
 
 	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
@@ -48,12 +61,27 @@ NTSTATUS rpccli_pre_open_netlogon_creds(void)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = netlogon_creds_cli_open_global_db(lp_ctx);
+	fname = lpcfg_private_db_path(frame, lp_ctx, "netlogon_creds_cli");
+	if (fname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	global_db = db_open(talloc_autofree_context(), fname,
+			    0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+			    O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2);
+	if (global_db == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = netlogon_creds_cli_set_global_db(&global_db);
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+	already_open = true;
 	return NT_STATUS_OK;
 }
 
@@ -68,6 +96,12 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx;
 	NTSTATUS status;
+
+	status = rpccli_pre_open_netlogon_creds();
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
 
 	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
