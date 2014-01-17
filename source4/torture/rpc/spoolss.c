@@ -6210,6 +6210,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 				       struct policy_handle *handle)
 {
 	NTSTATUS status;
+	struct cli_credentials *anon_creds;
 	const struct dcerpc_binding *binding2;
 	struct dcerpc_pipe *p2;
 	struct spoolss_ClosePrinter cp;
@@ -6221,12 +6222,14 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing close on secondary pipe\n");
 
-	binding2 = p->binding;
-	status = dcerpc_secondary_connection(p, &p2, binding2);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
 
-	status = dcerpc_bind_auth_none(p2, &ndr_table_spoolss);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to create bind on secondary connection");
+	binding2 = p->binding;
+	status = dcerpc_secondary_auth_connection(p, binding2, &ndr_table_spoolss,
+						  anon_creds, tctx->lp_ctx,
+						  tctx, &p2);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
 	cp.in.handle = handle;
 	cp.out.handle = handle;

@@ -3943,6 +3943,8 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
+	struct cli_credentials *anon_creds;
+	const struct dcerpc_binding *binding2;
 	struct dcerpc_pipe *p2;
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -3965,11 +3967,14 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 
 	torture_comment(tctx, "Torturing GetDCName\n");
 
-	status = dcerpc_secondary_connection(p, &p2, p->binding);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
 
-	status = dcerpc_bind_auth_none(p2, &ndr_table_lsarpc);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to create bind on secondary connection");
+	binding2 = p->binding;
+	status = dcerpc_secondary_auth_connection(p, binding2, &ndr_table_lsarpc,
+						  anon_creds, tctx->lp_ctx,
+						  tctx, &p2);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 	b2 = p2->binding_handle;
 
 	qos.len = 0;
