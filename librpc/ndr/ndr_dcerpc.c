@@ -21,10 +21,8 @@
 */
 
 #include "includes.h"
-#include "bin/default/librpc/gen_ndr/ndr_dcerpc.h"
-
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "lib/util/bitmap.h"
 
 const uint8_t DCERPC_SEC_VT_MAGIC[] = {0x8a,0xe3,0x13,0x71,0x02,0xf4,0x36,0x71};
 
