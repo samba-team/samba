@@ -286,7 +286,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                    lib/ctdbd_conn.c
                    lib/ctdb_conn.c
                    lib/util_cluster.c
-                   lib/msg_channel.c
                    lib/id_cache.c
                    lib/talloc_dict.c
                    lib/serverid.c
@@ -1209,7 +1208,6 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  torture/test_smbsock_any_connect.c
                  torture/test_cleanup.c
                  torture/test_ctdbconn.c
-                 torture/test_msg.c
                  torture/test_notify.c
                  lib/tevent_barrier.c
                  torture/test_dbwrap_watch.c
