@@ -130,6 +130,10 @@ SMB4ACE_T *smb_next_ace4(SMB4ACE_T *ace);
 
 uint32 smb_get_naces(SMB4ACL_T *theacl);
 
+uint16_t smbacl4_get_controlflags(SMB4ACL_T *theacl);
+
+bool smbacl4_set_controlflags(SMB4ACL_T *theacl, uint16_t controlflags);
+
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info,
 	TALLOC_CTX *mem_ctx,

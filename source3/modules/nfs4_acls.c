@@ -49,6 +49,7 @@ typedef struct _SMB_ACE4_INT_T
 typedef struct _SMB_ACL4_INT_T
 {
 	uint32	magic;
+	uint16_t controlflags;
 	uint32	naces;
 	SMB_ACE4_INT_T	*first;
 	SMB_ACE4_INT_T	*last;
@@ -218,6 +219,7 @@ SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	theacl->magic = SMB_ACL4_INT_MAGIC;
+	theacl->controlflags = SEC_DESC_SELF_RELATIVE;
 	/* theacl->first, last = NULL not needed */
 	return (SMB4ACL_T *)theacl;
 }
@@ -286,6 +288,25 @@ uint32 smb_get_naces(SMB4ACL_T *theacl)
 		return 0;
 
 	return aclint->naces;
+}
+
+uint16_t smbacl4_get_controlflags(SMB4ACL_T *theacl)
+{
+	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
+	if (aclint==NULL)
+		return 0;
+
+	return aclint->controlflags;
+}
+
+bool smbacl4_set_controlflags(SMB4ACL_T *theacl, uint16_t controlflags)
+{
+	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
+	if (aclint==NULL)
+		return false;
+
+	aclint->controlflags = controlflags;
+	return true;
 }
 
 static int smbacl4_GetFileOwner(struct connection_struct *conn,
@@ -543,7 +564,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 
 	DEBUG(10,("after make sec_acl\n"));
 	*ppdesc = make_sec_desc(
-		mem_ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
+		mem_ctx, SD_REVISION, smbacl4_get_controlflags(theacl),
 		(security_info & SECINFO_OWNER) ? &sid_owner : NULL,
 		(security_info & SECINFO_GROUP) ? &sid_group : NULL,
 		NULL, psa, &sd_size);
@@ -1028,6 +1049,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 		return map_nt_error_from_unix(errno);
 	}
 
+	smbacl4_set_controlflags(theacl, psd->type);
 	smbacl4_dump_nfs4acl(10, theacl);
 
 	if (set_acl_as_root) {
