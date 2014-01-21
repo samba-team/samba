@@ -27,12 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/* what is the longest significant password available on your system?
- Knowing this speeds up password searches a lot */
-#ifndef PASSWORD_LENGTH
-#define PASSWORD_LENGTH 8
-#endif
-
 #if !defined(WITH_PAM)
 static char *ths_salt;
 /* This must be writable. */
