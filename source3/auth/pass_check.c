@@ -33,27 +33,6 @@
 #define PASSWORD_LENGTH 8
 #endif
 
-/* these are kept here to keep the string_combinations function simple */
-static char *ths_user;
-
-static const char *get_this_user(void)
-{
-	if (!ths_user) {
-		return "";
-	}
-	return ths_user;
-}
-
-#if defined(WITH_PAM) || defined(OSF1_ENH_SEC)
-static const char *set_this_user(const char *newuser)
-{
-	char *orig_user = ths_user;
-	ths_user = SMB_STRDUP(newuser);
-	SAFE_FREE(orig_user);
-	return ths_user;
-}
-#endif
-
 #if !defined(WITH_PAM)
 static char *ths_salt;
 /* This must be writable. */
@@ -496,22 +475,22 @@ static char *osf1_bigcrypt(char *password, char *salt1)
 /****************************************************************************
 core of password checking routine
 ****************************************************************************/
-static NTSTATUS password_check(const char *password, const void *private_data)
+static NTSTATUS password_check(const char *user, const char *password, const void *private_data)
 {
 #ifdef WITH_PAM
 	const char *rhost = (const char *)private_data;
-	return smb_pam_passcheck(get_this_user(), rhost, password);
+	return smb_pam_passcheck(user, rhost, password);
 #else
 
 	bool ret;
 
 #ifdef WITH_AFS
-	if (afs_auth(get_this_user(), password))
+	if (afs_auth(user, password))
 		return NT_STATUS_OK;
 #endif /* WITH_AFS */
 
 #ifdef WITH_DFS
-	if (dfs_auth(get_this_user(), password))
+	if (dfs_auth(user, password))
 		return NT_STATUS_OK;
 #endif /* WITH_DFS */
 
@@ -631,10 +610,6 @@ NTSTATUS pass_check(const struct passwd *pass,
 	 * checks below and dive straight into the PAM code.
 	 */
 
-	if (set_this_user(user) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	DEBUG(4, ("pass_check: Checking (PAM) password for user %s\n", user));
 
 #else /* Not using PAM */
@@ -718,9 +693,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 			  user));
 		mypasswd = getprpwnam(user);
 		if (mypasswd) {
-			if (set_this_user(mypasswd->ufld.fd_name) == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
+			user = mypasswd->ufld.fd_name;
 			if (set_this_crypted(mypasswd->ufld.fd_encrypt) == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -763,13 +736,13 @@ NTSTATUS pass_check(const struct passwd *pass,
 	if (!get_this_crypted() || !*get_this_crypted()) {
 		if (!lp_null_passwords()) {
 			DEBUG(2, ("Disallowing %s with null password\n",
-				  get_this_user()));
+				  user));
 			return NT_STATUS_LOGON_FAILURE;
 		}
 		if (!*password) {
 			DEBUG(3,
 			      ("Allowing access to %s with null password\n",
-			       get_this_user()));
+			       user));
 			return NT_STATUS_OK;
 		}
 	}
@@ -777,7 +750,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 #endif /* defined(WITH_PAM) */
 
 	/* try it as it came to us */
-	nt_status = password_check(password, (const void *)rhost);
+	nt_status = password_check(user, password, (const void *)rhost);
         if NT_STATUS_IS_OK(nt_status) {
 		return (nt_status);
 	} else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -807,7 +780,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 		if (!strlower_m(pass2)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		nt_status = password_check(pass2, (const void *)rhost);
+		nt_status = password_check(user, pass2, (const void *)rhost);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			return (nt_status);
 		}
