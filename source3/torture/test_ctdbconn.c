@@ -20,8 +20,6 @@
 #include "includes.h"
 #include "torture/proto.h"
 
-#ifdef CLUSTER_SUPPORT
-
 #include "ctdb_conn.h"
 #include "ctdbd_conn.h"
 #include "lib/util/tevent_unix.h"
@@ -243,5 +241,3 @@ bool run_ctdb_conn(int dummy)
 	TALLOC_FREE(ev);
 	return (ret == 0);
 }
-
-#endif

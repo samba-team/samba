@@ -270,22 +270,34 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/sock_exec.c''',
                    deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash')
 
-bld.SAMBA3_LIBRARY('samba-cluster-support',
-                   source='''
+if bld.CONFIG_GET("CTDB_CFLAGS"):
+    SAMBA_CLUSTER_SUPPORT_SOURCES='''
                      lib/cluster_support.c
-                     lib/ctdb_dummy.c
                      lib/dbwrap/dbwrap_ctdb.c
                      lib/messages_ctdbd.c
                      lib/ctdb_packet.c
                      lib/ctdbd_conn.c
                      lib/ctdb_conn.c
                      torture/test_ctdbconn.c
-                   ''',
-                   deps='''
+                   '''
+    SAMBA_CLUSTER_SUPPORT_DEPS='''
                      talloc
                      tevent
                      tdb
-                   ''',
+                   '''
+else:
+    SAMBA_CLUSTER_SUPPORT_SOURCES='''
+                     lib/cluster_support.c
+                     lib/ctdb_dummy.c
+                   '''
+    SAMBA_CLUSTER_SUPPORT_DEPS='''
+                     talloc
+                     tevent
+                   '''
+
+bld.SAMBA3_LIBRARY('samba-cluster-support',
+                   source=SAMBA_CLUSTER_SUPPORT_SOURCES,
+                   deps=SAMBA_CLUSTER_SUPPORT_DEPS,
                    cflags=bld.CONFIG_GET("CTDB_CFLAGS"),
                    allow_undefined_symbols=True,
                    private_library=True)

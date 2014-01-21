@@ -27,8 +27,6 @@
 #include "dbwrap/dbwrap_rbt.h"
 #include "lib/param/param.h"
 
-#ifdef CLUSTER_SUPPORT
-
 /*
  * It is not possible to include ctdb.h and tdb_compat.h (included via
  * some other include above) without warnings. This fixes those
@@ -1709,5 +1707,3 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	return result;
 }
-
-#endif

@@ -21,8 +21,6 @@
 #include "lib/util/tevent_unix.h"
 #include "ctdb_conn.h"
 
-#ifdef CLUSTER_SUPPORT
-
 #include <tdb.h>
 
 #ifdef HAVE_CTDB_PROTOCOL_H
@@ -553,5 +551,3 @@ int ctdb_msg_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*pmsg_len = msg->datalen;
 	return 0;
 }
-
-#endif

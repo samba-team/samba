@@ -25,8 +25,6 @@
 #include "lib/dbwrap/dbwrap_ctdb.h"
 #include "torture/proto.h"
 
-#ifndef CLUSTER_SUPPORT
-
 NTSTATUS ctdbd_probe(void)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -180,5 +178,3 @@ bool run_ctdb_conn(int dummy)
 {
 	return true;
 }
-
-#endif

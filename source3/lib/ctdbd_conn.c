@@ -23,8 +23,6 @@
 #include "serverid.h"
 #include "ctdbd_conn.h"
 
-#ifdef CLUSTER_SUPPORT
-
 #include "ctdb_packet.h"
 #include "messages.h"
 
@@ -1885,5 +1883,3 @@ NTSTATUS ctdbd_probe(void)
 
 	return status;
 }
-
-#endif

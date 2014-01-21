@@ -21,8 +21,6 @@
 #include "messages.h"
 #include "util_tdb.h"
 
-#ifdef CLUSTER_SUPPORT
-
 /*
  * It is not possible to include ctdb.h and tdb_compat.h (included via
  * some other include above) without warnings. This fixes those
@@ -168,5 +166,3 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	*presult = result;
 	return NT_STATUS_OK;
 }
-
-#endif
