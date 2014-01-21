@@ -1019,10 +1019,17 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	if (client_hdr_signing != NULL) {
-		*client_hdr_signing = gensec_have_feature(gensec_security,
-						GENSEC_FEATURE_SIGN_PKT_HEADER);
+	if (client_hdr_signing == NULL) {
+		return status;
 	}
+
+	if (cli->auth->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		*client_hdr_signing = false;
+		return status;
+	}
+
+	*client_hdr_signing = gensec_have_feature(gensec_security,
+						GENSEC_FEATURE_SIGN_PKT_HEADER);
 
 	return status;
 }
