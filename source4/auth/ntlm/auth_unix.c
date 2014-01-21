@@ -518,10 +518,6 @@ static NTSTATUS password_check(const char *username, const char *password,
 		return NT_STATUS_OK;
 #endif /* WITH_AFS */
 
-#ifdef WITH_DFS
-	if (dfs_auth(username, password))
-		return NT_STATUS_OK;
-#endif /* WITH_DFS */
 
 #ifdef OSF1_ENH_SEC
 	
