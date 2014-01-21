@@ -169,18 +169,4 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	return NT_STATUS_OK;
 }
 
-#else
-
-NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
-			      TALLOC_CTX *mem_ctx,
-			      struct messaging_backend **presult)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-struct ctdbd_connection *messaging_ctdbd_connection(void)
-{
-	return NULL;
-}
-
 #endif

@@ -243,11 +243,4 @@ bool run_ctdb_conn(int dummy)
 	return (ret == 0);
 }
 
-#else /* CLUSTER_SUPPORT */
-
-bool run_ctdb_conn(int dummy)
-{
-	return true;
-}
-
 #endif

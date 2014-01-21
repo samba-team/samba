@@ -272,6 +272,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
 
 bld.SAMBA3_LIBRARY('samba-cluster-support',
                    source='''
+                     lib/ctdb_dummy.c
                      lib/dbwrap/dbwrap_ctdb.c
                      lib/messages_ctdbd.c
                      lib/ctdb_packet.c

@@ -1874,18 +1874,4 @@ NTSTATUS ctdbd_probe(void)
 	return status;
 }
 
-#else
-
-NTSTATUS ctdbd_probe(void)
-{
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32_t dst_vnn, uint64_t dst_srvid,
-				   const uint8_t *buf, size_t buflen)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 #endif
