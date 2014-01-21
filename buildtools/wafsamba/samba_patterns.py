@@ -59,6 +59,8 @@ def write_build_options_header(fp):
     fp.write("#include \"includes.h\"\n")
     fp.write("#include \"build_env.h\"\n")
     fp.write("#include \"dynconfig/dynconfig.h\"\n")
+    fp.write("#include \"lib/cluster_support.h\"\n")
+
     fp.write("\n")
     fp.write("static int output(bool screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);\n")
     fp.write("void build_options(bool screen);\n")
@@ -129,6 +131,9 @@ def write_build_options_header(fp):
     fp.write("\n")
 
 def write_build_options_footer(fp):
+    fp.write("       /* Output the sizes of the various cluster features */\n")
+    fp.write("       output(screen, \"\\n%s\", cluster_support_features());\n")
+    fp.write("\n")
     fp.write("       /* Output the sizes of the various types */\n")
     fp.write("       output(screen, \"\\nType sizes:\\n\");\n")
     fp.write("       output(screen, \"   sizeof(char):         %lu\\n\",(unsigned long)sizeof(char));\n")
