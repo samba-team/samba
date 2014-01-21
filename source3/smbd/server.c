@@ -912,11 +912,9 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL,
 			   ID_CACHE_KILL, smbd_parent_id_cache_kill);
 
-#ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
 		ctdbd_register_reconfigure(messaging_ctdbd_connection());
 	}
-#endif
 
 #ifdef DEVELOPER
 	messaging_register(msg_ctx, NULL, MSG_SMB_INJECT_FAULT,

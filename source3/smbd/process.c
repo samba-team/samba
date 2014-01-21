@@ -2499,8 +2499,6 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 	}
 }
 
-#ifdef CLUSTER_SUPPORT
-
 struct smbd_release_ip_state {
 	struct smbd_server_connection *sconn;
 	struct tevent_immediate *im;
@@ -2627,7 +2625,6 @@ static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
 	}
 	return 0;
 }
-#endif
 
 static void msg_kill_client_ip(struct messaging_context *msg_ctx,
 				  void *private_data, uint32_t msg_type,
@@ -3661,8 +3658,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-#ifdef CLUSTER_SUPPORT
-
 	if (lp_clustering()) {
 		/*
 		 * We need to tell ctdb about our client's TCP
@@ -3688,8 +3683,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 			exit_server_cleanly("client_get_tcp_info() failed.\n");
 		}
 	}
-
-#endif
 
 	sconn->nbt.got_session = false;
 

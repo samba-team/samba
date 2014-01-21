@@ -206,7 +206,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-#ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
 		status = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
 
@@ -218,7 +217,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		}
 	}
 	ctx->id.vnn = get_my_vnn();
-#endif
 
 	messaging_register(ctx, NULL, MSG_PING, ping_message);
 
@@ -254,7 +252,6 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 		return status;
 	}
 
-#ifdef CLUSTER_SUPPORT
 	TALLOC_FREE(msg_ctx->remote);
 
 	if (lp_clustering()) {
@@ -267,8 +264,6 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 			return status;
 		}
 	}
-
-#endif
 
 	return NT_STATUS_OK;
 }
@@ -365,13 +360,11 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-#ifdef CLUSTER_SUPPORT
 	if (!procid_is_local(&server)) {
 		return msg_ctx->remote->send_fn(msg_ctx, server,
 						msg_type, data,
 						msg_ctx->remote);
 	}
-#endif
 
 	if (server_id_equal(&msg_ctx->id, &server)) {
 		struct messaging_selfsend_state *state;

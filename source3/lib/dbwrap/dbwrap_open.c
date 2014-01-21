@@ -30,7 +30,6 @@
 
 bool db_is_local(const char *name)
 {
-#ifdef CLUSTER_SUPPORT
 	const char *sockname = lp_ctdbd_socket();
 
 	if (lp_clustering() && socket_exist(sockname)) {
@@ -47,7 +46,7 @@ bool db_is_local(const char *name)
 			return false;
 		}
 	}
-#endif
+
 	return true;
 }
 
@@ -62,9 +61,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   uint64_t dbwrap_flags)
 {
 	struct db_context *result = NULL;
-#ifdef CLUSTER_SUPPORT
 	const char *sockname;
-#endif
 
 	if (!DBWRAP_LOCK_ORDER_VALID(lock_order)) {
 		errno = EINVAL;
@@ -96,7 +93,6 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-#ifdef CLUSTER_SUPPORT
 	sockname = lp_ctdbd_socket();
 
 	if (lp_clustering()) {
@@ -130,8 +126,6 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			}
 		}
 	}
-
-#endif
 
 	if (result == NULL) {
 		struct loadparm_context *lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());

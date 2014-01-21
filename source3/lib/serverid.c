@@ -343,7 +343,6 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 		remote_num += 1;
 	}
 
-#ifdef CLUSTER_SUPPORT
 	if (remote_num != 0 &&
 	    ctdb_serverids_exist_supported(messaging_ctdbd_connection()))
 	{
@@ -388,7 +387,6 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 			results[idx] = todo_results[t];
 		}
 	}
-#endif
 
 	if (remote_num != 0) {
 		todo_num = 0;
@@ -401,13 +399,11 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 			todo_num += 1;
 		}
 
-#ifdef CLUSTER_SUPPORT
 		if (!ctdb_processes_exist(messaging_ctdbd_connection(),
 					  todo_ids, todo_num,
 					  todo_results)) {
 			goto fail;
 		}
-#endif
 
 		for (t=0; t<todo_num; t++) {
 			idx = todo_idx[t];

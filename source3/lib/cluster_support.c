@@ -22,6 +22,7 @@
 
 #ifdef HAVE_CTDB_H
 #include <ctdb.h>
+#define CLUSTER_SUPPORT 1
 #endif
 
 #ifdef HAVE_CTDB_PROTOCOL_H

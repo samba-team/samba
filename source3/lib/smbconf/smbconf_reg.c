@@ -657,11 +657,10 @@ static int smbconf_reg_shutdown(struct smbconf_ctx *ctx)
 
 static bool smbconf_reg_requires_messaging(struct smbconf_ctx *ctx)
 {
-#ifdef CLUSTER_SUPPORT
 	if (lp_clustering() && lp_parm_bool(-1, "ctdb", "registry.tdb", true)) {
 		return true;
 	}
-#endif
+
 	return false;
 }
 
