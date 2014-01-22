@@ -650,15 +650,6 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 	}
 #endif
 
-#ifdef HAVE_GETPRPWNAM
-	{
-		struct pr_passwd *pr_pw = getprpwnam(pws->pw_name);
-		if (pr_pw && pr_pw->ufld.fd_encrypt) {
-			crypted = talloc_strdup(ctx, pr_pw->ufld.fd_encrypt);
-			NT_STATUS_HAVE_NO_MEMORY(crypted);
-		}
-	}
-#endif
 
 #ifdef HAVE_GETPWANAM
 	{

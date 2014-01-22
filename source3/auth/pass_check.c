@@ -261,16 +261,6 @@ NTSTATUS pass_check(const struct passwd *pass,
 	}
 #endif
 
-#ifdef HAVE_GETPRPWNAM
-	{
-		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
-		if (pr_pw && pr_pw->ufld.fd_encrypt) {
-			if (set_this_crypted(pr_pw->ufld.fd_encrypt) == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-	}
-#endif
 
 #ifdef HAVE_GETPWANAM
 	{
