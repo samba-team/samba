@@ -67,14 +67,17 @@ struct tevent_req *dreplsrv_out_drsuapi_send(TALLOC_CTX *mem_ctx,
 	state->conn	= conn;
 	state->drsuapi	= conn->drsuapi;
 
-	if (state->drsuapi && !state->drsuapi->pipe->conn->dead) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
+	if (state->drsuapi != NULL) {
+		struct dcerpc_binding_handle *b =
+			state->drsuapi->pipe->binding_handle;
+		bool is_connected = dcerpc_binding_handle_is_connected(b);
 
-	if (state->drsuapi && state->drsuapi->pipe->conn->dead) {
-		talloc_free(state->drsuapi);
-		conn->drsuapi = NULL;
+		if (is_connected) {
+			tevent_req_done(req);
+			return tevent_req_post(req, ev);
+		}
+
+		TALLOC_FREE(conn->drsuapi);
 	}
 
 	state->drsuapi = talloc_zero(state, struct dreplsrv_drsuapi_connection);
