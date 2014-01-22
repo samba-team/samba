@@ -1113,16 +1113,17 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 	}
 
 	if (file_exist(key_file) &&
+	    !file_check_permissions(key_file, geteuid(), 0400, &st) &&
 	    !file_check_permissions(key_file, geteuid(), 0600, &st))
 	{
 		DEBUG(0, ("Invalid permissions on TLS private key file '%s':\n"
-			  "owner uid %u should be %u, mode 0%o should be 0%o\n"
+			  "owner uid %u should be %u, mode %04o should be %04o or %04o\n"
 			  "This is known as CVE-2013-4476.\n"
 			  "Removing all tls .pem files will cause an "
 			  "auto-regeneration with the correct permissions.\n",
 			  key_file,
 			  (unsigned int)st.st_uid, geteuid(),
-			  (unsigned int)(st.st_mode & 0777), 0600));
+			  (unsigned int)(st.st_mode & 0777), 0400, 0600));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
