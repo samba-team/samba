@@ -2718,29 +2718,7 @@ int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 	return 0;
 }
 
-struct delete_ip_callback_state {
-	struct ctdb_req_control_old *c;
-};
-
-/*
-  called when releaseip event finishes for del_public_address
- */
-static void delete_ip_callback(struct ctdb_context *ctdb,
-			       int32_t status, TDB_DATA data,
-			       const char *errormsg,
-			       void *private_data)
-{
-	struct delete_ip_callback_state *state =
-		talloc_get_type(private_data, struct delete_ip_callback_state);
-
-	/* If release failed then fail. */
-	ctdb_request_control_reply(ctdb, state->c, NULL, status, errormsg);
-	talloc_free(private_data);
-}
-
-int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
-					struct ctdb_req_control_old *c,
-					TDB_DATA indata, bool *async_reply)
+int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_addr_info_old *pub = (struct ctdb_addr_info_old *)indata.dptr;
 	struct ctdb_vnn *vnn;
@@ -2767,49 +2745,13 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (ctdb_same_ip(&vnn->public_address, &pub->addr)) {
 			if (vnn->pnn == ctdb->pnn) {
-				struct delete_ip_callback_state *state;
-				struct ctdb_public_ip *ip;
-				TDB_DATA data;
-				int ret;
-
+				/* This IP is currently being hosted.
+				 * Defer the deletion until the next
+				 * takeover run. "ctdb reloadips" will
+				 * always cause a takeover run.  "ctdb
+				 * delip" will now need an explicit
+				 * "ctdb ipreallocated" afterwards. */
 				vnn->delete_pending = true;
-
-				state = talloc(ctdb,
-					       struct delete_ip_callback_state);
-				CTDB_NO_MEMORY(ctdb, state);
-				state->c = c;
-
-				ip = talloc(state, struct ctdb_public_ip);
-				if (ip == NULL) {
-					DEBUG(DEBUG_ERR,
-					      (__location__ " Out of memory\n"));
-					talloc_free(state);
-					return -1;
-				}
-				ip->pnn = -1;
-				ip->addr = pub->addr;
-
-				data.dsize = sizeof(struct ctdb_public_ip);
-				data.dptr = (unsigned char *)ip;
-
-				ret = ctdb_daemon_send_control(ctdb,
-							       ctdb_get_pnn(ctdb),
-							       0,
-							       CTDB_CONTROL_RELEASE_IP,
-							       0, 0,
-							       data,
-							       delete_ip_callback,
-							       state);
-				if (ret == -1) {
-					DEBUG(DEBUG_ERR,
-					      (__location__ "Unable to send "
-					       "CTDB_CONTROL_RELEASE_IP\n"));
-					talloc_free(state);
-					return -1;
-				}
-
-				state->c = talloc_steal(state, c);
-				*async_reply = true;
 			} else {
 				/* This IP is not hosted on the
 				 * current node so just delete it

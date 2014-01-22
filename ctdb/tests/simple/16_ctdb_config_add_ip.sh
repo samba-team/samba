@@ -26,6 +26,7 @@ get_test_ip_mask_and_iface
 
 echo "Deleting IP $test_ip from all nodes"
 delete_ip_from_all_nodes $test_ip
+try_command_on_node -v $test_node $CTDB ipreallocate
 wait_until_ips_are_on_node '!' $test_node $test_ip
 
 # Debugging...

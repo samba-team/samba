@@ -953,8 +953,7 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb,
 int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb,
 					TDB_DATA indata);
 int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
-					struct ctdb_req_control_old *c,
-					TDB_DATA recdata, bool *async_reply);
+					TDB_DATA recdata);
 
 int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb,
 				       struct ctdb_req_control_old *c,

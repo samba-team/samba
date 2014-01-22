@@ -30,6 +30,7 @@ try_command_on_node $test_node "ip addr show dev $iface | grep -E 'inet6?[[:spac
 
 echo "Attempting to remove ${test_ip} from node ${test_node}."
 try_command_on_node $test_node $CTDB delip $test_ip
+try_command_on_node $test_node $CTDB ipreallocate
 wait_until_ips_are_on_node '!' $test_node $test_ip
 
 timeout=60

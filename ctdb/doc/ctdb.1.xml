@@ -1044,12 +1044,19 @@ DB Statistics: locking.tdb
     <refsect2>
       <title>delip <parameter>IPADDR</parameter></title>
       <para>
-	This command is used to remove a public ip from a node during runtime.
-	If this public ip is currently hosted by the node it being removed from, the ip will first be failed over to another node, if possible, before it is removed.
+	This command flags IPADDR for deletion from a node at runtime.
+	It should be followed by a <command>ctdb
+	ipreallocate</command>.  If IPADDR is currently hosted by the
+	node it is being removed from, this ensures that the IP will
+	first be failed over to another node, if possible, and that it
+	is then actually removed.
       </para>
       <para>
-	Note that this only updates the runtime instance of ctdb. Any changes will be lost next time ctdb is restarted and the public addresses file is re-read.
-	If you want this change to be permanent you must also update the public addresses file manually.
+	Note that this only updates the runtime instance of CTDB.  Any
+	changes will be lost next time CTDB is restarted and the
+	public addresses file is re-read.  If you want this change to
+	be permanent you must also update the public addresses file
+	manually.
       </para>
     </refsect2>
 

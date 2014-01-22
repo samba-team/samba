@@ -48,6 +48,7 @@ for i in $ifaces ; do
 	echo "  $ip"
 	try_command_on_node $test_node "$CTDB delip $ip"
     done
+    try_command_on_node $test_node "$CTDB ipreallocate"
 
     try_command_on_node $test_node "$CTDB ifaces -X"
     info=$(awk -F'|' -v iface="$i" '$2 == iface { print $0 }' <<<"$out")
