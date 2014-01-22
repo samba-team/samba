@@ -1003,12 +1003,17 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		}
 	} else if (transport == NCACN_IP_TCP) {
 		struct lsa_TransNameArray2 names;
+		enum dcerpc_AuthType auth_type;
+		enum dcerpc_AuthLevel auth_level;
 
 		names.count = 0;
 		names.names = NULL;
 
-		if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
-		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+		dcerpc_binding_handle_auth_info(p->binding_handle,
+						&auth_type, &auth_level);
+
+		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
+		    auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
 			if (!test_LookupSids3(b, tctx, &sids)) {
 				return false;
 			}
