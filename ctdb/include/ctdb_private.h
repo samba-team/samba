@@ -212,6 +212,11 @@ struct ctdb_vnn {
 	/* Set to true any time an update to this VNN is in flight.
 	   This helps to avoid races. */
 	bool update_in_flight;
+
+	/* If CTDB_CONTROL_DEL_PUBLIC_IP is received for this IP
+	 * address then this flag is set.  It will be deleted in the
+	 * release IP callback. */
+	bool delete_pending;
 };
 
 /*
@@ -1264,7 +1269,9 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_receive_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
+					struct ctdb_req_control *c,
+					TDB_DATA recdata, bool *async_reply);
 
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
 

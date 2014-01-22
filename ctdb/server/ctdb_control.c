@@ -481,7 +481,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_add_public_address(ctdb, indata);
 
 	case CTDB_CONTROL_DEL_PUBLIC_IP:
-		return ctdb_control_del_public_address(ctdb, indata);
+		return ctdb_control_del_public_address(ctdb, c, indata,
+						       async_reply);
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		return ctdb_control_get_capabilities(ctdb, outdata);

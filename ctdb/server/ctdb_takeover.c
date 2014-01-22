@@ -260,6 +260,10 @@ static bool ctdb_vnn_available(struct ctdb_context *ctdb,
 {
 	int i;
 
+	if (vnn->delete_pending) {
+		return false;
+	}
+
 	if (vnn->iface && vnn->iface->link_up) {
 		return true;
 	}
@@ -865,6 +869,17 @@ static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr
 	}
 }
 
+static void do_delete_ip(struct ctdb_context *ctdb, struct ctdb_vnn *vnn)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+
+	DLIST_REMOVE(ctdb->vnn, vnn);
+	ctdb_remove_orphaned_ifaces(ctdb, vnn, mem_ctx);
+	ctdb_vnn_unassign_iface(ctdb, vnn);
+	talloc_free(vnn);
+	talloc_free(mem_ctx);
+}
+
 /*
   called when releaseip event finishes
  */
@@ -903,6 +918,12 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 
 	ctdb_vnn_unassign_iface(ctdb, state->vnn);
 
+	/* Process the IP if it has been marked for deletion */
+	if (state->vnn->delete_pending) {
+		do_delete_ip(ctdb, state->vnn);
+		state->vnn = NULL;
+	}
+
 	/* the control succeeded */
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
@@ -910,7 +931,9 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 
 static int ctdb_releaseip_destructor(struct takeover_callback_state *state)
 {
-	state->vnn->update_in_flight = false;
+	if (state->vnn != NULL) {
+		state->vnn->update_in_flight = false;
+	}
 	return 0;
 }
 
@@ -4165,20 +4188,32 @@ int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 	return 0;
 }
 
+struct delete_ip_callback_state {
+	struct ctdb_req_control *c;
+};
+
 /*
   called when releaseip event finishes for del_public_address
  */
-static void delete_ip_callback(struct ctdb_context *ctdb, int status, 
-				void *private_data)
+static void delete_ip_callback(struct ctdb_context *ctdb,
+			       int32_t status, TDB_DATA data,
+			       const char *errormsg,
+			       void *private_data)
 {
+	struct delete_ip_callback_state *state =
+		talloc_get_type(private_data, struct delete_ip_callback_state);
+
+	/* If release failed then fail. */
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, errormsg);
 	talloc_free(private_data);
 }
 
-int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA indata)
+int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
+					struct ctdb_req_control *c,
+					TDB_DATA indata, bool *async_reply)
 {
 	struct ctdb_control_ip_iface *pub = (struct ctdb_control_ip_iface *)indata.dptr;
 	struct ctdb_vnn *vnn;
-	int ret;
 
 	/* verify the size of indata */
 	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
@@ -4201,37 +4236,63 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 	/* walk over all public addresses until we find a match */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (ctdb_same_ip(&vnn->public_address, &pub->addr)) {
-			TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+			if (vnn->pnn == ctdb->pnn) {
+				struct delete_ip_callback_state *state;
+				struct ctdb_public_ip *ip;
+				TDB_DATA data;
+				int ret;
 
-			DLIST_REMOVE(ctdb->vnn, vnn);
-			talloc_steal(mem_ctx, vnn);
-			ctdb_remove_orphaned_ifaces(ctdb, vnn, mem_ctx);
-			if (vnn->pnn != ctdb->pnn) {
-				if (vnn->iface != NULL) {
-					ctdb_vnn_unassign_iface(ctdb, vnn);
+				vnn->delete_pending = true;
+
+				state = talloc(ctdb,
+					       struct delete_ip_callback_state);
+				CTDB_NO_MEMORY(ctdb, state);
+				state->c = c;
+
+				ip = talloc(state, struct ctdb_public_ip);
+				if (ip == NULL) {
+					DEBUG(DEBUG_ERR,
+					      (__location__ " Out of memory\n"));
+					talloc_free(state);
+					return -1;
 				}
-				talloc_free(mem_ctx);
-				return 0;
-			}
-			vnn->pnn = -1;
+				ip->pnn = -1;
+				ip->addr = pub->addr;
 
-			ret = ctdb_event_script_callback(ctdb, 
-					 mem_ctx, delete_ip_callback, mem_ctx,
-					 CTDB_EVENT_RELEASE_IP,
-					 "%s %s %u",
-					 ctdb_vnn_iface_string(vnn),
-					 ctdb_addr_to_str(&vnn->public_address),
-					 vnn->public_netmask_bits);
-			if (vnn->iface != NULL) {
-				ctdb_vnn_unassign_iface(ctdb, vnn);
+				data.dsize = sizeof(struct ctdb_public_ip);
+				data.dptr = (unsigned char *)ip;
+
+				ret = ctdb_daemon_send_control(ctdb,
+							       ctdb_get_pnn(ctdb),
+							       0,
+							       CTDB_CONTROL_RELEASE_IP,
+							       0, 0,
+							       data,
+							       delete_ip_callback,
+							       state);
+				if (ret == -1) {
+					DEBUG(DEBUG_ERR,
+					      (__location__ "Unable to send "
+					       "CTDB_CONTROL_RELEASE_IP\n"));
+					talloc_free(state);
+					return -1;
+				}
+
+				state->c = talloc_steal(state, c);
+				*async_reply = true;
+			} else {
+				/* This IP is not hosted on the
+				 * current node so just delete it
+				 * now. */
+				do_delete_ip(ctdb, vnn);
 			}
-			if (ret != 0) {
-				return -1;
-			}
+
 			return 0;
 		}
 	}
 
+	DEBUG(DEBUG_ERR,("Delete IP of unknown public IP address %s\n",
+			 ctdb_addr_to_str(&pub->addr)));
 	return -1;
 }
 
