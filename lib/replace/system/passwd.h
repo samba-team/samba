@@ -77,9 +77,6 @@
 #define PASSWORD_LENGTH 8
 #endif
 
-#if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)
-#define OSF1_ENH_SEC 1
-#endif
 
 #ifndef ALLOW_CHANGE_PASSWORD
 #if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))

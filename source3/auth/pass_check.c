@@ -92,36 +92,6 @@ static int linux_bigcrypt(char *password, char *salt1, char *crypted)
 }
 #endif
 
-#ifdef OSF1_ENH_SEC
-/****************************************************************************
-an enhanced crypt for OSF1
-****************************************************************************/
-static char *osf1_bigcrypt(char *password, char *salt1)
-{
-	static char result[AUTH_MAX_PASSWD_LENGTH] = "";
-	char *p1;
-	char *p2 = password;
-	char salt[3];
-	int i;
-	int parts = strlen(password) / AUTH_CLEARTEXT_SEG_CHARS;
-	if (strlen(password) % AUTH_CLEARTEXT_SEG_CHARS)
-		parts++;
-
-	StrnCpy(salt, salt1, 2);
-	StrnCpy(result, salt1, 2);
-	result[2] = '\0';
-
-	for (i = 0; i < parts; i++) {
-		p1 = crypt(p2, salt);
-		strncat(result, p1 + 2,
-			AUTH_MAX_PASSWD_LENGTH - strlen(p1 + 2) - 1);
-		StrnCpy(salt, &result[2 + i * AUTH_CIPHERTEXT_SEG_CHARS], 2);
-		p2 += AUTH_CLEARTEXT_SEG_CHARS;
-	}
-
-	return (result);
-}
-#endif
 
 
 /****************************************************************************
@@ -138,22 +108,6 @@ static NTSTATUS password_check(const char *user, const char *password, const voi
 
 
 
-#ifdef OSF1_ENH_SEC
-
-	ret = (strcmp(osf1_bigcrypt(password, get_this_salt()),
-		      get_this_crypted()) == 0);
-	if (!ret) {
-		DEBUG(2,
-		      ("OSF1_ENH_SEC failed. Trying normal crypt.\n"));
-		ret = (strcmp((char *)crypt(password, get_this_salt()), get_this_crypted()) == 0);
-	}
-	if (ret) {
-		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-#endif /* OSF1_ENH_SEC */
 
 #ifdef ULTRIX_AUTH
 	ret = (strcmp((char *)crypt16(password, get_this_salt()), get_this_crypted()) == 0);
@@ -330,24 +284,6 @@ NTSTATUS pass_check(const struct passwd *pass,
 	}
 #endif
 
-#ifdef OSF1_ENH_SEC
-	{
-		struct pr_passwd *mypasswd;
-		DEBUG(5, ("Checking password for user %s in OSF1_ENH_SEC\n",
-			  user));
-		mypasswd = getprpwnam(user);
-		if (mypasswd) {
-			user = mypasswd->ufld.fd_name;
-			if (set_this_crypted(mypasswd->ufld.fd_encrypt) == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		} else {
-			DEBUG(5,
-			      ("OSF1_ENH_SEC: No entry for user %s in protected database !\n",
-			       user));
-		}
-	}
-#endif
 
 #ifdef ULTRIX_AUTH
 	{

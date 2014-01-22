@@ -419,9 +419,6 @@ typedef char fstring[FSTRING_LEN];
 #define SIGRTMIN NSIG
 #endif
 
-#if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)
-#define OSF1_ENH_SEC 1
-#endif
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
