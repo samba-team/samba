@@ -1140,13 +1140,16 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 #ifdef HAVE_LDAP_ADD_RESULT_ENTRY
 	while (cookie) {
 		LDAPMessage *res2 = NULL;
-		ADS_STATUS status2;
 		LDAPMessage *msg, *next;
 
-		status2 = ads_do_paged_search_args(ads, bind_path, scope, expr, 
+		status = ads_do_paged_search_args(ads, bind_path, scope, expr,
 					      attrs, args, &res2, &count, &cookie);
-
-		if (!ADS_ERR_OK(status2)) break;
+		if (!ADS_ERR_OK(status)) {
+			/* Ensure we free all collected results */
+			ads_msgfree(ads, *res);
+			*res = NULL;
+			break;
+		}
 
 		/* this relies on the way that ldap_add_result_entry() works internally. I hope
 		   that this works on all ldap libs, but I have only tested with openldap */
