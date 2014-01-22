@@ -85,7 +85,11 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
 
 		ret &= test_lsa_OpenPolicy2_ex(p->binding_handle, torture, &handle,
-					       NT_STATUS_PIPE_DISCONNECTED);
+					       NT_STATUS_IO_DEVICE_ERROR);
+
+		torture_assert(torture, !dcerpc_binding_handle_is_connected(p->binding_handle),
+			       "dcerpc disonnected");
+
 		return ret;
 	}
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
