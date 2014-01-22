@@ -3052,9 +3052,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 
 	/* If this is the first tickle */
 	if (tcparray == NULL) {
-		tcparray = talloc_size(ctdb->nodes, 
-			offsetof(struct ctdb_tcp_array, connections) +
-			sizeof(struct ctdb_tcp_connection) * 1);
+		tcparray = talloc(vnn, struct ctdb_tcp_array);
 		CTDB_NO_MEMORY(ctdb, tcparray);
 		vnn->tcp_array = tcparray;
 
@@ -3076,7 +3074,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 	/* Do we already have this tickle ?*/
 	tcp.src_addr = p->src_addr;
 	tcp.dst_addr = p->dst_addr;
-	if (ctdb_tcp_find(vnn->tcp_array, &tcp) != NULL) {
+	if (ctdb_tcp_find(tcparray, &tcp) != NULL) {
 		DEBUG(DEBUG_DEBUG,("Already had tickle info for %s:%u for vnn:%u\n",
 			ctdb_addr_to_str(&tcp.dst_addr),
 			ntohs(tcp.dst_addr.ip.sin_port),
@@ -3090,7 +3088,6 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 					tcparray->num+1);
 	CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
-	vnn->tcp_array = tcparray;
 	tcparray->connections[tcparray->num].src_addr = p->src_addr;
 	tcparray->connections[tcparray->num].dst_addr = p->dst_addr;
 	tcparray->num++;
@@ -3868,7 +3865,7 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	talloc_free(vnn->tcp_array);
 	vnn->tcp_array = NULL;
 
-	tcparray = talloc(ctdb->nodes, struct ctdb_tcp_array);
+	tcparray = talloc(vnn, struct ctdb_tcp_array);
 	CTDB_NO_MEMORY(ctdb, tcparray);
 
 	tcparray->num = list->tickles.num;
@@ -3880,8 +3877,8 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	       sizeof(struct ctdb_tcp_connection)*tcparray->num);
 
 	/* We now have a new fresh tickle list array for this vnn */
-	vnn->tcp_array = talloc_steal(vnn, tcparray);
-	
+	vnn->tcp_array = tcparray;
+
 	return 0;
 }
 
