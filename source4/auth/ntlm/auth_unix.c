@@ -542,14 +542,6 @@ static NTSTATUS password_check(const char *username, const char *password,
 	
 #endif /* ULTRIX_AUTH */
 	
-#ifdef LINUX_BIGCRYPT
-	ret = (linux_bigcrypt(password, salt, crypted));
-        if (ret) {
-		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-#endif /* LINUX_BIGCRYPT */
 	
 #if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
 	

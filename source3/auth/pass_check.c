@@ -67,30 +67,6 @@ static const char *set_this_crypted(const char *newcrypted)
 
 
 
-#ifdef LINUX_BIGCRYPT
-/****************************************************************************
-an enhanced crypt for Linux to handle password longer than 8 characters
-****************************************************************************/
-static int linux_bigcrypt(char *password, char *salt1, char *crypted)
-{
-#define LINUX_PASSWORD_SEG_CHARS 8
-	char salt[3];
-	int i;
-
-	StrnCpy(salt, salt1, 2);
-	crypted += 2;
-
-	for (i = strlen(password); i > 0; i -= LINUX_PASSWORD_SEG_CHARS) {
-		char *p = crypt(password, salt) + 2;
-		if (strncmp(p, crypted, LINUX_PASSWORD_SEG_CHARS) != 0)
-			return (0);
-		password += LINUX_PASSWORD_SEG_CHARS;
-		crypted += strlen(p);
-	}
-
-	return (1);
-}
-#endif
 
 
 
@@ -119,14 +95,6 @@ static NTSTATUS password_check(const char *user, const char *password, const voi
 
 #endif /* ULTRIX_AUTH */
 
-#ifdef LINUX_BIGCRYPT
-	ret = (linux_bigcrypt(password, get_this_salt(), get_this_crypted()));
-        if (ret) {
-		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-#endif /* LINUX_BIGCRYPT */
 
 #if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
 
