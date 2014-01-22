@@ -49,4 +49,24 @@ NTSTATUS tstream_smbXcli_np_use_trans(struct tstream_context *stream);
 unsigned int tstream_smbXcli_np_set_timeout(struct tstream_context *stream,
 					    unsigned int timeout);
 
+/*
+ * Windows uses 4280 (the max xmit/recv size negotiated on DCERPC).
+ * This is fits into the max_xmit negotiated at the SMB layer.
+ *
+ * On the sending side they may use SMBtranss if the request does not
+ * fit into a single SMBtrans call.
+ *
+ * Windows uses 1024 as max data size of a SMBtrans request and then
+ * possibly reads the rest of the DCERPC fragment (up to 3256 bytes)
+ * via a SMBreadX.
+ *
+ * For now we just ask for the full 4280 bytes (max data size) in the SMBtrans
+ * request to get the whole fragment at once (like samba 3.5.x and below did.
+ *
+ * It is important that we use do SMBwriteX with the size of a full fragment,
+ * otherwise we may get NT_STATUS_PIPE_BUSY on the SMBtrans request
+ * from NT4 servers. (See bug #8195)
+ */
+#define TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE 4280
+
 #endif /*  _CLI_NP_TSTREAM_H_ */
