@@ -96,25 +96,6 @@ static NTSTATUS password_check(const char *user, const char *password, const voi
 #endif /* ULTRIX_AUTH */
 
 
-#if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
-
-	/*
-	 * Some systems have bigcrypt in the C library but might not
-	 * actually use it for the password hashes (HPUX 10.20) is
-	 * a noteable example. So we try bigcrypt first, followed
-	 * by crypt.
-	 */
-
-	if (strcmp(bigcrypt(password, get_this_salt()), get_this_crypted()) == 0)
-		return NT_STATUS_OK;
-	else
-		ret = (strcmp((char *)crypt(password, get_this_salt()), get_this_crypted()) == 0);
-	if (ret) {
-		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-#else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 
 #ifdef HAVE_BIGCRYPT
 	ret = (strcmp(bigcrypt(password, get_this_salt()), get_this_crypted()) == 0);
@@ -136,7 +117,6 @@ static NTSTATUS password_check(const char *user, const char *password, const voi
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 #endif /* HAVE_CRYPT */
-#endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 #endif /* WITH_PAM */
 }
 
