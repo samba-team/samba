@@ -543,17 +543,6 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	samr_pipe = connect_with_info->out.dcerpc_pipe;
 
-	status = dcerpc_pipe_auth(tmp_ctx, &samr_pipe,
-				  connect_with_info->out.dcerpc_pipe->binding, 
-				  &ndr_table_samr, ctx->cred, ctx->lp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						"SAMR bind failed: %s",
-						nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return status;
-	}
-
 	/* prepare samr_Connect */
 	ZERO_STRUCT(p_handle);
 	sc.in.system_name = NULL;

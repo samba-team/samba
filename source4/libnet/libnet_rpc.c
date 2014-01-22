@@ -825,7 +825,11 @@ static void continue_epm_map_binding(struct composite_context *ctx)
 	}
 
 	/* create secondary connection derived from lsa pipe */
-	sec_conn_req = dcerpc_secondary_connection_send(s->lsa_pipe, s->final_binding);
+	sec_conn_req = dcerpc_secondary_auth_connection_send(s->lsa_pipe,
+							     s->final_binding,
+							     s->r.in.dcerpc_iface,
+							     s->ctx->cred,
+							     s->ctx->lp_ctx);
 	if (composite_nomem(sec_conn_req, c)) return;
 
 	composite_continue(c, sec_conn_req, continue_secondary_conn, c);
@@ -844,7 +848,8 @@ static void continue_secondary_conn(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
-	c->status = dcerpc_secondary_connection_recv(ctx, &s->final_pipe);
+	c->status = dcerpc_secondary_auth_connection_recv(ctx, s->lsa_pipe,
+							  &s->final_pipe);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		s->r.out.error_string = talloc_asprintf(c,
 							"secondary connection failed: %s",
