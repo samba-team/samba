@@ -526,7 +526,6 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "scanner", torture_rpc_scanner);
 	torture_suite_add_simple_test(suite, "autoidl", torture_rpc_autoidl);
 	torture_suite_add_simple_test(suite, "countcalls", torture_rpc_countcalls);
-	torture_suite_add_simple_test(suite, "multibind", torture_multi_bind);
 	torture_suite_add_simple_test(suite, "authcontext", torture_bind_authcontext);
 	torture_suite_add_suite(suite, torture_rpc_samba3(suite));
 	torture_rpc_drsuapi_tcase(suite);
