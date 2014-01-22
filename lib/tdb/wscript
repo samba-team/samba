@@ -40,6 +40,7 @@ tdb1_unit_tests = [
     'run-traverse-in-transaction',
     'run-wronghash-fail',
     'run-zero-append',
+    'run-marklock-deadlock',
     'run-mutex-openflags2',
     'run-mutex-trylock',
     'run-mutex-allrecord-bench',
