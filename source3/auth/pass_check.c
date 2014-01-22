@@ -64,37 +64,6 @@ static const char *set_this_crypted(const char *newcrypted)
 }
 #endif
 
-#ifdef WITH_AFS
-
-#include <afs/stds.h>
-#include <afs/kautils.h>
-
-/*******************************************************************
-check on AFS authentication
-********************************************************************/
-static bool afs_auth(char *user, char *password)
-{
-	long password_expires = 0;
-	char *reason;
-
-	/* For versions of AFS prior to 3.3, this routine has few arguments, */
-	/* but since I can't find the old documentation... :-)               */
-	setpag();
-	if (ka_UserAuthenticateGeneral
-	    (KA_USERAUTH_VERSION + KA_USERAUTH_DOSETPAG, user, (char *)0,	/* instance */
-	     (char *)0,		/* cell */
-	     password, 0,	/* lifetime, default */
-	     &password_expires,	/*days 'til it expires */
-	     0,			/* spare 2 */
-	     &reason) == 0)
-	{
-		return (True);
-	}
-	DEBUG(1,
-	      ("AFS authentication for \"%s\" failed (%s)\n", user, reason));
-	return (False);
-}
-#endif
 
 
 
@@ -167,10 +136,6 @@ static NTSTATUS password_check(const char *user, const char *password, const voi
 
 	bool ret;
 
-#ifdef WITH_AFS
-	if (afs_auth(user, password))
-		return NT_STATUS_OK;
-#endif /* WITH_AFS */
 
 
 #ifdef OSF1_ENH_SEC
