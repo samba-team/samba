@@ -661,11 +661,6 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 	}
 #endif
 
-#if defined(HAVE_TRUNCATED_SALT)
-	/* crypt on some platforms (HPUX in particular)
-	   won't work with more than 2 salt characters. */
-	salt[2] = 0;
-#endif
 
 	if (crypted[0] == '\0') {
 		if (!lpcfg_null_passwords(lp_ctx)) {

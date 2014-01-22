@@ -236,20 +236,6 @@ NTSTATUS pass_check(const struct passwd *pass,
 	}
 #endif
 
-#if defined(HAVE_TRUNCATED_SALT)
-	/* crypt on some platforms (HPUX in particular)
-	   won't work with more than 2 salt characters. */
-	{
-		char *trunc_salt = get_this_salt();
-		if (!trunc_salt || strlen(trunc_salt) < 2) {
-			return NT_STATUS_LOGON_FAILURE;
-		}
-		trunc_salt[2] = 0;
-		if (set_this_salt(trunc_salt) == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-#endif
 
 	if (!get_this_crypted() || !*get_this_crypted()) {
 		if (!lp_null_passwords()) {
