@@ -118,19 +118,20 @@ static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
  * causes problems...  :-)
  */
 static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
-					struct ctdb_vnn *vnn,
-					TALLOC_CTX *mem_ctx)
+					struct ctdb_vnn *vnn)
 {
 	struct ctdb_iface *i;
 
 	/* For each interface, check if there's an IP using it. */
-	for(i=ctdb->ifaces; i; i=i->next) {
+	i = ctdb->ifaces;
+	while (i != NULL) {
 		struct ctdb_vnn *tv;
 		bool found;
+		struct ctdb_iface *next = i->next;
 
 		/* Only consider interfaces named in the given VNN. */
 		if (!vnn_has_interface_with_name(vnn, i->name)) {
-			continue;
+			goto next;
 		}
 
 		/* Is the "single IP" on this interface? */
@@ -138,7 +139,7 @@ static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 		    (ctdb->single_ip_vnn->ifaces[0] != NULL) &&
 		    (strcmp(i->name, ctdb->single_ip_vnn->ifaces[0]) == 0)) {
 			/* Found, next interface please... */
-			continue;
+			goto next;
 		}
 		/* Search for a vnn with this interface. */
 		found = false;
@@ -152,9 +153,11 @@ static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 		if (!found) {
 			/* None of the VNNs are using this interface. */
 			DLIST_REMOVE(ctdb->ifaces, i);
-			/* Caller will free mem_ctx when convenient. */
-			talloc_steal(mem_ctx, i);
+			talloc_free(i);
 		}
+
+	next:
+		i = next;
 	}
 }
 
@@ -871,13 +874,10 @@ static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr
 
 static void do_delete_ip(struct ctdb_context *ctdb, struct ctdb_vnn *vnn)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
-
 	DLIST_REMOVE(ctdb->vnn, vnn);
-	ctdb_remove_orphaned_ifaces(ctdb, vnn, mem_ctx);
 	ctdb_vnn_unassign_iface(ctdb, vnn);
+	ctdb_remove_orphaned_ifaces(ctdb, vnn);
 	talloc_free(vnn);
-	talloc_free(mem_ctx);
 }
 
 /*
