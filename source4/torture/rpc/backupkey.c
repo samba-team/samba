@@ -720,13 +720,16 @@ static bool test_RetreiveBackupKeyGUID(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
 	if (r == NULL) {
 		return false;
 	}
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		torture_assert_ntstatus_ok(tctx,
 				dcerpc_bkrp_BackupKey_r(b, tctx, r),
 				"Get GUID");
@@ -755,9 +758,12 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 2, &out_blob,
 					true, false, false, false, false, false, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -780,9 +786,12 @@ static bool test_RestoreGUID_wrongversion(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 2, &out_blob,
 					false, true, false, false, false, false, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -805,9 +814,12 @@ static bool test_RestoreGUID_wronguser(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 2, &out_blob,
 					false, false, true, false, false, false, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -830,9 +842,12 @@ static bool test_RestoreGUID_v3(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 3, &out_blob,
 					false, false, false, false, false, false, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -856,9 +871,12 @@ static bool test_RestoreGUID(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 2, &out_blob,
 					false, false, false, false, false, false, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -882,9 +900,12 @@ static bool test_RestoreGUID_badmagiconsecret(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 3, &out_blob,
 					false, false, false, true, false, false, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -905,9 +926,12 @@ static bool test_RestoreGUID_emptyrequest(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 3, &out_blob,
 					false, false, false, true, false, false, true);
 
@@ -933,9 +957,12 @@ static bool test_RestoreGUID_badcertguid(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 3, &out_blob,
 					false, false, false, false, false, false, true);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -958,9 +985,12 @@ static bool test_RestoreGUID_badmagicaccesscheck(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 2, &out_blob,
 					false, false, false, false, true, false, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
@@ -983,9 +1013,12 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
-	if (p->conn->security_state.auth_info != NULL &&
-	    p->conn->security_state.auth_info->auth_level == 6) {
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		struct bkrp_BackupKey *r = createRestoreGUIDStruct(tctx, p, 2, &out_blob,
 					false, false, false, false, false, true, false);
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
