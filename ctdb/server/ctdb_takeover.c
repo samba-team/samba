@@ -3091,7 +3091,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 	tcparray->connections[tcparray->num].src_addr = p->src_addr;
 	tcparray->connections[tcparray->num].dst_addr = p->dst_addr;
 	tcparray->num++;
-				
+
 	DEBUG(DEBUG_INFO,("Added tickle info for %s:%u from vnn %u\n",
 		ctdb_addr_to_str(&tcp.dst_addr),
 		ntohs(tcp.dst_addr.ip.sin_port),
@@ -3851,11 +3851,11 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 				 * list->tickles.num) {
 		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tcp_tickle_list\n"));
 		return -1;
-	}	
+	}
 
 	vnn = find_public_ip_vnn(ctdb, &list->addr);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_INFO,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n", 
+		DEBUG(DEBUG_INFO,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n",
 			ctdb_addr_to_str(&list->addr)));
 
 		return 1;
@@ -3873,7 +3873,7 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	tcparray->connections = talloc_array(tcparray, struct ctdb_tcp_connection, tcparray->num);
 	CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
-	memcpy(tcparray->connections, &list->tickles.connections[0], 
+	memcpy(tcparray->connections, &list->tickles.connections[0],
 	       sizeof(struct ctdb_tcp_connection)*tcparray->num);
 
 	/* We now have a new fresh tickle list array for this vnn */
