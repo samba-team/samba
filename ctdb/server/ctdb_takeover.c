@@ -4458,6 +4458,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 				goto failed;
 			}
 
+			ctdb_client_async_add(async_data, state);
 		}
 	}
 
@@ -4534,6 +4535,8 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 				       " failed sending CTDB_CONTROL_ADD_PUBLIC_IP\n"));
 				goto failed;
 			}
+
+			ctdb_client_async_add(async_data, state);
 		}
 	}
 
