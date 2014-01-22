@@ -182,6 +182,8 @@ static void wbsrv_samba3_async_epilogue(NTSTATUS status,
 
 NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 {
+	DEBUG(3, ("request interface version (version = %d)\n", WINBIND_INTERFACE_VERSION));
+
 	s3call->response->result			= WINBINDD_OK;
 	s3call->response->data.interface_version	= WINBIND_INTERFACE_VERSION;
 	return NT_STATUS_OK;
