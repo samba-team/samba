@@ -717,6 +717,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	fsp->share_access = e->share_access;
 	fsp->can_read = ((fsp->access_mask & (FILE_READ_DATA)) != 0);
 	fsp->can_write = ((fsp->access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) != 0);
+	fsp->fnum = op->local_id;
 
 	/*
 	 * TODO:
