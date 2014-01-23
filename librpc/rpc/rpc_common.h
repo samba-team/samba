@@ -138,6 +138,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
 NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
 const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
+enum dcerpc_transport_t dcerpc_transport_by_name(const char *name);
 enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower);
 
 /* The following definitions come from ../librpc/rpc/dcerpc_util.c  */

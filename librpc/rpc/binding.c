@@ -7,6 +7,7 @@
    Copyright (C) Jelmer Vernooij 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Rafal Szczesniak 2006
+   Copyright (C) Stefan Metzmacher 2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -673,6 +674,23 @@ _PUBLIC_ const char *derpc_transport_string_by_transport(enum dcerpc_transport_t
 		}
 	}
 	return NULL;
+}
+
+_PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_name(const char *name)
+{
+	size_t i;
+
+	if (name == NULL) {
+		return NCA_UNKNOWN;
+	}
+
+	for (i=0; i<ARRAY_SIZE(transports);i++) {
+		if (strcasecmp(name, transports[i].name) == 0) {
+			return transports[i].transport;
+		}
+	}
+
+	return NCA_UNKNOWN;
 }
 
 _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
