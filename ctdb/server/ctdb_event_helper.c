@@ -127,7 +127,10 @@ int main(int argc, char *argv[])
 
 	waitpid(pid, &status, 0);
 	if (WIFEXITED(status)) {
-		output = -WEXITSTATUS(status);
+		output = WEXITSTATUS(status);
+		if (output == ENOENT || output == ENOEXEC) {
+			output = -output;
+		}
 		write(write_fd, &output, sizeof(output));
 		exit(output);
 	}
