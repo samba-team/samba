@@ -74,7 +74,7 @@ static const struct {
 	},
 };
 
-static const struct {
+static const struct ncacn_option {
 	const char *name;
 	uint32_t flag;
 } ncacn_options[] = {
@@ -91,6 +91,24 @@ static const struct {
 	{"smb2", DCERPC_SMB2},
 	{"ndr64", DCERPC_NDR64},
 };
+
+static const struct ncacn_option *ncacn_option_by_name(const char *name)
+{
+	size_t i;
+
+	for (i=0; i<ARRAY_SIZE(ncacn_options); i++) {
+		int ret;
+
+		ret = strcasecmp(ncacn_options[i].name, name);
+		if (ret != 0) {
+			continue;
+		}
+
+		return &ncacn_options[i];
+	}
+
+	return NULL;
+}
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
