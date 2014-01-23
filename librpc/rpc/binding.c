@@ -459,6 +459,8 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 		_SPECIAL(target_principal),
 #undef _SPECIAL
 	};
+	const struct ncacn_option *no = NULL;
+	size_t name_len = strlen(name);
 	size_t i;
 	int ret;
 
@@ -476,6 +478,15 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 		return specials[i].value;
 	}
 
+	no = ncacn_option_by_name(name);
+	if (no != NULL) {
+		if (b->flags & no->flag) {
+			return no->name;
+		}
+
+		return NULL;
+	}
+
 	if (b->options == NULL) {
 		return NULL;
 	}
@@ -483,7 +494,6 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 	for (i=0; b->options[i]; i++) {
 		const char *o = b->options[i];
 		const char *vs = NULL;
-		size_t name_len = strlen(name);
 
 		ret = strncmp(name, o, name_len);
 		if (ret != 0) {
@@ -538,9 +548,10 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 		_SPECIAL(target_principal),
 #undef _SPECIAL
 	};
+	const struct ncacn_option *no = NULL;
+	size_t name_len = strlen(name);
 	const char *opt = NULL;
 	char *tmp;
-	size_t name_len = strlen(name);
 	size_t i;
 	int ret;
 
@@ -623,6 +634,22 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 		}
 		talloc_free(tmp);
 
+		return NT_STATUS_OK;
+	}
+
+	no = ncacn_option_by_name(name);
+	if (no != NULL) {
+		if (value == NULL) {
+			b->flags &= ~no->flag;
+			return NT_STATUS_OK;
+		}
+
+		ret = strcasecmp(no->name, value);
+		if (ret != 0) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+
+		b->flags |= no->flag;
 		return NT_STATUS_OK;
 	}
 
