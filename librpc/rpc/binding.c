@@ -290,156 +290,140 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 /*
   parse a binding string into a dcerpc_binding structure
 */
-_PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out)
+_PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, struct dcerpc_binding **b_out)
 {
+	char *_t;
 	struct dcerpc_binding *b;
-	char *options;
+	char *s;
+	char *options = NULL;
 	char *p;
-	int i, j, comma_count;
+	size_t i;
+	NTSTATUS status;
 
 	b = talloc_zero(mem_ctx, struct dcerpc_binding);
 	if (!b) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	_t = talloc_strdup(b, _s);
+	if (_t == NULL) {
+		talloc_free(b);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	s = _t;
+
+	p = strchr(s, '[');
+	if (p) {
+		*p = '\0';
+		options = p + 1;
+		if (options[strlen(options)-1] != ']') {
+			talloc_free(b);
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+		options[strlen(options)-1] = 0;
+	}
+
 	p = strchr(s, '@');
 
 	if (p && PTR_DIFF(p, s) == 36) { /* 36 is the length of a UUID */
-		NTSTATUS status;
-		DATA_BLOB blob = data_blob(s, 36);
-		status = GUID_from_data_blob(&blob, &b->object.uuid);
+		*p = '\0';
 
-		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(0, ("Failed parsing UUID\n"));
+		status = dcerpc_binding_set_string_option(b, "object", s);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
 			return status;
 		}
 
 		s = p + 1;
-	} else {
-		ZERO_STRUCT(b->object);
 	}
-
-	b->object.if_version = 0;
 
 	p = strchr(s, ':');
 
 	if (p == NULL) {
 		b->transport = NCA_UNKNOWN;
 	} else {
-		char *type = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
-		if (!type) {
-			return NT_STATUS_NO_MEMORY;
+		*p = '\0';
+
+		status = dcerpc_binding_set_string_option(b, "transport", s);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
+			return status;
 		}
 
-		for (i=0;i<ARRAY_SIZE(transports);i++) {
-			if (strcasecmp(type, transports[i].name) == 0) {
-				b->transport = transports[i].transport;
-				break;
+		s = p + 1;
+	}
+
+	if (strlen(s) > 0) {
+		status = dcerpc_binding_set_string_option(b, "host", s);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
+			return status;
+		}
+
+		b->target_hostname = talloc_strdup(b, b->host);
+		if (b->target_hostname == NULL) {
+			talloc_free(b);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	for (i=0; options != NULL; i++) {
+		const char *name = options;
+		const char *value = NULL;
+
+		p = strchr(options, ',');
+		if (p != NULL) {
+			*p = '\0';
+			options = p+1;
+		} else {
+			options = NULL;
+		}
+
+		p = strchr(name, '=');
+		if (p != NULL) {
+			*p = '\0';
+			value = p + 1;
+		}
+
+		if (value == NULL) {
+			/*
+			 * If it's not a key=value pair
+			 * it might be a ncacn_option
+			 * or if it's the first option
+			 * it's the endpoint.
+			 */
+			const struct ncacn_option *no = NULL;
+
+			value = name;
+
+			no = ncacn_option_by_name(name);
+			if (no == NULL) {
+				if (i > 0) {
+					/*
+					 * we don't allow unknown options
+					 */
+					return NT_STATUS_INVALID_PARAMETER_MIX;
+				}
+
+				/*
+				 * This is the endpoint
+				 */
+				name = "endpoint";
+				if (strlen(value) == 0) {
+					value = NULL;
+				}
 			}
 		}
 
-		if (i==ARRAY_SIZE(transports)) {
-			DEBUG(0,("Unknown dcerpc transport '%s'\n", type));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		talloc_free(type);
-
-		s = p+1;
-	}
-
-	p = strchr(s, '[');
-	if (p) {
-		b->host = talloc_strndup(b, s, PTR_DIFF(p, s));
-		options = talloc_strdup(mem_ctx, p+1);
-		if (options[strlen(options)-1] != ']') {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		options[strlen(options)-1] = 0;
-	} else {
-		b->host = talloc_strdup(b, s);
-		options = NULL;
-	}
-	if (!b->host) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	b->target_hostname = b->host;
-
-	b->options = NULL;
-	b->flags = 0;
-	b->assoc_group_id = 0;
-	b->endpoint = NULL;
-
-	if (!options) {
-		*b_out = b;
-		return NT_STATUS_OK;
-	}
-
-	comma_count = count_chars(options, ',');
-
-	b->options = talloc_array(b, const char *, comma_count+2);
-	if (!b->options) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0; (p = strchr(options, ',')); i++) {
-		b->options[i] = talloc_strndup(b->options,
-					       options,
-					       PTR_DIFF(p, options));
-		if (!b->options[i]) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		options = p+1;
-	}
-	b->options[i] = talloc_strdup(b->options, options);
-	if (!b->options[i]) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	b->options[i+1] = NULL;
-
-	/* some options are pre-parsed for convenience */
-	for (i=0;b->options[i];i++) {
-		for (j=0;j<ARRAY_SIZE(ncacn_options);j++) {
-			size_t opt_len = strlen(ncacn_options[j].name);
-			if (strncasecmp(ncacn_options[j].name, b->options[i], opt_len) == 0) {
-				char *o = discard_const_p(char, b->options[i]);
-				int k;
-				char c = b->options[i][opt_len];
-
-				if (c != 0) {
-					continue;
-				}
-
-				b->flags |= ncacn_options[j].flag;
-				talloc_free(o);
-				for (k=i;b->options[k];k++) {
-					b->options[k] = b->options[k+1];
-				}
-				i--;
-				break;
-			}
+		status = dcerpc_binding_set_string_option(b, name, value);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
+			return status;
 		}
 	}
 
-	if (b->options[0] && strchr(b->options[0], '=') == NULL) {
-		/* Endpoint is first option */
-		b->endpoint = talloc_steal(b, b->options[0]);
-		if (strlen(b->endpoint) == 0) {
-			char *e = discard_const_p(char, b->endpoint);
-			talloc_free(e);
-			b->endpoint = NULL;
-		}
-
-		for (i=0;b->options[i];i++) {
-			b->options[i] = b->options[i+1];
-		}
-	}
-
-	if (b->options[0] == NULL) {
-		TALLOC_FREE(b->options);
-	}
-
+	talloc_free(_t);
 	*b_out = b;
 	return NT_STATUS_OK;
 }
