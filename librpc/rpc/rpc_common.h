@@ -43,6 +43,7 @@ enum dcerpc_transport_t {
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
 	struct ndr_syntax_id object;
+	const char *object_string;
 	const char *host;
 	const char *target_hostname;
 	const char *target_principal;

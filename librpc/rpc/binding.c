@@ -447,8 +447,34 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
 						      const char *name)
 {
+	struct {
+		const char *name;
+		const char *value;
+#define _SPECIAL(x) { .name = #x, .value = b->x, }
+	} specials[] = {
+		{ .name = "object", .value = b->object_string, },
+		_SPECIAL(host),
+		_SPECIAL(endpoint),
+		_SPECIAL(target_hostname),
+		_SPECIAL(target_principal),
+#undef _SPECIAL
+	};
 	size_t i;
 	int ret;
+
+	ret = strcmp(name, "transport");
+	if (ret == 0) {
+		return derpc_transport_string_by_transport(b->transport);
+	}
+
+	for (i=0; i < ARRAY_SIZE(specials); i++) {
+		ret = strcmp(specials[i].name, name);
+		if (ret != 0) {
+			continue;
+		}
+
+		return specials[i].value;
+	}
 
 	if (b->options == NULL) {
 		return NULL;
@@ -501,6 +527,17 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 						   const char *name,
 						   const char *value)
 {
+	struct {
+		const char *name;
+		const char **ptr;
+#define _SPECIAL(x) { .name = #x, .ptr = &b->x, }
+	} specials[] = {
+		_SPECIAL(host),
+		_SPECIAL(endpoint),
+		_SPECIAL(target_hostname),
+		_SPECIAL(target_principal),
+#undef _SPECIAL
+	};
 	const char *opt = NULL;
 	char *tmp;
 	size_t name_len = strlen(name);
@@ -511,6 +548,83 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 	 * Note: value == NULL, means delete it.
 	 * value != NULL means add or reset.
 	 */
+
+	ret = strcmp(name, "transport");
+	if (ret == 0) {
+		enum dcerpc_transport_t t = dcerpc_transport_by_name(value);
+
+		if (t == NCA_UNKNOWN && value != NULL) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+
+		b->transport = t;
+		return NT_STATUS_OK;
+	}
+
+	ret = strcmp(name, "object");
+	if (ret == 0) {
+		DATA_BLOB blob;
+		NTSTATUS status;
+		struct GUID uuid;
+
+		tmp = discard_const_p(char, b->object_string);
+
+		if (value == NULL) {
+			talloc_free(tmp);
+			b->object_string = NULL;
+			ZERO_STRUCT(b->object);
+			return NT_STATUS_OK;
+		}
+
+		blob = data_blob_string_const(value);
+		if (blob.length != 36) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+
+		status = GUID_from_data_blob(&blob, &uuid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		b->object_string = GUID_string(b, &uuid);
+		if (b->object_string == NULL) {
+			b->object_string = tmp;
+			return NT_STATUS_NO_MEMORY;
+		}
+		talloc_free(tmp);
+
+		ZERO_STRUCT(b->object);
+		b->object.uuid = uuid;
+		return NT_STATUS_OK;
+	}
+
+	for (i=0; i < ARRAY_SIZE(specials); i++) {
+		ret = strcmp(specials[i].name, name);
+		if (ret != 0) {
+			continue;
+		}
+
+		tmp = discard_const_p(char, *specials[i].ptr);
+
+		if (value == NULL) {
+			talloc_free(tmp);
+			*specials[i].ptr = NULL;
+			return NT_STATUS_OK;
+		}
+
+		if (value[0] == '\0') {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+
+		*specials[i].ptr = talloc_strdup(b, value);
+		if (*specials[i].ptr == NULL) {
+			*specials[i].ptr = tmp;
+			return NT_STATUS_NO_MEMORY;
+		}
+		talloc_free(tmp);
+
+		return NT_STATUS_OK;
+	}
 
 	for (i=0; b->options && b->options[i]; i++) {
 		const char *o = b->options[i];
@@ -959,6 +1073,13 @@ _PUBLIC_ struct dcerpc_binding *dcerpc_binding_dup(TALLOC_CTX *mem_ctx,
 	n->flags = b->flags;
 	n->assoc_group_id = b->assoc_group_id;
 
+	if (b->object_string != NULL) {
+		n->object_string = talloc_strdup(n, b->object_string);
+		if (n->object_string == NULL) {
+			talloc_free(n);
+			return NULL;
+		}
+	}
 	if (b->host != NULL) {
 		n->host = talloc_strdup(n, b->host);
 		if (n->host == NULL) {
