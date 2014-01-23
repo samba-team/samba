@@ -457,6 +457,27 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 	return NULL;
 }
 
+_PUBLIC_ char *dcerpc_binding_copy_string_option(TALLOC_CTX *mem_ctx,
+						 const struct dcerpc_binding *b,
+						 const char *name)
+{
+	const char *c = dcerpc_binding_get_string_option(b, name);
+	char *v;
+
+	if (c == NULL) {
+		errno = ENOENT;
+		return NULL;
+	}
+
+	v = talloc_strdup(mem_ctx, c);
+	if (v == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	return v;
+}
+
 _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 						   const char *name,
 						   const char *value)

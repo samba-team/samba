@@ -138,6 +138,9 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
 const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
 					     const char *name);
+char *dcerpc_binding_copy_string_option(TALLOC_CTX *mem_ctx,
+					const struct dcerpc_binding *b,
+					const char *name);
 NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 					  const char *name,
 					  const char *value);
