@@ -48,7 +48,6 @@ struct dcerpc_binding {
 	const char *target_principal;
 	const char *endpoint;
 	const char **options;
-	const char *localaddress;
 	uint32_t flags;
 	uint32_t assoc_group_id;
 };
@@ -103,9 +102,6 @@ struct dcerpc_binding {
 
 /* use NDR64 transport */
 #define DCERPC_NDR64                   (1<<21)
-
-/* specify binding interface */
-#define	DCERPC_LOCALADDRESS            (1<<22)
 
 /* handle upgrades or downgrades automatically */
 #define DCERPC_SCHANNEL_AUTO           (1<<23)

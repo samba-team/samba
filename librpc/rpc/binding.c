@@ -90,7 +90,6 @@ static const struct {
 	{"bigendian", DCERPC_PUSH_BIGENDIAN},
 	{"smb2", DCERPC_SMB2},
 	{"ndr64", DCERPC_NDR64},
-	{"localaddress", DCERPC_LOCALADDRESS}
 };
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
@@ -244,12 +243,7 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 		}
 
 		o = s;
-		if (ncacn_options[i].flag == DCERPC_LOCALADDRESS && b->localaddress) {
-			s = talloc_asprintf_append_buffer(s, ",%s=%s", ncacn_options[i].name,
-							  b->localaddress);
-		} else {
-			s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
-		}
+		s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
 		if (s == NULL) {
 			talloc_free(o);
 			return NULL;
@@ -358,7 +352,6 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	b->flags = 0;
 	b->assoc_group_id = 0;
 	b->endpoint = NULL;
-	b->localaddress = NULL;
 
 	if (!options) {
 		*b_out = b;
@@ -396,9 +389,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 				int k;
 				char c = b->options[i][opt_len];
 
-				if (ncacn_options[j].flag == DCERPC_LOCALADDRESS && c == '=') {
-					b->localaddress = talloc_strdup(b, &b->options[i][opt_len+1]);
-				} else if (c != 0) {
+				if (c != 0) {
 					continue;
 				}
 
@@ -440,11 +431,6 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 {
 	size_t i;
 	int ret;
-
-	ret = strcmp(name, "localaddress");
-	if (ret == 0) {
-		return b->localaddress;
-	}
 
 	if (b->options == NULL) {
 		return NULL;
@@ -507,28 +493,6 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 	 * Note: value == NULL, means delete it.
 	 * value != NULL means add or reset.
 	 */
-
-	ret = strcmp(name, "localaddress");
-	if (ret == 0) {
-		tmp = discard_const_p(char, b->localaddress);
-
-		if (value == NULL) {
-			talloc_free(tmp);
-			b->localaddress = NULL;
-			b->flags &= ~DCERPC_LOCALADDRESS;
-			return NT_STATUS_OK;
-		}
-
-		b->localaddress = talloc_strdup(b, value);
-		if (b->localaddress == NULL) {
-			b->localaddress = tmp;
-			return NT_STATUS_NO_MEMORY;
-		}
-		talloc_free(tmp);
-
-		b->flags |= DCERPC_LOCALADDRESS;
-		return NT_STATUS_OK;
-	}
 
 	for (i=0; b->options && b->options[i]; i++) {
 		const char *o = b->options[i];
@@ -996,14 +960,6 @@ _PUBLIC_ struct dcerpc_binding *dcerpc_binding_dup(TALLOC_CTX *mem_ctx,
 	if (b->target_principal != NULL) {
 		n->target_principal = talloc_strdup(n, b->target_principal);
 		if (n->target_principal == NULL) {
-			talloc_free(n);
-			return NULL;
-		}
-	}
-
-	if (b->localaddress != NULL) {
-		n->localaddress = talloc_strdup(n, b->localaddress);
-		if (n->localaddress == NULL) {
 			talloc_free(n);
 			return NULL;
 		}
