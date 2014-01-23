@@ -63,7 +63,6 @@ struct dcecli_connection {
 	uint32_t srv_max_recv_frag;
 	uint32_t flags;
 	struct dcecli_security security_state;
-	const char *binding_string;
 	struct tevent_context *event_ctx;
 
 	struct tevent_immediate *io_trigger;

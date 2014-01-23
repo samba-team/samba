@@ -622,9 +622,6 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	if (DEBUGLVL(100)) {
 		conn->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	}
-	
-	/* remember the binding string for possible secondary connections */
-	conn->binding_string = dcerpc_binding_string(p, binding);
 
 	if (cli_credentials_is_anonymous(s->credentials)) {
 		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);

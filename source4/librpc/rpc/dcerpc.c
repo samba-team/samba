@@ -142,7 +142,6 @@ static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	c->security_state.auth_info = NULL;
 	c->security_state.session_key = dcerpc_generic_session_key;
 	c->security_state.generic_state = NULL;
-	c->binding_string = NULL;
 	c->flags = 0;
 	/*
 	 * Windows uses 5840 for ncacn_ip_tcp,
