@@ -13,7 +13,6 @@ struct loadparm_s3_helpers
 	bool (*load)(const char *filename);
 	bool (*set_cmdline)(const char *pszParmName, const char *pszParmValue);
 	void (*dump)(FILE *f, bool show_defaults, int maxtoprint);
-	const char * (*dnsdomain)(void);
 	char * (*lp_string)(TALLOC_CTX *ctx, const char *in);
 	struct loadparm_global *globals;
 };
