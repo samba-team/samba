@@ -2275,10 +2275,10 @@ static int smb_time_audit_set_offline(struct vfs_handle_struct *handle,
 	return result;
 }
 
-NTSTATUS smb_time_audit_durable_cookie(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
-				       TALLOC_CTX *mem_ctx,
-				       DATA_BLOB *cookie)
+static NTSTATUS smb_time_audit_durable_cookie(struct vfs_handle_struct *handle,
+					      struct files_struct *fsp,
+					      TALLOC_CTX *mem_ctx,
+					      DATA_BLOB *cookie)
 {
 	NTSTATUS result;
 	struct timespec ts1,ts2;
@@ -2296,11 +2296,11 @@ NTSTATUS smb_time_audit_durable_cookie(struct vfs_handle_struct *handle,
 	return result;
 }
 
-NTSTATUS smb_time_audit_durable_disconnect(struct vfs_handle_struct *handle,
-					   struct files_struct *fsp,
-					   const DATA_BLOB old_cookie,
-					   TALLOC_CTX *mem_ctx,
-					   DATA_BLOB *new_cookie)
+static NTSTATUS smb_time_audit_durable_disconnect(struct vfs_handle_struct *handle,
+						  struct files_struct *fsp,
+						  const DATA_BLOB old_cookie,
+						  TALLOC_CTX *mem_ctx,
+						  DATA_BLOB *new_cookie)
 {
 	NTSTATUS result;
 	struct timespec ts1,ts2;
@@ -2319,13 +2319,13 @@ NTSTATUS smb_time_audit_durable_disconnect(struct vfs_handle_struct *handle,
 	return result;
 }
 
-NTSTATUS smb_time_audit_durable_reconnect(struct vfs_handle_struct *handle,
-					  struct smb_request *smb1req,
-					  struct smbXsrv_open *op,
-					  const DATA_BLOB old_cookie,
-					  TALLOC_CTX *mem_ctx,
-					  struct files_struct **fsp,
-					  DATA_BLOB *new_cookie)
+static NTSTATUS smb_time_audit_durable_reconnect(struct vfs_handle_struct *handle,
+						 struct smb_request *smb1req,
+						 struct smbXsrv_open *op,
+						 const DATA_BLOB old_cookie,
+						 TALLOC_CTX *mem_ctx,
+						 struct files_struct **fsp,
+						 DATA_BLOB *new_cookie)
 {
 	NTSTATUS result;
 	struct timespec ts1,ts2;
