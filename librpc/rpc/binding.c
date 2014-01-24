@@ -428,6 +428,46 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, stru
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
+					   enum dcerpc_AuthType *_auth_type,
+					   enum dcerpc_AuthLevel *_auth_level)
+{
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	if (b->flags & DCERPC_AUTH_SPNEGO) {
+		auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+	} else if (b->flags & DCERPC_AUTH_KRB5) {
+		auth_type = DCERPC_AUTH_TYPE_KRB5;
+	} else if (b->flags & DCERPC_SCHANNEL) {
+		auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+	} else if (b->flags & DCERPC_AUTH_NTLM) {
+		auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+	} else {
+		auth_type = DCERPC_AUTH_TYPE_NONE;
+	}
+
+	if (b->flags & DCERPC_SEAL) {
+		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	} else if (b->flags & DCERPC_SIGN) {
+		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	} else if (b->flags & DCERPC_CONNECT) {
+		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+	} else if (auth_type != DCERPC_AUTH_TYPE_NONE) {
+		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+	} else {
+		auth_level = DCERPC_AUTH_LEVEL_NONE;
+	}
+
+	if (_auth_type == NULL) {
+		*_auth_type = auth_type;
+	}
+
+	if (_auth_level == NULL) {
+		*_auth_level = auth_level;
+	}
+}
+
 _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
 						      const char *name)
 {
