@@ -497,8 +497,9 @@ static bool test_Lookup_simple(struct torture_context *tctx,
 
 		for (i = 0; i < *r.out.num_ents; i++) {
 			torture_comment(tctx,
-					"\n  Found '%s'\n",
-					r.out.entries[i].annotation);
+					"\n  Found '%s' Object[%s]\n",
+					r.out.entries[i].annotation,
+					GUID_string(tctx, &r.out.entries[i].object));
 
 			display_tower(tctx, &r.out.entries[i].tower->tower);
 		}
