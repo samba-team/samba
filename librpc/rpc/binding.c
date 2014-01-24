@@ -729,6 +729,24 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ uint32_t dcerpc_binding_get_flags(const struct dcerpc_binding *b)
+{
+	return b->flags;
+}
+
+_PUBLIC_ NTSTATUS dcerpc_binding_set_flags(struct dcerpc_binding *b,
+					   uint32_t additional,
+					   uint32_t clear)
+{
+	/*
+	 * TODO: in future we may want to reject invalid combinations
+	 */
+	b->flags &= ~clear;
+	b->flags |= additional;
+
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 					    struct ndr_syntax_id *syntax)
 {

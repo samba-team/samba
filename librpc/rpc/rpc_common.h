@@ -144,6 +144,10 @@ char *dcerpc_binding_copy_string_option(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 					  const char *name,
 					  const char *value);
+uint32_t dcerpc_binding_get_flags(const struct dcerpc_binding *b);
+NTSTATUS dcerpc_binding_set_flags(struct dcerpc_binding *b,
+				  uint32_t additional,
+				  uint32_t clear);
 NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
 const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
 enum dcerpc_transport_t dcerpc_transport_by_name(const char *name);
