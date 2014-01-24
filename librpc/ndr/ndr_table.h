@@ -27,6 +27,7 @@ NTSTATUS ndr_table_register(const struct ndr_interface_table *table);
 const char *ndr_interface_name(const struct GUID *uuid, uint32_t if_version);
 int ndr_interface_num_calls(const struct GUID *uuid, uint32_t if_version);
 const struct ndr_interface_table *ndr_table_by_name(const char *name);
+const struct ndr_interface_table *ndr_table_by_syntax(const struct ndr_syntax_id *syntax);
 const struct ndr_interface_table *ndr_table_by_uuid(const struct GUID *uuid);
 const struct ndr_interface_list *ndr_table_list(void);
 NTSTATUS ndr_table_init(void);

@@ -98,6 +98,20 @@ const struct ndr_interface_table *ndr_table_by_name(const char *name)
 }
 
 /*
+  find a dcerpc interface by syntax
+*/
+const struct ndr_interface_table *ndr_table_by_syntax(const struct ndr_syntax_id *syntax)
+{
+	const struct ndr_interface_list *l;
+	for (l=ndr_table_list();l;l=l->next) {
+		if (ndr_syntax_id_equal(&l->table->syntax_id, syntax)) {
+			return l->table;
+		}
+	}
+	return NULL;
+}
+
+/*
   find a dcerpc interface by uuid
 */
 const struct ndr_interface_table *ndr_table_by_uuid(const struct GUID *uuid)
