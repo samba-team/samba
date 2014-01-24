@@ -66,8 +66,9 @@ static bool test_BindingString(struct torture_context *tctx,
 	s2 = dcerpc_binding_string(mem_ctx, b2);
 	torture_assert(tctx, s != NULL, "Error converting binding back to string"); 
 
-	if (is_ipaddress(b->host))
+	if (b->host && is_ipaddress(b->host)) {
 		torture_assert_casestr_equal(tctx, s, s2, "Mismatch while comparing original and from protocol tower generated binding strings");
+	}
 
 	return true;
 }
