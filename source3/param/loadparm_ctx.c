@@ -56,7 +56,20 @@ static bool lp_load_for_s4_ctx(const char *filename)
 	return status;
 }
 
-#include "loadparm_ctx_table.c"
+static struct loadparm_s3_helpers s3_fns =
+{
+	.get_parametric = lp_parm_const_string_service,
+	.get_parm_struct = lp_get_parameter,
+	.get_parm_ptr = lp_parm_ptr,
+	.get_service = lp_service_for_s4_ctx,
+	.get_servicebynum = lp_servicebynum_for_s4_ctx,
+	.get_default_loadparm_service = lp_default_loadparm_service,
+	.get_numservices = lp_numservices,
+	.load = lp_load_for_s4_ctx,
+	.set_cmdline = lp_set_cmdline,
+	.dump = lp_dump,
+	.dnsdomain = lp_dnsdomain,
+};
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)
 {
