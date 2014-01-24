@@ -238,28 +238,27 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 		}
 	}
 
-	/* this is a *really* inefficent way of dealing with strings,
-	   but this is rarely called and the strings are always short,
-	   so I don't care */
-	for (i=0;b->options && b->options[i];i++) {
+	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
+		if (!(b->flags & ncacn_options[i].flag)) {
+			continue;
+		}
+
 		o = s;
-		s = talloc_asprintf_append_buffer(s, ",%s", b->options[i]);
+		if (ncacn_options[i].flag == DCERPC_LOCALADDRESS && b->localaddress) {
+			s = talloc_asprintf_append_buffer(s, ",%s=%s", ncacn_options[i].name,
+							  b->localaddress);
+		} else {
+			s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
+		}
 		if (s == NULL) {
 			talloc_free(o);
 			return NULL;
 		}
 	}
 
-	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
+	for (i=0;b->options && b->options[i];i++) {
 		o = s;
-		if (b->flags & ncacn_options[i].flag) {
-			if (ncacn_options[i].flag == DCERPC_LOCALADDRESS && b->localaddress) {
-				s = talloc_asprintf_append_buffer(s, ",%s=%s", ncacn_options[i].name,
-								  b->localaddress);
-			} else {
-				s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
-			}
-		}
+		s = talloc_asprintf_append_buffer(s, ",%s", b->options[i]);
 		if (s == NULL) {
 			talloc_free(o);
 			return NULL;

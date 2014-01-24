@@ -82,7 +82,7 @@ static const char *test_strings[] = {
 	"ncacn_ip_tcp:127.0.0.1",
 	"ncacn_ip_tcp:127.0.0.1[20]",
 	"ncacn_ip_tcp:127.0.0.1[20,sign]",
-	"ncacn_ip_tcp:127.0.0.1[20,Security=Foobar,sign]",
+	"ncacn_ip_tcp:127.0.0.1[20,sign,Security=Foobar]",
 	"ncacn_http:127.0.0.1",
 	"ncacn_http:127.0.0.1[78]",
 	"ncacn_http:127.0.0.1[78,ProxyServer=myproxy:3128]",
