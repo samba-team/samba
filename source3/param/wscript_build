@@ -6,7 +6,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
                      source='loadparm_ctx.c',
-                     deps='''talloc s3_param.h param''')
+                     deps='''talloc param''')
 
 bld.SAMBA_GENERATOR('s3_param_proto_h',
                     source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
