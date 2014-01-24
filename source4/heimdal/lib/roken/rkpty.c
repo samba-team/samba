@@ -233,7 +233,7 @@ eval_parent(pid_t pid)
 		     c->str, c->lineno);
 	    else if (alarmset)
 		errx(1, "got a signal %d waiting for %s (line %u)",
-		     alarmset, c->str, c->lineno);
+		     (int)alarmset, c->str, c->lineno);
 	    if (sret <= 0)
 		errx(1, "end command while waiting for %s (line %u)",
 		     c->str, c->lineno);
