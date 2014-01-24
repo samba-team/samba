@@ -428,6 +428,35 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, stru
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ struct GUID dcerpc_binding_get_object(const struct dcerpc_binding *b)
+{
+	return b->object.uuid;
+}
+
+_PUBLIC_ NTSTATUS dcerpc_binding_set_object(struct dcerpc_binding *b,
+					    struct GUID object)
+{
+	char *tmp = discard_const_p(char, b->object_string);
+
+	if (GUID_all_zero(&object)) {
+		talloc_free(tmp);
+		b->object_string = NULL;
+		ZERO_STRUCT(b->object);
+		return NT_STATUS_OK;
+	}
+
+	b->object_string = GUID_string(b, &object);
+	if (b->object_string == NULL) {
+		b->object_string = tmp;
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_free(tmp);
+
+	ZERO_STRUCT(b->object);
+	b->object.uuid = object;
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
 					   enum dcerpc_AuthType *_auth_type,
 					   enum dcerpc_AuthLevel *_auth_level)
@@ -598,39 +627,23 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 
 	ret = strcmp(name, "object");
 	if (ret == 0) {
-		DATA_BLOB blob;
 		NTSTATUS status;
-		struct GUID uuid;
+		struct GUID uuid = GUID_zero();
 
-		tmp = discard_const_p(char, b->object_string);
+		if (value != NULL) {
+			DATA_BLOB blob;
+			blob = data_blob_string_const(value);
+			if (blob.length != 36) {
+				return NT_STATUS_INVALID_PARAMETER_MIX;
+			}
 
-		if (value == NULL) {
-			talloc_free(tmp);
-			b->object_string = NULL;
-			ZERO_STRUCT(b->object);
-			return NT_STATUS_OK;
+			status = GUID_from_data_blob(&blob, &uuid);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		}
 
-		blob = data_blob_string_const(value);
-		if (blob.length != 36) {
-			return NT_STATUS_INVALID_PARAMETER_MIX;
-		}
-
-		status = GUID_from_data_blob(&blob, &uuid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		b->object_string = GUID_string(b, &uuid);
-		if (b->object_string == NULL) {
-			b->object_string = tmp;
-			return NT_STATUS_NO_MEMORY;
-		}
-		talloc_free(tmp);
-
-		ZERO_STRUCT(b->object);
-		b->object.uuid = uuid;
-		return NT_STATUS_OK;
+		return dcerpc_binding_set_object(b, uuid);
 	}
 
 	for (i=0; i < ARRAY_SIZE(specials); i++) {

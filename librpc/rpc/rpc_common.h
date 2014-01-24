@@ -133,6 +133,9 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding **b_out);
 NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out);
 char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
+struct GUID dcerpc_binding_get_object(const struct dcerpc_binding *b);
+NTSTATUS dcerpc_binding_set_object(struct dcerpc_binding *b,
+				   struct GUID object);
 void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
 				  enum dcerpc_AuthType *_auth_type,
 				  enum dcerpc_AuthLevel *_auth_level);
