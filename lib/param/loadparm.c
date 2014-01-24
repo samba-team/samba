@@ -210,8 +210,7 @@ static struct loadparm_context *global_loadparm_context;
  _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx, TALLOC_CTX *ctx) {\
 	 if (lp_ctx == NULL) return NULL;				\
 	 if (lp_ctx->s3_fns) {						\
-		 SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
-		 return lp_ctx->s3_fns->fn_name(ctx);			\
+		 return lp_ctx->globals->var_name ? lp_ctx->s3_fns->lp_string(ctx, lp_ctx->globals->var_name) : talloc_strdup(ctx, ""); \
 	 }								\
 	 return lp_ctx->globals->var_name ? talloc_strdup(ctx, lpcfg_string(lp_ctx->globals->var_name)) : talloc_strdup(ctx, ""); \
 }
@@ -219,39 +218,23 @@ static struct loadparm_context *global_loadparm_context;
 #define FN_GLOBAL_CONST_STRING(fn_name,var_name)				\
  _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) { \
 	if (lp_ctx == NULL) return NULL;				\
-	if (lp_ctx->s3_fns) {						\
-		SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
-		return lp_ctx->s3_fns->fn_name();			\
-	}								\
 	return lp_ctx->globals->var_name ? lpcfg_string(lp_ctx->globals->var_name) : ""; \
 }
 
 #define FN_GLOBAL_LIST(fn_name,var_name)				\
  _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) { \
 	 if (lp_ctx == NULL) return NULL;				\
-	 if (lp_ctx->s3_fns) {						\
-		 SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
-		 return lp_ctx->s3_fns->fn_name();			\
-	 }								\
 	 return lp_ctx->globals->var_name;				\
  }
 
 #define FN_GLOBAL_BOOL(fn_name,var_name) \
  _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {\
 	 if (lp_ctx == NULL) return false;				\
-	 if (lp_ctx->s3_fns) {						\
-		 SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
-		 return lp_ctx->s3_fns->fn_name();			\
-	 }								\
 	 return lp_ctx->globals->var_name;				\
 }
 
 #define FN_GLOBAL_INTEGER(fn_name,var_name) \
  _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) { \
-	 if (lp_ctx->s3_fns) {						\
-		 SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
-		 return lp_ctx->s3_fns->fn_name();			\
-	 }								\
 	 return lp_ctx->globals->var_name;				\
  }
 
@@ -2403,6 +2386,7 @@ struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	loadparm_context->s3_fns = s3_fns;
+	loadparm_context->globals = s3_fns->globals;
 	return loadparm_context;
 }
 

@@ -1072,7 +1072,7 @@ static void init_globals(bool reinit_globals)
  callers without affecting the source string.
 ********************************************************************/
 
-static char *lp_string(TALLOC_CTX *ctx, const char *s)
+char *lp_string(TALLOC_CTX *ctx, const char *s)
 {
 	char *ret;
 
@@ -5262,4 +5262,9 @@ int lp_security(void)
 {
 	return lp_find_security(lp__server_role(),
 				lp__security());
+}
+
+struct loadparm_global * get_globals(void)
+{
+	return &Globals;
 }

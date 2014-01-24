@@ -60,5 +60,9 @@ static bool lp_load_for_s4_ctx(const char *filename)
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)
 {
-	return &s3_fns;
+	struct loadparm_s3_helpers *helpers;
+	helpers = &s3_fns;
+	helpers->globals = get_globals();
+	helpers->lp_string = lp_string;
+	return helpers;
 }
