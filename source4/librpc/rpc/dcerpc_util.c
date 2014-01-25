@@ -175,6 +175,7 @@ static void continue_epm_map(struct tevent_req *subreq)
 				      struct composite_context);
 	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
 							  struct epm_map_binding_state);
+	const char *endpoint;
 
 	/* receive result of a rpc request */
 	c->status = dcerpc_epm_Map_r_recv(subreq, s);
@@ -200,9 +201,15 @@ static void continue_epm_map(struct tevent_req *subreq)
 	}
 
 	/* get received endpoint */
-	s->binding->endpoint = dcerpc_floor_get_rhs_data(s->binding,
-							 &s->twr_r->tower.floors[3]);
-	if (composite_nomem(s->binding->endpoint, c)) return;
+	endpoint = dcerpc_floor_get_rhs_data(s, &s->twr_r->tower.floors[3]);
+	if (composite_nomem(endpoint, c)) return;
+
+	c->status = dcerpc_binding_set_string_option(s->binding,
+						     "endpoint",
+						     endpoint);
+	if (!composite_is_ok(c)) {
+		return;
+	}
 
 	composite_done(c);
 }
@@ -222,8 +229,6 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	struct epm_map_binding_state *s;
 	struct composite_context *pipe_connect_req;
 	struct cli_credentials *anon_creds;
-	const char *localaddress;
-
 	NTSTATUS status;
 	struct dcerpc_binding *epmapper_binding;
 	int i;
@@ -256,6 +261,9 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	*/
 	for (i = 0; i < table->endpoints->count; i++) {
 		struct dcerpc_binding *default_binding;
+		enum dcerpc_transport_t transport;
+		enum dcerpc_transport_t dtransport;
+		const char *dendpoint = NULL;
 
 		status = dcerpc_parse_binding(s,
 					      table->endpoints->names[i],
@@ -264,24 +272,37 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		if (binding->transport == NCA_UNKNOWN) {
-			binding->transport = default_binding->transport;
+		transport = dcerpc_binding_get_transport(binding);
+		dtransport = dcerpc_binding_get_transport(default_binding);
+		if (transport == NCA_UNKNOWN) {
+			c->status = dcerpc_binding_set_transport(binding,
+								 dtransport);
+			if (!composite_is_ok(c)) {
+				return c;
+			}
+			transport = dtransport;
 		}
 
-		if (default_binding->transport != binding->transport) {
+		if (transport != dtransport) {
 			TALLOC_FREE(default_binding);
 			continue;
 		}
 
-		if (default_binding->endpoint == NULL) {
+		dendpoint = dcerpc_binding_get_string_option(default_binding,
+							     "endpoint");
+		if (dendpoint == NULL) {
 			TALLOC_FREE(default_binding);
 			continue;
 		}
 
-		binding->endpoint = talloc_strdup(binding, default_binding->endpoint);
-		if (composite_nomem(binding->endpoint, c)) return c;
+		c->status = dcerpc_binding_set_string_option(binding,
+							     "endpoint",
+							     dendpoint);
+		if (!composite_is_ok(c)) {
+			return c;
+		}
+
 		TALLOC_FREE(default_binding);
-
 		composite_done(c);
 		return c;
 	}
@@ -294,17 +315,23 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	if (composite_nomem(epmapper_binding, c)) return c;
 
 	/* basic endpoint mapping data */
-	epmapper_binding->options		= NULL;
-	localaddress = dcerpc_binding_get_string_option(binding, "localaddress");
-	if (localaddress != NULL) {
-		c->status = dcerpc_binding_set_string_option(epmapper_binding,
-							     "localaddress",
-							     localaddress);
-		if (!composite_is_ok(c)) return c;
+	c->status = dcerpc_binding_set_string_option(epmapper_binding,
+						     "endpoint", NULL);
+	if (!composite_is_ok(c)) {
+		return c;
 	}
-	epmapper_binding->flags			= 0;
-	epmapper_binding->assoc_group_id	= 0;
-	epmapper_binding->endpoint		= NULL;
+	c->status = dcerpc_binding_set_flags(epmapper_binding, 0, UINT32_MAX);
+	if (!composite_is_ok(c)) {
+		return c;
+	}
+	c->status = dcerpc_binding_set_assoc_group_id(epmapper_binding, 0);
+	if (!composite_is_ok(c)) {
+		return c;
+	}
+	c->status = dcerpc_binding_set_object(epmapper_binding, GUID_zero());
+	if (!composite_is_ok(c)) {
+		return c;
+	}
 
 	/* initiate rpc pipe connection */
 	pipe_connect_req = dcerpc_pipe_connect_b_send(s, epmapper_binding,
