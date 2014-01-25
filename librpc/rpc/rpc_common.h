@@ -146,6 +146,9 @@ void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
 uint32_t dcerpc_binding_get_assoc_group_id(const struct dcerpc_binding *b);
 NTSTATUS dcerpc_binding_set_assoc_group_id(struct dcerpc_binding *b,
 					   uint32_t assoc_group_id);
+struct ndr_syntax_id dcerpc_binding_get_abstract_syntax(const struct dcerpc_binding *b);
+NTSTATUS dcerpc_binding_set_abstract_syntax(struct dcerpc_binding *b,
+					    const struct ndr_syntax_id *syntax);
 const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
 					     const char *name);
 char *dcerpc_binding_copy_string_option(TALLOC_CTX *mem_ctx,

@@ -542,6 +542,49 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_assoc_group_id(struct dcerpc_binding *b,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ struct ndr_syntax_id dcerpc_binding_get_abstract_syntax(const struct dcerpc_binding *b)
+{
+	/*
+	 * For now we just use object, until all callers are fixed.
+	 */
+	return b->object;
+}
+
+_PUBLIC_ NTSTATUS dcerpc_binding_set_abstract_syntax(struct dcerpc_binding *b,
+						     const struct ndr_syntax_id *syntax)
+{
+	NTSTATUS status;
+	struct GUID object;
+
+	/*
+	 * For now we just use object, until all callers are fixed.
+	 */
+
+	if (syntax != NULL) {
+		object = syntax->uuid;
+	} else {
+		object = GUID_zero();
+	}
+
+	/*
+	 * This sets also the string
+	 */
+	status = dcerpc_binding_set_object(b, object);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (syntax != NULL) {
+		/*
+		 * Here we need to reset the whole ndr_syntax_id
+		 * structure including the .if_version
+		 */
+		b->object = *syntax;
+	}
+
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
 						      const char *name)
 {
@@ -1145,6 +1188,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
+	struct ndr_syntax_id abstract_syntax;
 
 	/*
 	 * A tower needs to have at least 4 floors to carry useful
@@ -1172,12 +1216,17 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	/* Set object uuid */
-	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &binding->object);
-
+	/* Set abstract syntax */
+	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &abstract_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Error pulling object uuid and version: %s", nt_errstr(status)));
+		DEBUG(1, ("Error pulling abstract syntax: %s", nt_errstr(status)));
+		return status;
+	}
+
+	status = dcerpc_binding_set_abstract_syntax(binding, &abstract_syntax);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(binding);
+		DEBUG(1, ("Error set object uuid and version: %s", nt_errstr(status)));
 		return status;
 	}
 
@@ -1297,6 +1346,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 {
 	const enum epm_protocol *protseq = NULL;
 	int num_protocols = -1, i;
+	struct ndr_syntax_id abstract_syntax;
 	NTSTATUS status;
 
 	/* Find transport */
@@ -1319,10 +1369,12 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 	/* Floor 0 */
 	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
 
-	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors, &binding->object);
+	abstract_syntax = dcerpc_binding_get_abstract_syntax(binding);
+	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors,
+								   &abstract_syntax);
 
 	if (!dcerpc_floor_pack_rhs_if_version_data(
-		    tower->floors, &binding->object,
+		    tower->floors, &abstract_syntax,
 		    &tower->floors[0].rhs.uuid.unknown)) {
 		return NT_STATUS_NO_MEMORY;
 	}
