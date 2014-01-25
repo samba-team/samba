@@ -457,6 +457,39 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_object(struct dcerpc_binding *b,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ enum dcerpc_transport_t dcerpc_binding_get_transport(const struct dcerpc_binding *b)
+{
+	return b->transport;
+}
+
+_PUBLIC_ NTSTATUS dcerpc_binding_set_transport(struct dcerpc_binding *b,
+					       enum dcerpc_transport_t transport)
+{
+	char *tmp = discard_const_p(char, b->endpoint);
+
+	/*
+	 * TODO: we may want to check the transport value is
+	 * wellknown.
+	 */
+	if (b->transport == transport) {
+		return NT_STATUS_OK;
+	}
+
+	b->transport = transport;
+
+	/*
+	 * This implicitly resets the endpoint
+	 * as the endpoint is transport specific.
+	 *
+	 * TODO: in future we may reset more options
+	 * here.
+	 */
+	talloc_free(tmp);
+	b->endpoint = NULL;
+
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
 					   enum dcerpc_AuthType *_auth_type,
 					   enum dcerpc_AuthLevel *_auth_level)
@@ -621,8 +654,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 			return NT_STATUS_INVALID_PARAMETER_MIX;
 		}
 
-		b->transport = t;
-		return NT_STATUS_OK;
+		return dcerpc_binding_set_transport(b, t);
 	}
 
 	ret = strcmp(name, "object");
