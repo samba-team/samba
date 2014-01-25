@@ -145,9 +145,6 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
 	if (!composite_is_ok(c)) return;
 
-	/* prepare requested binding parameters */
-	s->binding->object         = s->table->syntax_id;
-
 	c->status = dcerpc_binding_build_tower(s->pipe, s->binding, &s->twr.tower);
 	if (!composite_is_ok(c)) return;
 	
@@ -247,6 +244,12 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 
 	s->binding = binding;
 	s->table   = table;
+
+	c->status = dcerpc_binding_set_abstract_syntax(binding,
+						       &table->syntax_id);
+	if (!composite_is_ok(c)) {
+		return c;
+	}
 
 	/*
 	  First, check if there is a default endpoint specified in the IDL
