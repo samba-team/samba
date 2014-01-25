@@ -657,23 +657,27 @@ sub check_or_start($$$$$) {
 			exit 0;
 		}
 
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "nmbd");
 		my @optargs = ("-d0");
 		if (defined($ENV{NMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{NMBD_OPTIONS});
 		}
-
-		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "nmbd");
-
 		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{NMBD_VALGRIND})) { 
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
+		}
+		my @args = ("-F", "--no-process-group",
+			    "-s", $env_vars->{SERVERCONFFILE},
+			    "-l", $env_vars->{LOGDIR});
+		if (not defined($ENV{NMBD_DONT_LOG_STDOUT})) {
+			push(@args, "--log-stdout");
 		}
 
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "nmbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE},
-		     "-l", $env_vars->{LOGDIR}, @optargs) or die("Unable to start nmbd: $!");
+		exec(@preargs, $ENV{MAKE_TEST_BINARY}, @args, @optargs)
+			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env_vars->{NMBD_TL_PID} = $pid;
 	write_pid($env_vars, "nmbd", $pid);
@@ -710,25 +714,27 @@ sub check_or_start($$$$$) {
 			exit 0;
 		}
 
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "winbindd");
 		my @optargs = ("-d0");
 		if (defined($ENV{WINBINDD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
 		}
-
-		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "winbindd");
-
 		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{WINBINDD_VALGRIND})) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
-
-		print "Starting winbindd with config $env_vars->{SERVERCONFFILE}\n";
+		my @args = ("-F", "--no-process-group",
+			    "-s", $env_vars->{SERVERCONFFILE},
+			    "-l", $env_vars->{LOGDIR});
+		if (not defined($ENV{WINBINDD_DONT_LOG_STDOUT})) {
+			push(@args, "--stdout");
+		}
 
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "--stdout", "-s", $env_vars->{SERVERCONFFILE},
-		     "-l", $env_vars->{LOGDIR}, @optargs) or die("Unable to start winbindd: $!");
+		exec(@preargs, $ENV{MAKE_TEST_BINARY}, @args, @optargs)
+			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env_vars->{WINBINDD_TL_PID} = $pid;
 	write_pid($env_vars, "winbindd", $pid);
@@ -774,12 +780,18 @@ sub check_or_start($$$$$) {
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}
+		my @args = ("-F", "--no-process-group",
+			    "-s", $env_vars->{SERVERCONFFILE},
+			    "-l", $env_vars->{LOGDIR});
+		if (not defined($ENV{SMBD_DONT_LOG_STDOUT})) {
+			push(@args, "--log-stdout");
+		}
 
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "smbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE},
-		     "-l", $env_vars->{LOGDIR},  @optargs) or die("Unable to start smbd: $!");
+		exec(@preargs, $ENV{MAKE_TEST_BINARY}, @args, @optargs)
+			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env_vars->{SMBD_TL_PID} = $pid;
 	write_pid($env_vars, "smbd", $pid);
