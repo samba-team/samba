@@ -117,7 +117,7 @@ struct epm_map_binding_state {
 	const struct ndr_interface_table *table;
 	struct dcerpc_pipe *pipe;
 	struct policy_handle handle;
-	struct GUID guid;
+	struct GUID object;
 	struct epm_twr_t twr;
 	struct epm_twr_t *twr_r;
 	uint32_t num_towers;
@@ -149,7 +149,7 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	if (!composite_is_ok(c)) return;
 	
 	/* with some nice pretty paper around it of course */
-	s->r.in.object        = &s->guid;
+	s->r.in.object        = &s->object;
 	s->r.in.map_tower     = &s->twr;
 	s->r.in.entry_handle  = &s->handle;
 	s->r.in.max_towers    = 1;
@@ -248,6 +248,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	c->private_data = s;
 
 	s->binding = binding;
+	s->object  = dcerpc_binding_get_object(binding);
 	s->table   = table;
 
 	c->status = dcerpc_binding_set_abstract_syntax(binding,
