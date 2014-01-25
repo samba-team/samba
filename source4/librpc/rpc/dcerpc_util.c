@@ -290,21 +290,11 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	anon_creds = cli_credentials_init_anon(s);
 	if (composite_nomem(anon_creds, c)) return c;
 
-	epmapper_binding = talloc_zero(s, struct dcerpc_binding);
+	epmapper_binding = dcerpc_binding_dup(s, binding);
 	if (composite_nomem(epmapper_binding, c)) return c;
 
 	/* basic endpoint mapping data */
-	epmapper_binding->transport		= binding->transport;
-	if (binding->host != NULL) {
-		epmapper_binding->host = talloc_strdup(epmapper_binding, binding->host);
-		if (composite_nomem(epmapper_binding->host, c)) return c;
-	}
-	epmapper_binding->target_hostname       = epmapper_binding->host;
 	epmapper_binding->options		= NULL;
-	if (binding->localaddress != NULL) {
-		epmapper_binding->localaddress = talloc_strdup(epmapper_binding, binding->localaddress);
-		if (composite_nomem(epmapper_binding->localaddress, c)) return c;
-	}
 	epmapper_binding->flags			= 0;
 	epmapper_binding->assoc_group_id	= 0;
 	epmapper_binding->endpoint		= NULL;
