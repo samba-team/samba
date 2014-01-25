@@ -530,6 +530,18 @@ _PUBLIC_ void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
 	}
 }
 
+_PUBLIC_ uint32_t dcerpc_binding_get_assoc_group_id(const struct dcerpc_binding *b)
+{
+	return b->assoc_group_id;
+}
+
+_PUBLIC_ NTSTATUS dcerpc_binding_set_assoc_group_id(struct dcerpc_binding *b,
+						    uint32_t assoc_group_id)
+{
+	b->assoc_group_id = assoc_group_id;
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
 						      const char *name)
 {
