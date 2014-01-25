@@ -247,11 +247,6 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	s->binding = binding;
 	s->table   = table;
 
-	/* anonymous credentials for rpc connection used to get endpoint mapping */
-	anon_creds = cli_credentials_init(mem_ctx);
-	if (composite_nomem(anon_creds, c)) return c;
-	cli_credentials_set_anonymous(anon_creds);
-
 	/*
 	  First, check if there is a default endpoint specified in the IDL
 	*/
@@ -291,7 +286,11 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	epmapper_binding = talloc_zero(c, struct dcerpc_binding);
+	/* anonymous credentials for rpc connection used to get endpoint mapping */
+	anon_creds = cli_credentials_init_anon(s);
+	if (composite_nomem(anon_creds, c)) return c;
+
+	epmapper_binding = talloc_zero(s, struct dcerpc_binding);
 	if (composite_nomem(epmapper_binding, c)) return c;
 
 	/* basic endpoint mapping data */
@@ -311,7 +310,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	epmapper_binding->endpoint		= NULL;
 
 	/* initiate rpc pipe connection */
-	pipe_connect_req = dcerpc_pipe_connect_b_send(c, epmapper_binding, 
+	pipe_connect_req = dcerpc_pipe_connect_b_send(s, epmapper_binding,
 						      &ndr_table_epmapper,
 						      anon_creds, c->event_ctx,
 						      lp_ctx);
