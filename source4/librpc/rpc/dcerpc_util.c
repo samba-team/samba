@@ -260,24 +260,34 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 
 		/* Find one of the default pipes for this interface */
 		for (i = 0; i < table->endpoints->count; i++) {
-			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
 
-			if (NT_STATUS_IS_OK(status)) {
-				if (binding->transport == NCA_UNKNOWN) 
-					binding->transport = default_binding->transport;
-				if (default_binding->transport == binding->transport && 
-					default_binding->endpoint) {
-					binding->endpoint = talloc_strdup(binding, default_binding->endpoint);
-					if (composite_nomem(binding->endpoint, c)) return c;
-					talloc_free(default_binding);
-
-					composite_done(c);
-					return c;
-
-				} else {
-					talloc_free(default_binding);
-				}
+			status = dcerpc_parse_binding(s,
+						      table->endpoints->names[i],
+						      &default_binding);
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
 			}
+
+			if (binding->transport == NCA_UNKNOWN) {
+				binding->transport = default_binding->transport;
+			}
+
+			if (default_binding->transport != binding->transport) {
+				TALLOC_FREE(default_binding);
+				continue;
+			}
+
+			if (default_binding->endpoint == NULL) {
+				TALLOC_FREE(default_binding);
+				continue;
+			}
+
+			binding->endpoint = talloc_strdup(binding, default_binding->endpoint);
+			if (composite_nomem(binding->endpoint, c)) return c;
+			TALLOC_FREE(default_binding);
+
+			composite_done(c);
+			return c;
 		}
 	}
 
