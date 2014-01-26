@@ -163,7 +163,9 @@ bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target)
 			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", target);
 			return false;
 		}
-		lpcfg_set_cmdline(lp_ctx, "torture:host", binding_struct->host);
+		if (binding_struct->host != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "torture:host", binding_struct->host);
+		}
 		if (lpcfg_parm_string(lp_ctx, NULL, "torture", "share") == NULL)
 			lpcfg_set_cmdline(lp_ctx, "torture:share", "IPC$");
 		lpcfg_set_cmdline(lp_ctx, "torture:binding", target);
