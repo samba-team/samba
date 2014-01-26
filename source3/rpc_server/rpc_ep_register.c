@@ -199,6 +199,7 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 	}
 
 	/* Create map tower */
+	ZERO_STRUCT(map_binding);
 	map_binding.transport = NCACN_NP;
 	map_binding.object = state->iface->syntax_id;
 	map_binding.host = "";
