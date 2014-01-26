@@ -170,6 +170,7 @@ static bool test_Map_tcpip(struct torture_context *tctx,
 	r.out.num_towers = &num_towers;
 
 	/* Create map tower */
+	ZERO_STRUCT(map_binding);
 	map_binding.transport = NCACN_IP_TCP;
 	map_binding.object = map_syntax;
 	map_binding.host = "0.0.0.0";
