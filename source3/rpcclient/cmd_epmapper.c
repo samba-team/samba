@@ -41,6 +41,7 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 
 	abstract_syntax = ndr_table_lsarpc.syntax_id;
 
+	ZERO_STRUCT(map_binding);
 	map_binding.transport = NCACN_NP;
         map_binding.object = abstract_syntax;
         map_binding.host = "127.0.0.1"; /* needed? */
