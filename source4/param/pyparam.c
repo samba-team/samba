@@ -279,7 +279,6 @@ static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 
 	f = PyFile_AsFile(py_stream);
 	if (f == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Not a file stream");
 		return NULL;
 	}
 
@@ -457,7 +456,6 @@ static PyObject *py_lp_service_dump(PyObject *self, PyObject *args)
 
 	f = PyFile_AsFile(py_stream);
 	if (f == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Not a file stream");
 		return NULL;
 	}
 
