@@ -3487,8 +3487,6 @@ static bool do_section(const char *pszSectionName, void *userdata)
 
 static bool is_default(int i)
 {
-	if (!defaults_saved)
-		return false;
 	switch (parm_table[i].type) {
 		case P_LIST:
 		case P_CMDLIST:
