@@ -32,6 +32,8 @@ enum dbwrap_lock_order {
 };
 #define DBWRAP_LOCK_ORDER_MAX DBWRAP_LOCK_ORDER_3
 
+#define DBWRAP_FLAG_NONE                     0x0000000000000000ULL
+
 /* The following definitions come from lib/dbwrap.c  */
 
 TDB_DATA dbwrap_record_get_key(const struct db_record *rec);
