@@ -732,11 +732,11 @@ WERROR regdb_init(void)
 
 	regdb = db_open(NULL, state_path("registry.tdb"), 0,
 			REG_TDB_FLAGS, O_RDWR, 0600,
-			DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
+			DBWRAP_LOCK_ORDER_1, REG_DBWRAP_FLAGS);
 	if (!regdb) {
 		regdb = db_open(NULL, state_path("registry.tdb"), 0,
 				REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600,
-				DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
+				DBWRAP_LOCK_ORDER_1, REG_DBWRAP_FLAGS);
 		if (!regdb) {
 			werr = ntstatus_to_werror(map_nt_error_from_unix(errno));
 			DEBUG(1,("regdb_init: Failed to open registry %s (%s)\n",
@@ -852,7 +852,7 @@ WERROR regdb_open( void )
 
 	regdb = db_open(NULL, state_path("registry.tdb"), 0,
 			REG_TDB_FLAGS, O_RDWR, 0600,
-			DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
+			DBWRAP_LOCK_ORDER_1, REG_DBWRAP_FLAGS);
 	if ( !regdb ) {
 		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
 		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n",
