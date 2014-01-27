@@ -212,7 +212,7 @@ static struct db_record *dbwrap_fetch_locked_internal(
 	struct db_record *rec;
 	struct dbwrap_lock_order_state *lock_order = NULL;
 
-	if (db->lock_order != 0) {
+	if (db->lock_order != DBWRAP_LOCK_ORDER_NONE) {
 		lock_order = dbwrap_check_lock_order(db, mem_ctx);
 		if (lock_order == NULL) {
 			return NULL;
