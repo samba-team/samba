@@ -1794,7 +1794,7 @@ void lpcfg_print_parameter(struct parm_struct *p, void *ptr, FILE * f)
  * Check if two parameters are equal.
  */
 
- bool lpcfg_equal_parameter(parm_type type, void *ptr1, void *ptr2)
+static bool lpcfg_equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
 	switch (type) {
 		case P_BOOL:

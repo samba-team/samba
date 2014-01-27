@@ -286,10 +286,4 @@ void init_printer_values(TALLOC_CTX *, struct loadparm_service *);
 
 int num_parameters(void);
 
-/**
- * Check if two parameters are equal.
- */
-
-bool lpcfg_equal_parameter(parm_type type, void *ptr1, void *ptr2);
-
 #endif /* _LOADPARM_H */
