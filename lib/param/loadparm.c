@@ -1797,8 +1797,6 @@ static bool do_section(const char *pszSectionName, void *userdata)
 static bool is_default(struct loadparm_service *sDefault, int i)
 {
 	void *def_ptr = ((char *)sDefault) + parm_table[i].offset;
-	if (!defaults_saved)
-		return false;
 	switch (parm_table[i].type) {
 		case P_CMDLIST:
 		case P_LIST:
