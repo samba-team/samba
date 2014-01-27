@@ -49,7 +49,8 @@ struct db_context *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 
 	db_sc = dbwrap_local_open(mem_ctx, lp_ctx, fname, 0,
 				  TDB_CLEAR_IF_FIRST|TDB_NOSYNC, O_RDWR|O_CREAT,
-				  0600, 0, DBWRAP_FLAG_NONE);
+				  0600, DBWRAP_LOCK_ORDER_NONE,
+				  DBWRAP_FLAG_NONE);
 
 	if (!db_sc) {
 		DEBUG(0,("open_schannel_session_store: Failed to open %s - %s\n",
