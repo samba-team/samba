@@ -1931,58 +1931,6 @@ bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 }
 
 /**
- * Return info about the next parameter in a service.
- * snum==-1 gives the globals.
- * Return NULL when out of parameters.
- */
-
-
-struct parm_struct *lpcfg_next_parameter(struct loadparm_context *lp_ctx, int snum, int *i,
-					 int allparameters)
-{
-	if (snum == -1) {
-		/* do the globals */
-		for (; parm_table[*i].label; (*i)++) {
-			if ((*parm_table[*i].label == '-'))
-				continue;
-
-			if ((*i) > 0
-			    && (parm_table[*i].offset ==
-				parm_table[(*i) - 1].offset)
-			    && (parm_table[*i].p_class ==
-				parm_table[(*i) - 1].p_class))
-				continue;
-
-			return &parm_table[(*i)++];
-		}
-	} else {
-		struct loadparm_service *pService = lp_ctx->services[snum];
-
-		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].p_class == P_LOCAL &&
-			    (*parm_table[*i].label != '-') &&
-			    ((*i) == 0 ||
-			     (parm_table[*i].offset !=
-			      parm_table[(*i) - 1].offset)))
-			{
-				if (allparameters ||
-				    !lpcfg_equal_parameter(parm_table[*i].type,
-							   ((char *)pService) +
-							   parm_table[*i].offset,
-							   ((char *)lp_ctx->sDefault) +
-							   parm_table[*i].offset))
-				{
-					return &parm_table[(*i)++];
-				}
-			}
-		}
-	}
-
-	return NULL;
-}
-
-
-/**
  * Auto-load some home services.
  */
 static void lpcfg_add_auto_services(struct loadparm_context *lp_ctx,

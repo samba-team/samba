@@ -141,13 +141,6 @@ bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 			 const char *parm_name, FILE * f);
 
 /**
- * Return info about the next service  in a service. snum==-1 gives the globals.
- * Return NULL when out of parameters.
- */
-struct parm_struct *lpcfg_next_parameter(struct loadparm_context *lp_ctx, int snum, int *i,
-				      int allparameters);
-
-/**
  * Unload unused services.
  */
 void lpcfg_killunused(struct loadparm_context *lp_ctx,
