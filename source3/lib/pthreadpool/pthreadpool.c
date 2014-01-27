@@ -335,8 +335,8 @@ int pthreadpool_destroy(struct pthreadpool *pool)
 
 		if (pool->num_idle > 0) {
 			/*
-			 * Wake the idle threads. They will find pool->quit to
-			 * be set and exit themselves
+			 * Wake the idle threads. They will find
+			 * pool->shutdown to be set and exit themselves
 			 */
 			ret = pthread_cond_broadcast(&pool->condvar);
 			if (ret != 0) {
