@@ -67,7 +67,7 @@ static bool locking_init_internal(bool read_only)
 			  SMB_OPEN_DATABASE_TDB_HASH_SIZE,
 			  TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644,
-			  DBWRAP_LOCK_ORDER_1);
+			  DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 
 	if (!lock_db) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));

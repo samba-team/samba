@@ -77,7 +77,8 @@ static struct db_context *serverid_db(void)
 	}
 	db = db_open(NULL, lock_path("serverid.tdb"), 0,
 		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-		     O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_2);
+		     O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_2,
+		     DBWRAP_FLAG_NONE);
 	return db;
 }
 

@@ -588,7 +588,7 @@ int main(int argc, const char **argv)
 	case OP_LISTKEYS:
 	case OP_EXISTS:
 		db = db_open(mem_ctx, dbname, 0, tdb_flags, O_RDWR | O_CREAT,
-			     0644, DBWRAP_LOCK_ORDER_1);
+			     0644, DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 		if (db == NULL) {
 			d_fprintf(stderr, "ERROR: could not open dbname\n");
 			goto done;

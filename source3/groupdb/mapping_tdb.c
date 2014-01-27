@@ -54,7 +54,7 @@ static bool init_group_mapping(void)
 
 	db = db_open(NULL, state_path("group_mapping.tdb"), 0,
 		     TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
-		     DBWRAP_LOCK_ORDER_1);
+		     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		DEBUG(0, ("Failed to open group mapping database: %s\n",
 			  strerror(errno)));

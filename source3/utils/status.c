@@ -508,7 +508,7 @@ static void print_notify_recs(const char *path,
 		struct db_context *db;
 		db = db_open(NULL, lock_path("locking.tdb"), 0,
 			     TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDONLY, 0,
-			     DBWRAP_LOCK_ORDER_1);
+			     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 
 		if (!db) {
 			d_printf("%s not initialised\n",

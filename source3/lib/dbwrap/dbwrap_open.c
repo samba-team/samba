@@ -60,7 +60,8 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   const char *name,
 			   int hash_size, int tdb_flags,
 			   int open_flags, mode_t mode,
-			   enum dbwrap_lock_order lock_order)
+			   enum dbwrap_lock_order lock_order,
+			   uint64_t dbwrap_flags)
 {
 	struct db_context *result = NULL;
 #ifdef CLUSTER_SUPPORT

@@ -73,7 +73,8 @@ NTSTATUS smbXsrv_session_global_init(void)
 			 TDB_CLEAR_IF_FIRST |
 			 TDB_INCOMPATIBLE_HASH,
 			 O_RDWR | O_CREAT, 0600,
-			 DBWRAP_LOCK_ORDER_1);
+			 DBWRAP_LOCK_ORDER_1,
+			 DBWRAP_FLAG_NONE);
 	if (db_ctx == NULL) {
 		NTSTATUS status;
 

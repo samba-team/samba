@@ -320,7 +320,7 @@ static bool xattr_tdb_init(int snum, TALLOC_CTX *mem_ctx, struct db_context **p_
 
 	become_root();
 	db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
-		     DBWRAP_LOCK_ORDER_2);
+		     DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
 	unbecome_root();
 
 	if (db == NULL) {

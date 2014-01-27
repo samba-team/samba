@@ -69,7 +69,8 @@ NTSTATUS rpccli_pre_open_netlogon_creds(void)
 
 	global_db = db_open(talloc_autofree_context(), fname,
 			    0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-			    O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2);
+			    O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2,
+			    DBWRAP_FLAG_NONE);
 	if (global_db == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;

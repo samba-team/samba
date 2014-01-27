@@ -206,7 +206,7 @@ static bool net_idmap_opendb_autorid(TALLOC_CTX *mem_ctx,
 
 	if (readonly) {
 		*db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDONLY, 0,
-			     DBWRAP_LOCK_ORDER_1);
+			     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 		if (*db == NULL) {
 			d_fprintf(stderr,
 				  _("Could not open autorid db (%s): %s\n"),
@@ -261,7 +261,7 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 	d_fprintf(stderr, _("dumping id mapping from %s\n"), dbfile);
 
 	db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDONLY, 0,
-		     DBWRAP_LOCK_ORDER_1);
+		     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		d_fprintf(stderr, _("Could not open idmap db (%s): %s\n"),
 			  dbfile, strerror(errno));
@@ -387,7 +387,7 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 	}
 
 	db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644,
-		     DBWRAP_LOCK_ORDER_1);
+		     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		d_fprintf(stderr, _("Could not open idmap db (%s): %s\n"),
 			  dbfile, strerror(errno));
@@ -598,7 +598,7 @@ static int net_idmap_delete_mapping(struct net_context *c, int argc,
 	d_fprintf(stderr, _("deleting id mapping from %s\n"), dbfile);
 
 	db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDWR, 0,
-		     DBWRAP_LOCK_ORDER_1);
+		     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		d_fprintf(stderr, _("Could not open idmap db (%s): %s\n"),
 			  dbfile, strerror(errno));

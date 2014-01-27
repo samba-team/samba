@@ -80,7 +80,8 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 			 TDB_CLEAR_IF_FIRST |
 			 TDB_INCOMPATIBLE_HASH,
 			 O_RDWR | O_CREAT, 0600,
-			 DBWRAP_LOCK_ORDER_1);
+			 DBWRAP_LOCK_ORDER_1,
+			 DBWRAP_FLAG_NONE);
 	if (db_ctx == NULL) {
 		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("smbXsrv_version_global_init: "

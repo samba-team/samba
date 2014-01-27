@@ -309,7 +309,7 @@ int main(int argc, const char *argv[])
 	}
 
 	db = db_open(mem_ctx, db_name, 0, tdb_flags,  O_RDWR | O_CREAT, 0644,
-		     DBWRAP_LOCK_ORDER_1);
+		     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 
 	if (db == NULL) {
 		d_fprintf(stderr, "failed to open db '%s': %s\n", db_name,

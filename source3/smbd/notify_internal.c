@@ -145,7 +145,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 	notify->db_index = db_open(
 		notify, lock_path("notify_index.tdb"),
 		0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-		O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_3);
+		O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_3, DBWRAP_FLAG_NONE);
 	if (notify->db_index == NULL) {
 		goto fail;
 	}

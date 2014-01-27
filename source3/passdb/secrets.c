@@ -79,7 +79,7 @@ bool secrets_init_path(const char *private_dir, bool use_ntdb)
 
 	db_ctx = db_open(NULL, fname, 0,
 			 TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
-			 DBWRAP_LOCK_ORDER_1);
+			 DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 
 	if (db_ctx == NULL) {
 		DEBUG(0,("Failed to open %s\n", fname));

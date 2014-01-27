@@ -9066,7 +9066,8 @@ static bool run_local_dbtrans(int dummy)
 	TDB_DATA value;
 
 	db = db_open(talloc_tos(), "transtest.tdb", 0, TDB_DEFAULT,
-		     O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_1);
+		     O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_1,
+		     DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		printf("Could not open transtest.db\n");
 		return false;

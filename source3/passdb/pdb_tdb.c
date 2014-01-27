@@ -226,7 +226,7 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 
 	tmp_db = db_open(NULL, tmp_fname, 0,
 			 TDB_DEFAULT, O_CREAT|O_RDWR, 0600,
-			 DBWRAP_LOCK_ORDER_1);
+			 DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (tmp_db == NULL) {
 		DEBUG(0, ("tdbsam_convert_backup: Failed to create backup TDB passwd "
 			  "[%s]\n", tmp_fname));
@@ -293,7 +293,7 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 
 	orig_db = db_open(NULL, dbname, 0,
 			  TDB_DEFAULT, O_CREAT|O_RDWR, 0600,
-			  DBWRAP_LOCK_ORDER_1);
+			  DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (orig_db == NULL) {
 		DEBUG(0, ("tdbsam_convert_backup: Failed to re-open "
 			  "converted passdb TDB [%s]\n", dbname));
@@ -444,7 +444,7 @@ static bool tdbsam_open( const char *name )
 	/* Try to open tdb passwd.  Create a new one if necessary */
 
 	db_sam = db_open(NULL, name, 0, TDB_DEFAULT, O_CREAT|O_RDWR, 0600,
-			 DBWRAP_LOCK_ORDER_1);
+			 DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db_sam == NULL) {
 		DEBUG(0, ("tdbsam_open: Failed to open/create TDB passwd "
 			  "[%s]\n", name));

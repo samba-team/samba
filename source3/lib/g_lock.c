@@ -61,7 +61,8 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 	result->db = db_open(result, lock_path("g_lock.tdb"), 0,
 			     TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			     O_RDWR|O_CREAT, 0600,
-			     DBWRAP_LOCK_ORDER_2);
+			     DBWRAP_LOCK_ORDER_2,
+			     DBWRAP_FLAG_NONE);
 	if (result->db == NULL) {
 		DEBUG(1, ("g_lock_init: Could not open g_lock.tdb\n"));
 		TALLOC_FREE(result);

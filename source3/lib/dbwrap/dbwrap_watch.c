@@ -33,7 +33,8 @@ static struct db_context *dbwrap_record_watchers_db(void)
 		watchers_db = db_open(
 			NULL, lock_path("dbwrap_watchers.tdb"),	0,
 			TDB_CLEAR_IF_FIRST | TDB_INCOMPATIBLE_HASH,
-			O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_3);
+			O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_3,
+			DBWRAP_FLAG_NONE);
 	}
 	return watchers_db;
 }
