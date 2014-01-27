@@ -167,7 +167,7 @@ static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 	static struct db_context *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
 	struct dbwrap_lock_order_state *state = NULL;
 
-	if (db->lock_order > DBWRAP_LOCK_ORDER_MAX) {
+	if (!DBWRAP_LOCK_ORDER_VALID(db->lock_order)) {
 		DEBUG(0,("Invalid lock order %d of %s\n",
 			 (int)db->lock_order, db->name));
 		smb_panic("invalid lock_order\n");
