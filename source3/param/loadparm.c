@@ -3010,46 +3010,9 @@ static void dump_globals(FILE *f)
  Display the contents of a single services record.
 ***************************************************************************/
 
-static void dump_a_service(struct loadparm_service *pService, FILE * f)
+static void dump_a_service(struct loadparm_service *pService, FILE * f, bool show_defaults)
 {
-	int i;
-	struct parmlist_entry *data;
-
-	if (pService != &sDefault)
-		fprintf(f, "[%s]\n", pService->szService);
-
-	for (i = 0; parm_table[i].label; i++) {
-
-		if (parm_table[i].p_class == P_LOCAL &&
-		    !(parm_table[i].flags & FLAG_META) &&
-		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) 
-		{
-			if (pService == &sDefault) {
-				if (defaults_saved && is_default(i))
-					continue;
-			} else {
-				if (lpcfg_equal_parameter(parm_table[i].type,
-							  lp_parm_ptr(pService, &parm_table[i]),
-							  lp_parm_ptr(NULL, &parm_table[i])))
-					continue;
-			}
-
-			fprintf(f, "\t%s = ", parm_table[i].label);
-			lpcfg_print_parameter(&parm_table[i],
-					lp_parm_ptr(pService, &parm_table[i]),
-					f);
-			fprintf(f, "\n");
-		}
-	}
-
-		if (pService->param_opt != NULL) {
-			data = pService->param_opt;
-			while(data) {
-				fprintf(f, "\t%s = %s\n", data->key, data->value);
-				data = data->next;
-			}
-        	}
+	return lpcfg_dump_a_service(pService, &sDefault, f, NULL, show_defaults);
 }
 
 /***************************************************************************
@@ -4320,7 +4283,7 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 
 	dump_globals(f);
 
-	dump_a_service(&sDefault, f);
+	dump_a_service(&sDefault, f, show_defaults);
 
 	for (iService = 0; iService < maxtoprint; iService++) {
 		fprintf(f,"\n");
@@ -4337,7 +4300,7 @@ void lp_dump_one(FILE * f, bool show_defaults, int snum)
 	if (VALID(snum)) {
 		if (ServicePtrs[snum]->szService[0] == '\0')
 			return;
-		dump_a_service(ServicePtrs[snum], f);
+		dump_a_service(ServicePtrs[snum], f, show_defaults);
 	}
 }
 

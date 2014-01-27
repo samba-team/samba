@@ -1949,8 +1949,8 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
  * Display the contents of a single services record.
  */
 
-static void dump_a_service(struct loadparm_service * pService, struct loadparm_service *sDefault, FILE * f,
-			   unsigned int *flags)
+void lpcfg_dump_a_service(struct loadparm_service * pService, struct loadparm_service *sDefault, FILE * f,
+			  unsigned int *flags, bool show_defaults)
 {
 	int i;
 	struct parmlist_entry *data;
@@ -1967,7 +1967,7 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 				if (flags && (flags[i] & FLAG_DEFAULT)) {
 					continue;
 				}
-				if (defaults_saved) {
+				if (!show_defaults) {
 					if (is_default(sDefault, i)) {
 						continue;
 					}
@@ -2711,11 +2711,9 @@ void lpcfg_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 		return;
 	}
 
-	defaults_saved = !show_defaults;
-
 	dump_globals(lp_ctx, f, show_defaults);
 
-	dump_a_service(lp_ctx->sDefault, lp_ctx->sDefault, f, lp_ctx->flags);
+	lpcfg_dump_a_service(lp_ctx->sDefault, lp_ctx->sDefault, f, lp_ctx->flags, show_defaults);
 
 	for (iService = 0; iService < maxtoprint; iService++)
 		lpcfg_dump_one(f, show_defaults, lp_ctx->services[iService], lp_ctx->sDefault);
@@ -2729,7 +2727,7 @@ void lpcfg_dump_one(FILE *f, bool show_defaults, struct loadparm_service *servic
 	if (service != NULL) {
 		if (service->szService[0] == '\0')
 			return;
-		dump_a_service(service, sDefault, f, NULL);
+		lpcfg_dump_a_service(service, sDefault, f, NULL, show_defaults);
 	}
 }
 
