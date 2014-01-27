@@ -3673,65 +3673,6 @@ struct parm_struct *lp_get_parameter(const char *param_name)
 	return &parm_table[num];
 }
 
-/***************************************************************************
- Return info about the next parameter in a service.
- snum==GLOBAL_SECTION_SNUM gives the globals.
- Return NULL when out of parameters.
-***************************************************************************/
-
-struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
-{
-	if (snum < 0) {
-		/* do the globals */
-		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].p_class == P_SEPARATOR)
-				return &parm_table[(*i)++];
-
-			if ((*parm_table[*i].label == '-'))
-				continue;
-
-			if ((*i) > 0
-			    && (parm_table[*i].offset ==
-				parm_table[(*i) - 1].offset)
-			    && (parm_table[*i].p_class ==
-				parm_table[(*i) - 1].p_class))
-				continue;
-
-			if (is_default(*i) && !allparameters)
-				continue;
-
-			return &parm_table[(*i)++];
-		}
-	} else {
-		struct loadparm_service *pService = ServicePtrs[snum];
-
-		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].p_class == P_SEPARATOR)
-				return &parm_table[(*i)++];
-
-			if (parm_table[*i].p_class == P_LOCAL &&
-			    (*parm_table[*i].label != '-') &&
-			    ((*i) == 0 ||
-			     (parm_table[*i].offset !=
-			      parm_table[(*i) - 1].offset)))
-			{
-				if (allparameters ||
-				    !lpcfg_equal_parameter(parm_table[*i].type,
-							   lp_parm_ptr(pService,
-								       &parm_table[*i]),
-							   lp_parm_ptr(NULL,
-								       &parm_table[*i])))
-				{
-					return &parm_table[(*i)++];
-				}
-			}
-		}
-	}
-
-	return NULL;
-}
-
-
 #if 0
 /***************************************************************************
  Display the contents of a single copy structure.
