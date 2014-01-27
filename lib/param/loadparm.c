@@ -71,7 +71,6 @@
 #define standard_sub_basic talloc_strdup
 
 static bool do_parameter(const char *, const char *, void *);
-static bool defaults_saved = false;
 
 #include "lib/param/param_global.h"
 
