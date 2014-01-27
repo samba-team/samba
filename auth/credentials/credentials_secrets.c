@@ -255,7 +255,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 		
 	db_ctx = dbwrap_local_open(cred, lp_ctx, secrets_tdb, 0,
 				   TDB_DEFAULT, O_RDWR, 0600,
-				   DBWRAP_LOCK_ORDER_1);
+				   DBWRAP_LOCK_ORDER_1,
+				   DBWRAP_FLAG_NONE);
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */

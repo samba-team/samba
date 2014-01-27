@@ -63,7 +63,7 @@ static struct db_context *local_db_tmp_open(struct cluster_ops *ops,
 
 	path = smbd_tmp_path(tmp_ctx, lp_ctx, dbname);
 	db = dbwrap_local_open(mem_ctx, lp_ctx, path, 0, flags, O_RDWR|O_CREAT,
-			       0600, 0);
+			       0600, 0, DBWRAP_FLAG_NONE);
 	talloc_free(tmp_ctx);
 	return db;
 }

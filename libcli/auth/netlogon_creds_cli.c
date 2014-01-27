@@ -227,7 +227,8 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 				      fname, 0,
 				      TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 				      O_RDWR|O_CREAT,
-				      0600, DBWRAP_LOCK_ORDER_2);
+				      0600, DBWRAP_LOCK_ORDER_2,
+				      DBWRAP_FLAG_NONE);
 	if (global_db == NULL) {
 		DEBUG(0,("netlogon_creds_cli_open_global_db: Failed to open %s - %s\n",
 			 fname, strerror(errno)));

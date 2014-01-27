@@ -160,7 +160,8 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 				     const char *name,
 				     int hash_size, int tdb_flags,
 				     int open_flags, mode_t mode,
-				     enum dbwrap_lock_order lock_order)
+				     enum dbwrap_lock_order lock_order,
+				     uint64_t dbwrap_flags)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *ntdbname, *tdbname;
