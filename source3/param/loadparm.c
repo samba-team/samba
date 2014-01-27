@@ -3556,17 +3556,6 @@ static void dump_globals(FILE *f)
 }
 
 /***************************************************************************
- Return true if a local parameter is currently set to the global default.
-***************************************************************************/
-
-bool lp_is_default(int snum, struct parm_struct *parm)
-{
-	return lpcfg_equal_parameter(parm->type,
-				     lp_parm_ptr(ServicePtrs[snum], parm),
-				     lp_parm_ptr(NULL, parm));
-}
-
-/***************************************************************************
  Display the contents of a single services record.
 ***************************************************************************/
 

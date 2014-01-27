@@ -1050,7 +1050,6 @@ void *lp_local_ptr_by_snum(int snum, struct parm_struct *parm);
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue);
 bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue);
 bool lp_set_option(const char *option);
-bool lp_is_default(int snum, struct parm_struct *parm);
 bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal);
 struct parm_struct *lp_get_parameter(const char *param_name);
 bool lp_snum_ok(int iService);
