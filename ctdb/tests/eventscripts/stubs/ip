@@ -1,5 +1,7 @@
 #!/bin/sh
 
+promote_secondaries=true
+
 not_implemented ()
 {
     echo "ip stub command: \"$1\" not implemented"
@@ -305,8 +307,13 @@ ip_addr_del ()
 	echo "RTNETLINK answers: Cannot assign requested address" >&2
 	exit 254
     elif grep -Fq "$local" "$pf" ; then
-	# Remove primaries AND SECONDARIES.
-	rm -f "$pf" "$sf"
+	if $promote_secondaries && [ -s "$sf" ] ; then
+	    head -n 1 "$sf" >"$pf"
+	    sed -i -e '1d' "$sf"
+	else
+	    # Remove primaries AND SECONDARIES.
+	    rm -f "$pf" "$sf"
+	fi
     elif [ -f "$sf" ] && grep -Fq "$local" "$sf" ; then 
 	grep -Fv "$local" "$sf" >"${sf}.new"
 	mv "${sf}.new" "$sf"

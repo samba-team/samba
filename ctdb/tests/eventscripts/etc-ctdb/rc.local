@@ -33,6 +33,9 @@ get_proc ()
 	sys/net/ipv4/conf/all/arp_filter)
 	    echo 1
 	    ;;
+	sys/net/ipv4/conf/all/promote_secondaries)
+	    echo 1
+	    ;;
 	fs/nfsd/threads)
 	    echo "$FAKE_NFSD_THREAD_PIDS" | wc -w
 	    ;;
