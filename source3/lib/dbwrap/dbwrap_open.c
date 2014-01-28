@@ -81,6 +81,31 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
+		const char *base;
+		bool try_readonly = false;
+
+		base = strrchr_m(name, '/');
+		if (base != NULL) {
+			base += 1;
+		} else {
+			base = name;
+		}
+
+		if (dbwrap_flags & DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS) {
+			try_readonly = true;
+		}
+
+		try_readonly = lp_parm_bool(-1, "dbwrap_optimize_readonly", "*", try_readonly);
+		try_readonly = lp_parm_bool(-1, "dbwrap_optimize_readonly", base, try_readonly);
+
+		if (try_readonly) {
+			dbwrap_flags |= DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS;
+		} else {
+			dbwrap_flags &= ~DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS;
+		}
+	}
+
 #ifdef CLUSTER_SUPPORT
 	sockname = lp_ctdbd_socket();
 
