@@ -182,7 +182,7 @@ static bool brl_conflict_posix(const struct lock_struct *lck1,
 		return False;
 	}
 
-	/* Locks on the same context con't conflict. Ignore fnum. */
+	/* Locks on the same context don't conflict. Ignore fnum. */
 	if (brl_same_context(&lck1->context, &lck2->context)) {
 		return False;
 	}
