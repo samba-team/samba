@@ -1574,10 +1574,17 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	lp_ctx->flags[parmnum] |= FLAG_CMDLINE;
 
 	/* we have to also set FLAG_CMDLINE on aliases */
-	for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
+	for (i=parmnum-1;
+	     i>=0 && parm_table[i].p_class == parm_table[parmnum].p_class &&
+	     parm_table[i].offset == parm_table[parmnum].offset;
+	     i--) {
 		lp_ctx->flags[i] |= FLAG_CMDLINE;
 	}
-	for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset;i++) {
+	for (i=parmnum+1;
+	     i<NUMPARAMETERS &&
+	     parm_table[i].p_class == parm_table[parmnum].p_class &&
+	     parm_table[i].offset == parm_table[parmnum].offset;
+	     i++) {
 		lp_ctx->flags[i] |= FLAG_CMDLINE;
 	}
 
