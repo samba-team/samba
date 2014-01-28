@@ -103,7 +103,7 @@ static bool tdb_to_ntdb(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 		return false;
 	}
 	tdb = db_open_tdb(ctx, lp_ctx, tdbname, 0,
-			  TDB_DEFAULT, O_RDONLY, 0, 0);
+			  TDB_DEFAULT, O_RDONLY, 0, 0, DBWRAP_FLAG_NONE);
 	if (!tdb) {
 		DEBUG(0, ("tdb_to_ntdb: could not open %s: %s\n",
 			  tdbname, strerror(errno)));
@@ -213,7 +213,7 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 		}
 		db = db_open_tdb(mem_ctx, lp_ctx, tdbname, hash_size,
 				 tdb_flags, open_flags, mode,
-				 lock_order);
+				 lock_order, dbwrap_flags);
 	}
 out:
 	talloc_free(tmp_ctx);

@@ -57,7 +57,8 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	blob.length = blobsize;
 	mem_ctx = talloc_new(NULL);
 	eadb = db_open_tdb(mem_ctx, py_default_loadparm_context(mem_ctx), tdbname, 50000,
-			   TDB_DEFAULT, O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2);
+			   TDB_DEFAULT, O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2,
+			   DBWRAP_FLAG_NONE);
 
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
@@ -104,7 +105,8 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 	mem_ctx = talloc_new(NULL);
 
 	eadb = db_open_tdb(mem_ctx, py_default_loadparm_context(mem_ctx), tdbname, 50000,
-			   TDB_DEFAULT, O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2);
+			   TDB_DEFAULT, O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2,
+			   DBWRAP_FLAG_NONE);
 
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);

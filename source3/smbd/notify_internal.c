@@ -137,7 +137,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 	notify->db_notify = db_open_tdb(
 		notify, lp_ctx, lock_path("notify.tdb"),
 		0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-		O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_2);
+		O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
 		talloc_unlink(notify, lp_ctx);
 	if (notify->db_notify == NULL) {
 		goto fail;
