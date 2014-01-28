@@ -502,7 +502,8 @@ struct db_context *db_open_ntdb(TALLOC_CTX *mem_ctx,
 				const char *ntdbname,
 				int hash_size, int ntdb_flags,
 				int open_flags, mode_t mode,
-				enum dbwrap_lock_order lock_order)
+				enum dbwrap_lock_order lock_order,
+				uint64_t dbwrap_flags)
 {
 	struct db_context *result = NULL;
 	struct db_ntdb_ctx *db_ntdb;

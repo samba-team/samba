@@ -111,7 +111,7 @@ static bool tdb_to_ntdb(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 	}
 	ntdb = db_open_ntdb(ctx, lp_ctx, ntdbname, dbwrap_hash_size(tdb),
 			    TDB_DEFAULT, O_RDWR|O_CREAT|O_EXCL,
-			    st.st_mode & 0777, 0);
+			    st.st_mode & 0777, 0, DBWRAP_FLAG_NONE);
 	if (!ntdb) {
 		DEBUG(0, ("tdb_to_ntdb: could not create %s: %s\n",
 			  ntdbname, strerror(errno)));
@@ -204,7 +204,8 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 			}
 		}
 		db = db_open_ntdb(mem_ctx, lp_ctx, ntdbname, hash_size,
-				  ntdb_flags, open_flags, mode, lock_order);
+				  ntdb_flags, open_flags, mode, lock_order,
+				  dbwrap_flags);
 	} else {
 		if (!streq(ntdbname, tdbname) && file_exist(ntdbname)) {
 			DEBUG(0, ("Refusing to open '%s' when '%s' exists\n",
