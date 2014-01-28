@@ -68,15 +68,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	const char *sockname;
 #endif
 
-	switch (lock_order) {
-	case DBWRAP_LOCK_ORDER_1:
-	case DBWRAP_LOCK_ORDER_2:
-	case DBWRAP_LOCK_ORDER_3:
-		break;
-	default:
-		/*
-		 * Only allow the 3 levels ctdb gives us.
-		 */
+	if (!DBWRAP_LOCK_ORDER_VALID(lock_order)) {
 		errno = EINVAL;
 		return NULL;
 	}
