@@ -69,6 +69,13 @@
 		goto done; \
 	}} while (0)
 
+#define WAIT_FOR_ASYNC_RESPONSE(req) \
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) { \
+		if (tevent_loop_once(torture->ev) != 0) { \
+			break; \
+		} \
+	}
+
 #define BASEDIR "test_notify"
 #define FNAME "smb2-notify01.dat"
 
@@ -1244,8 +1251,7 @@ done:
 */
 
 static bool torture_smb2_notify_ulogoff(struct torture_context *torture,
-				struct smb2_tree *tree1,
-				struct smb2_tree *tree2)
+				struct smb2_tree *tree1)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -1276,11 +1282,11 @@ static bool torture_smb2_notify_ulogoff(struct torture_context *torture,
 	io.smb2.in.security_flags = 0;
 	io.smb2.in.fname = BASEDIR;
 
-	status = smb2_create(tree2, torture, &(io.smb2));
+	status = smb2_create(tree1, torture, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
-	status = smb2_create(tree2, torture, &(io.smb2));
+	status = smb2_create(tree1, torture, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h1 = io.smb2.out.file.handle;
 
@@ -1295,7 +1301,9 @@ static bool torture_smb2_notify_ulogoff(struct torture_context *torture,
 
 	req = smb2_notify_send(tree1, &(notify.smb2));
 
-	status = smb2_logoff(tree2->session);
+	WAIT_FOR_ASYNC_RESPONSE(req);
+
+	status = smb2_logoff(tree1->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
@@ -1992,7 +2000,7 @@ struct torture_suite *torture_smb2_notify_init(void)
 	torture_suite_add_2smb2_test(suite, "mask", torture_smb2_notify_mask);
 	torture_suite_add_1smb2_test(suite, "tdis", torture_smb2_notify_tree_disconnect);
 	torture_suite_add_2smb2_test(suite, "mask-change", torture_smb2_notify_mask_change);
-	torture_suite_add_2smb2_test(suite, "logoff", torture_smb2_notify_ulogoff);
+	torture_suite_add_1smb2_test(suite, "logoff", torture_smb2_notify_ulogoff);
 	torture_suite_add_1smb2_test(suite, "tree", torture_smb2_notify_tree);
 	torture_suite_add_2smb2_test(suite, "basedir", torture_smb2_notify_basedir);
 	torture_suite_add_2smb2_test(suite, "double", torture_smb2_notify_double);
