@@ -396,7 +396,7 @@ ctdb_get_my_public_addresses ()
 # This is suitable for passing to takeip/releaseip
 ctdb_get_1_public_address ()
 {
-    ctdb_get_my_public_addresses | head -n 1
+    ctdb_get_my_public_addresses | { head -n 1 ; cat >/dev/null ; }
 }
 
 ctdb_not_implemented ()
@@ -445,7 +445,7 @@ create_policy_routing_config ()
     if [ "$_num_ips" = "all" ] ; then
 	cat
     else
-	head -n "$_num_ips"
+	{ head -n "$_num_ips" ; cat >/dev/null ; }
     fi |
     while read _dev _ip _bits ; do
 	_net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
@@ -474,7 +474,7 @@ check_routes ()
     if [ "$_num_ips" = "all" ] ; then
 	cat
     else
-	head -n "$_num_ips"
+	{ head -n "$_num_ips" ; cat >/dev/null ; }
     fi | {
 	while read _dev _ip _bits ; do
 	    _net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
