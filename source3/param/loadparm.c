@@ -3800,10 +3800,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
-		    !(parm_table[i].flags & FLAG_META) &&
-		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag) &&
-		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) 
+		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag))
 		{
 			void *ptr;
 
