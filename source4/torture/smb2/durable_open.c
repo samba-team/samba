@@ -1297,7 +1297,6 @@ static bool test_durable_open_reopen4(struct torture_context *tctx,
 				 smb2_util_share_access(""),
 				 smb2_util_oplock_level("b"));
 	io1.in.durable_open = true;
-	io1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 
 	status = smb2_create(tree, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
