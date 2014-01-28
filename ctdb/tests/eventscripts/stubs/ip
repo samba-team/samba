@@ -143,7 +143,7 @@ ip_addr_show ()
     if [ -z "$devices" ] ; then
 	# No device specified?  Get all the primaries...
 	devices=$(ls "${FAKE_IP_STATE}/addresses/"*-primary 2>/dev/null | \
-	    sed -e 's@.*/@@' -e 's@-primary$@@')
+	    sed -e 's@.*/@@' -e 's@-.*-primary$@@' | sort -u)
     fi
     calc_brd ()
     {
@@ -157,27 +157,33 @@ ip_addr_show ()
     }
     show_iface()
     {
-	pf="${FAKE_IP_STATE}/addresses/${dev}-primary"
-	sf="${FAKE_IP_STATE}/addresses/${dev}-secondary"
 	ip_link_show "$dev"
-	if $primary && [ -r "$pf" ] ; then
-	    read local <"$pf"
-	    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
-		calc_brd
-		echo "    inet ${local} brd ${brd} scope global ${dev}"
-	    fi
-	fi
-	if $secondary && [ -r "$sf" ] ; then
-	    while read local ; do
+
+	nets=$(ls "${FAKE_IP_STATE}/addresses/${dev}"-*-primary 2>/dev/null | \
+	    sed -e 's@.*/@@' -e "s@${dev}-\(.*\)-primary\$@\1@")
+
+	for net in $nets ; do
+	    pf="${FAKE_IP_STATE}/addresses/${dev}-${net}-primary"
+	    sf="${FAKE_IP_STATE}/addresses/${dev}-${net}-secondary"
+	    if $primary && [ -r "$pf" ] ; then
+		read local <"$pf"
 		if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
 		    calc_brd
-		    echo "    inet ${local} brd ${brd} scope global secondary ${dev}"
+		    echo "    inet ${local} brd ${brd} scope global ${dev}"
 		fi
-	    done <"$sf"
-	fi
-	if [ -z "$_to" ] ; then
-	    echo "       valid_lft forever preferred_lft forever"
-	fi
+	    fi
+	    if $secondary && [ -r "$sf" ] ; then
+		while read local ; do
+		    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
+			calc_brd
+			echo "    inet ${local} brd ${brd} scope global secondary ${dev}"
+		    fi
+		done <"$sf"
+	    fi
+	    if [ -z "$_to" ] ; then
+		echo "       valid_lft forever preferred_lft forever"
+	    fi
+	done
     }
     n=1
     for dev in $devices ; do
@@ -187,6 +193,33 @@ ip_addr_show ()
 	fi
 	n=$(($n + 1))
     done
+}
+
+# Copied from 13.per_ip_routing for now... so this is lazy testing  :-(
+ipv4_host_addr_to_net ()
+{
+    _host="$1"
+    _maskbits="$2"
+
+    # Convert the host address to an unsigned long by splitting out
+    # the octets and doing the math.
+    _host_ul=0
+    for _o in $(export IFS="." ; echo $_host) ; do
+	_host_ul=$(( ($_host_ul << 8) + $_o)) # work around Emacs color bug
+    done
+
+    # Calculate the mask and apply it.
+    _mask_ul=$(( 0xffffffff << (32 - $_maskbits) ))
+    _net_ul=$(( $_host_ul & $_mask_ul ))
+
+    # Now convert to a network address one byte at a time.
+    _net=""
+    for _o in $(seq 1 4) ; do
+	_net="$(($_net_ul & 255))${_net:+.}${_net}"
+	_net_ul=$(($_net_ul >> 8))
+    done
+
+    echo "${_net}/${_maskbits}"
 }
 
 ip_addr_add ()
@@ -220,8 +253,10 @@ ip_addr_add ()
 	not_implemented "addr add (without dev)"
     fi
     mkdir -p "${FAKE_IP_STATE}/addresses"
-    pf="${FAKE_IP_STATE}/addresses/${dev}-primary"
-    sf="${FAKE_IP_STATE}/addresses/${dev}-secondary"
+    net_str=$(ipv4_host_addr_to_net $(IFS="/" ; echo $local))
+    net_str=$(echo "$net_str" | sed -e 's@/@_@')
+    pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
+    sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
     # We could lock here... but we should be the only ones playing
     # around here with these stubs.
     if [ ! -f "$pf" ] ; then
@@ -260,8 +295,10 @@ ip_addr_del ()
 	not_implemented "addr del (without dev)"
     fi
     mkdir -p "${FAKE_IP_STATE}/addresses"
-    pf="${FAKE_IP_STATE}/addresses/${dev}-primary"
-    sf="${FAKE_IP_STATE}/addresses/${dev}-secondary"
+    net_str=$(ipv4_host_addr_to_net $(IFS="/" ; echo $local))
+    net_str=$(echo "$net_str" | sed -e 's@/@_@')
+    pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
+    sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
     # We could lock here... but we should be the only ones playing
     # around here with these stubs.
     if [ ! -f "$pf" ] ; then
