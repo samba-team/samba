@@ -820,34 +820,20 @@ nfs_statd_update ()
     fi
 }
 
-add_ip_to_iface()
+########################################################
+
+add_ip_to_iface ()
 {
     _iface=$1
     _ip=$2
     _maskbits=$3
 
-    _lockfile="${CTDB_VARDIR}/state/interface_modify_${_iface}.flock"
-    mkdir -p "${_lockfile%/*}" # dirname
-    [ -f "$_lockfile" ] || touch "$_lockfile"
+    # Ensure interface is up
+    ip link set "$_iface" up || \
+	die "Failed to bringup interface $_iface"
 
-    (
-	# Note: use of return/exit/die() below only gets us out of the
-	# sub-shell, which is actually what we want.  That is, the
-	# function should just return non-zero.
-
-	flock --timeout 30 0 || \
-	    die "add_ip_to_iface: unable to get lock for ${_iface}"
-
-	# Ensure interface is up
-	ip link set "$_iface" up || \
-	    die "Failed to bringup interface $_iface"
-
-	ip addr add "$_ip/$_maskbits" brd + dev "$_iface" || \
-	    die "Failed to add $_ip/$_maskbits on dev $_iface"
-    ) <"$_lockfile"
-
-    # Do nothing here - return above only gets us out of the subshell
-    # and doing anything here will affect the return code.
+    ip addr add "$_ip/$_maskbits" brd + dev "$_iface" || \
+	die "Failed to add $_ip/$_maskbits on dev $_iface"
 }
 
 delete_ip_from_iface()
@@ -856,56 +842,15 @@ delete_ip_from_iface()
     _ip=$2
     _maskbits=$3
 
-    _lockfile="${CTDB_VARDIR}/state/interface_modify_${_iface}.flock"
-    mkdir -p "${_lockfile%/*}" # dirname
-    [ -f "$_lockfile" ] || touch "$_lockfile"
+    # This could be set globally for all interfaces but it is probably
+    # better to avoid surprises, so limit it the interfaces where CTDB
+    # has public IP addresses.  There isn't anywhere else convenient
+    # to do this so just set it each time.  This is much cheaper than
+    # remembering and re-adding secondaries.
+    set_proc "sys/net/ipv4/conf/${_iface}/promote_secondaries" 1
 
-    (
-	# Note: use of return/exit/die() below only gets us out of the
-	# sub-shell, which is actually what we want.  That is, the
-	# function should just return non-zero.
-
-	flock --timeout 30 0 || \
-	    die "delete_ip_from_iface: unable to get lock for ${_iface}"
-
-	_im="$_ip/$_maskbits"  # shorthand for readability
-
-	# "ip addr del" will delete all secondary IPs if this is the
-	# primary.  To work around this _very_ annoying behaviour we
-	# have to keep a record of the secondaries and re-add them
-	# afterwards.  Yuck!
-
-	_secondaries=""
-	if ip addr list dev "$_iface" primary | grep -Fq "inet $_im " ; then
-	    _secondaries=$(ip addr list dev "$_iface" secondary | \
-		awk '$1 == "inet" { print $2 }')
-	fi
-
-	local _rc=0
-	ip addr del "$_im" dev "$_iface" || {
-	    echo "Failed to del $_ip on dev $_iface"
-	    _rc=1
-	}
-
-	if [ -n "$_secondaries" ] ; then
-	    for _i in $_secondaries; do
-		if ip addr list dev "$_iface" | grep -Fq "inet $_i" ; then
-		    echo "Kept secondary $_i on dev $_iface"
-		else
-		    echo "Re-adding secondary address $_i to dev $_iface"
-		    ip addr add $_i brd + dev $_iface || {
-			echo "Failed to re-add address $_i to dev $_iface"
-			_rc=1
-		    }
-		fi
-	    done
-	fi
-
-	return $_rc
-    ) <"$_lockfile"
-
-    # Do nothing here - return above only gets us out of the subshell
-    # and doing anything here will affect the return code.
+    ip addr del "$_ip/$_maskbits" dev "$_iface" || \
+	die "Failed to del $_ip on dev $_iface"
 }
 
 # If the given IP is hosted then print 2 items: maskbits and iface 

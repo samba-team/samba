@@ -151,6 +151,10 @@ case "$1" in
 	get_proc sys/net/ipv4/conf/all/arp_filter >/dev/null 2>&1 && {
 	    set_proc sys/net/ipv4/conf/all/arp_filter 1
 	}
+
+	_promote="sys/net/ipv4/conf/all/promote_secondaries"
+	get_proc "$_promote" >/dev/null 2>&1 || \
+	    die "Public IPs only supported if promote_secondaries is available"
 	;;
 
      #############################
