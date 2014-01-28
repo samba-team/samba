@@ -33,6 +33,7 @@ enum dbwrap_lock_order {
 #define DBWRAP_LOCK_ORDER_MAX DBWRAP_LOCK_ORDER_3
 
 #define DBWRAP_FLAG_NONE                     0x0000000000000000ULL
+#define DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS 0x0000000000000001ULL
 
 /* The following definitions come from lib/dbwrap.c  */
 
