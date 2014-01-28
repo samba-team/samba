@@ -103,7 +103,8 @@ static bool tdb_to_ntdb(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 		return false;
 	}
 	tdb = db_open_tdb(ctx, lp_ctx, tdbname, 0,
-			  TDB_DEFAULT, O_RDONLY, 0, 0, DBWRAP_FLAG_NONE);
+			  TDB_DEFAULT, O_RDONLY, 0, DBWRAP_LOCK_ORDER_NONE,
+			  DBWRAP_FLAG_NONE);
 	if (!tdb) {
 		DEBUG(0, ("tdb_to_ntdb: could not open %s: %s\n",
 			  tdbname, strerror(errno)));
@@ -111,7 +112,8 @@ static bool tdb_to_ntdb(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 	}
 	ntdb = db_open_ntdb(ctx, lp_ctx, ntdbname, dbwrap_hash_size(tdb),
 			    TDB_DEFAULT, O_RDWR|O_CREAT|O_EXCL,
-			    st.st_mode & 0777, 0, DBWRAP_FLAG_NONE);
+			    st.st_mode & 0777, DBWRAP_LOCK_ORDER_NONE,
+			    DBWRAP_FLAG_NONE);
 	if (!ntdb) {
 		DEBUG(0, ("tdb_to_ntdb: could not create %s: %s\n",
 			  ntdbname, strerror(errno)));
