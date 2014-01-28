@@ -104,7 +104,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		if (lp_parm_bool(-1, "ctdb", partname, True)) {
 			result = db_open_ctdb(mem_ctx, partname, hash_size,
 					      tdb_flags, open_flags, mode,
-					      lock_order);
+					      lock_order, dbwrap_flags);
 			if (result == NULL) {
 				DEBUG(0,("failed to attach to ctdb %s\n",
 					 partname));

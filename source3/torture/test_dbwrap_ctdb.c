@@ -32,7 +32,7 @@ bool run_local_dbwrap_ctdb(int dummy)
 	uint32_t val;
 
 	db = db_open_ctdb(talloc_tos(), "torture.tdb", 0, TDB_DEFAULT,
-			  O_RDWR, 0755, DBWRAP_LOCK_ORDER_1);
+			  O_RDWR, 0755, DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		perror("db_open_ctdb failed");
 		goto fail;
