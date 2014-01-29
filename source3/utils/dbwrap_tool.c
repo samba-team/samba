@@ -420,7 +420,7 @@ int main(int argc, const char **argv)
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
-		{ "persistent", 'p', POPT_ARG_NONE, &persistent, 0, "treat the database as persistent", NULL },
+		{ "persistent", 0, POPT_ARG_NONE, &persistent, 0, "treat the database as persistent", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
