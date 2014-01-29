@@ -1444,9 +1444,6 @@ static const struct {
 	const char *name;
 	const char *syntax;
 } samba_attributes[] = {
-	{ "objectSid",			LDB_SYNTAX_SAMBA_SID },
-	{ "securityIdentifier", 	LDB_SYNTAX_SAMBA_SID },
-	{ "tokenGroups", 	        LDB_SYNTAX_SAMBA_SID },
 	{ "ntSecurityDescriptor",	LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR },
 	{ "oMSyntax",			LDB_SYNTAX_SAMBA_INT32 },
 	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
@@ -1465,6 +1462,26 @@ static const struct {
 
 	/*
 	 * these are extracted by searching
+	 * (&(attributeSyntax=2.5.5.17)(omSyntax=4))
+	 *
+	 * Except: msAuthz-CentralAccessPolicyID as it might be a GUID see:
+	 * adminDescription: For a Central Access Policy, this attribute defines a GUID t
+	 * hat can be used to identify the set of policies when applied to a resource.
+	 * Until we see a msAuthz-CentralAccessPolicyID value on a windows
+	 * server, we ignore it here.
+	 */
+	{ "mS-DS-CreatorSID",		LDB_SYNTAX_SAMBA_SID },
+	{ "msDS-QuotaTrustee",		LDB_SYNTAX_SAMBA_SID },
+	{ "objectSid",			LDB_SYNTAX_SAMBA_SID },
+	{ "tokenGroups", 	        LDB_SYNTAX_SAMBA_SID },
+	{ "tokenGroupsGlobalAndUniversal", LDB_SYNTAX_SAMBA_SID },
+	{ "tokenGroupsNoGCAcceptable",  LDB_SYNTAX_SAMBA_SID },
+	{ "securityIdentifier", 	LDB_SYNTAX_SAMBA_SID },
+	{ "sIDHistory",			LDB_SYNTAX_SAMBA_SID },
+	{ "syncWithSID",		LDB_SYNTAX_SAMBA_SID },
+
+	/*
+	 * these are extracted by searching
 	 * (&(attributeSyntax=2.5.5.10)(rangeLower=16)(rangeUpper=16)(omSyntax=4))
 	 */
 	{ "attributeSecurityGUID",		LDB_SYNTAX_SAMBA_GUID },
@@ -1475,6 +1492,8 @@ static const struct {
 	{ "fRSVersionGUID",			LDB_SYNTAX_SAMBA_GUID },
 	{ "implementedCategories",		LDB_SYNTAX_SAMBA_GUID },
 	{ "msDS-AzObjectGuid",			LDB_SYNTAX_SAMBA_GUID },
+	{ "msDS-GenerationId",			LDB_SYNTAX_SAMBA_GUID },
+	{ "msDS-OptionalFeatureGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "msDFSR-ContentSetGuid",		LDB_SYNTAX_SAMBA_GUID },
 	{ "msDFSR-ReplicationGroupGuid",	LDB_SYNTAX_SAMBA_GUID },
 	{ "mSMQDigests",			LDB_SYNTAX_SAMBA_GUID },
@@ -1491,13 +1510,14 @@ static const struct {
 	{ "msDFS-GenerationGUIDv2",		LDB_SYNTAX_SAMBA_GUID },
 	{ "msDFS-LinkIdentityGUIDv2",		LDB_SYNTAX_SAMBA_GUID },
 	{ "msDFS-NamespaceIdentityGUIDv2",	LDB_SYNTAX_SAMBA_GUID },
+	{ "msSPP-CSVLKSkuId",			LDB_SYNTAX_SAMBA_GUID },
+	{ "msSPP-KMSIds",			LDB_SYNTAX_SAMBA_GUID },
 
 	/*
 	 * these are known to be GUIDs
 	 */
 	{ "invocationId",			LDB_SYNTAX_SAMBA_GUID },
 	{ "parentGUID",				LDB_SYNTAX_SAMBA_GUID },
-	{ "msDS-OptionalFeatureGUID",		LDB_SYNTAX_SAMBA_GUID },
 
 	/* These NDR encoded things we want to be able to read with --show-binary */
 	{ "dnsRecord",				LDB_SYNTAX_SAMBA_DNSRECORD },
