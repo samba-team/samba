@@ -4011,6 +4011,8 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to send the tickle update for public address %s\n",
 				ctdb_addr_to_str(&vnn->public_address)));
+		} else {
+			vnn->tcp_update_needed = false;
 		}
 	}
 
