@@ -165,7 +165,7 @@ static struct loadparm_service sDefault =
 	.lpresumecommand = NULL,
 	.queuepausecommand = NULL,
 	.queueresumecommand = NULL,
-	.szPrintername = NULL,
+	._printername = NULL,
 	.printjob_username = NULL,
 	.dontdescend = NULL,
 	.hostsallow = NULL,
@@ -1825,7 +1825,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
+	string_set(&ServicePtrs[i]->_printername, pszPrintername);
 	string_set(&ServicePtrs[i]->comment, comment);
 
 	/* set the browseable flag from the gloabl default */

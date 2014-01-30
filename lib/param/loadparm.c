@@ -783,7 +783,7 @@ bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	lpcfg_string_set(service, &service->szPrintername, pszPrintername);
+	lpcfg_string_set(service, &service->_printername, pszPrintername);
 	lpcfg_string_set(service, &service->comment, comment);
 	service->browseable = default_service->browseable;
 	/* Printers cannot be read_only. */
@@ -2654,8 +2654,8 @@ const char *lpcfg_volume_label(struct loadparm_service *service, struct loadparm
 const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
 	const char *ret;
-	ret = lp_string((const char *)((service != NULL && service->szPrintername != NULL) ?
-				       service->szPrintername : sDefault->szPrintername));
+	ret = lp_string((const char *)((service != NULL && service->_printername != NULL) ?
+				       service->_printername : sDefault->_printername));
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
 		ret = lpcfg_servicename(service);
 
