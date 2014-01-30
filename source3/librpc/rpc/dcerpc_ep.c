@@ -103,12 +103,9 @@ NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *
 	for (i = 0; i < ep_count; i++) {
 		struct dcerpc_binding *b;
 
-		b = talloc_zero(bvec->bindings, struct dcerpc_binding);
-		if (b == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = dcerpc_parse_binding(b, iface->endpoints->names[i], &b);
+		status = dcerpc_parse_binding(bvec->bindings,
+					      iface->endpoints->names[i],
+					      &b);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -153,12 +150,9 @@ NTSTATUS dcerpc_binding_vector_add_port(const struct ndr_interface_table *iface,
 	for (i = 0; i < ep_count; i++) {
 		struct dcerpc_binding *b;
 
-		b = talloc_zero(bvec->bindings, struct dcerpc_binding);
-		if (b == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = dcerpc_parse_binding(b, iface->endpoints->names[i], &b);
+		status = dcerpc_parse_binding(bvec->bindings,
+					      iface->endpoints->names[i],
+					      &b);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -209,12 +203,9 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 	for (i = 0; i < ep_count; i++) {
 		struct dcerpc_binding *b;
 
-		b = talloc_zero(bvec->bindings, struct dcerpc_binding);
-		if (b == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = dcerpc_parse_binding(b, iface->endpoints->names[i], &b);
+		status = dcerpc_parse_binding(bvec->bindings,
+					      iface->endpoints->names[i],
+					      &b);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
