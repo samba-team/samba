@@ -124,7 +124,6 @@ static NTSTATUS pvfs_acl_save_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 	int i;
 	TALLOC_CTX *tmp_ctx;
 	struct id_map *ids;
-	struct composite_context *ctx;
 
 	tmp_ctx = talloc_new(pvfs);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -159,12 +158,7 @@ static NTSTATUS pvfs_acl_save_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 		ids[i].status = ID_UNKNOWN;
 	}
 
-	ctx = wbc_sids_to_xids_send(pvfs->wbc_ctx,ids, acl.a_count, ids);
-	if (ctx == NULL) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	status = wbc_sids_to_xids_recv(ctx, &ids);
+	status = wbc_sids_to_xids(pvfs->wbc_ctx->event_ctx, ids, acl.a_count);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return status;
