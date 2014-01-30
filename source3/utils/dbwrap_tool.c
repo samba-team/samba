@@ -411,6 +411,7 @@ int main(int argc, const char **argv)
 	enum dbwrap_type type;
 	const char *valuestr = "0";
 	int persistent = 0;
+	int non_persistent = 0;
 	int tdb_flags = TDB_DEFAULT;
 
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -420,7 +421,13 @@ int main(int argc, const char **argv)
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
-		{ "persistent", 0, POPT_ARG_NONE, &persistent, 0, "treat the database as persistent", NULL },
+		{ "non-persistent", 0, POPT_ARG_NONE, &non_persistent, 0,
+		  "treat the database as non-persistent "
+		  "(CAVEAT: This mode might wipe your database!)",
+		  NULL },
+		{ "persistent", 0, POPT_ARG_NONE, &persistent, 0,
+		  "treat the database as persistent",
+		  NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -461,6 +468,16 @@ int main(int argc, const char **argv)
 			  "       types: int32, uint32, string, hex\n",
 			 argv[0]);
 		goto done;
+	}
+
+	if ((persistent == 0 && non_persistent == 0) ||
+	    (persistent == 1 && non_persistent == 1))
+	{
+		d_fprintf(stderr, "ERROR: you must specify exactly one "
+			  "of --persistent and --non-persistent\n");
+		goto done;
+	} else if (non_persistent == 1) {
+		tdb_flags |= TDB_CLEAR_IF_FIRST;
 	}
 
 	dbname = extra_argv[0];
@@ -561,10 +578,6 @@ int main(int argc, const char **argv)
 	if (msg_ctx == NULL) {
 		d_fprintf(stderr, "ERROR: could not init messaging context\n");
 		goto done;
-	}
-
-	if (persistent == 0) {
-		tdb_flags |= TDB_CLEAR_IF_FIRST;
 	}
 
 	switch (op) {
