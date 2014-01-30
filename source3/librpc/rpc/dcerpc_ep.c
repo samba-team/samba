@@ -102,6 +102,8 @@ NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *
 
 	for (i = 0; i < ep_count; i++) {
 		struct dcerpc_binding *b;
+		enum dcerpc_transport_t transport;
+		char *unc = NULL;
 
 		status = dcerpc_parse_binding(bvec->bindings,
 					      iface->endpoints->names[i],
@@ -111,15 +113,27 @@ NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *
 		}
 
 		/* Only add the named pipes defined in the iface endpoints */
-		if (b->transport != NCACN_NP) {
+		transport = dcerpc_binding_get_transport(b);
+		if (transport != NCACN_NP) {
 			talloc_free(b);
 			continue;
 		}
 
-		b->object = iface->syntax_id;
+		status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 
-		b->host = talloc_asprintf(b, "\\\\%s", lp_netbios_name());
-		if (b->host == NULL) {
+		unc = talloc_asprintf(b, "\\\\%s", lp_netbios_name());
+		if (unc == NULL) {
+			talloc_free(b);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = dcerpc_binding_set_string_option(b, "host", unc);
+		TALLOC_FREE(unc);
+		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(b);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -140,15 +154,19 @@ NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *
 NTSTATUS dcerpc_binding_vector_add_port(const struct ndr_interface_table *iface,
 					struct dcerpc_binding_vector *bvec,
 					const char *host,
-					uint16_t port)
+					uint16_t _port)
 {
 	uint32_t ep_count = iface->endpoints->count;
 	uint32_t i;
 	NTSTATUS status;
 	bool ok;
+	char port[6];
+
+	snprintf(port, sizeof(port), "%u", _port);
 
 	for (i = 0; i < ep_count; i++) {
 		struct dcerpc_binding *b;
+		enum dcerpc_transport_t transport;
 
 		status = dcerpc_parse_binding(bvec->bindings,
 					      iface->endpoints->names[i],
@@ -157,23 +175,28 @@ NTSTATUS dcerpc_binding_vector_add_port(const struct ndr_interface_table *iface,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		if (b->transport != NCACN_IP_TCP) {
+		transport = dcerpc_binding_get_transport(b);
+		if (transport != NCACN_IP_TCP) {
 			talloc_free(b);
 			continue;
 		}
 
-		b->object = iface->syntax_id;
-
-		b->host = talloc_strdup(b, host);
-		if (b->host == NULL) {
+		status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
+		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		b->endpoint = talloc_asprintf(b, "%u", port);
-		if (b->endpoint == NULL) {
+		status = dcerpc_binding_set_string_option(b, "host", host);
+		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		status = dcerpc_binding_set_string_option(b, "endpoint", port);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		ok = binding_vector_realloc(bvec);
@@ -202,6 +225,8 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 
 	for (i = 0; i < ep_count; i++) {
 		struct dcerpc_binding *b;
+		enum dcerpc_transport_t transport;
+		char *endpoint = NULL;
 
 		status = dcerpc_parse_binding(bvec->bindings,
 					      iface->endpoints->names[i],
@@ -210,20 +235,32 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		if (b->transport != NCALRPC) {
+		transport = dcerpc_binding_get_transport(b);
+		if (transport != NCALRPC) {
 			talloc_free(b);
 			continue;
 		}
 
-		b->object = iface->syntax_id;
+		status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 
-		b->endpoint = talloc_asprintf(b,
-					      "%s/%s",
-					      lp_ncalrpc_dir(),
-					      name);
-		if (b->endpoint == NULL) {
+		endpoint = talloc_asprintf(b,
+					   "%s/%s",
+					   lp_ncalrpc_dir(),
+					   name);
+		if (endpoint == NULL) {
 			talloc_free(b);
 			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = dcerpc_binding_set_string_option(b, "endpoint", endpoint);
+		TALLOC_FREE(endpoint);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(b);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		ok = binding_vector_realloc(bvec);
