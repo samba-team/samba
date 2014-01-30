@@ -93,15 +93,14 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		r->out.error_string = NULL;
 		return NT_STATUS_NO_MEMORY;
 	}
-	                                           
-	drsuapi_binding = talloc_zero(tmp_ctx, struct dcerpc_binding);
+
+	drsuapi_binding = dcerpc_binding_dup(tmp_ctx, samr_binding);
 	if (!drsuapi_binding) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
-	*drsuapi_binding = *samr_binding;
+
 
 	/* DRSUAPI is only available on IP_TCP, and locally on NCALRPC */
 	if (drsuapi_binding->transport != NCALRPC) {
