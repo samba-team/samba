@@ -72,7 +72,7 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 	    && (state->userinfo->acct_name[0] != '\0'))
 	{
 		/*
-		 * QueryUser got us a name, let's got directly to the
+		 * QueryUser got us a name, let's go directly to the
 		 * fill_pwent step
 		 */
 		subreq = wb_fill_pwent_send(state, state->ev, state->userinfo,
