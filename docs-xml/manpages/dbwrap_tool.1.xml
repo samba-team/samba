@@ -20,6 +20,7 @@
 	<cmdsynopsis>
 		<command>dbwrap_tool</command>
 		<arg choice="opt">--persistent</arg>
+		<arg choice="opt">--non-persistent</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;config file&gt;</arg>
 		<arg choice="opt">-l &lt;log file base&gt;</arg>
@@ -72,8 +73,23 @@
 		<varlistentry>
 			<term>--persistent</term>
 			<listitem><para>Open the database as a persistent database.
-			If this option is not specified, the database is opened as
-			non-persistent.
+			</para>
+			<para>
+			Exactly one of --persistent and --non-persistent must be
+			specified.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--non-persistent</term>
+			<listitem><para>Open the database as a non-persistent database.
+			</para>
+			<para>
+			Caveat: opening a database as non-persistent when there
+			is currently no other opener will wipe the database.
+			</para>
+			<para>
+			Exactly one of --persistent and --non-persistent must be
+			specified.
 			</para></listitem>
 		</varlistentry>
 		&popt.common.samba.client;
