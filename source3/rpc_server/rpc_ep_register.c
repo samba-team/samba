@@ -206,7 +206,13 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 		return;
 	}
 
-	map_binding->object = state->iface->syntax_id;
+	status = dcerpc_binding_set_abstract_syntax(map_binding,
+						&state->iface->syntax_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		talloc_free(state);
+		return;
+	}
 
 	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
 	if (map_tower == NULL) {
