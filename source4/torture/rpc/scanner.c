@@ -152,7 +152,20 @@ bool torture_rpc_scanner(struct torture_context *torture)
 				continue;
 			}
 		} else {
-			b->endpoint = talloc_strdup(b, l->table->name);
+			status = dcerpc_binding_set_string_option(b, "endpoint",
+								  l->table->name);
+			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(loop_ctx);
+				ret = false;
+				continue;
+			}
+			status = dcerpc_binding_set_abstract_syntax(b,
+							&l->table->syntax_id);
+			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(loop_ctx);
+				ret = false;
+				continue;
+			}
 		}
 
 		lpcfg_set_cmdline(torture->lp_ctx, "torture:binding", dcerpc_binding_string(torture, b));
