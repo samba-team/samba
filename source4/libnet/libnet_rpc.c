@@ -155,14 +155,14 @@ static void continue_pipe_connect(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
-		
+		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
+
 		/* prepare monitor message and post it */
-		data.host        = binding->host;
-		data.endpoint    = binding->endpoint;
-		data.transport   = binding->transport;
-		data.domain_name = binding->target_hostname;
-		
+		data.host        = dcerpc_binding_get_string_option(b, "host");
+		data.endpoint    = dcerpc_binding_get_string_option(b, "endpoint");
+		data.transport   = dcerpc_binding_get_transport(b);
+		data.domain_name = dcerpc_binding_get_string_option(b, "target_hostname");
+
 		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
 		msg.data_size = sizeof(data);
@@ -371,13 +371,13 @@ static void continue_rpc_connect(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
+		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
 
-		data.host        = binding->host;
-		data.endpoint    = binding->endpoint;
-		data.transport   = binding->transport;
-		data.domain_name = binding->target_hostname;
-		
+		data.host        = dcerpc_binding_get_string_option(b, "host");
+		data.endpoint    = dcerpc_binding_get_string_option(b, "endpoint");
+		data.transport   = dcerpc_binding_get_transport(b);
+		data.domain_name = dcerpc_binding_get_string_option(b, "target_hostname");
+
 		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
 		msg.data_size = sizeof(data);
@@ -539,6 +539,7 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
 	struct tevent_req *subreq;
+	enum dcerpc_transport_t transport;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
@@ -553,12 +554,12 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
+		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
 
-		data.host        = binding->host;
-		data.endpoint    = binding->endpoint;
-		data.transport   = binding->transport;
-		data.domain_name = binding->target_hostname;
+		data.host        = dcerpc_binding_get_string_option(b, "host");
+		data.endpoint    = dcerpc_binding_get_string_option(b, "endpoint");
+		data.transport   = dcerpc_binding_get_transport(b);
+		data.domain_name = dcerpc_binding_get_string_option(b, "target_hostname");
 
 		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
@@ -576,7 +577,8 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 
 	s->attr.sec_qos = &s->qos;
 
-	if (s->lsa_pipe->binding->transport == NCACN_IP_TCP) {
+	transport = dcerpc_binding_get_transport(s->lsa_pipe->binding);
+	if (transport == NCACN_IP_TCP) {
 		/*
 		 * Skip to creating the actual connection. We can't open a
 		 * policy handle over tcpip.
@@ -856,14 +858,14 @@ static void continue_secondary_conn(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
-		
+		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
+
 		/* prepare monitor message and post it */
-		data.host        = binding->host;
-		data.endpoint    = binding->endpoint;
-		data.transport   = binding->transport;
-		data.domain_name = binding->target_hostname;
-		
+		data.host        = dcerpc_binding_get_string_option(b, "host");
+		data.endpoint    = dcerpc_binding_get_string_option(b, "endpoint");
+		data.transport   = dcerpc_binding_get_transport(b);
+		data.domain_name = dcerpc_binding_get_string_option(b, "target_hostname");
+
 		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
 		msg.data_size = sizeof(data);
