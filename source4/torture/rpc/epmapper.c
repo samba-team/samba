@@ -143,7 +143,7 @@ static bool test_Map_tcpip(struct torture_context *tctx,
 	struct GUID uuid;
 	struct policy_handle entry_handle;
 	struct ndr_syntax_id syntax;
-	struct dcerpc_binding map_binding;
+	struct dcerpc_binding *map_binding;
 	struct epm_twr_t map_tower;
 	struct epm_twr_p_t towers[20];
 	struct epm_tower t;
@@ -170,13 +170,13 @@ static bool test_Map_tcpip(struct torture_context *tctx,
 	r.out.num_towers = &num_towers;
 
 	/* Create map tower */
-	ZERO_STRUCT(map_binding);
-	map_binding.transport = NCACN_IP_TCP;
-	map_binding.object = map_syntax;
-	map_binding.host = "0.0.0.0";
-	map_binding.endpoint = "135";
+	status = dcerpc_parse_binding(tctx, "ncacn_ip_tcp:[135]", &map_binding);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "epm_Map_tcpip failed: can't create map_binding");
 
-	status = dcerpc_binding_build_tower(tctx, &map_binding,
+	map_binding->object = map_syntax;
+
+	status = dcerpc_binding_build_tower(tctx, map_binding,
 					    &map_tower.tower);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "epm_Map_tcpip failed: can't create map_tower");
