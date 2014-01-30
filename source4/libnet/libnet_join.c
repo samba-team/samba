@@ -57,6 +57,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	struct dcerpc_pipe *drsuapi_pipe;
 	struct dcerpc_binding *drsuapi_binding;
+	enum dcerpc_transport_t transport;
 	struct drsuapi_DsBind r_drsuapi_bind;
 	struct drsuapi_DsCrackNames r_crack_names;
 	struct drsuapi_DsNameString names[1];
@@ -101,13 +102,37 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	transport = dcerpc_binding_get_transport(drsuapi_binding);
 
 	/* DRSUAPI is only available on IP_TCP, and locally on NCALRPC */
-	if (drsuapi_binding->transport != NCALRPC) {
-		drsuapi_binding->transport = NCACN_IP_TCP;
+	if (transport != NCALRPC) {
+		status = dcerpc_binding_set_transport(drsuapi_binding, NCACN_IP_TCP);
+		if (!NT_STATUS_IS_OK(status)) {
+			r->out.error_string = talloc_asprintf(r,
+						"dcerpc_binding_set_transport failed: %s",
+						nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
+		}
 	}
-	drsuapi_binding->endpoint = NULL;
-	drsuapi_binding->flags |= DCERPC_SEAL;
+
+	status = dcerpc_binding_set_string_option(drsuapi_binding, "endpoint", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(r,
+					"dcerpc_binding_set_string_option failed: %s",
+					nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	status = dcerpc_binding_set_flags(drsuapi_binding, DCERPC_SEAL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(r,
+					"dcerpc_binding_set_flags failed: %s",
+					nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
 
 	status = dcerpc_pipe_connect_b(tmp_ctx, 
 				       &drsuapi_pipe,
