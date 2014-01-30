@@ -398,8 +398,16 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 	entries = talloc_array(tmp_ctx, struct epm_entry_t, num_ents);
 
 	for (i = 0; i < num_ents; i++) {
-		struct dcerpc_binding *map_binding = bind_vec->bindings[i];
+		struct dcerpc_binding *map_binding;
 		struct epm_twr_t *map_tower;
+
+		map_binding = dcerpc_binding_dup(entries, bind_vec->bindings[i]);
+		if (map_binding == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		map_binding->object = iface->syntax_id;
 
 		map_tower = talloc_zero(entries, struct epm_twr_t);
 		if (map_tower == NULL) {
@@ -413,6 +421,8 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+
+		TALLOC_FREE(map_binding);
 
 		entries[i].tower = map_tower;
 		if (annotation == NULL) {
