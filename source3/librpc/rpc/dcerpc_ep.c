@@ -430,7 +430,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 		if (object_guid != NULL) {
 			entries[i].object = *object_guid;
 		} else {
-			entries[i].object = map_binding->object.uuid;
+			ZERO_STRUCT(entries[i].object);
 		}
 	}
 
