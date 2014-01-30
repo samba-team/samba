@@ -170,6 +170,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 				const struct tdb_logging_context *log_ctx,
 				tdb_hash_func hash_fn)
 {
+	int orig_errno = errno;
 	struct tdb_header header;
 	struct tdb_context *tdb;
 	struct stat st;
@@ -489,6 +490,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	}
 	tdb->next = tdbs;
 	tdbs = tdb;
+	errno = orig_errno;
 	return tdb;
 
  fail:
