@@ -380,8 +380,8 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
 
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= dcerpc_flags;
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
 	status = dcerpc_pipe_connect_b(tctx, &p, b, &ndr_table_samr,
 				       credentials, tctx->ev, tctx->lp_ctx);
@@ -475,8 +475,8 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
 
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= dcerpc_flags;
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
 	status = dcerpc_pipe_connect_b(tctx, &p_samr2, b, &ndr_table_samr,
 				       credentials, tctx->ev, tctx->lp_ctx);
@@ -522,7 +522,8 @@ static bool test_schannel(struct torture_context *tctx,
 	talloc_free(p_samr2);
 
 	/* We don't want schannel for this test */
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	status = dcerpc_binding_set_flags(b, 0, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
 	status = dcerpc_pipe_connect_b(tctx, &p_netlogon3, b, &ndr_table_netlogon,
 				       credentials, tctx->ev, tctx->lp_ctx);
@@ -610,8 +611,8 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	status = dcerpc_parse_binding(torture, binding, &b);
 	torture_assert_ntstatus_ok(torture, status, "Bad binding string");
 
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= dcerpc_flags;
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(torture, status, "set flags");
 
 	torture_comment(torture, "Opening first connection\n");
 	status = dcerpc_pipe_connect_b(torture, &p1, b, &ndr_table_netlogon,
@@ -864,8 +865,10 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 
 	status = dcerpc_parse_binding(s, binding, &s->b);
 	torture_assert_ntstatus_ok(torture, status, "Bad binding string");
-	s->b->flags &= ~DCERPC_AUTH_OPTIONS;
-	s->b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN;
+
+	status = dcerpc_binding_set_flags(s->b, DCERPC_SCHANNEL | DCERPC_SIGN,
+					  DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(torture, status, "set flags");
 
 	torture_comment(torture, "Opening %d connections in parallel\n", s->nprocs);
 	for (i=0; i < s->nprocs; i++) {

@@ -3180,6 +3180,7 @@ static bool setup_schannel_netlogon_pipe(struct torture_context *tctx,
 					 struct dcerpc_pipe **p)
 {
 	struct dcerpc_binding *b;
+	NTSTATUS status;
 
 	torture_assert_ntstatus_ok(tctx, torture_rpc_binding(tctx, &b),
 		"failed to get rpc binding");
@@ -3187,8 +3188,11 @@ static bool setup_schannel_netlogon_pipe(struct torture_context *tctx,
 	/* We have to use schannel, otherwise the SamLogonEx fails
 	 * with INTERNAL_ERROR */
 
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_AUTO;
+	status = dcerpc_binding_set_flags(b,
+					  DCERPC_SCHANNEL | DCERPC_SIGN |
+					  DCERPC_SCHANNEL_AUTO,
+					  DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, p, b, &ndr_table_netlogon,

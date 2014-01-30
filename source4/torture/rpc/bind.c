@@ -46,14 +46,15 @@ static bool test_bind(struct torture_context *tctx,
 {
 	struct dcerpc_binding *binding;
 	struct dcerpc_pipe *p;
+	NTSTATUS status;
 	const uint32_t *flags = (const uint32_t *)private_data;
 
 	torture_assert_ntstatus_ok(tctx,
 		torture_rpc_binding(tctx, &binding),
 		"failed to parse binding string");
 
-	binding->flags &= ~DCERPC_AUTH_OPTIONS;
-	binding->flags |= *flags;
+	status = dcerpc_binding_set_flags(binding, *flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, &p, binding,

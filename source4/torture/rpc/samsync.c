@@ -1694,8 +1694,10 @@ bool torture_rpc_samsync(struct torture_context *torture)
 		goto failed;
 	}
 
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN;
+	status = dcerpc_binding_set_flags(b,
+					  DCERPC_SCHANNEL | DCERPC_SIGN,
+					  DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(torture, status, "set flags");
 
 	credentials = cli_credentials_init(mem_ctx);
 
@@ -1731,8 +1733,10 @@ bool torture_rpc_samsync(struct torture_context *torture)
 		goto failed;
 	}
 
-	b_netlogon_wksta->flags &= ~DCERPC_AUTH_OPTIONS;
-	b_netlogon_wksta->flags |= DCERPC_SCHANNEL | DCERPC_SIGN;
+	status = dcerpc_binding_set_flags(b_netlogon_wksta,
+					  DCERPC_SCHANNEL | DCERPC_SIGN,
+					  DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(torture, status, "set flags");
 
 	credentials_wksta = cli_credentials_init(mem_ctx);
 

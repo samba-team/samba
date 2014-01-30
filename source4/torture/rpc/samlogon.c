@@ -1753,8 +1753,11 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	/* We have to use schannel, otherwise the SamLogonEx fails
 	 * with INTERNAL_ERROR */
 
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+	status = dcerpc_binding_set_flags(b,
+					  DCERPC_SCHANNEL | DCERPC_SIGN |
+					  DCERPC_SCHANNEL_128,
+					  DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(torture, status, "set flags");
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b,
 				       &ndr_table_netlogon,
