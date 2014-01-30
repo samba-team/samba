@@ -214,32 +214,31 @@ static bool fillup_pw_field(const char *lp_template,
 			    const char *in,
 			    fstring out)
 {
-	char *templ;
+	const char *templ;
+	char *result;
 
 	if (out == NULL)
 		return False;
 
-	/* The substitution of %U and %D in the 'template
-	   homedir' is done by talloc_sub_specified() below.
-	   If we have an in string (which means the value has already
-	   been set in the nss_info backend), then use that.
-	   Otherwise use the template value passed in. */
+	templ = lp_template;
 
 	if ((in != NULL) && (in[0] != '\0') && (lp_security() == SEC_ADS)) {
-		templ = talloc_sub_specified(talloc_tos(), in,
-					     username, grpname, domname,
-					     uid, gid);
-	} else {
-		templ = talloc_sub_specified(talloc_tos(), lp_template,
-					     username, grpname, domname,
-					     uid, gid);
+		/*
+		 * The backend has already filled in the required value. Use
+		 * that instead of the template.
+		 */
+		templ = in;
 	}
 
-	if (!templ)
+	result = talloc_sub_specified(talloc_tos(), templ,
+				      username, grpname, domname,
+				      uid, gid);
+	if (result == NULL) {
 		return False;
+	}
 
 	fstrcpy(out, templ);
-	TALLOC_FREE(templ);
+	TALLOC_FREE(result);
 
 	return True;
 
