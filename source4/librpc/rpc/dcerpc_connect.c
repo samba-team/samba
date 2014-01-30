@@ -605,6 +605,8 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	struct composite_context *ncacn_ip_tcp_req;
 	struct composite_context *ncacn_unix_req;
 	struct composite_context *ncalrpc_req;
+	enum dcerpc_transport_t transport;
+	uint32_t flags;
 
 	/* dcerpc pipe connect input parameters */
 	pc.pipe         = s->pipe;
@@ -614,10 +616,13 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	pc.creds        = s->credentials;
 	pc.resolve_ctx  = lpcfg_resolve_context(s->lp_ctx);
 
+	transport = dcerpc_binding_get_transport(s->binding);
+	flags = dcerpc_binding_get_flags(s->binding);
+
 	/* connect dcerpc pipe depending on required transport */
-	switch (s->binding->transport) {
+	switch (transport) {
 	case NCACN_NP:
-		if (pc.binding->flags & DCERPC_SMB2) {
+		if (flags & DCERPC_SMB2) {
 			/* new varient of SMB a.k.a. SMB2 */
 			ncacn_np_smb2_req = dcerpc_pipe_connect_ncacn_np_smb2_send(c, &pc, s->lp_ctx);
 			composite_continue(c, ncacn_np_smb2_req, continue_pipe_connect_ncacn_np_smb2, c);
@@ -805,6 +810,8 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 {
 	struct composite_context *c;
 	struct pipe_connect_state *s;
+	enum dcerpc_transport_t transport;
+	const char *endpoint = NULL;
 
 	/* composite context allocation and setup */
 	c = composite_create(parent_ctx, ev);
@@ -836,31 +843,27 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	tevent_add_timer(c->event_ctx, c,
 			 timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
 			 dcerpc_connect_timeout_handler, c);
-	
-	switch (s->binding->transport) {
-	case NCA_UNKNOWN: {
+
+	transport = dcerpc_binding_get_transport(s->binding);
+
+	switch (transport) {
+	case NCACN_NP:
+	case NCACN_IP_TCP:
+	case NCALRPC:
+		endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
+		break;
+	default:
+		break;
+	}
+
+	if (endpoint == NULL) {
 		struct composite_context *binding_req;
+
 		binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
 							  s->pipe->conn->event_ctx,
 							  s->lp_ctx);
 		composite_continue(c, binding_req, continue_map_binding, c);
 		return c;
-		}
-
-	case NCACN_NP:
-	case NCACN_IP_TCP:
-	case NCALRPC:
-		if (!s->binding->endpoint) {
-			struct composite_context *binding_req;
-			binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
-								  s->pipe->conn->event_ctx,
-								  s->lp_ctx);
-			composite_continue(c, binding_req, continue_map_binding, c);
-			return c;
-		}
-
-	default:
-		break;
 	}
 
 	continue_connect(c, s);
