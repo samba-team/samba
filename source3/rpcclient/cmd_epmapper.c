@@ -50,7 +50,13 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 		goto done;
 	}
 
-	map_binding->object = abstract_syntax;
+	status = dcerpc_binding_set_abstract_syntax(map_binding,
+						    &abstract_syntax);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "dcerpc_binding_set_abstract_syntax returned %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
 
 	status = dcerpc_binding_build_tower(tmp_ctx, map_binding,
 					    &map_tower.tower);
