@@ -2531,6 +2531,8 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	struct pipe_auth_data *auth = NULL;
 	struct dcerpc_binding *map_binding = NULL;
 	struct dcerpc_binding *res_binding = NULL;
+	enum dcerpc_transport_t transport;
+	const char *endpoint = NULL;
 	struct epm_twr_t *map_tower = NULL;
 	struct epm_twr_t *res_towers = NULL;
 	struct policy_handle *entry_handle = NULL;
@@ -2574,16 +2576,17 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* create tower for asking the epmapper */
 
-	map_binding = talloc_zero(tmp_ctx, struct dcerpc_binding);
-	if (map_binding == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+	status = dcerpc_parse_binding(tmp_ctx, "ncacn_ip_tcp:[135]",
+				      &map_binding);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	map_binding->transport = NCACN_IP_TCP;
-	map_binding->object = table->syntax_id;
-	map_binding->host = NULL;
-	map_binding->endpoint = "135";
+	status = dcerpc_binding_set_abstract_syntax(map_binding,
+						    &table->syntax_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
 	if (map_tower == NULL) {
@@ -2648,13 +2651,21 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 		goto done;
 	}
 
+	transport = dcerpc_binding_get_transport(res_binding);
+	endpoint = dcerpc_binding_get_string_option(res_binding, "endpoint");
+
 	/* are further checks here necessary? */
-	if (res_binding->transport != NCACN_IP_TCP) {
-		status = NT_STATUS_UNSUCCESSFUL;
+	if (transport != NCACN_IP_TCP) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto done;
 	}
 
-	*pport = (uint16_t)atoi(res_binding->endpoint);
+	if (endpoint == NULL) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+
+	*pport = (uint16_t)atoi(endpoint);
 
 done:
 	TALLOC_FREE(tmp_ctx);
