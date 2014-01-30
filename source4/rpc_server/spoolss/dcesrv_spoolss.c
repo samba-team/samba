@@ -1156,6 +1156,7 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 		       struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
 	struct dcerpc_pipe *p;
+	char *binding_string;
 	struct dcerpc_binding *binding;
 	NTSTATUS status;
 	struct spoolss_ReplyOpenPrinter rop;
@@ -1171,12 +1172,20 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	 *       and the torture suite passing
 	 */
 
-	binding = talloc_zero(mem_ctx, struct dcerpc_binding);
-
-	binding->transport = NCACN_NP; 
-	if (strncmp(r->in.local_machine, "\\\\", 2))
+	if (strncmp(r->in.local_machine, "\\\\", 2)) {
 		return WERR_INVALID_COMPUTERNAME;
-	binding->host = r->in.local_machine+2;
+	}
+
+	binding_string = talloc_asprintf(mem_ctx, "ncacn_np:%s",
+					 r->in.local_machine+2);
+	if (binding_string == NULL) {
+		return WERR_NOMEM;
+	}
+
+	status = dcerpc_parse_binding(mem_ctx, binding_string, &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 
 	creds = cli_credentials_init_anon(mem_ctx); /* FIXME: Use machine credentials instead ? */
 
