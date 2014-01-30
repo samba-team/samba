@@ -53,7 +53,7 @@ static void count_records(TDB_DATA key, TDB_DATA data, void *_wd)
 	struct walk_data *wd = _wd;
 
 	if (!tdb_deq(key, wd->key) || !tdb_deq(data, wd->data))
-		diag("%.*s::%.*s\n",
+		diag("%.*s::%.*s",
 		     (int)key.dsize, key.dptr, (int)data.dsize, data.dptr);
 	wd->count++;
 }

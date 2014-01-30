@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 	unlock_callback = after_unlock;
 	for (i = 0; i < sizeof(flags)/sizeof(flags[0]); i++) {
 		clear_if_first = (flags[i] & TDB_CLEAR_IF_FIRST);
-		diag("Test with %s and %s\n",
+		diag("Test with %s and %s",
 		     clear_if_first ? "CLEAR" : "DEFAULT",
 		     (flags[i] & TDB_NOMMAP) ? "no mmap" : "mmap");
 		unlink(TEST_DBNAME);
