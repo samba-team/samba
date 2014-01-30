@@ -50,7 +50,6 @@ static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_map *ids;
-	struct composite_context *ctx;
 
 	DEBUG(5, ("dcesrv_unixinfo_SidToUid called\n"));
 
@@ -60,10 +59,7 @@ static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 	ids->sid = &r->in.sid;
 	ids->status = ID_UNKNOWN;
 	ZERO_STRUCT(ids->xid);
-	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, 1, ids);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	status = wbc_sids_to_xids_recv(ctx, &ids);
+	status = wbc_sids_to_xids(wbc_ctx->event_ctx, ids, 1);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (ids->xid.type == ID_TYPE_BOTH ||
@@ -123,7 +119,6 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_map *ids;
-	struct composite_context *ctx;
 
 	DEBUG(5, ("dcesrv_unixinfo_SidToGid called\n"));
 
@@ -133,10 +128,7 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 	ids->sid = &r->in.sid;
 	ids->status = ID_UNKNOWN;
 	ZERO_STRUCT(ids->xid);
-	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, 1, ids);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	status = wbc_sids_to_xids_recv(ctx, &ids);
+	status = wbc_sids_to_xids(wbc_ctx->event_ctx, ids, 1);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (ids->xid.type == ID_TYPE_BOTH ||
