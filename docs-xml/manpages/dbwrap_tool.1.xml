@@ -30,9 +30,7 @@
 		<arg choice="req">&lt;operation&gt;</arg>
 		<arg choice="opt">&lt;key&gt;
 			<arg choice="opt">&lt;type&gt;
-				<arg choice="opt">&lt;value&gt;</arg>
-			</arg>
-		</arg>
+				<arg choice="opt">&lt;value&gt;</arg></arg></arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
