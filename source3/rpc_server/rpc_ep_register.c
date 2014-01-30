@@ -171,7 +171,7 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 	struct rpc_ep_register_state *state =
 		tevent_req_callback_data(subreq, struct rpc_ep_register_state);
 	struct policy_handle entry_handle;
-	struct dcerpc_binding map_binding;
+	struct dcerpc_binding *map_binding;
 	struct epm_twr_p_t towers[10];
 	struct epm_twr_t *map_tower;
 	uint32_t num_towers = 0;
@@ -199,11 +199,14 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 	}
 
 	/* Create map tower */
-	ZERO_STRUCT(map_binding);
-	map_binding.transport = NCACN_NP;
-	map_binding.object = state->iface->syntax_id;
-	map_binding.host = "";
-	map_binding.endpoint = "";
+	status = dcerpc_parse_binding(tmp_ctx, "ncacn_np:", &map_binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		talloc_free(state);
+		return;
+	}
+
+	map_binding->object = state->iface->syntax_id;
 
 	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
 	if (map_tower == NULL) {
@@ -212,7 +215,7 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 		return;
 	}
 
-	status = dcerpc_binding_build_tower(map_tower, &map_binding,
+	status = dcerpc_binding_build_tower(map_tower, map_binding,
 					    &map_tower->tower);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
