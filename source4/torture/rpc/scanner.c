@@ -122,11 +122,13 @@ bool torture_rpc_scanner(struct torture_context *torture)
 	bool ret = true;
 	const struct ndr_interface_list *l;
 	struct dcerpc_binding *b;
+	enum dcerpc_transport_t transport;
 
 	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+	transport = dcerpc_binding_get_transport(b);
 
 	for (l=ndr_table_list();l;l=l->next) {		
 		loop_ctx = talloc_named(torture, 0, "torture_rpc_scanner loop context");
@@ -139,7 +141,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
 
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
-		if (b->transport == NCACN_IP_TCP) {
+		if (transport == NCACN_IP_TCP) {
 			status = dcerpc_epm_map_binding(torture, b, l->table,
 							torture->ev,
 							torture->lp_ctx);

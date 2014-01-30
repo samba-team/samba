@@ -426,8 +426,9 @@ static bool test_schannel(struct torture_context *tctx,
 		"Failed to process schannel secured NETLOGON EX ops");
 
 	/* we *MUST* use ncacn_np for openpolicy etc. */
-	transport = b->transport;
-	b->transport = NCACN_NP;
+	transport = dcerpc_binding_get_transport(b);
+	status = dcerpc_binding_set_transport(b, NCACN_NP);
+	torture_assert_ntstatus_ok(tctx, status, "set transport");
 
 	/* Swap the binding details from SAMR to LSARPC */
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
@@ -444,11 +445,9 @@ static bool test_schannel(struct torture_context *tctx,
 	talloc_free(p_lsa);
 	p_lsa = NULL;
 
-	b->transport = transport;
-
 	/* we *MUST* use ncacn_ip_tcp for lookupsids3/lookupnames4 */
-	transport = b->transport;
-	b->transport = NCACN_IP_TCP;
+	status = dcerpc_binding_set_transport(b, NCACN_IP_TCP);
+	torture_assert_ntstatus_ok(tctx, status, "set transport");
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx),
@@ -463,7 +462,9 @@ static bool test_schannel(struct torture_context *tctx,
 		test_many_LookupSids(p_lsa, tctx, NULL),
 		"LsaLookupSids3 failed!\n");
 
-	b->transport = transport;
+	status = dcerpc_binding_set_transport(b, transport);
+	torture_assert_ntstatus_ok(tctx, status, "set transport");
+
 
 	/* Drop the socket, we want to start from scratch */
 	talloc_free(p);

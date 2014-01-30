@@ -221,15 +221,16 @@ bool torture_rpc_lsa_lookup(struct torture_context *torture)
 	struct dom_sid *trusted_sid = NULL;
 	struct dom_sid *sids[NUM_SIDS];
 	struct dcerpc_binding_handle *b;
+	enum dcerpc_transport_t transport;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_fail(torture, "unable to connect to table");
 	}
 	b = p->binding_handle;
+	transport = dcerpc_binding_get_transport(p->binding);
 
-	if (p->binding->transport != NCACN_NP &&
-	    p->binding->transport != NCALRPC) {
+	if (transport != NCACN_NP && transport != NCALRPC) {
 		torture_comment(torture,
 				"torture_rpc_lsa_lookup is only available "
 				"over NCACN_NP or NCALRPC");
@@ -343,9 +344,9 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 	const char *dom_sid = "S-1-5-21-1111111111-2222222222-3333333333";
 	const char *dom_admin_sid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(p->binding);
 
-	if (p->binding->transport != NCACN_NP &&
-	    p->binding->transport != NCALRPC) {
+	if (transport != NCACN_NP && transport != NCALRPC) {
 		torture_comment(tctx,
 				"test_LookupSidsReply is only available "
 				"over NCACN_NP or NCALRPC");
