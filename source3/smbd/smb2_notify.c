@@ -28,6 +28,8 @@
 struct smbd_smb2_notify_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smbreq;
+	bool has_request;
+	bool skip_reply;
 	NTSTATUS status;
 	DATA_BLOB out_output_buffer;
 };
@@ -160,6 +162,44 @@ static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 				   uint8_t *buf, size_t len);
 static bool smbd_smb2_notify_cancel(struct tevent_req *req);
 
+static int smbd_smb2_notify_state_destructor(struct smbd_smb2_notify_state *state)
+{
+	if (!state->has_request) {
+		return 0;
+	}
+
+	state->skip_reply = true;
+	smbd_notify_cancel_by_smbreq(state->smbreq);
+	return 0;
+}
+
+static int smbd_smb2_notify_smbreq_destructor(struct smb_request *smbreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(smbreq->async_priv,
+						       struct tevent_req);
+	struct smbd_smb2_notify_state *state = tevent_req_data(req,
+					       struct smbd_smb2_notify_state);
+
+	/*
+	 * Our temporary parent from change_notify_add_request()
+	 * goes away.
+	 */
+	state->has_request = false;
+
+	/*
+	 * move it back to its original parent,
+	 * which means we no longer need the destructor
+	 * to protect it.
+	 */
+	talloc_steal(smbreq->smb2req, smbreq);
+	talloc_set_destructor(smbreq, NULL);
+
+	/*
+	 * We want to keep smbreq!
+	 */
+	return -1;
+}
+
 static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct smbd_smb2_request *smb2req,
@@ -183,6 +223,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 	state->smb2req = smb2req;
 	state->status = NT_STATUS_INTERNAL_ERROR;
 	state->out_output_buffer = data_blob_null;
+	talloc_set_destructor(state, smbd_smb2_notify_state_destructor);
 
 	DEBUG(10,("smbd_smb2_notify_send: %s - %s\n",
 		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
@@ -266,6 +307,16 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * This is a HACK!
+	 *
+	 * change_notify_add_request() talloc_moves()
+	 * smbreq away from us, so we need a destructor
+	 * which moves it back at the end.
+	 */
+	state->has_request = true;
+	talloc_set_destructor(smbreq, smbd_smb2_notify_smbreq_destructor);
+
 	/* allow this request to be canceled */
 	tevent_req_set_cancel_fn(req, smbd_smb2_notify_cancel);
 
@@ -280,6 +331,10 @@ static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 						       struct tevent_req);
 	struct smbd_smb2_notify_state *state = tevent_req_data(req,
 					       struct smbd_smb2_notify_state);
+
+	if (state->skip_reply) {
+		return;
+	}
 
 	state->status = error_code;
 	if (!NT_STATUS_IS_OK(error_code)) {
