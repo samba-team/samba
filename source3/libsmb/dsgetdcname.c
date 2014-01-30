@@ -876,8 +876,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_dcs; i++) {
 
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr), &dclist[i].ss);
 
-		DEBUG(10,("LDAP ping to %s\n", dclist[i].hostname));
+		DEBUG(10,("LDAP ping to %s (%s)\n", dclist[i].hostname, addr));
 
 		if (ads_cldap_netlogon(mem_ctx, &dclist[i].ss,
 					domain_name,
