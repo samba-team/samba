@@ -354,24 +354,37 @@ const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
 	/* Find one of the default pipes for this interface */
 
 	for (i = 0; i < table->endpoints->count; i++) {
+		enum dcerpc_transport_t dtransport;
+		const char *dendpoint;
 
 		status = dcerpc_parse_binding(frame, table->endpoints->names[i],
 					      &default_binding);
-		if (NT_STATUS_IS_OK(status)) {
-			if (transport == NCA_UNKNOWN &&
-			    default_binding->endpoint != NULL) {
-				p = default_binding->endpoint;
-				break;
-			}
-			if (default_binding->transport == transport &&
-			    default_binding->endpoint != NULL) {
-				p = default_binding->endpoint;
-				break;
-			}
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
 		}
+
+		dtransport = dcerpc_binding_get_transport(default_binding);
+		dendpoint = dcerpc_binding_get_string_option(default_binding,
+							     "endpoint");
+		if (dendpoint == NULL) {
+			TALLOC_FREE(default_binding);
+			continue;
+		}
+
+		if (transport == NCA_UNKNOWN) {
+			transport = dtransport;
+		}
+
+		if (transport != dtransport) {
+			TALLOC_FREE(default_binding);
+			continue;
+		}
+
+		p = dendpoint;
+		break;
 	}
 
-	if (i == table->endpoints->count || p == NULL) {
+	if (p == NULL) {
 		goto done;
 	}
 
@@ -379,7 +392,7 @@ const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
 	 * extract the pipe name without \\pipe from for example
 	 * ncacn_np:[\\pipe\\epmapper]
 	 */
-	if (default_binding->transport == NCACN_NP) {
+	if (transport == NCACN_NP) {
 		if (strncasecmp(p, "\\pipe\\", 6) == 0) {
 			p += 6;
 		}
