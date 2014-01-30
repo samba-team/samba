@@ -170,7 +170,6 @@ def configure(conf):
     if not conf.CHECK_CODE('#include "tests/summary.c"',
                            define='SUMMARY_PASSES',
                            addmain=False,
-                           execute=True,
                            msg='Checking configure summary'):
         raise Utils.WafError('configure summary failed')
     
