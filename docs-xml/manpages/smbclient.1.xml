@@ -357,144 +357,142 @@
 		<term>-T|--tar tar options</term>
 		<listitem><para>smbclient may be used to create <command>tar(1)
 		</command> compatible backups of all the files on an SMB/CIFS
-		share. The secondary tar flags that can be given to this option 
-		are : </para>
-		
+		share. The secondary tar flags that can be given to this option
+		are:</para>
+
 		<itemizedlist>
-			<listitem><para><parameter>c</parameter> - Create a tar file on UNIX. 
-			Must be followed by the name of a tar file, tape device
-			or "-" for standard output. If using standard output you must 
-			turn the log level to its lowest value -d0 to avoid corrupting 
-			your tar file. This flag is mutually exclusive with the 
+			<listitem><para><parameter>c</parameter> - Create a tar
+			backup archive on the local system.	 Must be followed by
+			the name of a tar file, tape device or "-" for standard
+			output. If using standard output you must turn the log
+			level to its lowest value -d0 to avoid corrupting your tar
+			file. This flag is mutually exclusive with the
 			<parameter>x</parameter> flag. </para></listitem>
-			
-			<listitem><para><parameter>x</parameter> - Extract (restore) a local 
-			tar file back to a share. Unless the -D option is given, the tar 
-			files will be restored from the top level of the share. Must be 
-			followed by the name of the tar file, device or "-" for standard 
-			input. Mutually exclusive with the <parameter>c</parameter> flag. 
+
+			<listitem><para><parameter>x</parameter> - Extract (restore) a local
+			tar file back to a share. Unless the -D option is given, the tar
+			files will be restored from the top level of the share. Must be
+			followed by the name of the tar file, device or "-" for standard
+			input. Mutually exclusive with the <parameter>c</parameter> flag.
 			Restored files have their creation times (mtime) set to the
-			date saved in the tar file. Directories currently do not get 
+			date saved in the tar file. Directories currently do not get
 			their creation dates restored properly. </para></listitem>
-			
-			<listitem><para><parameter>I</parameter> - Include files and directories. 
-			Is the default behavior when filenames are specified above. Causes 
-			files to be included in an extract or create (and therefore 
-			everything else to be excluded). See example below.  Filename globbing 
-			works  in one of two ways.  See <parameter>r</parameter> below. </para></listitem>
-			
-			<listitem><para><parameter>X</parameter> - Exclude files and directories. 
-			Causes files to be excluded from an extract or create. See 
-			example below.  Filename globbing works in one of two ways now. 
+
+			<listitem><para><parameter>I</parameter> - Include files and directories.
+			Is the default behavior when filenames are specified above. Causes
+			files to be included in an extract or create (and therefore
+			everything else to be excluded). See example below.	 Filename globbing
+			works  in one of two ways.	See <parameter>r</parameter> below. </para></listitem>
+
+			<listitem><para><parameter>X</parameter> - Exclude files and directories.
+			Causes files to be excluded from an extract or create. See
+			example below.	Filename globbing works in one of two ways.
 			See <parameter>r</parameter> below. </para></listitem>
-			
+
 			<listitem><para><parameter>F</parameter> - File containing a list of files and directories.
 			The <parameter>F</parameter> causes the name following the tarfile to
-			create to be read as a filename that contains a list of files and directories to 
+			create to be read as a filename that contains a list of files and directories to
 			be included in an extract or create (and therefore everything else to be excluded).
 			See example below. Filename globbing works in one of two ways.
 			See <parameter>r</parameter> below.
 			</para></listitem>
-			
-			<listitem><para><parameter>b</parameter> - Blocksize. Must be followed 
-			by a valid (greater than zero) blocksize.  Causes tar file to be 
-			written out in blocksize*TBLOCK (usually 512 byte) blocks. 
+
+			<listitem><para><parameter>b</parameter> - Blocksize. Must be followed
+			by a valid (greater than zero) blocksize.  Causes tar file to be
+			written out in blocksize*TBLOCK (512 byte) blocks.
 			</para></listitem>
-			
-			<listitem><para><parameter>g</parameter> - Incremental. Only back up 
-			files that have the archive bit set. Useful only with the 
+
+			<listitem><para><parameter>g</parameter> - Incremental. Only back up
+			files that have the archive bit set. Useful only with the
 			<parameter>c</parameter> flag. </para></listitem>
 
-			<listitem><para><parameter>q</parameter> - Quiet. Keeps tar from printing 
-			diagnostics as it works.  This is the same as tarmode quiet. 
+			<listitem><para><parameter>q</parameter> - Quiet. Keeps tar from printing
+			diagnostics as it works.  This is the same as tarmode quiet.
 			</para></listitem>
-			
-			<listitem><para><parameter>r</parameter> - Regular expression include
-			or exclude.  Uses regular  expression matching for 
-			excluding or excluding files if  compiled with HAVE_REGEX_H. 
-			However this mode can be very slow. If  not compiled with 
-			HAVE_REGEX_H, does a limited wildcard match on '*' and  '?'. 
+
+			<listitem><para><parameter>r</parameter> - Use wildcard
+			matching to include or exclude. Deprecated.
 			</para></listitem>
-			
-			<listitem><para><parameter>N</parameter> - Newer than. Must be followed 
-			by the name of a file whose date is compared against files found 
-			on the share during a create. Only files newer than the file 
-			specified are backed up to the tar file. Useful only with the 
+
+			<listitem><para><parameter>N</parameter> - Newer than. Must be followed
+			by the name of a file whose date is compared against files found
+			on the share during a create. Only files newer than the file
+			specified are backed up to the tar file. Useful only with the
 			<parameter>c</parameter> flag. </para></listitem>
-			
-			<listitem><para><parameter>a</parameter> - Set archive bit. Causes the 
-			archive bit to be reset when a file is backed up. Useful with the 
-			<parameter>g</parameter> and <parameter>c</parameter> flags. 
+
+			<listitem><para><parameter>a</parameter> - Set archive bit. Causes the
+			archive bit to be reset when a file is backed up. Useful with the
+			<parameter>g</parameter> and <parameter>c</parameter> flags.
 			</para></listitem>
 		</itemizedlist>
-			
+
 		<para><emphasis>Tar Long File Names</emphasis></para>
-			
-		<para><command>smbclient</command>'s tar option now supports long 
-		file names both on backup and restore. However, the full path 
-		name of the file must be less than 1024 bytes.  Also, when
-		a tar archive is created, <command>smbclient</command>'s tar option places all 
-		files in the archive with relative names, not absolute names. 
+
+		<para><command>smbclient</command>'s tar option now supports long
+		file names both on backup and restore. However, the full path
+		name of the file must be less than 1024 bytes.	Also, when
+		a tar archive is created, <command>smbclient</command>'s tar option places all
+		files in the archive with relative names, not absolute names.
 		</para>
 
 		<para><emphasis>Tar Filenames</emphasis></para>
-			
-		<para>All file names can be given as DOS path names (with '\\' 
-		as the component separator) or as UNIX path names (with '/' as 
+
+		<para>All file names can be given as DOS path names (with '\\'
+		as the component separator) or as UNIX path names (with '/' as
 		the component separator). </para>
-			
+
 		<para><emphasis>Examples</emphasis></para>
-		
-		<para>Restore from tar file <filename>backup.tar</filename> into myshare on mypc 
+
+		<para>Restore from tar file <filename>backup.tar</filename> into myshare on mypc
 		(no password on share). </para>
-		
+
 		<para><command>smbclient //mypc/myshare "" -N -Tx backup.tar
 		</command></para>
-		
+
 		<para>Restore everything except <filename>users/docs</filename>
 		</para>
-		
-		<para><command>smbclient //mypc/myshare "" -N -TXx backup.tar 
+
+		<para><command>smbclient //mypc/myshare "" -N -TXx backup.tar
 		users/docs</command></para>
-		
+
 		<para>Create a tar file of the files beneath <filename>
 		users/docs</filename>. </para>
-		
+
 		<para><command>smbclient //mypc/myshare "" -N -Tc
 		backup.tar users/docs </command></para>
-		
-		<para>Create the same tar file as above, but now use 
+
+		<para>Create the same tar file as above, but now use
 		a DOS path name. </para>
-		
+
 		<para><command>smbclient //mypc/myshare "" -N -Tc backup.tar
 		users\edocs </command></para>
-		
+
 		<para>Create a tar file of the files listed in the file <filename>tarlist</filename>.</para>
-		
+
 		<para><command>smbclient //mypc/myshare "" -N -TcF
 		backup.tar tarlist</command></para>
-		
-		<para>Create a tar file of all the files and directories in 
+
+		<para>Create a tar file of all the files and directories in
 		the share. </para>
-		
+
 		<para><command>smbclient //mypc/myshare "" -N -Tc backup.tar *
 		</command></para>
 		</listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-D|--directory initial directory</term>
-		<listitem><para>Change to initial directory before starting. Probably 
+		<listitem><para>Change to initial directory before starting. Probably
 		only of any use with the tar -T option. </para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-c|--command command string</term>
-		<listitem><para>command string is a semicolon-separated list of 
+		<listitem><para>command string is a semicolon-separated list of
 		commands to be executed instead of prompting from stdin. <parameter>
 		-N</parameter> is implied by <parameter>-c</parameter>.</para>
 
-		<para>This is particularly useful in scripts and for printing stdin 
+		<para>This is particularly useful in scripts and for printing stdin
 		to the server, e.g. <command>-c 'print -'</command>. </para></listitem>
 		</varlistentry>
 
@@ -1038,29 +1036,44 @@
 
 		<varlistentry>
 		<term>tar &lt;c|x&gt;[IXbgNa]</term>
-		<listitem><para>Performs a tar operation - see the <parameter>-T
-		</parameter> command line option above. Behavior may be affected
-		by the tarmode command (see below). Using g (incremental) and N
-		(newer) will affect tarmode settings. Note that using the "-" option
-		with tar x may not work - use the command line option instead.
-		</para></listitem>
+		<listitem><para>Performs a tar operation - see the
+		<parameter>-T</parameter> command line option above. Behavior
+		may be affected by the tarmode command (see below). Using g
+		(incremental) and N (newer) will affect tarmode settings. Note
+		that using the "-" option with tar x may not work - use the
+		command line option instead.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>blocksize &lt;blocksize&gt;</term>
 		<listitem><para>Blocksize. Must be followed by a valid (greater
 		than zero) blocksize. Causes tar file to be written out in
-		<replaceable>blocksize</replaceable>*TBLOCK (usually 512 byte) blocks. </para></listitem>
+		<replaceable>blocksize</replaceable>*TBLOCK (512 byte) blocks. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>tarmode &lt;full|inc|reset|noreset&gt;</term>
-		<listitem><para>Changes tar's behavior with regard to archive
-		bits. In full mode, tar will back up everything regardless of the
-		archive bit setting (this is the default mode). In incremental mode,
-		tar will only back up files with the archive bit set. In reset mode,
-		tar will reset the archive bit on all files it backs up (implies
-		read/write share). </para></listitem>
+		<term>tarmode &lt;full|inc|reset|noreset|system|nosystem|hidden|nohidden&gt;</term>
+		<listitem><para>Changes tar's behavior with regard to DOS
+		attributes. There are 4 modes which can be turned on or
+		off.</para>
+
+		<para>Incremental mode (default off). When off (using
+		<command>full</command>) tar will back up everything
+		regardless of the <emphasis>archive</emphasis> bit
+		setting. When on (using <command>inc</command>), tar will only
+		back up files with the archive bit set.</para>
+
+		<para>Reset mode (default off). When on (using
+		<command>reset</command>), tar will remove the archive bit on
+		all files it backs up (implies read/write share). Use
+		<command>noreset</command> to turn off.</para>
+
+		<para>System mode (default on). When off, tar will not backup
+		system files. Use <command>nosystem</command> to turn off.</para>
+
+		<para>Hidden mode (default on). When off, tar will not backup
+		hidden files. Use <command>nohidden</command> to turn off.</para>
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
