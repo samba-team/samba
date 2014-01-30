@@ -939,6 +939,8 @@ out_free:
 	TALLOC_CTX *frame = talloc_stackframe();
 	uint32_t flags = 0;
 	struct dcerpc_binding *binding = NULL;
+	enum dcerpc_transport_t transport;
+	uint32_t bflags = 0;
 	const char *binding_string = NULL;
 	char *user, *domain, *q;
 
@@ -1063,34 +1065,41 @@ out_free:
 		}
 	}
 
-	if (binding->transport == NCA_UNKNOWN) {
-		binding->transport = NCACN_NP;
+	transport = dcerpc_binding_get_transport(binding);
+
+	if (transport == NCA_UNKNOWN) {
+		nt_status = dcerpc_binding_set_transport(binding, NCACN_NP);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			result = -1;
+			goto done;
+		}
 	}
 
-	if (binding->flags & DCERPC_CONNECT) {
+	bflags = dcerpc_binding_get_flags(binding);
+	if (bflags & DCERPC_CONNECT) {
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	}
-	if (binding->flags & DCERPC_SIGN) {
+	if (bflags & DCERPC_SIGN) {
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	}
-	if (binding->flags & DCERPC_SEAL) {
+	if (bflags & DCERPC_SEAL) {
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	}
-	if (binding->flags & DCERPC_AUTH_SPNEGO) {
+	if (bflags & DCERPC_AUTH_SPNEGO) {
 		pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 		pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 	}
-	if (binding->flags & DCERPC_AUTH_NTLM) {
+	if (bflags & DCERPC_AUTH_NTLM) {
 		if (pipe_default_auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
 			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 		} else {
 			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		}
 	}
-	if (binding->flags & DCERPC_AUTH_KRB5) {
+	if (bflags & DCERPC_AUTH_KRB5) {
 		if (pipe_default_auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
 			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
 		} else {
@@ -1169,7 +1178,7 @@ out_free:
 		cmd_set++;
 	}
 
-	default_transport = binding->transport;
+	default_transport = dcerpc_binding_get_transport(binding);
 
 	fetch_machine_sid(cli);
 
