@@ -2582,8 +2582,8 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	map_binding->transport = NCACN_IP_TCP;
 	map_binding->object = table->syntax_id;
-	map_binding->host = host; /* needed? */
-	map_binding->endpoint = "0"; /* correct? needed? */
+	map_binding->host = NULL;
+	map_binding->endpoint = "135";
 
 	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
 	if (map_tower == NULL) {
