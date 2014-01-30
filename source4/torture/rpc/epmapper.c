@@ -267,17 +267,18 @@ static bool test_Map_full(struct torture_context *tctx,
 
 static bool test_Map_display(struct dcerpc_binding_handle *b,
 			     struct torture_context *tctx,
-			     struct epm_twr_t *twr)
+			     struct epm_entry_t *entry)
+
 {
 	NTSTATUS status;
+	struct epm_twr_t *twr = entry->tower;
 	struct epm_Map r;
-	struct GUID uuid;
+	struct GUID uuid = entry->object;
 	struct policy_handle handle;
 	struct ndr_syntax_id syntax;
 	uint32_t num_towers;
 	uint32_t i;
 
-	ZERO_STRUCT(uuid);
 	ZERO_STRUCT(handle);
 
 	r.in.object = &uuid;
@@ -292,6 +293,15 @@ static bool test_Map_display(struct dcerpc_binding_handle *b,
 	torture_comment(tctx,
 			"epm_Map results for '%s':\n",
 			ndr_interface_name(&syntax.uuid, syntax.if_version));
+
+	status = dcerpc_epm_Map_r(b, tctx, &r);
+	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
+		for (i=0;i<*r.out.num_towers;i++) {
+			if (r.out.towers[i].twr) {
+				display_tower(tctx, &r.out.towers[i].twr->tower);
+			}
+		}
+	}
 
 	/* RPC protocol identifier */
 	twr->tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
@@ -332,7 +342,7 @@ static bool test_Map_display(struct dcerpc_binding_handle *b,
 
 	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_UDP;
 	twr->tower.floors[3].lhs.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[3].rhs.http.port = 0;
+	twr->tower.floors[3].rhs.udp.port = 0;
 
 	status = dcerpc_epm_Map_r(b, tctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
@@ -401,7 +411,7 @@ static bool test_Map_simple(struct torture_context *tctx,
 
 		for (i = 0; i < *r.out.num_ents; i++) {
 			if (r.out.entries[i].tower->tower.num_floors == 5) {
-				test_Map_display(h, tctx, r.out.entries[i].tower);
+				test_Map_display(h, tctx, &r.out.entries[i]);
 			}
 		}
 	} while (NT_STATUS_IS_OK(status) &&
