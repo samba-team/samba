@@ -31,9 +31,27 @@
 #endif
 
 #define plan_tests(num)
-#define ok(e, ...) do { if (e) { (void)printf("."); } else { fprintf(stderr, __VA_ARGS__); exit(1); } } while(0)
+#define fail(...) do { \
+	fprintf(stderr, __VA_ARGS__); \
+	fprintf(stdout, "\n"); \
+	fflush(stderr); \
+	exit(1); \
+} while(0)
+#define diag(...) do { \
+	fprintf(stdout, __VA_ARGS__); \
+	fprintf(stdout, "\n"); \
+	fflush(stdout); \
+} while(0)
+#define pass(...) do { \
+	fprintf(stdout, "."); \
+	fflush(stdout); \
+} while(0)
+#define ok(e, ...) do { \
+	if (e) { \
+		pass(); \
+	} else { \
+		fail(__VA_ARGS__); \
+	} \
+} while(0)
 #define ok1(e) ok((e), "%s:%s", __location__, #e)
-#define pass(...) printf(".")
-#define fail(...) do { fprintf(stderr, __VA_ARGS__); exit(1); } while(0)
-#define diag printf
 #define exit_status() 0
