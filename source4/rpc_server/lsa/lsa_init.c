@@ -154,7 +154,8 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct lsa_OpenPolicy2 *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	NTSTATUS status;
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *handle;
@@ -203,7 +204,8 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 NTSTATUS dcesrv_lsa_OpenPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct lsa_OpenPolicy *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct lsa_OpenPolicy2 r2;
 
 	if (transport != NCACN_NP && transport != NCALRPC) {

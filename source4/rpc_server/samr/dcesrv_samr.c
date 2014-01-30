@@ -4296,7 +4296,8 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 	DATA_BLOB password;
 	enum samr_ValidationStatus res;
 	NTSTATUS status;
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 
 	if (transport != NCACN_IP_TCP && transport != NCALRPC) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);

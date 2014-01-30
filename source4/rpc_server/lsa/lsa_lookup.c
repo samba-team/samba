@@ -686,7 +686,8 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_LookupSids2 *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
 
@@ -715,7 +716,8 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_LookupSids3 *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
 	struct lsa_policy_state *policy_state;
 	struct lsa_LookupSids2 q;
@@ -773,7 +775,8 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			       struct lsa_LookupSids *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct lsa_LookupSids2 r2;
 	NTSTATUS status;
 	uint32_t i;
@@ -911,7 +914,8 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 				 TALLOC_CTX *mem_ctx,
 				 struct lsa_LookupNames3 *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct lsa_policy_state *policy_state;
 	struct dcesrv_handle *policy_handle;
 
@@ -938,7 +942,8 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct lsa_LookupNames4 *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
 	struct lsa_policy_state *policy_state;
 	struct lsa_LookupNames3 q;
@@ -998,7 +1003,8 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 				 TALLOC_CTX *mem_ctx,
 				 struct lsa_LookupNames2 *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
 	uint32_t i;
@@ -1093,7 +1099,8 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_LookupNames *r)
 {
-	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct lsa_LookupNames2 r2;
 	NTSTATUS status;
 	uint32_t i;

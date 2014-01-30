@@ -1471,6 +1471,8 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	NTSTATUS status;
 	struct dcesrv_socket_context *dcesrv_sock = 
 		talloc_get_type(srv_conn->private_data, struct dcesrv_socket_context);
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dcesrv_sock->endpoint->ep_description);
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	int ret;
 	struct tevent_req *subreq;
@@ -1520,7 +1522,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 		return;
 	}
 
-	if (dcesrv_sock->endpoint->ep_description->transport == NCACN_NP) {
+	if (transport == NCACN_NP) {
 		dcesrv_conn->auth_state.session_key = dcesrv_inherited_session_key;
 		dcesrv_conn->stream = talloc_move(dcesrv_conn,
 						  &srv_conn->tstream);
@@ -1842,7 +1844,10 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
 		       struct tevent_context *event_ctx,
 		       const struct model_ops *model_ops)
 {
-	switch (e->ep_description->transport) {
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(e->ep_description);
+
+	switch (transport) {
 	case NCACN_UNIX_STREAM:
 		return dcesrv_add_ep_unix(dce_ctx, lp_ctx, e, event_ctx, model_ops);
 
