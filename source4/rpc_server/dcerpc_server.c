@@ -127,16 +127,28 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_new(TALLOC_CTX *mem_ctx,
 static bool endpoints_match(const struct dcerpc_binding *ep1,
 			    const struct dcerpc_binding *ep2)
 {
-	if (ep1->transport != ep2->transport) {
+	enum dcerpc_transport_t t1;
+	enum dcerpc_transport_t t2;
+	const char *e1;
+	const char *e2;
+
+	t1 = dcerpc_binding_get_transport(ep1);
+	t2 = dcerpc_binding_get_transport(ep2);
+
+	e1 = dcerpc_binding_get_string_option(ep1, "endpoint");
+	e2 = dcerpc_binding_get_string_option(ep2, "endpoint");
+
+	if (t1 != t2) {
 		return false;
 	}
 
-	if (!ep1->endpoint || !ep2->endpoint) {
-		return ep1->endpoint == ep2->endpoint;
+	if (!e1 || !e2) {
+		return e1 == e2;
 	}
 
-	if (strcasecmp(ep1->endpoint, ep2->endpoint) != 0) 
+	if (strcasecmp(e1, e2) != 0) {
 		return false;
+	}
 
 	return true;
 }
