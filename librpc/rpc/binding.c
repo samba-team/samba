@@ -541,6 +541,10 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx,
 					  struct epm_floor *epm_floor,  
 					  const char *data)
 {
+	if (data == NULL) {
+		data = "";
+	}
+
 	switch (epm_floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
 		epm_floor->rhs.tcp.port = atoi(data);
@@ -555,6 +559,9 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_IP:
+		if (!is_ipaddress_v4(data)) {
+			data = "0.0.0.0";
+		}
 		epm_floor->rhs.ip.ipaddr = talloc_strdup(mem_ctx, data);
 		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.ip.ipaddr);
 		return NT_STATUS_OK;
