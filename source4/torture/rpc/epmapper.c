@@ -174,7 +174,9 @@ static bool test_Map_tcpip(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "epm_Map_tcpip failed: can't create map_binding");
 
-	map_binding->object = map_syntax;
+	status = dcerpc_binding_set_abstract_syntax(map_binding, &map_syntax);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "epm_Map_tcpip failed: set map_syntax");
 
 	status = dcerpc_binding_build_tower(tctx, map_binding,
 					    &map_tower.tower);
