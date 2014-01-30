@@ -78,6 +78,7 @@ static struct dcerpc_binding *init_domain_binding(struct init_domain_state *stat
 						  const struct ndr_interface_table *table) 
 {
 	struct dcerpc_binding *binding;
+	enum dcerpc_transport_t transport;
 	char *s;
 	NTSTATUS status;
 
@@ -85,10 +86,14 @@ static struct dcerpc_binding *init_domain_binding(struct init_domain_state *stat
 	if ((lpcfg_server_role(state->service->task->lp_ctx) != ROLE_DOMAIN_MEMBER) &&
 	    dom_sid_equal(state->domain->info->sid, state->service->primary_sid) &&
 	    state->service->sec_channel_type != SEC_CHAN_RODC) {
-		s = talloc_asprintf(state, "ncalrpc:%s", state->domain->dc_name);
+		s = talloc_asprintf(state, "ncalrpc:%s[target_hostname=%s]",
+				    state->domain->dc_address,
+				    state->domain->dc_name);
 		if (s == NULL) return NULL;
 	} else {
-		s = talloc_asprintf(state, "ncacn_np:%s", state->domain->dc_name);
+		s = talloc_asprintf(state, "ncacn_np:%s[target_hostname=%s]",
+				    state->domain->dc_address,
+				    state->domain->dc_name);
 		if (s == NULL) return NULL;
 
 	}
@@ -98,11 +103,8 @@ static struct dcerpc_binding *init_domain_binding(struct init_domain_state *stat
 		return NULL;
 	}
 
-	/* Alter binding to contain hostname, but also address (so we don't look it up twice) */
-	binding->target_hostname = state->domain->dc_name;
-	binding->host = state->domain->dc_address;
-
-	if (binding->transport == NCALRPC) {
+	transport = dcerpc_binding_get_transport(binding);
+	if (transport == NCALRPC) {
 		return binding;
 	}
 
