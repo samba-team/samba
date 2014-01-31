@@ -214,6 +214,10 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 		struct dcerpc_binding *description;
 
 		for (iface = d->iface_list; iface != NULL; iface = iface->next) {
+			enum dcerpc_transport_t transport;
+			const char *host = NULL;
+			const char *host_addr = NULL;
+
 			if (uuid && !interface_match_by_uuid(iface->iface, uuid)) {
 				continue;
 			}
@@ -227,18 +231,42 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			}
 			eps[total].name = talloc_strdup(eps,
 							iface->iface->name);
+			if (eps[total].name == NULL) {
+				return 0;
+			}
 			eps[total].syntax_id = iface->iface->syntax_id;
 
 			description = dcerpc_binding_dup(mem_ctx, d->ep_description);
 			if (description == NULL) {
 				return 0;
 			}
-			description->object = iface->iface->syntax_id;
-			if (description->transport == NCACN_IP_TCP &&
-			    srv_addr != NULL &&
-			    (strcmp(description->host, "0.0.0.0") == 0 ||
-			     strcmp(description->host, "::") == 0)) {
-				description->host = srv_addr;
+
+			status = dcerpc_binding_set_abstract_syntax(description,
+							&iface->iface->syntax_id);
+			if (!NT_STATUS_IS_OK(status)) {
+				return 0;
+			}
+
+			transport = dcerpc_binding_get_transport(description);
+			host = dcerpc_binding_get_string_option(description, "host");
+
+			if (transport == NCACN_IP_TCP) {
+				if (host == NULL) {
+					host_addr = srv_addr;
+				} else if (!is_ipaddress_v4(host)) {
+					host_addr = srv_addr;
+				} else if (strcmp(host, "0.0.0.0") == 0) {
+					host_addr = srv_addr;
+				}
+			}
+
+			if (host_addr != NULL) {
+				status = dcerpc_binding_set_string_option(description,
+									  "host",
+									  host_addr);
+				if (!NT_STATUS_IS_OK(status)) {
+					return 0;
+				}
 			}
 
 			status = dcerpc_binding_build_tower(eps,
