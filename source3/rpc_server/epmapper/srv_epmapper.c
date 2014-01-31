@@ -395,7 +395,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;
 		}
-		iface->syntax_id = b->object;
+		iface->syntax_id = dcerpc_binding_get_abstract_syntax(b);
 
 		/*
 		 * Check if the rpc service is alrady registered on the
