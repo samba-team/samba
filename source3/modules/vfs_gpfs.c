@@ -1468,13 +1468,20 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
 
         ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
         if ( ret == -1){
+		int dbg_lvl;
+
 		if (errno == ENOSYS) {
 			return SMB_VFS_NEXT_GETXATTR(handle, path, name, value,
 						     size);
 		}
 
-                DEBUG(1, ("gpfs_get_xattr: Get GPFS attributes failed: "
-			  "%d (%s)\n", ret, strerror(errno)));
+		if (errno != EPERM && errno != EACCES) {
+			dbg_lvl = 1;
+		} else {
+			dbg_lvl = 5;
+		}
+		DEBUG(dbg_lvl, ("gpfs_get_xattr: Get GPFS attributes failed: "
+			      "%d (%s)\n", ret, strerror(errno)));
                 return -1;
         }
 
