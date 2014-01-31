@@ -560,7 +560,9 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			goto done;
 		}
 
-		if (p->local_address != NULL) {
+		if (p->local_address != NULL &&
+		    tsocket_address_is_inet(p->local_address, "ipv4"))
+		{
 			srv_addr = tsocket_address_inet_addr_string(p->local_address,
 								    tmp_ctx);
 		}
@@ -957,7 +959,9 @@ error_status_t _epm_Map(struct pipes_struct *p,
 			obj = r->in.object;
 		}
 
-		if (p->local_address != NULL) {
+		if (p->local_address != NULL &&
+		    tsocket_address_is_inet(p->local_address, "ipv4"))
+		{
 			srv_addr = tsocket_address_inet_addr_string(p->local_address,
 								    tmp_ctx);
 		}
