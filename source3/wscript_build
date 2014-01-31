@@ -82,9 +82,9 @@ bld.SAMBA3_LIBRARY('gpo',
                           ../libgpo/gpo_ini.c
                           ../libgpo/gpo_util.c
                           ../libgpo/gpo_fetch.c
-                          libgpo/gpo_filesync.c
+                          ../libgpo/gpo_filesync.c
                           ../libgpo/gpo_sec.c
-                          libgpo/gpo_reg.c
+                          ../libgpo/gpo_reg.c
                           ''',
                    deps='''
                         talloc

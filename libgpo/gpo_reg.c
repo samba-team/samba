@@ -1037,4 +1037,3 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 
 	return werr;
 }
-

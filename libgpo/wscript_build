@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
-bld.SAMBA_SUBSYSTEM('LIBGPO',
-	source='gpo_util.c gpo_sec.c ../libgpo/gpext/gpext.c gpo_fetch.c gpo_ini.c ../source4/libgpo/ads_convenience.c ../source3/libgpo/gpo_filesync.c ../source4/libgpo/gpo_filesync.c',
-	deps='ldb samba-net samba-util',
-	enabled=False
-	)
+LIBGPO_SRC = '''gpo_ldap.c gpo_ini.c gpo_util.c gpo_fetch.c gpo_filesync.c
+                gpo_sec.c gpo_reg.c gpext/gpext.c'''
+
+bld.SAMBA3_LIBRARY('gpo',
+                   source='${LIBGPO_SRC}',
+                   deps='talloc ads TOKEN_UTIL auth',
+                   vars=locals(),
+                   private_library=True)
+bld.SAMBA3_PYTHON('python_samba_libgpo', 'pygpo.c',
+                 deps='pyparam_util gpo talloc ads TOKEN_UTIL auth',
+                 realname='samba/gpo.so')
