@@ -40,7 +40,6 @@ def set_options(opt):
     opt.RECURSE('lib/ntdb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
-    opt.RECURSE('lib/nss_wrapper')
     opt.RECURSE('lib/socket_wrapper')
     opt.RECURSE('pidl')
     opt.RECURSE('source3')

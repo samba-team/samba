@@ -2,5 +2,4 @@
 `dirname $0`/configure -C \
 	--enable-developer \
 	--enable-socket-wrapper \
-	--enable-nss-wrapper \
 	"$@"
