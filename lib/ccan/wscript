@@ -127,15 +127,18 @@ def configure(conf):
     # Only check for FILE_OFFSET_BITS=64 if off_t is normally small:
     # use raw routines because wrappers include previous _GNU_SOURCE
     # or _FILE_OFFSET_BITS defines.
+    # The math for these tests is:
+    # array[-1 * !((int)(condition)) ] (condition is true) = array[0] = builds
+    # array[-1 * !((int)(condition)) ] (condition is false) = array[-1] = fails
     conf.check(fragment="""#include <sys/types.h>
-               int main(void) { return !(sizeof(off_t) < 8); }""",
-               execute=True, msg='Checking for small off_t',
+               int main(void) { static int test_array[1 - 2 * !(((long int)(sizeof(off_t))) < 8)]; }""",
+               msg='Checking for small off_t',
                define_name='SMALL_OFF_T')
     # Unreliable return value above, hence use define.
     if conf.CONFIG_SET('SMALL_OFF_T'):
         conf.check(fragment="""#include <sys/types.h>
-                   int main(void) { return !(sizeof(off_t) >= 8); }""",
-                   execute=True, msg='Checking for -D_FILE_OFFSET_BITS=64',
+		   int main(void) { static int test_array[1 - 2 * !(((long int)(sizeof(off_t))) >= 8)]; }""",
+                   msg='Checking for -D_FILE_OFFSET_BITS=64',
                    ccflags='-D_FILE_OFFSET_BITS=64',
                    define_name='HAVE_FILE_OFFSET_BITS')
 
