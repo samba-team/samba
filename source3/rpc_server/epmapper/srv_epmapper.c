@@ -134,20 +134,32 @@ static bool endpoints_match(const struct dcerpc_binding *ep1,
 		return false;
 	}
 
-	if (!ep1->endpoint || !ep2->endpoint) {
-		return ep1->endpoint == ep2->endpoint;
-	}
-
-	if (!strequal(ep1->endpoint, ep2->endpoint)) {
+	if (!ep1->endpoint && ep2->endpoint) {
 		return false;
 	}
 
-	if (!ep1->host || !ep2->host) {
-		return ep1->endpoint == ep2->endpoint;
+	if (ep1->endpoint && !ep2->endpoint) {
+		return false;
 	}
 
-	if (!strequal(ep1->host, ep2->host)) {
+	if (ep1->endpoint && ep2->endpoint) {
+		if (!strequal(ep1->endpoint, ep2->endpoint)) {
+			return false;
+		}
+	}
+
+	if (!ep1->host && ep2->host) {
 		return false;
+	}
+
+	if (ep1->host && !ep2->host) {
+		return false;
+	}
+
+	if (ep1->host && ep2->host) {
+		if (!strequal(ep1->host, ep2->host)) {
+			return false;
+		}
 	}
 
 	return true;
