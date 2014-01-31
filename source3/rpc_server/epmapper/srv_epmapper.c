@@ -127,37 +127,52 @@ static struct dcesrv_iface_list *find_interface_list(const struct dcesrv_endpoin
 /*
  * Check if two endpoints match.
  */
-static bool endpoints_match(const struct dcerpc_binding *ep1,
-			    const struct dcerpc_binding *ep2)
+static bool endpoints_match(const struct dcerpc_binding *b1,
+			    const struct dcerpc_binding *b2)
 {
-	if (ep1->transport != ep2->transport) {
+	enum dcerpc_transport_t t1;
+	const char *ep1;
+	const char *h1;
+	enum dcerpc_transport_t t2;
+	const char *ep2;
+	const char *h2;
+
+	t1 = dcerpc_binding_get_transport(b1);
+	ep1 = dcerpc_binding_get_string_option(b1, "endpoint");
+	h1 = dcerpc_binding_get_string_option(b1, "host");
+
+	t2 = dcerpc_binding_get_transport(b2);
+	ep2 = dcerpc_binding_get_string_option(b2, "endpoint");
+	h2 = dcerpc_binding_get_string_option(b2, "host");
+
+	if (t1 != t2) {
 		return false;
 	}
 
-	if (!ep1->endpoint && ep2->endpoint) {
+	if (!ep1 && ep2) {
 		return false;
 	}
 
-	if (ep1->endpoint && !ep2->endpoint) {
+	if (ep1 && !ep2) {
 		return false;
 	}
 
-	if (ep1->endpoint && ep2->endpoint) {
-		if (!strequal(ep1->endpoint, ep2->endpoint)) {
+	if (ep1 && ep2) {
+		if (!strequal(ep1, ep2)) {
 			return false;
 		}
 	}
 
-	if (!ep1->host && ep2->host) {
+	if (!h1 && h2) {
 		return false;
 	}
 
-	if (ep1->host && !ep2->host) {
+	if (h1 && !h2) {
 		return false;
 	}
 
-	if (ep1->host && ep2->host) {
-		if (!strequal(ep1->host, ep2->host)) {
+	if (h1 && h2) {
+		if (!strequal(h1, h2)) {
 			return false;
 		}
 	}
