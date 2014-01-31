@@ -200,6 +200,7 @@ def cmd_testonly(opt):
     else:
         env.SELFTEST_TARGET="samba3"
 
+    env.OPTIONS += " --nss_wrapper_so_path=" + CONFIG_GET(opt, 'LIBNSS_WRAPPER_SO_PATH')
     env.OPTIONS += " --uid_wrapper_so_path=" + CONFIG_GET(opt, 'LIBUID_WRAPPER_SO_PATH')
 
     # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).

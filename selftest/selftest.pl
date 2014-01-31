@@ -52,6 +52,7 @@ my $ldap = undef;
 my $opt_resetup_env = undef;
 my $opt_binary_mapping = "";
 my $opt_load_list = undef;
+my $opt_libnss_wrapper_so_path = "";
 my $opt_libuid_wrapper_so_path = "";
 my @testlists = ();
 
@@ -203,6 +204,7 @@ Paths:
  --bindir=DIR               binaries directory [./bin]
 
 Preload cwrap:
+ --nss_wrapper_so_path=FILE the nss_wrapper library to preload
  --uid_wrapper_so_path=FILE the uid_wrapper library to preload
 
 Target Specific:
@@ -244,6 +246,7 @@ my $result = GetOptions (
 		'random-order' => \$opt_random_order,
 		'load-list=s' => \$opt_load_list,
 		'binary-mapping=s' => \$opt_binary_mapping,
+		'nss_wrapper_so_path=s' => \$opt_libnss_wrapper_so_path,
 		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path
 	    );
 
@@ -341,6 +344,14 @@ if ($opt_socket_wrapper_pcap) {
 }
 
 my $ld_preload = $ENV{LD_PRELOAD};
+
+if ($opt_libnss_wrapper_so_path) {
+	if ($ld_preload) {
+		$ld_preload = "$ld_preload:$opt_libnss_wrapper_so_path";
+	} else {
+		$ld_preload = "$opt_libnss_wrapper_so_path";
+	}
+}
 
 if ($opt_libuid_wrapper_so_path) {
 	if ($ld_preload) {
