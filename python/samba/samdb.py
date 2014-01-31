@@ -831,6 +831,24 @@ accountExpires: %u
         else:
             return res[0]["minPwdAge"][0]
 
+    def set_maxPwdAge(self, value):
+        m = ldb.Message()
+        m.dn = ldb.Dn(self, self.domain_dn())
+        m["maxPwdAge"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "maxPwdAge")
+        self.modify(m)
+
+
+    def get_maxPwdAge(self):
+        res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["maxPwdAge"])
+        if len(res) == 0:
+            return None
+        elif not "maxPwdAge" in res[0]:
+            return None
+        else:
+            return res[0]["maxPwdAge"][0]
+
+
+
     def set_minPwdLength(self, value):
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
