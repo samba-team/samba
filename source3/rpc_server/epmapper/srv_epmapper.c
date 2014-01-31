@@ -346,6 +346,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 		  r->in.num_ents));
 
 	for (i = 0; i < r->in.num_ents; i++) {
+		enum dcerpc_transport_t transport;
 		add_ep = false;
 		b = NULL;
 
@@ -361,8 +362,9 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 			goto done;
 		}
 
+		transport = dcerpc_binding_get_transport(b);
 		DEBUG(3, ("_epm_Insert: Adding transport %s for %s\n",
-			  derpc_transport_string_by_transport(b->transport),
+			  derpc_transport_string_by_transport(transport),
 			  r->in.entries[i].annotation));
 
 		/* Check if the entry already exits */
@@ -480,6 +482,8 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 	}
 
 	for (i = 0; i < r->in.num_ents; i++) {
+		enum dcerpc_transport_t transport;
+
 		b = NULL;
 
 		status = dcerpc_binding_from_tower(tmp_ctx,
@@ -490,8 +494,9 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 			goto done;
 		}
 
+		transport = dcerpc_binding_get_transport(b);
 		DEBUG(3, ("_epm_Delete: Deleting transport '%s' for '%s'\n",
-			  derpc_transport_string_by_transport(b->transport),
+			  derpc_transport_string_by_transport(transport),
 			  r->in.entries[i].annotation));
 
 		ep = find_endpoint(endpoint_table, b);
