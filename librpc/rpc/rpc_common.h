@@ -40,19 +40,7 @@ enum dcerpc_transport_t {
 	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX, NCACN_INTERNAL };
 
 /** this describes a binding to a particular transport/pipe */
-struct dcerpc_binding {
-	enum dcerpc_transport_t transport;
-	struct ndr_syntax_id object;
-	const char *object_string;
-	const char *host;
-	const char *target_hostname;
-	const char *target_principal;
-	const char *endpoint;
-	const char **options;
-	uint32_t flags;
-	uint32_t assoc_group_id;
-	char assoc_group_string[11]; /* 0x3456789a + '\0' */
-};
+struct dcerpc_binding;
 
 /* dcerpc pipe flags */
 #define DCERPC_DEBUG_PRINT_IN          (1<<0)
