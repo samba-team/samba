@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include <tevent.h>
+#include "lib/util/tevent_unix.h"
 #include "libcli/wbclient/wbclient.h"
 #include "nsswitch/wb_reqtrans.h"
 #include "system/network.h"
@@ -360,4 +361,218 @@ NTSTATUS wbc_sids_to_xids(struct tevent_context *ev, struct id_map *ids,
 	}
 
 	return NT_STATUS_OK;
+}
+
+struct wbc_id_to_sid_state {
+	struct winbindd_request wbreq;
+	struct dom_sid sid;
+};
+
+static void wbc_id_to_sid_done(struct tevent_req *subreq);
+
+static struct tevent_req *wbc_id_to_sid_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     int fd, const struct unixid *id)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_id_to_sid_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_id_to_sid_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	switch(id->type) {
+	case ID_TYPE_UID:
+		state->wbreq.cmd = WINBINDD_UID_TO_SID;
+		state->wbreq.data.uid = id->id;
+		break;
+	case ID_TYPE_GID:
+		state->wbreq.cmd = WINBINDD_GID_TO_SID;
+		state->wbreq.data.gid = id->id;
+		break;
+	default:
+		tevent_req_error(req, ENOENT);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = wb_simple_trans_send(state, ev, NULL, fd, &state->wbreq);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wbc_id_to_sid_done, req);
+	return req;
+}
+
+static void wbc_id_to_sid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wbc_id_to_sid_state *state = tevent_req_data(
+		req, struct wbc_id_to_sid_state);
+	struct winbindd_response *wbresp;
+	int ret, err;
+
+	ret = wb_simple_trans_recv(subreq, state, &wbresp, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	if ((wbresp->result != WINBINDD_OK) ||
+	    !dom_sid_parse(wbresp->data.sid.sid, &state->sid)) {
+		tevent_req_error(req, ENOENT);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static int wbc_id_to_sid_recv(struct tevent_req *req, struct dom_sid *sid)
+{
+	struct wbc_id_to_sid_state *state = tevent_req_data(
+		req, struct wbc_id_to_sid_state);
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		return err;
+	}
+	sid_copy(sid, &state->sid);
+	return 0;
+}
+
+struct wbc_ids_to_sids_state {
+	struct tevent_context *ev;
+	int fd;
+	struct id_map *ids;
+	uint32_t count;
+	uint32_t idx;
+};
+
+static void wbc_ids_to_sids_done(struct tevent_req *subreq);
+
+static struct tevent_req *wbc_ids_to_sids_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	int fd, struct id_map *ids, uint32_t count)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_ids_to_sids_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wbc_ids_to_sids_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->fd = fd;
+	state->ids = ids;
+	state->count = count;
+
+	if (count == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = wbc_id_to_sid_send(state, state->ev, state->fd,
+				    &state->ids[state->idx].xid);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wbc_ids_to_sids_done, req);
+	return req;
+}
+
+static void wbc_ids_to_sids_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wbc_ids_to_sids_state *state = tevent_req_data(
+		req, struct wbc_ids_to_sids_state);
+	struct id_map *id;
+	struct dom_sid sid;
+	int ret;
+
+	ret = wbc_id_to_sid_recv(subreq, &sid);
+	TALLOC_FREE(subreq);
+
+	id = &state->ids[state->idx];
+	if (ret == 0) {
+		id->status = ID_MAPPED;
+		id->sid = dom_sid_dup(state->ids, &sid);
+		if (id->sid == NULL) {
+			tevent_req_error(req, ENOMEM);
+			return;
+		}
+	} else {
+		id->status = ID_UNMAPPED;
+		id->sid = NULL;
+	}
+
+	state->idx += 1;
+	if (state->idx == state->count) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = wbc_id_to_sid_send(state, state->ev, state->fd,
+				    &state->ids[state->idx].xid);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wbc_ids_to_sids_done, req);
+}
+
+static int wbc_ids_to_sids_recv(struct tevent_req *req)
+{
+	int err;
+	if (tevent_req_is_unix_error(req, &err)) {
+		return err;
+	}
+	return 0;
+}
+
+NTSTATUS wbc_xids_to_sids(struct tevent_context *ev, struct id_map *ids,
+			  uint32_t count)
+{
+	struct tevent_req *req;
+	NTSTATUS status;
+	bool polled;
+	int ret, fd;
+
+	DEBUG(5, ("wbc_xids_to_sids called: %u ids\n", (unsigned)count));
+
+	fd = winbindd_pipe_sock();
+	if (fd == -1) {
+		status = map_nt_error_from_unix_common(errno);
+		DEBUG(10, ("winbindd_pipe_sock returned %s\n",
+			   strerror(errno)));
+		return status;
+	}
+
+	req = wbc_ids_to_sids_send(ev, ev, fd, ids, count);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	polled = tevent_req_poll(req, ev);
+	if (!polled) {
+		status = map_nt_error_from_unix_common(errno);
+		DEBUG(10, ("tevent_req_poll returned %s\n",
+			   strerror(errno)));
+		goto done;
+	}
+
+	ret = wbc_ids_to_sids_recv(req);
+	TALLOC_FREE(req);
+	if (ret != 0) {
+		status = map_nt_error_from_unix_common(ret);
+		DEBUG(10, ("tevent_req_poll returned %s\n",
+			   strerror(ret)));
+	} else {
+		status = NT_STATUS_OK;
+	}
+
+done:
+	close(fd);
+	return status;
 }
