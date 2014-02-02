@@ -27,7 +27,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-FN_LOCAL_STRING(path, pathname)
+FN_LOCAL_STRING(path, path)
 FN_LOCAL_LIST(hostsallow, hostsallow)
 FN_LOCAL_LIST(hostsdeny, hostsdeny)
 FN_LOCAL_STRING(fstype, fstype)
