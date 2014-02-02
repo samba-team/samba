@@ -1888,7 +1888,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			rhost = raddr;
 		}
 
-		if (!allow_access(lp_hostsdeny(snum), lp_hostsallow(snum),
+		if (!allow_access(lp_hostsdeny(snum), lp_hosts_allow(snum),
 				  rhost, raddr)) {
 			DEBUG(3, ("access DENIED (hosts allow/deny) for printer open\n"));
 			ZERO_STRUCTP(r->out.handle);

@@ -28,7 +28,7 @@
 */
 
 FN_LOCAL_STRING(path, path)
-FN_LOCAL_LIST(hostsallow, hostsallow)
+FN_LOCAL_LIST(hosts_allow, hostsallow)
 FN_LOCAL_LIST(hostsdeny, hostsdeny)
 FN_LOCAL_STRING(fstype, fstype)
 FN_LOCAL_LIST(ntvfs_handler, ntvfs_handler)

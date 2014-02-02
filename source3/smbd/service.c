@@ -248,7 +248,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 	}
 
 	if (!lp_snum_ok(snum) ||
-	    !allow_access(lp_hostsdeny(snum), lp_hostsallow(snum),
+	    !allow_access(lp_hostsdeny(snum), lp_hosts_allow(snum),
 			  rhost, raddr)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}

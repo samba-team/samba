@@ -287,7 +287,7 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_ALLOW) == 0) {
-		return lpcfg_hostsallow(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_hosts_allow(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_DENY) == 0) {

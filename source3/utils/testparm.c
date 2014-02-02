@@ -339,7 +339,7 @@ static int do_global_checks(void)
 static void do_per_share_checks(int s)
 {
 	const char **deny_list = lp_hostsdeny(s);
-	const char **allow_list = lp_hostsallow(s);
+	const char **allow_list = lp_hosts_allow(s);
 	int i;
 
 	if(deny_list) {
@@ -569,8 +569,8 @@ static void do_per_share_checks(int s)
 		/* this is totally ugly, a real `quick' hack */
 		for (s=0;s<1000;s++) {
 			if (VALID_SNUM(s)) {
-				if (allow_access(lp_hostsdeny(-1), lp_hostsallow(-1), cname, caddr)
-				    && allow_access(lp_hostsdeny(s), lp_hostsallow(s), cname, caddr)) {
+				if (allow_access(lp_hostsdeny(-1), lp_hosts_allow(-1), cname, caddr)
+				    && allow_access(lp_hostsdeny(s), lp_hosts_allow(s), cname, caddr)) {
 					fprintf(stderr,"Allow connection from %s (%s) to %s\n",
 						   cname,caddr,lp_servicename(talloc_tos(), s));
 				} else {
