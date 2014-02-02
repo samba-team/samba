@@ -154,10 +154,8 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 					  struct security_token *token,
 					  struct security_unix_token **sec)
 {
-	struct unixuid_private *priv = ntvfs->private_data;
-
 	return security_token_to_unix_token(req,
-					    priv->wbc_ctx->event_ctx,
+					    ntvfs->ctx->event_ctx,
 					    token, sec);
 }
 
