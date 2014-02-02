@@ -789,7 +789,7 @@ bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
 	/* Printers cannot be read_only. */
 	service->read_only = false;
 	/* Printer services must be printable. */
-	service->print_ok = true;
+	service->printable = true;
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
@@ -1011,10 +1011,10 @@ static bool lpcfg_service_ok(struct loadparm_service *service)
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
 	if (strwicmp(service->szService, PRINTERS_NAME) == 0) {
-		if (!service->print_ok) {
+		if (!service->printable) {
 			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
 			       service->szService));
-			service->print_ok = true;
+			service->printable = true;
 		}
 		/* [printers] service must also be non-browsable. */
 		if (service->browseable)
