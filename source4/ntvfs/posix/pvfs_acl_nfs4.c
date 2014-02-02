@@ -42,7 +42,6 @@ static NTSTATUS pvfs_acl_load_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 	struct security_descriptor *sd;
 	int i, num_ids;
 	struct id_map *ids;
-	struct composite_context *ctx;
 
 	acl = talloc_zero(mem_ctx, struct nfs4acl);
 	NT_STATUS_HAVE_NO_MEMORY(acl);
@@ -91,9 +90,7 @@ static NTSTATUS pvfs_acl_load_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 
 	/* Allocate memory for the sids from the security descriptor to be on
 	 * the safe side. */
-	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, sd, num_ids, ids);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-	status = wbc_xids_to_sids_recv(ctx, &ids);
+	status = wbc_xids_to_sids(pvfs->wbc_ctx->event_ctx, ids, num_ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	sd->owner_sid = talloc_steal(sd, ids[0].sid);
