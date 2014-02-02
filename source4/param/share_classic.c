@@ -291,7 +291,7 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_DENY) == 0) {
-		return lpcfg_hostsdeny(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_hosts_deny(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_NTVFS_HANDLER) == 0) {

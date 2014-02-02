@@ -1545,7 +1545,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 		 * Haven't we checked this in smbd_process already???
 		 */
 
-		ok = allow_access(lp_hostsdeny(-1), lp_hosts_allow(-1),
+		ok = allow_access(lp_hosts_deny(-1), lp_hosts_allow(-1),
 				  sconn->remote_hostname, raddr);
 		TALLOC_FREE(raddr);
 
@@ -3483,7 +3483,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 			   sconn->remote_hostname,
 			   locaddr);
 
-	if (!allow_access(lp_hostsdeny(-1), lp_hosts_allow(-1),
+	if (!allow_access(lp_hosts_deny(-1), lp_hosts_allow(-1),
 			  sconn->remote_hostname,
 			  remaddr)) {
 		/*
