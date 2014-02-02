@@ -201,7 +201,7 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 	if (remark) {
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
-			get_current_username(), lp_pathname(talloc_tos(), snum),
+			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
@@ -229,12 +229,12 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 	if (remark) {
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
-			get_current_username(), lp_pathname(talloc_tos(), snum),
+			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(p->mem_ctx,
-			"C:%s", lp_pathname(talloc_tos(), snum));
+			"C:%s", lp_path(talloc_tos(), snum));
 
 	if (path) {
 		/*
@@ -294,7 +294,7 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 	if (remark) {
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
-			get_current_username(), lp_pathname(talloc_tos(), snum),
+			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
@@ -328,11 +328,11 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 	if (remark) {
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
-			get_current_username(), lp_pathname(talloc_tos(), snum),
+			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
-	path = talloc_asprintf(ctx, "C:%s", lp_pathname(talloc_tos(), snum));
+	path = talloc_asprintf(ctx, "C:%s", lp_path(talloc_tos(), snum));
 	if (path) {
 		/*
 		 * Change / to \\ so that win2k will see it as a valid path.  This was added to
@@ -369,7 +369,7 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 	if (remark) {
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
-			get_current_username(), lp_pathname(talloc_tos(), snum),
+			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
@@ -1563,7 +1563,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 
 	switch (r->in.level) {
 	case 1:
-		pathname = lp_pathname(ctx, snum);
+		pathname = lp_path(ctx, snum);
 		comment = talloc_strdup(ctx, info->info1->comment);
 		type = info->info1->type;
 		psd = NULL;
@@ -1592,7 +1592,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		map_generic_share_sd_bits(psd);
 		break;
 	case 1004:
-		pathname = lp_pathname(ctx, snum);
+		pathname = lp_path(ctx, snum);
 		comment = talloc_strdup(ctx, info->info1004->comment);
 		type = STYPE_DISKTREE;
 		break;
@@ -1613,7 +1613,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	case 1007:
 		return WERR_ACCESS_DENIED;
 	case 1501:
-		pathname = lp_pathname(ctx, snum);
+		pathname = lp_path(ctx, snum);
 		comment = lp_comment(ctx, snum);
 		psd = info->info1501->sd;
 		map_generic_share_sd_bits(psd);
@@ -1654,7 +1654,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 
 	/* Only call modify function if something changed. */
 
-	if (strcmp(path, lp_pathname(talloc_tos(), snum)) || strcmp(comment, lp_comment(talloc_tos(), snum))
+	if (strcmp(path, lp_path(talloc_tos(), snum)) || strcmp(comment, lp_comment(talloc_tos(), snum))
 			|| (lp_max_connections(snum) != max_connections)) {
 		if (!lp_change_share_cmd(talloc_tos()) || !*lp_change_share_cmd(talloc_tos())) {
 			DEBUG(10,("_srvsvc_NetShareSetInfo: No change share command\n"));
@@ -2112,7 +2112,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 					   server_event_context(),
 					   server_messaging_context(),
 					   &conn,
-					   snum, lp_pathname(talloc_tos(), snum),
+					   snum, lp_path(talloc_tos(), snum),
 					   p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
@@ -2259,7 +2259,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 					   server_event_context(),
 					   server_messaging_context(),
 					   &conn,
-					   snum, lp_pathname(talloc_tos(), snum),
+					   snum, lp_path(talloc_tos(), snum),
 					   p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",

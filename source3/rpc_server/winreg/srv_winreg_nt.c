@@ -663,7 +663,7 @@ static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
 			continue;
 		}
 
-		share_path = lp_pathname(talloc_tos(), snum);
+		share_path = lp_path(talloc_tos(), snum);
 
 		/* make sure we have a path (e.g. [homes] ) */
 		if (strlen(share_path) == 0) {

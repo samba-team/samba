@@ -127,7 +127,7 @@ int register_homes_share(const char *username)
 	if (result != -1) {
 		DEBUG(3, ("Using static (or previously created) service for "
 			  "user '%s'; path = '%s'\n", username,
-			  lp_pathname(talloc_tos(), result)));
+			  lp_path(talloc_tos(), result)));
 		return result;
 	}
 

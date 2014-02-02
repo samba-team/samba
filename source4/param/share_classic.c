@@ -76,7 +76,7 @@ static const char *sclassic_string_option(struct share_config *scfg,
 	}
 
 	if (strcmp(opt_name, SHARE_PATH) == 0) {
-		return lpcfg_pathname(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_path(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_COMMENT) == 0) {

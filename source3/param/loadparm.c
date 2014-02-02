@@ -1728,7 +1728,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 
 	if (!(*(ServicePtrs[iDefaultService]->pathname))
 	    || strequal(ServicePtrs[iDefaultService]->pathname,
-			lp_pathname(talloc_tos(), GLOBAL_SECTION_SNUM))) {
+			lp_path(talloc_tos(), GLOBAL_SECTION_SNUM))) {
 		string_set(&ServicePtrs[i]->pathname, pszHomedir);
 	}
 

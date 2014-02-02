@@ -1027,7 +1027,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 					server_event_context(),
 					server_messaging_context(),
 					&conn, snum,
-					lp_pathname(talloc_tos(), snum), NULL, &oldpath);
+					lp_path(talloc_tos(), snum), NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -1219,14 +1219,14 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 					server_event_context(),
 					server_messaging_context(),
 					conn_out,
-					snum, lp_pathname(talloc_tos(), snum), NULL, oldpath);
+					snum, lp_path(talloc_tos(), snum), NULL, oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
 	*pp_path_out = talloc_asprintf(*conn_out,
 			"%s/%s",
-			lp_pathname(talloc_tos(), snum),
+			lp_path(talloc_tos(), snum),
 			jucn->volume_name);
 	if (!*pp_path_out) {
 		vfs_ChDir(*conn_out, *oldpath);
@@ -1361,7 +1361,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	const char *connect_path = lp_pathname(talloc_tos(), snum);
+	const char *connect_path = lp_path(talloc_tos(), snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(talloc_tos(), snum);
 	connection_struct *conn;
 	NTSTATUS status;
@@ -1431,7 +1431,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	const char *connect_path = lp_pathname(talloc_tos(), snum);
+	const char *connect_path = lp_path(talloc_tos(), snum);
 	char *service_name = lp_servicename(talloc_tos(), snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(talloc_tos(), snum);
 	connection_struct *conn;

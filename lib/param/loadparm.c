@@ -747,7 +747,7 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 	    || strequal(default_service->pathname, lp_ctx->sDefault->pathname)) {
 		service->pathname = talloc_strdup(service, pszHomedir);
 	} else {
-		service->pathname = string_sub_talloc(service, lpcfg_pathname(default_service, lp_ctx->sDefault), "%H", pszHomedir);
+		service->pathname = string_sub_talloc(service, lpcfg_path(default_service, lp_ctx->sDefault), "%H", pszHomedir);
 	}
 
 	if (!(*(service->comment))) {

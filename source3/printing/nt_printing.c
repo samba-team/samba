@@ -89,7 +89,7 @@ static bool print_driver_directories_init(void)
 		return true;
 	}
 
-	driver_path = lp_pathname(mem_ctx, service);
+	driver_path = lp_path(mem_ctx, service);
 	if (driver_path == NULL) {
 		talloc_free(mem_ctx);
 		return false;
@@ -682,7 +682,7 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 					   server_messaging_context(),
 					   &conn,
 					   printdollar_snum,
-					   lp_pathname(talloc_tos(), printdollar_snum),
+					   lp_path(talloc_tos(), printdollar_snum),
 					   session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
@@ -1069,7 +1069,7 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 					   server_messaging_context(),
 					   &conn,
 					   printdollar_snum,
-					   lp_pathname(talloc_tos(), printdollar_snum),
+					   lp_path(talloc_tos(), printdollar_snum),
 					   session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
@@ -1604,7 +1604,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 					   server_messaging_context(),
 					   &conn,
 					   printdollar_snum,
-					   lp_pathname(talloc_tos(), printdollar_snum),
+					   lp_path(talloc_tos(), printdollar_snum),
 					   session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("delete_driver_files: create_conn_struct "

@@ -121,8 +121,8 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	 */
 
 	pf->filename = talloc_asprintf(pf, "%s/%sXXXXXX",
-					lp_pathname(talloc_tos(),
-						    SNUM(fsp->conn)),
+					lp_path(talloc_tos(),
+						SNUM(fsp->conn)),
 					PRINT_SPOOL_PREFIX);
 	if (!pf->filename) {
 		status = NT_STATUS_NO_MEMORY;
