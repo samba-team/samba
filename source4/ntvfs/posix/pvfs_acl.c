@@ -151,7 +151,6 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	struct security_ace ace;
 	mode_t mode;
 	struct id_map *ids;
-	struct composite_context *ctx;
 
 	*psd = security_descriptor_initialise(req);
 	if (*psd == NULL) {
@@ -170,10 +169,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	ids[1].xid.type = ID_TYPE_GID;
 	ids[1].sid = NULL;
 
-	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	status = wbc_xids_to_sids_recv(ctx, &ids);
+	status = wbc_xids_to_sids(pvfs->wbc_ctx->event_ctx, ids, 2);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	sd->owner_sid = talloc_steal(sd, ids[0].sid);
@@ -925,7 +921,6 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct security_descriptor *parent_sd, *sd;
 	struct id_map *ids;
-	struct composite_context *ctx;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	*ret_sd = NULL;
@@ -974,10 +969,7 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	ids[1].sid = NULL;
 	ids[1].status = ID_UNKNOWN;
 
-	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ctx, tmp_ctx);
-
-	status = wbc_xids_to_sids_recv(ctx, &ids);
+	status = wbc_xids_to_sids(pvfs->wbc_ctx->event_ctx, ids, 2);
 	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
 
 	sd->owner_sid = talloc_steal(sd, ids[0].sid);
