@@ -88,7 +88,7 @@ static const char *sclassic_string_option(struct share_config *scfg,
 	}
 
 	if (strcmp(opt_name, SHARE_TYPE) == 0) {
-		if (lpcfg_print_ok(s, lpcfg_default_service(lp_ctx))) {
+		if (lpcfg_printable(s, lpcfg_default_service(lp_ctx))) {
 			return "PRINTER";
 		}
 		if (strcmp("NTFS", lpcfg_fstype(s, lpcfg_default_service(lp_ctx))) == 0) {

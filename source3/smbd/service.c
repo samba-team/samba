@@ -254,7 +254,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 	}
 
 	if (dev[0] == '?' || !dev[0]) {
-		if (lp_print_ok(snum)) {
+		if (lp_printable(snum)) {
 			fstrcpy(dev,"LPT1:");
 		} else if (strequal(lp_fstype(talloc_tos(), snum), "IPC")) {
 			fstrcpy(dev, "IPC");
@@ -268,7 +268,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (lp_print_ok(snum)) {
+	if (lp_printable(snum)) {
 		if (!strequal(dev, "LPT1:")) {
 			return NT_STATUS_BAD_DEVICE_TYPE;
 		}
@@ -281,7 +281,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 	}
 
 	/* Behave as a printer if we are supposed to */
-	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
+	if (lp_printable(snum) && (strcmp(dev, "A:") == 0)) {
 		fstrcpy(dev, "LPT1:");
 	}
 

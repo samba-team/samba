@@ -533,7 +533,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	}
 
 	for (snum = 0; snum < n_services; snum++) {
-		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
+		if (!lp_snum_ok(snum) || !lp_printable(snum)) {
 			continue;
 		}
 

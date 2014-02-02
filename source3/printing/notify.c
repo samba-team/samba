@@ -62,7 +62,7 @@ static bool create_send_ctx(void)
 int print_queue_snum(const char *qname)
 {
 	int snum = lp_servicenumber(qname);
-	if (snum == -1 || !lp_print_ok(snum))
+	if (snum == -1 || !lp_printable(snum))
 		return -1;
 	return snum;
 }

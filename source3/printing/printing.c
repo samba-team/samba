@@ -214,7 +214,7 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 
 	for (snum = 0; snum < services; snum++) {
 		struct tdb_print_db *pdb;
-		if (!lp_print_ok(snum))
+		if (!lp_printable(snum))
 			continue;
 
 		pdb = get_print_db_byname(lp_const_servicename(snum));
@@ -547,7 +547,7 @@ uint32 sysjob_to_jobid(int unix_jobid)
 
 	for (snum = 0; snum < services; snum++) {
 		struct tdb_print_db *pdb;
-		if (!lp_print_ok(snum))
+		if (!lp_printable(snum))
 			continue;
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb) {
@@ -1800,7 +1800,7 @@ bool print_notify_register_pid(int snum)
 		int idx;
 
 		for ( idx=0; idx<num_services; idx++ ) {
-			if (lp_snum_ok(idx) && lp_print_ok(idx) )
+			if (lp_snum_ok(idx) && lp_printable(idx) )
 				print_notify_register_pid(idx);
 		}
 
@@ -1890,7 +1890,7 @@ bool print_notify_deregister_pid(int snum)
 		int idx;
 
 		for ( idx=0; idx<num_services; idx++ ) {
-			if ( lp_snum_ok(idx) && lp_print_ok(idx) )
+			if ( lp_snum_ok(idx) && lp_printable(idx) )
 				print_notify_deregister_pid(idx);
 		}
 

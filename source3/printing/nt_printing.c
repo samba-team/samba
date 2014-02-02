@@ -1262,7 +1262,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 	/* loop through the printers.tdb and check for the drivername */
 
 	for (snum=0; snum<n_services && !in_use; snum++) {
-		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
+		if (!lp_snum_ok(snum) || !lp_printable(snum)) {
 			continue;
 		}
 

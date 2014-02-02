@@ -653,7 +653,7 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		const char *printer = lp_const_servicename(snum);
 
 		/* no point going on if this is not a printer */
-		if (!(lp_snum_ok(snum) && lp_print_ok(snum))) {
+		if (!(lp_snum_ok(snum) && lp_printable(snum))) {
 			continue;
 		}
 
@@ -1547,7 +1547,7 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 	/* Iterate the printer list */
 
 	for (snum = 0; snum < n_services; snum++) {
-		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
+		if (!lp_snum_ok(snum) || !lp_printable(snum)) {
 			continue;
 		}
 
@@ -3543,7 +3543,7 @@ static WERROR printserver_notify_info(struct pipes_struct *p,
 		for (snum = 0; snum < n_services; snum++) {
 			if (!lp_browseable(snum) ||
 			    !lp_snum_ok(snum) ||
-			    !lp_print_ok(snum)) {
+			    !lp_printable(snum)) {
 				continue; /* skip */
 			}
 
@@ -4290,7 +4290,7 @@ static WERROR construct_printer_info8(TALLOC_CTX *mem_ctx,
 
 static bool snum_is_shared_printer(int snum)
 {
-	return (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum));
+	return (lp_browseable(snum) && lp_snum_ok(snum) && lp_printable(snum));
 }
 
 /********************************************************************

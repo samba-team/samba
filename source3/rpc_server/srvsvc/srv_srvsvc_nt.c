@@ -166,7 +166,7 @@ static enum srvsvc_ShareType get_share_type(int snum)
 	/* work out the share type */
 	enum srvsvc_ShareType type = STYPE_DISKTREE;
 
-	if (lp_print_ok(snum)) {
+	if (lp_printable(snum)) {
 		type = lp_administrative_share(snum)
 			? STYPE_PRINTQ_HIDDEN : STYPE_PRINTQ;
 	}
@@ -1545,7 +1545,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		return WERR_NET_NAME_NOT_FOUND;
 
 	/* No change to printer shares. */
-	if (lp_print_ok(snum))
+	if (lp_printable(snum))
 		return WERR_ACCESS_DENIED;
 
 	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
@@ -1954,7 +1954,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	}
 
 	/* No change to printer shares. */
-	if (lp_print_ok(snum))
+	if (lp_printable(snum))
 		return WERR_ACCESS_DENIED;
 
 	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);

@@ -1945,7 +1945,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 
 		SCVAL(p,13,0);
 		type = STYPE_DISKTREE;
-		if (lp_print_ok(snum)) {
+		if (lp_printable(snum)) {
 			type = STYPE_PRINTQ;
 		}
 		if (strequal("IPC",lp_fstype(talloc_tos(),snum))) {

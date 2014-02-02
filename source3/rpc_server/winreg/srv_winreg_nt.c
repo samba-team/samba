@@ -659,7 +659,7 @@ static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
 	/* has to exist within a valid file share */
 
 	for (snum=0; snum<num_services; snum++) {
-		if (!lp_snum_ok(snum) || lp_print_ok(snum)) {
+		if (!lp_snum_ok(snum) || lp_printable(snum)) {
 			continue;
 		}
 
