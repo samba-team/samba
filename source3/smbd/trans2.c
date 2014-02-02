@@ -1405,7 +1405,7 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
 		 * "directory mask"/"force directory mode" are
 		 * only applied to new directories, not existing ones.
 		 */
-		ret &= lp_dir_mask(SNUM(conn));
+		ret &= lp_directory_mask(SNUM(conn));
 		/* Add in force bits */
 		ret |= lp_force_dir_mode(SNUM(conn));
 	}

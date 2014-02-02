@@ -146,7 +146,7 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 	}
 
 	if (strcmp(opt_name, SHARE_DIR_MASK) == 0) {
-		return lpcfg_dir_mask(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_directory_mask(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_FORCE_DIR_MODE) == 0) {

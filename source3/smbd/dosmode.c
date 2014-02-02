@@ -162,7 +162,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			result |= (S_IXUSR | S_IXGRP | S_IXOTH);                 
 
 			/* Apply directory mask */
-			result &= lp_dir_mask(SNUM(conn));
+			result &= lp_directory_mask(SNUM(conn));
 			/* Add in force bits */
 			result |= lp_force_dir_mode(SNUM(conn));
 		}
