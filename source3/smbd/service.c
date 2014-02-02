@@ -580,7 +580,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	conn->veto_oplock_list = NULL;
 	conn->aio_write_behind_list = NULL;
 
-	conn->read_only = lp_readonly(SNUM(conn));
+	conn->read_only = lp_read_only(SNUM(conn));
 
 	status = set_conn_force_user_group(conn, snum);
 	if (!NT_STATUS_IS_OK(status)) {

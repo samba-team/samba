@@ -197,7 +197,7 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 	}
 
 	if (strcmp(opt_name, SHARE_READONLY) == 0) {
-		return lpcfg_readonly(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_read_only(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_SYSTEM) == 0) {
