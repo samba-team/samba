@@ -269,7 +269,7 @@ FN_GLOBAL_CONST_STRING(winbindd_privileged_socket_directory, winbindd_privileged
 FN_GLOBAL_CONST_STRING(winbindd_socket_directory, winbindd_socket_directory)
 FN_GLOBAL_CONST_STRING(winbind_separator, winbind_separator)
 FN_GLOBAL_CONST_STRING(workgroup, workgroup)
-FN_GLOBAL_CONST_STRING(wtmpdir, wtmpdir)
+FN_GLOBAL_CONST_STRING(wtmp_directory, wtmp_directory)
 FN_GLOBAL_INTEGER(afs_token_lifetime, afs_token_lifetime)
 FN_GLOBAL_INTEGER(algorithmic_rid_base, algorithmic_rid_base)
 FN_GLOBAL_INTEGER(allow_dns_updates, allow_dns_updates)
