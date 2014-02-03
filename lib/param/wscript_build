@@ -3,18 +3,21 @@
 bld.SAMBA_GENERATOR('param_local_h',
                     source= '../../script/mkparamdefs.pl param_functions.c ',
                     target='param_local.h',
+                    group='build_source',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} --file ${TGT} --generate-scope=LOCAL')
 
 
 bld.SAMBA_GENERATOR('s3_param_h',
                     source= ' ../../script/mks3param.pl loadparm.c param_functions.c',
                     target='s3_param.h',
+                    group='build_source',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT}')
 
 
 bld.SAMBA_GENERATOR('param_global_h',
                     source= '../../script/mkparamdefs.pl loadparm.c param_functions.c',
                     target='param_global.h',
+                    group='build_source',
                     rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)}  ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
 
 bld.SAMBA_LIBRARY('server-role',
