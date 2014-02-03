@@ -91,9 +91,10 @@ static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwarg
 	int hash_size = 0, tdb_flags = TDB_DEFAULT, flags = O_RDWR, mode = 0600;
 	TDB_CONTEXT *ctx;
 	PyTdbObject *ret;
-	const char *kwnames[] = { "name", "hash_size", "tdb_flags", "flags", "mode", NULL };
+	const char *_kwnames[] = { "name", "hash_size", "tdb_flags", "flags", "mode", NULL };
+	char **kwnames = discard_const_p(char *, _kwnames);
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|siiii", (char **)kwnames, &name, &hash_size, &tdb_flags, &flags, &mode))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|siiii", kwnames, &name, &hash_size, &tdb_flags, &flags, &mode))
 		return NULL;
 
 	if (name == NULL) {
@@ -548,13 +549,21 @@ static PyObject *obj_get_seqnum(PyTdbObject *self, void *closure)
 
 
 static PyGetSetDef tdb_object_getsetters[] = {
-	{ (char *)"hash_size", (getter)obj_get_hash_size, NULL, NULL },
-	{ (char *)"map_size", (getter)obj_get_map_size, NULL, NULL },
-	{ (char *)"freelist_size", (getter)obj_get_freelist_size, NULL, NULL },
-	{ (char *)"flags", (getter)obj_get_flags, NULL, NULL },
-	{ (char *)"max_dead", NULL, (setter)obj_set_max_dead, NULL },
-	{ (char *)"filename", (getter)obj_get_filename, NULL, (char *)"The filename of this TDB file."},
-	{ (char *)"seqnum", (getter)obj_get_seqnum, NULL, NULL },
+	{ discard_const_p(char, "hash_size"),
+	  (getter)obj_get_hash_size, NULL, NULL },
+	{ discard_const_p(char, "map_size"),
+	  (getter)obj_get_map_size, NULL, NULL },
+	{ discard_const_p(char, "freelist_size"),
+	  (getter)obj_get_freelist_size, NULL, NULL },
+	{ discard_const_p(char, "flags"),
+	  (getter)obj_get_flags, NULL, NULL },
+	{ discard_const_p(char, "max_dead"),
+	  NULL, (setter)obj_set_max_dead, NULL },
+	{ discard_const_p(char, "filename"),
+	  (getter)obj_get_filename, NULL,
+	  discard_const_p(char, "The filename of this TDB file.") },
+	{ discard_const_p(char, "seqnum"),
+	  (getter)obj_get_seqnum, NULL, NULL },
 	{ NULL }
 };
 
