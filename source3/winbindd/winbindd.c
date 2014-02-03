@@ -217,7 +217,7 @@ static void terminate(bool is_parent)
 		struct messaging_context *msg = winbind_messaging_context();
 		struct server_id self = messaging_server_id(msg);
 		serverid_deregister(self);
-		pidfile_unlink(lp_piddir(), "winbindd");
+		pidfile_unlink(lp_pid_directory(), "winbindd");
 	}
 
 	exit(0);
@@ -1488,10 +1488,10 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
-	ok = directory_create_or_exist(lp_piddir(), geteuid(), 0755);
+	ok = directory_create_or_exist(lp_pid_directory(), geteuid(), 0755);
 	if (!ok) {
 		DEBUG(0, ("Failed to create directory %s for pid files - %s\n",
-			  lp_piddir(), strerror(errno)));
+			  lp_pid_directory(), strerror(errno)));
 		exit(1);
 	}
 
@@ -1529,7 +1529,7 @@ int main(int argc, char **argv, char **envp)
 	if (!interactive)
 		become_daemon(Fork, no_process_group, log_stdout);
 
-	pidfile_create(lp_piddir(), "winbindd");
+	pidfile_create(lp_pid_directory(), "winbindd");
 
 #if HAVE_SETPGID
 	/*

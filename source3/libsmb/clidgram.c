@@ -328,7 +328,7 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->my_mailslot, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->nmbd_pid = pidfile_pid(lp_piddir(), "nmbd");
+	state->nmbd_pid = pidfile_pid(lp_pid_directory(), "nmbd");
 	if (state->nmbd_pid == 0) {
 		DEBUG(3, ("No nmbd found\n"));
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);

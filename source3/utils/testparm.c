@@ -118,9 +118,9 @@ static int do_global_checks(void)
 		       lp_cachedir());
 	}
 
-	if (!directory_exist_stat(lp_piddir(), &st)) {
+	if (!directory_exist_stat(lp_pid_directory(), &st)) {
 		fprintf(stderr, "ERROR: pid directory %s does not exist\n\n",
-		       lp_piddir());
+		       lp_pid_directory());
 		ret = 1;
 	}
 

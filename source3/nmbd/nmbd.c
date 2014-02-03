@@ -72,7 +72,7 @@ static void terminate(struct messaging_context *msg)
 	gencache_stabilize();
 	serverid_deregister(messaging_server_id(msg));
 
-	pidfile_unlink(lp_piddir(), "nmbd");
+	pidfile_unlink(lp_pid_directory(), "nmbd");
 
 	exit(0);
 }
@@ -976,14 +976,14 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	ok = directory_create_or_exist(lp_piddir(), geteuid(), 0755);
+	ok = directory_create_or_exist(lp_pid_directory(), geteuid(), 0755);
 	if (!ok) {
 		DEBUG(0, ("Failed to create directory %s for pid files - %s\n",
-			  lp_piddir(), strerror(errno)));
+			  lp_pid_directory(), strerror(errno)));
 		exit(1);
 	}
 
-	pidfile_create(lp_piddir(), "nmbd");
+	pidfile_create(lp_pid_directory(), "nmbd");
 
 	status = reinit_after_fork(msg, nmbd_event_context(),
 				   false);

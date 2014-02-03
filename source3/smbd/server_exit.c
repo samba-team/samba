@@ -211,7 +211,7 @@ static void exit_server_common(enum server_exit_reason how,
 		DEBUG(3,("Server exit (%s)\n",
 			(reason ? reason : "normal exit")));
 		if (am_parent) {
-			pidfile_unlink(lp_piddir(), "smbd");
+			pidfile_unlink(lp_pid_directory(), "smbd");
 		}
 		gencache_stabilize();
 	}

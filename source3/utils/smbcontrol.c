@@ -1441,7 +1441,7 @@ static struct server_id parse_dest(struct messaging_context *msg,
 
 	/* Look up other destinations in pidfile directory */
 
-	if ((pid = pidfile_pid(lp_piddir(), dest)) != 0) {
+	if ((pid = pidfile_pid(lp_pid_directory(), dest)) != 0) {
 		return pid_to_procid(pid);
 	}
 

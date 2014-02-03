@@ -388,7 +388,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		mkdir(lpcfg_lock_directory(cmdline_lp_ctx), 0755);
 	}
 
-	pidfile_create(lpcfg_piddir(cmdline_lp_ctx), binary_name);
+	pidfile_create(lpcfg_pid_directory(cmdline_lp_ctx), binary_name);
 
 	/* Set up a database to hold a random seed, in case we don't
 	 * have /dev/urandom */

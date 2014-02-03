@@ -1340,11 +1340,11 @@ extern void build_options(bool screen);
 	if (!directory_exist(lp_lock_directory()))
 		mkdir(lp_lock_directory(), 0755);
 
-	if (!directory_exist(lp_piddir()))
-		mkdir(lp_piddir(), 0755);
+	if (!directory_exist(lp_pid_directory()))
+		mkdir(lp_pid_directory(), 0755);
 
 	if (is_daemon)
-		pidfile_create(lp_piddir(), "smbd");
+		pidfile_create(lp_pid_directory(), "smbd");
 
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,
