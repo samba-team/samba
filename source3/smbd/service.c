@@ -206,7 +206,7 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 	last_flags = flags;
 
 	/* Obey the client case sensitivity requests - only for clients that support it. */
-	switch (lp_casesensitive(snum)) {
+	switch (lp_case_sensitive(snum)) {
 		case Auto:
 			{
 				/* We need this uglyness due to DOS/Win9x clients that lie about case insensitivity. */
@@ -562,12 +562,12 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		      ( lp_enable_asu_support() && strequal(dev,"ADMIN$")) );
 
 	/* Case options for the share. */
-	if (lp_casesensitive(snum) == Auto) {
+	if (lp_case_sensitive(snum) == Auto) {
 		/* We will be setting this per packet. Set to be case
 		 * insensitive for now. */
 		conn->case_sensitive = False;
 	} else {
-		conn->case_sensitive = (bool)lp_casesensitive(snum);
+		conn->case_sensitive = (bool)lp_case_sensitive(snum);
 	}
 
 	conn->case_preserve = lp_preservecase(snum);

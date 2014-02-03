@@ -229,7 +229,7 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 	}
 
 	if (strcmp(opt_name, SHARE_CI_FILESYSTEM) == 0) {
-		int case_sensitive = lpcfg_casesensitive(s, lpcfg_default_service(lp_ctx));
+		int case_sensitive = lpcfg_case_sensitive(s, lpcfg_default_service(lp_ctx));
 		/*
 		 * Yes, this confusingly named option means Samba acts
 		 * case sensitive, so that the filesystem can act case
