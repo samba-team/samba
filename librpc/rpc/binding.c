@@ -474,7 +474,7 @@ static bool dcerpc_floor_pack_rhs_if_version_data(
 	return true;
 }
 
-const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
+char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
 	switch (epm_floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
