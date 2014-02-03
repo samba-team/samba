@@ -104,7 +104,7 @@ bool mangle_is_8_3_wildcards(const char *fname, bool check_case,
 bool mangle_must_mangle(const char *fname,
 		   const struct share_params *p)
 {
-	if (!lp_manglednames(p)) {
+	if (!lp_mangled_names(p)) {
 		return False;
 	}
 	return mangle_fns->must_mangle(fname, p);
@@ -140,7 +140,7 @@ bool name_to_8_3(const char *in,
 
 	/* name mangling can be disabled for speed, in which case
 	   we just truncate the string */
-	if (!lp_manglednames(p)) {
+	if (!lp_mangled_names(p)) {
 		strlcpy(out, in, 13);
 		return True;
 	}

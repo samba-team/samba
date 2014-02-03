@@ -2211,7 +2211,7 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	ZERO_STRUCT(state);
 	state.conn = conn;
 	state.info_level = info_level;
-	state.check_mangled_names = lp_manglednames(conn->params);
+	state.check_mangled_names = lp_mangled_names(conn->params);
 	state.has_wild = dptr_has_wild(dirptr);
 	state.got_exact_match = false;
 
