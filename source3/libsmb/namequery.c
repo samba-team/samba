@@ -3079,7 +3079,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	if (strequal(domain, lp_workgroup()) || strequal(domain, lp_realm())) {
 		pserver = talloc_asprintf(ctx, "%s, %s",
 			saf_servername ? saf_servername : "",
-			lp_passwordserver());
+			lp_password_server());
 	} else {
 		pserver = talloc_asprintf(ctx, "%s, *",
 			saf_servername ? saf_servername : "");

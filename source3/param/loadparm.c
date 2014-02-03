@@ -796,7 +796,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.logon_path, "\\\\%N\\%U\\profile");
 
 	Globals.name_resolve_order = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
-	string_set(&Globals.passwordserver, "*");
+	string_set(&Globals.password_server, "*");
 
 	Globals.algorithmic_rid_base = BASE_RID;
 
@@ -4721,9 +4721,9 @@ static bool lp_load_ex(const char *pszFname,
 
 	set_allowed_client_auth();
 
-	if (lp_security() == SEC_ADS && strchr(lp_passwordserver(), ':')) {
+	if (lp_security() == SEC_ADS && strchr(lp_password_server(), ':')) {
 		DEBUG(1, ("WARNING: The optional ':port' in password server = %s is deprecated\n",
-			  lp_passwordserver()));
+			  lp_password_server()));
 	}
 
 	bLoaded = true;

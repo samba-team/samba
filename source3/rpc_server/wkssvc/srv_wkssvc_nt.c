@@ -506,7 +506,7 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 
 	pwd_server = "";
 
-	if ((pwd_tmp = talloc_strdup(ctr1->user1, lp_passwordserver()))) {
+	if ((pwd_tmp = talloc_strdup(ctr1->user1, lp_password_server()))) {
 		/* The configured password server is a full DNS name but
 		 * for the logon server we need to return just the first
 		 * component (machine name) of it in upper-case */

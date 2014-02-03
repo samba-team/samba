@@ -165,7 +165,7 @@ static int do_global_checks(void)
 	 * Password server sanity checks.
 	 */
 
-	if((lp_security() >= SEC_DOMAIN) && !*lp_passwordserver()) {
+	if((lp_security() >= SEC_DOMAIN) && !*lp_password_server()) {
 		const char *sec_setting;
 		if(lp_security() == SEC_DOMAIN)
 			sec_setting = "domain";
@@ -181,7 +181,7 @@ static int do_global_checks(void)
 		ret = 1;
 	}
 
-	if((lp_security() >= SEC_DOMAIN) && (strcmp(lp_passwordserver(), "*") != 0)) {
+	if((lp_security() >= SEC_DOMAIN) && (strcmp(lp_password_server(), "*") != 0)) {
 		const char *sec_setting;
 		if(lp_security() == SEC_DOMAIN)
 			sec_setting = "domain";
