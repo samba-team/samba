@@ -1240,8 +1240,11 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 					    struct dcerpc_binding **b_out)
 {
 	NTSTATUS status;
-	struct dcerpc_binding *binding;
+	struct dcerpc_binding *b;
+	enum dcerpc_transport_t transport;
 	struct ndr_syntax_id abstract_syntax;
+	char *endpoint = NULL;
+	char *host = NULL;
 
 	/*
 	 * A tower needs to have at least 4 floors to carry useful
@@ -1252,65 +1255,80 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	binding = talloc_zero(mem_ctx, struct dcerpc_binding);
-	NT_STATUS_HAVE_NO_MEMORY(binding);
+	status = dcerpc_parse_binding(mem_ctx, "", &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	ZERO_STRUCT(binding->object);
-	binding->options = NULL;
-	binding->host = NULL;
-	binding->target_hostname = NULL;
-	binding->flags = 0;
-	binding->assoc_group_id = 0;
-
-	binding->transport = dcerpc_transport_by_tower(tower);
-
-	if (binding->transport == (unsigned int)-1) {
-		talloc_free(binding);
+	transport = dcerpc_transport_by_tower(tower);
+	if (transport == NCA_UNKNOWN) {
+		talloc_free(b);
 		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	status = dcerpc_binding_set_transport(b, transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(b);
+		return status;
 	}
 
 	/* Set abstract syntax */
 	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &abstract_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Error pulling abstract syntax: %s", nt_errstr(status)));
+		talloc_free(b);
 		return status;
 	}
 
-	status = dcerpc_binding_set_abstract_syntax(binding, &abstract_syntax);
+	status = dcerpc_binding_set_abstract_syntax(b, &abstract_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(binding);
-		DEBUG(1, ("Error set object uuid and version: %s", nt_errstr(status)));
+		talloc_free(b);
 		return status;
 	}
 
 	/* Ignore floor 1, it contains the NDR version info */
 
-	binding->options = NULL;
-
 	/* Set endpoint */
 	errno = 0;
 	if (tower->num_floors >= 4) {
-		binding->endpoint = dcerpc_floor_get_rhs_data(binding, &tower->floors[3]);
+		endpoint = dcerpc_floor_get_rhs_data(b, &tower->floors[3]);
 	}
 	if (errno != 0) {
 		int saved_errno = errno;
-		talloc_free(binding);
+		talloc_free(b);
 		return map_nt_error_from_unix_common(saved_errno);
 	}
+
+	status = dcerpc_binding_set_string_option(b, "endpoint", endpoint);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(b);
+		return status;
+	}
+	TALLOC_FREE(endpoint);
 
 	/* Set network address */
 	errno = 0;
 	if (tower->num_floors >= 5) {
-		binding->host = dcerpc_floor_get_rhs_data(binding, &tower->floors[4]);
+		host = dcerpc_floor_get_rhs_data(b, &tower->floors[4]);
 	}
 	if (errno != 0) {
 		int saved_errno = errno;
-		talloc_free(binding);
+		talloc_free(b);
 		return map_nt_error_from_unix_common(saved_errno);
 	}
-	binding->target_hostname = binding->host;
 
-	*b_out = binding;
+	status = dcerpc_binding_set_string_option(b, "host", host);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(b);
+		return status;
+	}
+	status = dcerpc_binding_set_string_option(b, "target_hostname", host);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(b);
+		return status;
+	}
+	TALLOC_FREE(host);
+
+	*b_out = b;
 	return NT_STATUS_OK;
 }
 
