@@ -25,30 +25,11 @@
 #include "libcli/wbclient/wbclient.h"
 #include "system/passwd.h"
 
-static NTSTATUS dcerpc_unixinfo_bind(struct dcesrv_call_state *dce_call,
-				     const struct dcesrv_interface *iface)
-{
-	struct wbc_context *wbc_ctx;
-
-	wbc_ctx = wbc_init(dce_call->context, dce_call->msg_ctx,
-			   dce_call->event_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(wbc_ctx);
-
-	dce_call->context->private_data = wbc_ctx;
-
-	return NT_STATUS_OK;
-}
-
-#define DCESRV_INTERFACE_UNIXINFO_BIND dcerpc_unixinfo_bind
-
 static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_SidToUid *r)
 {
 	NTSTATUS status;
-	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private_data,
-						struct wbc_context);
 	struct id_map *ids;
 
 	DEBUG(5, ("dcesrv_unixinfo_SidToUid called\n"));
@@ -59,7 +40,7 @@ static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 	ids->sid = &r->in.sid;
 	ids->status = ID_UNKNOWN;
 	ZERO_STRUCT(ids->xid);
-	status = wbc_sids_to_xids(wbc_ctx->event_ctx, ids, 1);
+	status = wbc_sids_to_xids(dce_call->event_ctx, ids, 1);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (ids->xid.type == ID_TYPE_BOTH ||
@@ -75,9 +56,6 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_UidToSid *r)
 {
-	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private_data,
-						struct wbc_context);
 	struct id_map *ids;
 	uint32_t uid;
 	NTSTATUS status;
@@ -99,7 +77,7 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 	ids->xid.id = uid;
 	ids->xid.type = ID_TYPE_UID;
 
-	status = wbc_xids_to_sids(wbc_ctx->event_ctx, ids, 1);
+	status = wbc_xids_to_sids(dce_call->event_ctx, ids, 1);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	r->out.sid = ids->sid;
@@ -111,9 +89,6 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 				  struct unixinfo_SidToGid *r)
 {
 	NTSTATUS status;
-	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private_data,
-						struct wbc_context);
 	struct id_map *ids;
 
 	DEBUG(5, ("dcesrv_unixinfo_SidToGid called\n"));
@@ -124,7 +99,7 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 	ids->sid = &r->in.sid;
 	ids->status = ID_UNKNOWN;
 	ZERO_STRUCT(ids->xid);
-	status = wbc_sids_to_xids(wbc_ctx->event_ctx, ids, 1);
+	status = wbc_sids_to_xids(dce_call->event_ctx, ids, 1);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (ids->xid.type == ID_TYPE_BOTH ||
@@ -140,9 +115,6 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_GidToSid *r)
 {
-	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private_data,
-						struct wbc_context);
 	struct id_map *ids;
 	uint32_t gid;
 	NTSTATUS status;
@@ -164,7 +136,7 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 	ids->xid.id = gid;
 	ids->xid.type = ID_TYPE_GID;
 
-	status = wbc_xids_to_sids(wbc_ctx->event_ctx, ids, 1);
+	status = wbc_xids_to_sids(dce_call->event_ctx, ids, 1);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	r->out.sid = ids->sid;
