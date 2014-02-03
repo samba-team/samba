@@ -107,7 +107,7 @@ static int dump_tdb(const char *fname, const char *keyname, bool emergency)
 	}
 
 	if (emergency) {
-		return tdb_rescue(tdb, emergency_walk, keyname) == 0;
+		return tdb_rescue(tdb, emergency_walk, discard_const(keyname)) == 0;
 	}
 	if (!keyname) {
 		return tdb_traverse(tdb, traverse_fn, NULL) == -1 ? 1 : 0;
