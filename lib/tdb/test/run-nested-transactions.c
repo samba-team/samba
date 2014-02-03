@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 
 	plan_tests(27);
 	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
+	key.dptr = discard_const_p(uint8_t, "hi");
 
 	tdb = tdb_open_ex("run-nested-transactions.tdb",
 			  1024, TDB_CLEAR_IF_FIRST|TDB_DISALLOW_NESTING,
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
 	/* Nesting disallowed. */
 	ok1(tdb_transaction_start(tdb) == 0);
-	data.dptr = (void *)"world";
+	data.dptr = discard_const_p(uint8_t, "world");
 	data.dsize = strlen("world");
 	ok1(tdb_store(tdb, key, data, TDB_INSERT) == 0);
 	data = tdb_fetch(tdb, key);

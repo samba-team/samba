@@ -29,7 +29,7 @@ static inline bool tdb_deq(TDB_DATA a, TDB_DATA b)
 static inline TDB_DATA tdb_mkdata(const void *p, size_t len)
 {
 	TDB_DATA d;
-	d.dptr = (void *)p;
+	d.dptr = discard_const_p(uint8_t, p);
 	d.dsize = len;
 	return d;
 }
@@ -76,9 +76,9 @@ int main(int argc, char *argv[])
 			  O_CREAT|O_TRUNC|O_RDWR, 0600, &log_ctx, NULL);
 
 	wd.key.dsize = strlen("hi");
-	wd.key.dptr = (void *)"hi";
+	wd.key.dptr = discard_const_p(uint8_t, "hi");
 	wd.data.dsize = strlen("world");
-	wd.data.dptr = (void *)"world";
+	wd.data.dptr = discard_const_p(uint8_t, "world");
 	wd.count = 0;
 	wd.fail = false;
 

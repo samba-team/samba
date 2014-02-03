@@ -156,7 +156,7 @@ reset:
 
 	/* Put key for agent to fetch. */
 	key.dsize = strlen(KEY_STRING);
-	key.dptr = (void *)KEY_STRING;
+	key.dptr = discard_const_p(uint8_t, KEY_STRING);
 	if (tdb_store(tdb, key, key, TDB_INSERT) != 0)
 		return false;
 

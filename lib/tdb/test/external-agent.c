@@ -27,7 +27,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 		return OTHER_FAILURE;
 	}
 
-	k.dptr = (void *)name;
+	k.dptr = discard_const_p(uint8_t, name);
 	k.dsize = strlen(name);
 
 	locking_would_block = 0;

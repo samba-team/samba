@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 
 	/* Tickle bug on appending zero length buffer to zero length buffer. */
 	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
-	data.dptr = (void *)"world";
+	key.dptr = discard_const_p(uint8_t, "hi");
+	data.dptr = discard_const_p(uint8_t, "world");
 	data.dsize = 0;
 
 	ok1(tdb_append(tdb, key, data) == 0);

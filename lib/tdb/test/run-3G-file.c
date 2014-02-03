@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
 	tdb->methods = &large_io_methods;
 
 	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
+	key.dptr = discard_const_p(uint8_t, "hi");
 	orig_data.dsize = strlen("world");
-	orig_data.dptr = (void *)"world";
+	orig_data.dptr = discard_const_p(uint8_t, "world");
 
 	/* Enlarge the file (internally multiplies by 2). */
 	ret = tdb_expand(tdb, 1500000000);

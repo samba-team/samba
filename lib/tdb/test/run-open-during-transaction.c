@@ -165,8 +165,8 @@ int main(int argc, char *argv[])
 		opened = true;
 		ok1(tdb_transaction_start(tdb) == 0);
 		key.dsize = strlen("hi");
-		key.dptr = (void *)"hi";
-		data.dptr = (void *)"world";
+		key.dptr = discard_const_p(uint8_t, "hi");
+		data.dptr = discard_const_p(uint8_t, "world");
 		data.dsize = strlen("world");
 
 		ok1(tdb_store(tdb, key, data, TDB_INSERT) == 0);

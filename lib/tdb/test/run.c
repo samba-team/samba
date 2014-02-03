@@ -24,9 +24,9 @@ int main(int argc, char *argv[])
 
 	ok1(tdb);
 	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
+	key.dptr = discard_const_p(uint8_t, "hi");
 	data.dsize = strlen("world");
-	data.dptr = (void *)"world";
+	data.dptr = discard_const_p(uint8_t, "world");
 
 	ok1(tdb_store(tdb, key, data, TDB_MODIFY) < 0);
 	ok1(tdb_error(tdb) == TDB_ERR_NOEXIST);
