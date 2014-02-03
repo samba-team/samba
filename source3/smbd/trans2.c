@@ -2571,8 +2571,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		 directory,lp_dontdescend(ctx, SNUM(conn))));
-	if (in_list(directory,lp_dontdescend(ctx, SNUM(conn)),conn->case_sensitive))
+		 directory,lp_dont_descend(ctx, SNUM(conn))));
+	if (in_list(directory,lp_dont_descend(ctx, SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
 
 	p = pdata;
@@ -2905,8 +2905,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		 directory,lp_dontdescend(ctx, SNUM(conn))));
-	if (in_list(directory,lp_dontdescend(ctx, SNUM(conn)),conn->case_sensitive))
+		 directory,lp_dont_descend(ctx, SNUM(conn))));
+	if (in_list(directory,lp_dont_descend(ctx, SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
 
 	p = pdata;

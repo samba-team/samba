@@ -1705,8 +1705,8 @@ void reply_search(struct smb_request *req)
 			 /DIR_STRUCT_SIZE));
 
 		DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-			 directory,lp_dontdescend(ctx, SNUM(conn))));
-		if (in_list(directory, lp_dontdescend(ctx, SNUM(conn)),True)) {
+			 directory,lp_dont_descend(ctx, SNUM(conn))));
+		if (in_list(directory, lp_dont_descend(ctx, SNUM(conn)),True)) {
 			check_descend = True;
 		}
 
