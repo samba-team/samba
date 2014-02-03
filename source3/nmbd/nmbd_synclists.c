@@ -157,7 +157,7 @@ done:
 	unstrcpy(s->server, name);
 	s->ip = ip;
 
-	if (asprintf(&s->fname, "%s/sync.%d", lp_lockdir(), counter++) < 0) {
+	if (asprintf(&s->fname, "%s/sync.%d", lp_lock_directory(), counter++) < 0) {
 		SAFE_FREE(s);
 		goto done;
 	}

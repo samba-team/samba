@@ -768,7 +768,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.workgroup, DEFAULT_WORKGROUP);
 
 	string_set(&Globals.passwd_program, "");
-	string_set(&Globals.lockdir, get_dyn_LOCKDIR());
+	string_set(&Globals.lock_directory, get_dyn_LOCKDIR());
 	string_set(&Globals.szStateDir, get_dyn_STATEDIR());
 	string_set(&Globals.szCacheDir, get_dyn_CACHEDIR());
 	string_set(&Globals.piddir, get_dyn_PIDDIR());
@@ -1172,15 +1172,15 @@ static FN_GLOBAL_BOOL(_writeraw, bWriteRaw)
 
 /* If lp_statedir() and lp_cachedir() are explicitely set during the
  * build process or in smb.conf, we use that value.  Otherwise they
- * default to the value of lp_lockdir(). */
+ * default to the value of lp_lock_directory(). */
 const char *lp_statedir(void) {
 	if ((strcmp(get_dyn_STATEDIR(), get_dyn_LOCKDIR()) != 0) ||
 	    (strcmp(get_dyn_STATEDIR(), Globals.szStateDir) != 0))
 		return(*(char **)(&Globals.szStateDir) ?
 		       *(char **)(&Globals.szStateDir) : "");
 	else
-		return(*(char **)(&Globals.lockdir) ?
-		       *(char **)(&Globals.lockdir) : "");
+		return(*(char **)(&Globals.lock_directory) ?
+		       *(char **)(&Globals.lock_directory) : "");
 }
 const char *lp_cachedir(void) {
 	if ((strcmp(get_dyn_CACHEDIR(), get_dyn_LOCKDIR()) != 0) ||
@@ -1188,8 +1188,8 @@ const char *lp_cachedir(void) {
 		return(*(char **)(&Globals.szCacheDir) ?
 		       *(char **)(&Globals.szCacheDir) : "");
 	else
-		return(*(char **)(&Globals.lockdir) ?
-		       *(char **)(&Globals.lockdir) : "");
+		return(*(char **)(&Globals.lock_directory) ?
+		       *(char **)(&Globals.lock_directory) : "");
 }
 static FN_GLOBAL_INTEGER(winbind_max_domain_connections_int,
 		  winbindMaxDomainConnections)

@@ -1517,7 +1517,7 @@ static char *xx_path(const char *name, const char *rootpath)
 
 char *lock_path(const char *name)
 {
-	return xx_path(name, lp_lockdir());
+	return xx_path(name, lp_lock_directory());
 }
 
 /**

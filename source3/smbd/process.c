@@ -3088,7 +3088,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 		DEBUG(1, ("pipe() failed: %s\n", strerror(errno)));
 		return false;
 	}
-	sconn->smb1.echo_handler.socket_lock_fd = create_unlink_tmp(lp_lockdir());
+	sconn->smb1.echo_handler.socket_lock_fd = create_unlink_tmp(lp_lock_directory());
 	if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
 		DEBUG(1, ("Could not create lock fd: %s\n", strerror(errno)));
 		goto fail;

@@ -388,7 +388,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	p->dce_ctx = dce_ctx;
 	p->endpoint = ep;
-	p->packet_log_dir = lpcfg_lockdir(dce_ctx->lp_ctx);
+	p->packet_log_dir = lpcfg_lock_directory(dce_ctx->lp_ctx);
 	p->auth_state.session_info = session_info;
 	p->auth_state.session_key = dcesrv_generic_session_key;
 	p->event_ctx = event_ctx;

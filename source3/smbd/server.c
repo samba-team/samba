@@ -1337,8 +1337,8 @@ extern void build_options(bool screen);
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	if (!directory_exist(lp_lockdir()))
-		mkdir(lp_lockdir(), 0755);
+	if (!directory_exist(lp_lock_directory()))
+		mkdir(lp_lock_directory(), 0755);
 
 	if (!directory_exist(lp_piddir()))
 		mkdir(lp_piddir(), 0755);

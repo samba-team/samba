@@ -384,8 +384,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	cleanup_tmp_files(cmdline_lp_ctx);
 
-	if (!directory_exist(lpcfg_lockdir(cmdline_lp_ctx))) {
-		mkdir(lpcfg_lockdir(cmdline_lp_ctx), 0755);
+	if (!directory_exist(lpcfg_lock_directory(cmdline_lp_ctx))) {
+		mkdir(lpcfg_lock_directory(cmdline_lp_ctx), 0755);
 	}
 
 	pidfile_create(lpcfg_piddir(cmdline_lp_ctx), binary_name);

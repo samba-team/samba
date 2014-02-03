@@ -114,7 +114,7 @@ static char *lpcfg_common_path(TALLOC_CTX* mem_ctx,
 char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			 const char *name)
 {
-	return lpcfg_common_path(mem_ctx, lpcfg_lockdir(lp_ctx), name);
+	return lpcfg_common_path(mem_ctx, lpcfg_lock_directory(lp_ctx), name);
 }
 
 /**

@@ -1481,10 +1481,10 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
-	ok = directory_create_or_exist(lp_lockdir(), geteuid(), 0755);
+	ok = directory_create_or_exist(lp_lock_directory(), geteuid(), 0755);
 	if (!ok) {
 		DEBUG(0, ("Failed to create directory %s for lock files - %s\n",
-			  lp_lockdir(), strerror(errno)));
+			  lp_lock_directory(), strerror(errno)));
 		exit(1);
 	}
 
