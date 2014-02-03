@@ -323,7 +323,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	if (conn->case_sensitive && !conn->case_preserve &&
 			!conn->short_case_preserve) {
-		if (!strnorm(smb_fname->base_name, lp_defaultcase(SNUM(conn)))) {
+		if (!strnorm(smb_fname->base_name, lp_default_case(SNUM(conn)))) {
 			DEBUG(0, ("strnorm %s failed\n", smb_fname->base_name));
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto err;
@@ -770,7 +770,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						   conn->params) &&
 						 !conn->short_case_preserve)) {
 					if (!strnorm(start,
-							lp_defaultcase(SNUM(conn)))) {
+							lp_default_case(SNUM(conn)))) {
 						DEBUG(0, ("strnorm %s failed\n",
 							start));
 						status = NT_STATUS_INVALID_PARAMETER;

@@ -148,6 +148,6 @@ bool name_to_8_3(const char *in,
 	return mangle_fns->name_to_8_3(in,
 				out,
 				cache83,
-				lp_defaultcase(p->service),
+				lp_default_case(p->service),
 				p);
 }
