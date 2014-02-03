@@ -32,7 +32,7 @@
  * Other stuff...
  *
  * magic_char     - This is the magic char used for mangling.  It's
- *                  global.  There is a call to lp_magicchar() in server.c
+ *                  global.  There is a call to lp_mangling_char() in server.c
  *                  that is used to override the initial value.
  *
  * MANGLE_BASE    - This is the number of characters we use for name mangling.
@@ -416,7 +416,7 @@ static bool is_mangled(const char *s, const struct share_params *p)
 	char *magic;
 	char magic_char;
 
-	magic_char = lp_magicchar(p);
+	magic_char = lp_mangling_char(p);
 
 	if (chartest == NULL) {
 		init_chartest();
@@ -720,7 +720,7 @@ static bool hash_name_to_8_3(const char *in,
 	size_t converted_size;
 	char magic_char;
 
-	magic_char = lp_magicchar(p);
+	magic_char = lp_mangling_char(p);
 
 	DEBUG(5,("hash_name_to_8_3( %s, cache83 = %s)\n", in,
 		 cache83 ? "True" : "False"));
