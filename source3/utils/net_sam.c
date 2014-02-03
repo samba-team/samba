@@ -1948,7 +1948,7 @@ doma_done:
 		goto failed;
 	}
 
-	if (!pdb_getsampwnam(samuser, lp_guestaccount())) {
+	if (!pdb_getsampwnam(samuser, lp_guest_account())) {
 		LDAPMod **mods = NULL;
 		struct dom_sid sid;
 		char *dn;
@@ -1960,7 +1960,7 @@ doma_done:
 
 		sid_compose(&sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
 
-		pwd = Get_Pwnam_alloc(tc, lp_guestaccount());
+		pwd = Get_Pwnam_alloc(tc, lp_guest_account());
 
 		if (!pwd) {
 			if (domusers_gid == -1) {
@@ -1973,7 +1973,7 @@ doma_done:
 				d_fprintf(stderr, _("talloc failed\n"));
 				goto done;
 			}
-			pwd->pw_name = talloc_strdup(pwd, lp_guestaccount());
+			pwd->pw_name = talloc_strdup(pwd, lp_guest_account());
 
 			if (is_ipa) {
 				pwd->pw_uid = 999;
@@ -2042,7 +2042,7 @@ doma_done:
 		}
 
 		if (is_ipa) {
-			if (!pdb_getsampwnam(samuser, lp_guestaccount())) {
+			if (!pdb_getsampwnam(samuser, lp_guest_account())) {
 				d_fprintf(stderr, _("Failed to read just "
 						    "created user.\n"));
 				goto failed;
@@ -2054,7 +2054,7 @@ doma_done:
 
 	d_printf(_("Checking Guest's group.\n"));
 
-	pwd = Get_Pwnam_alloc(tc, lp_guestaccount());
+	pwd = Get_Pwnam_alloc(tc, lp_guest_account());
 	if (!pwd) {
 		d_fprintf(stderr,
 			  _("Failed to find just created Guest account!\n"

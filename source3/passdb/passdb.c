@@ -148,7 +148,7 @@ static int count_commas(const char *str)
 static NTSTATUS samu_set_unix_internal(struct pdb_methods *methods,
 				       struct samu *user, const struct passwd *pwd, bool create)
 {
-	const char *guest_account = lp_guestaccount();
+	const char *guest_account = lp_guest_account();
 	const char *domain = lp_netbios_name();
 	char *fullname;
 	uint32_t urid;

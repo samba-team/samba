@@ -902,7 +902,7 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 		bool guest;
 
 		connect_time = (uint32_t)(now - session_list[resume_handle].connect_start);
-		guest = strequal( session_list[resume_handle].username, lp_guestaccount() );
+		guest = strequal( session_list[resume_handle].username, lp_guest_account() );
 
 		ctr1->array[num_entries].client		= session_list[resume_handle].remote_machine;
 		ctr1->array[num_entries].user		= session_list[resume_handle].username;

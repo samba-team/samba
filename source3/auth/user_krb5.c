@@ -151,7 +151,7 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID) {
 			*mapped_to_guest = true;
-			fuser = talloc_strdup(mem_ctx, lp_guestaccount());
+			fuser = talloc_strdup(mem_ctx, lp_guest_account());
 			if (!fuser) {
 				return NT_STATUS_NO_MEMORY;
 			}

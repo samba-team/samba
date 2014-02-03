@@ -752,7 +752,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.mangling_method, "hash2");
 	Globals.mangle_prefix = 1;
 
-	string_set(&Globals.guestaccount, GUEST_ACCOUNT);
+	string_set(&Globals.guest_account, GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
 	string_set(&Globals.unix_charset, DEFAULT_UNIX_CHARSET);

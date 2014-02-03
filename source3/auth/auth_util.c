@@ -721,7 +721,7 @@ static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 				struct netr_SamInfo3 *info3)
 {
-	const char *guest_account = lp_guestaccount();
+	const char *guest_account = lp_guest_account();
 	struct dom_sid domain_sid;
 	struct passwd *pwd;
 	const char *tmp;
@@ -782,7 +782,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_info, struct auth_serversupplied_info **server_info)
 {
 	static const char zeros[16] = {0};
-	const char *guest_account = lp_guestaccount();
+	const char *guest_account = lp_guest_account();
 	const char *domain = lp_netbios_name();
 	struct netr_SamInfo3 info3;
 	TALLOC_CTX *tmp_ctx;

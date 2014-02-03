@@ -619,7 +619,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		/*
 		 * If the SID from lookup_name() was the guest sid, passdb knows
-		 * about the mapping of guest sid to lp_guestaccount()
+		 * about the mapping of guest sid to lp_guest_account()
 		 * username and will return the unix_pw info for a guest
 		 * user. Use it if it's there, else lookup the *uid details
 		 * using Get_Pwnam_alloc(). See bug #6291 for details. JRA.

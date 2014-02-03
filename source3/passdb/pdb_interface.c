@@ -367,7 +367,7 @@ static bool guest_user_info( struct samu *user )
 {
 	struct passwd *pwd;
 	NTSTATUS result;
-	const char *guestname = lp_guestaccount();
+	const char *guestname = lp_guest_account();
 
 	pwd = Get_Pwnam_alloc(talloc_tos(), guestname);
 	if (pwd == NULL) {
