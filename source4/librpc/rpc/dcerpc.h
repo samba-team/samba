@@ -247,9 +247,4 @@ void dcerpc_log_packet(const char *lockdir,
 		       uint32_t opnum, uint32_t flags,
 		       const DATA_BLOB *pkt);
 
-
-enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
-
-const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
-
 #endif /* __S4_DCERPC_H__ */
