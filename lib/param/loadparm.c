@@ -2015,7 +2015,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->create_mask = 0744;
 	lp_ctx->sDefault->force_create_mode = 0000;
 	lp_ctx->sDefault->directory_mask = 0755;
-	lp_ctx->sDefault->force_dir_mode = 0000;
+	lp_ctx->sDefault->force_directory_mode = 0000;
 
 	DEBUG(3, ("Initialising global parameters\n"));
 

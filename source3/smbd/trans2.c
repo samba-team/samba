@@ -1407,7 +1407,7 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
 		 */
 		ret &= lp_directory_mask(SNUM(conn));
 		/* Add in force bits */
-		ret |= lp_force_dir_mode(SNUM(conn));
+		ret |= lp_force_directory_mode(SNUM(conn));
 	}
 
 	*ret_perms = ret;

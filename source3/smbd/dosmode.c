@@ -164,7 +164,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			/* Apply directory mask */
 			result &= lp_directory_mask(SNUM(conn));
 			/* Add in force bits */
-			result |= lp_force_dir_mode(SNUM(conn));
+			result |= lp_force_directory_mode(SNUM(conn));
 		}
 	} else { 
 		if (lp_map_archive(SNUM(conn)) && IS_DOS_ARCHIVE(dosmode))
