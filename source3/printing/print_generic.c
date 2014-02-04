@@ -133,7 +133,7 @@ static int generic_job_resume(int snum, struct printjob *pjob)
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-				 lp_lpresumecommand(talloc_tos(), snum), NULL,
+				 lp_lpresume_command(talloc_tos(), snum), NULL,
 				 "%j", jobstr,
 				 NULL);
 }
