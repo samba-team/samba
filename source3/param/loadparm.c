@@ -5271,7 +5271,7 @@ static bool lp_widelinks_internal(int snum)
 
 void widelinks_warning(int snum)
 {
-	if (lp_allow_insecure_widelinks()) {
+	if (lp_allow_insecure_wide_links()) {
 		return;
 	}
 
@@ -5291,7 +5291,7 @@ bool lp_widelinks(int snum)
 		 * Unless we have "allow insecure widelinks"
 		 * turned on.
 		 */
-		if (!lp_allow_insecure_widelinks()) {
+		if (!lp_allow_insecure_wide_links()) {
 			return false;
 		}
 	}
