@@ -386,11 +386,11 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 
 	/* defer to scripts */
 
-	if ( *lp_deluserfromgroup_script(talloc_tos()) ) {
+	if ( *lp_delete_user_from_group_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		del_script = talloc_strdup(ctx,
-				lp_deluserfromgroup_script(ctx));
+				lp_delete_user_from_group_script(ctx));
 		if (!del_script) {
 			return -1;
 		}
