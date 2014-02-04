@@ -261,11 +261,11 @@ bool is_share_read_only_for_token(const char *username,
 	int snum = SNUM(conn);
 	bool result = conn->read_only;
 
-	if (lp_readlist(snum) != NULL) {
+	if (lp_read_list(snum) != NULL) {
 		if (token_contains_name_in_list(username, domain,
 						lp_servicename(talloc_tos(), snum),
 						token,
-						lp_readlist(snum))) {
+						lp_read_list(snum))) {
 			result = True;
 		}
 	}
