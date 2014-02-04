@@ -7026,7 +7026,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
  	 * don't want to end up with a half-constructed mknod.
  	 */
 
-	if (lp_inherit_perms(SNUM(conn))) {
+	if (lp_inherit_permissions(SNUM(conn))) {
 		char *parent;
 		if (!parent_dirname(talloc_tos(), smb_fname->base_name,
 				    &parent, NULL)) {

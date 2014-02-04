@@ -116,7 +116,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
-	if ((inherit_from_dir != NULL) && lp_inherit_perms(SNUM(conn))) {
+	if ((inherit_from_dir != NULL) && lp_inherit_permissions(SNUM(conn))) {
 		struct smb_filename *smb_fname_parent;
 
 		DEBUG(2, ("unix_mode(%s) inheriting from %s\n",
