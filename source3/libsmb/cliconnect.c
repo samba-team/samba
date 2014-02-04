@@ -3147,7 +3147,7 @@ static void cli_start_connection_connected(struct tevent_req *subreq)
 
 	subreq = smbXcli_negprot_send(state, state->ev, state->cli->conn,
 				      state->cli->timeout,
-				      lp_cli_minprotocol(),
+				      lp_client_min_protocol(),
 				      lp_client_max_protocol());
 	if (tevent_req_nomem(subreq, req)) {
 		return;

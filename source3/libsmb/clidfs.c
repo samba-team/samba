@@ -167,7 +167,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	DEBUG(4,(" session request ok\n"));
 
 	status = smbXcli_negprot(c->conn, c->timeout,
-				 lp_cli_minprotocol(),
+				 lp_client_min_protocol(),
 				 max_protocol);
 
 	if (!NT_STATUS_IS_OK(status)) {
