@@ -2654,8 +2654,8 @@ static WERROR print_job_checks(const struct auth_session_info *server_info,
 	}
 
 	/* see if we have sufficient disk space */
-	if (lp_minprintspace(snum)) {
-		minspace = lp_minprintspace(snum);
+	if (lp_min_print_space(snum)) {
+		minspace = lp_min_print_space(snum);
 		ret = sys_fsusage(lp_path(talloc_tos(), snum), &dspace, &dsize);
 		if (ret == 0 && dspace < 2*minspace) {
 			DEBUG(3, ("print_job_checks: "
