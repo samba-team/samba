@@ -163,7 +163,8 @@ static struct DsIntIdTestCtx *_dsintid_create_context(struct torture_context *tc
 	ctx->creds = cmdline_credentials;
 	ctx->dsa_bind.server_binding = server_binding;
 
-	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s", server_binding->host);
+	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s",
+			dcerpc_binding_get_string_option(server_binding, "host"));
 
 	return ctx;
 }
