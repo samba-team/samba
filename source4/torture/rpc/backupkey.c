@@ -996,48 +996,47 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "backupkey");
-	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "backupkey",
 						  &ndr_table_backupkey);
 
-	test = torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid",
-					  test_RetreiveBackupKeyGUID);
+	torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid",
+				   test_RetreiveBackupKeyGUID);
 
-	test = torture_rpc_tcase_add_test(tcase, "restore_guid",
-					  test_RestoreGUID);
+	torture_rpc_tcase_add_test(tcase, "restore_guid",
+				   test_RestoreGUID);
 
-	test = torture_rpc_tcase_add_test(tcase, "restore_guid version 3",
-					  test_RestoreGUID_v3);
+	torture_rpc_tcase_add_test(tcase, "restore_guid version 3",
+				   test_RestoreGUID_v3);
 
 /* We double the test in order to be sure that we don't mess stuff (ie. freeing static stuff */
 
-	test = torture_rpc_tcase_add_test(tcase, "restore_guid_2nd",
-					  test_RestoreGUID);
+	torture_rpc_tcase_add_test(tcase, "restore_guid_2nd",
+				   test_RestoreGUID);
 
-	test = torture_rpc_tcase_add_test(tcase, "unable_to_decrypt_secret",
-					  test_RestoreGUID_ko);
+	torture_rpc_tcase_add_test(tcase, "unable_to_decrypt_secret",
+				   test_RestoreGUID_ko);
 
-	test = torture_rpc_tcase_add_test(tcase, "wrong_user_restore_guid",
-					  test_RestoreGUID_wronguser);
+	torture_rpc_tcase_add_test(tcase, "wrong_user_restore_guid",
+				   test_RestoreGUID_wronguser);
 
-	test = torture_rpc_tcase_add_test(tcase, "wrong_version_restore_guid",
-					  test_RestoreGUID_wrongversion);
+	torture_rpc_tcase_add_test(tcase, "wrong_version_restore_guid",
+				   test_RestoreGUID_wrongversion);
 
-	test = torture_rpc_tcase_add_test(tcase, "bad_magic_on_secret_restore_guid",
-					  test_RestoreGUID_badmagiconsecret);
+	torture_rpc_tcase_add_test(tcase, "bad_magic_on_secret_restore_guid",
+				   test_RestoreGUID_badmagiconsecret);
 
-	test = torture_rpc_tcase_add_test(tcase, "bad_hash_on_secret_restore_guid",
-					  test_RestoreGUID_badhashaccesscheck);
+	torture_rpc_tcase_add_test(tcase, "bad_hash_on_secret_restore_guid",
+				   test_RestoreGUID_badhashaccesscheck);
 
-	test = torture_rpc_tcase_add_test(tcase, "bad_magic_on_accesscheck_restore_guid",
-					  test_RestoreGUID_badmagicaccesscheck);
+	torture_rpc_tcase_add_test(tcase, "bad_magic_on_accesscheck_restore_guid",
+				   test_RestoreGUID_badmagicaccesscheck);
 
-	test = torture_rpc_tcase_add_test(tcase, "bad_cert_guid_restore_guid",
-					  test_RestoreGUID_badcertguid);
+	torture_rpc_tcase_add_test(tcase, "bad_cert_guid_restore_guid",
+				   test_RestoreGUID_badcertguid);
 
-	test = torture_rpc_tcase_add_test(tcase, "empty_request_restore_guid",
-					  test_RestoreGUID_emptyrequest);
+	torture_rpc_tcase_add_test(tcase, "empty_request_restore_guid",
+				   test_RestoreGUID_emptyrequest);
 
 	return suite;
 }
