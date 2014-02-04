@@ -89,7 +89,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg, FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
 	SSVAL(req->outbuf,smb_vwv2, sconn->smb1.negprot.max_recv);
-	SSVAL(req->outbuf,smb_vwv3, lp_maxmux()); /* maxmux */
+	SSVAL(req->outbuf,smb_vwv3, lp_max_mux()); /* maxmux */
 	SSVAL(req->outbuf,smb_vwv4, 1);
 	SSVAL(req->outbuf,smb_vwv5, raw); /* tell redirector we support
 		readbraw writebraw (possibly) */
@@ -136,7 +136,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
 	SSVAL(req->outbuf,smb_vwv2,sconn->smb1.negprot.max_recv);
-	SSVAL(req->outbuf,smb_vwv3,lp_maxmux());
+	SSVAL(req->outbuf,smb_vwv3,lp_max_mux());
 	SSVAL(req->outbuf,smb_vwv4,1);
 	SSVAL(req->outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
 	SSVAL(req->outbuf,smb_vwv10, set_server_zone_offset(t)/60);
@@ -320,7 +320,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 
 	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_NT1);
 
-	SSVAL(req->outbuf,smb_vwv1+1, lp_maxmux()); /* maxmpx */
+	SSVAL(req->outbuf,smb_vwv1+1, lp_max_mux()); /* maxmpx */
 	SSVAL(req->outbuf,smb_vwv2+1, 1); /* num vcs */
 	SIVAL(req->outbuf,smb_vwv3+1,
 	      sconn->smb1.negprot.max_recv); /* max buffer. LOTS! */

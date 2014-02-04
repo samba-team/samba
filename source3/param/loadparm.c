@@ -809,7 +809,7 @@ static void init_globals(bool reinit_globals)
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
-	Globals.maxmux = 50;	/* This is *needed* for profile support. */
+	Globals.max_mux = 50;	/* This is *needed* for profile support. */
 	Globals.lpq_cache_time = 30;	/* changed to handle large print servers better -- jerry */
 	Globals._disable_spoolss = false;
 	Globals.max_smbd_processes = 0;/* no limit specified */

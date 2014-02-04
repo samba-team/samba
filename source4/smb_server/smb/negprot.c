@@ -139,7 +139,7 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 	SSVAL(req->out.vwv, VWV(0), choice);
 	SSVAL(req->out.vwv, VWV(1), secword); 
 	SSVAL(req->out.vwv, VWV(2), req->smb_conn->negotiate.max_recv);
-	SSVAL(req->out.vwv, VWV(3), lpcfg_maxmux(req->smb_conn->lp_ctx));
+	SSVAL(req->out.vwv, VWV(3), lpcfg_max_mux(req->smb_conn->lp_ctx));
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
 	SIVAL(req->out.vwv, VWV(6), req->smb_conn->connection->server_id.pid);
@@ -190,7 +190,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 	SSVAL(req->out.vwv, VWV(0), choice);
 	SSVAL(req->out.vwv, VWV(1), secword); 
 	SSVAL(req->out.vwv, VWV(2), req->smb_conn->negotiate.max_recv);
-	SSVAL(req->out.vwv, VWV(3), lpcfg_maxmux(req->smb_conn->lp_ctx));
+	SSVAL(req->out.vwv, VWV(3), lpcfg_max_mux(req->smb_conn->lp_ctx));
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
 	SIVAL(req->out.vwv, VWV(6), req->smb_conn->connection->server_id.pid);
@@ -315,7 +315,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	   this is the one and only SMB packet that is malformed in
 	   the specification - all the command words after the secword
 	   are offset by 1 byte */
-	SSVAL(req->out.vwv+1, VWV(1), lpcfg_maxmux(req->smb_conn->lp_ctx));
+	SSVAL(req->out.vwv+1, VWV(1), lpcfg_max_mux(req->smb_conn->lp_ctx));
 	SSVAL(req->out.vwv+1, VWV(2), 1); /* num vcs */
 	SIVAL(req->out.vwv+1, VWV(3), req->smb_conn->negotiate.max_recv);
 	SIVAL(req->out.vwv+1, VWV(5), 0x10000); /* raw size. full 64k */
