@@ -1774,7 +1774,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
-	if (!lp_add_share_cmd(talloc_tos()) || !*lp_add_share_cmd(talloc_tos())) {
+	if (!lp_add_share_command(talloc_tos()) || !*lp_add_share_command(talloc_tos())) {
 		DEBUG(10,("_srvsvc_NetShareAdd: No add share command\n"));
 		return WERR_ACCESS_DENIED;
 	}
@@ -1870,7 +1870,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
-			lp_add_share_cmd(talloc_tos()),
+			lp_add_share_command(talloc_tos()),
 			get_dyn_CONFIGFILE(),
 			share_name_in,
 			path,
