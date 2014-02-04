@@ -1685,7 +1685,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	}
 
 	lprmcommand = talloc_string_sub2(ctx,
-			lp_lprmcommand(talloc_tos(), snum),
+			lp_lprm_command(talloc_tos(), snum),
 			"%p",
 			lp_printername(talloc_tos(), snum),
 			false, false, false);
@@ -2147,7 +2147,7 @@ static bool print_job_delete1(struct tevent_context *ev,
 	{
 		result = (*(current_printif->job_delete))(
 			lp_printername(talloc_tos(), snum),
-			lp_lprmcommand(talloc_tos(), snum),
+			lp_lprm_command(talloc_tos(), snum),
 			pjob);
 
 		/* Delete the tdb entry if the delete succeeded or the job hasn't

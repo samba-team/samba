@@ -160,7 +160,7 @@ static struct loadparm_service sDefault =
 	.cups_options = NULL,
 	.printcommand = NULL,
 	.lpq_command = NULL,
-	.lprmcommand = NULL,
+	.lprm_command = NULL,
 	.lppause_command = NULL,
 	.lpresume_command = NULL,
 	.queuepausecommand = NULL,
@@ -382,14 +382,14 @@ static void init_printer_values(struct loadparm_service *pService)
 		case PRINT_LPRNT:
 		case PRINT_LPROS2:
 			string_set(&pService->lpq_command, "lpq -P'%p'");
-			string_set(&pService->lprmcommand, "lprm -P'%p' %j");
+			string_set(&pService->lprm_command, "lprm -P'%p' %j");
 			string_set(&pService->printcommand, "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
 			string_set(&pService->lpq_command, "lpq -P'%p'");
-			string_set(&pService->lprmcommand, "lprm -P'%p' %j");
+			string_set(&pService->lprm_command, "lprm -P'%p' %j");
 			string_set(&pService->printcommand, "lpr -r -P'%p' %s");
 			string_set(&pService->queuepausecommand, "lpc stop '%p'");
 			string_set(&pService->queueresumecommand, "lpc start '%p'");
@@ -402,7 +402,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			/* set the lpq command to contain the destination printer
 			   name only.  This is used by cups_queue_get() */
 			string_set(&pService->lpq_command, "%p");
-			string_set(&pService->lprmcommand, "");
+			string_set(&pService->lprm_command, "");
 			string_set(&pService->printcommand, "");
 			string_set(&pService->lppause_command, "");
 			string_set(&pService->lpresume_command, "");
@@ -413,7 +413,7 @@ static void init_printer_values(struct loadparm_service *pService)
 		case PRINT_SYSV:
 		case PRINT_HPUX:
 			string_set(&pService->lpq_command, "lpstat -o%p");
-			string_set(&pService->lprmcommand, "cancel %p-%j");
+			string_set(&pService->lprm_command, "cancel %p-%j");
 			string_set(&pService->printcommand, "lp -c -d%p %s; rm %s");
 			string_set(&pService->queuepausecommand, "disable %p");
 			string_set(&pService->queueresumecommand, "enable %p");
@@ -425,7 +425,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		case PRINT_QNX:
 			string_set(&pService->lpq_command, "lpq -P%p");
-			string_set(&pService->lprmcommand, "lprm -P%p %j");
+			string_set(&pService->lprm_command, "lprm -P%p %j");
 			string_set(&pService->printcommand, "lp -r -P%p %s");
 			break;
 
@@ -457,7 +457,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lprm %%p %%j",
 				      tdbfile);
-		string_set(&pService->lprmcommand,
+		string_set(&pService->lprm_command,
 			   tmp ? tmp : "vlp lprm %p %j");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lppause %%p %%j",
