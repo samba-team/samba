@@ -852,9 +852,9 @@ static void init_globals(bool reinit_globals)
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.nis_home_map = false;
 #ifdef WITH_NISPLUS_HOME
-	string_set(&Globals.nis_home_map_name, "auto_home.org_dir");
+	string_set(&Globals.homedir_map, "auto_home.org_dir");
 #else
-	string_set(&Globals.nis_home_map_name, "auto.home");
+	string_set(&Globals.homedir_map, "auto.home");
 #endif
 #endif
 	Globals.time_server = false;

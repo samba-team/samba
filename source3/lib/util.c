@@ -593,7 +593,7 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 {
 	char *value = NULL;
 
-	char *nis_map = (char *)lp_nis_home_map_name();
+	char *nis_map = (char *)lp_homedir_map();
 
 	char buffer[NIS_MAXATTRVAL + 1];
 	nis_result *result;
@@ -645,7 +645,7 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 	char *nis_result;     /* yp_match inits this */
 	int nis_result_len;  /* and set this */
 	char *nis_domain;     /* yp_get_default_domain inits this */
-	char *nis_map = lp_nis_home_map_name(talloc_tos());
+	char *nis_map = lp_homedir_map(talloc_tos());
 
 	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0) {
 		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
