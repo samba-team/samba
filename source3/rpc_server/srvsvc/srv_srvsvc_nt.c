@@ -1980,14 +1980,14 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
-	if (!lp_delete_share_cmd(talloc_tos()) || !*lp_delete_share_cmd(talloc_tos())) {
+	if (!lp_delete_share_command(talloc_tos()) || !*lp_delete_share_command(talloc_tos())) {
 		DEBUG(10,("_srvsvc_NetShareDel: No delete share command\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\"",
-			lp_delete_share_cmd(talloc_tos()),
+			lp_delete_share_command(talloc_tos()),
 			get_dyn_CONFIGFILE(),
 			lp_servicename(talloc_tos(), snum));
 	if (!command) {
