@@ -7869,7 +7869,7 @@ static WERROR fill_port_2(TALLOC_CTX *mem_ctx,
 
 static WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines)
 {
-	char *cmd = lp_enumports_cmd(talloc_tos());
+	char *cmd = lp_enumports_command(talloc_tos());
 	char **qlines = NULL;
 	char *command = NULL;
 	int numlines;
