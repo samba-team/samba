@@ -794,7 +794,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		set_namearray( &conn->hide_list,
 			       lp_hide_files(talloc_tos(), snum));
 		set_namearray( &conn->veto_oplock_list,
-			       lp_veto_oplocks(talloc_tos(), snum));
+			       lp_veto_oplock_files(talloc_tos(), snum));
 		set_namearray( &conn->aio_write_behind_list,
 				lp_aio_write_behind(talloc_tos(), snum));
 	}
