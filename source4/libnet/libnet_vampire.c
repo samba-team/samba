@@ -860,7 +860,8 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	rep.in.targetdir     = r->in.targetdir;
 	rep.in.domain_sid    = join->out.domain_sid;
 	rep.in.realm         = join->out.realm;
-	rep.in.server        = join->out.samr_binding->host;
+	rep.in.server        = dcerpc_binding_get_string_option(join->out.samr_binding,
+								"host");
 	rep.in.join_password = join->out.join_password;
 	rep.in.kvno          = join->out.kvno;
 

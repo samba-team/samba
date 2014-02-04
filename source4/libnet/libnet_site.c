@@ -151,6 +151,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	int rtn;
 
 	const char *server_dn_str;
+	const char *host;
 	struct nbt_name name;
 	const char *dest_addr = NULL;
 
@@ -167,7 +168,8 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
+	host = dcerpc_binding_get_string_option(libnet_r->out.samr_binding, "host");
+	make_nbt_name_client(&name, host);
 	status = resolve_name_ex(lpcfg_resolve_context(ctx->lp_ctx),
 				 0, 0,
 				 &name, r, &dest_addr, ctx->event_ctx);
