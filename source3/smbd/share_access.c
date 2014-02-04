@@ -217,7 +217,7 @@ bool user_ok_token(const char *username, const char *domain,
 		}
 	}
 
-	if (lp_onlyuser(snum)) {
+	if (lp_only_user(snum)) {
 		const char *list[2];
 		list[0] = lp_username(talloc_tos(), snum);
 		list[1] = NULL;
