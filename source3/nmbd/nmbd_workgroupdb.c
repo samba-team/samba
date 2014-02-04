@@ -254,7 +254,7 @@ workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
 			stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
    
 		create_server_on_workgroup(work,name,stype|SV_TYPE_LOCAL_LIST_ONLY, PERMANENT_TTL, 
-				string_truncate(lp_serverstring(talloc_tos()), MAX_SERVER_STRING_LENGTH));
+				string_truncate(lp_server_string(talloc_tos()), MAX_SERVER_STRING_LENGTH));
 		DEBUG(3,("initiate_myworkgroup_startup: Added server name entry %s \
 on subnet %s\n", name, subrec->subnet_name));
 	}

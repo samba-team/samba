@@ -40,7 +40,7 @@ static WERROR NetServerGetInfo_l_101(struct libnetapi_ctx *ctx,
 	i.sv101_version_major	= SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
 	i.sv101_version_minor	= SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 	i.sv101_type		= lp_default_server_announce();
-	i.sv101_comment		= lp_serverstring(ctx);
+	i.sv101_comment		= lp_server_string(ctx);
 
 	*buffer = (uint8_t *)talloc_memdup(ctx, &i, sizeof(i));
 	if (!*buffer) {
@@ -58,7 +58,7 @@ static WERROR NetServerGetInfo_l_1005(struct libnetapi_ctx *ctx,
 {
 	struct SERVER_INFO_1005 info1005;
 
-	info1005.sv1005_comment = lp_serverstring(ctx);
+	info1005.sv1005_comment = lp_server_string(ctx);
 	*buffer = (uint8_t *)talloc_memdup(ctx, &info1005, sizeof(info1005));
 	if (!*buffer) {
 		return WERR_NOMEM;

@@ -3352,7 +3352,7 @@ static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
 
 	unbecome_root();
 
-	r->oem_information.string	= lp_serverstring(r);
+	r->oem_information.string	= lp_server_string(r);
 	r->domain_name.string		= lp_workgroup();
 	r->primary.string		= lp_netbios_name();
 	r->sequence_num			= seq_num;
@@ -3396,7 +3396,7 @@ static NTSTATUS query_dom_info_3(TALLOC_CTX *mem_ctx,
 static NTSTATUS query_dom_info_4(TALLOC_CTX *mem_ctx,
 				 struct samr_DomOEMInformation *r)
 {
-	r->oem_information.string = lp_serverstring(r);
+	r->oem_information.string = lp_server_string(r);
 
 	return NT_STATUS_OK;
 }

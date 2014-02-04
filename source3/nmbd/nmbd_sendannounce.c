@@ -477,7 +477,7 @@ void announce_remote(time_t t)
 	if (!*s)
 		return;
 
-	comment = string_truncate(lp_serverstring(talloc_tos()),
+	comment = string_truncate(lp_server_string(talloc_tos()),
 				  MAX_SERVER_STRING_LENGTH);
 
 	frame = talloc_stackframe();
