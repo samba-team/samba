@@ -571,7 +571,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	}
 
 	conn->case_preserve = lp_preserve_case(snum);
-	conn->short_case_preserve = lp_shortpreservecase(snum);
+	conn->short_case_preserve = lp_short_preserve_case(snum);
 
 	conn->encrypt_level = lp_smb_encrypt(snum);
 
