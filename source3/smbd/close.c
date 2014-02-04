@@ -47,7 +47,7 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 	char *fname = NULL;
 	NTSTATUS status;
 
-	if (!*lp_magicscript(talloc_tos(), SNUM(conn))) {
+	if (!*lp_magic_script(talloc_tos(), SNUM(conn))) {
 		return NT_STATUS_OK;
 	}
 
@@ -63,7 +63,7 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		p++;
 	}
 
-	if (!strequal(lp_magicscript(talloc_tos(), SNUM(conn)),p)) {
+	if (!strequal(lp_magic_script(talloc_tos(), SNUM(conn)),p)) {
 		status = NT_STATUS_OK;
 		goto out;
 	}
