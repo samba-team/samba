@@ -27,7 +27,7 @@
 #include "../libcli/netlogon/netlogon.h"
 
 /* don't allow an unlimited number of name components */
-#define MAX_COMPONENTS 10
+#define MAX_COMPONENTS 128
 
 /**
   print a nbt string
