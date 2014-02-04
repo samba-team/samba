@@ -297,8 +297,15 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 
 	hostname = rft->other_info->dns_name;
 
-	for (cur = s->connections; cur; cur = cur->next) {		
-		if (strcmp(cur->binding->host, hostname) == 0) {
+	for (cur = s->connections; cur; cur = cur->next) {
+		const char *host;
+
+		host = dcerpc_binding_get_string_option(cur->binding, "host");
+		if (host == NULL) {
+			continue;
+		}
+
+		if (strcmp(host, hostname) == 0) {
 			conn = cur;
 			break;
 		}
@@ -340,9 +347,9 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 
 		DLIST_ADD_END(s->connections, conn, struct dreplsrv_out_connection *);
 
-		DEBUG(4,("dreplsrv_out_connection_attach(%s): create\n", conn->binding->host));
+		DEBUG(4,("dreplsrv_out_connection_attach(%s): create\n", hostname));
 	} else {
-		DEBUG(4,("dreplsrv_out_connection_attach(%s): attach\n", conn->binding->host));
+		DEBUG(4,("dreplsrv_out_connection_attach(%s): attach\n", hostname));
 	}
 
 	*_conn = conn;
