@@ -271,8 +271,8 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	struct bind_auth_state *state;
 	struct dcecli_security *sec;
 	struct tevent_req *subreq;
-
 	struct ndr_syntax_id syntax, transfer_syntax;
+	const char *target_principal = NULL;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, p->conn->event_ctx);
@@ -328,12 +328,16 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (p->binding && p->binding->target_principal) {
+	if (p->binding != NULL) {
+		target_principal = dcerpc_binding_get_string_option(p->binding,
+							"target_principal");
+	}
+	if (target_principal != NULL) {
 		c->status = gensec_set_target_principal(sec->generic_state,
-							p->binding->target_principal);
+							target_principal);
 		if (!NT_STATUS_IS_OK(c->status)) {
 			DEBUG(1, ("Failed to set GENSEC target principal to %s: %s\n",
-				  p->binding->target_principal, nt_errstr(c->status)));
+				  target_principal, nt_errstr(c->status)));
 			composite_error(c, c->status);
 			return c;
 		}
