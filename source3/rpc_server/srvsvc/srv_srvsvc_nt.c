@@ -1561,6 +1561,8 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
+	max_connections = lp_max_connections(snum);
+
 	switch (r->in.level) {
 	case 1:
 		pathname = lp_path(ctx, snum);
