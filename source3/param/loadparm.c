@@ -821,7 +821,7 @@ static void init_globals(bool reinit_globals)
 	Globals.max_open_files = max_open_files();
 	Globals.srv_maxprotocol = PROTOCOL_SMB3_00;
 	Globals.srv_minprotocol = PROTOCOL_LANMAN1;
-	Globals.cli_maxprotocol = PROTOCOL_NT1;
+	Globals.client_max_protocol = PROTOCOL_NT1;
 	Globals.cli_minprotocol = PROTOCOL_CORE;
 	Globals._security = SEC_AUTO;
 	Globals.encrypted_passwords = true;

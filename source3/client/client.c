@@ -5624,7 +5624,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	/* Ensure we have a password (or equivalent). */
 	set_cmdline_auth_info_getpass(auth_info);
 
-	max_protocol = lp_cli_maxprotocol();
+	max_protocol = lp_client_max_protocol();
 
 	if (tar_type) {
 		if (cmdstr)

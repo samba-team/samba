@@ -452,7 +452,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	status = smbXcli_negprot(c->conn, c->timeout,
 				 lp_cli_minprotocol(),
-				 lp_cli_maxprotocol());
+				 lp_client_max_protocol());
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(c);
 		errno = ETIMEDOUT;

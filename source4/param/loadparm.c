@@ -40,7 +40,7 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 	options->signing = lpcfg_client_signing(lp_ctx);
 	options->request_timeout = SMB_REQUEST_TIMEOUT;
 	options->ntstatus_support = lpcfg_nt_status_support(lp_ctx);
-	options->max_protocol = lpcfg_cli_maxprotocol(lp_ctx);
+	options->max_protocol = lpcfg_client_max_protocol(lp_ctx);
 	options->unicode = lpcfg_unicode(lp_ctx);
 	options->use_oplocks = true;
 	options->use_level2_oplocks = true;

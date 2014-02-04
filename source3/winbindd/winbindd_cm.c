@@ -906,7 +906,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	result = smbXcli_negprot((*cli)->conn, (*cli)->timeout,
 				 lp_cli_minprotocol(),
-				 lp_cli_maxprotocol());
+				 lp_client_max_protocol());
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("cli_negprot failed: %s\n", nt_errstr(result)));
