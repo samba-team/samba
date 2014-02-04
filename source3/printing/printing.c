@@ -1665,7 +1665,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	/* don't strip out characters like '$' from the printername */
 
 	lpqcommand = talloc_string_sub2(ctx,
-			lp_lpqcommand(talloc_tos(), snum),
+			lp_lpq_command(talloc_tos(), snum),
 			"%p",
 			lp_printername(talloc_tos(), snum),
 			false, false, false);
@@ -2968,7 +2968,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 
 	/* don't strip out characters like '$' from the printername */
 	lpq_cmd = talloc_string_sub2(tmp_ctx,
-				     lp_lpqcommand(talloc_tos(), snum),
+				     lp_lpq_command(talloc_tos(), snum),
 				     "%p",
 				     lp_printername(talloc_tos(), snum),
 				     false, false, false);
