@@ -45,7 +45,7 @@ static bool test_Insert(struct torture_context *tctx,
 			struct dcerpc_binding_handle *h,
 			struct ndr_syntax_id object,
 			const char *annotation,
-			struct dcerpc_binding *b)
+			const struct dcerpc_binding *b)
 {
 	struct epm_Insert r;
 	NTSTATUS status;
@@ -95,7 +95,7 @@ static bool test_Insert(struct torture_context *tctx,
 static bool test_Delete(struct torture_context *tctx,
 			struct dcerpc_binding_handle *h,
 			const char *annotation,
-			struct dcerpc_binding *b)
+			const struct dcerpc_binding *b)
 {
 	NTSTATUS status;
 	struct epm_Delete r;
@@ -245,7 +245,8 @@ static bool test_Map_full(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 				   status,
 				   "Unable to generate dcerpc_binding struct");
-	b->object = obj;
+	status = dcerpc_binding_set_abstract_syntax(b, &obj);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_binding_set_abstract_syntax");
 
 	ok = test_Insert(tctx, h, obj, annotation, b);
 	if (!ok) {
