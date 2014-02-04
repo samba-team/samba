@@ -97,7 +97,6 @@ struct auth_critical_sizes {
 			   const struct auth_usersupplied_info *user_info_in,
 			   const struct auth_usersupplied_info **user_info_encrypted);
 
-struct wbc_context;
 #include "auth/session.h"
 #include "auth/unix_token_proto.h"
 #include "auth/system_session_proto.h"

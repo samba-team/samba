@@ -28,35 +28,6 @@
 #include "libcli/util/error.h"
 #include "libcli/security/dom_sid.h"
 
-/**
- * Initialize the wbclient context, talloc_free() when done.
- *
- * \param mem_ctx talloc context to allocate memory from
- * \param msg_ctx message context to use
- * \param
- */
-struct wbc_context *wbc_init(TALLOC_CTX *mem_ctx,
-			     struct imessaging_context *msg_ctx,
-			     struct tevent_context *event_ctx)
-{
-	struct wbc_context *ctx;
-
-	ctx = talloc(mem_ctx, struct wbc_context);
-	if (ctx == NULL) return NULL;
-
-	ctx->event_ctx = event_ctx;
-
-	ctx->irpc_handle = irpc_binding_handle_by_name(ctx, msg_ctx,
-						       "winbind_server",
-						       &ndr_table_winbind);
-	if (ctx->irpc_handle == NULL) {
-		talloc_free(ctx);
-		return NULL;
-	}
-
-	return ctx;
-}
-
 static int wb_simple_trans(struct tevent_context *ev, int fd,
 			   struct winbindd_request *wb_req,
 			   TALLOC_CTX *mem_ctx,
