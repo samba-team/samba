@@ -60,7 +60,8 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	struct composite_context *pipe_smb_req;
 	struct composite_context *pipe_tcp_req;
 	struct composite_context *pipe_ncalrpc_req;
-	
+	const char *endpoint;
+
 	/* composite context allocation and setup */
 	c = composite_create(p, p->conn->event_ctx);
 	if (c == NULL) return NULL;
@@ -79,11 +80,24 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	if (DEBUGLEVEL >= 10)
 		s->pipe2->conn->packet_log_dir = s->pipe->conn->packet_log_dir;
 
+	endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
+	if (endpoint == NULL) {
+		/*
+		 * We may fallback to the endpoint of the given connection
+		 */
+		endpoint = dcerpc_binding_get_string_option(s->pipe->binding, "endpoint");
+	}
+	if (endpoint == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return c;
+	}
+
 	/* open second dcerpc pipe using the same transport as for primary pipe */
 	switch (s->pipe->conn->transport.transport) {
 	case NCACN_NP:
-		pipe_smb_req = dcerpc_secondary_smb_send(s->pipe->conn, s->pipe2->conn,
-							 s->binding->endpoint);
+		pipe_smb_req = dcerpc_secondary_smb_send(s->pipe->conn,
+							 s->pipe2->conn,
+							 endpoint);
 		composite_continue(c, pipe_smb_req, continue_open_smb, c);
 		return c;
 
@@ -101,7 +115,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 							 s->localaddress,
 							 s->peer_addr->addr,
 							 s->binding->target_hostname,
-							 atoi(s->binding->endpoint),
+							 atoi(endpoint),
 							 resolve_context_init(s));
 		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
 		return c;

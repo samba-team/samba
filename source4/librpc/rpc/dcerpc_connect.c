@@ -88,7 +88,11 @@ static void continue_smb_connect(struct composite_context *ctx)
 	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
-	s->io.pipe_name = s->io.binding->endpoint;
+	s->io.pipe_name = dcerpc_binding_get_string_option(s->io.binding, "endpoint");
+	if (s->io.pipe_name == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return;
+	}
 
 	t = s->conn.out.tree;
 	conn = t->session->transport->conn;
@@ -242,7 +246,11 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
-	s->io.pipe_name = s->io.binding->endpoint;
+	s->io.pipe_name = dcerpc_binding_get_string_option(s->io.binding, "endpoint");
+	if (s->io.pipe_name == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return;
+	}
 
 	conn = t->session->transport->conn;
 	session = t->session->smbXcli;
@@ -375,6 +383,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 	struct composite_context *c;
 	struct pipe_ip_tcp_state *s;
 	struct composite_context *pipe_req;
+	const char *endpoint;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
@@ -396,8 +405,16 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 		s->target_hostname = talloc_strdup(s, io->binding->target_hostname);
 		if (composite_nomem(s->target_hostname, c)) return c;
 	}
-                             /* port number is a binding endpoint here */
-	s->port             = atoi(io->binding->endpoint);   
+	endpoint = dcerpc_binding_get_string_option(io->binding, "endpoint");
+	/* port number is a binding endpoint here */
+	if (endpoint != NULL) {
+		s->port = atoi(endpoint);
+	}
+
+	if (s->port == 0) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return c;
+	}
 
 	/* send pipe open request on tcp/ip */
 	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->localaddr, s->host, s->target_hostname,
@@ -463,15 +480,12 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALL
 	/* prepare pipe open parameters and store them in state structure
 	   also, verify whether biding endpoint is not null */
 	s->io = *io;
-	
-	if (!io->binding->endpoint) {
-		DEBUG(0, ("Path to unix socket not specified\n"));
-		composite_error(c, NT_STATUS_INVALID_PARAMETER);
+
+	s->path = dcerpc_binding_get_string_option(io->binding, "endpoint");
+	if (s->path == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
 		return c;
 	}
-
-	s->path  = talloc_strdup(c, io->binding->endpoint);  /* path is a binding endpoint here */
-	if (composite_nomem(s->path, c)) return c;
 
 	/* send pipe open request on unix socket */
 	pipe_req = dcerpc_pipe_open_unix_stream_send(s->io.pipe->conn, s->path);
@@ -524,6 +538,7 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 	struct composite_context *c;
 	struct pipe_ncalrpc_state *s;
 	struct composite_context *pipe_req;
+	const char *endpoint;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
@@ -536,9 +551,16 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 	/* store input parameters in state structure */
 	s->io  = *io;
 
+	endpoint = dcerpc_binding_get_string_option(io->binding, "endpoint");
+	if (endpoint == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return c;
+	}
+
 	/* send pipe open request */
-	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, lpcfg_ncalrpc_dir(lp_ctx),
-					      s->io.binding->endpoint);
+	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn,
+					      lpcfg_ncalrpc_dir(lp_ctx),
+					      endpoint);
 	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
 	return c;
 }
@@ -585,12 +607,14 @@ static void continue_map_binding(struct composite_context *ctx)
 						      struct composite_context);
 	struct pipe_connect_state *s = talloc_get_type(c->private_data,
 						       struct pipe_connect_state);
-	
+	const char *endpoint;
+
 	c->status = dcerpc_epm_map_binding_recv(ctx);
 	if (!composite_is_ok(c)) return;
 
-	DEBUG(4,("Mapped to DCERPC endpoint %s\n", s->binding->endpoint));
-	
+	endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
+	DEBUG(4,("Mapped to DCERPC endpoint %s\n", endpoint));
+
 	continue_connect(c, s);
 }
 

@@ -445,6 +445,7 @@ static void continue_auth_auto(struct composite_context *ctx)
 		  NT_STATUS_UNSUCCESSFUL on a authentication error on RPC
 		 */
 		const char *principal;
+		const char *endpoint;
 
 		principal = gensec_get_target_principal(s->pipe->conn->security_state.generic_state);
 		if (principal == NULL) {
@@ -455,9 +456,11 @@ static void continue_auth_auto(struct composite_context *ctx)
 			}
 		}
 
+		endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
+
 		if ((cli_credentials_failed_kerberos_login(s->credentials, principal, &s->logon_retries) ||
 		     cli_credentials_wrong_password(s->credentials)) &&
-		    s->binding->endpoint != NULL) {
+		    endpoint != NULL) {
 			/*
 			 * Retry SPNEGO with a better password
 			 * send a request for secondary rpc connection
