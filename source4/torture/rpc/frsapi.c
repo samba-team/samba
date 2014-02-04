@@ -256,21 +256,21 @@ struct torture_suite *torture_rpc_frsapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "frsapi");
-	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "frsapi",
 						  &ndr_table_frsapi);
 
-	test = torture_rpc_tcase_add_test(tcase, "DsPollingIntervalW",
-					  test_DsPollingIntervalW);
+	torture_rpc_tcase_add_test(tcase, "DsPollingIntervalW",
+				   test_DsPollingIntervalW);
 
-	test = torture_rpc_tcase_add_test(tcase, "IsPathReplicated",
-					  test_IsPathReplicated);
+	torture_rpc_tcase_add_test(tcase, "IsPathReplicated",
+				   test_IsPathReplicated);
 
-	test = torture_rpc_tcase_add_test(tcase, "ForceReplication",
-					  test_ForceReplication);
+	torture_rpc_tcase_add_test(tcase, "ForceReplication",
+				   test_ForceReplication);
 
-	test = torture_rpc_tcase_add_test(tcase, "InfoW",
-					  test_InfoW);
+	torture_rpc_tcase_add_test(tcase, "InfoW",
+				   test_InfoW);
+
 	return suite;
 }
