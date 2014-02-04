@@ -614,7 +614,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	s->lp_ctx       = lp_ctx;
 
 	conn = s->pipe->conn;
-	conn->flags = binding->flags;
+	conn->flags = dcerpc_binding_get_flags(binding);
 
 	if (DEBUGLVL(100)) {
 		conn->flags |= DCERPC_DEBUG_PRINT_BOTH;
@@ -629,7 +629,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		return c;
 	}
 
-	if ((binding->flags & DCERPC_SCHANNEL) &&
+	if ((conn->flags & DCERPC_SCHANNEL) &&
 	    !cli_credentials_get_netlogon_creds(s->credentials)) {
 		/* If we don't already have netlogon credentials for
 		 * the schannel bind, then we have to get these
@@ -646,7 +646,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	 * if not doing sign or seal
 	 */
 	if (conn->transport.transport == NCACN_NP &&
-	    !(s->binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+	    !(conn->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
 		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
 		composite_continue(c, auth_none_req, continue_auth_none, c);
 		return c;
@@ -666,16 +666,16 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		conn->flags |= DCERPC_CONNECT;
 	}
 
-	if (s->binding->flags & DCERPC_AUTH_SPNEGO) {
+	if (conn->flags & DCERPC_AUTH_SPNEGO) {
 		auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 
-	} else if (s->binding->flags & DCERPC_AUTH_KRB5) {
+	} else if (conn->flags & DCERPC_AUTH_KRB5) {
 		auth_type = DCERPC_AUTH_TYPE_KRB5;
 
-	} else if (s->binding->flags & DCERPC_SCHANNEL) {
+	} else if (conn->flags & DCERPC_SCHANNEL) {
 		auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
-	} else if (s->binding->flags & DCERPC_AUTH_NTLM) {
+	} else if (conn->flags & DCERPC_AUTH_NTLM) {
 		auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	} else {

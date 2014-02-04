@@ -1174,6 +1174,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 	NTSTATUS status;
 	struct rpc_request *subreq;
+	uint32_t flags;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dcerpc_bind_state);
@@ -1187,6 +1188,8 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
 
+	flags = dcerpc_binding_get_flags(p->binding);
+
 	init_ncacn_hdr(p->conn, &pkt);
 
 	pkt.ptype = DCERPC_PKT_BIND;
@@ -1194,7 +1197,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	pkt.call_id = p->conn->call_id;
 	pkt.auth_length = 0;
 
-	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
+	if (flags & DCERPC_CONCURRENT_MULTIPLEX) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 	}
 
@@ -1292,6 +1295,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		struct dcerpc_bind_state);
 	struct dcecli_connection *conn = state->p->conn;
 	NTSTATUS status;
+	uint32_t flags;
 
 	/*
 	 * Note that pkt is allocated under raw_packet->data,
@@ -1349,7 +1353,9 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 	conn->srv_max_recv_frag = MIN(conn->srv_max_recv_frag,
 				      pkt->u.bind_ack.max_recv_frag);
 
-	if ((state->p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) &&
+	flags = dcerpc_binding_get_flags(state->p->binding);
+
+	if ((flags & DCERPC_CONCURRENT_MULTIPLEX) &&
 	    (pkt->pfc_flags & DCERPC_PFC_FLAG_CONC_MPX)) {
 		conn->flags |= DCERPC_CONCURRENT_MULTIPLEX;
 	}
@@ -1394,6 +1400,9 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	struct ncacn_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
+	uint32_t flags;
+
+	flags = dcerpc_binding_get_flags(p->binding);
 
 	init_ncacn_hdr(p->conn, &pkt);
 
@@ -1403,7 +1412,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	pkt.auth_length = 0;
 	pkt.u.auth3.auth_info = data_blob(NULL, 0);
 
-	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
+	if (flags & DCERPC_CONCURRENT_MULTIPLEX) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 	}
 
@@ -2056,6 +2065,7 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 	NTSTATUS status;
 	struct rpc_request *subreq;
+	uint32_t flags;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dcerpc_alter_context_state);
@@ -2069,6 +2079,8 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
 
+	flags = dcerpc_binding_get_flags(p->binding);
+
 	init_ncacn_hdr(p->conn, &pkt);
 
 	pkt.ptype = DCERPC_PKT_ALTER;
@@ -2076,7 +2088,7 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 	pkt.call_id = p->conn->call_id;
 	pkt.auth_length = 0;
 
-	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
+	if (flags & DCERPC_CONCURRENT_MULTIPLEX) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 	}
 

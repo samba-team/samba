@@ -131,6 +131,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	struct pipe_np_smb_state *s;
 	struct composite_context *conn_req;
 	struct smb_composite_connect *conn;
+	uint32_t flags;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
@@ -167,7 +168,8 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	 * setup) or if asked to do so by the caller (perhaps a SAMR password change?)
 	 */
 	s->conn.in.credentials = s->io.creds;
-	if (s->io.binding->flags & (DCERPC_SCHANNEL|DCERPC_ANON_FALLBACK)) {
+	flags = dcerpc_binding_get_flags(s->io.binding);
+	if (flags & (DCERPC_SCHANNEL|DCERPC_ANON_FALLBACK)) {
 		conn->in.fallback_to_anonymous  = true;
 	} else {
 		conn->in.fallback_to_anonymous  = false;
@@ -284,6 +286,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	struct pipe_np_smb2_state *s;
 	struct tevent_req *subreq;
 	struct smbcli_options options;
+	uint32_t flags;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
@@ -295,15 +298,15 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 
 	s->io = *io;
 
+	flags = dcerpc_binding_get_flags(s->io.binding);
+
 	/*
 	 * provide proper credentials - user supplied or anonymous in case this is
 	 * schannel connection
 	 */
-	if (s->io.binding->flags & DCERPC_SCHANNEL) {
-		s->io.creds = cli_credentials_init(mem_ctx);
+	if (flags & DCERPC_SCHANNEL) {
+		s->io.creds = cli_credentials_init_anon(mem_ctx);
 		if (composite_nomem(s->io.creds, c)) return c;
-
-		cli_credentials_guess(s->io.creds, lp_ctx);
 	}
 
 	lpcfg_smbcli_options(lp_ctx, &options);
