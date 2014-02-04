@@ -88,6 +88,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	struct drsuapi_DsBindInfo28 *our_bind_info28;
 	struct drsuapi_DsBindInfoCtr *our_bind_info_ctr;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	const char *host;
 	struct nbt_name name;
 
 	ctx = talloc_zero(tctx, struct DsSyncTest);
@@ -105,9 +106,11 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 		return NULL;
 	}
 
-	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s", ctx->drsuapi_binding->host);
+	host = dcerpc_binding_get_string_option(ctx->drsuapi_binding, "host");
 
-	make_nbt_name_server(&name, ctx->drsuapi_binding->host);
+	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s", host);
+
+	make_nbt_name_server(&name, host);
 
 	/* do an initial name resolution to find its IP */
 	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
