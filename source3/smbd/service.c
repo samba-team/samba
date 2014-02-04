@@ -698,7 +698,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	/* Preexecs are done here as they might make the dir we are to ChDir
 	 * to below */
 	/* execute any "root preexec = " line */
-	if (*lp_rootpreexec(talloc_tos(), snum)) {
+	if (*lp_root_preexec(talloc_tos(), snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(talloc_tos(), SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
@@ -706,11 +706,11 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_rootpreexec(talloc_tos(), snum));
+					lp_root_preexec(talloc_tos(), snum));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
-		if (ret != 0 && lp_rootpreexec_close(snum)) {
+		if (ret != 0 && lp_root_preexec_close(snum)) {
 			DEBUG(1,("root preexec gave %d - failing "
 				 "connection\n", ret));
 			status = NT_STATUS_ACCESS_DENIED;
