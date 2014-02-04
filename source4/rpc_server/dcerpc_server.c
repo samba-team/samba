@@ -1637,6 +1637,7 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
 	NTSTATUS status;
+	const char *endpoint;
 
 	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
@@ -1645,14 +1646,16 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
+	endpoint = dcerpc_binding_get_string_option(e->ep_description, "endpoint");
+
 	status = stream_setup_socket(dcesrv_sock, event_ctx, lp_ctx,
 				     model_ops, &dcesrv_stream_ops, 
-				     "unix", e->ep_description->endpoint, &port, 
+				     "unix", endpoint, &port,
 				     lpcfg_socket_options(lp_ctx),
 				     dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n",
-			 e->ep_description->endpoint, nt_errstr(status)));
+			 endpoint, nt_errstr(status)));
 	}
 
 	return status;
@@ -1667,16 +1670,30 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 	uint16_t port = 1;
 	char *full_path;
 	NTSTATUS status;
+	const char *endpoint;
 
-	if (!e->ep_description->endpoint) {
-		/* No identifier specified: use DEFAULT. 
-		 * DO NOT hardcode this value anywhere else. Rather, specify 
-		 * no endpoint and let the epmapper worry about it. */
-		e->ep_description->endpoint = talloc_strdup(dce_ctx, "DEFAULT");
+	endpoint = dcerpc_binding_get_string_option(e->ep_description, "endpoint");
+
+	if (endpoint == NULL) {
+		/*
+		 * No identifier specified: use DEFAULT.
+		 *
+		 * TODO: DO NOT hardcode this value anywhere else. Rather, specify
+		 * no endpoint and let the epmapper worry about it.
+		 */
+		endpoint = "DEFAULT";
+		status = dcerpc_binding_set_string_option(e->ep_description,
+							  "endpoint",
+							  endpoint);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("dcerpc_binding_set_string_option() failed - %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
 	}
 
 	full_path = talloc_asprintf(dce_ctx, "%s/%s", lpcfg_ncalrpc_dir(lp_ctx),
-				    e->ep_description->endpoint);
+				    endpoint);
 
 	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
@@ -1692,7 +1709,7 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 				     dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(identifier=%s,path=%s) failed - %s\n",
-			 e->ep_description->endpoint, full_path, nt_errstr(status)));
+			 endpoint, full_path, nt_errstr(status)));
 	}
 	return status;
 }
@@ -1704,8 +1721,10 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	NTSTATUS status;
-			
-	if (e->ep_description->endpoint == NULL) {
+	const char *endpoint;
+
+	endpoint = dcerpc_binding_get_string_option(e->ep_description, "endpoint");
+	if (endpoint == NULL) {
 		DEBUG(0, ("Endpoint mandatory for named pipes\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1719,11 +1738,11 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 
 	status = tstream_setup_named_pipe(dce_ctx, event_ctx, lp_ctx,
 					  model_ops, &dcesrv_stream_ops,
-					  e->ep_description->endpoint,
+					  endpoint,
 					  dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("stream_setup_named_pipe(pipe=%s) failed - %s\n",
-			 e->ep_description->endpoint, nt_errstr(status)));
+			 endpoint, nt_errstr(status)));
 		return status;
 	}
 
@@ -1740,9 +1759,12 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 0;
 	NTSTATUS status;
-			
-	if (e->ep_description->endpoint) {
-		port = atoi(e->ep_description->endpoint);
+	const char *endpoint;
+	char port_str[6];
+
+	endpoint = dcerpc_binding_get_string_option(e->ep_description, "endpoint");
+	if (endpoint != NULL) {
+		port = atoi(endpoint);
 	}
 
 	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
@@ -1760,13 +1782,20 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed - %s\n", 
 			 address, port, nt_errstr(status)));
+		return status;
 	}
 
-	if (e->ep_description->endpoint == NULL) {
-		e->ep_description->endpoint = talloc_asprintf(dce_ctx, "%d", port);
+	snprintf(port_str, sizeof(port_str), "%u", port);
+
+	status = dcerpc_binding_set_string_option(e->ep_description,
+						  "endpoint", port_str);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("dcerpc_binding_set_string_option(endpoint, %s) failed - %s\n",
+			 port_str, nt_errstr(status)));
+		return status;
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 #include "lib/socket/netif.h" /* Included here to work around the fact that socket_wrapper redefines bind() */
