@@ -551,7 +551,10 @@ static void unbecomeDC_drsuapi_connect_send(struct libnet_UnbecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	if (DEBUGLEVEL >= 10) {
-		s->drsuapi.binding->flags |= DCERPC_DEBUG_PRINT_BOTH;
+		c->status = dcerpc_binding_set_flags(s->drsuapi.binding,
+						     DCERPC_DEBUG_PRINT_BOTH,
+						     0);
+		if (!composite_is_ok(c)) return;
 	}
 
 	creq = dcerpc_pipe_connect_b_send(s, s->drsuapi.binding, &ndr_table_drsuapi,

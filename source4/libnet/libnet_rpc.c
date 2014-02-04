@@ -108,7 +108,8 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	switch (r->level) {
 	case LIBNET_RPC_CONNECT_SERVER:
 	case LIBNET_RPC_CONNECT_SERVER_ADDRESS:
-		b->flags = r->in.dcerpc_flags;
+		c->status = dcerpc_binding_set_flags(b, r->in.dcerpc_flags, 0);
+		if (!composite_is_ok(c)) return c;
 		break;
 	default:
 		/* other types have already been checked before */
@@ -116,7 +117,8 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		b->flags |= DCERPC_DEBUG_PRINT_BOTH;
+		c->status = dcerpc_binding_set_flags(b, DCERPC_DEBUG_PRINT_BOTH, 0);
+		if (!composite_is_ok(c)) return c;
 	}
 
 	if (r->level == LIBNET_RPC_CONNECT_SERVER_ADDRESS) {

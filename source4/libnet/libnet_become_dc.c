@@ -1583,7 +1583,10 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		drsuapi->binding->flags |= DCERPC_DEBUG_PRINT_BOTH;
+		c->status = dcerpc_binding_set_flags(drsuapi->binding,
+						     DCERPC_DEBUG_PRINT_BOTH,
+						     0);
+		if (!composite_is_ok(c)) return;
 	}
 
 	creq = dcerpc_pipe_connect_b_send(s, drsuapi->binding, &ndr_table_drsuapi,
@@ -2458,7 +2461,10 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 	if (!composite_is_ok(c)) return;
 
 	if (DEBUGLEVEL >= 10) {
-		s->drsuapi2.binding->flags |= DCERPC_DEBUG_PRINT_BOTH;
+		c->status = dcerpc_binding_set_flags(s->drsuapi2.binding,
+						     DCERPC_DEBUG_PRINT_BOTH,
+						     0);
+		if (!composite_is_ok(c)) return;
 	}
 
 	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
@@ -2532,7 +2538,10 @@ static void becomeDC_drsuapi2_bind_recv(struct tevent_req *subreq)
 	if (!composite_is_ok(c)) return;
 
 	if (DEBUGLEVEL >= 10) {
-		s->drsuapi3.binding->flags |= DCERPC_DEBUG_PRINT_BOTH;
+		c->status = dcerpc_binding_set_flags(s->drsuapi3.binding,
+						     DCERPC_DEBUG_PRINT_BOTH,
+						     0);
+		if (!composite_is_ok(c)) return;
 	}
 
 	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
@@ -2540,7 +2549,10 @@ static void becomeDC_drsuapi2_bind_recv(struct tevent_req *subreq)
 	c->status = dcerpc_binding_set_assoc_group_id(s->drsuapi3.binding, assoc_group_id);
 	if (!composite_is_ok(c)) return;
 	/* w2k3 uses the concurrent multiplex feature on the 3rd connection, so we do */
-	s->drsuapi3.binding->flags		|= DCERPC_CONCURRENT_MULTIPLEX;
+	c->status = dcerpc_binding_set_flags(s->drsuapi3.binding,
+					     DCERPC_CONCURRENT_MULTIPLEX,
+					     0);
+	if (!composite_is_ok(c)) return;
 
 	becomeDC_drsuapi_connect_send(s, &s->drsuapi3, becomeDC_drsuapi3_connect_recv);
 }
