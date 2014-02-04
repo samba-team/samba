@@ -164,7 +164,7 @@ static struct loadparm_service sDefault =
 	.lppause_command = NULL,
 	.lpresume_command = NULL,
 	.queuepause_command = NULL,
-	.queueresumecommand = NULL,
+	.queueresume_command = NULL,
 	._printername = NULL,
 	.printjob_username = NULL,
 	.dont_descend = NULL,
@@ -392,7 +392,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->lprm_command, "lprm -P'%p' %j");
 			string_set(&pService->print_command, "lpr -r -P'%p' %s");
 			string_set(&pService->queuepause_command, "lpc stop '%p'");
-			string_set(&pService->queueresumecommand, "lpc start '%p'");
+			string_set(&pService->queueresume_command, "lpc start '%p'");
 			string_set(&pService->lppause_command, "lpc hold '%p' %j");
 			string_set(&pService->lpresume_command, "lpc release '%p' %j");
 			break;
@@ -407,7 +407,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->lppause_command, "");
 			string_set(&pService->lpresume_command, "");
 			string_set(&pService->queuepause_command, "");
-			string_set(&pService->queueresumecommand, "");
+			string_set(&pService->queueresume_command, "");
 			break;
 
 		case PRINT_SYSV:
@@ -416,7 +416,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->lprm_command, "cancel %p-%j");
 			string_set(&pService->print_command, "lp -c -d%p %s; rm %s");
 			string_set(&pService->queuepause_command, "disable %p");
-			string_set(&pService->queueresumecommand, "enable %p");
+			string_set(&pService->queueresume_command, "enable %p");
 #ifndef HPUX
 			string_set(&pService->lppause_command, "lp -i %p-%j -H hold");
 			string_set(&pService->lpresume_command, "lp -i %p-%j -H resume");
@@ -477,7 +477,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s queueresume %%p",
 				      tdbfile);
-		string_set(&pService->queueresumecommand,
+		string_set(&pService->queueresume_command,
 			   tmp ? tmp : "vlp queueresume %p");
 		TALLOC_FREE(tmp_ctx);
 

@@ -317,7 +317,7 @@ static int generic_queue_pause(int snum)
 static int generic_queue_resume(int snum)
 {
 	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-				 lp_queueresumecommand(talloc_tos(), snum), NULL, NULL);
+				 lp_queueresume_command(talloc_tos(), snum), NULL, NULL);
 }
 
 /****************************************************************************
