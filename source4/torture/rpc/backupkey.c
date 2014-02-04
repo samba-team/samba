@@ -510,7 +510,10 @@ static struct bkrp_BackupKey *createRetreiveBackupKeyGUIDStruct(struct torture_c
 		return NULL;
 	}
 
-	binding->flags = binding->flags & (DCERPC_SEAL|DCERPC_AUTH_SPNEGO);
+	status = dcerpc_binding_set_flags(binding, DCERPC_SEAL|DCERPC_AUTH_SPNEGO, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
 
 	ZERO_STRUCT(data);
 	status = GUID_from_string(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID, g);

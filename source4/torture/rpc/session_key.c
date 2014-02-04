@@ -161,7 +161,8 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 	torture_assert_ntstatus_ok(torture, torture_rpc_binding(torture, &binding), 
 				   "Getting bindoptions");
 
-	binding->flags |= settings->bindoptions;
+	status = dcerpc_binding_set_flags(binding, settings->bindoptions, 0);
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_binding_set_flags");
 
 	status = dcerpc_pipe_connect_b(torture, &p, binding,
 				       &ndr_table_lsarpc,

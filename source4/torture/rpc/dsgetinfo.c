@@ -127,7 +127,11 @@ static struct DsGetinfoTest *test_create_context(struct torture_context *tctx)
 		printf("Bad binding string %s\n", binding);
 		return NULL;
 	}
-	ctx->drsuapi_binding->flags |= DCERPC_SIGN | DCERPC_SEAL;
+	status = dcerpc_binding_set_flags(ctx->drsuapi_binding, DCERPC_SIGN | DCERPC_SEAL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_binding_set_flags - %s\n", nt_errstr(status));
+		return NULL;
+	}
 
 	/* ctx->admin ...*/
 	ctx->admin.credentials				= cmdline_credentials;
