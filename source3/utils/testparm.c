@@ -68,7 +68,7 @@ static int do_global_checks(void)
 	SMB_STRUCT_STAT st;
 	const char *socket_options;
 
-	if (lp_security() >= SEC_DOMAIN && !lp_encrypted_passwords()) {
+	if (lp_security() >= SEC_DOMAIN && !lp_encrypt_passwords()) {
 		fprintf(stderr, "ERROR: in 'security=domain' mode the "
 				"'encrypt passwords' parameter must always be "
 				"set to 'true'.\n\n");
@@ -272,7 +272,7 @@ static int do_global_checks(void)
 		 * been written to expect the old password.
 		 */
 
-		if(lp_encrypted_passwords()) {
+		if(lp_encrypt_passwords()) {
 			if(strstr_m( lp_passwd_chat(talloc_tos()), "%o")!=NULL) {
 				fprintf(stderr,
 					"ERROR: the 'passwd chat' script [%s] "

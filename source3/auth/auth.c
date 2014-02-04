@@ -462,7 +462,7 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 			break;
 		case ROLE_STANDALONE:
 			DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = yes\n"));
-			if (lp_encrypted_passwords()) {
+			if (lp_encrypt_passwords()) {
 				auth_method_list = str_list_make_v3(
 						talloc_tos(), "guest sam",
 						NULL);

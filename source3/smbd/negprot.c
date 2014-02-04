@@ -67,7 +67,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 	time_t t = time(NULL);
 	struct smbd_server_connection *sconn = req->sconn;
 
-	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
+	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
 	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	if (sconn->smb1.negprot.encrypted_passwords) {
@@ -112,7 +112,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 	time_t t = time(NULL);
 	struct smbd_server_connection *sconn = req->sconn;
 
-	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
+	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
 	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	if (sconn->smb1.negprot.encrypted_passwords) {
@@ -243,7 +243,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	bool signing_enabled = false;
 	bool signing_required = false;
 
-	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
+	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
 	/* Check the flags field to see if this is Vista.
 	   WinXP sets it and Vista does not. But we have to 

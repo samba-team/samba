@@ -123,7 +123,7 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
 
-	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypted_passwords(req->smb_conn->lp_ctx);
+	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypt_passwords(req->smb_conn->lp_ctx);
 
 	if (req->smb_conn->negotiate.encrypted_passwords)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
@@ -178,7 +178,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
 
-	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypted_passwords(req->smb_conn->lp_ctx);
+	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypt_passwords(req->smb_conn->lp_ctx);
   
 	if (req->smb_conn->negotiate.encrypted_passwords)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
@@ -251,7 +251,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		CAP_NT_FIND | CAP_LOCK_AND_READ | 
 		CAP_LEVEL_II_OPLOCKS | CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
 
-	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypted_passwords(req->smb_conn->lp_ctx);
+	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypt_passwords(req->smb_conn->lp_ctx);
 
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
