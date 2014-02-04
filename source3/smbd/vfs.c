@@ -1205,7 +1205,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	}
 
 	allow_widelinks = lp_widelinks(SNUM(conn));
-	allow_symlinks = lp_symlinks(SNUM(conn));
+	allow_symlinks = lp_follow_symlinks(SNUM(conn));
 
 	/* Common widelinks and symlinks checks. */
 	if (!allow_widelinks || !allow_symlinks) {

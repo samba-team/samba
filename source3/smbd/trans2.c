@@ -6142,7 +6142,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!lp_symlinks(SNUM(conn))) {
+	if (!lp_follow_symlinks(SNUM(conn))) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

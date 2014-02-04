@@ -360,7 +360,7 @@ NTSTATUS fd_open(struct connection_struct *conn,
 	 * client should be doing this.
 	 */
 
-	if (fsp->posix_open || !lp_symlinks(SNUM(conn))) {
+	if (fsp->posix_open || !lp_follow_symlinks(SNUM(conn))) {
 		flags |= O_NOFOLLOW;
 	}
 #endif
