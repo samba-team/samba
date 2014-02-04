@@ -269,11 +269,11 @@ int smb_delete_group(const char *unix_group)
 
 	/* defer to scripts */
 
-	if ( *lp_delgroup_script(talloc_tos()) ) {
+	if ( *lp_delete_group_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		del_script = talloc_strdup(ctx,
-				lp_delgroup_script(ctx));
+				lp_delete_group_script(ctx));
 		if (!del_script) {
 			return -1;
 		}
