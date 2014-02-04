@@ -307,6 +307,7 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 	if (!conn) {
 		NTSTATUS nt_status;
 		char *binding_str;
+		const char *target_principal = NULL;
 
 		conn = talloc_zero(s, struct dreplsrv_out_connection);
 		W_ERROR_HAVE_NO_MEMORY(conn);
@@ -324,7 +325,14 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 
 		/* use the GC principal for DRS replication */
 		nt_status = dreplsrv_get_target_principal(s, conn->binding,
-							  rft, &conn->binding->target_principal);
+							  rft, &target_principal);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ntstatus_to_werror(nt_status);
+		}
+
+		nt_status = dcerpc_binding_set_string_option(conn->binding,
+							     "target_principal",
+							     target_principal);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return ntstatus_to_werror(nt_status);
 		}
