@@ -53,6 +53,7 @@ typedef uint32_t tdb_off_t;
 #define TDB_RECOVERY_MAGIC (0xf53bc0e7U)
 #define TDB_RECOVERY_INVALID_MAGIC (0x0)
 #define TDB_HASH_RWLOCK_MAGIC (0xbad1a51U)
+#define TDB_FEATURE_FLAG_MAGIC (0xbad1a52U)
 #define TDB_ALIGNMENT 4
 #define DEFAULT_HASH_SIZE 131
 #define FREELIST_TOP (sizeof(struct tdb_header))
@@ -67,6 +68,8 @@ typedef uint32_t tdb_off_t;
 #define TDB_SEQNUM_OFS    offsetof(struct tdb_header, sequence_number)
 #define TDB_PAD_BYTE 0x42
 #define TDB_PAD_U32  0x42424242
+
+#define TDB_SUPPORTED_FEATURE_FLAGS 0
 
 /* NB assumes there is a local variable called "tdb" that is the
  * current context, also takes doubly-parenthesized print-style
@@ -152,7 +155,8 @@ struct tdb_header {
 	tdb_off_t sequence_number; /* used when TDB_SEQNUM is set */
 	uint32_t magic1_hash; /* hash of TDB_MAGIC_FOOD. */
 	uint32_t magic2_hash; /* hash of TDB_MAGIC. */
-	tdb_off_t reserved[27];
+	uint32_t feature_flags;
+	tdb_off_t reserved[26];
 };
 
 struct tdb_lock_type {
@@ -200,6 +204,7 @@ struct tdb_context {
 	int lockrecs_array_length;
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	uint32_t hash_size;
+	uint32_t feature_flags;
 	uint32_t flags; /* the flags passed to tdb_open */
 	struct tdb_traverse_lock travlocks; /* current traversal locks */
 	struct tdb_context *next; /* all tdbs to avoid multiple opens */

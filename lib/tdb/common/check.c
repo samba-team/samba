@@ -39,7 +39,9 @@ static bool tdb_check_header(struct tdb_context *tdb, tdb_off_t *recovery)
 	if (hdr.version != TDB_VERSION)
 		goto corrupt;
 
-	if (hdr.rwlocks != 0 && hdr.rwlocks != TDB_HASH_RWLOCK_MAGIC)
+	if (hdr.rwlocks != 0 &&
+	    hdr.rwlocks != TDB_FEATURE_FLAG_MAGIC &&
+	    hdr.rwlocks != TDB_HASH_RWLOCK_MAGIC)
 		goto corrupt;
 
 	tdb_header_hash(tdb, &h1, &h2);

@@ -76,6 +76,20 @@ static int tdb_new_database(struct tdb_context *tdb, struct tdb_header *header,
 	if (tdb->flags & TDB_INCOMPATIBLE_HASH)
 		newdb->rwlocks = TDB_HASH_RWLOCK_MAGIC;
 
+	/*
+	 * If we have any features we add the FEATURE_FLAG_MAGIC, overwriting the
+	 * TDB_HASH_RWLOCK_MAGIC above.
+	 */
+	if (newdb->feature_flags != 0) {
+		newdb->rwlocks = TDB_FEATURE_FLAG_MAGIC;
+	}
+
+	/*
+	 * It's required for some following code pathes
+	 * to have the fields on 'tdb' up-to-date.
+	 */
+	tdb->feature_flags = newdb->feature_flags;
+
 	if (tdb->flags & TDB_INTERNAL) {
 		tdb->map_size = size;
 		tdb->map_ptr = (char *)newdb;
@@ -390,12 +404,26 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 
 	if (header.rwlocks != 0 &&
+	    header.rwlocks != TDB_FEATURE_FLAG_MAGIC &&
 	    header.rwlocks != TDB_HASH_RWLOCK_MAGIC) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: spinlocks no longer supported\n"));
 		errno = ENOSYS;
 		goto fail;
 	}
 	tdb->hash_size = header.hash_size;
+
+	if (header.rwlocks == TDB_FEATURE_FLAG_MAGIC) {
+		tdb->feature_flags = header.feature_flags;
+	}
+
+	if (tdb->feature_flags & ~TDB_SUPPORTED_FEATURE_FLAGS) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: unsupported "
+			 "features in tdb %s: 0x%08x (supported: 0x%08x)\n",
+			 name, (unsigned)tdb->feature_flags,
+			 (unsigned)TDB_SUPPORTED_FEATURE_FLAGS));
+		errno = ENOSYS;
+		goto fail;
+	}
 
 	if ((header.magic1_hash == 0) && (header.magic2_hash == 0)) {
 		/* older TDB without magic hash references */

@@ -21,6 +21,7 @@
 	"Size of file/data: %u/%zu\n" \
 	"Number of records: %zu\n" \
 	"Incompatible hash: %s\n" \
+	"Active/supported feature flags: 0x%08x/0x%08x\n" \
 	"Smallest/average/largest keys: %zu/%zu/%zu\n" \
 	"Smallest/average/largest data: %zu/%zu/%zu\n" \
 	"Smallest/average/largest padding: %zu/%zu/%zu\n" \
@@ -169,6 +170,7 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 		 tdb->map_size, keys.total+data.total,
 		 keys.num,
 		 (tdb->hash_fn == tdb_jenkins_hash)?"yes":"no",
+		 (unsigned)tdb->feature_flags, TDB_SUPPORTED_FEATURE_FLAGS,
 		 keys.min, tally_mean(&keys), keys.max,
 		 data.min, tally_mean(&data), data.max,
 		 extra.min, tally_mean(&extra), extra.max,
