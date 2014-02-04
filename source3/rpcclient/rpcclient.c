@@ -943,6 +943,7 @@ out_free:
 	uint32_t bflags = 0;
 	const char *binding_string = NULL;
 	char *user, *domain, *q;
+	const char *host;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -1075,6 +1076,8 @@ out_free:
 		}
 	}
 
+	host = dcerpc_binding_get_string_option(binding, "host");
+
 	bflags = dcerpc_binding_get_flags(binding);
 	if (bflags & DCERPC_CONNECT) {
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_CONNECT;
@@ -1134,8 +1137,7 @@ out_free:
 		set_cmdline_auth_info_username(rpcclient_auth_info, q+1);
 	}
 
-
-	nt_status = cli_full_connection(&cli, lp_netbios_name(), binding->host,
+	nt_status = cli_full_connection(&cli, lp_netbios_name(), host,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
 					get_cmdline_auth_info_username(rpcclient_auth_info),
