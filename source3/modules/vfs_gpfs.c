@@ -1445,7 +1445,7 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 	if (ret == 0) {
 		init_stat_ex_from_stat(
 			&smb_fname->st, &st,
-			lp_fake_dir_create_times(SNUM(handle->conn)));
+			lp_fake_directory_create_times(SNUM(handle->conn)));
 	}
 
 	return ret;

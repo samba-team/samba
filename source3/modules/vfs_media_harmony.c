@@ -607,7 +607,7 @@ static int set_fake_mtime(vfs_handle_struct *handle,
 
 	DEBUG(MH_INFO_DEBUG, ("Fake stat'ing '%s'\n", statPath));
 	if (statFn(statPath, &fakeStat,
-			lp_fake_dir_create_times(SNUM(handle->conn))))
+			lp_fake_directory_create_times(SNUM(handle->conn))))
 	{
 		/* This can fail for legitimate reasons - i.e. the
 		 * fakeStat directory doesn't exist, which is okay
