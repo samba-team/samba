@@ -115,15 +115,26 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		DEBUG(0, ("Failed to parse dcerpc binding '%s'\n", binding));
 		return status;
 	}
-	
-	DEBUG(3, ("Using binding %s\n", dcerpc_binding_string(dce_call->context, b)));
-	
+
 	/* If we already have a remote association group ID, then use that */
 	if (dce_call->context->assoc_group->proxied_id != 0) {
-		b->assoc_group_id = dce_call->context->assoc_group->proxied_id;
+		status = dcerpc_binding_set_assoc_group_id(b,
+			dce_call->context->assoc_group->proxied_id);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("dcerpc_binding_set_assoc_group_id() - %s'\n",
+				  nt_errstr(status)));
+			return status;
+		}
 	}
 
-	b->object.if_version = if_version;
+	status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dcerpc_binding_set_abstract_syntax() - %s'\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	DEBUG(3, ("Using binding %s\n", dcerpc_binding_string(dce_call->context, b)));
 
 	pipe_conn_req = dcerpc_pipe_connect_b_send(dce_call->context, b, table,
 						   credentials, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
