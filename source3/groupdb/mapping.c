@@ -213,11 +213,11 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 
 	/* defer to scripts */
 
-	if ( *lp_addgroup_script(talloc_tos()) ) {
+	if ( *lp_add_group_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		add_script = talloc_strdup(ctx,
-					lp_addgroup_script(ctx));
+					lp_add_group_script(ctx));
 		if (!add_script) {
 			return -1;
 		}
