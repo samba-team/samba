@@ -329,7 +329,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		break;
 	}
 
-	if (lp_hideunreadable(SNUM(tcon->compat)) ||
+	if (lp_hide_unreadable(SNUM(tcon->compat)) ||
 	    lp_hideunwriteable_files(SNUM(tcon->compat))) {
 		*out_share_flags |= SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM;
 	}
