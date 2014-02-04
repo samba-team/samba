@@ -534,7 +534,7 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 		}
 
 		iface.name = r->in.entries[i].annotation;
-		iface.syntax_id = b->object;
+		iface.syntax_id = dcerpc_binding_get_abstract_syntax(b);
 
 		iflist = find_interface_list(ep, &iface);
 		if (iflist == NULL) {
