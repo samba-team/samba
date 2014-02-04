@@ -1624,11 +1624,13 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 		}
 
 #define TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, err) do { \
+		void *p; \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTGETCALL(GetPrinter, q) \
 		info_ctr.level = lvl1; \
-		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)(void *)&q.out.info->info ## lvl1; \
+		p = (void *)&q.out.info->info ## lvl1; \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)p; \
 		info_ctr.info.info ## lvl1->field1 = value;\
 		TESTSETCALL_EXP(SetPrinter, s, err) \
 		info_ctr.info.info ## lvl1->field1 = ""; \
@@ -1637,7 +1639,8 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 		STRING_EQUAL(info_ctr.info.info ## lvl1->field1, value, field1); \
 		q.in.level = lvl2; \
 		TESTGETCALL(GetPrinter, q) \
-		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)(void *)&q.out.info->info ## lvl2; \
+		p = (void *)&q.out.info->info ## lvl2; \
+		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)p; \
 		STRING_EQUAL(info_ctr.info.info ## lvl2->field2, value, field2); \
 	} while (0)
 
@@ -1646,20 +1649,24 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 	} while (0);
 
 #define TEST_PRINTERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value) do { \
+		void *p; \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTGETCALL(GetPrinter, q) \
 		info_ctr.level = lvl1; \
-		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)(void *)&q.out.info->info ## lvl1; \
+		p = (void *)&q.out.info->info ## lvl1; \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)p; \
 		info_ctr.info.info ## lvl1->field1 = value; \
 		TESTSETCALL(SetPrinter, s) \
 		info_ctr.info.info ## lvl1->field1 = 0; \
 		TESTGETCALL(GetPrinter, q) \
-		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)(void *)&q.out.info->info ## lvl1; \
+		p = (void *)&q.out.info->info ## lvl1; \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)p; \
 		INT_EQUAL(info_ctr.info.info ## lvl1->field1, exp_value, field1); \
 		q.in.level = lvl2; \
 		TESTGETCALL(GetPrinter, q) \
-		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)(void *)&q.out.info->info ## lvl2; \
+		p = (void *)&q.out.info->info ## lvl2; \
+		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)p; \
 		INT_EQUAL(info_ctr.info.info ## lvl2->field2, exp_value, field1); \
 	} while (0)
 
@@ -2148,7 +2155,8 @@ static bool test_devicemode_full(struct torture_context *tctx,
 		TESTGETCALL(GetPrinter, q) \
 		info_ctr.level = lvl1; \
 		if (lvl1 == 2) {\
-			info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)(void *)&q.out.info->info ## lvl1; \
+			void *p = (void *)&q.out.info->info ## lvl1; \
+			info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)p; \
 		} else if (lvl1 == 8) {\
 			info_ctr.info.info ## lvl1 = &info8; \
 		}\
