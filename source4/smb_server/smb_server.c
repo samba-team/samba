@@ -63,7 +63,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private_data, DATA_BLOB blob)
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
 	case SMB2_MAGIC:
-		if (lpcfg_srv_maxprotocol(smb_conn->lp_ctx) < PROTOCOL_SMB2_02) break;
+		if (lpcfg_server_max_protocol(smb_conn->lp_ctx) < PROTOCOL_SMB2_02) break;
 		status = smbsrv_init_smb2_connection(smb_conn);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb2_request);

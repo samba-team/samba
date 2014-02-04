@@ -819,7 +819,7 @@ static void init_globals(bool reinit_globals)
 	Globals.large_readwrite = true;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = max_open_files();
-	Globals.srv_maxprotocol = PROTOCOL_SMB3_00;
+	Globals.server_max_protocol = PROTOCOL_SMB3_00;
 	Globals.srv_minprotocol = PROTOCOL_LANMAN1;
 	Globals.client_max_protocol = PROTOCOL_NT1;
 	Globals.client_min_protocol = PROTOCOL_CORE;

@@ -139,7 +139,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	indyn = SMBD_SMB2_IN_DYN_PTR(req);
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB3_00) {
+		if (lp_server_max_protocol() < PROTOCOL_SMB3_00) {
 			break;
 		}
 		if (lp_srv_minprotocol() > PROTOCOL_SMB3_00) {
@@ -154,7 +154,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_24) {
+		if (lp_server_max_protocol() < PROTOCOL_SMB2_24) {
 			break;
 		}
 		if (lp_srv_minprotocol() > PROTOCOL_SMB2_24) {
@@ -169,7 +169,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_22) {
+		if (lp_server_max_protocol() < PROTOCOL_SMB2_22) {
 			break;
 		}
 		if (lp_srv_minprotocol() > PROTOCOL_SMB2_22) {
@@ -184,7 +184,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_10) {
+		if (lp_server_max_protocol() < PROTOCOL_SMB2_10) {
 			break;
 		}
 		if (lp_srv_minprotocol() > PROTOCOL_SMB2_10) {
@@ -199,7 +199,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_02) {
+		if (lp_server_max_protocol() < PROTOCOL_SMB2_02) {
 			break;
 		}
 		if (lp_srv_minprotocol() > PROTOCOL_SMB2_02) {
@@ -214,7 +214,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_10) {
+		if (lp_server_max_protocol() < PROTOCOL_SMB2_10) {
 			break;
 		}
 
