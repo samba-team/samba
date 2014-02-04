@@ -620,42 +620,55 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_assoc_group_id(struct dcerpc_binding *b,
 
 _PUBLIC_ struct ndr_syntax_id dcerpc_binding_get_abstract_syntax(const struct dcerpc_binding *b)
 {
-	/*
-	 * For now we just use object, until all callers are fixed.
-	 */
-	return b->object;
+	const char *s = dcerpc_binding_get_string_option(b, "abstract_syntax");
+	bool ok;
+	struct ndr_syntax_id id;
+
+	if (s == NULL) {
+		return ndr_syntax_id_null;
+	}
+
+	ok = ndr_syntax_id_from_string(s, &id);
+	if (!ok) {
+		return ndr_syntax_id_null;
+	}
+
+	return id;
 }
 
 _PUBLIC_ NTSTATUS dcerpc_binding_set_abstract_syntax(struct dcerpc_binding *b,
 						     const struct ndr_syntax_id *syntax)
 {
 	NTSTATUS status;
-	struct GUID object;
+	char *s = NULL;
 
-	/*
-	 * For now we just use object, until all callers are fixed.
-	 */
+	if (syntax == NULL) {
+		status = dcerpc_binding_set_string_option(b, "abstract_syntax", NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
-	if (syntax != NULL) {
-		object = syntax->uuid;
-	} else {
-		object = GUID_zero();
+		return NT_STATUS_OK;
 	}
 
-	/*
-	 * This sets also the string
-	 */
-	status = dcerpc_binding_set_object(b, object);
+	if (ndr_syntax_id_equal(&ndr_syntax_id_null, syntax)) {
+		status = dcerpc_binding_set_string_option(b, "abstract_syntax", NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		return NT_STATUS_OK;
+	}
+
+	s = ndr_syntax_id_to_string(b, syntax);
+	if (s == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_binding_set_string_option(b, "abstract_syntax", s);
+	TALLOC_FREE(s);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (syntax != NULL) {
-		/*
-		 * Here we need to reset the whole ndr_syntax_id
-		 * structure including the .if_version
-		 */
-		b->object = *syntax;
 	}
 
 	return NT_STATUS_OK;
