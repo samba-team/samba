@@ -151,7 +151,13 @@ static struct DsIntIdTestCtx *_dsintid_create_context(struct torture_context *tc
 		return NULL;
 	}
 
-	server_binding->flags |= DCERPC_SIGN | DCERPC_SEAL;
+	status = dcerpc_binding_set_flags(server_binding,
+					  DCERPC_SIGN | DCERPC_SEAL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_result(tctx, TORTURE_FAIL,
+		               "dcerpc_binding_set_flags: %s", nt_errstr(status));
+		return NULL;
+	}
 
 	/* populate test suite context */
 	ctx->creds = cmdline_credentials;
