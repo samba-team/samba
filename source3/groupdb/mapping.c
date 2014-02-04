@@ -304,11 +304,11 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 
 	/* defer to scripts */
 
-	if ( *lp_setprimarygroup_script(talloc_tos()) ) {
+	if ( *lp_set_primary_group_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		add_script = talloc_strdup(ctx,
-				lp_setprimarygroup_script(ctx));
+				lp_set_primary_group_script(ctx));
 		if (!add_script) {
 			return -1;
 		}
