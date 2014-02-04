@@ -138,7 +138,8 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	}
 
 	if (dce_call->context->assoc_group->proxied_id == 0) {
-		dce_call->context->assoc_group->proxied_id = priv->c_pipe->assoc_group_id;
+		dce_call->context->assoc_group->proxied_id =
+			dcerpc_binding_get_assoc_group_id(priv->c_pipe->binding);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
