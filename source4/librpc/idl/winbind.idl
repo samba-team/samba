@@ -4,10 +4,10 @@
 
 #include "idl_types.h"
 
-import "netlogon.idl", "lsa.idl", "security.idl", "idmap.idl";
+import "netlogon.idl";
 
 [
-  uuid("245f3e6b-3c5d-6e21-3a2d-2a3d645b7221"),
+  uuid("b875118e-47a3-4210-b5f7-c240cce656b2"),
   version(1.0),
   pointer_default(unique)
 ]
@@ -15,15 +15,6 @@ interface winbind
 {
 	typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;
 	typedef [switch_type(uint16)] union netr_Validation netr_Validation;
-
-	/* a call to get runtime informations */
-	void winbind_information(/* TODO */);
-
-	/*
-	 * a call to trigger some internal events,
-	 * for use in torture tests...
-	 */
-	NTSTATUS winbind_remote_control(/* TODO */);
 
 	/*
 	 * do a netr_LogonSamLogon() against the right DC
@@ -34,17 +25,6 @@ interface winbind
 		[in]  uint16 validation_level,
 		[out] [switch_is(validation_level)] netr_Validation validation,
 		[out] uint8 authoritative
-	);
-
-	typedef [v1_enum] enum {
-		WINBIND_IDMAP_LEVEL_SIDS_TO_XIDS	= 1,
-		WINBIND_IDMAP_LEVEL_XIDS_TO_SIDS	= 2
-	} winbind_get_idmap_level;
-
-	NTSTATUS winbind_get_idmap(
-		[in]     winbind_get_idmap_level level,
-		[in]     uint32 count,
-		[in,out] [size_is(count)] id_map ids[]
 	);
 
 	NTSTATUS winbind_DsrUpdateReadOnlyServerDnsRecords(

@@ -125,74 +125,6 @@ static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct tevent_req
 	irpc_send_reply(s->msg, status);
 }
 
-struct wb_irpc_get_idmap_state {
-	struct irpc_message *msg;
-	struct winbind_get_idmap *req;
-	int level;
-};
-
-static void wb_irpc_get_idmap_callback(struct composite_context *ctx);
-
-static NTSTATUS wb_irpc_get_idmap(struct irpc_message *msg,
-				  struct winbind_get_idmap *req)
-{
-	struct wbsrv_service *service = talloc_get_type(msg->private_data,
-					struct wbsrv_service);
-	struct wb_irpc_get_idmap_state *s;
-	struct composite_context *ctx = NULL;
-
-	DEBUG(5, ("wb_irpc_get_idmap called\n"));
-
-	s = talloc(msg, struct wb_irpc_get_idmap_state);
-	NT_STATUS_HAVE_NO_MEMORY(s);
-
-	s->msg = msg;
-	s->req = req;
-	s->level = req->in.level;
-
-	switch(s->level) {
-		case WINBIND_IDMAP_LEVEL_SIDS_TO_XIDS:
-			ctx = wb_sids2xids_send(msg, service, req->in.count,
-						req->in.ids);
-			break;
-		case WINBIND_IDMAP_LEVEL_XIDS_TO_SIDS:
-			ctx = wb_xids2sids_send(msg, service, req->in.count,
-						req->in.ids);
-			break;
-	}
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	composite_continue(ctx, ctx, wb_irpc_get_idmap_callback, s);
-	msg->defer_reply = true;
-
-	return NT_STATUS_OK;
-}
-
-static void wb_irpc_get_idmap_callback(struct composite_context *ctx)
-{
-	struct wb_irpc_get_idmap_state *s;
-	NTSTATUS status;
-
-	DEBUG(5, ("wb_irpc_get_idmap_callback called\n"));
-
-	s = talloc_get_type(ctx->async.private_data,
-			    struct wb_irpc_get_idmap_state);
-
-	switch(s->level) {
-		case WINBIND_IDMAP_LEVEL_SIDS_TO_XIDS:
-			status = wb_sids2xids_recv(ctx, &s->req->out.ids, NULL);
-			break;
-		case WINBIND_IDMAP_LEVEL_XIDS_TO_SIDS:
-			status = wb_xids2sids_recv(ctx, &s->req->out.ids);
-			break;
-		default:
-			status = NT_STATUS_INTERNAL_ERROR;
-			break;
-	}
-
-	irpc_send_reply(s->msg, status);
-}
-
 NTSTATUS wbsrv_init_irpc(struct wbsrv_service *service)
 {
 	NTSTATUS status;
@@ -205,10 +137,6 @@ NTSTATUS wbsrv_init_irpc(struct wbsrv_service *service)
 
 	status = IRPC_REGISTER(service->task->msg_ctx, winbind, WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
 			       wb_irpc_DsrUpdateReadOnlyServerDnsRecords, service);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	status = IRPC_REGISTER(service->task->msg_ctx, winbind, WINBIND_GET_IDMAP,
-			       wb_irpc_get_idmap, service);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
