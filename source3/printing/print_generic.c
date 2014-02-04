@@ -255,7 +255,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-			lp_printcommand(talloc_tos(), snum), NULL,
+			lp_print_command(talloc_tos(), snum), NULL,
 			"%s", p,
 			"%J", jobname,
 			"%f", p,
