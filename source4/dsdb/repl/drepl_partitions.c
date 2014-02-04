@@ -153,10 +153,10 @@ static bool dreplsrv_spn_exists(struct ldb_context *samdb, struct ldb_dn *accoun
 /*
   work out the principal to use for DRS replication connections
  */
-NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
-				       TALLOC_CTX *mem_ctx,
-				       const struct repsFromTo1 *rft,
-				       const char **target_principal)
+static NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
+					      TALLOC_CTX *mem_ctx,
+					      const struct repsFromTo1 *rft,
+					      char **target_principal)
 {
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
@@ -307,7 +307,7 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 	if (!conn) {
 		NTSTATUS nt_status;
 		char *binding_str;
-		const char *target_principal = NULL;
+		char *target_principal = NULL;
 
 		conn = talloc_zero(s, struct dreplsrv_out_connection);
 		W_ERROR_HAVE_NO_MEMORY(conn);
@@ -333,6 +333,7 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 		nt_status = dcerpc_binding_set_string_option(conn->binding,
 							     "target_principal",
 							     target_principal);
+		TALLOC_FREE(target_principal);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return ntstatus_to_werror(nt_status);
 		}
