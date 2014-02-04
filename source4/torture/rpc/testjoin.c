@@ -660,7 +660,8 @@ static NTSTATUS torture_leave_ads_domain(struct torture_context *torture,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	remote_ldb_url = talloc_asprintf(tmp_ctx, "ldap://%s", libnet_r->out.samr_binding->host);
+	remote_ldb_url = talloc_asprintf(tmp_ctx, "ldap://%s",
+		dcerpc_binding_get_string_option(libnet_r->out.samr_binding, "host"));
 	if (!remote_ldb_url) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
