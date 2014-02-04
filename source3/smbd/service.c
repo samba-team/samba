@@ -1145,7 +1145,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 
 	change_to_root_user();
 	/* execute any "root postexec = " line */
-	if (*lp_rootpostexec(talloc_tos(), SNUM(conn)))  {
+	if (*lp_root_postexec(talloc_tos(), SNUM(conn)))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(talloc_tos(), SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
@@ -1153,7 +1153,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_rootpostexec(talloc_tos(), SNUM(conn)));
+					lp_root_postexec(talloc_tos(), SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
 	}
