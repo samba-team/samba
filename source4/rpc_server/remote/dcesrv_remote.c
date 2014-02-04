@@ -71,7 +71,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	pass = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "password");
 	domain = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dceprc_remote", "domain");
 
-	table = ndr_table_by_uuid(&iface->syntax_id.uuid); /* FIXME: What about if_version ? */
+	table = ndr_table_by_syntax(&iface->syntax_id);
 	if (!table) {
 		dce_call->fault_code = DCERPC_FAULT_UNK_IF;
 		return NT_STATUS_NET_WRITE_FAULT;
