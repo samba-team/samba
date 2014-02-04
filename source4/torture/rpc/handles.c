@@ -124,7 +124,7 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	b1 = p1->binding_handle;
 
 	transport	= p1->conn->transport.transport;
-	assoc_group_id	= p1->assoc_group_id;
+	assoc_group_id	= dcerpc_binding_get_assoc_group_id(p1->binding);
 
 	torture_comment(torture, "use assoc_group_id[0x%08X] for new connections\n", assoc_group_id);
 
@@ -136,7 +136,7 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	b2 = p2->binding_handle;
 
 	torture_comment(torture, "got assoc_group_id[0x%08X] for p2\n", 
-			p2->assoc_group_id);
+			dcerpc_binding_get_assoc_group_id(p2->binding));
 
 	qos.len = 0;
 	qos.impersonation_level = 2;
@@ -416,7 +416,7 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	b1 = p1->binding_handle;
 
 	transport	= p1->conn->transport.transport;
-	assoc_group_id	= p1->assoc_group_id;
+	assoc_group_id	= dcerpc_binding_get_assoc_group_id(p1->binding);
 
 	torture_comment(torture, "use assoc_group_id[0x%08X] for new connections\n", assoc_group_id);
 
@@ -428,7 +428,7 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	b2 = p2->binding_handle;
 
 	torture_comment(torture, "got assoc_group_id[0x%08X] for p2\n", 
-			p2->assoc_group_id);
+			dcerpc_binding_get_assoc_group_id(p2->binding));
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &handle;
@@ -510,14 +510,15 @@ static bool test_handles_random_assoc(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "opening samr pipe1");
 
 	torture_comment(torture, "pipe1 uses assoc_group_id[0x%08X]\n",
-			p1->assoc_group_id);
+			dcerpc_binding_get_assoc_group_id(p1->binding));
 
 	transport	= p1->conn->transport.transport;
 	/*
 	 * We use ~p1->assoc_group_id instead of p1->assoc_group_id, because
 	 * this way we are less likely to use an id which is already in use.
 	 */
-	assoc_group_id	= ~p1->assoc_group_id;
+	assoc_group_id = dcerpc_binding_get_assoc_group_id(p1->binding);
+	assoc_group_id = ~assoc_group_id;
 
 	torture_comment(torture, "connect samr pipe2 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);
 	status = torture_rpc_connection_transport(torture, &p2, &ndr_table_samr,
