@@ -161,7 +161,7 @@ static struct loadparm_service sDefault =
 	.printcommand = NULL,
 	.lpqcommand = NULL,
 	.lprmcommand = NULL,
-	.lppausecommand = NULL,
+	.lppause_command = NULL,
 	.lpresumecommand = NULL,
 	.queuepausecommand = NULL,
 	.queueresumecommand = NULL,
@@ -393,7 +393,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->printcommand, "lpr -r -P'%p' %s");
 			string_set(&pService->queuepausecommand, "lpc stop '%p'");
 			string_set(&pService->queueresumecommand, "lpc start '%p'");
-			string_set(&pService->lppausecommand, "lpc hold '%p' %j");
+			string_set(&pService->lppause_command, "lpc hold '%p' %j");
 			string_set(&pService->lpresumecommand, "lpc release '%p' %j");
 			break;
 
@@ -404,7 +404,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->lpqcommand, "%p");
 			string_set(&pService->lprmcommand, "");
 			string_set(&pService->printcommand, "");
-			string_set(&pService->lppausecommand, "");
+			string_set(&pService->lppause_command, "");
 			string_set(&pService->lpresumecommand, "");
 			string_set(&pService->queuepausecommand, "");
 			string_set(&pService->queueresumecommand, "");
@@ -418,7 +418,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->queuepausecommand, "disable %p");
 			string_set(&pService->queueresumecommand, "enable %p");
 #ifndef HPUX
-			string_set(&pService->lppausecommand, "lp -i %p-%j -H hold");
+			string_set(&pService->lppause_command, "lp -i %p-%j -H hold");
 			string_set(&pService->lpresumecommand, "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
@@ -462,7 +462,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lppause %%p %%j",
 				      tdbfile);
-		string_set(&pService->lppausecommand,
+		string_set(&pService->lppause_command,
 			   tmp ? tmp : "vlp lppause %p %j");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpresume %%p %%j",
