@@ -150,12 +150,13 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 
 	/* prepare smb connection parameters: we're connecting to IPC$ share on
 	   remote rpc server */
-	conn->in.dest_host              = s->io.binding->host;
-	conn->in.dest_ports                  = lpcfg_smb_ports(lp_ctx);
-	if (s->io.binding->target_hostname == NULL)
-		conn->in.called_name = "*SMBSERVER"; /* FIXME: This is invalid */
-	else
-		conn->in.called_name            = s->io.binding->target_hostname;
+	conn->in.dest_host = dcerpc_binding_get_string_option(s->io.binding, "host");
+	conn->in.dest_ports = lpcfg_smb_ports(lp_ctx);
+	conn->in.called_name =
+		dcerpc_binding_get_string_option(s->io.binding, "target_hostname");
+	if (conn->in.called_name == NULL) {
+		conn->in.called_name = "*SMBSERVER";
+	}
 	conn->in.socket_options         = lpcfg_socket_options(lp_ctx);
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
@@ -294,6 +295,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	struct pipe_np_smb2_state *s;
 	struct tevent_req *subreq;
 	struct smbcli_options options;
+	const char *host;
 	uint32_t flags;
 
 	/* composite context allocation and setup */
@@ -306,6 +308,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 
 	s->io = *io;
 
+	host = dcerpc_binding_get_string_option(s->io.binding, "host");
 	flags = dcerpc_binding_get_flags(s->io.binding);
 
 	/*
@@ -321,7 +324,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 
 	/* send smb2 connect request */
 	subreq = smb2_connect_send(s, c->event_ctx,
-			s->io.binding->host,
+			host,
 			lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "smb2", "ports", NULL),
 			"IPC$",
 			s->io.resolve_ctx,
@@ -394,17 +397,12 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 	c->private_data = s;
 
 	/* store input parameters in state structure */
-	s->io               = *io;
+	s->io = *io;
 	s->localaddr = dcerpc_binding_get_string_option(io->binding,
 							"localaddress");
-	if (io->binding->host != NULL) {
-		s->host = talloc_strdup(s, io->binding->host);
-		if (composite_nomem(s->host, c)) return c;
-	}
-	if (io->binding->target_hostname != NULL) {
-		s->target_hostname = talloc_strdup(s, io->binding->target_hostname);
-		if (composite_nomem(s->target_hostname, c)) return c;
-	}
+	s->host = dcerpc_binding_get_string_option(io->binding, "host");
+	s->target_hostname = dcerpc_binding_get_string_option(io->binding,
+							      "target_hostname");
 	endpoint = dcerpc_binding_get_string_option(io->binding, "endpoint");
 	/* port number is a binding endpoint here */
 	if (endpoint != NULL) {

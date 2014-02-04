@@ -60,6 +60,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	struct composite_context *pipe_smb_req;
 	struct composite_context *pipe_tcp_req;
 	struct composite_context *pipe_ncalrpc_req;
+	const char *target_hostname;
 	const char *endpoint;
 
 	/* composite context allocation and setup */
@@ -80,6 +81,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	if (DEBUGLEVEL >= 10)
 		s->pipe2->conn->packet_log_dir = s->pipe->conn->packet_log_dir;
 
+	target_hostname = dcerpc_binding_get_string_option(s->binding, "target_hostname");
 	endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
 	if (endpoint == NULL) {
 		/*
@@ -114,7 +116,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 		pipe_tcp_req = dcerpc_pipe_open_tcp_send(s->pipe2->conn,
 							 s->localaddress,
 							 s->peer_addr->addr,
-							 s->binding->target_hostname,
+							 target_hostname,
 							 atoi(endpoint),
 							 resolve_context_init(s));
 		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
