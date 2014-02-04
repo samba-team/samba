@@ -1511,6 +1511,11 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	char *path = NULL;
 	struct security_descriptor *psd = NULL;
 	bool is_disk_op = False;
+	const char *csc_policy = NULL;
+	bool csc_policy_changed = false;
+	const char *csc_policies[] = {"manual", "documents", "programs",
+				      "disable"};
+	uint32_t client_csc_policy;
 	int max_connections = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
 	union srvsvc_NetShareInfo *info = r->in.info;
@@ -1562,6 +1567,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	}
 
 	max_connections = lp_max_connections(snum);
+	csc_policy = csc_policies[lp_csc_policy(snum)];
 
 	switch (r->in.level) {
 	case 1:
@@ -1603,14 +1609,21 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		   user, so we must compare it to see if it's what is set in
 		   smb.conf, so that we can contine other ops like setting
 		   ACLs on a share */
-		if (((info->info1005->dfs_flags &
-		      SHARE_1005_CSC_POLICY_MASK) >>
-		     SHARE_1005_CSC_POLICY_SHIFT) == lp_csc_policy(snum))
+		client_csc_policy = (info->info1005->dfs_flags &
+				     SHARE_1005_CSC_POLICY_MASK) >>
+				    SHARE_1005_CSC_POLICY_SHIFT;
+
+		if (client_csc_policy == lp_csc_policy(snum))
 			return WERR_OK;
 		else {
-			DEBUG(3, ("_srvsvc_NetShareSetInfo: client is trying to change csc policy from the network; must be done with smb.conf\n"));
-			return WERR_ACCESS_DENIED;
+			csc_policy = csc_policies[client_csc_policy];
+			csc_policy_changed = true;
 		}
+
+		pathname = lp_path(ctx, snum);
+		comment = lp_comment(ctx, snum);
+		type = STYPE_DISKTREE;
+		break;
 	case 1006:
 	case 1007:
 		return WERR_ACCESS_DENIED;
@@ -1657,20 +1670,23 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	/* Only call modify function if something changed. */
 
 	if (strcmp(path, lp_path(talloc_tos(), snum)) || strcmp(comment, lp_comment(talloc_tos(), snum))
-			|| (lp_max_connections(snum) != max_connections)) {
+			|| (lp_max_connections(snum) != max_connections)
+			|| csc_policy_changed) {
+
 		if (!lp_change_share_cmd(talloc_tos()) || !*lp_change_share_cmd(talloc_tos())) {
 			DEBUG(10,("_srvsvc_NetShareSetInfo: No change share command\n"));
 			return WERR_ACCESS_DENIED;
 		}
 
 		command = talloc_asprintf(p->mem_ctx,
-				"%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
+				"%s \"%s\" \"%s\" \"%s\" \"%s\" %d \"%s\"",
 				lp_change_share_cmd(talloc_tos()),
 				get_dyn_CONFIGFILE(),
 				share_name,
 				path,
 				comment ? comment : "",
-				max_connections);
+				max_connections,
+				csc_policy);
 		if (!command) {
 			return WERR_NOMEM;
 		}
