@@ -355,7 +355,7 @@ static const char *automount_path(const char *user_name)
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
-	if (lp_nis_home_map()) {
+	if (lp_nis_homedir()) {
 		const char *home_path_start;
 		char *automount_value = automount_lookup(ctx, user_name);
 
@@ -410,7 +410,7 @@ static const char *automount_server(const char *user_name)
 	}
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
-	if (lp_nis_home_map()) {
+	if (lp_nis_homedir()) {
 		char *p;
 		char *srv;
 		char *automount_value = automount_lookup(ctx, user_name);
