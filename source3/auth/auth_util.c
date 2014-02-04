@@ -48,7 +48,7 @@ static int _smb_create_user(const char *domain, const char *unix_username, const
 	char *add_script;
 	int ret;
 
-	add_script = lp_adduser_script(ctx);
+	add_script = lp_add_user_script(ctx);
 	if (!add_script || !*add_script) {
 		return -1;
 	}

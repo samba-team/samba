@@ -459,7 +459,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		fstring name2;
 
 		if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] != '$') {
-			add_script = lp_adduser_script(tmp_ctx);
+			add_script = lp_add_user_script(tmp_ctx);
 		} else {
 			add_script = lp_add_machine_script(tmp_ctx);
 		}
