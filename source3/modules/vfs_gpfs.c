@@ -52,6 +52,24 @@ struct gpfs_config_data {
 	bool recalls;
 };
 
+static inline unsigned int gpfs_acl_flags(gpfs_acl_t *gacl)
+{
+	if (gacl->acl_level == 1) { /* GPFS_ACL_LEVEL_V4FLAGS */
+		/* gacl->v4Level1.acl_flags requires gpfs 3.5 */
+		return *(unsigned int *)&gacl->ace_v4;
+	}
+	return 0;
+}
+
+static inline gpfs_ace_v4_t *gpfs_ace_ptr(gpfs_acl_t *gacl, unsigned int i)
+{
+	if (gacl->acl_level == 1) { /* GPFS_ACL_LEVEL_V4FLAGS */
+		/* &gacl->v4Level1.ace_v4[i] requires gpfs 3.5 */
+		char *ptr = (char *)&gacl->ace_v4[i] + sizeof(unsigned int);
+		return (gpfs_ace_v4_t *)ptr;
+	}
+	return &gacl->ace_v4[i];
+}
 
 static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 				 uint32 share_mode, uint32 access_mask)
@@ -208,6 +226,34 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 	return 0;
 }
 
+static void sd2gpfs_control(uint16_t control, struct gpfs_acl *gacl)
+{
+	unsigned int gpfs_aclflags = 0;
+	control &= SEC_DESC_DACL_PROTECTED | SEC_DESC_SACL_PROTECTED |
+		SEC_DESC_DACL_AUTO_INHERITED | SEC_DESC_SACL_AUTO_INHERITED |
+		SEC_DESC_DACL_DEFAULTED | SEC_DESC_SACL_DEFAULTED |
+		SEC_DESC_DACL_PRESENT | SEC_DESC_SACL_PRESENT;
+	gpfs_aclflags = control << 8;
+	if (!(control & SEC_DESC_DACL_PRESENT))
+		gpfs_aclflags |= 0x00800000; /* ACL4_FLAG_NULL_DACL; */
+	if (!(control & SEC_DESC_SACL_PRESENT))
+		gpfs_aclflags |= 0x01000000; /* ACL4_FLAG_NULL_SACL; */
+	gacl->acl_level = 1; /* GPFS_ACL_LEVEL_V4FLAGS*/
+	/* gacl->v4Level1.acl_flags requires gpfs 3.5 */
+	*(unsigned int *)&gacl->ace_v4 = gpfs_aclflags;
+}
+
+static uint16_t gpfs2sd_control(unsigned int gpfs_aclflags)
+{
+	uint16_t control = gpfs_aclflags >> 8;
+	control &= SEC_DESC_DACL_PROTECTED | SEC_DESC_SACL_PROTECTED |
+		SEC_DESC_DACL_AUTO_INHERITED | SEC_DESC_SACL_AUTO_INHERITED |
+		SEC_DESC_DACL_DEFAULTED | SEC_DESC_SACL_DEFAULTED |
+		SEC_DESC_DACL_PRESENT | SEC_DESC_SACL_PRESENT;
+	control |= SEC_DESC_SELF_RELATIVE;
+	return control;
+}
+
 static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 {
 	gpfs_aclCount_t i;
@@ -217,14 +263,18 @@ static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 		return;
 	}
 
-	DEBUG(level, ("gpfs acl: nace: %d, type:%d, version:%d, level:%d, len:%d\n",
-		gacl->acl_nace, gacl->acl_type, gacl->acl_version, gacl->acl_level, gacl->acl_len));
+	DEBUG(level, ("len: %d, level: %d, version: %d, nace: %d, "
+		      "control: %x\n",
+		      gacl->acl_len, gacl->acl_level, gacl->acl_version,
+		      gacl->acl_nace, gpfs_acl_flags(gacl)));
+
 	for(i=0; i<gacl->acl_nace; i++)
 	{
-		struct gpfs_ace_v4 *gace = gacl->ace_v4 + i;
-		DEBUG(level, ("\tace[%d]: type:%d, flags:0x%x, mask:0x%x, iflags:0x%x, who:%u\n",
-			i, gace->aceType, gace->aceFlags, gace->aceMask,
-			gace->aceIFlags, gace->aceWho));
+		struct gpfs_ace_v4 *gace = gpfs_ace_ptr(gacl, i);
+		DEBUG(level, ("\tace[%d]: type:%d, flags:0x%x, mask:0x%x, "
+			      "iflags:0x%x, who:%u\n",
+			      i, gace->aceType, gace->aceFlags, gace->aceMask,
+			      gace->aceIFlags, gace->aceWho));
 	}
 }
 
@@ -266,9 +316,11 @@ again:
 	} else {
 		struct gpfs_acl *buf = (struct gpfs_acl *) aclbuf;
 		buf->acl_type = type;
+		buf->acl_level = 1; /* GPFS_ACL_LEVEL_V4FLAGS */
 		flags = GPFS_GETACL_STRUCT;
 		len = &(buf->acl_len);
-		struct_size = sizeof(struct gpfs_acl);
+		/* reserve space for control flags in gpfs 3.5 and beyond */
+		struct_size = sizeof(struct gpfs_acl) + sizeof(unsigned int);
 	}
 
 	/* set the length of the buffer as input value */
@@ -331,12 +383,17 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T *
 
 	*ppacl = smb_create_smb4acl(mem_ctx);
 
-	DEBUG(10, ("len: %d, level: %d, version: %d, nace: %d\n",
+	if (gacl->acl_level == 1) { /* GPFS_ACL_LEVEL_V4FLAGS */
+		uint16_t control = gpfs2sd_control(gpfs_acl_flags(gacl));
+		smbacl4_set_controlflags(*ppacl, control);
+	}
+
+	DEBUG(10, ("len: %d, level: %d, version: %d, nace: %d, control: %x\n",
 		   gacl->acl_len, gacl->acl_level, gacl->acl_version,
-		   gacl->acl_nace));
+		   gacl->acl_nace, gpfs_acl_flags(gacl)));
 
 	for (i=0; i<gacl->acl_nace; i++) {
-		struct gpfs_ace_v4 *gace = &gacl->ace_v4[i];
+		struct gpfs_ace_v4 *gace = gpfs_ace_ptr(gacl, i);
 		SMB_ACE4PROP_T smbace;
 		DEBUG(10, ("type: %d, iflags: %x, flags: %x, mask: %x, "
 			   "who: %d\n", gace->aceType, gace->aceIFlags,
@@ -369,7 +426,7 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T *
 
 		/* remove redundant deny entries */
 		if (i > 0 && gace->aceType == SMB_ACE4_ACCESS_DENIED_ACE_TYPE) {
-			struct gpfs_ace_v4 *prev = &gacl->ace_v4[i-1];
+			struct gpfs_ace_v4 *prev = gpfs_ace_ptr(gacl, i - 1);
 			if (prev->aceType == SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE &&
 			    prev->aceFlags == gace->aceFlags &&
 			    prev->aceIFlags == gace->aceIFlags &&
@@ -377,7 +434,7 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T *
 			    gace->aceWho == prev->aceWho) {
 				/* it's redundant - skip it */
 				continue;
-			}                                                
+			}
 		}
 
 		smbace.aceType = gace->aceType;
@@ -484,32 +541,37 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	return map_nt_error_from_unix(errno);
 }
 
-static bool gpfsacl_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB4ACL_T *smbacl)
+static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
+						files_struct *fsp,
+						SMB4ACL_T *smbacl,
+						bool controlflags)
 {
-	int ret;
-	gpfs_aclLen_t gacl_len;
-	SMB4ACE_T	*smbace;
 	struct gpfs_acl *gacl;
-	TALLOC_CTX *mem_ctx  = talloc_tos();
+	gpfs_aclLen_t gacl_len;
+	SMB4ACE_T *smbace;
 
-	gacl_len = offsetof(gpfs_acl_t, ace_v4) + smb_get_naces(smbacl) *
-		sizeof(gpfs_ace_v4_t);
+	gacl_len = offsetof(gpfs_acl_t, ace_v4) + sizeof(unsigned int)
+		+ smb_get_naces(smbacl) * sizeof(gpfs_ace_v4_t);
 
 	gacl = (struct gpfs_acl *)TALLOC_SIZE(mem_ctx, gacl_len);
 	if (gacl == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		errno = ENOMEM;
-		return False;
+		return NULL;
 	}
 
-	gacl->acl_len = gacl_len;
-	gacl->acl_level = 0;
+	gacl->acl_level = 0; /* GPFS_ACL_LEVEL_BASE */
 	gacl->acl_version = GPFS_ACL_VERSION_NFS4;
 	gacl->acl_type = GPFS_ACL_TYPE_NFS4;
 	gacl->acl_nace = 0; /* change later... */
 
+	if (controlflags) {
+		gacl->acl_level = 1; /* GPFS_ACL_LEVEL_V4FLAGS */
+		sd2gpfs_control(smbacl4_get_controlflags(smbacl), gacl);
+	}
+
 	for (smbace=smb_first_ace4(smbacl); smbace!=NULL; smbace = smb_next_ace4(smbace)) {
-		struct gpfs_ace_v4 *gace = &gacl->ace_v4[gacl->acl_nace];
+		struct gpfs_ace_v4 *gace = gpfs_ace_ptr(gacl, gacl->acl_nace);
 		SMB_ACE4PROP_T	*aceprop = smb_get_ace4(smbace);
 
 		gace->aceType = aceprop->aceType;
@@ -567,9 +629,38 @@ static bool gpfsacl_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 
 		gacl->acl_nace++;
 	}
+	gacl->acl_len = (char *)gpfs_ace_ptr(gacl, gacl->acl_nace)
+		- (char *)gacl;
+	return gacl;
+}
 
+static bool gpfsacl_process_smbacl(vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   SMB4ACL_T *smbacl)
+{
+	int ret;
+	struct gpfs_acl *gacl;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+
+	gacl = vfs_gpfs_smbacl2gpfsacl(mem_ctx, fsp, smbacl, true);
+	if (gacl == NULL) { /* out of memory */
+		return False;
+	}
 	ret = smbd_gpfs_putacl(fsp->fsp_name->base_name,
 			       GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA, gacl);
+
+	if ((ret != 0) && (errno == EINVAL)) {
+		DEBUG(10, ("Retry without nfs41 control flags\n"));
+		talloc_free(gacl);
+		gacl = vfs_gpfs_smbacl2gpfsacl(mem_ctx, fsp, smbacl, false);
+		if (gacl == NULL) { /* out of memory */
+			return False;
+		}
+		ret = smbd_gpfs_putacl(fsp->fsp_name->base_name,
+				       GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA,
+				       gacl);
+	}
+
 	if (ret != 0) {
 		DEBUG(8, ("gpfs_putacl failed with %s\n", strerror(errno)));
 		gpfs_dumpacl(8, gacl);
