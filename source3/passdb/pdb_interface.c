@@ -557,7 +557,7 @@ static int smb_delete_user(const char *unix_user)
 		return -1;
 	}
 
-	del_script = lp_deluser_script(talloc_tos());
+	del_script = lp_delete_user_script(talloc_tos());
 	if (!del_script || !*del_script) {
 		return -1;
 	}
