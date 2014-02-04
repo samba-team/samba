@@ -68,8 +68,8 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		goto out;
 	}
 
-	if (*lp_magicoutput(talloc_tos(), SNUM(conn))) {
-		magic_output = lp_magicoutput(talloc_tos(), SNUM(conn));
+	if (*lp_magic_output(talloc_tos(), SNUM(conn))) {
+		magic_output = lp_magic_output(talloc_tos(), SNUM(conn));
 	} else {
 		magic_output = talloc_asprintf(ctx,
 				"%s.out",
