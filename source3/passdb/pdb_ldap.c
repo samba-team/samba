@@ -1975,7 +1975,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	oldname = pdb_get_username(old_acct);
 
 	/* rename the posix user */
-	rename_script = lp_renameuser_script(talloc_tos());
+	rename_script = lp_rename_user_script(talloc_tos());
 	if (rename_script == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
