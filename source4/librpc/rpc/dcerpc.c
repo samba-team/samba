@@ -1370,7 +1370,6 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		}
 	}
 
-	state->p->assoc_group_id = pkt->u.bind_ack.assoc_group_id;
 
 	status = dcerpc_binding_set_assoc_group_id(state->p->binding,
 						pkt->u.bind_ack.assoc_group_id);

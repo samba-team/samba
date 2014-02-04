@@ -108,8 +108,6 @@ struct dcerpc_pipe {
 
 	uint32_t context_id;
 
-	uint32_t assoc_group_id;
-
 	struct ndr_syntax_id syntax;
 	struct ndr_syntax_id transfer_syntax;
 
