@@ -3513,17 +3513,17 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("Could not open account policy tdb.\n");
 	}
 
-	if (*lp_rootdir(talloc_tos())) {
-		if (chroot(lp_rootdir(talloc_tos())) != 0) {
+	if (*lp_root_directory(talloc_tos())) {
+		if (chroot(lp_root_directory(talloc_tos())) != 0) {
 			DEBUG(0,("Failed to change root to %s\n",
-				 lp_rootdir(talloc_tos())));
+				 lp_root_directory(talloc_tos())));
 			exit_server("Failed to chroot()");
 		}
 		if (chdir("/") == -1) {
-			DEBUG(0,("Failed to chdir to / on chroot to %s\n", lp_rootdir(talloc_tos())));
+			DEBUG(0,("Failed to chdir to / on chroot to %s\n", lp_root_directory(talloc_tos())));
 			exit_server("Failed to chroot()");
 		}
-		DEBUG(0,("Changed root to %s\n", lp_rootdir(talloc_tos())));
+		DEBUG(0,("Changed root to %s\n", lp_root_directory(talloc_tos())));
 	}
 
 	if (!srv_init_signing(sconn)) {
