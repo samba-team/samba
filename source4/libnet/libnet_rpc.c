@@ -79,7 +79,8 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.name);
 		break;
 	case LIBNET_RPC_CONNECT_SERVER_ADDRESS:
-		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.address);
+		s->binding = talloc_asprintf(s, "ncacn_np:%s[target_hostname=%s]",
+					     r->in.address, r->in.name);
 		break;
 
 	case LIBNET_RPC_CONNECT_BINDING:
@@ -119,13 +120,6 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	if (DEBUGLEVEL >= 10) {
 		c->status = dcerpc_binding_set_flags(b, DCERPC_DEBUG_PRINT_BOTH, 0);
 		if (!composite_is_ok(c)) return c;
-	}
-
-	if (r->level == LIBNET_RPC_CONNECT_SERVER_ADDRESS) {
-		b->target_hostname = talloc_strdup(b, r->in.name);
-		if (composite_nomem(b->target_hostname, c)) {
-			return c;
-		}
 	}
 
 	/* connect to remote dcerpc pipe */

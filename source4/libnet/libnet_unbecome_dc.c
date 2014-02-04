@@ -543,7 +543,9 @@ static void unbecomeDC_drsuapi_connect_send(struct libnet_UnbecomeDC_state *s)
 	struct composite_context *creq;
 	char *binding_str;
 
-	binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[seal]", s->source_dsa.dns_name);
+	binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[seal,target_hostname=%s]",
+				      s->source_dsa.address,
+				      s->source_dsa.dns_name);
 	if (composite_nomem(binding_str, c)) return;
 
 	c->status = dcerpc_parse_binding(s, binding_str, &s->drsuapi.binding);

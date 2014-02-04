@@ -1573,9 +1573,10 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 		{
 			print_str = "print,";
 		}
-		binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[%s%sseal]",
-					      s->source_dsa.dns_name,
-					      krb5_str, print_str);
+		binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[%s%sseal,target_hostname=%s]",
+					      s->source_dsa.address,
+					      krb5_str, print_str,
+					      s->source_dsa.dns_name);
 		if (composite_nomem(binding_str, c)) return;
 		c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
 		talloc_free(binding_str);
