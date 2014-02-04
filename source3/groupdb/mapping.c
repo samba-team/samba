@@ -346,11 +346,11 @@ int smb_add_user_group(const char *unix_group, const char *unix_user)
 
 	/* defer to scripts */
 
-	if ( *lp_addusertogroup_script(talloc_tos()) ) {
+	if ( *lp_add_user_to_group_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		add_script = talloc_strdup(ctx,
-				lp_addusertogroup_script(ctx));
+				lp_add_user_to_group_script(ctx));
 		if (!add_script) {
 			return -1;
 		}
