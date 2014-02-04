@@ -142,7 +142,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		if (lp_server_max_protocol() < PROTOCOL_SMB3_00) {
 			break;
 		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB3_00) {
+		if (lp_server_min_protocol() > PROTOCOL_SMB3_00) {
 			break;
 		}
 
@@ -157,7 +157,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		if (lp_server_max_protocol() < PROTOCOL_SMB2_24) {
 			break;
 		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_24) {
+		if (lp_server_min_protocol() > PROTOCOL_SMB2_24) {
 			break;
 		}
 
@@ -172,7 +172,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		if (lp_server_max_protocol() < PROTOCOL_SMB2_22) {
 			break;
 		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_22) {
+		if (lp_server_min_protocol() > PROTOCOL_SMB2_22) {
 			break;
 		}
 
@@ -187,7 +187,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		if (lp_server_max_protocol() < PROTOCOL_SMB2_10) {
 			break;
 		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_10) {
+		if (lp_server_min_protocol() > PROTOCOL_SMB2_10) {
 			break;
 		}
 
@@ -202,7 +202,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		if (lp_server_max_protocol() < PROTOCOL_SMB2_02) {
 			break;
 		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_02) {
+		if (lp_server_min_protocol() > PROTOCOL_SMB2_02) {
 			break;
 		}
 

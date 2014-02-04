@@ -504,7 +504,7 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 
 		if (supported_protocols[protocol].protocol_level > lpcfg_server_max_protocol(req->smb_conn->lp_ctx))
 			continue;
-		if (supported_protocols[protocol].protocol_level < lpcfg_srv_minprotocol(req->smb_conn->lp_ctx))
+		if (supported_protocols[protocol].protocol_level < lpcfg_server_min_protocol(req->smb_conn->lp_ctx))
 			continue;
 
 		for (i = 0; i < protos_count; i++) {
