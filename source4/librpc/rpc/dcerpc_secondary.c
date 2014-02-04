@@ -156,7 +156,7 @@ static void continue_open_pipe(struct composite_context *ctx)
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 
-	c->status = dcerpc_pipe_open_pipe_recv(ctx);
+	c->status = dcerpc_pipe_open_unix_stream_recv(ctx);
 	if (!composite_is_ok(c)) return;
 
 	continue_pipe_open(c);
