@@ -270,11 +270,11 @@ bool is_share_read_only_for_token(const char *username,
 		}
 	}
 
-	if (lp_writelist(snum) != NULL) {
+	if (lp_write_list(snum) != NULL) {
 		if (token_contains_name_in_list(username, domain,
 						lp_servicename(talloc_tos(), snum),
 						token,
-						lp_writelist(snum))) {
+						lp_write_list(snum))) {
 			result = False;
 		}
 	}
