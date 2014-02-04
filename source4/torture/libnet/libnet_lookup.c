@@ -45,7 +45,7 @@ bool torture_lookup(struct torture_context *torture)
 	if (lookup.in.hostname == NULL) {
 		status = torture_rpc_binding(torture, &binding);
 		if (NT_STATUS_IS_OK(status)) {
-			lookup.in.hostname = binding->host;
+			lookup.in.hostname = dcerpc_binding_get_string_option(binding, "host");
 		}
 	}
 
@@ -89,7 +89,7 @@ bool torture_lookup_host(struct torture_context *torture)
 	if (lookup.in.hostname == NULL) {
 		status = torture_rpc_binding(torture, &binding);
 		if (NT_STATUS_IS_OK(status)) {
-			lookup.in.hostname = binding->host;
+			lookup.in.hostname = dcerpc_binding_get_string_option(binding, "host");
 		}
 	}
 

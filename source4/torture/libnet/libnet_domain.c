@@ -394,7 +394,7 @@ bool torture_domain_list(struct torture_context *torture)
 	 */
 
 	ZERO_STRUCT(r);
-	r.in.hostname = binding->host;
+	r.in.hostname = dcerpc_binding_get_string_option(binding, "host");
 
 	status = libnet_DomainList(ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -415,7 +415,7 @@ bool torture_domain_list(struct torture_context *torture)
 	ctx->samr.buf_size = 32;
 
 	ZERO_STRUCT(r);
-	r.in.hostname = binding->host;
+	r.in.hostname = dcerpc_binding_get_string_option(binding, "host");
 
 	status = libnet_DomainList(ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
