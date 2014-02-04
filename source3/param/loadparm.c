@@ -163,7 +163,7 @@ static struct loadparm_service sDefault =
 	.lprm_command = NULL,
 	.lppause_command = NULL,
 	.lpresume_command = NULL,
-	.queuepausecommand = NULL,
+	.queuepause_command = NULL,
 	.queueresumecommand = NULL,
 	._printername = NULL,
 	.printjob_username = NULL,
@@ -391,7 +391,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->lpq_command, "lpq -P'%p'");
 			string_set(&pService->lprm_command, "lprm -P'%p' %j");
 			string_set(&pService->print_command, "lpr -r -P'%p' %s");
-			string_set(&pService->queuepausecommand, "lpc stop '%p'");
+			string_set(&pService->queuepause_command, "lpc stop '%p'");
 			string_set(&pService->queueresumecommand, "lpc start '%p'");
 			string_set(&pService->lppause_command, "lpc hold '%p' %j");
 			string_set(&pService->lpresume_command, "lpc release '%p' %j");
@@ -406,7 +406,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->print_command, "");
 			string_set(&pService->lppause_command, "");
 			string_set(&pService->lpresume_command, "");
-			string_set(&pService->queuepausecommand, "");
+			string_set(&pService->queuepause_command, "");
 			string_set(&pService->queueresumecommand, "");
 			break;
 
@@ -415,7 +415,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->lpq_command, "lpstat -o%p");
 			string_set(&pService->lprm_command, "cancel %p-%j");
 			string_set(&pService->print_command, "lp -c -d%p %s; rm %s");
-			string_set(&pService->queuepausecommand, "disable %p");
+			string_set(&pService->queuepause_command, "disable %p");
 			string_set(&pService->queueresumecommand, "enable %p");
 #ifndef HPUX
 			string_set(&pService->lppause_command, "lp -i %p-%j -H hold");
@@ -472,7 +472,7 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s queuepause %%p",
 				      tdbfile);
-		string_set(&pService->queuepausecommand,
+		string_set(&pService->queuepause_command,
 			   tmp ? tmp : "vlp queuepause %p");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s queueresume %%p",

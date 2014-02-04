@@ -308,7 +308,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 static int generic_queue_pause(int snum)
 {
 	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-				 lp_queuepausecommand(talloc_tos(), snum), NULL, NULL);
+				 lp_queuepause_command(talloc_tos(), snum), NULL, NULL);
 }
 
 /****************************************************************************
