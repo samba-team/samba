@@ -1203,7 +1203,7 @@ static int printjob_comp(print_queue_struct *j1, print_queue_struct *j2)
 static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct *pts)
 {
 	TDB_DATA data;
-	int max_reported_jobs = lp_max_reported_jobs(pts->snum);
+	int max_reported_jobs = lp_max_reported_print_jobs(pts->snum);
 	print_queue_struct *queue = pts->queue;
 	size_t len;
 	size_t i;
@@ -3036,7 +3036,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	int total_count = 0;
 	size_t len = 0;
 	uint32 i;
-	int max_reported_jobs = lp_max_reported_jobs(snum);
+	int max_reported_jobs = lp_max_reported_print_jobs(snum);
 	bool ret = false;
 	const char* sharename = lp_servicename(talloc_tos(), snum);
 	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
