@@ -285,8 +285,13 @@ NTSTATUS dcerpc_binding_vector_replace_iface(const struct ndr_interface_table *i
 
 	for (i = 0; i < v->count; i++) {
 		struct dcerpc_binding *b = v->bindings[i];
+		NTSTATUS status;
 
-		b->object = iface->syntax_id;
+		status = dcerpc_binding_set_abstract_syntax(b,
+							    &iface->syntax_id);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -435,7 +440,11 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		map_binding->object = iface->syntax_id;
+		status = dcerpc_binding_set_abstract_syntax(map_binding,
+							    &iface->syntax_id);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 
 		map_tower = talloc_zero(entries, struct epm_twr_t);
 		if (map_tower == NULL) {
