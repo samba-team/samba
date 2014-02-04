@@ -68,7 +68,11 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 				return 0;
 			}
 
-			description->object = iface->iface.syntax_id;
+			status = dcerpc_binding_set_abstract_syntax(description,
+							&iface->iface.syntax_id);
+			if (!NT_STATUS_IS_OK(status)) {
+				return 0;
+			}
 
 			status = dcerpc_binding_build_tower(*eps, description, &(*eps)[total].ep);
 			TALLOC_FREE(description);
