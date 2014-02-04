@@ -77,11 +77,52 @@ interface witness
 		WITNESS_NOTIFY_IP_CHANGE       = 4
 	} witness_notifyResponse_type;
 
-	typedef struct {
-		witness_notifyResponse_type message_type;
-		uint32 length;
-		uint32 num_messages;
-		[size_is(length)] uint8 *message_buffer;
+	typedef [v1_enum] enum {
+		WITNESS_RESOURCE_STATE_UNKNOWN     = 0x00,
+		WITNESS_RESOURCE_STATE_AVAILABLE   = 0x01,
+		WITNESS_RESOURCE_STATE_UNAVAILABLE = 0xff
+	} witness_ResourceChange_type;
+
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN),gensize,public] struct {
+		[value(ndr_size_witness_ResourceChange(r,ndr->flags))] uint32 length;
+		witness_ResourceChange_type type;
+		nstring name;
+	} witness_ResourceChange;
+
+	typedef [bitmap32bit] bitmap {
+		WITNESS_IPADDR_V4      = 0x01,
+		WITNESS_IPADDR_V6      = 0x02,
+		WITNESS_IPADDR_ONLINE  = 0x08,
+		WITNESS_IPADDR_OFFLINE = 0x10
+	} witness_IPaddrInfo_flags;
+
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN),gensize] struct {
+		witness_IPaddrInfo_flags flags;
+		ipv4address ipv4;
+		ipv6address ipv6;
+	} witness_IPaddrInfo;
+
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
+		[value(r->num*ndr_size_witness_IPaddrInfo(r->addr, ndr->flags))] uint32 length;
+		[value(0)] uint32 reserved;
+		uint32 num;
+		witness_IPaddrInfo addr[num];
+	} witness_IPaddrInfoList;
+
+	typedef [public,switch_type(witness_notifyResponse_type),nodiscriminant, flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] union {
+		[case(WITNESS_NOTIFY_RESOURCE_CHANGE)] witness_ResourceChange resource_change;
+		[case(WITNESS_NOTIFY_CLIENT_MOVE)]     witness_IPaddrInfoList client_move;
+		[case(WITNESS_NOTIFY_SHARE_MOVE)]      witness_IPaddrInfoList share_move;
+		[case(WITNESS_NOTIFY_IP_CHANGE)]       witness_IPaddrInfoList ip_change;
+	} witness_notifyResponse_message;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		witness_notifyResponse_type type;
+		[value(messages->length)] uint32 length;
+		uint32 num;
+		/* [switch_is(type), size_is(num)] witness_notifyResponse_message *messages; */
+		/* [size_is(length)] uint8 *messages; */
+		[subcontext(4), subcontext_size(length), flag(NDR_REMAINING)] DATA_BLOB *messages;
 	} witness_notifyResponse;
 
 	WERROR witness_AsyncNotify(

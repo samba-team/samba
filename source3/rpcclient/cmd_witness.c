@@ -453,7 +453,7 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	switch(response->message_type) {
+	switch(response->type) {
 	case WITNESS_NOTIFY_RESOURCE_CHANGE:
 		d_printf("Resource change");
 		read_response = AsyncNotify_Change;
@@ -471,15 +471,15 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 		read_response = AsyncNotify_Move;
 		break;
 	default:
-		d_printf("Unknown (0x%x)", (int)response->message_type);
+		d_printf("Unknown (0x%x)", (int)response->type);
 	}
-	d_printf(" with %d messages\n", response->num_messages);
+	d_printf(" with %d messages\n", response->num);
 
 	if (read_response) {
 		unsigned n;
-		const uint8_t *pos = response->message_buffer;
+		const uint8_t *pos = response->messages->data;
 
-		for (n=0; n<response->num_messages; n++) {
+		for (n=0; n<response->num; n++) {
 			read_response(frame, &pos);
 		}
 	}
