@@ -418,14 +418,12 @@ static bool torture_dsgetinfo_tcase_teardown(struct torture_context *tctx, void 
 void torture_drs_rpc_dsgetinfo_tcase(struct torture_suite *suite)
 {
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
-
-	struct torture_test *test;
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "dsgetinfo");
 
 	torture_tcase_set_fixture(tcase,
 				  torture_dsgetinfo_tcase_setup,
 				  torture_dsgetinfo_tcase_teardown);
 
-	test = torture_tcase_add_simple_test(tcase, "DsGetReplicaInfo", (run_func)test_getinfo);
+	torture_tcase_add_simple_test(tcase, "DsGetReplicaInfo", (run_func)test_getinfo);
 }
 
