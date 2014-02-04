@@ -1316,7 +1316,7 @@ static bool print_cache_expired(const char *sharename, bool check_pending)
 	 */
 
 	if (last_qscan_time == ((time_t)-1)
-		|| (time_now - last_qscan_time) >= lp_lpqcachetime()
+		|| (time_now - last_qscan_time) >= lp_lpq_cache_time()
 		|| last_qscan_time > (time_now + MAX_CACHE_VALID_TIME))
 	{
 		uint32 u;
@@ -1325,7 +1325,7 @@ static bool print_cache_expired(const char *sharename, bool check_pending)
 		DEBUG(4, ("print_cache_expired: cache expired for queue %s "
 			"(last_qscan_time = %d, time now = %d, qcachetime = %d)\n",
 			sharename, (int)last_qscan_time, (int)time_now,
-			(int)lp_lpqcachetime() ));
+			(int)lp_lpq_cache_time() ));
 
 		/* check if another smbd has already sent a message to update the
 		   queue.  Give the pending message one minute to clear and
