@@ -375,7 +375,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 				  const char *sharename,
 				  struct messaging_context *msg_ctx)
 {
-	char *cmd = lp_deleteprinter_cmd(talloc_tos());
+	char *cmd = lp_deleteprinter_command(talloc_tos());
 	char *command = NULL;
 	int ret;
 	bool is_print_op = false;
