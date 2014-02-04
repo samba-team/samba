@@ -519,17 +519,11 @@ static bool test_analyse_objects(struct torture_context *tctx,
 
 	for (cur = first_object; cur; cur = cur->next_object) {
 		const char *dn;
-		struct dom_sid *sid = NULL;
-		uint32_t rid = 0;
 		bool dn_printed = false;
 
 		if (!cur->object.identifier) continue;
 
 		dn = cur->object.identifier->dn;
-		if (cur->object.identifier->sid.num_auths > 0) {
-			sid = &cur->object.identifier->sid;
-			rid = sid->sub_auths[sid->num_auths - 1];
-		}
 
 		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 			const char *name = NULL;
@@ -1035,15 +1029,13 @@ static bool torture_dssync_tcase_teardown(struct torture_context *tctx, void *da
 void torture_drs_rpc_dssync_tcase(struct torture_suite *suite)
 {
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
-
-	struct torture_test *test;
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "dssync");
 
 	torture_tcase_set_fixture(tcase,
 				  torture_dssync_tcase_setup,
 				  torture_dssync_tcase_teardown);
 
-	test = torture_tcase_add_simple_test(tcase, "DC_FetchData", (run_func)test_FetchData);
-	test = torture_tcase_add_simple_test(tcase, "FetchNT4Data", (run_func)test_FetchNT4Data);
+	torture_tcase_add_simple_test(tcase, "DC_FetchData", (run_func)test_FetchData);
+	torture_tcase_add_simple_test(tcase, "FetchNT4Data", (run_func)test_FetchNT4Data);
 }
 

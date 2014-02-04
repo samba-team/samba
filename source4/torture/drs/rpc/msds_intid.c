@@ -720,15 +720,13 @@ static bool torture_dsintid_tcase_teardown(struct torture_context *tctx, void *d
 void torture_drs_rpc_dsintid_tcase(struct torture_suite *suite)
 {
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
-
-	struct torture_test *test;
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "msDSIntId");
 
 	torture_tcase_set_fixture(tcase,
 				  torture_dsintid_tcase_setup,
 				  torture_dsintid_tcase_teardown);
 
-	test = torture_tcase_add_simple_test(tcase, "Schema", (run_func)test_dsintid_schema);
-	test = torture_tcase_add_simple_test(tcase, "Configuration", (run_func)test_dsintid_configuration);
-	test = torture_tcase_add_simple_test(tcase, "Domain", (run_func)test_dsintid_domain);
+	torture_tcase_add_simple_test(tcase, "Schema", (run_func)test_dsintid_schema);
+	torture_tcase_add_simple_test(tcase, "Configuration", (run_func)test_dsintid_configuration);
+	torture_tcase_add_simple_test(tcase, "Domain", (run_func)test_dsintid_domain);
 }
