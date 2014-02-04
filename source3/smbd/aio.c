@@ -371,7 +371,7 @@ static void pwrite_fsync_write_done(struct tevent_req *subreq)
 	}
 
 	do_sync = (lp_strict_sync(SNUM(conn)) &&
-		   (lp_syncalways(SNUM(conn)) || state->write_through));
+		   (lp_sync_always(SNUM(conn)) || state->write_through));
 	if (!do_sync) {
 		tevent_req_done(req);
 		return;
@@ -512,7 +512,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
 
-	if (!aio_ex->write_through && !lp_syncalways(SNUM(fsp->conn))
+	if (!aio_ex->write_through && !lp_sync_always(SNUM(fsp->conn))
 	    && fsp->aio_write_behind) {
 		/* Lie to the client and immediately claim we finished the
 		 * write. */

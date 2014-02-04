@@ -1026,7 +1026,7 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (lp_strict_sync(SNUM(conn)) &&
-	    (lp_syncalways(SNUM(conn)) || write_through)) {
+	    (lp_sync_always(SNUM(conn)) || write_through)) {
 		int ret = flush_write_cache(fsp, SAMBA_SYNC_FLUSH);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
