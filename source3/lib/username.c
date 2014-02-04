@@ -96,7 +96,7 @@ char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user)
  *   - as transmitted
  *   - in all lower case if this differs from transmitted
  *   - in all upper case if this differs from transmitted
- *   - using lp_usernamelevel() for permutations.
+ *   - using lp_username_level() for permutations.
 ****************************************************************************/
 
 static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
@@ -150,9 +150,9 @@ static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n",
-		 lp_usernamelevel(), user2));
+		 lp_username_level(), user2));
 	ret = uname_string_combinations(user2, mem_ctx, getpwnam_alloc_cached,
-					lp_usernamelevel());
+					lp_username_level());
 
 done:
 	DEBUG(5,("Get_Pwnam_internals %s find user [%s]!\n",ret ?
