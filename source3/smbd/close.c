@@ -948,7 +948,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		/* We only have veto files/directories.
 		 * Are we allowed to delete them ? */
 
-		if(!lp_recursive_veto_delete(SNUM(conn))) {
+		if(!lp_delete_veto_files(SNUM(conn))) {
 			TALLOC_FREE(dir_hnd);
 			errno = ENOTEMPTY;
 			goto err;
