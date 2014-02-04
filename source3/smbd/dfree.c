@@ -28,7 +28,7 @@
 void disk_norm(bool small_query, uint64_t *bsize,uint64_t *dfree,uint64_t *dsize)
 {
 	/* check if the disk is beyond the max disk size */
-	uint64_t maxdisksize = lp_maxdisksize();
+	uint64_t maxdisksize = lp_max_disk_size();
 	if (maxdisksize) {
 		/* convert to blocks - and don't overflow */
 		maxdisksize = ((maxdisksize*1024)/(*bsize))*1024;
