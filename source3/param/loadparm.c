@@ -935,7 +935,7 @@ static void init_globals(bool reinit_globals)
 
 */
 
-	Globals.ms_add_printer_wizard = true;
+	Globals.show_add_printer_wizard = true;
 	Globals.os_level = 20;
 	Globals.local_master = true;
 	Globals._domain_master = Auto;	/* depending on _domain_logons */

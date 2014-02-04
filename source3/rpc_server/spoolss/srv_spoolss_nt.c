@@ -1804,7 +1804,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		if ( r->in.access_mask & SERVER_ACCESS_ADMINISTER )
 		{
-			if (!lp_ms_add_printer_wizard()) {
+			if (!lp_show_add_printer_wizard()) {
 				close_printer_handle(p, r->out.handle);
 				ZERO_STRUCTP(r->out.handle);
 				return WERR_ACCESS_DENIED;
