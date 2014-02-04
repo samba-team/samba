@@ -1204,7 +1204,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 
 	pkt.u.bind.max_xmit_frag = p->conn->srv_max_xmit_frag;
 	pkt.u.bind.max_recv_frag = p->conn->srv_max_recv_frag;
-	pkt.u.bind.assoc_group_id = p->binding->assoc_group_id;
+	pkt.u.bind.assoc_group_id = dcerpc_binding_get_assoc_group_id(p->binding);
 	pkt.u.bind.num_contexts = 1;
 	pkt.u.bind.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
 	if (tevent_req_nomem(pkt.u.bind.ctx_list, req)) {
@@ -1371,6 +1371,12 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 	}
 
 	state->p->assoc_group_id = pkt->u.bind_ack.assoc_group_id;
+
+	status = dcerpc_binding_set_assoc_group_id(state->p->binding,
+						pkt->u.bind_ack.assoc_group_id);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
 	tevent_req_done(req);
 }
@@ -2077,7 +2083,7 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 
 	pkt.u.alter.max_xmit_frag = p->conn->srv_max_xmit_frag;
 	pkt.u.alter.max_recv_frag = p->conn->srv_max_recv_frag;
-	pkt.u.alter.assoc_group_id = p->binding->assoc_group_id;
+	pkt.u.alter.assoc_group_id = dcerpc_binding_get_assoc_group_id(p->binding);
 	pkt.u.alter.num_contexts = 1;
 	pkt.u.alter.ctx_list = talloc_array(state, struct dcerpc_ctx_list, 1);
 	if (tevent_req_nomem(pkt.u.alter.ctx_list, req)) {
