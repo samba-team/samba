@@ -77,6 +77,13 @@ static bool torture_dsdb_dn_attrs(struct torture_context *torture)
 		       syntax->comparison_fn(ldb, mem_ctx, &dn1, &dn2) != 0,
 		       "compare of binary+dn an dn should have failed");
 
+	/* Test compare (false) with different binary prefix */
+	dn1 = data_blob_string_const("B:6:abcdef:dc=samba,dc=org");
+	dn2 = data_blob_string_const("B:4:abcd:dc=samba,dc=org");
+	torture_assert(torture,
+		       syntax->comparison_fn(ldb, mem_ctx, &dn1, &dn2) != 0,
+		       "compare of binary+dn an dn should have failed");
+
 	/* Test DN+String behaviour */
 	torture_assert(torture, syntax = ldb_samba_syntax_by_name(ldb, DSDB_SYNTAX_STRING_DN), 
 		       "Failed to get DN+String schema attribute");
@@ -104,6 +111,13 @@ static bool torture_dsdb_dn_attrs(struct torture_context *torture)
 	dn1 = data_blob_string_const("S:6:abcdef:dc=samba,dc=org");
 	dn2 = data_blob_string_const("dc=samba,dc=org");
 	torture_assert(torture, 
+		       syntax->comparison_fn(ldb, mem_ctx, &dn1, &dn2) != 0,
+		       "compare of string+dn an dn should have failed");
+
+	/* Test compare (false) with different string prefix */
+	dn1 = data_blob_string_const("S:6:abcdef:dc=samba,dc=org");
+	dn2 = data_blob_string_const("S:6:abcXYZ:dc=samba,dc=org");
+	torture_assert(torture,
 		       syntax->comparison_fn(ldb, mem_ctx, &dn1, &dn2) != 0,
 		       "compare of string+dn an dn should have failed");
 
