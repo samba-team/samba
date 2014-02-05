@@ -76,11 +76,10 @@ static connection_struct *get_conn(TALLOC_CTX *mem_ctx, const char *service)
 	return conn;
 }
 
-static NTSTATUS set_sys_acl_conn(const char *fname,
+static int set_sys_acl_conn(const char *fname,
 				 SMB_ACL_TYPE_T acltype,
 				 SMB_ACL_T theacl, connection_struct *conn)
 {
-	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 	mode_t saved_umask;
 
@@ -91,16 +90,11 @@ static NTSTATUS set_sys_acl_conn(const char *fname,
 	saved_umask = umask(0);
 
 	ret = SMB_VFS_SYS_ACL_SET_FILE( conn, fname, acltype, theacl);
-	if (ret != 0) {
-		status = map_nt_error_from_unix_common(ret);
-		DEBUG(0,("set_sys_acl_conn: SMB_VFS_SYS_ACL_SET_FILE "
-			 "returned zero.\n"));
-	}
 
 	umask(saved_umask);
 
 	TALLOC_FREE(frame);
-	return status;
+	return ret;
 }
 
 static NTSTATUS set_nt_acl_conn(const char *fname,
@@ -319,8 +313,8 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	const char * const kwnames[] = { "fname", "mode", "gid", "service", NULL };
-	NTSTATUS status;
 	char *fname, *service = NULL;
+	int ret;
 	int mode, gid = -1;
 	SMB_ACL_T acl;
 	TALLOC_CTX *frame;
@@ -340,12 +334,16 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject
 		return NULL;
 	}
 
-	status = set_sys_acl_conn(fname, SMB_ACL_TYPE_ACCESS, acl, conn);
+	ret = set_sys_acl_conn(fname, SMB_ACL_TYPE_ACCESS, acl, conn);
 	TALLOC_FREE(acl);
 
-	TALLOC_FREE(frame);
+	if (ret != 0) {
+		TALLOC_FREE(frame);
+		errno = ret;
+		return PyErr_SetFromErrno(PyExc_OSError);
+	}
 
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	TALLOC_FREE(frame);
 
 	Py_RETURN_NONE;
 }
@@ -357,7 +355,6 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	const char * const kwnames[] = { "fname", "uid", "gid", "service", NULL };
 	connection_struct *conn;
-	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
 	char *fname, *service = NULL;
@@ -383,27 +380,26 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 
 	ret = SMB_VFS_CHOWN( conn, fname, uid, gid);
 	if (ret != 0) {
-		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0,("chown returned failure: %s\n", strerror(errno)));
+		umask(saved_umask);
+		TALLOC_FREE(frame);
+		errno = ret;
+		return PyErr_SetFromErrno(PyExc_OSError);
 	}
 
 	umask(saved_umask);
 
 	TALLOC_FREE(frame);
 
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-
 	Py_RETURN_NONE;
 }
 
 /*
-  chown a file
+  unlink a file
  */
 static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	const char * const kwnames[] = { "fname", "service", NULL };
 	connection_struct *conn;
-	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 	struct smb_filename *smb_fname = NULL;
 	char *fname, *service = NULL;
@@ -427,18 +423,17 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 	smb_fname = synthetic_smb_fname_split(frame, fname, NULL);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
-		PyErr_NTSTATUS_IS_ERR_RAISE(NT_STATUS_NO_MEMORY);
+		return PyErr_NoMemory();
 	}
 
 	ret = SMB_VFS_UNLINK(conn, smb_fname);
 	if (ret != 0) {
-		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0,("unlink returned failure: %s\n", strerror(errno)));
+		TALLOC_FREE(frame);
+		errno = ret;
+		return PyErr_SetFromErrno(PyExc_OSError);
 	}
 
 	TALLOC_FREE(frame);
-
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
 }
@@ -541,7 +536,7 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *k
 {
 	const char * const kwnames[] = { "fname", "acl_type", "acl", "service", NULL };
 	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status;
+	int ret;
 	char *fname, *service = NULL;
 	PyObject *py_acl;
 	struct smb_acl_t *acl;
@@ -568,8 +563,12 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *k
 
 	acl = pytalloc_get_type(py_acl, struct smb_acl_t);
 
-	status = set_sys_acl_conn(fname, acl_type, acl, conn);
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	ret = set_sys_acl_conn(fname, acl_type, acl, conn);
+	if (ret != 0) {
+		TALLOC_FREE(frame);
+		errno = ret;
+		return PyErr_SetFromErrno(PyExc_OSError);
+	}
 
 	TALLOC_FREE(frame);
 	Py_RETURN_NONE;
@@ -588,7 +587,6 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	TALLOC_CTX *frame = talloc_stackframe();
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	connection_struct *conn;
-	NTSTATUS status = NT_STATUS_OK;
 	char *service = NULL;
 	if (!tmp_ctx) {
 		PyErr_NoMemory();
@@ -614,9 +612,7 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	if (!acl) {
 		TALLOC_FREE(frame);
 		TALLOC_FREE(tmp_ctx);
-		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0,("sys_acl_get_file returned NULL: %s\n", strerror(errno)));
-		PyErr_NTSTATUS_IS_ERR_RAISE(status);
+		return PyErr_SetFromErrno(PyExc_OSError);
 	}
 
 	py_acl = py_return_ndr_struct("samba.dcerpc.smb_acl", "t", acl, acl);
