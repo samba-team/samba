@@ -1540,7 +1540,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
         try:
             try:
                 smbd.set_simple_acl(file.name, 0755, gid)
-            except Exception:
+            except OSError:
                 if not smbd.have_posix_acls():
                     # This clue is only strictly correct for RPM and
                     # Debian-like Linux systems, but hopefully other users
@@ -1552,7 +1552,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
                                         "Try the mounting the filesystem with the 'acl' option.")
             try:
                 smbd.chown(file.name, uid, gid)
-            except Exception:
+            except OSError:
                 raise ProvisioningError("Unable to chown a file on your filesystem.  "
                                         "You may not be running provision as root.")
         finally:
