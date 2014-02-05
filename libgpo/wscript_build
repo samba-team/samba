@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-LIBGPO_SRC = '''gpo_ldap.c gpo_ini.c gpo_util.c gpo_fetch.c gpo_filesync.c
-                gpo_sec.c gpo_reg.c gpext/gpext.c'''
-
-bld.SAMBA3_LIBRARY('gpo',
-                   source='${LIBGPO_SRC}',
+bld.SAMBA3_LIBRARY('gpext',
+                   source='''gpext/gpext.c gpo_util.c gpo_ldap.c gpo_ini.c
+                           gpo_fetch.c gpo_filesync.c
+                           gpo_sec.c gpo_reg.c''',
                    deps='talloc ads TOKEN_UTIL auth',
-                   vars=locals(),
                    private_library=True)
+
 bld.SAMBA3_PYTHON('python_samba_libgpo', 'pygpo.c',
-                 deps='pyparam_util gpo talloc ads TOKEN_UTIL auth',
+                 deps='pyparam_util gpext talloc ads TOKEN_UTIL auth',
                  realname='samba/gpo.so')
