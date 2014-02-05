@@ -257,11 +257,12 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 		return ret;
 	}
 
-	if (ldb_load_modules(ldb, options) != LDB_SUCCESS) {
+	ret = ldb_load_modules(ldb, options);
+	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "Unable to load modules for %s: %s",
 			  url, ldb_errstring(ldb));
-		return LDB_ERR_OTHER;
+		return ret;
 	}
 
 	/* set the default base dn */
