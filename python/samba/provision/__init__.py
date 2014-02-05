@@ -1203,7 +1203,13 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 
     # And now we can connect to the DB - the schema won't be loaded from the
     # DB
-    samdb.connect(path)
+    try:
+        samdb.connect(path)
+    except ldb.LdbError, (num, string_error):
+        if (num == ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS):
+            raise ProvisioningError("Permission denied connecting to %s, are you running as root?" % path)
+        else:
+            raise
 
     # But we have to give it one more kick to have it use the schema
     # during provision - it needs, now that it is connected, to write
