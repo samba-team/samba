@@ -246,11 +246,14 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 	if (data->metadata->db == NULL) {
 		talloc_free(tmp_ctx);
 		if (create) {
-			ldb_asprintf_errstring(ldb, "partition_metadata: Unable to create %s",
-					       filename);
+			ldb_asprintf_errstring(ldb, "partition_metadata: Unable to create %s: %s",
+					       filename, strerror(errno));
 		} else {
-			ldb_asprintf_errstring(ldb, "partition_metadata: Unable to open %s",
-					       filename);
+			ldb_asprintf_errstring(ldb, "partition_metadata: Unable to open %s: %s",
+					       filename, strerror(errno));
+		}
+		if (errno == EACCES || errno == EPERM) {
+			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 		}
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
