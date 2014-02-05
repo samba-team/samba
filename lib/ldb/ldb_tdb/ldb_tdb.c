@@ -1560,10 +1560,13 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 				   ldb_get_create_perms(ldb), ldb);
 	if (!ltdb->tdb) {
 		ldb_asprintf_errstring(ldb,
-				       "Unable to open tdb '%s'", path);
+				       "Unable to open tdb '%s': %s", path, strerror(errno));
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Unable to open tdb '%s'", path);
+			  "Unable to open tdb '%s': %s", path, strerror(errno));
 		talloc_free(ltdb);
+		if (errno == EACCES || errno == EPERM) {
+			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+		}
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
