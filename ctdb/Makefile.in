@@ -315,6 +315,7 @@ distclean: clean
 	rm -rf bin
 	rm -f config.log config.status config.cache config.h
 	rm -f Makefile
+	rm -f $(CTDB_VERSION_H)
 
 install: all manpages $(PMDA_INSTALL)
 	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
