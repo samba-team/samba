@@ -3214,8 +3214,13 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				*/
 				continue;
 			}
-			if (!sa->linkID && ldb_attr_in_list(preserved_attrs, el->name)) {
-				continue;
+			if (!sa->linkID) {
+				if (ldb_attr_in_list(preserved_attrs, el->name)) {
+					continue;
+				}
+				if (sa->searchFlags & SEARCH_FLAG_PRESERVEONDELETE) {
+					continue;
+				}
 			}
 			ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, &el);
 			if (ret != LDB_SUCCESS) {
