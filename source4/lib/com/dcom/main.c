@@ -36,34 +36,28 @@
 
 static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dcerpc_binding **b_out, struct STRINGBINDING *bd)
 {
-	char *host, *endpoint;
+	char *tstr;
+	char *bstr;
+	enum dcerpc_transport_t transport;
 	struct dcerpc_binding *b;
 
-	b = talloc_zero(mem_ctx, struct dcerpc_binding);
-	if (!b) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	b->transport = dcerpc_transport_by_endpoint_protocol(bd->wTowerId);
-
-	if (b->transport == -1) {
+	transport = dcerpc_transport_by_endpoint_protocol(bd->wTowerId);
+	if (transport == NCA_UNKNOWN) {
 		DEBUG(1, ("Can't find transport match endpoint protocol %d\n", bd->wTowerId));
-		talloc_free(b);
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	host = talloc_strdup(b, bd->NetworkAddr);
-	endpoint = strchr(host, '[');
-
-	if (endpoint) {
-		*endpoint = '\0';
-		endpoint++;
-
-		endpoint[strlen(endpoint)-1] = '\0';
+	tstr = derpc_transport_string_by_transport(transport);
+	bstr = talloc_asprintf(mem_ctx, "%s:%s", tstr, bd->NetworkAddr);
+	if (bstr == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	b->host = host;
-	b->endpoint = talloc_strdup(b, endpoint);
+	status = dcerpc_parse_binding(mem_ctx, bstr, &b);
+	TALLOC_FREE(bstr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	*b_out = b;
 	return NT_STATUS_OK;
