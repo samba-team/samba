@@ -346,10 +346,8 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* allocate binding structure */
-	s->binding = talloc_zero(c, struct dcerpc_binding);
+	s->binding = dcerpc_binding_dup(s, s->pipe->binding);
 	if (composite_nomem(s->binding, c)) return c;
-
-	*s->binding = *s->pipe->binding;
 
 	/* request the netlogon endpoint mapping */
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->binding,
