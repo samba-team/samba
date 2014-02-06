@@ -1065,6 +1065,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		push_file_id_16(return_data, &fsp->file_id);
 		memcpy(return_data+16,create_volume_objectid(fsp->conn,objid),16);
 		push_file_id_16(return_data+32, &fsp->file_id);
+		memset(return_data+48, 0, 16);
 		*out_data = return_data;
 		return NT_STATUS_OK;
 	}
