@@ -262,11 +262,11 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		ZERO_STRUCTP(ep);
-		ep->ep_description = talloc_reference(ep, binding);
+		ep->ep_description = talloc_move(ep, &binding);
 		add_ep = true;
 
 		/* add mgmt interface */
-		ifl = talloc(dce_ctx, struct dcesrv_if_list);
+		ifl = talloc(ep, struct dcesrv_if_list);
 		if (!ifl) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -285,7 +285,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	}
 
 	/* talloc a new interface list element */
-	ifl = talloc(dce_ctx, struct dcesrv_if_list);
+	ifl = talloc(ep, struct dcesrv_if_list);
 	if (!ifl) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -301,7 +301,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		 * we try to set it
 		 */
 		if (ep->sd == NULL) {
-			ep->sd = security_descriptor_copy(dce_ctx, sd);
+			ep->sd = security_descriptor_copy(ep, sd);
 		}
 
 		/* if now there's no security descriptor given on the endpoint
