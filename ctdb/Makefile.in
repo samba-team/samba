@@ -178,9 +178,9 @@ bin/ctdb_lock_helper: server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTE
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ) $(TDB_LIBS) $(LIB_FLAGS)
 
-bin/ctdb_event_helper: server/ctdb_event_helper.o $(SOCKET_WRAPPER_OBJ)
+bin/ctdb_event_helper: server/ctdb_event_helper.o $(REPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_event_helper.o  $(SOCKET_WRAPPER_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_event_helper.o $(REPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(LIB_FLAGS)
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o $(POPT_OBJ)
 	@echo Linking $@
