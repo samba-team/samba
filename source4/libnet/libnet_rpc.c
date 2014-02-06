@@ -788,13 +788,9 @@ static void continue_epm_map_binding_send(struct composite_context *c)
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	/* prepare to get endpoint mapping for the requested interface */
-	s->final_binding = talloc_zero(s, struct dcerpc_binding);
+	s->final_binding = dcerpc_binding_dup(s, s->lsa_pipe->binding);
 	if (composite_nomem(s->final_binding, c)) return;
 	
-	*s->final_binding = *s->lsa_pipe->binding;
-	/* Ensure we keep hold of the member elements */
-	if (composite_nomem(talloc_reference(s->final_binding, s->lsa_pipe->binding), c)) return;
-
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->final_binding, s->r.in.dcerpc_iface,
 						  s->ctx->event_ctx, s->ctx->lp_ctx);
 	if (composite_nomem(epm_map_req, c)) return;
