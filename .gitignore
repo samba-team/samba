@@ -6,6 +6,10 @@ st/
 *.swp
 tags
 TAGS
+GPATH
+GRTAGS
+GSYMS
+GTAGS
 cscope*.out
 autom4te.cache
 source3/.clang_complete
