@@ -66,6 +66,27 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 	}
 	cc_state->handle = handle;
 
+	if (num == 0) {
+		/*
+		 * With a @src_length of zero, BTRFS_IOC_CLONE_RANGE clones
+		 * all data from @src_offset->EOF! This is certainly not what
+		 * the caller expects, and not what vfs_default does.
+		 */
+		cc_state->subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle,
+								cc_state, ev,
+								src_fsp,
+								src_off,
+								dest_fsp,
+								dest_off, num);
+		if (tevent_req_nomem(cc_state->subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(cc_state->subreq,
+					btrfs_copy_chunk_done,
+					req);
+		return req;
+	}
+
 	status = vfs_stat_fsp(src_fsp);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
@@ -137,7 +158,6 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 					btrfs_copy_chunk_done,
 					req);
 		return req;
-
 	}
 
 	DEBUG(5, ("BTRFS_IOC_CLONE_RANGE returned %d\n", ret));
