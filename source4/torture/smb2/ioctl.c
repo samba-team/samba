@@ -1605,6 +1605,68 @@ static bool test_ioctl_copy_chunk_max_output_sz(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_copy_chunk_zero_length(struct torture_context *torture,
+					      struct smb2_tree *tree)
+{
+	struct smb2_handle src_h;
+	struct smb2_handle dest_h;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	union smb_fileinfo q;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct srv_copychunk_copy cc_copy;
+	struct srv_copychunk_rsp cc_rsp;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+
+	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
+				   1, /* 1 chunk */
+				   &src_h, 4096, /* fill 4096 byte src file */
+				   SEC_RIGHTS_FILE_ALL,
+				   &dest_h, 0,	/* 0 byte dest file */
+				   SEC_RIGHTS_FILE_ALL,
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		torture_fail(torture, "setup copy chunk error");
+	}
+
+	/* zero length server-side copy (via a single chunk desc) */
+	cc_copy.chunks[0].source_off = 0;
+	cc_copy.chunks[0].target_off = 0;
+	cc_copy.chunks[0].length = 0;
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cc_copy,
+			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_srv_copychunk_copy");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_INVALID_PARAMETER,
+				      "bad zero-length chunk response");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cc_rsp,
+			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+	torture_assert_ndr_success(torture, ndr_ret, "unmarshalling response");
+
+	ZERO_STRUCT(q);
+	q.all_info2.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	q.all_info2.in.file.handle = dest_h;
+	status = smb2_getinfo_file(tree, torture, &q);
+	torture_assert_ntstatus_ok(torture, status, "getinfo");
+
+	torture_assert_int_equal(torture, q.all_info2.out.size, 0,
+				 "size after zero len clone");
+
+	smb2_util_close(tree, src_h);
+	smb2_util_close(tree, dest_h);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 static NTSTATUS test_ioctl_compress_fs_supported(struct torture_context *torture,
 						 struct smb2_tree *tree,
 						 TALLOC_CTX *mem_ctx,
@@ -2395,6 +2457,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_copy_chunk_sparse_dest);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_max_output_sz",
 				     test_ioctl_copy_chunk_max_output_sz);
+	torture_suite_add_1smb2_test(suite, "copy_chunk_zero_length",
+				     test_ioctl_copy_chunk_zero_length);
 	torture_suite_add_1smb2_test(suite, "compress_file_flag",
 				     test_ioctl_compress_file_flag);
 	torture_suite_add_1smb2_test(suite, "compress_dir_inherit",
