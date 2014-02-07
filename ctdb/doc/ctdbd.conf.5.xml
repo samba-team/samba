@@ -1375,6 +1375,36 @@ CTDB_SET_MonitorInterval=20
       </varlistentry>
 
       <varlistentry>
+	<term>CTDB_DEBUG_HUNG_SCRIPT_LOGFILE=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    FILENAME specifies where log messages should go when
+	    debugging hung eventscripts.  This is a testing option.
+	    See also <citetitle>CTDB_DEBUG_HUNG_SCRIPT</citetitle>.
+	  </para>
+	  <para>
+	    No default.  Messages go to stdout/stderr and are logged
+	    to the same place as other CTDB log messages.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_DEBUG_HUNG_SCRIPT_STACKPAT=<parameter>REGEXP</parameter></term>
+	<listitem>
+	  <para>
+	    REGEXP specifies interesting processes for which stack
+	    traces should be logged when debugging hung eventscripts
+	    and those processes are matched in pstree output.  See
+	    also <citetitle>CTDB_DEBUG_HUNG_SCRIPT</citetitle>.
+	  </para>
+	  <para>
+	    Default is "exportfs\|rpcinfo".
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>CTDB_DEBUG_LOCKS=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
