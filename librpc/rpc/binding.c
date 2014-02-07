@@ -198,6 +198,8 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 	char *o = s;
 	int i;
 	const char *t_name = NULL;
+	bool option_section = false;
+	const char *target_hostname = NULL;
 
 	if (b->transport != NCA_UNKNOWN) {
 		t_name = derpc_transport_string_by_transport(b->transport);
@@ -235,7 +237,28 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 		}
 	}
 
-	if (!b->endpoint && !b->options && !b->flags) {
+	target_hostname = b->target_hostname;
+	if (target_hostname != NULL && b->host != NULL) {
+		if (strcmp(target_hostname, b->host) == 0) {
+			target_hostname = NULL;
+		}
+	}
+
+	if (b->endpoint) {
+		option_section = true;
+	} else if (target_hostname) {
+		option_section = true;
+	} else if (b->target_principal) {
+		option_section = true;
+	} else if (b->assoc_group_id != 0) {
+		option_section = true;
+	} else if (b->options) {
+		option_section = true;
+	} else if (b->flags) {
+		option_section = true;
+	}
+
+	if (!option_section) {
 		return s;
 	}
 
@@ -262,6 +285,36 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 
 		o = s;
 		s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
+		}
+	}
+
+	if (target_hostname) {
+		o = s;
+		s = talloc_asprintf_append_buffer(s, ",target_hostname=%s",
+						  b->target_hostname);
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
+		}
+	}
+
+	if (b->target_principal) {
+		o = s;
+		s = talloc_asprintf_append_buffer(s, ",target_principal=%s",
+						  b->target_principal);
+		if (s == NULL) {
+			talloc_free(o);
+			return NULL;
+		}
+	}
+
+	if (b->assoc_group_id != 0) {
+		o = s;
+		s = talloc_asprintf_append_buffer(s, ",assoc_group_id=0x%08x",
+						  b->assoc_group_id);
 		if (s == NULL) {
 			talloc_free(o);
 			return NULL;
