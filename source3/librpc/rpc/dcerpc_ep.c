@@ -29,6 +29,12 @@
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
+struct dcerpc_binding_vector {
+	struct dcerpc_binding *bindings;
+	uint32_t count;
+	uint32_t allocated;
+};
+
 static bool binding_vector_realloc(struct dcerpc_binding_vector *bvec)
 {
 	if (bvec->count >= bvec->allocated) {

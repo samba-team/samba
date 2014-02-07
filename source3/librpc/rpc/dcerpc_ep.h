@@ -20,11 +20,7 @@
 #ifndef _DCERPC_EP_H_
 #define _DCERPC_EP_H_
 
-struct dcerpc_binding_vector {
-    struct dcerpc_binding *bindings;
-    uint32_t count;
-    uint32_t allocated;
-};
+struct dcerpc_binding_vector;
 
 /**
  * @brief Allocate a new binding vector.
