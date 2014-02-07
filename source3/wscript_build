@@ -76,25 +76,6 @@ bld.SAMBA3_LIBRARY('msrpc3',
                    ''',
                    private_library=True)
 
-bld.SAMBA3_LIBRARY('gpo',
-                   source='''
-                          ../libgpo/gpo_ldap.c
-                          ../libgpo/gpo_ini.c
-                          ../libgpo/gpo_util.c
-                          ../libgpo/gpo_fetch.c
-                          ../libgpo/gpo_filesync.c
-                          ../libgpo/gpo_sec.c
-                          ../libgpo/gpo_reg.c
-                          ''',
-                   deps='''
-                        talloc
-                        ads
-                        TOKEN_UTIL
-                        gpext
-                        auth
-                        ''',
-                   private_library=True)
-
 bld.SAMBA3_SUBSYSTEM('AVAHI',
                     source='''
                            lib/avahi.c
