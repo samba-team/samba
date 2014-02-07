@@ -31,9 +31,10 @@ static bool test_BindingString(struct torture_context *tctx,
 {
 	const char *binding = test_data;
 	struct dcerpc_binding *b, *b2;
-	const char *s, *s2;
+	char *s, *s2, *p;
 	struct epm_tower tower;
 	TALLOC_CTX *mem_ctx = tctx;
+	const char *host;
 
 	/* Parse */
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(mem_ctx, binding, &b),
@@ -54,19 +55,44 @@ static bool test_BindingString(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, dcerpc_binding_from_tower(mem_ctx, &tower, &b2),
 			    "Error generating binding from tower for original binding");
 
-	/* Compare to a stripped down version of the binding string because 
-	 * the protocol tower doesn't contain the extra option data */
-	b->options = NULL;
-
-	b->flags = 0;
-	
 	s = dcerpc_binding_string(mem_ctx, b);
 	torture_assert(tctx, s != NULL, "Error converting binding back to string for (stripped down)"); 
+
+	/*
+	 * Compare to a stripped down version of the binding string because
+	 * the protocol tower doesn't contain the extra option data
+	 *
+	 * We remove all options except of the endpoint.
+	 */
+	p = strchr(s, '[');
+	if (p != NULL) {
+		char *p2;
+
+		p2 = strchr(p + 1, ',');
+		if (p2 != NULL) {
+			/*
+			 * We only look at the first option,
+			 * which might be the endpoint.
+			 */
+			p2[0] = ']';
+			p2[1] = '\0';
+		}
+
+		p2 = strchr(p + 1, '=');
+		if (p2 != NULL) {
+			/*
+			 * It's not the endpoint, so remove the
+			 * whole option section.
+			 */
+			*p = '\0';
+		}
+	}
 
 	s2 = dcerpc_binding_string(mem_ctx, b2);
 	torture_assert(tctx, s != NULL, "Error converting binding back to string"); 
 
-	if (b->host && is_ipaddress(b->host)) {
+	host = dcerpc_binding_get_string_option(b, "host");
+	if (host && is_ipaddress_v4(host)) {
 		torture_assert_casestr_equal(tctx, s, s2, "Mismatch while comparing original and from protocol tower generated binding strings");
 	}
 
@@ -102,36 +128,50 @@ static bool test_parse_check_results(struct torture_context *tctx)
 {
 	struct dcerpc_binding *b;
 	struct GUID uuid;
+	struct GUID object;
+	enum dcerpc_transport_t transport;
+	const char *endpoint;
+	uint32_t flags;
 
 	torture_assert_ntstatus_ok(tctx, 
 				   GUID_from_string("308FB580-1EB2-11CA-923B-08002B1075A7", &uuid),
 				   "parsing uuid");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER", &b), "parse");
-	torture_assert(tctx, b->transport == NCACN_NP, "ncacn_np expected");
+	transport = dcerpc_binding_get_transport(b);
+	torture_assert(tctx, transport == NCACN_NP, "ncacn_np expected");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_ip_tcp:$SERVER", &b), "parse");
-	torture_assert(tctx, b->transport == NCACN_IP_TCP, "ncacn_ip_tcp expected");
+	transport = dcerpc_binding_get_transport(b);
+	torture_assert(tctx, transport == NCACN_IP_TCP, "ncacn_ip_tcp expected");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[rpcecho]", &b), "parse");
-	torture_assert_str_equal(tctx, b->endpoint, "rpcecho", "endpoint");
+	endpoint = dcerpc_binding_get_string_option(b, "endpoint");
+	torture_assert_str_equal(tctx, endpoint, "rpcecho", "endpoint");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[/pipe/rpcecho]", &b), "parse");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[/pipe/rpcecho,sign,seal]", &b), "parse");
-	torture_assert(tctx, b->flags == DCERPC_SIGN+DCERPC_SEAL, "sign+seal flags");
-	torture_assert_str_equal(tctx, b->endpoint, "/pipe/rpcecho", "endpoint");
+	flags = dcerpc_binding_get_flags(b);
+	torture_assert(tctx, flags == DCERPC_SIGN+DCERPC_SEAL, "sign+seal flags");
+	endpoint = dcerpc_binding_get_string_option(b, "endpoint");
+	torture_assert_str_equal(tctx, endpoint, "/pipe/rpcecho", "endpoint");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[,sign]", &b), "parse");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_ip_tcp:$SERVER[,sign]", &b), "parse");
-	torture_assert(tctx, b->endpoint == NULL, "endpoint");
-	torture_assert(tctx, b->flags == DCERPC_SIGN, "sign flag");
+	endpoint = dcerpc_binding_get_string_option(b, "endpoint");
+	torture_assert(tctx, endpoint == NULL, "endpoint");
+	flags = dcerpc_binding_get_flags(b);
+	torture_assert(tctx, flags == DCERPC_SIGN, "sign flag");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncalrpc:", &b), "parse");
-	torture_assert(tctx, b->transport == NCALRPC, "ncalrpc expected");
+	transport = dcerpc_binding_get_transport(b);
+	torture_assert(tctx, transport == NCALRPC, "ncalrpc expected");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, 
 		"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:$SERVER", &b), "parse");
-	torture_assert(tctx, GUID_equal(&b->object.uuid, &uuid), "object uuid");
-	torture_assert_int_equal(tctx, b->object.if_version, 0, "object version");
+	object = dcerpc_binding_get_object(b);
+	torture_assert(tctx, GUID_equal(&object, &uuid), "object uuid");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, 
 		"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$SERVER", &b), "parse");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_ip_tcp:$SERVER[,sign,localaddress=192.168.1.1]", &b), "parse");
-	torture_assert(tctx, b->transport == NCACN_IP_TCP, "ncacn_ip_tcp expected");
-	torture_assert(tctx, b->flags == DCERPC_SIGN, "sign flag");
+	transport = dcerpc_binding_get_transport(b);
+	torture_assert(tctx, transport == NCACN_IP_TCP, "ncacn_ip_tcp expected");
+	flags = dcerpc_binding_get_flags(b);
+	torture_assert(tctx, flags == DCERPC_SIGN, "sign flag");
 	torture_assert_str_equal(tctx, dcerpc_binding_get_string_option(b, "localaddress"),
 				 "192.168.1.1", "localaddress");
 	torture_assert_str_equal(tctx, "ncacn_ip_tcp:$SERVER[,sign,localaddress=192.168.1.1]",
@@ -144,13 +184,15 @@ static bool test_no_transport(struct torture_context *tctx)
 {
 	const char *binding = "somehost";
 	struct dcerpc_binding *b;
+	enum dcerpc_transport_t transport;
 	const char *s;
 
 	/* Parse */
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, binding, &b),
 		"Error parsing binding string");
 
-	torture_assert(tctx, b->transport == NCA_UNKNOWN, "invalid transport");
+	transport = dcerpc_binding_get_transport(b);
+	torture_assert(tctx, transport == NCA_UNKNOWN, "invalid transport");
 
 	s = dcerpc_binding_string(tctx, b);
 	torture_assert(tctx, s != NULL, "Error converting binding back to string");
