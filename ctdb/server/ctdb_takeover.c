@@ -1880,7 +1880,6 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 				    struct ctdb_ipflags *ipflags,
 				    struct ctdb_public_ip_list *all_ips,
 				    int srcnode,
-				    uint32_t candimbl,
 				    uint32_t *lcp2_imbalances,
 				    bool *rebalance_candidates)
 {
@@ -1900,7 +1899,8 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 	numnodes = talloc_array_length(ipflags);
 
 	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
-	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n", srcnode, candimbl));
+	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n",
+			   srcnode, lcp2_imbalances[srcnode]));
 
 	for (tmp_ip=all_ips; tmp_ip; tmp_ip=tmp_ip->next) {
 		/* Only consider addresses on srcnode. */
@@ -1910,7 +1910,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 
 		/* What is this IP address costing the source node? */
 		srcdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, srcnode);
-		srcimbl = candimbl - srcdsum;
+		srcimbl = lcp2_imbalances[srcnode] - srcdsum;
 
 		/* Consider this IP address would cost each potential
 		 * destination node.  Destination nodes are limited to
@@ -1933,11 +1933,12 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 			dstdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, dstnode);
 			dstimbl = lcp2_imbalances[dstnode] + dstdsum;
 			DEBUG(DEBUG_DEBUG,(" %d [%d] -> %s -> %d [+%d]\n",
-					   srcnode, srcimbl - lcp2_imbalances[srcnode],
+					   srcnode, -srcdsum,
 					   ctdb_addr_to_str(&(tmp_ip->addr)),
-					   dstnode, dstimbl - lcp2_imbalances[dstnode]));
+					   dstnode, dstdsum));
 
-			if ((dstimbl < candimbl) && (dstdsum < srcdsum) && \
+			if ((dstimbl < lcp2_imbalances[srcnode]) &&
+			    (dstdsum < srcdsum) &&			\
 			    ((mindstnode == -1) ||				\
 			     ((srcimbl + dstimbl) < (minsrcimbl + mindstimbl)))) {
 
@@ -2033,7 +2034,6 @@ try_again:
 					    ipflags,
 					    all_ips,
 					    lips[i].pnn,
-					    lips[i].imbalance,
 					    lcp2_imbalances,
 					    rebalance_candidates)) {
 			again = true;
