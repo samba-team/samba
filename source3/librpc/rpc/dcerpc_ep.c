@@ -30,7 +30,7 @@
 #define EPM_MAX_ANNOTATION_SIZE 64
 
 struct dcerpc_binding_vector {
-	struct dcerpc_binding *bindings;
+	struct dcerpc_binding **bindings;
 	uint32_t count;
 	uint32_t allocated;
 };
@@ -38,11 +38,11 @@ struct dcerpc_binding_vector {
 static bool binding_vector_realloc(struct dcerpc_binding_vector *bvec)
 {
 	if (bvec->count >= bvec->allocated) {
-		struct dcerpc_binding *tmp;
+		struct dcerpc_binding **tmp;
 
 		tmp = talloc_realloc(bvec,
 				     bvec->bindings,
-				     struct dcerpc_binding,
+				     struct dcerpc_binding *,
 				     bvec->allocated * 2);
 		if (tmp == NULL) {
 			return false;
@@ -73,7 +73,7 @@ NTSTATUS dcerpc_binding_vector_new(TALLOC_CTX *mem_ctx,
 	}
 
 	bvec->bindings = talloc_zero_array(bvec,
-					   struct dcerpc_binding,
+					   struct dcerpc_binding *,
 					   4);
 	if (bvec->bindings == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -133,7 +133,7 @@ NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		bvec->bindings[bvec->count] = *b;
+		bvec->bindings[bvec->count] = b;
 		bvec->count++;
 	}
 
@@ -188,7 +188,7 @@ NTSTATUS dcerpc_binding_vector_add_port(const struct ndr_interface_table *iface,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		bvec->bindings[bvec->count] = *b;
+		bvec->bindings[bvec->count] = b;
 		bvec->count++;
 
 		break;
@@ -241,7 +241,7 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		bvec->bindings[bvec->count] = *b;
+		bvec->bindings[bvec->count] = b;
 		bvec->count++;
 
 		break;
@@ -256,9 +256,8 @@ NTSTATUS dcerpc_binding_vector_replace_iface(const struct ndr_interface_table *i
 	uint32_t i;
 
 	for (i = 0; i < v->count; i++) {
-		struct dcerpc_binding *b;
+		struct dcerpc_binding *b = v->bindings[i];
 
-		b = &(v->bindings[i]);
 		b->object = iface->syntax_id;
 	}
 
@@ -276,7 +275,7 @@ struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	v->bindings = talloc_array(v, struct dcerpc_binding, bvec->allocated);
+	v->bindings = talloc_array(v, struct dcerpc_binding *, bvec->allocated);
 	if (v->bindings == NULL) {
 		talloc_free(v);
 		return NULL;
@@ -286,12 +285,12 @@ struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < bvec->count; i++) {
 		struct dcerpc_binding *b;
 
-		b = dcerpc_binding_dup(v->bindings, &bvec->bindings[i]);
+		b = dcerpc_binding_dup(v->bindings, bvec->bindings[i]);
 		if (b == NULL) {
 			talloc_free(v);
 			return NULL;
 		}
-		v->bindings[i] = *b;
+		v->bindings[i] = b;
 	}
 	v->count = bvec->count;
 
@@ -399,7 +398,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 	entries = talloc_array(tmp_ctx, struct epm_entry_t, num_ents);
 
 	for (i = 0; i < num_ents; i++) {
-		struct dcerpc_binding *map_binding = &bind_vec->bindings[i];
+		struct dcerpc_binding *map_binding = bind_vec->bindings[i];
 		struct epm_twr_t *map_tower;
 
 		map_tower = talloc_zero(entries, struct epm_twr_t);
