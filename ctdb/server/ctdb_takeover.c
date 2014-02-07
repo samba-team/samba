@@ -1958,7 +1958,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 				  mindstnode, mindstimbl - lcp2_imbalances[mindstnode]));
 
 
-		lcp2_imbalances[srcnode] = srcimbl;
+		lcp2_imbalances[srcnode] = minsrcimbl;
 		lcp2_imbalances[mindstnode] = mindstimbl;
 		minip->pnn = mindstnode;
 
@@ -2024,10 +2024,13 @@ try_again:
 	 * iterate through candidates.  Usually the 1st one will be
 	 * used, so this doesn't cost much...
 	 */
+	DEBUG(DEBUG_DEBUG,("+++++++++++++++++++++++++++++++++++++++++\n"));
+	DEBUG(DEBUG_DEBUG,("Selecting most imbalanced node from:\n"));
 	lips = talloc_array(ctdb, struct lcp2_imbalance_pnn, numnodes);
 	for (i=0; i<numnodes; i++) {
 		lips[i].imbalance = lcp2_imbalances[i];
 		lips[i].pnn = i;
+		DEBUG(DEBUG_DEBUG,(" %d [%d]\n", i, lcp2_imbalances[i]));
 	}
 	qsort(lips, numnodes, sizeof(struct lcp2_imbalance_pnn),
 	      lcp2_cmp_imbalance_pnn);
