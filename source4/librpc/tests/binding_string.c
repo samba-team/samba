@@ -148,6 +148,7 @@ static bool test_parse_check_results(struct torture_context *tctx)
 	struct dcerpc_binding *b;
 	struct GUID uuid;
 	struct GUID object;
+	struct ndr_syntax_id abstract;
 	enum dcerpc_transport_t transport;
 	const char *endpoint;
 	uint32_t flags;
@@ -183,7 +184,10 @@ static bool test_parse_check_results(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, 
 		"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:$SERVER", &b), "parse");
 	object = dcerpc_binding_get_object(b);
+	abstract = dcerpc_binding_get_abstract_syntax(b);
 	torture_assert(tctx, GUID_equal(&object, &uuid), "object uuid");
+	torture_assert(tctx, ndr_syntax_id_equal(&abstract, &ndr_syntax_id_null),
+		       "null abstract syntax");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, 
 		"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$SERVER", &b), "parse");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_ip_tcp:$SERVER[,sign,localaddress=192.168.1.1]", &b), "parse");
