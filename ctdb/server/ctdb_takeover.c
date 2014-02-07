@@ -1998,28 +1998,13 @@ static void lcp2_failback(struct ctdb_context *ctdb,
 			  uint32_t *lcp2_imbalances,
 			  bool *rebalance_candidates)
 {
-	int i, num_rebalance_candidates, numnodes;
+	int i, numnodes;
 	struct lcp2_imbalance_pnn * lips;
 	bool again;
 
 	numnodes = talloc_array_length(ipflags);
 
 try_again:
-
-	/* It is only worth continuing if we have suitable target
-	 * nodes to transfer IPs to.  This check is much cheaper than
-	 * continuing on...
-	 */
-	num_rebalance_candidates = 0;
-	for (i=0; i<numnodes; i++) {
-		if (rebalance_candidates[i]) {
-			num_rebalance_candidates++;
-		}
-	}
-	if (num_rebalance_candidates == 0) {
-		return;
-	}
-
 	/* Put the imbalances and nodes into an array, sort them and
 	 * iterate through candidates.  Usually the 1st one will be
 	 * used, so this doesn't cost much...
@@ -2153,6 +2138,7 @@ static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 {
 	uint32_t *lcp2_imbalances;
 	bool *rebalance_candidates;
+	int numnodes, num_rebalance_candidates, i;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
@@ -2165,6 +2151,21 @@ static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 
 	/* If we don't want IPs to fail back then don't rebalance IPs. */
 	if (1 == ctdb->tunable.no_ip_failback) {
+		goto finished;
+	}
+
+	/* It is only worth continuing if we have suitable target
+	 * nodes to transfer IPs to.  This check is much cheaper than
+	 * continuing on...
+	 */
+	numnodes = talloc_array_length(ipflags);
+	num_rebalance_candidates = 0;
+	for (i=0; i<numnodes; i++) {
+		if (rebalance_candidates[i]) {
+			num_rebalance_candidates++;
+		}
+	}
+	if (num_rebalance_candidates == 0) {
 		goto finished;
 	}
 
