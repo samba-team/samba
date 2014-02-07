@@ -423,8 +423,8 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 
 	SIVAL(out_output->data, 0x00, conn->smb2.server.capabilities);
 	memcpy(out_output->data+0x04, out_guid_blob.data, 16);
-	SIVAL(out_output->data, 0x14, conn->smb2.server.security_mode);
-	SIVAL(out_output->data, 0x16, conn->smb2.server.dialect);
+	SSVAL(out_output->data, 0x14, conn->smb2.server.security_mode);
+	SSVAL(out_output->data, 0x16, conn->smb2.server.dialect);
 
 	return NT_STATUS_OK;
 }
