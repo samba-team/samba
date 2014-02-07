@@ -242,7 +242,7 @@ static int db_lock_unmark_handler(struct ctdb_db_context *ctdb_db, uint32_t prio
 int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
 	/*
-	 * This function is only used by the main dameon during recovery.
+	 * This function is only used by the main daemon during recovery.
 	 * At this stage, the databases have already been locked, by a
 	 * dedicated child process. The freeze_mode variable is used to track
 	 * whether the actual locks are held by the child process or not.
