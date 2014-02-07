@@ -892,8 +892,19 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 	state.handle = handle;
 	state.status = NT_STATUS_OK;
 
-	status = walk_streams(handle, smb_fname_base, NULL, collect_one_stream,
+	if (S_ISLNK(smb_fname_base->st.st_ex_mode)) {
+		/*
+		 * Currently we do't have SMB_VFS_LLISTXATTR
+		 * inside the VFS which means there's no way
+		 * to cope with a symlink when lp_posix_pathnames().
+		 * returns true. For now ignore links.
+		 * FIXME - by adding SMB_VFS_LLISTXATTR. JRA.
+		 */
+		status = NT_STATUS_OK;
+	} else {
+		status = walk_streams(handle, smb_fname_base, NULL, collect_one_stream,
 			      &state);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(state.streams);
