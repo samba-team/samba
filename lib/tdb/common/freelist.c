@@ -156,6 +156,40 @@ static int read_record_on_left(struct tdb_context *tdb, tdb_off_t rec_ptr,
 	return 0;
 }
 
+/**
+ * Merge new freelist record with the direct left neighbour.
+ * This assumes that left_rec represents the record
+ * directly to the left of right_rec and that this is
+ * a freelist record.
+ */
+static int merge_with_left_record(struct tdb_context *tdb,
+				  tdb_off_t left_ptr,
+				  struct tdb_record *left_rec,
+				  struct tdb_record *right_rec)
+{
+	int ret;
+
+	left_rec->rec_len += sizeof(*right_rec) + right_rec->rec_len;
+
+	ret = tdb_rec_write(tdb, left_ptr, left_rec);
+	if (ret == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,
+			 "merge_with_left_record: update_left failed at %u\n",
+			 left_ptr));
+		return -1;
+	}
+
+	ret = update_tailer(tdb, left_ptr, left_rec);
+	if (ret == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,
+			 "merge_with_left_record: update_tailer failed at %u\n",
+			 left_ptr));
+		return -1;
+	}
+
+	return 0;
+}
+
 /* Add an element into the freelist. Merge adjacent records if
    necessary. */
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
@@ -213,15 +247,11 @@ left:
 	/* we now merge the new record into the left record, rather than the other
 	   way around. This makes the operation O(1) instead of O(n). This change
 	   prevents traverse from being O(n^2) after a lot of deletes */
-	l.rec_len += sizeof(*rec) + rec->rec_len;
-	if (tdb_rec_write(tdb, left, &l) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_left failed at %u\n", left));
+
+	if (merge_with_left_record(tdb, left, &l, rec) != 0) {
 		goto fail;
 	}
-	if (update_tailer(tdb, left, &l) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", left));
-		goto fail;
-	}
+
 	tdb_unlock(tdb, -1, F_WRLCK);
 	return 0;
 
