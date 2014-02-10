@@ -569,8 +569,8 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 
 		SIVAL(state->out_output.data, 0x00, conn->smb2.server.capabilities);
 		memcpy(state->out_output.data+0x04, out_guid_blob.data, 16);
-		SIVAL(state->out_output.data, 0x14, conn->smb2.server.security_mode);
-		SIVAL(state->out_output.data, 0x16, conn->smb2.server.dialect);
+		SSVAL(state->out_output.data, 0x14, conn->smb2.server.security_mode);
+		SSVAL(state->out_output.data, 0x16, conn->smb2.server.dialect);
 
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
