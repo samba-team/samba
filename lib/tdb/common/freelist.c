@@ -97,10 +97,58 @@ static int update_tailer(struct tdb_context *tdb, tdb_off_t offset,
 			 &totalsize);
 }
 
+/**
+ * Read the record directly on the left.
+ * Fail if there is no record on the left.
+ */
+static int read_record_on_left(struct tdb_context *tdb, tdb_off_t offset,
+			       tdb_off_t *left_p,
+			       struct tdb_record *left_r)
+{
+	tdb_off_t left = offset - sizeof(tdb_off_t);
+	struct tdb_record l;
+	tdb_off_t leftsize;
+
+	if (offset - sizeof(tdb_off_t) > TDB_DATA_START(tdb->hash_size)) {
+
+		/* Read in tailer and jump back to header */
+		if (tdb_ofs_read(tdb, left, &leftsize) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left offset read failed at %u\n", left));
+			return -1;
+		}
+
+		/* it could be uninitialised data */
+		if (leftsize == 0 || leftsize == TDB_PAD_U32) {
+			return -1;
+		}
+
+		left = offset - leftsize;
+
+		if (leftsize > offset ||
+		    left < TDB_DATA_START(tdb->hash_size)) {
+			return -1;
+		}
+
+		/* Now read in the left record */
+		if (tdb->methods->tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
+			return -1;
+		}
+
+		*left_p = left;
+		*left_r = l;
+	}
+
+	return -1;
+}
+
 /* Add an element into the freelist. Merge adjacent records if
    necessary. */
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 {
+	tdb_off_t left;
+	struct tdb_record l;
+
 	/* Allocation and tailer lock */
 	if (tdb_lock(tdb, -1, F_WRLCK) != 0)
 		return -1;
@@ -138,36 +186,7 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 left:
 #endif
 
-	/* Look left */
-	if (offset - sizeof(tdb_off_t) > TDB_DATA_START(tdb->hash_size)) {
-		tdb_off_t left = offset - sizeof(tdb_off_t);
-		struct tdb_record l;
-		tdb_off_t leftsize;
-
-		/* Read in tailer and jump back to header */
-		if (tdb_ofs_read(tdb, left, &leftsize) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left offset read failed at %u\n", left));
-			goto update;
-		}
-
-		/* it could be uninitialised data */
-		if (leftsize == 0 || leftsize == TDB_PAD_U32) {
-			goto update;
-		}
-
-		left = offset - leftsize;
-
-		if (leftsize > offset ||
-		    left < TDB_DATA_START(tdb->hash_size)) {
-			goto update;
-		}
-
-		/* Now read in the left record */
-		if (tdb->methods->tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
-			goto update;
-		}
-
+	if (read_record_on_left(tdb, offset, &left, &l) == 0) {
 		/* If it's free, expand to include it. */
 		if (l.magic == TDB_FREE_MAGIC) {
 			/* we now merge the new record into the left record, rather than the other
