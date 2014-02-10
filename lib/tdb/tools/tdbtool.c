@@ -55,6 +55,7 @@ enum commands {
 	CMD_DELETE,
 	CMD_LIST_HASH_FREE,
 	CMD_LIST_FREE,
+	CMD_FREELIST_SIZE,
 	CMD_INFO,
 	CMD_MMAP,
 	CMD_SPEED,
@@ -89,6 +90,7 @@ COMMAND_TABLE cmd_table[] = {
 	{"delete",	CMD_DELETE},
 	{"list",	CMD_LIST_HASH_FREE},
 	{"free",	CMD_LIST_FREE},
+	{"freelist_size",	CMD_FREELIST_SIZE},
 	{"info",	CMD_INFO},
 	{"speed",	CMD_SPEED},
 	{"mmap",	CMD_MMAP},
@@ -232,6 +234,7 @@ static void help(void)
 "  delete    key        : delete a record by key\n"
 "  list                 : print the database hash table and freelist\n"
 "  free                 : print the database freelist\n"
+"  freelist_size        : print the number of records in the freelist\n"
 "  check                : check the integrity of an opened database\n"
 "  repack               : repack the database\n"
 "  speed                : perform speed tests on the database\n"
@@ -710,6 +713,18 @@ static int do_command(void)
 		case CMD_LIST_FREE:
 			tdb_printfreelist(tdb);
 			return 0;
+		case CMD_FREELIST_SIZE: {
+			int count;
+
+			count = tdb_freelist_size(tdb);
+			if (count < 0) {
+				printf("Error getting freelist size.\n");
+			} else {
+				printf("freelist size: %d\n", count);
+			}
+
+			return 0;
+		}
 		case CMD_INFO:
 			info_tdb();
 			return 0;
