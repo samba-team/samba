@@ -188,6 +188,11 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 	}
 	tdb_io_init(tdb);
+
+	if (tdb_flags & TDB_INTERNAL) {
+		tdb_flags |= TDB_INCOMPATIBLE_HASH;
+	}
+
 	tdb->fd = -1;
 #ifdef TDB_TRACE
 	tdb->tracefd = -1;
