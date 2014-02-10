@@ -200,25 +200,30 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 left:
 #endif
 
-	if (read_record_on_left(tdb, offset, &left, &l) == 0) {
-		/* If it's free, expand to include it. */
-		if (l.magic == TDB_FREE_MAGIC) {
-			/* we now merge the new record into the left record, rather than the other
-			   way around. This makes the operation O(1) instead of O(n). This change
-			   prevents traverse from being O(n^2) after a lot of deletes */
-			l.rec_len += sizeof(*rec) + rec->rec_len;
-			if (tdb_rec_write(tdb, left, &l) == -1) {
-				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_left failed at %u\n", left));
-				goto fail;
-			}
-			if (update_tailer(tdb, left, &l) == -1) {
-				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
-				goto fail;
-			}
-			tdb_unlock(tdb, -1, F_WRLCK);
-			return 0;
-		}
+	if (read_record_on_left(tdb, offset, &left, &l) != 0) {
+		goto update;
 	}
+
+	if (l.magic != TDB_FREE_MAGIC) {
+		goto update;
+	}
+
+	/* It's free - expand to include it. */
+
+	/* we now merge the new record into the left record, rather than the other
+	   way around. This makes the operation O(1) instead of O(n). This change
+	   prevents traverse from being O(n^2) after a lot of deletes */
+	l.rec_len += sizeof(*rec) + rec->rec_len;
+	if (tdb_rec_write(tdb, left, &l) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_left failed at %u\n", left));
+		goto fail;
+	}
+	if (update_tailer(tdb, left, &l) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
+		goto fail;
+	}
+	tdb_unlock(tdb, -1, F_WRLCK);
+	return 0;
 
 update:
 
