@@ -50,6 +50,8 @@ is_ctdb_managed_service || exit 0
 
 ctdb_service_check_reconfigure
 
+nodenum_file="${service_state_dir}/gpfs_nodenum"
+
 get_cluster_fs_state  ()
 {
     case $CTDB_CLUSTER_FILESYSTEM_TYPE in
@@ -62,6 +64,21 @@ get_cluster_fs_state  ()
             ;;
    esac
 }
+
+create_nodenum_file()
+{
+    NNUM=$(/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}')
+    echo $NNUM > $nodenum_file
+}
+
+get_nodenum()
+{
+    if [ ! -f $nodenum_file ]; then
+        create_nodenum_file
+    fi
+    cat $nodenum_file
+}
+
 
 create_ganesha_recdirs ()
 {
@@ -153,6 +170,7 @@ case "$1" in
      startup)
 	create_ganesha_recdirs
 	ctdb_service_start
+	create_nodenum_file
 	;;
 
      shutdown)
@@ -163,7 +181,7 @@ case "$1" in
 	if [ -n "$2" ] ; then
 	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
 		gpfs)
-		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
+		    NNUM=$(get_nodenum)
 		    TDATE=`date +"%s"`
 		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
 		    touch $GANRECDIR2/$TOUCHTGT
@@ -177,7 +195,7 @@ case "$1" in
 	if [ -n "$2" ] ; then
 	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
 		gpfs)
-		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
+		    NNUM=$(get_nodenum)
 		    TDATE=`date +"%s"`
 		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
 		    touch $GANRECDIR2/$TOUCHTGT
