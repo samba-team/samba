@@ -1431,12 +1431,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	int freelist_size;
 	struct vacuum_data *vdata;
 
-	freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
-	if (freelist_size == -1) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
-		return -1;
-	}
-
 	vdata = talloc_zero(mem_ctx, struct vacuum_data);
 	if (vdata == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
@@ -1461,6 +1455,13 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	 */
 	if (ctdb_vacuum_db(ctdb_db, vdata, full_vacuum_run) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to vacuum '%s'\n", name));
+	}
+
+	freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
+	if (freelist_size == -1) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
+		talloc_free(vdata);
+		return -1;
 	}
 
 	/*
