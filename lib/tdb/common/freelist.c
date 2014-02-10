@@ -219,7 +219,7 @@ left:
 		goto fail;
 	}
 	if (update_tailer(tdb, left, &l) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", left));
 		goto fail;
 	}
 	tdb_unlock(tdb, -1, F_WRLCK);
