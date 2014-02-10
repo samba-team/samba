@@ -697,6 +697,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	binding->transport = dcerpc_transport_by_tower(tower);
 
 	if (binding->transport == (unsigned int)-1) {
+		talloc_free(binding);
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -705,6 +706,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Error pulling object uuid and version: %s", nt_errstr(status)));
+		talloc_free(binding);
 		return status;
 	}
 
@@ -713,18 +715,28 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	binding->options = NULL;
 
 	/* Set endpoint */
+	errno = 0;
 	if (tower->num_floors >= 4) {
 		binding->endpoint = dcerpc_floor_get_rhs_data(binding, &tower->floors[3]);
-	} else {
-		binding->endpoint = NULL;
+	}
+	if (errno != 0) {
+		int saved_errno = errno;
+		talloc_free(binding);
+		return map_nt_error_from_unix_common(saved_errno);
 	}
 
 	/* Set network address */
+	errno = 0;
 	if (tower->num_floors >= 5) {
 		binding->host = dcerpc_floor_get_rhs_data(binding, &tower->floors[4]);
-		NT_STATUS_HAVE_NO_MEMORY(binding->host);
-		binding->target_hostname = binding->host;
 	}
+	if (errno != 0) {
+		int saved_errno = errno;
+		talloc_free(binding);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+	binding->target_hostname = binding->host;
+
 	*b_out = binding;
 	return NT_STATUS_OK;
 }
