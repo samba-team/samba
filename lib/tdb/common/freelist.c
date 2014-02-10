@@ -611,6 +611,65 @@ blocking_freelist_allocate:
 	return ret;
 }
 
+/**
+ * Merge adjacent records in the freelist.
+ */
+static int tdb_freelist_merge_adjacent(struct tdb_context *tdb,
+				       int *count_records, int *count_merged)
+{
+	tdb_off_t cur, next;
+	int count = 0;
+	int merged = 0;
+	int ret;
+
+	ret = tdb_lock(tdb, -1, F_RDLCK);
+	if (ret == -1) {
+		return -1;
+	}
+
+	cur = FREELIST_TOP;
+	while (tdb_ofs_read(tdb, cur, &next) == 0 && next != 0) {
+		tdb_off_t next2;
+
+		count++;
+
+		ret = check_merge_ptr_with_left_record(tdb, next, &next2);
+		if (ret == -1) {
+			goto done;
+		}
+		if (ret == 1) {
+			/*
+			 * merged:
+			 * now let cur->next point to next2 instead of next
+			 */
+
+			ret = tdb_ofs_write(tdb, cur, &next2);
+			if (ret != 0) {
+				goto done;
+			}
+
+			next = next2;
+			merged++;
+		}
+
+		cur = next;
+	}
+
+	if (count_records != NULL) {
+		*count_records = count;
+	}
+
+	if (count_merged != NULL) {
+		*count_merged = merged;
+	}
+
+	ret = 0;
+
+done:
+	tdb_unlock(tdb, -1, F_RDLCK);
+	return ret;
+}
+
 /*
    return the size of the freelist - used to decide if we should repack
 */
