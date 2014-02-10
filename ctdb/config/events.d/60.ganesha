@@ -199,6 +199,8 @@ case "$1" in
 		    TDATE=`date +"%s"`
 		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
 		    touch $GANRECDIR2/$TOUCHTGT
+		    TOUCHTGT="my"$TOUCHTGT
+		    touch $GANRECDIR2/$TOUCHTGT
 		;;
 	    esac
 	fi
