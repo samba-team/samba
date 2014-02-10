@@ -101,45 +101,59 @@ static int update_tailer(struct tdb_context *tdb, tdb_off_t offset,
  * Read the record directly on the left.
  * Fail if there is no record on the left.
  */
-static int read_record_on_left(struct tdb_context *tdb, tdb_off_t offset,
+static int read_record_on_left(struct tdb_context *tdb, tdb_off_t rec_ptr,
 			       tdb_off_t *left_p,
 			       struct tdb_record *left_r)
 {
-	tdb_off_t left = offset - sizeof(tdb_off_t);
-	struct tdb_record l;
-	tdb_off_t leftsize;
+	tdb_off_t left_ptr;
+	tdb_off_t left_size;
+	struct tdb_record left_rec;
+	int ret;
 
-	if (offset - sizeof(tdb_off_t) > TDB_DATA_START(tdb->hash_size)) {
+	left_ptr = rec_ptr - sizeof(tdb_off_t);
 
-		/* Read in tailer and jump back to header */
-		if (tdb_ofs_read(tdb, left, &leftsize) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left offset read failed at %u\n", left));
-			return -1;
-		}
-
-		/* it could be uninitialised data */
-		if (leftsize == 0 || leftsize == TDB_PAD_U32) {
-			return -1;
-		}
-
-		left = offset - leftsize;
-
-		if (leftsize > offset ||
-		    left < TDB_DATA_START(tdb->hash_size)) {
-			return -1;
-		}
-
-		/* Now read in the left record */
-		if (tdb->methods->tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
-			return -1;
-		}
-
-		*left_p = left;
-		*left_r = l;
+	if (left_ptr <= TDB_DATA_START(tdb->hash_size)) {
+		/* no record on the left */
+		return -1;
 	}
 
-	return -1;
+	/* Read in tailer and jump back to header */
+	ret = tdb_ofs_read(tdb, left_ptr, &left_size);
+	if (ret == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,
+			"tdb_free: left offset read failed at %u\n", left_ptr));
+		return -1;
+	}
+
+	/* it could be uninitialised data */
+	if (left_size == 0 || left_size == TDB_PAD_U32) {
+		return -1;
+	}
+
+	if (left_size > rec_ptr) {
+		return -1;
+	}
+
+	left_ptr = rec_ptr - left_size;
+
+	if (left_ptr < TDB_DATA_START(tdb->hash_size)) {
+		return -1;
+	}
+
+	/* Now read in the left record */
+	ret = tdb->methods->tdb_read(tdb, left_ptr, &left_rec,
+				     sizeof(left_rec), DOCONV());
+	if (ret == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,
+			 "tdb_free: left read failed at %u (%u)\n",
+			 left_ptr, left_size));
+		return -1;
+	}
+
+	*left_p = left_ptr;
+	*left_r = left_rec;
+
+	return 0;
 }
 
 /* Add an element into the freelist. Merge adjacent records if
