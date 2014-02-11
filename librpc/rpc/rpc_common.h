@@ -51,6 +51,7 @@ struct dcerpc_binding {
 	const char **options;
 	uint32_t flags;
 	uint32_t assoc_group_id;
+	char assoc_group_string[11]; /* 0x3456789a + '\0' */
 };
 
 /* dcerpc pipe flags */

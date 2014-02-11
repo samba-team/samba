@@ -567,6 +567,19 @@ _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_bindin
 		return derpc_transport_string_by_transport(b->transport);
 	}
 
+	ret = strcmp(name, "assoc_group_id");
+	if (ret == 0) {
+		char *tmp = discard_const_p(char, b->assoc_group_string);
+
+		if (b->assoc_group_id == 0) {
+			return NULL;
+		}
+
+		snprintf(tmp, sizeof(b->assoc_group_string),
+			 "0x%08x", b->assoc_group_id);
+		return (const char *)b->assoc_group_string;
+	}
+
 	for (i=0; i < ARRAY_SIZE(specials); i++) {
 		ret = strcmp(specials[i].name, name);
 		if (ret != 0) {
@@ -688,6 +701,22 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_string_option(struct dcerpc_binding *b,
 		}
 
 		return dcerpc_binding_set_object(b, uuid);
+	}
+
+	ret = strcmp(name, "assoc_group_id");
+	if (ret == 0) {
+		uint32_t assoc_group_id = 0;
+
+		if (value != NULL) {
+			char c;
+
+			ret = sscanf(value, "0x%08x%c", &assoc_group_id, &c);
+			if (ret != 1) {
+				return NT_STATUS_INVALID_PARAMETER_MIX;
+			}
+		}
+
+		return dcerpc_binding_set_assoc_group_id(b, assoc_group_id);
 	}
 
 	for (i=0; i < ARRAY_SIZE(specials); i++) {
