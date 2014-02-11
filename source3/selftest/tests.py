@@ -361,6 +361,11 @@ for t in tests:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/aio -U$USERNAME%$PASSWORD', 'aio')
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+    elif t == "raw.search":
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+# test the dirsort module.
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmpsort -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     else:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
