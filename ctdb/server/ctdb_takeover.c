@@ -2900,6 +2900,11 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	struct ctdb_vnn *vnn;
 	ctdb_sock_addr addr;
 
+	/* If we don't have public IPs, tickles are useless */
+	if (ctdb->vnn == NULL) {
+		return 0;
+	}
+
 	switch (indata.dsize) {
 	case sizeof(struct ctdb_control_tcp):
 		old_addr = (struct ctdb_control_tcp *)indata.dptr;
@@ -3044,6 +3049,11 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 	struct ctdb_tcp_connection tcp;
 	struct ctdb_vnn *vnn;
 
+	/* If we don't have public IPs, tickles are useless */
+	if (ctdb->vnn == NULL) {
+		return 0;
+	}
+
 	vnn = find_public_ip_vnn(ctdb, &p->dst_addr);
 	if (vnn == NULL) {
 		DEBUG(DEBUG_INFO,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n",
@@ -3180,6 +3190,11 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_tcp_connection *conn = (struct ctdb_tcp_connection *)indata.dptr;
+
+	/* If we don't have public IPs, tickles are useless */
+	if (ctdb->vnn == NULL) {
+		return 0;
+	}
 
 	ctdb_remove_tcp_connection(ctdb, conn);
 
