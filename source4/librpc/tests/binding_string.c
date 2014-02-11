@@ -122,6 +122,7 @@ static const char *test_strings[] = {
 	"ncacn_unix_stream:[/tmp/epmapper]",
 	"ncalrpc:[IDENTIFIER]",
 	"ncacn_unix_stream:[/tmp/epmapper,sign]",
+	"ncacn_ip_tcp:127.0.0.1[75,target_hostname=port75.example.com,target_principal=host/port75.example.com]",
 };
 
 static bool test_parse_check_results(struct torture_context *tctx)
@@ -176,6 +177,24 @@ static bool test_parse_check_results(struct torture_context *tctx)
 				 "192.168.1.1", "localaddress");
 	torture_assert_str_equal(tctx, "ncacn_ip_tcp:$SERVER[,sign,localaddress=192.168.1.1]",
 				 dcerpc_binding_string(tctx, b), "back to string");
+	torture_assert_str_equal(tctx, dcerpc_binding_get_string_option(b, "host"),
+				 "$SERVER", "host");
+	torture_assert_str_equal(tctx, dcerpc_binding_get_string_option(b, "target_hostname"),
+				 "$SERVER", "target_hostname");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx,
+		"ncacn_ip_tcp:$HOST[,target_hostname=$HOSTNAME,target_principal=$PRINCIPAL]",
+		&b), "parse");
+	torture_assert_str_equal(tctx, dcerpc_binding_get_string_option(b, "host"),
+				 "$HOST", "host");
+	torture_assert_str_equal(tctx, dcerpc_binding_get_string_option(b, "target_hostname"),
+				 "$HOSTNAME", "target_hostname");
+	torture_assert_str_equal(tctx, dcerpc_binding_get_string_option(b, "target_principal"),
+				 "$PRINCIPAL", "target_principal");
+	torture_assert_str_equal(tctx,
+				 dcerpc_binding_string(tctx, b),
+		"ncacn_ip_tcp:$HOST[,target_hostname=$HOSTNAME,target_principal=$PRINCIPAL]",
+				 "back to string");
 
 	return true;
 }
