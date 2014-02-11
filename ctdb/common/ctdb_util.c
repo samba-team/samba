@@ -735,7 +735,7 @@ int32_t get_debug_by_desc(const char *desc)
  * we'd fail to mmap later on. */
 void ctdb_lockdown_memory(struct ctdb_context *ctdb)
 {
-#ifdef HAVE_MLOCKALL
+#if defined(HAVE_MLOCKALL) && !defined(_AIX_)
 	/* Extra stack, please! */
 	char dummy[10000];
 	memset(dummy, 0, sizeof(dummy));
@@ -743,11 +743,6 @@ void ctdb_lockdown_memory(struct ctdb_context *ctdb)
 	if (ctdb->valgrinding) {
 		return;
 	}
-
-	/* TODO: Add a command line option to disable memory lockdown.
-	 *       This can be a performance issue on AIX since fork() copies
-	 *       all locked memory pages. 
-	 */
 
 	/* Ignore when running in local daemons mode */
 	if (getuid() != 0) {
