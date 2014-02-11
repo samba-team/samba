@@ -1364,6 +1364,7 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 	struct ctdb_db_context *ctdb_db = child_ctx->vacuum_handle->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
+	CTDB_UPDATE_DB_LATENCY(ctdb_db, "vacuum", vacuum.latency, l);
 	DEBUG(DEBUG_INFO,("Vacuuming took %.3f seconds for database %s\n", l, ctdb_db->db_name));
 
 	if (child_ctx->child_pid != -1) {

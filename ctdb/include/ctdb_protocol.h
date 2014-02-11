@@ -717,6 +717,9 @@ struct ctdb_db_statistics {
 		struct latency_counter latency;
 		uint32_t buckets[MAX_COUNT_BUCKETS];
 	} locks;
+	struct {
+		struct latency_counter latency;
+	} vacuum;
 	uint32_t db_ro_delegations;
 	uint32_t db_ro_revokes;
 	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];

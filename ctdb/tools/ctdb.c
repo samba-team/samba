@@ -725,6 +725,14 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 		 0.0),
 		dbstat->locks.latency.max,
 		dbstat->locks.latency.num);
+	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
+		"vacuum_latency     MIN/AVG/MAX",
+		dbstat->vacuum.latency.min,
+		(dbstat->vacuum.latency.num ?
+		 dbstat->vacuum.latency.total /dbstat->vacuum.latency.num :
+		 0.0),
+		dbstat->vacuum.latency.max,
+		dbstat->vacuum.latency.num);
 	num_hot_keys = 0;
 	for (i=0; i<dbstat->num_hot_keys; i++) {
 		if (dbstat->hot_keys[i].count > 0) {
