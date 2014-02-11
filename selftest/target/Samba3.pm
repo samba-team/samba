@@ -933,6 +933,10 @@ sub provision($$$$$$)
 [tmp]
 	path = $shrdir
         comment = smb username is [%U]
+[tmpsort]
+	path = $shrdir
+	comment = Load dirsort module
+	vfs objects = dirsort acl_xattr fake_acls xattr_tdb streams_depot
 [tmpenc]
 	path = $shrdir
 	comment = encrypt smb username is [%U]
