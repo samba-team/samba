@@ -456,6 +456,10 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct debug_h
 		return;
 	}
 
+	if (getenv("CTDB_DEBUG_HUNG_SCRIPT") != NULL) {
+		debug_hung_script = getenv("CTDB_DEBUG_HUNG_SCRIPT");
+	}
+
 	argv = talloc_array(state, const char *, 5);
 
 	argv[0] = talloc_asprintf(argv, "%d", fd[1]);
