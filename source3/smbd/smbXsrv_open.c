@@ -1384,7 +1384,7 @@ NTSTATUS smbXsrv_open_global_traverse(
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smbXsrv_open_global0 *op = NULL;
 	uint8_t key_buf[SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE];
