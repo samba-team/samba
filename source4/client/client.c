@@ -1077,7 +1077,8 @@ show 8.3 name of a file
 ****************************************************************************/
 static int cmd_altname(struct smbclient_context *ctx, const char **args)
 {
-	const char *altname;
+	const char *p;
+	char *altname;
 	char *name;
   
 	if (!args[1]) {
@@ -1087,11 +1088,12 @@ static int cmd_altname(struct smbclient_context *ctx, const char **args)
 
 	name = talloc_asprintf(ctx, "%s%s", ctx->remote_cur_dir, args[1]);
 
-	if (!NT_STATUS_IS_OK(smbcli_qpathinfo_alt_name(ctx->cli->tree, name, &altname))) {
+	if (!NT_STATUS_IS_OK(smbcli_qpathinfo_alt_name(ctx->cli->tree, name, &p))) {
 		d_printf("%s getting alt name for %s\n",
 			 smbcli_errstr(ctx->cli->tree),name);
 		return(false);
 	}
+	altname = discard_const_p(char, p);
 	d_printf("%s\n", altname);
 
 	SAFE_FREE(altname);
@@ -3081,16 +3083,17 @@ static void readline_callback(void)
 
 static int process_line(struct smbclient_context *ctx, const char *cline)
 {
-	const char **args;
+	char **args;
 	int i;
 
 	/* and get the first part of the command */
-	args = (const char **) str_list_make_shell(ctx, cline, NULL);
+	args = str_list_make_shell(ctx, cline, NULL);
 	if (!args || !args[0])
 		return 0;
 
 	if ((i = process_tok(args[0])) >= 0) {
-		i = commands[i].fn(ctx, args);
+		const char **a = discard_const_p(const char *, args);
+		i = commands[i].fn(ctx, a);
 	} else if (i == -2) {
 		d_printf("%s: command abbreviation ambiguous\n",args[0]);
 	} else {
@@ -3254,7 +3257,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc,char *argv[])
+ int main(int argc, const char *argv[])
 {
 	char *base_directory = NULL;
 	const char *dest_ip = NULL;
@@ -3302,7 +3305,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	ctx = talloc_zero(mem_ctx, struct smbclient_context);
 	ctx->io_bufsize = 64512;
 
-	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
+	pc = poptGetContext("smbclient", argc, argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
