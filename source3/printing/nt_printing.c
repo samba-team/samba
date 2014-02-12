@@ -75,6 +75,31 @@ static const struct print_architecture_table_node archi_table[]= {
 };
 
 /****************************************************************************
+ Forward a MSG_PRINTER_DRVUPGRADE message from another smbd to the
+ background lpq updater.
+****************************************************************************/
+
+static void forward_drv_upgrade_printer_msg(struct messaging_context *msg,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data)
+{
+	extern pid_t background_lpq_updater_pid;
+
+	if (background_lpq_updater_pid == -1) {
+		DEBUG(3,("no background lpq queue updater\n"));
+		return;
+	}
+
+	messaging_send_buf(msg,
+			pid_to_procid(background_lpq_updater_pid),
+			MSG_PRINTER_DRVUPGRADE,
+			data->data,
+			data->length);
+}
+
+/****************************************************************************
  Open the NT printing tdbs. Done once before fork().
 ****************************************************************************/
 
@@ -88,10 +113,10 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 
 	/*
 	 * register callback to handle updating printers as new
-	 * drivers are installed
+	 * drivers are installed. Forwards to background lpq updater.
 	 */
 	messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
-			   do_drv_upgrade_printer);
+			forward_drv_upgrade_printer_msg);
 
 	/* of course, none of the message callbacks matter if you don't
 	   tell messages.c that you interested in receiving PRINT_GENERAL

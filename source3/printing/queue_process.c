@@ -31,6 +31,7 @@
 #include "smbd/smbd.h"
 #include "rpc_server/rpc_config.h"
 #include "printing/load.h"
+#include "rpc_server/spoolss/srv_spoolss_nt.h"
 
 extern pid_t start_spoolssd(struct event_context *ev_ctx,
 			    struct messaging_context *msg_ctx);
@@ -311,6 +312,11 @@ pid_t start_background_queue(struct tevent_context *ev,
 				   bq_smb_conf_updated);
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
 				   print_queue_receive);
+		/* Remove previous forwarder message set in parent. */
+		messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
+
+		messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
+				   do_drv_upgrade_printer);
 
 		fde = tevent_add_fd(ev, ev, pause_pipe[1], TEVENT_FD_READ,
 				    printing_pause_fd_handler,
