@@ -1515,6 +1515,7 @@ void srv_spoolss_cleanup(void)
 /**********************************************************************
  callback to receive a MSG_PRINTER_DRVUPGRADE message and interate
  over all printers, upgrading ones as necessary
+ This is now *ONLY* called inside the background lpq updater. JRA.
  **********************************************************************/
 
 void do_drv_upgrade_printer(struct messaging_context *msg,
