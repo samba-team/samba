@@ -493,7 +493,7 @@ static DATA_BLOB *encrypt_blob_pk(struct torture_context *tctx,
 static struct bkrp_BackupKey *createRetreiveBackupKeyGUIDStruct(struct torture_context *tctx,
 				struct dcerpc_pipe *p, int version, DATA_BLOB *out)
 {
-	struct dcerpc_binding *binding = p->binding;
+	struct dcerpc_binding *binding;
 	struct bkrp_client_side_wrapped data;
 	struct GUID *g = talloc(tctx, struct GUID);
 	struct bkrp_BackupKey *r = talloc_zero(tctx, struct bkrp_BackupKey);
@@ -505,7 +505,13 @@ static struct bkrp_BackupKey *createRetreiveBackupKeyGUIDStruct(struct torture_c
 		return NULL;
 	}
 
+	binding = dcerpc_binding_dup(tctx, p->binding);
+	if (binding == NULL) {
+		return NULL;
+	}
+
 	binding->flags = binding->flags & (DCERPC_SEAL|DCERPC_AUTH_SPNEGO);
+
 	ZERO_STRUCT(data);
 	status = GUID_from_string(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID, g);
 	if (!NT_STATUS_IS_OK(status)) {
