@@ -168,7 +168,7 @@ NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 					  struct dcerpc_pipe **p2);
 
 struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
-						     struct dcerpc_binding *binding,
+						     const struct dcerpc_binding *binding,
 						     const struct ndr_interface_table *table,
 						     struct cli_credentials *credentials,
 						     struct tevent_context *ev,
@@ -179,7 +179,7 @@ NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem
 
 NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_pipe **pp,
-			       struct dcerpc_binding *binding,
+			       const struct dcerpc_binding *binding,
 			       const struct ndr_interface_table *table,
 			       struct cli_credentials *credentials,
 			       struct tevent_context *ev,

@@ -799,7 +799,7 @@ static void dcerpc_connect_timeout_handler(struct tevent_context *ev, struct tev
   specified binding structure to determine the endpoint and options
 */
 _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
-						     struct dcerpc_binding *binding,
+						     const struct dcerpc_binding *binding,
 						     const struct ndr_interface_table *table,
 						     struct cli_credentials *credentials,
 						     struct tevent_context *ev,
@@ -826,7 +826,8 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 		s->pipe->conn->packet_log_dir = lpcfg_lock_directory(lp_ctx);
 
 	/* store parameters in state structure */
-	s->binding      = binding;
+	s->binding      = dcerpc_binding_dup(s, binding);
+	if (composite_nomem(s->binding, c)) return c;
 	s->table        = table;
 	s->credentials  = credentials;
 	s->lp_ctx 	= lp_ctx;
@@ -896,7 +897,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC
 */
 _PUBLIC_ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_pipe **pp,
-			       struct dcerpc_binding *binding,
+			       const struct dcerpc_binding *binding,
 			       const struct ndr_interface_table *table,
 			       struct cli_credentials *credentials,
 			       struct tevent_context *ev,
