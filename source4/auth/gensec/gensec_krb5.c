@@ -29,7 +29,7 @@
 #include "auth/auth.h"
 #include "lib/socket/socket.h"
 #include "lib/tsocket/tsocket.h"
-#include "librpc/rpc/dcerpc.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/kerberos/kerberos_credentials.h"

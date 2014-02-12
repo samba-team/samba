@@ -30,7 +30,7 @@
 #include "auth/auth.h"
 #include <ldb.h>
 #include "auth/auth_sam.h"
-#include "librpc/rpc/dcerpc.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/gensec/gensec.h"
