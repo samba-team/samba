@@ -1467,7 +1467,8 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	/*
 	 * decide if a repack is necessary
 	 */
-	if (freelist_size < repack_limit && vdata->delete_left < vacuum_limit)
+	if ((uint32_t)freelist_size < repack_limit &&
+	    vdata->delete_left < vacuum_limit)
 	{
 		talloc_free(vdata);
 		return 0;
