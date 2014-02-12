@@ -203,6 +203,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 
 	/* if we don't have a binding on this pipe yet, then create one */
 	if (p->binding == NULL) {
+		struct dcerpc_binding *b;
 		NTSTATUS status;
 		const char *r = smbXcli_conn_remote_name(conn);
 		char *str;
@@ -211,12 +212,12 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 		if (str == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcerpc_parse_binding(p, str,
-					      &p->binding);
+		status = dcerpc_parse_binding(p, str, &b);
 		talloc_free(str);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		p->binding = b;
 	}
 
 	ctx = dcerpc_pipe_open_smb_send(p->conn,
@@ -247,6 +248,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
 
 	/* if we don't have a binding on this pipe yet, then create one */
 	if (p->binding == NULL) {
+		struct dcerpc_binding *b;
 		NTSTATUS status;
 		const char *r = smbXcli_conn_remote_name(conn);
 		char *str;
@@ -255,12 +257,12 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_open_smb2(struct dcerpc_pipe *p,
 		if (str == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcerpc_parse_binding(p, str,
-					      &p->binding);
+		status = dcerpc_parse_binding(p, str, &b);
 		talloc_free(str);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		p->binding = b;
 	}
 
 	ctx = dcerpc_pipe_open_smb_send(p->conn,

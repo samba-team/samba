@@ -112,7 +112,7 @@ struct dcerpc_pipe {
 	struct ndr_syntax_id transfer_syntax;
 
 	struct dcecli_connection *conn;
-	struct dcerpc_binding *binding;
+	const struct dcerpc_binding *binding;
 
 	/** the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;

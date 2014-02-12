@@ -1294,6 +1294,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		tevent_req_data(req,
 		struct dcerpc_bind_state);
 	struct dcecli_connection *conn = state->p->conn;
+	struct dcerpc_binding *b = NULL;
 	NTSTATUS status;
 	uint32_t flags;
 
@@ -1376,9 +1377,12 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		}
 	}
 
-
-	status = dcerpc_binding_set_assoc_group_id(state->p->binding,
-						pkt->u.bind_ack.assoc_group_id);
+	/*
+	 * We're the owner of the binding, so we're allowed to modify it.
+	 */
+	b = discard_const_p(struct dcerpc_binding, state->p->binding);
+	status = dcerpc_binding_set_assoc_group_id(b,
+						   pkt->u.bind_ack.assoc_group_id);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
