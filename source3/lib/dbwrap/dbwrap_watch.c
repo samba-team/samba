@@ -307,7 +307,6 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 	struct server_id *ids = NULL;
 	size_t num_ids = 0;
 	TDB_DATA w_key = { 0, };
-	DATA_BLOB w_blob;
 	NTSTATUS status;
 	uint32_t i;
 
@@ -326,12 +325,10 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 		DEBUG(1, ("dbwrap_record_watchers_key failed\n"));
 		goto done;
 	}
-	w_blob.data = w_key.dptr;
-	w_blob.length = w_key.dsize;
 
 	for (i=0; i<num_ids; i++) {
-		status = messaging_send(msg, ids[i], MSG_DBWRAP_MODIFIED,
-					&w_blob);
+		status = messaging_send_buf(msg, ids[i], MSG_DBWRAP_MODIFIED,
+					    w_key.dptr, w_key.dsize);
 		if (!NT_STATUS_IS_OK(status)) {
 			char *str = procid_str_static(&ids[i]);
 			DEBUG(1, ("messaging_send to %s failed: %s\n",
