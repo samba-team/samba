@@ -53,7 +53,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	const char *realm = r->out.realm;
 
-	struct dcerpc_binding *samr_binding = r->out.samr_binding;
+	const struct dcerpc_binding *samr_binding = r->out.samr_binding;
 
 	struct dcerpc_pipe *drsuapi_pipe;
 	struct dcerpc_binding *drsuapi_binding;
