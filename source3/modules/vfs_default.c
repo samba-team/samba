@@ -1054,7 +1054,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on %s\n",
 			  fsp_fnum_dbg(fsp)));
 
-		*out_len = (max_out_len >= 64) ? 64 : max_out_len;
+		*out_len = MIN(max_out_len, 64);
+
 		/* Hmmm, will this cause problems if less data asked for? */
 		return_data = talloc_array(ctx, char, 64);
 		if (return_data == NULL) {
