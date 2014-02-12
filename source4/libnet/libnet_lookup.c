@@ -123,10 +123,13 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
+		char **address;
+
 		s = talloc_get_type(c->private_data, struct lookup_state);
 
-		io->out.address = (const char **)str_list_make_single(mem_ctx, s->address);
-		NT_STATUS_HAVE_NO_MEMORY(io->out.address);
+		address = str_list_make_single(mem_ctx, s->address);
+		NT_STATUS_HAVE_NO_MEMORY(address);
+		io->out.address = discard_const_p(const char *, address);
 	}
 
 	talloc_free(c);
