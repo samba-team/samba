@@ -251,40 +251,36 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	/*
 	  First, check if there is a default endpoint specified in the IDL
 	*/
-	if (table != NULL) {
+	for (i = 0; i < table->endpoints->count; i++) {
 		struct dcerpc_binding *default_binding;
 
-		/* Find one of the default pipes for this interface */
-		for (i = 0; i < table->endpoints->count; i++) {
-
-			status = dcerpc_parse_binding(s,
-						      table->endpoints->names[i],
-						      &default_binding);
-			if (!NT_STATUS_IS_OK(status)) {
-				continue;
-			}
-
-			if (binding->transport == NCA_UNKNOWN) {
-				binding->transport = default_binding->transport;
-			}
-
-			if (default_binding->transport != binding->transport) {
-				TALLOC_FREE(default_binding);
-				continue;
-			}
-
-			if (default_binding->endpoint == NULL) {
-				TALLOC_FREE(default_binding);
-				continue;
-			}
-
-			binding->endpoint = talloc_strdup(binding, default_binding->endpoint);
-			if (composite_nomem(binding->endpoint, c)) return c;
-			TALLOC_FREE(default_binding);
-
-			composite_done(c);
-			return c;
+		status = dcerpc_parse_binding(s,
+					      table->endpoints->names[i],
+					      &default_binding);
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
 		}
+
+		if (binding->transport == NCA_UNKNOWN) {
+			binding->transport = default_binding->transport;
+		}
+
+		if (default_binding->transport != binding->transport) {
+			TALLOC_FREE(default_binding);
+			continue;
+		}
+
+		if (default_binding->endpoint == NULL) {
+			TALLOC_FREE(default_binding);
+			continue;
+		}
+
+		binding->endpoint = talloc_strdup(binding, default_binding->endpoint);
+		if (composite_nomem(binding->endpoint, c)) return c;
+		TALLOC_FREE(default_binding);
+
+		composite_done(c);
+		return c;
 	}
 
 	/* anonymous credentials for rpc connection used to get endpoint mapping */
