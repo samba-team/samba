@@ -24,7 +24,7 @@
 #include "system/network.h"
 #include "tevent.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "librpc/rpc/dcerpc.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"

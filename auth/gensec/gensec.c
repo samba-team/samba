@@ -27,7 +27,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
-#include "librpc/rpc/dcerpc.h"
+#include "librpc/gen_ndr/dcerpc.h"
 
 /*
   wrappers for the gensec function pointers
