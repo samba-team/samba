@@ -1420,7 +1420,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
 	uint32_t vacuum_limit = ctdb_db->ctdb->tunable.vacuum_limit;
 	const char *name = ctdb_db->db_name;
-	int freelist_size;
+	int freelist_size = 0;
 	struct vacuum_data *vdata;
 
 	vdata = talloc_zero(mem_ctx, struct vacuum_data);
@@ -1449,17 +1449,19 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 		DEBUG(DEBUG_ERR,(__location__ " Failed to vacuum '%s'\n", name));
 	}
 
-	freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
-	if (freelist_size == -1) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
-		talloc_free(vdata);
-		return -1;
+	if (repack_limit != 0) {
+		freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
+		if (freelist_size == -1) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
+			talloc_free(vdata);
+			return -1;
+		}
 	}
 
 	/*
 	 * decide if a repack is necessary
 	 */
-	if ((uint32_t)freelist_size < repack_limit &&
+	if ((repack_limit == 0 || (uint32_t)freelist_size < repack_limit) &&
 	    vdata->delete_left < vacuum_limit)
 	{
 		talloc_free(vdata);
