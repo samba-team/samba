@@ -37,7 +37,7 @@
 #include "libcli/resolve/resolve.h"
 
 struct dcerpc_pipe_connect {
-	struct dcerpc_pipe *pipe;
+	struct dcecli_connection *conn;
 	struct dcerpc_binding *binding;
 	const char *pipe_name;
 	const struct ndr_interface_table *interface;
@@ -84,7 +84,7 @@ static void continue_smb_connect(struct composite_context *ctx)
 	uint32_t timeout_msec;
 
 	/* receive result of smb connect request */
-	c->status = smb_composite_connect_recv(ctx, s->io.pipe->conn);
+	c->status = smb_composite_connect_recv(ctx, s->io.conn);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
@@ -102,7 +102,7 @@ static void continue_smb_connect(struct composite_context *ctx)
 	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
 	/* send named pipe open request */
-	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn,
+	open_ctx = dcerpc_pipe_open_smb_send(s->io.conn,
 					     conn, session,
 					     tcon, timeout_msec,
 					     s->io.pipe_name);
@@ -125,7 +125,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	uint32_t flags;
 
 	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
+	c = composite_create(mem_ctx, io->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_np_smb_state);
@@ -168,9 +168,9 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	}
 
 	/* send smb connect request */
-	conn_req = smb_composite_connect_send(conn, s->io.pipe->conn, 
+	conn_req = smb_composite_connect_send(conn, s->io.conn,
 					      s->io.resolve_ctx,
-					      s->io.pipe->conn->event_ctx);
+					      c->event_ctx);
 	if (composite_nomem(conn_req, c)) return c;
 
 	composite_continue(c, conn_req, continue_smb_connect, c);
@@ -229,7 +229,7 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	uint32_t timeout_msec;
 
 	/* receive result of smb2 connect request */
-	c->status = smb2_connect_recv(subreq, s->io.pipe->conn, &t);
+	c->status = smb2_connect_recv(subreq, s->io.conn, &t);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
@@ -246,7 +246,7 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
 	/* send named pipe open request */
-	open_req = dcerpc_pipe_open_smb_send(s->io.pipe->conn,
+	open_req = dcerpc_pipe_open_smb_send(s->io.conn,
 					     conn, session,
 					     tcon, timeout_msec,
 					     s->io.pipe_name);
@@ -273,7 +273,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	uint32_t flags;
 
 	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
+	c = composite_create(mem_ctx, io->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_np_smb2_state);
@@ -363,7 +363,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 	const char *endpoint;
 
 	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
+	c = composite_create(mem_ctx, io->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_ip_tcp_state);
@@ -389,7 +389,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 	}
 
 	/* send pipe open request on tcp/ip */
-	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->localaddr, s->host, s->target_hostname,
+	pipe_req = dcerpc_pipe_open_tcp_send(s->io.conn, s->localaddr, s->host, s->target_hostname,
 					     s->port, io->resolve_ctx);
 	composite_continue(c, pipe_req, continue_pipe_open_ncacn_ip_tcp, c);
 	return c;
@@ -442,7 +442,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALL
 	struct composite_context *pipe_req;
 
 	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
+	c = composite_create(mem_ctx, io->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_unix_state);
@@ -460,7 +460,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALL
 	}
 
 	/* send pipe open request on unix socket */
-	pipe_req = dcerpc_pipe_open_unix_stream_send(s->io.pipe->conn, s->path);
+	pipe_req = dcerpc_pipe_open_unix_stream_send(s->io.conn, s->path);
 	composite_continue(c, pipe_req, continue_pipe_open_ncacn_unix_stream, c);
 	return c;
 }
@@ -513,7 +513,7 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 	const char *endpoint;
 
 	/* composite context allocation and setup */
-	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
+	c = composite_create(mem_ctx, io->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_ncalrpc_state);
@@ -530,7 +530,7 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 	}
 
 	/* send pipe open request */
-	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn,
+	pipe_req = dcerpc_pipe_open_pipe_send(s->io.conn,
 					      lpcfg_ncalrpc_dir(lp_ctx),
 					      endpoint);
 	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
@@ -608,7 +608,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	uint32_t flags;
 
 	/* dcerpc pipe connect input parameters */
-	pc.pipe         = s->pipe;
+	pc.conn         = s->pipe->conn;
 	pc.binding      = s->binding;
 	pc.pipe_name    = NULL;
 	pc.interface    = s->table;
