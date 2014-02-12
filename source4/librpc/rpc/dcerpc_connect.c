@@ -101,19 +101,6 @@ static void continue_smb_connect(struct composite_context *ctx)
 	smb1cli_tcon_set_id(tcon, t->tid);
 	timeout_msec = t->session->transport->options.request_timeout * 1000;
 
-	/* if we don't have a binding on this pipe yet, then create one */
-	if (s->io.pipe->binding == NULL) {
-		const char *r = smbXcli_conn_remote_name(conn);
-		char *str;
-		SMB_ASSERT(r != NULL);
-		str = talloc_asprintf(s, "ncacn_np:%s", r);
-		if (composite_nomem(str, c)) return;
-		c->status = dcerpc_parse_binding(s->io.pipe, str,
-						 &s->io.pipe->binding);
-		talloc_free(str);
-		if (!composite_is_ok(c)) return;
-	}
-
 	/* send named pipe open request */
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn,
 					     conn, session,
@@ -257,19 +244,6 @@ static void continue_smb2_connect(struct tevent_req *subreq)
 	session = t->session->smbXcli;
 	tcon = t->smbXcli;
 	timeout_msec = t->session->transport->options.request_timeout * 1000;
-
-	/* if we don't have a binding on this pipe yet, then create one */
-	if (s->io.pipe->binding == NULL) {
-		const char *r = smbXcli_conn_remote_name(conn);
-		char *str;
-		SMB_ASSERT(r != NULL);
-		str = talloc_asprintf(s, "ncacn_np:%s", r);
-		if (composite_nomem(str, c)) return;
-		c->status = dcerpc_parse_binding(s->io.pipe, str,
-						 &s->io.pipe->binding);
-		talloc_free(str);
-		if (!composite_is_ok(c)) return;
-	}
 
 	/* send named pipe open request */
 	open_req = dcerpc_pipe_open_smb_send(s->io.pipe->conn,
