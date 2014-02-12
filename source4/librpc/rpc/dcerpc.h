@@ -185,13 +185,13 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 
 NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 			  struct dcerpc_pipe **p, 
-			  struct dcerpc_binding *binding,
+			  const struct dcerpc_binding *binding,
 			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
 			  struct loadparm_context *lp_ctx);
 NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
 				     struct dcerpc_pipe **p2,
-				     struct dcerpc_binding *b);
+				     const struct dcerpc_binding *b);
 NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
 				   struct dcerpc_pipe *p,
 				   const struct ndr_interface_table *table,
@@ -230,7 +230,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 				const struct ndr_interface_table *table, struct tevent_context *ev,
 				struct loadparm_context *lp_ctx);
 struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
-								struct dcerpc_binding *binding,
+								const struct dcerpc_binding *binding,
 								const struct ndr_interface_table *table,
 								struct cli_credentials *credentials,
 								struct loadparm_context *lp_ctx);
@@ -239,7 +239,7 @@ NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c,
 					       struct dcerpc_pipe **p);
 
 struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
-							   struct dcerpc_binding *b);
+							   const struct dcerpc_binding *b);
 void dcerpc_log_packet(const char *lockdir, 
 		       const struct ndr_interface_table *ndr,
 		       uint32_t opnum, uint32_t flags,

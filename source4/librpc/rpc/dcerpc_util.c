@@ -373,7 +373,7 @@ _PUBLIC_ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_bind
 
 struct pipe_auth_state {
 	struct dcerpc_pipe *pipe;
-	struct dcerpc_binding *binding;
+	const struct dcerpc_binding *binding;
 	const struct ndr_interface_table *table;
 	struct loadparm_context *lp_ctx;
 	struct cli_credentials *credentials;
@@ -588,7 +588,7 @@ static void continue_auth_none(struct composite_context *ctx)
   is determined using credentials passed and binding flags.
 */
 struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p, 
-						struct dcerpc_binding *binding,
+						const struct dcerpc_binding *binding,
 						const struct ndr_interface_table *table,
 						struct cli_credentials *credentials,
 						struct loadparm_context *lp_ctx)
@@ -741,7 +741,7 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 			  struct dcerpc_pipe **p, 
-			  struct dcerpc_binding *binding,
+			  const struct dcerpc_binding *binding,
 			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
 			  struct loadparm_context *lp_ctx)

@@ -36,7 +36,7 @@
 struct sec_conn_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_pipe *pipe2;
-	struct dcerpc_binding *binding;
+	const struct dcerpc_binding *binding;
 	struct socket_address *peer_addr;
 	const char *localaddress;
 };
@@ -53,7 +53,7 @@ static void continue_pipe_open(struct composite_context *c);
   connection
 */
 _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
-							   struct dcerpc_binding *b)
+							const struct dcerpc_binding *b)
 {
 	struct composite_context *c;
 	struct sec_conn_state *s;
@@ -232,7 +232,7 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 */
 _PUBLIC_ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
 				     struct dcerpc_pipe **p2,
-				     struct dcerpc_binding *b)
+				     const struct dcerpc_binding *b)
 {
 	struct composite_context *c;
 	
@@ -248,7 +248,7 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
 */
 struct sec_auth_conn_state {
 	struct dcerpc_pipe *pipe2;
-	struct dcerpc_binding *binding;
+	const struct dcerpc_binding *binding;
 	const struct ndr_interface_table *table;
 	struct cli_credentials *credentials;
 	struct composite_context *ctx;
@@ -259,7 +259,7 @@ static void dcerpc_secondary_auth_connection_bind(struct composite_context *ctx)
 static void dcerpc_secondary_auth_connection_continue(struct composite_context *ctx);
 
 _PUBLIC_ struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
-								struct dcerpc_binding *binding,
+								const struct dcerpc_binding *binding,
 								const struct ndr_interface_table *table,
 								struct cli_credentials *credentials,
 								struct loadparm_context *lp_ctx)

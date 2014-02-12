@@ -38,7 +38,7 @@
 
 struct dcerpc_pipe_connect {
 	struct dcecli_connection *conn;
-	struct dcerpc_binding *binding;
+	const struct dcerpc_binding *binding;
 	const char *pipe_name;
 	const struct ndr_interface_table *interface;
 	struct cli_credentials *creds;
