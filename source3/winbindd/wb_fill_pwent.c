@@ -162,7 +162,10 @@ static void wb_fill_pwent_getgrsid_done(struct tevent_req *subreq)
 	strlcpy(state->pw->pw_name,
 		output_username,
 		sizeof(state->pw->pw_name));
-	fstrcpy(state->pw->pw_gecos, state->info->full_name);
+	/* FIXME The full_name can be longer than 255 chars */
+	strlcpy(state->pw->pw_gecos,
+		state->info->full_name != NULL ? state->info->full_name : "",
+		sizeof(state->pw->pw_gecos));
 
 	/* Home directory and shell */
 	ok = fillup_pw_field(lp_template_homedir(),
