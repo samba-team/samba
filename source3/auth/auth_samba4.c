@@ -31,6 +31,48 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+static struct idr_context *task_id_tree;
+
+static int free_task_id(struct server_id *server_id)
+{
+	idr_remove(task_id_tree, server_id->task_id);
+	return 0;
+}
+
+/* Return a server_id with a unique task_id element.  Free the
+ * returned pointer to de-allocate the task_id via a talloc destructor
+ * (ie, use talloc_free()) */
+static struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
+{
+	struct server_id *server_id;
+	int task_id;
+	if (!task_id_tree) {
+		task_id_tree = idr_init(NULL);
+		if (!task_id_tree) {
+			return NULL;
+		}
+	}
+
+	server_id = talloc(mem_ctx, struct server_id);
+
+	if (!server_id) {
+		return NULL;
+	}
+	*server_id = procid_self();
+
+	/* 0 is the default server_id, so we need to start with 1 */
+	task_id = idr_get_new_above(task_id_tree, server_id, 1, INT32_MAX);
+
+	if (task_id == -1) {
+		talloc_free(server_id);
+		return NULL;
+	}
+
+	talloc_set_destructor(server_id, free_task_id);
+	server_id->task_id = task_id;
+	return server_id;
+}
+
 /*
  * This module is not an ordinary authentication module.  It is really
  * a way to redirect the whole authentication and authorization stack

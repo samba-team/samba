@@ -447,7 +447,6 @@ uint32 get_my_vnn(void);
 void set_my_unique_id(uint64_t unique_id);
 struct server_id pid_to_procid(pid_t pid);
 struct server_id procid_self(void);
-struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx);
 #define serverid_equal(p1, p2) server_id_equal(p1,p2)
 bool procid_is_me(const struct server_id *pid);
 struct server_id interpret_pid(const char *pid_string);
