@@ -38,7 +38,7 @@
 
 struct dcerpc_pipe_connect {
 	struct dcecli_connection *conn;
-	const struct dcerpc_binding *binding;
+	struct dcerpc_binding *binding;
 	const char *pipe_name;
 	const struct ndr_interface_table *interface;
 	struct cli_credentials *creds;
@@ -344,9 +344,23 @@ static void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
+	struct pipe_ip_tcp_state *s = talloc_get_type(c->private_data,
+						      struct pipe_ip_tcp_state);
+	char *localaddr = NULL;
+	char *remoteaddr = NULL;
 
 	/* receive result of named pipe open request on tcp/ip */
-	c->status = dcerpc_pipe_open_tcp_recv(ctx, NULL, NULL, NULL);
+	c->status = dcerpc_pipe_open_tcp_recv(ctx, s, &localaddr, &remoteaddr);
+	if (!composite_is_ok(c)) return;
+
+	c->status = dcerpc_binding_set_string_option(s->io.binding,
+						     "localaddress",
+						     localaddr);
+	if (!composite_is_ok(c)) return;
+
+	c->status = dcerpc_binding_set_string_option(s->io.binding,
+						     "host",
+						     remoteaddr);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);

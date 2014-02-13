@@ -36,7 +36,7 @@
 struct sec_conn_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_pipe *pipe2;
-	const struct dcerpc_binding *binding;
+	struct dcerpc_binding *binding;
 	struct socket_address *peer_addr;
 	const char *localaddress;
 };
@@ -75,7 +75,8 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	c->private_data = s;
 
 	s->pipe     = p;
-	s->binding  = b;
+	s->binding  = dcerpc_binding_dup(s, b);
+	if (composite_nomem(s->binding, c)) return c;
 
 	/* initialise second dcerpc pipe based on primary pipe's event context */
 	s->pipe2 = dcerpc_pipe_init(c, s->pipe->conn->event_ctx);
@@ -180,8 +181,22 @@ static void continue_open_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
+	struct sec_conn_state *s = talloc_get_type_abort(c->private_data,
+							 struct sec_conn_state);
+	char *localaddr = NULL;
+	char *remoteaddr = NULL;
 
-	c->status = dcerpc_pipe_open_tcp_recv(ctx, NULL, NULL, NULL);
+	c->status = dcerpc_pipe_open_tcp_recv(ctx, s, &localaddr, &remoteaddr);
+	if (!composite_is_ok(c)) return;
+
+	c->status = dcerpc_binding_set_string_option(s->binding,
+						     "localaddress",
+						     localaddr);
+	if (!composite_is_ok(c)) return;
+
+	c->status = dcerpc_binding_set_string_option(s->binding,
+						     "host",
+						     remoteaddr);
 	if (!composite_is_ok(c)) return;
 
 	continue_pipe_open(c);
