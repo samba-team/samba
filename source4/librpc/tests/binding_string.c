@@ -218,9 +218,9 @@ static bool test_parse_check_results(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_no_transport(struct torture_context *tctx)
+static bool test_no_transport(struct torture_context *tctx, const void *test_data)
 {
-	const char *binding = "somehost";
+	const char *binding = test_data;
 	struct dcerpc_binding *b;
 	enum dcerpc_transport_t transport;
 	const char *s;
@@ -241,6 +241,15 @@ static bool test_no_transport(struct torture_context *tctx)
 	return true;
 }
 
+static const char *test_no_strings[] = {
+	"port75.example.com",
+	"port75.example.com[75]",
+	"127.0.0.1",
+	"127.0.0.1[75]",
+	"127.0.0.1[,target_hostname=port75.example.com]",
+	"127.0.0.1[75,target_hostname=port75.example.com]",
+};
+
 struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 {
 	int i;
@@ -252,7 +261,11 @@ struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 						test_strings[i]);
 	}
 
-	torture_suite_add_simple_test(suite, "no transport",test_no_transport);
+	for (i = 0; i < ARRAY_SIZE(test_no_strings); i++) {
+		torture_suite_add_simple_tcase_const(suite, test_no_strings[i],
+						     test_no_transport,
+						     test_no_strings[i]);
+	}
 
 	torture_suite_add_simple_test(suite, "parsing results",
 			test_parse_check_results);
