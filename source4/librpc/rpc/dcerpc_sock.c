@@ -47,6 +47,7 @@ struct pipe_open_socket_state {
 	struct socket_address *server;
 	const char *target_hostname;
 	enum dcerpc_transport_t transport;
+	struct socket_address *client;
 };
 
 
@@ -74,6 +75,12 @@ static void continue_socket_connect(struct composite_context *ctx)
 		return;
 	}
 
+	s->client = socket_get_my_addr(s->socket_ctx, s);
+	if (s->client == NULL) {
+		talloc_free(sock);
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return;
+	}
 	sock_fd = socket_get_fd(s->socket_ctx);
 	sock->peer_addr = socket_get_peer_addr(s->socket_ctx, sock);
 	if (sock->peer_addr == NULL) {
@@ -176,10 +183,21 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 	return c;
 }
 
-
-static NTSTATUS dcerpc_pipe_open_socket_recv(struct composite_context *c)
+static NTSTATUS dcerpc_pipe_open_socket_recv(struct composite_context *c,
+					     TALLOC_CTX *mem_ctx,
+					     struct socket_address **localaddr)
 {
 	NTSTATUS status = composite_wait(c);
+
+	if (NT_STATUS_IS_OK(status)) {
+		struct pipe_open_socket_state *s =
+			talloc_get_type_abort(c->private_data,
+			struct pipe_open_socket_state);
+
+		if (localaddr != NULL) {
+			*localaddr = talloc_move(mem_ctx, &s->client);
+		}
+	}
 
 	talloc_free(c);
 	return status;
@@ -237,7 +255,7 @@ static void continue_ip_open_socket(struct composite_context *ctx)
 		c->private_data, struct pipe_tcp_state);
 	
 	/* receive result socket open request */
-	c->status = dcerpc_pipe_open_socket_recv(ctx);
+	c->status = dcerpc_pipe_open_socket_recv(ctx, NULL, NULL);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		/* something went wrong... */
 		DEBUG(0, ("Failed to connect host %s (%s) on port %d - %s.\n",
@@ -343,7 +361,7 @@ static void continue_unix_open_socket(struct composite_context *ctx)
 	struct composite_context *c = talloc_get_type_abort(
 		ctx->async.private_data, struct composite_context);
 
-	c->status = dcerpc_pipe_open_socket_recv(ctx);
+	c->status = dcerpc_pipe_open_socket_recv(ctx, NULL, NULL);
 	if (NT_STATUS_IS_OK(c->status)) {
 		composite_done(c);
 		return;
@@ -410,7 +428,7 @@ static void continue_np_open_socket(struct composite_context *ctx)
 	struct composite_context *c = talloc_get_type_abort(
 		ctx->async.private_data, struct composite_context);
 
-	c->status = dcerpc_pipe_open_socket_recv(ctx);
+	c->status = dcerpc_pipe_open_socket_recv(ctx, NULL, NULL);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
