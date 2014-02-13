@@ -1766,8 +1766,8 @@ struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx
 
 	if (new_version != NULL) {
 		struct NL_PASSWORD_VERSION version;
-		uint32_t len = IVAL(state->samr_crypt_password.data, 512);
-		uint32_t ofs = 512 - len;
+		int32_t len = IVAL(state->samr_crypt_password.data, 512);
+		int32_t ofs = 512 - len;
 		uint8_t *p;
 
 		if (ofs < 12) {
