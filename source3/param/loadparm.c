@@ -294,7 +294,7 @@ static const char null_string[] = "";
  Set a string value, allocing the space for the string
 **/
 
-static bool string_init(char **dest,const char *src)
+static bool string_init(TALLOC_CTX *mem_ctx, char **dest,const char *src)
 {
 	size_t l;
 
@@ -306,7 +306,7 @@ static bool string_init(char **dest,const char *src)
 	if (l == 0) {
 		*dest = discard_const_p(char, null_string);
 	} else {
-		(*dest) = SMB_STRDUP(src);
+		(*dest) = talloc_strdup(mem_ctx, src);
 		if ((*dest) == NULL) {
 			DEBUG(0,("Out of memory in string_init\n"));
 			return false;
@@ -325,7 +325,7 @@ static void string_free(char **s)
 		return;
 	if (*s == null_string)
 		*s = NULL;
-	SAFE_FREE(*s);
+	TALLOC_FREE(*s);
 }
 
 /**
@@ -333,17 +333,17 @@ static void string_free(char **s)
  for the string
 **/
 
-static bool string_set(char **dest,const char *src)
+static bool string_set(TALLOC_CTX *mem_ctx, char **dest,const char *src)
 {
 	string_free(dest);
-	return(string_init(dest,src));
+	return(string_init(mem_ctx, dest, src));
 }
 
 /***************************************************************************
  Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
 
-static void init_printer_values(struct loadparm_service *pService)
+static void init_printer_values(TALLOC_CTX *ctx, struct loadparm_service *pService)
 {
 	/* choose defaults depending on the type of printing */
 	switch (pService->printing) {
@@ -351,52 +351,52 @@ static void init_printer_values(struct loadparm_service *pService)
 		case PRINT_AIX:
 		case PRINT_LPRNT:
 		case PRINT_LPROS2:
-			string_set(&pService->lpq_command, "lpq -P'%p'");
-			string_set(&pService->lprm_command, "lprm -P'%p' %j");
-			string_set(&pService->print_command, "lpr -r -P'%p' %s");
+			string_set(ctx, &pService->lpq_command, "lpq -P'%p'");
+			string_set(ctx, &pService->lprm_command, "lprm -P'%p' %j");
+			string_set(ctx, &pService->print_command, "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
-			string_set(&pService->lpq_command, "lpq -P'%p'");
-			string_set(&pService->lprm_command, "lprm -P'%p' %j");
-			string_set(&pService->print_command, "lpr -r -P'%p' %s");
-			string_set(&pService->queuepause_command, "lpc stop '%p'");
-			string_set(&pService->queueresume_command, "lpc start '%p'");
-			string_set(&pService->lppause_command, "lpc hold '%p' %j");
-			string_set(&pService->lpresume_command, "lpc release '%p' %j");
+			string_set(ctx, &pService->lpq_command, "lpq -P'%p'");
+			string_set(ctx, &pService->lprm_command, "lprm -P'%p' %j");
+			string_set(ctx, &pService->print_command, "lpr -r -P'%p' %s");
+			string_set(ctx, &pService->queuepause_command, "lpc stop '%p'");
+			string_set(ctx, &pService->queueresume_command, "lpc start '%p'");
+			string_set(ctx, &pService->lppause_command, "lpc hold '%p' %j");
+			string_set(ctx, &pService->lpresume_command, "lpc release '%p' %j");
 			break;
 
 		case PRINT_CUPS:
 		case PRINT_IPRINT:
 			/* set the lpq command to contain the destination printer
 			   name only.  This is used by cups_queue_get() */
-			string_set(&pService->lpq_command, "%p");
-			string_set(&pService->lprm_command, "");
-			string_set(&pService->print_command, "");
-			string_set(&pService->lppause_command, "");
-			string_set(&pService->lpresume_command, "");
-			string_set(&pService->queuepause_command, "");
-			string_set(&pService->queueresume_command, "");
+			string_set(ctx, &pService->lpq_command, "%p");
+			string_set(ctx, &pService->lprm_command, "");
+			string_set(ctx, &pService->print_command, "");
+			string_set(ctx, &pService->lppause_command, "");
+			string_set(ctx, &pService->lpresume_command, "");
+			string_set(ctx, &pService->queuepause_command, "");
+			string_set(ctx, &pService->queueresume_command, "");
 			break;
 
 		case PRINT_SYSV:
 		case PRINT_HPUX:
-			string_set(&pService->lpq_command, "lpstat -o%p");
-			string_set(&pService->lprm_command, "cancel %p-%j");
-			string_set(&pService->print_command, "lp -c -d%p %s; rm %s");
-			string_set(&pService->queuepause_command, "disable %p");
-			string_set(&pService->queueresume_command, "enable %p");
+			string_set(ctx, &pService->lpq_command, "lpstat -o%p");
+			string_set(ctx, &pService->lprm_command, "cancel %p-%j");
+			string_set(ctx, &pService->print_command, "lp -c -d%p %s; rm %s");
+			string_set(ctx, &pService->queuepause_command, "disable %p");
+			string_set(ctx, &pService->queueresume_command, "enable %p");
 #ifndef HPUX
-			string_set(&pService->lppause_command, "lp -i %p-%j -H hold");
-			string_set(&pService->lpresume_command, "lp -i %p-%j -H resume");
+			string_set(ctx, &pService->lppause_command, "lp -i %p-%j -H hold");
+			string_set(ctx, &pService->lpresume_command, "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
 
 		case PRINT_QNX:
-			string_set(&pService->lpq_command, "lpq -P%p");
-			string_set(&pService->lprm_command, "lprm -P%p %j");
-			string_set(&pService->print_command, "lp -r -P%p %s");
+			string_set(ctx, &pService->lpq_command, "lpq -P%p");
+			string_set(ctx, &pService->lprm_command, "lprm -P%p %j");
+			string_set(ctx, &pService->print_command, "lp -r -P%p %s");
 			break;
 
 #if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
@@ -417,37 +417,37 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s print %%p %%s",
 				      tdbfile);
-		string_set(&pService->print_command,
+		string_set(ctx, &pService->print_command,
 			   tmp ? tmp : "vlp print %p %s");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpq %%p",
 				      tdbfile);
-		string_set(&pService->lpq_command,
+		string_set(ctx, &pService->lpq_command,
 			   tmp ? tmp : "vlp lpq %p");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lprm %%p %%j",
 				      tdbfile);
-		string_set(&pService->lprm_command,
+		string_set(ctx, &pService->lprm_command,
 			   tmp ? tmp : "vlp lprm %p %j");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lppause %%p %%j",
 				      tdbfile);
-		string_set(&pService->lppause_command,
+		string_set(ctx, &pService->lppause_command,
 			   tmp ? tmp : "vlp lppause %p %j");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpresume %%p %%j",
 				      tdbfile);
-		string_set(&pService->lpresume_command,
+		string_set(ctx, &pService->lpresume_command,
 			   tmp ? tmp : "vlp lpresume %p %j");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s queuepause %%p",
 				      tdbfile);
-		string_set(&pService->queuepause_command,
+		string_set(ctx, &pService->queuepause_command,
 			   tmp ? tmp : "vlp queuepause %p");
 
 		tmp = talloc_asprintf(tmp_ctx, "vlp %s queueresume %%p",
 				      tdbfile);
-		string_set(&pService->queueresume_command,
+		string_set(ctx, &pService->queueresume_command,
 			   tmp ? tmp : "vlp queueresume %p");
 		TALLOC_FREE(tmp_ctx);
 
@@ -698,51 +698,51 @@ static void init_globals(bool reinit_globals)
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING))
 		{
-			string_set((char **)lp_parm_ptr(NULL, &parm_table[i]), "");
+			string_set(Globals.ctx, (char **)lp_parm_ptr(NULL, &parm_table[i]), "");
 		}
 	}
 
 
-	string_set(&sDefault.fstype, FSTYPE_STRING);
-	string_set(&sDefault.printjob_username, "%U");
+	string_set(Globals.ctx, &sDefault.fstype, FSTYPE_STRING);
+	string_set(Globals.ctx, &sDefault.printjob_username, "%U");
 
-	init_printer_values(&sDefault);
+	init_printer_values(Globals.ctx, &sDefault);
 
 	sDefault.ntvfs_handler = (const char **)str_list_make_v3(NULL, "unixuid default", NULL);
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
 	/* Must manually force to upper case here, as this does not go via the handler */
-	string_set(&Globals.netbios_name, myhostname_upper());
+	string_set(Globals.ctx, &Globals.netbios_name, myhostname_upper());
 
-	string_set(&Globals.smb_passwd_file, get_dyn_SMB_PASSWD_FILE());
-	string_set(&Globals.private_dir, get_dyn_PRIVATE_DIR());
+	string_set(Globals.ctx, &Globals.smb_passwd_file, get_dyn_SMB_PASSWD_FILE());
+	string_set(Globals.ctx, &Globals.private_dir, get_dyn_PRIVATE_DIR());
 
 	/* use the new 'hash2' method by default, with a prefix of 1 */
-	string_set(&Globals.mangling_method, "hash2");
+	string_set(Globals.ctx, &Globals.mangling_method, "hash2");
 	Globals.mangle_prefix = 1;
 
-	string_set(&Globals.guest_account, GUEST_ACCOUNT);
+	string_set(Globals.ctx, &Globals.guest_account, GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
-	string_set(&Globals.unix_charset, DEFAULT_UNIX_CHARSET);
+	string_set(Globals.ctx, &Globals.unix_charset, DEFAULT_UNIX_CHARSET);
 
 	/* Use codepage 850 as a default for the dos character set */
-	string_set(&Globals.dos_charset, DEFAULT_DOS_CHARSET);
+	string_set(Globals.ctx, &Globals.dos_charset, DEFAULT_DOS_CHARSET);
 
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
-	string_set(&Globals.passwd_chat, DEFAULT_PASSWD_CHAT);
+	string_set(Globals.ctx, &Globals.passwd_chat, DEFAULT_PASSWD_CHAT);
 
-	string_set(&Globals.workgroup, DEFAULT_WORKGROUP);
+	string_set(Globals.ctx, &Globals.workgroup, DEFAULT_WORKGROUP);
 
-	string_set(&Globals.passwd_program, "");
-	string_set(&Globals.lock_directory, get_dyn_LOCKDIR());
-	string_set(&Globals.state_directory, get_dyn_STATEDIR());
-	string_set(&Globals.cache_directory, get_dyn_CACHEDIR());
-	string_set(&Globals.pid_directory, get_dyn_PIDDIR());
-	string_set(&Globals.nbt_client_socket_address, "0.0.0.0");
+	string_set(Globals.ctx, &Globals.passwd_program, "");
+	string_set(Globals.ctx, &Globals.lock_directory, get_dyn_LOCKDIR());
+	string_set(Globals.ctx, &Globals.state_directory, get_dyn_STATEDIR());
+	string_set(Globals.ctx, &Globals.cache_directory, get_dyn_CACHEDIR());
+	string_set(Globals.ctx, &Globals.pid_directory, get_dyn_PIDDIR());
+	string_set(Globals.ctx, &Globals.nbt_client_socket_address, "0.0.0.0");
 	/*
 	 * By default support explicit binding to broadcast
  	 * addresses.
@@ -752,21 +752,21 @@ static void init_globals(bool reinit_globals)
 	if (asprintf(&s, "Samba %s", samba_version_string()) < 0) {
 		smb_panic("init_globals: ENOMEM");
 	}
-	string_set(&Globals.server_string, s);
+	string_set(Globals.ctx, &Globals.server_string, s);
 	SAFE_FREE(s);
 #ifdef DEVELOPER
-	string_set(&Globals.panic_action, "/bin/sleep 999999999");
+	string_set(Globals.ctx, &Globals.panic_action, "/bin/sleep 999999999");
 #endif
 
-	string_set(&Globals.socket_options, DEFAULT_SOCKET_OPTIONS);
+	string_set(Globals.ctx, &Globals.socket_options, DEFAULT_SOCKET_OPTIONS);
 
-	string_set(&Globals.logon_drive, "");
+	string_set(Globals.ctx, &Globals.logon_drive, "");
 	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
-	string_set(&Globals.logon_home, "\\\\%N\\%U");
-	string_set(&Globals.logon_path, "\\\\%N\\%U\\profile");
+	string_set(Globals.ctx, &Globals.logon_home, "\\\\%N\\%U");
+	string_set(Globals.ctx, &Globals.logon_path, "\\\\%N\\%U\\profile");
 
 	Globals.name_resolve_order = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
-	string_set(&Globals.password_server, "*");
+	string_set(Globals.ctx, &Globals.password_server, "*");
 
 	Globals.algorithmic_rid_base = BASE_RID;
 
@@ -807,7 +807,7 @@ static void init_globals(bool reinit_globals)
 	Globals.syslog = 1;
 	Globals.syslog_only = false;
 	Globals.timestamp_logs = true;
-	string_set(&Globals.log_level, "0");
+	string_set(Globals.ctx, &Globals.log_level, "0");
 	Globals.debug_prefix_timestamp = false;
 	Globals.debug_hires_timestamp = true;
 	Globals.debug_pid = false;
@@ -823,9 +823,9 @@ static void init_globals(bool reinit_globals)
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.nis_homedir = false;
 #ifdef WITH_NISPLUS_HOME
-	string_set(&Globals.homedir_map, "auto_home.org_dir");
+	string_set(Globals.ctx, &Globals.homedir_map, "auto_home.org_dir");
 #else
-	string_set(&Globals.homedir_map, "auto.home");
+	string_set(Globals.ctx, &Globals.homedir_map, "auto.home");
 #endif
 #endif
 	Globals.time_server = false;
@@ -866,14 +866,14 @@ static void init_globals(bool reinit_globals)
 	   a large number of sites (tridge) */
 	Globals.hostname_lookups = false;
 
-	string_set(&Globals.passdb_backend, "tdbsam");
-	string_set(&Globals.ldap_suffix, "");
-	string_set(&Globals.szLdapMachineSuffix, "");
-	string_set(&Globals.szLdapUserSuffix, "");
-	string_set(&Globals.szLdapGroupSuffix, "");
-	string_set(&Globals.szLdapIdmapSuffix, "");
+	string_set(Globals.ctx, &Globals.passdb_backend, "tdbsam");
+	string_set(Globals.ctx, &Globals.ldap_suffix, "");
+	string_set(Globals.ctx, &Globals.szLdapMachineSuffix, "");
+	string_set(Globals.ctx, &Globals.szLdapUserSuffix, "");
+	string_set(Globals.ctx, &Globals.szLdapGroupSuffix, "");
+	string_set(Globals.ctx, &Globals.szLdapIdmapSuffix, "");
 
-	string_set(&Globals.ldap_admin_dn, "");
+	string_set(Globals.ctx, &Globals.ldap_admin_dn, "");
 	Globals.ldap_ssl = LDAP_SSL_START_TLS;
 	Globals.ldap_ssl_ads = false;
 	Globals.ldap_deref = -1;
@@ -921,17 +921,17 @@ static void init_globals(bool reinit_globals)
 	Globals.wins_dns_proxy = true;
 
 	Globals.allow_trusted_domains = true;
-	string_set(&Globals.szIdmapBackend, "tdb");
+	string_set(Globals.ctx, &Globals.szIdmapBackend, "tdb");
 
-	string_set(&Globals.template_shell, "/bin/false");
-	string_set(&Globals.template_homedir, "/home/%D/%U");
-	string_set(&Globals.winbind_separator, "\\");
-	string_set(&Globals.winbindd_socket_directory, dyn_WINBINDD_SOCKET_DIR);
+	string_set(Globals.ctx, &Globals.template_shell, "/bin/false");
+	string_set(Globals.ctx, &Globals.template_homedir, "/home/%D/%U");
+	string_set(Globals.ctx, &Globals.winbind_separator, "\\");
+	string_set(Globals.ctx, &Globals.winbindd_socket_directory, dyn_WINBINDD_SOCKET_DIR);
 
-	string_set(&Globals.cups_server, "");
-	string_set(&Globals.iprint_server, "");
+	string_set(Globals.ctx, &Globals.cups_server, "");
+	string_set(Globals.ctx, &Globals.iprint_server, "");
 
-	string_set(&Globals._ctdbd_socket, "");
+	string_set(Globals.ctx, &Globals._ctdbd_socket, "");
 
 	Globals.cluster_addresses = NULL;
 	Globals.clustering = false;
@@ -975,9 +975,9 @@ static void init_globals(bool reinit_globals)
 	if (asprintf(&s, "%s/usershares", get_dyn_STATEDIR()) < 0) {
 		smb_panic("init_globals: ENOMEM");
 	}
-	string_set(&Globals.usershare_path, s);
+	string_set(Globals.ctx, &Globals.usershare_path, s);
 	SAFE_FREE(s);
-	string_set(&Globals.usershare_template_share, "");
+	string_set(Globals.ctx, &Globals.usershare_template_share, "");
 	Globals.usershare_max_shares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
 	Globals.usershare_owner_only = true;
@@ -999,7 +999,7 @@ static void init_globals(bool reinit_globals)
 	Globals.smb2_max_trans = DEFAULT_SMB2_MAX_TRANSACT;
 	Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
 
-	string_set(&Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
+	string_set(Globals.ctx, &Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
 
 	Globals.server_services = (const char **)str_list_make_v3(NULL, "s3fs rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd kcc dnsupdate dns", NULL);
 
@@ -1007,19 +1007,19 @@ static void init_globals(bool reinit_globals)
 
 	Globals.tls_enabled = true;
 
-	string_set(&Globals._tls_keyfile, "tls/key.pem");
-	string_set(&Globals._tls_certfile, "tls/cert.pem");
-	string_set(&Globals._tls_cafile, "tls/ca.pem");
+	string_set(Globals.ctx, &Globals._tls_keyfile, "tls/key.pem");
+	string_set(Globals.ctx, &Globals._tls_certfile, "tls/cert.pem");
+	string_set(Globals.ctx, &Globals._tls_cafile, "tls/ca.pem");
 
-	string_set(&Globals.share_backend, "classic");
+	string_set(Globals.ctx, &Globals.share_backend, "classic");
 
 	Globals.iPreferredMaster = Auto;
 
 	Globals.allow_dns_updates = DNS_UPDATE_SIGNED;
 
-	string_set(&Globals.ntp_signd_socket_directory, get_dyn_NTP_SIGND_SOCKET_DIR());
+	string_set(Globals.ctx, &Globals.ntp_signd_socket_directory, get_dyn_NTP_SIGND_SOCKET_DIR());
 
-	string_set(&Globals.winbindd_privileged_socket_directory, get_dyn_WINBINDD_PRIVILEGED_SOCKET_DIR());
+	string_set(Globals.ctx, &Globals.winbindd_privileged_socket_directory, get_dyn_WINBINDD_PRIVILEGED_SOCKET_DIR());
 
 	if (asprintf(&s, "%s/samba_kcc", get_dyn_SCRIPTSBINDIR()) < 0) {
 		smb_panic("init_globals: ENOMEM");
@@ -1212,6 +1212,7 @@ static struct parmlist_entry *get_parametrics_by_service(struct loadparm_service
 	bool global_section = false;
 	char* param_key;
         struct parmlist_entry *data;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (service == NULL) {
 		data = Globals.param_opt;
@@ -1220,14 +1221,16 @@ static struct parmlist_entry *get_parametrics_by_service(struct loadparm_service
 		data = service->param_opt;
 	}
 
-	if (asprintf(&param_key, "%s:%s", type, option) == -1) {
+	param_key = talloc_asprintf(mem_ctx, "%s:%s", type, option);
+	if (param_key == NULL) {
 		DEBUG(0,("asprintf failed!\n"));
+		TALLOC_FREE(mem_ctx);
 		return NULL;
 	}
 
 	while (data) {
 		if (strwicmp(data->key, param_key) == 0) {
-			string_free(&param_key);
+			TALLOC_FREE(mem_ctx);
 			return data;
 		}
 		data = data->next;
@@ -1239,14 +1242,14 @@ static struct parmlist_entry *get_parametrics_by_service(struct loadparm_service
 		data = Globals.param_opt;
 		while (data) {
 		        if (strwicmp(data->key, param_key) == 0) {
-			        string_free(&param_key);
+				TALLOC_FREE(mem_ctx);
 				return data;
 			}
 			data = data->next;
 		}
 	}
 
-	string_free(&param_key);
+	TALLOC_FREE(mem_ctx);
 
 	return NULL;
 }
@@ -1484,7 +1487,7 @@ static void free_param_opts(struct parmlist_entry **popts)
 		string_free(&opt->value);
 		TALLOC_FREE(opt->list);
 		next_opt = opt->next;
-		SAFE_FREE(opt);
+		TALLOC_FREE(opt);
 		opt = next_opt;
 	}
 	*popts = NULL;
@@ -1565,7 +1568,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 
 	/* if not, then create one */
 	i = iNumServices;
-	tsp = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(ServicePtrs, struct loadparm_service *, num_to_alloc);
+	tsp = talloc_realloc(NULL, ServicePtrs, struct loadparm_service *, num_to_alloc);
 	if (tsp == NULL) {
 		DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
 		return (-1);
@@ -1583,7 +1586,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 	init_service(ServicePtrs[i]);
 	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name)
-		string_set(&ServicePtrs[i]->szService, name);
+		string_set(ServicePtrs[i], &ServicePtrs[i]->szService, name);
 
 	DEBUG(8,("add_a_service: Creating snum = %d for %s\n", 
 		i, ServicePtrs[i]->szService));
@@ -1672,7 +1675,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	if (!(*(ServicePtrs[iDefaultService]->path))
 	    || strequal(ServicePtrs[iDefaultService]->path,
 			lp_path(talloc_tos(), GLOBAL_SECTION_SNUM))) {
-		string_set(&ServicePtrs[i]->path, pszHomedir);
+		string_set(ServicePtrs[i], &ServicePtrs[i]->path, pszHomedir);
 	}
 
 	if (!(*(ServicePtrs[i]->comment))) {
@@ -1680,7 +1683,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 		if (asprintf(&comment, "Home directory of %s", user) < 0) {
 			return false;
 		}
-		string_set(&ServicePtrs[i]->comment, comment);
+		string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 		SAFE_FREE(comment);
 	}
 
@@ -1727,10 +1730,10 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 		return false;
 	}
 
-	string_set(&ServicePtrs[i]->path, tmpdir());
-	string_set(&ServicePtrs[i]->username, "");
-	string_set(&ServicePtrs[i]->comment, comment);
-	string_set(&ServicePtrs[i]->fstype, "IPC");
+	string_set(ServicePtrs[i], &ServicePtrs[i]->path, tmpdir());
+	string_set(ServicePtrs[i], &ServicePtrs[i]->username, "");
+	string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->fstype, "IPC");
 	ServicePtrs[i]->max_connections = 0;
 	ServicePtrs[i]->bAvailable = true;
 	ServicePtrs[i]->read_only = true;
@@ -1764,8 +1767,8 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(&ServicePtrs[i]->_printername, pszPrintername);
-	string_set(&ServicePtrs[i]->comment, comment);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->_printername, pszPrintername);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 
 	/* set the browseable flag from the gloabl default */
 	ServicePtrs[i]->browseable = sDefault.browseable;
@@ -2199,7 +2202,12 @@ static void set_param_opt(struct parmlist_entry **opt_list,
 			}
 			string_free(&opt->value);
 			TALLOC_FREE(opt->list);
-			opt->value = SMB_STRDUP(opt_value);
+
+			opt->value = talloc_strdup(NULL, opt_value);
+			if (opt->value == NULL) {
+				smb_panic("talloc_strdup failed");
+			}
+
 			opt->priority = priority;
 			not_added = false;
 			break;
@@ -2207,12 +2215,24 @@ static void set_param_opt(struct parmlist_entry **opt_list,
 		opt = opt->next;
 	}
 	if (not_added) {
-	    new_opt = SMB_XMALLOC_P(struct parmlist_entry);
-	    new_opt->key = SMB_STRDUP(opt_name);
-	    new_opt->value = SMB_STRDUP(opt_value);
-	    new_opt->list = NULL;
-	    new_opt->priority = priority;
-	    DLIST_ADD(*opt_list, new_opt);
+		new_opt = talloc(NULL, struct parmlist_entry);
+		if (new_opt == NULL) {
+			smb_panic("OOM");
+		}
+
+		new_opt->key = talloc_strdup(NULL, opt_name);
+		if (new_opt->key == NULL) {
+			smb_panic("talloc_strdup failed");
+		}
+
+		new_opt->value = talloc_strdup(NULL, opt_value);
+		if (new_opt->value == NULL) {
+			smb_panic("talloc_strdup failed");
+		}
+
+		new_opt->list = NULL;
+		new_opt->priority = priority;
+		DLIST_ADD(*opt_list, new_opt);
 	}
 }
 
@@ -2247,7 +2267,7 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 					break;
 
 				case P_STRING:
-					string_set((char **)dest_ptr,
+					string_set(pserviceDest, (char **)dest_ptr,
 						   *(char **)src_ptr);
 					break;
 
@@ -2255,7 +2275,7 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 				{
 					char *upper_string = strupper_talloc(talloc_tos(), 
 									     *(char **)src_ptr);
-					string_set((char **)dest_ptr,
+					string_set(pserviceDest, (char **)dest_ptr,
 						   upper_string);
 					TALLOC_FREE(upper_string);
 					break;
@@ -2530,20 +2550,20 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 
 	if (!f) {
-		f = SMB_MALLOC_P(struct file_lists);
-		if (!f)
-			return;
-		f->next = file_lists;
-		f->name = SMB_STRDUP(fname);
-		if (!f->name) {
-			SAFE_FREE(f);
-			return;
+		f = talloc(NULL, struct file_lists);
+		if (!f) {
+			goto fail;
 		}
-		f->subfname = SMB_STRDUP(subfname);
+		f->next = file_lists;
+		f->name = talloc_strdup(f, fname);
+		if (!f->name) {
+			TALLOC_FREE(f);
+			goto fail;
+		}
+		f->subfname = talloc_strdup(f, subfname);
 		if (!f->subfname) {
-			SAFE_FREE(f->name);
-			SAFE_FREE(f);
-			return;
+			TALLOC_FREE(f);
+			goto fail;
 		}
 		file_lists = f;
 		f->modtime = file_modtime(subfname);
@@ -2553,6 +2573,10 @@ static void add_to_file_list(const char *fname, const char *subfname)
 			f->modtime = t;
 	}
 	return;
+
+fail:
+	DEBUG(0, ("Unable to add file to file list: %s\n", fname));
+
 }
 
 /**
@@ -2566,9 +2590,7 @@ static void free_file_list(void)
 	f = file_lists;
 	while( f ) {
 		next = f->next;
-		SAFE_FREE( f->name );
-		SAFE_FREE( f->subfname );
-		SAFE_FREE( f );
+		TALLOC_FREE( f );
 		f = next;
 	}
 	file_lists = NULL;
@@ -2639,8 +2661,11 @@ bool lp_file_list_changed(void)
 					 ("file %s modified: %s\n", n2,
 					  ctime(&mod_time)));
 				f->modtime = mod_time;
-				SAFE_FREE(f->subfname);
-				f->subfname = SMB_STRDUP(n2);
+				TALLOC_FREE(f->subfname);
+				f->subfname = talloc_strdup(f, n2);
+				if (f->subfname == NULL) {
+					smb_panic("talloc_strdup failed");
+				}
 				TALLOC_FREE(n2);
 				return true;
 			}
@@ -2669,7 +2694,7 @@ static void init_iconv(void)
 static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	if (strcmp(*ptr, pszParmValue) != 0) {
-		string_set(ptr, pszParmValue);
+		string_set(Globals.ctx, ptr, pszParmValue);
 		init_iconv();
 	}
 	return true;
@@ -2706,7 +2731,7 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 				DEFAULT_DOS_CHARSET));
 			pszParmValue = DEFAULT_DOS_CHARSET;
 		}
-		string_set(ptr, pszParmValue);
+		string_set(Globals.ctx, ptr, pszParmValue);
 		init_iconv();
 	}
 	return true;
@@ -2719,9 +2744,9 @@ static bool handle_realm(struct loadparm_context *unused, int snum, const char *
 	char *realm = strupper_talloc(frame, pszParmValue);
 	char *dnsdomain = strlower_talloc(realm, pszParmValue);
 
-	ret &= string_set(&Globals.realm_original, pszParmValue);
-	ret &= string_set(&Globals.realm, realm);
-	ret &= string_set(&Globals.dnsdomain, dnsdomain);
+	ret &= string_set(Globals.ctx, &Globals.realm_original, pszParmValue);
+	ret &= string_set(Globals.ctx, &Globals.realm, realm);
+	ret &= string_set(Globals.ctx, &Globals.dnsdomain, dnsdomain);
 	TALLOC_FREE(frame);
 
 	return ret;
@@ -2772,7 +2797,11 @@ static bool handle_include(struct loadparm_context *unused, int snum, const char
 
 	add_to_file_list(pszParmValue, fname);
 
-	string_set(ptr, fname);
+	if (snum < 0) {
+		string_set(Globals.ctx, ptr, fname);
+	} else {
+		string_set(ServicePtrs[snum], ptr, fname);
+	}
 
 	if (file_exist(fname)) {
 		bool ret;
@@ -2808,7 +2837,7 @@ static bool handle_copy(struct loadparm_context *unused, int snum, const char *p
 			copy_service(ServicePtrs[iServiceIndex],
 				     ServicePtrs[iTemp],
 				     ServicePtrs[iServiceIndex]->copymap);
-			string_set(ptr, pszParmValue);
+			string_set(ServicePtrs[iServiceIndex], ptr, pszParmValue);
 			bRetval = true;
 		}
 	} else {
@@ -2934,7 +2963,7 @@ const char *lp_idmap_default_backend(void)
 
 static bool handle_debug_list(struct loadparm_context *unused, int snum, const char *pszParmValueIn, char **ptr )
 {
-	string_set(ptr, pszParmValueIn);
+	string_set(Globals.ctx, ptr, pszParmValueIn);
 	return debug_parse_levels(pszParmValueIn);
 }
 
@@ -3020,12 +3049,13 @@ static bool handle_printing(struct loadparm_context *unused, int snum, const cha
 
 	lp_set_enum_parm( &parm_table[parm_num], pszParmValue, (int*)ptr );
 
-	if ( snum < 0 )
+	if ( snum < 0 ) {
 		s = &sDefault;
-	else
+		init_printer_values(Globals.ctx, s);
+	} else {
 		s = ServicePtrs[snum];
-
-	init_printer_values( s );
+		init_printer_values(s, s);
+	}
 
 	return true;
 }
@@ -3086,6 +3116,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	struct parmlist_entry **opt_list;
+	TALLOC_CTX *mem_ctx;
 
 	parmnum = lpcfg_map_parameter(pszParmName);
 
@@ -3143,6 +3174,9 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 				bitmap_clear(ServicePtrs[snum]->copymap, i);
 			}
 		}
+		mem_ctx = ServicePtrs[snum];
+	} else {
+		mem_ctx = Globals.ctx;
 	}
 
 	/* if it is a special case then go ahead */
@@ -3200,14 +3234,14 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_STRING:
-			string_set((char **)parm_ptr, pszParmValue);
+			string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_USTRING:
 		{
 			char *upper_string = strupper_talloc(talloc_tos(), 
 							     pszParmValue);
-			string_set((char **)parm_ptr, upper_string);
+			string_set(mem_ctx, (char **)parm_ptr, upper_string);
 			TALLOC_FREE(upper_string);
 			break;
 		}
@@ -3638,9 +3672,11 @@ static void lp_add_auto_services(char *str)
 	if (!str)
 		return;
 
-	s = SMB_STRDUP(str);
-	if (!s)
+	s = talloc_strdup(talloc_tos(), str);
+	if (!s) {
+		smb_panic("talloc_strdup failed");
 		return;
+	}
 
 	homes = lp_servicenumber(HOMES_NAME);
 
@@ -3658,7 +3694,7 @@ static void lp_add_auto_services(char *str)
 
 		TALLOC_FREE(home);
 	}
-	SAFE_FREE(s);
+	TALLOC_FREE(s);
 }
 
 /***************************************************************************
@@ -3674,7 +3710,7 @@ void lp_add_one_printer(const char *name, const char *comment,
 	if (lp_servicenumber(name) < 0) {
 		lp_add_printer(name, printers);
 		if ((i = lp_servicenumber(name)) >= 0) {
-			string_set(&ServicePtrs[i]->comment, comment);
+			string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 			ServicePtrs[i]->autoloaded = true;
 		}
 	}
@@ -3753,7 +3789,10 @@ static void lp_save_defaults(void)
 				break;
 			case P_STRING:
 			case P_USTRING:
-				parm_table[i].def.svalue = SMB_STRDUP(*(char **)lp_parm_ptr(NULL, &parm_table[i]));
+				parm_table[i].def.svalue = talloc_strdup(Globals.ctx, *(char **)lp_parm_ptr(NULL, &parm_table[i]));
+				if (parm_table[i].def.svalue == NULL) {
+					smb_panic("talloc_strdup failed");
+				}
 				break;
 			case P_BOOL:
 			case P_BOOLREV:
@@ -4217,8 +4256,8 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* And note when it was loaded. */
 	ServicePtrs[iService]->usershare_last_mod = sbuf.st_ex_mtime;
-	string_set(&ServicePtrs[iService]->path, sharepath);
-	string_set(&ServicePtrs[iService]->comment, comment);
+	string_set(ServicePtrs[iService], &ServicePtrs[iService]->path, sharepath);
+	string_set(ServicePtrs[iService], &ServicePtrs[iService]->comment, comment);
 
 	ret = iService;
 
@@ -4243,23 +4282,25 @@ static bool usershare_exists(int iService, struct timespec *last_mod)
 	const char *usersharepath = Globals.usershare_path;
 	char *fname;
 
-	if (asprintf(&fname, "%s/%s",
+	fname = talloc_asprintf(talloc_tos(),
+				"%s/%s",
 				usersharepath,
-				ServicePtrs[iService]->szService) < 0) {
+				ServicePtrs[iService]->szService);
+	if (fname == NULL) {
 		return false;
 	}
 
 	if (sys_lstat(fname, &lsbuf, false) != 0) {
-		SAFE_FREE(fname);
+		TALLOC_FREE(fname);
 		return false;
 	}
 
 	if (!S_ISREG(lsbuf.st_ex_mode)) {
-		SAFE_FREE(fname);
+		TALLOC_FREE(fname);
 		return false;
 	}
 
-	SAFE_FREE(fname);
+	TALLOC_FREE(fname);
 	*last_mod = lsbuf.st_ex_mtime;
 	return true;
 }
@@ -4516,7 +4557,7 @@ void gfree_loadparm(void)
 		}
 	}
 
-	SAFE_FREE( ServicePtrs );
+	TALLOC_FREE( ServicePtrs );
 	iNumServices = 0;
 
 	/* Now release all resources allocated to global
@@ -5038,7 +5079,7 @@ const char *lp_printername(TALLOC_CTX *ctx, int snum)
 
 void lp_set_logfile(const char *name)
 {
-	string_set(&Globals.logfile, name);
+	string_set(Globals.ctx, &Globals.logfile, name);
 	debug_set_logfile(name);
 }
 
@@ -5138,7 +5179,7 @@ void set_store_dos_attributes(int snum, bool val)
 
 void lp_set_mangling_method(const char *new_method)
 {
-	string_set(&Globals.mangling_method, new_method);
+	string_set(Globals.ctx, &Globals.mangling_method, new_method);
 }
 
 /*******************************************************************
