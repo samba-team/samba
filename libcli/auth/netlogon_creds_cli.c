@@ -1770,7 +1770,7 @@ struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx
 		uint32_t ofs = 512 - len;
 		uint8_t *p;
 
-		if (ofs < 12) {
+		if (len > 500) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
 			return tevent_req_post(req, ev);
 		}
