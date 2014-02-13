@@ -147,7 +147,7 @@ static int add_record_to_delete_list(struct vacuum_data *vdata, TDB_DATA key,
 	hash = ctdb_hash(&key);
 
 	if (trbt_lookup32(vdata->delete_list, hash)) {
-		DEBUG(DEBUG_INFO, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
+		DEBUG(DEBUG_INFO, (__location__ " Hash collision when vacuuming, skipping this record.\n"));
 		return 0;
 	}
 
