@@ -410,6 +410,8 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, stru
 
 	if (p == NULL) {
 		b->transport = NCA_UNKNOWN;
+	} else if (is_ipaddress_v6(s)) {
+		b->transport = NCA_UNKNOWN;
 	} else {
 		*p = '\0';
 
