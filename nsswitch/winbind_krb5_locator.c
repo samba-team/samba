@@ -142,11 +142,10 @@ static int smb_krb5_locator_lookup_sanity_check(enum locate_service_type svc,
 	switch (family) {
 		case AF_UNSPEC:
 		case AF_INET:
-			break;
 #if defined(HAVE_IPV6)
 		case AF_INET6:
-			break;
 #endif
+			break;
 		default:
 			return EINVAL;
 	}
