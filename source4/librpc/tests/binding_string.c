@@ -124,6 +124,16 @@ static const char *test_strings[] = {
 	"ncacn_unix_stream:[/tmp/epmapper,sign]",
 	"ncacn_ip_tcp:127.0.0.1[75,target_hostname=port75.example.com,target_principal=host/port75.example.com]",
 	"ncacn_ip_tcp:127.0.0.1[75,connect,target_hostname=port75.example.com,target_principal=host/port75.example.com,assoc_group_id=0x01234567]",
+	"ncacn_ip_tcp:::",
+	"ncacn_ip_tcp:::[75]",
+	"ncacn_ip_tcp:FD00::5357:5F00",
+	"ncacn_ip_tcp:FD00::5357:5F00[75]",
+	"ncacn_ip_tcp:FD00::5357:5F00[,target_hostname=port75.example.com]",
+	"ncacn_ip_tcp:FD00::5357:5F00[75,target_hostname=port75.example.com]",
+	"ncacn_ip_tcp:fe80::5357:5F00%75",
+	"ncacn_ip_tcp:fe80::5357:5F00%75[75]",
+	"ncacn_ip_tcp:fe80::5357:5F00%75[,target_hostname=port75.example.com]",
+	"ncacn_ip_tcp:fe80::5357:5F00%75[75,target_hostname=port75.example.com]",
 };
 
 static bool test_parse_check_results(struct torture_context *tctx)
@@ -248,6 +258,18 @@ static const char *test_no_strings[] = {
 	"127.0.0.1[75]",
 	"127.0.0.1[,target_hostname=port75.example.com]",
 	"127.0.0.1[75,target_hostname=port75.example.com]",
+	"::",
+	"::[75]",
+	"::[,target_hostname=port75.example.com]",
+	"::[75,target_hostname=port75.example.com]",
+	"FD00::5357:5F00",
+	"FD00::5357:5F00[75]",
+	"FD00::5357:5F00[,target_hostname=port75.example.com]",
+	"FD00::5357:5F00[75,target_hostname=port75.example.com]",
+	"fe80::5357:5F00%75",
+	"fe80::5357:5F00%75[75]",
+	"fe80::5357:5F00%75[,target_hostname=port75.example.com]",
+	"fe80::5357:5F00%75[75,target_hostname=port75.example.com]",
 };
 
 struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
