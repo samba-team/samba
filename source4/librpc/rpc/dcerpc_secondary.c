@@ -180,8 +180,8 @@ static void continue_open_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
-	
-	c->status = dcerpc_pipe_open_tcp_recv(ctx);
+
+	c->status = dcerpc_pipe_open_tcp_recv(ctx, NULL, NULL, NULL);
 	if (!composite_is_ok(c)) return;
 
 	continue_pipe_open(c);

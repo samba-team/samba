@@ -213,6 +213,8 @@ struct pipe_tcp_state {
 	struct socket_address *srvaddr;
 	struct resolve_context *resolve_ctx;
 	struct dcecli_connection *conn;
+	char *local_address;
+	char *remote_address;
 };
 
 
@@ -253,9 +255,10 @@ static void continue_ip_open_socket(struct composite_context *ctx)
 		ctx->async.private_data, struct composite_context);
 	struct pipe_tcp_state *s = talloc_get_type_abort(
 		c->private_data, struct pipe_tcp_state);
-	
+	struct socket_address *localaddr = NULL;
+
 	/* receive result socket open request */
-	c->status = dcerpc_pipe_open_socket_recv(ctx, NULL, NULL);
+	c->status = dcerpc_pipe_open_socket_recv(ctx, s, &localaddr);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		/* something went wrong... */
 		DEBUG(0, ("Failed to connect host %s (%s) on port %d - %s.\n",
@@ -281,6 +284,11 @@ static void continue_ip_open_socket(struct composite_context *ctx)
 			return;
 		}
 	}
+
+	s->local_address = talloc_strdup(s, localaddr->addr);
+	if (composite_nomem(s->local_address, c)) return;
+	s->remote_address = talloc_strdup(s, s->addresses[s->index - 1]);
+	if (composite_nomem(s->remote_address, c)) return;
 
 	composite_done(c);
 }
@@ -335,10 +343,25 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcecli_connection *co
 /*
   Receive result of pipe open request on tcp/ip
 */
-NTSTATUS dcerpc_pipe_open_tcp_recv(struct composite_context *c)
+NTSTATUS dcerpc_pipe_open_tcp_recv(struct composite_context *c,
+				   TALLOC_CTX *mem_ctx,
+				   char **localaddr,
+				   char **remoteaddr)
 {
 	NTSTATUS status;
 	status = composite_wait(c);
+
+	if (NT_STATUS_IS_OK(status)) {
+		struct pipe_tcp_state *s = talloc_get_type_abort(
+			c->private_data, struct pipe_tcp_state);
+
+		if (localaddr != NULL) {
+			*localaddr = talloc_move(mem_ctx, &s->local_address);
+		}
+		if (remoteaddr != NULL) {
+			*remoteaddr = talloc_move(mem_ctx, &s->remote_address);
+		}
+	}
 
 	talloc_free(c);
 	return status;

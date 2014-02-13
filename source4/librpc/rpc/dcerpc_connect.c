@@ -346,7 +346,7 @@ static void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 						      struct composite_context);
 
 	/* receive result of named pipe open request on tcp/ip */
-	c->status = dcerpc_pipe_open_tcp_recv(ctx);
+	c->status = dcerpc_pipe_open_tcp_recv(ctx, NULL, NULL, NULL);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
