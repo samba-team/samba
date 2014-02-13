@@ -387,15 +387,17 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 	struct tdb_record rec;
 	int ret;
 
+	rec_ptr = tdb_find_lock_hash(tdb, key, hash, F_WRLCK, &rec);
+	if (rec_ptr == 0) {
+		return -1;
+	}
+
 	if (tdb->max_dead_records != 0) {
 
 		/*
 		 * Allow for some dead records per hash chain, mainly for
 		 * tdb's with a very high create/delete rate like locking.tdb.
 		 */
-
-		if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
-			return -1;
 
 		if (tdb_count_dead(tdb, hash) >= tdb->max_dead_records) {
 			/*
@@ -405,11 +407,6 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 			tdb_purge_dead(tdb, hash);
 		}
 
-		if (!(rec_ptr = tdb_find(tdb, key, hash, &rec))) {
-			tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
-			return -1;
-		}
-
 		/*
 		 * Just mark the record as dead.
 		 */
@@ -417,10 +414,6 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 		ret = tdb_rec_write(tdb, rec_ptr, &rec);
 	}
 	else {
-		if (!(rec_ptr = tdb_find_lock_hash(tdb, key, hash, F_WRLCK,
-						   &rec)))
-			return -1;
-
 		ret = tdb_do_delete(tdb, rec_ptr, &rec);
 	}
 
