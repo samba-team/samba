@@ -44,7 +44,8 @@ struct sec_conn_state {
 
 static void continue_open_smb(struct composite_context *ctx);
 static void continue_open_tcp(struct composite_context *ctx);
-static void continue_open_pipe(struct composite_context *ctx);
+static void continue_open_ncalrpc(struct composite_context *ctx);
+static void continue_open_ncacn_unix(struct composite_context *ctx);
 static void continue_pipe_open(struct composite_context *c);
 
 
@@ -60,6 +61,8 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	struct composite_context *pipe_smb_req;
 	struct composite_context *pipe_tcp_req;
 	struct composite_context *pipe_ncalrpc_req;
+	const char *ncalrpc_dir = NULL;
+	struct composite_context *pipe_unix_req;
 	const char *target_hostname;
 	const char *endpoint;
 
@@ -123,10 +126,27 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 		return c;
 
 	case NCALRPC:
+		ncalrpc_dir = dcerpc_binding_get_string_option(s->binding,
+							       "ncalrpc_dir");
+		if (ncalrpc_dir == NULL) {
+			ncalrpc_dir = dcerpc_binding_get_string_option(s->pipe->binding,
+								"ncalrpc_dir");
+		}
+		if (ncalrpc_dir == NULL) {
+			composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+			return c;
+		}
+
+		pipe_ncalrpc_req = dcerpc_pipe_open_pipe_send(s->pipe2->conn,
+							      ncalrpc_dir,
+							      endpoint);
+		composite_continue(c, pipe_ncalrpc_req, continue_open_ncalrpc, c);
+		return c;
+
 	case NCACN_UNIX_STREAM:
-		pipe_ncalrpc_req = dcerpc_pipe_open_unix_stream_send(s->pipe2->conn, 
-							      dcerpc_unix_socket_path(s->pipe->conn));
-		composite_continue(c, pipe_ncalrpc_req, continue_open_pipe, c);
+		pipe_unix_req = dcerpc_pipe_open_unix_stream_send(s->pipe2->conn,
+								  endpoint);
+		composite_continue(c, pipe_unix_req, continue_open_ncacn_unix, c);
 		return c;
 
 	default:
@@ -167,11 +187,24 @@ static void continue_open_tcp(struct composite_context *ctx)
 	continue_pipe_open(c);
 }
 
-
 /*
   Stage 2 of secondary_connection: Receive result of pipe open request on ncalrpc
 */
-static void continue_open_pipe(struct composite_context *ctx)
+static void continue_open_ncalrpc(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+
+	c->status = dcerpc_pipe_open_pipe_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	continue_pipe_open(c);
+}
+
+/*
+  Stage 2 of secondary_connection: Receive result of pipe open request on ncacn_unix
+*/
+static void continue_open_ncacn_unix(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
