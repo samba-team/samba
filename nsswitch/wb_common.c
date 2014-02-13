@@ -317,14 +317,14 @@ static int winbind_named_pipe_sock(const char *dir)
 
 static const char *winbindd_socket_dir(void)
 {
-#ifdef SOCKET_WRAPPER
-	const char *env_dir;
+	if (nss_wrapper_enabled()) {
+		const char *env_dir;
 
-	env_dir = getenv(WINBINDD_SOCKET_DIR_ENVVAR);
-	if (env_dir) {
-		return env_dir;
+		env_dir = getenv(WINBINDD_SOCKET_DIR_ENVVAR);
+		if (env_dir != NULL) {
+			return env_dir;
+		}
 	}
-#endif
 
 	return WINBINDD_SOCKET_DIR;
 }
