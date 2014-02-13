@@ -149,7 +149,7 @@ struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
  * callers without affecting the source string.
  */
 
-static const char *lp_string(const char *s)
+static const char *lpcfg_string(const char *s)
 {
 #if 0  /* until REWRITE done to make thread-safe */
 	size_t len = s ? strlen(s) : 0;
@@ -162,7 +162,7 @@ static const char *lp_string(const char *s)
 	   present all the time? */
 
 #if 0
-	DEBUG(10, ("lp_string(%s)\n", s));
+	DEBUG(10, ("lpcfg_string(%s)\n", s));
 #endif
 
 #if 0  /* until REWRITE done to make thread-safe */
@@ -213,7 +213,7 @@ static struct loadparm_context *global_loadparm_context;
 		 SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
 		 return lp_ctx->s3_fns->fn_name(ctx);			\
 	 }								\
-	 return lp_ctx->globals->var_name ? talloc_strdup(ctx, lp_string(lp_ctx->globals->var_name)) : talloc_strdup(ctx, ""); \
+	 return lp_ctx->globals->var_name ? talloc_strdup(ctx, lpcfg_string(lp_ctx->globals->var_name)) : talloc_strdup(ctx, ""); \
 }
 
 #define FN_GLOBAL_CONST_STRING(fn_name,var_name)				\
@@ -223,7 +223,7 @@ static struct loadparm_context *global_loadparm_context;
 		SMB_ASSERT(lp_ctx->s3_fns->fn_name);			\
 		return lp_ctx->s3_fns->fn_name();			\
 	}								\
-	return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : ""; \
+	return lp_ctx->globals->var_name ? lpcfg_string(lp_ctx->globals->var_name) : ""; \
 }
 
 #define FN_GLOBAL_LIST(fn_name,var_name)				\
@@ -261,7 +261,7 @@ static struct loadparm_context *global_loadparm_context;
 #define FN_LOCAL_STRING(fn_name,val) \
  _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_service *service, \
 					struct loadparm_service *sDefault, TALLOC_CTX *ctx) { \
-	 return(talloc_strdup(ctx, lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)))); \
+	 return(talloc_strdup(ctx, lpcfg_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)))); \
  }
 
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
@@ -455,7 +455,7 @@ const char *lpcfg_parm_string(struct loadparm_context *lp_ctx,
 	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value)
-		return lp_string(value);
+		return lpcfg_string(value);
 
 	return NULL;
 }
@@ -2635,7 +2635,7 @@ struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
 
 const char *lpcfg_servicename(const struct loadparm_service *service)
 {
-	return lp_string((const char *)service->szService);
+	return lpcfg_string((const char *)service->szService);
 }
 
 /**
@@ -2644,7 +2644,7 @@ const char *lpcfg_servicename(const struct loadparm_service *service)
 const char *lpcfg_volume_label(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
 	const char *ret;
-	ret = lp_string((const char *)((service != NULL && service->volume != NULL) ?
+	ret = lpcfg_string((const char *)((service != NULL && service->volume != NULL) ?
 				       service->volume : sDefault->volume));
 	if (!*ret)
 		return lpcfg_servicename(service);
@@ -2657,7 +2657,7 @@ const char *lpcfg_volume_label(struct loadparm_service *service, struct loadparm
 const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
 	const char *ret;
-	ret = lp_string((const char *)((service != NULL && service->_printername != NULL) ?
+	ret = lpcfg_string((const char *)((service != NULL && service->_printername != NULL) ?
 				       service->_printername : sDefault->_printername));
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
 		ret = lpcfg_servicename(service);
