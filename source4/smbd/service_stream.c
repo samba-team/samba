@@ -290,7 +290,10 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 		}
 
 		socket_address = socket_address_from_sockaddr_storage(stream_socket, &ss, port?*port:0);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(socket_address, stream_socket);
+		if (socket_address == NULL) {
+			TALLOC_FREE(stream_socket);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		status = socket_create(socket_address->family, SOCKET_TYPE_STREAM, &stream_socket->sock, 0);
 		NT_STATUS_NOT_OK_RETURN(status);

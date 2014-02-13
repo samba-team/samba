@@ -280,12 +280,18 @@ static NTSTATUS gp_get_files(struct smbcli_tree *tree, const char *share_path,
 
 		/* Get local path by replacing backslashes with slashes */
 		local_rel_path = talloc_strdup(mem_ctx, list->files[i].rel_path);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(local_rel_path, mem_ctx);
+		if (local_rel_path == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		string_replace(local_rel_path, '\\', '/');
 
 		full_local_path = talloc_asprintf(mem_ctx, "%s%s", local_path,
 				local_rel_path);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(full_local_path, mem_ctx);
+		if (full_local_path == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		/* If the entry is a directory, create it. */
 		if (list->files[i].is_directory == true) {
@@ -301,7 +307,10 @@ static NTSTATUS gp_get_files(struct smbcli_tree *tree, const char *share_path,
 
 		full_remote_path = talloc_asprintf(mem_ctx, "%s%s", share_path,
 				list->files[i].rel_path);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(full_remote_path, mem_ctx);
+		if (full_remote_path == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		/* Get the file */
 		status = gp_get_file(tree, full_remote_path, full_local_path);
@@ -340,15 +349,24 @@ NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo,
 
 	/* Get the remote path to copy from */
 	share_path = gp_get_share_path(mem_ctx, gpo->file_sys_path);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(share_path, mem_ctx);
+	if (share_path == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Get the local path to copy to */
 	local_path = talloc_asprintf(gp_ctx, "%s/%s", gp_tmpdir(mem_ctx), gpo->name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(local_path, mem_ctx);
+	if (local_path == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Prepare the state structure */
 	state = talloc_zero(mem_ctx, struct gp_list_state);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(state, mem_ctx);
+	if (state == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	state->tree = gp_ctx->cli->tree;
 	state->share_path = share_path;

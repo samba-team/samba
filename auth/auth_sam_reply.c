@@ -154,7 +154,10 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 
 	sam3->sids = talloc_array(sam, struct netr_SidAttr,
 				  user_info_dc->num_sids);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sam3->sids, sam3);
+	if (sam3->sids == NULL) {
+		TALLOC_FREE(sam3);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* We don't put the user and group SIDs in there */
 	for (i=2; i<user_info_dc->num_sids; i++) {
@@ -162,7 +165,10 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 		sam3->sids[sam3->sidcount].sid = dom_sid_dup(sam3->sids, &user_info_dc->sids[i]);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sam3->sids[sam3->sidcount].sid, sam3);
+		if (sam3->sids[sam3->sidcount].sid == NULL) {
+			TALLOC_FREE(sam3);
+			return NT_STATUS_NO_MEMORY;
+		}
 		sam3->sids[sam3->sidcount].attributes =
 			SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		sam3->sidcount += 1;
@@ -429,7 +435,10 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		sidcount = user_info_dc->num_sids + pac_logon_info->res_groups.count;
 		user_info_dc->sids
 			= talloc_realloc(user_info_dc, user_info_dc->sids, struct dom_sid, sidcount);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info_dc->sids, user_info_dc);
+		if (user_info_dc->sids == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		for (i = 0; pac_logon_info->res_group_dom_sid && i < pac_logon_info->res_groups.count; i++) {
 			user_info_dc->sids[user_info_dc->num_sids] = *pac_logon_info->res_group_dom_sid;

@@ -66,31 +66,52 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	session_info = talloc_zero(tmp_ctx, struct auth_session_info);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(session_info, tmp_ctx);
+	if (session_info == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	session_info->info = talloc_reference(session_info, user_info_dc->info);
 
 	session_info->torture = talloc_zero(session_info, struct auth_user_info_torture);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(session_info->torture, tmp_ctx);
+	if (session_info->torture == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	session_info->torture->num_dc_sids = user_info_dc->num_sids;
 	session_info->torture->dc_sids = talloc_reference(session_info, user_info_dc->sids);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(session_info->torture->dc_sids, tmp_ctx);
+	if (session_info->torture->dc_sids == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* unless set otherwise, the session key is the user session
 	 * key from the auth subsystem */ 
 	session_info->session_key = data_blob_talloc(session_info, user_info_dc->user_session_key.data, user_info_dc->user_session_key.length);
 	if (!session_info->session_key.data && session_info->session_key.length) {
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(session_info->session_key.data, tmp_ctx);
+		if (session_info->session_key.data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	anonymous_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_ANONYMOUS);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(anonymous_sid, tmp_ctx);
+	if (anonymous_sid == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	system_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_SYSTEM);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(system_sid, tmp_ctx);
+	if (system_sid == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	sids = talloc_array(tmp_ctx, struct dom_sid, user_info_dc->num_sids);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sids, tmp_ctx);
+	if (sids == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	if (!sids) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -151,11 +172,17 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 			sid_string = dom_sid_string(tmp_ctx,
 						      &sids[i]);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_string, user_info_dc);
+			if (sid_string == NULL) {
+				TALLOC_FREE(user_info_dc);
+				return NT_STATUS_NO_MEMORY;
+			}
 			
 			sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", sid_string);
 			talloc_free(sid_string);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_dn, user_info_dc);
+			if (sid_dn == NULL) {
+				TALLOC_FREE(user_info_dc);
+				return NT_STATUS_NO_MEMORY;
+			}
 			sid_blob = data_blob_string_const(sid_dn);
 			
 			/* This function takes in memberOf values and expands

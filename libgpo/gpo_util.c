@@ -726,34 +726,58 @@ NTSTATUS gpo_copy(TALLOC_CTX *mem_ctx,
 	gpo->version		= gpo_src->version;
 
 	gpo->ds_path		= talloc_strdup(gpo, gpo_src->ds_path);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->ds_path, gpo);
+	if (gpo->ds_path == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->file_sys_path	= talloc_strdup(gpo, gpo_src->file_sys_path);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->file_sys_path, gpo);
+	if (gpo->file_sys_path == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->display_name	= talloc_strdup(gpo, gpo_src->display_name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->display_name, gpo);
+	if (gpo->display_name == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->name		= talloc_strdup(gpo, gpo_src->name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->name, gpo);
+	if (gpo->name == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->link		= talloc_strdup(gpo, gpo_src->link);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->link, gpo);
+	if (gpo->link == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->link_type		= gpo_src->link_type;
 
 	if (gpo_src->user_extensions) {
 		gpo->user_extensions = talloc_strdup(gpo, gpo_src->user_extensions);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->user_extensions, gpo);
+		if (gpo->user_extensions == NULL) {
+			TALLOC_FREE(gpo);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (gpo_src->machine_extensions) {
 		gpo->machine_extensions = talloc_strdup(gpo, gpo_src->machine_extensions);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->machine_extensions, gpo);
+		if (gpo->machine_extensions == NULL) {
+			TALLOC_FREE(gpo);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	gpo->security_descriptor = dup_sec_desc(gpo, gpo_src->security_descriptor);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->security_descriptor, gpo);
+	if (gpo->security_descriptor == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->next = gpo->prev = NULL;
 

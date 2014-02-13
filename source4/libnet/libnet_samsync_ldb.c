@@ -976,13 +976,22 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 	}
 
 	sidstr = dom_sid_string(msg, sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidstr, msg);
+	if (sidstr == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	dnstr = talloc_asprintf(msg, "sid=%s", sidstr);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(dnstr, msg);
+	if (dnstr == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_dn_new(msg, state->pdb, dnstr);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg->dn, msg);
+	if (msg->dn == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i< account->privilege_entries; i++) {
 		ldb_msg_add_string(msg, "privilege", account->privilege_name[i].string);

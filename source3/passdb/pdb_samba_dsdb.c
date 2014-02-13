@@ -1172,7 +1172,10 @@ static NTSTATUS pdb_samba_dsdb_enum_group_members(struct pdb_methods *m,
 	}
 
 	*pmembers = members = talloc_array(mem_ctx, uint32_t, num_sids);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(*pmembers, tmp_ctx);
+	if (*pmembers == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	num_members = 0;
 
 	for (i = 0; i < num_sids; i++) {
@@ -1392,7 +1395,10 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem_by_sid(struct pdb_methods *m,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 	msg = ldb_msg_new(tmp_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, tmp_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_dn_new_fmt(msg, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, groupsid));
 	if (!msg->dn || !ldb_dn_validate(msg->dn)) {
@@ -1441,9 +1447,15 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem(struct pdb_methods *m,
 	dom_sid = samdb_domain_sid(state->ldb);
 
 	groupsid = dom_sid_add_rid(tmp_ctx, dom_sid, grouprid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupsid, tmp_ctx);
+	if (groupsid == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	membersid = dom_sid_add_rid(tmp_ctx, dom_sid, memberrid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(membersid, tmp_ctx);
+	if (membersid == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	status = pdb_samba_dsdb_mod_groupmem_by_sid(m, tmp_ctx, groupsid, membersid, mod_op);
 	talloc_free(tmp_ctx);
 	return status;
@@ -1708,10 +1720,16 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 
 	for (i = 0; i < num_members; i++) {
 		sid_string = dom_sid_string(tmp_ctx, &members[i]);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_string, tmp_ctx);
+		if (sid_string == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", sid_string);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_dn, tmp_ctx);
+		if (sid_dn == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		sid_blob = data_blob_string_const(sid_dn);
 

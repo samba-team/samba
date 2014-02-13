@@ -61,26 +61,41 @@ static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct g
 	NT_STATUS_HAVE_NO_MEMORY(gpo);
 
 	gpo->dn = talloc_strdup(mem_ctx, ldb_dn_get_linearized(msg->dn));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->dn, gpo);
+	if (gpo->dn == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(9, ("Parsing GPO LDAP data for %s\n", gpo->dn));
 
 	gpo->display_name = talloc_strdup(gpo, ldb_msg_find_attr_as_string(msg, "displayName", ""));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->display_name, gpo);
+	if (gpo->display_name == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->name = talloc_strdup(gpo, ldb_msg_find_attr_as_string(msg, "name", ""));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->name, gpo);
+	if (gpo->name == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->flags = ldb_msg_find_attr_as_uint(msg, "flags", 0);
 	gpo->version = ldb_msg_find_attr_as_uint(msg, "versionNumber", 0);
 
 	gpo->file_sys_path = talloc_strdup(gpo, ldb_msg_find_attr_as_string(msg, "gPCFileSysPath", ""));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->file_sys_path, gpo);
+	if (gpo->file_sys_path == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Pull the security descriptor through the NDR library */
 	data = ldb_msg_find_ldb_val(msg, "nTSecurityDescriptor");
 	gpo->security_descriptor = talloc(gpo, struct security_descriptor);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->security_descriptor, gpo);
+	if (gpo->security_descriptor == NULL) {
+		TALLOC_FREE(gpo);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ndr_err = ndr_pull_struct_blob(data,
 			mem_ctx,
@@ -218,7 +233,10 @@ NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret)
 	DEBUG(10, ("Searching for policies in DN: %s\n", ldb_dn_get_linearized(dn)));
 
 	attrs = talloc_array(mem_ctx, const char *, 7);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(attrs, mem_ctx);
+	if (attrs == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	attrs[0] = "nTSecurityDescriptor";
 	attrs[1] = "versionNumber";
@@ -236,7 +254,10 @@ NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret)
 	}
 
 	gpo = talloc_array(gp_ctx, struct gp_object *, result->count+1);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo, mem_ctx);
+	if (gpo == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo[result->count] = NULL;
 
@@ -273,7 +294,10 @@ NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *dn_str, struct g
 	dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
 
 	attrs = talloc_array(mem_ctx, const char *, 7);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(attrs, mem_ctx);
+	if (attrs == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	attrs[0] = "nTSecurityDescriptor";
 	attrs[1] = "versionNumber";
@@ -341,12 +365,18 @@ static NTSTATUS parse_gplink (TALLOC_CTX *mem_ctx, const char *gplink_str, struc
 			gplinks[idx]->dn = talloc_strndup(mem_ctx,
 			                                  gplink_str + start,
 			                                  pos - start);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gplinks[idx]->dn, gplinks);
+			if (gplinks[idx]->dn == NULL) {
+				TALLOC_FREE(gplinks);
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			for (start = pos + 1; gplink_str[pos] != ']'; pos++);
 
 			buf = talloc_strndup(gplinks, gplink_str + start, pos - start);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(buf, gplinks);
+			if (buf == NULL) {
+				TALLOC_FREE(gplinks);
+				return NT_STATUS_NO_MEMORY;
+			}
 			gplinks[idx]->options = (uint32_t) strtoll(buf, &end, 0);
 			talloc_free(buf);
 
@@ -397,13 +427,19 @@ NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *dn_str, struct gp
 			if (strcmp(element->name, "gPLink") == 0) {
 				SMB_ASSERT(element->num_values > 0);
 				gplink_str = talloc_strdup(mem_ctx, (char *) element->values[0].data);
-				NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gplink_str, mem_ctx);
+				if (gplink_str == NULL) {
+					TALLOC_FREE(mem_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
 				goto found;
 			}
 		}
 	}
 	gplink_str = talloc_strdup(mem_ctx, "");
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gplink_str, mem_ctx);
+	if (gplink_str == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	found:
 
@@ -479,7 +515,10 @@ NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, c
 	}
 
 	gpos = talloc_array(gp_ctx, const char *, 1);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpos, mem_ctx);
+	if (gpos == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	gpos[0] = NULL;
 
 	/* Walk through the containers until we hit the root */
@@ -559,9 +598,15 @@ NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, c
 
 			/* Add the GPO to the list */
 			gpos = talloc_realloc(gp_ctx, gpos, const char *, count+2);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpos, mem_ctx);
+			if (gpos == NULL) {
+				TALLOC_FREE(mem_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			gpos[count] = talloc_strdup(gp_ctx, gplinks[i]->dn);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpos[count], mem_ctx);
+			if (gpos[count] == NULL) {
+				TALLOC_FREE(mem_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			gpos[count+1] = NULL;
 			count++;
 
@@ -624,18 +669,27 @@ NTSTATUS gp_set_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_
 			start++;
 		}
 		gplink_str = talloc_asprintf(mem_ctx, "%s;%d%s", gplink_str, gplink->options, start);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gplink_str, mem_ctx);
+		if (gplink_str == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 	} else {
 		/* Prepend the new GPO link to the string. This list is backwards in priority. */
 		gplink_str = talloc_asprintf(mem_ctx, "[LDAP://%s;%d]%s", gplink->dn, gplink->options, gplink_str);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gplink_str, mem_ctx);
+		if (gplink_str == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 
 
 	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = dn;
 
@@ -691,7 +745,10 @@ NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char
 
 	/* If this GPO link already exists, alter the options, else add it */
 	search_string = talloc_asprintf(mem_ctx, "[LDAP://%s]", gplink_dn);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(search_string, mem_ctx);
+	if (search_string == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	p = strcasestr(gplink_str, search_string);
 	if (p == NULL) {
@@ -706,11 +763,17 @@ NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char
 	}
 	p++;
 	gplink_str = talloc_asprintf(mem_ctx, "%s%s", gplink_str, p);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gplink_str, mem_ctx);
+	if (gplink_str == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 
 	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = dn;
 
@@ -785,7 +848,10 @@ NTSTATUS gp_set_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum 
 	msg->dn = ldb_dn_new(msg, gp_ctx->ldb_ctx, dn_str);
 
 	inheritance_string = talloc_asprintf(msg, "%d", inheritance);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(inheritance_string, msg);
+	if (inheritance_string == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rv = ldb_msg_add_string(msg, "gPOptions", inheritance_string);
 	if (rv != LDB_SUCCESS) {
@@ -819,21 +885,33 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 
 	/* CN={GUID} */
 	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_get_default_basedn(gp_ctx->ldb_ctx);
 	dn_str = talloc_asprintf(mem_ctx, "CN=%s,CN=Policies,CN=System", gpo->name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(dn_str, mem_ctx);
+	if (dn_str == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	child_dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
 	rv = ldb_dn_add_child(msg->dn, child_dn);
 	if (!rv) goto ldb_msg_add_error;
 
 	flags_str = talloc_asprintf(mem_ctx, "%d", gpo->flags);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(flags_str, mem_ctx);
+	if (flags_str == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	version_str = talloc_asprintf(mem_ctx, "%d", gpo->version);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(version_str, mem_ctx);
+	if (version_str == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rv = ldb_msg_add_string(msg, "objectClass", "top");
 	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
@@ -869,7 +947,10 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 
 	/* CN=User */
 	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_dn_copy(mem_ctx, gpo_dn);
 	child_dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, "CN=User");
@@ -896,7 +977,10 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 
 	/* CN=Machine */
 	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_dn_copy(mem_ctx, gpo_dn);
 	child_dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, "CN=Machine");
@@ -922,7 +1006,10 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 	}
 
 	gpo->dn = talloc_strdup(gpo, ldb_dn_get_linearized(gpo_dn));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->dn, mem_ctx);
+	if (gpo->dn == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
@@ -957,7 +1044,10 @@ NTSTATUS gp_set_ads_acl (struct gp_context *gp_ctx, const char *dn_str, const st
 
 	/* Create a LDB message */
 	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
 
@@ -991,15 +1081,24 @@ NTSTATUS gp_set_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 	mem_ctx = talloc_new(gp_ctx);
 
 	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, gpo->dn);
 
 	version_str = talloc_asprintf(mem_ctx, "%d", gpo->version);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	flags_str = talloc_asprintf(mem_ctx, "%d", gpo->flags);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+	if (msg == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rv = ldb_msg_add_string(msg, "flags", flags_str);
 	if (rv != LDB_SUCCESS) {

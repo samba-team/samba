@@ -505,7 +505,10 @@ static NTSTATUS kcctpl_create_graph(TALLOC_CTX *mem_ctx,
 	graph->vertices.count = guids.count;
 	graph->vertices.data = talloc_zero_array(graph, struct kcctpl_vertex,
 						 guids.count);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(graph->vertices.data, graph);
+	if (graph->vertices.data == NULL) {
+		TALLOC_FREE(graph);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	TYPESAFE_QSORT(guids.data, guids.count, GUID_compare);
 
@@ -539,7 +542,10 @@ static NTSTATUS kcctpl_create_edge(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	edge = talloc_zero(tmp_ctx, struct kcctpl_multi_edge);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(edge, tmp_ctx);
+	if (edge == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	edge->id = samdb_result_guid(site_link, "objectGUID");
 
@@ -580,7 +586,10 @@ static NTSTATUS kcctpl_create_edge(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	edge->vertex_ids.data = talloc_array(edge, struct GUID, el->num_values);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(edge->vertex_ids.data, tmp_ctx);
+	if (edge->vertex_ids.data == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	edge->vertex_ids.count = el->num_values;
 
 	for (i = 0; i < el->num_values; i++) {
@@ -641,7 +650,10 @@ static NTSTATUS kcctpl_create_auto_edge_set(struct kcctpl_graph *graph,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	set = talloc_zero(tmp_ctx, struct kcctpl_multi_edge_set);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(set, tmp_ctx);
+	if (set == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i = 0; i < res_site_link->count; i++) {
 		struct GUID site_link_guid;
@@ -665,7 +677,10 @@ static NTSTATUS kcctpl_create_auto_edge_set(struct kcctpl_graph *graph,
 			new_data = talloc_realloc(set, set->edge_ids.data,
 						  struct GUID,
 						  set->edge_ids.count + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			if (new_data == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			new_data[set->edge_ids.count] = site_link_guid;
 			set->edge_ids.data = new_data;
 			set->edge_ids.count++;
@@ -694,7 +709,10 @@ static NTSTATUS kcctpl_create_edge_set(struct ldb_context *ldb,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	set = talloc_zero(tmp_ctx, struct kcctpl_multi_edge_set);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(set, tmp_ctx);
+	if (set == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	set->id = samdb_result_guid(bridge, "objectGUID");
 
@@ -752,7 +770,10 @@ static NTSTATUS kcctpl_create_edge_set(struct ldb_context *ldb,
 			new_data = talloc_realloc(set, set->edge_ids.data,
 						  struct GUID,
 						  set->edge_ids.count + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			if (new_data == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			new_data[set->edge_ids.count] = site_link_guid;
 			set->edge_ids.data = new_data;
 			set->edge_ids.count++;
@@ -820,7 +841,10 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 		new_data = talloc_realloc(tmp_ctx, vertex_ids.data, struct GUID,
 					  vertex_ids.count + 1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		if (new_data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		new_data[vertex_ids.count] = guid;
 		vertex_ids.data = new_data;
 		vertex_ids.count++;
@@ -905,7 +929,10 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			new_data = talloc_realloc(graph, graph->edges.data,
 						  struct kcctpl_multi_edge,
 						  graph->edges.count + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			if (new_data == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			new_data[graph->edges.count] = *edge;
 			graph->edges.data = new_data;
 			graph->edges.count++;
@@ -930,7 +957,10 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			new_data = talloc_realloc(graph, graph->edge_sets.data,
 						  struct kcctpl_multi_edge_set,
 						  graph->edge_sets.count + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			if (new_data == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			new_data[graph->edge_sets.count] = *edge_set;
 			graph->edge_sets.data = new_data;
 			graph->edge_sets.count++;
@@ -1285,7 +1315,10 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 		new_data = talloc_realloc(tmp_ctx, bridgeheads.data,
 					  struct ldb_message,
 					  bridgeheads.count + 1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		if (new_data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		new_data[bridgeheads.count + 1] = *dc;
 		bridgeheads.data = new_data;
 		bridgeheads.count++;
@@ -1527,7 +1560,10 @@ static NTSTATUS kcctpl_color_vertices(struct kccsrv_service *service,
 						  vertex->accept_red_red.data,
 						  struct GUID,
 						  vertex->accept_red_red.count + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			if (new_data == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			new_data[vertex->accept_red_red.count + 1] = transport_guid;
 			vertex->accept_red_red.data = new_data;
 			vertex->accept_red_red.count++;
@@ -1536,7 +1572,10 @@ static NTSTATUS kcctpl_color_vertices(struct kccsrv_service *service,
 						  vertex->accept_black.data,
 						  struct GUID,
 						  vertex->accept_black.count + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			if (new_data == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			new_data[vertex->accept_black.count + 1] = transport_guid;
 			vertex->accept_black.data = new_data;
 			vertex->accept_black.count++;
@@ -1716,7 +1755,10 @@ static NTSTATUS kcctpl_copy_output_edges(struct kccsrv_service *service,
 			new_data = talloc_realloc(tmp_ctx, copy.data,
 						  struct kcctpl_multi_edge,
 						  copy.count + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			if (new_data == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 			new_data[copy.count + 1] = *edge;
 			copy.data = new_data;
 			copy.count++;
@@ -1928,7 +1970,10 @@ static NTSTATUS kcctpl_dijkstra(struct kcctpl_graph *graph, struct GUID type,
 		new_data = talloc_realloc(tmp_ctx, vertices.data,
 					  struct kcctpl_vertex,
 					  vertices.count - 1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		if (new_data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		talloc_free(vertices.data);
 		vertices.data = new_data;
 		vertices.count--;
@@ -2110,7 +2155,10 @@ static NTSTATUS kcctpl_process_edge(TALLOC_CTX *mem_ctx,
 		new_data = talloc_realloc(tmp_ctx, vertices.data,
 					  struct kcctpl_vertex,
 					  vertices.count + 1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		if (new_data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		new_data[vertices.count] = *vertex;
 		vertices.data = new_data;
 		vertices.count++;
@@ -2323,13 +2371,19 @@ static NTSTATUS kcctpl_add_out_edge(TALLOC_CTX *mem_ctx,
 	}
 
 	new_edge = talloc(tmp_ctx, struct kcctpl_multi_edge);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_edge, tmp_ctx);
+	if (new_edge == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	new_edge->id = GUID_random(); /* TODO: what should be new_edge->GUID? */
 	new_edge->directed = false;
 
 	new_edge->vertex_ids.data = talloc_array(new_edge, struct GUID, 2);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_edge->vertex_ids.data, tmp_ctx);
+	if (new_edge->vertex_ids.data == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	new_edge->vertex_ids.data[0] = vertex1->id;
 	new_edge->vertex_ids.data[1] = vertex2->id;
@@ -2341,14 +2395,20 @@ static NTSTATUS kcctpl_add_out_edge(TALLOC_CTX *mem_ctx,
 	new_data = talloc_realloc(tmp_ctx, output_edges.data,
 				  struct kcctpl_multi_edge,
 				  output_edges.count + 1);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+	if (new_data == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	new_data[output_edges.count + 1] = *new_edge;
 	output_edges.data = new_data;
 	output_edges.count++;
 
 	new_data_id = talloc_realloc(vertex1, vertex1->edge_ids.data,
 				     struct GUID, vertex1->edge_ids.count);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data_id, tmp_ctx);
+	if (new_data_id == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	new_data_id[vertex1->edge_ids.count] = new_edge->id;
 	talloc_free(vertex1->edge_ids.data);
 	vertex1->edge_ids.data = new_data_id;
@@ -2356,7 +2416,10 @@ static NTSTATUS kcctpl_add_out_edge(TALLOC_CTX *mem_ctx,
 
 	new_data_id = talloc_realloc(vertex2, vertex2->edge_ids.data,
 				     struct GUID, vertex2->edge_ids.count);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data_id, tmp_ctx);
+	if (new_data_id == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	new_data_id[vertex2->edge_ids.count] = new_edge->id;
 	talloc_free(vertex2->edge_ids.data);
 	vertex2->edge_ids.data = new_data_id;
@@ -2729,7 +2792,10 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	r_site_dn = ldb_dn_copy(tmp_ctx, r_bridgehead->dn);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(r_site_dn, tmp_ctx);
+	if (r_site_dn == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ok = ldb_dn_remove_child_components(r_site_dn, 3);
 	if (!ok) {
@@ -2748,7 +2814,10 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 	}
 
 	l_site_dn = ldb_dn_copy(tmp_ctx, l_bridgehead->dn);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(l_site_dn, tmp_ctx);
+	if (l_site_dn == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ok = ldb_dn_remove_child_components(l_site_dn, 3);
 	if (!ok) {
@@ -3111,7 +3180,10 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 		new_data = talloc_realloc(tmp_ctx, keep_connections.data,
 					  struct GUID,
 					  keep_connections.count + 1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		if (new_data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		new_data[keep_connections.count] = new_guid;
 		keep_connections.data = new_data;
 		keep_connections.count++;
@@ -3369,7 +3441,10 @@ static NTSTATUS kcctpl_create_intersite_connections(struct kccsrv_service *servi
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	partitions_dn = samdb_partitions_dn(service->samdb, tmp_ctx);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(partitions_dn, tmp_ctx);
+	if (partitions_dn == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ret = ldb_search(service->samdb, tmp_ctx, &res, partitions_dn, LDB_SCOPE_ONELEVEL,
 			 attrs, "objectClass=crossRef");

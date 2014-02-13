@@ -361,7 +361,10 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	wrepl_out->sock			= wrepl_socket_init(wrepl_out,
 							    wrepl_in->conn->event.ctx);
 							    
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(wrepl_out->sock, update_state);
+	if (wrepl_out->sock == NULL) {
+		TALLOC_FREE(update_state);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	TALLOC_FREE(wrepl_in->send_queue);
 

@@ -174,7 +174,10 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 	if (!only_childs) {
 		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
 			struct dom_sid, *num_res_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(*res_sids, tmp_ctx);
+		if (*res_sids == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		(*res_sids)[*num_res_sids] = sid;
 		++(*num_res_sids);
 	}

@@ -926,7 +926,10 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	*ret_sd = NULL;
 
 	acl = talloc(req, struct xattr_NTACL);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(acl, tmp_ctx);
+	if (acl == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = pvfs_acl_load(pvfs, parent, -1, acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -954,10 +957,16 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 
 	/* create the new sd */
 	sd = security_descriptor_initialise(req);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sd, tmp_ctx);
+	if (sd == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ids = talloc_array(sd, struct id_map, 2);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids, tmp_ctx);
+	if (ids == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ids[0].xid.id = geteuid();
 	ids[0].xid.type = ID_TYPE_UID;

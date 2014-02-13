@@ -298,15 +298,24 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
 	tmp_ctx = talloc_new(user_info_dc);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info_dc, user_info_dc);
+	if (user_info_dc == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	sids = talloc_array(user_info_dc, struct dom_sid, 2);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sids, user_info_dc);
+	if (sids == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	num_sids = 2;
 
 	account_sid = samdb_result_dom_sid(user_info_dc, msg, "objectSid");
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, user_info_dc);
+	if (account_sid == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = dom_sid_split_rid(tmp_ctx, account_sid, &domain_sid, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -322,13 +331,22 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	 * for builtin groups later, and not include them in the PAC
 	 * on SamLogon validation info */
 	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))", GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(filter, user_info_dc);
+	if (filter == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	primary_group_string = dom_sid_string(tmp_ctx, &sids[PRIMARY_GROUP_SID_INDEX]);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_string, user_info_dc);
+	if (primary_group_string == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_dn, user_info_dc);
+	if (primary_group_dn == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	primary_group_blob = data_blob_string_const(primary_group_dn);
 
@@ -377,7 +395,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	str = ldb_msg_find_attr_as_string(msg, "displayName", "");
 	info->full_name = talloc_strdup(info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->full_name, user_info_dc);
+	if (info->full_name == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	str = ldb_msg_find_attr_as_string(msg, "scriptPath", "");
 	info->logon_script = talloc_strdup(info, str);
@@ -396,7 +417,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	str = ldb_msg_find_attr_as_string(msg, "homeDrive", "");
 	info->home_drive = talloc_strdup(info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->home_drive, user_info_dc);
+	if (info->home_drive == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	info->logon_server = talloc_strdup(info, netbios_name);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->logon_server,
@@ -442,7 +466,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 						   user_info_dc->sids,
 						   struct dom_sid,
 						   user_info_dc->num_sids+1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info_dc->sids, user_info_dc);
+		if (user_info_dc->sids == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 		user_info_dc->sids[user_info_dc->num_sids] = global_sid_Enterprise_DCs;
 		user_info_dc->num_sids++;
 	}
@@ -454,7 +481,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 						   user_info_dc->sids,
 						   struct dom_sid,
 						   user_info_dc->num_sids+1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info_dc->sids, user_info_dc);
+		if (user_info_dc->sids == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 		user_info_dc->sids[user_info_dc->num_sids] = *domain_sid;
 		sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids],
 			    DOMAIN_RID_ENTERPRISE_READONLY_DCS);

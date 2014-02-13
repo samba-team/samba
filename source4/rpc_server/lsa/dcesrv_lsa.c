@@ -87,13 +87,22 @@ static NTSTATUS dcesrv_build_lsa_sd(TALLOC_CTX *mem_ctx,
 	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
 
 	domain_admins_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_ADMINS);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(domain_admins_sid, tmp_ctx);
+	if (domain_admins_sid == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	domain_admins_sid_str = dom_sid_string(tmp_ctx, domain_admins_sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(domain_admins_sid_str, tmp_ctx);
+	if (domain_admins_sid_str == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	sidstr = dom_sid_string(tmp_ctx, sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidstr, tmp_ctx);
+	if (sidstr == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	*sd = security_descriptor_dacl_create(mem_ctx,
 					      0, sidstr, NULL,
@@ -2587,16 +2596,28 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 	}
 
 	sidndrstr = ldap_encode_ndr_dom_sid(msg, sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidndrstr, msg);
+	if (sidndrstr == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	sidstr = dom_sid_string(msg, sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidstr, msg);
+	if (sidstr == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	dnstr = talloc_asprintf(msg, "sid=%s", sidstr);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(dnstr, msg);
+	if (dnstr == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg->dn = ldb_dn_new(msg, state->pdb, dnstr);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg->dn, msg);
+	if (msg->dn == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (LDB_FLAG_MOD_TYPE(ldb_flag) == LDB_FLAG_MOD_ADD) {
 		NTSTATUS status;

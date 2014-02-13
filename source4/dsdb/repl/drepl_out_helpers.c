@@ -280,7 +280,10 @@ static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service 
 
 	pas->version = 1;
 	pas->attids = talloc_array(pas, enum drsuapi_DsAttributeId, schema->num_attributes);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+	if (pas->attids == NULL) {
+		TALLOC_FREE(pas);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<schema->num_attributes; i++) {
 		struct dsdb_attribute *a;
@@ -296,7 +299,10 @@ static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service 
 	}
 
 	pas->attids = talloc_realloc(pas, pas->attids, enum drsuapi_DsAttributeId, pas->num_attids);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+	if (pas->attids == NULL) {
+		TALLOC_FREE(pas);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	*_pas = pas;
 	return NT_STATUS_OK;
@@ -321,7 +327,10 @@ static NTSTATUS dreplsrv_get_gc_partial_attribute_set(struct dreplsrv_service *s
 
 	pas->version = 1;
 	pas->attids = talloc_array(pas, enum drsuapi_DsAttributeId, schema->num_attributes);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+	if (pas->attids == NULL) {
+		TALLOC_FREE(pas);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<schema->num_attributes; i++) {
 		struct dsdb_attribute *a;
@@ -333,7 +342,10 @@ static NTSTATUS dreplsrv_get_gc_partial_attribute_set(struct dreplsrv_service *s
 	}
 
 	pas->attids = talloc_realloc(pas, pas->attids, enum drsuapi_DsAttributeId, pas->num_attids);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+	if (pas->attids == NULL) {
+		TALLOC_FREE(pas);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	*_pas = pas;
 	return NT_STATUS_OK;

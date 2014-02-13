@@ -67,21 +67,33 @@ NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security
 
 	/* Copy the basic information from the directory server security descriptor */
 	fs_sd->owner_sid = talloc_memdup(fs_sd, ds_sd->owner_sid, sizeof(struct dom_sid));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->owner_sid, fs_sd);
+	if (fs_sd->owner_sid == NULL) {
+		TALLOC_FREE(fs_sd);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	fs_sd->group_sid = talloc_memdup(fs_sd, ds_sd->group_sid, sizeof(struct dom_sid));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->group_sid, fs_sd);
+	if (fs_sd->group_sid == NULL) {
+		TALLOC_FREE(fs_sd);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	fs_sd->type = ds_sd->type;
 	fs_sd->revision = ds_sd->revision;
 
 	/* Copy the sacl */
 	fs_sd->sacl = security_acl_dup(fs_sd, ds_sd->sacl);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->sacl, fs_sd);
+	if (fs_sd->sacl == NULL) {
+		TALLOC_FREE(fs_sd);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Copy the dacl */
 	fs_sd->dacl = talloc_zero(fs_sd, struct security_acl);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->dacl, fs_sd);
+	if (fs_sd->dacl == NULL) {
+		TALLOC_FREE(fs_sd);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i = 0; i < ds_sd->dacl->num_aces; i++) {
 		char *trustee = dom_sid_string(fs_sd, &ds_sd->dacl->aces[i].trustee);
@@ -96,7 +108,10 @@ NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security
 
 		/* Copy the ace from the directory server security descriptor */
 		ace = talloc_memdup(fs_sd, &ds_sd->dacl->aces[i], sizeof(struct security_ace));
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ace, fs_sd);
+		if (ace == NULL) {
+			TALLOC_FREE(fs_sd);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		/* Set specific inheritance flags for within the GPO */
 		ace->flags |= SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_CONTAINER_INHERIT;
@@ -139,14 +154,23 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 
 	/* Create the gpo struct to return later */
 	gpo = talloc(gp_ctx, struct gp_object);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo, mem_ctx);
+	if (gpo == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Generate a GUID */
 	guid_struct = GUID_random();
 	guid_str = GUID_string2(mem_ctx, &guid_struct);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(guid_str, mem_ctx);
+	if (guid_str == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	name = strupper_talloc(mem_ctx, guid_str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(name, mem_ctx);
+	if (name == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Prepare the GPO struct */
 	gpo->dn = NULL;
@@ -154,10 +178,16 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	gpo->flags = 0;
 	gpo->version = 0;
 	gpo->display_name = talloc_strdup(gpo, display_name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->display_name, mem_ctx);
+	if (gpo->display_name == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	gpo->file_sys_path = talloc_asprintf(gpo, "\\\\%s\\sysvol\\%s\\Policies\\%s", lpcfg_dnsdomain(gp_ctx->lp_ctx), lpcfg_dnsdomain(gp_ctx->lp_ctx), name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->file_sys_path, mem_ctx);
+	if (gpo->file_sys_path == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Create the GPT */
 	status = gp_create_gpt(gp_ctx, name, gpo->file_sys_path);
@@ -266,7 +296,10 @@ NTSTATUS gp_push_gpo (struct gp_context *gp_ctx, const char *local_path, struct 
 	/* Get version from ini file */
 	/* FIXME: The local file system may be case sensitive */
 	filename = talloc_asprintf(mem_ctx, "%s/%s", local_path, "GPT.INI");
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(filename, mem_ctx);
+	if (filename == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	status = gp_parse_ini(mem_ctx, gp_ctx, local_path, &ini);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to parse GPT.INI.\n"));
