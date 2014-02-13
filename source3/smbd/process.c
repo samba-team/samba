@@ -2499,8 +2499,27 @@ static void smbd_server_echo_handler(struct event_context *ev,
 
 struct smbd_release_ip_state {
 	struct smbd_server_connection *sconn;
+	struct tevent_immediate *im;
 	char addr[INET6_ADDRSTRLEN];
 };
+
+static void smbd_release_ip_immediate(struct tevent_context *ctx,
+				      struct tevent_immediate *im,
+				      void *private_data)
+{
+	struct smbd_release_ip_state *state =
+		talloc_get_type_abort(private_data,
+		struct smbd_release_ip_state);
+
+	if (!NT_STATUS_EQUAL(state->sconn->status, NT_STATUS_ADDRESS_CLOSED)) {
+		/*
+		 * smbd_server_connection_terminate() already triggered ?
+		 */
+		return;
+	}
+
+	smbd_server_connection_terminate(state->sconn, "CTDB_SRVID_RELEASE_IP");
+}
 
 /****************************************************************************
 received when we should release a specific IP
@@ -2512,6 +2531,11 @@ static bool release_ip(const char *ip, void *priv)
 		struct smbd_release_ip_state);
 	const char *addr = state->addr;
 	const char *p = addr;
+
+	if (!NT_STATUS_IS_OK(state->sconn->status)) {
+		/* avoid recursion */
+		return false;
+	}
 
 	if (strncmp("::ffff:", addr, 7) == 0) {
 		p = addr + 7;
@@ -2539,9 +2563,18 @@ static bool release_ip(const char *ip, void *priv)
 		 * triggered and has implication on our process model,
 		 * we can just use smbd_server_connection_terminate()
 		 * (also for SMB1).
+		 *
+		 * We don't call smbd_server_connection_terminate() directly
+		 * as we might be called from within ctdbd_migrate(),
+		 * we need to defer our action to the next event loop
 		 */
-		smbd_server_connection_terminate(state->sconn,
-						 "CTDB_SRVID_RELEASE_IP");
+		tevent_schedule_immediate(state->im, state->sconn->ev_ctx,
+					  smbd_release_ip_immediate, state);
+
+		/*
+		 * Make sure we don't get any io on the connection.
+		 */
+		state->sconn->status = NT_STATUS_ADDRESS_CLOSED;
 		return true;
 	}
 
@@ -2565,6 +2598,10 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	state->sconn = sconn;
+	state->im = tevent_create_immediate(state);
+	if (state->im == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	if (print_sockaddr(state->addr, sizeof(state->addr), srv) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
