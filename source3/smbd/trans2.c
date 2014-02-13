@@ -3077,7 +3077,7 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	int data_len = 0, len;
 	const char *vname = volume_label(talloc_tos(), SNUM(conn));
 	int snum = SNUM(conn);
-	char *fstype = lp_fstype(SNUM(conn));
+	const char *fstype = lp_fstype(SNUM(conn));
 	const char *filename = NULL;
 	uint32 additional_flags = 0;
 	struct smb_filename smb_fname;
