@@ -390,8 +390,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL));
 
 	info->domain_name = talloc_strdup(info, domain_name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->domain_name,
-		user_info_dc);
+	if (info->domain_name == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	str = ldb_msg_find_attr_as_string(msg, "displayName", "");
 	info->full_name = talloc_strdup(info, str);
@@ -402,18 +404,24 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	str = ldb_msg_find_attr_as_string(msg, "scriptPath", "");
 	info->logon_script = talloc_strdup(info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->logon_script,
-		user_info_dc);
+	if (info->logon_script == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	str = ldb_msg_find_attr_as_string(msg, "profilePath", "");
 	info->profile_path = talloc_strdup(info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->profile_path,
-		user_info_dc);
+	if (info->profile_path == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	str = ldb_msg_find_attr_as_string(msg, "homeDirectory", "");
 	info->home_directory = talloc_strdup(info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->home_directory,
-		user_info_dc);
+	if (info->home_directory == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	str = ldb_msg_find_attr_as_string(msg, "homeDrive", "");
 	info->home_drive = talloc_strdup(info, str);
@@ -423,8 +431,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	info->logon_server = talloc_strdup(info, netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(info->logon_server,
-		user_info_dc);
+	if (info->logon_server == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);
 	info->last_logoff = samdb_result_last_logoff(msg);
@@ -448,15 +458,19 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 							 user_sess_key.data,
 							 user_sess_key.length);
 	if (user_sess_key.data) {
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info_dc->user_session_key.data,
-						  user_info_dc);
+		if (user_info_dc->user_session_key.data == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	user_info_dc->lm_session_key = data_blob_talloc(user_info_dc,
 						       lm_sess_key.data,
 						       lm_sess_key.length);
 	if (lm_sess_key.data) {
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info_dc->lm_session_key.data,
-						  user_info_dc);
+		if (user_info_dc->lm_session_key.data == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (info->acct_flags & ACB_SVRTRUST) {

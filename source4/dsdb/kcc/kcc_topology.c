@@ -1003,8 +1003,10 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 							  graph->edge_sets.data,
 							  struct kcctpl_multi_edge_set,
 							  graph->edge_sets.count + 1);
-				NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data,
-								  tmp_ctx);
+				if (new_data == NULL) {
+					TALLOC_FREE(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
 				new_data[graph->edge_sets.count] = *edge_set;
 				graph->edge_sets.data = new_data;
 				graph->edge_sets.count++;
@@ -2655,8 +2657,10 @@ static NTSTATUS kcctpl_get_spanning_tree_edges(struct kccsrv_service *service,
 							  vertex->edge_ids.data,
 							  struct GUID,
 							  vertex->edge_ids.count + 1);
-				NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data,
-								  tmp_ctx);
+				if (new_data == NULL) {
+					TALLOC_FREE(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
 				new_data[vertex->edge_ids.count] = edge->id;
 				vertex->edge_ids.data = new_data;
 				vertex->edge_ids.count++;
@@ -3136,8 +3140,10 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 								 keep_connections.data,
 								 struct GUID,
 								 keep_connections.count + 1);
-					NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data,
-									  tmp_ctx);
+					if (new_data == NULL) {
+						TALLOC_FREE(tmp_ctx);
+						return NT_STATUS_NO_MEMORY;
+					}
 					new_data[keep_connections.count] = conn_guid;
 					keep_connections.data = new_data;
 					keep_connections.count++;
