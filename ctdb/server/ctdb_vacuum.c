@@ -1133,18 +1133,18 @@ success:
 		      (__location__
 		       " vacuum delete list statistics: "
 		       "db[%s] "
-		       "coll[%u] "
+		       "total[%u] "
+		       "del[%u] "
+		       "skip[%u] "
 		       "rem.err[%u] "
 		       "loc.err[%u] "
-		       "skip[%u] "
-		       "del[%u] "
 		       "left[%u]\n",
 		       ctdb_db->db_name,
 		       (unsigned)vdata->delete_count,
+		       (unsigned)vdata->delete_deleted,
+		       (unsigned)vdata->delete_skipped,
 		       (unsigned)vdata->delete_remote_error,
 		       (unsigned)vdata->delete_local_error,
-		       (unsigned)vdata->delete_skipped,
-		       (unsigned)vdata->delete_deleted,
 		       (unsigned)vdata->delete_left));
 	}
 
