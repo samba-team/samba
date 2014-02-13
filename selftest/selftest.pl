@@ -53,6 +53,7 @@ my $opt_resetup_env = undef;
 my $opt_binary_mapping = "";
 my $opt_load_list = undef;
 my $opt_libnss_wrapper_so_path = "";
+my $opt_libsocket_wrapper_so_path = "";
 my $opt_libuid_wrapper_so_path = "";
 my @testlists = ();
 
@@ -205,6 +206,7 @@ Paths:
 
 Preload cwrap:
  --nss_wrapper_so_path=FILE the nss_wrapper library to preload
+ --socket_wrapper_so_path=FILE the socket_wrapper library to preload
  --uid_wrapper_so_path=FILE the uid_wrapper library to preload
 
 Target Specific:
@@ -247,6 +249,7 @@ my $result = GetOptions (
 		'load-list=s' => \$opt_load_list,
 		'binary-mapping=s' => \$opt_binary_mapping,
 		'nss_wrapper_so_path=s' => \$opt_libnss_wrapper_so_path,
+		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
 		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path
 	    );
 
@@ -353,6 +356,14 @@ if ($opt_libnss_wrapper_so_path) {
 	}
 }
 
+if ($opt_libsocket_wrapper_so_path) {
+	if ($ld_preload) {
+		$ld_preload = "$ld_preload:$opt_libsocket_wrapper_so_path";
+	} else {
+		$ld_preload = "$opt_libsocket_wrapper_so_path";
+	}
+}
+
 if ($opt_libuid_wrapper_so_path) {
 	if ($ld_preload) {
 		$ld_preload = "$ld_preload:$opt_libuid_wrapper_so_path";
@@ -408,16 +419,10 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
 
 unless ($opt_list) {
 	if ($opt_target eq "samba") {
-		if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
-			die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
-		}
 		$testenv_default = "dc";
 		require target::Samba;
 		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $server_maxtime);
 	} elsif ($opt_target eq "samba3") {
-		if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
-			die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
-		}
 		$testenv_default = "member";
 		require target::Samba3;
 		$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $server_maxtime);
