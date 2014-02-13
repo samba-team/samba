@@ -43,6 +43,9 @@ struct dcerpc_pipe_connect {
 	const struct ndr_interface_table *interface;
 	struct cli_credentials *creds;
 	struct resolve_context *resolve_ctx;
+	struct {
+		const char *dir;
+	} ncalrpc;
 };
 
 struct pipe_np_smb_state {
@@ -505,7 +508,7 @@ static void continue_pipe_open_ncalrpc(struct composite_context *ctx)
    the binding structure to determine the endpoint and options
 */
 static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *mem_ctx,
-								  struct dcerpc_pipe_connect *io, struct loadparm_context *lp_ctx)
+								  struct dcerpc_pipe_connect *io)
 {
 	struct composite_context *c;
 	struct pipe_ncalrpc_state *s;
@@ -531,7 +534,7 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 
 	/* send pipe open request */
 	pipe_req = dcerpc_pipe_open_pipe_send(s->io.conn,
-					      lpcfg_ncalrpc_dir(lp_ctx),
+					      s->io.ncalrpc.dir,
 					      endpoint);
 	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
 	return c;
@@ -608,6 +611,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	uint32_t flags;
 
 	/* dcerpc pipe connect input parameters */
+	ZERO_STRUCT(pc);
 	pc.conn         = s->pipe->conn;
 	pc.binding      = s->binding;
 	pc.pipe_name    = NULL;
@@ -646,7 +650,11 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 		return;
 
 	case NCALRPC:
-		ncalrpc_req = dcerpc_pipe_connect_ncalrpc_send(c, &pc, s->lp_ctx);
+		pc.ncalrpc.dir = lpcfg_ncalrpc_dir(s->lp_ctx);
+		c->status = dcerpc_binding_set_string_option(s->binding, "ncalrpc_dir",
+							     pc.ncalrpc.dir);
+		if (!composite_is_ok(c)) return;
+		ncalrpc_req = dcerpc_pipe_connect_ncalrpc_send(c, &pc);
 		composite_continue(c, ncalrpc_req, continue_pipe_connect_ncalrpc, c);
 		return;
 
