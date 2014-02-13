@@ -421,7 +421,7 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 		tdb_increment_seqnum(tdb);
 	}
 
-	if (tdb_unlock(tdb, BUCKET(rec.full_hash), F_WRLCK) != 0)
+	if (tdb_unlock(tdb, BUCKET(hash), F_WRLCK) != 0)
 		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_delete: WARNING tdb_unlock failed!\n"));
 	return ret;
 }
