@@ -5318,7 +5318,7 @@ static int do_host_query(const char *query_host)
 
 static int do_tar_op(const char *base_directory)
 {
-	extern struct tar tar_ctx;
+	struct tar *tar_ctx = tar_get_ctx();
 	int ret = 0;
 
 	/* do we already have a connection? */
@@ -5345,7 +5345,7 @@ static int do_tar_op(const char *base_directory)
 		}
 	}
 
-	ret = tar_process(&tar_ctx);
+	ret = tar_process(tar_ctx);
 
  out_cli:
 	cli_shutdown(cli);
@@ -5393,7 +5393,7 @@ int main(int argc,char *argv[])
 	int rc = 0;
 	bool tar_opt = false;
 	bool service_opt = false;
-    extern struct tar tar_ctx;
+	struct tar *tar_ctx = tar_get_ctx();
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -5517,7 +5517,7 @@ int main(int argc,char *argv[])
 						break;
 				}
 				i++;
-				if (tar_parse_args(&tar_ctx, poptGetOptArg(pc),
+				if (tar_parse_args(tar_ctx, poptGetOptArg(pc),
 						   const_argv + i, argc - i)) {
 					poptPrintUsage(pc, stderr, 0);
 					exit(1);
@@ -5611,7 +5611,7 @@ int main(int argc,char *argv[])
 	if(new_name_resolve_order)
 		lp_set_cmdline("name resolve order", new_name_resolve_order);
 
-	if (!tar_to_process(&tar_ctx) && !query_host && !service && !message) {
+	if (!tar_to_process(tar_ctx) && !query_host && !service && !message) {
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
@@ -5626,7 +5626,7 @@ int main(int argc,char *argv[])
 
 	max_protocol = lp_client_max_protocol();
 
-	if (tar_to_process(&tar_ctx)) {
+	if (tar_to_process(tar_ctx)) {
 		if (cmdstr)
 			process_command_string(cmdstr);
 		rc = do_tar_op(base_directory);

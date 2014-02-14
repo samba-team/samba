@@ -24,8 +24,8 @@
  * the context of the backup process.
  *
  * The current tar context can be accessed via the global variable
- * `tar_ctx`. It's not static but you should avoid accessing it
- * directly.
+ * `tar_ctx`. It's publicly exported as an opaque handle via
+ * tar_get_ctx().
  *
  * A tar context is first configured through tar_parse_args() which
  * can be called from either the CLI (in client.c) or the interactive
@@ -232,6 +232,13 @@ static int max_token (const char *str);
 static bool is_subpath(const char *sub, const char *full);
 static int set_remote_attr(const char *filename, uint16 new_attr, int mode);
 
+/**
+ * tar_get_ctx - retrieve global tar context handle
+ */
+struct tar *tar_get_ctx()
+{
+    return &tar_ctx;
+}
 
 /**
  * cmd_block - interactive command to change tar blocksize
@@ -475,12 +482,17 @@ int cmd_setmode(void)
 int tar_parse_args(struct tar* t, const char *flag,
                    const char **val, int valsize)
 {
-    TALLOC_CTX *ctx = tar_reset_mem_context(t);
+    TALLOC_CTX *ctx;
     bool list = false;
-
     /* index of next value to use */
     int ival = 0;
 
+    if (t == NULL) {
+        DBG(0, ("Invalid tar context\n"));
+        return 1;
+    }
+
+    ctx = tar_reset_mem_context(t);
     /*
      * Reset back some options - could be from interactive version
      * all other modes are left as they are
@@ -658,6 +670,11 @@ int tar_parse_args(struct tar* t, const char *flag,
 int tar_process(struct tar *t)
 {
     int rc = 0;
+
+    if (t == NULL) {
+        DBG(0, ("Invalid tar context\n"));
+        return 1;
+    }
 
     switch(t->mode.operation) {
     case TAR_EXTRACT:
@@ -1353,6 +1370,10 @@ static bool tar_create_skip_path(struct tar *t,
  */
 bool tar_to_process (struct tar *t)
 {
+    if (t == NULL) {
+        DBG(0, ("Invalid tar context\n"));
+        return false;
+    }
     return t->to_process;
 }
 
@@ -1683,13 +1704,6 @@ static char *path_base_name (const char *path)
 
 #define NOT_IMPLEMENTED DEBUG(0, ("tar mode not compiled. build with --with-libarchive\n"))
 
-struct tar
-{
-    int dummy;
-};
-
-struct tar tar_ctx;
-
 int cmd_block(void)
 {
     NOT_IMPLEMENTED;
@@ -1730,6 +1744,11 @@ bool tar_to_process(struct tar *tar)
 {
     NOT_IMPLEMENTED;
     return false;
+}
+
+struct tar *tar_get_ctx()
+{
+    return NULL;
 }
 
 #endif
