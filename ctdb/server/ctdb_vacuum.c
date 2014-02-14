@@ -555,13 +555,14 @@ static int delete_queue_traverse(void *param, void *data)
 			       "hash [0x%08x] from local data base db[%s].\n",
 			       hash, ctdb_db->db_name));
 			vdata->fast_error++;
-		} else {
-			DEBUG(DEBUG_DEBUG,
-			      (__location__ " Deleted record with key hash "
-			       "[0x%08x] from local data base db[%s].\n",
-			       hash, ctdb_db->db_name));
-			vdata->fast_deleted++;
+			goto done;
 		}
+
+		DEBUG(DEBUG_DEBUG,
+		      (__location__ " Deleted record with key hash "
+		       "[0x%08x] from local data base db[%s].\n",
+		       hash, ctdb_db->db_name));
+		vdata->fast_deleted++;
 	}
 
 	goto done;
