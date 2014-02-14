@@ -706,8 +706,8 @@ done:
  * Traverse the delete_queue.
  * This fills the same lists as the database traverse.
  */
-static void ctdb_vacuum_db_fast(struct ctdb_db_context *ctdb_db,
-				struct vacuum_data *vdata)
+static void ctdb_process_delete_queue(struct ctdb_db_context *ctdb_db,
+				      struct vacuum_data *vdata)
 {
 	uint32_t sum;
 
@@ -1267,7 +1267,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		}
 	}
 
-	ctdb_vacuum_db_fast(ctdb_db, vdata);
+	ctdb_process_delete_queue(ctdb_db, vdata);
 
 	ret = ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
 	if (ret != 0) {
