@@ -169,7 +169,7 @@ static bool string_is_printable(const char *s)
 
 static WERROR append_data_summary(struct value_item *vitem)
 {
-	char *tmp;
+	char *tmp = NULL;
 
 /* This is adapted from print_registry_value() in net_registry_util.c */
 
