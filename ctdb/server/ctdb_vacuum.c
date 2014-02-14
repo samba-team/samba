@@ -757,8 +757,8 @@ static void ctdb_vacuum_db_fast(struct ctdb_db_context *ctdb_db,
  * This is not done each time but only every tunable
  * VacuumFastPathCount times.
  */
-static int ctdb_vacuum_db_full(struct ctdb_db_context *ctdb_db,
-			       struct vacuum_data *vdata)
+static int ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
+				   struct vacuum_data *vdata)
 {
 	int ret;
 
@@ -1262,7 +1262,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (full_vacuum_run) {
-		ret = ctdb_vacuum_db_full(ctdb_db, vdata);
+		ret = ctdb_vacuum_traverse_db(ctdb_db, vdata);
 		if (ret != 0) {
 			return ret;
 		}
