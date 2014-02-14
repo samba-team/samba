@@ -716,7 +716,22 @@ done:
 static void ctdb_vacuum_db_fast(struct ctdb_db_context *ctdb_db,
 				struct vacuum_data *vdata)
 {
+	uint32_t sum;
+
 	trbt_traversearray32(ctdb_db->delete_queue, 1, delete_queue_traverse, vdata);
+
+	sum = vdata->fast_deleted
+	    + vdata->fast_skipped
+	    + vdata->fast_error
+	    + vdata->fast_added_to_delete_list
+	    + vdata->fast_added_to_vacuum_fetch_list;
+
+	if (vdata->fast_total != sum) {
+		DEBUG(DEBUG_ERR, (__location__ " Inconsistency in fast vacuum "
+		      "counts for db[%s]: total[%u] != sum[%u]\n",
+		      ctdb_db->db_name, (unsigned)vdata->fast_total,
+		      (unsigned)sum));
+	}
 
 	if (vdata->fast_total > 0) {
 		DEBUG(DEBUG_INFO,
