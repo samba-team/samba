@@ -185,7 +185,9 @@ NTSTATUS ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 		 * send and we need to return directly
 		 */
 		status = extended_ops[i].fn(call, reply, &error_str);
-		NT_STATUS_IS_OK_RETURN(status);
+		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
  
 		if (NT_STATUS_IS_LDAP(status)) {
 			result = NT_STATUS_LDAP_CODE(status);
