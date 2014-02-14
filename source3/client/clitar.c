@@ -168,20 +168,6 @@ struct tar tar_ctx = {
     .mode.verbose     = false,
 };
 
-/* interactive commands, exported functions */
-int cmd_block(void);
-int cmd_setmode(void);
-int cmd_tar(void);
-int cmd_tarmode(void);
-
-/* tar, exported functions */
-int tar_process(struct tar *t);
-bool tar_to_process(struct tar *t);
-int tar_parse_args(struct tar *t,
-                   const char *flag,
-                   const char **val, int valsize);
-
-
 /* tar, local function */
 static int tar_create(struct tar* t);
 static int tar_create_from_list(struct tar *t);
