@@ -587,8 +587,7 @@ static int delete_record_traverse(void *param, void *data)
 	struct ctdb_db_context *ctdb_db = dd->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	int res;
-	struct ctdb_ltdb_header *header;
-	TDB_DATA tdb_data;
+	struct ctdb_ltdb_header header;
 	uint32_t lmaster;
 	uint32_t hash = ctdb_hash(&(dd->key));
 
@@ -609,26 +608,13 @@ static int delete_record_traverse(void *param, void *data)
 	 * changed and that we are still its lmaster and dmaster.
 	 */
 
-	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
-	if (tdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
-				   "on database db[%s] does not exist or is not"
-				   " a ctdb-record.  skipping.\n",
-				   hash, ctdb_db->db_name));
+	res = tdb_parse_record(ctdb_db->ltdb->tdb, dd->key,
+			       vacuum_record_parser, &header);
+	if (res != 0) {
 		goto skip;
 	}
 
-	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
-				   "on database db[%s] has been recycled. "
-				   "skipping.\n",
-				   hash, ctdb_db->db_name));
-		goto skip;
-	}
-
-	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
-
-	if (header->flags & CTDB_REC_RO_FLAGS) {
+	if (header.flags & CTDB_REC_RO_FLAGS) {
 		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
 				   "on database db[%s] has read-only flags. "
 				   "skipping.\n",
@@ -636,7 +622,7 @@ static int delete_record_traverse(void *param, void *data)
 		goto skip;
 	}
 
-	if (header->dmaster != ctdb->pnn) {
+	if (header.dmaster != ctdb->pnn) {
 		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
 				   "on database db[%s] has been migrated away. "
 				   "skipping.\n",
@@ -644,7 +630,7 @@ static int delete_record_traverse(void *param, void *data)
 		goto skip;
 	}
 
-	if (header->rsn != dd->hdr.rsn + 1) {
+	if (header.rsn != dd->hdr.rsn + 1) {
 		/*
 		 * The record has been migrated off the node and back again.
 		 * But not requeued for deletion. Skip it.
@@ -691,8 +677,6 @@ skip:
 	vdata->delete_skipped++;
 
 done:
-	free(tdb_data.dptr);
-
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
 	talloc_free(dd);
