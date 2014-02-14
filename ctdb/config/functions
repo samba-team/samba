@@ -1289,14 +1289,7 @@ ctdb_service_stop ()
 
 # Default service_start() and service_stop() functions.
  
-# These may be overridden in an eventscript.  When overriding, the
-# following convention must be followed.  If these functions are
-# called with no arguments then they may use internal logic to
-# determine whether the service is managed and, therefore, whether
-# they should take any action.  However, if the service name is
-# specified as an argument then an attempt must be made to start or
-# stop the service.  This is because the auto-start/stop code calls
-# them with the service name as an argument.
+# These may be overridden in an eventscript.
 service_start ()
 {
     service "$service_name" start
