@@ -73,8 +73,7 @@ struct vacuum_data {
 	uint32_t fast_skipped;
 	uint32_t fast_error;
 	uint32_t fast_total;
-	uint32_t full_added_to_vacuum_fetch_list;
-	uint32_t full_added_to_delete_list;
+	uint32_t full_scheduled;
 	uint32_t full_skipped;
 	uint32_t full_error;
 	uint32_t full_total;
@@ -98,6 +97,10 @@ struct delete_records_list {
 	struct ctdb_marshall_buffer *records;
 	struct vacuum_data *vdata;
 };
+
+static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
+					   const struct ctdb_ltdb_header *hdr,
+					   TDB_DATA key);
 
 /**
  * Store key and header in a tree, indexed by the key hash.
@@ -232,6 +235,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	struct vacuum_data *vdata = talloc_get_type(private_data,
 						    struct vacuum_data);
 	struct ctdb_context *ctdb = vdata->ctdb;
+	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
 	uint32_t lmaster;
 	struct ctdb_ltdb_header *hdr;
 	int res = 0;
@@ -263,31 +267,18 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		return 0;
 	}
 
-	if (lmaster == ctdb->pnn) {
-		/*
-		 * We are both lmaster and dmaster, and the record is empty.
-		 * So we should be able to delete it.
-		 */
-		res = add_record_to_delete_list(vdata, key, hdr);
-		if (res != 0) {
-			vdata->full_error++;
-		} else {
-			vdata->full_added_to_delete_list++;
-		}
+	/*
+	 * Add the record to this process's delete_queue for processing
+	 * in the subsequent traverse in the fast vacuum run.
+	 */
+	res = insert_record_into_delete_queue(ctdb_db, hdr, key);
+	if (res != 0) {
+		vdata->full_error++;
 	} else {
-		/*
-		 * We are not lmaster.
-		 * Add the record to the blob ready to send to the nodes.
-		 */
-		res = add_record_to_vacuum_fetch_list(vdata, key);
-		if (res != 0) {
-			vdata->full_error++;
-		} else {
-			vdata->full_added_to_vacuum_fetch_list++;
-		}
+		vdata->full_scheduled++;
 	}
 
-	return res;
+	return 0;
 }
 
 /*
@@ -786,14 +777,12 @@ static int ctdb_vacuum_db_full(struct ctdb_db_context *ctdb_db,
 		       "total[%u] "
 		       "skp[%u] "
 		       "err[%u] "
-		       "adl[%u] "
-		       "avf[%u]\n",
+		       "sched[%u]\n",
 		       ctdb_db->db_name,
 		       (unsigned)vdata->full_total,
 		       (unsigned)vdata->full_skipped,
 		       (unsigned)vdata->full_error,
-		       (unsigned)vdata->full_added_to_delete_list,
-		       (unsigned)vdata->full_added_to_vacuum_fetch_list));
+		       (unsigned)vdata->full_scheduled));
 	}
 
 	return 0;
@@ -1176,8 +1165,7 @@ static int ctdb_vacuum_init_vacuum_data(struct ctdb_db_context *ctdb_db,
 	vdata->fast_skipped = 0;
 	vdata->fast_error = 0;
 	vdata->fast_total = 0;
-	vdata->full_added_to_delete_list = 0;
-	vdata->full_added_to_vacuum_fetch_list = 0;
+	vdata->full_scheduled = 0;
 	vdata->full_skipped = 0;
 	vdata->full_error = 0;
 	vdata->full_total = 0;
