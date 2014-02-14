@@ -248,7 +248,7 @@ done:
 			}
 		}
 		/* We need to delete the job from spoolss too */
-		if (pf->jobid) {
+		if (pf && pf->jobid) {
 			print_spool_terminate(fsp->conn, pf);
 		}
 	}
