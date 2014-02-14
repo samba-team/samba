@@ -226,9 +226,11 @@ static int vacuum_record_parser(TDB_DATA key, TDB_DATA data, void *private_data)
 /*
  * traverse function for gathering the records that can be deleted
  */
-static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private)
+static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
+			   void *private_data)
 {
-	struct vacuum_data *vdata = talloc_get_type(private, struct vacuum_data);
+	struct vacuum_data *vdata = talloc_get_type(private_data,
+						    struct vacuum_data);
 	struct ctdb_context *ctdb = vdata->ctdb;
 	uint32_t lmaster;
 	struct ctdb_ltdb_header *hdr;
