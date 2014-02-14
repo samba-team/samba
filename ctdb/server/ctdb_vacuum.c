@@ -209,6 +209,19 @@ static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
 static void ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 			      struct timeval t, void *private_data);
 
+static int vacuum_record_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct ctdb_ltdb_header *header =
+		(struct ctdb_ltdb_header *)private_data;
+
+	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
+		return -1;
+	}
+
+	*header = *(struct ctdb_ltdb_header *)data.dptr;
+
+	return 0;
+}
 
 /*
  * traverse function for gathering the records that can be deleted
@@ -466,8 +479,7 @@ static int delete_queue_traverse(void *param, void *data)
 	struct ctdb_db_context *ctdb_db = dd->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb; /* or dd->ctdb ??? */
 	int res;
-	struct ctdb_ltdb_header *header;
-	TDB_DATA tdb_data;
+	struct ctdb_ltdb_header header;
 	uint32_t lmaster;
 	uint32_t hash = ctdb_hash(&(dd->key));
 
@@ -483,25 +495,18 @@ static int delete_queue_traverse(void *param, void *data)
 		return 0;
 	}
 
-	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
-	if (tdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		/* Does not exist or not a ctdb record. Skip. */
+	res = tdb_parse_record(ctdb_db->ltdb->tdb, dd->key,
+			       vacuum_record_parser, &header);
+	if (res != 0) {
 		goto skipped;
 	}
 
-	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
-		/* The record has been recycled (filled with data). Skip. */
-		goto skipped;
-	}
-
-	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
-
-	if (header->dmaster != ctdb->pnn) {
+	if (header.dmaster != ctdb->pnn) {
 		/* The record has been migrated off the node. Skip. */
 		goto skipped;
 	}
 
-	if (header->rsn != dd->hdr.rsn) {
+	if (header.rsn != dd->hdr.rsn) {
 		/*
 		 * The record has been migrated off the node and back again.
 		 * But not requeued for deletion. Skip it.
@@ -571,8 +576,6 @@ skipped:
 	vdata->fast_skipped++;
 
 done:
-	free(tdb_data.dptr);
-
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
 	return 0;
