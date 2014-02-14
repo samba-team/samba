@@ -53,7 +53,6 @@ struct ctdb_vacuum_handle {
 
 /*  a list of records to possibly delete */
 struct vacuum_data {
-	uint32_t vacuum_limit;
 	uint32_t repack_limit;
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
@@ -1428,7 +1427,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 				     bool full_vacuum_run)
 {
 	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
-	uint32_t vacuum_limit = ctdb_db->ctdb->tunable.vacuum_limit;
 	const char *name = ctdb_db->db_name;
 	int freelist_size = 0;
 	struct vacuum_data *vdata;
@@ -1440,7 +1438,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	}
 
 	vdata->ctdb = ctdb_db->ctdb;
-	vdata->vacuum_limit = vacuum_limit;
 	vdata->repack_limit = repack_limit;
 	vdata->delete_list = trbt_create(vdata, 0);
 	vdata->ctdb_db = ctdb_db;
@@ -1471,8 +1468,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	/*
 	 * decide if a repack is necessary
 	 */
-	if ((repack_limit == 0 || (uint32_t)freelist_size < repack_limit) &&
-	    (vacuum_limit == 0 || vdata->delete_left < vacuum_limit))
+	if ((repack_limit == 0 || (uint32_t)freelist_size < repack_limit))
 	{
 		talloc_free(vdata);
 		return 0;
