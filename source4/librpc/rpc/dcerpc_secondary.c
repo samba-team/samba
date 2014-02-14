@@ -31,14 +31,12 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
-#include "lib/socket/socket.h"
+#include "lib/util/util_net.h"
 
 struct sec_conn_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
-	struct socket_address *peer_addr;
-	const char *localaddress;
 };
 
 
@@ -60,9 +58,11 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	struct sec_conn_state *s;
 	struct composite_context *pipe_smb_req;
 	struct composite_context *pipe_tcp_req;
+	const char *localaddress = NULL;
 	struct composite_context *pipe_ncalrpc_req;
 	const char *ncalrpc_dir = NULL;
 	struct composite_context *pipe_unix_req;
+	const char *host;
 	const char *target_hostname;
 	const char *endpoint;
 
@@ -85,7 +85,22 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	if (DEBUGLEVEL >= 10)
 		s->pipe2->conn->packet_log_dir = s->pipe->conn->packet_log_dir;
 
+	host = dcerpc_binding_get_string_option(s->binding, "host");
+	if (host == NULL) {
+		/*
+		 * We may fallback to the host of the given connection
+		 */
+		host = dcerpc_binding_get_string_option(s->pipe->binding,
+							"host");
+	}
 	target_hostname = dcerpc_binding_get_string_option(s->binding, "target_hostname");
+	if (target_hostname == NULL) {
+		/*
+		 * We may fallback to the target_hostname of the given connection
+		 */
+		target_hostname = dcerpc_binding_get_string_option(s->pipe->binding,
+								   "target_hostname");
+	}
 	endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
 	if (endpoint == NULL) {
 		/*
@@ -108,18 +123,40 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 		return c;
 
 	case NCACN_IP_TCP:
-		s->peer_addr = dcerpc_socket_peer_addr(s->pipe->conn, s);
-		if (!s->peer_addr) {
-			composite_error(c, NT_STATUS_INVALID_PARAMETER);
+		if (host == NULL) {
+			composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
 			return c;
 		}
 
-		s->localaddress = dcerpc_binding_get_string_option(s->binding,
+		if (!is_ipaddress(host)) {
+			/*
+			 * We may fallback to the host of the given connection
+			 */
+			host = dcerpc_binding_get_string_option(s->pipe->binding,
+								"host");
+			if (host == NULL) {
+				composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+				return c;
+			}
+			if (!is_ipaddress(host)) {
+				composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+				return c;
+			}
+		}
+
+		localaddress = dcerpc_binding_get_string_option(s->binding,
 								"localaddress");
+		if (localaddress == NULL) {
+			/*
+			 * We may fallback to the localaddress of the given connection
+			 */
+			localaddress = dcerpc_binding_get_string_option(s->pipe->binding,
+									"localaddress");
+		}
 
 		pipe_tcp_req = dcerpc_pipe_open_tcp_send(s->pipe2->conn,
-							 s->localaddress,
-							 s->peer_addr->addr,
+							 localaddress,
+							 host,
 							 target_hostname,
 							 atoi(endpoint),
 							 resolve_context_init(s));
