@@ -32,17 +32,9 @@
 #include "libcli/resolve/resolve.h"
 #include "librpc/rpc/rpc_common.h"
 
-/* transport private information used by general socket pipe transports */
-struct sock_private {
-	const char *path; /* For ncacn_unix_sock and ncalrpc */
-
-	struct socket_address *peer_addr;
-};
-
 struct pipe_open_socket_state {
 	struct dcecli_connection *conn;
 	struct socket_context *socket_ctx;
-	struct sock_private *sock;
 	struct socket_address *localaddr;
 	struct socket_address *server;
 	const char *target_hostname;
@@ -54,7 +46,6 @@ struct pipe_open_socket_state {
 static void continue_socket_connect(struct composite_context *ctx)
 {
 	struct dcecli_connection *conn;
-	struct sock_private *sock;
 	struct composite_context *c = talloc_get_type_abort(
 		ctx->async.private_data, struct composite_context);
 	struct pipe_open_socket_state *s = talloc_get_type_abort(
@@ -64,7 +55,6 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 	/* make it easier to write a function calls */
 	conn = s->conn;
-	sock = s->sock;
 
 	c->status = socket_connect_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
@@ -77,17 +67,11 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 	s->client = socket_get_my_addr(s->socket_ctx, s);
 	if (s->client == NULL) {
-		talloc_free(sock);
+		TALLOC_FREE(s->socket_ctx);
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 	sock_fd = socket_get_fd(s->socket_ctx);
-	sock->peer_addr = socket_get_peer_addr(s->socket_ctx, sock);
-	if (sock->peer_addr == NULL) {
-		talloc_free(sock);
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
 	socket_set_flags(s->socket_ctx, SOCKET_FLAG_NOCLOSE);
 	TALLOC_FREE(s->socket_ctx);
 
@@ -107,12 +91,10 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->transport.pending_reads = 0;
 	conn->server_name   = strupper_talloc(conn, s->target_hostname);
 
-	conn->transport.private_data = sock;
-
-	rc = tstream_bsd_existing_socket(sock, sock_fd,
+	rc = tstream_bsd_existing_socket(conn, sock_fd,
 					 &conn->transport.stream);
 	if (rc < 0) {
-		talloc_free(sock);
+		close(sock_fd);
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -120,7 +102,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 	conn->transport.write_queue =
 		tevent_queue_create(conn, "dcerpc sock write queue");
 	if (conn->transport.write_queue == NULL) {
-		talloc_free(sock);
+		TALLOC_FREE(conn->transport.stream);
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -164,18 +146,10 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 		if (composite_nomem(s->target_hostname, c)) return c;
 	}
 
-	s->sock = talloc_zero(cn, struct sock_private);
-	if (composite_nomem(s->sock, c)) return c;
-
 	c->status = socket_create(server->family, SOCKET_TYPE_STREAM, &s->socket_ctx, 0);
 	if (!composite_is_ok(c)) return c;
 
-	talloc_steal(s->sock, s->socket_ctx);
-
-	if (full_path != NULL) {
-		s->sock->path = talloc_strdup(s->sock, full_path);
-		if (composite_nomem(s->sock->path, c)) return c;
-	}
+	talloc_steal(s, s->socket_ctx);
 
 	conn_req = socket_connect_send(s->socket_ctx, s->localaddr, s->server, 0,
 				       c->event_ctx);
@@ -519,18 +493,3 @@ NTSTATUS dcerpc_pipe_open_pipe(struct dcecli_connection *conn, const char *ncalr
 	struct composite_context *c = dcerpc_pipe_open_pipe_send(conn, ncalrpc_dir, identifier);
 	return dcerpc_pipe_open_pipe_recv(c);
 }
-
-const char *dcerpc_unix_socket_path(struct dcecli_connection *p)
-{
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
-	return sock->path;
-}
-
-struct socket_address *dcerpc_socket_peer_addr(struct dcecli_connection *p, TALLOC_CTX *mem_ctx)
-{
-	struct sock_private *sock = talloc_get_type_abort(
-		p->transport.private_data, struct sock_private);
-	return socket_address_copy(mem_ctx, sock->peer_addr);
-}
-
