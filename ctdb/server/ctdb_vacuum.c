@@ -750,7 +750,6 @@ static void ctdb_vacuum_db_fast(struct ctdb_db_context *ctdb_db,
 }
 
 /**
- * Full vacuum run:
  * read-only traverse of the database, looking for records that
  * might be able to be vacuumed.
  *
