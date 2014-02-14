@@ -1302,9 +1302,10 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 /*
  * traverse function for repacking
  */
-static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private)
+static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
+			   void *private_data)
 {
-	struct vacuum_data *vdata = (struct vacuum_data *)private;
+	struct vacuum_data *vdata = (struct vacuum_data *)private_data;
 
 	if (vdata->vacuum) {
 		uint32_t hash = ctdb_hash(&key);
