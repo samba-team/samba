@@ -849,6 +849,7 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	uint32_t *active_nodes;
 	int num_active_nodes;
 	TALLOC_CTX *tmp_ctx;
+	uint32_t sum;
 
 	if (vdata->delete_count == 0) {
 		return 0;
@@ -1112,6 +1113,19 @@ success:
 		      "processing delete list\n",
 		      ctdb_db->db_name,
 		      (unsigned)vdata->delete_left));
+	}
+
+	sum = vdata->delete_deleted
+	    + vdata->delete_skipped
+	    + vdata->delete_remote_error
+	    + vdata->delete_local_error
+	    + vdata->delete_left;
+
+	if (vdata->delete_count != sum) {
+		DEBUG(DEBUG_ERR, (__location__ " Inconsistency in vacuum "
+		      "delete list counts for db[%s]: total[%u] != sum[%u]\n",
+		      ctdb_db->db_name, (unsigned)vdata->delete_count,
+		      (unsigned)sum));
 	}
 
 	if (vdata->delete_count > 0) {
