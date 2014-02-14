@@ -1273,14 +1273,14 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		return ret;
 	}
 
-	ctdb_vacuum_db_fast(ctdb_db, vdata);
-
 	if (full_vacuum_run) {
 		ret = ctdb_vacuum_db_full(ctdb_db, vdata);
 		if (ret != 0) {
 			return ret;
 		}
 	}
+
+	ctdb_vacuum_db_fast(ctdb_db, vdata);
 
 	ret = ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
 	if (ret != 0) {
