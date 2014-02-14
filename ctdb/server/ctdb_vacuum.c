@@ -571,9 +571,8 @@ skipped:
 	vdata->fast_skipped++;
 
 done:
-	if (tdb_data.dptr != NULL) {
-		free(tdb_data.dptr);
-	}
+	free(tdb_data.dptr);
+
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
 	return 0;
