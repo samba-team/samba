@@ -1106,6 +1106,14 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 success:
 
+	if (vdata->delete_left != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Vaccum db[%s] error: "
+		      "there are %u records left for deletion after "
+		      "processing delete list\n",
+		      ctdb_db->db_name,
+		      (unsigned)vdata->delete_left));
+	}
+
 	if (vdata->delete_count > 0) {
 		DEBUG(DEBUG_INFO,
 		      (__location__
