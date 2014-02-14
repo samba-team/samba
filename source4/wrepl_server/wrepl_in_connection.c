@@ -65,7 +65,9 @@ static NTSTATUS wreplsrv_process(struct wreplsrv_in_connection *wrepl_conn,
 	}
 
 	status = wreplsrv_in_call(call);
-	NT_STATUS_IS_ERR_RETURN(status);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		/* w2k just ignores invalid packets, so we do */
 		DEBUG(10,("Received WINS-Replication packet was invalid, we just ignore it\n"));
