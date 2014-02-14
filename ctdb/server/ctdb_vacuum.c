@@ -702,9 +702,10 @@ done:
 }
 
 /**
- * Fast vacuuming run:
  * Traverse the delete_queue.
- * This fills the same lists as the database traverse.
+ * Records are either deleted directly or filled
+ * into the delete list or the vacuum fetch lists
+ * for further processing.
  */
 static void ctdb_process_delete_queue(struct ctdb_db_context *ctdb_db,
 				      struct vacuum_data *vdata)
