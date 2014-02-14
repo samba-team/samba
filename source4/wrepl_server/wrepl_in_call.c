@@ -369,7 +369,10 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	TALLOC_FREE(wrepl_in->send_queue);
 
 	status = wrepl_socket_donate_stream(wrepl_out->sock, &wrepl_in->tstream);
-	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, update_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(update_state);
+		return status;
+	}
 
 	update_state->wrepl_in			= wrepl_in;
 	update_state->wrepl_out			= wrepl_out;

@@ -936,7 +936,10 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
-	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
 	switch (acl->version) {
 	case 1:
@@ -979,7 +982,10 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	ids[1].status = ID_UNKNOWN;
 
 	status = wbc_xids_to_sids(pvfs->ntvfs->ctx->event_ctx, ids, 2);
-	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
 	sd->owner_sid = talloc_steal(sd, ids[0].sid);
 	sd->group_sid = talloc_steal(sd, ids[1].sid);
@@ -988,7 +994,10 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 
 	/* fill in the aces from the parent */
 	status = pvfs_acl_inherit_aces(pvfs, parent_sd, sd, container);
-	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
 	/* if there is nothing to inherit then we fallback to the
 	   default acl */

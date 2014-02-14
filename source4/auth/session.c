@@ -206,7 +206,10 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 					  sids,
 					  session_info_flags,
 					  &session_info->security_token);
-	NT_STATUS_NOT_OK_RETURN_AND_FREE(nt_status, tmp_ctx);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
 
 	session_info->credentials = NULL;
 

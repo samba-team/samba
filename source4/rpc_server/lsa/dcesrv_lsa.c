@@ -84,7 +84,10 @@ static NTSTATUS dcesrv_build_lsa_sd(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	status = dom_sid_split_rid(tmp_ctx, sid, &domain_sid, &rid);
-	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
 	domain_admins_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_ADMINS);
 	if (domain_admins_sid == NULL) {

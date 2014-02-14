@@ -915,7 +915,10 @@ NTSTATUS torture_check_privilege(struct smbcli_state *cli,
 	}
 
 	status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
-	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
 	if (rid == DOMAIN_RID_ADMINISTRATOR) {
 		/* assume the administrator has them all */
