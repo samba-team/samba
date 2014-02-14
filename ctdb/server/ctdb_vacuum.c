@@ -594,7 +594,6 @@ static int delete_record_traverse(void *param, void *data)
 	struct ctdb_ltdb_header *header;
 	TDB_DATA tdb_data;
 	uint32_t lmaster;
-	bool deleted = false;
 	uint32_t hash = ctdb_hash(&(dd->key));
 
 	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
@@ -604,6 +603,8 @@ static int delete_record_traverse(void *param, void *data)
 		       "key hash [0x%08x] on database db[%s].\n",
 		       hash, ctdb_db->db_name));
 		vdata->delete_local_error++;
+		vdata->delete_left--;
+		talloc_free(dd);
 		return 0;
 	}
 
@@ -618,8 +619,7 @@ static int delete_record_traverse(void *param, void *data)
 				   "on database db[%s] does not exist or is not"
 				   " a ctdb-record.  skipping.\n",
 				   hash, ctdb_db->db_name));
-		vdata->delete_skipped++;
-		goto done;
+		goto skip;
 	}
 
 	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
@@ -627,8 +627,7 @@ static int delete_record_traverse(void *param, void *data)
 				   "on database db[%s] has been recycled. "
 				   "skipping.\n",
 				   hash, ctdb_db->db_name));
-		vdata->delete_skipped++;
-		goto done;
+		goto skip;
 	}
 
 	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
@@ -638,8 +637,7 @@ static int delete_record_traverse(void *param, void *data)
 				   "on database db[%s] has read-only flags. "
 				   "skipping.\n",
 				   hash, ctdb_db->db_name));
-		vdata->delete_skipped++;
-		goto done;
+		goto skip;
 	}
 
 	if (header->dmaster != ctdb->pnn) {
@@ -647,8 +645,7 @@ static int delete_record_traverse(void *param, void *data)
 				   "on database db[%s] has been migrated away. "
 				   "skipping.\n",
 				   hash, ctdb_db->db_name));
-		vdata->delete_skipped++;
-		goto done;
+		goto skip;
 	}
 
 	if (header->rsn != dd->hdr.rsn + 1) {
@@ -663,8 +660,7 @@ static int delete_record_traverse(void *param, void *data)
 				   "migrated away and back again (with empty "
 				   "data). skipping.\n",
 				   hash, ctdb_db->db_name));
-		vdata->delete_skipped++;
-		goto done;
+		goto skip;
 	}
 
 	lmaster = ctdb_lmaster(ctdb_db->ctdb, &dd->key);
@@ -674,8 +670,7 @@ static int delete_record_traverse(void *param, void *data)
 				   "delete list (key hash [0x%08x], db[%s]). "
 				   "Strange! skipping.\n",
 				   hash, ctdb_db->db_name));
-		vdata->delete_skipped++;
-		goto done;
+		goto skip;
 	}
 
 	res = tdb_delete(ctdb_db->ltdb->tdb, dd->key);
@@ -689,11 +684,15 @@ static int delete_record_traverse(void *param, void *data)
 		goto done;
 	}
 
-	deleted = true;
-
 	DEBUG(DEBUG_DEBUG,
 	      (__location__ " Deleted record with key hash [0x%08x] from "
 	       "local data base db[%s].\n", hash, ctdb_db->db_name));
+
+	vdata->delete_deleted++;
+	goto done;
+
+skip:
+	vdata->delete_skipped++;
 
 done:
 	if (tdb_data.dptr != NULL) {
@@ -702,15 +701,8 @@ done:
 
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
-	if (deleted) {
-		/*
-		 * successfully deleted the record locally.
-		 * remove it from the list and update statistics.
-		 */
-		talloc_free(dd);
-		vdata->delete_deleted++;
-		vdata->delete_left--;
-	}
+	talloc_free(dd);
+	vdata->delete_left--;
 
 	return 0;
 }
