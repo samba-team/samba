@@ -765,14 +765,9 @@ static void ctdb_vacuum_db_fast(struct ctdb_db_context *ctdb_db,
  * VacuumFastPathCount times.
  */
 static int ctdb_vacuum_db_full(struct ctdb_db_context *ctdb_db,
-			       struct vacuum_data *vdata,
-			       bool full_vacuum_run)
+			       struct vacuum_data *vdata)
 {
 	int ret;
-
-	if (!full_vacuum_run) {
-		return 0;
-	}
 
 	ret = tdb_traverse_read(ctdb_db->ltdb->tdb, vacuum_traverse, vdata);
 	if (ret == -1 || vdata->traverse_error) {
@@ -1278,9 +1273,11 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 	ctdb_vacuum_db_fast(ctdb_db, vdata);
 
-	ret = ctdb_vacuum_db_full(ctdb_db, vdata, full_vacuum_run);
-	if (ret != 0) {
-		return ret;
+	if (full_vacuum_run) {
+		ret = ctdb_vacuum_db_full(ctdb_db, vdata);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	ret = ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
