@@ -39,7 +39,7 @@
 /*
 ** NT's AFP_AfpInfo stream structure
 */
-#define APF_INFO_SIZE		0x3c		
+#define AFP_INFO_SIZE		0x3c
 #define AFP_Signature		0x41465000 
 #define AFP_Version			0x00000100
 #define AFP_BackupTime		0x00000080
