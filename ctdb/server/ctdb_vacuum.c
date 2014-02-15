@@ -761,8 +761,8 @@ static void ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
  * For records for which we are not the lmaster, tell the lmaster to
  * fetch the record.
  */
-static int ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
-					   struct vacuum_data *vdata)
+static void ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
+					    struct vacuum_data *vdata)
 {
 	int i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -795,7 +795,7 @@ static int ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 		}
 	}
 
-	return 0;
+	return;
 }
 
 /**
@@ -1268,10 +1268,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 	ctdb_process_delete_queue(ctdb_db, vdata);
 
-	ret = ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
-	if (ret != 0) {
-		return ret;
-	}
+	ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
 
 	ret = ctdb_process_delete_list(ctdb_db, vdata);
 	if (ret != 0) {
