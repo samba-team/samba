@@ -726,8 +726,8 @@ static void ctdb_process_delete_queue(struct ctdb_db_context *ctdb_db,
  * This is not done each time but only every tunable
  * VacuumFastPathCount times.
  */
-static int ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
-				   struct vacuum_data *vdata)
+static void ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
+				    struct vacuum_data *vdata)
 {
 	int ret;
 
@@ -735,7 +735,6 @@ static int ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
 	if (ret == -1 || vdata->traverse_error) {
 		DEBUG(DEBUG_ERR, (__location__ " Traverse error in vacuuming "
 				  "'%s'\n", ctdb_db->db_name));
-		return -1;
 	}
 
 	if (vdata->full_total > 0) {
@@ -754,7 +753,7 @@ static int ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
 		       (unsigned)vdata->full_scheduled));
 	}
 
-	return 0;
+	return;
 }
 
 /**
@@ -1264,10 +1263,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (full_vacuum_run) {
-		ret = ctdb_vacuum_traverse_db(ctdb_db, vdata);
-		if (ret != 0) {
-			return ret;
-		}
+		ctdb_vacuum_traverse_db(ctdb_db, vdata);
 	}
 
 	ctdb_process_delete_queue(ctdb_db, vdata);
