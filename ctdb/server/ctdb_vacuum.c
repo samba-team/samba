@@ -1344,12 +1344,10 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 		DEBUG(DEBUG_ERR,(__location__ " Failed to vacuum '%s'\n", name));
 	}
 
-	if (repack_limit != 0) {
-		freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
-		if (freelist_size == -1) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
-			return -1;
-		}
+	freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
+	if (freelist_size == -1) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
+		return -1;
 	}
 
 	/*
