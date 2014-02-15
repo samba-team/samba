@@ -324,8 +324,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 	struct delete_records_list *recs = talloc_get_type(param, struct delete_records_list);
 	struct ctdb_db_context *ctdb_db = dd->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	struct ctdb_ltdb_header *header;
-	TDB_DATA tdb_data;
+	struct ctdb_ltdb_header header;
 	uint32_t lmaster;
 	uint32_t hash = ctdb_hash(&(dd->key));
 	int res;
@@ -346,26 +345,13 @@ static int delete_marshall_traverse_first(void *param, void *data)
 	 * changed and that we are still its lmaster and dmaster.
 	 */
 
-	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
-	if (tdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
-				   "on database db[%s] does not exist or is not"
-				   " a ctdb-record.  skipping.\n",
-				   hash, ctdb_db->db_name));
+	res = tdb_parse_record(ctdb_db->ltdb->tdb, dd->key,
+			       vacuum_record_parser, &header);
+	if (res != 0) {
 		goto skip;
 	}
 
-	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
-				   "on database db[%s] has been recycled. "
-				   "skipping.\n",
-				   hash, ctdb_db->db_name));
-		goto skip;
-	}
-
-	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
-
-	if (header->flags & CTDB_REC_RO_FLAGS) {
+	if (header.flags & CTDB_REC_RO_FLAGS) {
 		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
 				   "on database db[%s] has read-only flags. "
 				   "skipping.\n",
@@ -373,7 +359,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 		goto skip;
 	}
 
-	if (header->dmaster != ctdb->pnn) {
+	if (header.dmaster != ctdb->pnn) {
 		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
 				   "on database db[%s] has been migrated away. "
 				   "skipping.\n",
@@ -381,7 +367,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 		goto skip;
 	}
 
-	if (header->rsn != dd->hdr.rsn) {
+	if (header.rsn != dd->hdr.rsn) {
 		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
 				   "on database db[%s] seems to have been "
 				   "migrated away and back again (with empty "
@@ -409,7 +395,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 	 * on the record's dmaster.
 	 */
 
-	res = ctdb_ltdb_store(ctdb_db, dd->key, header, tdb_null);
+	res = ctdb_ltdb_store(ctdb_db, dd->key, &header, tdb_null);
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ ": Failed to store record with "
 				  "key hash [0x%08x] on database db[%s].\n",
@@ -429,10 +415,6 @@ skip:
 	dd = NULL;
 
 done:
-	if (tdb_data.dptr != NULL) {
-		free(tdb_data.dptr);
-	}
-
 	if (dd == NULL) {
 		return 0;
 	}
