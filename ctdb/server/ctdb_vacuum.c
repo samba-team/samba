@@ -793,7 +793,6 @@ static int ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 			DEBUG(DEBUG_ERR, (__location__ " Failed to send vacuum "
 					  "fetch message to %u\n",
 					  ctdb->nodes[i]->pnn));
-			return -1;
 		}
 	}
 
