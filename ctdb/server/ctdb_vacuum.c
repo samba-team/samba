@@ -325,7 +325,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 	struct ctdb_db_context *ctdb_db = dd->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_ltdb_header *header;
-	TDB_DATA tdb_data, ctdb_data;
+	TDB_DATA tdb_data;
 	uint32_t lmaster;
 	uint32_t hash = ctdb_hash(&(dd->key));
 	int res;
@@ -409,10 +409,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 	 * on the record's dmaster.
 	 */
 
-	ctdb_data.dptr = tdb_data.dptr + sizeof(struct ctdb_ltdb_header);
-	ctdb_data.dsize = tdb_data.dsize - sizeof(struct ctdb_ltdb_header);
-
-	res = ctdb_ltdb_store(ctdb_db, dd->key, header, ctdb_data);
+	res = ctdb_ltdb_store(ctdb_db, dd->key, header, tdb_null);
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ ": Failed to store record with "
 				  "key hash [0x%08x] on database db[%s].\n",
