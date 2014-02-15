@@ -196,10 +196,12 @@ main() {
 
     # check for libarchive (tar command in smbclient)
     # None means autodetect, True/False means enable/disable
+    conf.env['archive_lib'] = ''
     if Options.options.with_libarchive is not False:
         libarchive_mandatory = Options.options.with_libarchive == True
         Logs.info("Checking for libarchive existence")
-        conf.CHECK_LIB('archive', mandatory=libarchive_mandatory)
+        if conf.CHECK_LIB('archive', mandatory=libarchive_mandatory):
+            conf.env['archive_lib'] = 'archive'
         if not conf.CHECK_HEADERS('archive.h') and libarchive_mandatory:
             conf.fatal('libarchive support requested, but no suitable header found')
 
