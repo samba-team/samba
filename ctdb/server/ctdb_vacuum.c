@@ -673,8 +673,15 @@ static void ctdb_process_delete_queue(struct ctdb_db_context *ctdb_db,
 				      struct vacuum_data *vdata)
 {
 	uint32_t sum;
+	int ret;
 
-	trbt_traversearray32(ctdb_db->delete_queue, 1, delete_queue_traverse, vdata);
+	ret = trbt_traversearray32(ctdb_db->delete_queue, 1,
+				   delete_queue_traverse, vdata);
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Error traversing "
+		      "the delete queue.\n"));
+	}
 
 	sum = vdata->fast_deleted
 	    + vdata->fast_skipped
