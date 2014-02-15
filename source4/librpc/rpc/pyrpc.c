@@ -296,7 +296,7 @@ static void dcerpc_interface_dealloc(PyObject* self)
 
 static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	dcerpc_InterfaceObject *ret;
+	PyObject *ret;
 	const char *binding_string = NULL;
 	PyObject *py_lp_ctx = Py_None;
 	PyObject *py_credentials = Py_None;
@@ -305,97 +305,49 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 	const char *kwnames[] = {
 		"binding", "syntax", "lp_ctx", "credentials", "basis_connection", NULL
 	};
-	struct ndr_interface_table *table;
-	NTSTATUS status;
+	static struct ndr_interface_table dummy_table;
+	PyObject *args2 = Py_None;
+	PyObject *kwargs2 = Py_None;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OOO:connect", discard_const_p(char *, kwnames), &binding_string, &syntax, &py_lp_ctx, &py_credentials, &py_basis)) {
 		return NULL;
 	}
 
-	ret = PyObject_New(dcerpc_InterfaceObject, type);
-	ret->pipe = NULL;
-	ret->binding_handle = NULL;
-	ret->mem_ctx = talloc_new(NULL);
-	if (ret->mem_ctx == NULL) {
-		PyErr_NoMemory();
+	if (strncmp(binding_string, "irpc:", 5) == 0) {
+		PyErr_SetString(PyExc_ValueError, "irpc: transport not supported");
 		return NULL;
 	}
 
-	/* Create a dummy interface table struct. TODO: In the future, we should
+	/*
+	 * Fill a dummy interface table struct. TODO: In the future, we should
 	 * rather just allow connecting without requiring an interface table.
+	 *
+	 * We just fill the syntax during the connect, but keep the memory valid
+	 * the whole time.
 	 */
-
-	table = talloc_zero(ret->mem_ctx, struct ndr_interface_table);
-
-	if (table == NULL) {
-		PyErr_SetString(PyExc_MemoryError, "Allocating interface table");
-		TALLOC_FREE(ret->mem_ctx);
+	if (!ndr_syntax_from_py_object(syntax, &dummy_table.syntax_id)) {
 		return NULL;
 	}
 
-	if (!ndr_syntax_from_py_object(syntax, &table->syntax_id)) {
-		TALLOC_FREE(ret->mem_ctx);
+	args2 = Py_BuildValue("(s)", binding_string);
+	if (args2 == NULL) {
 		return NULL;
 	}
 
-	if (py_basis != Py_None) {
-		struct dcerpc_pipe *base_pipe;
-
-		if (!PyObject_TypeCheck(py_basis, &dcerpc_InterfaceType)) {
-			PyErr_SetString(PyExc_ValueError, "basis_connection must be a DCE/RPC connection");
-			TALLOC_FREE(ret->mem_ctx);
-			return NULL;
-		}
-
-		base_pipe = talloc_reference(ret->mem_ctx, 
-					 ((dcerpc_InterfaceObject *)py_basis)->pipe);
-
-		status = dcerpc_secondary_context(base_pipe, &ret->pipe, table);
-
-		ret->pipe = talloc_steal(ret->mem_ctx, ret->pipe);
-	} else {
-		struct tevent_context *event_ctx;
-		struct loadparm_context *lp_ctx;
-		struct cli_credentials *credentials;
-
-		event_ctx = s4_event_context_init(ret->mem_ctx);
-		if (event_ctx == NULL) {
-			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-			TALLOC_FREE(ret->mem_ctx);
-			return NULL;
-		}
-
-		lp_ctx = lpcfg_from_py_object(event_ctx, py_lp_ctx);
-		if (lp_ctx == NULL) {
-			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-			TALLOC_FREE(ret->mem_ctx);
-			return NULL;
-		}
-
-		credentials = cli_credentials_from_py_object(py_credentials);
-		if (credentials == NULL) {
-			PyErr_SetString(PyExc_TypeError, "Expected credentials");
-			TALLOC_FREE(ret->mem_ctx);
-			return NULL;
-		}
-		status = dcerpc_pipe_connect(ret->mem_ctx, &ret->pipe, binding_string, 
-			     table, credentials, event_ctx, lp_ctx);
-
-		/*
-		 * the event context is cached under the connection,
-		 * so let it be a child of it.
-		 */
-		talloc_steal(ret->pipe->conn, event_ctx);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetDCERPCStatus(ret->pipe, status);
-		TALLOC_FREE(ret->mem_ctx);
+	kwargs2 = Py_BuildValue("{s:O,s:O,s:O}",
+				"lp_ctx", py_lp_ctx,
+				"credentials", py_credentials,
+				"basis_connection", py_basis);
+	if (kwargs2 == NULL) {
+		Py_DECREF(args2);
 		return NULL;
 	}
-	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
-	ret->binding_handle = ret->pipe->binding_handle;
-	return (PyObject *)ret;
+
+	ret = py_dcerpc_interface_init_helper(type, args2, kwargs2, &dummy_table);
+	ZERO_STRUCT(dummy_table.syntax_id);
+	Py_DECREF(args2);
+	Py_DECREF(kwargs2);
+	return ret;
 }
 
 static PyTypeObject dcerpc_InterfaceType = {
