@@ -77,9 +77,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-/* number of element in an array */
-#define LEN(x) (sizeof(x)/sizeof((x)[0]))
-
 /* prepend module name and line number to debug messages */
 #define DBG(a, b) (DEBUG(a, ("tar:%-4d ", __LINE__)), DEBUG(a, b))
 
@@ -306,14 +303,14 @@ int cmd_tarmode(void)
     };
 
     while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-        for (i = 0; i < LEN(table); i++) {
+        for (i = 0; i < ARRAY_SIZE(table); i++) {
             if (strequal(table[i].cmd, buf)) {
                 *table[i].p = table[i].value;
                 break;
             }
         }
 
-        if (i == LEN(table))
+        if (i == ARRAY_SIZE(table))
             DBG(0, ("tarmode: unrecognised option %s\n", buf));
     }
 
