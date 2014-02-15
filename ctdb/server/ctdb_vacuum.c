@@ -907,8 +907,12 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	 * records' RSNs in the database, to ensure we (as dmaster)
 	 * keep the highest RSN of the records in the cluster.
 	 */
-	trbt_traversearray32(vdata->delete_list, 1,
-			     delete_marshall_traverse_first, recs);
+	ret = trbt_traversearray32(vdata->delete_list, 1,
+				   delete_marshall_traverse_first, recs);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Error traversing the "
+		      "delete list for first marshalling.\n"));
+	}
 
 	indata.dsize = talloc_get_size(recs->records);
 	indata.dptr  = (void *)recs->records;
@@ -1005,8 +1009,12 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	}
 	recs->records->db_id = ctdb_db->db_id;
 
-	trbt_traversearray32(vdata->delete_list, 1,
-			     delete_marshall_traverse, recs);
+	ret = trbt_traversearray32(vdata->delete_list, 1,
+				   delete_marshall_traverse, recs);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Error traversing the "
+		      "delete list for second marshalling.\n"));
+	}
 
 	indata.dsize = talloc_get_size(recs->records);
 	indata.dptr  = (void *)recs->records;
@@ -1087,8 +1095,12 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	 * active remote nodes.
 	 */
 
-	trbt_traversearray32(vdata->delete_list, 1,
-			     delete_record_traverse, vdata);
+	ret = trbt_traversearray32(vdata->delete_list, 1,
+				   delete_record_traverse, vdata);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Error traversing the "
+		      "delete list for deletion.\n"));
+	}
 
 success:
 
