@@ -821,8 +821,8 @@ static void ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
  *  3) The lmaster locally deletes its copies of all records that
  *     could successfully be deleted remotely in step #2.
  */
-static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
-				    struct vacuum_data *vdata)
+static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
+				     struct vacuum_data *vdata)
 {
 	int ret, i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -835,13 +835,13 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	uint32_t sum;
 
 	if (vdata->delete_count == 0) {
-		return 0;
+		return;
 	}
 
 	tmp_ctx = talloc_new(vdata);
 	if (tmp_ctx == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		return 0;
+		return;
 	}
 
 	vdata->delete_left = vdata->delete_count;
@@ -856,7 +856,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				   &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " unable to get node map\n"));
-		ret = -1;
 		goto done;
 	}
 
@@ -883,7 +882,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	recs = talloc_zero(tmp_ctx, struct delete_records_list);
 	if (recs == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		ret = -1;
 		goto done;
 	}
 	recs->records = (struct ctdb_marshall_buffer *)
@@ -891,7 +889,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				 offsetof(struct ctdb_marshall_buffer, data));
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		ret = -1;
 		goto done;
 	}
 	recs->records->db_id = ctdb_db->db_id;
@@ -929,7 +926,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 			DEBUG(DEBUG_ERR, ("Error storing record copies on "
 					  "node %u: ret[%d] res[%d]\n",
 					  active_nodes[i], ret, res));
-			ret = -1;
 			goto done;
 		}
 
@@ -953,7 +949,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 			if (recdata.dsize < sizeof(struct ctdb_ltdb_header)) {
 				DEBUG(DEBUG_CRIT,(__location__ " bad ltdb record\n"));
-				ret = -1;
 				goto done;
 			}
 			rechdr = (struct ctdb_ltdb_header *)recdata.dptr;
@@ -1002,7 +997,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				 offsetof(struct ctdb_marshall_buffer, data));
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		ret = -1;
 		goto done;
 	}
 	recs->records->db_id = ctdb_db->db_id;
@@ -1031,7 +1025,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 			DEBUG(DEBUG_ERR, ("Failed to delete records on "
 					  "node %u: ret[%d] res[%d]\n",
 					  active_nodes[i], ret, res));
-			ret = -1;
 			goto done;
 		}
 
@@ -1055,7 +1048,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 			if (recdata.dsize < sizeof(struct ctdb_ltdb_header)) {
 				DEBUG(DEBUG_CRIT,(__location__ " bad ltdb record\n"));
-				ret = -1;
 				goto done;
 			}
 			rechdr = (struct ctdb_ltdb_header *)recdata.dptr;
@@ -1143,12 +1135,10 @@ success:
 		       (unsigned)vdata->delete_left));
 	}
 
-	ret = 0;
-
 done:
 	talloc_free(tmp_ctx);
 
-	return ret;
+	return;
 }
 
 /**
@@ -1270,10 +1260,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 	ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
 
-	ret = ctdb_process_delete_list(ctdb_db, vdata);
-	if (ret != 0) {
-		return ret;
-	}
+	ctdb_process_delete_list(ctdb_db, vdata);
 
 	/* this ensures we run our event queue */
 	ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
