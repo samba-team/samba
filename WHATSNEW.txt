@@ -1,4 +1,84 @@
                    ==============================
+                   Release Notes for Samba 4.0.15
+                         February 18, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.0.
+
+
+Changes since 4.0.14:
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10259: Make shadow_copy2 module working with Windows 7.
+
+
+o   Alistair Leslie-Hughes <leslie_alistair@hotmail.com>
+    * BUG 10087: ntlm_auth sometimes returns the wrong username to
+      mod_ntlm_auth_winbind.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 2662: Make revamped directory handling code 64bit clean.
+    * BUG 10358: Fix 100% CPU utilization in winbindd when trying to free
+      memory in winbindd_reinit_after_fork.
+    * BUG 10429: s3: modules: streaminfo: As we have no VFS function
+      SMB_VFS_LLISTXATTR we can't cope with a symlink when lp_posix_pathnames()
+      is true.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 0280: s3:winbindd: Fix use of uninitialized variables.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10418: Fix INTERNAL ERROR: Signal 11 in the kdc pid.
+
+
+o   Jeffrey Clark <dude@zaplabs.com>
+    * BUG 10418: Add support for Heimdal's unified krb5 and hdb plugin system.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 2191: s3-winbind: Improve performance of wb_fill_pwent_sid2uid_done().
+    * BUG 10415: smbd: Fix memory overwrites.
+    * BUG 10436: smbd: Fix an ancient oplock bug.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10442: Fix crash bug in smb2_notify code.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 10418: Cope with first element in hdb_method having a different name
+      in different heimdal versions.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.14
                            January 7, 2014
                    ==============================
@@ -66,14 +146,8 @@ be filed under the Samba 4.0 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
-======================================================================
-== Our Code, Our Bugs, Our Responsibility.
-== The Samba Team
-======================================================================
+----------------------------------------------------------------------
 
-
-Release notes for older releases follow:
-----------------------------------------
 
                    ==============================
                    Release Notes for Samba 4.0.13
