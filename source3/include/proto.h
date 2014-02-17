@@ -1031,7 +1031,6 @@ bool lp_canonicalize_parameter_with_value(const char *parm_name,
 					  const char **canon_parm,
 					  const char **canon_val);
 void show_parameter_list(void);
-bool lp_string_is_valid_boolean(const char *parm_value);
 bool lp_invert_boolean(const char *str, const char **inverse_str);
 bool lp_canonicalize_boolean(const char *str, const char**canon_str);
 bool service_ok(int iService);

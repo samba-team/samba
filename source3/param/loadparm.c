@@ -2041,15 +2041,6 @@ void show_parameter_list(void)
 }
 
 /***************************************************************************
- Check if a given string correctly represents a boolean value.
-***************************************************************************/
-
-bool lp_string_is_valid_boolean(const char *parm_value)
-{
-	return set_boolean(parm_value, NULL);
-}
-
-/***************************************************************************
  Get the standard string representation of a boolean value ("yes" or "no")
 ***************************************************************************/
 
