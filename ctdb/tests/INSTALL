@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Stop on 1st error
+set -e
+
 # Script to install the CTDB testsuite on a machine.
 
 usage ()
@@ -71,7 +74,9 @@ for d in $data_subdirs ; do
 done
 # Some of the unit tests have relative symlinks back to in-tree bits
 # and pieces.  These links will be broken!
-for i in "events.d" "functions" "nfs-rpc-checks.d" ; do
+link_dir="${ctdb_datadir}/eventscripts/etc-ctdb/"
+broken_links=$(find "$link_dir" -type l | sed -e "s@^${link_dir}@@")
+for i in $broken_links ; do
     ln -sf "${etcdir}/ctdb/${i}" "${ctdb_datadir}/eventscripts/etc-ctdb/${i}"
 done
 # test_wrap needs to set TEST_BIN_DIR
@@ -86,6 +91,6 @@ ctdb_bindir="${destdir}${bindir}"
 echo "Installing wrapper scripts into ${ctdb_bindir}..."
 mkdir -p "${ctdb_bindir}"
 out="${ctdb_bindir}/ctdb_run_tests"
-sed -e "s@^test_dir=.*@test_dir=${datarootdir}/ctdb-tests\nexport TEST_BIN_DIR=\"${libdir}/ctdb-tests\"@" "tests/run_tests.sh" >"$out"
+sed -e "s@^test_dir=.*@test_dir=${datarootdir}/ctdb-tests\nexport TEST_BIN_DIR=\"${libdir}/ctdb-tests\"@" -e 's@^\(export CTDB_TESTS_ARE_INSTALLED\)=false@\1=true@' "tests/run_tests.sh" >"$out"
 chmod 755 "$out"
 ln -s "ctdb_run_tests" "${ctdb_bindir}/ctdb_run_cluster_tests"
