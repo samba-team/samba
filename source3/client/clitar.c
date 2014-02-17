@@ -1235,15 +1235,18 @@ static int tar_read_inclusion_file (struct tar *t, const char* filename)
     char *line;
     TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int err = 0;
-    int fd = open(filename, O_RDONLY);
+    int fd;
 
+    fd = open(filename, O_RDONLY);
     if (fd < 0) {
         DBG(0, ("Can't open inclusion file '%s': %s\n", filename, strerror(errno)));
         err = 1;
         goto out;
     }
 
-    while ((line = afdgets(fd, ctx, 0))) {
+    for (line = afdgets(fd, ctx, 0);
+         line != NULL;
+         line = afdgets(fd, ctx, 0)) {
         tar_add_selection_path(t, line);
     }
 
