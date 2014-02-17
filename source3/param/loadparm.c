@@ -265,7 +265,6 @@ static bool handle_copy(struct loadparm_context *unused, int snum, const char *p
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
-static bool handle_debug_list(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 static bool handle_realm(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
@@ -2951,16 +2950,6 @@ done:
 const char *lp_idmap_default_backend(void)
 {
 	return lp_idmap_backend("*");
-}
-
-/***************************************************************************
- Handle the DEBUG level list.
-***************************************************************************/
-
-static bool handle_debug_list(struct loadparm_context *unused, int snum, const char *pszParmValueIn, char **ptr )
-{
-	string_set(Globals.ctx, ptr, pszParmValueIn);
-	return debug_parse_levels(pszParmValueIn);
 }
 
 /***************************************************************************

@@ -68,6 +68,7 @@ static struct loadparm_s3_helpers s3_fns =
 	.load = lp_load_for_s4_ctx,
 	.set_cmdline = lp_set_cmdline,
 	.dump = lp_dump,
+	.lp_string_set = lp_string_set,
 };
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)

@@ -102,8 +102,6 @@ static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
 			 const char *pszParmValue, char **ptr);
 static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr);
-static bool handle_debug_list(struct loadparm_context *lp_ctx, int unused,
-			      const char *pszParmValue, char **ptr);
 static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
 
@@ -1136,15 +1134,16 @@ static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 	return bRetval;
 }
 
-static bool handle_debug_list(struct loadparm_context *lp_ctx, int unused,
+bool handle_debug_list(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr)
 {
-
-	lpcfg_string_set(lp_ctx, ptr, pszParmValue);
-	if (lp_ctx->global) {
-		return debug_parse_levels(pszParmValue);
+	if (lp_ctx->s3_fns != NULL) {
+		lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
+	} else {
+		lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 	}
-	return true;
+
+	return debug_parse_levels(pszParmValue);
 }
 
 static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
