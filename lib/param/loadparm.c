@@ -98,8 +98,6 @@ static bool defaults_saved = false;
 /* prototypes for the special type handlers */
 static bool handle_include(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
-static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
-			 const char *pszParmValue, char **ptr);
 static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr);
 
@@ -1063,16 +1061,32 @@ bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx)
  Handle the "realm" parameter
 ***************************************************************************/
 
-static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
-			 const char *pszParmValue, char **ptr)
+bool handle_realm(struct loadparm_context *lp_ctx, int unused,
+		  const char *pszParmValue, char **ptr)
 {
-	lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+	char *upper;
+	char *lower;
 
-	talloc_free(lp_ctx->globals->realm);
-	talloc_free(lp_ctx->globals->dnsdomain);
+	upper = strupper_talloc(lp_ctx, pszParmValue);
+	if (upper == NULL) {
+		return false;
+	}
 
-	lp_ctx->globals->realm = strupper_talloc(lp_ctx, pszParmValue);
-	lp_ctx->globals->dnsdomain = strlower_talloc(lp_ctx, pszParmValue);
+	lower = strlower_talloc(lp_ctx, pszParmValue);
+	if (lower == NULL) {
+		TALLOC_FREE(upper);
+		return false;
+	}
+
+	if (lp_ctx->s3_fns != NULL) {
+		lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
+		lp_ctx->s3_fns->lp_string_set(&lp_ctx->globals->realm, upper);
+		lp_ctx->s3_fns->lp_string_set(&lp_ctx->globals->dnsdomain, lower);
+	} else {
+		lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+		lpcfg_string_set(lp_ctx, &lp_ctx->globals->realm, upper);
+		lpcfg_string_set(lp_ctx, &lp_ctx->globals->dnsdomain, lower);
+	}
 
 	return true;
 }

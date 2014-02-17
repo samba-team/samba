@@ -265,7 +265,6 @@ static bool handle_copy(struct loadparm_context *unused, int snum, const char *p
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
-static bool handle_realm(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 static bool handle_dos_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
@@ -2724,21 +2723,6 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 		init_iconv();
 	}
 	return true;
-}
-
-static bool handle_realm(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	bool ret = true;
-	TALLOC_CTX *frame = talloc_stackframe();
-	char *realm = strupper_talloc(frame, pszParmValue);
-	char *dnsdomain = strlower_talloc(realm, pszParmValue);
-
-	ret &= string_set(Globals.ctx, &Globals.realm_original, pszParmValue);
-	ret &= string_set(Globals.ctx, &Globals.realm, realm);
-	ret &= string_set(Globals.ctx, &Globals.dnsdomain, dnsdomain);
-	TALLOC_FREE(frame);
-
-	return ret;
 }
 
 static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
