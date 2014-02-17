@@ -1268,25 +1268,27 @@ static int tar_read_inclusion_file (struct tar *t, const char* filename)
  * If you want /path to be in the path list (path/a/, path/b/) set
  * @reverse to true to try to match the other way around.
  */
-static bool tar_path_in_list(struct tar *t, const char *path, bool reverse)
+static bool tar_path_in_list(struct tar *t, const char *path, bool is_reverse)
 {
     int i;
-    const char *p = path;
+    const char *p;
     const char *pattern;
-    bool res;
 
-    if (!p || !p[0])
+    if (path == NULL || path[0] == '\0') {
         return false;
+    }
 
-    p = skip_useless_char_in_path(p);
+    p = skip_useless_char_in_path(path);
 
     for (i = 0; i < t->path_list_size; i++) {
+        bool is_in_list;
+
         pattern = skip_useless_char_in_path(t->path_list[i]);
-        res = is_subpath(p, pattern);
-        if (reverse) {
-            res = res || is_subpath(pattern, p);
+        is_in_list = is_subpath(p, pattern);
+        if (is_reverse) {
+            is_in_list = is_in_list || is_subpath(pattern, p);
         }
-        if (res) {
+        if (is_in_list) {
             return true;
         }
     }
