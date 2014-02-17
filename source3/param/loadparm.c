@@ -272,12 +272,6 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 static bool handle_printing(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 
-/* these are parameter handlers which are not needed in the
- * source3 code
- */
-
-#define handle_logfile NULL
-
 static void set_allowed_client_auth(void);
 
 static void add_to_file_list(const char *fname, const char *subfname);
