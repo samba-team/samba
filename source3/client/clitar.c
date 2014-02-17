@@ -850,6 +850,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
     NTSTATUS err = NT_STATUS_OK;
     char *remote_name;
     const char *initial_dir = client_get_cur_dir();
+    int rc;
 
     remote_name = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s",
                                                 initial_dir, finfo->name));
@@ -858,7 +859,8 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
         goto out;
     }
 
-    if (tar_create_skip_path(&tar_ctx, remote_name, finfo)) {
+    rc = tar_create_skip_path(&tar_ctx, remote_name, finfo);
+    if (rc != 0) {
         DBG(5, ("--- %s\n", remote_name));
         goto out;
     }
@@ -873,7 +875,8 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
                                                 initial_dir, finfo->name));
         mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s*", new_dir));
 
-        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
+        rc = tar_get_file(&tar_ctx, remote_name, finfo);
+        if (rc != 0) {
             err = NT_STATUS_UNSUCCESSFUL;
             goto out;
         }
@@ -881,10 +884,9 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
         client_set_cur_dir(new_dir);
         do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
         client_set_cur_dir(old_dir);
-    }
-
-    else {
-        if (tar_get_file(&tar_ctx, remote_name, finfo)) {
+    } else {
+        rc = tar_get_file(&tar_ctx, remote_name, finfo);
+        if (rc != 0) {
             err = NT_STATUS_UNSUCCESSFUL;
             goto out;
         }
