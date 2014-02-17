@@ -250,14 +250,17 @@ int cmd_block(void)
     char *buf;
     TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int err = 0;
+    bool ok;
 
-    if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+    ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+    if (!ok) {
         DBG(0, ("blocksize <n>\n"));
         err = 1;
         goto out;
     }
 
-    if (tar_set_blocksize(&tar_ctx, atoi(buf))) {
+    ok = tar_set_blocksize(&tar_ctx, atoi(buf));
+    if (ok) {
         DBG(0, ("invalid blocksize\n"));
         err = 1;
         goto out;
