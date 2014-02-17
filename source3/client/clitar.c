@@ -1091,6 +1091,7 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
     int err = 0;
     int flags = O_RDWR | O_CREAT | O_TRUNC;
     mode_t mode = archive_entry_filetype(entry);
+    int rc;
 
     dos_path = PANIC_IF_NULL(talloc_strdup(ctx, archive_entry_pathname(entry)));
     fix_unix_path(dos_path, true);
@@ -1103,7 +1104,8 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
         goto out;
     }
 
-    if (make_remote_path(full_path)) {
+    rc = make_remote_path(full_path);
+    if (rc != 0) {
         err = 1;
         goto out;
     }
