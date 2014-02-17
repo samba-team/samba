@@ -2506,7 +2506,7 @@ struct smbd_release_ip_state {
 /****************************************************************************
 received when we should release a specific IP
 ****************************************************************************/
-static void release_ip(const char *ip, void *priv)
+static bool release_ip(const char *ip, void *priv)
 {
 	struct smbd_release_ip_state *state =
 		talloc_get_type_abort(priv,
@@ -2543,8 +2543,10 @@ static void release_ip(const char *ip, void *priv)
 		 */
 		smbd_server_connection_terminate(state->sconn,
 						 "CTDB_SRVID_RELEASE_IP");
-		return;
+		return true;
 	}
+
+	return false;
 }
 
 static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
