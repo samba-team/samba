@@ -490,9 +490,10 @@ int tar_parse_args(struct tar* t, const char *flag,
                    const char **val, int valsize)
 {
     TALLOC_CTX *ctx;
-    bool list = false;
+    bool do_read_list = false;
     /* index of next value to use */
     int ival = 0;
+    int rc;
 
     if (t == NULL) {
         DBG(0, ("Invalid tar context\n"));
@@ -510,8 +511,8 @@ int tar_parse_args(struct tar* t, const char *flag,
     t->to_process = false;
     t->total_size = 0;
 
-    while (*flag) {
-        switch(*flag++) {
+    while (flag[0] != '\0') {
+        switch(flag[0]) {
         /* operation */
         case 'c':
             if (t->mode.operation != TAR_NO_OPERATION) {
@@ -549,7 +550,7 @@ int tar_parse_args(struct tar* t, const char *flag,
                 return 1;
             }
             t->mode.selection = TAR_INCLUDE;
-            list = true;
+            do_read_list = true;
             break;
 
         /* blocksize */
@@ -617,6 +618,8 @@ int tar_parse_args(struct tar* t, const char *flag,
             DBG(0,("Unknown tar option\n"));
             return 1;
         }
+
+        flag++;
     }
 
     /* no selection given? default selection is include */
@@ -644,13 +647,14 @@ int tar_parse_args(struct tar* t, const char *flag,
     /* handle PATHs... */
 
     /* flag F -> read file list */
-    if (list) {
+    if (do_read_list) {
         if (valsize - ival != 1) {
             DBG(0,("Option F must be followed by exactly one filename.\n"));
             return 1;
         }
 
-        if (tar_read_inclusion_file(t, val[ival])) {
+        rc = tar_read_inclusion_file(t, val[ival]);
+        if (rc != 0) {
             return 1;
         }
         ival++;
