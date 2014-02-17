@@ -254,6 +254,7 @@ bool lp_is_security_and_server_role_valid(int server_role, int security);
 
 struct loadparm_global * get_globals(void);
 char * lp_string(TALLOC_CTX *, const char *);
+bool lp_string_set(char **, const char *);
 
 /**
  * Check if two parameters are equal.

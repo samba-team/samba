@@ -325,6 +325,10 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest,const char *src)
 	return true;
 }
 
+bool lp_string_set(char **dest, const char *src) {
+	return string_set(Globals.ctx, dest, src);
+}
+
 /***************************************************************************
  Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
