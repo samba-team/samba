@@ -1433,29 +1433,42 @@ static const char* skip_useless_char_in_path(const char *p)
  */
 static bool is_subpath(const char *sub, const char *full)
 {
-    const char *full_copy = full;
+	TALLOC_CTX *tmp_ctx = PANIC_IF_NULL(talloc_new(NULL));
+	int len = 0;
+	char *f, *s;
 
-    while (*full && *sub &&
-           (*full == *sub || tolower_m(*full) == tolower_m(*sub) ||
-            (*full == '\\' && *sub=='/') || (*full == '/' && *sub=='\\'))) {
-        full++; sub++;
-    }
+	f = PANIC_IF_NULL(strlower_talloc(tmp_ctx, full));
+	string_replace(f, '\\', '/');
+	s = PANIC_IF_NULL(strlower_talloc(tmp_ctx, sub));
+	string_replace(s, '\\', '/');
 
-    /* if full has a trailing slash, it compared equal, so full is an "initial"
-       string of sub.
-    */
-    if (!*full && full != full_copy && (*(full-1) == '/' || *(full-1) == '\\'))
-        return true;
+	/* find the point where sub and full diverge */
+	while ((*f != '\0') && (*s != '\0') && (*f == *s)) {
+		f++;
+		s++;
+		len++;
+	}
 
-    /* ignore trailing slash on full */
-    if (!*sub && (*full == '/' || *full == '\\') && !*(full+1))
-        return true;
+	if ((*f == '\0') && (*s == '\0')) {
+		return true;	/* sub and full match */
+	}
 
-    /* check for full is an "initial" string of sub */
-    if ((*sub == '/' || *sub == '\\') && !*full)
-        return true;
+	if ((*f == '\0') && (len > 0) && (*(f - 1) == '/')) {
+		/* sub diverges from full at path separator */
+		return true;
+	}
 
-    return *full == *sub;
+	if ((*s == '\0') && (strcmp(f, "/") == 0)) {
+		/* full diverges from sub with trailing slash only */
+		return true;
+	}
+
+	if ((*s == '/') && (*f == '\0')) {
+		/* sub diverges from full with extra path component */
+		return true;
+	}
+
+	return false;
 }
 
 /**
