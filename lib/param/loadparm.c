@@ -923,8 +923,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
-	struct parmlist_entry *data, *pdata, *paramo;
-	bool not_added;
+	struct parmlist_entry *data;
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_LOCAL &&
@@ -978,31 +977,9 @@ static void copy_service(struct loadparm_service *pserviceDest,
 				    pserviceSource->copymap);
 	}
 
-	data = pserviceSource->param_opt;
-	while (data) {
-		not_added = true;
-		pdata = pserviceDest->param_opt;
-		/* Traverse destination */
-		while (pdata) {
-			/* If we already have same option, override it */
-			if (strcmp(pdata->key, data->key) == 0) {
-				talloc_free(pdata->value);
-				pdata->value = talloc_strdup(pdata,
-							     data->value);
-				not_added = false;
-				break;
-			}
-			pdata = pdata->next;
-		}
-		if (not_added) {
-			paramo = talloc_zero(pserviceDest, struct parmlist_entry);
-			if (paramo == NULL)
-				smb_panic("OOM");
-			paramo->key = talloc_strdup(paramo, data->key);
-			paramo->value = talloc_strdup(paramo, data->value);
-			DLIST_ADD(pserviceDest->param_opt, paramo);
-		}
-		data = data->next;
+	for (data = pserviceSource->param_opt; data != NULL; data = data->next) {
+		set_param_opt(pserviceDest, &pserviceDest->param_opt,
+			      data->key, data->value, data->priority);
 	}
 }
 
