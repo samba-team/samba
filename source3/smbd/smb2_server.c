@@ -2841,6 +2841,13 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 	size_t max_send_queue_len;
 	size_t cur_send_queue_len;
 
+	if (!NT_STATUS_IS_OK(sconn->status)) {
+		/*
+		 * we're not supposed to do any io
+		 */
+		return NT_STATUS_OK;
+	}
+
 	if (state->req != NULL) {
 		/*
 		 * if there is already a tstream_readv_pdu
@@ -3086,6 +3093,15 @@ static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
 	bool retry;
 	NTSTATUS status;
 	NTTIME now;
+
+	if (!NT_STATUS_IS_OK(sconn->status)) {
+		/*
+		 * we're not supposed to do any io
+		 */
+		TEVENT_FD_NOT_READABLE(sconn->smb2.fde);
+		TEVENT_FD_NOT_WRITEABLE(sconn->smb2.fde);
+		return NT_STATUS_OK;
+	}
 
 	if (fde_flags & TEVENT_FD_WRITE) {
 		status = smbd_smb2_flush_send_queue(sconn);

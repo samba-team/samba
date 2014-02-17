@@ -152,6 +152,13 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 	ssize_t ret;
 	char *buf_out = buffer;
 
+	if (!NT_STATUS_IS_OK(sconn->status)) {
+		/*
+		 * we're not supposed to do any io
+		 */
+		return true;
+	}
+
 	smbd_lock_socket(sconn);
 
 	if (do_signing) {
@@ -2445,6 +2452,15 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 	struct smbd_server_connection *conn = talloc_get_type(private_data,
 					      struct smbd_server_connection);
 
+	if (!NT_STATUS_IS_OK(conn->status)) {
+		/*
+		 * we're not supposed to do any io
+		 */
+		TEVENT_FD_NOT_READABLE(conn->smb1.fde);
+		TEVENT_FD_NOT_WRITEABLE(conn->smb1.fde);
+		return;
+	}
+
 	if (flags & TEVENT_FD_WRITE) {
 		smbd_server_connection_write_handler(conn);
 		return;
@@ -2462,6 +2478,15 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 {
 	struct smbd_server_connection *conn = talloc_get_type(private_data,
 					      struct smbd_server_connection);
+
+	if (!NT_STATUS_IS_OK(conn->status)) {
+		/*
+		 * we're not supposed to do any io
+		 */
+		TEVENT_FD_NOT_READABLE(conn->smb1.echo_handler.trusted_fde);
+		TEVENT_FD_NOT_WRITEABLE(conn->smb1.echo_handler.trusted_fde);
+		return;
+	}
 
 	if (flags & TEVENT_FD_WRITE) {
 		smbd_server_connection_write_handler(conn);
