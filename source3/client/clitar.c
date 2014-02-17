@@ -1211,8 +1211,10 @@ static int tar_set_newer_than(struct tar *t, const char *filename)
 {
     extern time_t newer_than;
     SMB_STRUCT_STAT stbuf;
+    int rc;
 
-    if (sys_stat(filename, &stbuf, false) != 0) {
+    rc = sys_stat(filename, &stbuf, false);
+    if (rc != 0) {
         DBG(0, ("Error setting newer-than time\n"));
         return 1;
     }
