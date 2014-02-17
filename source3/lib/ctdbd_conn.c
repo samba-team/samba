@@ -59,7 +59,7 @@ struct ctdbd_connection {
 	struct ctdb_packet_context *pkt;
 	struct tevent_fd *fde;
 
-	void (*release_ip_handler)(const char *ip_addr, void *private_data);
+	bool (*release_ip_handler)(const char *ip_addr, void *private_data);
 	void *release_ip_priv;
 };
 
@@ -428,10 +428,23 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 
 		if ((conn->release_ip_handler != NULL)
 		    && (msg->srvid == CTDB_SRVID_RELEASE_IP)) {
+			bool ret;
+
 			/* must be dispatched immediately */
 			DEBUG(10, ("received CTDB_SRVID_RELEASE_IP\n"));
-			conn->release_ip_handler((const char *)msg->data,
-						 conn->release_ip_priv);
+			ret = conn->release_ip_handler((const char *)msg->data,
+						       conn->release_ip_priv);
+			if (ret) {
+				/*
+				 * We need to release the ip,
+				 * so return an error to the upper layers.
+				 *
+				 * We make sure we don't trigger this again.
+				 */
+				conn->release_ip_handler = NULL;
+				conn->release_ip_priv = NULL;
+				return NT_STATUS_ADDRESS_CLOSED;
+			}
 			TALLOC_FREE(hdr);
 			goto next_pkt;
 		}
@@ -630,10 +643,21 @@ static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
 
 	if ((conn->release_ip_handler != NULL)
 	    && (msg->srvid == CTDB_SRVID_RELEASE_IP)) {
+		bool ret;
+
 		/* must be dispatched immediately */
 		DEBUG(10, ("received CTDB_SRVID_RELEASE_IP\n"));
-		conn->release_ip_handler((const char *)msg->data,
-					 conn->release_ip_priv);
+		ret = conn->release_ip_handler((const char *)msg->data,
+					       conn->release_ip_priv);
+		if (ret) {
+			/*
+			 * We need to release the ip.
+			 *
+			 * We make sure we don't trigger this again.
+			 */
+			conn->release_ip_handler = NULL;
+			conn->release_ip_priv = NULL;
+		}
 		TALLOC_FREE(buf);
 		return NT_STATUS_OK;
 	}
@@ -1692,7 +1716,7 @@ static void smbd_ctdb_canonicalize_ip(const struct sockaddr_storage *in,
 NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 			    const struct sockaddr_storage *_server,
 			    const struct sockaddr_storage *_client,
-			    void (*release_ip_handler)(const char *ip_addr,
+			    bool (*release_ip_handler)(const char *ip_addr,
 						       void *private_data),
 			    void *private_data)
 {
