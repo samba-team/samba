@@ -413,11 +413,11 @@ def rebase_tree(rebase_url, rebase_branch = "master"):
             show=True, dir=test_master)
     run_cmd("git fetch %s" % rebase_remote, show=True, dir=test_master)
     if options.fix_whitespace:
-        run_cmd("git rebase --whitespace=fix %s/%s" %
+        run_cmd("git rebase --force-rebase --whitespace=fix %s/%s" %
                 (rebase_remote, rebase_branch),
                 show=True, dir=test_master)
     else:
-        run_cmd("git rebase %s/%s" %
+        run_cmd("git rebase --force-rebase %s/%s" %
                 (rebase_remote, rebase_branch),
                 show=True, dir=test_master)
     diff = run_cmd("git --no-pager diff HEAD %s/%s" %
