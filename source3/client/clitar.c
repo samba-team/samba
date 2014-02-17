@@ -92,10 +92,10 @@
 static inline void* _panic_if_null(void *p, const char *expr);
 static inline void* _panic_if_null(void *p, const char *expr)
 {
-    if (!p) {
-        smb_panic(expr);
-    }
-    return p;
+	if (p == NULL) {
+		smb_panic(expr);
+	}
+	return p;
 }
 
 /**
@@ -119,59 +119,59 @@ static inline void* _panic_if_null(void *p, const char *expr)
 #define TAR_CLI_READ_SIZE 0xff00
 
 #define TAR_DO_LIST_ATTR (FILE_ATTRIBUTE_DIRECTORY \
-                          | FILE_ATTRIBUTE_SYSTEM  \
-                          | FILE_ATTRIBUTE_HIDDEN)
+			  | FILE_ATTRIBUTE_SYSTEM  \
+			  | FILE_ATTRIBUTE_HIDDEN)
 
 
 enum tar_operation {
-    TAR_NO_OPERATION,
-    TAR_CREATE,    /* c flag */
-    TAR_EXTRACT,   /* x flag */
+	TAR_NO_OPERATION,
+	TAR_CREATE,    /* c flag */
+	TAR_EXTRACT,   /* x flag */
 };
 
 enum tar_selection {
-    TAR_NO_SELECTION,
-    TAR_INCLUDE,       /* I and F flag, default */
-    TAR_EXCLUDE,       /* X flag */
+	TAR_NO_SELECTION,
+	TAR_INCLUDE,       /* I and F flag, default */
+	TAR_EXCLUDE,       /* X flag */
 };
 
 enum {
-    ATTR_UNSET,
-    ATTR_SET,
+	ATTR_UNSET,
+	ATTR_SET,
 };
 
 struct tar {
-    TALLOC_CTX *talloc_ctx;
+	TALLOC_CTX *talloc_ctx;
 
-    /* in state that needs/can be processed? */
-    bool to_process;
+	/* in state that needs/can be processed? */
+	bool to_process;
 
-    /* flags */
-    struct tar_mode {
-        enum tar_operation operation; /* create, extract */
-        enum tar_selection selection; /* include, exclude */
-        int blocksize;    /* size in TAR_BLOCK_UNIT of a tar file block */
-        bool hidden;      /* backup hidden file? */
-        bool system;      /* backup system file? */
-        bool incremental; /* backup _only_ archived file? */
-        bool reset;       /* unset archive bit? */
-        bool dry;         /* don't write tar file? */
-        bool regex;       /* XXX: never actually using regex... */
-        bool verbose;     /* XXX: ignored */
-    } mode;
+	/* flags */
+	struct tar_mode {
+		enum tar_operation operation; /* create, extract */
+		enum tar_selection selection; /* include, exclude */
+		int blocksize;    /* size in TAR_BLOCK_UNIT of a tar file block */
+		bool hidden;      /* backup hidden file? */
+		bool system;      /* backup system file? */
+		bool incremental; /* backup _only_ archived file? */
+		bool reset;       /* unset archive bit? */
+		bool dry;         /* don't write tar file? */
+		bool regex;       /* XXX: never actually using regex... */
+		bool verbose;     /* XXX: ignored */
+	} mode;
 
-    /* nb of bytes received */
-    uint64_t total_size;
+	/* nb of bytes received */
+	uint64_t total_size;
 
-    /* path to tar archive name */
-    char *tar_path;
+	/* path to tar archive name */
+	char *tar_path;
 
-    /* list of path to include or exclude */
-    char **path_list;
-    int path_list_size;
+	/* list of path to include or exclude */
+	char **path_list;
+	int path_list_size;
 
-    /* archive handle */
-    struct archive *archive;
+	/* archive handle */
+	struct archive *archive;
 };
 
 /**
@@ -180,22 +180,22 @@ struct tar {
  * Default options.
  */
 struct tar tar_ctx = {
-    .mode.selection   = TAR_INCLUDE,
-    .mode.blocksize   = TAR_DEFAULT_BLOCK_SIZE,
-    .mode.hidden      = true,
-    .mode.system      = true,
-    .mode.incremental = false,
-    .mode.reset       = false,
-    .mode.dry         = false,
-    .mode.regex       = false,
-    .mode.verbose     = false,
+	.mode.selection   = TAR_INCLUDE,
+	.mode.blocksize   = TAR_DEFAULT_BLOCK_SIZE,
+	.mode.hidden      = true,
+	.mode.system      = true,
+	.mode.incremental = false,
+	.mode.reset       = false,
+	.mode.dry         = false,
+	.mode.regex       = false,
+	.mode.verbose     = false,
 };
 
 /* tar, local function */
 static int tar_create(struct tar* t);
 static int tar_create_from_list(struct tar *t);
 static int tar_extract(struct tar *t);
-static int tar_read_inclusion_file (struct tar *t, const char* filename);
+static int tar_read_inclusion_file(struct tar *t, const char* filename);
 static int tar_send_file(struct tar *t, struct archive_entry *entry);
 static int tar_set_blocksize(struct tar *t, int size);
 static int tar_set_newer_than(struct tar *t, const char *filename);
@@ -205,24 +205,24 @@ static bool tar_extract_skip_path(struct tar *t, struct archive_entry *entry);
 static TALLOC_CTX *tar_reset_mem_context(struct tar *t);
 static void tar_free_mem_context(struct tar *t);
 static bool tar_create_skip_path(struct tar *t,
-                                 const char *fullpath,
-                                 const struct file_info *finfo);
+				 const char *fullpath,
+				 const struct file_info *finfo);
 
 static bool tar_path_in_list(struct tar *t,
-                             const char *path,
-                             bool reverse);
+			     const char *path,
+			     bool reverse);
 
 static int tar_get_file(struct tar *t,
-                        const char *full_dos_path,
-                        struct file_info *finfo);
+			const char *full_dos_path,
+			struct file_info *finfo);
 
 static NTSTATUS get_file_callback(struct cli_state *cli,
-                                  struct file_info *finfo,
-                                  const char *dir);
+				  struct file_info *finfo,
+				  const char *dir);
 
 /* utilities */
-static char *fix_unix_path (char *path, bool removeprefix);
-static char *path_base_name (const char *path);
+static char *fix_unix_path(char *path, bool removeprefix);
+static char *path_base_name(const char *path);
 static const char* skip_useless_char_in_path(const char *p);
 static int make_remote_path(const char *full_path);
 static int max_token (const char *str);
@@ -234,7 +234,7 @@ static int set_remote_attr(const char *filename, uint16 new_attr, int mode);
  */
 struct tar *tar_get_ctx()
 {
-    return &tar_ctx;
+	return &tar_ctx;
 }
 
 /**
@@ -245,32 +245,32 @@ struct tar *tar_get_ctx()
  */
 int cmd_block(void)
 {
-    /* XXX: from client.c */
-    const extern char *cmd_ptr;
-    char *buf;
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    int err = 0;
-    bool ok;
+	/* XXX: from client.c */
+	const extern char *cmd_ptr;
+	char *buf;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	int err = 0;
+	bool ok;
 
-    ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
-    if (!ok) {
-        DBG(0, ("blocksize <n>\n"));
-        err = 1;
-        goto out;
-    }
+	ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+	if (!ok) {
+		DBG(0, ("blocksize <n>\n"));
+		err = 1;
+		goto out;
+	}
 
-    ok = tar_set_blocksize(&tar_ctx, atoi(buf));
-    if (ok) {
-        DBG(0, ("invalid blocksize\n"));
-        err = 1;
-        goto out;
-    }
+	ok = tar_set_blocksize(&tar_ctx, atoi(buf));
+	if (ok) {
+		DBG(0, ("invalid blocksize\n"));
+		err = 1;
+		goto out;
+	}
 
-    DBG(2, ("blocksize is now %d\n", tar_ctx.mode.blocksize));
+	DBG(2, ("blocksize is now %d\n", tar_ctx.mode.blocksize));
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -281,51 +281,51 @@ int cmd_block(void)
  */
 int cmd_tarmode(void)
 {
-    const extern char *cmd_ptr;
-    char *buf;
-    int i;
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	const extern char *cmd_ptr;
+	char *buf;
+	int i;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
 
-    struct {
-        const char *cmd;
-        bool *p;
-        bool value;
-    } table[] = {
-        {"full",      &tar_ctx.mode.incremental, false},
-        {"inc",       &tar_ctx.mode.incremental, true },
-        {"reset",     &tar_ctx.mode.reset,       true },
-        {"noreset",   &tar_ctx.mode.reset,       false},
-        {"system",    &tar_ctx.mode.system,      true },
-        {"nosystem",  &tar_ctx.mode.system,      false},
-        {"hidden",    &tar_ctx.mode.hidden,      true },
-        {"nohidden",  &tar_ctx.mode.hidden,      false},
-        {"verbose",   &tar_ctx.mode.verbose,     true },
-        {"noquiet",   &tar_ctx.mode.verbose,     true },
-        {"quiet",     &tar_ctx.mode.verbose,     false},
-        {"noverbose", &tar_ctx.mode.verbose,     false},
-    };
+	struct {
+		const char *cmd;
+		bool *p;
+		bool value;
+	} table[] = {
+		{"full",      &tar_ctx.mode.incremental, false},
+		{"inc",       &tar_ctx.mode.incremental, true },
+		{"reset",     &tar_ctx.mode.reset,       true },
+		{"noreset",   &tar_ctx.mode.reset,       false},
+		{"system",    &tar_ctx.mode.system,      true },
+		{"nosystem",  &tar_ctx.mode.system,      false},
+		{"hidden",    &tar_ctx.mode.hidden,      true },
+		{"nohidden",  &tar_ctx.mode.hidden,      false},
+		{"verbose",   &tar_ctx.mode.verbose,     true },
+		{"noquiet",   &tar_ctx.mode.verbose,     true },
+		{"quiet",     &tar_ctx.mode.verbose,     false},
+		{"noverbose", &tar_ctx.mode.verbose,     false},
+	};
 
-    while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-        for (i = 0; i < ARRAY_SIZE(table); i++) {
-            if (strequal(table[i].cmd, buf)) {
-                *table[i].p = table[i].value;
-                break;
-            }
-        }
+	while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		for (i = 0; i < ARRAY_SIZE(table); i++) {
+			if (strequal(table[i].cmd, buf)) {
+				*table[i].p = table[i].value;
+				break;
+			}
+		}
 
-        if (i == ARRAY_SIZE(table))
-            DBG(0, ("tarmode: unrecognised option %s\n", buf));
-    }
+		if (i == ARRAY_SIZE(table))
+			DBG(0, ("tarmode: unrecognised option %s\n", buf));
+	}
 
-    DBG(0, ("tarmode is now %s, %s, %s, %s, %s\n",
-              tar_ctx.mode.incremental ? "incremental" : "full",
-              tar_ctx.mode.system      ? "system"      : "nosystem",
-              tar_ctx.mode.hidden      ? "hidden"      : "nohidden",
-              tar_ctx.mode.reset       ? "reset"       : "noreset",
-              tar_ctx.mode.verbose     ? "verbose"     : "quiet"));
+	DBG(0, ("tarmode is now %s, %s, %s, %s, %s\n",
+				tar_ctx.mode.incremental ? "incremental" : "full",
+				tar_ctx.mode.system      ? "system"      : "nosystem",
+				tar_ctx.mode.hidden      ? "hidden"      : "nohidden",
+				tar_ctx.mode.reset       ? "reset"       : "noreset",
+				tar_ctx.mode.verbose     ? "verbose"     : "quiet"));
 
-    talloc_free(ctx);
-    return 0;
+	talloc_free(ctx);
+	return 0;
 }
 
 /**
@@ -335,48 +335,48 @@ int cmd_tarmode(void)
  */
 int cmd_tar(void)
 {
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    const extern char *cmd_ptr;
-    const char *flag;
-    const char **val;
-    char *buf;
-    int maxtok = max_token(cmd_ptr);
-    int i = 0;
-    int err = 0;
-    bool ok;
-    int rc;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	const extern char *cmd_ptr;
+	const char *flag;
+	const char **val;
+	char *buf;
+	int maxtok = max_token(cmd_ptr);
+	int i = 0;
+	int err = 0;
+	bool ok;
+	int rc;
 
-    ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
-    if (!ok) {
-        DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
-        err = 1;
-        goto out;
-    }
+	ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+	if (!ok) {
+		DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
+		err = 1;
+		goto out;
+	}
 
-    flag = buf;
-    val = PANIC_IF_NULL(talloc_array(ctx, const char*, maxtok));
+	flag = buf;
+	val = PANIC_IF_NULL(talloc_array(ctx, const char*, maxtok));
 
-    while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-        val[i++] = buf;
-    }
+	while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		val[i++] = buf;
+	}
 
-    rc = tar_parse_args(&tar_ctx, flag, val, i);
-    if (rc != 0) {
-        DBG(0, ("parse_args failed\n"));
-        err = 1;
-        goto out;
-    }
+	rc = tar_parse_args(&tar_ctx, flag, val, i);
+	if (rc != 0) {
+		DBG(0, ("parse_args failed\n"));
+		err = 1;
+		goto out;
+	}
 
-    rc = tar_process(&tar_ctx);
-    if (rc != 0) {
-        DBG(0, ("tar_process failed\n"));
-        err = 1;
-        goto out;
-    }
+	rc = tar_process(&tar_ctx);
+	if (rc != 0) {
+		DBG(0, ("tar_process failed\n"));
+		err = 1;
+		goto out;
+	}
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -387,77 +387,77 @@ int cmd_tar(void)
  */
 int cmd_setmode(void)
 {
-    const extern char *cmd_ptr;
-    char *buf;
-    char *fname = NULL;
-    uint16 attr[2] = {0};
-    int mode = ATTR_SET;
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    int err = 0;
-    bool ok;
+	const extern char *cmd_ptr;
+	char *buf;
+	char *fname = NULL;
+	uint16 attr[2] = {0};
+	int mode = ATTR_SET;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	int err = 0;
+	bool ok;
 
 
-    ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
-    if (!ok) {
-        DBG(0, ("setmode <filename> <[+|-]rsha>\n"));
-        err = 1;
-        goto out;
-    }
+	ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+	if (!ok) {
+		DBG(0, ("setmode <filename> <[+|-]rsha>\n"));
+		err = 1;
+		goto out;
+	}
 
-    fname = PANIC_IF_NULL(talloc_asprintf(ctx,
-                                          "%s%s",
-                                          client_get_cur_dir(),
-                                          buf));
-    if (fname == NULL) {
-        err = 1;
-        goto out;
-    }
+	fname = PANIC_IF_NULL(talloc_asprintf(ctx,
+				"%s%s",
+				client_get_cur_dir(),
+				buf));
+	if (fname == NULL) {
+		err = 1;
+		goto out;
+	}
 
-    while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-        const char *s = buf;
+	while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		const char *s = buf;
 
-        while (*s) {
-            switch (*s++) {
-            case '+':
-                mode = ATTR_SET;
-                break;
-            case '-':
-                mode = ATTR_UNSET;
-                break;
-            case 'r':
-                attr[mode] |= FILE_ATTRIBUTE_READONLY;
-                break;
-            case 'h':
-                attr[mode] |= FILE_ATTRIBUTE_HIDDEN;
-                break;
-            case 's':
-                attr[mode] |= FILE_ATTRIBUTE_SYSTEM;
-                break;
-            case 'a':
-                attr[mode] |= FILE_ATTRIBUTE_ARCHIVE;
-                break;
-            default:
-                DBG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
-                err = 1;
-                goto out;
-            }
-        }
-    }
+		while (*s) {
+			switch (*s++) {
+			case '+':
+				mode = ATTR_SET;
+				break;
+			case '-':
+				mode = ATTR_UNSET;
+				break;
+			case 'r':
+				attr[mode] |= FILE_ATTRIBUTE_READONLY;
+				break;
+			case 'h':
+				attr[mode] |= FILE_ATTRIBUTE_HIDDEN;
+				break;
+			case 's':
+				attr[mode] |= FILE_ATTRIBUTE_SYSTEM;
+				break;
+			case 'a':
+				attr[mode] |= FILE_ATTRIBUTE_ARCHIVE;
+				break;
+			default:
+				DBG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
+				err = 1;
+				goto out;
+			}
+		}
+	}
 
-    if (attr[ATTR_SET] == 0 && attr[ATTR_UNSET] == 0) {
-        DBG(0, ("setmode <filename> <[+|-]rsha>\n"));
-        err = 1;
-        goto out;
-    }
+	if (attr[ATTR_SET] == 0 && attr[ATTR_UNSET] == 0) {
+		DBG(0, ("setmode <filename> <[+|-]rsha>\n"));
+		err = 1;
+		goto out;
+	}
 
-    DBG(2, ("perm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
+	DBG(2, ("perm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
 
-    /* ignore return value: server might not store DOS attributes */
-    set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
-    set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
- out:
-    talloc_free(ctx);
-    return err;
+	/* ignore return value: server might not store DOS attributes */
+	set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
+	set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -486,191 +486,191 @@ int cmd_setmode(void)
  * containing a list of included/excluded paths to use (F flag). If no
  * PATH is provided, the whole share is used (/).
  */
-int tar_parse_args(struct tar* t, const char *flag,
-                   const char **val, int valsize)
+int tar_parse_args(struct tar* t,
+		   const char *flag,
+		   const char **val,
+		   int valsize)
 {
-    TALLOC_CTX *ctx;
-    bool do_read_list = false;
-    /* index of next value to use */
-    int ival = 0;
-    int rc;
+	TALLOC_CTX *ctx;
+	bool do_read_list = false;
+	/* index of next value to use */
+	int ival = 0;
+	int rc;
 
-    if (t == NULL) {
-        DBG(0, ("Invalid tar context\n"));
-        return 1;
-    }
+	if (t == NULL) {
+		DBG(0, ("Invalid tar context\n"));
+		return 1;
+	}
 
-    ctx = tar_reset_mem_context(t);
-    /*
-     * Reset back some options - could be from interactive version
-     * all other modes are left as they are
-     */
-    t->mode.operation = TAR_NO_OPERATION;
-    t->mode.selection = TAR_NO_SELECTION;
-    t->mode.dry = false;
-    t->to_process = false;
-    t->total_size = 0;
+	ctx = tar_reset_mem_context(t);
+	/*
+	 * Reset back some options - could be from interactive version
+	 * all other modes are left as they are
+	 */
+	t->mode.operation = TAR_NO_OPERATION;
+	t->mode.selection = TAR_NO_SELECTION;
+	t->mode.dry = false;
+	t->to_process = false;
+	t->total_size = 0;
 
-    while (flag[0] != '\0') {
-        switch(flag[0]) {
-        /* operation */
-        case 'c':
-            if (t->mode.operation != TAR_NO_OPERATION) {
-                printf("Tar must be followed by only one of c or x.\n");
-                return 1;
-            }
-            t->mode.operation = TAR_CREATE;
-            break;
-        case 'x':
-            if (t->mode.operation != TAR_NO_OPERATION) {
-                printf("Tar must be followed by only one of c or x.\n");
-                return 1;
-            }
-            t->mode.operation = TAR_EXTRACT;
-            break;
+	while (flag[0] != '\0') {
+		switch(flag[0]) {
+		/* operation */
+		case 'c':
+			if (t->mode.operation != TAR_NO_OPERATION) {
+				printf("Tar must be followed by only one of c or x.\n");
+				return 1;
+			}
+			t->mode.operation = TAR_CREATE;
+			break;
+		case 'x':
+			if (t->mode.operation != TAR_NO_OPERATION) {
+				printf("Tar must be followed by only one of c or x.\n");
+				return 1;
+			}
+			t->mode.operation = TAR_EXTRACT;
+			break;
 
-        /* selection  */
-        case 'I':
-            if (t->mode.selection != TAR_NO_SELECTION) {
-                DBG(0,("Only one of I,X,F must be specified\n"));
-                return 1;
-            }
-            t->mode.selection = TAR_INCLUDE;
-            break;
-        case 'X':
-            if (t->mode.selection != TAR_NO_SELECTION) {
-                DBG(0,("Only one of I,X,F must be specified\n"));
-                return 1;
-            }
-            t->mode.selection = TAR_EXCLUDE;
-            break;
-        case 'F':
-            if (t->mode.selection != TAR_NO_SELECTION) {
-                DBG(0,("Only one of I,X,F must be specified\n"));
-                return 1;
-            }
-            t->mode.selection = TAR_INCLUDE;
-            do_read_list = true;
-            break;
+			/* selection  */
+		case 'I':
+			if (t->mode.selection != TAR_NO_SELECTION) {
+				DBG(0,("Only one of I,X,F must be specified\n"));
+				return 1;
+			}
+			t->mode.selection = TAR_INCLUDE;
+			break;
+		case 'X':
+			if (t->mode.selection != TAR_NO_SELECTION) {
+				DBG(0,("Only one of I,X,F must be specified\n"));
+				return 1;
+			}
+			t->mode.selection = TAR_EXCLUDE;
+			break;
+		case 'F':
+			if (t->mode.selection != TAR_NO_SELECTION) {
+				DBG(0,("Only one of I,X,F must be specified\n"));
+				return 1;
+			}
+			t->mode.selection = TAR_INCLUDE;
+			do_read_list = true;
+			break;
 
-        /* blocksize */
-        case 'b':
-            if (ival >= valsize) {
-                DBG(0, ("Option b must be followed by a blocksize\n"));
-                return 1;
-            }
+			/* blocksize */
+		case 'b':
+			if (ival >= valsize) {
+				DBG(0, ("Option b must be followed by a blocksize\n"));
+				return 1;
+			}
 
-            if (tar_set_blocksize(t, atoi(val[ival]))) {
-                DBG(0, ("Option b must be followed by a valid blocksize\n"));
-                return 1;
-            }
+			if (tar_set_blocksize(t, atoi(val[ival]))) {
+				DBG(0, ("Option b must be followed by a valid blocksize\n"));
+				return 1;
+			}
 
-            ival++;
-            break;
+			ival++;
+			break;
 
-         /* incremental mode */
-        case 'g':
-            t->mode.incremental = true;
-            break;
+			/* incremental mode */
+		case 'g':
+			t->mode.incremental = true;
+			break;
 
-        /* newer than */
-        case 'N':
-            if (ival >= valsize) {
-                DBG(0, ("Option N must be followed by valid file name\n"));
-                return 1;
-            }
+			/* newer than */
+		case 'N':
+			if (ival >= valsize) {
+				DBG(0, ("Option N must be followed by valid file name\n"));
+				return 1;
+			}
 
-            if (tar_set_newer_than(t, val[ival])) {
-                DBG(0,("Error setting newer-than time\n"));
-                return 1;
-            }
+			if (tar_set_newer_than(t, val[ival])) {
+				DBG(0,("Error setting newer-than time\n"));
+				return 1;
+			}
 
-            ival++;
-            break;
+			ival++;
+			break;
 
-        /* reset mode */
-        case 'a':
-            t->mode.reset = true;
-            break;
+			/* reset mode */
+		case 'a':
+			t->mode.reset = true;
+			break;
 
-        /* verbose */
-        case 'q':
-            t->mode.verbose = true;
-            break;
+			/* verbose */
+		case 'q':
+			t->mode.verbose = true;
+			break;
 
-        /* regex match  */
-        case 'r':
-            t->mode.regex = true;
-            break;
+			/* regex match  */
+		case 'r':
+			t->mode.regex = true;
+			break;
 
-        /* dry run mode */
-        case 'n':
-            if (t->mode.operation != TAR_CREATE) {
-                DBG(0, ("n is only meaningful when creating a tar-file\n"));
-                return 1;
-            }
+			/* dry run mode */
+		case 'n':
+			if (t->mode.operation != TAR_CREATE) {
+				DBG(0, ("n is only meaningful when creating a tar-file\n"));
+				return 1;
+			}
 
-            t->mode.dry = true;
-            DBG(0, ("dry_run set\n"));
-            break;
+			t->mode.dry = true;
+			DBG(0, ("dry_run set\n"));
+			break;
 
-        default:
-            DBG(0,("Unknown tar option\n"));
-            return 1;
-        }
+		default:
+			DBG(0,("Unknown tar option\n"));
+			return 1;
+		}
 
-        flag++;
-    }
+		flag++;
+	}
 
-    /* no selection given? default selection is include */
-    if (t->mode.selection == TAR_NO_SELECTION) {
-        t->mode.selection = TAR_INCLUDE;
-    }
+	/* no selection given? default selection is include */
+	if (t->mode.selection == TAR_NO_SELECTION) {
+		t->mode.selection = TAR_INCLUDE;
+	}
 
-    if (valsize - ival < 1) {
-        DBG(0, ("No tar file given.\n"));
-        return 1;
-    }
+	if (valsize - ival < 1) {
+		DBG(0, ("No tar file given.\n"));
+		return 1;
+	}
 
-    /* handle TARFILE */
-    t->tar_path = PANIC_IF_NULL(talloc_strdup(ctx, val[ival]));
-    ival++;
+	/* handle TARFILE */
+	t->tar_path = PANIC_IF_NULL(talloc_strdup(ctx, val[ival]));
+	ival++;
 
-    /*
-     * Make sure that dbf points to stderr if we are using stdout for
-     * tar output
-     */
-    if (t->mode.operation == TAR_CREATE && strequal(t->tar_path, "-")) {
-        setup_logging("smbclient", DEBUG_STDERR);
-    }
+	/*
+	 * Make sure that dbf points to stderr if we are using stdout for
+	 * tar output
+	 */
+	if (t->mode.operation == TAR_CREATE && strequal(t->tar_path, "-")) {
+		setup_logging("smbclient", DEBUG_STDERR);
+	}
 
-    /* handle PATHs... */
+	/* handle PATHs... */
 
-    /* flag F -> read file list */
-    if (do_read_list) {
-        if (valsize - ival != 1) {
-            DBG(0,("Option F must be followed by exactly one filename.\n"));
-            return 1;
-        }
+	/* flag F -> read file list */
+	if (do_read_list) {
+		if (valsize - ival != 1) {
+			DBG(0,("Option F must be followed by exactly one filename.\n"));
+			return 1;
+		}
 
-        rc = tar_read_inclusion_file(t, val[ival]);
-        if (rc != 0) {
-            return 1;
-        }
-        ival++;
-    }
+		rc = tar_read_inclusion_file(t, val[ival]);
+		if (rc != 0) {
+			return 1;
+		}
+		ival++;
+	/* otherwise store all the PATHs on the command line */
+	} else {
+		int i;
+		for (i = ival; i < valsize; i++) {
+			tar_add_selection_path(t, val[i]);
+		}
+	}
 
-    /* otherwise store all the PATHs on the command line */
-    else {
-        int i;
-        for (i = ival; i < valsize; i++) {
-            tar_add_selection_path(t, val[i]);
-        }
-    }
-
-    t->to_process = true;
-    tar_dump(t);
-    return 0;
+	t->to_process = true;
+	tar_dump(t);
+	return 0;
 }
 
 /**
@@ -680,29 +680,29 @@ int tar_parse_args(struct tar* t, const char *flag,
  */
 int tar_process(struct tar *t)
 {
-    int rc = 0;
+	int rc = 0;
 
-    if (t == NULL) {
-        DBG(0, ("Invalid tar context\n"));
-        return 1;
-    }
+	if (t == NULL) {
+		DBG(0, ("Invalid tar context\n"));
+		return 1;
+	}
 
-    switch(t->mode.operation) {
-    case TAR_EXTRACT:
-        rc = tar_extract(t);
-        break;
-    case TAR_CREATE:
-        rc = tar_create(t);
-        break;
-    default:
-        DBG(0, ("Invalid tar state\n"));
-        rc = 1;
-    }
+	switch(t->mode.operation) {
+	case TAR_EXTRACT:
+		rc = tar_extract(t);
+		break;
+	case TAR_CREATE:
+		rc = tar_create(t);
+		break;
+	default:
+		DBG(0, ("Invalid tar state\n"));
+		rc = 1;
+	}
 
-    t->to_process = false;
-    tar_free_mem_context(t);
-    DBG(5, ("tar_process done, err = %d\n", rc));
-    return rc;
+	t->to_process = false;
+	tar_free_mem_context(t);
+	DBG(5, ("tar_process done, err = %d\n", rc));
+	return rc;
 }
 
 /**
@@ -710,85 +710,85 @@ int tar_process(struct tar *t)
  */
 static int tar_create(struct tar* t)
 {
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    int r;
-    int err = 0;
-    NTSTATUS status;
-    const char *mask;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	int r;
+	int err = 0;
+	NTSTATUS status;
+	const char *mask;
 
-    t->archive = archive_write_new();
+	t->archive = archive_write_new();
 
-    if (!t->mode.dry) {
-        const int bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
-        r = archive_write_set_bytes_per_block(t->archive, bsize);
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Can't use a block size of %d bytes", bsize));
-            err = 1;
-            goto out;
-        }
+	if (!t->mode.dry) {
+		const int bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
+		r = archive_write_set_bytes_per_block(t->archive, bsize);
+		if (r != ARCHIVE_OK) {
+			DBG(0, ("Can't use a block size of %d bytes", bsize));
+			err = 1;
+			goto out;
+		}
 
-        /*
-         * Use PAX restricted format which is not the most
-         * conservative choice but has useful extensions and is widely
-         * supported
-         */
-        r = archive_write_set_format_pax_restricted(t->archive);
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Can't use pax restricted format: %s\n",
-                    archive_error_string(t->archive)));
-            err = 1;
-            goto out;
-        }
+		/*
+		 * Use PAX restricted format which is not the most
+		 * conservative choice but has useful extensions and is widely
+		 * supported
+		 */
+		r = archive_write_set_format_pax_restricted(t->archive);
+		if (r != ARCHIVE_OK) {
+			DBG(0, ("Can't use pax restricted format: %s\n",
+						archive_error_string(t->archive)));
+			err = 1;
+			goto out;
+		}
 
-        if (strequal(t->tar_path, "-")) {
-            r = archive_write_open_fd(t->archive, STDOUT_FILENO);
-        } else {
-            r = archive_write_open_filename(t->archive, t->tar_path);
-        }
+		if (strequal(t->tar_path, "-")) {
+			r = archive_write_open_fd(t->archive, STDOUT_FILENO);
+		} else {
+			r = archive_write_open_filename(t->archive, t->tar_path);
+		}
 
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Can't open %s: %s\n", t->tar_path,
-                    archive_error_string(t->archive)));
-            err = 1;
-            goto out_close;
-        }
-    }
+		if (r != ARCHIVE_OK) {
+			DBG(0, ("Can't open %s: %s\n", t->tar_path,
+						archive_error_string(t->archive)));
+			err = 1;
+			goto out_close;
+		}
+	}
 
-    /*
-     * In inclusion mode, iterate on the inclusion list
-     */
-    if (t->mode.selection == TAR_INCLUDE && t->path_list_size > 0) {
-        if (tar_create_from_list(t)) {
-            err = 1;
-            goto out_close;
-        }
-    } else {
-        mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s\\*",
-                                             client_get_cur_dir()));
-        DBG(5, ("tar_process do_list with mask: %s\n", mask));
-        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0, ("do_list fail %s\n", nt_errstr(status)));
-            err = 1;
-            goto out_close;
-        }
-    }
+	/*
+	 * In inclusion mode, iterate on the inclusion list
+	 */
+	if (t->mode.selection == TAR_INCLUDE && t->path_list_size > 0) {
+		if (tar_create_from_list(t)) {
+			err = 1;
+			goto out_close;
+		}
+	} else {
+		mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s\\*",
+					client_get_cur_dir()));
+		DBG(5, ("tar_process do_list with mask: %s\n", mask));
+		status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG(0, ("do_list fail %s\n", nt_errstr(status)));
+			err = 1;
+			goto out_close;
+		}
+	}
 
- out_close:
-    DBG(0, ("Total bytes received: %" PRIu64 "\n", t->total_size));
+out_close:
+	DBG(0, ("Total bytes received: %" PRIu64 "\n", t->total_size));
 
-    if (!t->mode.dry) {
-        r = archive_write_close(t->archive);
-        if (r != ARCHIVE_OK) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto out;
-        }
-    }
- out:
-    archive_write_free(t->archive);
-    talloc_free(ctx);
-    return err;
+	if (!t->mode.dry) {
+		r = archive_write_close(t->archive);
+		if (r != ARCHIVE_OK) {
+			DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+			err = 1;
+			goto out;
+		}
+	}
+out:
+	archive_write_free(t->archive);
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -796,43 +796,43 @@ static int tar_create(struct tar* t)
  */
 static int tar_create_from_list(struct tar *t)
 {
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    int err = 0;
-    NTSTATUS status;
-    const char *path, *mask, *base, *start_dir;
-    int i;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	int err = 0;
+	NTSTATUS status;
+	const char *path, *mask, *base, *start_dir;
+	int i;
 
-    start_dir = talloc_strdup(ctx, client_get_cur_dir());
+	start_dir = talloc_strdup(ctx, client_get_cur_dir());
 
-    for (i = 0; i < t->path_list_size; i++) {
-        path = t->path_list[i];
-        base = path_base_name(path);
-        mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s\\%s",
-                                             client_get_cur_dir(), path));
+	for (i = 0; i < t->path_list_size; i++) {
+		path = t->path_list[i];
+		base = path_base_name(path);
+		mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s\\%s",
+					client_get_cur_dir(), path));
 
-        DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
-                path, base ? base : "NULL", mask));
+		DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
+					path, base ? base : "NULL", mask));
 
-        if (base != NULL) {
-            base = talloc_asprintf(ctx, "%s%s\\",
-                                   client_get_cur_dir(), path_base_name(path));
-            DBG(5, ("cd '%s' before do_list\n", base));
-            client_set_cur_dir(base);
-        }
-        status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-        if (base != NULL) {
-            client_set_cur_dir(start_dir);
-        }
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0, ("do_list failed on %s (%s)\n", path, nt_errstr(status)));
-            err = 1;
-            goto out;
-        }
-    }
+		if (base != NULL) {
+			base = talloc_asprintf(ctx, "%s%s\\",
+					client_get_cur_dir(), path_base_name(path));
+			DBG(5, ("cd '%s' before do_list\n", base));
+			client_set_cur_dir(base);
+		}
+		status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+		if (base != NULL) {
+			client_set_cur_dir(start_dir);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG(0, ("do_list failed on %s (%s)\n", path, nt_errstr(status)));
+			err = 1;
+			goto out;
+		}
+	}
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -843,58 +843,58 @@ static int tar_create_from_list(struct tar *t)
  * as callback when the current file is a directory.
  */
 static NTSTATUS get_file_callback(struct cli_state *cli,
-                                  struct file_info *finfo,
-                                  const char *dir)
+				  struct file_info *finfo,
+				  const char *dir)
 {
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    NTSTATUS err = NT_STATUS_OK;
-    char *remote_name;
-    const char *initial_dir = client_get_cur_dir();
-    int rc;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	NTSTATUS err = NT_STATUS_OK;
+	char *remote_name;
+	const char *initial_dir = client_get_cur_dir();
+	int rc;
 
-    remote_name = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s",
-                                                initial_dir, finfo->name));
+	remote_name = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s",
+				initial_dir, finfo->name));
 
-    if (strequal(finfo->name, "..") || strequal(finfo->name, ".")) {
-        goto out;
-    }
+	if (strequal(finfo->name, "..") || strequal(finfo->name, ".")) {
+		goto out;
+	}
 
-    rc = tar_create_skip_path(&tar_ctx, remote_name, finfo);
-    if (rc != 0) {
-        DBG(5, ("--- %s\n", remote_name));
-        goto out;
-    }
+	rc = tar_create_skip_path(&tar_ctx, remote_name, finfo);
+	if (rc != 0) {
+		DBG(5, ("--- %s\n", remote_name));
+		goto out;
+	}
 
-    if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
-        char *old_dir;
-        char *new_dir;
-        char *mask;
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+		char *old_dir;
+		char *new_dir;
+		char *mask;
 
-        old_dir = PANIC_IF_NULL(talloc_strdup(ctx, initial_dir));
-        new_dir = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s\\",
-                                                initial_dir, finfo->name));
-        mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s*", new_dir));
+		old_dir = PANIC_IF_NULL(talloc_strdup(ctx, initial_dir));
+		new_dir = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s\\",
+					initial_dir, finfo->name));
+		mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s*", new_dir));
 
-        rc = tar_get_file(&tar_ctx, remote_name, finfo);
-        if (rc != 0) {
-            err = NT_STATUS_UNSUCCESSFUL;
-            goto out;
-        }
+		rc = tar_get_file(&tar_ctx, remote_name, finfo);
+		if (rc != 0) {
+			err = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
 
-        client_set_cur_dir(new_dir);
-        do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-        client_set_cur_dir(old_dir);
-    } else {
-        rc = tar_get_file(&tar_ctx, remote_name, finfo);
-        if (rc != 0) {
-            err = NT_STATUS_UNSUCCESSFUL;
-            goto out;
-        }
-    }
+		client_set_cur_dir(new_dir);
+		do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+		client_set_cur_dir(old_dir);
+	} else {
+		rc = tar_get_file(&tar_ctx, remote_name, finfo);
+		if (rc != 0) {
+			err = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -902,108 +902,109 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
  * @full_dos_path: path to the file to fetch
  * @finfo: attributes of the file to fetch
  */
-static int tar_get_file(struct tar *t, const char *full_dos_path,
-                        struct file_info *finfo)
+static int tar_get_file(struct tar *t,
+			const char *full_dos_path,
+			struct file_info *finfo)
 {
-    extern struct cli_state *cli;
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    NTSTATUS status;
-    struct archive_entry *entry;
-    char *full_unix_path;
-    char buf[TAR_CLI_READ_SIZE];
-    size_t len;
-    uint64_t off = 0;
-    uint16_t remote_fd = (uint16_t)-1;
-    int err = 0, r;
-    const bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
+	extern struct cli_state *cli;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	NTSTATUS status;
+	struct archive_entry *entry;
+	char *full_unix_path;
+	char buf[TAR_CLI_READ_SIZE];
+	size_t len;
+	uint64_t off = 0;
+	uint16_t remote_fd = (uint16_t)-1;
+	int err = 0, r;
+	const bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
 
-    DBG(5, ("+++ %s\n", full_dos_path));
+	DBG(5, ("+++ %s\n", full_dos_path));
 
-    t->total_size += finfo->size;
+	t->total_size += finfo->size;
 
-    if (t->mode.dry) {
-        goto out;
-    }
+	if (t->mode.dry) {
+		goto out;
+	}
 
-    if (t->mode.reset) {
-        /* ignore return value: server might not store DOS attributes */
-        set_remote_attr(full_dos_path, FILE_ATTRIBUTE_ARCHIVE, ATTR_UNSET);
-    }
+	if (t->mode.reset) {
+		/* ignore return value: server might not store DOS attributes */
+		set_remote_attr(full_dos_path, FILE_ATTRIBUTE_ARCHIVE, ATTR_UNSET);
+	}
 
-    full_unix_path = PANIC_IF_NULL(talloc_asprintf(ctx, ".%s", full_dos_path));
-    string_replace(full_unix_path, '\\', '/');
-    entry = archive_entry_new();
-    archive_entry_copy_pathname(entry, full_unix_path);
-    archive_entry_set_filetype(entry, isdir ? AE_IFDIR : AE_IFREG);
-    archive_entry_set_atime(entry,
-                            finfo->atime_ts.tv_sec,
-                            finfo->atime_ts.tv_nsec);
-    archive_entry_set_mtime(entry,
-                            finfo->mtime_ts.tv_sec,
-                            finfo->mtime_ts.tv_nsec);
-    archive_entry_set_ctime(entry,
-                            finfo->ctime_ts.tv_sec,
-                            finfo->ctime_ts.tv_nsec);
-    archive_entry_set_perm(entry, isdir ? 0755 : 0644);
-    /*
-     * check if we can safely cast unsigned file size to libarchive
-     * signed size. Very unlikely problem (>9 exabyte file)
-     */
-    if (finfo->size > INT64_MAX) {
-        DBG(0, ("Remote file %s too big\n", full_dos_path));
-        goto out_entry;
-    }
+	full_unix_path = PANIC_IF_NULL(talloc_asprintf(ctx, ".%s", full_dos_path));
+	string_replace(full_unix_path, '\\', '/');
+	entry = archive_entry_new();
+	archive_entry_copy_pathname(entry, full_unix_path);
+	archive_entry_set_filetype(entry, isdir ? AE_IFDIR : AE_IFREG);
+	archive_entry_set_atime(entry,
+			finfo->atime_ts.tv_sec,
+			finfo->atime_ts.tv_nsec);
+	archive_entry_set_mtime(entry,
+			finfo->mtime_ts.tv_sec,
+			finfo->mtime_ts.tv_nsec);
+	archive_entry_set_ctime(entry,
+			finfo->ctime_ts.tv_sec,
+			finfo->ctime_ts.tv_nsec);
+	archive_entry_set_perm(entry, isdir ? 0755 : 0644);
+	/*
+	 * check if we can safely cast unsigned file size to libarchive
+	 * signed size. Very unlikely problem (>9 exabyte file)
+	 */
+	if (finfo->size > INT64_MAX) {
+		DBG(0, ("Remote file %s too big\n", full_dos_path));
+		goto out_entry;
+	}
 
-    archive_entry_set_size(entry, (int64_t)finfo->size);
+	archive_entry_set_size(entry, (int64_t)finfo->size);
 
-    r = archive_write_header(t->archive, entry);
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-        err = 1;
-        goto out_entry;
-    }
+	r = archive_write_header(t->archive, entry);
+	if (r != ARCHIVE_OK) {
+		DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+		err = 1;
+		goto out_entry;
+	}
 
-    if (isdir) {
-        DBG(5, ("get_file skip dir %s\n", full_dos_path));
-        goto out_entry;
-    }
+	if (isdir) {
+		DBG(5, ("get_file skip dir %s\n", full_dos_path));
+		goto out_entry;
+	}
 
-    status = cli_open(cli, full_dos_path, O_RDONLY, DENY_NONE, &remote_fd);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0,("%s opening remote file %s\n",
-                 nt_errstr(status), full_dos_path));
-        goto out_entry;
-    }
+	status = cli_open(cli, full_dos_path, O_RDONLY, DENY_NONE, &remote_fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG(0,("%s opening remote file %s\n",
+					nt_errstr(status), full_dos_path));
+		goto out_entry;
+	}
 
-    do {
-        status = cli_read(cli, remote_fd, buf, off, sizeof(buf), &len);
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0,("Error reading file %s : %s\n",
-                     full_dos_path, nt_errstr(status)));
-            err = 1;
-            goto out_close;
-        }
+	do {
+		status = cli_read(cli, remote_fd, buf, off, sizeof(buf), &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG(0,("Error reading file %s : %s\n",
+						full_dos_path, nt_errstr(status)));
+			err = 1;
+			goto out_close;
+		}
 
-        off += len;
+		off += len;
 
-        r = archive_write_data(t->archive, buf, len);
-        if (r < 0) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto out_close;
-        }
+		r = archive_write_data(t->archive, buf, len);
+		if (r < 0) {
+			DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+			err = 1;
+			goto out_close;
+		}
 
-    } while (off < finfo->size);
+	} while (off < finfo->size);
 
- out_close:
-    cli_close(cli, remote_fd);
+out_close:
+	cli_close(cli, remote_fd);
 
- out_entry:
-    archive_entry_free(entry);
+out_entry:
+	archive_entry_free(entry);
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -1011,66 +1012,66 @@ static int tar_get_file(struct tar *t, const char *full_dos_path,
  */
 static int tar_extract(struct tar *t)
 {
-    int err = 0;
-    int r;
-    struct archive_entry *entry;
-    const size_t bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
-    int rc;
+	int err = 0;
+	int r;
+	struct archive_entry *entry;
+	const size_t bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
+	int rc;
 
-    t->archive = archive_read_new();
-    archive_read_support_format_all(t->archive);
-    archive_read_support_filter_all(t->archive);
+	t->archive = archive_read_new();
+	archive_read_support_format_all(t->archive);
+	archive_read_support_filter_all(t->archive);
 
-    if (strequal(t->tar_path, "-")) {
-        r = archive_read_open_fd(t->archive, STDIN_FILENO, bsize);
-    } else {
-        r = archive_read_open_filename(t->archive, t->tar_path, bsize);
-    }
+	if (strequal(t->tar_path, "-")) {
+		r = archive_read_open_fd(t->archive, STDIN_FILENO, bsize);
+	} else {
+		r = archive_read_open_filename(t->archive, t->tar_path, bsize);
+	}
 
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Can't open %s : %s\n", t->tar_path,
-                  archive_error_string(t->archive)));
-        err = 1;
-        goto out;
-    }
+	if (r != ARCHIVE_OK) {
+		DBG(0, ("Can't open %s : %s\n", t->tar_path,
+					archive_error_string(t->archive)));
+		err = 1;
+		goto out;
+	}
 
-    for (;;) {
-        r = archive_read_next_header(t->archive, &entry);
-        if (r == ARCHIVE_EOF) {
-            break;
-        }
-        if (r == ARCHIVE_WARN) {
-            DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
-        }
-        if (r == ARCHIVE_FATAL) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto out;
-        }
+	for (;;) {
+		r = archive_read_next_header(t->archive, &entry);
+		if (r == ARCHIVE_EOF) {
+			break;
+		}
+		if (r == ARCHIVE_WARN) {
+			DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
+		}
+		if (r == ARCHIVE_FATAL) {
+			DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+			err = 1;
+			goto out;
+		}
 
-        rc = tar_extract_skip_path(t, entry);
-        if (rc != 0) {
-            DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
-            continue;
-        }
+		rc = tar_extract_skip_path(t, entry);
+		if (rc != 0) {
+			DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
+			continue;
+		}
 
-        DBG(5, ("+++ %s\n", archive_entry_pathname(entry)));
+		DBG(5, ("+++ %s\n", archive_entry_pathname(entry)));
 
-        rc = tar_send_file(t, entry);
-        if (rc != 0) {
-            err = 1;
-            goto out;
-        }
-    }
+		rc = tar_send_file(t, entry);
+		if (rc != 0) {
+			err = 1;
+			goto out;
+		}
+	}
 
- out:
-    r = archive_read_free(t->archive);
-    if (r != ARCHIVE_OK) {
-        DBG(0, ("Can't close %s : %s\n", t->tar_path,
-                  archive_error_string(t->archive)));
-        err = 1;
-    }
-    return err;
+out:
+	r = archive_read_free(t->archive);
+	if (r != ARCHIVE_OK) {
+		DBG(0, ("Can't close %s : %s\n", t->tar_path,
+					archive_error_string(t->archive)));
+		err = 1;
+	}
+	return err;
 }
 
 /**
@@ -1082,85 +1083,85 @@ static int tar_extract(struct tar *t)
  */
 static int tar_send_file(struct tar *t, struct archive_entry *entry)
 {
-    extern struct cli_state *cli;
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    char *dos_path;
-    char *full_path;
-    NTSTATUS status;
-    uint16_t remote_fd = (uint16_t) -1;
-    int err = 0;
-    int flags = O_RDWR | O_CREAT | O_TRUNC;
-    mode_t mode = archive_entry_filetype(entry);
-    int rc;
+	extern struct cli_state *cli;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	char *dos_path;
+	char *full_path;
+	NTSTATUS status;
+	uint16_t remote_fd = (uint16_t) -1;
+	int err = 0;
+	int flags = O_RDWR | O_CREAT | O_TRUNC;
+	mode_t mode = archive_entry_filetype(entry);
+	int rc;
 
-    dos_path = PANIC_IF_NULL(talloc_strdup(ctx, archive_entry_pathname(entry)));
-    fix_unix_path(dos_path, true);
+	dos_path = PANIC_IF_NULL(talloc_strdup(ctx, archive_entry_pathname(entry)));
+	fix_unix_path(dos_path, true);
 
-    full_path = PANIC_IF_NULL(talloc_strdup(ctx, client_get_cur_dir()));
-    full_path = PANIC_IF_NULL(talloc_strdup_append(full_path, dos_path));
+	full_path = PANIC_IF_NULL(talloc_strdup(ctx, client_get_cur_dir()));
+	full_path = PANIC_IF_NULL(talloc_strdup_append(full_path, dos_path));
 
-    if (mode != AE_IFREG && mode != AE_IFDIR) {
-        DBG(0, ("Skipping non-dir & non-regular file %s\n", full_path));
-        goto out;
-    }
+	if (mode != AE_IFREG && mode != AE_IFDIR) {
+		DBG(0, ("Skipping non-dir & non-regular file %s\n", full_path));
+		goto out;
+	}
 
-    rc = make_remote_path(full_path);
-    if (rc != 0) {
-        err = 1;
-        goto out;
-    }
+	rc = make_remote_path(full_path);
+	if (rc != 0) {
+		err = 1;
+		goto out;
+	}
 
-    if (mode == AE_IFDIR) {
-        goto out;
-    }
+	if (mode == AE_IFDIR) {
+		goto out;
+	}
 
-    status = cli_open(cli, full_path, flags, DENY_NONE, &remote_fd);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0, ("Error opening remote file %s: %s\n",
-                  full_path, nt_errstr(status)));
-        err = 1;
-        goto out;
-    }
+	status = cli_open(cli, full_path, flags, DENY_NONE, &remote_fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG(0, ("Error opening remote file %s: %s\n",
+					full_path, nt_errstr(status)));
+		err = 1;
+		goto out;
+	}
 
-    for (;;) {
-        const void *buf;
-        size_t len;
-        off_t off;
-        int r;
+	for (;;) {
+		const void *buf;
+		size_t len;
+		off_t off;
+		int r;
 
-        r = archive_read_data_block(t->archive, &buf, &len, &off);
-        if (r == ARCHIVE_EOF) {
-            break;
-        }
-        if (r == ARCHIVE_WARN) {
-            DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
-        }
-        if (r == ARCHIVE_FATAL) {
-            DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
-            err = 1;
-            goto close_out;
-        }
+		r = archive_read_data_block(t->archive, &buf, &len, &off);
+		if (r == ARCHIVE_EOF) {
+			break;
+		}
+		if (r == ARCHIVE_WARN) {
+			DBG(0, ("Warning: %s\n", archive_error_string(t->archive)));
+		}
+		if (r == ARCHIVE_FATAL) {
+			DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+			err = 1;
+			goto close_out;
+		}
 
-        status = cli_writeall(cli, remote_fd, 0, buf, off, len, NULL);
-        if (!NT_STATUS_IS_OK(status)) {
-            DBG(0, ("Error writing remote file %s: %s\n",
-                      full_path, nt_errstr(status)));
-            err = 1;
-            goto close_out;
-        }
-    }
+		status = cli_writeall(cli, remote_fd, 0, buf, off, len, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG(0, ("Error writing remote file %s: %s\n",
+						full_path, nt_errstr(status)));
+			err = 1;
+			goto close_out;
+		}
+	}
 
- close_out:
-    status = cli_close(cli, remote_fd);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0, ("Error losing remote file %s: %s\n",
-                  full_path, nt_errstr(status)));
-        err = 1;
-    }
+close_out:
+	status = cli_close(cli, remote_fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG(0, ("Error losing remote file %s: %s\n",
+					full_path, nt_errstr(status)));
+		err = 1;
+	}
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -1169,17 +1170,17 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
  */
 static void tar_add_selection_path(struct tar *t, const char *path)
 {
-    TALLOC_CTX *ctx = t->talloc_ctx;
-    if (!t->path_list) {
-        t->path_list = PANIC_IF_NULL(str_list_make_empty(ctx));
-        t->path_list_size = 0;
-    }
+	TALLOC_CTX *ctx = t->talloc_ctx;
+	if (!t->path_list) {
+		t->path_list = PANIC_IF_NULL(str_list_make_empty(ctx));
+		t->path_list_size = 0;
+	}
 
-    /* cast to silent gcc const-qual warning */
-    t->path_list = PANIC_IF_NULL(str_list_add((void*)t->path_list,
-                                              path));
-    t->path_list_size++;
-    fix_unix_path(t->path_list[t->path_list_size - 1], true);
+	/* cast to silent gcc const-qual warning */
+	t->path_list = PANIC_IF_NULL(str_list_add((void*)t->path_list,
+				path));
+	t->path_list_size++;
+	fix_unix_path(t->path_list[t->path_list_size - 1], true);
 }
 
 /**
@@ -1187,13 +1188,13 @@ static void tar_add_selection_path(struct tar *t, const char *path)
  */
 static int tar_set_blocksize(struct tar *t, int size)
 {
-    if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
-        return 1;
-    }
+	if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
+		return 1;
+	}
 
-    t->mode.blocksize = size;
+	t->mode.blocksize = size;
 
-    return 0;
+	return 0;
 }
 
 /**
@@ -1209,19 +1210,19 @@ static int tar_set_blocksize(struct tar *t, int size)
  */
 static int tar_set_newer_than(struct tar *t, const char *filename)
 {
-    extern time_t newer_than;
-    SMB_STRUCT_STAT stbuf;
-    int rc;
+	extern time_t newer_than;
+	SMB_STRUCT_STAT stbuf;
+	int rc;
 
-    rc = sys_stat(filename, &stbuf, false);
-    if (rc != 0) {
-        DBG(0, ("Error setting newer-than time\n"));
-        return 1;
-    }
+	rc = sys_stat(filename, &stbuf, false);
+	if (rc != 0) {
+		DBG(0, ("Error setting newer-than time\n"));
+		return 1;
+	}
 
-    newer_than = convert_timespec_to_time_t(stbuf.st_ex_mtime);
-    DBG(1, ("Getting files newer than %s\n", time_to_asc(newer_than)));
-    return 0;
+	newer_than = convert_timespec_to_time_t(stbuf.st_ex_mtime);
+	DBG(1, ("Getting files newer than %s\n", time_to_asc(newer_than)));
+	return 0;
 }
 
 /**
@@ -1230,31 +1231,31 @@ static int tar_set_newer_than(struct tar *t, const char *filename)
  *
  * Read and add each line of @filename to the path list.
  */
-static int tar_read_inclusion_file (struct tar *t, const char* filename)
+static int tar_read_inclusion_file(struct tar *t, const char* filename)
 {
-    char *line;
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    int err = 0;
-    int fd;
+	char *line;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	int err = 0;
+	int fd;
 
-    fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        DBG(0, ("Can't open inclusion file '%s': %s\n", filename, strerror(errno)));
-        err = 1;
-        goto out;
-    }
+	fd = open(filename, O_RDONLY);
+	if (fd < 0) {
+		DBG(0, ("Can't open inclusion file '%s': %s\n", filename, strerror(errno)));
+		err = 1;
+		goto out;
+	}
 
-    for (line = afdgets(fd, ctx, 0);
-         line != NULL;
-         line = afdgets(fd, ctx, 0)) {
-        tar_add_selection_path(t, line);
-    }
+	for (line = afdgets(fd, ctx, 0);
+			line != NULL;
+			line = afdgets(fd, ctx, 0)) {
+		tar_add_selection_path(t, line);
+	}
 
-    close(fd);
+	close(fd);
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -1270,30 +1271,30 @@ static int tar_read_inclusion_file (struct tar *t, const char* filename)
  */
 static bool tar_path_in_list(struct tar *t, const char *path, bool is_reverse)
 {
-    int i;
-    const char *p;
-    const char *pattern;
+	int i;
+	const char *p;
+	const char *pattern;
 
-    if (path == NULL || path[0] == '\0') {
-        return false;
-    }
+	if (path == NULL || path[0] == '\0') {
+		return false;
+	}
 
-    p = skip_useless_char_in_path(path);
+	p = skip_useless_char_in_path(path);
 
-    for (i = 0; i < t->path_list_size; i++) {
-        bool is_in_list;
+	for (i = 0; i < t->path_list_size; i++) {
+		bool is_in_list;
 
-        pattern = skip_useless_char_in_path(t->path_list[i]);
-        is_in_list = is_subpath(p, pattern);
-        if (is_reverse) {
-            is_in_list = is_in_list || is_subpath(pattern, p);
-        }
-        if (is_in_list) {
-            return true;
-        }
-    }
+		pattern = skip_useless_char_in_path(t->path_list[i]);
+		is_in_list = is_subpath(p, pattern);
+		if (is_reverse) {
+			is_in_list = is_in_list || is_subpath(pattern, p);
+		}
+		if (is_in_list) {
+			return true;
+		}
+	}
 
-    return false;
+	return false;
 }
 
 /**
@@ -1303,27 +1304,27 @@ static bool tar_path_in_list(struct tar *t, const char *path, bool is_reverse)
  * Skip predicate for tar extraction (archive to server) only.
  */
 static bool tar_extract_skip_path(struct tar *t,
-                                  struct archive_entry *entry)
+				  struct archive_entry *entry)
 {
-    const bool skip = true;
-    const char *fullpath = archive_entry_pathname(entry);
-    bool in = true;
+	const bool skip = true;
+	const char *fullpath = archive_entry_pathname(entry);
+	bool in = true;
 
-    if (t->path_list_size <= 0) {
-        return !skip;
-    }
+	if (t->path_list_size <= 0) {
+		return !skip;
+	}
 
-    if (t->mode.regex) {
-        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
-    } else {
-        in = tar_path_in_list(t, fullpath, false);
-    }
+	if (t->mode.regex) {
+		in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
+	} else {
+		in = tar_path_in_list(t, fullpath, false);
+	}
 
-    if (t->mode.selection == TAR_EXCLUDE) {
-        in = !in;
-    }
+	if (t->mode.selection == TAR_EXCLUDE) {
+		in = !in;
+	}
 
-    return in ? !skip : skip;
+	return in ? !skip : skip;
 }
 
 /**
@@ -1334,58 +1335,58 @@ static bool tar_extract_skip_path(struct tar *t,
  * Skip predicate for tar creation (server to archive) only.
  */
 static bool tar_create_skip_path(struct tar *t,
-                                 const char *fullpath,
-                                 const struct file_info *finfo)
+				 const char *fullpath,
+				 const struct file_info *finfo)
 {
-    /* syntaxic sugar */
-    const bool skip = true;
-    const mode_t mode = finfo->mode;
-    const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
-    const bool exclude = t->mode.selection == TAR_EXCLUDE;
-    bool in = true;
+	/* syntaxic sugar */
+	const bool skip = true;
+	const mode_t mode = finfo->mode;
+	const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
+	const bool exclude = t->mode.selection == TAR_EXCLUDE;
+	bool in = true;
 
-    if (!isdir) {
+	if (!isdir) {
 
-        /* 1. if we dont want X and we have X, skip */
-        if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
-            return skip;
-        }
+		/* 1. if we dont want X and we have X, skip */
+		if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
+			return skip;
+		}
 
-        if (!t->mode.hidden && (mode & FILE_ATTRIBUTE_HIDDEN)) {
-            return skip;
-        }
+		if (!t->mode.hidden && (mode & FILE_ATTRIBUTE_HIDDEN)) {
+			return skip;
+		}
 
-        /* 2. if we only want archive and it's not, skip */
+		/* 2. if we only want archive and it's not, skip */
 
-        if (t->mode.incremental && !(mode & FILE_ATTRIBUTE_ARCHIVE)) {
-            return skip;
-        }
-    }
+		if (t->mode.incremental && !(mode & FILE_ATTRIBUTE_ARCHIVE)) {
+			return skip;
+		}
+	}
 
-    /* 3. is it in the selection list? */
+	/* 3. is it in the selection list? */
 
-    /*
-     * tar_create_from_list() use the include list as a starting
-     * point, no need to check
-     */
-    if (!exclude) {
-        return !skip;
-    }
+	/*
+	 * tar_create_from_list() use the include list as a starting
+	 * point, no need to check
+	 */
+	if (!exclude) {
+		return !skip;
+	}
 
-    /* we are now in exclude mode */
+	/* we are now in exclude mode */
 
-    /* no matter the selection, no list => include everything */
-    if (t->path_list_size <= 0) {
-        return !skip;
-    }
+	/* no matter the selection, no list => include everything */
+	if (t->path_list_size <= 0) {
+		return !skip;
+	}
 
-    if (t->mode.regex) {
-        in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
-    } else {
-        in = tar_path_in_list(t, fullpath, isdir && !exclude);
-    }
+	if (t->mode.regex) {
+		in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
+	} else {
+		in = tar_path_in_list(t, fullpath, isdir && !exclude);
+	}
 
-    return in ? skip : !skip;
+	return in ? skip : !skip;
 }
 
 /**
@@ -1393,13 +1394,13 @@ static bool tar_create_skip_path(struct tar *t,
  *
  * @t is ready if it properly parsed command line arguments.
  */
-bool tar_to_process (struct tar *t)
+bool tar_to_process(struct tar *t)
 {
-    if (t == NULL) {
-        DBG(0, ("Invalid tar context\n"));
-        return false;
-    }
-    return t->to_process;
+	if (t == NULL) {
+		DBG(0, ("Invalid tar context\n"));
+		return false;
+	}
+	return t->to_process;
 }
 
 /**
@@ -1409,17 +1410,17 @@ bool tar_to_process (struct tar *t)
  */
 static const char* skip_useless_char_in_path(const char *p)
 {
-    while (p) {
-        if (*p == '/' || *p == '\\') {
-            p++;
-        }
-        else if (p[0] == '.' && (p[1] == '/' || p[1] == '\\')) {
-            p += 2;
-        }
-        else
-            return p;
-    }
-    return p;
+	while (p) {
+		if (*p == '/' || *p == '\\') {
+			p++;
+		}
+		else if (p[0] == '.' && (p[1] == '/' || p[1] == '\\')) {
+			p += 2;
+		}
+		else
+			return p;
+	}
+	return p;
 }
 
 /**
@@ -1481,29 +1482,29 @@ static bool is_subpath(const char *sub, const char *full)
  */
 static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
 {
-    extern struct cli_state *cli;
-    uint16 old_attr;
-    NTSTATUS status;
+	extern struct cli_state *cli;
+	uint16 old_attr;
+	NTSTATUS status;
 
-    status = cli_getatr(cli, filename, &old_attr, NULL, NULL);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(0, ("cli_getatr failed: %s\n", nt_errstr(status)));
-        return 1;
-    }
+	status = cli_getatr(cli, filename, &old_attr, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG(0, ("cli_getatr failed: %s\n", nt_errstr(status)));
+		return 1;
+	}
 
-    if (mode == ATTR_SET) {
-        new_attr |= old_attr;
-    } else {
-        new_attr = old_attr & ~new_attr;
-    }
+	if (mode == ATTR_SET) {
+		new_attr |= old_attr;
+	} else {
+		new_attr = old_attr & ~new_attr;
+	}
 
-    status = cli_setatr(cli, filename, new_attr, 0);
-    if (!NT_STATUS_IS_OK(status)) {
-        DBG(1, ("cli_setatr failed: %s\n", nt_errstr(status)));
-        return 1;
-    }
+	status = cli_setatr(cli, filename, new_attr, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG(1, ("cli_setatr failed: %s\n", nt_errstr(status)));
+		return 1;
+	}
 
-    return 0;
+	return 0;
 }
 
 
@@ -1515,52 +1516,52 @@ static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
  */
 static int make_remote_path(const char *full_path)
 {
-    extern struct cli_state *cli;
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-    char *path;
-    char *subpath;
-    char *state;
-    char *last_backslash;
-    char *p;
-    int len;
-    NTSTATUS status;
-    int err = 0;
+	extern struct cli_state *cli;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
+	char *path;
+	char *subpath;
+	char *state;
+	char *last_backslash;
+	char *p;
+	int len;
+	NTSTATUS status;
+	int err = 0;
 
-    subpath = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
-    path = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
-    len = talloc_get_size(path) - 1;
+	subpath = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
+	path = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
+	len = talloc_get_size(path) - 1;
 
-    last_backslash = strrchr_m(path, '\\');
-    if (last_backslash == NULL) {
-        goto out;
-    }
+	last_backslash = strrchr_m(path, '\\');
+	if (last_backslash == NULL) {
+		goto out;
+	}
 
-    *last_backslash = 0;
+	*last_backslash = 0;
 
-    subpath[0] = 0;
-    p = strtok_r(path, "\\", &state);
+	subpath[0] = 0;
+	p = strtok_r(path, "\\", &state);
 
-    while (p != NULL) {
-        strlcat(subpath, p, len);
-        status = cli_chkpath(cli, subpath);
-        if (!NT_STATUS_IS_OK(status)) {
-            status = cli_mkdir(cli, subpath);
-            if (!NT_STATUS_IS_OK(status)) {
-                DBG(0, ("Can't mkdir %s: %s\n", subpath, nt_errstr(status)));
-                err = 1;
-                goto out;
-            }
-            DBG(3, ("mkdir %s\n", subpath));
-        }
+	while (p != NULL) {
+		strlcat(subpath, p, len);
+		status = cli_chkpath(cli, subpath);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = cli_mkdir(cli, subpath);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG(0, ("Can't mkdir %s: %s\n", subpath, nt_errstr(status)));
+				err = 1;
+				goto out;
+			}
+			DBG(3, ("mkdir %s\n", subpath));
+		}
 
-        strlcat(subpath, "\\", len);
-        p = strtok_r(NULL, "/\\", &state);
+		strlcat(subpath, "\\", len);
+		p = strtok_r(NULL, "/\\", &state);
 
-    }
+	}
 
- out:
-    talloc_free(ctx);
-    return err;
+out:
+	talloc_free(ctx);
+	return err;
 }
 
 /**
@@ -1572,9 +1573,9 @@ static int make_remote_path(const char *full_path)
  */
 static TALLOC_CTX *tar_reset_mem_context(struct tar *t)
 {
-    tar_free_mem_context(t);
-    t->talloc_ctx = PANIC_IF_NULL(talloc_new(NULL));
-    return t->talloc_ctx;
+	tar_free_mem_context(t);
+	t->talloc_ctx = PANIC_IF_NULL(talloc_new(NULL));
+	return t->talloc_ctx;
 }
 
 /**
@@ -1582,13 +1583,13 @@ static TALLOC_CTX *tar_reset_mem_context(struct tar *t)
  */
 static void tar_free_mem_context(struct tar *t)
 {
-    if (t->talloc_ctx) {
-        talloc_free(t->talloc_ctx);
-        t->talloc_ctx = NULL;
-        t->path_list_size = 0;
-        t->path_list = NULL;
-        t->tar_path = NULL;
-    }
+	if (t->talloc_ctx) {
+		talloc_free(t->talloc_ctx);
+		t->talloc_ctx = NULL;
+		t->path_list_size = 0;
+		t->path_list = NULL;
+		t->tar_path = NULL;
+	}
 }
 
 #define XSET(v)      [v] = #v
@@ -1603,38 +1604,38 @@ static void tar_free_mem_context(struct tar *t)
  */
 static void tar_dump(struct tar *t)
 {
-    int i;
-    const char* op[] = {
-        XSET(TAR_NO_OPERATION),
-        XSET(TAR_CREATE),
-        XSET(TAR_EXTRACT),
-    };
+	int i;
+	const char* op[] = {
+		XSET(TAR_NO_OPERATION),
+		XSET(TAR_CREATE),
+		XSET(TAR_EXTRACT),
+	};
 
-    const char* sel[] = {
-        XSET(TAR_NO_SELECTION),
-        XSET(TAR_INCLUDE),
-        XSET(TAR_EXCLUDE),
-    };
+	const char* sel[] = {
+		XSET(TAR_NO_SELECTION),
+		XSET(TAR_INCLUDE),
+		XSET(TAR_EXCLUDE),
+	};
 
-    XBOOL(t->to_process);
-    XTABLE(t->mode.operation, op);
-    XTABLE(t->mode.selection, sel);
-    XINT(t->mode.blocksize);
-    XBOOL(t->mode.hidden);
-    XBOOL(t->mode.system);
-    XBOOL(t->mode.incremental);
-    XBOOL(t->mode.reset);
-    XBOOL(t->mode.dry);
-    XBOOL(t->mode.verbose);
-    XUINT64(t->total_size);
-    XSTR(t->tar_path);
-    XINT(t->path_list_size);
+	XBOOL(t->to_process);
+	XTABLE(t->mode.operation, op);
+	XTABLE(t->mode.selection, sel);
+	XINT(t->mode.blocksize);
+	XBOOL(t->mode.hidden);
+	XBOOL(t->mode.system);
+	XBOOL(t->mode.incremental);
+	XBOOL(t->mode.reset);
+	XBOOL(t->mode.dry);
+	XBOOL(t->mode.verbose);
+	XUINT64(t->total_size);
+	XSTR(t->tar_path);
+	XINT(t->path_list_size);
 
-    for (i = 0; t->path_list && t->path_list[i]; i++) {
-        DBG(2, ("DUMP: t->path_list[%2d] = %s\n", i, t->path_list[i]));
-    }
+	for (i = 0; t->path_list && t->path_list[i]; i++) {
+		DBG(2, ("DUMP: t->path_list[%2d] = %s\n", i, t->path_list[i]));
+	}
 
-    DBG(2, ("DUMP:t->path_list @ %p (%d elem)\n", t->path_list, i));
+	DBG(2, ("DUMP:t->path_list @ %p (%d elem)\n", t->path_list, i));
 }
 #undef XSET
 #undef XTABLE
@@ -1648,26 +1649,26 @@ static void tar_dump(struct tar *t)
  * The result is not exact, the actual number of token might be less
  * than what is returned.
  */
-static int max_token (const char *str)
+static int max_token(const char *str)
 {
-    const char *s;
-    int nb = 0;
+	const char *s;
+	int nb = 0;
 
-    if (str == NULL) {
-        return 0;
-    }
+	if (str == NULL) {
+		return 0;
+	}
 
-    s = str;
-    while (s[0] != '\0') {
-        if (isspace((int)s[0])) {
-            nb++;
-        }
-        s++;
-    }
+	s = str;
+	while (s[0] != '\0') {
+		if (isspace((int)s[0])) {
+			nb++;
+		}
+		s++;
+	}
 
-    nb++;
+	nb++;
 
-    return nb;
+	return nb;
 }
 
 /**
@@ -1675,44 +1676,44 @@ static int max_token (const char *str)
  * @path: path to convert
  * @removeprefix: if true, remove leading ./ or /.
  */
-static char *fix_unix_path (char *path, bool do_remove_prefix)
+static char *fix_unix_path(char *path, bool do_remove_prefix)
 {
-    char *from = path, *to = path;
+	char *from = path, *to = path;
 
-    if (path == NULL || path[0] == '\0') {
-        return path;
-    }
+	if (path == NULL || path[0] == '\0') {
+		return path;
+	}
 
-    /* remove prefix:
-     * ./path => path
-     *  /path => path
-     */
-    if (do_remove_prefix) {
-        /* /path */
-        if (path[0] == '/' || path[0] == '\\') {
-            from += 1;
-        }
+	/* remove prefix:
+	 * ./path => path
+	 *  /path => path
+	 */
+	if (do_remove_prefix) {
+		/* /path */
+		if (path[0] == '/' || path[0] == '\\') {
+			from += 1;
+		}
 
-        /* ./path */
-        if (path[1] != '\0' && path[0] == '.' && (path[1] == '/' || path[1] == '\\')) {
-            from += 2;
-        }
-    }
+		/* ./path */
+		if (path[1] != '\0' && path[0] == '.' && (path[1] == '/' || path[1] == '\\')) {
+			from += 2;
+		}
+	}
 
-    /* replace / with \ */
-    while (from[0] != '\0') {
-        if (from[0] == '/') {
-            to[0] = '\\';
-        } else {
-            to[0] = from[0];
-        }
+	/* replace / with \ */
+	while (from[0] != '\0') {
+		if (from[0] == '/') {
+			to[0] = '\\';
+		} else {
+			to[0] = from[0];
+		}
 
-        from++;
-        to++;
-    }
-    to[0] = '\0';
+		from++;
+		to++;
+	}
+	to[0] = '\0';
 
-    return path;
+	return path;
 }
 
 /**
@@ -1720,25 +1721,25 @@ static char *fix_unix_path (char *path, bool do_remove_prefix)
  *
  * If @path doesn't contain any directory separator return NULL.
  */
-static char *path_base_name (const char *path)
+static char *path_base_name(const char *path)
 {
-    TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_tos());
-    char *base = NULL;
-    int last = -1;
-    int i;
+	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_tos());
+	char *base = NULL;
+	int last = -1;
+	int i;
 
-    for (i = 0; path[i]; i++) {
-        if (path[i] == '\\' || path[i] == '/') {
-            last = i;
-        }
-    }
+	for (i = 0; path[i]; i++) {
+		if (path[i] == '\\' || path[i] == '/') {
+			last = i;
+		}
+	}
 
-    if (last >= 0) {
-        base = PANIC_IF_NULL(talloc_strdup(ctx, path));
-        base[last] = 0;
-    }
+	if (last >= 0) {
+		base = PANIC_IF_NULL(talloc_strdup(ctx, path));
+		base[last] = 0;
+	}
 
-    return base;
+	return base;
 }
 
 #else
@@ -1747,49 +1748,49 @@ static char *path_base_name (const char *path)
 
 int cmd_block(void)
 {
-    NOT_IMPLEMENTED;
-    return 1;
+	NOT_IMPLEMENTED;
+	return 1;
 }
 
 int cmd_tarmode(void)
 {
-    NOT_IMPLEMENTED;
-    return 1;
+	NOT_IMPLEMENTED;
+	return 1;
 }
 
 int cmd_setmode(void)
 {
-    NOT_IMPLEMENTED;
-    return 1;
+	NOT_IMPLEMENTED;
+	return 1;
 }
 
 int cmd_tar(void)
 {
-    NOT_IMPLEMENTED;
-    return 1;
+	NOT_IMPLEMENTED;
+	return 1;
 }
 
 int tar_process(struct tar* tar)
 {
-    NOT_IMPLEMENTED;
-    return 1;
+	NOT_IMPLEMENTED;
+	return 1;
 }
 
 int tar_parse_args(struct tar *tar, const char *flag, const char **val, int valsize)
 {
-    NOT_IMPLEMENTED;
-    return 1;
+	NOT_IMPLEMENTED;
+	return 1;
 }
 
 bool tar_to_process(struct tar *tar)
 {
-    NOT_IMPLEMENTED;
-    return false;
+	NOT_IMPLEMENTED;
+	return false;
 }
 
 struct tar *tar_get_ctx()
 {
-    return NULL;
+	return NULL;
 }
 
 #endif
