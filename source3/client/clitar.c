@@ -1662,39 +1662,42 @@ static int max_token (const char *str)
  * @path: path to convert
  * @removeprefix: if true, remove leading ./ or /.
  */
-static char *fix_unix_path (char *path, bool removeprefix)
+static char *fix_unix_path (char *path, bool do_remove_prefix)
 {
     char *from = path, *to = path;
 
-    if (!path || !*path)
+    if (path == NULL || path[0] == '\0') {
         return path;
+    }
 
     /* remove prefix:
      * ./path => path
      *  /path => path
      */
-    if (removeprefix) {
+    if (do_remove_prefix) {
         /* /path */
         if (path[0] == '/' || path[0] == '\\') {
             from += 1;
         }
 
         /* ./path */
-        if (path[1] && path[0] == '.' && (path[1] == '/' || path[1] == '\\')) {
+        if (path[1] != '\0' && path[0] == '.' && (path[1] == '/' || path[1] == '\\')) {
             from += 2;
         }
     }
 
     /* replace / with \ */
-    while (*from) {
-        if (*from == '/') {
-            *to = '\\';
+    while (from[0] != '\0') {
+        if (from[0] == '/') {
+            to[0] = '\\';
         } else {
-            *to = *from;
+            to[0] = from[0];
         }
-        from++; to++;
+
+        from++;
+        to++;
     }
-    *to = 0;
+    to[0] = '\0';
 
     return path;
 }
