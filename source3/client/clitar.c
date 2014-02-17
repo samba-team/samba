@@ -1518,8 +1518,7 @@ static int make_remote_path(const char *full_path)
     len = talloc_get_size(path) - 1;
 
     last_backslash = strrchr_m(path, '\\');
-
-    if (!last_backslash) {
+    if (last_backslash == NULL) {
         goto out;
     }
 
@@ -1528,7 +1527,7 @@ static int make_remote_path(const char *full_path)
     subpath[0] = 0;
     p = strtok_r(path, "\\", &state);
 
-    while (p) {
+    while (p != NULL) {
         strlcat(subpath, p, len);
         status = cli_chkpath(cli, subpath);
         if (!NT_STATUS_IS_OK(status)) {
