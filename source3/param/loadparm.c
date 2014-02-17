@@ -2158,7 +2158,8 @@ struct loadparm_service *lp_default_loadparm_service()
  * Add a parametric option to a parmlist_entry,
  * replacing old value, if already present.
  */
-static void set_param_opt(struct parmlist_entry **opt_list,
+static void set_param_opt(TALLOC_CTX *mem_ctx,
+			  struct parmlist_entry **opt_list,
 			  const char *opt_name,
 			  const char *opt_value,
 			  unsigned priority)
@@ -2182,7 +2183,7 @@ static void set_param_opt(struct parmlist_entry **opt_list,
 			string_free(&opt->value);
 			TALLOC_FREE(opt->list);
 
-			opt->value = talloc_strdup(NULL, opt_value);
+			opt->value = talloc_strdup(opt, opt_value);
 			if (opt->value == NULL) {
 				smb_panic("talloc_strdup failed");
 			}
@@ -2194,17 +2195,17 @@ static void set_param_opt(struct parmlist_entry **opt_list,
 		opt = opt->next;
 	}
 	if (not_added) {
-		new_opt = talloc(NULL, struct parmlist_entry);
+		new_opt = talloc(mem_ctx, struct parmlist_entry);
 		if (new_opt == NULL) {
 			smb_panic("OOM");
 		}
 
-		new_opt->key = talloc_strdup(NULL, opt_name);
+		new_opt->key = talloc_strdup(new_opt, opt_name);
 		if (new_opt->key == NULL) {
 			smb_panic("talloc_strdup failed");
 		}
 
-		new_opt->value = talloc_strdup(NULL, opt_value);
+		new_opt->value = talloc_strdup(new_opt, opt_value);
 		if (new_opt->value == NULL) {
 			smb_panic("talloc_strdup failed");
 		}
@@ -2278,7 +2279,7 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 
 	data = pserviceSource->param_opt;
 	while (data) {
-		set_param_opt(&pserviceDest->param_opt, data->key, data->value, data->priority);
+		set_param_opt(pserviceDest, &pserviceDest->param_opt, data->key, data->value, data->priority);
 		data = data->next;
 	}
 }
@@ -3085,9 +3086,13 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		 * We've got a parametric option
 		 */
 
-		opt_list = (snum < 0)
-			? &Globals.param_opt : &ServicePtrs[snum]->param_opt;
-		set_param_opt(opt_list, pszParmName, pszParmValue, 0);
+		if (snum < 0) {
+			opt_list = &Globals.param_opt;
+			set_param_opt(NULL, opt_list, pszParmName, pszParmValue, 0);
+		} else {
+			opt_list = &ServicePtrs[snum]->param_opt;
+			set_param_opt(ServicePtrs[snum], opt_list, pszParmName, pszParmValue, 0);
+		}
 
 		return true;
 	}
@@ -3253,7 +3258,7 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 
 	/* it might be parametric */
 	if (strchr(pszParmName, ':') != NULL) {
-		set_param_opt(&Globals.param_opt, pszParmName, pszParmValue, FLAG_CMDLINE);
+		set_param_opt(NULL, &Globals.param_opt, pszParmName, pszParmValue, FLAG_CMDLINE);
 		if (store_values) {
 			store_lp_set_cmdline(pszParmName, pszParmValue);
 		}
