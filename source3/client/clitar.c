@@ -1637,15 +1637,16 @@ static void tar_dump(struct tar *t)
  */
 static int max_token (const char *str)
 {
-    const char *s = str;
+    const char *s;
     int nb = 0;
 
-    if (!str) {
+    if (str == NULL) {
         return 0;
     }
 
-    while (*s) {
-        if (isspace(*s)) {
+    s = str;
+    while (s[0] != '\0') {
+        if (isspace((int)s[0])) {
             nb++;
         }
         s++;
