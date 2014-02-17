@@ -1015,6 +1015,7 @@ static int tar_extract(struct tar *t)
     int r;
     struct archive_entry *entry;
     const size_t bsize = t->mode.blocksize * TAR_BLOCK_UNIT;
+    int rc;
 
     t->archive = archive_read_new();
     archive_read_support_format_all(t->archive);
@@ -1047,14 +1048,16 @@ static int tar_extract(struct tar *t)
             goto out;
         }
 
-        if (tar_extract_skip_path(t, entry)) {
+        rc = tar_extract_skip_path(t, entry);
+        if (rc != 0) {
             DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
             continue;
         }
 
         DBG(5, ("+++ %s\n", archive_entry_pathname(entry)));
 
-        if (tar_send_file(t, entry)) {
+        rc = tar_send_file(t, entry);
+        if (rc != 0) {
             err = 1;
             goto out;
         }
