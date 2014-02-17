@@ -343,8 +343,11 @@ int cmd_tar(void)
     int maxtok = max_token(cmd_ptr);
     int i = 0;
     int err = 0;
+    bool ok;
+    int rc;
 
-    if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+    ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+    if (!ok) {
         DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
         err = 1;
         goto out;
@@ -357,13 +360,15 @@ int cmd_tar(void)
         val[i++] = buf;
     }
 
-    if (tar_parse_args(&tar_ctx, flag, val, i)) {
+    rc = tar_parse_args(&tar_ctx, flag, val, i);
+    if (rc != 0) {
         DBG(0, ("parse_args failed\n"));
         err = 1;
         goto out;
     }
 
-    if (tar_process(&tar_ctx)) {
+    rc = tar_process(&tar_ctx);
+    if (rc != 0) {
         DBG(0, ("tar_process failed\n"));
         err = 1;
         goto out;
