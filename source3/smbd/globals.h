@@ -633,6 +633,7 @@ struct user_struct {
 };
 
 struct smbd_server_connection {
+	NTSTATUS status;
 	int sock;
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
