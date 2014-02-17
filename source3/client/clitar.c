@@ -813,14 +813,14 @@ static int tar_create_from_list(struct tar *t)
         DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
                 path, base ? base : "NULL", mask));
 
-        if (base) {
+        if (base != NULL) {
             base = talloc_asprintf(ctx, "%s%s\\",
                                    client_get_cur_dir(), path_base_name(path));
             DBG(5, ("cd '%s' before do_list\n", base));
             client_set_cur_dir(base);
         }
         status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-        if (base) {
+        if (base != NULL) {
             client_set_cur_dir(start_dir);
         }
         if (!NT_STATUS_IS_OK(status)) {
