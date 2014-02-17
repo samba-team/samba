@@ -2154,68 +2154,6 @@ struct loadparm_service *lp_default_loadparm_service()
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-/**
- * Add a parametric option to a parmlist_entry,
- * replacing old value, if already present.
- */
-static void set_param_opt(TALLOC_CTX *mem_ctx,
-			  struct parmlist_entry **opt_list,
-			  const char *opt_name,
-			  const char *opt_value,
-			  unsigned priority)
-{
-	struct parmlist_entry *new_opt, *opt;
-	bool not_added;
-
-	opt = *opt_list;
-	not_added = true;
-
-	/* Traverse destination */
-	while (opt) {
-		/* If we already have same option, override it */
-		if (strwicmp(opt->key, opt_name) == 0) {
-			if ((opt->priority & FLAG_CMDLINE) &&
-			    !(priority & FLAG_CMDLINE)) {
-				/* it's been marked as not to be
-				   overridden */
-				return;
-			}
-			string_free(&opt->value);
-			TALLOC_FREE(opt->list);
-
-			opt->value = talloc_strdup(opt, opt_value);
-			if (opt->value == NULL) {
-				smb_panic("talloc_strdup failed");
-			}
-
-			opt->priority = priority;
-			not_added = false;
-			break;
-		}
-		opt = opt->next;
-	}
-	if (not_added) {
-		new_opt = talloc(mem_ctx, struct parmlist_entry);
-		if (new_opt == NULL) {
-			smb_panic("OOM");
-		}
-
-		new_opt->key = talloc_strdup(new_opt, opt_name);
-		if (new_opt->key == NULL) {
-			smb_panic("talloc_strdup failed");
-		}
-
-		new_opt->value = talloc_strdup(new_opt, opt_value);
-		if (new_opt->value == NULL) {
-			smb_panic("talloc_strdup failed");
-		}
-
-		new_opt->list = NULL;
-		new_opt->priority = priority;
-		DLIST_ADD(*opt_list, new_opt);
-	}
-}
-
 static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_service *pserviceSource,
 			 struct bitmap *pcopymapDest)
 {
