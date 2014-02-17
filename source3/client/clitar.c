@@ -394,9 +394,11 @@ int cmd_setmode(void)
     int mode = ATTR_SET;
     TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
     int err = 0;
+    bool ok;
 
 
-    if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+    ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+    if (!ok) {
         DBG(0, ("setmode <filename> <[+|-]rsha>\n"));
         err = 1;
         goto out;
@@ -406,7 +408,7 @@ int cmd_setmode(void)
                                           "%s%s",
                                           client_get_cur_dir(),
                                           buf));
-    if (!fname) {
+    if (fname == NULL) {
         err = 1;
         goto out;
     }
