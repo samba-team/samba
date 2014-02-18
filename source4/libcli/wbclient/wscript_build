@@ -4,6 +4,7 @@ bld.SAMBA_LIBRARY('LIBWBCLIENT_OLD',
                   source='wbclient.c',
                   public_deps='errors events',
                   deps='NDR_WINBIND MESSAGING RPC_NDR_WINBIND',
+                  cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
                   private_library=True
 	)
 
