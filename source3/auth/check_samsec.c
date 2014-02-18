@@ -482,7 +482,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	}
 
 	become_root();
-	nt_status = make_server_info_sam(server_info, sampass);
+	nt_status = make_server_info_sam(mem_ctx, sampass, server_info);
 	unbecome_root();
 
 	TALLOC_FREE(sampass);

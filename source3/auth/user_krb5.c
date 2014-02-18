@@ -223,9 +223,6 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 		 * SID consistency with ntlmssp session setup
 		 */
 		struct samu *sampass;
-		/* The stupid make_server_info_XX functions here
-		   don't take a talloc context. */
-		struct auth_serversupplied_info *tmp = NULL;
 
 		sampass = samu_new(talloc_tos());
 		if (sampass == NULL) {
@@ -235,14 +232,19 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 		if (pdb_getsampwnam(sampass, username)) {
 			DEBUG(10, ("found user %s in passdb, calling "
 				   "make_server_info_sam\n", username));
-			status = make_server_info_sam(&tmp, sampass);
+			status = make_server_info_sam(mem_ctx,
+						      sampass,
+						      &server_info);
 		} else {
 			/*
 			 * User not in passdb, make it up artificially
 			 */
 			DEBUG(10, ("didn't find user %s in passdb, calling "
 				   "make_server_info_pw\n", username));
-			status = make_server_info_pw(mem_ctx, username, pw, &tmp);
+			status = make_server_info_pw(mem_ctx,
+						     username,
+						     pw,
+						     &server_info);
 		}
 
 		TALLOC_FREE(sampass);

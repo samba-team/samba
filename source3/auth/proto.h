@@ -190,8 +190,9 @@ bool make_user_info_guest(const struct tsocket_address *remote_address,
 			  struct auth_usersupplied_info **user_info);
 
 struct samu;
-NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
-			      struct samu *sampass);
+NTSTATUS make_server_info_sam(TALLOC_CTX *mem_ctx,
+			      struct samu *sampass,
+			      struct auth_serversupplied_info **pserver_info);
 NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			    const struct auth_serversupplied_info *server_info,
 			    DATA_BLOB *session_key,
