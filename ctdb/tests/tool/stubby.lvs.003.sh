@@ -2,16 +2,18 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "3 nodes, no LVS, all ok"
+define_test "3 nodes, some LVS, all ok"
 
 required_result 0 <<EOF
+0:192.168.20.41
+2:192.168.20.43
 EOF
 
 simple_test <<EOF
 NODEMAP
-0       192.168.20.41   0x0     CURRENT RECMASTER
+0       192.168.20.41   0x0     CURRENT RECMASTER CTDB_CAP_LVS
 1       192.168.20.42   0x0
-2       192.168.20.43   0x0
+2       192.168.20.43   0x0	CTDB_CAP_LVS
 
 IFACES
 :Name:LinkStatus:References:
