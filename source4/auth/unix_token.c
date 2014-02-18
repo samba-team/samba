@@ -29,7 +29,7 @@
   form a security_unix_token from the current security_token
 */
 NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
+				      struct wbc_context *wbc_ctx,
 				      struct security_token *token,
 				      struct security_unix_token **sec)
 {
@@ -55,7 +55,7 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 		ids[s].status = ID_UNKNOWN;
 	}
 
-	status = wbc_sids_to_xids(ev, ids, token->num_sids);
+	status = wbc_sids_to_xids(wbc_ctx->event_ctx, ids, token->num_sids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	g = token->num_sids;
@@ -128,7 +128,7 @@ NTSTATUS auth_session_info_fill_unix(struct wbc_context *wbc_ctx,
 {
 	char *su;
 	size_t len;
-	NTSTATUS status = security_token_to_unix_token(session_info, wbc_ctx->event_ctx,
+	NTSTATUS status = security_token_to_unix_token(session_info, wbc_ctx,
 						       session_info->security_token,
 						       &session_info->unix_token);
 	if (!NT_STATUS_IS_OK(status)) {
