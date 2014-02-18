@@ -121,14 +121,14 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 /*
   Fill in the auth_user_info_unix and auth_unix_token elements in a struct session_info
 */
-NTSTATUS auth_session_info_fill_unix(struct tevent_context *ev,
+NTSTATUS auth_session_info_fill_unix(struct wbc_context *wbc_ctx,
 				     struct loadparm_context *lp_ctx,
 				     const char *original_user_name,
 				     struct auth_session_info *session_info)
 {
 	char *su;
 	size_t len;
-	NTSTATUS status = security_token_to_unix_token(session_info, ev,
+	NTSTATUS status = security_token_to_unix_token(session_info, wbc_ctx->event_ctx,
 						       session_info->security_token,
 						       &session_info->unix_token);
 	if (!NT_STATUS_IS_OK(status)) {
