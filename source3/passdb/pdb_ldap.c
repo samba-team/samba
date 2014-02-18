@@ -5168,6 +5168,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	uint32_t num_result;
 	bool is_machine = False;
 	bool add_posix = False;
+	bool init_okay = False;
 	LDAPMod **mods = NULL;
 	struct samu *user;
 	char *filter;
@@ -5285,7 +5286,10 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!init_ldap_from_sam(ldap_state, entry, &mods, user, pdb_element_is_set_or_changed)) {
+	init_okay = init_ldap_from_sam(ldap_state, entry, &mods, user, pdb_element_is_set_or_changed);
+	smbldap_talloc_autofree_ldapmod(tmp_ctx, mods);
+
+	if (!init_okay) {
 		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -5371,9 +5375,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", shell);
 	}
 
-	smbldap_talloc_autofree_ldapmod(tmp_ctx, mods);
-
-	if (add_posix) {	
+	if (add_posix) {
 		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
 	} else {
 		rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
