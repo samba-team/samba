@@ -558,18 +558,6 @@ bool lpcfg_parm_bool(struct loadparm_context *lp_ctx,
 
 
 /**
- * Initialise a service to the defaults.
- */
-
-static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx, struct loadparm_service *sDefault)
-{
-	struct loadparm_service *pservice =
-		talloc_zero(mem_ctx, struct loadparm_service);
-	copy_service(pservice, sDefault, NULL);
-	return pservice;
-}
-
-/**
  * Set a string value, deallocating any existing space, and allocing the space
  * for the string
  */
@@ -621,15 +609,12 @@ struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 					   const char *name)
 {
 	int i;
-	struct loadparm_service tservice;
 	int num_to_alloc = lp_ctx->iNumServices + 1;
 	struct parmlist_entry *data, *pdata;
 
 	if (pservice == NULL) {
 		pservice = lp_ctx->sDefault;
 	}
-
-	tservice = *pservice;
 
 	/* it might already exist */
 	if (name) {
@@ -671,12 +656,12 @@ struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 		lp_ctx->iNumServices++;
 	}
 
-	lp_ctx->services[i] = init_service(lp_ctx->services, lp_ctx->sDefault);
+	lp_ctx->services[i] = talloc_zero(lp_ctx->services, struct loadparm_service);
 	if (lp_ctx->services[i] == NULL) {
 		DEBUG(0,("lpcfg_add_service: out of memory!\n"));
 		return NULL;
 	}
-	copy_service(lp_ctx->services[i], &tservice, NULL);
+	copy_service(lp_ctx->services[i], pservice, NULL);
 	if (name != NULL)
 		lpcfg_string_set(lp_ctx->services[i], &lp_ctx->services[i]->szService, name);
 	return lp_ctx->services[i];
