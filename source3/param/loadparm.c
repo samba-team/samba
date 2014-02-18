@@ -2164,7 +2164,7 @@ static void copy_service(struct loadparm_service *pserviceDest, const struct loa
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || bitmap_query(pcopymapDest,i))) {
-			const void *src_ptr = lp_parm_ptr(pserviceSource, &parm_table[i]);
+			const void *src_ptr = ((const char *)pserviceSource) + parm_table[i].offset;
 			void *dest_ptr = lp_parm_ptr(pserviceDest, &parm_table[i]);
 
 			switch (parm_table[i].type) {
