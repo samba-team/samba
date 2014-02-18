@@ -65,6 +65,8 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
  * struct.  When the return is other than NT_STATUS_OK the contents 
  * of that structure is undefined.
  *
+ * @param mem_ctx   The memory context to use to allocate server_info
+ *
  * @param user_info Contains the user supplied components, including the passwords.
  *                  Must be created with make_user_info() or one of its wrappers.
  *
@@ -79,9 +81,9 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
  * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
  *
  **/
-
-NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
-				  const struct auth_usersupplied_info *user_info, 
+NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
+				  const struct auth_context *auth_context,
+				  const struct auth_usersupplied_info *user_info,
 				  struct auth_serversupplied_info **server_info);
 
 /* The following definitions come from auth/auth_builtin.c  */

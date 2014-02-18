@@ -1646,8 +1646,10 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	} /* end switch */
 
 	if ( NT_STATUS_IS_OK(status) ) {
-		status = auth_check_ntlm_password(auth_context,
-			user_info, &server_info);
+		status = auth_check_ntlm_password(p->mem_ctx,
+						  auth_context,
+						  user_info,
+						  &server_info);
 	}
 
 	TALLOC_FREE(auth_context);

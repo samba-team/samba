@@ -304,7 +304,10 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 		return False;
 	}
 	
-	status = auth_check_ntlm_password(auth_context, user_info, &server_info);
+	status = auth_check_ntlm_password(mem_ctx,
+					  auth_context,
+					  user_info,
+					  &server_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to test authentication with auth module: %s\n", nt_errstr(status)));

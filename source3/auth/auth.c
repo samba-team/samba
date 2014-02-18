@@ -160,18 +160,19 @@ static bool check_domain_match(const char *user, const char *domain)
  *
  **/
 
-NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
-				  const struct auth_usersupplied_info *user_info, 
-				  struct auth_serversupplied_info **server_info)
+NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
+				  const struct auth_context *auth_context,
+				  const struct auth_usersupplied_info *user_info,
+				  struct auth_serversupplied_info **pserver_info)
 {
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
 	const char *unix_username;
 	auth_methods *auth_method;
-	TALLOC_CTX *mem_ctx;
 
-	if (!user_info || !auth_context || !server_info)
+	if (user_info == NULL || auth_context == NULL || pserver_info == NULL) {
 		return NT_STATUS_LOGON_FAILURE;
+	}
 
 	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
 		  user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
@@ -205,17 +206,27 @@ NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
+		struct auth_serversupplied_info *server_info;
+		TALLOC_CTX *tmp_ctx;
 		NTSTATUS result;
 
-		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name,
-				      user_info->mapped.domain_name, user_info->client.account_name);
+		tmp_ctx = talloc_named(mem_ctx,
+				       0,
+				       "%s authentication for user %s\\%s",
+				       auth_method->name,
+				       user_info->mapped.domain_name,
+				       user_info->client.account_name);
 
-		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+		result = auth_method->auth(auth_context,
+					   auth_method->private_data,
+					   tmp_ctx,
+					   user_info,
+					   &server_info);
 
 		/* check if the module did anything */
 		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ) {
 			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
 
@@ -229,19 +240,20 @@ NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
 				  auth_method->name, user_info->client.account_name, nt_errstr(nt_status)));
 		}
 
-		talloc_destroy(mem_ctx);
-
-		if ( NT_STATUS_IS_OK(nt_status))
-		{
-				break;			
+		if (NT_STATUS_IS_OK(nt_status)) {
+			*pserver_info = talloc_steal(mem_ctx, server_info);
+			TALLOC_FREE(tmp_ctx);
+			break;
 		}
+
+		TALLOC_FREE(tmp_ctx);
 	}
 
 	/* successful authentication */
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		unix_username = (*server_info)->unix_name;
-		if (!(*server_info)->guest) {
+		unix_username = (*pserver_info)->unix_name;
+		if (!(*pserver_info)->guest) {
 			const char *rhost;
 
 			if (tsocket_address_is_inet(user_info->remote_host, "ip")) {
@@ -270,9 +282,9 @@ NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
 		}
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG((*server_info)->guest ? 5 : 2, 
+			DEBUG((*pserver_info)->guest ? 5 : 2,
 			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n",
-			       (*server_info)->guest ? "guest " : "",
+			       (*pserver_info)->guest ? "guest " : "",
 			       user_info->client.account_name,
 			       user_info->mapped.account_name,
 			       unix_username));
@@ -286,7 +298,7 @@ NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
 	DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n",
 		  user_info->client.account_name, user_info->mapped.account_name,
 		  nt_errstr(nt_status)));
-	ZERO_STRUCTP(server_info);
+	ZERO_STRUCTP(pserver_info);
 
 	return nt_status;
 }

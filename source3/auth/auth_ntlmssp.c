@@ -134,8 +134,10 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 
 	mapped_user_info->flags = user_info->flags;
 
-	nt_status = auth_check_ntlm_password(auth_context,
-					     mapped_user_info, &server_info);
+	nt_status = auth_check_ntlm_password(mem_ctx,
+					     auth_context,
+					     mapped_user_info,
+					     &server_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(5,("Checking NTLMSSP password for %s\\%s failed: %s\n",
