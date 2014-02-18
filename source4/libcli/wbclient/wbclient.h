@@ -18,7 +18,18 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "librpc/gen_ndr/idmap.h"
+#include "lib/messaging/irpc.h"
+#include "libcli/composite/composite.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
+
+struct wbc_context {
+	struct tevent_context *event_ctx;
+	struct dcerpc_binding_handle *irpc_handle;
+};
+
+struct wbc_context *wbc_init(TALLOC_CTX *mem_ctx,
+			     struct imessaging_context *msg_ctx,
+			     struct tevent_context *event_ctx);
 
 NTSTATUS wbc_sids_to_xids(struct tevent_context *ev, struct id_map *ids,
 			  uint32_t count);
