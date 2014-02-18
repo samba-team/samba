@@ -464,7 +464,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char cwd[MAXPATHLEN];
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev = samba_tevent_context_init(NULL);
+	struct tevent_context *ev;
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -537,9 +537,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	ev = server_event_context();
+
 	status = create_conn_struct(vfs,
 				ev,
-				messaging_init(vfs, ev),
+				server_messaging_context(),
                                 &vfs->conn,
                                 -1,
                                 getcwd(cwd, sizeof(cwd)),
