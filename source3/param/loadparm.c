@@ -2796,23 +2796,19 @@ static bool handle_copy(struct loadparm_context *unused, int snum, const char *p
 {
 	bool bRetval;
 	int iTemp;
-	struct loadparm_service serviceTemp;
-
-	string_set(ptr, pszParmValue);
-
-	init_service(&serviceTemp);
 
 	bRetval = false;
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
-	if ((iTemp = getservicebyname(pszParmValue, &serviceTemp)) >= 0) {
+	if ((iTemp = getservicebyname(pszParmValue, NULL)) >= 0) {
 		if (iTemp == iServiceIndex) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
 			copy_service(ServicePtrs[iServiceIndex],
-				     &serviceTemp,
+				     ServicePtrs[iTemp],
 				     ServicePtrs[iServiceIndex]->copymap);
+			string_set(ptr, pszParmValue);
 			bRetval = true;
 		}
 	} else {
@@ -2820,7 +2816,6 @@ static bool handle_copy(struct loadparm_context *unused, int snum, const char *p
 		bRetval = false;
 	}
 
-	free_service(&serviceTemp);
 	return (bRetval);
 }
 
