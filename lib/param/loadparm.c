@@ -286,7 +286,7 @@ FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)
 static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName);
 static void copy_service(struct loadparm_service *pserviceDest,
-			 struct loadparm_service *pserviceSource,
+			 const struct loadparm_service *pserviceSource,
 			 struct bitmap *pcopymapDest);
 static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
@@ -903,7 +903,7 @@ void set_param_opt(TALLOC_CTX *mem_ctx,
  */
 
 static void copy_service(struct loadparm_service *pserviceDest,
-			 struct loadparm_service *pserviceSource,
+			 const struct loadparm_service *pserviceSource,
 			 struct bitmap *pcopymapDest)
 {
 	int i;
@@ -913,42 +913,42 @@ static void copy_service(struct loadparm_service *pserviceDest,
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || bitmap_query(pcopymapDest, i))) {
-			void *src_ptr =
-				((char *)pserviceSource) + parm_table[i].offset;
+			const void *src_ptr =
+				((const char *)pserviceSource) + parm_table[i].offset;
 			void *dest_ptr =
 				((char *)pserviceDest) + parm_table[i].offset;
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
 				case P_BOOLREV:
-					*(bool *)dest_ptr = *(bool *)src_ptr;
+					*(bool *)dest_ptr = *(const bool *)src_ptr;
 					break;
 
 				case P_INTEGER:
 				case P_BYTES:
 				case P_OCTAL:
 				case P_ENUM:
-					*(int *)dest_ptr = *(int *)src_ptr;
+					*(int *)dest_ptr = *(const int *)src_ptr;
 					break;
 
 				case P_CHAR:
-					*(char *)dest_ptr = *(char *)src_ptr;
+					*(char *)dest_ptr = *(const char *)src_ptr;
 					break;
 
 				case P_STRING:
 					lpcfg_string_set(pserviceDest,
 						   (char **)dest_ptr,
-						   *(char **)src_ptr);
+						   *(const char * const *)src_ptr);
 					break;
 
 				case P_USTRING:
 					lpcfg_string_set_upper(pserviceDest,
 							 (char **)dest_ptr,
-							 *(char **)src_ptr);
+							 *(const char * const *)src_ptr);
 					break;
 				case P_LIST:
-					*(const char ***)dest_ptr = (const char **)str_list_copy(pserviceDest, 
-										  *(const char ***)src_ptr);
+					*(const char * const **)dest_ptr = (const char * const *)str_list_copy(pserviceDest,
+										  *(const char * * const *)src_ptr);
 					break;
 				default:
 					break;
@@ -1342,8 +1342,9 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		}
 
 		case P_CMDLIST:
-			*(const char ***)parm_ptr = (const char **)str_list_make(mem_ctx,
-								  pszParmValue, NULL);
+			*(const char * const **)parm_ptr
+				= (const char * const *)str_list_make(mem_ctx,
+								      pszParmValue, NULL);
 			break;
 		case P_LIST:
 		{
@@ -1371,7 +1372,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 							  pszParmName, pszParmValue));
 						return false;
 					}
-					*(const char ***)parm_ptr = (const char **) new_list;
+					*(const char * const **)parm_ptr = (const char * const *) new_list;
 					break;
 				}
 			}
@@ -1795,7 +1796,7 @@ static bool is_default(struct loadparm_service *sDefault, int i)
 	switch (parm_table[i].type) {
 		case P_CMDLIST:
 		case P_LIST:
-			return str_list_equal((const char **)parm_table[i].def.lvalue, 
+			return str_list_equal((const char * const *)parm_table[i].def.lvalue,
 					      (const char **)def_ptr);
 		case P_STRING:
 		case P_USTRING:
