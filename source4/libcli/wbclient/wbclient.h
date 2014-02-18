@@ -31,8 +31,24 @@ struct wbc_context *wbc_init(TALLOC_CTX *mem_ctx,
 			     struct imessaging_context *msg_ctx,
 			     struct tevent_context *event_ctx);
 
+struct composite_context *wbc_sids_to_xids_send(struct wbc_context *wbc_ctx,
+						TALLOC_CTX *mem_ctx,
+						uint32_t count,
+						struct id_map *ids);
+
+NTSTATUS wbc_sids_to_xids_recv(struct composite_context *ctx,
+			       struct id_map **ids);
+
 NTSTATUS wbc_sids_to_xids(struct tevent_context *ev, struct id_map *ids,
 			  uint32_t count);
+
+struct composite_context *wbc_xids_to_sids_send(struct wbc_context *wbc_ctx,
+						TALLOC_CTX *mem_ctx,
+						uint32_t count,
+						struct id_map *ids);
+
+NTSTATUS wbc_xids_to_sids_recv(struct composite_context *ctx,
+			       struct id_map **ids);
 
 NTSTATUS wbc_xids_to_sids(struct tevent_context *ev, struct id_map *ids,
 			  uint32_t count);

@@ -57,6 +57,148 @@ struct wbc_context *wbc_init(TALLOC_CTX *mem_ctx,
 	return ctx;
 }
 
+struct wbc_idmap_state {
+	struct composite_context *ctx;
+	struct winbind_get_idmap *req;
+	struct id_map *ids;
+};
+
+static void sids_to_xids_recv_ids(struct tevent_req *subreq);
+
+struct composite_context *wbc_sids_to_xids_send(struct wbc_context *wbc_ctx,
+						TALLOC_CTX *mem_ctx,
+						uint32_t count,
+						struct id_map *ids)
+{
+	struct composite_context *ctx;
+	struct wbc_idmap_state *state;
+	struct tevent_req *subreq;
+
+	DEBUG(5, ("wbc_sids_to_xids called\n"));
+
+	ctx = composite_create(mem_ctx, wbc_ctx->event_ctx);
+	if (ctx == NULL) return NULL;
+
+	state = talloc(ctx, struct wbc_idmap_state);
+	if (composite_nomem(state, ctx)) return ctx;
+	ctx->private_data = state;
+
+	state->req = talloc(state, struct winbind_get_idmap);
+	if (composite_nomem(state->req, ctx)) return ctx;
+
+	state->req->in.count = count;
+	state->req->in.level = WINBIND_IDMAP_LEVEL_SIDS_TO_XIDS;
+	state->req->in.ids = ids;
+	state->ctx = ctx;
+
+	subreq = dcerpc_winbind_get_idmap_r_send(state,
+						 wbc_ctx->event_ctx,
+						 wbc_ctx->irpc_handle,
+						 state->req);
+	if (composite_nomem(subreq, ctx)) return ctx;
+
+	tevent_req_set_callback(subreq, sids_to_xids_recv_ids, state);
+
+	return ctx;
+}
+
+static void sids_to_xids_recv_ids(struct tevent_req *subreq)
+{
+	struct wbc_idmap_state *state =
+		tevent_req_callback_data(subreq,
+		struct wbc_idmap_state);
+
+	state->ctx->status = dcerpc_winbind_get_idmap_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->ids = state->req->out.ids;
+	composite_done(state->ctx);
+}
+
+NTSTATUS wbc_sids_to_xids_recv(struct composite_context *ctx,
+			       struct id_map **ids)
+{
+	NTSTATUS status = composite_wait(ctx);
+		DEBUG(5, ("wbc_sids_to_xids_recv called\n"));
+	if (NT_STATUS_IS_OK(status)) {
+		struct wbc_idmap_state *state =	talloc_get_type_abort(
+							ctx->private_data,
+							struct wbc_idmap_state);
+		*ids = state->ids;
+	}
+
+	return status;
+}
+
+static void xids_to_sids_recv_ids(struct tevent_req *subreq);
+
+struct composite_context *wbc_xids_to_sids_send(struct wbc_context *wbc_ctx,
+						TALLOC_CTX *mem_ctx,
+						uint32_t count,
+						struct id_map *ids)
+{
+	struct composite_context *ctx;
+	struct wbc_idmap_state *state;
+	struct tevent_req *subreq;
+
+	DEBUG(5, ("wbc_xids_to_sids called\n"));
+
+	ctx = composite_create(mem_ctx, wbc_ctx->event_ctx);
+	if (ctx == NULL) return NULL;
+
+	state = talloc(ctx, struct wbc_idmap_state);
+	if (composite_nomem(state, ctx)) return ctx;
+	ctx->private_data = state;
+
+	state->req = talloc(state, struct winbind_get_idmap);
+	if (composite_nomem(state->req, ctx)) return ctx;
+
+	state->req->in.count = count;
+	state->req->in.level = WINBIND_IDMAP_LEVEL_XIDS_TO_SIDS;
+	state->req->in.ids = ids;
+	state->ctx = ctx;
+
+	subreq = dcerpc_winbind_get_idmap_r_send(state,
+						 wbc_ctx->event_ctx,
+						 wbc_ctx->irpc_handle,
+						 state->req);
+	if (composite_nomem(subreq, ctx)) return ctx;
+
+	tevent_req_set_callback(subreq, xids_to_sids_recv_ids, state);
+
+	return ctx;
+}
+
+static void xids_to_sids_recv_ids(struct tevent_req *subreq)
+{
+	struct wbc_idmap_state *state =
+		tevent_req_callback_data(subreq,
+		struct wbc_idmap_state);
+
+	state->ctx->status = dcerpc_winbind_get_idmap_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->ids = state->req->out.ids;
+	composite_done(state->ctx);
+}
+
+NTSTATUS wbc_xids_to_sids_recv(struct composite_context *ctx,
+			       struct id_map **ids)
+{
+	NTSTATUS status = composite_wait(ctx);
+		DEBUG(5, ("wbc_xids_to_sids_recv called\n"));
+	if (NT_STATUS_IS_OK(status)) {
+		struct wbc_idmap_state *state =	talloc_get_type_abort(
+							ctx->private_data,
+							struct wbc_idmap_state);
+		*ids = state->ids;
+	}
+
+	return status;
+}
+
 static int wb_simple_trans(struct tevent_context *ev, int fd,
 			   struct winbindd_request *wb_req,
 			   TALLOC_CTX *mem_ctx,
