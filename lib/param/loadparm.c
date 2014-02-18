@@ -947,6 +947,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 							 *(const char * const *)src_ptr);
 					break;
 				case P_LIST:
+					TALLOC_FREE(*((char ***)dest_ptr));
 					*(const char * const **)dest_ptr = (const char * const *)str_list_copy(pserviceDest,
 										  *(const char * * const *)src_ptr);
 					break;
