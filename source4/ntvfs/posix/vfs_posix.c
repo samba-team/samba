@@ -271,6 +271,13 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 					   pvfs->ntvfs->ctx->event_ctx,
 					   pvfs->ntvfs->ctx->config);
 
+	pvfs->wbc_ctx = wbc_init(pvfs,
+				 pvfs->ntvfs->ctx->msg_ctx,
+				 pvfs->ntvfs->ctx->event_ctx);
+	if (pvfs->wbc_ctx == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	/* allocate the search handle -> ptr tree */
 	pvfs->search.idtree = idr_init(pvfs);
 	NT_STATUS_HAVE_NO_MEMORY(pvfs->search.idtree);

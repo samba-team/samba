@@ -47,6 +47,7 @@ struct pvfs_state {
 	struct brl_context *brl_context;
 	struct odb_context *odb_context;
 	struct notify_context *notify_context;
+	struct wbc_context *wbc_ctx;
 
 	/* a list of pending async requests. Needed to support
 	   ntcancel */
