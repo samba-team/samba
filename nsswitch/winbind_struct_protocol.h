@@ -25,12 +25,16 @@ typedef char fstring[FSTRING_LEN];
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 
-/* Let the build environment override the public winbindd socket location. This
- * is needed for launchd support -- jpeach.
+/* We let the build environment set the public winbindd socket
+ * location. Therefore we no longer set
+ *
+ * #define WINBINDD_SOCKET_DIR "/tmp/.winbindd"
+ *
+ * A number of different distributions set different paths, and so it
+ * needs to come from configure in Samba.  External users of this header will
+ * need to know where the path is on their system by some other
+ * mechanism.
  */
-#ifndef WINBINDD_SOCKET_DIR
-#define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
-#endif
 
 /*
  * when compiled with socket_wrapper support

@@ -1231,6 +1231,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  NDR_OPEN_FILES
                  idmap
                  ''',
+                 cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
                  install=False)
 
 bld.SAMBA3_BINARY('smbconftort',
