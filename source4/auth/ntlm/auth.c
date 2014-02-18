@@ -461,12 +461,21 @@ static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_co
 
 	if ((session_info_flags & AUTH_SESSION_INFO_UNIX_TOKEN)
 	    && NT_STATUS_IS_OK(status)) {
-		status = auth_session_info_fill_unix(auth_context->event_ctx,
+		struct wbc_context *wbc_ctx = wbc_init(auth_context,
+						       auth_context->msg_ctx,
+						       auth_context->event_ctx);
+		if (!wbc_ctx) {
+			TALLOC_FREE(*session_info);
+			DEBUG(1, ("Cannot contact winbind to provide unix token\n"));
+			return NT_STATUS_INVALID_SERVER_STATE;
+		}
+		status = auth_session_info_fill_unix(wbc_ctx->event_ctx,
 						     auth_context->lp_ctx,
 						     original_user_name, *session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(*session_info);
 		}
+		TALLOC_FREE(wbc_ctx);
 	}
 	return status;
 }
