@@ -169,7 +169,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	ids[1].xid.type = ID_TYPE_GID;
 	ids[1].sid = NULL;
 
-	status = wbc_xids_to_sids(pvfs->ntvfs->ctx->event_ctx, ids, 2);
+	status = wbc_xids_to_sids(pvfs->wbc_ctx->event_ctx, ids, 2);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	sd->owner_sid = talloc_steal(sd, ids[0].sid);
@@ -313,7 +313,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		if (!dom_sid_equal(sd->owner_sid, new_sd->owner_sid)) {
 			ids->sid = new_sd->owner_sid;
-			status = wbc_sids_to_xids(pvfs->ntvfs->ctx->event_ctx,
+			status = wbc_sids_to_xids(pvfs->wbc_ctx->event_ctx,
 						  ids, 1);
 			NT_STATUS_NOT_OK_RETURN(status);
 
@@ -331,7 +331,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		if (!dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
 			ids->sid = new_sd->group_sid;
-			status = wbc_sids_to_xids(pvfs->ntvfs->ctx->event_ctx,
+			status = wbc_sids_to_xids(pvfs->wbc_ctx->event_ctx,
 						  ids, 1);
 			NT_STATUS_NOT_OK_RETURN(status);
 
@@ -969,7 +969,7 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	ids[1].sid = NULL;
 	ids[1].status = ID_UNKNOWN;
 
-	status = wbc_xids_to_sids(pvfs->ntvfs->ctx->event_ctx, ids, 2);
+	status = wbc_xids_to_sids(pvfs->wbc_ctx->event_ctx, ids, 2);
 	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
 
 	sd->owner_sid = talloc_steal(sd, ids[0].sid);
