@@ -1123,27 +1123,58 @@ struct natgw_node {
 	const char *addr;
 };
 
+/* talloc off the existing nodemap... */
+static struct ctdb_node_map *talloc_nodemap(struct ctdb_node_map *nodemap)
+{
+	return talloc_zero_size(nodemap,
+				offsetof(struct ctdb_node_map, nodes) +
+				nodemap->num * sizeof(struct ctdb_node_and_flags));
+}
+
+static struct ctdb_node_map *
+filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
+			       struct ctdb_node_map *nodemap,
+			       uint32_t required_capabilities)
+{
+	int i;
+	uint32_t capabilities;
+	struct ctdb_node_map *ret;
+
+	ret = talloc_nodemap(nodemap);
+	CTDB_NO_MEMORY_NULL(ctdb, ret);
+
+	ret->num = 0;
+
+	for (i = 0; i < nodemap->num; i++) {
+		int res = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(),
+						    nodemap->nodes[i].pnn,
+						    &capabilities);
+		if (res != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n",
+					  nodemap->nodes[i].pnn));
+			talloc_free(ret);
+			return NULL;
+		}
+		if (!(capabilities & required_capabilities)) {
+			continue;
+		}
+
+		ret->nodes[ret->num] = nodemap->nodes[i];
+		ret->num++;
+	}
+
+	return ret;
+}
+
+
 static int find_natgw(struct ctdb_context *ctdb,
 		       struct ctdb_node_map *nodemap, uint32_t flags,
 		       uint32_t *pnn, const char **ip)
 {
 	int i;
-	uint32_t capabilities;
-	int ret;
 
 	for (i=0;i<nodemap->num;i++) {
 		if (!(nodemap->nodes[i].flags & flags)) {
-			ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(),
-						        nodemap->nodes[i].pnn,
-						        &capabilities);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n",
-						  nodemap->nodes[i].pnn));
-				return -1;
-			}
-			if (!(capabilities&CTDB_CAP_NATGW)) {
-				continue;
-			}
 			*pnn = nodemap->nodes[i].pnn;
 			*ip = ctdb_addr_to_str(&nodemap->nodes[i].addr);
 			return 0;
@@ -1166,6 +1197,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	struct natgw_node *natgw_nodes = NULL;
 	struct natgw_node *natgw_node;
 	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map *cnodemap;
 	uint32_t mypnn, pnn;
 	const char *ip;
 
@@ -1255,11 +1287,20 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		i++;
 	}
 
+	/* Get a nodemap that includes only the nodes with the NATGW
+	 * capability */
+	cnodemap = filter_nodemap_by_capabilities(ctdb, nodemap,
+						  CTDB_CAP_NATGW);
+	if (cnodemap == NULL) {
+		ret = -1;
+		goto done;
+	}
+
 	ret = 2; /* matches ENOENT */
 	pnn = -1;
 	ip = "0.0.0.0";
 	for (i = 0; exclude_flags[i] != 0; i++) {
-		ret = find_natgw(ctdb, nodemap,
+		ret = find_natgw(ctdb, cnodemap,
 				 exclude_flags[i],
 				 &pnn, &ip);
 		if (ret == -1) {
