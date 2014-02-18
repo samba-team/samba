@@ -151,10 +151,11 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	free_user_info(&mapped_user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		nt_status = do_map_to_guest_server_info(nt_status,
-							&server_info,
+		nt_status = do_map_to_guest_server_info(mem_ctx,
+							nt_status,
 							user_info->client.account_name,
-							user_info->client.domain_name);
+							user_info->client.domain_name,
+							&server_info);
 		*server_returned_info = talloc_steal(mem_ctx, server_info);
 		return nt_status;
 	}

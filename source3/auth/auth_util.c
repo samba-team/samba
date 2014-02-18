@@ -1536,9 +1536,11 @@ bool is_trusted_domain(const char* dom_name)
   on a logon error possibly map the error to success if "map to guest"
   is set approriately
 */
-NTSTATUS do_map_to_guest_server_info(NTSTATUS status,
-				     struct auth_serversupplied_info **server_info,
-				     const char *user, const char *domain)
+NTSTATUS do_map_to_guest_server_info(TALLOC_CTX *mem_ctx,
+				     NTSTATUS status,
+				     const char *user,
+				     const char *domain,
+				     struct auth_serversupplied_info **server_info)
 {
 	user = user ? user : "";
 	domain = domain ? domain : "";
@@ -1548,13 +1550,13 @@ NTSTATUS do_map_to_guest_server_info(NTSTATUS status,
 		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
 			DEBUG(3,("No such user %s [%s] - using guest account\n",
 				 user, domain));
-			return make_server_info_guest(NULL, server_info);
+			return make_server_info_guest(mem_ctx, server_info);
 		}
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
 			DEBUG(3,("Registered username %s for guest access\n",
 				user));
-			return make_server_info_guest(NULL, server_info);
+			return make_server_info_guest(mem_ctx, server_info);
 		}
 	}
 
