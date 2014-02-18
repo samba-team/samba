@@ -287,6 +287,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	uid_t new_uid = -1;
 	gid_t new_gid = -1;
 	struct id_map *ids;
+	struct composite_context *ctx;
 
 	if (pvfs->acl_ops != NULL) {
 		status = pvfs->acl_ops->acl_load(pvfs, name, fd, req, &sd);
@@ -317,8 +318,9 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		if (!dom_sid_equal(sd->owner_sid, new_sd->owner_sid)) {
 			ids->sid = new_sd->owner_sid;
-			status = wbc_sids_to_xids(pvfs->wbc_ctx->event_ctx,
-						  ids, 1);
+			ctx = wbc_sids_to_xids_send(pvfs->wbc_ctx, ids, 1, ids);
+			NT_STATUS_HAVE_NO_MEMORY(ctx);
+			status = wbc_sids_to_xids_recv(ctx, &ids);
 			NT_STATUS_NOT_OK_RETURN(status);
 
 			if (ids->xid.type == ID_TYPE_BOTH ||
@@ -335,8 +337,9 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		if (!dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
 			ids->sid = new_sd->group_sid;
-			status = wbc_sids_to_xids(pvfs->wbc_ctx->event_ctx,
-						  ids, 1);
+			ctx = wbc_sids_to_xids_send(pvfs->wbc_ctx, ids, 1, ids);
+			NT_STATUS_HAVE_NO_MEMORY(ctx);
+			status = wbc_sids_to_xids_recv(ctx, &ids);
 			NT_STATUS_NOT_OK_RETURN(status);
 
 			if (ids->xid.type == ID_TYPE_BOTH ||

@@ -36,6 +36,7 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	uint32_t s, g;
 	NTSTATUS status;
 	struct id_map *ids;
+	struct composite_context *ctx;
 
 	/* we can't do unix security without a user and group */
 	if (token->num_sids < 2) {
@@ -55,7 +56,10 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 		ids[s].status = ID_UNKNOWN;
 	}
 
-	status = wbc_sids_to_xids(wbc_ctx->event_ctx, ids, token->num_sids);
+	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, token->num_sids, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_sids_to_xids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	g = token->num_sids;
