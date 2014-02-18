@@ -74,7 +74,11 @@ struct messaging_context {
 
 	struct messaging_backend *local;
 	struct messaging_backend *remote;
+
+	bool *have_context;
 };
+
+static int messaging_context_destructor(struct messaging_context *msg_ctx);
 
 /****************************************************************************
  A useful function for testing the message system.
@@ -205,6 +209,13 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 {
 	struct messaging_context *ctx;
 	NTSTATUS status;
+	static bool have_context = false;
+
+	if (have_context) {
+		DEBUG(0, ("No two messaging contexts per process\n"));
+		return NULL;
+	}
+
 
 	if (!(ctx = talloc_zero(mem_ctx, struct messaging_context))) {
 		return NULL;
@@ -212,6 +223,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	ctx->id = procid_self();
 	ctx->event_ctx = ev;
+	ctx->have_context = &have_context;
 
 	status = messaging_dgm_init(ctx, ctx, &ctx->local);
 
@@ -242,7 +254,17 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	register_dmalloc_msgs(ctx);
 	debug_register_msgs(ctx);
 
+	have_context = true;
+	talloc_set_destructor(ctx, messaging_context_destructor);
+
 	return ctx;
+}
+
+static int messaging_context_destructor(struct messaging_context *msg_ctx)
+{
+	SMB_ASSERT(*msg_ctx->have_context);
+	*msg_ctx->have_context = false;
+	return 0;
 }
 
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx)
