@@ -18,8 +18,14 @@
 */
 
 /* Read a nodemap from stdin.  Each line looks like:
- *  <PNN> <FLAGS> [RECMASTER] [CURRENT]
+ *  <PNN> <FLAGS> [RECMASTER] [CURRENT] [CAPABILITIES]
  * EOF or a blank line terminates input.
+ *
+ * By default, capablities for each node are
+ * CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW.  These 3
+ * capabilities can be faked off by adding, for example,
+ * -CTDB_CAP_RECMASTER.  LVS can be faked on by adding
+ * CTDB_CAP_LVS.
  */
 void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 {
@@ -33,7 +39,7 @@ void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 
 	while ((fgets(line, sizeof(line), stdin) != NULL) &&
 	       (line[0] != '\n')) {
-		uint32_t pnn, flags;
+		uint32_t pnn, flags, capabilities;
 		char *tok, *t;
 		const char *ip;
 		ctdb_sock_addr saddr;
@@ -70,6 +76,7 @@ void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 			continue;
 		}
 		flags = (uint32_t)strtoul(tok, NULL, 0);
+		capabilities = CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW;
 
 		tok = strtok(NULL, " \t");
 		while (tok != NULL) {
@@ -77,6 +84,14 @@ void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 				ctdb->pnn = pnn;
 			} else if (strcmp(tok, "RECMASTER") == 0) {
 				ctdb->recovery_master = pnn;
+			} else if (strcmp(tok, "-CTDB_CAP_RECMASTER") == 0) {
+				capabilities &= ~CTDB_CAP_RECMASTER;
+			} else if (strcmp(tok, "-CTDB_CAP_LMASTER") == 0) {
+				capabilities &= ~CTDB_CAP_LMASTER;
+			} else if (strcmp(tok, "-CTDB_CAP_NATGW") == 0) {
+				capabilities &= ~CTDB_CAP_NATGW;
+			} else if (strcmp(tok, "CTDB_CAP_LVS") == 0) {
+				capabilities |= CTDB_CAP_LVS;
 			}
 			tok = strtok(NULL, " \t");
 		}
@@ -98,6 +113,7 @@ void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 		ctdb->nodes[ctdb->num_nodes]->address.address = ip;
 		ctdb->nodes[ctdb->num_nodes]->address.port = 0;
 		ctdb->nodes[ctdb->num_nodes]->flags = flags;
+		ctdb->nodes[ctdb->num_nodes]->capabilities = capabilities;
 		ctdb->num_nodes++;
 	}
 }
@@ -524,6 +540,6 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   uint32_t *capabilities)
 {
-       *capabilities = CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW;
-       return 0;
+	*capabilities = ctdb->nodes[destnode]->capabilities;
+	return 0;
 }
