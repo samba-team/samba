@@ -1539,11 +1539,8 @@ static void free_service_byindex(int idx)
 static int add_a_service(const struct loadparm_service *pservice, const char *name)
 {
 	int i;
-	struct loadparm_service tservice;
 	int num_to_alloc = iNumServices + 1;
 	struct loadparm_service **tsp = NULL;
-
-	tservice = *pservice;
 
 	/* it might already exist */
 	if (name) {
@@ -1561,7 +1558,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		return (-1);
 	}
 	ServicePtrs = tsp;
-	ServicePtrs[iNumServices] = talloc(NULL, struct loadparm_service);
+	ServicePtrs[iNumServices] = talloc_zero(NULL, struct loadparm_service);
 	if (!ServicePtrs[iNumServices]) {
 		DEBUG(0,("add_a_service: out of memory!\n"));
 		return (-1);
@@ -1570,8 +1567,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 
 	ServicePtrs[i]->valid = true;
 
-	init_service(ServicePtrs[i]);
-	copy_service(ServicePtrs[i], &tservice, NULL);
+	copy_service(ServicePtrs[i], pservice, NULL);
 	if (name)
 		string_set(ServicePtrs[i], &ServicePtrs[i]->szService, name);
 
