@@ -1177,7 +1177,7 @@ static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
 			    struct loadparm_service *pserviceDest);
 static void copy_service(struct loadparm_service *pserviceDest,
-			 struct loadparm_service *pserviceSource,
+			 const struct loadparm_service *pserviceSource,
 			 struct bitmap *pcopymapDest);
 static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata);
@@ -2154,7 +2154,7 @@ struct loadparm_service *lp_default_loadparm_service()
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_service *pserviceSource,
+static void copy_service(struct loadparm_service *pserviceDest, const struct loadparm_service *pserviceSource,
 			 struct bitmap *pcopymapDest)
 {
 	int i;
@@ -2164,35 +2164,35 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || bitmap_query(pcopymapDest,i))) {
-			void *src_ptr = lp_parm_ptr(pserviceSource, &parm_table[i]);
+			const void *src_ptr = lp_parm_ptr(pserviceSource, &parm_table[i]);
 			void *dest_ptr = lp_parm_ptr(pserviceDest, &parm_table[i]);
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
 				case P_BOOLREV:
-					*(bool *)dest_ptr = *(bool *)src_ptr;
+					*(bool *)dest_ptr = *(const bool *)src_ptr;
 					break;
 
 				case P_INTEGER:
 				case P_ENUM:
 				case P_OCTAL:
 				case P_BYTES:
-					*(int *)dest_ptr = *(int *)src_ptr;
+					*(int *)dest_ptr = *(const int *)src_ptr;
 					break;
 
 				case P_CHAR:
-					*(char *)dest_ptr = *(char *)src_ptr;
+					*(char *)dest_ptr = *(const char *)src_ptr;
 					break;
 
 				case P_STRING:
 					string_set(pserviceDest, (char **)dest_ptr,
-						   *(char **)src_ptr);
+						   *(const char * const *)src_ptr);
 					break;
 
 				case P_USTRING:
 				{
 					char *upper_string = strupper_talloc(talloc_tos(), 
-									     *(char **)src_ptr);
+									     *(const char * const *)src_ptr);
 					string_set(pserviceDest, (char **)dest_ptr,
 						   upper_string);
 					TALLOC_FREE(upper_string);
@@ -2200,8 +2200,8 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 				}
 				case P_LIST:
 					TALLOC_FREE(*((char ***)dest_ptr));
-					*((char ***)dest_ptr) = str_list_copy(NULL, 
-						      *(const char ***)src_ptr);
+					*((const char * const **)dest_ptr) = (const char * const *)str_list_copy(NULL,
+						      *(const char ** const *)src_ptr);
 					break;
 				default:
 					break;
@@ -3360,7 +3360,7 @@ static bool is_default(int i)
 	switch (parm_table[i].type) {
 		case P_LIST:
 		case P_CMDLIST:
-			return str_list_equal((const char **)parm_table[i].def.lvalue, 
+			return str_list_equal((const char * const *)parm_table[i].def.lvalue,
 					      *(const char ***)lp_parm_ptr(NULL, 
 									   &parm_table[i]));
 		case P_STRING:
