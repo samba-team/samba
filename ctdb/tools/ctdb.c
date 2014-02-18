@@ -1166,22 +1166,29 @@ filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
 	return ret;
 }
 
-
-static int find_natgw(struct ctdb_context *ctdb,
-		       struct ctdb_node_map *nodemap, uint32_t flags,
-		       uint32_t *pnn, const char **ip)
+static struct ctdb_node_map *
+filter_nodemap_by_flags(struct ctdb_context *ctdb,
+			struct ctdb_node_map *nodemap,
+			uint32_t flags_mask)
 {
 	int i;
+	struct ctdb_node_map *ret;
 
-	for (i=0;i<nodemap->num;i++) {
-		if (!(nodemap->nodes[i].flags & flags)) {
-			*pnn = nodemap->nodes[i].pnn;
-			*ip = ctdb_addr_to_str(&nodemap->nodes[i].addr);
-			return 0;
+	ret = talloc_nodemap(nodemap);
+	CTDB_NO_MEMORY_NULL(ctdb, ret);
+
+	ret->num = 0;
+
+	for (i = 0; i < nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & flags_mask) {
+			continue;
 		}
+
+		ret->nodes[ret->num] = nodemap->nodes[i];
+		ret->num++;
 	}
 
-	return 2; /* matches ENOENT */
+	return ret;
 }
 
 /*
@@ -1300,15 +1307,21 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	pnn = -1;
 	ip = "0.0.0.0";
 	for (i = 0; exclude_flags[i] != 0; i++) {
-		ret = find_natgw(ctdb, cnodemap,
-				 exclude_flags[i],
-				 &pnn, &ip);
-		if (ret == -1) {
+		struct ctdb_node_map *t =
+			filter_nodemap_by_flags(ctdb, cnodemap,
+						exclude_flags[i]);
+		if (t == NULL) {
+			/* No memory */
+			ret = -1;
 			goto done;
 		}
-		if (ret == 0) {
+		if (t->num > 0) {
+			ret = 0;
+			pnn = t->nodes[0].pnn;
+			ip = ctdb_addr_to_str(&t->nodes[0].addr);
 			break;
 		}
+		talloc_free(t);
 	}
 
 	if (options.machinereadable) {
