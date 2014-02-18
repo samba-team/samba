@@ -53,6 +53,7 @@ struct messaging_tdb_context {
 	struct tdb_wrap *tdb;
 	struct tevent_signal *se;
 	int received_messages;
+	bool *have_context;
 };
 
 static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
@@ -77,6 +78,8 @@ static void messaging_tdb_signal_handler(struct tevent_context *ev_ctx,
 	message_dispatch(ctx->msg_ctx);
 }
 
+static int messaging_tdb_context_destructor(struct messaging_tdb_context *ctx);
+
 /****************************************************************************
  Initialise the messaging functions. 
 ****************************************************************************/
@@ -88,6 +91,12 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	struct messaging_backend *result;
 	struct messaging_tdb_context *ctx;
 	struct loadparm_context *lp_ctx;
+	static bool have_context = false;
+
+	if (have_context) {
+		DEBUG(0, ("No two messaging contexts per process\n"));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
 
 	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -110,6 +119,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	result->send_fn = messaging_tdb_send;
 
 	ctx->msg_ctx = msg_ctx;
+	ctx->have_context = &have_context;
 
 	ctx->tdb = tdb_wrap_open(ctx, lock_path("messages.tdb"), 0,
 				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_VOLATILE|TDB_INCOMPATIBLE_HASH,
@@ -139,8 +149,18 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 
 	sec_init();
 
+	have_context = true;
+	talloc_set_destructor(ctx, messaging_tdb_context_destructor);
+
 	*presult = result;
 	return NT_STATUS_OK;
+}
+
+static int messaging_tdb_context_destructor(struct messaging_tdb_context *ctx)
+{
+	SMB_ASSERT(*ctx->have_context);
+	*ctx->have_context = false;
+	return 0;
 }
 
 bool messaging_tdb_parent_init(TALLOC_CTX *mem_ctx)
