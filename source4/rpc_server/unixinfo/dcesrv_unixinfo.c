@@ -79,6 +79,7 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_map *ids;
+	struct composite_context *ctx;
 	uint32_t uid;
 	NTSTATUS status;
 
@@ -99,7 +100,10 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 	ids->xid.id = uid;
 	ids->xid.type = ID_TYPE_UID;
 
-	status = wbc_xids_to_sids(wbc_ctx->event_ctx, ids, 1);
+	ctx = wbc_xids_to_sids_send(wbc_ctx, ids, 1, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_xids_to_sids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	r->out.sid = ids->sid;
@@ -144,6 +148,7 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_map *ids;
+	struct composite_context *ctx;
 	uint32_t gid;
 	NTSTATUS status;
 
@@ -164,7 +169,10 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 	ids->xid.id = gid;
 	ids->xid.type = ID_TYPE_GID;
 
-	status = wbc_xids_to_sids(wbc_ctx->event_ctx, ids, 1);
+	ctx = wbc_xids_to_sids_send(wbc_ctx, ids, 1, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_xids_to_sids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	r->out.sid = ids->sid;
