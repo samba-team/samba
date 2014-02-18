@@ -1443,18 +1443,6 @@ int lp_parm_enum(int snum, const char *type, const char *option,
 	return def;
 }
 
-
-/***************************************************************************
- Initialise a service to the defaults.
-***************************************************************************/
-
-static void init_service(struct loadparm_service *pservice)
-{
-	memset((char *)pservice, '\0', sizeof(struct loadparm_service));
-	copy_service(pservice, &sDefault, NULL);
-}
-
-
 /**
  * free a param_opts structure.
  * param_opts handling should be moved to talloc;
