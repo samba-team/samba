@@ -15,6 +15,11 @@ shift 2
 
 release_dir=`dirname $0`/../../source4/selftest/provisions/${RELEASE}
 
+LDBDEL_BIN=ldbdel
+if [ -x "$BINDIR/ldbdel" ]; then
+	LDBDEL_BIN=$BINDIR/ldbdel
+fi
+
 undump() {
        if test -x $BINDIR/tdbrestore;
        then
@@ -42,7 +47,7 @@ undump() {
 remove_dns_user() {
     if [ x$RELEASE != x"release-4-0-0" ]; then
        # This is done, because otherwise the upgrdeprovision will not run without --full
-	$BINDIR/ldbdel -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb cn=dns,cn=users,dc=${RELEASE},dc=samba,dc=corp
+       ${LDBDEL_BIN} -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb cn=dns,cn=users,dc=${RELEASE},dc=samba,dc=corp
     fi
 }
 
