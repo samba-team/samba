@@ -1176,9 +1176,6 @@ static int map_parameter_canonical(const char *pszParmName, bool *inverse);
 static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
 			    struct loadparm_service *pserviceDest);
-static void copy_service(struct loadparm_service *pserviceDest,
-			 const struct loadparm_service *pserviceSource,
-			 struct bitmap *pcopymapDest);
 static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata);
 static bool do_section(const char *pszSectionName, void *userdata);
@@ -2130,80 +2127,6 @@ struct loadparm_service *lp_servicebynum(int snum)
 struct loadparm_service *lp_default_loadparm_service()
 {
 	return &sDefault;
-}
-
-
-/***************************************************************************
- Copy a service structure to another.
- If pcopymapDest is NULL then copy all fields
-***************************************************************************/
-
-static void copy_service(struct loadparm_service *pserviceDest,
-			 const struct loadparm_service *pserviceSource,
-			 struct bitmap *pcopymapDest)
-{
-	int i;
-	bool bcopyall = (pcopymapDest == NULL);
-	struct parmlist_entry *data;
-
-	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].p_class == P_LOCAL &&
-		    (bcopyall || bitmap_query(pcopymapDest, i))) {
-			const void *src_ptr =
-				((const char *)pserviceSource) + parm_table[i].offset;
-			void *dest_ptr =
-				((char *)pserviceDest) + parm_table[i].offset;
-
-			switch (parm_table[i].type) {
-				case P_BOOL:
-				case P_BOOLREV:
-					*(bool *)dest_ptr = *(const bool *)src_ptr;
-					break;
-
-				case P_INTEGER:
-				case P_BYTES:
-				case P_OCTAL:
-				case P_ENUM:
-					*(int *)dest_ptr = *(const int *)src_ptr;
-					break;
-
-				case P_CHAR:
-					*(char *)dest_ptr = *(const char *)src_ptr;
-					break;
-
-				case P_STRING:
-					lpcfg_string_set(pserviceDest,
-						   (char **)dest_ptr,
-						   *(const char * const *)src_ptr);
-					break;
-
-				case P_USTRING:
-					lpcfg_string_set_upper(pserviceDest,
-							 (char **)dest_ptr,
-							 *(const char * const *)src_ptr);
-					break;
-				case P_LIST:
-					TALLOC_FREE(*((char ***)dest_ptr));
-					*(const char * const **)dest_ptr = (const char * const *)str_list_copy(pserviceDest,
-										  *(const char * * const *)src_ptr);
-					break;
-				default:
-					break;
-			}
-		}
-
-	if (bcopyall) {
-		init_copymap(pserviceDest);
-		if (pserviceSource->copymap)
-			bitmap_copy(pserviceDest->copymap,
-				    pserviceSource->copymap);
-	}
-
-	data = pserviceSource->param_opt;
-	while (data) {
-		set_param_opt(pserviceDest, &pserviceDest->param_opt, data->key, data->value, data->priority);
-		data = data->next;
-	}
 }
 
 /***************************************************************************

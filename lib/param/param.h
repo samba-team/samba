@@ -46,6 +46,7 @@ struct loadparm_service;
 struct smbcli_options;
 struct smbcli_session_options;
 struct gensec_settings;
+struct bitmap;
 
 #ifdef CONFIG_H_IS_FROM_SAMBA
 #include "lib/param/param_proto.h"

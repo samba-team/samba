@@ -285,9 +285,6 @@ FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)
 /* local prototypes */
 static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName);
-static void copy_service(struct loadparm_service *pserviceDest,
-			 const struct loadparm_service *pserviceSource,
-			 struct bitmap *pcopymapDest);
 static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
 static void init_copymap(struct loadparm_service *pservice);
@@ -561,7 +558,7 @@ bool lpcfg_parm_bool(struct loadparm_context *lp_ctx,
  * Set a string value, deallocating any existing space, and allocing the space
  * for the string
  */
-bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
+static bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
 	talloc_free(*dest);
 
@@ -581,7 +578,7 @@ bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
  * Set a string value, deallocating any existing space, and allocing the space
  * for the string
  */
-bool lpcfg_string_set_upper(TALLOC_CTX *mem_ctx, char **dest, const char *src)
+static bool lpcfg_string_set_upper(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
 	talloc_free(*dest);
 
@@ -902,9 +899,9 @@ void set_param_opt(TALLOC_CTX *mem_ctx,
  * If pcopymapDest is NULL then copy all fields
  */
 
-static void copy_service(struct loadparm_service *pserviceDest,
-			 const struct loadparm_service *pserviceSource,
-			 struct bitmap *pcopymapDest)
+void copy_service(struct loadparm_service *pserviceDest,
+		  const struct loadparm_service *pserviceSource,
+		  struct bitmap *pcopymapDest)
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
