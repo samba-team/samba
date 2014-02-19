@@ -249,6 +249,13 @@ static struct loadparm_service sDefault =
 	.dummy = ""
 };
 
+static struct file_lists {
+	struct file_lists *next;
+	char *name;
+	char *subfname;
+	time_t modtime;
+} *file_lists = NULL;
+
 /* local variables */
 static struct loadparm_service **ServicePtrs = NULL;
 static int iNumServices = 0;
@@ -272,7 +279,7 @@ static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, c
 
 static void set_allowed_client_auth(void);
 
-static void add_to_file_list(const char *fname, const char *subfname);
+static void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **f, const char *fname, const char *subfname);
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
 static void free_param_opts(struct parmlist_entry **popts);
 
@@ -2269,7 +2276,7 @@ static bool process_registry_globals(void)
 {
 	bool ret;
 
-	add_to_file_list(INCLUDE_REGISTRY_NAME, INCLUDE_REGISTRY_NAME);
+	add_to_file_list(NULL, &file_lists, INCLUDE_REGISTRY_NAME, INCLUDE_REGISTRY_NAME);
 
 	ret = do_parameter("registry shares", "yes", NULL);
 	if (!ret) {
@@ -2351,21 +2358,15 @@ done:
 
 static uint8_t include_depth;
 
-static struct file_lists {
-	struct file_lists *next;
-	char *name;
-	char *subfname;
-	time_t modtime;
-} *file_lists = NULL;
-
 /*******************************************************************
  Keep a linked list of all config files so we know when one has changed 
  it's date and needs to be reloaded.
 ********************************************************************/
 
-static void add_to_file_list(const char *fname, const char *subfname)
+static void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **list,
+			     const char *fname, const char *subfname)
 {
-	struct file_lists *f = file_lists;
+	struct file_lists *f = *list;
 
 	while (f) {
 		if (f->name && !strcmp(f->name, fname))
@@ -2374,11 +2375,10 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 
 	if (!f) {
-		f = talloc(NULL, struct file_lists);
-		if (!f) {
+		f = talloc(mem_ctx, struct file_lists);
+		if (!f)
 			goto fail;
-		}
-		f->next = file_lists;
+		f->next = *list;
 		f->name = talloc_strdup(f, fname);
 		if (!f->name) {
 			TALLOC_FREE(f);
@@ -2389,7 +2389,7 @@ static void add_to_file_list(const char *fname, const char *subfname)
 			TALLOC_FREE(f);
 			goto fail;
 		}
-		file_lists = f;
+		*list = f;
 		f->modtime = file_modtime(subfname);
 	} else {
 		time_t t = file_modtime(subfname);
@@ -2604,7 +2604,7 @@ static bool handle_include(struct loadparm_context *unused, int snum, const char
 				 current_user_info.domain,
 				 pszParmValue);
 
-	add_to_file_list(pszParmValue, fname);
+	add_to_file_list(NULL, &file_lists, pszParmValue, fname);
 
 	if (snum < 0) {
 		string_set(Globals.ctx, ptr, fname);
@@ -4413,7 +4413,7 @@ static bool lp_load_ex(const char *pszFname,
 			smb_panic("lp_load_ex: out of memory");
 		}
 
-		add_to_file_list(pszFname, n2);
+		add_to_file_list(NULL, &file_lists, pszFname, n2);
 
 		bRetval = pm_process(n2, do_section, do_parameter, NULL);
 		TALLOC_FREE(n2);
