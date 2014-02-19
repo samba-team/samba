@@ -58,28 +58,38 @@ struct vacuum_data {
 	struct ctdb_db_context *ctdb_db;
 	struct tdb_context *dest_db;
 	trbt_tree_t *delete_list;
-	uint32_t delete_count;
 	struct ctdb_marshall_buffer **vacuum_fetch_list;
 	struct timeval start;
 	bool traverse_error;
 	bool vacuum;
-	uint32_t vacuumed;
-	uint32_t copied;
-	uint32_t fast_added_to_vacuum_fetch_list;
-	uint32_t fast_added_to_delete_list;
-	uint32_t fast_deleted;
-	uint32_t fast_skipped;
-	uint32_t fast_error;
-	uint32_t fast_total;
-	uint32_t full_scheduled;
-	uint32_t full_skipped;
-	uint32_t full_error;
-	uint32_t full_total;
-	uint32_t delete_left;
-	uint32_t delete_remote_error;
-	uint32_t delete_local_error;
-	uint32_t delete_deleted;
-	uint32_t delete_skipped;
+	struct {
+		struct {
+			uint32_t added_to_vacuum_fetch_list;
+			uint32_t added_to_delete_list;
+			uint32_t deleted;
+			uint32_t skipped;
+			uint32_t error;
+			uint32_t total;
+		} delete_queue;
+		struct {
+			uint32_t scheduled;
+			uint32_t skipped;
+			uint32_t error;
+			uint32_t total;
+		} db_traverse;
+		struct {
+			uint32_t total;
+			uint32_t remote_error;
+			uint32_t local_error;
+			uint32_t deleted;
+			uint32_t skipped;
+			uint32_t left;
+		} delete_list;
+		struct {
+			uint32_t vacuumed;
+			uint32_t copied;
+		} repack;
+	} count;
 };
 
 /* this structure contains the information for one record to be deleted */
@@ -159,7 +169,7 @@ static int add_record_to_delete_list(struct vacuum_data *vdata, TDB_DATA key,
 		return -1;
 	}
 
-	vdata->delete_count++;
+	vdata->count.delete_list.total++;
 
 	return 0;
 }
@@ -236,11 +246,11 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	struct ctdb_ltdb_header *hdr;
 	int res = 0;
 
-	vdata->full_total++;
+	vdata->count.db_traverse.total++;
 
 	lmaster = ctdb_lmaster(ctdb, &key);
 	if (lmaster >= ctdb->num_nodes) {
-		vdata->full_error++;
+		vdata->count.db_traverse.error++;
 		DEBUG(DEBUG_CRIT, (__location__
 				   " lmaster[%u] >= ctdb->num_nodes[%u] for key"
 				   " with hash[%u]!\n",
@@ -252,14 +262,14 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 
 	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
 		/* it is not a deleted record */
-		vdata->full_skipped++;
+		vdata->count.db_traverse.skipped++;
 		return 0;
 	}
 
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 
 	if (hdr->dmaster != ctdb->pnn) {
-		vdata->full_skipped++;
+		vdata->count.db_traverse.skipped++;
 		return 0;
 	}
 
@@ -269,9 +279,9 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	 */
 	res = insert_record_into_delete_queue(ctdb_db, hdr, key);
 	if (res != 0) {
-		vdata->full_error++;
+		vdata->count.db_traverse.error++;
 	} else {
-		vdata->full_scheduled++;
+		vdata->count.db_traverse.scheduled++;
 	}
 
 	return 0;
@@ -332,7 +342,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 		      (__location__ " Error getting chainlock on record with "
 		       "key hash [0x%08x] on database db[%s].\n",
 		       hash, ctdb_db->db_name));
-		recs->vdata->delete_skipped++;
+		recs->vdata->count.delete_list.skipped++;
 		talloc_free(dd);
 		return 0;
 	}
@@ -407,7 +417,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 skip:
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
-	recs->vdata->delete_skipped++;
+	recs->vdata->count.delete_list.skipped++;
 	talloc_free(dd);
 	dd = NULL;
 
@@ -451,7 +461,7 @@ static int delete_queue_traverse(void *param, void *data)
 	uint32_t lmaster;
 	uint32_t hash = ctdb_hash(&(dd->key));
 
-	vdata->fast_total++;
+	vdata->count.delete_queue.total++;
 
 	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
 	if (res != 0) {
@@ -459,7 +469,7 @@ static int delete_queue_traverse(void *param, void *data)
 		      (__location__ " Error getting chainlock on record with "
 		       "key hash [0x%08x] on database db[%s].\n",
 		       hash, ctdb_db->db_name));
-		vdata->fast_error++;
+		vdata->count.delete_queue.error++;
 		return 0;
 	}
 
@@ -500,9 +510,9 @@ static int delete_queue_traverse(void *param, void *data)
 			DEBUG(DEBUG_ERR,
 			      (__location__ " Error adding record to list "
 			       "of records to send to lmaster.\n"));
-			vdata->fast_error++;
+			vdata->count.delete_queue.error++;
 		} else {
-			vdata->fast_added_to_vacuum_fetch_list++;
+			vdata->count.delete_queue.added_to_vacuum_fetch_list++;
 		}
 		goto done;
 	}
@@ -515,9 +525,9 @@ static int delete_queue_traverse(void *param, void *data)
 			DEBUG(DEBUG_ERR,
 			      (__location__ " Error adding record to list "
 			       "of records for deletion on lmaster.\n"));
-			vdata->fast_error++;
+			vdata->count.delete_queue.error++;
 		} else {
-			vdata->fast_added_to_delete_list++;
+			vdata->count.delete_queue.added_to_delete_list++;
 		}
 	} else {
 		res = tdb_delete(ctdb_db->ltdb->tdb, dd->key);
@@ -527,7 +537,7 @@ static int delete_queue_traverse(void *param, void *data)
 			      (__location__ " Error deleting record with key "
 			       "hash [0x%08x] from local data base db[%s].\n",
 			       hash, ctdb_db->db_name));
-			vdata->fast_error++;
+			vdata->count.delete_queue.error++;
 			goto done;
 		}
 
@@ -535,13 +545,13 @@ static int delete_queue_traverse(void *param, void *data)
 		      (__location__ " Deleted record with key hash "
 		       "[0x%08x] from local data base db[%s].\n",
 		       hash, ctdb_db->db_name));
-		vdata->fast_deleted++;
+		vdata->count.delete_queue.deleted++;
 	}
 
 	goto done;
 
 skipped:
-	vdata->fast_skipped++;
+	vdata->count.delete_queue.skipped++;
 
 done:
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
@@ -572,8 +582,8 @@ static int delete_record_traverse(void *param, void *data)
 		      (__location__ " Error getting chainlock on record with "
 		       "key hash [0x%08x] on database db[%s].\n",
 		       hash, ctdb_db->db_name));
-		vdata->delete_local_error++;
-		vdata->delete_left--;
+		vdata->count.delete_list.local_error++;
+		vdata->count.delete_list.left--;
 		talloc_free(dd);
 		return 0;
 	}
@@ -637,7 +647,7 @@ static int delete_record_traverse(void *param, void *data)
 		      (__location__ " Error deleting record with key hash "
 		       "[0x%08x] from local data base db[%s].\n",
 		       hash, ctdb_db->db_name));
-		vdata->delete_local_error++;
+		vdata->count.delete_list.local_error++;
 		goto done;
 	}
 
@@ -645,17 +655,17 @@ static int delete_record_traverse(void *param, void *data)
 	      (__location__ " Deleted record with key hash [0x%08x] from "
 	       "local data base db[%s].\n", hash, ctdb_db->db_name));
 
-	vdata->delete_deleted++;
+	vdata->count.delete_list.deleted++;
 	goto done;
 
 skip:
-	vdata->delete_skipped++;
+	vdata->count.delete_list.skipped++;
 
 done:
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
 	talloc_free(dd);
-	vdata->delete_left--;
+	vdata->count.delete_list.left--;
 
 	return 0;
 }
@@ -680,20 +690,21 @@ static void ctdb_process_delete_queue(struct ctdb_db_context *ctdb_db,
 		      "the delete queue.\n"));
 	}
 
-	sum = vdata->fast_deleted
-	    + vdata->fast_skipped
-	    + vdata->fast_error
-	    + vdata->fast_added_to_delete_list
-	    + vdata->fast_added_to_vacuum_fetch_list;
+	sum = vdata->count.delete_queue.deleted
+	    + vdata->count.delete_queue.skipped
+	    + vdata->count.delete_queue.error
+	    + vdata->count.delete_queue.added_to_delete_list
+	    + vdata->count.delete_queue.added_to_vacuum_fetch_list;
 
-	if (vdata->fast_total != sum) {
+	if (vdata->count.delete_queue.total != sum) {
 		DEBUG(DEBUG_ERR, (__location__ " Inconsistency in fast vacuum "
 		      "counts for db[%s]: total[%u] != sum[%u]\n",
-		      ctdb_db->db_name, (unsigned)vdata->fast_total,
+		      ctdb_db->db_name,
+		      (unsigned)vdata->count.delete_queue.total,
 		      (unsigned)sum));
 	}
 
-	if (vdata->fast_total > 0) {
+	if (vdata->count.delete_queue.total > 0) {
 		DEBUG(DEBUG_INFO,
 		      (__location__
 		       " fast vacuuming delete_queue traverse statistics: "
@@ -705,12 +716,12 @@ static void ctdb_process_delete_queue(struct ctdb_db_context *ctdb_db,
 		       "adl[%u] "
 		       "avf[%u]\n",
 		       ctdb_db->db_name,
-		       (unsigned)vdata->fast_total,
-		       (unsigned)vdata->fast_deleted,
-		       (unsigned)vdata->fast_skipped,
-		       (unsigned)vdata->fast_error,
-		       (unsigned)vdata->fast_added_to_delete_list,
-		       (unsigned)vdata->fast_added_to_vacuum_fetch_list));
+		       (unsigned)vdata->count.delete_queue.total,
+		       (unsigned)vdata->count.delete_queue.deleted,
+		       (unsigned)vdata->count.delete_queue.skipped,
+		       (unsigned)vdata->count.delete_queue.error,
+		       (unsigned)vdata->count.delete_queue.added_to_delete_list,
+		       (unsigned)vdata->count.delete_queue.added_to_vacuum_fetch_list));
 	}
 
 	return;
@@ -734,7 +745,7 @@ static void ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
 				  "'%s'\n", ctdb_db->db_name));
 	}
 
-	if (vdata->full_total > 0) {
+	if (vdata->count.db_traverse.total > 0) {
 		DEBUG(DEBUG_INFO,
 		      (__location__
 		       " full vacuuming db traverse statistics: "
@@ -744,10 +755,10 @@ static void ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
 		       "err[%u] "
 		       "sched[%u]\n",
 		       ctdb_db->db_name,
-		       (unsigned)vdata->full_total,
-		       (unsigned)vdata->full_skipped,
-		       (unsigned)vdata->full_error,
-		       (unsigned)vdata->full_scheduled));
+		       (unsigned)vdata->count.db_traverse.total,
+		       (unsigned)vdata->count.db_traverse.skipped,
+		       (unsigned)vdata->count.db_traverse.error,
+		       (unsigned)vdata->count.db_traverse.scheduled));
 	}
 
 	return;
@@ -831,7 +842,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	TALLOC_CTX *tmp_ctx;
 	uint32_t sum;
 
-	if (vdata->delete_count == 0) {
+	if (vdata->count.delete_list.total == 0) {
 		return;
 	}
 
@@ -841,7 +852,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
-	vdata->delete_left = vdata->delete_count;
+	vdata->count.delete_list.left = vdata->count.delete_list.total;
 
 	/*
 	 * get the list of currently active nodes
@@ -963,15 +974,15 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				 * update statistics.
 				 */
 				talloc_free(dd);
-				vdata->delete_remote_error++;
-				vdata->delete_left--;
+				vdata->count.delete_list.remote_error++;
+				vdata->count.delete_list.left--;
 			}
 
 			rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
 		}
 	}
 
-	if (vdata->delete_left == 0) {
+	if (vdata->count.delete_list.left == 0) {
 		goto success;
 	}
 
@@ -1062,15 +1073,15 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				 * the tree and update statistics.
 				 */
 				talloc_free(dd);
-				vdata->delete_remote_error++;
-				vdata->delete_left--;
+				vdata->count.delete_list.remote_error++;
+				vdata->count.delete_list.left--;
 			}
 
 			rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
 		}
 	}
 
-	if (vdata->delete_left == 0) {
+	if (vdata->count.delete_list.left == 0) {
 		goto success;
 	}
 
@@ -1091,28 +1102,29 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 success:
 
-	if (vdata->delete_left != 0) {
+	if (vdata->count.delete_list.left != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Vaccum db[%s] error: "
 		      "there are %u records left for deletion after "
 		      "processing delete list\n",
 		      ctdb_db->db_name,
-		      (unsigned)vdata->delete_left));
+		      (unsigned)vdata->count.delete_list.left));
 	}
 
-	sum = vdata->delete_deleted
-	    + vdata->delete_skipped
-	    + vdata->delete_remote_error
-	    + vdata->delete_local_error
-	    + vdata->delete_left;
+	sum = vdata->count.delete_list.deleted
+	    + vdata->count.delete_list.skipped
+	    + vdata->count.delete_list.remote_error
+	    + vdata->count.delete_list.local_error
+	    + vdata->count.delete_list.left;
 
-	if (vdata->delete_count != sum) {
+	if (vdata->count.delete_list.total != sum) {
 		DEBUG(DEBUG_ERR, (__location__ " Inconsistency in vacuum "
 		      "delete list counts for db[%s]: total[%u] != sum[%u]\n",
-		      ctdb_db->db_name, (unsigned)vdata->delete_count,
+		      ctdb_db->db_name,
+		      (unsigned)vdata->count.delete_list.total,
 		      (unsigned)sum));
 	}
 
-	if (vdata->delete_count > 0) {
+	if (vdata->count.delete_list.total > 0) {
 		DEBUG(DEBUG_INFO,
 		      (__location__
 		       " vacuum delete list statistics: "
@@ -1124,12 +1136,12 @@ success:
 		       "loc.err[%u] "
 		       "left[%u]\n",
 		       ctdb_db->db_name,
-		       (unsigned)vdata->delete_count,
-		       (unsigned)vdata->delete_deleted,
-		       (unsigned)vdata->delete_skipped,
-		       (unsigned)vdata->delete_remote_error,
-		       (unsigned)vdata->delete_local_error,
-		       (unsigned)vdata->delete_left));
+		       (unsigned)vdata->count.delete_list.total,
+		       (unsigned)vdata->count.delete_list.deleted,
+		       (unsigned)vdata->count.delete_list.skipped,
+		       (unsigned)vdata->count.delete_list.remote_error,
+		       (unsigned)vdata->count.delete_list.local_error,
+		       (unsigned)vdata->count.delete_list.left));
 	}
 
 done:
@@ -1147,22 +1159,22 @@ static int ctdb_vacuum_init_vacuum_data(struct ctdb_db_context *ctdb_db,
 	int i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
-	vdata->fast_added_to_delete_list = 0;
-	vdata->fast_added_to_vacuum_fetch_list = 0;
-	vdata->fast_deleted = 0;
-	vdata->fast_skipped = 0;
-	vdata->fast_error = 0;
-	vdata->fast_total = 0;
-	vdata->full_scheduled = 0;
-	vdata->full_skipped = 0;
-	vdata->full_error = 0;
-	vdata->full_total = 0;
-	vdata->delete_count = 0;
-	vdata->delete_left = 0;
-	vdata->delete_remote_error = 0;
-	vdata->delete_local_error = 0;
-	vdata->delete_skipped = 0;
-	vdata->delete_deleted = 0;
+	vdata->count.delete_queue.added_to_delete_list = 0;
+	vdata->count.delete_queue.added_to_vacuum_fetch_list = 0;
+	vdata->count.delete_queue.deleted = 0;
+	vdata->count.delete_queue.skipped = 0;
+	vdata->count.delete_queue.error = 0;
+	vdata->count.delete_queue.total = 0;
+	vdata->count.db_traverse.scheduled = 0;
+	vdata->count.db_traverse.skipped = 0;
+	vdata->count.db_traverse.error = 0;
+	vdata->count.db_traverse.total = 0;
+	vdata->count.delete_list.total = 0;
+	vdata->count.delete_list.left = 0;
+	vdata->count.delete_list.remote_error = 0;
+	vdata->count.delete_list.local_error = 0;
+	vdata->count.delete_list.skipped = 0;
+	vdata->count.delete_list.deleted = 0;
 
 	/* the list needs to be of length num_nodes */
 	vdata->vacuum_fetch_list = talloc_zero_array(vdata,
@@ -1294,7 +1306,7 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 				hdr->dmaster == kd->ctdb->pnn &&
 				ctdb_lmaster(kd->ctdb, &(kd->key)) == kd->ctdb->pnn &&
 				kd->hdr.rsn == hdr->rsn) {
-				vdata->vacuumed++;
+				vdata->count.repack.vacuumed++;
 				return 0;
 			}
 		}
@@ -1303,7 +1315,7 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		vdata->traverse_error = true;
 		return -1;
 	}
-	vdata->copied++;
+	vdata->count.repack.copied++;
 	return 0;
 }
 
@@ -1331,8 +1343,8 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 	vdata->traverse_error = false;
 	vdata->dest_db = tmp_db;
 	vdata->vacuum = true;
-	vdata->vacuumed = 0;
-	vdata->copied = 0;
+	vdata->count.repack.vacuumed = 0;
+	vdata->count.repack.copied = 0;
 
 	/*
 	 * repack and vacuum on-the-fly by not writing the records that are
@@ -1345,7 +1357,8 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 		return -1;		
 	}
 
-	DEBUG(DEBUG_INFO,(__location__ " %u records vacuumed\n", vdata->vacuumed));
+	DEBUG(DEBUG_INFO,(__location__ " %u records vacuumed\n",
+	      vdata->count.repack.vacuumed));
 	
 	if (vdata->traverse_error) {
 		DEBUG(DEBUG_ERR,(__location__ " Error during traversal\n"));
@@ -1364,7 +1377,7 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 	vdata->traverse_error = false;
 	vdata->dest_db = tdb;
 	vdata->vacuum = false;
-	vdata->copied = 0;
+	vdata->count.repack.copied = 0;
 
 	if (tdb_traverse_read(tmp_db, repack_traverse, vdata) == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to traverse copying back\n"));
@@ -1387,7 +1400,8 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 		DEBUG(DEBUG_ERR,(__location__ " Failed to commit\n"));
 		return -1;
 	}
-	DEBUG(DEBUG_INFO,(__location__ " %u records copied\n", vdata->copied));
+	DEBUG(DEBUG_INFO,(__location__ " %u records copied\n",
+	      vdata->count.repack.copied));
 
 	return 0;
 }
@@ -1449,7 +1463,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	}
 
 	DEBUG(DEBUG_INFO,("Repacking %s with %u freelist entries and %u records to delete\n", 
-			name, freelist_size, vdata->delete_left));
+			name, freelist_size, vdata->count.delete_list.left));
 
 	/*
 	 * repack and implicitely get rid of the records we can delete
