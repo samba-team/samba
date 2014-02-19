@@ -3539,13 +3539,21 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 /*
   display lvs configuration
  */
+
+static uint32_t lvs_exclude_flags[] = {
+	/* Look for a nice healthy node */
+	NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
+	/* If not found, an UNHEALTHY node will do */
+	NODE_FLAGS_INACTIVE|NODE_FLAGS_PERMANENTLY_DISABLED,
+	0,
+};
+
 static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_node_map *orig_nodemap=NULL;
 	struct ctdb_node_map *nodemap;
 	int i, ret;
-	int healthy_count = 0;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn,
 				   tmp_ctx, &orig_nodemap);
@@ -3565,39 +3573,26 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	ret = 0;
 
-	/* collect capabilities for all connected nodes */
-	for (i=0; i<nodemap->num; i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
+	for (i = 0; lvs_exclude_flags[i] != 0; i++) {
+		struct ctdb_node_map *t =
+			filter_nodemap_by_flags(ctdb, nodemap,
+						lvs_exclude_flags[i]);
+		if (t == NULL) {
+			/* No memory */
+			ret = -1;
+			goto done;
 		}
-		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
-			continue;
-		}
-
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY)) {
-			healthy_count++;
-		}
-	}
-
-	/* Print all LVS nodes */
-	for (i=0; i<nodemap->num; i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
-			continue;
-		}
-
-		if (healthy_count != 0) {
-			if (nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY) {
-				continue;
+		if (t->num > 0) {
+			/* At least 1 node without excluded flags */
+			int j;
+			for (j = 0; j < t->num; j++) {
+				printf("%d:%s\n", t->nodes[j].pnn, 
+				       ctdb_addr_to_str(&t->nodes[j].addr));
 			}
+			goto done;
 		}
-
-		printf("%d:%s\n", nodemap->nodes[i].pnn, 
-			ctdb_addr_to_str(&nodemap->nodes[i].addr));
+		talloc_free(t);
 	}
-
 done:
 	talloc_free(tmp_ctx);
 	return ret;
@@ -3612,7 +3607,6 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 	struct ctdb_node_map *orig_nodemap=NULL;
 	struct ctdb_node_map *nodemap;
 	int i, ret;
-	int healthy_count = 0;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn,
 				   tmp_ctx, &orig_nodemap);
@@ -3630,47 +3624,27 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 		goto done;
 	}
 
-	/* collect capabilities for all connected nodes */
-	for (i=0; i<nodemap->num; i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
+	for (i = 0; lvs_exclude_flags[i] != 0; i++) {
+		struct ctdb_node_map *t =
+			filter_nodemap_by_flags(ctdb, nodemap,
+						lvs_exclude_flags[i]);
+		if (t == NULL) {
+			/* No memory */
+			ret = -1;
+			goto done;
 		}
-		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
-			continue;
+		if (t->num > 0) {
+			ret = 0;
+			printf(options.machinereadable ?
+			       "%d\n" : "Node %d is LVS master\n",
+				t->nodes[0].pnn);
+			goto done;
 		}
-	
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY)) {
-			healthy_count++;
-		}
-	}
-
-	ret = -1;
-
-	/* find and show the lvsmaster */
-	for (i=0; i<nodemap->num; i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
-			continue;
-		}
-		if (healthy_count != 0) {
-			if (nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY) {
-				continue;
-			}
-		}
-
-		if (options.machinereadable){
-			printf("%d\n", nodemap->nodes[i].pnn);
-		} else {
-			printf("Node %d is LVS master\n",
-			       nodemap->nodes[i].pnn);
-		}
-		ret = 0;
-		goto done;
+		talloc_free(t);
 	}
 
 	printf("There is no LVS master\n");
+	ret = 255;
 done:
 	talloc_free(tmp_ctx);
 	return ret;
