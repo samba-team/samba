@@ -130,6 +130,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   private_library=False,
                   grouping_library=False,
                   allow_undefined_symbols=False,
+                  allow_warnings=True,
                   enabled=True):
     '''define a Samba library'''
 
@@ -176,6 +177,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         autoproto_extra_source=autoproto_extra_source,
                         depends_on     = depends_on,
                         hide_symbols   = hide_symbols,
+                        allow_warnings = allow_warnings,
                         pyembed        = pyembed,
                         pyext          = pyext,
                         local_include  = local_include,
@@ -415,7 +417,8 @@ def SAMBA_MODULE(bld, modname, source,
                  enabled=True,
                  pyembed=False,
                  manpages=None,
-                 allow_undefined_symbols=False
+                 allow_undefined_symbols=False,
+                 allow_warnings=True
                  ):
     '''define a Samba module.'''
 
@@ -435,6 +438,7 @@ def SAMBA_MODULE(bld, modname, source,
                     cflags=cflags,
                     local_include=local_include,
                     global_include=global_include,
+                    allow_warnings=allow_warnings,
                     enabled=enabled)
 
         bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
@@ -481,7 +485,8 @@ def SAMBA_MODULE(bld, modname, source,
                       install_path="${MODULESDIR}/%s" % subsystem,
                       pyembed=pyembed,
                       manpages=manpages,
-                      allow_undefined_symbols=allow_undefined_symbols
+                      allow_undefined_symbols=allow_undefined_symbols,
+                      allow_warnings=allow_warnings
                       )
 
 
@@ -513,6 +518,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     vars=None,
                     subdir=None,
                     hide_symbols=False,
+                    allow_warnings=True,
                     pyext=False,
                     pyembed=False):
     '''define a Samba subsystem'''
@@ -548,7 +554,9 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         features       = features,
         source         = source,
         target         = modname,
-        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags, hide_symbols=hide_symbols),
+        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags,
+                                        allow_warnings=allow_warnings,
+                                        hide_symbols=hide_symbols),
         depends_on     = depends_on,
         samba_deps     = TO_LIST(deps),
         samba_includes = includes,
