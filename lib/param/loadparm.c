@@ -283,7 +283,7 @@ FN_LOCAL_BOOL(autoloaded, autoloaded)
 FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)
 
 /* local prototypes */
-static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
+static struct loadparm_service *lpcfg_getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName);
 static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
@@ -615,7 +615,7 @@ struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 
 	/* it might already exist */
 	if (name) {
-		struct loadparm_service *service = getservicebyname(lp_ctx,
+		struct loadparm_service *service = lpcfg_getservicebyname(lp_ctx,
 								    name);
 		if (service != NULL) {
 			/* Clean all parametric options for service */
@@ -819,7 +819,7 @@ bool lpcfg_parm_is_cmdline(struct loadparm_context *lp_ctx, const char *name)
  * Find a service by name. Otherwise works like get_service.
  */
 
-static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
+static struct loadparm_service *lpcfg_getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName)
 {
 	int iService;
@@ -1145,7 +1145,9 @@ static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
-	if ((serviceTemp = getservicebyname(lp_ctx, pszParmValue)) != NULL) {
+	serviceTemp = lpcfg_getservicebyname(lp_ctx, pszParmValue);
+
+	if (serviceTemp != NULL) {
 		if (serviceTemp == lp_ctx->currentService) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
