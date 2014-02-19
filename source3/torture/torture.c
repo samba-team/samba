@@ -3087,7 +3087,7 @@ static bool run_randomipc(int dummy)
 
 		cli_api(cli, 
 			param, param_len, 8,  
-			NULL, 0, BUFFER_SIZE, 
+			NULL, 0, CLI_BUFFER_SIZE,
 			&rparam, &rprcnt,     
 			&rdata, &rdrcnt);
 		if (i % 100 == 0) {
