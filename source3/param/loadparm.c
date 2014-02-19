@@ -2138,7 +2138,8 @@ struct loadparm_service *lp_default_loadparm_service()
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(struct loadparm_service *pserviceDest, const struct loadparm_service *pserviceSource,
+static void copy_service(struct loadparm_service *pserviceDest,
+			 const struct loadparm_service *pserviceSource,
 			 struct bitmap *pcopymapDest)
 {
 	int i;
@@ -2147,9 +2148,11 @@ static void copy_service(struct loadparm_service *pserviceDest, const struct loa
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_LOCAL &&
-		    (bcopyall || bitmap_query(pcopymapDest,i))) {
-			const void *src_ptr = ((const char *)pserviceSource) + parm_table[i].offset;
-			void *dest_ptr = lp_parm_ptr(pserviceDest, &parm_table[i]);
+		    (bcopyall || bitmap_query(pcopymapDest, i))) {
+			const void *src_ptr =
+				((const char *)pserviceSource) + parm_table[i].offset;
+			void *dest_ptr =
+				((char *)pserviceDest) + parm_table[i].offset;
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
@@ -2158,9 +2161,9 @@ static void copy_service(struct loadparm_service *pserviceDest, const struct loa
 					break;
 
 				case P_INTEGER:
-				case P_ENUM:
-				case P_OCTAL:
 				case P_BYTES:
+				case P_OCTAL:
+				case P_ENUM:
 					*(int *)dest_ptr = *(const int *)src_ptr;
 					break;
 
@@ -2169,23 +2172,20 @@ static void copy_service(struct loadparm_service *pserviceDest, const struct loa
 					break;
 
 				case P_STRING:
-					string_set(pserviceDest, (char **)dest_ptr,
+					lpcfg_string_set(pserviceDest,
+						   (char **)dest_ptr,
 						   *(const char * const *)src_ptr);
 					break;
 
 				case P_USTRING:
-				{
-					char *upper_string = strupper_talloc(talloc_tos(), 
-									     *(const char * const *)src_ptr);
-					string_set(pserviceDest, (char **)dest_ptr,
-						   upper_string);
-					TALLOC_FREE(upper_string);
+					lpcfg_string_set_upper(pserviceDest,
+							 (char **)dest_ptr,
+							 *(const char * const *)src_ptr);
 					break;
-				}
 				case P_LIST:
 					TALLOC_FREE(*((char ***)dest_ptr));
-					*((const char * const **)dest_ptr) = (const char * const *)str_list_copy(pserviceDest,
-						      *(const char ** const *)src_ptr);
+					*(const char * const **)dest_ptr = (const char * const *)str_list_copy(pserviceDest,
+										  *(const char * * const *)src_ptr);
 					break;
 				default:
 					break;
