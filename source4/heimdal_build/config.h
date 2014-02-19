@@ -41,7 +41,8 @@
 #endif
 
 /*Workaround for heimdal define vs samba define*/
-#ifdef HAVE_LIBINTL_H
+#if defined(HAVE_LIBINTL_H) && defined(HAVE_BINDTEXTDOMAIN) &&\
+    defined(HAVE_TEXTDOMAIN)
 #define LIBINTL
 #endif
 
