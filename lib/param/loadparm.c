@@ -1006,10 +1006,10 @@ static bool lpcfg_service_ok(struct loadparm_service *service)
  it's date and needs to be reloaded.
 ********************************************************************/
 
-static void add_to_file_list(struct loadparm_context *lp_ctx,
+static void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **file,
 			     const char *fname, const char *subfname)
 {
-	struct file_lists *f = lp_ctx->file_lists;
+	struct file_lists *f = *file;
 
 	while (f) {
 		if (f->name && !strcmp(f->name, fname))
@@ -1018,10 +1018,10 @@ static void add_to_file_list(struct loadparm_context *lp_ctx,
 	}
 
 	if (!f) {
-		f = talloc(lp_ctx, struct file_lists);
+		f = talloc(mem_ctx, struct file_lists);
 		if (!f)
 			return;
-		f->next = lp_ctx->file_lists;
+		f->next = *file;
 		f->name = talloc_strdup(f, fname);
 		if (!f->name) {
 			talloc_free(f);
@@ -1032,7 +1032,7 @@ static void add_to_file_list(struct loadparm_context *lp_ctx,
 			talloc_free(f);
 			return;
 		}
-		lp_ctx->file_lists = f;
+		*file = f;
 		f->modtime = file_modtime(subfname);
 	} else {
 		time_t t = file_modtime(subfname);
@@ -1115,7 +1115,7 @@ static bool handle_include(struct loadparm_context *lp_ctx, int unused,
 {
 	char *fname = standard_sub_basic(lp_ctx, pszParmValue);
 
-	add_to_file_list(lp_ctx, pszParmValue, fname);
+	add_to_file_list(lp_ctx, &lp_ctx->file_lists, pszParmValue, fname);
 
 	lpcfg_string_set(lp_ctx, ptr, fname);
 
@@ -2539,7 +2539,7 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 	n2 = standard_sub_basic(lp_ctx, lp_ctx->szConfigFile);
 	DEBUG(2, ("lpcfg_load: refreshing parameters from %s\n", n2));
 
-	add_to_file_list(lp_ctx, lp_ctx->szConfigFile, n2);
+	add_to_file_list(lp_ctx, &lp_ctx->file_lists, lp_ctx->szConfigFile, n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
 	lp_ctx->currentService = NULL;
