@@ -735,11 +735,12 @@ static void init_globals(bool reinit_globals)
  	 */
 	Globals.nmbd_bind_explicit_broadcast = true;
 
-	if (asprintf(&s, "Samba %s", samba_version_string()) < 0) {
+	s = talloc_asprintf(talloc_tos(), "Samba %s", samba_version_string());
+	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
 	string_set(Globals.ctx, &Globals.server_string, s);
-	SAFE_FREE(s);
+	TALLOC_FREE(s);
 #ifdef DEVELOPER
 	string_set(Globals.ctx, &Globals.panic_action, "/bin/sleep 999999999");
 #endif
@@ -958,11 +959,12 @@ static void init_globals(bool reinit_globals)
 	Globals.enable_asu_support       = false;
 
 	/* User defined shares. */
-	if (asprintf(&s, "%s/usershares", get_dyn_STATEDIR()) < 0) {
+	s = talloc_asprintf(talloc_tos(), "%s/usershares", get_dyn_STATEDIR());
+	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
 	string_set(Globals.ctx, &Globals.usershare_path, s);
-	SAFE_FREE(s);
+	TALLOC_FREE(s);
 	string_set(Globals.ctx, &Globals.usershare_template_share, "");
 	Globals.usershare_max_shares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
@@ -1007,23 +1009,26 @@ static void init_globals(bool reinit_globals)
 
 	string_set(Globals.ctx, &Globals.winbindd_privileged_socket_directory, get_dyn_WINBINDD_PRIVILEGED_SOCKET_DIR());
 
-	if (asprintf(&s, "%s/samba_kcc", get_dyn_SCRIPTSBINDIR()) < 0) {
+	s = talloc_asprintf(talloc_tos(), "%s/samba_kcc", get_dyn_SCRIPTSBINDIR());
+	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
 	Globals.samba_kcc_command = (const char **)str_list_make_v3(NULL, s, NULL);
-	SAFE_FREE(s);
+	TALLOC_FREE(s);
 
-	if (asprintf(&s, "%s/samba_dnsupdate", get_dyn_SCRIPTSBINDIR()) < 0) {
+	s = talloc_asprintf(talloc_tos(), "%s/samba_dnsupdate", get_dyn_SCRIPTSBINDIR());
+	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
 	Globals.dns_update_command = (const char **)str_list_make_v3(NULL, s, NULL);
-	SAFE_FREE(s);
+	TALLOC_FREE(s);
 
-	if (asprintf(&s, "%s/samba_spnupdate", get_dyn_SCRIPTSBINDIR()) < 0) {
+	s = talloc_asprintf(talloc_tos(), "%s/samba_spnupdate", get_dyn_SCRIPTSBINDIR());
+	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
 	Globals.spn_update_command = (const char **)str_list_make_v3(NULL, s, NULL);
-	SAFE_FREE(s);
+	TALLOC_FREE(s);
 
 	Globals.nsupdate_command = (const char **)str_list_make_v3(NULL, "/usr/bin/nsupdate -g", NULL);
 
@@ -1665,12 +1670,12 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	}
 
 	if (!(*(ServicePtrs[i]->comment))) {
-		char *comment = NULL;
-		if (asprintf(&comment, "Home directory of %s", user) < 0) {
+		char *comment = talloc_asprintf(talloc_tos(), "Home directory of %s", user);
+		if (comment == NULL) {
 			return false;
 		}
 		string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
-		SAFE_FREE(comment);
+		TALLOC_FREE(comment);
 	}
 
 	/* set the browseable flag from the global default */
@@ -1711,8 +1716,9 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	if (i < 0)
 		return false;
 
-	if (asprintf(&comment, "IPC Service (%s)",
-				Globals.server_string) < 0) {
+	comment = talloc_asprintf(talloc_tos(), "IPC Service (%s)",
+				  Globals.server_string);
+	if (comment == NULL) {
 		return false;
 	}
 
@@ -1731,7 +1737,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 
 	DEBUG(3, ("adding IPC service\n"));
 
-	SAFE_FREE(comment);
+	TALLOC_FREE(comment);
 	return true;
 }
 
