@@ -35,7 +35,6 @@
 #define CLI_CAPABILITY_SET  0
 
 static char *netbiosname;
-static char packet[BUFFER_SIZE];
 
 static void save_file(const char *fname, void *ppacket, size_t length)
 {
@@ -178,6 +177,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 {
 	NTSTATUS status;
 	int s = -1;
+	uint8_t packet[128*1024];
 
 	/* we have a connection from a new client, now connect to the server */
 	status = open_socket_out(dest_ss, TCP_SMB_PORT, LONG_CONNECT_TIMEOUT, &s);
