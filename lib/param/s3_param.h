@@ -9,6 +9,7 @@ struct loadparm_s3_helpers
 	struct loadparm_service * (*get_service)(const char *service_name);
 	struct loadparm_service * (*get_default_loadparm_service)(void);
 	struct loadparm_service * (*get_servicebynum)(int snum);
+	int (*getservicebyname)(const char *, struct loadparm_service *);
 	int (*get_numservices)(void);
 	bool (*load)(const char *filename);
 	bool (*set_cmdline)(const char *pszParmName, const char *pszParmValue);

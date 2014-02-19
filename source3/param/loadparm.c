@@ -1173,8 +1173,6 @@ FN_LOCAL_BOOL(autoloaded, autoloaded)
 
 static int map_parameter_canonical(const char *pszParmName, bool *inverse);
 static const char *get_boolean(bool bool_value);
-static int getservicebyname(const char *pszServiceName,
-			    struct loadparm_service *pserviceDest);
 static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata);
 static bool do_section(const char *pszSectionName, void *userdata);
@@ -2071,7 +2069,7 @@ bool lp_canonicalize_boolean(const char *str, const char**canon_str)
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
 
-static int getservicebyname(const char *pszServiceName, struct loadparm_service *pserviceDest)
+int getservicebyname(const char *pszServiceName, struct loadparm_service *pserviceDest)
 {
 	int iService = -1;
 	char *canon_name;

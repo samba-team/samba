@@ -63,6 +63,7 @@ static struct loadparm_s3_helpers s3_fns =
 	.get_parm_ptr = lp_parm_ptr,
 	.get_service = lp_service_for_s4_ctx,
 	.get_servicebynum = lp_servicebynum_for_s4_ctx,
+	.getservicebyname = getservicebyname,
 	.get_default_loadparm_service = lp_default_loadparm_service,
 	.get_numservices = lp_numservices,
 	.load = lp_load_for_s4_ctx,
