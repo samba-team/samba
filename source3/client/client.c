@@ -226,7 +226,7 @@ static int readfile(uint8_t *b, int n, XFILE *f)
 		return x_fread(b,1,n,f);
 
 	i = 0;
-	while (i < (n - 1) && (i < BUFFER_SIZE)) {
+	while (i < (n - 1)) {
 		if ((c = x_getc(f)) == EOF) {
 			break;
 		}
