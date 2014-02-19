@@ -200,10 +200,10 @@ main() {
     if Options.options.with_libarchive is not False:
         libarchive_mandatory = Options.options.with_libarchive == True
         Logs.info("Checking for libarchive existence")
-        if conf.CHECK_LIB('archive', mandatory=libarchive_mandatory):
-            conf.env['archive_lib'] = 'archive'
-        if not conf.CHECK_HEADERS('archive.h') and libarchive_mandatory:
-            conf.fatal('libarchive support requested, but no suitable header found')
+        if conf.CHECK_BUNDLED_SYSTEM('libarchive', minversion='3.1.2'):
+            conf.env['archive_lib'] = 'libarchive'
+        elif libarchive_mandatory:
+            conf.fatal('libarchive support requested, but no suitable pkgconfig found')
 
     # check for DMAPI libs
     Logs.info("Checking for DMAPI library existence")
