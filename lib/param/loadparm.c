@@ -98,8 +98,6 @@ static bool defaults_saved = false;
 /* prototypes for the special type handlers */
 static bool handle_include(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
-static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
-			const char *pszParmValue, char **ptr);
 
 #include "lib/param/param_table.c"
 
@@ -1133,27 +1131,38 @@ static bool handle_include(struct loadparm_context *lp_ctx, int unused,
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
+bool handle_copy(struct loadparm_context *lp_ctx, int snum,
 			const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
-	struct loadparm_service *serviceTemp;
-
-	lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+	struct loadparm_service *serviceTemp = NULL;
+	struct loadparm_service *current = NULL;
 
 	bRetval = false;
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
 	serviceTemp = lpcfg_getservicebyname(lp_ctx, pszParmValue);
+	if (lp_ctx->s3_fns != NULL) {
+		current = lp_ctx->s3_fns->get_servicebynum(snum);
+	} else {
+		current = lp_ctx->currentService;
+	}
+
+	if (current == NULL) {
+		DEBUG(0, ("Unable to copy service - invalid service destination"));
+		return false;
+	}
 
 	if (serviceTemp != NULL) {
-		if (serviceTemp == lp_ctx->currentService) {
+		if (serviceTemp == current) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
-			copy_service(lp_ctx->currentService,
+			copy_service(current,
 				     serviceTemp,
-				     lp_ctx->currentService->copymap);
+				     current->copymap);
+			lpcfg_string_set(current, ptr, pszParmValue);
+
 			bRetval = true;
 		}
 	} else {

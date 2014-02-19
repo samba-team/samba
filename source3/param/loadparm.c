@@ -261,7 +261,6 @@ static bool bGlobalOnly = false;
 
 /* prototypes for the special type handlers */
 static bool handle_include(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
-static bool handle_copy(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
@@ -2625,37 +2624,6 @@ static bool handle_include(struct loadparm_context *unused, int snum, const char
 	DEBUG(2, ("Can't find include file %s\n", fname));
 	TALLOC_FREE(fname);
 	return true;
-}
-
-/***************************************************************************
- Handle the interpretation of the copy parameter.
-***************************************************************************/
-
-static bool handle_copy(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	bool bRetval;
-	int iTemp;
-
-	bRetval = false;
-
-	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
-
-	if ((iTemp = getservicebyname(pszParmValue, NULL)) >= 0) {
-		if (iTemp == snum) {
-			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
-		} else {
-			copy_service(ServicePtrs[snum],
-				     serviceTemp,
-				     ServicePtrs[snum]->copymap);
-			string_set(ServicePtrs[snum], ptr, pszParmValue);
-			bRetval = true;
-		}
-	} else {
-		DEBUG(0, ("Unable to copy service - source not found: %s\n", pszParmValue));
-		bRetval = false;
-	}
-
-	return (bRetval);
 }
 
 static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
