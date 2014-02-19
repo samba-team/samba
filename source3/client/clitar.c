@@ -1784,7 +1784,6 @@ int tar_parse_args(struct tar *tar, const char *flag, const char **val, int vals
 
 bool tar_to_process(struct tar *tar)
 {
-	NOT_IMPLEMENTED;
 	return false;
 }
 
