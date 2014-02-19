@@ -5204,7 +5204,7 @@ int lp_min_receive_file_size(void)
 	if (Globals.iminreceivefile < 0) {
 		return 0;
 	}
-	return MIN(Globals.iminreceivefile, BUFFER_SIZE);
+	return Globals.iminreceivefile;
 }
 
 /*******************************************************************
