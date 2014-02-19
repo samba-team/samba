@@ -63,7 +63,6 @@ struct vacuum_data {
 	struct timeval start;
 	bool traverse_error;
 	bool vacuum;
-	uint32_t total;
 	uint32_t vacuumed;
 	uint32_t copied;
 	uint32_t fast_added_to_vacuum_fetch_list;
@@ -201,8 +200,6 @@ static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
 	vfl->count++;
 	memcpy(old_size+(uint8_t *)vfl, rec, rec->length);
 	talloc_free(rec);
-
-	vdata->total++;
 
 	return 0;
 }
