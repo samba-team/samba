@@ -2641,13 +2641,13 @@ static bool handle_copy(struct loadparm_context *unused, int snum, const char *p
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
 	if ((iTemp = getservicebyname(pszParmValue, NULL)) >= 0) {
-		if (iTemp == iServiceIndex) {
+		if (iTemp == snum) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
-			copy_service(ServicePtrs[iServiceIndex],
-				     ServicePtrs[iTemp],
-				     ServicePtrs[iServiceIndex]->copymap);
-			string_set(ServicePtrs[iServiceIndex], ptr, pszParmValue);
+			copy_service(ServicePtrs[snum],
+				     serviceTemp,
+				     ServicePtrs[snum]->copymap);
+			string_set(ServicePtrs[snum], ptr, pszParmValue);
 			bRetval = true;
 		}
 	} else {
