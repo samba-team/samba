@@ -4824,22 +4824,6 @@ void lp_remove_service(int snum)
 	ServicePtrs[snum]->valid = false;
 }
 
-/*******************************************************************
- Copy a service.
-********************************************************************/
-
-void lp_copy_service(int snum, const char *new_name)
-{
-	do_section(new_name, NULL);
-	if (snum >= 0) {
-		snum = lp_servicenumber(new_name);
-		if (snum >= 0) {
-			char *name = lp_servicename(talloc_tos(), snum);
-			lp_do_parameter(snum, "copy", name);
-		}
-	}
-}
-
 const char *lp_printername(TALLOC_CTX *ctx, int snum)
 {
 	const char *ret = lp__printername(ctx, snum);
