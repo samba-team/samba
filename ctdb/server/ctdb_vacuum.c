@@ -976,6 +976,14 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				talloc_free(dd);
 				vdata->count.delete_list.remote_error++;
 				vdata->count.delete_list.left--;
+			} else {
+				DEBUG(DEBUG_ERR, (__location__ " Failed to "
+				      "find record with hash 0x%08x coming "
+				      "back from RECEIVE_RECORDS "
+				      "control in delete list.\n",
+				      ctdb_hash(&reckey)));
+				vdata->count.delete_list.local_error++;
+				vdata->count.delete_list.left--;
 			}
 
 			rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
@@ -1074,6 +1082,14 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				 */
 				talloc_free(dd);
 				vdata->count.delete_list.remote_error++;
+				vdata->count.delete_list.left--;
+			} else {
+				DEBUG(DEBUG_ERR, (__location__ " Failed to "
+				      "find record with hash 0x%08x coming "
+				      "back from TRY_DELETE_RECORDS "
+				      "control in delete list.\n",
+				      ctdb_hash(&reckey)));
+				vdata->count.delete_list.local_error++;
 				vdata->count.delete_list.left--;
 			}
 
