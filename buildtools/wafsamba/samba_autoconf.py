@@ -685,7 +685,7 @@ int main(void) {
             conf.env['EXTRA_CFLAGS'].extend(TO_LIST("-Werror=format"))
 
     if Options.options.picky_developer:
-        conf.ADD_CFLAGS('-Werror', testflags=True)
+        conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Werror', testflags=True)
 
     if Options.options.fatal_errors:
         conf.ADD_CFLAGS('-Wfatal-errors', testflags=True)
@@ -759,14 +759,17 @@ def ADD_EXTRA_INCLUDES(conf, includes):
 
 
 
-def CURRENT_CFLAGS(bld, target, cflags, hide_symbols=False):
+def CURRENT_CFLAGS(bld, target, cflags, allow_warnings=True, hide_symbols=False):
     '''work out the current flags. local flags are added first'''
+    ret = TO_LIST(cflags)
     if not 'EXTRA_CFLAGS' in bld.env:
         list = []
     else:
         list = bld.env['EXTRA_CFLAGS'];
-    ret = TO_LIST(cflags)
     ret.extend(list)
+    if not allow_warnings and 'PICKY_CFLAGS' in bld.env:
+        list = bld.env['PICKY_CFLAGS'];
+        ret.extend(list)
     if hide_symbols and bld.env.HAVE_VISIBILITY_ATTR:
         ret.append('-fvisibility=hidden')
     return ret
