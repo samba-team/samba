@@ -249,13 +249,6 @@ static struct loadparm_service sDefault =
 	.dummy = ""
 };
 
-static struct file_lists {
-	struct file_lists *next;
-	char *name;
-	char *subfname;
-	time_t modtime;
-} *file_lists = NULL;
-
 /* local variables */
 static struct loadparm_service **ServicePtrs = NULL;
 static int iNumServices = 0;
@@ -263,6 +256,7 @@ static int iServiceIndex = 0;
 static struct db_context *ServiceHash;
 static bool bInGlobalSection = true;
 static bool bGlobalOnly = false;
+static struct file_lists *file_lists = NULL;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 

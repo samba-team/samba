@@ -68,6 +68,13 @@ struct parm_struct {
 	} def;
 };
 
+struct file_lists {
+	struct file_lists *next;
+	char *name;
+	char *subfname;
+	time_t modtime;
+};
+
 /* The following flags are used in SWAT */
 #define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
 #define FLAG_SHARE 	0x0002 /* file sharing options */

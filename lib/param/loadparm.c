@@ -111,12 +111,7 @@ struct loadparm_context {
 	int iNumServices;
 	struct loadparm_service *currentService;
 	bool bInGlobalSection;
-	struct file_lists {
-		struct file_lists *next;
-		char *name;
-		char *subfname;
-		time_t modtime;
-	} *file_lists;
+	struct file_lists *file_lists;
 	unsigned int flags[NUMPARAMETERS];
 	bool loaded;
 	bool refuse_free;
