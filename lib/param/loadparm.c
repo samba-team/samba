@@ -1006,10 +1006,10 @@ static bool lpcfg_service_ok(struct loadparm_service *service)
  it's date and needs to be reloaded.
 ********************************************************************/
 
-static void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **file,
+void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **list,
 			     const char *fname, const char *subfname)
 {
-	struct file_lists *f = *file;
+	struct file_lists *f = *list;
 
 	while (f) {
 		if (f->name && !strcmp(f->name, fname))
@@ -1020,25 +1020,30 @@ static void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **file,
 	if (!f) {
 		f = talloc(mem_ctx, struct file_lists);
 		if (!f)
-			return;
-		f->next = *file;
+			goto fail;
+		f->next = *list;
 		f->name = talloc_strdup(f, fname);
 		if (!f->name) {
-			talloc_free(f);
-			return;
+			TALLOC_FREE(f);
+			goto fail;
 		}
 		f->subfname = talloc_strdup(f, subfname);
 		if (!f->subfname) {
-			talloc_free(f);
-			return;
+			TALLOC_FREE(f);
+			goto fail;
 		}
-		*file = f;
+		*list = f;
 		f->modtime = file_modtime(subfname);
 	} else {
 		time_t t = file_modtime(subfname);
 		if (t)
 			f->modtime = t;
 	}
+	return;
+
+fail:
+	DEBUG(0, ("Unable to add file to file list: %s\n", fname));
+
 }
 
 /*******************************************************************

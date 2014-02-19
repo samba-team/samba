@@ -279,7 +279,6 @@ static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, c
 
 static void set_allowed_client_auth(void);
 
-static void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **f, const char *fname, const char *subfname);
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
 static void free_param_opts(struct parmlist_entry **popts);
 
@@ -2357,51 +2356,6 @@ done:
 #define MAX_INCLUDE_DEPTH 100
 
 static uint8_t include_depth;
-
-/*******************************************************************
- Keep a linked list of all config files so we know when one has changed 
- it's date and needs to be reloaded.
-********************************************************************/
-
-static void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **list,
-			     const char *fname, const char *subfname)
-{
-	struct file_lists *f = *list;
-
-	while (f) {
-		if (f->name && !strcmp(f->name, fname))
-			break;
-		f = f->next;
-	}
-
-	if (!f) {
-		f = talloc(mem_ctx, struct file_lists);
-		if (!f)
-			goto fail;
-		f->next = *list;
-		f->name = talloc_strdup(f, fname);
-		if (!f->name) {
-			TALLOC_FREE(f);
-			goto fail;
-		}
-		f->subfname = talloc_strdup(f, subfname);
-		if (!f->subfname) {
-			TALLOC_FREE(f);
-			goto fail;
-		}
-		*list = f;
-		f->modtime = file_modtime(subfname);
-	} else {
-		time_t t = file_modtime(subfname);
-		if (t)
-			f->modtime = t;
-	}
-	return;
-
-fail:
-	DEBUG(0, ("Unable to add file to file list: %s\n", fname));
-
-}
 
 /**
  * Free the file lists
