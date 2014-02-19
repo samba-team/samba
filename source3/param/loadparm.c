@@ -3177,8 +3177,14 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		return parm_table[parmnum].special(NULL, snum, pszParmValue,
-						   (char **)parm_ptr);
+		bool ok;
+		struct loadparm_context *lp_ctx = loadparm_init_s3(talloc_tos(),
+								   loadparm_s3_helpers());
+		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
+						  (char **)parm_ptr);
+		TALLOC_FREE(lp_ctx);
+
+		return ok;
 	}
 
 	/* now switch on the type of variable it is */
