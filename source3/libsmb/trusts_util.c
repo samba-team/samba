@@ -118,6 +118,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			TALLOC_FREE(frame);
 			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 		}
+		free(pwd);
 		break;
 	case SEC_CHAN_DOMAIN:
 		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &pass_last_set_time)) {
