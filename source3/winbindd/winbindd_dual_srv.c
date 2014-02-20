@@ -74,6 +74,7 @@ NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	struct lsa_RefDomainList *domains = r->out.domains;
 	NTSTATUS status;
 
 	if (domain == NULL) {
@@ -87,7 +88,12 @@ NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 	 * done at the wbint RPC layer.
 	 */
 	status = rpc_lookup_sids(p->mem_ctx, domain, r->in.sids,
-				 &r->out.domains, &r->out.names);
+				 &domains, &r->out.names);
+
+	if (domains != NULL) {
+		r->out.domains = domains;
+	}
+
 	reset_cm_connection_on_error(domain, status);
 	return status;
 }
