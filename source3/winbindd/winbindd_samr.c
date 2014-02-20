@@ -684,7 +684,9 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 
 	/* Paranoia check */
 	if (!sid_check_is_in_builtin(sid) &&
+	    !sid_check_is_builtin(sid) &&
 	    !sid_check_is_in_our_sam(sid) &&
+	    !sid_check_is_our_sam(sid) &&
 	    !sid_check_is_in_unix_users(sid) &&
 	    !sid_check_is_unix_users(sid) &&
 	    !sid_check_is_in_unix_groups(sid) &&
