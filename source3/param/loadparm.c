@@ -2464,7 +2464,9 @@ static bool handle_charset(struct loadparm_context *unused, int snum, const char
 {
 	if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
 		string_set(Globals.ctx, ptr, pszParmValue);
-		init_iconv();
+		global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
+						      lp_unix_charset(),
+						      true, global_iconv_handle);
 	}
 	return true;
 }
@@ -2501,7 +2503,9 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 			pszParmValue = DEFAULT_DOS_CHARSET;
 		}
 		string_set(Globals.ctx, ptr, pszParmValue);
-		init_iconv();
+		global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
+						      lp_unix_charset(),
+						      true, global_iconv_handle);
 	}
 	return true;
 }
