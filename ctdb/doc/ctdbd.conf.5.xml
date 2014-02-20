@@ -909,7 +909,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	      NFS during a restart.
 	    </para>
 	    <para>
-	      Default is 0.
+	      Default is 5.  Set this to 0 to disable this feature.
 	    </para>
 	  </listitem>
 	</varlistentry>

@@ -734,7 +734,7 @@ startstop_nfs() {
 # Dump up to the configured number of nfsd thread backtraces.
 nfs_dump_some_threads ()
 {
-    [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] || return 0
+    [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] || CTDB_NFS_DUMP_STUCK_THREADS=5
 
     # Optimisation to avoid running an unnecessary pidof
     [ $CTDB_NFS_DUMP_STUCK_THREADS -gt 0 ] || return 0
