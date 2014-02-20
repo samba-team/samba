@@ -211,9 +211,8 @@ static NTSTATUS tar_create_skip_path(struct tar *t,
 				     const struct file_info *finfo,
 				     bool *_skip);
 
-static bool tar_path_in_list(struct tar *t,
-			     const char *path,
-			     bool reverse);
+static NTSTATUS tar_path_in_list(struct tar *t, const char *path,
+				 bool reverse, bool *_is_in_list);
 
 static int tar_get_file(struct tar *t,
 			const char *full_dos_path,
@@ -1284,24 +1283,27 @@ out:
 }
 
 /**
- * tar_path_in_list - return true if @path is in the path list
+ * tar_path_in_list - check whether @path is in the path list
  * @path: path to find
  * @reverse: when true also try to find path list element in @path
+ * @_is_in_list: set if @path is in the path list
  *
- * Look at each path of the path list and return true if @path is a
+ * Look at each path of the path list and set @_is_in_list if @path is a
  * subpath of one of them.
  *
  * If you want /path to be in the path list (path/a/, path/b/) set
  * @reverse to true to try to match the other way around.
  */
-static bool tar_path_in_list(struct tar *t, const char *path, bool is_reverse)
+static NTSTATUS tar_path_in_list(struct tar *t, const char *path,
+				 bool reverse, bool *_is_in_list)
 {
 	int i;
 	const char *p;
 	const char *pattern;
 
 	if (path == NULL || path[0] == '\0') {
-		return false;
+		*_is_in_list = false;
+		return NT_STATUS_OK;
 	}
 
 	p = skip_useless_char_in_path(path);
@@ -1311,15 +1313,17 @@ static bool tar_path_in_list(struct tar *t, const char *path, bool is_reverse)
 
 		pattern = skip_useless_char_in_path(t->path_list[i]);
 		is_in_list = is_subpath(p, pattern);
-		if (is_reverse) {
+		if (reverse) {
 			is_in_list = is_in_list || is_subpath(pattern, p);
 		}
 		if (is_in_list) {
-			return true;
+			*_is_in_list = true;
+			return NT_STATUS_OK;
 		}
 	}
 
-	return false;
+	*_is_in_list = false;
+	return NT_STATUS_OK;
 }
 
 /**
@@ -1344,7 +1348,10 @@ static NTSTATUS tar_extract_skip_path(struct tar *t,
 	if (t->mode.regex) {
 		in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
 	} else {
-		in = tar_path_in_list(t, fullpath, false);
+		NTSTATUS status = tar_path_in_list(t, fullpath, false, &in);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	if (t->mode.selection == TAR_EXCLUDE) {
@@ -1418,7 +1425,11 @@ static NTSTATUS tar_create_skip_path(struct tar *t,
 	if (t->mode.regex) {
 		in = mask_match_list(fullpath, t->path_list, t->path_list_size, true);
 	} else {
-		in = tar_path_in_list(t, fullpath, isdir && !exclude);
+		bool reverse = isdir && !exclude;
+		NTSTATUS status = tar_path_in_list(t, fullpath, reverse, &in);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 	*_skip = in;
 
