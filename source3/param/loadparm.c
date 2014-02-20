@@ -266,8 +266,6 @@ static bool handle_idmap_backend(struct loadparm_context *unused, int snum, cons
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
-static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
-static bool handle_dos_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 static bool handle_printing(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 
@@ -2458,56 +2456,6 @@ static void init_iconv(void)
 	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
 						      lp_unix_charset(),
 						      true, global_iconv_handle);
-}
-
-static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
-		string_set(Globals.ctx, ptr, pszParmValue);
-		global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
-						      lp_unix_charset(),
-						      true, global_iconv_handle);
-	}
-	return true;
-}
-
-static bool handle_dos_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	bool is_utf8 = false;
-	size_t len = strlen(pszParmValue);
-
-	if (len == 4 || len == 5) {
-		/* Don't use StrCaseCmp here as we don't want to
-		   initialize iconv. */
-		if ((toupper_m(pszParmValue[0]) == 'U') &&
-		    (toupper_m(pszParmValue[1]) == 'T') &&
-		    (toupper_m(pszParmValue[2]) == 'F')) {
-			if (len == 4) {
-				if (pszParmValue[3] == '8') {
-					is_utf8 = true;
-				}
-			} else {
-				if (pszParmValue[3] == '-' &&
-				    pszParmValue[4] == '8') {
-					is_utf8 = true;
-				}
-			}
-		}
-	}
-
-	if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
-		if (is_utf8) {
-			DEBUG(0,("ERROR: invalid DOS charset: 'dos charset' must not "
-				"be UTF8, using (default value) %s instead.\n",
-				DEFAULT_DOS_CHARSET));
-			pszParmValue = DEFAULT_DOS_CHARSET;
-		}
-		string_set(Globals.ctx, ptr, pszParmValue);
-		global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
-						      lp_unix_charset(),
-						      true, global_iconv_handle);
-	}
-	return true;
 }
 
 static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)

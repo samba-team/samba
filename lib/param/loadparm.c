@@ -77,10 +77,6 @@ static bool defaults_saved = false;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
-/* we don't need a special handler for "dos charset" and "unix charset" */
-#define handle_dos_charset NULL
-#define handle_charset NULL
-
 /* these are parameter handlers which are not needed in the
  * non-source3 code
  */
@@ -1196,6 +1192,73 @@ bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 	}
 
 	return true;
+}
+
+/*
+ * These special charset handling methods only run in the source3 code.
+ */
+
+bool handle_charset(struct loadparm_context *lp_ctx, int snum,
+			const char *pszParmValue, char **ptr)
+{
+	if (lp_ctx->s3_fns) {
+		if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
+			lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
+			global_iconv_handle = smb_iconv_handle_reinit(NULL,
+							lpcfg_dos_charset(lp_ctx),
+							lpcfg_unix_charset(lp_ctx),
+							true, global_iconv_handle);
+		}
+
+		return true;
+	}
+	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+
+}
+
+bool handle_dos_charset(struct loadparm_context *lp_ctx, int snum,
+			const char *pszParmValue, char **ptr)
+{
+	bool is_utf8 = false;
+	size_t len = strlen(pszParmValue);
+
+	if (lp_ctx->s3_fns) {
+		if (len == 4 || len == 5) {
+			/* Don't use StrCaseCmp here as we don't want to
+			   initialize iconv. */
+			if ((toupper_m(pszParmValue[0]) == 'U') &&
+			    (toupper_m(pszParmValue[1]) == 'T') &&
+			    (toupper_m(pszParmValue[2]) == 'F')) {
+				if (len == 4) {
+					if (pszParmValue[3] == '8') {
+						is_utf8 = true;
+					}
+				} else {
+					if (pszParmValue[3] == '-' &&
+					    pszParmValue[4] == '8') {
+						is_utf8 = true;
+					}
+				}
+			}
+		}
+
+		if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
+			if (is_utf8) {
+				DEBUG(0,("ERROR: invalid DOS charset: 'dos charset' must not "
+					"be UTF8, using (default value) %s instead.\n",
+					DEFAULT_DOS_CHARSET));
+				pszParmValue = DEFAULT_DOS_CHARSET;
+			}
+			lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
+			global_iconv_handle = smb_iconv_handle_reinit(NULL,
+							lpcfg_dos_charset(lp_ctx),
+							lpcfg_unix_charset(lp_ctx),
+							true, global_iconv_handle);
+		}
+		return true;
+	}
+
+	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 }
 
 /***************************************************************************
