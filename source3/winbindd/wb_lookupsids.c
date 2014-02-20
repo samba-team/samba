@@ -320,7 +320,7 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 		}
 	}
 
-	wb_domain = find_domain_from_sid_noinit(sid);
+	wb_domain = find_lookup_domain_from_sid(sid);
 	if (wb_domain == NULL) {
 		return NULL;
 	}
