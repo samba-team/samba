@@ -61,7 +61,7 @@ static const char *winbindd_socket_dir(void)
 #ifdef SOCKET_WRAPPER
 	const char *env_dir;
 
-	env_dir = getenv(WINBINDD_SOCKET_DIR_ENVVAR);
+	env_dir = getenv("SELFTEST_WINBINDD_SOCKET_DIR");
 	if (env_dir) {
 		return env_dir;
 	}

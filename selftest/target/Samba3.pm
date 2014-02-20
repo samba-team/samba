@@ -636,7 +636,7 @@ sub check_or_start($$$$$) {
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
-		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+		$ENV{SELFTEST_WINBINDD_SOCKET_DIR} = $env_vars->{SELFTEST_WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
@@ -693,7 +693,7 @@ sub check_or_start($$$$$) {
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
-		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+		$ENV{SELFTEST_WINBINDD_SOCKET_DIR} = $env_vars->{SELFTEST_WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
@@ -750,7 +750,7 @@ sub check_or_start($$$$$) {
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
-		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+		$ENV{SELFTEST_WINBINDD_SOCKET_DIR} = $env_vars->{SELFTEST_WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
@@ -1261,7 +1261,7 @@ domadmins:X:$gid_domadmins:
 	$ret{NETBIOSNAME} = $server;
 	$ret{PASSWORD} = $password;
 	$ret{PIDDIR} = $piddir;
-	$ret{WINBINDD_SOCKET_DIR} = $wbsockdir;
+	$ret{SELFTEST_WINBINDD_SOCKET_DIR} = $wbsockdir;
 	$ret{WINBINDD_PRIV_PIPE_DIR} = $wbsockprivdir;
 	$ret{NMBD_SOCKET_DIR} = $nmbdsockdir;
 	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} = $swiface;
@@ -1298,7 +1298,7 @@ sub wait_for_start($$$$$)
 	    print "checking for winbindd\n";
 	    my $count = 0;
 	    do {
-		$ret = system("WINBINDD_SOCKET_DIR=" . $envvars->{WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " -p");
+		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " -p");
 		if ($ret != 0) {
 		    sleep(2);
 		}
@@ -1343,7 +1343,7 @@ sub wait_for_start($$$$$)
 	if ($winbindd eq "yes") {
 	    # note: creating builtin groups requires winbindd for the
 	    # unix id allocator
-	    $ret = system("WINBINDD_SOCKET_DIR=" . $envvars->{WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Users");
+	    $ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Users");
 	    if ($ret != 0) {
 	        print "Failed to create BUILTIN\\Users group\n";
 	        return 0;
@@ -1351,7 +1351,7 @@ sub wait_for_start($$$$$)
 	    my $count = 0;
 	    do {
 		system(Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} cache flush");
-		$ret = system("WINBINDD_SOCKET_DIR=" . $envvars->{WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545");
+		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545");
 		if ($ret != 0) {
 		    sleep(2);
 		}

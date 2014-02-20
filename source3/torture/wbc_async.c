@@ -328,7 +328,7 @@ static const char *winbindd_socket_dir(void)
 	if (nss_wrapper_enabled()) {
 		const char *env_dir;
 
-		env_dir = getenv(WINBINDD_SOCKET_DIR_ENVVAR);
+		env_dir = getenv("SELFTEST_WINBINDD_SOCKET_DIR");
 		if (env_dir != NULL) {
 			return env_dir;
 		}

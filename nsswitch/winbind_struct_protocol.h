@@ -36,13 +36,6 @@ typedef char fstring[FSTRING_LEN];
  * mechanism.
  */
 
-/*
- * when compiled with socket_wrapper support
- * the location of the WINBINDD_SOCKET_DIR
- * can be overwritten via an environment variable
- */
-#define WINBINDD_SOCKET_DIR_ENVVAR "WINBINDD_SOCKET_DIR"
-
 #define WINBINDD_PRIV_SOCKET_SUBDIR "winbindd_privileged" /* name of subdirectory of lp_lock_directory() to hold the 'privileged' pipe */
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
