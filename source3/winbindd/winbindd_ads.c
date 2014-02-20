@@ -297,9 +297,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		status = ads_ntstatus(rc);
+		goto done;
 	} else if (!res) {
 		DEBUG(1,("query_user_list ads_search returned NULL res\n"));
-
 		goto done;
 	}
 
