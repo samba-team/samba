@@ -228,7 +228,8 @@ static NTSTATUS path_base_name(TALLOC_CTX *ctx, const char *path, char **_base);
 static const char* skip_useless_char_in_path(const char *p);
 static int make_remote_path(const char *full_path);
 static int max_token (const char *str);
-static bool is_subpath(const char *sub, const char *full);
+static NTSTATUS is_subpath(const char *sub, const char *full,
+			   bool *_subpath_match);
 static int set_remote_attr(const char *filename, uint16 new_attr, int mode);
 
 /**
@@ -1310,11 +1311,18 @@ static NTSTATUS tar_path_in_list(struct tar *t, const char *path,
 
 	for (i = 0; i < t->path_list_size; i++) {
 		bool is_in_list;
+		NTSTATUS status;
 
 		pattern = skip_useless_char_in_path(t->path_list[i]);
-		is_in_list = is_subpath(p, pattern);
-		if (reverse) {
-			is_in_list = is_in_list || is_subpath(pattern, p);
+		status = is_subpath(p, pattern, &is_in_list);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (reverse && !is_in_list) {
+			status = is_subpath(pattern, p, &is_in_list);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		}
 		if (is_in_list) {
 			*_is_in_list = true;
@@ -1471,23 +1479,36 @@ static const char* skip_useless_char_in_path(const char *p)
 }
 
 /**
- * is_subpath - return true if the path @sub is a subpath of @full.
+ * is_subpath - check if the path @sub is a subpath of @full.
  * @sub: path to test
  * @full: container path
+ * @_subpath_match: set true if @sub is a subpath of @full, otherwise false
  *
  * String comparaison is case-insensitive.
- *
- * Return true if @sub = @full
  */
-static bool is_subpath(const char *sub, const char *full)
+static NTSTATUS is_subpath(const char *sub, const char *full,
+			   bool *_subpath_match)
 {
-	TALLOC_CTX *tmp_ctx = PANIC_IF_NULL(talloc_new(NULL));
+	NTSTATUS status = NT_STATUS_OK;
 	int len = 0;
 	char *f, *s;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
-	f = PANIC_IF_NULL(strlower_talloc(tmp_ctx, full));
+	f = strlower_talloc(tmp_ctx, full);
+	if (f == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out_ctx_free;
+	}
 	string_replace(f, '\\', '/');
-	s = PANIC_IF_NULL(strlower_talloc(tmp_ctx, sub));
+	s = strlower_talloc(tmp_ctx, sub);
+	if (f == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out_ctx_free;
+	}
 	string_replace(s, '\\', '/');
 
 	/* find the point where sub and full diverge */
@@ -1498,25 +1519,33 @@ static bool is_subpath(const char *sub, const char *full)
 	}
 
 	if ((*f == '\0') && (*s == '\0')) {
-		return true;	/* sub and full match */
+		*_subpath_match = true;	/* sub and full match */
+		goto out_ctx_free;
 	}
 
 	if ((*f == '\0') && (len > 0) && (*(f - 1) == '/')) {
 		/* sub diverges from full at path separator */
-		return true;
+		*_subpath_match = true;
+		goto out_ctx_free;
 	}
 
 	if ((*s == '\0') && (strcmp(f, "/") == 0)) {
 		/* full diverges from sub with trailing slash only */
-		return true;
+		*_subpath_match = true;
+		goto out_ctx_free;
 	}
 
 	if ((*s == '/') && (*f == '\0')) {
 		/* sub diverges from full with extra path component */
-		return true;
+		*_subpath_match = true;
+		goto out_ctx_free;
 	}
+	*_subpath_match = false;
 
-	return false;
+out_ctx_free:
+	talloc_free(tmp_ctx);
+out:
+	return status;
 }
 
 /**
