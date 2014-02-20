@@ -1593,7 +1593,6 @@ static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
 static int make_remote_path(const char *full_path)
 {
 	extern struct cli_state *cli;
-	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
 	char *path;
 	char *subpath;
 	char *state;
@@ -1602,9 +1601,21 @@ static int make_remote_path(const char *full_path)
 	int len;
 	NTSTATUS status;
 	int err = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+	if (ctx == NULL) {
+		return 1;
+	}
 
-	subpath = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
-	path = PANIC_IF_NULL(talloc_strdup(ctx, full_path));
+	subpath = talloc_strdup(ctx, full_path);
+	if (subpath == NULL) {
+		err = 1;
+		goto out;
+	}
+	path = talloc_strdup(ctx, full_path);
+	if (path == NULL) {
+		err = 1;
+		goto out;
+	}
 	len = talloc_get_size(path) - 1;
 
 	last_backslash = strrchr_m(path, '\\');
