@@ -1612,14 +1612,13 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	int parmnum;
 	int i;
 
+	while (isspace((unsigned char)*pszParmValue)) pszParmValue++;
+
 	if (lp_ctx->s3_fns) {
 		return lp_ctx->s3_fns->set_cmdline(pszParmName, pszParmValue);
 	}
 
 	parmnum = lpcfg_map_parameter(pszParmName);
-
-	while (isspace((unsigned char)*pszParmValue)) pszParmValue++;
-
 
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
