@@ -222,7 +222,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 
 /* utilities */
 static char *fix_unix_path(char *path, bool removeprefix);
-static char *path_base_name(const char *path);
+static NTSTATUS path_base_name(TALLOC_CTX *ctx, const char *path, char **_base);
 static const char* skip_useless_char_in_path(const char *p);
 static int make_remote_path(const char *full_path);
 static int max_token (const char *str);
@@ -799,14 +799,20 @@ static int tar_create_from_list(struct tar *t)
 	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
 	int err = 0;
 	NTSTATUS status;
-	const char *path, *mask, *base, *start_dir;
+	char *base;
+	const char *path, *mask, *start_dir;
 	int i;
 
 	start_dir = talloc_strdup(ctx, client_get_cur_dir());
 
 	for (i = 0; i < t->path_list_size; i++) {
 		path = t->path_list[i];
-		base = path_base_name(path);
+		base = NULL;
+		status = path_base_name(ctx, path, &base);
+		if (!NT_STATUS_IS_OK(status)) {
+			err = 1;
+			goto out;
+		}
 		mask = PANIC_IF_NULL(talloc_asprintf(ctx, "%s\\%s",
 					client_get_cur_dir(), path));
 
@@ -815,7 +821,11 @@ static int tar_create_from_list(struct tar *t)
 
 		if (base != NULL) {
 			base = talloc_asprintf(ctx, "%s%s\\",
-					client_get_cur_dir(), path_base_name(path));
+					       client_get_cur_dir(), base);
+			if (base == NULL) {
+				err = 1;
+				goto out;
+			}
 			DBG(5, ("cd '%s' before do_list\n", base));
 			client_set_cur_dir(base);
 		}
@@ -1721,9 +1731,8 @@ static char *fix_unix_path(char *path, bool do_remove_prefix)
  *
  * If @path doesn't contain any directory separator return NULL.
  */
-static char *path_base_name(const char *path)
+static NTSTATUS path_base_name(TALLOC_CTX *ctx, const char *path, char **_base)
 {
-	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_tos());
 	char *base = NULL;
 	int last = -1;
 	int i;
@@ -1735,11 +1744,16 @@ static char *path_base_name(const char *path)
 	}
 
 	if (last >= 0) {
-		base = PANIC_IF_NULL(talloc_strdup(ctx, path));
+		base = talloc_strdup(ctx, path);
+		if (base == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		base[last] = 0;
 	}
 
-	return base;
+	*_base = base;
+	return NT_STATUS_OK;
 }
 
 #else
