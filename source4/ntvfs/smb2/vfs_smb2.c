@@ -185,8 +185,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		sharename = tcon->smb2.in.path;
 		break;
 	default:
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_INVALID_LEVEL;
+		status = NT_STATUS_INVALID_LEVEL;
+		goto out;
 	}
 
 	if (strncmp(sharename, "\\\\", 2) == 0) {
@@ -212,24 +212,24 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	p = talloc_zero(ntvfs, struct cvfs_private);
 	if (!p) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	ntvfs->private_data = p;
 
 	if (!host) {
 		DEBUG(1,("CIFS backend: You must supply server\n"));
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	} 
 	
 	if (user && pass) {
 		DEBUG(5, ("CIFS backend: Using specified password\n"));
 		credentials = cli_credentials_init(p);
 		if (!credentials) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
@@ -246,16 +246,15 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		}
 		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(tmp_ctx);
-			return status;
+			goto out;
 		}
 	} else if (req->session_info->credentials) {
 		DEBUG(5, ("CIFS backend: Using delegated credentials\n"));
 		credentials = req->session_info->credentials;
 	} else {
 		DEBUG(1,("CIFS backend: NO delegated credentials found: You must supply server, user and password or the client must supply delegated credentials\n"));
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	lpcfg_smbcli_options(ntvfs->ctx->lp_ctx, &options);
@@ -270,14 +269,12 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 			lpcfg_socket_options(ntvfs->ctx->lp_ctx),
 			lpcfg_gensec_settings(p, ntvfs->ctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(tmp_ctx);
-		return status;
+		goto out;
 	}
 
 	status = smb2_get_roothandle(tree, &p->roothandle);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(tmp_ctx);
-		return status;
+		goto out;
 	}
 
 	p->tree = tree;
@@ -286,13 +283,13 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
 	if (ntvfs->ctx->fs_type == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
 	if (ntvfs->ctx->dev_type == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	if (tcon->generic.level == RAW_TCON_TCONX) {
@@ -305,8 +302,11 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	smbcli_oplock_handler(p->transport, oplock_handler, p);
 	*/
 
+	status = NT_STATUS_OK;
+
+out:
 	TALLOC_FREE(tmp_ctx);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
