@@ -899,13 +899,18 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			break;
 		}
 
-		if (dom->num_idxs) {
-			if (!(rids = talloc_array(tmp_ctx, uint32, dom->num_idxs))) {
-				result = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-		} else {
-			rids = NULL;
+		if (dom->num_idxs == 0) {
+			/*
+			 * This happens only if the only sid related to
+			 * this domain is the domain sid itself, which
+			 * is mapped to SID_NAME_DOMAIN above.
+			 */
+			continue;
+		}
+
+		if (!(rids = talloc_array(tmp_ctx, uint32, dom->num_idxs))) {
+			result = NT_STATUS_NO_MEMORY;
+			goto fail;
 		}
 
 		for (j=0; j<dom->num_idxs; j++) {
