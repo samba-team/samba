@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "popt_common.h"
+#include "lib/param/param.h"
 
 /* Handle command line options:
  *		-d,--debuglevel 
@@ -99,12 +100,22 @@ static void popt_common_callback(poptContext con,
 
 	switch(opt->val) {
 	case OPT_OPTION:
-		if (!lp_set_option(arg)) {
+	{
+		struct loadparm_context *lp_ctx;
+
+		lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+		if (lp_ctx == NULL) {
+			fprintf(stderr, "loadparm_init_s3() failed!\n");
+			exit(1);
+		}
+
+		if (!lpcfg_set_option(lp_ctx, arg)) {
 			fprintf(stderr, "Error setting option '%s'\n", arg);
 			exit(1);
 		}
+		TALLOC_FREE(lp_ctx);
 		break;
-
+	}
 	case 'd':
 		if (arg) {
 			lp_set_cmdline("log level", arg);
