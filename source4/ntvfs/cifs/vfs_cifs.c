@@ -173,7 +173,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		sharename = tcon->smb2.in.path;
 		break;
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		status = NT_STATUS_INVALID_LEVEL;
+		goto out;
 	}
 
 	if (strncmp(sharename, "\\\\", 2) == 0) {
@@ -200,23 +201,24 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	p = talloc_zero(ntvfs, struct cvfs_private);
 	if (!p) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	ntvfs->private_data = p;
 
 	if (!host) {
 		DEBUG(1,("CIFS backend: You must supply server\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	} 
 	
 	if (user && pass) {
 		DEBUG(5, ("CIFS backend: Using specified password\n"));
 		credentials = cli_credentials_init(p);
 		if (!credentials) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
@@ -233,8 +235,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		}
 		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(tmp_ctx);
-			return status;
+			goto out;
 		}
 	} else if (req->session_info->credentials) {
 		DEBUG(5, ("CIFS backend: Using delegated credentials\n"));
@@ -265,8 +266,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		}
 		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(tmp_ctx);
-			return status;
+			goto out;
 		}
 		cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 		cli_credentials_set_impersonate_principal(credentials,
@@ -282,14 +282,13 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 			status = NT_STATUS_CROSSREALM_DELEGATION_FAILURE;
 			DEBUG(1,("S4U2Proxy: cli_credentials_get_ccache() gave: ret[%d] str[%s] - %s\n",
 				ret, err_str, nt_errstr(status)));
-			TALLOC_FREE(tmp_ctx);
-			return status;
+			goto out;
 		}
 
 	} else {
 		DEBUG(1,("CIFS backend: NO delegated credentials found: You must supply server, user and password or the client must supply delegated credentials\n"));
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 
 	/* connect to the server, using the smbd event context */
@@ -315,8 +314,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 					  ntvfs->ctx->event_ctx);
 	status = smb_composite_connect_recv(creq, p);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(tmp_ctx);
-		return status;
+		goto out;
 	}
 
 	p->tree = io.out.tree;
@@ -327,13 +325,13 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
 	if (ntvfs->ctx->fs_type == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
 	if (ntvfs->ctx->dev_type == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	if (tcon->generic.level == RAW_TCON_TCONX) {
@@ -348,8 +346,11 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	p->map_trans2 = share_bool_option(scfg, CIFS_MAP_TRANS2, CIFS_MAP_TRANS2_DEFAULT);
 
+	status = NT_STATUS_OK;
+
+out:
 	TALLOC_FREE(tmp_ctx);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
