@@ -201,7 +201,9 @@ static int tar_set_blocksize(struct tar *t, int size);
 static int tar_set_newer_than(struct tar *t, const char *filename);
 static void tar_add_selection_path(struct tar *t, const char *path);
 static void tar_dump(struct tar *t);
-static bool tar_extract_skip_path(struct tar *t, struct archive_entry *entry);
+static NTSTATUS tar_extract_skip_path(struct tar *t,
+				      struct archive_entry *entry,
+				      bool *_skip);
 static TALLOC_CTX *tar_reset_mem_context(struct tar *t);
 static void tar_free_mem_context(struct tar *t);
 static NTSTATUS tar_create_skip_path(struct tar *t,
@@ -1053,6 +1055,8 @@ static int tar_extract(struct tar *t)
 	}
 
 	for (;;) {
+		NTSTATUS status;
+		bool skip;
 		r = archive_read_next_header(t->archive, &entry);
 		if (r == ARCHIVE_EOF) {
 			break;
@@ -1066,8 +1070,12 @@ static int tar_extract(struct tar *t)
 			goto out;
 		}
 
-		rc = tar_extract_skip_path(t, entry);
-		if (rc != 0) {
+		status = tar_extract_skip_path(t, entry, &skip);
+		if (!NT_STATUS_IS_OK(status)) {
+			err = 1;
+			goto out;
+		}
+		if (skip) {
 			DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
 			continue;
 		}
@@ -1315,20 +1323,22 @@ static bool tar_path_in_list(struct tar *t, const char *path, bool is_reverse)
 }
 
 /**
- * tar_extract_skip_path - return true if @entry should be skipped
+ * tar_extract_skip_path - check if @entry should be skipped
  * @entry: current tar entry
+ * @_skip: set true if path should be skipped, otherwise false
  *
  * Skip predicate for tar extraction (archive to server) only.
  */
-static bool tar_extract_skip_path(struct tar *t,
-				  struct archive_entry *entry)
+static NTSTATUS tar_extract_skip_path(struct tar *t,
+				      struct archive_entry *entry,
+				      bool *_skip)
 {
-	const bool skip = true;
 	const char *fullpath = archive_entry_pathname(entry);
 	bool in = true;
 
 	if (t->path_list_size <= 0) {
-		return !skip;
+		*_skip = false;
+		return NT_STATUS_OK;
 	}
 
 	if (t->mode.regex) {
@@ -1338,10 +1348,12 @@ static bool tar_extract_skip_path(struct tar *t,
 	}
 
 	if (t->mode.selection == TAR_EXCLUDE) {
-		in = !in;
+		*_skip = in;
+	} else {
+		*_skip = !in;
 	}
 
-	return in ? !skip : skip;
+	return NT_STATUS_OK;
 }
 
 /**
