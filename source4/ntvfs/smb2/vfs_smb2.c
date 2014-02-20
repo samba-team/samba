@@ -285,12 +285,12 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	p->ntvfs = ntvfs;
 
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
-	if (!ntvfs->ctx->fs_type) {
+	if (ntvfs->ctx->fs_type == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
-	if (!ntvfs->ctx->dev_type) {
+	if (ntvfs->ctx->dev_type == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
