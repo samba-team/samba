@@ -204,9 +204,10 @@ static void tar_dump(struct tar *t);
 static bool tar_extract_skip_path(struct tar *t, struct archive_entry *entry);
 static TALLOC_CTX *tar_reset_mem_context(struct tar *t);
 static void tar_free_mem_context(struct tar *t);
-static bool tar_create_skip_path(struct tar *t,
-				 const char *fullpath,
-				 const struct file_info *finfo);
+static NTSTATUS tar_create_skip_path(struct tar *t,
+				     const char *fullpath,
+				     const struct file_info *finfo,
+				     bool *_skip);
 
 static bool tar_path_in_list(struct tar *t,
 			     const char *path,
@@ -857,9 +858,10 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 				  const char *dir)
 {
 	TALLOC_CTX *ctx = PANIC_IF_NULL(talloc_new(NULL));
-	NTSTATUS err = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 	char *remote_name;
 	const char *initial_dir = client_get_cur_dir();
+	bool skip = false;
 	int rc;
 
 	remote_name = PANIC_IF_NULL(talloc_asprintf(ctx, "%s%s",
@@ -869,9 +871,14 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		goto out;
 	}
 
-	rc = tar_create_skip_path(&tar_ctx, remote_name, finfo);
-	if (rc != 0) {
+	status = tar_create_skip_path(&tar_ctx, remote_name, finfo, &skip);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (skip) {
 		DBG(5, ("--- %s\n", remote_name));
+		status = NT_STATUS_OK;
 		goto out;
 	}
 
@@ -887,7 +894,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 
 		rc = tar_get_file(&tar_ctx, remote_name, finfo);
 		if (rc != 0) {
-			err = NT_STATUS_UNSUCCESSFUL;
+			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
 
@@ -897,14 +904,14 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 	} else {
 		rc = tar_get_file(&tar_ctx, remote_name, finfo);
 		if (rc != 0) {
-			err = NT_STATUS_UNSUCCESSFUL;
+			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
 	}
 
 out:
 	talloc_free(ctx);
-	return err;
+	return status;
 }
 
 /**
@@ -1338,18 +1345,19 @@ static bool tar_extract_skip_path(struct tar *t,
 }
 
 /**
- * tar_create_skip_path - return true if @fullpath shoud be skipped
+ * tar_create_skip_path - check if @fullpath shoud be skipped
  * @fullpath: full remote path of the current file
  * @finfo: remote file attributes
+ * @_skip: returned skip not
  *
  * Skip predicate for tar creation (server to archive) only.
  */
-static bool tar_create_skip_path(struct tar *t,
-				 const char *fullpath,
-				 const struct file_info *finfo)
+static NTSTATUS tar_create_skip_path(struct tar *t,
+				     const char *fullpath,
+				     const struct file_info *finfo,
+				     bool *_skip)
 {
 	/* syntaxic sugar */
-	const bool skip = true;
 	const mode_t mode = finfo->mode;
 	const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
 	const bool exclude = t->mode.selection == TAR_EXCLUDE;
@@ -1359,17 +1367,20 @@ static bool tar_create_skip_path(struct tar *t,
 
 		/* 1. if we dont want X and we have X, skip */
 		if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
-			return skip;
+			*_skip = true;
+			return NT_STATUS_OK;
 		}
 
 		if (!t->mode.hidden && (mode & FILE_ATTRIBUTE_HIDDEN)) {
-			return skip;
+			*_skip = true;
+			return NT_STATUS_OK;
 		}
 
 		/* 2. if we only want archive and it's not, skip */
 
 		if (t->mode.incremental && !(mode & FILE_ATTRIBUTE_ARCHIVE)) {
-			return skip;
+			*_skip = true;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -1380,14 +1391,16 @@ static bool tar_create_skip_path(struct tar *t,
 	 * point, no need to check
 	 */
 	if (!exclude) {
-		return !skip;
+		*_skip = false;
+		return NT_STATUS_OK;
 	}
 
 	/* we are now in exclude mode */
 
 	/* no matter the selection, no list => include everything */
 	if (t->path_list_size <= 0) {
-		return !skip;
+		*_skip = false;
+		return NT_STATUS_OK;
 	}
 
 	if (t->mode.regex) {
@@ -1395,8 +1408,9 @@ static bool tar_create_skip_path(struct tar *t,
 	} else {
 		in = tar_path_in_list(t, fullpath, isdir && !exclude);
 	}
+	*_skip = in;
 
-	return in ? skip : !skip;
+	return NT_STATUS_OK;
 }
 
 /**
