@@ -371,7 +371,7 @@ NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
 	} else {
 		*pname = talloc_strdup(mem_ctx, names[0]);
 	}
-	if (*pname == NULL) {
+	if ((names[0] != NULL) && (*pname == NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
