@@ -362,7 +362,7 @@ NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
 
 	map_status = normalize_name_map(mem_ctx,
 					domain,
-					*pname,
+					names[0],
 					&mapped_name);
 	if (NT_STATUS_IS_OK(map_status) ||
 	    NT_STATUS_EQUAL(map_status, NT_STATUS_FILE_RENAMED)) {
