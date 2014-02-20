@@ -1178,7 +1178,6 @@ static int getservicebyname(const char *pszServiceName,
 static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata);
 static bool do_section(const char *pszSectionName, void *userdata);
-static void init_copymap(struct loadparm_service *pservice);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static void show_parameter(int parmIndex);
@@ -2774,27 +2773,6 @@ static bool handle_printing(struct loadparm_context *unused, int snum, const cha
 	}
 
 	return true;
-}
-
-
-/***************************************************************************
- Initialise a copymap.
-***************************************************************************/
-
-static void init_copymap(struct loadparm_service *pservice)
-{
-	int i;
-
-	TALLOC_FREE(pservice->copymap);
-
-	pservice->copymap = bitmap_talloc(NULL, NUMPARAMETERS);
-	if (!pservice->copymap)
-		DEBUG(0,
-		      ("Couldn't allocate copymap!! (size %d)\n",
-		       (int)NUMPARAMETERS));
-	else
-		for (i = 0; i < NUMPARAMETERS; i++)
-			bitmap_set(pservice->copymap, i);
 }
 
 /**

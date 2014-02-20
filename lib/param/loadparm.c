@@ -280,7 +280,6 @@ static struct loadparm_service *lpcfg_getservicebyname(struct loadparm_context *
 					const char *pszServiceName);
 static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
-static void init_copymap(struct loadparm_service *pservice);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -1203,7 +1202,7 @@ bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
  Initialise a copymap.
 ***************************************************************************/
 
-static void init_copymap(struct loadparm_service *pservice)
+void init_copymap(struct loadparm_service *pservice)
 {
 	int i;
 
