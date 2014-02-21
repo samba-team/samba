@@ -32,7 +32,7 @@
 
 #include "system/kerberos.h"
 
-struct PAC_LOGON_INFO;
+struct PAC_DATA;
 
 #include "libads/ads_status.h"
 
@@ -78,7 +78,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
 			     const char *local_service,
-			     struct PAC_LOGON_INFO **logon_info);
+			     struct PAC_DATA **pac_data);
 
 /* The following definitions come from libads/krb5_setpw.c  */
 

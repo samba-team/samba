@@ -52,7 +52,7 @@ static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
 				   struct auth_session_info **session_info)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_DATA *pac_data = NULL;
 	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -61,16 +61,22 @@ static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
 	}
 
 	if (pac_blob) {
-		status = kerberos_pac_logon_info(tmp_ctx, *pac_blob, NULL, NULL,
-						 NULL, NULL, 0, &logon_info);
+		status = kerberos_decode_pac(tmp_ctx,
+					     *pac_blob,
+					     NULL,
+					     NULL,
+					     NULL,
+					     NULL,
+					     0,
+					     &pac_data);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	}
 
-	talloc_set_name_const(logon_info, "struct PAC_LOGON_INFO");
+	talloc_set_name_const(pac_data, "struct PAC_DATA");
 
-	auth_ctx->private_data = talloc_steal(auth_ctx, logon_info);
+	auth_ctx->private_data = talloc_steal(auth_ctx, pac_data);
 	*session_info = talloc_zero(mem_ctx, struct auth_session_info);
 	if (!*session_info) {
 		status = NT_STATUS_NO_MEMORY;
@@ -102,7 +108,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
 			     const char *local_service,
-			     struct PAC_LOGON_INFO **_logon_info)
+			     struct PAC_DATA **_pac_data)
 {
 	krb5_error_code ret;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
@@ -116,7 +122,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	size_t idx = 0;
 	struct auth4_context *auth_context;
 	struct loadparm_context *lp_ctx;
-	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_DATA *pac_data = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -272,15 +278,15 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	logon_info = talloc_get_type_abort(gensec_server_context->auth_context->private_data,
-					   struct PAC_LOGON_INFO);
-	if (logon_info == NULL) {
+	pac_data = talloc_get_type_abort(gensec_server_context->auth_context->private_data,
+					 struct PAC_DATA);
+	if (pac_data == NULL) {
 		DEBUG(1,("no PAC\n"));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
-	*_logon_info = talloc_move(mem_ctx, &logon_info);
+	*_pac_data = talloc_move(mem_ctx, &pac_data);
 
 out:
 	talloc_free(tmp_ctx);

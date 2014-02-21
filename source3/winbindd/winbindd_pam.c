@@ -576,7 +576,9 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	time_t time_offset = 0;
 	const char *user_ccache_file;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_DATA *pac_data = NULL;
 	const char *local_service;
+	int i;
 
 	*info3 = NULL;
 
@@ -662,7 +664,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 				     WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
 				     NULL,
 				     local_service,
-				     &logon_info);
+				     &pac_data);
 	if (user_ccache_file != NULL) {
 		gain_root_privilege();
 	}
@@ -671,6 +673,24 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto failed;
+	}
+
+	if (pac_data == NULL) {
+		goto failed;
+	}
+
+	for (i=0; i < pac_data->num_buffers; i++) {
+
+		if (pac_data->buffers[i].type != PAC_TYPE_LOGON_INFO) {
+			continue;
+		}
+
+		logon_info = pac_data->buffers[i].info->logon_info.info;
+		if (!logon_info) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		break;
 	}
 
 	*info3 = &logon_info->info3;
