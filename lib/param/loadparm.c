@@ -341,10 +341,10 @@ int lp_int(const char *s)
 /**
  * convenience routine to return unsigned long parameters.
  */
-static unsigned long lp_ulong(const char *s)
+unsigned long lp_ulong(const char *s)
 {
 
-	if (!s) {
+	if (!s || !*s) {
 		DEBUG(0,("lp_ulong(%s): is called with NULL!\n",s));
 		return -1;
 	}

@@ -1253,20 +1253,6 @@ static struct parmlist_entry *get_parametrics(int snum, const char *type,
     DEBUG(0, ("%s(): value is NULL or empty!\n", #name))
 
 /*******************************************************************
-convenience routine to return unsigned long parameters.
-********************************************************************/
-static unsigned long lp_ulong(const char *s)
-{
-
-	if (!s || !*s) {
-		MISSING_PARAMETER(lp_ulong);
-		return (0);
-	}
-
-	return strtoul(s, NULL, 0);
-}
-
-/*******************************************************************
 convenience routine to return boolean parameters.
 ********************************************************************/
 static bool lp_bool(const char *s)
