@@ -367,7 +367,7 @@ exit:
 	free(comp[--n]);
     }
     free(comp);
-    free(realm);
+    krb5_free_default_realm(context, realm);
     free(s);
     return ret;
 }
@@ -457,7 +457,7 @@ unparse_name_fixed(krb5_context context,
 	    return ret;
 	if(strcmp(princ_realm(principal), r) != 0)
 	    short_form = 0;
-	free(r);
+	krb5_free_default_realm(context, r);
     }
     if(!short_form && !no_realm) {
 	add_char(name, idx, len, '@');
@@ -740,7 +740,7 @@ krb5_make_principal(krb5_context context,
     ret = krb5_build_principal_va(context, principal, strlen(realm), realm, ap);
     va_end(ap);
     if(r)
-	free(r);
+	krb5_free_default_realm(context, r);
     return ret;
 }
 
