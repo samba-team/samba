@@ -1479,19 +1479,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 
 		case P_ENUM:
-			for (i = 0; parm_table[parmnum].enum_list[i].name; i++) {
-				if (strequal
-				    (pszParmValue,
-				     parm_table[parmnum].enum_list[i].name)) {
-					*(int *)parm_ptr =
-						parm_table[parmnum].
-						enum_list[i].value;
-					break;
-				}
-			}
-			if (!parm_table[parmnum].enum_list[i].name) {
-				DEBUG(0,("Unknown enumerated value '%s' for '%s'\n", 
-					 pszParmValue, pszParmName));
+			if (!lp_set_enum_parm(&parm_table[parmnum], pszParmValue, (int*)parm_ptr)) {
 				return false;
 			}
 			break;
