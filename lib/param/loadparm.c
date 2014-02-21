@@ -81,7 +81,6 @@ static bool defaults_saved = false;
  * non-source3 code
  */
 #define handle_netbios_aliases NULL
-#define handle_printing NULL
 #define handle_ldap_debug_level NULL
 #define handle_idmap_backend NULL
 #define handle_idmap_uid NULL
@@ -1261,6 +1260,34 @@ bool handle_dos_charset(struct loadparm_context *lp_ctx, int snum,
 
 	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 }
+
+bool handle_printing(struct loadparm_context *lp_ctx, int snum,
+			    const char *pszParmValue, char **ptr)
+{
+	static int parm_num = -1;
+	struct loadparm_service *s;
+
+	if (parm_num == -1) {
+		parm_num = lpcfg_map_parameter("printing");
+	}
+
+	if (!lp_set_enum_parm(&parm_table[parm_num], pszParmValue, (int*)ptr)) {
+		return false;
+	}
+
+	if (lp_ctx->s3_fns) {
+		if ( snum < 0 ) {
+			s = lp_ctx->sDefault;
+			lp_ctx->s3_fns->init_printer_values(lp_ctx->globals->ctx, s);
+		} else {
+			s = lp_ctx->services[snum];
+			lp_ctx->s3_fns->init_printer_values(s, s);
+		}
+	}
+
+	return true;
+}
+
 
 /***************************************************************************
  Initialise a copymap.

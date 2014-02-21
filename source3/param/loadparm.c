@@ -265,7 +265,6 @@ static bool handle_idmap_backend(struct loadparm_context *unused, int snum, cons
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
-static bool handle_printing(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 
 static void set_allowed_client_auth(void);
@@ -321,7 +320,7 @@ bool lp_string_set(char **dest, const char *src) {
  Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
 
-static void init_printer_values(TALLOC_CTX *ctx, struct loadparm_service *pService)
+void init_printer_values(TALLOC_CTX *ctx, struct loadparm_service *pService)
 {
 	/* choose defaults depending on the type of printing */
 	switch (pService->printing) {
@@ -2633,32 +2632,6 @@ const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
 		return append_ldap_suffix(ctx, Globals.szLdapIdmapSuffix);
 
 	return lp_string(ctx, Globals.ldap_suffix);
-}
-
-/***************************************************************************
-***************************************************************************/
-
-static bool handle_printing(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	static int parm_num = -1;
-	struct loadparm_service *s;
-
-	if ( parm_num == -1 )
-		parm_num = lpcfg_map_parameter( "printing" );
-
-	if (!lp_set_enum_parm(&parm_table[parm_num], pszParmValue, (int*)ptr)) {
-		return false;
-	}
-
-	if ( snum < 0 ) {
-		s = &sDefault;
-		init_printer_values(Globals.ctx, s);
-	} else {
-		s = ServicePtrs[snum];
-		init_printer_values(s, s);
-	}
-
-	return true;
 }
 
 /**

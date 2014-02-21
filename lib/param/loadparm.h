@@ -280,6 +280,7 @@ char * lp_string(TALLOC_CTX *, const char *);
 bool lp_string_set(char **, const char *);
 int getservicebyname(const char *, struct loadparm_service *);
 bool lp_include(struct loadparm_context *, int, const char *, char **);
+void init_printer_values(TALLOC_CTX *, struct loadparm_service *);
 
 /**
  * Check if two parameters are equal.
