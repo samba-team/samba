@@ -18,8 +18,17 @@ DC_PASSWORD="$9"
 echo called with: $1 $2 $3 $4 $5 $6 $7 $8 $9
 
 wbinfo="$VALGRIND $BINDIR/wbinfo"
-ldbadd="$BINDIR/ldbadd"
-ldbdel="$BINDIR/ldbdel"
+
+ldbadd="ldbadd"
+if [ -x "$BINDIR/ldbadd" ]; then
+	ldbadd="$BINDIR/ldbadd"
+fi
+
+ldbdel="ldbdel"
+if [ -x "$BINDIR/ldbdel" ]; then
+	ldbdel="$BINDIR/ldbdel"
+fi
+
 failed=0
 
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
