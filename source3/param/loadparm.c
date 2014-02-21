@@ -2633,26 +2633,6 @@ const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
 	return lp_string(ctx, Globals.ldap_suffix);
 }
 
-/****************************************************************************
- set the value for a P_ENUM
- ***************************************************************************/
-
-static bool lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue,
-                              int *ptr )
-{
-	int i;
-
-	for (i = 0; parm->enum_list[i].name; i++) {
-		if ( strequal(pszParmValue, parm->enum_list[i].name)) {
-			*ptr = parm->enum_list[i].value;
-			return true;
-		}
-	}
-	DEBUG(0, ("WARNING: Ignoring invalid value '%s' for parameter '%s'\n",
-		  pszParmValue, parm->label));
-	return false;
-}
-
 /***************************************************************************
 ***************************************************************************/
 
