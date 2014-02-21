@@ -93,26 +93,6 @@ static bool defaults_saved = false;
 
 #include "lib/param/param_table.c"
 
-/* local variables */
-struct loadparm_context {
-	const char *szConfigFile;
-	struct loadparm_global *globals;
-	struct loadparm_service **services;
-	struct loadparm_service *sDefault;
-	struct smb_iconv_handle *iconv_handle;
-	int iNumServices;
-	struct loadparm_service *currentService;
-	bool bInGlobalSection;
-	struct file_lists *file_lists;
-	unsigned int flags[NUMPARAMETERS];
-	bool loaded;
-	bool refuse_free;
-	bool global; /* Is this the global context, which may set
-		      * global variables such as debug level etc? */
-	const struct loadparm_s3_helpers *s3_fns;
-};
-
-
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 {
 	if (lp_ctx->s3_fns) {
@@ -2079,6 +2059,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->bInGlobalSection = true;
 	lp_ctx->globals = talloc_zero(lp_ctx, struct loadparm_global);
 	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
+	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, NUMPARAMETERS);
 
 	lp_ctx->sDefault->iMaxPrintJobs = 1000;
 	lp_ctx->sDefault->bAvailable = true;

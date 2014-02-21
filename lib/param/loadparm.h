@@ -48,7 +48,23 @@ struct enum_list {
 };
 
 struct loadparm_service;
-struct loadparm_context;
+struct loadparm_context {
+	const char *szConfigFile;
+	struct loadparm_global *globals;
+	struct loadparm_service **services;
+	struct loadparm_service *sDefault;
+	struct smb_iconv_handle *iconv_handle;
+	int iNumServices;
+	struct loadparm_service *currentService;
+	bool bInGlobalSection;
+	struct file_lists *file_lists;
+	unsigned int *flags;
+	bool loaded;
+	bool refuse_free;
+	bool global; /* Is this the global context, which may set
+		      * global variables such as debug level etc? */
+	const struct loadparm_s3_helpers *s3_fns;
+};
 
 struct parm_struct {
 	const char *label;

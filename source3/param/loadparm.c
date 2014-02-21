@@ -2768,6 +2768,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		bool ok;
 		struct loadparm_context *lp_ctx = loadparm_init_s3(talloc_tos(),
 								   loadparm_s3_helpers());
+		lp_ctx->sDefault = &sDefault;
+		lp_ctx->services = ServicePtrs;
 		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
 						  (char **)parm_ptr);
 		TALLOC_FREE(lp_ctx);
