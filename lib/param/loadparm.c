@@ -541,7 +541,7 @@ bool lpcfg_parm_bool(struct loadparm_context *lp_ctx,
  * Set a string value, deallocating any existing space, and allocing the space
  * for the string
  */
-static bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
+bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
 	talloc_free(*dest);
 
