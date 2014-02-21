@@ -91,10 +91,6 @@ static bool defaults_saved = false;
 #define N_(x) x
 #endif
 
-/* prototypes for the special type handlers */
-static bool handle_include(struct loadparm_context *lp_ctx, int unused,
-			   const char *pszParmValue, char **ptr);
-
 #include "lib/param/param_table.c"
 
 /* local variables */
@@ -1105,10 +1101,16 @@ bool handle_realm(struct loadparm_context *lp_ctx, int unused,
  Handle the include operation.
 ***************************************************************************/
 
-static bool handle_include(struct loadparm_context *lp_ctx, int unused,
+bool handle_include(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr)
 {
-	char *fname = standard_sub_basic(lp_ctx, pszParmValue);
+	char *fname;
+
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->lp_include(lp_ctx, unused, pszParmValue, ptr);
+	}
+
+	fname = standard_sub_basic(lp_ctx, pszParmValue);
 
 	add_to_file_list(lp_ctx, &lp_ctx->file_lists, pszParmValue, fname);
 

@@ -71,6 +71,7 @@ static struct loadparm_s3_helpers s3_fns =
 	.dump = lp_dump,
 	.lp_string = lp_string,
 	.lp_string_set = lp_string_set,
+	.lp_include = lp_include,
 };
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)

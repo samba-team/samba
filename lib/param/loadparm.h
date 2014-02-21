@@ -263,6 +263,7 @@ struct loadparm_global * get_globals(void);
 char * lp_string(TALLOC_CTX *, const char *);
 bool lp_string_set(char **, const char *);
 int getservicebyname(const char *, struct loadparm_service *);
+bool lp_include(struct loadparm_context *, int, const char *, char **);
 
 /**
  * Check if two parameters are equal.

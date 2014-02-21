@@ -261,7 +261,6 @@ static struct file_lists *file_lists = NULL;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static bool handle_include(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
@@ -2470,7 +2469,7 @@ static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, co
 ***************************************************************************/
 static bool bAllowIncludeRegistry = true;
 
-static bool handle_include(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
+bool lp_include(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
 

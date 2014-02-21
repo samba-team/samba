@@ -16,6 +16,7 @@ struct loadparm_s3_helpers
 	void (*dump)(FILE *f, bool show_defaults, int maxtoprint);
 	char * (*lp_string)(TALLOC_CTX *ctx, const char *in);
 	bool (*lp_string_set)(char **dest, const char *src);
+	bool (*lp_include)(struct loadparm_context*, int, const char *, char **);
 	struct loadparm_global *globals;
 };
 
