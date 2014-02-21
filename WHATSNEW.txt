@@ -1,4 +1,103 @@
                    =============================
+                   Release Notes for Samba 4.1.5
+                         February 21, 2014
+                   =============================
+
+
+This is the latest stable release of Samba 4.1.
+
+Major enhancements in Samba 4.1.5 include:
+
+o  Fix 100% CPU utilization in winbindd when trying to free memory in
+   winbindd_reinit_after_fork (bug #10358).
+o  smbd: Fix memory overwrites (bug #10415).
+
+
+Changes since 4.1.4:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10259: Make shadow_copy2 module working with Windows 7.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 2662: Make revamped directory handling code 64bit clean.
+    * BUG 10320: s3: smbpasswd: Fix crashes on invalid input.
+    * BUG 10358: Fix 100% CPU utilization in winbindd when trying to free
+      memory in winbindd_reinit_after_fork.
+    * BUG 10406: s3: vfs_dirsort module: Allow dirsort to work when multiple
+      simultaneous directories are open.
+    * BUG 10429: s3: modules: streaminfo: As we have no VFS function
+      SMB_VFS_LLISTXATTR we can't cope with a symlink when lp_posix_pathnames()
+      is true.
+
+
+o   Alistair Leslie-Hughes <leslie_alistair@hotmail.com>
+    * BUG 10087: ntlm_auth sometimes returns the wrong username to
+      mod_ntlm_auth_winbind.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10418: Fix INTERNAL ERROR: Signal 11 in the kdc pid.
+
+
+o   Jeffrey Clark <dude@zaplabs.com>
+    * BUG 10418: Add support for Heimdal's unified krb5 and hdb plugin system.
+
+
+o   Niels de Vos <ndevos@redhat.com>
+    * BUG 10384: vfs/glusterfs: In case atime is not passed, set it to the
+      current atime.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10424: vfs_btrfs: Fix incorrect zero length server-side copy request
+      handling.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 2191: s3-winbind: Improve performance of wb_fill_pwent_sid2uid_done().
+    * BUG 10415: smbd: Fix memory overwrites.
+    * BUG 10436: smbd: Fix an ancient oplock bug.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10442: Fix crash bug in smb2_notify code.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10367: Fix several memory leaks.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 10418: Cope with first element in hdb_method having a different name
+      in different heimdal versions.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.1.4
                          January 10, 2014
                    =============================
@@ -97,8 +196,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.1.3
