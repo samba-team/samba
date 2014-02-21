@@ -2637,7 +2637,7 @@ const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
  set the value for a P_ENUM
  ***************************************************************************/
 
-static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue,
+static bool lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue,
                               int *ptr )
 {
 	int i;
@@ -2645,11 +2645,12 @@ static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue
 	for (i = 0; parm->enum_list[i].name; i++) {
 		if ( strequal(pszParmValue, parm->enum_list[i].name)) {
 			*ptr = parm->enum_list[i].value;
-			return;
+			return true;
 		}
 	}
 	DEBUG(0, ("WARNING: Ignoring invalid value '%s' for parameter '%s'\n",
 		  pszParmValue, parm->label));
+	return false;
 }
 
 /***************************************************************************
@@ -2663,7 +2664,9 @@ static bool handle_printing(struct loadparm_context *unused, int snum, const cha
 	if ( parm_num == -1 )
 		parm_num = lpcfg_map_parameter( "printing" );
 
-	lp_set_enum_parm( &parm_table[parm_num], pszParmValue, (int*)ptr );
+	if (!lp_set_enum_parm(&parm_table[parm_num], pszParmValue, (int*)ptr)) {
+		return false;
+	}
 
 	if ( snum < 0 ) {
 		s = &sDefault;
@@ -2851,7 +2854,9 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 		}
 		case P_ENUM:
-			lp_set_enum_parm( &parm_table[parmnum], pszParmValue, (int*)parm_ptr );
+			if (!lp_set_enum_parm(&parm_table[parmnum], pszParmValue, (int*)parm_ptr)) {
+				return false;
+			}
 			break;
 		case P_SEP:
 			break;
