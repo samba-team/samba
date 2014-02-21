@@ -1451,6 +1451,17 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
+	/* Do not allow multiple vacuuming child processes to be active at the
+	 * same time.  If there is vacuuming child process active, delay
+	 * new vacuuming event to stagger vacuuming events.
+	 */
+	if (ctdb->vacuumers != NULL) {
+		event_add_timed(ctdb->ev, vacuum_handle,
+				timeval_current_ofs(0, 500*1000),
+				ctdb_vacuum_event, vacuum_handle);
+		return;
+	}
+
 	child_ctx = talloc(vacuum_handle, struct ctdb_vacuum_child_context);
 	if (child_ctx == NULL) {
 		DEBUG(DEBUG_CRIT, (__location__ " Failed to allocate child context for vacuuming of %s\n", ctdb_db->db_name));
