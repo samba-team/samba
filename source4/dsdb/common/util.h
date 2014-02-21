@@ -58,7 +58,8 @@ bool is_attr_in_list(const char * const * attrs, const char *attr);
 	"supplementalCredentials" sep \
 	"trustAuthIncoming" sep \
 	"trustAuthOutgoing" sep \
-	"unicodePwd"
+	"unicodePwd" sep \
+	"clearTextPassword"
 
 #define DSDB_SECRET_ATTRIBUTES_COMMA ,
 #define DSDB_SECRET_ATTRIBUTES DSDB_SECRET_ATTRIBUTES_EX(DSDB_SECRET_ATTRIBUTES_COMMA)
