@@ -327,10 +327,10 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 /**
  * convenience routine to return int parameters.
  */
-static int lp_int(const char *s)
+int lp_int(const char *s)
 {
 
-	if (!s) {
+	if (!s || !*s) {
 		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
 		return -1;
 	}
