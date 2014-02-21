@@ -1304,12 +1304,14 @@ const char *lp_parm_const_string(int snum, const char *type, const char *option,
 	return data->value;
 }
 
-const char *lp_parm_const_string_service(struct loadparm_service *service, const char *type, const char *option)
+const char *lp_parm_const_string_service(struct loadparm_service *service,
+					 const char *type, const char *option,
+					 const char *def)
 {
 	struct parmlist_entry *data = get_parametrics_by_service(service, type, option);
 
 	if (data == NULL||data->value==NULL)
-		return NULL;
+		return def;
 
 	return data->value;
 }

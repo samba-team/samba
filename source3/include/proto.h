@@ -1008,7 +1008,8 @@ bool lp_widelinks(int );
 char *lp_parm_talloc_string(TALLOC_CTX *ctx, int snum, const char *type, const char *option, const char *def);
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def);
 struct loadparm_service;
-const char *lp_parm_const_string_service(struct loadparm_service *service, const char *type, const char *option);
+const char *lp_parm_const_string_service(struct loadparm_service *service, const char *type,
+					 const char *option, const char *def);
 const char **lp_parm_string_list(int snum, const char *type, const char *option, const char **def);
 int lp_parm_int(int snum, const char *type, const char *option, int def);
 unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsigned long def);
