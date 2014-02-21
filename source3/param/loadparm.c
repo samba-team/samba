@@ -2979,37 +2979,6 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 				pszParmName, pszParmValue));
 }
 
-/*
-  set a option from the commandline in 'a=b' format. Use to support --option
-*/
-bool lp_set_option(const char *option)
-{
-	char *p, *s;
-	bool ret;
-
-	s = talloc_strdup(NULL, option);
-	if (!s) {
-		return false;
-	}
-
-	p = strchr(s, '=');
-	if (!p) {
-		talloc_free(s);
-		return false;
-	}
-
-	*p = 0;
-
-	/* skip white spaces after the = sign */
-	do {
-		p++;
-	} while (*p == ' ');
-
-	ret = lp_set_cmdline(s, p);
-	talloc_free(s);
-	return ret;
-}
-
 /***************************************************************************
  Initialize any local variables in the sDefault table, after parsing a
  [globals] section.
