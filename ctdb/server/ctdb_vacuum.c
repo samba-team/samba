@@ -343,6 +343,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 		       "key hash [0x%08x] on database db[%s].\n",
 		       hash, ctdb_db->db_name));
 		recs->vdata->count.delete_list.skipped++;
+		recs->vdata->count.delete_list.left--;
 		talloc_free(dd);
 		return 0;
 	}
@@ -418,6 +419,7 @@ skip:
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
 	recs->vdata->count.delete_list.skipped++;
+	recs->vdata->count.delete_list.left--;
 	talloc_free(dd);
 	dd = NULL;
 
