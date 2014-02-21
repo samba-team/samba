@@ -179,7 +179,7 @@ def cmd_testonly(opt):
     # if we are using a system version of ldb then we need to tell it to
     # load modules from our modules path
     if env.USING_SYSTEM_LDB:
-        os.environ['LDB_MODULES_PATH'] = 'bin/modules/ldb'
+        os.environ['LDB_MODULES_PATH'] = os.path.abspath(os.path.join(env.cwd, 'bin/modules/ldb'))
 
     # tell build system where to find config.h
     os.environ['CONFIG_H'] = 'bin/default/include/config.h'
