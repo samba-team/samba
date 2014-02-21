@@ -1560,6 +1560,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 		TALLOC_FREE(priv);
 		return ret;
 	}
+	krb5_free_default_realm(context, realm);
 
 	lret = dsdb_search(ldb_ctx, priv, &res,
 			   priv->realm_dn, LDB_SCOPE_SUBTREE, user_attrs,
