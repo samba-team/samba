@@ -25,12 +25,20 @@ samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
 samba4kinit="$samba4bindir/samba4kinit"
 samba_tool="$samba4bindir/samba-tool"
-ldbmodify="$samba4bindir/ldbmodify"
-ldbsearch="$samba4bindir/ldbsearch"
 rkpty="$samba4bindir/rkpty"
 samba4kpasswd="$samba4bindir/samba4kpasswd"
 enableaccount="$samba_tool user enable"
 machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
+
+ldbmodify="ldbmodify"
+if [ -x "$samba4bindir/ldbmodify" ]; then
+	ldbmodify="$samba4bindir/ldbmodify"
+fi
+
+ldbsearch="ldbsearch"
+if [ -x "$samba4bindir/ldbsearch" ]; then
+	ldbsearch="$samba4bindir/ldbsearch"
+fi
 
 . `dirname $0`/subunit.sh
 
