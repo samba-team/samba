@@ -383,11 +383,11 @@ static double lp_double(const char *s)
 /**
  * convenience routine to return boolean parameters.
  */
-static bool lp_bool(const char *s)
+bool lp_bool(const char *s)
 {
 	bool ret = false;
 
-	if (!s) {
+	if (!s || !*s) {
 		DEBUG(0,("lp_bool(%s): is called with NULL!\n",s));
 		return false;
 	}

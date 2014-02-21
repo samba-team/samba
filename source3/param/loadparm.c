@@ -1253,26 +1253,6 @@ static struct parmlist_entry *get_parametrics(int snum, const char *type,
     DEBUG(0, ("%s(): value is NULL or empty!\n", #name))
 
 /*******************************************************************
-convenience routine to return boolean parameters.
-********************************************************************/
-static bool lp_bool(const char *s)
-{
-	bool ret = false;
-
-	if (!s || !*s) {
-		MISSING_PARAMETER(lp_bool);
-		return false;
-	}
-
-	if (!set_boolean(s, &ret)) {
-		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
-		return false;
-	}
-
-	return ret;
-}
-
-/*******************************************************************
 convenience routine to return enum parameters.
 ********************************************************************/
 static int lp_enum(const char *s,const struct enum_list *_enum)
