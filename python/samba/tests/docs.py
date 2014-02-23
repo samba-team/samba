@@ -66,7 +66,7 @@ def get_implementation_parameters(sourcedir):
         # burn through the preceding lines
         while True:
             l = f.readline()
-            if l.startswith("static struct parm_struct parm_table"):
+            if l.startswith("struct parm_struct parm_table"):
                 break
 
         for l in f.readlines():

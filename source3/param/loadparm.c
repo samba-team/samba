@@ -258,14 +258,12 @@ static bool bInGlobalSection = true;
 static bool bGlobalOnly = false;
 static struct file_lists *file_lists = NULL;
 
-#define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
+#define NUMPARAMETERS (num_parameters())
 
 static void set_allowed_client_auth(void);
 
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
 static void free_param_opts(struct parmlist_entry **popts);
-
-#include "lib/param/param_table.c"
 
 /* this is used to prevent lots of mallocs of size 1 */
 static const char null_string[] = "";

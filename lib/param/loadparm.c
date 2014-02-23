@@ -75,13 +75,7 @@ static bool defaults_saved = false;
 
 #include "lib/param/param_global.h"
 
-#define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
-
-#ifndef N_
-#define N_(x) x
-#endif
-
-#include "lib/param/param_table.c"
+#define NUMPARAMETERS (num_parameters())
 
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 {

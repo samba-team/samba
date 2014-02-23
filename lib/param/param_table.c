@@ -27,6 +27,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "includes.h"
+#include "lib/param/param.h"
+#include "lib/param/loadparm.h"
+#include "lib/param/param_global.h"
+#include "libcli/smb/smb_constants.h"
+
+#ifndef N_
+#define N_(x) x
+#endif
+
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2_10, "SMB2"}, /* for now keep PROTOCOL_SMB2_10 */
 	{PROTOCOL_SMB3_00, "SMB3"}, /* for now keep PROTOCOL_SMB3_00 */
@@ -276,7 +286,7 @@ static const struct enum_list enum_case[] = {
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
 
-static struct parm_struct parm_table[] = {
+struct parm_struct parm_table[] = {
 	{N_("Base Options"), P_SEP, P_SEPARATOR},
 
 	{
@@ -4398,3 +4408,7 @@ static struct parm_struct parm_table[] = {
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };
 
+int num_parameters(void)
+{
+	return (sizeof(parm_table) / sizeof(struct parm_struct));
+}
