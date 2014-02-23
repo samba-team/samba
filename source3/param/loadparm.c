@@ -264,7 +264,6 @@ static struct file_lists *file_lists = NULL;
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
-static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
 
 static void set_allowed_client_auth(void);
 
@@ -2407,13 +2406,6 @@ static void init_iconv(void)
 	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
 						      lp_unix_charset(),
 						      true, global_iconv_handle);
-}
-
-static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	TALLOC_FREE(Globals.netbios_aliases);
-	Globals.netbios_aliases = (const char **)str_list_make_v3(NULL, pszParmValue, NULL);
-	return set_netbios_aliases(Globals.netbios_aliases);
 }
 
 /***************************************************************************

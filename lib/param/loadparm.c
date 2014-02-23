@@ -80,7 +80,6 @@ static bool defaults_saved = false;
 /* these are parameter handlers which are not needed in the
  * non-source3 code
  */
-#define handle_netbios_aliases NULL
 #define handle_idmap_backend NULL
 #define handle_idmap_uid NULL
 #define handle_idmap_gid NULL
@@ -1293,6 +1292,18 @@ bool handle_ldap_debug_level(struct loadparm_context *lp_ctx, int snum, const ch
 
 	if (lp_ctx->s3_fns) {
 		lp_ctx->s3_fns->init_ldap_debugging();
+	}
+	return true;
+}
+
+bool handle_netbios_aliases(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+{
+	TALLOC_FREE(lp_ctx->globals->netbios_aliases);
+	lp_ctx->globals->netbios_aliases = (const char **)str_list_make_v3(lp_ctx->globals->ctx,
+									   pszParmValue, NULL);
+
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->set_netbios_aliases(lp_ctx->globals->netbios_aliases);
 	}
 	return true;
 }
