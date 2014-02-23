@@ -1317,7 +1317,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 				       const char *pszParmName,
 				       const char *pszParmValue, int flags)
 {
-	struct parmlist_entry *paramo, *data;
+	struct parmlist_entry **data;
 	char *name;
 	TALLOC_CTX *mem_ctx;
 
@@ -1329,43 +1329,14 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 	if (!name) return false;
 
 	if (service == NULL) {
-		data = lp_ctx->globals->param_opt;
+		data = &lp_ctx->globals->param_opt;
 		mem_ctx = lp_ctx->globals;
 	} else {
-		data = service->param_opt;
+		data = &service->param_opt;
 		mem_ctx = service;
 	}
 
-	/* Traverse destination */
-	for (paramo=data; paramo; paramo=paramo->next) {
-		/* If we already have the option set, override it unless
-		   it was a command line option and the new one isn't */
-		if (strcmp(paramo->key, name) == 0) {
-			if ((paramo->priority & FLAG_CMDLINE) &&
-			    !(flags & FLAG_CMDLINE)) {
-				talloc_free(name);
-				return true;
-			}
-
-			talloc_free(paramo->value);
-			paramo->value = talloc_strdup(paramo, pszParmValue);
-			paramo->priority = flags;
-			talloc_free(name);
-			return true;
-		}
-	}
-
-	paramo = talloc_zero(mem_ctx, struct parmlist_entry);
-	if (!paramo)
-		smb_panic("OOM");
-	paramo->key = talloc_strdup(paramo, name);
-	paramo->value = talloc_strdup(paramo, pszParmValue);
-	paramo->priority = flags;
-	if (service == NULL) {
-		DLIST_ADD(lp_ctx->globals->param_opt, paramo);
-	} else {
-		DLIST_ADD(service->param_opt, paramo);
-	}
+	set_param_opt(mem_ctx, data, name, pszParmValue, flags);
 
 	talloc_free(name);
 
