@@ -265,7 +265,6 @@ static bool handle_idmap_backend(struct loadparm_context *unused, int snum, cons
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
-static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 
 static void set_allowed_client_auth(void);
 
@@ -2472,13 +2471,6 @@ bool lp_include(struct loadparm_context *unused, int snum, const char *pszParmVa
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 	TALLOC_FREE(fname);
-	return true;
-}
-
-static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	Globals.ldap_debug_level = lp_int(pszParmValue);
-	init_ldap_debugging();
 	return true;
 }
 

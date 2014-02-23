@@ -81,7 +81,6 @@ static bool defaults_saved = false;
  * non-source3 code
  */
 #define handle_netbios_aliases NULL
-#define handle_ldap_debug_level NULL
 #define handle_idmap_backend NULL
 #define handle_idmap_uid NULL
 #define handle_idmap_gid NULL
@@ -1288,6 +1287,15 @@ bool handle_printing(struct loadparm_context *lp_ctx, int snum,
 	return true;
 }
 
+bool handle_ldap_debug_level(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+{
+	lp_ctx->globals->ldap_debug_level = lp_int(pszParmValue);
+
+	if (lp_ctx->s3_fns) {
+		lp_ctx->s3_fns->init_ldap_debugging();
+	}
+	return true;
+}
 
 /***************************************************************************
  Initialise a copymap.
