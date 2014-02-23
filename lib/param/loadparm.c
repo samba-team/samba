@@ -77,13 +77,6 @@ static bool defaults_saved = false;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
-/* these are parameter handlers which are not needed in the
- * non-source3 code
- */
-#define handle_idmap_backend NULL
-#define handle_idmap_uid NULL
-#define handle_idmap_gid NULL
-
 #ifndef N_
 #define N_(x) x
 #endif
@@ -1306,6 +1299,37 @@ bool handle_netbios_aliases(struct loadparm_context *lp_ctx, int snum, const cha
 		return lp_ctx->s3_fns->set_netbios_aliases(lp_ctx->globals->netbios_aliases);
 	}
 	return true;
+}
+
+/*
+ * idmap related parameters
+ */
+
+bool handle_idmap_backend(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+{
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->lp_do_parameter(snum, "idmap config * : backend", pszParmValue);
+	}
+
+	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+}
+
+bool handle_idmap_uid(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+{
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->lp_do_parameter(snum, "idmap config * : range", pszParmValue);
+	}
+
+	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+}
+
+bool handle_idmap_gid(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+{
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->lp_do_parameter(snum, "idmap config * : range", pszParmValue);
+	}
+
+	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 }
 
 /***************************************************************************

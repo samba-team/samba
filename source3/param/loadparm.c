@@ -260,11 +260,6 @@ static struct file_lists *file_lists = NULL;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
-/* prototypes for the special type handlers */
-static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
-static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
-static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
-
 static void set_allowed_client_auth(void);
 
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
@@ -2463,31 +2458,6 @@ bool lp_include(struct loadparm_context *unused, int snum, const char *pszParmVa
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 	TALLOC_FREE(fname);
-	return true;
-}
-
-/*
- * idmap related parameters
- */
-
-static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	lp_do_parameter(snum, "idmap config * : backend", pszParmValue);
-
-	return true;
-}
-
-static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
-
-	return true;
-}
-
-static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
-{
-	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
-
 	return true;
 }
 
