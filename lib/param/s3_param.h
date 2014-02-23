@@ -20,6 +20,7 @@ struct loadparm_s3_helpers
 	bool (*lp_include)(struct loadparm_context*, int, const char *, char **);
 	void (*init_printer_values)(TALLOC_CTX *, struct loadparm_service *);
 	void (*init_ldap_debugging)(void);
+	bool (*set_netbios_aliases)(const char **);
 	struct loadparm_global *globals;
 };
 
