@@ -73,6 +73,7 @@ static struct loadparm_s3_helpers s3_fns =
 	.lp_string_set = lp_string_set,
 	.lp_include = lp_include,
 	.init_printer_values = init_printer_values,
+	.init_ldap_debugging = init_ldap_debugging,
 };
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)

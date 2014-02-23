@@ -19,6 +19,7 @@ struct loadparm_s3_helpers
 	bool (*lp_string_set)(char **dest, const char *src);
 	bool (*lp_include)(struct loadparm_context*, int, const char *, char **);
 	void (*init_printer_values)(TALLOC_CTX *, struct loadparm_service *);
+	void (*init_ldap_debugging)(void);
 	struct loadparm_global *globals;
 };
 
