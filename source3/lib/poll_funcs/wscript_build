@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+bld.SAMBA3_SUBSYSTEM('POLL_FUNCS_TEVENT',
+                     source='poll_funcs_tevent.c',
+		     deps='tevent')
