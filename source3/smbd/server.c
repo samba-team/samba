@@ -484,13 +484,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}
 
-		/*
-		 * Ensure we flush any stored messages
-		 * queued for the child process that
-		 * terminated uncleanly.
-		 */
-		messaging_cleanup_server(parent->msg_ctx, child_id);
-
 		status = messaging_dgm_cleanup(parent->msg_ctx, pid);
 		DEBUG(10, ("%s: messaging_dgm_cleanup returned %s\n",
 			   __func__, nt_errstr(status)));
@@ -1451,10 +1444,6 @@ extern void build_options(bool screen);
 
 	if (!locking_init())
 		exit_daemon("Samba cannot init locking", EACCES);
-
-	if (!messaging_tdb_parent_init(ev_ctx)) {
-		exit_daemon("Samba cannot init TDB messaging", EACCES);
-	}
 
 	if (!smbd_parent_notify_init(NULL, msg_ctx, ev_ctx)) {
 		exit_daemon("Samba cannot init notification", EACCES);
