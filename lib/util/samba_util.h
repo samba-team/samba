@@ -530,6 +530,14 @@ _PUBLIC_ const char **str_list_copy_const(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ const char **const_str_list(char **list);
 
+/**
+ * str_list_make, v3 version. The v4 version does not
+ * look at quoted strings with embedded blanks, so
+ * do NOT merge this function please!
+ */
+char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
+	const char *sep);
+
 
 /* The following definitions come from lib/util/util_file.c  */
 
