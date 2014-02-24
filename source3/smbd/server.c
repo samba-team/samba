@@ -465,6 +465,8 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	}
 
 	if (unclean_shutdown) {
+		NTSTATUS status;
+
 		/* a child terminated uncleanly so tickle all
 		   processes to see if they can grab any of the
 		   pending locks
@@ -488,6 +490,10 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		 * terminated uncleanly.
 		 */
 		messaging_cleanup_server(parent->msg_ctx, child_id);
+
+		status = messaging_dgm_cleanup(parent->msg_ctx, pid);
+		DEBUG(10, ("%s: messaging_dgm_cleanup returned %s\n",
+			   __func__, nt_errstr(status)));
 	}
 
 	if (!serverid_deregister(child_id)) {

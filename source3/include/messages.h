@@ -91,6 +91,11 @@ struct messaging_backend {
 	void *private_data;
 };
 
+NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
+			    TALLOC_CTX *mem_ctx,
+			    struct messaging_backend **presult);
+NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid);
+
 NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 			    TALLOC_CTX *mem_ctx,
 			    struct messaging_backend **presult);

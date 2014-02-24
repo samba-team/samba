@@ -314,6 +314,7 @@ bld.SAMBA3_SUBSYSTEM('TDB_LIB',
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source='''lib/messages.c
                    lib/messages_local.c
+                   lib/messages_dgm.c
                    lib/util_cluster.c
                    lib/id_cache.c
                    lib/talloc_dict.c
@@ -352,6 +353,8 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         UTIL_PW
                         SAMBA_VERSION
                         PTHREADPOOL
+                        UNIX_MSG
+                        POLL_FUNCS_TEVENT
                         interfaces
                         param
                         dbwrap
