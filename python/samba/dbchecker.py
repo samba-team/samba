@@ -73,6 +73,7 @@ class dbcheck(object):
         self.ntds_dsa = ldb.Dn(samdb, samdb.get_dsServiceName())
         self.class_schemaIDGUID = {}
         self.wellknown_sds = get_wellknown_sds(self.samdb)
+        self.fix_all_missing_objectclass = False
 
         self.name_map = {}
         try:
@@ -174,6 +175,18 @@ class dbcheck(object):
             return False
         return c
 
+    def do_delete(self, dn, controls, msg):
+        '''delete dn with optional verbose output'''
+        if self.verbose:
+            self.report("delete DN %s" % dn)
+        try:
+            controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
+            self.samdb.delete(dn, controls=controls)
+        except Exception, err:
+            self.report("%s : %s" % (msg, err))
+            return False
+        return True
+
     def do_modify(self, m, controls, msg, validate=True):
         '''perform a modify with optional verbose output'''
         if self.verbose:
@@ -271,6 +284,16 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def is_deleted_objects_dn(self, dsdb_dn):
         '''see if a dsdb_Dn is the special Deleted Objects DN'''
         return dsdb_dn.prefix == "B:32:%s:" % dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER
+
+    def err_missing_objectclass(self, dn):
+        """handle object without objectclass"""
+        self.report("ERROR: missing objectclass in object %s.  If you have another working DC, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (dn, self.samdb.get_nc_root(dn)))
+        if not self.confirm_all("If you cannot re-sync from another DC, do you wish to delete object '%s'?" % dn, 'fix_all_missing_objectclass'):
+            self.report("Not deleting object with missing objectclass '%s'" % dn)
+            return
+        if self.do_delete(dn, ["relax:0"],
+                          "Failed to remove DN %s" % dn):
+            self.report("Removed DN %s" % dn)
 
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
         """handle a DN pointing to a deleted object"""
@@ -1018,10 +1041,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         list_attrs_from_md = []
         list_attrs_seen = []
         got_repl_property_meta_data = False
+        got_objectclass = False
 
         for attrname in obj:
             if attrname == 'dn':
                 continue
+
+            if str(attrname).lower() == 'objectclass':
+                got_objectclass = True
 
             if str(attrname).lower() == 'replpropertymetadata':
                 if self.has_replmetadata_zero_invocationid(dn, obj[attrname]):
@@ -1109,6 +1136,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if len(obj["instanceType"]) != 1 or obj["instanceType"][0] != str(calculated_instancetype):
                     error_count += 1
                     self.err_wrong_instancetype(obj, calculated_instancetype)
+
+        if not got_objectclass and ("*" in attrs or "objectclass" in map(str.lower, attrs)):
+            error_count += 1
+            self.err_missing_objectclass(dn)
 
         show_dn = True
         if got_repl_property_meta_data:
