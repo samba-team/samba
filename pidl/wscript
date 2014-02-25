@@ -26,9 +26,6 @@ def build(bld):
     if not bld.CONFIG_SET('HAVE_PERL_MAKEMAKER'):
         return
 
-    pidl_src = ['pidl']
-    pidl_src.extend(bld.path.ant_glob('lib/**/*.pm').split())
-
     pidl_manpages = {
         'pidl': 'man1/pidl.${PERLMAN1EXT}',
         'lib/Parse/Pidl/NDR.pm': 'man3/Parse::Pidl::NDR.${PERLMAN3EXT}',
