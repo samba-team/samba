@@ -1449,7 +1449,11 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 
 		case P_OCTAL:
-			*(int *)parm_ptr = strtol(pszParmValue, NULL, 8);
+			i = sscanf(pszParmValue, "%o", (int *)parm_ptr);
+			if ( i != 1 ) {
+				DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
+				return false;
+			}
 			break;
 
 		case P_BYTES:
