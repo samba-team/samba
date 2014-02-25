@@ -1172,19 +1172,11 @@ static bool is_synonym_of(int parm1, int parm2, bool *inverse);
  * parametrical functions are quite simple
  */
 static struct parmlist_entry *get_parametrics_by_service(struct loadparm_service *service, const char *type,
-							   const char *option)
+							 const char *option, struct parmlist_entry *global_opts)
 {
-	bool global_section = false;
 	char* param_key;
         struct parmlist_entry *data;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
-
-	if (service == NULL) {
-		data = Globals.param_opt;
-		global_section = true;
-	} else {
-		data = service->param_opt;
-	}
 
 	param_key = talloc_asprintf(mem_ctx, "%s:%s", type, option);
 	if (param_key == NULL) {
@@ -1193,18 +1185,11 @@ static struct parmlist_entry *get_parametrics_by_service(struct loadparm_service
 		return NULL;
 	}
 
-	while (data) {
-		if (strwicmp(data->key, param_key) == 0) {
-			TALLOC_FREE(mem_ctx);
-			return data;
-		}
-		data = data->next;
-	}
-
-	if (!global_section) {
-		/* Try to fetch the same option but from globals */
-		/* but only if we are not already working with Globals */
-		data = Globals.param_opt;
+	/*
+	 * Try to fetch the option from the service.
+	 */
+	if (service != NULL) {
+		data = service->param_opt;
 		while (data) {
 		        if (strwicmp(data->key, param_key) == 0) {
 				TALLOC_FREE(mem_ctx);
@@ -1213,6 +1198,19 @@ static struct parmlist_entry *get_parametrics_by_service(struct loadparm_service
 			data = data->next;
 		}
 	}
+
+	/*
+	 * Fall back to fetching from the globals.
+	 */
+	data = global_opts;
+	while (data) {
+		if (strwicmp(data->key, param_key) == 0) {
+			TALLOC_FREE(mem_ctx);
+			return data;
+		}
+		data = data->next;
+	}
+
 
 	TALLOC_FREE(mem_ctx);
 
@@ -1230,9 +1228,10 @@ static struct parmlist_entry *get_parametrics(int snum, const char *type,
 	if (snum >= iNumServices) return NULL;
 
 	if (snum < 0) {
-		return get_parametrics_by_service(NULL, type, option);
+		return get_parametrics_by_service(NULL, type, option, Globals.param_opt);
 	} else {
-		return get_parametrics_by_service(ServicePtrs[snum], type, option);
+		return get_parametrics_by_service(ServicePtrs[snum],
+						  type, option, Globals.param_opt);
 	}
 }
 
@@ -1296,7 +1295,7 @@ const char *lp_parm_const_string_service(struct loadparm_service *service,
 					 const char *type, const char *option,
 					 const char *def)
 {
-	struct parmlist_entry *data = get_parametrics_by_service(service, type, option);
+	struct parmlist_entry *data = get_parametrics_by_service(service, type, option, Globals.param_opt);
 
 	if (data == NULL||data->value==NULL)
 		return def;
