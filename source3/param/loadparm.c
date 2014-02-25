@@ -3078,7 +3078,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 			parm_opt_value = lp_parm_const_string( snum,
 				local_parm_name, parm_opt, NULL);
 			if (parm_opt_value) {
-				printf( "%s\n", parm_opt_value);
+				fprintf(f, "%s\n", parm_opt_value);
 				result = true;
 			}
 		}
