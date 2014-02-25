@@ -134,6 +134,7 @@ NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
 done:
 	SAFE_FREE(nstr);
 	SAFE_FREE(cstr);
+	SAFE_FREE(lstr);
 	TALLOC_FREE(key);
 	return status;
 }
