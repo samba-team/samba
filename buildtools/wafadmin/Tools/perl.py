@@ -103,7 +103,14 @@ def check_perl_ext_devel(conf):
 	else:
 		conf.env.ARCHDIR_PERL = read_out('print $Config{sitearch}')[0]
 
+	conf.env.VENDORDIR_PERL = Options.options.perlvendordir
+
 def set_options(opt):
 	opt.add_option("--with-perl-binary", type="string", dest="perlbinary", help = 'Specify alternate perl binary', default=None)
 	opt.add_option("--with-perl-archdir", type="string", dest="perlarchdir", help = 'Specify directory where to install arch specific files', default=None)
 
+	opt.add_option("--with-perl-vendordir",
+		       type="string",
+		       dest="perlvendordir",
+		       help="Specify directory where to install perl vendor files",
+		       default='${DATAROOTDIR}/perl5/vendor_perl')

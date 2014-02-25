@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # install the pidl modules
-bld.INSTALL_FILES('${DATAROOTDIR}/perl5',
+bld.INSTALL_FILES(bld.env.VENDORDIR_PERL,
                   '''
                   Parse/Pidl.pm
                   Parse/Pidl/Samba4.pm
