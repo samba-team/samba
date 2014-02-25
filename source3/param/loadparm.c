@@ -1240,20 +1240,6 @@ const char *lp_parm_const_string(int snum, const char *type, const char *option,
 	return data->value;
 }
 
-const char *lp_parm_const_string_service(struct loadparm_service *service,
-					 const char *type, const char *option,
-					 const char *def)
-{
-	struct parmlist_entry *data;
-
-	data = get_parametric_helper(service, type, option, Globals.param_opt);
-
-	if (data == NULL||data->value==NULL)
-		return def;
-
-	return data->value;
-}
-
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */

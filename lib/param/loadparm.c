@@ -295,10 +295,6 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 	if (lp_ctx == NULL)
 		return NULL;
 
-	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->get_parametric(service, type, option, NULL);
-	}
-
 	data = get_parametric_helper(service,
 				     type, option, lp_ctx->globals->param_opt);
 

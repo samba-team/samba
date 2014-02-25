@@ -3,8 +3,6 @@
 
 struct loadparm_s3_helpers
 {
-	const char * (*get_parametric)(struct loadparm_service *, const char *type,
-				       const char *option, const char *def);
 	struct parm_struct * (*get_parm_struct)(const char *param_name);
 	void * (*get_parm_ptr)(struct loadparm_service *service, struct parm_struct *parm);
 	struct loadparm_service * (*get_service)(const char *service_name);
