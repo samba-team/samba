@@ -234,7 +234,7 @@ static struct loadparm_service *lpcfg_getservicebyname(struct loadparm_context *
 static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
 
-/* This is a helper function for parametrical options support. */
+/* The following are helper functions for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
 struct parmlist_entry *get_parametric_helper(struct loadparm_service *service,
