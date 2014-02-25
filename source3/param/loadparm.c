@@ -260,7 +260,7 @@ static struct file_lists *file_lists = NULL;
 
 static void set_allowed_client_auth(void);
 
-static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
+static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue);
 static void free_param_opts(struct parmlist_entry **popts);
 
 /* this is used to prevent lots of mallocs of size 1 */
@@ -616,7 +616,7 @@ static bool apply_lp_set_cmdline(void)
 {
 	struct lp_stored_option *entry = NULL;
 	for (entry = stored_options; entry != NULL; entry = entry->next) {
-		if (!lp_set_cmdline_helper(entry->label, entry->value, false)) {
+		if (!lp_set_cmdline_helper(entry->label, entry->value)) {
 			DEBUG(0, ("Failed to re-apply cmdline parameter %s = %s\n",
 				  entry->label, entry->value));
 			return false;
@@ -2777,7 +2777,7 @@ set a parameter, marking it with FLAG_CMDLINE. Parameters marked as
 FLAG_CMDLINE won't be overridden by loads from smb.conf.
 ***************************************************************************/
 
-static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values)
+static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum, i;
 	parmnum = lpcfg_map_parameter(pszParmName);
@@ -2802,18 +2802,12 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 			parm_table[i].flags |= FLAG_CMDLINE;
 		}
 
-		if (store_values) {
-			store_lp_set_cmdline(pszParmName, pszParmValue);
-		}
 		return true;
 	}
 
 	/* it might be parametric */
 	if (strchr(pszParmName, ':') != NULL) {
 		set_param_opt(NULL, &Globals.param_opt, pszParmName, pszParmValue, FLAG_CMDLINE);
-		if (store_values) {
-			store_lp_set_cmdline(pszParmName, pszParmValue);
-		}
 		return true;
 	}
 
@@ -2823,7 +2817,14 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 
 bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 {
-	return lp_set_cmdline_helper(pszParmName, pszParmValue, true);
+	bool ret;
+
+	ret = lp_set_cmdline_helper(pszParmName, pszParmValue);
+	if (ret) {
+		store_lp_set_cmdline(pszParmName, pszParmValue);
+	}
+
+	return ret;
 }
 
 /***************************************************************************
