@@ -1399,23 +1399,12 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 	return true;
 }
 
-static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
-			 const char *pszParmName, const char *pszParmValue,
-			 struct loadparm_context *lp_ctx, bool on_globals)
+bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
+			 const char *pszParmName, const char *pszParmValue)
 {
 	int i;
-	/* if it is a special case then go ahead */
-	if (parm_table[parmnum].special) {
-		bool ret;
-		ret = parm_table[parmnum].special(lp_ctx, -1, pszParmValue,
-						  (char **)parm_ptr);
-		if (!ret) {
-			return false;
-		}
-		goto mark_non_default;
-	}
 
-	/* now switch on the type of variable it is */
+	/* switch on the type of variable it is */
 	switch (parm_table[parmnum].type)
 	{
 		case P_BOOL: {
@@ -1525,6 +1514,33 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 
 		case P_SEP:
 			break;
+	}
+
+	return true;
+
+}
+
+static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
+			 const char *pszParmName, const char *pszParmValue,
+			 struct loadparm_context *lp_ctx, bool on_globals)
+{
+	int i;
+	bool ok;
+
+	/* if it is a special case then go ahead */
+	if (parm_table[parmnum].special) {
+		ok = parm_table[parmnum].special(lp_ctx, -1, pszParmValue,
+						  (char **)parm_ptr);
+		if (!ok) {
+			return false;
+		}
+		goto mark_non_default;
+	}
+
+	ok = set_variable_helper(mem_ctx, parmnum, parm_ptr, pszParmName, pszParmValue);
+
+	if (!ok) {
+		return false;
 	}
 
 mark_non_default:
