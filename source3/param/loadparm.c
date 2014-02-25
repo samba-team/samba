@@ -2818,7 +2818,7 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 	}
 
 	DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",  pszParmName));
-	return true;
+	return false;
 }
 
 bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
