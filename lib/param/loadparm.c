@@ -1441,7 +1441,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 
 		case P_INTEGER:
-			*(int *)parm_ptr = atoi(pszParmValue);
+			*(int *)parm_ptr = lp_int(pszParmValue);
 			break;
 
 		case P_CHAR:
@@ -1468,6 +1468,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		}
 
 		case P_CMDLIST:
+			TALLOC_FREE(*(char ***)parm_ptr);
 			*(const char * const **)parm_ptr
 				= (const char * const *)str_list_make(mem_ctx,
 								      pszParmValue, NULL);
