@@ -244,7 +244,6 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option)
 {
-	char *vfskey_tmp = NULL;
 	char *vfskey = NULL;
 	struct parmlist_entry *data;
 
@@ -257,13 +256,14 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 
 	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
 
-	vfskey_tmp = talloc_asprintf(NULL, "%s:%s", type, option);
-	if (vfskey_tmp == NULL) return NULL;
-	vfskey = strlower_talloc(NULL, vfskey_tmp);
-	talloc_free(vfskey_tmp);
+	vfskey = talloc_asprintf(NULL, "%s:%s", type, option);
+	if (vfskey == NULL) {
+		DEBUG(0,("asprintf failed!\n"));
+		return NULL;
+	}
 
 	while (data) {
-		if (strcmp(data->key, vfskey) == 0) {
+		if (strwicmp(data->key, vfskey) == 0) {
 			talloc_free(vfskey);
 			return data->value;
 		}
@@ -275,7 +275,7 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 		/* but only if we are not already working with globals */
 		for (data = lp_ctx->globals->param_opt; data;
 		     data = data->next) {
-			if (strcmp(data->key, vfskey) == 0) {
+			if (strwicmp(data->key, vfskey) == 0) {
 				talloc_free(vfskey);
 				return data->value;
 			}
