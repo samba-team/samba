@@ -290,7 +290,6 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option)
 {
-	char *vfskey = NULL;
 	struct parmlist_entry *data;
 
 	if (lp_ctx == NULL)
@@ -300,40 +299,14 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 		return lp_ctx->s3_fns->get_parametric(service, type, option, NULL);
 	}
 
-	vfskey = talloc_asprintf(NULL, "%s:%s", type, option);
-	if (vfskey == NULL) {
-		DEBUG(0,("asprintf failed!\n"));
+	data = get_parametric_helper(service,
+				     type, option, lp_ctx->globals->param_opt);
+
+	if (data == NULL) {
 		return NULL;
+	} else {
+		return data->value;
 	}
-
-	/*
-	 * Try to fetch the option from the service.
-	 */
-	if (service != NULL) {
-		for (data = service->param_opt; data;
-		     data = data->next) {
-			if (strwicmp(data->key, vfskey) == 0) {
-				talloc_free(vfskey);
-				return data->value;
-			}
-		}
-	}
-
-	/*
-	 * Fall back to fetching from the globals.
-	 */
-	data = lp_ctx->globals->param_opt;
-	while (data) {
-		if (strwicmp(data->key, vfskey) == 0) {
-			talloc_free(vfskey);
-			return data->value;
-		}
-		data = data->next;
-	}
-
-	talloc_free(vfskey);
-
-	return NULL;
 }
 
 
