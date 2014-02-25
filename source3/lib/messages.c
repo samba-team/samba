@@ -419,6 +419,25 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 	return messaging_send(msg_ctx, server, msg_type, &blob);
 }
 
+NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
+			    struct server_id server, uint32_t msg_type,
+			    const struct iovec *iov, int iovlen)
+{
+	uint8_t *buf;
+	NTSTATUS status;
+
+	buf = iov_buf(talloc_tos(), iov, iovlen);
+	if (buf == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = messaging_send_buf(msg_ctx, server, msg_type,
+				    buf, talloc_get_size(buf));
+
+	TALLOC_FREE(buf);
+	return status;
+}
+
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 					       struct messaging_rec *rec)
 {
