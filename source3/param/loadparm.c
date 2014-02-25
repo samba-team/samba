@@ -2685,6 +2685,37 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		}
 
 		case P_LIST:
+		{
+			char **new_list = str_list_make_v3(mem_ctx,
+							pszParmValue, NULL);
+			for (i=0; new_list[i]; i++) {
+				if (*(const char ***)parm_ptr != NULL &&
+				    new_list[i][0] == '+' &&
+				    new_list[i][1])
+				{
+					if (!str_list_check(*(const char ***)parm_ptr,
+							    &new_list[i][1])) {
+						*(const char ***)parm_ptr = str_list_add(*(const char ***)parm_ptr,
+											 &new_list[i][1]);
+					}
+				} else if (*(const char ***)parm_ptr != NULL &&
+					   new_list[i][0] == '-' &&
+					   new_list[i][1])
+				{
+					str_list_remove(*(const char ***)parm_ptr,
+							&new_list[i][1]);
+				} else {
+					if (i != 0) {
+						DEBUG(0, ("Unsupported list syntax for: %s = %s\n",
+							  pszParmName, pszParmValue));
+						return false;
+					}
+					*(const char * const **)parm_ptr = (const char * const *) new_list;
+					break;
+				}
+			}
+			break;
+		}
 		case P_CMDLIST:
 			TALLOC_FREE(*((char ***)parm_ptr));
 			*(char ***)parm_ptr = str_list_make_v3(
