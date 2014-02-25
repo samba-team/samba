@@ -2659,6 +2659,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			i = sscanf(pszParmValue, "%o", (int *)parm_ptr);
 			if ( i != 1 ) {
 			    DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
+				return false;
 			}
 			break;
 
