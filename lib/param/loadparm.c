@@ -237,6 +237,55 @@ static bool do_section(const char *pszSectionName, void *);
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
+struct parmlist_entry *get_parametric_helper(struct loadparm_service *service,
+					     const char *type, const char *option,
+					     struct parmlist_entry *global_opts)
+{
+	char* param_key;
+	struct parmlist_entry *data = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	param_key = talloc_asprintf(mem_ctx, "%s:%s", type, option);
+	if (param_key == NULL) {
+		DEBUG(0,("asprintf failed!\n"));
+		TALLOC_FREE(mem_ctx);
+		return NULL;
+	}
+
+	/*
+	 * Try to fetch the option from the data.
+	 */
+	if (service != NULL) {
+		data = service->param_opt;
+		while (data != NULL) {
+			if (strwicmp(data->key, param_key) == 0) {
+				TALLOC_FREE(mem_ctx);
+				return data;
+			}
+			data = data->next;
+		}
+	}
+
+	/*
+	 * Fall back to fetching from the globals.
+	 */
+	data = global_opts;
+	while (data != NULL) {
+		if (strwicmp(data->key, param_key) == 0) {
+			TALLOC_FREE(mem_ctx);
+			return data;
+		}
+		data = data->next;
+	}
+
+
+	TALLOC_FREE(mem_ctx);
+
+	return NULL;
+
+
+}
+
 const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option)

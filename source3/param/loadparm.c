@@ -1228,10 +1228,10 @@ static struct parmlist_entry *get_parametrics(int snum, const char *type,
 	if (snum >= iNumServices) return NULL;
 
 	if (snum < 0) {
-		return get_parametrics_by_service(NULL, type, option, Globals.param_opt);
+		return get_parametric_helper(NULL, type, option, Globals.param_opt);
 	} else {
-		return get_parametrics_by_service(ServicePtrs[snum],
-						  type, option, Globals.param_opt);
+		return get_parametric_helper(ServicePtrs[snum],
+					     type, option, Globals.param_opt);
 	}
 }
 
@@ -1295,7 +1295,9 @@ const char *lp_parm_const_string_service(struct loadparm_service *service,
 					 const char *type, const char *option,
 					 const char *def)
 {
-	struct parmlist_entry *data = get_parametrics_by_service(service, type, option, Globals.param_opt);
+	struct parmlist_entry *data;
+
+	data = get_parametric_helper(service, type, option, Globals.param_opt);
 
 	if (data == NULL||data->value==NULL)
 		return def;
