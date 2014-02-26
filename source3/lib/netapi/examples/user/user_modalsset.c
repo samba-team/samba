@@ -34,20 +34,14 @@ int main(int argc, const char **argv)
 	const char *hostname = NULL;
 	uint8_t *buffer = NULL;
 	uint32_t level = 0;
-	uint32_t value = 0;
 	uint32_t parm_err = 0;
 
 	struct USER_MODALS_INFO_0 u0;
-	struct USER_MODALS_INFO_1 u1;
-	struct USER_MODALS_INFO_2 u2;
-	struct USER_MODALS_INFO_3 u3;
 	struct USER_MODALS_INFO_1001 u1001;
 	struct USER_MODALS_INFO_1002 u1002;
 	struct USER_MODALS_INFO_1003 u1003;
 	struct USER_MODALS_INFO_1004 u1004;
 	struct USER_MODALS_INFO_1005 u1005;
-	struct USER_MODALS_INFO_1006 u1006;
-	struct USER_MODALS_INFO_1007 u1007;
 
 	poptContext pc;
 	int opt;
@@ -77,10 +71,6 @@ int main(int argc, const char **argv)
 
 	if (poptPeekArg(pc)) {
 		level = atoi(poptGetArg(pc));
-	}
-
-	if (poptPeekArg(pc)) {
-		value = atoi(poptGetArg(pc));
 	}
 
 	switch (level) {

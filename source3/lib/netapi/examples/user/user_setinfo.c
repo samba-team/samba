@@ -39,12 +39,6 @@ int main(int argc, const char **argv)
 	const char *val = NULL;
 
 	struct USER_INFO_0 u0;
-	struct USER_INFO_1 u1;
-	struct USER_INFO_2 u2;
-	struct USER_INFO_3 u3;
-	struct USER_INFO_4 u4;
-	struct USER_INFO_21 u21;
-	struct USER_INFO_22 u22;
 	struct USER_INFO_1003 u1003;
 	struct USER_INFO_1005 u1005;
 	struct USER_INFO_1006 u1006;
@@ -56,7 +50,6 @@ int main(int argc, const char **argv)
 	struct USER_INFO_1012 u1012;
 	struct USER_INFO_1014 u1014;
 	struct USER_INFO_1017 u1017;
-	struct USER_INFO_1020 u1020;
 	struct USER_INFO_1024 u1024;
 	struct USER_INFO_1051 u1051;
 	struct USER_INFO_1052 u1052;
