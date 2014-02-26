@@ -512,7 +512,20 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 				p++;
 
 				if (p != NULL && *p == 'u' && strchr(p, '%') == NULL) {
-					gen_cc = talloc_asprintf(mem_ctx, type, uid);
+					char uid_str[sizeof("18446744073709551615")];
+
+					snprintf(uid_str, sizeof(uid_str), "%u", uid);
+
+					gen_cc = talloc_string_sub2(mem_ctx,
+							type,
+							"%u",
+							uid_str,
+							/* remove_unsafe_characters */
+							false,
+							/* replace_once */
+							true,
+							/* allow_trailing_dollar */
+							false);
 				}
 			}
 		}
