@@ -276,11 +276,11 @@ static void add_command_set(struct cmd_set *cmd_set)
 static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *cmd)
 {
 	const char *p = cmd;
-	char **argv = NULL;
+	const char **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *buf;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	int argc = 0, i;
+	int argc = 0;
 
 	/* Count number of arguments first time through the loop then
 	   allocate memory and strdup them. */
@@ -288,7 +288,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
  again:
 	while(next_token_talloc(mem_ctx, &p, &buf, " ")) {
 		if (argv) {
-			argv[argc] = SMB_STRDUP(buf);
+			argv[argc] = talloc_strdup(argv, buf);
 		}
 		argc++;
 	}
@@ -296,10 +296,8 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 	if (!argv) {
 		/* Create argument list */
 
-		argv = SMB_MALLOC_ARRAY(char *, argc);
-		memset(argv, 0, sizeof(char *) * argc);
-
-		if (!argv) {
+		argv = talloc_zero_array(mem_ctx, const char *, argc);
+		if (argv == NULL) {
 			fprintf(stderr, "out of memory\n");
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -326,10 +324,9 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 	/* Cleanup */
 
 	if (argv) {
-		for (i = 0; i < argc; i++)
-			SAFE_FREE(argv[i]);
-
-		SAFE_FREE(argv);
+		char **_argv = discard_const_p(char *, argv);
+		TALLOC_FREE(_argv);
+		argv = NULL;
 	}
 
 	if (memreports != 0) {
@@ -418,12 +415,14 @@ static void process_file(struct vfs_state *pvfs, char *filename) {
 	}
 }
 
+static void vfstest_exit_server(const char * const reason) _NORETURN_;
 static void vfstest_exit_server(const char * const reason)
 {
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
 }
 
+static void vfstest_exit_server_cleanly(const char * const reason) _NORETURN_;
 static void vfstest_exit_server_cleanly(const char * const reason)
 {
 	vfstest_exit_server("normal exit");
@@ -433,6 +432,7 @@ struct smb_request *vfstest_get_smbreq(TALLOC_CTX *mem_ctx,
 				       struct vfs_state *vfs)
 {
 	struct smb_request *result;
+	uint8_t *inbuf;
 
 	result = talloc_zero(mem_ctx, struct smb_request);
 	if (result == NULL) {
@@ -441,12 +441,13 @@ struct smb_request *vfstest_get_smbreq(TALLOC_CTX *mem_ctx,
 	result->sconn = vfs->conn->sconn;
 	result->mid = ++vfs->mid;
 
-	result->inbuf = talloc_array(result, uint8_t, smb_size);
-	if (result->inbuf == NULL) {
+	inbuf = talloc_array(result, uint8_t, smb_size);
+	if (inbuf == NULL) {
 		goto fail;
 	}
-	SSVAL(result->inbuf, smb_mid, result->mid);
-	smb_setlen(result->inbuf, smb_size-4);
+	SSVAL(inbuf, smb_mid, result->mid);
+	smb_setlen(inbuf, smb_size-4);
+	result->inbuf = inbuf;
 	return result;
 fail:
 	TALLOC_FREE(result);
@@ -455,7 +456,7 @@ fail:
 
 /* Main function */
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
 	char *cmdstr = NULL;
 	struct cmd_set	**cmd_set;
@@ -490,8 +491,7 @@ int main(int argc, char *argv[])
 
 	setlinebuf(stdout);
 
-	pc = poptGetContext("vfstest", argc, (const char **) argv,
-			    long_options, 0);
+	pc = poptGetContext("vfstest", argc, argv, long_options, 0);
 
 	while(poptGetNextOpt(pc) != -1);
 
