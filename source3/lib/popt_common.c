@@ -353,8 +353,11 @@ static void popt_common_credentials_callback(poptContext con,
 					const struct poptOption *opt,
 					const char *arg, const void *data)
 {
-	struct user_auth_info *auth_info = talloc_get_type_abort(
-		*((const char **)data), struct user_auth_info);
+	const void **pp = discard_const(data);
+	void *p = discard_const(*pp);
+	struct user_auth_info *auth_info =
+		talloc_get_type_abort(p,
+		struct user_auth_info);
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		set_cmdline_auth_info_username(auth_info, "GUEST");
@@ -501,7 +504,7 @@ void popt_burn_cmdline_password(int argc, char *argv[])
 struct poptOption popt_common_credentials[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE,
 	  (void *)popt_common_credentials_callback, 0,
-	  (const char *)&global_auth_info },
+	  (const void *)&global_auth_info },
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
 	{ "no-pass", 'N', POPT_ARG_NONE, NULL, 'N', "Don't ask for a password" },
 	{ "kerberos", 'k', POPT_ARG_NONE, NULL, 'k', "Use kerberos (active directory) authentication" },
