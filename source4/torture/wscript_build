@@ -10,6 +10,7 @@ bld.SAMBA_SUBSYSTEM('TORTURE_UTIL',
 
 bld.SAMBA_MODULE('TORTURE_BASIC',
 	source='basic/base.c basic/misc.c basic/scanner.c basic/utable.c basic/charset.c basic/mangle_test.c basic/denytest.c basic/aliases.c basic/locking.c basic/secleak.c basic/rename.c basic/dir.c basic/delete.c basic/unlink.c basic/disconnect.c basic/delaywrite.c basic/attr.c basic/properties.c',
+	allow_warnings=True,
 	subsystem='smbtorture',
 	deps='LIBCLI_SMB POPT_CREDENTIALS TORTURE_UTIL smbclient-raw TORTURE_RAW',
 	internal_module=True,
@@ -20,6 +21,7 @@ bld.SAMBA_MODULE('TORTURE_BASIC',
 
 bld.SAMBA_MODULE('TORTURE_RAW',
 	source='raw/qfsinfo.c raw/qfileinfo.c raw/setfileinfo.c raw/search.c raw/close.c raw/open.c raw/mkdir.c raw/oplock.c raw/notify.c raw/mux.c raw/ioctl.c raw/chkpath.c raw/unlink.c raw/read.c raw/context.c raw/session.c raw/write.c raw/lock.c raw/pingpong.c raw/lockbench.c raw/lookuprate.c raw/tconrate.c raw/openbench.c raw/rename.c raw/eas.c raw/streams.c raw/acls.c raw/seek.c raw/samba3hide.c raw/samba3misc.c raw/composite.c raw/raw.c raw/offline.c',
+	allow_warnings=True,
 	autoproto='raw/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_raw_init',
@@ -41,6 +43,7 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	source='ndr/ndr.c ndr/winreg.c ndr/atsvc.c ndr/lsa.c ndr/epmap.c ndr/dfs.c ndr/netlogon.c ndr/drsuapi.c ndr/spoolss.c ndr/ntprinting.c ndr/samr.c ndr/dfsblob.c ndr/drsblobs.c ndr/nbt.c ndr/ntlmssp.c ndr/string.c ndr/backupkey.c',
+	allow_warnings=True,
 	autoproto='ndr/proto.h',
 	deps='torture'
 	)
@@ -48,6 +51,7 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 
 bld.SAMBA_MODULE('torture_rpc',
 	source='rpc/join.c rpc/lsa.c rpc/forest_trust.c rpc/lsa_lookup.c rpc/session_key.c rpc/echo.c rpc/dfs.c rpc/drsuapi.c rpc/drsuapi_cracknames.c rpc/dsgetinfo.c rpc/spoolss.c rpc/spoolss_win.c rpc/spoolss_access.c rpc/unixinfo.c rpc/samr.c rpc/samr_accessmask.c rpc/samr_priv.c rpc/wkssvc.c rpc/srvsvc.c rpc/svcctl.c rpc/atsvc.c rpc/eventlog.c rpc/epmapper.c rpc/winreg.c rpc/initshutdown.c rpc/oxidresolve.c rpc/remact.c rpc/mgmt.c rpc/scanner.c rpc/autoidl.c rpc/countcalls.c rpc/testjoin.c rpc/schannel.c rpc/netlogon.c rpc/remote_pac.c rpc/samlogon.c rpc/samsync.c rpc/dssetup.c rpc/alter_context.c rpc/bench.c rpc/samba3rpc.c rpc/rpc.c rpc/async_bind.c rpc/handles.c rpc/frsapi.c rpc/object_uuid.c rpc/ntsvcs.c rpc/browser.c rpc/bind.c rpc/fsrvp.c '+heimdal_specific['rpc'][0],
+	allow_warnings=True,
 	autoproto='rpc/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_rpc_init',
