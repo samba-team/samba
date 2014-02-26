@@ -247,8 +247,9 @@ static int tstream_gensec_readv_next_vector(struct tstream_context *unix_stream,
 		vector[0].iov_base = (char *)state->wrapped.hdr;
 		vector[0].iov_len = sizeof(state->wrapped.hdr);
 	} else if (!state->wrapped.asked_for_blob) {
-		state->wrapped.asked_for_blob = true;
 		uint32_t msg_len;
+
+		state->wrapped.asked_for_blob = true;
 
 		msg_len = RIVAL(state->wrapped.hdr, 0);
 
