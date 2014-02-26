@@ -356,7 +356,7 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 
 bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out);
 bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname);
-bool user_in_list(TALLOC_CTX *ctx, const char *user,const char **list);
+bool user_in_list(TALLOC_CTX *ctx, const char *user, const char * const *list);
 
 /* The following definitions come from auth/user_krb5.c  */
 struct PAC_LOGON_INFO;

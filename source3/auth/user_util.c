@@ -188,7 +188,7 @@ bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
  and netgroup lists.
 ****************************************************************************/
 
-bool user_in_list(TALLOC_CTX *ctx, const char *user,const char **list)
+bool user_in_list(TALLOC_CTX *ctx, const char *user, const char * const *list)
 {
 	if (!list || !*list)
 		return False;
@@ -399,7 +399,7 @@ bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 		}
 
 		if (strchr_m(dosname,'*') ||
-		    user_in_list(ctx, user_in, (const char **)dosuserlist)) {
+		    user_in_list(ctx, user_in, (const char * const *)dosuserlist)) {
 			DEBUG(3,("Mapped user %s to %s\n",user_in,unixname));
 			mapped_user = True;
 
