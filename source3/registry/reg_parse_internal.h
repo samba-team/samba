@@ -38,7 +38,7 @@ struct cbuf;
 #if defined USE_NATIVE_ICONV && defined HAVE_NATIVE_ICONV
 #  define smb_iconv_t     iconv_t
 #  define smb_iconv(CD, IPTR, ILEN, OPTR, OLEN) \
-	iconv(CD, (char**)(IPTR), ILEN, OPTR, OLEN)
+	iconv(CD, discard_const_p(char*, (IPTR)), ILEN, OPTR, OLEN)
 #  define smb_iconv_open  iconv_open
 #  define smb_iconv_close iconv_close
 #endif
