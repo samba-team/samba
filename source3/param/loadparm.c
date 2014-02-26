@@ -291,31 +291,6 @@ static void free_param_opts(struct parmlist_entry **popts);
 static const char null_string[] = "";
 
 /**
- Set a string value, allocing the space for the string
-**/
-
-static bool string_init(TALLOC_CTX *mem_ctx, char **dest,const char *src)
-{
-	size_t l;
-
-	if (!src)
-		src = "";
-
-	l = strlen(src);
-
-	if (l == 0) {
-		*dest = discard_const_p(char, null_string);
-	} else {
-		(*dest) = talloc_strdup(mem_ctx, src);
-		if ((*dest) == NULL) {
-			DEBUG(0,("Out of memory in string_init\n"));
-			return false;
-		}
-	}
-	return(true);
-}
-
-/**
  Free a string value.
 **/
 
@@ -336,7 +311,18 @@ static void string_free(char **s)
 static bool string_set(TALLOC_CTX *mem_ctx, char **dest,const char *src)
 {
 	string_free(dest);
-	return(string_init(mem_ctx, dest, src));
+
+	if (!src) {
+		src = "";
+	}
+
+	(*dest) = talloc_strdup(mem_ctx, src);
+	if ((*dest) == NULL) {
+		DEBUG(0,("Out of memory in string_init\n"));
+		return false;
+	}
+
+	return true;
 }
 
 /***************************************************************************
