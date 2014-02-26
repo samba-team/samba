@@ -37,6 +37,7 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "gensec_krb5_util.h"
 
 /* Taken from  accept_sec_context.c,v 1.65 */
 krb5_error_code smb_rd_req_return_stuff(krb5_context context, 
