@@ -190,7 +190,8 @@ def build(bld):
 
             bld.SAMBA_SUBSYSTEM('ntdb-test-helpers',
                                 bld.env.NTDB_TEST_HELPER_SRC,
-                                deps='replace')
+                                deps='replace',
+                                allow_warnings=True)
             bld.SAMBA_SUBSYSTEM('ntdb-run-helpers',
                                 bld.env.NTDB_TEST_RUN_HELPER_SRC,
                                 deps='replace')
