@@ -2853,7 +2853,7 @@ static bool is_default(int i)
 Display the contents of the global structure.
 ***************************************************************************/
 
-static void dump_globals(FILE *f)
+static void dump_globals(FILE *f, bool show_defaults)
 {
 	int i;
 	struct parmlist_entry *data;
@@ -2864,7 +2864,7 @@ static void dump_globals(FILE *f)
 		if (parm_table[i].p_class == P_GLOBAL &&
 		    !(parm_table[i].flags & FLAG_META) &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (defaults_saved && is_default(i))
+			if (show_defaults && is_default(i))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			lpcfg_print_parameter(&parm_table[i], lp_parm_ptr(NULL,
@@ -4164,7 +4164,7 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 	if (show_defaults)
 		defaults_saved = false;
 
-	dump_globals(f);
+	dump_globals(f, defaults_saved);
 
 	dump_a_service(&sDefault, f, show_defaults);
 
