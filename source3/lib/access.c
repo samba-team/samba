@@ -181,7 +181,7 @@ static bool string_match(const char *tok,const char *s)
 /* client_match - match host name and address against token */
 bool client_match(const char *tok, const void *item)
 {
-	const char **client = (const char **)item;
+	const char **client = discard_const_p(const char *, item);
 	const char *tok_addr = tok;
 	const char *cli_addr = client[ADDR_INDEX];
 
