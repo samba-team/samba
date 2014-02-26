@@ -2575,6 +2575,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	struct parmlist_entry **opt_list;
 	TALLOC_CTX *mem_ctx;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
 
 	parmnum = lpcfg_map_parameter(pszParmName);
 
@@ -2645,7 +2646,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		bool ok;
 		struct loadparm_context *lp_ctx = loadparm_init_s3(frame,
 								   loadparm_s3_helpers());
 		lp_ctx->sDefault = &sDefault;
@@ -2654,11 +2654,33 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
 						  (char **)parm_ptr);
 		TALLOC_FREE(frame);
-		return ok;
+
+		if (!ok) {
+			return false;
+		}
+		goto mark_non_default;
 	}
 
 	TALLOC_FREE(frame);
-	return set_variable_helper(mem_ctx, parmnum, parm_ptr, pszParmName, pszParmValue);
+
+	ok = set_variable_helper(mem_ctx, parmnum, parm_ptr, pszParmName, pszParmValue);
+
+	if (!ok) {
+		return false;
+	}
+
+mark_non_default:
+	if (snum < 0 && (flags_list[parmnum] & FLAG_DEFAULT)) {
+		flags_list[parmnum] &= ~FLAG_DEFAULT;
+		/* we have to also unset FLAG_DEFAULT on aliases */
+		for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
+			flags_list[i] &= ~FLAG_DEFAULT;
+		}
+		for (i=parmnum+1;i<num_parameters() && parm_table[i].offset == parm_table[parmnum].offset;i++) {
+			flags_list[i] &= ~FLAG_DEFAULT;
+		}
+	}
+	return true;
 }
 
 /***************************************************************************
