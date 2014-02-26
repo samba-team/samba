@@ -17,6 +17,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "replace.h"
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -30,7 +31,8 @@ int main(int argc, const char **argv)
 {
 	NET_API_STATUS status;
 	const char *host_name = NULL;
-	const char *name_buffer = NULL;
+	char *name_buffer = NULL;
+	const char *p = NULL;
 	uint16_t name_type = 0;
 	struct libnetapi_ctx *ctx = NULL;
 
@@ -62,9 +64,8 @@ int main(int argc, const char **argv)
 
 	/* NetGetJoinInformation */
 
-	status = NetGetJoinInformation(host_name,
-				       &name_buffer,
-				       &name_type);
+	status = NetGetJoinInformation(host_name, &p, &name_type);
+	name_buffer = discard_const_p(char, p);
 	if (status != 0) {
 		printf("failed with: %s\n",
 			libnetapi_get_error_string(ctx, status));
@@ -96,7 +97,7 @@ int main(int argc, const char **argv)
 	}
 
  out:
-	NetApiBufferFree((void *)name_buffer);
+	NetApiBufferFree(name_buffer);
 	libnetapi_free(ctx);
 	poptFreeContext(pc);
 
