@@ -348,7 +348,7 @@ NET_API_STATUS netapitest_group(struct libnetapi_ctx *ctx,
 	printf("testing NetGroupSetInfo level 0\n");
 
 	status = NetGroupSetInfo(hostname, groupname, 0, (uint8_t *)&g0, &parm_err);
-	switch (status) {
+	switch ((int)status) {
 		case 0:
 			break;
 		case 50: /* not supported */
