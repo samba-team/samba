@@ -19,6 +19,7 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	source='gensec_gssapi.c',
 	subsystem='gensec',
 	init_function='gensec_gssapi_init',
+	allow_warnings=True,
 	deps='gssapi samba-credentials authkrb5 com_err gensec_util'
 	)
 
@@ -28,6 +29,7 @@ bld.SAMBA_MODULE('cyrus_sasl',
 	subsystem='gensec',
 	init_function='gensec_sasl_init',
 	deps='samba-credentials sasl2',
+	allow_warnings=True,
 	enabled=bld.CONFIG_SET('HAVE_SASL')
 	)
 
