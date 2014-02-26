@@ -67,7 +67,8 @@ static void samba_tevent_debug(void *context,
 
 void samba_tevent_set_debug(struct tevent_context *ev, const char *name)
 {
-	tevent_set_debug(ev, samba_tevent_debug, name);
+	void *p = discard_const(name);
+	tevent_set_debug(ev, samba_tevent_debug, p);
 }
 
 struct tevent_context *samba_tevent_context_init(TALLOC_CTX *mem_ctx)

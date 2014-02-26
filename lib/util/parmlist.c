@@ -74,11 +74,14 @@ const char **parmlist_get_string_list(struct parmlist *ctx, const char *name,
 									  const char *separator)
 {
 	struct parmlist_entry *p = parmlist_get(ctx, name);
+	char **l;
 
-	if (p == NULL)
+	if (p == NULL) {
 		return NULL;
+	}
 
-	return (const char **)str_list_make(ctx, p->value, separator);
+	l = str_list_make(ctx, p->value, separator);
+	return discard_const_p(const char *, l);
 }
 
 static struct parmlist_entry *parmlist_get_add(struct parmlist *ctx, const char *name)

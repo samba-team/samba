@@ -519,6 +519,6 @@ _PUBLIC_ const char **str_list_copy_const(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ const char **const_str_list(char **list)
 {
-	return (const char **)list;
+	return discard_const_p(const char *, list);
 }
 
