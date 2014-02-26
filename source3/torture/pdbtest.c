@@ -432,7 +432,7 @@ static bool test_trusted_domains(TALLOC_CTX *ctx,
 }
 
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	TALLOC_CTX *ctx;
 	struct samu *out = NULL;
@@ -460,8 +460,7 @@ int main(int argc, char **argv)
 
 	load_case_tables();
 
-	pc = poptGetContext("pdbtest", argc, (const char **) argv,
-			    long_options, 0);
+	pc = poptGetContext("pdbtest", argc, argv, long_options, 0);
 
 	poptSetOtherOptionHelp(pc, "backend[:settings] username");
 
