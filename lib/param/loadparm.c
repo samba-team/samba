@@ -2002,7 +2002,33 @@ bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 {
 	struct parm_struct *parm;
 	void *ptr;
+	char *local_parm_name;
+	char *parm_opt;
+	const char *parm_opt_value;
 
+	/* check for parametrical option */
+	local_parm_name = talloc_strdup(lp_ctx, parm_name);
+	if (local_parm_name == NULL) {
+		return false;
+	}
+
+	parm_opt = strchr( local_parm_name, ':');
+
+	if (parm_opt) {
+		*parm_opt = '\0';
+		parm_opt++;
+		if (strlen(parm_opt)) {
+			parm_opt_value = lpcfg_parm_string(lp_ctx, service,
+				local_parm_name, parm_opt);
+			if (parm_opt_value) {
+				fprintf(f, "%s\n", parm_opt_value);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/* parameter is not parametric, search the table */
 	parm = lpcfg_parm_struct(lp_ctx, parm_name);
 	if (!parm) {
 		return false;
