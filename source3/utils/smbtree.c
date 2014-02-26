@@ -285,9 +285,10 @@ static bool print_tree(struct user_auth_info *user_info)
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const char **argv_const = discard_const_p(const char *, argv);
 	struct user_auth_info *auth_info;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -313,8 +314,8 @@ static bool print_tree(struct user_auth_info *user_info)
 	}
 	popt_common_set_auth_info(auth_info);
 
-	pc = poptGetContext("smbtree", argc, (const char **)argv, long_options,
-						POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext("smbtree", argc, argv_const, long_options,
+			    POPT_CONTEXT_KEEP_FIRST);
 	while(poptGetNextOpt(pc) != -1);
 	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);

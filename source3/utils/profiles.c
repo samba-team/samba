@@ -194,7 +194,7 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 /*********************************************************************
 *********************************************************************/
 
-int main( int argc, char *argv[] )
+int main( int argc, const char *argv[] )
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	int opt;
@@ -218,7 +218,7 @@ int main( int argc, char *argv[] )
 
 	setup_logging( "profiles", DEBUG_STDERR);
 
-	pc = poptGetContext("profiles", argc, (const char **)argv, long_options,
+	pc = poptGetContext("profiles", argc, argv, long_options,
 		POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<profilefile>");

@@ -214,7 +214,7 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 /****************************************************************************
   main program
 ****************************************************************************/
-int main(int argc,char *argv[])
+int main(int argc, const char *argv[])
 {
 	int opt;
 	unsigned int lookup_type = 0x0;
@@ -246,7 +246,7 @@ int main(int argc,char *argv[])
 
 	setup_logging(argv[0], DEBUG_STDOUT);
 
-	pc = poptGetContext("nmblookup", argc, (const char **)argv,
+	pc = poptGetContext("nmblookup", argc, argv,
 			long_options, POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<NODE> ...");

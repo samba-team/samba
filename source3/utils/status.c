@@ -336,7 +336,7 @@ static void print_notify_recs(const char *path,
 	printf("\n");
 }
 
- int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
 	int c;
 	int profile_only = 0;
@@ -375,7 +375,7 @@ static void print_notify_recs(const char *path,
 		goto done;
 	}
 
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while ((c = poptGetNextOpt(pc)) != -1) {

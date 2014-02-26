@@ -295,7 +295,7 @@ static long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 	return data_length;
 }
 
-int main (int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	const char *infile, *outfile;
 	FILE *out, *in;
@@ -312,7 +312,7 @@ int main (int argc, char **argv)
 		POPT_TABLEEND
 	};
 
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
+	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "[<infile> [<outfile>]]");
 

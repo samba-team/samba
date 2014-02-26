@@ -1355,8 +1355,9 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
+	const char **argv_const = discard_const_p(const char *, argv);
 	char *share;
 	int opt;
 	enum acl_mode mode = SMB_ACL_SET;
@@ -1415,7 +1416,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 	}
 	popt_common_set_auth_info(auth_info);
 
-	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
+	pc = poptGetContext("smbcacls", argc, argv_const, long_options, 0);
 
 	poptSetOtherOptionHelp(pc, "//server1/share1 filename\nACLs look like: "
 		"'ACL:user:[ALLOWED|DENIED]/flags/permissions'");

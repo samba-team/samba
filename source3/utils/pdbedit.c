@@ -983,7 +983,7 @@ static int delete_machine_entry(const char *machinename)
  Start here.
 **********************************************************/
 
-int main (int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	static int list_users = False;
 	static int verbose = False;
@@ -1068,7 +1068,7 @@ int main (int argc, char **argv)
 
 	setup_logging("pdbedit", DEBUG_STDOUT);
 
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
+	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {

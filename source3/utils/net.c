@@ -767,13 +767,14 @@ static struct functable net_func[] = {
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc, const char **argv)
+ int main(int argc, char **argv)
 {
 	int opt,i;
 	char *p;
 	int rc = 0;
 	int argc_new = 0;
 	const char ** argv_new;
+	const char **argv_const = discard_const_p(const char *, argv);
 	poptContext pc;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct net_context *c = talloc_zero(frame, struct net_context);
@@ -852,7 +853,7 @@ static struct functable net_func[] = {
 	lp_set_cmdline("log level", "0");
 	c->private_data = net_func;
 
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
+	pc = poptGetContext(NULL, argc, argv_const, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -883,7 +884,7 @@ static struct functable net_func[] = {
 		default:
 			d_fprintf(stderr, _("\nInvalid option %s: %s\n"),
 				 poptBadOption(pc, 0), poptStrerror(opt));
-			net_help(c, argc, argv);
+			net_help(c, argc, argv_const);
 			exit(1);
 		}
 	}

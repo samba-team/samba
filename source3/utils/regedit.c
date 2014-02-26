@@ -498,7 +498,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	endwin();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -526,7 +526,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	popt_common_set_auth_info(auth_info);
-	pc = poptGetContext("regedit", argc, (const char **)argv, long_options, 0);
+	pc = poptGetContext("regedit", argc, argv, long_options, 0);
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		/* TODO */
