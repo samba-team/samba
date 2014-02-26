@@ -579,6 +579,10 @@ static void notify_bench3_del_on_close_set(struct tevent_req *subreq)
 
 	status = cli_nt_delete_on_close_recv(subreq);
 	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	subreq = cli_close_send(state, state->ev, state->cli, state->dnum);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
