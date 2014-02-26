@@ -2604,7 +2604,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	/* if it's already been set by the command line, then we don't
 	   override here */
-	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+	if (flags_list[parmnum] & FLAG_CMDLINE) {
 		TALLOC_FREE(frame);
 		return true;
 	}
@@ -2671,11 +2671,11 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 	int parmnum, i;
 	parmnum = lpcfg_map_parameter(pszParmName);
 	if (parmnum >= 0) {
-		parm_table[parmnum].flags &= ~FLAG_CMDLINE;
+		flags_list[parmnum] &= ~FLAG_CMDLINE;
 		if (!lp_do_parameter(-1, pszParmName, pszParmValue)) {
 			return false;
 		}
-		parm_table[parmnum].flags |= FLAG_CMDLINE;
+		flags_list[parmnum] |= FLAG_CMDLINE;
 
 		/* we have to also set FLAG_CMDLINE on aliases.  Aliases must
 		 * be grouped in the table, so we don't have to search the
@@ -2684,11 +2684,11 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 		     i>=0 && parm_table[i].offset == parm_table[parmnum].offset
 			     && parm_table[i].p_class == parm_table[parmnum].p_class;
 		     i--) {
-			parm_table[i].flags |= FLAG_CMDLINE;
+			flags_list[i] |= FLAG_CMDLINE;
 		}
 		for (i=parmnum+1;i<num_parameters() && parm_table[i].offset == parm_table[parmnum].offset
 			     && parm_table[i].p_class == parm_table[parmnum].p_class;i++) {
-			parm_table[i].flags |= FLAG_CMDLINE;
+			flags_list[i] |= FLAG_CMDLINE;
 		}
 
 		return true;
@@ -3098,7 +3098,7 @@ static void lp_save_defaults(void)
 	int i;
 	struct parmlist_entry * parm;
 	for (i = 0; parm_table[i].label; i++) {
-		if (!(parm_table[i].flags & FLAG_CMDLINE)) {
+		if (!(flags_list[i] & FLAG_CMDLINE)) {
 			flags_list[i] |= FLAG_DEFAULT;
 		}
 
