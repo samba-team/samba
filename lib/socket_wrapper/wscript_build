@@ -4,6 +4,7 @@ bld.SAMBA_LIBRARY('socket_wrapper',
                   source='socket_wrapper.c',
                   group='base_libraries',
                   private_library=True,
+                  allow_warnings=True,
                   enabled=bld.CONFIG_SET('SOCKET_WRAPPER'),
                   deps='replace')
 
