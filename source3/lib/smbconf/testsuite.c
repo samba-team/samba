@@ -25,7 +25,8 @@
 #include "lib/smbconf/smbconf_txt.h"
 
 static void print_strings(const char *prefix,
-			  uint32_t num_strings, const char **strings)
+			  uint32_t num_strings,
+			  const char * const *strings)
 {
 	uint32_t count;
 
@@ -56,7 +57,7 @@ static bool test_get_includes(struct smbconf_ctx *ctx)
 
 	printf("got %u includes%s\n", num_includes,
 	       (num_includes > 0) ? ":" : ".");
-	print_strings("", num_includes, (const char **)includes);
+	print_strings("", num_includes, (const char * const *)includes);
 
 	printf("OK: get_includes\n");
 	ret = true;
@@ -106,10 +107,11 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 	for (count = 0; count < get_num_includes; count++) {
 		if (!strequal(set_includes[count], get_includes[count])) {
 			printf("expected: \n");
-			print_strings("* ", set_num_includes, set_includes);
+			print_strings("* ", set_num_includes,
+				      (const char * const *)set_includes);
 			printf("got: \n");
 			print_strings("* ", get_num_includes,
-				      (const char **)get_includes);
+				      (const char * const *)get_includes);
 			printf("FAIL: get_set_includes - data mismatch:\n");
 			goto done;
 		}
