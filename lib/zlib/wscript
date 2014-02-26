@@ -24,6 +24,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('z',
                       private_library=True,
                       deps='replace',
+                      allow_warnings=True,
                       source='''adler32.c compress.c crc32.c gzio.c
                                 uncompr.c deflate.c trees.c zutil.c
                                 inflate.c infback.c inftrees.c inffast.c''')
