@@ -695,7 +695,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	for (i=1; i < new_ace_list_ndx;) {
 		struct security_ace *ai = &new_ace_list[i];
 		unsigned int remaining, j;
-		bool remove = false;
+		bool remove_ace = false;
 
 		for (j=0; j < i; j++) {
 			struct security_ace *aj = &new_ace_list[j];
@@ -704,11 +704,11 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 				continue;
 			}
 
-			remove = true;
+			remove_ace = true;
 			break;
 		}
 
-		if (!remove) {
+		if (!remove_ace) {
 			i++;
 			continue;
 		}
