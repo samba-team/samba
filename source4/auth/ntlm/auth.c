@@ -596,7 +596,7 @@ const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *
 		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain winbind", NULL);
 		break;
 	}
-	return (const char **) auth_methods;
+	return discard_const_p(const char *, auth_methods);
 }
 
 /***************************************************************************
