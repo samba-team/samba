@@ -414,8 +414,10 @@ const char **lpcfg_parm_string_list(TALLOC_CTX *mem_ctx,
 {
 	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
-	if (value != NULL)
-		return (const char **)str_list_make(mem_ctx, value, separator);
+	if (value != NULL) {
+		char **l = str_list_make(mem_ctx, value, separator);
+		return discard_const_p(const char *, l);
+	}
 
 	return NULL;
 }
@@ -905,8 +907,8 @@ void copy_service(struct loadparm_service *pserviceDest,
 				case P_CMDLIST:
 				case P_LIST:
 					TALLOC_FREE(*((char ***)dest_ptr));
-					*(const char * const **)dest_ptr = (const char * const *)str_list_copy(pserviceDest,
-										  *(const char * * const *)src_ptr);
+					*(char ***)dest_ptr = str_list_copy(pserviceDest,
+									    *discard_const_p(const char **, src_ptr));
 					break;
 				default:
 					break;
@@ -1287,8 +1289,8 @@ bool handle_netbios_aliases(struct loadparm_context *lp_ctx, struct loadparm_ser
 			    const char *pszParmValue, char **ptr)
 {
 	TALLOC_FREE(lp_ctx->globals->netbios_aliases);
-	lp_ctx->globals->netbios_aliases = (const char **)str_list_make_v3(lp_ctx->globals->ctx,
-									   pszParmValue, NULL);
+	lp_ctx->globals->netbios_aliases = str_list_make_v3_const(lp_ctx->globals->ctx,
+								  pszParmValue, NULL);
 
 	if (lp_ctx->s3_fns) {
 		return lp_ctx->s3_fns->set_netbios_aliases(lp_ctx->globals->netbios_aliases);
@@ -1502,9 +1504,8 @@ static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr
 
 		case P_CMDLIST:
 			TALLOC_FREE(*(char ***)parm_ptr);
-			*(const char * const **)parm_ptr
-				= (const char * const *)str_list_make_v3(mem_ctx,
-									 pszParmValue, NULL);
+			*(char ***)parm_ptr = str_list_make_v3(mem_ctx,
+							pszParmValue, NULL);
 			break;
 
 		case P_LIST:
@@ -1537,7 +1538,7 @@ static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr
 							  pszParmName, pszParmValue));
 						return false;
 					}
-					*(const char * const **)parm_ptr = (const char * const *) new_list;
+					*(char ***)parm_ptr = new_list;
 					break;
 				}
 			}
@@ -2001,7 +2002,7 @@ static bool is_default(void *base_structure, int i)
 		case P_CMDLIST:
 		case P_LIST:
 			return str_list_equal((const char * const *)parm_table[i].def.lvalue,
-					      *(const char ***)def_ptr);
+					      *(const char * const **)def_ptr);
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
