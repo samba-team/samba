@@ -266,18 +266,20 @@ uint32 dmapi_file_flags(const char * const path)
 	uint		nevents;
 
 	dm_sessid_t     dmapi_session;
-	const void      *dmapi_session_ptr;
+	dm_sessid_t     *dmapi_session_ptr;
+	const void      *_dmapi_session_ptr;
 	void	        *dm_handle = NULL;
 	size_t	        dm_handle_len = 0;
 
 	uint32	        flags = 0;
 
-	dmapi_session_ptr = dmapi_get_current_session();
-	if (dmapi_session_ptr == NULL) {
+	_dmapi_session_ptr = dmapi_get_current_session();
+	if (_dmapi_session_ptr == NULL) {
 		return 0;
 	}
 
-	dmapi_session = *(const dm_sessid_t *)dmapi_session_ptr;
+	dmapi_session_ptr = discard_const_p(dm_sessid_t, _dmapi_session_ptr);
+	dmapi_session = *dmapi_session_ptr;
 	if (dmapi_session == DM_NO_SESSION) {
 		return 0;
 	}
