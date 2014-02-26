@@ -181,15 +181,14 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 
 	/* we have a connection from a new client, now connect to the server */
 	status = open_socket_out(dest_ss, TCP_SMB_PORT, LONG_CONNECT_TIMEOUT, &s);
-
-	if (s == -1) {
+	if (!NT_STATUS_IS_OK(status)) {
 		char addr[INET6_ADDRSTRLEN];
 		if (dest_ss) {
 			print_sockaddr(addr, sizeof(addr), dest_ss);
 		}
 
 		d_printf("Unable to connect to %s (%s)\n",
-			 dest_ss?addr:"NULL",strerror(errno));
+			 dest_ss?addr:"NULL", nt_errstr(status));
 		exit(1);
 	}
 
