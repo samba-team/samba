@@ -2053,6 +2053,9 @@ void lpcfg_dump_a_service(struct loadparm_service * pService, struct loadparm_se
 	}
 	if (pService->param_opt != NULL) {
 		for (data = pService->param_opt; data; data = data->next) {
+			if (!show_defaults && (data->priority & FLAG_DEFAULT)) {
+				continue;
+			}
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
 		}
         }
@@ -2574,6 +2577,13 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 			parm->priority |= FLAG_DEFAULT;
 		}
 	}
+
+	for (parm=lp_ctx->sDefault->param_opt; parm; parm=parm->next) {
+		if (!(parm->priority & FLAG_CMDLINE)) {
+			parm->priority |= FLAG_DEFAULT;
+		}
+	}
+
 
 	return lp_ctx;
 }

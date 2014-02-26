@@ -257,6 +257,7 @@ static struct db_context *ServiceHash;
 static bool bInGlobalSection = true;
 static bool bGlobalOnly = false;
 static struct file_lists *file_lists = NULL;
+static unsigned int *flags_list = NULL;
 
 static void set_allowed_client_auth(void);
 
@@ -659,6 +660,7 @@ static void init_globals(bool reinit_globals)
 	ZERO_STRUCT(Globals);
 
 	Globals.ctx = talloc_pooled_object(NULL, char, 272, 2048);
+	flags_list = talloc_zero_array(Globals.ctx, unsigned int, num_parameters());
 
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
@@ -2887,6 +2889,10 @@ static void dump_globals(FILE *f, bool show_defaults)
 	if (Globals.param_opt != NULL) {
 		data = Globals.param_opt;
 		while(data) {
+			if (!show_defaults && (data->priority & FLAG_DEFAULT)) {
+				data = data->next;
+				continue;
+			}
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
 			data = data->next;
 		}
@@ -2900,7 +2906,7 @@ static void dump_globals(FILE *f, bool show_defaults)
 
 static void dump_a_service(struct loadparm_service *pService, FILE * f, bool show_defaults)
 {
-	return lpcfg_dump_a_service(pService, &sDefault, f, NULL, show_defaults);
+	return lpcfg_dump_a_service(pService, &sDefault, f, flags_list, show_defaults);
 }
 
 /***************************************************************************
@@ -3093,7 +3099,12 @@ void lp_killservice(int iServiceIn)
 static void lp_save_defaults(void)
 {
 	int i;
+	struct parmlist_entry * parm;
 	for (i = 0; parm_table[i].label; i++) {
+		if (!(parm_table[i].flags & FLAG_CMDLINE)) {
+			flags_list[i] |= FLAG_DEFAULT;
+		}
+
 		if (i > 0 && parm_table[i].offset == parm_table[i - 1].offset
 		    && parm_table[i].p_class == parm_table[i - 1].p_class)
 			continue;
@@ -3130,6 +3141,19 @@ static void lp_save_defaults(void)
 				break;
 		}
 	}
+
+	for (parm=Globals.param_opt; parm; parm=parm->next) {
+		if (!(parm->priority & FLAG_CMDLINE)) {
+			parm->priority |= FLAG_DEFAULT;
+		}
+	}
+
+	for (parm=sDefault.param_opt; parm; parm=parm->next) {
+		if (!(parm->priority & FLAG_CMDLINE)) {
+			parm->priority |= FLAG_DEFAULT;
+		}
+	}
+
 	defaults_saved = true;
 }
 
