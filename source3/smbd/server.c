@@ -755,7 +755,9 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 	/* use a reasonable default set of ports - listing on 445 and 139 */
 	if (smb_ports) {
-		ports = (const char **)str_list_make_v3(talloc_tos(), smb_ports, NULL);
+		char **l;
+		l = str_list_make_v3(talloc_tos(), smb_ports, NULL);
+		ports = discard_const_p(const char *, l);
 	}
 
 	for (j = 0; ports && ports[j]; j++) {
