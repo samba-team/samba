@@ -277,6 +277,7 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 	enum lsa_SidType *types = NULL;
 	struct dom_sid *sids = NULL;
 	char *full_name = NULL;
+	const char *names[1];
 	char *mapped_name = NULL;
 	NTSTATUS status;
 
@@ -302,6 +303,8 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 	DEBUG(3,("name_to_sid: %s for domain %s\n",
 		 full_name ? full_name : "", domain_name ));
 
+	names[0] = full_name;
+
 	/*
 	 * We don't run into deadlocks here, cause winbind_off() is
 	 * called in the main function.
@@ -310,7 +313,7 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 					 mem_ctx,
 					 lsa_policy,
 					 1, /* num_names */
-					 (const char **) &full_name,
+					 names,
 					 NULL, /* domains */
 					 1, /* level */
 					 &sids,

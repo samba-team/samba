@@ -135,6 +135,7 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		struct group *gr;
 		enum lsa_SidType type;
+		const char *p = NULL;
 		char *name = NULL;
 		bool ret;
 
@@ -142,8 +143,9 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		   the following call will not recurse so this is safe */
 		(void)winbind_on();
 		ret = winbind_lookup_sid(talloc_tos(), ids[i]->sid, NULL,
-					 (const char **)&name, &type);
+					 &p, &type);
 		(void)winbind_off();
+		name = discard_const_p(char, p);
 
 		if (!ret) {
 			/* TODO: how do we know if the name is really not mapped,

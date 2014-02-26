@@ -234,6 +234,7 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	struct dom_sid *sids = NULL;
 	enum lsa_SidType *types = NULL;
 	char *full_name = NULL;
+	const char *names[1];
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 	char *mapped_name = NULL;
 
@@ -265,8 +266,10 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n",
 		 full_name?full_name:"", domain_name ));
 
+	names[0] = full_name;
+
 	result = winbindd_lookup_names(mem_ctx, domain, 1,
-				       (const char **)&full_name, NULL,
+				       names, NULL,
 				       &sids, &types);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
