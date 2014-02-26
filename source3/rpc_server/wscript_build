@@ -96,6 +96,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source='''spoolss/srv_spoolss_nt.c
                     ../../librpc/gen_ndr/srv_spoolss.c
                     spoolss/srv_spoolss_util.c''',
+                    allow_warnings=True,
                     deps='PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
