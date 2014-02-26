@@ -145,8 +145,8 @@ void reply_sends(struct smb_request *req)
 {
 	struct msg_state *state;
 	int len;
-	const char *msg;
-	const char *p;
+	const uint8_t *msg;
+	const uint8_t *p;
 
 	START_PROFILE(SMBsends);
 
@@ -158,7 +158,7 @@ void reply_sends(struct smb_request *req)
 
 	state = talloc(talloc_tos(), struct msg_state);
 
-	p = (const char *)req->buf + 1;
+	p = req->buf + 1;
 	p += srvstr_pull_req_talloc(
 		state, req, &state->from, p, STR_ASCII|STR_TERMINATE) + 1;
 	p += srvstr_pull_req_talloc(
@@ -194,7 +194,7 @@ void reply_sends(struct smb_request *req)
 
 void reply_sendstrt(struct smb_request *req)
 {
-	const char *p;
+	const uint8_t *p;
 
 	START_PROFILE(SMBsendstrt);
 
@@ -214,7 +214,7 @@ void reply_sendstrt(struct smb_request *req)
 		return;
 	}
 
-	p = (const char *)req->buf+1;
+	p = req->buf+1;
 	p += srvstr_pull_req_talloc(
 		req->sconn->conn->msg_state, req,
 		&req->sconn->conn->msg_state->from, p,

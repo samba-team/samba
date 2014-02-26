@@ -127,7 +127,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	const char *native_os;
 	const char *native_lanman;
 	const char *primary_domain;
-	const char *p2;
 	uint16 data_blob_len = SVAL(req->vwv+7, 0);
 	enum remote_arch_types ra_type = get_remote_arch();
 	uint64_t vuid = req->vuid;
@@ -165,17 +164,17 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	file_save("negotiate.dat", in_blob.data, in_blob.length);
 #endif
 
-	p2 = (const char *)req->buf + in_blob.length;
+	p = req->buf + in_blob.length;
 
-	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
+	p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 				     STR_TERMINATE);
 	native_os = tmp ? tmp : "";
 
-	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
+	p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 				     STR_TERMINATE);
 	native_lanman = tmp ? tmp : "";
 
-	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
+	p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 				     STR_TERMINATE);
 	primary_domain = tmp ? tmp : "";
 

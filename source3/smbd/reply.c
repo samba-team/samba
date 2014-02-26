@@ -345,7 +345,7 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
  * end of the smbbuf area
  */
 size_t srvstr_pull_req_talloc(TALLOC_CTX *ctx, struct smb_request *req,
-			      char **dest, const char *src, int flags)
+			      char **dest, const uint8_t *src, int flags)
 {
 	ssize_t bufrem = smbreq_bufrem(req, src);
 
@@ -688,7 +688,8 @@ void reply_tcon(struct smb_request *req)
 	char *dev = NULL;
 	int pwlen=0;
 	NTSTATUS nt_status;
-	const char *p;
+	const uint8_t *p;
+	const char *p2;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbd_server_connection *sconn = req->sconn;
 	NTTIME now = timeval_to_nttime(&req->request_time);
@@ -701,7 +702,7 @@ void reply_tcon(struct smb_request *req)
 		return;
 	}
 
-	p = (const char *)req->buf + 1;
+	p = req->buf + 1;
 	p += srvstr_pull_req_talloc(ctx, req, &service_buf, p, STR_TERMINATE);
 	p += 1;
 	pwlen = srvstr_pull_req_talloc(ctx, req, &password, p, STR_TERMINATE);
@@ -714,9 +715,9 @@ void reply_tcon(struct smb_request *req)
 		END_PROFILE(SMBtcon);
 		return;
 	}
-	p = strrchr_m(service_buf,'\\');
-	if (p) {
-		service = p+1;
+	p2 = strrchr_m(service_buf,'\\');
+	if (p2) {
+		service = p2+1;
 	} else {
 		service = service_buf;
 	}
@@ -760,7 +761,8 @@ void reply_tcon_and_X(struct smb_request *req)
 	NTSTATUS nt_status;
 	int passlen;
 	char *path = NULL;
-	const char *p, *q;
+	const uint8_t *p;
+	const char *q;
 	uint16_t tcon_flags;
 	struct smbXsrv_session *session = NULL;
 	NTTIME now = timeval_to_nttime(&req->request_time);
@@ -815,9 +817,9 @@ void reply_tcon_and_X(struct smb_request *req)
 	}
 
 	if (sconn->smb1.negprot.encrypted_passwords) {
-		p = (const char *)req->buf + passlen;
+		p = req->buf + passlen;
 	} else {
-		p = (const char *)req->buf + passlen + 1;
+		p = req->buf + passlen + 1;
 	}
 
 	p += srvstr_pull_req_talloc(ctx, req, &path, p, STR_TERMINATE);
