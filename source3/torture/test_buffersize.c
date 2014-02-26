@@ -29,7 +29,6 @@
 bool run_qpathinfo_bufsize(int dummy)
 {
 	struct cli_state *cli = NULL;
-	NTSTATUS status, status2;
 	bool ret = false;
 	int i;
 
