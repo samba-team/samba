@@ -380,5 +380,8 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				DATA_BLOB *session_key,
 				struct auth_session_info **session_info);
 
+/* The following definitions come from auth/auth_samba4.c  */
+
+NTSTATUS auth_samba4_init(void);
 
 #endif /* _AUTH_PROTO_H_ */
