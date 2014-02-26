@@ -567,7 +567,9 @@ done:
 int reg_format_registry_key(struct reg_format* f, struct registry_key* key,
 			    bool del)
 {
-	return reg_format_key(f, (const char**)&key->key->name, 1, del);
+	const char *knames[1];
+	knames[0] = key->key->name;
+	return reg_format_key(f, knames, 1, del);
 }
 
 int reg_format_registry_value(struct reg_format* f, const char* name,
