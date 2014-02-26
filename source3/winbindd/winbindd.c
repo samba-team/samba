@@ -1304,7 +1304,7 @@ static void winbindd_addr_changed(struct tevent_req *req)
 
 /* Main function */
 
-int main(int argc, char **argv, char **envp)
+int main(int argc, const char **argv)
 {
 	static bool is_daemon = False;
 	static bool Fork = True;
@@ -1374,7 +1374,7 @@ int main(int argc, char **argv, char **envp)
 
 	/* Initialise samba/rpc client stuff */
 
-	pc = poptGetContext("winbindd", argc, (const char **)argv, long_options, 0);
+	pc = poptGetContext("winbindd", argc, argv, long_options, 0);
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
