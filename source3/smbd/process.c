@@ -3369,6 +3369,11 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 	case TEVENT_TRACE_AFTER_WAIT:
 		END_PROFILE_STAMP(smbd_idle, conn->smbd_idle_profstamp);
 		break;
+#ifdef TEVENT_HAS_LOOP_ONCE_TRACE_POINTS
+	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
+	case TEVENT_TRACE_AFTER_LOOP_ONCE:
+		break;
+#endif
 	}
 }
 
