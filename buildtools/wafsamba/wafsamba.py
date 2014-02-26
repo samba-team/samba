@@ -132,7 +132,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   private_library=False,
                   grouping_library=False,
                   allow_undefined_symbols=False,
-                  allow_warnings=True,
+                  allow_warnings=False,
                   enabled=True):
     '''define a Samba library'''
 
@@ -420,7 +420,7 @@ def SAMBA_MODULE(bld, modname, source,
                  pyembed=False,
                  manpages=None,
                  allow_undefined_symbols=False,
-                 allow_warnings=True
+                 allow_warnings=False
                  ):
     '''define a Samba module.'''
 
@@ -520,7 +520,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     vars=None,
                     subdir=None,
                     hide_symbols=False,
-                    allow_warnings=True,
+                    allow_warnings=False,
                     pyext=False,
                     pyembed=False):
     '''define a Samba subsystem'''
