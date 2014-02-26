@@ -76,6 +76,7 @@ bld.SAMBA_MODULE('dcerpc_unixinfo',
 
 bld.SAMBA_MODULE('dcesrv_samr',
 	source='samr/dcesrv_samr.c samr/samr_password.c',
+	allow_warnings=True,
 	autoproto='samr/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_samr_init',
@@ -102,6 +103,7 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
 
 bld.SAMBA_MODULE('dcerpc_lsarpc',
 	source='lsa/dcesrv_lsa.c lsa/lsa_init.c lsa/lsa_lookup.c',
+	allow_warnings=True,
 	autoproto='lsa/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_lsa_init',
@@ -129,6 +131,7 @@ bld.SAMBA_MODULE('dcerpc_spoolss',
 
 bld.SAMBA_MODULE('dcerpc_drsuapi',
 	source='drsuapi/dcesrv_drsuapi.c drsuapi/updaterefs.c drsuapi/getncchanges.c drsuapi/addentry.c drsuapi/writespn.c drsuapi/drsutil.c',
+	allow_warnings=True,
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_drsuapi_init',
 	deps='samdb DCERPC_COMMON NDR_DRSUAPI samba-security'
