@@ -49,5 +49,6 @@ def configure(conf):
 def build(bld):
     bld.SAMBA_SUBSYSTEM('LIBTLS',
                         source='tls.c tlscert.c tls_tstream.c',
+                        allow_warnings=True,
                         public_deps='talloc gnutls gcrypt samba-hostconfig samba_socket LIBTSOCKET tevent tevent-util'
                         )
