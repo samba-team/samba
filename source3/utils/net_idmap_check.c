@@ -73,7 +73,9 @@ static bool is_map(const struct record* r) {
 /* action *********************************************************************/
 
 typedef struct check_action {
-	const char* fmt;
+	void (*fmt)(struct check_action *a,
+		    struct record *r,
+		    TDB_DATA *v);
 	const char* name;
 	const char* prompt;
 	const char* answers;
@@ -97,6 +99,38 @@ struct check_actions {
 	check_action invalid_diff;
 };
 
+static void invalid_mapping_fmt(struct check_action *a,
+				struct record *r,
+				TDB_DATA *v)
+{
+	d_printf("%1$s: %2$s -> %3$s\n(%4$s <- %3$s)\n",
+		 a->name,
+		 print_data(r, r->key),
+		 print_data(r, r->val),
+		 (v ? print_data(r, *v) : ""));
+}
+
+static void record_exists_fmt(struct check_action *a,
+			      struct record *r,
+			      TDB_DATA *v)
+{
+	d_printf("%1$s: %2$s\n-%4$s\n+%3$s\n",
+		 a->name,
+		 print_data(r, r->key),
+		 print_data(r, r->val),
+		 (v ? print_data(r, *v) : ""));
+}
+
+static void valid_mapping_fmt(struct check_action *a,
+			      struct record *r,
+			      TDB_DATA *v)
+{
+	d_printf("%1$s: %2$s <-> %3$s\n",
+		 a->name,
+		 print_data(r, r->key),
+		 print_data(r, r->val));
+}
+
 static struct check_actions
 check_actions_init(const struct check_options* opts) {
 	struct check_actions ret = {
@@ -117,7 +151,7 @@ check_actions_init(const struct check_options* opts) {
 			.verbose = true,
 		},
 		.invalid_mapping = (check_action) {
-			.fmt = "%1$s: %2$s -> %3$s\n(%4$s <- %3$s)\n",
+			.fmt = invalid_mapping_fmt,
 			.name = "Invalid mapping",
 			.prompt = "[e]dit/[d]elete/[D]elete all"
 			"/[s]kip/[S]kip all",
@@ -134,7 +168,7 @@ check_actions_init(const struct check_options* opts) {
 			.verbose = true,
 		},
 		.record_exists = (check_action) {
-			.fmt = "%1$s: %2$s\n-%4$s\n+%3$s\n",
+			.fmt = record_exists_fmt,
 			.name = "Record exists",
 			.prompt = "[o]verwrite/[O]verwrite all/[e]dit"
 			"/[d]elete/[D]elete all/[s]kip/[S]kip all",
@@ -164,7 +198,7 @@ check_actions_init(const struct check_options* opts) {
 			.verbose = true,
 		},
 		.valid_mapping = (check_action) {
-			.fmt = "%1$s: %2$s <-> %3$s\n",
+			.fmt = valid_mapping_fmt,
 			.name = "Mapping",
 			.auto_action = 's',
 			.verbose = opts->verbose,
@@ -230,10 +264,7 @@ static char get_action(struct check_action* a, struct record* r, TDB_DATA* v) {
 				d_printf("\n");
 			}
 		} else {
-			d_printf(a->fmt, a->name,
-				 print_data(r, r->key),
-				 print_data(r, r->val),
-				 (v ? print_data(r, *v) : ""));
+			a->fmt(a, r, v);
 		}
 	}
 
