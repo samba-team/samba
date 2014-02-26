@@ -39,7 +39,7 @@ int main(int argc, const char **argv)
 	struct NETLOGON_INFO_2 *i2 = NULL;
 	struct NETLOGON_INFO_3 *i3 = NULL;
 	struct NETLOGON_INFO_4 *i4 = NULL;
-	const char *domain = NULL;
+	char *domain = NULL;
 
 	poptContext pc;
 	int opt;
@@ -75,7 +75,7 @@ int main(int argc, const char **argv)
 		level = atoi(poptGetArg(pc));
 	}
 
-	domain = "TEST";
+	domain = strdup("TEST");
 
 	/* I_NetLogonControl2 */
 
