@@ -1436,21 +1436,23 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 				  int mod_op, const char *name, 
 				  const void *_invals)
 {
-	const void **invals = (const void **)_invals;
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) *mods;
 	struct berval **ber_values = NULL;
 	char **char_values = NULL;
 
-	if (!invals) {
+	if (!_invals) {
 		mod_op = LDAP_MOD_DELETE;
 	} else {
-		if (mod_op & LDAP_MOD_BVALUES)
-			ber_values = ads_dup_values(ctx, 
-						(const struct berval **)invals);
-		else
-			char_values = ads_push_strvals(ctx, 
-						  (const char **) invals);
+		if (mod_op & LDAP_MOD_BVALUES) {
+			const struct berval **b;
+			b = discard_const_p(const struct berval *, _invals);
+			ber_values = ads_dup_values(ctx, b);
+		} else {
+			const char **c;
+			c = discard_const_p(const char *, _invals);
+			char_values = ads_push_strvals(ctx, c);
+		}
 	}
 
 	/* find the first empty slot */
@@ -2418,7 +2420,8 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 		     utf8_field=ldap_next_attribute(ads->ldap.ld,
 						    (LDAPMessage *)msg,b)) {
 			struct berval **ber_vals;
-			char **str_vals, **utf8_vals;
+			char **str_vals;
+			char **utf8_vals;
 			char *field;
 			bool string; 
 
@@ -2433,10 +2436,12 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 			string = fn(ads, field, NULL, data_area);
 
 			if (string) {
+				const char **p;
+
 				utf8_vals = ldap_get_values(ads->ldap.ld,
 					       	 (LDAPMessage *)msg, field);
-				str_vals = ads_pull_strvals(ctx, 
-						  (const char **) utf8_vals);
+				p = discard_const_p(const char *, utf8_vals);
+				str_vals = ads_pull_strvals(ctx, p);
 				fn(ads, field, (void **) str_vals, data_area);
 				ldap_value_free(utf8_vals);
 			} else {
@@ -3277,7 +3282,7 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 
 	for (msg = ads_first_entry(ads, res); msg;
 	     msg = ads_next_entry(ads, msg)) {
-
+		const char **p = discard_const_p(const char *, *ous);
 		char *dn = NULL;
 
 		dn = ads_get_dn(ads, talloc_tos(), msg);
@@ -3286,15 +3291,14 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 
-		if (!add_string_to_array(mem_ctx, dn,
-					 (const char ***)ous,
-					 num_ous)) {
+		if (!add_string_to_array(mem_ctx, dn, &p, num_ous)) {
 			TALLOC_FREE(dn);
 			ads_msgfree(ads, res);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 
 		TALLOC_FREE(dn);
+		*ous = discard_const_p(char *, p);
 	}
 
 	ads_msgfree(ads, res);
