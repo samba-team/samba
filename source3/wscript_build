@@ -190,6 +190,7 @@ bld.SAMBA3_SUBSYSTEM('param',
                    lib/sharesec.c
                    lib/ldap_debug_handler.c
                    lib/util_names.c''',
+                   allow_warnings=True,
                    deps='samba-util PARAM_UTIL ldap lber LOADPARM_CTX samba3core smbconf param_local.h param_global.h cups''')
 
 # this includes only the low level parse code, not stuff
@@ -221,6 +222,7 @@ bld.SAMBA3_LIBRARY('smbregistry',
                    replace util_reg samba-util samba-security
                    errors3 dbwrap samba3-util''',
                    allow_undefined_symbols=True,
+                   allow_warnings=True,
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
@@ -255,6 +257,7 @@ bld.SAMBA3_LIBRARY('util_cmdline',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                      source='libads/kerberos.c libads/ads_status.c',
+                     allow_warnings=True,
                      public_deps='krb5samba k5crypto gssapi LIBTSOCKET CLDAP LIBNMB')
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
@@ -449,6 +452,7 @@ bld.SAMBA3_LIBRARY('ads',
                    libads/ldap_schema.c
                    libads/util.c
                    libads/ndr.c''',
+                   allow_warnings=True,
                    deps='cli-ldap-common krb5samba ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL smbldap',
                    private_library=True)
 
@@ -494,6 +498,18 @@ bld.SAMBA3_LIBRARY('smbd_conn',
                    deps='samba3-util samba-util',
                    private_library=True)
 
+bld.SAMBA3_SUBSYSTEM('sysquotas',
+                     source='''
+                        lib/sysquotas.c
+                        lib/sysquotas_linux.c
+                        lib/sysquotas_xfs.c
+                        lib/sysquotas_4A.c
+                        lib/sysquotas_4B.c
+                        lib/sysquotas_nfs.c
+                     ''',
+                     allow_warnings=True,
+                     deps='samba3-util samba-util')
+
 bld.SAMBA3_LIBRARY('smbd_base',
                    source='''
                    smbd/server_reload.c
@@ -536,12 +552,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    smbd/error.c
                    printing/printspoolss.c
                    printing/spoolssd.c
-                   lib/sysquotas.c
-                   lib/sysquotas_linux.c
-                   lib/sysquotas_xfs.c
-                   lib/sysquotas_4A.c
-                   lib/sysquotas_4B.c
-                   lib/sysquotas_nfs.c
                    lib/background.c
                    lib/sessionid_tdb.c
                    lib/conn_tdb.c
@@ -616,6 +626,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    RPC_SERVICE
                    NDR_SMBXSRV
                    LIBASYS
+                   sysquotas
                    ccan-hash
                    NDR_SMB_ACL
                    netapi
@@ -691,6 +702,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     source='''libnet/libnet_dssync.c
                     libnet/libnet_dssync_passdb.c
                     libnet/libnet_dssync_keytab.c''',
+                    allow_warnings=True,
                     deps='LIBNET RPC_NDR_DRSUAPI')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
