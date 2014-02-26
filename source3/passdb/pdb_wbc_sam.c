@@ -135,18 +135,21 @@ static NTSTATUS pdb_wbc_sam_lookup_rids(struct pdb_methods *methods,
 					enum lsa_SidType *attrs)
 {
 	NTSTATUS result = NT_STATUS_OK;
+	const char *p = NULL;
+	const char **pp = NULL;
 	char *domain = NULL;
 	char **account_names = NULL;
 	enum lsa_SidType *attr_list = NULL;
 	int i;
 
 	if (!winbind_lookup_rids(talloc_tos(), domain_sid, num_rids, rids,
-				 (const char **)&domain,
-				 (const char ***)&account_names, &attr_list))
+				 &p, &pp, &attr_list))
 	{
 		result = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
+	domain = discard_const_p(char, p);
+	account_names = discard_const_p(char *, pp);
 
 	memcpy(attrs, attr_list, num_rids * sizeof(enum lsa_SidType));
 
@@ -243,16 +246,18 @@ static NTSTATUS pdb_wbc_sam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map
 				 struct dom_sid sid)
 {
 	NTSTATUS result = NT_STATUS_OK;
+	const char *p1 = NULL, *p2 = NULL;
 	char *name = NULL;
 	char *domain = NULL;
 	enum lsa_SidType name_type;
 	gid_t gid;
 
-	if (!winbind_lookup_sid(talloc_tos(), &sid, (const char **)&domain,
-				(const char **) &name, &name_type)) {
+	if (!winbind_lookup_sid(talloc_tos(), &sid, &p1, &p2, &name_type)) {
 		result = NT_STATUS_NO_SUCH_GROUP;
 		goto done;
 	}
+	domain = discard_const_p(char, p1);
+	name = discard_const_p(char, p2);
 
 	if ((name_type != SID_NAME_DOM_GRP) &&
 	    (name_type != SID_NAME_DOMAIN) &&
@@ -282,6 +287,7 @@ static NTSTATUS pdb_wbc_sam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map
 				 gid_t gid)
 {
 	NTSTATUS result = NT_STATUS_OK;
+	const char *p1 = NULL, *p2 = NULL;
 	char *name = NULL;
 	char *domain = NULL;
 	struct dom_sid sid;
@@ -292,11 +298,12 @@ static NTSTATUS pdb_wbc_sam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map
 		goto done;
 	}
 
-	if (!winbind_lookup_sid(talloc_tos(), &sid, (const char **)&domain,
-				(const char **)&name, &name_type)) {
+	if (!winbind_lookup_sid(talloc_tos(), &sid, &p1, &p2, &name_type)) {
 		result = NT_STATUS_NO_SUCH_GROUP;
 		goto done;
 	}
+	domain = discard_const_p(char, p1);
+	name = discard_const_p(char, p2);
 
 	if ((name_type != SID_NAME_DOM_GRP) &&
 	    (name_type != SID_NAME_DOMAIN) &&
