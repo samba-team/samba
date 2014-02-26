@@ -141,6 +141,7 @@ def build(bld):
                           pc_files='ldb.pc',
                           vnum=VERSION,
                           private_library=private_library,
+                          allow_warnings=True,
                           manpages='man/ldb.3',
                           abi_directory='ABI',
                           abi_match = abi_match)
@@ -205,6 +206,7 @@ def build(bld):
                          'tests/sample_module.c',
                          init_function='ldb_sample_init',
                          internal_module=False,
+                         allow_warnings=True,
                          module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
@@ -242,6 +244,7 @@ def build(bld):
                             'common/ldb.c',
                             deps='tevent tdb',
                             includes='include',
+                            allow_warnings=True,
                             cflags=['-DLDB_MODULESDIR=\"%s\"' % modules_dir])
 
         LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
