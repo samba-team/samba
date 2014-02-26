@@ -3061,14 +3061,24 @@ static void dump_a_service(struct loadparm_service *pService, FILE * f)
 bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 {
 	bool result = false;
-	fstring local_parm_name;
+	char *local_parm_name;
 	char *parm_opt;
 	const char *parm_opt_value;
 
 	struct loadparm_context *lp_ctx;
 
+	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		return false;
+	}
+
 	/* check for parametrical option */
-	fstrcpy( local_parm_name, parm_name);
+	local_parm_name = talloc_strdup(lp_ctx, parm_name);
+	if (local_parm_name == NULL) {
+		TALLOC_FREE(lp_ctx);
+		return false;
+	}
+
 	parm_opt = strchr( local_parm_name, ':');
 
 	if (parm_opt) {
@@ -3083,11 +3093,6 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 			}
 		}
 		return result;
-	}
-
-	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		return false;
 	}
 
 	if (isGlobal) {
