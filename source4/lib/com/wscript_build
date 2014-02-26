@@ -2,6 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('COM',
 	source='tables.c rot.c main.c',
+	allow_warnings=True,
 	deps='samba-util samba-hostconfig events ndr NDR_DCOM'
 	)
 
@@ -19,6 +20,7 @@ bld.SAMBA_SUBSYSTEM('DCOM',
 
 bld.SAMBA_MODULE('com_simple',
 	source='classes/simple.c',
+	allow_warnings=True,
 	deps='talloc',
 	subsystem='COM',
 	init_function='com_simple_init'
