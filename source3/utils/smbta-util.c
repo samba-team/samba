@@ -78,7 +78,7 @@ static void load_key_from_file(char *filename, char *key)
 		exit(1);
 	}
 	l = fscanf(keyfile, "%s", key);
-	if (strlen(key) != 16) {
+	if (l != 1 || strlen(key) != 16) {
 		printf("Key file in wrong format\n");
 		fclose(keyfile);
 		exit(1);
