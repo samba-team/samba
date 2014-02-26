@@ -145,6 +145,7 @@ def configure(conf):
 def ccan_module(bld, name, deps=''):
     bld.SAMBA_SUBSYSTEM('ccan-%s' % name,
                         source=bld.path.ant_glob('%s/*.c' % name),
+                        allow_warnings=True,
                         deps=deps)
     bld.env.CCAN_MODS += 'ccan-%s ' % name
 
@@ -188,5 +189,6 @@ def build(bld):
     bld.SAMBA_LIBRARY('ccan',
                       source='',
                       deps=bld.env.CCAN_MODS,
+                      allow_warnings=True,
                       private_library=True,
                       grouping_library=True)
