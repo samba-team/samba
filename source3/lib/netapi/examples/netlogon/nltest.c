@@ -289,7 +289,7 @@ int main(int argc, const char **argv)
 			status = I_NetLogonControl2(opt_server,
 						    NETLOGON_CONTROL_SET_DBFLAG,
 						    query_level,
-						    (uint8_t *)opt_dbflag,
+						    (uint8_t *)&opt_dbflag,
 						    &buffer);
 			if (status != 0) {
 				fprintf(stderr, "I_NetlogonControl failed: Status = %d 0x%x %s\n",
