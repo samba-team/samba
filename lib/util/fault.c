@@ -114,6 +114,7 @@ _PUBLIC_ const char *panic_action = NULL;
 /*
    default smb_panic() implementation
 */
+static void smb_panic_default(const char *why) _NORETURN_;
 static void smb_panic_default(const char *why)
 {
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
