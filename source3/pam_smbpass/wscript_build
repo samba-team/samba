@@ -6,6 +6,7 @@ if bld.CONFIG_SET('WITH_PAM_MODULES'):
                   pam_smb_passwd.c
                   pam_smb_acct.c
                   support.c''',
+        allow_warnings=True,
         deps='''tdb talloc pam PAM_ERRORS wbclient cap asn1util param pdb
                 LIBNTLMSSP LIBTSOCKET''',
         cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
