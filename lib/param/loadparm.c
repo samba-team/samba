@@ -1584,6 +1584,11 @@ bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 		return true;
 	}
 
+	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
+		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
+			  pszParmName));
+	}
+
 	parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
 	return set_variable(lp_ctx->globals, parmnum, parm_ptr,
@@ -1610,6 +1615,11 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
 	   but don't report an error */
 	if (lp_ctx->flags[parmnum] & FLAG_CMDLINE) {
 		return true;
+	}
+
+	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
+		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
+			  pszParmName));
 	}
 
 	if (parm_table[parmnum].p_class == P_GLOBAL) {
