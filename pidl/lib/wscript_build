@@ -28,6 +28,10 @@ bld.INSTALL_FILES(bld.env.VENDORDIR_PERL,
                   Parse/Pidl/Samba3/ServerNDR.pm
                   Parse/Pidl/Compat.pm
                   Parse/Pidl/NDR.pm
-                  Parse/Yapp/Driver.pm
                   ''',
                   flat=False)
+
+if not bld.CONFIG_SET('USING_SYSTEM_PARSE_YAPP_DRIVER'):
+    bld.INSTALL_FILES(bld.env.VENDORDIR_PERL,
+                      'Parse/Yapp/Driver.pm',
+                      flat=False)

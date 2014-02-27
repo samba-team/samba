@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, Logs
+import os, sys, Logs, Options
 from samba_utils import MODE_755
 
 def set_options(opt):
@@ -19,6 +19,9 @@ def configure(conf):
     # yapp is used for building the parser
     conf.find_program('yapp', var='YAPP')
     conf.find_program('pod2man', var='POD2MAN')
+
+    # Check for perl(Parse::Yapp::Driver)
+    check_system_perl_module(conf, "Parse::Yapp::Driver", 1.05)
 
 def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=MODE_755)
@@ -82,3 +85,23 @@ try this to avoid this message:
 $ touch ../pidl/lib/Parse/Pidl/IDL.pm ../pidl/lib/Parse/Pidl/Expr.pm
 ''')
 
+def check_system_perl_module(conf, module, version=None):
+    bundle_name = module.replace('::', '_')
+    module_check = module
+    found = False
+
+    # Create module string with version
+    if version:
+        module_check = module + ' ' + str(version)
+
+    # Check if we have to bundle it.
+    if conf.LIB_MUST_BE_BUNDLED(bundle_name.lower()):
+        return False
+
+    # Check for system perl module
+    if not conf.check_perl_module(module_check):
+        return False
+
+    conf.define('USING_SYSTEM_%s' % bundle_name.upper(), 1)
+
+    return True
