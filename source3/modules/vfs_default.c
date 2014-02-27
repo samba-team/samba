@@ -1021,12 +1021,12 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 {
 	const char *in_data = (const char *)_in_data;
 	char **out_data = (char **)_out_data;
+	NTSTATUS status;
 
 	switch (function) {
 	case FSCTL_SET_SPARSE:
 	{
 		bool set_sparse = true;
-		NTSTATUS status;
 
 		if (in_len >= 1 && in_data[0] == 0) {
 			set_sparse = false;
@@ -1125,16 +1125,23 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 * Call the VFS routine to actually do the work.
 		 */
 		if (SMB_VFS_GET_SHADOW_COPY_DATA(fsp, shadow_data, labels)!=0) {
-			TALLOC_FREE(shadow_data);
-			if (errno == ENOSYS) {
-				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n",
-					fsp->conn->connectpath));
-				return NT_STATUS_NOT_SUPPORTED;
+			int log_lev = 0;
+			if (errno == 0) {
+				/* broken module didn't set errno on error */
+				status = NT_STATUS_UNSUCCESSFUL;
 			} else {
-				DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, failed.\n",
-					fsp->conn->connectpath));
-				return NT_STATUS_UNSUCCESSFUL;
+				status = map_nt_error_from_unix(errno);
+				if (NT_STATUS_EQUAL(status,
+						    NT_STATUS_NOT_SUPPORTED)) {
+					log_lev = 5;
+				}
 			}
+			DEBUG(log_lev, ("FSCTL_GET_SHADOW_COPY_DATA: "
+					"connectpath %s, failed - %s.\n",
+					fsp->conn->connectpath,
+					nt_errstr(status)));
+			TALLOC_FREE(shadow_data);
+			return status;
 		}
 
 		labels_data_count = (shadow_data->num_volumes * 2 *
@@ -1262,7 +1269,6 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 * and SEEK_DATA/SEEK_HOLE on Solaris is needed to make
 		 * this FSCTL correct for sparse files.
 		 */
-		NTSTATUS status;
 		uint64_t offset, length;
 		char *out_data_tmp = NULL;
 
