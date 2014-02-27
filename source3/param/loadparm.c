@@ -2576,6 +2576,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	TALLOC_CTX *mem_ctx;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ok;
+	struct loadparm_context *lp_ctx;
 
 	parmnum = lpcfg_map_parameter(pszParmName);
 
@@ -2644,50 +2645,24 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		mem_ctx = ServicePtrs[snum];
 	}
 
-	/* if it is a special case then go ahead */
-	if (parm_table[parmnum].special) {
-		struct loadparm_context *lp_ctx = loadparm_init_s3(frame,
-								   loadparm_s3_helpers());
-		if (lp_ctx == NULL) {
-			DEBUG(0, ("loadparm_init_s3 failed\n"));
-			TALLOC_FREE(frame);
-			return false;
-		}
-
-		lp_ctx->sDefault = &sDefault;
-		lp_ctx->services = ServicePtrs;
-		lp_ctx->bInGlobalSection = bInGlobalSection;
-		lp_ctx->flags = flags_list;
-		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
-						  (char **)parm_ptr);
+	lp_ctx = loadparm_init_s3(frame,
+				  loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		TALLOC_FREE(frame);
-
-		if (!ok) {
-			return false;
-		}
-		goto mark_non_default;
-	}
-
-	TALLOC_FREE(frame);
-
-	ok = set_variable_helper(mem_ctx, parmnum, parm_ptr, pszParmName, pszParmValue);
-
-	if (!ok) {
 		return false;
 	}
 
-mark_non_default:
-	if (snum < 0 && (flags_list[parmnum] & FLAG_DEFAULT)) {
-		flags_list[parmnum] &= ~FLAG_DEFAULT;
-		/* we have to also unset FLAG_DEFAULT on aliases */
-		for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
-			flags_list[i] &= ~FLAG_DEFAULT;
-		}
-		for (i=parmnum+1;i<num_parameters() && parm_table[i].offset == parm_table[parmnum].offset;i++) {
-			flags_list[i] &= ~FLAG_DEFAULT;
-		}
-	}
-	return true;
+	lp_ctx->sDefault = &sDefault;
+	lp_ctx->services = ServicePtrs;
+	lp_ctx->bInGlobalSection = bInGlobalSection;
+	lp_ctx->flags = flags_list;
+
+	ok = set_variable(mem_ctx, snum, parmnum, parm_ptr, pszParmName, pszParmValue,
+			    lp_ctx, (snum < 0));
+	TALLOC_FREE(frame);
+
+	return ok;
 }
 
 /***************************************************************************

@@ -1406,7 +1406,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 	return true;
 }
 
-bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
+static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue)
 {
 	int i;
@@ -1533,7 +1533,7 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 
 }
 
-static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
+bool set_variable(TALLOC_CTX *mem_ctx, int snum, int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
 			 struct loadparm_context *lp_ctx, bool on_globals)
 {
@@ -1542,7 +1542,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		ok = parm_table[parmnum].special(lp_ctx, -1, pszParmValue,
+		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
 						  (char **)parm_ptr);
 		if (!ok) {
 			return false;
@@ -1598,7 +1598,7 @@ bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 
 	parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
-	return set_variable(lp_ctx->globals->ctx, parmnum, parm_ptr,
+	return set_variable(lp_ctx->globals->ctx, -1, parmnum, parm_ptr,
 			    pszParmName, pszParmValue, lp_ctx, true);
 }
 
@@ -1647,7 +1647,7 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
 		    parm_table[i].p_class == parm_table[parmnum].p_class)
 			bitmap_clear(service->copymap, i);
 
-	return set_variable(service, parmnum, parm_ptr, pszParmName,
+	return set_variable(service, -1, parmnum, parm_ptr, pszParmName,
 			    pszParmValue, lp_ctx, false);
 }
 
