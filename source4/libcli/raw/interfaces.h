@@ -1339,12 +1339,12 @@ enum smb_setfsinfo_level {
 union smb_setfsinfo {
 	/* generic interface */
 	struct {
-		enum smb_fsinfo_level level;
+		enum smb_setfsinfo_level level;
 	} generic;
 
 	/* TRANS2 RAW_QFS_UNIX_INFO interface */
 	struct {
-		enum smb_fsinfo_level level;
+		enum smb_setfsinfo_level level;
 
 		struct {
 			uint16_t major_version;
