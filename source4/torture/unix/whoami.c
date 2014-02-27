@@ -21,6 +21,7 @@
 #include "libcli/libcli.h"
 #include "libcli/raw/raw_proto.h"
 #include "torture/torture.h"
+#include "torture/unix/proto.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"

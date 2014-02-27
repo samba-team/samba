@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/unix/proto.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
