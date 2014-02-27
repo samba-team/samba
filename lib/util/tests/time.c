@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 
 static bool test_null_time(struct torture_context *tctx)
 {

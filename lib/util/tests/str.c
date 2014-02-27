@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 
 static bool test_string_sub_simple(struct torture_context *tctx)
 {

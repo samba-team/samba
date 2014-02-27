@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "../lib/util/parmlist.h"
 
 static bool test_get_int(struct torture_context *tctx)

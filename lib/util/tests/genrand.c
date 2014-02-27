@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 
 static void dummy_reseed(void *userdata, int *d)
 {

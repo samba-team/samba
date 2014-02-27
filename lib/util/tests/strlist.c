@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "param/param.h"
 
 struct test_list_element {

@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 
 #define TEST_FILENAME "utilfile.test"
 #define TEST_LINE1 "This is list line 1..."

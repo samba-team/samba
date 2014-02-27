@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "../asn1.h"
 
 struct oid_data {
