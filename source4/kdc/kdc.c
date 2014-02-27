@@ -733,7 +733,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
 	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
-		const char **wcard = iface_list_wildcard(kdc, lp_ctx);
+		char **wcard = iface_list_wildcard(kdc);
 		NT_STATUS_HAVE_NO_MEMORY(wcard);
 		for (i=0; wcard[i]; i++) {
 			if (kdc_port) {

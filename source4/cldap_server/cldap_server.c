@@ -153,7 +153,7 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
 	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
-		const char **wcard = iface_list_wildcard(cldapd, lp_ctx);
+		char **wcard = iface_list_wildcard(cldapd);
 		NT_STATUS_HAVE_NO_MEMORY(wcard);
 		for (i=0; wcard[i]; i++) {
 			status = cldapd_add_socket(cldapd, lp_ctx, wcard[i]);
