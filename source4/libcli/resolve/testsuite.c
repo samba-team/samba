@@ -23,6 +23,7 @@
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "system/network.h"
 #include "lib/util/util_net.h"
 

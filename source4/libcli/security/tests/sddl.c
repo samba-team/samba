@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/security/security.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 
