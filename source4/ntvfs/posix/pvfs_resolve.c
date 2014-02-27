@@ -694,7 +694,7 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 
 	if (h->have_opendb_entry) {
 		struct odb_lock *lck;
-		char *name = NULL;
+		const char *name = NULL;
 
 		lck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
 		if (lck == NULL) {
@@ -705,7 +705,7 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		status = odb_get_path(lck, (const char **) &name);
+		status = odb_get_path(lck, &name);
 		if (NT_STATUS_IS_OK(status)) {
 			/*
 			 * This relies an the fact that
@@ -719,6 +719,7 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 				const char *new_file;
 				char *new_orig;
 				char *delim;
+				char *full_name = discard_const_p(char, name);
 
 				delim = strrchr(name, '/');
 				if (!delim) {
@@ -747,7 +748,7 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 
 				talloc_free(h->name->original_name);
 				talloc_free(h->name->full_name);
-				h->name->full_name = talloc_steal(h->name, name);
+				h->name->full_name = talloc_steal(h->name, full_name);
 				h->name->original_name = new_orig;
 			}
 		}
