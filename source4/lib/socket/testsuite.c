@@ -25,6 +25,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 

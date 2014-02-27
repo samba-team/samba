@@ -27,6 +27,7 @@
 #include "torture/torture.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+#include "torture/local/proto.h"
 
 const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 

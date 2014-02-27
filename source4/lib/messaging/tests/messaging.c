@@ -25,7 +25,7 @@
 #include "torture/torture.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
-
+#include "torture/local/proto.h"
 
 static uint32_t msg_pong;
 
