@@ -693,7 +693,8 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 				/* Initialise the referrals list */
 				if (ac->referrals == NULL) {
-					ac->referrals = (const char **) str_list_make_empty(ac);
+					char **l = str_list_make_empty(ac);
+					ac->referrals = discard_const_p(const char *, l);
 					if (ac->referrals == NULL) {
 						return ldb_oom(ldb);
 					}

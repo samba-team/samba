@@ -105,9 +105,11 @@ static int prepare_modules_line(struct ldb_context *ldb,
 	}
 
 	if (backend_mod) {
-		backend_full_list = (const char **)str_list_make_single(tmp_ctx, backend_mod);
+		char **b = str_list_make_single(tmp_ctx, backend_mod);
+		backend_full_list = discard_const_p(const char *, b);
 	} else {
-		backend_full_list = (const char **)str_list_make_empty(tmp_ctx);
+		char **b = str_list_make_empty(tmp_ctx);
+		backend_full_list = discard_const_p(const char *, b);
 	}
 	if (!backend_full_list) {
 		talloc_free(tmp_ctx);
