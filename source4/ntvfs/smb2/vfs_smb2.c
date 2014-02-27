@@ -100,6 +100,7 @@ struct async_info {
   a handler for oplock break events from the server - these need to be passed
   along to the client
  */
+#if 0
 static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *p_private)
 {
 	struct cvfs_private *p = p_private;
@@ -123,6 +124,7 @@ static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	if (!NT_STATUS_IS_OK(status)) return false;
 	return true;
 }
+#endif
 
 /*
   return a handle to the root of the share
