@@ -663,7 +663,7 @@ static int converse(const pam_handle_t *pamh,
 	retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
 	if (retval == PAM_SUCCESS) {
 		retval = conv->conv(nargs,
-				    (const struct pam_message **)message,
+				    discard_const_p(const struct pam_message *, message),
 				    response, conv->appdata_ptr);
 	}
 
@@ -1998,7 +1998,7 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 		}
 
 		/* FIXME: avoid to send multiple PAM messages after another */
-		switch (reject_reason) {
+		switch ((int)reject_reason) {
 			case -1:
 				break;
 			case WBC_PWD_CHANGE_NO_ERROR:

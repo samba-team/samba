@@ -287,7 +287,7 @@ static NSS_STATUS fill_pwent(struct passwd *result,
    Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
 static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
-		      char *gr_mem, char **buffer, size_t *buflen)
+		      const char *gr_mem, char **buffer, size_t *buflen)
 {
 	char *name;
 	int i;

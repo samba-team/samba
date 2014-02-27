@@ -1329,13 +1329,14 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 	}
 
 	wbc_status = wbcLookupRids(&dinfo->sid, num_rids, rids,
-				   (const char **)&domain_name, &names, &types);
+				   &p, &names, &types);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_printf("winbind_lookup_rids failed: %s\n",
 			 wbcErrorString(wbc_status));
 		goto done;
 	}
 
+	domain_name = discard_const_p(char, p);
 	d_printf("Domain: %s\n", domain_name);
 
 	for (i=0; i<num_rids; i++) {
@@ -2104,7 +2105,7 @@ enum {
 	OPT_KRB5CCNAME
 };
 
-int main(int argc, char **argv, char **envp)
+int main(int argc, const char **argv, char **envp)
 {
 	int opt;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -2219,7 +2220,7 @@ int main(int argc, char **argv, char **envp)
 
 	/* Parse options */
 
-	pc = poptGetContext("wbinfo", argc, (const char **)argv,
+	pc = poptGetContext("wbinfo", argc, argv,
 			    long_options, 0);
 
 	/* Parse command line options */
