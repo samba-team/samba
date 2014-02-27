@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/srv_spoolss.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_register.h"
+#include "rpc_server/rpc_config.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "librpc/rpc/dcerpc_ep.h"
 #include "lib/server_prefork.h"
@@ -631,6 +632,7 @@ static char *get_bq_logfile(void)
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		    struct messaging_context *msg_ctx)
 {
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	struct rpc_srv_callbacks spoolss_cb;
 	struct dcerpc_binding_vector *v;
 	TALLOC_CTX *mem_ctx;
@@ -778,25 +780,28 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	status = dcerpc_binding_vector_new(mem_ctx, &v);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to create binding vector (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
-	}
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED &&
+	    (lp_parm_bool(-1, "rpc_server", "register_embedded_np", false))) {
+		status = dcerpc_binding_vector_new(mem_ctx, &v);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to create binding vector (%s)\n",
+				  nt_errstr(status)));
+			exit(1);
+		}
 
-	status = dcerpc_binding_vector_add_np_default(&ndr_table_spoolss, v);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to add np to binding vector (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
-	}
+		status = dcerpc_binding_vector_add_np_default(&ndr_table_spoolss, v);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to add np to binding vector (%s)\n",
+				  nt_errstr(status)));
+			exit(1);
+		}
 
-	status = rpc_ep_register(ev_ctx, msg_ctx, &ndr_table_spoolss, v);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register spoolss endpoint! (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
+		status = rpc_ep_register(ev_ctx, msg_ctx, &ndr_table_spoolss, v);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to register spoolss endpoint! (%s)\n",
+				  nt_errstr(status)));
+			exit(1);
+		}
 	}
 
 	talloc_free(mem_ctx);
