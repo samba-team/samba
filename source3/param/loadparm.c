@@ -678,7 +678,7 @@ static void init_globals(bool reinit_globals)
 	 * table once the defaults are set */
 	ZERO_STRUCT(Globals);
 
-	Globals.ctx = talloc_new(NULL);
+	Globals.ctx = talloc_pooled_object(NULL, char, 272, 2048);
 
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
