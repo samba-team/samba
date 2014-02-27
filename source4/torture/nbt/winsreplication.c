@@ -719,7 +719,6 @@ static bool test_wrepl_update_one(struct torture_context *tctx,
 	struct wrepl_table *update;
 	struct wrepl_wins_owner wrepl_wins_owners[1];
 	struct wrepl_packet *repl_recv;
-	struct wrepl_wins_owner *send_request;
 	struct wrepl_send_reply *send_reply;
 	struct wrepl_wins_name wrepl_wins_names[1];
 	uint32_t assoc_ctx;
@@ -753,7 +752,6 @@ static bool test_wrepl_update_one(struct torture_context *tctx,
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_VALUE(tctx, repl_recv->mess_type, WREPL_REPLICATION);
 	CHECK_VALUE(tctx, repl_recv->message.replication.command, WREPL_REPL_SEND_REQUEST);
-	send_request = &repl_recv->message.replication.info.owner;
 
 	ZERO_STRUCT(repl_send);
 	repl_send.opcode			= WREPL_OPCODE_BITS;
