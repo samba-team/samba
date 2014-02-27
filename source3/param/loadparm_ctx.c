@@ -75,6 +75,7 @@ static struct loadparm_s3_helpers s3_fns =
 	.init_ldap_debugging = init_ldap_debugging,
 	.set_netbios_aliases = set_netbios_aliases,
 	.lp_do_parameter = lp_do_parameter,
+	.do_section = lp_do_section,
 };
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)

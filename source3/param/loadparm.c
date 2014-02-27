@@ -1161,7 +1161,6 @@ static int map_parameter_canonical(const char *pszParmName, bool *inverse);
 static const char *get_boolean(bool bool_value);
 static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata);
-static bool lp_do_section(const char *pszSectionName, void *userdata);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static void show_parameter(int parmIndex);
@@ -2773,7 +2772,7 @@ static void init_locals(void)
  Returns true on success, false on failure.
 ***************************************************************************/
 
-static bool lp_do_section(const char *pszSectionName, void *userdata)
+bool lp_do_section(const char *pszSectionName, void *userdata)
 {
 	bool bRetval;
 	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
