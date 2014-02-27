@@ -102,7 +102,7 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 	struct netr_SamBaseInfo *base;
 	wbcErr wbc_err;
 	NTSTATUS status;
-	int result, sid_idx, i;
+	int sid_idx, i;
 	char sid_str[50];
 
 	/* Let winbind decode the PAC */
