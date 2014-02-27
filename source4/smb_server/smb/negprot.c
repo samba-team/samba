@@ -125,15 +125,16 @@ static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 ****************************************************************************/
 static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 {
+	int secword=0;
+	time_t t = req->request_time.tv_sec;
 	uint16_t raw;
+
 	if (lpcfg_async_smb_echo_handler(req->smb_conn->lp_ctx)) {
 		raw = 0;
 	} else {
 		raw = (lpcfg_read_raw(req->smb_conn->lp_ctx)?1:0) |
 		      (lpcfg_write_raw(req->smb_conn->lp_ctx)?2:0);
 	}
-	int secword=0;
-	time_t t = req->request_time.tv_sec;
 
 	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypt_passwords(req->smb_conn->lp_ctx);
 
