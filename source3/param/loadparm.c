@@ -2361,7 +2361,7 @@ static void init_iconv(void)
 ***************************************************************************/
 static bool bAllowIncludeRegistry = true;
 
-bool lp_include(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
+bool lp_include(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
 
@@ -2375,7 +2375,7 @@ bool lp_include(struct loadparm_context *unused, int snum, const char *pszParmVa
 		if (!bAllowIncludeRegistry) {
 			return true;
 		}
-		if (bInGlobalSection) {
+		if (lp_ctx->bInGlobalSection) {
 			bool ret;
 			include_depth++;
 			ret = process_registry_globals();
@@ -2646,6 +2646,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 								   loadparm_s3_helpers());
 		lp_ctx->sDefault = &sDefault;
 		lp_ctx->services = ServicePtrs;
+		lp_ctx->bInGlobalSection = bInGlobalSection;
 		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
 						  (char **)parm_ptr);
 		TALLOC_FREE(frame);
