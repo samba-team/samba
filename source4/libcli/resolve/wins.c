@@ -27,7 +27,7 @@
 #include "lib/socket/netif.h"
 
 struct resolve_wins_data {
-	const char **address_list;
+	char **address_list;
 	struct interface *ifaces;
 	uint16_t nbt_port;
 	int nbt_timeout;
@@ -47,7 +47,8 @@ struct composite_context *resolve_name_wins_send(
 	struct resolve_wins_data *wins_data = talloc_get_type(userdata, struct resolve_wins_data);
 	if (wins_data->address_list == NULL) return NULL;
 	return resolve_name_nbtlist_send(mem_ctx, event_ctx, flags, port, name,
-					 wins_data->address_list, wins_data->ifaces,
+					 (const char * const *)wins_data->address_list,
+					 wins_data->ifaces,
 					 wins_data->nbt_port, wins_data->nbt_timeout,
 					 false, true);
 }
@@ -66,7 +67,7 @@ NTSTATUS resolve_name_wins_recv(struct composite_context *c,
 bool resolve_context_add_wins_method(struct resolve_context *ctx, const char **address_list, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)
 {
 	struct resolve_wins_data *wins_data = talloc(ctx, struct resolve_wins_data);
-	wins_data->address_list = (const char **)str_list_copy(wins_data, address_list);
+	wins_data->address_list = str_list_copy(wins_data, address_list);
 	wins_data->ifaces = talloc_reference(wins_data, ifaces);
 	wins_data->nbt_port = nbt_port;
 	wins_data->nbt_timeout = nbt_timeout;
