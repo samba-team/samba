@@ -24,6 +24,7 @@
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "torture/rpc/torture_rpc.h"
+#include "torture/nbt/proto.h"
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
