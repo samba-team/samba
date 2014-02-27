@@ -158,13 +158,16 @@ bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target)
 
 	/* see if its a RPC transport specifier */
 	if (!smbcli_parse_unc(target, NULL, &host, &share)) {
+		const char *h;
+
 		status = dcerpc_parse_binding(talloc_autofree_context(), target, &binding_struct);
 		if (NT_STATUS_IS_ERR(status)) {
 			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", target);
 			return false;
 		}
 
-		host = dcerpc_binding_get_string_option(binding_struct, "host");
+		h = dcerpc_binding_get_string_option(binding_struct, "host");
+		host = discard_const_p(char, h);
 		if (host != NULL) {
 			lpcfg_set_cmdline(lp_ctx, "torture:host", host);
 		}
@@ -378,7 +381,7 @@ int main(int argc, const char *argv[])
 	const char *extra_module = NULL;
 	static int list_tests = 0, list_testsuites = 0;
 	int num_extra_users = 0;
-	char **restricted = NULL;
+	const char **restricted = NULL;
 	int num_restricted = -1;
 	const char *load_list = NULL;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
@@ -479,8 +482,9 @@ int main(int argc, const char *argv[])
 	}
 
 	if (load_list != NULL) {
-		restricted = file_lines_load(load_list, &num_restricted, 0,
-									 talloc_autofree_context());
+		char **r;
+		r = file_lines_load(load_list, &num_restricted, 0, talloc_autofree_context());
+		restricted = discard_const_p(const char *, r);
 		if (restricted == NULL) {
 			printf("Unable to read load list file '%s'\n", load_list);
 			exit(1);
