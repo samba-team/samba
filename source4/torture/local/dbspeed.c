@@ -27,6 +27,7 @@
 #include "ldb_wrap.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "torture/smbtorture.h"
+#include "torture/local/proto.h"
 #include "param/param.h"
 
 float tdb_speed;

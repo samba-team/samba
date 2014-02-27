@@ -23,6 +23,7 @@
 #include "system/wait.h"
 #include "libcli/raw/libcliraw.h"
 #include "torture/util.h"
+#include "torture/local/proto.h"
 #include "param/provision.h"
 
 static bool test_tempdir(struct torture_context *tctx)
