@@ -2154,7 +2154,21 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 			make_tdb_data((uint8_t *)&fsp->file_id,
 				      sizeof(fsp->file_id)),
 			brl_get_locks_readonly_parser, &state);
-		if (!NT_STATUS_IS_OK(status)) {
+
+		if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_FOUND)) {
+			/*
+			 * No locks on this file. Return an empty br_lock.
+			 */
+			br_lock = talloc(fsp, struct byte_range_lock);
+			if (br_lock == NULL) {
+				goto fail;
+			}
+
+			br_lock->have_read_oplocks = false;
+			br_lock->num_locks = 0;
+			br_lock->lock_data = NULL;
+
+		} else if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not parse byte range lock record: "
 				  "%s\n", nt_errstr(status)));
 			goto fail;
