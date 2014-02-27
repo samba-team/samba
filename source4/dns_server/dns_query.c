@@ -258,7 +258,7 @@ static WERROR handle_question(struct dns_server *dns,
 			      struct dns_res_rec **answers, uint16_t *ancount)
 {
 	struct dns_res_rec *ans = *answers;
-	WERROR werror;
+	WERROR werror, werror_return;
 	unsigned int ri;
 	struct dnsp_DnssrvRpcRecord *recs;
 	uint16_t rec_count, ai = *ancount;
@@ -274,6 +274,9 @@ static WERROR handle_question(struct dns_server *dns,
 	if (ans == NULL) {
 		return WERR_NOMEM;
 	}
+
+	/* Set up for an NXDOMAIN reply if no match is found */
+	werror_return = DNS_ERR(NAME_ERROR);
 
 	for (ri = 0; ri < rec_count; ri++) {
 		if ((recs[ri].wType == DNS_TYPE_CNAME) &&
@@ -319,28 +322,27 @@ static WERROR handle_question(struct dns_server *dns,
 			if (!W_ERROR_IS_OK(werror)) {
 				return werror;
 			}
+			werror_return = WERR_OK;
 
 
 			continue;
 		}
 		if ((question->question_type != DNS_QTYPE_ALL) &&
 		    (recs[ri].wType != question->question_type)) {
+			werror_return = WERR_OK;
 			continue;
 		}
 		werror = create_response_rr(question, &recs[ri], &ans, &ai);
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
 		}
-	}
-
-	if (ai == 0) {
-		return DNS_ERR(NAME_ERROR);
+		werror_return = WERR_OK;
 	}
 
 	*ancount = ai;
 	*answers = ans;
 
-	return WERR_OK;
+	return werror_return;
 }
 
 static NTSTATUS create_tkey(struct dns_server *dns,
