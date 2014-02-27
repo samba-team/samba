@@ -142,6 +142,7 @@ static void nbtd_wins_refresh(struct tevent_context *ev, struct tevent_timer *te
 	struct nbt_name_socket *nbtsock = wins_socket(iface);
 	struct tevent_req *subreq;
 	struct nbtd_wins_refresh_state *state;
+	char **l;
 
 	state = talloc_zero(iname, struct nbtd_wins_refresh_state);
 	if (state == NULL) {
@@ -152,7 +153,8 @@ static void nbtd_wins_refresh(struct tevent_context *ev, struct tevent_timer *te
 
 	/* setup a wins name refresh request */
 	state->io.in.name            = iname->name;
-	state->io.in.wins_servers    = (const char **)str_list_make_single(state, iname->wins_server);
+	l = str_list_make_single(state, iname->wins_server);
+	state->io.in.wins_servers    = discard_const_p(const char *, l);
 	state->io.in.wins_port       = lpcfg_nbt_port(iface->nbtsrv->task->lp_ctx);
 	state->io.in.addresses       = nbtd_address_list(iface, state);
 	state->io.in.nb_flags        = iname->nb_flags;
