@@ -492,7 +492,7 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 	int protocol;
 	uint8_t *p;
 	uint32_t protos_count = 0;
-	char **protos = NULL;
+	const char **protos = NULL;
 
 	if (req->smb_conn->negotiate.done_negprot) {
 		smbsrv_terminate_connection(req->smb_conn, "multiple negprot's are not permitted");
@@ -504,13 +504,13 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 	while (true) {
 		size_t len;
 
-		protos = talloc_realloc(req, protos, char *, protos_count + 1);
+		protos = talloc_realloc(req, protos, const char *, protos_count + 1);
 		if (!protos) {
 			smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
 			return;
 		}
 		protos[protos_count] = NULL;
-		len = req_pull_ascii4(&req->in.bufinfo, (const char **)&protos[protos_count], p, STR_ASCII|STR_TERMINATE);
+		len = req_pull_ascii4(&req->in.bufinfo, &protos[protos_count], p, STR_ASCII|STR_TERMINATE);
 		p += len;
 		if (len == 0 || !protos[protos_count]) break;
 
