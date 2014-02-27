@@ -3155,7 +3155,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
 	int opt;
 	int i, username_count=0;
@@ -3203,7 +3203,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	options.max_open_handles = 20;
 	options.seeds_file = "gentest_seeds.dat";
 
-	pc = poptGetContext("gentest", argc, (const char **) argv, long_options, 
+	pc = poptGetContext("gentest", argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");

@@ -547,7 +547,7 @@ static void usage(poptContext pc)
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc,char *argv[])
+int main(int argc, const char *argv[])
 {
 	char *share[NSERVERS];
 	int opt;
@@ -584,7 +584,7 @@ static void usage(poptContext pc)
 	setlinebuf(stdout);
 	seed = time(NULL);
 
-	pc = poptGetContext("locktest", argc, (const char **) argv, long_options, 
+	pc = poptGetContext("locktest", argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");

@@ -358,7 +358,7 @@ _NORETURN_ static void max_runtime_handler(int sig)
 /****************************************************************************
   main program
 ****************************************************************************/
-int main(int argc,char *argv[])
+int main(int argc, const char *argv[])
 {
 	int opt, i;
 	bool correct = true;
@@ -430,7 +430,7 @@ int main(int argc,char *argv[])
 	/* we are never interested in SIGPIPE */
 	BlockSignals(true, SIGPIPE);
 
-	pc = poptGetContext("smbtorture", argc, (const char **) argv, long_options, 
+	pc = poptGetContext("smbtorture", argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<binding>|<unc> TEST1 TEST2 ...");
