@@ -51,8 +51,6 @@ static void smb2srv_keepalive_send(struct smb2srv_request *req)
 
 void smb2srv_keepalive_recv(struct smb2srv_request *req)
 {
-	uint16_t _pad;
-
 	if (req->in.body_size != 0x04) {
 		smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER);
 		return;
@@ -62,8 +60,6 @@ void smb2srv_keepalive_recv(struct smb2srv_request *req)
 		smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
-
-	_pad	= SVAL(req->in.body, 0x02);
 
 	req->status = smb2srv_keepalive_backend(req);
 

@@ -282,11 +282,7 @@ static void smb2srv_logoff_send(struct smb2srv_request *req)
 
 void smb2srv_logoff_recv(struct smb2srv_request *req)
 {
-	uint16_t _pad;
-
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x04, false);
-
-	_pad	= SVAL(req->in.body, 0x02);
 
 	req->status = smb2srv_logoff_backend(req);
 
