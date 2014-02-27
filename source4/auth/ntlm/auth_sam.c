@@ -379,6 +379,7 @@ static const struct auth_operations sam_ops = {
 	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper
 };
 
+_PUBLIC_ NTSTATUS auth4_sam_init(void);
 _PUBLIC_ NTSTATUS auth4_sam_init(void)
 {
 	NTSTATUS ret;
