@@ -624,7 +624,7 @@ void netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_Credential
 static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
 						enum netr_LogonInfoClass level,
 						union netr_LogonLevel *logon,
-						bool encrypt)
+						bool do_encrypt)
 {
 	static const char zeros[16];
 
@@ -646,7 +646,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 
 			h = logon->password->lmpassword.hash;
 			if (memcmp(h, zeros, 16) != 0) {
-				if (encrypt) {
+				if (do_encrypt) {
 					netlogon_creds_aes_encrypt(creds, h, 16);
 				} else {
 					netlogon_creds_aes_decrypt(creds, h, 16);
@@ -655,7 +655,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 
 			h = logon->password->ntpassword.hash;
 			if (memcmp(h, zeros, 16) != 0) {
-				if (encrypt) {
+				if (do_encrypt) {
 					netlogon_creds_aes_encrypt(creds, h, 16);
 				} else {
 					netlogon_creds_aes_decrypt(creds, h, 16);
@@ -678,7 +678,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 
 			p = &logon->password->lmpassword;
 			if (memcmp(p->hash, zeros, 16) != 0) {
-				if (encrypt) {
+				if (do_encrypt) {
 					netlogon_creds_des_encrypt(creds, p);
 				} else {
 					netlogon_creds_des_decrypt(creds, p);
@@ -686,7 +686,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 			}
 			p = &logon->password->ntpassword;
 			if (memcmp(p->hash, zeros, 16) != 0) {
-				if (encrypt) {
+				if (do_encrypt) {
 					netlogon_creds_des_encrypt(creds, p);
 				} else {
 					netlogon_creds_des_decrypt(creds, p);
@@ -705,7 +705,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 		}
 
 		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			if (encrypt) {
+			if (do_encrypt) {
 				netlogon_creds_aes_encrypt(creds,
 						logon->generic->data,
 						logon->generic->length);
