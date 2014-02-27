@@ -336,9 +336,9 @@ static void websrv_task_init(struct task_server *task)
 
 		talloc_free(ifaces);
 	} else {
-		const char **wcard;
+		char **wcard;
 		int i;
-		wcard = iface_list_wildcard(task, task->lp_ctx);
+		wcard = iface_list_wildcard(task);
 		if (wcard == NULL) {
 			DEBUG(0,("No wildcard addresses available\n"));
 			goto failed;

@@ -63,9 +63,9 @@ static void smbsrv_task_init(struct task_server *task)
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		const char **wcard;
+		char **wcard;
 		int i;
-		wcard = iface_list_wildcard(task, task->lp_ctx);
+		wcard = iface_list_wildcard(task);
 		if (wcard == NULL) {
 			DEBUG(0,("No wildcard addresses available\n"));
 			goto failed;
