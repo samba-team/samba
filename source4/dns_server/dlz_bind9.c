@@ -466,7 +466,7 @@ static isc_result_t b9_putnamedrr(struct dlz_bind9_data *state,
    parse options
  */
 static isc_result_t parse_options(struct dlz_bind9_data *state,
-				  unsigned int argc, char *argv[],
+				  unsigned int argc, const char **argv,
 				  struct b9_options *options)
 {
 	int opt;
@@ -477,7 +477,7 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 		{ NULL }
 	};
 
-	pc = poptGetContext("dlz_bind9", argc, (const char **)argv, long_options,
+	pc = poptGetContext("dlz_bind9", argc, argv, long_options,
 			POPT_CONTEXT_KEEP_FIRST);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -571,7 +571,7 @@ static int dlz_state_debug_unregister(struct dlz_bind9_data *state)
   called to initialise the driver
  */
 _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
-				 unsigned int argc, char *argv[],
+				 unsigned int argc, const char **argv,
 				 void **dbdata, ...)
 {
 	struct dlz_bind9_data *state;
