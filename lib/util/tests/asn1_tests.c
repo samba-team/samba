@@ -111,47 +111,47 @@ static const struct {
 	int value;
 } integer_tests[] = {
         {
-		.blob = {"\x02\x01\x00", 3},
+		.blob = { discard_const_p(uint8_t, "\x02\x01\x00"), 3},
 		.value = 0
 	},
 	{
-		.blob = {"\x02\x01\x7f", 3},
+		.blob = { discard_const_p(uint8_t, "\x02\x01\x7f"), 3},
 		.value = 127
 	},
 	{
-		.blob = {"\x02\x02\x00\x80", 4},
+		.blob = { discard_const_p(uint8_t, "\x02\x02\x00\x80"), 4},
 		.value = 128
 	},
 	{
-		.blob = {"\x02\x02\x01\x00", 4},
+		.blob = { discard_const_p(uint8_t, "\x02\x02\x01\x00"), 4},
 		.value = 256
 	},
 	{
-		.blob = {"\x02\x01\x80", 3},
+		.blob = { discard_const_p(uint8_t, "\x02\x01\x80"), 3},
 		.value = -128
 	},
 	{
-		.blob = {"\x02\x02\xff\x7f", 4},
+		.blob = { discard_const_p(uint8_t, "\x02\x02\xff\x7f"), 4},
 		.value = -129
 	},
 	{
-		.blob = {"\x02\x01\xff", 3},
+		.blob = { discard_const_p(uint8_t, "\x02\x01\xff"), 3},
 		.value = -1
 	},
 	{
-		.blob = {"\x02\x02\xff\x01", 4},
+		.blob = { discard_const_p(uint8_t, "\x02\x02\xff\x01"), 4},
 		.value = -255
 	},
 	{
-		.blob = {"\x02\x02\x00\xff", 4},
+		.blob = { discard_const_p(uint8_t, "\x02\x02\x00\xff"), 4},
 		.value = 255
 	},
 	{
-		.blob = {"\x02\x04\x80\x00\x00\x00", 6},
+		.blob = { discard_const_p(uint8_t, "\x02\x04\x80\x00\x00\x00"), 6},
 		.value = 0x80000000
 	},
 	{
-		.blob = {"\x02\x04\x7f\xff\xff\xff", 6},
+		.blob = { discard_const_p(uint8_t, "\x02\x04\x7f\xff\xff\xff"), 6},
 		.value = 0x7fffffff
 	}
 };
