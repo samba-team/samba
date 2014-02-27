@@ -1161,7 +1161,7 @@ static int map_parameter_canonical(const char *pszParmName, bool *inverse);
 static const char *get_boolean(bool bool_value);
 static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata);
-static bool do_section(const char *pszSectionName, void *userdata);
+static bool lp_do_section(const char *pszSectionName, void *userdata);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static void show_parameter(int parmIndex);
@@ -2073,7 +2073,7 @@ static bool process_smbconf_service(struct smbconf_service *service)
 		return false;
 	}
 
-	ret = do_section(service->name, NULL);
+	ret = lp_do_section(service->name, NULL);
 	if (ret != true) {
 		return false;
 	}
@@ -2404,7 +2404,7 @@ bool lp_include(struct loadparm_context *unused, int snum, const char *pszParmVa
 	if (file_exist(fname)) {
 		bool ret;
 		include_depth++;
-		ret = pm_process(fname, do_section, do_parameter, NULL);
+		ret = pm_process(fname, lp_do_section, do_parameter, NULL);
 		include_depth--;
 		TALLOC_FREE(fname);
 		return ret;
@@ -2773,7 +2773,7 @@ static void init_locals(void)
  Returns true on success, false on failure.
 ***************************************************************************/
 
-static bool do_section(const char *pszSectionName, void *userdata)
+static bool lp_do_section(const char *pszSectionName, void *userdata)
 {
 	bool bRetval;
 	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
@@ -3954,7 +3954,7 @@ static bool lp_load_ex(const char *pszFname,
 
 		add_to_file_list(NULL, &file_lists, pszFname, n2);
 
-		bRetval = pm_process(n2, do_section, do_parameter, NULL);
+		bRetval = pm_process(n2, lp_do_section, do_parameter, NULL);
 		TALLOC_FREE(n2);
 
 		/* finish up the last section */
