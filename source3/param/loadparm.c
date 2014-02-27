@@ -2648,6 +2648,12 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	if (parm_table[parmnum].special) {
 		struct loadparm_context *lp_ctx = loadparm_init_s3(frame,
 								   loadparm_s3_helpers());
+		if (lp_ctx == NULL) {
+			DEBUG(0, ("loadparm_init_s3 failed\n"));
+			TALLOC_FREE(frame);
+			return false;
+		}
+
 		lp_ctx->sDefault = &sDefault;
 		lp_ctx->services = ServicePtrs;
 		lp_ctx->bInGlobalSection = bInGlobalSection;
