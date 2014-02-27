@@ -3183,12 +3183,20 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 
 
 /*
-  called when a daemon restarts - send all tickes for all public addresses
-  we are serving immediately to the new node.
+  Called when another daemon starts - caises all tickles for all
+  public addresses we are serving to be sent to the new node on the
+  next check.  This actually causes the next scheduled call to
+  tdb_update_tcp_tickles() to update all nodes.  This is simple and
+  doesn't require careful error handling.
  */
-int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn)
+int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t pnn)
 {
-/*XXX here we should send all tickes we are serving to the new node */
+	struct ctdb_vnn *vnn;
+
+	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
+		vnn->tcp_update_needed = true;
+	}
+
 	return 0;
 }
 
