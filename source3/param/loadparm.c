@@ -2651,6 +2651,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		lp_ctx->sDefault = &sDefault;
 		lp_ctx->services = ServicePtrs;
 		lp_ctx->bInGlobalSection = bInGlobalSection;
+		lp_ctx->flags = flags_list;
 		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
 						  (char **)parm_ptr);
 		TALLOC_FREE(frame);
