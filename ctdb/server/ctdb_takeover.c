@@ -2578,8 +2578,13 @@ static void iprealloc_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
 		/* If the control timed out then that's a real error,
 		 * so call the real fail callback
 		 */
-		cd->fail_callback(ctdb, pnn, res, outdata,
-				  cd->fail_callback_data);
+		if (cd->fail_callback) {
+			cd->fail_callback(ctdb, pnn, res, outdata,
+					  cd->fail_callback_data);
+		} else {
+			DEBUG(DEBUG_WARNING,
+			      ("iprealloc timed out but no callback registered\n"));
+		}
 		break;
 	default:
 		/* If not a timeout then either the ipreallocated
