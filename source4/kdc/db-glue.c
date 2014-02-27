@@ -1362,10 +1362,10 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 	} else {
 		int lret;
 		char *short_princ;
-		const char *realm;
+		/* const char *realm; */
 		/* server as client principal case, but we must not lookup userPrincipalNames */
 		*realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
-		realm = krb5_principal_get_realm(context, principal);
+		/* realm = krb5_principal_get_realm(context, principal); */
 
 		/* TODO: Check if it is our realm, otherwise give referral */
 
