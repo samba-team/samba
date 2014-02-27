@@ -21,6 +21,7 @@
 #include "param/share.h"
 #include "param/param.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 
 static bool test_create(struct torture_context *tctx)
 {
