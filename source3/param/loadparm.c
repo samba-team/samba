@@ -2617,6 +2617,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	/* we might point at a service, the default service or a global */
 	if (snum < 0) {
 		parm_ptr = lp_parm_ptr(NULL, &parm_table[parmnum]);
+		mem_ctx = Globals.ctx;
 	} else {
 		if (parm_table[parmnum].p_class == P_GLOBAL) {
 			DEBUG(0,
@@ -2626,9 +2627,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			return true;
 		}
 		parm_ptr = lp_parm_ptr(ServicePtrs[snum], &parm_table[parmnum]);
-	}
 
-	if (snum >= 0) {
 		if (!ServicePtrs[snum]->copymap)
 			init_copymap(ServicePtrs[snum]);
 
@@ -2640,9 +2639,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 				bitmap_clear(ServicePtrs[snum]->copymap, i);
 			}
 		}
+
 		mem_ctx = ServicePtrs[snum];
-	} else {
-		mem_ctx = Globals.ctx;
 	}
 
 	/* if it is a special case then go ahead */
