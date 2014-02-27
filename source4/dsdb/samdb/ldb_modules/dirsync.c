@@ -336,10 +336,13 @@ skip:
 	 * if not we remove the attribute.
 	 */
 	for (i = msg->num_elements - 1; i >= 0; i--) {
+		const char *ldapattrname;
+
 		el = &(msg->elements[i]);
+		ldapattrname = el->name;
+
 		attr = dsdb_attribute_by_lDAPDisplayName(dsc->schema,
 				el->name);
-		const char *ldapattrname = el->name;
 		keep = false;
 
 		if (attr->linkID & 1) {
