@@ -908,8 +908,10 @@ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
 		info->alignment_information.out.alignment_requirement =
 			info2->generic.out.alignment_requirement;
 		return NT_STATUS_OK;
-#if 0	
 	case RAW_FILEINFO_UNIX_BASIC:
+#if 1
+		return NT_STATUS_INVALID_LEVEL;
+#else
 		info->unix_basic_info.out.end_of_file = info2->generic.out.end_of_file;
 		info->unix_basic_info.out.num_bytes = info2->generic.out.size;
 		info->unix_basic_info.out.status_change_time = info2->generic.out.change_time;
@@ -924,8 +926,11 @@ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
 		info->unix_basic_info.out.permissions = info2->generic.out.permissions;
 		info->unix_basic_info.out.nlink = info2->generic.out.nlink;
 		return NT_STATUS_OK;
-		
+#endif
 	case RAW_FILEINFO_UNIX_LINK:
+#if 1
+		return NT_STATUS_INVALID_LEVEL;
+#else
 		info->unix_link_info.out.link_dest = info2->generic.out.link_dest;
 		return NT_STATUS_OK;
 #endif
