@@ -536,7 +536,7 @@ static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 	} else if (parm.p_class != P_LOCAL) {
 		return;
 	} else {
-		parm_ptr = lp_local_ptr_by_snum(snum, &parm);
+		parm_ptr = lp_parm_ptr(ServicePtrs[snum], &parm);
 	}
 
 	free_one_parameter_common(parm_ptr, parm);
@@ -2538,15 +2538,6 @@ void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm)
 }
 
 /***************************************************************************
- Return the local pointer to a parameter given the service number and parameter
-***************************************************************************/
-
-void *lp_local_ptr_by_snum(int snum, struct parm_struct *parm)
-{
-	return lp_parm_ptr(ServicePtrs[snum], parm);
-}
-
-/***************************************************************************
  Process a parameter for a particular service number. If snum < 0
  then assume we are in the globals.
 ***************************************************************************/
@@ -2608,7 +2599,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			TALLOC_FREE(frame);
 			return true;
 		}
-		parm_ptr = lp_local_ptr_by_snum(snum, &parm_table[parmnum]);
+		parm_ptr = lp_parm_ptr(ServicePtrs[snum], &parm_table[parmnum]);
 	}
 
 	if (snum >= 0) {
