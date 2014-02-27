@@ -141,6 +141,7 @@ static bool test_ref1(void)
 
 	CHECK_BLOCKS("ref1", p1, 5);
 	CHECK_BLOCKS("ref1", p2, 1);
+	CHECK_BLOCKS("ref1", ref, 1);
 	CHECK_BLOCKS("ref1", r1, 2);
 
 	fprintf(stderr, "Freeing p2\n");
@@ -249,6 +250,7 @@ static bool test_ref3(void)
 	CHECK_BLOCKS("ref3", p1, 2);
 	CHECK_BLOCKS("ref3", p2, 2);
 	CHECK_BLOCKS("ref3", r1, 1);
+	CHECK_BLOCKS("ref3", ref, 1);
 
 	fprintf(stderr, "Freeing p1\n");
 	talloc_free(p1);
@@ -291,6 +293,7 @@ static bool test_ref4(void)
 
 	CHECK_BLOCKS("ref4", p1, 5);
 	CHECK_BLOCKS("ref4", p2, 1);
+	CHECK_BLOCKS("ref4", ref, 1);
 	CHECK_BLOCKS("ref4", r1, 2);
 
 	fprintf(stderr, "Freeing r1\n");
@@ -341,6 +344,7 @@ static bool test_unlink1(void)
 
 	CHECK_BLOCKS("unlink", p1, 7);
 	CHECK_BLOCKS("unlink", p2, 1);
+	CHECK_BLOCKS("unlink", ref, 1);
 	CHECK_BLOCKS("unlink", r1, 2);
 
 	fprintf(stderr, "Unreferencing r1\n");
@@ -408,6 +412,8 @@ static bool test_misc(void)
 
 	name = talloc_set_name(p1, "my name is %s", "foo");
 	torture_assert_str_equal("misc", talloc_get_name(p1), "my name is foo",
+		"failed: wrong name after talloc_set_name(my name is foo)");
+	torture_assert_str_equal("misc", talloc_get_name(p1), name,
 		"failed: wrong name after talloc_set_name(my name is foo)");
 	CHECK_BLOCKS("misc", p1, 2);
 	CHECK_BLOCKS("misc", root, 3);
@@ -617,6 +623,7 @@ static bool test_realloc_child(void)
 	el2 = talloc(el1->list, struct el2);
 	el2 = talloc(el1->list2, struct el2);
 	el2 = talloc(el1->list3, struct el2);
+	(void)el2;
 
 	el1->list = talloc_realloc(el1, el1->list, struct el2 *, 100);
 	el1->list2 = talloc_realloc(el1, el1->list2, struct el2 *, 200);
@@ -829,6 +836,8 @@ static bool test_speed(void)
 			p1 = talloc_size(ctx, loop % 100);
 			p2 = talloc_strdup(p1, "foo bar");
 			p3 = talloc_size(p1, 300);
+			(void)p2;
+			(void)p3;
 			talloc_free(p1);
 		}
 		count += 3 * loop;
@@ -848,6 +857,8 @@ static bool test_speed(void)
 			p1 = talloc_size(ctx, loop % 100);
 			p2 = talloc_strdup(p1, "foo bar");
 			p3 = talloc_size(p1, 300);
+			(void)p2;
+			(void)p3;
 			talloc_free(p1);
 		}
 		count += 3 * loop;
@@ -1380,6 +1391,7 @@ static bool test_free_children(void)
 	root = talloc_new(NULL);
 	p1 = talloc_strdup(root, "foo1");
 	p2 = talloc_strdup(p1, "foo2");
+	(void)p2;
 
 	talloc_set_name(p1, "%s", "testname");
 	talloc_free_children(p1);
@@ -1404,6 +1416,7 @@ static bool test_free_children(void)
 	name2 = talloc_get_name(p1);
 	/* but this does */
 	talloc_free_children(p1);
+	(void)name2;
 	torture_assert("namecheck", strcmp(talloc_get_name(p1), "testname2") == 0,
 		       "wrong name");
 	CHECK_BLOCKS("name1", p1, 1);
