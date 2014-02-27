@@ -26,12 +26,17 @@ reindex() {
 	$BINDIR/samba-tool dbcheck --reindex
 }
 
+fixed_attrs() {
+	$BINDIR/samba-tool dbcheck --attrs=cn
+}
+
 force_modules() {
 	$BINDIR/samba-tool dbcheck --force-modules
 }
 
 testit "dbcheck" dbcheck
 testit "reindex" reindex
+testit "fixed_attrs" fixed_attrs
 testit "force_modules" force_modules
 
 exit $failed
