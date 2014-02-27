@@ -23,7 +23,9 @@
 #include "ldb.h"
 #include "ldb_wrap.h"
 #include "lib/cmdline/popt_common.h"
+#include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
+#include "torture/ldap/proto.h"
 
 #define torture_assert_res(torture_ctx,expr,cmt,_res) \
 	if (!(expr)) { \

@@ -27,6 +27,7 @@
 #include "../lib/util/dlinklist.h"
 
 #include "torture/torture.h"
+#include "torture/ldap/proto.h"
 
 
 struct test_rootDSE {

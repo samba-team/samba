@@ -22,7 +22,9 @@
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
+#include "torture/ldap/proto.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 
