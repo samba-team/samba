@@ -939,13 +939,14 @@ bool test_DsCrackNames(struct torture_context *tctx,
 		int i;
 		
 		for (i=0; i < ARRAY_SIZE(crack); i++) {
+			const char *comment;
+
 			torture_comment(tctx, "Testing DsCrackNames with name '%s'"
 					" offered format: %d desired format:%d\n",
 					crack[i].str,
 					crack[i].format_offered,
 					crack[i].format_desired);
 
-			const char *comment;
 			r.in.req->req1.format_flags   = crack[i].flags;
 			r.in.req->req1.format_offered = crack[i].format_offered;
 			r.in.req->req1.format_desired = crack[i].format_desired;

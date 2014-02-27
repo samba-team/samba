@@ -472,6 +472,12 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	const char *username = user->account_name.string;
 	NTSTATUS nt_status;
 	bool ret = true;
+	struct samr_OpenUser r;
+	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
+	struct policy_handle user_handle;
+	struct samr_GetGroupsForUser getgr;
+	struct samr_RidWithAttributeArray *rids;
 
 	switch (database_id) {
 	case SAM_DATABASE_DOMAIN:
@@ -483,14 +489,6 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	}
 
 	domain = samsync_state->domain_name[database_id];
-
-	struct samr_OpenUser r;
-	struct samr_QueryUserInfo q;
-	union samr_UserInfo *info;
-	struct policy_handle user_handle;
-
-	struct samr_GetGroupsForUser getgr;
-	struct samr_RidWithAttributeArray *rids;
 
 	if (domain == NULL ||
 	    samsync_state->domain_handle[database_id] == NULL) {

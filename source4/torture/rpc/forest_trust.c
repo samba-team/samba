@@ -598,6 +598,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 	struct lsa_ForestTrustInformation *forest_trust_info;
 	int i;
 	struct samr_Password nt_hash;
+	char *dummy;
 
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
@@ -607,7 +608,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 		return false;
 	}
 
-	char *dummy = talloc_asprintf(tctx, "%s$", trusted_dom_name);
+	dummy = talloc_asprintf(tctx, "%s$", trusted_dom_name);
 	cli_credentials_set_username(credentials, dummy,
 				     CRED_SPECIFIED);
 	cli_credentials_set_domain(credentials, trusting_dom_name,
