@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_ntp_signd.h"
 #include "param/param.h"
 #include "system/network.h"
+#include "torture/ntp/proto.h"
 
 #define TEST_MACHINE_NAME "ntpsigndtest"
 
