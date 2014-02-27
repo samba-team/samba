@@ -100,7 +100,7 @@ int dlz_version(unsigned int *flags);
 /*
  * dlz_create() is required for all DLZ external drivers.
  */
-isc_result_t dlz_create(const char *dlzname, unsigned int argc, char *argv[], void **dbdata, ...);
+isc_result_t dlz_create(const char *dlzname, unsigned int argc, const char **argv, void **dbdata, ...);
 
 /*
  * dlz_destroy() is optional, and will be called when the driver is
