@@ -1899,8 +1899,15 @@ static bool do_section(const char *pszSectionName, void *userdata)
 {
 	struct loadparm_context *lp_ctx = (struct loadparm_context *)userdata;
 	bool bRetval;
-	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
+	bool isglobal;
+
+	if (lp_ctx->s3_fns != NULL) {
+		return lp_ctx->s3_fns->do_section(pszSectionName, lp_ctx);
+	}
+
+	isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
 			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
+
 	bRetval = false;
 
 	/* if we've just struck a global section, note the fact. */
