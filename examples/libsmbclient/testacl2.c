@@ -25,6 +25,7 @@ int main(int argc, const char *argv[])
     int ret;
     const char *debugstr;
     char value[1024];
+    SMBCCTX *context;
 
     if (smbc_init(get_auth_data_fn, debug) != 0)
     {
@@ -32,7 +33,7 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    SMBCCTX *context = smbc_set_context(NULL);
+    context = smbc_set_context(NULL);
     smbc_setOptionFullTimeNames(context, 1);
     
     the_acl = strdup("system.nt_sec_desc.*");

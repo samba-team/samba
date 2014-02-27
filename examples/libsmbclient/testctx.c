@@ -1,15 +1,16 @@
 #include <libsmbclient.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-void create_and_destroy_context (void)
+static void create_and_destroy_context (void)
 {
   int i;
   SMBCCTX *ctx;
   ctx = smbc_new_context ();
   /* Both should do the same thing */
   smbc_setOptionDebugToStderr(ctx, 1);
-  smbc_option_set(ctx, "debug_to_stderr", 1);
+  smbc_option_set(ctx, strdup("debug_to_stderr"), 1);
   smbc_setDebug(ctx, 1);
   i = smbc_getDebug(ctx);
   if (i != 1) { 

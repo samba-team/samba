@@ -25,8 +25,7 @@ get_auth_data_with_context_fn(SMBCCTX * context,
                               char * pPassword,
                               int maxLenPassword);
 
-int
-main(int argc, char * argv[])
+int main(int argc, const char *argv[])
 {
     int                         debug = 0;
     int                         debug_stderr = 0;
@@ -73,7 +72,7 @@ main(int argc, char * argv[])
     
     setbuf(stdout, NULL);
 
-    pc = poptGetContext("opendir", argc, (const char **)argv, long_options, 0);
+    pc = poptGetContext("opendir", argc, argv, long_options, 0);
     
     poptSetOtherOptionHelp(pc, "");
     
@@ -100,7 +99,7 @@ main(int argc, char * argv[])
     if (context_auth) {
         smbc_setFunctionAuthDataWithContext(context,
                                             get_auth_data_with_context_fn);
-        smbc_setOptionUserData(context, (void *)"hello world");
+        smbc_setOptionUserData(context, strdup("hello world"));
     } else {
         smbc_setFunctionAuthData(context, get_auth_data_fn);
     }
@@ -126,20 +125,22 @@ main(int argc, char * argv[])
 
     if (scan)
     {
-        for (;
-             iterations == -1 || iterations > 0;
-             iterations = (iterations == -1 ? iterations : --iterations))
-        {
+        for (; iterations != 0;) {
+            if (iterations > 0) {
+                iterations--;
+            }
+
             snprintf(buf, sizeof(buf), "smb://");
             browse(buf, scan, 0);
         }
     }
     else
     {
-        for (;
-             iterations == -1 || iterations > 0;
-             iterations = (iterations == -1 ? iterations : --iterations))
-        {
+        for (; iterations != 0;) {
+            if (iterations > 0) {
+                iterations--;
+            }
+
             fputs("url: ", stdout);
             p = fgets(buf, sizeof(buf), stdin);
             if (! p)
