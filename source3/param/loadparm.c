@@ -2078,9 +2078,19 @@ static bool process_smbconf_service(struct smbconf_service *service)
 		return false;
 	}
 	for (count = 0; count < service->num_params; count++) {
-		ret = do_parameter(service->param_names[count],
-				   service->param_values[count],
-				   NULL);
+
+		if (!bInGlobalSection && bGlobalOnly) {
+			ret = true;
+		} else {
+			const char *pszParmName = service->param_names[count];
+			const char *pszParmValue = service->param_values[count];
+
+			DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
+
+			ret = lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
+					      pszParmName, pszParmValue);
+		}
+
 		if (ret != true) {
 			return false;
 		}
@@ -2144,7 +2154,18 @@ static bool process_registry_globals(void)
 
 	add_to_file_list(NULL, &file_lists, INCLUDE_REGISTRY_NAME, INCLUDE_REGISTRY_NAME);
 
-	ret = do_parameter("registry shares", "yes", NULL);
+	if (!bInGlobalSection && bGlobalOnly) {
+		ret = true;
+	} else {
+		const char *pszParmName = "registry shares";
+		const char *pszParmValue = "yes";
+
+		DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
+
+		ret = lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
+				      pszParmName, pszParmValue);
+	}
+
 	if (!ret) {
 		return ret;
 	}
