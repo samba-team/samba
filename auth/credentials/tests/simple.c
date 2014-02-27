@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "auth/credentials/credentials.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 
 static bool test_init(struct torture_context *tctx)
 {
