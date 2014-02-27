@@ -1268,7 +1268,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.fix_metadata(dn, att)
 
         if self.is_fsmo_role(dn):
-            if "fSMORoleOwner" not in obj:
+            if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in map(str.lower, attrs)):
                 self.err_no_fsmoRoleOwner(obj)
                 error_count += 1
 
