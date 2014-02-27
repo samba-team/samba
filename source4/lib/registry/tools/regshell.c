@@ -37,9 +37,9 @@ struct regshell_context {
 	struct registry_key *root;
 };
 
-static WERROR get_full_path(struct regshell_context *ctx, char *path, char **ret_path) 
+static WERROR get_full_path(struct regshell_context *ctx, const char *path, char **ret_path)
 {
-	char *dir;
+	const char *dir;
 	char *tmp;
 	char *new_path;
 
@@ -49,7 +49,7 @@ static WERROR get_full_path(struct regshell_context *ctx, char *path, char **ret
  		new_path = talloc_strdup(ctx, ctx->path);
 	}		
 
-	dir = strtok(path, "\\");
+	dir = strtok(discard_const_p(char, path), "\\");
 	if (dir == NULL) {
 		*ret_path = new_path;
 		return WERR_OK;
@@ -98,7 +98,7 @@ static WERROR get_full_path(struct regshell_context *ctx, char *path, char **ret
  * exit
  */
 
-static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_info(struct regshell_context *ctx, int argc, const char **argv)
 {
 	struct security_descriptor *sec_desc = NULL;
 	time_t last_mod;
@@ -150,7 +150,7 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 	return WERR_OK;
 }
 
-static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_predef(struct regshell_context *ctx, int argc, const char **argv)
 {
 	struct registry_key *ret = NULL;
 	if (argc < 2) {
@@ -176,7 +176,7 @@ static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
 }
 
 static WERROR cmd_pwd(struct regshell_context *ctx,
-		      int argc, char **argv)
+		      int argc, const char **argv)
 {
 	if (ctx->predef) {
 		printf("%s\\", ctx->predef);
@@ -185,7 +185,7 @@ static WERROR cmd_pwd(struct regshell_context *ctx,
 	return WERR_OK;
 }
 
-static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_set(struct regshell_context *ctx, int argc, const char **argv)
 {
 	struct registry_value val;
 	WERROR error;
@@ -209,7 +209,7 @@ static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
 	return WERR_OK;
 }
 
-static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_ck(struct regshell_context *ctx, int argc, const char **argv)
 {
 	struct registry_key *nkey = NULL;
 	char *full_path;
@@ -238,7 +238,7 @@ static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 	return WERR_OK;
 }
 
-static WERROR cmd_print(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_print(struct regshell_context *ctx, int argc, const char **argv)
 {
 	uint32_t value_type;
 	DATA_BLOB value_data;
@@ -262,7 +262,7 @@ static WERROR cmd_print(struct regshell_context *ctx, int argc, char **argv)
 	return WERR_OK;
 }
 
-static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_ls(struct regshell_context *ctx, int argc, const char **argv)
 {
 	unsigned int i;
 	WERROR error;
@@ -292,7 +292,7 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 
 	return WERR_OK;
 }
-static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, const char **argv)
 {
 	struct registry_key *tmp;
 	WERROR error;
@@ -314,7 +314,7 @@ static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, char **argv)
 }
 
 static WERROR cmd_rmkey(struct regshell_context *ctx,
-			int argc, char **argv)
+			int argc, const char **argv)
 {
 	WERROR error;
 
@@ -334,7 +334,7 @@ static WERROR cmd_rmkey(struct regshell_context *ctx,
 	return WERR_OK;
 }
 
-static WERROR cmd_rmval(struct regshell_context *ctx, int argc, char **argv)
+static WERROR cmd_rmval(struct regshell_context *ctx, int argc, const char **argv)
 {
 	WERROR error;
 
@@ -355,18 +355,18 @@ static WERROR cmd_rmval(struct regshell_context *ctx, int argc, char **argv)
 }
 
 _NORETURN_ static WERROR cmd_exit(struct regshell_context *ctx,
-				  int argc, char **argv)
+				  int argc, const char **argv)
 {
 	exit(0);
 }
 
-static WERROR cmd_help(struct regshell_context *ctx, int, char **);
+static WERROR cmd_help(struct regshell_context *ctx, int, const char **);
 
 static struct {
 	const char *name;
 	const char *alias;
 	const char *help;
-	WERROR (*handle)(struct regshell_context *ctx, int argc, char **argv);
+	WERROR (*handle)(struct regshell_context *ctx, int argc, const char **argv);
 } regshell_cmds[] = {
 	{"ck", "cd", "Change current key", cmd_ck },
 	{"info", "i", "Show detailed information of a key", cmd_info },
@@ -384,7 +384,7 @@ static struct {
 };
 
 static WERROR cmd_help(struct regshell_context *ctx,
-		       int argc, char **argv)
+		       int argc, const char **argv)
 {
 	unsigned int i;
 	printf("Available commands:\n");
@@ -399,10 +399,10 @@ static WERROR process_cmd(struct regshell_context *ctx,
 			  char *line)
 {
 	int argc;
-	char **argv = NULL;
+	const char **argv = NULL;
 	int ret, i;
 
-	if ((ret = poptParseArgvString(line, &argc, (const char ***) &argv)) != 0) {
+	if ((ret = poptParseArgvString(line, &argc, &argv)) != 0) {
 		fprintf(stderr, "regshell: %s\n", poptStrerror(ret));
 		return WERR_INVALID_PARAM;
 	}
@@ -551,7 +551,7 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int opt;
 	const char *file = NULL;
@@ -570,7 +570,7 @@ int main(int argc, char **argv)
 		{ NULL }
 	};
 
-	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
+	pc = poptGetContext(argv[0], argc, argv, long_options,0);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}

@@ -98,7 +98,7 @@ static void print_tree(unsigned int level, struct registry_key *p,
 	talloc_free(mem_ctx);
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int opt;
 	unsigned int i;
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 		{ NULL }
 	};
 
-	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
+	pc = poptGetContext(argv[0], argc, argv, long_options,0);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
