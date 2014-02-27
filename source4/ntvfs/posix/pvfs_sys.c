@@ -541,6 +541,7 @@ int pvfs_sys_mkdir(struct pvfs_state *pvfs, const char *dirname, mode_t mode, bo
 	}
 
 	talloc_free(ctx);
+	errno = orig_errno;
 	return ret;
 }
 
