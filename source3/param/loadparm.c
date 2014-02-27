@@ -2907,15 +2907,6 @@ static void dump_globals(FILE *f, bool show_defaults)
 }
 
 /***************************************************************************
- Display the contents of a single services record.
-***************************************************************************/
-
-static void dump_a_service(struct loadparm_service *pService, FILE * f, bool show_defaults)
-{
-	return lpcfg_dump_a_service(pService, &sDefault, f, flags_list, show_defaults);
-}
-
-/***************************************************************************
  Display the contents of a parameter of a single services record.
 ***************************************************************************/
 
@@ -4208,7 +4199,7 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 
 	dump_globals(f, defaults_saved);
 
-	dump_a_service(&sDefault, f, show_defaults);
+	lpcfg_dump_a_service(&sDefault, &sDefault, f, flags_list, show_defaults);
 
 	for (iService = 0; iService < maxtoprint; iService++) {
 		fprintf(f,"\n");
@@ -4225,7 +4216,8 @@ void lp_dump_one(FILE * f, bool show_defaults, int snum)
 	if (VALID(snum)) {
 		if (ServicePtrs[snum]->szService[0] == '\0')
 			return;
-		dump_a_service(ServicePtrs[snum], f, show_defaults);
+		lpcfg_dump_a_service(ServicePtrs[snum], &sDefault, f,
+				     flags_list, show_defaults);
 	}
 }
 
