@@ -30,6 +30,7 @@
 #include "system/select.h"
 #include "system/network.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #include <assert.h>
