@@ -397,7 +397,7 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 		const char *realm;
 		char *upper_realm;
 		struct ldb_message_element *spn_el = ldb_msg_find_element(p->msg, "servicePrincipalName");
-		char **SPNs = NULL;
+		const char **SPNs = NULL;
 		int num_SPNs = 0;
 		int i;
 
@@ -411,13 +411,13 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 			}
 
 			num_SPNs = spn_el->num_values;
-			SPNs = talloc_array(tmp_ctx, char *, num_SPNs);
+			SPNs = talloc_array(tmp_ctx, const char *, num_SPNs);
 			if (!SPNs) {
 				ldb_oom(ldb);
 				goto fail;
 			}
 			for (i = 0; i < num_SPNs; i++) {
-				SPNs[i] = talloc_asprintf(tmp_ctx, "%*.*s@%s",
+				SPNs[i] = talloc_asprintf(SPNs, "%*.*s@%s",
 							  (int)spn_el->values[i].length,
 							  (int)spn_el->values[i].length,
 							  (const char *)spn_el->values[i].data,
@@ -432,7 +432,7 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 		krb5_ret = smb_krb5_update_keytab(tmp_ctx, smb_krb5_context->krb5_context,
 						  keytab_name_from_msg(tmp_ctx, ldb, p->msg),
 						  ldb_msg_find_attr_as_string(p->msg, "samAccountName", NULL),
-						  realm, (const char **)SPNs, num_SPNs,
+						  realm, SPNs, num_SPNs,
 						  ldb_msg_find_attr_as_string(p->msg, "saltPrincipal", NULL),
 						  ldb_msg_find_attr_as_string(p->msg, "secret", NULL),
 						  ldb_msg_find_attr_as_string(p->msg, "priorSecret", NULL),

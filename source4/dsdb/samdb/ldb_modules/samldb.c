@@ -2762,7 +2762,6 @@ static int check_rename_constraints(struct ldb_message *msg,
 static int samldb_rename_search_base_callback(struct ldb_request *req,
 					       struct ldb_reply *ares)
 {
-	struct ldb_request *rename_req;
 	struct samldb_ctx *ac;
 	int ret;
 
