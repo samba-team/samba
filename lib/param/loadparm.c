@@ -1892,7 +1892,7 @@ static bool is_default(struct loadparm_service *sDefault, int i)
 		case P_CMDLIST:
 		case P_LIST:
 			return str_list_equal((const char * const *)parm_table[i].def.lvalue,
-					      (const char **)def_ptr);
+					      *(const char ***)def_ptr);
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
