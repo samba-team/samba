@@ -21,6 +21,7 @@
 #define _LIBCLI_AUTH_UTIL_LSARPC_H_
 
 /* The following definitions come from libcli/auth/util_lsarpc.c  */
+struct trustAuthInOutBlob;
 
 NTSTATUS auth_blob_2_auth_info(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB incoming, DATA_BLOB outgoing,
