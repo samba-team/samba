@@ -250,7 +250,7 @@ static void smb2srv_setinfo_send(struct ntvfs_request *ntvfs)
 
 	SMB2SRV_CHECK_ASYNC_STATUS(op, struct smb2srv_setinfo_op);
 
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x02, false, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(op->req, 0x02, false, 0));
 
 	smb2srv_send_reply(req);
 }
