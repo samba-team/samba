@@ -563,6 +563,11 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
 
 	status = imessaging_send(notify->imessaging_ctx, e->server,
 				MSG_PVFS_NOTIFY, &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
 	talloc_free(tmp_ctx);
 }
 
