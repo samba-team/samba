@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "talloc.h"
 #include "lzxpress.h"
 
