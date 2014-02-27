@@ -32,15 +32,15 @@
 
 float tdb_speed;
 
-static bool tdb_add_record(struct tdb_wrap *tdbw, const char *fmt1, 
-			   const char *fmt2, int i)
+static bool tdb_add_record(struct tdb_wrap *tdbw, const char *p1,
+			   const char *p2, int i)
 {
 	TDB_DATA key, data;
 	int ret;
 
-	key.dptr = (uint8_t *)talloc_asprintf(tdbw, fmt1, i);
+	key.dptr = (uint8_t *)talloc_asprintf(tdbw, "%s%u", p1, i);
 	key.dsize = strlen((char *)key.dptr)+1;
-	data.dptr = (uint8_t *)talloc_asprintf(tdbw, fmt2, i+10000);
+	data.dptr = (uint8_t *)talloc_asprintf(tdbw, "%s%u", p2, i+10000);
 	data.dsize = strlen((char *)data.dptr)+1;
 
 	ret = tdb_store(tdbw->tdb, key, data, TDB_INSERT);
@@ -77,14 +77,14 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 
 	for (i=0;i<torture_entries;i++) {
 		if (!tdb_add_record(tdbw, 
-				    "S-1-5-21-53173311-3623041448-2049097239-%u",
-				    "UID %u", i)) {
+				    "S-1-5-21-53173311-3623041448-2049097239-",
+				    "UID ", i)) {
 			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d!", i);
 			goto failed;
 		}
 		if (!tdb_add_record(tdbw, 
-				    "UID %u",
-				    "S-1-5-21-53173311-3623041448-2049097239-%u", i)) {
+				    "UID ",
+				    "S-1-5-21-53173311-3623041448-2049097239-", i)) {
 			torture_result(torture, TORTURE_FAIL, "Failed to add UID %d!", i);
 			goto failed;
 		}
