@@ -171,6 +171,22 @@ class TestSimpleQueries(DNSTest):
         self.assertEquals(response.answers[0].rdata,
                           os.getenv('SERVER_IP'))
 
+    def test_one_mx_query(self):
+        "create a query packet causing an empty RCODE_OK answer"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
+        print "asking for ", q.name
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 0)
+
     def test_two_queries(self):
         "create a query packet containing two query records"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
