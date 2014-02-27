@@ -5184,7 +5184,7 @@ void reply_writeclose(struct smb_request *req)
 	mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+4));
 	data = (const char *)req->buf + 1;
 
-	if (!fsp->print_file) {
+	if (fsp->print_file == NULL) {
 		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
@@ -5198,6 +5198,10 @@ void reply_writeclose(struct smb_request *req)
 
 	nwritten = write_file(req,fsp,data,startpos,numtowrite);
 
+	if (fsp->print_file == NULL) {
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	}
+
 	set_close_write_time(fsp, mtime);
 
 	/*
@@ -5205,34 +5209,32 @@ void reply_writeclose(struct smb_request *req)
 	 * JRA.
 	 */
 
+	DEBUG(3,("writeclose %s num=%d wrote=%d (numopen=%d)\n",
+		fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten,
+		(numtowrite) ? conn->num_files_open - 1 : conn->num_files_open));
+
 	if (numtowrite) {
 		DEBUG(3,("reply_writeclose: zero length write doesn't close "
 			 "file %s\n", fsp_str_dbg(fsp)));
 		close_status = close_file(req, fsp, NORMAL_CLOSE);
+		fsp = NULL;
 	}
-
-	DEBUG(3,("writeclose %s num=%d wrote=%d (numopen=%d)\n",
-		 fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten,
-		 conn->num_files_open));
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		reply_nterror(req, NT_STATUS_DISK_FULL);
-		goto strict_unlock;
+		goto out;
 	}
 
 	if(!NT_STATUS_IS_OK(close_status)) {
 		reply_nterror(req, close_status);
-		goto strict_unlock;
+		goto out;
 	}
 
 	reply_outbuf(req, 1, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
 
-strict_unlock:
-	if (numtowrite && !fsp->print_file) {
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-	}
+out:
 
 	END_PROFILE(SMBwriteclose);
 	return;
