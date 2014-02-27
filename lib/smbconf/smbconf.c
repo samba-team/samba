@@ -286,7 +286,7 @@ sbcErr smbconf_create_set_share(struct smbconf_ctx *ctx,
 	}
 
 	err = smbconf_set_includes(ctx, service->name, num_includes,
-				   (const char **)includes);
+				   discard_const_p(const char *, includes));
 	if (!SBC_ERROR_IS_OK(err)) {
 		goto cancel;
 	}
