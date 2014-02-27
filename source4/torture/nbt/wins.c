@@ -64,6 +64,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	struct socket_address *socket_address;
 	struct interface *ifaces;
 	bool low_port = try_low_port;
+	char **l;
 
 	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 
@@ -192,8 +193,10 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_comment(tctx, "register the name correct address\n");
 	io.in.name = *name;
 	io.in.wins_port = lpcfg_nbt_port(tctx->lp_ctx);
-	io.in.wins_servers = (const char **)str_list_make_single(tctx, address);
-	io.in.addresses = (const char **)str_list_make_single(tctx, myaddress);
+	l = str_list_make_single(tctx, address);
+	io.in.wins_servers = discard_const_p(const char *, l);
+	l = str_list_make_single(tctx, myaddress);
+	io.in.addresses = discard_const_p(const char *, l);
 	io.in.nb_flags = nb_flags;
 	io.in.ttl = 300000;
 	
@@ -269,8 +272,10 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_comment(tctx, "refresh the name\n");
 	refresh.in.name = *name;
 	refresh.in.wins_port = lpcfg_nbt_port(tctx->lp_ctx);
-	refresh.in.wins_servers = (const char **)str_list_make_single(tctx, address);
-	refresh.in.addresses = (const char **)str_list_make_single(tctx, myaddress);
+	l = str_list_make_single(tctx, address);
+	refresh.in.wins_servers = discard_const_p(const char *, l);
+	l = str_list_make_single(tctx, myaddress);
+	refresh.in.addresses = discard_const_p(const char *, l);
 	refresh.in.nb_flags = nb_flags;
 	refresh.in.ttl = 12345;
 	
