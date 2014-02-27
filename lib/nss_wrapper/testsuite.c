@@ -26,6 +26,7 @@
 #endif
 
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 #include "lib/replace/system/passwd.h"
 
 static bool copy_passwd(struct torture_context *tctx,
