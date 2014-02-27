@@ -33,6 +33,7 @@
 #include "param/param.h"
 #include "param/provision.h"
 #include "libcli/resolve/resolve.h"
+#include "torture/libnet/proto.h"
 
 bool torture_net_become_dc(struct torture_context *torture)
 {

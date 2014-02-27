@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
+#include "torture/libnet/proto.h"
 
 
 static bool test_opendomain_samr(struct torture_context *tctx,
