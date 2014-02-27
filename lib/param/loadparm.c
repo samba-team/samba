@@ -1701,16 +1701,19 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 
 	while (isspace((unsigned char)*pszParmValue)) pszParmValue++;
 
-	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->set_cmdline(pszParmName, pszParmValue);
-	}
-
 	parmnum = lpcfg_map_parameter(pszParmName);
 
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
-		return lp_do_parameter_parametric(lp_ctx, NULL, pszParmName,
-						  pszParmValue, FLAG_CMDLINE);
+		bool ok;
+		ok = lp_do_parameter_parametric(lp_ctx, NULL, pszParmName,
+						pszParmValue, FLAG_CMDLINE);
+		if (lp_ctx->s3_fns != NULL) {
+			if (ok) {
+				lp_ctx->s3_fns->store_cmdline(pszParmName, pszParmValue);
+			}
+		}
+		return ok;
 	}
 
 	if (parmnum < 0) {
@@ -1721,8 +1724,14 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	/* reset the CMDLINE flag in case this has been called before */
 	lp_ctx->flags[parmnum] &= ~FLAG_CMDLINE;
 
-	if (!lpcfg_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
-		return false;
+	if (lp_ctx->s3_fns != NULL) {
+		if (!lp_ctx->s3_fns->lp_do_parameter(-1, pszParmName, pszParmValue)) {
+			return false;
+		}
+	} else {
+		if (!lpcfg_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
+			return false;
+		}
 	}
 
 	lp_ctx->flags[parmnum] |= FLAG_CMDLINE;
@@ -1740,6 +1749,10 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	     parm_table[i].offset == parm_table[parmnum].offset;
 	     i++) {
 		lp_ctx->flags[i] |= FLAG_CMDLINE;
+	}
+
+	if (lp_ctx->s3_fns != NULL) {
+		lp_ctx->s3_fns->store_cmdline(pszParmName, pszParmValue);
 	}
 
 	return true;

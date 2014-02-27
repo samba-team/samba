@@ -11,7 +11,7 @@ struct loadparm_s3_helpers
 	int (*getservicebyname)(const char *, struct loadparm_service *);
 	int (*get_numservices)(void);
 	bool (*load)(const char *filename);
-	bool (*set_cmdline)(const char *pszParmName, const char *pszParmValue);
+	bool (*store_cmdline)(const char *pszParmName, const char *pszParmValue);
 	void (*dump)(FILE *f, bool show_defaults, int maxtoprint);
 	char * (*lp_string)(TALLOC_CTX *ctx, const char *in);
 	bool (*lp_string_set)(char **dest, const char *src);

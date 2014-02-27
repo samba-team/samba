@@ -579,7 +579,7 @@ static struct lp_stored_option *stored_options;
   re-applied when we do a globals reset, so that cmdline set options
   are sticky across reloads of smb.conf
  */
-static bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
+bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 {
 	struct lp_stored_option *entry, *entry_next;
 	for (entry = stored_options; entry != NULL; entry = entry_next) {
@@ -2710,11 +2710,15 @@ bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 {
 	bool ret;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx;
 
-	ret = lp_set_cmdline_helper(pszParmName, pszParmValue);
-	if (ret) {
-		store_lp_set_cmdline(pszParmName, pszParmValue);
+	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return false;
 	}
+
+	ret = lpcfg_set_cmdline(lp_ctx, pszParmName, pszParmValue);
 
 	TALLOC_FREE(frame);
 	return ret;
