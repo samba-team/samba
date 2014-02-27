@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "../socket_wrapper/socket_wrapper.h"
 #include "torture/torture.h"
+#include "torture/local/proto.h"
 
 static char *old_dir = NULL;
 static char *old_iface = NULL;
