@@ -1862,12 +1862,14 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 	}
 
 	if (br_lck->num_locks == 0) {
-		/* No locks - delete this entry. */
-		NTSTATUS status = dbwrap_record_delete(br_lck->record);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("delete_rec returned %s\n",
-				  nt_errstr(status)));
-			smb_panic("Could not delete byte range lock entry");
+		if (br_lck->record) {
+			/* No locks and the record existed - delete this entry. */
+			NTSTATUS status = dbwrap_record_delete(br_lck->record);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("delete_rec returned %s\n",
+					  nt_errstr(status)));
+				smb_panic("Could not delete byte range lock entry");
+			}
 		}
 	} else {
 		TDB_DATA data;
@@ -1932,7 +1934,12 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	if (do_read_only) {
 		NTSTATUS status;
 		status = dbwrap_fetch(brlock_db, br_lck, key, &data);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_FOUND)) {
+			/*
+			 * No locks on this file. data should be empty.
+			 */
+			ZERO_STRUCT(data);
+		} else if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not fetch byte range lock record\n"));
 			TALLOC_FREE(br_lck);
 			return NULL;
@@ -1942,12 +1949,15 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		br_lck->record = dbwrap_fetch_locked(brlock_db, br_lck, key);
 
 		if (br_lck->record == NULL) {
-			DEBUG(3, ("Could not lock byte range lock entry\n"));
-			TALLOC_FREE(br_lck);
-			return NULL;
+			/*
+			 * We're going to assume this means no locks on
+			 * the file, not a talloc fail. If it was a talloc
+			 * fail we'll just have to die elsewhere.
+			 */
+			ZERO_STRUCT(data);
+		} else {
+			data = dbwrap_record_get_value(br_lck->record);
 		}
-
-		data = dbwrap_record_get_value(br_lck->record);
 	}
 
 	br_lck->read_only = do_read_only;
