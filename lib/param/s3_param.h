@@ -22,6 +22,7 @@ struct loadparm_s3_helpers
 	bool (*lp_do_parameter)(int, const char *, const char *);
 	bool (*do_section)(const char *pszSectionName, void *userdata);
 	struct loadparm_global *globals;
+	unsigned int *flags;
 };
 
 #endif /* __S3_PARAM_H__ */

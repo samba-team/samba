@@ -2619,6 +2619,8 @@ struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx,
 	}
 	loadparm_context->s3_fns = s3_fns;
 	loadparm_context->globals = s3_fns->globals;
+	loadparm_context->flags = s3_fns->flags;
+
 	return loadparm_context;
 }
 

@@ -660,7 +660,11 @@ static void init_globals(bool reinit_globals)
 	ZERO_STRUCT(Globals);
 
 	Globals.ctx = talloc_pooled_object(NULL, char, 272, 2048);
-	flags_list = talloc_zero_array(Globals.ctx, unsigned int, num_parameters());
+
+	/* Initialize the flags list if necessary */
+	if (flags_list == NULL) {
+		get_flags();
+	}
 
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
@@ -4626,4 +4630,13 @@ int lp_security(void)
 struct loadparm_global * get_globals(void)
 {
 	return &Globals;
+}
+
+unsigned int * get_flags(void)
+{
+	if (flags_list == NULL) {
+		flags_list = talloc_zero_array(NULL, unsigned int, num_parameters());
+	}
+
+	return flags_list;
 }

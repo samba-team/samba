@@ -278,6 +278,7 @@ int lp_find_security(int server_role, int security);
 bool lp_is_security_and_server_role_valid(int server_role, int security);
 
 struct loadparm_global * get_globals(void);
+unsigned int * get_flags(void);
 char * lp_string(TALLOC_CTX *, const char *);
 bool lp_string_set(char **, const char *);
 int getservicebyname(const char *, struct loadparm_service *);

@@ -83,5 +83,6 @@ const struct loadparm_s3_helpers *loadparm_s3_helpers(void)
 	struct loadparm_s3_helpers *helpers;
 	helpers = &s3_fns;
 	helpers->globals = get_globals();
+	helpers->flags = get_flags();
 	return helpers;
 }
