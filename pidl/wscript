@@ -32,6 +32,9 @@ def configure(conf):
     conf.check_tool('perl')
     conf.check_perl_ext_devel()
 
+    # Check if perl(Parse::Yapp::Driver) is available.
+    check_system_perl_module(conf, "Parse::Yapp::Driver", 1.05)
+
     # we need a recent version of MakeMaker to get the right man page names
     if conf.CHECK_PERL_MANPAGE():
         conf.env.PERLMAN1EXT = conf.CHECK_PERL_MANPAGE(section='1')
