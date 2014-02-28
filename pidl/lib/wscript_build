@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 
 # install the pidl modules
-bld.INSTALL_WILDCARD('${DATAROOTDIR}/perl5', '**/*.pm', flat=False)
+bld.INSTALL_WILDCARD(bld.env.PERL_VENDORLIB_DIR, '**/*.pm', flat=False)
