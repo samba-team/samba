@@ -29,6 +29,35 @@ wait_until_get_src_socket ()
 
 #######################################
 
+check_tickles ()
+{
+    local node="$1"
+    local test_ip="$2"
+    local test_port="$3"
+    local src_socket="$4"
+    try_command_on_node $node ctdb gettickles $test_ip $test_port
+    # SRC: 10.0.2.45:49091   DST: 10.0.2.143:445
+    [ "${out/SRC: ${src_socket} /}" != "$out" ]
+}
+
+check_tickles_all ()
+{
+    local numnodes="$1"
+    local test_ip="$2"
+    local test_port="$3"
+    local src_socket="$4"
+
+    try_command_on_node all ctdb gettickles $test_ip $test_port
+    # SRC: 10.0.2.45:49091   DST: 10.0.2.143:445
+    local t="${src_socket//./\\.}"
+    local count=$(grep -E -c "SRC: ${t} " <<<"$out" || true)
+    [ $count -eq $numnodes ]
+}
+
+
+
+#######################################
+
 # filename will be in $tcpdump_filename, pid in $tcpdump_pid
 tcpdump_start ()
 {

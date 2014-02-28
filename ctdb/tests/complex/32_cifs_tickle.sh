@@ -72,15 +72,8 @@ echo "Source socket is $src_socket"
 
 # This should happen as soon as connection is up... but unless we wait
 # we sometimes beat the registration.
-check_tickles ()
-{
-    try_command_on_node 0 ctdb gettickles $test_ip -n $test_node
-    # SRC: 10.0.2.45:49091   DST: 10.0.2.143:445
-    [ "${out/SRC: ${src_socket} /}" != "$out" ]
-}
-
 echo "Checking if CIFS connection is tracked by CTDB..."
-wait_until 10 check_tickles
+wait_until 10 check_tickles $test_node $test_ip $test_port $src_socket
 echo "$out"
 
 if [ "${out/SRC: ${src_socket} /}" != "$out" ] ; then
@@ -92,6 +85,9 @@ fi
 
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
+# The test node is only being disabled so the tickling is done from
+# the test node.  We don't need to wait until the tickles are
+# transferred to another node.
 echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node
 wait_until_node_has_status $test_node disabled

@@ -34,8 +34,8 @@ Steps:
 
 Expected results:
 
-* CTDB should correctly record the socket in the nfs-tickles directory
-  and should send a reset packet when the node is disabled.
+* CTDB should correctly record the socket and should send a reset
+  packet when the node is disabled.
 EOF
 }
 
@@ -58,6 +58,8 @@ monitor_interval="${out#*= }"
 #echo "Monitor interval on node $test_node is $monitor_interval seconds."
 
 select_test_node_and_ips
+try_command_on_node $test_node "$CTDB listnodes | wc -l"
+numnodes="$out"
 
 test_port=2049
 
@@ -73,18 +75,16 @@ echo "Source socket is $src_socket"
 
 wait_for_monitor_event $test_node
 
-echo "Sleeping until tickles are synchronised across nodes..."
+echo "Wait until NFS connection is tracked by CTDB on test node ..."
+wait_until 10 check_tickles $test_node $test_ip $test_port $src_socket
+
+echo "Getting TicklesUpdateInterval..."
 try_command_on_node $test_node $CTDB getvar TickleUpdateInterval
-sleep_for "${out#*= }"
+update_interval="$out"
 
-try_command_on_node -v any "ctdb -Y gettickles $test_ip $test_port"
-
-if [ "${out/${src_socket}/}" != "$out" ] ; then
-    echo "GOOD: NFS connection tracked OK."
-else
-    echo "BAD: Socket not tracked in NFS tickles."
-    testfailures=1
-fi
+echo "Wait until NFS connection is tracked by CTDB on all nodes..."
+wait_until $(($update_interval * 2)) \
+    check_tickles_all $numnodes  $test_ip $test_port $src_socket
 
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
