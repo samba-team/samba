@@ -8,6 +8,8 @@ def set_options(opt):
 
 def configure(conf):
     conf.check_tool('perl')
+    conf.check_perl_ext_devel()
+
     # we need a recent version of MakeMaker to get the right man page names
     if conf.CHECK_PERL_MANPAGE():
         conf.env.PERLMAN1EXT = conf.CHECK_PERL_MANPAGE(section='1')
