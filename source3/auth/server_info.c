@@ -453,6 +453,7 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	enum lsa_SidType type;
 	uint32_t num_sids = 0;
 	struct dom_sid *user_sids = NULL;
+	bool is_null;
 	bool ok;
 
 	tmp_ctx = talloc_stackframe();
@@ -514,8 +515,8 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Make sure we have a valid group sid */
-	ok = !is_null_sid(&group_sid);
-	if (!ok) {
+	is_null = is_null_sid(&group_sid);
+	if (is_null) {
 		status = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
