@@ -96,11 +96,7 @@ NTSTATUS make_server_info_sam(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	server_info->unix_name = talloc_strdup(server_info, pwd->pw_name);
-	if (server_info->unix_name == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
+	server_info->unix_name = talloc_steal(server_info, pwd->pw_name);
 
 	server_info->utok.gid = pwd->pw_gid;
 	server_info->utok.uid = pwd->pw_uid;
