@@ -187,6 +187,20 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 0)
 
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "invalid-%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
+        print "asking for ", q.name
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXDOMAIN)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 0)
+
     def test_two_queries(self):
         "create a query packet containing two query records"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
