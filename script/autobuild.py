@@ -101,7 +101,8 @@ tasks = {
 
                       ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ntdb,!pyntdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("make", "make", "text/plain"),
-                      ("install", "make install", "text/plain")],
+                      ("install", "make install", "text/plain"),
+                      ("dist", "make dist", "text/plain")],
 
     "ldb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
