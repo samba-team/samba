@@ -278,7 +278,7 @@ wait_until_healthy ()
 
     echo "Waiting for cluster to become healthy..."
 
-    wait_until 120 _cluster_is_healthy
+    wait_until $timeout onnode -q any $CTDB_TEST_WRAPPER _cluster_is_healthy
 }
 
 # This function is becoming nicely overloaded.  Soon it will collapse!  :-)
@@ -438,7 +438,7 @@ _ctdb_hack_options ()
     esac
 }
 
-_restart_ctdb ()
+restart_ctdb_1 ()
 {
     _ctdb_hack_options "$@"
 
@@ -452,7 +452,7 @@ _restart_ctdb ()
 # Restart CTDB on all nodes.  Override for local daemons.
 _restart_ctdb_all ()
 {
-    onnode -p all $CTDB_TEST_WRAPPER _restart_ctdb "$@"
+    onnode -p all $CTDB_TEST_WRAPPER restart_ctdb_1 "$@"
 }
 
 # Nothing needed for a cluster.  Override for local daemons.
@@ -479,7 +479,7 @@ restart_ctdb ()
 	    continue
 	}
 
-	onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || {
+	wait_until_healthy || {
 	    echo "Cluster didn't become healthy.  Restarting..."
 	    continue
 	}
