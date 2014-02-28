@@ -3602,7 +3602,7 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 			}
 		}
 
-		printf("%d:%s\n", i, 
+		printf("%d:%s\n", nodemap->nodes[i].pnn, 
 			ctdb_addr_to_str(&nodemap->nodes[i].addr));
 	}
 
@@ -3681,9 +3681,10 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 		}
 
 		if (options.machinereadable){
-			printf("%d\n", i);
+			printf("%d\n", nodemap->nodes[i].pnn);
 		} else {
-			printf("Node %d is LVS master\n", i);
+			printf("Node %d is LVS master\n",
+			       nodemap->nodes[i].pnn);
 		}
 		ret = 0;
 		goto done;
