@@ -109,16 +109,7 @@ static int db_ctdb_ltdb_parser(TDB_DATA key, TDB_DATA data,
 	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		return -1;
 	}
-	if (data.dsize == sizeof(struct ctdb_ltdb_header)) {
-		/*
-		 * Making this a separate case that needs fixing
-		 * separately. This is an empty record. ctdbd does not
-		 * distinguish between empty and deleted records. Samba right
-		 * now can live without empty records, so lets treat zero-size
-		 * (i.e. deleted) records as non-existing.
-		 */
-		return -1;
-	}
+
 	state->parser(
 		key, (struct ctdb_ltdb_header *)data.dptr,
 		make_tdb_data(data.dptr + sizeof(struct ctdb_ltdb_header),
