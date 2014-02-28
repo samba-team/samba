@@ -660,7 +660,15 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 						   const struct replPropertyMetaData1 *m2,
 						   const uint32_t *rdn_attid)
 {
-	if (m1->attid == m2->attid) {
+	/*
+	 * This assignment seems inoccous, but it is critical for the
+	 * system, as we need to do the comparisons as a unsigned
+	 * quantity, not signed (enums are signed integers)
+	 */
+	uint32_t attid_1 = m1->attid;
+	uint32_t attid_2 = m2->attid;
+
+	if (attid_1 == attid_2) {
 		return 0;
 	}
 
@@ -669,7 +677,7 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 	 * so we need to return a value greater than zero
 	 * which means m1 is greater than m2
 	 */
-	if (m1->attid == *rdn_attid) {
+	if (attid_1 == *rdn_attid) {
 		return 1;
 	}
 
@@ -678,11 +686,17 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 	 * so we need to return a value less than zero
 	 * which means m2 is greater than m1
 	 */
-	if (m2->attid == *rdn_attid) {
+	if (attid_2 == *rdn_attid) {
 		return -1;
 	}
 
-	return m1->attid > m2->attid ? 1 : -1;
+	/*
+	 * See above regarding this being an unsigned comparison.
+	 * Otherwise when the high bit is set on non-standard
+	 * attributes, they would end up first, before objectClass
+	 * (0).
+	 */
+	return attid_1 > attid_2 ? 1 : -1;
 }
 
 static int replmd_replPropertyMetaDataCtr1_sort(struct replPropertyMetaDataCtr1 *ctr1,
