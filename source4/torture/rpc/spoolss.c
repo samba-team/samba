@@ -1874,13 +1874,14 @@ static bool test_sd_set_level(struct torture_context *tctx,
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
 	union spoolss_SetPrinterInfo sinfo;
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinterInfo3 info3;
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
 
 	switch (level) {
 	case 2: {
-		union spoolss_PrinterInfo info;
 		torture_assert(tctx, test_GetPrinter_level(tctx, b, handle, 2, &info), "");
 		torture_assert(tctx, PrinterInfo_to_SetPrinterInfo(tctx, &info, 2, &sinfo), "");
 
@@ -1890,7 +1891,6 @@ static bool test_sd_set_level(struct torture_context *tctx,
 		break;
 	}
 	case 3: {
-		struct spoolss_SetPrinterInfo3 info3;
 
 		info3.sec_desc_ptr = NULL;
 
