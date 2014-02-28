@@ -77,8 +77,8 @@ struct test_spoolss_context {
 	union spoolss_PortInfo *ports[3];
 
 	/* for EnumPrinterDrivers */
-	uint32_t driver_count[8];
-	union spoolss_DriverInfo *drivers[8];
+	uint32_t driver_count[9];
+	union spoolss_DriverInfo *drivers[9];
 
 	/* for EnumMonitors */
 	uint32_t monitor_count[3];
