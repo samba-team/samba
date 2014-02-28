@@ -75,7 +75,8 @@ NTSTATUS make_server_info_sam(TALLOC_CTX *mem_ctx,
 
 	server_info = make_server_info(tmp_ctx);
 	if (server_info == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	pwd = Get_Pwnam_alloc(tmp_ctx, username);
