@@ -103,6 +103,11 @@ def check_perl_ext_devel(conf):
 	else:
 		conf.env.PERL_VENDORARCH_DIR = read_out('print $Config{vendorarch}')[0]
 
+	if getattr(Options.options, 'perl_vendorlib_dir', None):
+		conf.env.PERL_VENDORLIB_DIR = Options.options.perl_vendorlib_dir
+	else:
+		conf.env.PERL_VENDORLIB_DIR = read_out('print $Config{vendorlib}')[0]
+
 def set_options(opt):
 	opt.add_option("--with-perl-binary", type="string", dest="perlbinary", help = 'Specify alternate perl binary', default=None)
 
@@ -112,3 +117,8 @@ def set_options(opt):
 		       help = ('Specify directory where to install arch specific files'),
 		       default=None)
 
+	opt.add_option("--with-perl-vendorlib",
+		       type="string",
+		       dest="perl_vendorlib_dir",
+		       help = ('Specify directory where to install vendor specific files'),
+		       default=None)
