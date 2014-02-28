@@ -98,12 +98,17 @@ def check_perl_ext_devel(conf):
 	conf.env.EXTUTILS_TYPEMAP  = read_out('print "$Config{privlib}/ExtUtils/typemap"')
 	conf.env.perlext_PATTERN   = '%s.' + read_out('print $Config{dlext}')[0]
 
-	if getattr(Options.options, 'perlarchdir', None):
-		conf.env.ARCHDIR_PERL = Options.options.perlarchdir
+	if getattr(Options.options, 'perl_vendorarch_dir', None):
+		conf.env.PERL_VENDORARCH_DIR = Options.options.perl_vendorarch_dir
 	else:
-		conf.env.ARCHDIR_PERL = read_out('print $Config{sitearch}')[0]
+		conf.env.PERL_VENDORARCH_DIR = read_out('print $Config{vendorarch}')[0]
 
 def set_options(opt):
 	opt.add_option("--with-perl-binary", type="string", dest="perlbinary", help = 'Specify alternate perl binary', default=None)
-	opt.add_option("--with-perl-archdir", type="string", dest="perlarchdir", help = 'Specify directory where to install arch specific files', default=None)
+
+	opt.add_option("--with-perl-vendorarch",
+		       type="string",
+		       dest="perl_vendorarch_dir",
+		       help = ('Specify directory where to install arch specific files'),
+		       default=None)
 
