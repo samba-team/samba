@@ -201,6 +201,24 @@ NTSTATUS read_data(int fd, char *buffer, size_t N)
 	return read_fd_with_timeout(fd, buffer, N, N, 0, NULL);
 }
 
+ssize_t iov_buflen(const struct iovec *iov, int iovcnt)
+{
+	size_t buflen = 0;
+	int i;
+
+	for (i=0; i<iovcnt; i++) {
+		size_t thislen = iov[i].iov_len;
+		size_t tmp = buflen + thislen;
+
+		if ((tmp < buflen) || (tmp < thislen)) {
+			/* overflow */
+			return -1;
+		}
+		buflen = tmp;
+	}
+	return buflen;
+}
+
 /****************************************************************************
  Write all data from an iov array
  NB. This can be called with a non-socket fd, don't add dependencies
@@ -209,15 +227,15 @@ NTSTATUS read_data(int fd, char *buffer, size_t N)
 
 ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 {
-	int i;
-	size_t to_send;
+	ssize_t to_send;
 	ssize_t thistime;
 	size_t sent;
 	struct iovec *iov_copy, *iov;
 
-	to_send = 0;
-	for (i=0; i<iovcnt; i++) {
-		to_send += orig_iov[i].iov_len;
+	to_send = iov_buflen(orig_iov, iovcnt);
+	if (to_send == -1) {
+		errno = EINVAL;
+		return -1;
 	}
 
 	thistime = sys_writev(fd, orig_iov, iovcnt);
