@@ -219,6 +219,31 @@ ssize_t iov_buflen(const struct iovec *iov, int iovcnt)
 	return buflen;
 }
 
+uint8_t *iov_buf(TALLOC_CTX *mem_ctx, const struct iovec *iov, int iovcnt)
+{
+	int i;
+	ssize_t buflen;
+	uint8_t *buf, *p;
+
+	buflen = iov_buflen(iov, iovcnt);
+	if (buflen == -1) {
+		return NULL;
+	}
+	buf = talloc_array(mem_ctx, uint8_t, buflen);
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	p = buf;
+	for (i=0; i<iovcnt; i++) {
+		size_t len = iov[i].iov_len;
+
+		memcpy(p, iov[i].iov_base, len);
+		p += len;
+	}
+	return buf;
+}
+
 /****************************************************************************
  Write all data from an iov array
  NB. This can be called with a non-socket fd, don't add dependencies
