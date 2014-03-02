@@ -196,12 +196,13 @@ case "$1" in
 	fi
 	;;
 
-     setup)
+    setup)
 	# Set any tunables from the config file
 	set_ctdb_variables || die "Failed to set CTDB tunables"
 	;;
 
     startup)
+	ctdb attach ctdb.tdb persistent
 	update_config_from_tdb &
 	;;
     monitor)
