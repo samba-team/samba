@@ -30,6 +30,7 @@
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 #include "db_wrap.h"
+#include "lib/util/dlinklist.h"
 
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */
 #define ERR_NONODE	21	/* node does not exist */
@@ -811,7 +812,7 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 
 
 struct pnn_node {
-	struct pnn_node *next;
+	struct pnn_node *next, *prev;
 	const char *addr;
 	int pnn;
 };
@@ -824,7 +825,6 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 	int i, pnn;
 	struct pnn_node *pnn_nodes = NULL;
 	struct pnn_node *pnn_node;
-	struct pnn_node *tmp_node;
 
 	lines = file_lines_load(file, &nlines, mem_ctx);
 	if (lines == NULL) {
@@ -851,19 +851,8 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 		pnn_node = talloc(mem_ctx, struct pnn_node);
 		pnn_node->pnn = pnn++;
 		pnn_node->addr = talloc_strdup(pnn_node, node);
-		pnn_node->next = pnn_nodes;
-		pnn_nodes = pnn_node;
-	}
 
-	/* swap them around so we return them in incrementing order */
-	pnn_node = pnn_nodes;
-	pnn_nodes = NULL;
-	while (pnn_node) {
-		tmp_node = pnn_node;
-		pnn_node = pnn_node->next;
-
-		tmp_node->next = pnn_nodes;
-		pnn_nodes = tmp_node;
+		DLIST_ADD_END(pnn_nodes, pnn_node, NULL);
 	}
 
 	return pnn_nodes;
