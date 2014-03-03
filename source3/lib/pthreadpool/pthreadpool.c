@@ -188,16 +188,11 @@ static void pthreadpool_parent(void)
 	int ret;
 	struct pthreadpool *pool;
 
-	pool = DLIST_TAIL(pthreadpools);
-
-	while (1) {
+	for (pool = DLIST_TAIL(pthreadpools);
+	     pool != NULL;
+	     pool = DLIST_PREV(pool)) {
 		ret = pthread_mutex_unlock(&pool->mutex);
 		assert(ret == 0);
-
-		if (pool == pthreadpools) {
-			break;
-		}
-		pool = pool->prev;
 	}
 
 	ret = pthread_mutex_unlock(&pthreadpools_mutex);
@@ -209,9 +204,10 @@ static void pthreadpool_child(void)
 	int ret;
 	struct pthreadpool *pool;
 
-	pool = DLIST_TAIL(pthreadpools);
+	for (pool = DLIST_TAIL(pthreadpools);
+	     pool != NULL;
+	     pool = DLIST_PREV(pool)) {
 
-	while (1) {
 		close(pool->sig_pipe[0]);
 		close(pool->sig_pipe[1]);
 
@@ -236,11 +232,6 @@ static void pthreadpool_child(void)
 
 		ret = pthread_mutex_unlock(&pool->mutex);
 		assert(ret == 0);
-
-		if (pool == pthreadpools) {
-			break;
-		}
-		pool = pool->prev;
 	}
 
 	ret = pthread_mutex_unlock(&pthreadpools_mutex);
