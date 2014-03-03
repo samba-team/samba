@@ -79,7 +79,7 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 }
 
 /**
-* @brief Decode a blob containing a NDR envoded PAC structure
+* @brief Decode a blob containing a NDR encoded PAC structure
 *
 * @param mem_ctx	  - The memory context
 * @param pac_data_blob	  - The data blob containing the NDR encoded data
