@@ -830,9 +830,6 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 	if (lines == NULL) {
 		return NULL;
 	}
-	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
-		nlines--;
-	}
 	for (i=0, pnn=0; i<nlines; i++) {
 		char *node;
 
