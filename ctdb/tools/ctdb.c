@@ -813,7 +813,7 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 
 struct pnn_node {
 	struct pnn_node *next, *prev;
-	const char *addr;
+	ctdb_sock_addr addr;
 	int pnn;
 };
 
@@ -847,7 +847,14 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 		}
 		pnn_node = talloc(mem_ctx, struct pnn_node);
 		pnn_node->pnn = pnn++;
-		pnn_node->addr = talloc_strdup(pnn_node, node);
+
+		if (!parse_ip(node, NULL, 0, &pnn_node->addr)) {
+			DEBUG(DEBUG_ERR,
+			      ("Invalid IP address '%s' in file %s\n",
+			       node, file));
+			/* Caller will free mem_ctx */
+			return NULL;
+		}
 
 		DLIST_ADD_END(pnn_nodes, pnn_node, NULL);
 	}
@@ -894,15 +901,7 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
-		ctdb_sock_addr addr;
-
-		if (parse_ip(pnn_node->addr, NULL, 63999, &addr) == 0) {
-			DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file\n", pnn_node->addr));
-			talloc_free(mem_ctx);
-			return -1;
-		}
-
-		if (ctdb_sys_have_ip(&addr)) {
+		if (ctdb_sys_have_ip(&pnn_node->addr)) {
 			printf("PNN:%d\n", pnn_node->pnn);
 			talloc_free(mem_ctx);
 			return 0;
@@ -1161,8 +1160,8 @@ filter_nodemap_by_addrs(struct ctdb_context *ctdb,
 
 	for (i = 0; i < nodemap->num; i++) {
 		for(n = nodes; n != NULL ; n = n->next) {
-			if (!strcmp(n->addr,
-				    ctdb_addr_to_str(&nodemap->nodes[i].addr))) {
+			if (ctdb_same_ip(&n->addr,
+					 &nodemap->nodes[i].addr)) {
 				break;
 			}
 		}
@@ -6127,16 +6126,11 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
-		ctdb_sock_addr addr;
-		if (parse_ip(pnn_node->addr, NULL, 63999, &addr) == 0) {
-			DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file\n", pnn_node->addr));
-			talloc_free(mem_ctx);
-			return -1;
-		}
+		const char *addr = ctdb_addr_to_str(&pnn_node->addr);
 		if (options.machinereadable){
-			printf(":%d:%s:\n", pnn_node->pnn, pnn_node->addr);
+			printf(":%d:%s:\n", pnn_node->pnn, addr);
 		} else {
-			printf("%s\n", pnn_node->addr);
+			printf("%s\n", addr);
 		}
 	}
 	talloc_free(mem_ctx);
