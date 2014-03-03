@@ -253,8 +253,8 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
 				}
 				*te++ = ' ';
 				strcpy(te, defs);
-				defs = (char *)_free(defs);
 			}
+			defs = (char *)_free(defs);
 			defs = t;
 		}
 	}
@@ -326,7 +326,7 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
 
     left = (char *)_free(left);
     if (defs) {
-	help = defs; defs = NULL;
+	help = defs;
     }
 
     helpLength = strlen(help);
