@@ -1123,6 +1123,55 @@ struct natgw_node {
 	const char *addr;
 };
 
+static struct natgw_node *read_natgw_nodes_file(struct ctdb_context *ctdb,
+						TALLOC_CTX *mem_ctx)
+{
+	int i;
+	const char *natgw_list;
+	int nlines;
+	char **lines;
+	struct natgw_node *natgw_node;
+	struct natgw_node *natgw_nodes = NULL;
+
+	natgw_list = getenv("CTDB_NATGW_NODES");
+	if (natgw_list == NULL) {
+		natgw_list = talloc_asprintf(mem_ctx, "%s/natgw_nodes",
+					     getenv("CTDB_BASE"));
+		if (natgw_list == NULL) {
+			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			exit(1);
+		}
+	}
+	lines = file_lines_load(natgw_list, &nlines, ctdb);
+	if (lines == NULL) {
+		ctdb_set_error(ctdb, "Failed to load natgw node list '%s'\n", natgw_list);
+		return NULL;;
+	}
+	for (i=0;i<nlines;i++) {
+		char *node;
+
+		node = lines[i];
+		/* strip leading spaces */
+		while((*node == ' ') || (*node == '\t')) {
+			node++;
+		}
+		if (*node == '#') {
+			continue;
+		}
+		if (strcmp(node, "") == 0) {
+			continue;
+		}
+		natgw_node = talloc(ctdb, struct natgw_node);
+		natgw_node->addr = talloc_strdup(natgw_node, node);
+		CTDB_NO_MEMORY_NULL(ctdb, natgw_node->addr);
+		natgw_node->next = natgw_nodes;
+		natgw_nodes = natgw_node;
+	}
+
+	return natgw_nodes;
+}
+
+
 /* talloc off the existing nodemap... */
 static struct ctdb_node_map *talloc_nodemap(struct ctdb_node_map *nodemap)
 {
@@ -1230,11 +1279,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int i, ret;
-	const char *natgw_list;
-	int nlines;
-	char **lines;
 	struct natgw_node *natgw_nodes = NULL;
-	struct natgw_node *natgw_node;
 	struct ctdb_node_map *orig_nodemap=NULL;
 	struct ctdb_node_map *cnodemap, *nodemap;
 	uint32_t mypnn, pnn;
@@ -1255,40 +1300,10 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	};
 
 	/* read the natgw nodes file into a linked list */
-	natgw_list = getenv("CTDB_NATGW_NODES");
-	if (natgw_list == NULL) {
-		natgw_list = talloc_asprintf(tmp_ctx, "%s/natgw_nodes",
-					     getenv("CTDB_BASE"));
-		if (natgw_list == NULL) {
-			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
-			exit(1);
-		}
-	}
-	lines = file_lines_load(natgw_list, &nlines, ctdb);
-	if (lines == NULL) {
-		ctdb_set_error(ctdb, "Failed to load natgw node list '%s'\n", natgw_list);
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-	for (i=0;i<nlines;i++) {
-		char *node;
-
-		node = lines[i];
-		/* strip leading spaces */
-		while((*node == ' ') || (*node == '\t')) {
-			node++;
-		}
-		if (*node == '#') {
-			continue;
-		}
-		if (strcmp(node, "") == 0) {
-			continue;
-		}
-		natgw_node = talloc(ctdb, struct natgw_node);
-		natgw_node->addr = talloc_strdup(natgw_node, node);
-		CTDB_NO_MEMORY(ctdb, natgw_node->addr);
-		natgw_node->next = natgw_nodes;
-		natgw_nodes = natgw_node;
+	natgw_nodes = read_natgw_nodes_file(ctdb, tmp_ctx);
+	if (natgw_nodes == NULL) {
+		ret = -1;
+		goto done;
 	}
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE,
