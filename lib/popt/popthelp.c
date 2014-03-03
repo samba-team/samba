@@ -240,22 +240,23 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
 	/* Choose type of output */
 	/*@-branchstate@*/
 	if (opt->argInfo & POPT_ARGFLAG_SHOW_DEFAULT) {
-	    defs = singleOptionDefaultValue(lineLength, opt, translation_domain);
-	    if (defs) {
-		char * t = (char *)malloc((help ? strlen(help) : 0) +
+		defs = singleOptionDefaultValue(lineLength, opt, translation_domain);
+		if (defs) {
+			char * t = (char *)malloc((help ? strlen(help) : 0) +
 				strlen(defs) + sizeof(" "));
-		if (t) {
-		    char * te = t;
-		    *te = '\0';
-		    if (help) {
-			strcpy(te, help);	te += strlen(te);
-		    }
-		    *te++ = ' ';
-		    strcpy(te, defs);
-		    defs = (char *)_free(defs);
+			if (t) {
+				char * te = t;
+				*te = '\0';
+				if (help) {
+					strcpy(te, help);
+					te += strlen(te);
+				}
+				*te++ = ' ';
+				strcpy(te, defs);
+				defs = (char *)_free(defs);
+			}
+			defs = t;
 		}
-		defs = t;
-	    }
 	}
 	/*@=branchstate@*/
 
