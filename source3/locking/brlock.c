@@ -2085,6 +2085,8 @@ static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
 
 	if ((data.dsize % sizeof(struct lock_struct)) == 1) {
 		br_lock->have_read_oplocks = (data.dptr[data.dsize-1] == 1);
+	} else {
+		br_lock->have_read_oplocks = false;
 	}
 
 	DEBUG(10, ("Got %d bytes, have_read_oplocks: %s\n", (int)data.dsize,
