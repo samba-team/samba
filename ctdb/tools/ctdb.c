@@ -816,9 +816,9 @@ struct pnn_node {
 	int pnn;
 };
 
-static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
+static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
+					   const char *file)
 {
-	const char *nodes_list;
 	int nlines;
 	char **lines;
 	int i, pnn;
@@ -826,17 +826,7 @@ static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
 	struct pnn_node *pnn_node;
 	struct pnn_node *tmp_node;
 
-	/* read the nodes file */
-	nodes_list = getenv("CTDB_NODES");
-	if (nodes_list == NULL) {
-		nodes_list = talloc_asprintf(mem_ctx, "%s/nodes",
-					     getenv("CTDB_BASE"));
-		if (nodes_list == NULL) {
-			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
-			exit(1);
-		}
-	}
-	lines = file_lines_load(nodes_list, &nlines, mem_ctx);
+	lines = file_lines_load(file, &nlines, mem_ctx);
 	if (lines == NULL) {
 		return NULL;
 	}
@@ -877,6 +867,24 @@ static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
 	}
 
 	return pnn_nodes;
+}
+
+static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
+{
+	const char *nodes_list;
+
+	/* read the nodes file */
+	nodes_list = getenv("CTDB_NODES");
+	if (nodes_list == NULL) {
+		nodes_list = talloc_asprintf(mem_ctx, "%s/nodes",
+					     getenv("CTDB_BASE"));
+		if (nodes_list == NULL) {
+			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			exit(1);
+		}
+	}
+
+	return read_pnn_node_file(mem_ctx, nodes_list);
 }
 
 /*
@@ -1118,20 +1126,11 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 	return ret;
 }
 
-struct natgw_node {
-	struct natgw_node *next;
-	const char *addr;
-};
-
-static struct natgw_node *read_natgw_nodes_file(struct ctdb_context *ctdb,
-						TALLOC_CTX *mem_ctx)
+static struct pnn_node *read_natgw_nodes_file(struct ctdb_context *ctdb,
+					      TALLOC_CTX *mem_ctx)
 {
-	int i;
 	const char *natgw_list;
-	int nlines;
-	char **lines;
-	struct natgw_node *natgw_node;
-	struct natgw_node *natgw_nodes = NULL;
+	struct pnn_node *natgw_nodes = NULL;
 
 	natgw_list = getenv("CTDB_NATGW_NODES");
 	if (natgw_list == NULL) {
@@ -1142,32 +1141,12 @@ static struct natgw_node *read_natgw_nodes_file(struct ctdb_context *ctdb,
 			exit(1);
 		}
 	}
-	lines = file_lines_load(natgw_list, &nlines, ctdb);
-	if (lines == NULL) {
-		ctdb_set_error(ctdb, "Failed to load natgw node list '%s'\n", natgw_list);
-		return NULL;;
+	/* The PNNs will be junk but they're not used */
+	natgw_nodes = read_pnn_node_file(mem_ctx, natgw_list);
+	if (natgw_nodes == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to load natgw node list '%s'\n", natgw_list));
 	}
-	for (i=0;i<nlines;i++) {
-		char *node;
-
-		node = lines[i];
-		/* strip leading spaces */
-		while((*node == ' ') || (*node == '\t')) {
-			node++;
-		}
-		if (*node == '#') {
-			continue;
-		}
-		if (strcmp(node, "") == 0) {
-			continue;
-		}
-		natgw_node = talloc(ctdb, struct natgw_node);
-		natgw_node->addr = talloc_strdup(natgw_node, node);
-		CTDB_NO_MEMORY_NULL(ctdb, natgw_node->addr);
-		natgw_node->next = natgw_nodes;
-		natgw_nodes = natgw_node;
-	}
-
 	return natgw_nodes;
 }
 
@@ -1181,12 +1160,12 @@ static struct ctdb_node_map *talloc_nodemap(struct ctdb_node_map *nodemap)
 }
 
 static struct ctdb_node_map *
-filter_nodemap_by_natgw_nodes(struct ctdb_context *ctdb,
-			      struct ctdb_node_map *nodemap,
-			      struct natgw_node *natgw_nodes)
+filter_nodemap_by_addrs(struct ctdb_context *ctdb,
+			struct ctdb_node_map *nodemap,
+			struct pnn_node *nodes)
 {
 	int i;
-	struct natgw_node *n;
+	struct pnn_node *n;
 	struct ctdb_node_map *ret;
 
 	ret = talloc_nodemap(nodemap);
@@ -1195,7 +1174,7 @@ filter_nodemap_by_natgw_nodes(struct ctdb_context *ctdb,
 	ret->num = 0;
 
 	for (i = 0; i < nodemap->num; i++) {
-		for(n = natgw_nodes; n != NULL ; n = n->next) {
+		for(n = nodes; n != NULL ; n = n->next) {
 			if (!strcmp(n->addr,
 				    ctdb_addr_to_str(&nodemap->nodes[i].addr))) {
 				break;
@@ -1279,7 +1258,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int i, ret;
-	struct natgw_node *natgw_nodes = NULL;
+	struct pnn_node *natgw_nodes = NULL;
 	struct ctdb_node_map *orig_nodemap=NULL;
 	struct ctdb_node_map *cnodemap, *nodemap;
 	uint32_t mypnn, pnn;
@@ -1316,8 +1295,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 
 	/* Get a nodemap that includes only the nodes in the NATGW
 	 * group */
-	nodemap = filter_nodemap_by_natgw_nodes(ctdb, orig_nodemap,
-						natgw_nodes);
+	nodemap = filter_nodemap_by_addrs(ctdb, orig_nodemap, natgw_nodes);
 	if (nodemap == NULL) {
 		ret = -1;
 		goto done;
