@@ -1132,6 +1132,38 @@ static struct ctdb_node_map *talloc_nodemap(struct ctdb_node_map *nodemap)
 }
 
 static struct ctdb_node_map *
+filter_nodemap_by_natgw_nodes(struct ctdb_context *ctdb,
+			      struct ctdb_node_map *nodemap,
+			      struct natgw_node *natgw_nodes)
+{
+	int i;
+	struct natgw_node *n;
+	struct ctdb_node_map *ret;
+
+	ret = talloc_nodemap(nodemap);
+	CTDB_NO_MEMORY_NULL(ctdb, ret);
+
+	ret->num = 0;
+
+	for (i = 0; i < nodemap->num; i++) {
+		for(n = natgw_nodes; n != NULL ; n = n->next) {
+			if (!strcmp(n->addr,
+				    ctdb_addr_to_str(&nodemap->nodes[i].addr))) {
+				break;
+			}
+		}
+		if (n == NULL) {
+			continue;
+		}
+
+		ret->nodes[ret->num] = nodemap->nodes[i];
+		ret->num++;
+	}
+
+	return ret;
+}
+
+static struct ctdb_node_map *
 filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
 			       struct ctdb_node_map *nodemap,
 			       uint32_t required_capabilities)
@@ -1203,8 +1235,8 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	char **lines;
 	struct natgw_node *natgw_nodes = NULL;
 	struct natgw_node *natgw_node;
-	struct ctdb_node_map *nodemap=NULL;
-	struct ctdb_node_map *cnodemap;
+	struct ctdb_node_map *orig_nodemap=NULL;
+	struct ctdb_node_map *cnodemap, *nodemap;
 	uint32_t mypnn, pnn;
 	const char *ip;
 
@@ -1259,39 +1291,21 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		natgw_nodes = natgw_node;
 	}
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE,
+				   tmp_ctx, &orig_nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	/* Trim the nodemap so it only includes connected nodes in the
-	 * current natgw group.
-	 */
-	i=0;
-	while(i<nodemap->num) {
-		for(natgw_node=natgw_nodes;natgw_node;natgw_node=natgw_node->next) {
-			if (!strcmp(natgw_node->addr, ctdb_addr_to_str(&nodemap->nodes[i].addr))) {
-				break;
-			}
-		}
-
-		/* this node was not in the natgw so we just remove it from
-		 * the list
-		 */
-		if ((natgw_node == NULL) 
-		||  (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) ) {
-			int j;
-
-			for (j=i+1; j<nodemap->num; j++) {
-				nodemap->nodes[j-1] = nodemap->nodes[j];
-			}
-			nodemap->num--;
-			continue;
-		}
-
-		i++;
+	/* Get a nodemap that includes only the nodes in the NATGW
+	 * group */
+	nodemap = filter_nodemap_by_natgw_nodes(ctdb, orig_nodemap,
+						natgw_nodes);
+	if (nodemap == NULL) {
+		ret = -1;
+		goto done;
 	}
 
 	/* Get a nodemap that includes only the nodes with the NATGW
