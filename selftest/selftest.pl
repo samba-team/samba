@@ -367,6 +367,12 @@ print "LD_PRELOAD=$ENV{LD_PRELOAD}\n";
 # Enable uid_wrapper globally
 $ENV{UID_WRAPPER} = 1;
 
+# Disable RTLD_DEEPBIND hack for Samba bind dlz module
+#
+# This is needed in order to allow the ldb_*ldap module
+# to work with a preloaded socket wrapper.
+$ENV{LDB_MODULES_DISABLE_DEEPBIND} = 1;
+
 my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {
 	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix_abs/w", $opt_socket_wrapper_pcap);
