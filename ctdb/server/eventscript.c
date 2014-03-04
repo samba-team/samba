@@ -901,8 +901,6 @@ static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 	struct eventscript_callback_state *state = 
 		talloc_get_type(private_data, struct eventscript_callback_state);
 
-	ctdb_enable_monitoring(ctdb);
-
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to run eventscripts\n"));
 	}
@@ -966,14 +964,11 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_NOTICE,("Running eventscripts with arguments %s\n", indata.dptr));
 
-	ctdb_disable_monitoring(ctdb);
-
 	ret = ctdb_event_script_callback(ctdb, 
 			 state, run_eventscripts_callback, state,
 			 call, "%s", options);
 
 	if (ret != 0) {
-		ctdb_enable_monitoring(ctdb);
 		DEBUG(DEBUG_ERR,(__location__ " Failed to run eventscripts with arguments %s\n", indata.dptr));
 		talloc_free(state);
 		return -1;
