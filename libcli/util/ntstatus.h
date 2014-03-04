@@ -674,6 +674,14 @@ NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 #define NT_STATUS_IS_ERR(x) (unlikely((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000))
 #define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
 
+/*
+ * These macros (with the embedded return) are considered poor coding
+ * style per README.Coding
+ *
+ * Please do not use them in new code, and do not rely on them in
+ * projects external to Samba as they will go away at some point.
+ */
+
 #define NT_STATUS_HAVE_NO_MEMORY(x) do { \
 	if (unlikely(!(x))) {		\
 		return NT_STATUS_NO_MEMORY;\
