@@ -3460,6 +3460,7 @@ void reply_lockread(struct smb_request *req)
 	char *data;
 	off_t startpos;
 	size_t numtoread;
+	size_t maxtoread;
 	NTSTATUS status;
 	files_struct *fsp;
 	struct byte_range_lock *br_lck = NULL;
@@ -3490,14 +3491,12 @@ void reply_lockread(struct smb_request *req)
 	numtoread = SVAL(req->vwv+1, 0);
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 
-	numtoread = MIN(BUFFER_SIZE - (smb_size + 5*2 + 3), numtoread);
-
 	/*
 	 * NB. Discovered by Menny Hamburger at Mainsoft. This is a core+
 	 * protocol request that predates the read/write lock concept. 
 	 * Thus instead of asking for a read lock here we need to ask
 	 * for a write lock. JRA.
-	 * Note that the requested lock size is unaffected by max_recv.
+	 * Note that the requested lock size is unaffected by max_send.
 	 */
 
 	br_lck = do_lock(req->sconn->msg_ctx,
@@ -3520,15 +3519,16 @@ void reply_lockread(struct smb_request *req)
 	}
 
 	/*
-	 * However the requested READ size IS affected by max_recv. Insanity.... JRA.
+	 * However the requested READ size IS affected by max_send. Insanity.... JRA.
 	 */
+	maxtoread = sconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
 
-	if (numtoread > sconn->smb1.negprot.max_recv) {
-		DEBUG(0,("reply_lockread: requested read size (%u) is greater than maximum allowed (%u). \
+	if (numtoread > maxtoread) {
+		DEBUG(0,("reply_lockread: requested read size (%u) is greater than maximum allowed (%u/%u). \
 Returning short read of maximum allowed for compatibility with Windows 2000.\n",
-			(unsigned int)numtoread,
-			(unsigned int)sconn->smb1.negprot.max_recv));
-		numtoread = MIN(numtoread, sconn->smb1.negprot.max_recv);
+			(unsigned int)numtoread, (unsigned int)maxtoread,
+			(unsigned int)sconn->smb1.sessions.max_send));
+		numtoread = maxtoread;
 	}
 
 	reply_outbuf(req, 5, numtoread + 3);
