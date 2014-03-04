@@ -3502,10 +3502,6 @@ void reply_lockread(struct smb_request *req)
 
 	numtoread = MIN(BUFFER_SIZE - (smb_size + 5*2 + 3), numtoread);
 
-	reply_outbuf(req, 5, numtoread + 3);
-
-	data = smb_buf(req->outbuf) + 3;
-
 	/*
 	 * NB. Discovered by Menny Hamburger at Mainsoft. This is a core+
 	 * protocol request that predates the read/write lock concept. 
@@ -3544,6 +3540,11 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 			(unsigned int)sconn->smb1.negprot.max_recv));
 		numtoread = MIN(numtoread, sconn->smb1.negprot.max_recv);
 	}
+
+	reply_outbuf(req, 5, numtoread + 3);
+
+	data = smb_buf(req->outbuf) + 3;
+
 	nread = read_file(fsp,data,startpos,numtoread);
 
 	if (nread < 0) {
