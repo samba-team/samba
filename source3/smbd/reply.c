@@ -3490,7 +3490,7 @@ void reply_lockread(struct smb_request *req)
 	numtoread = SVAL(req->vwv+1, 0);
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 
-	numtoread = MIN(BUFFER_SIZE - (smb_size + 3*2 + 3), numtoread);
+	numtoread = MIN(BUFFER_SIZE - (smb_size + 5*2 + 3), numtoread);
 
 	reply_outbuf(req, 5, numtoread + 3);
 
