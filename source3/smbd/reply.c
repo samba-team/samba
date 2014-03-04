@@ -3569,10 +3569,10 @@ void reply_read(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	size_t numtoread;
+	size_t maxtoread;
 	ssize_t nread = 0;
 	char *data;
 	off_t startpos;
-	int outsize = 0;
 	files_struct *fsp;
 	struct lock_struct lock;
 	struct smbd_server_connection *sconn = req->sconn;
@@ -3601,17 +3601,17 @@ void reply_read(struct smb_request *req)
 	numtoread = SVAL(req->vwv+1, 0);
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 
-	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
-
 	/*
-	 * The requested read size cannot be greater than max_recv. JRA.
+	 * The requested read size cannot be greater than max_send. JRA.
 	 */
-	if (numtoread > sconn->smb1.negprot.max_recv) {
-		DEBUG(0,("reply_read: requested read size (%u) is greater than maximum allowed (%u). \
+	maxtoread = sconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
+
+	if (numtoread > maxtoread) {
+		DEBUG(0,("reply_read: requested read size (%u) is greater than maximum allowed (%u/%u). \
 Returning short read of maximum allowed for compatibility with Windows 2000.\n",
-			(unsigned int)numtoread,
-			(unsigned int)sconn->smb1.negprot.max_recv));
-		numtoread = MIN(numtoread, sconn->smb1.negprot.max_recv);
+			(unsigned int)numtoread, (unsigned int)maxtoread,
+			(unsigned int)sconn->smb1.sessions.max_send));
+		numtoread = maxtoread;
 	}
 
 	reply_outbuf(req, 5, numtoread+3);
