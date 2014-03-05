@@ -303,10 +303,10 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		}
 	}
 
-	d_printf("%-7s   %-12s  %-12s  %-12s (%s)\n",
+	d_printf("%-7s   %-12s  %-12s  %-12s (%s) %-12s\n",
 		 procid_str_static(&session->pid),
 		 uid_str, gid_str,
-		 session->remote_machine, session->hostname);
+		 session->remote_machine, session->hostname, session->protocol_ver);
 
 	return 0;
 }
@@ -472,8 +472,8 @@ int main(int argc, const char *argv[])
 
 	if ( show_processes ) {
 		d_printf("\nSamba version %s\n",samba_version_string());
-		d_printf("PID     Username      Group         Machine                        \n");
-		d_printf("-------------------------------------------------------------------\n");
+		d_printf("PID     Username      Group         Machine            Protocol Version       \n");
+		d_printf("------------------------------------------------------------------------------\n");
 
 		sessionid_traverse_read(traverse_sessionid, NULL);
 
