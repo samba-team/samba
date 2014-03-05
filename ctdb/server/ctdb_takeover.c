@@ -3230,7 +3230,7 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 
 
 /*
-  Called when another daemon starts - caises all tickles for all
+  Called when another daemon starts - causes all tickles for all
   public addresses we are serving to be sent to the new node on the
   next check.  This actually causes the next scheduled call to
   tdb_update_tcp_tickles() to update all nodes.  This is simple and
@@ -3239,6 +3239,9 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t pnn)
 {
 	struct ctdb_vnn *vnn;
+
+	DEBUG(DEBUG_INFO, ("Received startup control from node %lu\n",
+			   (unsigned long) pnn));
 
 	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
 		vnn->tcp_update_needed = true;
@@ -3908,6 +3911,9 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 		return -1;
 	}
 
+	DEBUG(DEBUG_INFO, ("Received tickle update for public address %s\n",
+			   ctdb_addr_to_str(&list->addr)));
+
 	vnn = find_public_ip_vnn(ctdb, &list->addr);
 	if (vnn == NULL) {
 		DEBUG(DEBUG_INFO,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n",
@@ -4056,6 +4062,9 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 			DEBUG(DEBUG_ERR,("Failed to send the tickle update for public address %s\n",
 				ctdb_addr_to_str(&vnn->public_address)));
 		} else {
+			DEBUG(DEBUG_INFO,
+			      ("Sent tickle update for public address %s\n",
+			       ctdb_addr_to_str(&vnn->public_address)));
 			vnn->tcp_update_needed = false;
 		}
 	}
