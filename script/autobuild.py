@@ -45,7 +45,7 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
-    "samba" : [ ("configure", "./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
+    "samba" : [ ("configure", "./configure.developer ${PREFIX} ${PERL_VENDOR_LIB} --with-selftest-prefix=./bin/ab", "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
                 ("install", "make install", "text/plain"),
@@ -67,7 +67,7 @@ tasks = {
                      ("ctdb-header-ls", "ls ${PREFIX_DIR}/include/ctdb.h", "text/plain"),
 
                      # build samba with cluster support against this ctdb:
-                     ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --with-ctdb-dir=${PREFIX_DIR} --bundled-libraries=!tdb", "text/plain"),
+                     ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure.developer ${PREFIX} ${PERL_VENDOR_LIB} --with-selftest-prefix=./bin/ab --with-cluster-support --with-ctdb-dir=${PREFIX_DIR} --bundled-libraries=!tdb", "text/plain"),
                      ("samba-make", "make", "text/plain"),
                      ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
                      ("samba-install", "make install", "text/plain"),
@@ -99,7 +99,7 @@ tasks = {
                       ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ntdb,!pyntdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ntdb,!pyntdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX} ${PERL_VENDOR_LIB}", "text/plain"),
                       ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("dist", "make dist", "text/plain")],
@@ -230,6 +230,7 @@ class builder(object):
         self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(standard_lib=1, prefix=self.prefix))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
+        self.cmd = self.cmd.replace("${PERL_VENDOR_LIB}", "--with-perl-vendorlib=%s/share/perl5" % self.prefix)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
