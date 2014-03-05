@@ -2465,7 +2465,7 @@ static void init_iconv(void)
 
 static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
-	if (strcmp(*ptr, pszParmValue) != 0) {
+	if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
 		string_set(Globals.ctx, ptr, pszParmValue);
 		init_iconv();
 	}
@@ -2496,7 +2496,7 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 		}
 	}
 
-	if (strcmp(*ptr, pszParmValue) != 0) {
+	if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
 		if (is_utf8) {
 			DEBUG(0,("ERROR: invalid DOS charset: 'dos charset' must not "
 				"be UTF8, using (default value) %s instead.\n",
