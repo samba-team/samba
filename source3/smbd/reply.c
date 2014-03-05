@@ -1699,7 +1699,7 @@ void reply_search(struct smb_request *req)
 	} else {
 		unsigned int i;
 		size_t hdr_size = ((uint8_t *)smb_buf(req->outbuf) + 3 - req->outbuf);
-		size_t available_space = BUFFER_SIZE - hdr_size;
+		size_t available_space = sconn->smb1.sessions.max_send - hdr_size;
 
 		maxentries = MIN(maxentries, available_space/DIR_STRUCT_SIZE);
 
