@@ -98,11 +98,10 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 
 		break;
 	case RPC_SERVICE_MODE_EMBEDDED:
-		/* Check if we this daemon handles this pipe */
+		/* Check if we handle this pipe internally */
 		ok = is_known_pipename(name, &syntax);
 		if (!ok) {
-			DEBUG(0, ("ERROR! '%s' is not a registred pipe!\n",
-				  name));
+			DEBUG(2, ("'%s' is not a registered pipe!\n", name));
 			talloc_free(handle);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
