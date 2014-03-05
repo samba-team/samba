@@ -418,15 +418,7 @@ utimensat vsyslog _write __write __xstat
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
 
     if Options.options.with_acl_support:
-	if (host_os.rfind('sysv5') > -1) and conf.CHECK_FUNCS_IN('sec', 'facl', checklibc=True):
-		Logs.info('Using UnixWare ACLs')
-                conf.DEFINE('HAVE_UNIXWARE_ACLS',1)
-                default_static_modules.extend(TO_LIST('vfs_solarisacl'))
-	elif (host_os.rfind('solaris') > -1) and conf.CHECK_FUNCS_IN('sec', 'facl'):
-		Logs.info('Using solaris ACLs')
-                conf.DEFINE('HAVE_SOLARIS_ACLS',1)
-                default_static_modules.extend(TO_LIST('vfs_solarisacl'))
-	elif (host_os.rfind('hpux') > -1):
+        if (host_os.rfind('hpux') > -1):
 		Logs.info('Using HPUX ACLs')
                 conf.DEFINE('HAVE_HPUX_ACLS',1)
                 conf.DEFINE('POSIX_ACL_NEEDS_MASK',1)
@@ -435,10 +427,6 @@ utimensat vsyslog _write __write __xstat
 		Logs.info('Using AIX ACLs')
                 conf.DEFINE('HAVE_AIX_ACLS',1)
                 default_static_modules.extend(TO_LIST('vfs_aixacl vfs_aixacl2'))
-	elif (host_os.rfind('osf') > -1) and conf.CHECK_FUNCS_IN('pacl', 'acl_get_fd'):
-		Logs.info('Using Tru64 ACLs')
-                conf.DEFINE('HAVE_TRU64_ACLS',1)
-                default_static_modules.extend(TO_LIST('vfs_tru64acl'))
         elif (host_os.rfind('darwin') > -1):
             Logs.warn('ACLs on Darwin currently not supported')
             conf.fatal("ACL support not available on Darwin/MacOS. "
@@ -447,7 +435,7 @@ utimensat vsyslog _write __write __xstat
                        "ACL support is required to change permissions "
                        "from Windows clients.")
         else:
-            conf.CHECK_FUNCS_IN('acl_get_file', 'acl')
+            conf.CHECK_FUNCS_IN(['acl_get_file'], 'acl')
             if conf.CHECK_CODE('''
 acl_t acl;
 int entry_id;
@@ -466,6 +454,14 @@ return acl_get_perm_np(permset_d, perm);
                         headers='sys/types.h sys/acl.h', link=True,
                         msg="Checking whether acl_get_perm_np() is available")
                 default_static_modules.extend(TO_LIST('vfs_posixacl'))
+            elif conf.CHECK_FUNCS_IN(['facl'], 'sec'):
+                Logs.info('Using solaris or UnixWare ACLs')
+                conf.DEFINE('HAVE_SOLARIS_UNIXWARE_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_solarisacl'))
+            elif conf.CHECK_FUNCS_IN('pacl', 'acl_get_fd'):
+                Logs.info('Using Tru64 ACLs')
+                conf.DEFINE('HAVE_TRU64_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_tru64acl'))
             else:
                 conf.fatal("ACL support not found. Try installing libacl1-dev "
                            "or libacl-devel.  "

@@ -30,7 +30,7 @@
 #include "modules/vfs_tru64acl.h"
 #endif
 
-#if defined(HAVE_SOLARIS_ACLS) || defined(HAVE_UNIXWARE_ACLS)
+#if defined(HAVE_SOLARIS_UNIXWARE_ACLS)
 #include "modules/vfs_solarisacl.h"
 #endif
 
@@ -457,7 +457,7 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return tru64acl_sys_acl_delete_def_file(handle, path);
 }
 
-#elif defined(HAVE_SOLARIS_ACLS) || defined(HAVE_UNIXWARE_ACLS)
+#elif defined(HAVE_SOLARIS_UNIXWARE_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 			   const char *path_p, SMB_ACL_TYPE_T type,
