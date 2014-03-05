@@ -170,9 +170,11 @@ class SmbDotConfTests(TestCase):
 
     def test_default_s3(self):
         self._test_default(['bin/testparm'])
+        self._set_defaults(['bin/testparm'])
 
     def test_default_s4(self):
         self._test_default(['bin/samba-tool', 'testparm'])
+        self._set_defaults(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
         topdir = os.path.abspath(samba.source_tree_topdir())
@@ -197,6 +199,43 @@ class SmbDotConfTests(TestCase):
                  self.fail("%s has no valid context" % param)
             p = subprocess.Popen(program + ["-s", self.smbconf,
                     "--section-name", section, "--parameter-name", param],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+            if p[0].upper().strip() != default.upper():
+                if not (p[0].upper().strip() == "" and default == '""'):
+                    doc_triple = "%s\n      Expected: %s" % (param, default)
+                    failset.add("%s\n      Got: %s" % (doc_triple, p[0].upper().strip()))
+
+        if len(failset) > 0:
+            self.fail(self._format_message(failset,
+                "Parameters that do not have matching defaults:"))
+
+    def _set_defaults(self, program):
+        topdir = os.path.abspath(samba.source_tree_topdir())
+        try:
+            defaults = set(get_default_triples(topdir))
+        except:
+            self.fail("Unable to load parameters")
+        bindir = os.path.join(topdir, "bin")
+        failset = set()
+        count = 0
+
+        for triple in defaults:
+            param, default, context = triple
+
+            # temporarily remove parametric options - no dump available in s4
+            if param in ['printing'] or ':' in param:
+                continue
+
+            section = None
+            if context == "G":
+                section = "global"
+            elif context == "S":
+                section = "test"
+            else:
+                 self.fail("%s has no valid context" % param)
+            p = subprocess.Popen(program + ["-s", self.smbconf,
+                    "--section-name", section, "--parameter-name", param,
+                    "--option", "%s = %s" % (param, default)],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
             if p[0].upper().strip() != default.upper():
                 if not (p[0].upper().strip() == "" and default == '""'):
