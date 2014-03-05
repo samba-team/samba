@@ -84,7 +84,7 @@ def get_implementation_parameters(sourcedir):
     finally:
         f.close()
 
-def get_default_triples(sourcedir):
+def get_documented_tuples(sourcedir, omit_no_default=True):
     path = os.path.join(sourcedir, "bin", "default", "docs-xml", "smbdotconf")
     if not os.path.exists(os.path.join(path, "parameters.all.xml")):
         raise Exception("Unable to find parameters.all.xml")
@@ -97,20 +97,28 @@ def get_default_triples(sourcedir):
     root = ET.fromstring(out)
     for parameter in root:
         name = parameter.attrib.get("name")
+        param_type = parameter.attrib.get("type")
+        if parameter.attrib.get('removed') == "1":
+           continue
         values = parameter.findall("value")
         defaults = []
         for value in values:
             if value.attrib.get("type") == "default":
                 defaults.append(value)
+
+        default_text = None
         if len(defaults) == 0:
-            continue
+            if omit_no_default:
+                continue
         elif len(defaults) > 1:
             raise Exception("More than one default found for parameter %s" % name)
-        default_text = defaults[0].text
+        else:
+            default_text = defaults[0].text
+
         if default_text is None:
             default_text = ""
         context = parameter.attrib.get("context")
-        yield name, default_text, context
+        yield name, default_text, context, param_type
     p.close()
 
 class SmbDotConfTests(TestCase):
@@ -172,22 +180,32 @@ class SmbDotConfTests(TestCase):
         self._test_default(['bin/testparm'])
         self._set_defaults(['bin/testparm'])
 
+        # registry shares appears to need sudo
+        self._set_arbitrary(['bin/testparm'],
+            exceptions = ['client lanman auth',
+                          'client plaintext auth',
+                          'registry shares',
+                          'idmap backend',
+                          'idmap gid',
+                          'idmap uid'])
+
     def test_default_s4(self):
         self._test_default(['bin/samba-tool', 'testparm'])
         self._set_defaults(['bin/samba-tool', 'testparm'])
+        self._set_arbitrary(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
         topdir = os.path.abspath(samba.source_tree_topdir())
         try:
-            defaults = set(get_default_triples(topdir))
+            defaults = set(get_documented_tuples(topdir))
         except:
             self.fail("Unable to load parameters")
         bindir = os.path.join(topdir, "bin")
         failset = set()
         count = 0
 
-        for triple in defaults:
-            param, default, context = triple
+        for tuples in defaults:
+            param, default, context, param_type = tuples
             if param in self.special_cases:
                 continue
             section = None
@@ -212,15 +230,15 @@ class SmbDotConfTests(TestCase):
     def _set_defaults(self, program):
         topdir = os.path.abspath(samba.source_tree_topdir())
         try:
-            defaults = set(get_default_triples(topdir))
+            defaults = set(get_documented_tuples(topdir))
         except:
             self.fail("Unable to load parameters")
         bindir = os.path.join(topdir, "bin")
         failset = set()
         count = 0
 
-        for triple in defaults:
-            param, default, context = triple
+        for tuples in defaults:
+            param, default, context, param_type = tuples
 
             # temporarily remove parametric options - no dump available in s4
             if param in ['printing'] or ':' in param:
@@ -245,3 +263,68 @@ class SmbDotConfTests(TestCase):
         if len(failset) > 0:
             self.fail(self._format_message(failset,
                 "Parameters that do not have matching defaults:"))
+
+    def _set_arbitrary(self, program, exceptions=None):
+        arbitrary = {'string': 'string', 'boolean': 'yes', 'integer': '5',
+                     'enum':'', 'boolean-auto': '', 'char': 'a', 'list': 'a, b, c'}
+
+        topdir = os.path.abspath(samba.source_tree_topdir())
+        try:
+            defaults = set(get_documented_tuples(topdir, False))
+        except Exception,e:
+            self.fail("Unable to load parameters" + e)
+        bindir = os.path.join(topdir, "bin")
+        failset = set()
+        count = 0
+
+        for tuples in defaults:
+            param, default, context, param_type = tuples
+
+            # temporarily remove parametric options - no dump available in s4
+            if param in ['printing', 'copy', 'include', 'log level'] or ':' in param:
+                continue
+
+            # currently no easy way to set an arbitrary value for these
+            if param_type in ['enum', 'boolean-auto']:
+                continue
+
+            if exceptions is not None:
+                if param in exceptions:
+                    continue
+
+            section = None
+            if context == "G":
+                section = "global"
+            elif context == "S":
+                section = "test"
+            else:
+                 self.fail("%s has no valid context" % param)
+
+            value_to_use = arbitrary.get(param_type)
+            if value_to_use is None:
+                self.fail("%s has an invalid type" % param)
+
+            p = subprocess.Popen(program + ["-s", self.smbconf,
+                    "--section-name", section, "--parameter-name", param,
+                    "--option", "%s = %s" % (param, value_to_use)],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+            if p[0].upper().strip() != value_to_use.upper():
+                # currently no way to distinguish command lists
+                if param_type == 'list':
+                    if ", ".join(p[0].upper().strip().split()) == value_to_use.upper():
+                        continue
+
+                # currently no way to identify octal
+                if param_type == 'integer':
+                    try:
+                        if int(value_to_use, 8) == int(p[0].strip(), 8):
+                            continue
+                    except:
+                        pass
+
+                doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
+                failset.add("%s\n      Got: %s" % (doc_triple, p[0].upper().strip()))
+
+        if len(failset) > 0:
+            self.fail(self._format_message(failset,
+                "Parameters that were unexpectedly not set:"))
