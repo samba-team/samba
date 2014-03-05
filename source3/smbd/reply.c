@@ -1698,11 +1698,10 @@ void reply_search(struct smb_request *req)
 		}
 	} else {
 		unsigned int i;
-		maxentries = MIN(
-			maxentries,
-			((BUFFER_SIZE -
-			  ((uint8 *)smb_buf(req->outbuf) + 3 - req->outbuf))
-			 /DIR_STRUCT_SIZE));
+		size_t hdr_size = ((uint8_t *)smb_buf(req->outbuf) + 3 - req->outbuf);
+		size_t available_space = BUFFER_SIZE - hdr_size;
+
+		maxentries = MIN(maxentries, available_space/DIR_STRUCT_SIZE);
 
 		DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
 			 directory,lp_dont_descend(ctx, SNUM(conn))));
