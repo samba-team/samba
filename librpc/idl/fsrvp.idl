@@ -20,6 +20,7 @@ import "misc.idl";
 	const uint32 FSRVP_E_WAIT_FAILED = 0xFFFFFFFF;
 	const uint32 FSRVP_E_OBJECT_ALREADY_EXISTS = 0x8004230D;
 	const uint32 FSRVP_E_OBJECT_NOT_FOUND = 0x80042308;
+	const uint32 FSRVP_E_UNSUPPORTED_CONTEXT = 0x8004231B;
 	const uint32 FSRVP_E_BAD_ID = 0x80042302;	/* wire, not documented */
 
 	/* TODO move these to generic herror defines or COM in orpc.idl */
