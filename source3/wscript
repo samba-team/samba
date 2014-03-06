@@ -398,7 +398,7 @@ utimensat vsyslog _write __write __xstat
         conf.DEFINE('FREEBSD', 1)
         if conf.CHECK_HEADERS('sunacl.h'):
             conf.DEFINE('HAVE_FREEBSD_SUNACL_H', '1')
-            conf.CHECK_FUNCS_IN('acl', 'sunacl')
+            conf.CHECK_FUNCS_IN(['acl'], 'sunacl')
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     elif (host_os.rfind('irix') > -1):
         conf.DEFINE('IRIX', 1)
@@ -458,7 +458,7 @@ return acl_get_perm_np(permset_d, perm);
                 Logs.info('Using solaris or UnixWare ACLs')
                 conf.DEFINE('HAVE_SOLARIS_UNIXWARE_ACLS',1)
                 default_static_modules.extend(TO_LIST('vfs_solarisacl'))
-            elif conf.CHECK_FUNCS_IN('pacl', 'acl_get_fd'):
+            elif conf.CHECK_FUNCS_IN(['acl_get_fd'], 'pacl'):
                 Logs.info('Using Tru64 ACLs')
                 conf.DEFINE('HAVE_TRU64_ACLS',1)
                 default_static_modules.extend(TO_LIST('vfs_tru64acl'))
