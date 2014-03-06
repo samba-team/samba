@@ -24,6 +24,40 @@
 #include "../librpc/gen_ndr/ndr_fsrvp.h"
 #include "../librpc/gen_ndr/ndr_fsrvp_c.h"
 
+static const struct {
+	uint32_t error_code;
+	const char *error_str;
+} fss_errors[] = {
+	{
+		FSRVP_E_BAD_STATE,
+		"A method call was invalid because of the state of the server."
+	},
+	{
+		FSRVP_E_SHADOW_COPY_SET_IN_PROGRESS,
+		"A call was made to either \'SetContext\' or \'StartShadowCopySet\' while the creation of another shadow copy set is in progress."
+	},
+	{
+		FSRVP_E_NOT_SUPPORTED,
+		"The file store which contains the share to be shadow copied is not supported by the server."
+	},
+	{
+		FSRVP_E_WAIT_TIMEOUT,
+		"The wait for a shadow copy commit or expose operation has timed out."
+	},
+	{
+		FSRVP_E_WAIT_FAILED,
+		"The wait for a shadow copy commit expose operation has failed."
+	},
+	{
+		FSRVP_E_OBJECT_NOT_FOUND,
+		"The specified object does not exist."
+	},
+	{
+		FSRVP_E_UNSUPPORTED_CONTEXT,
+		"The specified context value is invalid."
+	}
+};
+
 struct fss_context_map {
 	uint32_t ctx_val;
 	const char *ctx_str;
@@ -53,6 +87,20 @@ struct fss_context_map ctx_map[] = {
 		.ctx_desc = "non-auto-release, persistent shadow-copy.",
 	},
 	{ 0, NULL, NULL },
+};
+
+static const char *get_error_str(uint32_t code)
+{
+	static const char *default_err = "Unknown Error";
+	const char *result = default_err;
+	int i;
+	for (i = 0; i < ARRAY_SIZE(fss_errors); ++i) {
+		if (code == fss_errors[i].error_code) {
+			result = fss_errors[i].error_str;
+			break;
+		}
+	}
+	return result;
 };
 
 static bool map_fss_ctx_str(const char *ctx_str,
@@ -100,8 +148,8 @@ static NTSTATUS cmd_fss_is_path_sup(struct rpc_pipe_client *cli,
 			  r.in.ShareName));
 		return NT_STATUS_UNSUCCESSFUL;
 	} else if (r.out.result) {
-		DEBUG(0, ("failed IsPathSupported response: 0x%x\n",
-			  r.out.result));
+		DEBUG(0, ("failed IsPathSupported response: 0x%x - \"%s\"\n",
+			  r.out.result, get_error_str(r.out.result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	printf("UNC %s %s shadow copy requests\n", r.in.ShareName,
