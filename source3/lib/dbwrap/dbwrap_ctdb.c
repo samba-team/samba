@@ -1168,15 +1168,15 @@ again:
 
 		DEBUG(0, ("db_ctdb_fetch_locked for %s key %s, chain %d "
 			  "needed %d attempts, %d milliseconds, "
-			  "chainlock: %d ms, CTDB %d ms\n",
+			  "chainlock: %f ms, CTDB %f ms\n",
 			  tdb_name(ctx->wtdb->tdb),
 			  hex_encode_talloc(talloc_tos(),
 					    (unsigned char *)key.dptr,
 					    key.dsize),
 			  chain,
 			  migrate_attempts, duration_msecs,
-			  (int) chainlock_time * 1000,
-			  (int) ctdb_time * 1000));
+			  chainlock_time * 1000.0,
+			  ctdb_time * 1000.0));
 	}
 
 	GetTimeOfDay(&crec->lock_time);
