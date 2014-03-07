@@ -26,7 +26,7 @@ natgw_check_config ()
 	die "Invalid configuration: CTDB_NATGW_PRIVATE_NETWORK not set"
 }
 
-set_natgw_capability ()
+natgw_set_capability ()
 {
     # Set NATGW capability depending on configuration
     if [ "$CTDB_NATGW_SLAVE_ONLY" = "yes" ] ; then
@@ -36,7 +36,8 @@ set_natgw_capability ()
     fi
 }
 
-delete_all() {
+natgw_clear ()
+{
 	_ip="${CTDB_NATGW_PUBLIC_IP%/*}"
 	_maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
 
@@ -80,7 +81,7 @@ natgw_set_slave ()
     smbcontrol winbindd ip-dropped $CTDB_NATGW_PUBLIC_IP >/dev/null 2>&1
 }
 
-ensure_natgwmaster ()
+natgw_ensure_master ()
 {
     _event="$1"
 
@@ -97,7 +98,7 @@ ensure_natgwmaster ()
 case "$1" in 
     setup)
 	natgw_check_config
-	set_natgw_capability
+	natgw_set_capability
 	;;
 
     startup)
@@ -116,10 +117,10 @@ case "$1" in
 
 	mypnn=$(ctdb pnn | cut -d: -f2)
 
-	set_natgw_capability
-	ensure_natgwmaster "$1"
+	natgw_set_capability
+	natgw_ensure_master "$1"
 
-	delete_all
+	natgw_clear
 
 	if [ "$mypnn" = "$natgwmaster" ]; then
 	    natgw_set_master
@@ -133,13 +134,13 @@ case "$1" in
 
     shutdown|removenatgw)
 	natgw_check_config
-	delete_all
+	natgw_clear
 	;;
 
     monitor)
 	natgw_check_config
-	set_natgw_capability
-	ensure_natgwmaster "$1"
+	natgw_set_capability
+	natgw_ensure_master "$1"
 	;;
 
     *)
