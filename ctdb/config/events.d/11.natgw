@@ -66,7 +66,7 @@ case "$1" in
 	    die "ERROR: NATGW configured to use a public address. NATGW must not use a public address."
 
 	# do not send out arp requests from loopback addresses
-	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
+	set_proc sys/net/ipv4/conf/all/arp_announce 2
 	;;
 
     updatenatgw|ipreallocated)
@@ -79,7 +79,7 @@ case "$1" in
 
 	if [ "$mypnn" = "$natgwmaster" ]; then
 		# This is the NAT GW
-		echo 1 >/proc/sys/net/ipv4/ip_forward
+		set_proc sys/net/ipv4/ip_forward 1
 		iptables -A POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE
 
 		# block all incoming connections to the natgw address
@@ -98,7 +98,7 @@ case "$1" in
 	fi
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	set_proc sys/net/ipv4/route/flush 1
 	;;
 
     shutdown|removenatgw)
