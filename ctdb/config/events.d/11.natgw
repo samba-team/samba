@@ -107,8 +107,11 @@ case "$1" in
 	natgw_check_config
 
 	# Error if CTDB_NATGW_PUBLIC_IP is listed in public addresses
-	grep -q "^$CTDB_NATGW_PUBLIC_IP[[:space:]]" "${CTDB_PUBLIC_ADDRESSES:-/etc/ctdb/public_addresses}" && \
-	    die "ERROR: NATGW configured to use a public address. NATGW must not use a public address."
+	ip_pat=$(echo "$CTDB_NATGW_PUBLIC_IP" | sed -e 's@\.@\\.@g')
+	if grep -q "^${ip_pat}[[:space:]]" \
+	    "${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}" ; then
+	    die "ERROR: CTDB_NATGW_PUBLIC_IP same as a public address"
+	fi
 
 	# do not send out arp requests from loopback addresses
 	set_proc sys/net/ipv4/conf/all/arp_announce 2
