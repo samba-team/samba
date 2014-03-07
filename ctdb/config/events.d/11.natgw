@@ -24,6 +24,9 @@ natgw_check_config ()
 	die "Invalid configuration: CTDB_NATGW_PUBLIC_IFACE not set"
     [ -n "$CTDB_NATGW_PRIVATE_NETWORK" ] || \
 	die "Invalid configuration: CTDB_NATGW_PRIVATE_NETWORK not set"
+
+    # The default is to create a single default route
+    [ -n "$CTDB_NATGW_STATIC_ROUTES" ] || CTDB_NATGW_STATIC_ROUTES="0.0.0.0/0"
 }
 
 natgw_set_capability ()
@@ -43,7 +46,9 @@ natgw_clear ()
 
     delete_ip_from_iface \
 	$CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
-    ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
+    for _net in $CTDB_NATGW_STATIC_ROUTES ; do
+	ip route del "$_net" metric 10 >/dev/null 2>/dev/null
+    done
 
     # Delete the masquerading setup from a previous iteration where we
     # were the NAT-GW
@@ -70,7 +75,9 @@ natgw_set_master ()
 
     ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
     if [ -n "$CTDB_NATGW_DEFAULT_GATEWAY" ] ; then
-	ip route add 0.0.0.0/0 metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY
+	for _net in $CTDB_NATGW_STATIC_ROUTES ; do
+	    ip route add "$_net" metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY
+	done
     fi
 }
 
@@ -78,7 +85,9 @@ natgw_set_slave ()
 {
     _natgwip="$1"
 
-    ip route add 0.0.0.0/0 via "$_natgwip" metric 10
+    for _net in $CTDB_NATGW_STATIC_ROUTES ; do
+	ip route add "$_net" via "$_natgwip" metric 10
+    done
 
     # Make sure winbindd does not stay bound to this address if we are
     # no longer NATGW master

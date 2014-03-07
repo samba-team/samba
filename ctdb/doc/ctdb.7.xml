@@ -655,9 +655,17 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
       </para>
 
       <para>
+	<varname>CTDB_NATGW_STATIC_ROUTES</varname> can be used to
+	have NATGW create more specific routes instead of just default
+	routes.
+      </para>
+
+      <para>
 	This is implemented in the <filename>11.natgw</filename>
-	eventscript. Please see the eventscript file for the finer
-	details.
+	eventscript.  Please see the eventscript file and the
+	<citetitle>NAT GATEWAY</citetitle> section in
+	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> for more details.
       </para>
 
     </refsect2>

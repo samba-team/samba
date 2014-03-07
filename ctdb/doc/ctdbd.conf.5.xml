@@ -545,6 +545,31 @@
 	  </listitem>
 	</varlistentry>
 
+	<varlistentry>
+	  <term>CTDB_NATGW_STATIC_ROUTES=<parameter>IPADDR/MASK</parameter> ...</term>
+	  <listitem>
+	    <para>
+	      Each IPADDR/MASK identifies a network or host to which
+	      NATGW should create a fallback route, instead of
+	      creating a single default route.  This can be used when
+	      there is already a default route, via an interface that
+	      can not reach required infrastructure, that overrides
+	      the NAT gateway default route.
+	    </para>
+	    <para>
+	      This should be used with care to avoid causing traffic
+	      to unnecessarily double-hop through the NAT gateway
+	      master, even when a node is hosting public IP addresses.
+	      Each specified network or host should probably have a
+	      corresponding automatically created link route or static
+	      route to avoid this.
+	    </para>
+	    <para>
+	      No default.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
       </variablelist>
 
       <refsect3>
@@ -556,6 +581,23 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 CTDB_NATGW_PUBLIC_IP=10.0.0.227/24
 CTDB_NATGW_PUBLIC_IFACE=eth0
 	</screen>
+
+	<para>
+	  A variation that ensures that infrastructure (ADS, DNS, ...)
+	  directly attached to the public network (10.0.0.0/24) is
+	  always reachable would look like this:
+	</para>
+	<screen>
+CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
+CTDB_NATGW_PRIVATE_NETWORK=192.168.1.0/24
+CTDB_NATGW_PUBLIC_IP=10.0.0.227/24
+CTDB_NATGW_PUBLIC_IFACE=eth0
+CTDB_NATGW_STATIC_ROUTES=10.0.0.0/24
+	</screen>
+	<para>
+	  Note that <varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> is
+	  not specified.
+	</para>
       </refsect3>
 
     </refsect2>
