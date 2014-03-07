@@ -546,7 +546,7 @@
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_NATGW_STATIC_ROUTES=<parameter>IPADDR/MASK</parameter> ...</term>
+	  <term>CTDB_NATGW_STATIC_ROUTES=<parameter>IPADDR/MASK[@GATEWAY]</parameter> ...</term>
 	  <listitem>
 	    <para>
 	      Each IPADDR/MASK identifies a network or host to which
@@ -555,6 +555,17 @@
 	      there is already a default route, via an interface that
 	      can not reach required infrastructure, that overrides
 	      the NAT gateway default route.
+	    </para>
+	    <para>
+	      If GATEWAY is specified then the corresponding route on
+	      the NATGW master node will be via GATEWAY.  Such routes
+	      are created even if
+	      <varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> is not
+	      specified.  If GATEWAY is not specified for some
+	      networks then routes are only created on the NATGW
+	      master node for those networks if
+	      <varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> is
+	      specified.
 	    </para>
 	    <para>
 	      This should be used with care to avoid causing traffic
