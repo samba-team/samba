@@ -41,6 +41,35 @@ delete_all() {
 	iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
 }
 
+natgw_set_master ()
+{
+    set_proc sys/net/ipv4/ip_forward 1
+    iptables -A POSTROUTING -t nat \
+	-s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK \
+	-j MASQUERADE
+
+    # block all incoming connections to the NATGW IP address
+    ctdb_natgw_public_ip_host="${CTDB_NATGW_PUBLIC_IP%/*}/32"
+    iptables -D INPUT -p tcp --syn \
+	-d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
+    iptables -I INPUT -p tcp --syn \
+	-d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
+
+    ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
+    ip route add 0.0.0.0/0 metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
+}
+
+natgw_set_slave ()
+{
+    _natgwip="$1"
+
+    ip route add 0.0.0.0/0 via "$_natgwip" metric 10
+
+    # Make sure winbindd does not stay bound to this address if we are
+    # no longer NATGW master
+    smbcontrol winbindd ip-dropped $CTDB_NATGW_PUBLIC_IP >/dev/null 2>&1
+}
+
 ensure_natgwmaster ()
 {
     _event="$1"
@@ -78,23 +107,9 @@ case "$1" in
 	delete_all
 
 	if [ "$mypnn" = "$natgwmaster" ]; then
-		# This is the NAT GW
-		set_proc sys/net/ipv4/ip_forward 1
-		iptables -A POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE
-
-		# block all incoming connections to the natgw address
-		ctdb_natgw_public_ip_host="${CTDB_NATGW_PUBLIC_IP%/*}/32"
-		iptables -D INPUT -p tcp --syn -d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
-		iptables -I INPUT -p tcp --syn -d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
-
-		ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
-		ip route add 0.0.0.0/0 metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
+	    natgw_set_master
 	else
-		# This is NOT the NAT GW
-		ip route add 0.0.0.0/0 via $natgwip metric 10
-		# Make sure winbindd does not stay bound to this address
-		# if we are no longer natgwmaster
-		smbcontrol winbindd ip-dropped $CTDB_NATGW_PUBLIC_IP >/dev/null 2>/dev/null
+	    natgw_set_slave "$natgwip"
 	fi
 
 	# flush our route cache
