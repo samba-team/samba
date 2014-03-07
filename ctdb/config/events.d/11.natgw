@@ -38,18 +38,20 @@ natgw_set_capability ()
 
 natgw_clear ()
 {
-	_ip="${CTDB_NATGW_PUBLIC_IP%/*}"
-	_maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
+    _ip="${CTDB_NATGW_PUBLIC_IP%/*}"
+    _maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
 
-	delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
-	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
+    delete_ip_from_iface \
+	$CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
+    ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
 
-	# Delete the masquerading setup from a previous iteration where we
-	# were the NAT-GW
-	iptables -D POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
+    # Delete the masquerading setup from a previous iteration where we
+    # were the NAT-GW
+    iptables -D POSTROUTING -t nat \
+	-s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK \
+	-j MASQUERADE >/dev/null 2>/dev/null
 
-	# remove any iptables rule we may have on this address
-	iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
+    iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
 }
 
 natgw_set_master ()
