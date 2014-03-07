@@ -1044,11 +1044,12 @@ static bool test_cancel_tdis(struct torture_context *torture,
 
 	torture_comment(torture, "  Check pending lock reply\n");
 	status = smb2_lock_recv(req, &lck);
-	if (torture_setting_bool(torture, "samba4", false)) {
-		/* saying that this lock succeeded is nonsense - the
-		 * tree is gone!! */
-		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
-	} else {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RANGE_NOT_LOCKED)) {
+		/*
+		 * The status depends on the server internals
+		 * the order in which the files are closed
+		 * by smb2_tdis().
+		 */
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
@@ -1087,7 +1088,7 @@ static bool test_cancel_logoff(struct torture_context *torture,
 	struct smb2_lock_element el[2];
 	struct smb2_request *req = NULL;
 
-	const char *fname = BASEDIR "\\cancel_tdis.txt";
+	const char *fname = BASEDIR "\\cancel_logoff.txt";
 
 	status = torture_smb2_testdir(tree, BASEDIR, &h);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1130,11 +1131,12 @@ static bool test_cancel_logoff(struct torture_context *torture,
 
 	torture_comment(torture, "  Check pending lock reply\n");
 	status = smb2_lock_recv(req, &lck);
-	if (torture_setting_bool(torture, "samba4", false)) {
-		/* another bogus 'success' code from windows. The lock
-		 * cannot have succeeded, as we are now logged off */
-		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
-	} else {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RANGE_NOT_LOCKED)) {
+		/*
+		 * The status depends on the server internals
+		 * the order in which the files are closed
+		 * by smb2_logoff().
+		 */
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
