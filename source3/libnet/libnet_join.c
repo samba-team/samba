@@ -2152,8 +2152,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 	create_local_private_krb5_conf_for_domain(
 		r->out.dns_domain_name, r->out.netbios_domain_name,
-		NULL, smbXcli_conn_remote_sockaddr(cli->conn),
-		smbXcli_conn_remote_name(cli->conn));
+		NULL, smbXcli_conn_remote_sockaddr(cli->conn));
 
 	if (r->out.domain_is_ad && r->in.account_ou &&
 	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {

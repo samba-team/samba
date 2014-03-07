@@ -618,8 +618,7 @@ static void add_sockaddr_unique(struct sockaddr_storage *addrs, int *num_addrs,
 static char *get_kdc_ip_string(char *mem_ctx,
 		const char *realm,
 		const char *sitename,
-		const struct sockaddr_storage *pss,
-		const char *kdc_name)
+		const struct sockaddr_storage *pss)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	int i;
@@ -756,8 +755,7 @@ fail:
 bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *domain,
 						const char *sitename,
-					        const struct sockaddr_storage *pss,
-						const char *kdc_name)
+					        const struct sockaddr_storage *pss)
 {
 	char *dname;
 	char *tmpname = NULL;
@@ -782,7 +780,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		return false;
 	}
 
-	if (domain == NULL || pss == NULL || kdc_name == NULL) {
+	if (domain == NULL || pss == NULL) {
 		return false;
 	}
 
@@ -815,7 +813,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		goto done;
 	}
 
-	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, pss, kdc_name);
+	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, pss);
 	if (!kdc_ip_string) {
 		goto done;
 	}
