@@ -635,11 +635,12 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 	<varname>CTDB_NATGW_PUBLIC_IP</varname> on the configured public
 	interfaces <varname>CTDB_NATGW_PUBLIC_IFACE</varname> and acts as
 	a router, masquerading outgoing connections from slave nodes
-	via this IP address.  It also establishes a fallback default
-	route to the configured default gateway
-	<varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> with a metric of 10.
-	A metric 10 route is used so it can co-exist with other
-	default routes that may be available.
+	via this IP address.  If
+	<varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> is set then it
+	also establishes a fallback default route to the configured
+	this gateway with a metric of 10.  A metric 10 route is used
+	so it can co-exist with other default routes that may be
+	available.
       </para>
 
       <para>

@@ -69,7 +69,9 @@ natgw_set_master ()
 	-d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
 
     ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
-    ip route add 0.0.0.0/0 metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
+    if [ -n "$CTDB_NATGW_DEFAULT_GATEWAY" ] ; then
+	ip route add 0.0.0.0/0 metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY
+    fi
 }
 
 natgw_set_slave ()

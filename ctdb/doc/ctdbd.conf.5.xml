@@ -458,11 +458,13 @@
 	  <listitem>
 	    <para>
 	      IPADDR is an alternate network gateway to use on the NAT
-	      gateway master node.  A fallback default route is added
-	      via this network gateway.
+	      gateway master node.  If set, a fallback default route
+	      is added via this network gateway.
 	    </para>
 	    <para>
-	      No default.
+	      No default.  Setting this variable is optional - if not
+	      set that no route is created on the NAT gateway master
+	      node.
 	    </para>
 	  </listitem>
 	</varlistentry>
