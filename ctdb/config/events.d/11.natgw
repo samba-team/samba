@@ -14,6 +14,18 @@ loadconfig
 [ -n "$CTDB_NATGW_NODES" ] || exit 0
 export CTDB_NATGW_NODES
 
+natgw_check_config ()
+{
+    [ -r "$CTDB_NATGW_NODES" ] || \
+	die "error: CTDB_NATGW_NODES=${CTDB_NATGW_NODES} unreadable"
+    [ -n "$CTDB_NATGW_PUBLIC_IP" ] || \
+	die "Invalid configuration: CTDB_NATGW_PUBLIC_IP not set"
+    [ -n "$CTDB_NATGW_PUBLIC_IFACE" ] || \
+	die "Invalid configuration: CTDB_NATGW_PUBLIC_IFACE not set"
+    [ -n "$CTDB_NATGW_PRIVATE_NETWORK" ] || \
+	die "Invalid configuration: CTDB_NATGW_PRIVATE_NETWORK not set"
+}
+
 set_natgw_capability ()
 {
     # Set NATGW capability depending on configuration
@@ -28,9 +40,7 @@ delete_all() {
 	_ip="${CTDB_NATGW_PUBLIC_IP%/*}"
 	_maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
 
-	[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] || {
-	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
-	}
+	delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
 	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
 
 	# Delete the masquerading setup from a previous iteration where we
@@ -86,10 +96,13 @@ ensure_natgwmaster ()
 
 case "$1" in 
     setup)
+	natgw_check_config
 	set_natgw_capability
 	;;
 
     startup)
+	natgw_check_config
+
 	# Error if CTDB_NATGW_PUBLIC_IP is listed in public addresses
 	grep -q "^$CTDB_NATGW_PUBLIC_IP[[:space:]]" "${CTDB_PUBLIC_ADDRESSES:-/etc/ctdb/public_addresses}" && \
 	    die "ERROR: NATGW configured to use a public address. NATGW must not use a public address."
@@ -99,6 +112,8 @@ case "$1" in
 	;;
 
     updatenatgw|ipreallocated)
+	natgw_check_config
+
 	mypnn=$(ctdb pnn | cut -d: -f2)
 
 	set_natgw_capability
@@ -117,10 +132,12 @@ case "$1" in
 	;;
 
     shutdown|removenatgw)
+	natgw_check_config
 	delete_all
 	;;
 
     monitor)
+	natgw_check_config
 	set_natgw_capability
 	ensure_natgwmaster "$1"
 	;;
