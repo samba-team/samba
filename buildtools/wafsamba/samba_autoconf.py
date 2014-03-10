@@ -654,7 +654,6 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.ADD_CFLAGS('-Wmissing-prototypes', testflags=True)
         conf.ADD_CFLAGS('-Wcast-align -Wcast-qual', testflags=True)
         conf.ADD_CFLAGS('-fno-common', testflags=True)
-        conf.ADD_CFLAGS('-Wdeclaration-after-statement', testflags=True)
 
         conf.ADD_CFLAGS('-Werror=address', testflags=True)
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
@@ -665,6 +664,8 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.ADD_CFLAGS('-Werror-implicit-function-declaration',
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=pointer-arith -Wpointer-arith',
+                        testflags=True)
+        conf.ADD_CFLAGS('-Werror=declaration-after-statement -Wdeclaration-after-statement',
                         testflags=True)
 
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
