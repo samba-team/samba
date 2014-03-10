@@ -2605,6 +2605,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 	int ret = -1;
 	const char *impersonate_princ_s = NULL;
 	const char *local_service = NULL;
+	int i;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -2615,13 +2616,18 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 		return 0;
 	}
 
+	for (i=0; i<argc; i++) {
+		if (strnequal(argv[i], "impersonate", strlen("impersonate"))) {
+			impersonate_princ_s = get_string_param(argv[i]);
+			if (impersonate_princ_s == NULL) {
+				return -1;
+			}
+		}
+	}
+
 	mem_ctx = talloc_init("net_ads_kerberos_pac");
 	if (!mem_ctx) {
 		goto out;
-	}
-
-	if (argc > 0) {
-		impersonate_princ_s = argv[0];
 	}
 
 	local_service = talloc_asprintf(mem_ctx, "%s$@%s",
