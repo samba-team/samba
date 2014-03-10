@@ -79,6 +79,7 @@ struct lock_context {
 	pid_t block_child;
 	int block_fd[2];
 	struct timeval start_time;
+	uint32_t key_hash;
 };
 
 /* lock_request is the client specific part for a lock request */
@@ -672,7 +673,8 @@ static struct lock_context *find_lock_context(struct lock_context *lock_list,
 					      struct ctdb_db_context *ctdb_db,
 					      TDB_DATA key,
 					      uint32_t priority,
-					      enum lock_type type)
+					      enum lock_type type,
+					      uint32_t key_hash)
 {
 	struct lock_context *lock_ctx;
 
@@ -685,8 +687,7 @@ static struct lock_context *find_lock_context(struct lock_context *lock_list,
 		switch (lock_ctx->type) {
 		case LOCK_RECORD:
 			if (ctdb_db == lock_ctx->ctdb_db &&
-			    key.dsize == lock_ctx->key.dsize &&
-			    memcmp(key.dptr, lock_ctx->key.dptr, key.dsize) == 0) {
+			    key_hash == lock_ctx->key_hash) {
 				goto done;
 			}
 			break;
@@ -763,7 +764,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		} else {
 			active_ctx = find_lock_context(ctdb->lock_current, lock_ctx->ctdb_db,
 						       lock_ctx->key, lock_ctx->priority,
-						       lock_ctx->type);
+						       lock_ctx->type, lock_ctx->key_hash);
 			if (active_ctx == NULL) {
 				if (lock_ctx->ctdb_db == NULL ||
 				    lock_ctx->ctdb_db->lock_num_current < MAX_LOCK_PROCESSES_PER_DB) {
@@ -932,6 +933,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 				talloc_free(lock_ctx);
 				return NULL;
 			}
+			lock_ctx->key_hash = ctdb_hash(&key);
 		} else {
 			lock_ctx->key.dptr = NULL;
 		}
