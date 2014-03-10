@@ -35,10 +35,13 @@ static bool test_BindingString(struct torture_context *tctx,
 	struct epm_tower tower;
 	TALLOC_CTX *mem_ctx = tctx;
 	const char *host;
+	struct GUID object;
 
 	/* Parse */
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(mem_ctx, binding, &b),
 		"Error parsing binding string");
+
+	object = dcerpc_binding_get_object(b);
 
 	s = dcerpc_binding_string(mem_ctx, b);
 	torture_assert(tctx, s != NULL, "Error converting binding back to string");
@@ -54,6 +57,10 @@ static bool test_BindingString(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_binding_from_tower(mem_ctx, &tower, &b2),
 			    "Error generating binding from tower for original binding");
+
+	/* The tower doesn't contain the object */
+	torture_assert_ntstatus_ok(tctx, dcerpc_binding_set_object(b2, object),
+			    "set object on tower binding");
 
 	s = dcerpc_binding_string(mem_ctx, b);
 	torture_assert(tctx, s != NULL, "Error converting binding back to string for (stripped down)"); 
