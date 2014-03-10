@@ -103,7 +103,7 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_RECORD_NAME_PREFERENCE;
 
-	typedef [gensize,nopull,nopush] struct {
+	typedef [nopull,nopush] struct {
 		uint8 count;
 		DNS_RPC_NAME str[count];
 	}
