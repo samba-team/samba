@@ -643,16 +643,31 @@ def SAMBA_CONFIG_H(conf, path=None):
         return
 
     if Options.options.debug:
-        conf.ADD_CFLAGS('-g',
-                        testflags=True)
+        conf.ADD_CFLAGS('-g', testflags=True)
 
     if Options.options.developer:
-        # we add these here to ensure that -Wstrict-prototypes is not set during configure
-        conf.ADD_CFLAGS('-Wall -g -Wshadow -Werror=strict-prototypes -Wstrict-prototypes -Werror=pointer-arith -Wpointer-arith -Wcast-align -Werror=write-strings -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k -Wmissing-prototypes -fno-common -Werror=address -Wdeclaration-after-statement',
-                        testflags=True)
-        conf.ADD_CFLAGS('-Wcast-qual', testflags=True)
         conf.env.DEVELOPER_MODE = True
 
+        conf.ADD_CFLAGS('-g', testflags=True)
+        conf.ADD_CFLAGS('-Wall', testflags=True)
+        conf.ADD_CFLAGS('-Wshadow', testflags=True)
+        conf.ADD_CFLAGS('-Wmissing-prototypes', testflags=True)
+        conf.ADD_CFLAGS('-Wcast-align -Wcast-qual', testflags=True)
+        conf.ADD_CFLAGS('-fno-common', testflags=True)
+        conf.ADD_CFLAGS('-Wdeclaration-after-statement', testflags=True)
+
+        conf.ADD_CFLAGS('-Werror=address', testflags=True)
+        # we add these here to ensure that -Wstrict-prototypes is not set during configure
+        conf.ADD_CFLAGS('-Werror=strict-prototypes -Wstrict-prototypes',
+                        testflags=True)
+        conf.ADD_CFLAGS('-Werror=write-strings -Wwrite-strings',
+                        testflags=True)
+        conf.ADD_CFLAGS('-Werror-implicit-function-declaration',
+                        testflags=True)
+        conf.ADD_CFLAGS('-Werror=pointer-arith -Wpointer-arith',
+                        testflags=True)
+
+        conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
         # This check is because for ldb_search(), a NULL format string
         # is not an error, but some compilers complain about that.
         if CHECK_CFLAGS(conf, ["-Werror=format", "-Wformat=2"], '''
