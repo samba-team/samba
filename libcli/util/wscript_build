@@ -2,9 +2,9 @@
 
 
 bld.SAMBA_LIBRARY('errors',
-                  public_headers='error.h ntstatus.h doserr.h werror.h',
+                  public_headers='error.h ntstatus.h doserr.h werror.h hresult.h',
                   header_path='core',
-                  source='doserr.c errormap.c nterr.c errmap_unix.c',
+                  source='doserr.c errormap.c nterr.c errmap_unix.c hresult.c',
                   public_deps='talloc samba-util',
                   private_library=True
                   )
