@@ -1,4 +1,58 @@
                    ==============================
+                   Release Notes for Samba 3.6.23
+                           March 11, 2014
+                   ==============================
+
+
+This is a security release in order to address
+CVE-2013-4496 (Password lockout not enforced for SAMR password changes).
+
+o  CVE-2013-4496:
+   Samba versions 3.4.0 and above allow the administrator to implement
+   locking out Samba accounts after a number of bad password attempts.
+
+   However, all released versions of Samba did not implement this check for
+   password changes, such as are available over multiple SAMR and RAP
+   interfaces, allowing password guessing attacks.
+
+
+Changes since 3.6.22:
+---------------------
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10245: CVE-2013-4496: Enforce password lockout for SAMR password
+      changes.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10245: CVE-2013-4496: Enforce password lockout for SAMR password
+      changes.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.6 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.6.22
                           December 9, 2013
                    ==============================
@@ -88,8 +142,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.6.21
