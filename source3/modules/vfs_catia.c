@@ -549,6 +549,25 @@ static int catia_lchown(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int catia_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
+{
+	char *name = NULL;
+	NTSTATUS status;
+	int ret;
+
+	status = catia_string_replace_allocate(handle->conn, path,
+					&name, vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_CHMOD(handle, name, mode);
+	TALLOC_FREE(name);
+
+	return ret;
+}
+
 static int catia_rmdir(vfs_handle_struct *handle,
 		       const char *path)
 {
@@ -917,6 +936,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.unlink_fn = catia_unlink,
 	.chown_fn = catia_chown,
 	.lchown_fn = catia_lchown,
+	.chmod_fn = catia_chmod,
 	.chdir_fn = catia_chdir,
 	.ntimes_fn = catia_ntimes,
 	.realpath_fn = catia_realpath,
