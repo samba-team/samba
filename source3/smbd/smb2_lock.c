@@ -368,23 +368,23 @@ static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req)
 
 static bool smbd_smb2_lock_cancel(struct tevent_req *req)
 {
-        struct smbd_smb2_request *smb2req = NULL;
-        struct smbd_smb2_lock_state *state = tevent_req_data(req,
-                                struct smbd_smb2_lock_state);
-        if (!state) {
-                return false;
-        }
+	struct smbd_smb2_request *smb2req = NULL;
+	struct smbd_smb2_lock_state *state = tevent_req_data(req,
+				struct smbd_smb2_lock_state);
+	if (!state) {
+		return false;
+	}
 
-        if (!state->smb2req) {
-                return false;
-        }
+	if (!state->smb2req) {
+		return false;
+	}
 
-        smb2req = state->smb2req;
+	smb2req = state->smb2req;
 
 	remove_pending_lock(state, state->blr);
 	tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
 	tevent_req_nterror(req, NT_STATUS_CANCELLED);
-        return true;
+	return true;
 }
 
 /****************************************************************
