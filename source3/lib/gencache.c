@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "system/glob.h"
 #include "util_tdb.h"
+#include "memcache.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
@@ -37,6 +38,7 @@
 
 static struct tdb_context *cache;
 static struct tdb_context *cache_notrans;
+static int cache_notrans_seqnum;
 
 /**
  * @file gencache.c
@@ -112,6 +114,7 @@ static bool gencache_init(void)
 	cache_notrans = tdb_open_log(cache_fname, 0,
 				     TDB_CLEAR_IF_FIRST|
 				     TDB_INCOMPATIBLE_HASH|
+				     TDB_SEQNUM|
 				     TDB_NOSYNC,
 				     open_flags, 0644);
 	if (cache_notrans == NULL) {
@@ -413,6 +416,7 @@ static bool gencache_pull_timeout(char *val, time_t *pres, char **pendptr)
 struct gencache_parse_state {
 	void (*parser)(time_t timeout, DATA_BLOB blob, void *private_data);
 	void *private_data;
+	bool is_memcache;
 };
 
 static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
@@ -434,6 +438,13 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 	blob = data_blob_const(
 		endptr+1, data.dsize - PTR_DIFF(endptr+1, data.dptr));
 	state->parser(t, blob, state->private_data);
+
+	if (!state->is_memcache) {
+		memcache_add(NULL, GENCACHE_RAM,
+			     data_blob_const(key.dptr, key.dsize),
+			     data_blob_const(data.dptr, data.dsize));
+	}
+
 	return 0;
 }
 
@@ -444,6 +455,7 @@ bool gencache_parse(const char *keystr,
 {
 	struct gencache_parse_state state;
 	TDB_DATA key = string_term_tdb_data(keystr);
+	DATA_BLOB memcache_val;
 	int ret;
 
 	if (keystr == NULL) {
@@ -458,6 +470,31 @@ bool gencache_parse(const char *keystr,
 
 	state.parser = parser;
 	state.private_data = private_data;
+
+	if (memcache_lookup(NULL, GENCACHE_RAM,
+			    data_blob_const(key.dptr, key.dsize),
+			    &memcache_val)) {
+		/*
+		 * Make sure that nobody has changed the gencache behind our
+		 * back.
+		 */
+		int current_seqnum = tdb_get_seqnum(cache_notrans);
+		if (current_seqnum == cache_notrans_seqnum) {
+			/*
+			 * Ok, our memcache is still current, use it without
+			 * going to the tdb files.
+			 */
+			state.is_memcache = true;
+			gencache_parse_fn(key, make_tdb_data(memcache_val.data,
+							     memcache_val.length),
+					  &state);
+			return true;
+		}
+		memcache_flush(NULL, GENCACHE_RAM);
+		cache_notrans_seqnum = current_seqnum;
+	}
+
+	state.is_memcache = false;
 
 	ret = tdb_parse_record(cache_notrans, key, gencache_parse_fn, &state);
 	if (ret == 0) {
