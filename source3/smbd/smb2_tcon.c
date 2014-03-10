@@ -411,40 +411,113 @@ static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbd_smb2_request *smb2req);
+static NTSTATUS smbd_smb2_tdis_recv(struct tevent_req *req);
+static void smbd_smb2_request_tdis_done(struct tevent_req *subreq);
+
 NTSTATUS smbd_smb2_request_process_tdis(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
-	DATA_BLOB outbody;
+	struct tevent_req *subreq = NULL;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x04);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
 
+	subreq = smbd_smb2_tdis_send(req, req->sconn->ev_ctx, req);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_request_tdis_done, req);
+
 	/*
-	 * TODO: cancel all outstanding requests on the tcon
+	 * Wait a long time before going async on this to allow
+	 * requests we're waiting on to finish. Set timeout to 10 secs.
 	 */
-	status = smbXsrv_tcon_disconnect(req->tcon, req->tcon->compat->vuid);
+	return smbd_smb2_request_pending_queue(req, subreq, 10000000);
+}
+
+static void smbd_smb2_request_tdis_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *smb2req =
+		tevent_req_callback_data(subreq,
+		struct smbd_smb2_request);
+	DATA_BLOB outbody;
+	NTSTATUS status;
+	NTSTATUS error;
+
+	status = smbd_smb2_tdis_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("smbd_smb2_request_process_tdis: "
-			  "smbXsrv_tcon_disconnect() failed: %s\n",
-			  nt_errstr(status)));
-		/*
-		 * If we hit this case, there is something completely
-		 * wrong, so we better disconnect the transport connection.
-		 */
-		return status;
+		error = smbd_smb2_request_error(smb2req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(smb2req->sconn,
+							nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
-	TALLOC_FREE(req->tcon);
-
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x04);
+	outbody = data_blob_talloc(smb2req->out.vector, NULL, 0x04);
 	if (outbody.data == NULL) {
-		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		error = smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(smb2req->sconn,
+							nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	SSVAL(outbody.data, 0x00, 0x04);	/* struct size */
 	SSVAL(outbody.data, 0x02, 0);		/* reserved */
 
-	return smbd_smb2_request_done(req, outbody, NULL);
+	error = smbd_smb2_request_done(smb2req, outbody, NULL);
+	if (!NT_STATUS_IS_OK(error)) {
+		smbd_server_connection_terminate(smb2req->sconn,
+						nt_errstr(error));
+		return;
+	}
+}
+
+struct smbd_smb2_tdis_state {
+	struct smbd_smb2_request *smb2req;
+};
+
+static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbd_smb2_request *smb2req)
+{
+	struct tevent_req *req;
+	struct smbd_smb2_tdis_state *state;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+			struct smbd_smb2_tdis_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->smb2req = smb2req;
+
+	/*
+	 * TODO: cancel all outstanding requests on the tcon
+	 */
+	status = smbXsrv_tcon_disconnect(state->smb2req->tcon,
+					 state->smb2req->tcon->compat->vuid);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* We did tear down the tcon. */
+	TALLOC_FREE(state->smb2req->tcon);
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS smbd_smb2_tdis_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
