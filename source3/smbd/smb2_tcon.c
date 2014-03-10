@@ -26,6 +26,7 @@
 #include "auth.h"
 #include "lib/param/loadparm.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/smbd_tevent_queue.h"
 
 static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -485,7 +486,10 @@ static void smbd_smb2_request_tdis_done(struct tevent_req *subreq)
 
 struct smbd_smb2_tdis_state {
 	struct smbd_smb2_request *smb2req;
+	struct tevent_queue *wait_queue;
 };
+
+static void smbd_smb2_tdis_wait_done(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -493,7 +497,8 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smbd_smb2_tdis_state *state;
-	NTSTATUS status;
+	struct tevent_req *subreq;
+	struct smbd_smb2_request *preq;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_tdis_state);
@@ -502,19 +507,89 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 	}
 	state->smb2req = smb2req;
 
+	state->wait_queue = tevent_queue_create(state, "tdis_wait_queue");
+	if (tevent_req_nomem(state->wait_queue, req)) {
+		return tevent_req_post(req, ev);
+	}
+
 	/*
-	 * TODO: cancel all outstanding requests on the tcon
+	 * Make sure that no new request will be able to use this tcon.
 	 */
+	smb2req->tcon->status = NT_STATUS_NETWORK_NAME_DELETED;
+
+	for (preq = smb2req->sconn->smb2.requests; preq != NULL; preq = preq->next) {
+		if (preq == smb2req) {
+			/* Can't cancel current request. */
+			continue;
+		}
+		if (preq->tcon != smb2req->tcon) {
+			/* Request on different tcon. */
+			continue;
+		}
+
+		/*
+		 * Never cancel anything in a compound
+		 * request. Way too hard to deal with
+		 * the result.
+		 */
+		if (!preq->compound_related && preq->subreq != NULL) {
+			tevent_req_cancel(preq->subreq);
+		}
+
+		/*
+		 * Now wait until the request is finished.
+		 *
+		 * We don't set a callback, as we just want to block the
+		 * wait queue and the talloc_free() of the request will
+		 * remove the item from the wait queue.
+		 */
+		subreq = smbd_tevent_queue_wait_send(preq, ev, state->wait_queue);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	/*
+	 * Now we add our own waiter to the end of the queue,
+	 * this way we get notified when all pending requests are finished
+	 * and send to the socket.
+	 */
+	subreq = smbd_tevent_queue_wait_send(state, ev, state->wait_queue);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_tdis_wait_done, req);
+
+	return req;
+}
+
+static void smbd_smb2_tdis_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_tdis_state *state = tevent_req_data(
+		req, struct smbd_smb2_tdis_state);
+	NTSTATUS status;
+
+	smbd_tevent_queue_wait_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	/*
+	 * As we've been awoken, we may have changed
+	 * uid in the meantime. Ensure we're still
+	 * root (SMB2_OP_TDIS has .as_root = true).
+	 */
+	change_to_root_user();
+
 	status = smbXsrv_tcon_disconnect(state->smb2req->tcon,
 					 state->smb2req->tcon->compat->vuid);
 	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	/* We did tear down the tcon. */
 	TALLOC_FREE(state->smb2req->tcon);
 	tevent_req_done(req);
-	return tevent_req_post(req, ev);
 }
 
 static NTSTATUS smbd_smb2_tdis_recv(struct tevent_req *req)
