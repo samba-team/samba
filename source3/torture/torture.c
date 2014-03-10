@@ -8119,12 +8119,26 @@ static bool run_local_base64(int dummy)
 	return ret;
 }
 
+static void parse_fn(time_t timeout, DATA_BLOB blob, void *private_data)
+{
+	return;
+}
+
 static bool run_local_gencache(int dummy)
 {
 	char *val;
 	time_t tm;
 	DATA_BLOB blob;
 	char v;
+	struct memcache *mem;
+	int i;
+
+	mem = memcache_init(NULL, 0);
+	if (mem == NULL) {
+		d_printf("%s: memcache_init failed\n", __location__);
+		return false;
+	}
+	memcache_set_global(mem);
 
 	if (!gencache_set("foo", "bar", time(NULL) + 1000)) {
 		d_printf("%s: gencache_set() failed\n", __location__);
@@ -8135,6 +8149,16 @@ static bool run_local_gencache(int dummy)
 		d_printf("%s: gencache_get() failed\n", __location__);
 		return False;
 	}
+
+	for (i=0; i<1000000; i++) {
+		gencache_parse("foo", parse_fn, NULL);
+	}
+
+	if (!gencache_get("foo", talloc_tos(), &val, &tm)) {
+		d_printf("%s: gencache_get() failed\n", __location__);
+		return False;
+	}
+	TALLOC_FREE(val);
 
 	if (!gencache_get("foo", talloc_tos(), &val, &tm)) {
 		d_printf("%s: gencache_get() failed\n", __location__);
