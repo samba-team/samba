@@ -710,7 +710,7 @@ got_connection:
 
 	/* Otherwise setup the TCP LDAP session */
 
-	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
+	ads->ldap.ld = ldap_open_with_timeout(addr,
 					      &ads->ldap.ss,
 					      ads->ldap.port, lp_ldap_timeout());
 	if (ads->ldap.ld == NULL) {
