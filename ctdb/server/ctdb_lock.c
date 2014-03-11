@@ -927,6 +927,11 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 		lock_ctx->key.dsize = key.dsize;
 		if (key.dsize > 0) {
 			lock_ctx->key.dptr = talloc_memdup(lock_ctx, key.dptr, key.dsize);
+			if (lock_ctx->key.dptr == NULL) {
+				DEBUG(DEBUG_ERR, (__location__ "Memory allocation error\n"));
+				talloc_free(lock_ctx);
+				return NULL;
+			}
 		} else {
 			lock_ctx->key.dptr = NULL;
 		}
