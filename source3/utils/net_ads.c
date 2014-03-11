@@ -2601,6 +2601,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 {
 	struct PAC_LOGON_INFO *info = NULL;
 	struct PAC_DATA *pac_data = NULL;
+	struct PAC_DATA_CTR *pac_data_ctr = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS status;
 	int ret = -1;
@@ -2659,12 +2660,14 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 				     2592000, /* one month */
 				     impersonate_princ_s,
 				     local_service,
-				     &pac_data);
+				     &pac_data_ctr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to query kerberos PAC: %s\n"),
 			nt_errstr(status));
 		goto out;
 	}
+
+	pac_data = pac_data_ctr->pac_data;
 
 	for (i=0; i < pac_data->num_buffers; i++) {
 

@@ -34,6 +34,11 @@
 
 struct PAC_DATA;
 
+struct PAC_DATA_CTR {
+	DATA_BLOB pac_blob;
+	struct PAC_DATA *pac_data;
+};
+
 #include "libads/ads_status.h"
 
 /* The following definitions come from libads/kerberos.c  */
@@ -78,7 +83,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
 			     const char *local_service,
-			     struct PAC_DATA **pac_data);
+			     struct PAC_DATA_CTR **pac_data_ctr);
 
 /* The following definitions come from libads/krb5_setpw.c  */
 
