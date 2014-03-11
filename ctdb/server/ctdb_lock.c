@@ -948,6 +948,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	}
 
 	if ((request = talloc_zero(lock_ctx, struct lock_request)) == NULL) {
+		talloc_free(lock_ctx);
 		return NULL;
 	}
 
