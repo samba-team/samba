@@ -2716,6 +2716,50 @@ static int net_ads_kerberos_pac_dump(struct net_context *c, int argc, const char
 	return 0;
 }
 
+static int net_ads_kerberos_pac_save(struct net_context *c, int argc, const char **argv)
+{
+	struct PAC_DATA_CTR *pac_data_ctr = NULL;
+	char *filename = NULL;
+	int ret = -1;
+	int i;
+
+	if (c->display_usage) {
+		d_printf(  "%s\n"
+			   "net ads kerberos pac save [impersonate=string] [local_service=string] [filename=string]\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Save the Kerberos PAC"));
+		return -1;
+	}
+
+	for (i=0; i<argc; i++) {
+		if (strnequal(argv[i], "filename", strlen("filename"))) {
+			filename = get_string_param(argv[i]);
+			if (filename == NULL) {
+				return -1;
+			}
+		}
+	}
+
+	ret = net_ads_kerberos_pac_common(c, argc, argv, &pac_data_ctr);
+	if (ret) {
+		return ret;
+	}
+
+	if (filename == NULL) {
+		d_printf(_("please define \"filename=<filename>\" to save the PAC\n"));
+		return -1;
+	}
+
+	/* save the raw format */
+	if (!file_save(filename, pac_data_ctr->pac_blob.data, pac_data_ctr->pac_blob.length)) {
+		d_printf(_("failed to save PAC in %s\n"), filename);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -2726,6 +2770,14 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 			N_("Dump Kerberos PAC"),
 			N_("net ads kerberos pac dump\n"
 			   "    Dump a Kerberos PAC to stdout")
+		},
+		{
+			"save",
+			net_ads_kerberos_pac_save,
+			NET_TRANSPORT_ADS,
+			N_("Save Kerberos PAC"),
+			N_("net ads kerberos pac save\n"
+			   "    Save a Kerberos PAC in a file")
 		},
 
 		{NULL, NULL, 0, NULL, NULL}
