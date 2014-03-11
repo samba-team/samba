@@ -98,6 +98,7 @@ static const struct ncacn_option {
 	{"spnego", DCERPC_AUTH_SPNEGO},
 	{"ntlm", DCERPC_AUTH_NTLM},
 	{"krb5", DCERPC_AUTH_KRB5},
+	{"schannel", DCERPC_SCHANNEL},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
