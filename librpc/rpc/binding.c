@@ -37,7 +37,7 @@
 
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
-	struct ndr_syntax_id object;
+	struct GUID object;
 	const char *object_string;
 	const char *host;
 	const char *target_hostname;
@@ -224,10 +224,10 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 		}
 	}
 
-	if (!GUID_all_zero(&b->object.uuid)) { 
+	if (!GUID_all_zero(&b->object)) {
 		o = s;
 		s = talloc_asprintf_append_buffer(s, "%s@",
-				    GUID_string(mem_ctx, &b->object.uuid));
+				    GUID_string(mem_ctx, &b->object));
 		if (s == NULL) {
 			talloc_free(o);
 			return NULL;
@@ -500,7 +500,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, stru
 
 _PUBLIC_ struct GUID dcerpc_binding_get_object(const struct dcerpc_binding *b)
 {
-	return b->object.uuid;
+	return b->object;
 }
 
 _PUBLIC_ NTSTATUS dcerpc_binding_set_object(struct dcerpc_binding *b,
@@ -522,8 +522,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_object(struct dcerpc_binding *b,
 	}
 	talloc_free(tmp);
 
-	ZERO_STRUCT(b->object);
-	b->object.uuid = object;
+	b->object = object;
 	return NT_STATUS_OK;
 }
 
