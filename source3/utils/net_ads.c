@@ -2597,26 +2597,14 @@ static int net_ads_kerberos_renew(struct net_context *c, int argc, const char **
 	return ret;
 }
 
-static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **argv)
+static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const char **argv,
+				       struct PAC_DATA_CTR **pac_data_ctr)
 {
-	struct PAC_LOGON_INFO *info = NULL;
-	struct PAC_DATA *pac_data = NULL;
-	struct PAC_DATA_CTR *pac_data_ctr = NULL;
-	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS status;
 	int ret = -1;
 	const char *impersonate_princ_s = NULL;
 	const char *local_service = NULL;
 	int i;
-
-	if (c->display_usage) {
-		d_printf(  "%s\n"
-			   "net ads kerberos pac [impersonation_principal]\n"
-			   "    %s\n",
-			 _("Usage:"),
-			 _("Dump the Kerberos PAC"));
-		return 0;
-	}
 
 	for (i=0; i<argc; i++) {
 		if (strnequal(argv[i], "impersonate", strlen("impersonate"))) {
@@ -2633,13 +2621,8 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 		}
 	}
 
-	mem_ctx = talloc_init("net_ads_kerberos_pac");
-	if (!mem_ctx) {
-		goto out;
-	}
-
 	if (local_service == NULL) {
-		local_service = talloc_asprintf(mem_ctx, "%s$@%s",
+		local_service = talloc_asprintf(c, "%s$@%s",
 						lp_netbios_name(), lp_realm());
 		if (local_service == NULL) {
 			goto out;
@@ -2648,7 +2631,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 
 	c->opt_password = net_prompt_pass(c, c->opt_user_name);
 
-	status = kerberos_return_pac(mem_ctx,
+	status = kerberos_return_pac(c,
 				     c->opt_user_name,
 				     c->opt_password,
 				     0,
@@ -2660,39 +2643,95 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 				     2592000, /* one month */
 				     impersonate_princ_s,
 				     local_service,
-				     &pac_data_ctr);
+				     pac_data_ctr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to query kerberos PAC: %s\n"),
 			nt_errstr(status));
 		goto out;
 	}
 
-	pac_data = pac_data_ctr->pac_data;
+	ret = 0;
+ out:
+	return ret;
+}
 
-	for (i=0; i < pac_data->num_buffers; i++) {
+static int net_ads_kerberos_pac_dump(struct net_context *c, int argc, const char **argv)
+{
+	struct PAC_DATA_CTR *pac_data_ctr = NULL;
+	int i;
+	int ret = -1;
+	enum PAC_TYPE type = 0;
 
-		if (pac_data->buffers[i].type != PAC_TYPE_LOGON_INFO) {
+	if (c->display_usage) {
+		d_printf(  "%s\n"
+			   "net ads kerberos pac dump [impersonate=string] [local_service=string] [pac_buffer_type=int]\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Dump the Kerberos PAC"));
+		return -1;
+	}
+
+	for (i=0; i<argc; i++) {
+		if (strnequal(argv[i], "pac_buffer_type", strlen("pac_buffer_type"))) {
+			type = get_int_param(argv[i]);
+		}
+	}
+
+	ret = net_ads_kerberos_pac_common(c, argc, argv, &pac_data_ctr);
+	if (ret) {
+		return ret;
+	}
+
+	if (type == 0) {
+
+		char *s = NULL;
+
+		s = NDR_PRINT_STRUCT_STRING(c, PAC_DATA,
+			pac_data_ctr->pac_data);
+		if (s != NULL) {
+			d_printf(_("The Pac: %s\n"), s);
+			talloc_free(s);
+		}
+
+		return 0;
+	}
+
+	for (i=0; i < pac_data_ctr->pac_data->num_buffers; i++) {
+
+		char *s = NULL;
+
+		if (pac_data_ctr->pac_data->buffers[i].type != type) {
 			continue;
 		}
 
-		info = pac_data->buffers[i].info->logon_info.info;
-		if (!info) {
-			goto out;
+		s = NDR_PRINT_UNION_STRING(c, PAC_INFO, type,
+				pac_data_ctr->pac_data->buffers[i].info);
+		if (s != NULL) {
+			d_printf(_("The Pac: %s\n"), s);
+			talloc_free(s);
 		}
-
 		break;
 	}
 
-	if (info) {
-		const char *s;
-		s = NDR_PRINT_STRUCT_STRING(mem_ctx, PAC_LOGON_INFO, info);
-		d_printf(_("The Pac: %s\n"), s);
-	}
+	return 0;
+}
 
-	ret = 0;
- out:
-	TALLOC_FREE(mem_ctx);
-	return ret;
+static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"dump",
+			net_ads_kerberos_pac_dump,
+			NET_TRANSPORT_ADS,
+			N_("Dump Kerberos PAC"),
+			N_("net ads kerberos pac dump\n"
+			   "    Dump a Kerberos PAC to stdout")
+		},
+
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net ads kerberos pac", func);
 }
 
 static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **argv)
