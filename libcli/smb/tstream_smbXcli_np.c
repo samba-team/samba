@@ -63,10 +63,12 @@ static const struct tstream_context_ops tstream_smbXcli_np_ops;
 struct tstream_smbXcli_np_ref;
 
 struct tstream_smbXcli_np {
-	struct tstream_smbXcli_np_ref *ref;
 	struct smbXcli_conn *conn;
+	struct tstream_smbXcli_np_ref *conn_ref;
 	struct smbXcli_session *session;
+	struct tstream_smbXcli_np_ref *session_ref;
 	struct smbXcli_tcon *tcon;
+	struct tstream_smbXcli_np_ref *tcon_ref;
 	uint16_t pid;
 	unsigned int timeout;
 
@@ -98,9 +100,19 @@ static int tstream_smbXcli_np_destructor(struct tstream_smbXcli_np *cli_nps)
 {
 	NTSTATUS status;
 
-	if (cli_nps->ref != NULL) {
-		cli_nps->ref->cli_nps = NULL;
-		TALLOC_FREE(cli_nps->ref);
+	if (cli_nps->conn_ref != NULL) {
+		cli_nps->conn_ref->cli_nps = NULL;
+		TALLOC_FREE(cli_nps->conn_ref);
+	}
+
+	if (cli_nps->session_ref != NULL) {
+		cli_nps->session_ref->cli_nps = NULL;
+		TALLOC_FREE(cli_nps->session_ref);
+	}
+
+	if (cli_nps->tcon_ref != NULL) {
+		cli_nps->tcon_ref->cli_nps = NULL;
+		TALLOC_FREE(cli_nps->tcon_ref);
 	}
 
 	if (!smbXcli_conn_is_connected(cli_nps->conn)) {
@@ -153,10 +165,17 @@ static int tstream_smbXcli_np_ref_destructor(struct tstream_smbXcli_np_ref *ref)
 		return 0;
 	}
 
+	if (ref->cli_nps->conn == NULL) {
+		return 0;
+	}
+
 	ref->cli_nps->conn = NULL;
 	ref->cli_nps->session = NULL;
 	ref->cli_nps->tcon = NULL;
-	ref->cli_nps->ref = NULL;
+
+	TALLOC_FREE(ref->cli_nps->conn_ref);
+	TALLOC_FREE(ref->cli_nps->session_ref);
+	TALLOC_FREE(ref->cli_nps->tcon_ref);
 
 	return 0;
 };
@@ -312,13 +331,33 @@ NTSTATUS _tstream_smbXcli_np_open_recv(struct tevent_req *req,
 	}
 	ZERO_STRUCTP(cli_nps);
 
-	cli_nps->ref = talloc_zero(state->conn, struct tstream_smbXcli_np_ref);
-	if (cli_nps->ref == NULL) {
+	cli_nps->conn_ref = talloc_zero(state->conn,
+					struct tstream_smbXcli_np_ref);
+	if (cli_nps->conn_ref == NULL) {
 		TALLOC_FREE(cli_nps);
 		tevent_req_received(req);
 		return NT_STATUS_NO_MEMORY;
 	}
-	cli_nps->ref->cli_nps = cli_nps;
+	cli_nps->conn_ref->cli_nps = cli_nps;
+
+	cli_nps->session_ref = talloc_zero(state->session,
+					struct tstream_smbXcli_np_ref);
+	if (cli_nps->session_ref == NULL) {
+		TALLOC_FREE(cli_nps);
+		tevent_req_received(req);
+		return NT_STATUS_NO_MEMORY;
+	}
+	cli_nps->session_ref->cli_nps = cli_nps;
+
+	cli_nps->tcon_ref = talloc_zero(state->tcon,
+					struct tstream_smbXcli_np_ref);
+	if (cli_nps->tcon_ref == NULL) {
+		TALLOC_FREE(cli_nps);
+		tevent_req_received(req);
+		return NT_STATUS_NO_MEMORY;
+	}
+	cli_nps->tcon_ref->cli_nps = cli_nps;
+
 	cli_nps->conn = state->conn;
 	cli_nps->session = state->session;
 	cli_nps->tcon = state->tcon;
@@ -331,7 +370,12 @@ NTSTATUS _tstream_smbXcli_np_open_recv(struct tevent_req *req,
 	cli_nps->fid_volatile = state->fid_volatile;
 
 	talloc_set_destructor(cli_nps, tstream_smbXcli_np_destructor);
-	talloc_set_destructor(cli_nps->ref, tstream_smbXcli_np_ref_destructor);
+	talloc_set_destructor(cli_nps->conn_ref,
+			      tstream_smbXcli_np_ref_destructor);
+	talloc_set_destructor(cli_nps->session_ref,
+			      tstream_smbXcli_np_ref_destructor);
+	talloc_set_destructor(cli_nps->tcon_ref,
+			      tstream_smbXcli_np_ref_destructor);
 
 	cli_nps->trans.active = false;
 	cli_nps->trans.read_req = NULL;
