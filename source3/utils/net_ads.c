@@ -2623,6 +2623,12 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 				return -1;
 			}
 		}
+		if (strnequal(argv[i], "local_service", strlen("local_service"))) {
+			local_service = get_string_param(argv[i]);
+			if (local_service == NULL) {
+				return -1;
+			}
+		}
 	}
 
 	mem_ctx = talloc_init("net_ads_kerberos_pac");
@@ -2630,10 +2636,12 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 		goto out;
 	}
 
-	local_service = talloc_asprintf(mem_ctx, "%s$@%s",
-					lp_netbios_name(), lp_realm());
 	if (local_service == NULL) {
-		goto out;
+		local_service = talloc_asprintf(mem_ctx, "%s$@%s",
+						lp_netbios_name(), lp_realm());
+		if (local_service == NULL) {
+			goto out;
+		}
 	}
 
 	c->opt_password = net_prompt_pass(c, c->opt_user_name);
