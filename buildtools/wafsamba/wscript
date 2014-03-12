@@ -102,17 +102,13 @@ def options(opt):
     gr.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
+    gr.add_option('--disable-warnings-as-errors',
+                   help=("Do not treat all warnings as errors (disable -Werror)"),
+                   action="store_true", dest='disable_warnings_as_errors', default=False)
     opt.add_option('--enable-coverage',
                    help=("enable options necessary for code coverage "
                          "reporting on selftest (default=no)"),
                    action="store_true", dest='enable_coverage', default=False)
-    def picky_developer_callback(option, opt_str, value, parser):
-        parser.values.developer = True
-        parser.values.picky_developer = True
-    gr.add_option('--picky-developer',
-                   help=("Treat all warnings as errors (enable -Werror)"),
-                   action="callback", callback=picky_developer_callback,
-                   dest='picky_developer', default=False)
     gr.add_option('--fatal-errors',
                    help=("Stop compilation on first error (enable -Wfatal-errors)"),
                    action="store_true", dest='fatal_errors', default=False)
