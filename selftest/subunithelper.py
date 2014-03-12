@@ -24,7 +24,7 @@ import subunit.iso8601
 import testtools
 from testtools import content, content_type
 
-VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error', 'uxsuccess']
+VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error', 'uxsuccess', 'testsuite-uxsuccess']
 
 class TestsuiteEnabledTestResult(testtools.testresult.TestResult):
 
@@ -158,6 +158,9 @@ def parse_results(msg_ops, statistics, fh):
                 exitcode = 1
             elif result == "testsuite-xfail":
                 msg_ops.end_testsuite(testname, "xfail", reason)
+            elif result == "testsuite-uxsuccess":
+                msg_ops.end_testsuite(testname, "uxsuccess", reason)
+                exitcode = 1
             elif result == "testsuite-error":
                 msg_ops.end_testsuite(testname, "error", reason)
                 exitcode = 1
