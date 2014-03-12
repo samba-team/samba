@@ -393,6 +393,12 @@ class FilterOps(testtools.testresult.TestResult):
             reason += "\n errors[%d]" % self.error_added
 
         self._ops.end_testsuite(name, result, reason)
+        if result not in ("success", "xfail"):
+            if self.output:
+                self._ops.output_msg(self.output)
+            if self.fail_immediately:
+                raise ImmediateFail()
+        self.output = None
 
     def __init__(self, out, prefix=None, suffix=None, expected_failures=None,
                  strip_ok_output=False, fail_immediately=False,
