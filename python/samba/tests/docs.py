@@ -240,8 +240,7 @@ class SmbDotConfTests(TestCase):
         for tuples in defaults:
             param, default, context, param_type = tuples
 
-            # temporarily remove parametric options - no dump available in s4
-            if param in ['printing'] or ':' in param:
+            if param in ['printing']:
                 continue
 
             section = None
@@ -280,8 +279,7 @@ class SmbDotConfTests(TestCase):
         for tuples in defaults:
             param, default, context, param_type = tuples
 
-            # temporarily remove parametric options - no dump available in s4
-            if param in ['printing', 'copy', 'include', 'log level'] or ':' in param:
+            if param in ['printing', 'copy', 'include', 'log level']:
                 continue
 
             # currently no easy way to set an arbitrary value for these
