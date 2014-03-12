@@ -301,8 +301,14 @@ class FilterOps(testtools.testresult.TestResult):
 
     def addUnexpectedSuccess(self, test, details=None):
         test = self._add_prefix(test)
+        self.uxsuccess_added+=1
+        self.total_uxsuccess+=1
         self._ops.addUnexpectedSuccess(test, details)
+        if self.output:
+            self._ops.output_msg(self.output)
         self.output = None
+        if self.fail_immediately:
+            raise ImmediateFail()
 
     def addFailure(self, test, details=None):
         test = self._add_prefix(test)
@@ -362,11 +368,17 @@ class FilterOps(testtools.testresult.TestResult):
 
         if self.xfail_added > 0:
             xfail = True
-        if self.fail_added > 0 or self.error_added > 0:
+        if self.fail_added > 0 or self.error_added > 0 or self.uxsuccess_added > 0:
             xfail = False
 
         if xfail and result in ("fail", "failure"):
             result = "xfail"
+
+        if self.uxsuccess_added > 0 and result != "uxsuccess":
+            result = "uxsuccess"
+            if reason is None:
+                reason = "Subunit/Filter Reason"
+            reason += "\n uxsuccess[%d]" % self.uxsuccess_added
 
         if self.fail_added > 0 and result != "failure":
             result = "failure"
