@@ -1043,6 +1043,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         got_repl_property_meta_data = False
         got_objectclass = False
 
+        nc_dn = self.samdb.get_nc_root(obj.dn)
+        try:
+            deleted_objects_dn = self.samdb.get_wellknown_dn(nc_dn,
+                                                 samba.dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+        except KeyError, e:
+            deleted_objects_dn = ldb.Dn(self.samdb, "CN=Deleted Objects,%s" % nc_dn)
+
         for attrname in obj:
             if attrname == 'dn':
                 continue
@@ -1143,8 +1150,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         show_dn = True
         if got_repl_property_meta_data:
-            rdn = (str(dn).split(","))[0]
-            if rdn == "CN=Deleted Objects":
+            if obj.dn == deleted_objects_dn:
                 isDeletedAttId = 131120
                 # It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
 
