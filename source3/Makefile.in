@@ -495,7 +495,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/fncall.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
 	  lib/file_id.o lib/idmap_cache.o \
-	  lib/tevent_wait.o \
+	  lib/tevent_wait.o lib/smbd_tevent_queue.o \
 	  ../libcli/security/dom_sid.o ../libcli/security/security_descriptor.o \
 	  ../libcli/security/security_token.o ../libcli/security/util_sid.o \
 	  ../libcli/smb/util.o ../lib/util/idtree.o
