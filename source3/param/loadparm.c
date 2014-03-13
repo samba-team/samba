@@ -258,8 +258,6 @@ static bool bInGlobalSection = true;
 static bool bGlobalOnly = false;
 static struct file_lists *file_lists = NULL;
 
-#define NUMPARAMETERS (num_parameters())
-
 static void set_allowed_client_auth(void);
 
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
@@ -2799,7 +2797,7 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 		     i--) {
 			parm_table[i].flags |= FLAG_CMDLINE;
 		}
-		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset
+		for (i=parmnum+1;i<num_parameters() && parm_table[i].offset == parm_table[parmnum].offset
 			     && parm_table[i].p_class == parm_table[parmnum].p_class;i++) {
 			parm_table[i].flags |= FLAG_CMDLINE;
 		}
