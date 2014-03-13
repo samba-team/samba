@@ -1470,6 +1470,10 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		{
 			char **new_list = str_list_make(mem_ctx,
 							pszParmValue, NULL);
+			if (new_list == NULL) {
+				break;
+			}
+
 			for (i=0; new_list[i]; i++) {
 				if (*(const char ***)parm_ptr != NULL &&
 				    new_list[i][0] == '+' &&
