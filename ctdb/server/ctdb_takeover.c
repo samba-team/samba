@@ -3959,10 +3959,9 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 /*
   set the list of all tcp tickles for a public address
  */
-static int ctdb_ctrl_set_tcp_tickles(struct ctdb_context *ctdb, 
-			      struct timeval timeout, uint32_t destnode, 
-			      ctdb_sock_addr *addr,
-			      struct ctdb_tcp_array *tcparray)
+static int ctdb_send_set_tcp_tickles_for_ip(struct ctdb_context *ctdb,
+					    ctdb_sock_addr *addr,
+					    struct ctdb_tcp_array *tcparray)
 {
 	int ret, num;
 	TDB_DATA data;
@@ -3987,7 +3986,7 @@ static int ctdb_ctrl_set_tcp_tickles(struct ctdb_context *ctdb,
 		memcpy(&list->tickles.connections[0], tcparray->connections, sizeof(struct ctdb_tcp_connection) * num);
 	}
 
-	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
+	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
 				       CTDB_CONTROL_SET_TCP_TICKLE_LIST,
 				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
@@ -4023,11 +4022,9 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 		if (!vnn->tcp_update_needed) {
 			continue;
 		}
-		ret = ctdb_ctrl_set_tcp_tickles(ctdb, 
-				TAKEOVER_TIMEOUT(),
-				CTDB_BROADCAST_CONNECTED,
-				&vnn->public_address,
-				vnn->tcp_array);
+		ret = ctdb_send_set_tcp_tickles_for_ip(ctdb,
+						       &vnn->public_address,
+						       vnn->tcp_array);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to send the tickle update for public address %s\n",
 				ctdb_addr_to_str(&vnn->public_address)));
