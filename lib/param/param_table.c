@@ -1324,7 +1324,7 @@ struct parm_struct parm_table[] = {
 		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(smb_ports),
-		.special	= NULL,
+		.special	= handle_smb_ports,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},

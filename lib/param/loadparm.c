@@ -233,6 +233,8 @@ static struct loadparm_service *lpcfg_getservicebyname(struct loadparm_context *
 					const char *pszServiceName);
 static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
+static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
+				const char *pszParmName, const char *pszParmValue);
 
 /* The following are helper functions for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -1343,6 +1345,44 @@ bool handle_idmap_gid(struct loadparm_context *lp_ctx, int snum, const char *psz
 	}
 
 	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+}
+
+bool handle_smb_ports(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+{
+	static int parm_num = -1;
+	int i;
+	const char **list;
+
+	if (!pszParmValue || !*pszParmValue) {
+		return false;
+	}
+
+	if (parm_num == -1) {
+		parm_num = lpcfg_map_parameter("smb ports");
+	}
+
+	if(!set_variable_helper(lp_ctx->globals->ctx, parm_num, ptr, "smb ports",
+			       	pszParmValue)) {
+		return false;
+	}
+
+	list = lp_ctx->globals->smb_ports;
+	if (list == NULL) {
+		return false;
+	}
+
+	/* Check that each port is a valid integer and within range */
+	for (i = 0; list[i] != NULL; i++) {
+		char *end = NULL;
+		int port = 0;
+		port = strtol(list[i], &end, 10);
+		if (*end != '\0' || port <= 0 || port > 65535) {
+			TALLOC_FREE(list);
+			return false;
+		}
+	}
+
+	return true;
 }
 
 /***************************************************************************

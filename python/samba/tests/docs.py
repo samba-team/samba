@@ -188,12 +188,14 @@ class SmbDotConfTests(TestCase):
                           'registry shares',
                           'idmap backend',
                           'idmap gid',
-                          'idmap uid'])
+                          'idmap uid',
+                          'smb ports'])
 
     def test_default_s4(self):
         self._test_default(['bin/samba-tool', 'testparm'])
         self._set_defaults(['bin/samba-tool', 'testparm'])
-        self._set_arbitrary(['bin/samba-tool', 'testparm'])
+        self._set_arbitrary(['bin/samba-tool', 'testparm'],
+            exceptions = ['smb ports'])
 
     def _test_default(self, program):
         topdir = os.path.abspath(samba.source_tree_topdir())
