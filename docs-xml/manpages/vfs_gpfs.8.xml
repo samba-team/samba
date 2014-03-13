@@ -138,6 +138,28 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>gpfs:recalls = [ yes | no ]</term>
+		<listitem>
+		<para> When this option is set to no, an attempt to
+		open an offline file will be rejected with access
+		denied.  This helps preventing recall storms triggered
+		by careless applications like Finder and
+		Explorer.</para>
+
+		<itemizedlist>
+		<listitem><para><command>yes(default)</command> - Open
+		files that are offline. This will recall the files
+		from HSM.</para></listitem>
+		<listitem><para><command>no</command> - Reject access
+		to offline files with access denied. This will prevent
+		recalls of files from HSM. Using this setting also
+		requires gpfs:hsm to be set to yes.</para></listitem>
+		</itemizedlist>
+
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
 
 		<term>gpfs:getrealfilename = [ yes | no ]</term>
 		<listitem>
