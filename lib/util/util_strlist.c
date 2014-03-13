@@ -330,7 +330,7 @@ _PUBLIC_ bool str_list_check(const char **list, const char *s)
 {
 	int i;
 
-	for (i=0;list[i];i++) {
+	for (i=0; list != NULL && list[i] != NULL; i++) {
 		if (strcmp(list[i], s) == 0) return true;
 	}
 	return false;
@@ -343,7 +343,7 @@ _PUBLIC_ bool str_list_check_ci(const char **list, const char *s)
 {
 	int i;
 
-	for (i=0;list[i];i++) {
+	for (i=0; list != NULL && list[i] != NULL; i++) {
 		if (strcasecmp(list[i], s) == 0) return true;
 	}
 	return false;
