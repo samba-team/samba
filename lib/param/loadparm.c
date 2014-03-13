@@ -75,8 +75,6 @@ static bool defaults_saved = false;
 
 #include "lib/param/param_global.h"
 
-#define NUMPARAMETERS (num_parameters())
-
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 {
 	if (lp_ctx->s3_fns) {
@@ -1337,13 +1335,13 @@ void init_copymap(struct loadparm_service *pservice)
 
 	TALLOC_FREE(pservice->copymap);
 
-	pservice->copymap = bitmap_talloc(NULL, NUMPARAMETERS);
+	pservice->copymap = bitmap_talloc(NULL, num_parameters());
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
-		       (int)NUMPARAMETERS));
+		       (int)num_parameters()));
 	else
-		for (i = 0; i < NUMPARAMETERS; i++)
+		for (i = 0; i < num_parameters(); i++)
 			bitmap_set(pservice->copymap, i);
 }
 
@@ -1511,7 +1509,7 @@ mark_non_default:
 		for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
 			lp_ctx->flags[i] &= ~FLAG_DEFAULT;
 		}
-		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset;i++) {
+		for (i=parmnum+1;i<num_parameters() && parm_table[i].offset == parm_table[parmnum].offset;i++) {
 			lp_ctx->flags[i] &= ~FLAG_DEFAULT;
 		}
 	}
@@ -1673,7 +1671,7 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 		lp_ctx->flags[i] |= FLAG_CMDLINE;
 	}
 	for (i=parmnum+1;
-	     i<NUMPARAMETERS &&
+	     i<num_parameters() &&
 	     parm_table[i].p_class == parm_table[parmnum].p_class &&
 	     parm_table[i].offset == parm_table[parmnum].offset;
 	     i++) {
@@ -2123,7 +2121,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	/* This appears odd, but globals in s3 isn't a pointer */
 	lp_ctx->globals->ctx = lp_ctx->globals;
 	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
-	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, NUMPARAMETERS);
+	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, num_parameters());
 
 	lp_ctx->sDefault->iMaxPrintJobs = 1000;
 	lp_ctx->sDefault->bAvailable = true;
