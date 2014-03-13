@@ -67,6 +67,7 @@ LIB_SRC = '''
           lib/fncall.c
           libads/krb5_errs.c lib/system_smbd.c lib/audit.c
 	  lib/tevent_wait.c
+	  lib/smbd_tevent_queue.c
           lib/idmap_cache.c
           lib/util_ea.c'''
 
