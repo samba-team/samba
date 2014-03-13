@@ -63,6 +63,7 @@ class dbcheck(object):
         self.fix_instancetype = False
         self.fix_replmetadata_zero_invocationid = False
         self.fix_deleted_deleted_objects = False
+        self.fix_dn = False
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -486,6 +487,26 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         else:
             self.samdb.transaction_cancel()
 
+    def err_wrong_dn(self, obj, new_dn, rdn_attr, rdn_val, name_val):
+        '''handle a wrong dn'''
+
+        new_rdn = ldb.Dn(self.samdb, str(new_dn))
+        new_rdn.remove_base_components(len(new_rdn) - 1)
+        new_parent = new_dn.parent()
+
+        attributes = ""
+        if rdn_val != name_val:
+            attributes += "%s=%r " % (rdn_attr, rdn_val)
+        attributes += "name=%r" % (name_val)
+
+        self.report("ERROR: wrong dn[%s] %s new_dn[%s]" % (obj.dn, attributes, new_dn))
+        if not self.confirm_all("Rename %s to %s?" % (obj.dn, new_dn), 'fix_dn'):
+            self.report("Not renaming %s to %s" % (obj.dn, new_dn))
+            return
+
+        if self.do_rename(obj.dn, new_rdn, new_parent, ["show_recycled:1", "relax:0"],
+                          "Failed to rename object %s into %s" % (obj.dn, new_dn)):
+            self.report("Renamed %s into %s" % (obj.dn, new_dn))
 
     def err_wrong_instancetype(self, obj, calculated_instancetype):
         '''handle a wrong instanceType'''
@@ -1008,6 +1029,18 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
+        rdn0 = (str(dn).split(",", 1))[0]
+        rdn0_attr = (str(rdn0).split("=", 1))[0]
+        if "dn" in map(str.lower, attrs):
+            attrs.append("name")
+        if "distinguishedname" in map(str.lower, attrs):
+            attrs.append("name")
+        if str(rdn0_attr).lower() in map(str.lower, attrs):
+            attrs.append("name")
+        if 'name' in map(str.lower, attrs):
+            attrs.append(rdn0_attr)
+            attrs.append("isDeleted")
+            attrs.append("systemFlags")
         if '*' in attrs:
             attrs.append("replPropertyMetaData")
 
@@ -1050,12 +1083,45 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         except KeyError, e:
             deleted_objects_dn = ldb.Dn(self.samdb, "CN=Deleted Objects,%s" % nc_dn)
 
+        rdn1_attr = obj.dn.get_rdn_name()
+        rdn1_val = obj.dn.get_rdn_value()
+
+        rdn2_attr = None
+        rdn2_val = None
+        name_val = None
+        isDeleted = False
+        systemFlags = 0
+
         for attrname in obj:
             if attrname == 'dn':
                 continue
 
             if str(attrname).lower() == 'objectclass':
                 got_objectclass = True
+
+            if str(attrname).lower() == "name":
+                if len(obj[attrname]) != 1:
+                    error_count += 1
+                    self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
+                                (len(obj[attrname]), attrname, str(obj.dn)))
+                else:
+                    name_val = obj[attrname][0]
+
+            if str(attrname).lower() == str(rdn1_attr).lower():
+                rdn2_attr = attrname
+                if len(obj[attrname]) != 1:
+                    error_count += 1
+                    self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
+                                (len(obj[attrname]), attrname, str(obj.dn)))
+                else:
+                    rdn2_val = obj[attrname][0]
+
+            if str(attrname).lower() == 'isdeleted':
+                if obj[attrname][0] != "FALSE":
+                    isDeleted = True
+
+            if str(attrname).lower() == 'systemflags':
+                systemFlags = int(obj[attrname][0])
 
             if str(attrname).lower() == 'replpropertymetadata':
                 if self.has_replmetadata_zero_invocationid(dn, obj[attrname]):
@@ -1147,6 +1213,34 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if not got_objectclass and ("*" in attrs or "objectclass" in map(str.lower, attrs)):
             error_count += 1
             self.err_missing_objectclass(dn)
+
+        if ("*" in attrs or "name" in map(str.lower, attrs)):
+            if name_val is None:
+                error_count += 1
+                self.report("ERROR: Not fixing missing 'name' on '%s'" % (str(obj.dn)))
+            if rdn2_attr is None:
+                error_count += 1
+                self.report("ERROR: Not fixing missing '%s' on '%s'" % (rdn1_attr, str(obj.dn)))
+
+        if name_val is not None:
+            parent_dn = None
+            if isDeleted:
+                if not (systemFlags & samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE):
+                    parent_dn = deleted_objects_dn
+            if parent_dn is None:
+                parent_dn = obj.dn.parent()
+            expected_dn = ldb.Dn(self.samdb, "RDN=RDN,%s" % (parent_dn))
+            expected_dn.set_component(0, rdn1_attr, name_val)
+
+            if obj.dn == deleted_objects_dn:
+                expected_dn = obj.dn
+
+            if expected_dn != obj.dn:
+                error_count += 1
+                self.err_wrong_dn(obj, expected_dn, rdn2_attr, rdn2_val, name_val)
+            elif rdn1_val != rdn2_val:
+                error_count += 1
+                self.report("ERROR: Not fixing %s=%r on '%s'" % (rdn2_attr, rdn2_val, str(obj.dn)))
 
         show_dn = True
         if got_repl_property_meta_data:
