@@ -82,6 +82,8 @@ def LIB_MAY_BE_BUNDLED(conf, libname):
 def LIB_MUST_BE_BUNDLED(conf, libname):
     if libname in conf.env.BUNDLED_LIBS:
         return True
+    if '!%s' % libname in conf.env.BUNDLED_LIBS:
+        return False
     if 'ALL' in conf.env.BUNDLED_LIBS:
         return True
     return False
