@@ -68,6 +68,8 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003_MIXED,
     DS_DOMAIN_FUNCTION_2008,
     DS_DOMAIN_FUNCTION_2008_R2,
+    DS_DOMAIN_FUNCTION_2012,
+    DS_DOMAIN_FUNCTION_2012_R2,
     DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL,
     DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL,
     UF_WORKSTATION_TRUST_ACCOUNT,
@@ -969,10 +971,10 @@ class cmd_domain_level(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--quiet", help="Be quiet", action="store_true"),
-        Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2"],
-            help="The forest function level (2003 | 2008 | 2008_R2)"),
-        Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2"],
-            help="The domain function level (2003 | 2008 | 2008_R2)")
+        Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
+            help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)"),
+        Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
+            help="The domain function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)")
             ]
 
     takes_args = ["subcommand"]
@@ -1050,8 +1052,12 @@ class cmd_domain_level(Command):
                 outstr = "2008"
             elif level_forest == DS_DOMAIN_FUNCTION_2008_R2:
                 outstr = "2008 R2"
+            elif level_forest == DS_DOMAIN_FUNCTION_2012:
+                outstr = "2012"
+            elif level_forest == DS_DOMAIN_FUNCTION_2012_R2:
+                outstr = "2012 R2"
             else:
-                outstr = "higher than 2008 R2"
+                outstr = "higher than 2012 R2"
             self.message("Forest function level: (Windows) " + outstr)
 
             if level_domain == DS_DOMAIN_FUNCTION_2000 and level_domain_mixed != 0:
@@ -1066,8 +1072,12 @@ class cmd_domain_level(Command):
                 outstr = "2008"
             elif level_domain == DS_DOMAIN_FUNCTION_2008_R2:
                 outstr = "2008 R2"
+            elif level_domain == DS_DOMAIN_FUNCTION_2012:
+                outstr = "2012"
+            elif level_domain == DS_DOMAIN_FUNCTION_2012_R2:
+                outstr = "2012 R2"
             else:
-                outstr = "higher than 2008 R2"
+                outstr = "higher than 2012 R2"
             self.message("Domain function level: (Windows) " + outstr)
 
             if min_level_dc == DS_DOMAIN_FUNCTION_2000:
@@ -1078,8 +1088,12 @@ class cmd_domain_level(Command):
                 outstr = "2008"
             elif min_level_dc == DS_DOMAIN_FUNCTION_2008_R2:
                 outstr = "2008 R2"
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2012:
+                outstr = "2012"
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2012_R2:
+                outstr = "2012 R2"
             else:
-                outstr = "higher than 2008 R2"
+                outstr = "higher than 2012 R2"
             self.message("Lowest function level of a DC: (Windows) " + outstr)
 
         elif subcommand == "raise":
@@ -1092,10 +1106,13 @@ class cmd_domain_level(Command):
                     new_level_domain = DS_DOMAIN_FUNCTION_2008
                 elif domain_level == "2008_R2":
                     new_level_domain = DS_DOMAIN_FUNCTION_2008_R2
+                elif domain_level == "2012":
+                    new_level_domain = DS_DOMAIN_FUNCTION_2012
+                elif domain_level == "2012_R2":
+                    new_level_domain = DS_DOMAIN_FUNCTION_2012_R2
 
                 if new_level_domain <= level_domain and level_domain_mixed == 0:
                     raise CommandError("Domain function level can't be smaller than or equal to the actual one!")
-
                 if new_level_domain > min_level_dc:
                     raise CommandError("Domain function level can't be higher than the lowest function level of a DC!")
 
@@ -1148,10 +1165,16 @@ class cmd_domain_level(Command):
                     new_level_forest = DS_DOMAIN_FUNCTION_2008
                 elif forest_level == "2008_R2":
                     new_level_forest = DS_DOMAIN_FUNCTION_2008_R2
+                elif forest_level == "2012":
+                    new_level_forest = DS_DOMAIN_FUNCTION_2012
+                elif forest_level == "2012_R2":
+                    new_level_forest = DS_DOMAIN_FUNCTION_2012_R2
+
                 if new_level_forest <= level_forest:
                     raise CommandError("Forest function level can't be smaller than or equal to the actual one!")
                 if new_level_forest > level_domain:
                     raise CommandError("Forest function level can't be higher than the domain function level(s). Please raise it/them first!")
+
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
