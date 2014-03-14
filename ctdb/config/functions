@@ -832,8 +832,10 @@ add_ip_to_iface ()
     ip link set "$_iface" up || \
 	die "Failed to bringup interface $_iface"
 
-    ip addr add "$_ip/$_maskbits" brd + dev "$_iface" || \
-	die "Failed to add $_ip/$_maskbits on dev $_iface"
+    ip addr add "$_ip/$_maskbits" brd + dev "$_iface" || {
+	echo "Failed to add $_ip/$_maskbits on dev $_iface"
+	return 1
+    }
 }
 
 delete_ip_from_iface()
@@ -849,8 +851,10 @@ delete_ip_from_iface()
     # remembering and re-adding secondaries.
     set_proc "sys/net/ipv4/conf/${_iface}/promote_secondaries" 1
 
-    ip addr del "$_ip/$_maskbits" dev "$_iface" || \
-	die "Failed to del $_ip on dev $_iface"
+    ip addr del "$_ip/$_maskbits" dev "$_iface" || {
+	echo "Failed to del $_ip on dev $_iface"
+	return 1
+    }
 }
 
 # If the given IP is hosted then print 2 items: maskbits and iface 
