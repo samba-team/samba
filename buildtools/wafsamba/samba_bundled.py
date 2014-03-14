@@ -70,6 +70,8 @@ def minimum_library_version(conf, libname, default):
 
 @conf
 def LIB_MAY_BE_BUNDLED(conf, libname):
+    if libname in conf.env.BUNDLED_LIBS:
+        return True
     if '!%s' % libname in conf.env.BUNDLED_LIBS:
         return False
     if 'NONE' in conf.env.BUNDLED_LIBS:
