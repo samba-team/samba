@@ -181,7 +181,11 @@ void pcap_cache_reload(struct tevent_context *ev,
 
 	pcap_reloaded = std_pcap_cache_reload(pcap_name, &pcache);
 
+/* Fix silly compiler warning about done not being used if none of the above
+ * ifdefs are used */
+#if defined(HAVE_CUPS) || defined(HAVE_IPRINT) || defined(SYSV) || defined(HPUX) || defined(AIX)
 done:
+#endif
 	DEBUG(3, ("reload status: %s\n", (pcap_reloaded) ? "ok" : "error"));
 
 	if ((pcap_reloaded) && (post_cache_fill_fn_handled == false)) {
