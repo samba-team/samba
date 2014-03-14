@@ -78,8 +78,11 @@ def LIB_MAY_BE_BUNDLED(conf, libname):
 
 @conf
 def LIB_MUST_BE_BUNDLED(conf, libname):
-    return ('ALL' in conf.env.BUNDLED_LIBS or
-            libname in conf.env.BUNDLED_LIBS)
+    if libname in conf.env.BUNDLED_LIBS:
+        return True
+    if 'ALL' in conf.env.BUNDLED_LIBS:
+        return True
+    return False
 
 @conf
 def LIB_MUST_BE_PRIVATE(conf, libname):
