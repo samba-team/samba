@@ -126,12 +126,15 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
 
     def check_functions_headers():
         '''helper function for CHECK_BUNDLED_SYSTEM'''
-        if checkfunctions is None:
-            return True
         if require_headers and headers and not conf.CHECK_HEADERS(headers, lib=libname):
             return False
-        return conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers,
-                                   empty_decl=False, set_target=False)
+        if checkfunctions is not None:
+            ok = conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers,
+                                     empty_decl=False, set_target=False)
+            if not ok:
+                return False
+        return True
+
 
     # see if the library should only use a system version if another dependent
     # system version is found. That prevents possible use of mixed library
