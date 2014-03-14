@@ -111,7 +111,7 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
 @runonce
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
-                         checkfunctions=None, headers=None,
+                         checkfunctions=None, headers=None, checkcode=None,
                          onlyif=None, implied_deps=None,
                          require_headers=True, pkg=None):
     '''check if a library is available as a system library.
@@ -124,13 +124,21 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     if found in conf.env:
         return conf.env[found]
 
-    def check_functions_headers():
+    def check_functions_headers_code():
         '''helper function for CHECK_BUNDLED_SYSTEM'''
         if require_headers and headers and not conf.CHECK_HEADERS(headers, lib=libname):
             return False
         if checkfunctions is not None:
             ok = conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers,
                                      empty_decl=False, set_target=False)
+            if not ok:
+                return False
+        if checkcode is not None:
+            define='CHECK_BUNDLED_SYSTEM_%s' % libname.upper()
+            ok = conf.CHECK_CODE(checkcode, lib=libname,
+                                 headers=headers, local_include=False,
+                                 msg=msg, define=define)
+            conf.CONFIG_RESET(define)
             if not ok:
                 return False
         return True
@@ -162,14 +170,14 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     if (conf.check_cfg(package=pkg,
                       args='"%s >= %s" --cflags --libs' % (pkg, minversion),
                       msg=msg, uselib_store=uselib_store) and
-        check_functions_headers()):
+        check_functions_headers_code()):
         conf.SET_TARGET_TYPE(libname, 'SYSLIB')
         conf.env[found] = True
         if implied_deps:
             conf.SET_SYSLIB_DEPS(libname, implied_deps)
         return True
     if checkfunctions is not None:
-        if check_functions_headers():
+        if check_functions_headers_code():
             conf.env[found] = True
             if implied_deps:
                 conf.SET_SYSLIB_DEPS(libname, implied_deps)
