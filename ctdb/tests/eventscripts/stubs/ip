@@ -80,12 +80,17 @@ ip_check_table ()
 {
     _cmd="$1"
 
+    if [ "$_cmd" = "route" -a -z "$_table" ] ;then
+	_table="main"
+    fi
+
     [ -n "$_table" ] || not_implemented "ip rule/route without \"table\""
 
-    # Only allow tables names from 13.per_ip_routing.  This is a cheap
-    # way of avoiding implementing the default/main/local tables.
+    # Only allow tables names from 13.per_ip_routing and "main".  This
+    # is a cheap way of avoiding implementing the default/local
+    # tables.
     case "$_table" in
-	ctdb.*)
+	ctdb.*|main)
 	    if $IP_ROUTE_BAD_TABLE_ID ; then
 		# Ouch.  Simulate inconsistent errors from ip.  :-(
 		case "$_cmd" in
@@ -449,14 +454,17 @@ ip_route ()
 	show|list)    shift ; ip_route_show  "$@" ;;
 	flush)        shift ; ip_route_flush "$@" ;;
 	add)          shift ; ip_route_add   "$@" ;;
+	del*)         shift ; ip_route_del   "$@" ;;
 	*) not_implemented "$1 in \"ip route\"" ;;
     esac
 }
 
 ip_route_common ()
 {
-    [ "$1" = table ] || not_implemented "$1 in \"$orig_args\""
-    _table="$2"
+    if [ "$1" = table ] ; then
+	_table="$2"
+	shift 2
+    fi
 
     ip_check_table "route"
 }
@@ -487,6 +495,7 @@ ip_route_add ()
     _dev=""
     _gw=""
     _table=""
+    _metric=""
 
     while [ -n "$1" ] ; do
 	case "$1" in
@@ -495,13 +504,15 @@ ip_route_add ()
 	    dev)   _dev="$2"   ; shift 2 ;;
 	    via)   _gw="$2"    ; shift 2 ;;
 	    table) _table="$2" ; shift 2 ;;
+	    metric) _metric="$2" ; shift 2 ;;
 	    *) not_implemented "$1 in \"$orig_args\"" ;;
 	esac
     done
 
     ip_check_table "route"
     [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$orig_args\""
-    [ -n "$_dev" ] || not_implemented "ip route without \"dev\" in \"$orig_args\""
+    # This can't be easily deduced, so print some garbage.
+    [ -n "$_dev" ] || _dev="ethXXX"
 
     # Alias or add missing bits
     case "$_prefix" in
@@ -517,14 +528,65 @@ ip_route_add ()
     (
 	flock 0
 
-	if [ -n "$_gw" ] ; then
-	    echo "${_prefix} via ${_gw} dev ${_dev} "
-	else
-	    echo "${_prefix} dev ${_dev}  scope link "
-	fi >>"$_f"
+	_out="${_prefix} "
+	[ -z "$_gw" ] || _out="${_out}via ${_gw} "
+	[ -z "$_dev" ] || _out="${_out}dev ${_dev} "
+	[ -n "$_gw" ] || _out="${_out} scope link "
+	[ -z "$_metric" ] || _out="${_out} metric ${_metric} "
+	echo "$_out" >>"$_f"
     ) <"$_f"
 }
 
+ip_route_del ()
+{
+    _prefix=""
+    _dev=""
+    _gw=""
+    _table=""
+    _metric=""
+
+    while [ -n "$1" ] ; do
+	case "$1" in
+	    *.*.*.*/*|*.*.*.*) _prefix="$1" ; shift 1 ;;
+	    local) _prefix="$2" ; shift 2 ;;
+	    dev)   _dev="$2"   ; shift 2 ;;
+	    via)   _gw="$2"    ; shift 2 ;;
+	    table) _table="$2" ; shift 2 ;;
+	    metric) _metric="$2" ; shift 2 ;;
+	    *) not_implemented "$1 in \"$orig_args\"" ;;
+	esac
+    done
+
+    ip_check_table "route"
+    [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$orig_args\""
+    # This can't be easily deduced, so print some garbage.
+    [ -n "$_dev" ] || _dev="ethXXX"
+
+    # Alias or add missing bits
+    case "$_prefix" in
+	0.0.0.0/0) _prefix="default" ;;
+	*/*) : ;;
+	*) _prefix="${_prefix}/32" ;;
+    esac
+
+    _f="$FAKE_IP_STATE/routes/${_table}"
+    mkdir -p "$FAKE_IP_STATE/routes"
+    touch "$_f"
+
+    (
+	flock 0
+
+	# Escape some dots
+	[ -z "$_gw" ] || _gw=$(echo "$_gw" | sed -e 's@\.@\\.@g')
+	_prefix=$(echo "$_prefix" | sed -e 's@\.@\\.@g' -e 's@/@\\/@')
+
+	_re="^${_prefix}\>.*"
+	[ -z "$_gw" ] || _re="${_re}\<via ${_gw}\>.*"
+	[ -z "$_dev" ] || _re="${_re}\<dev ${_dev}\>.*"
+	[ -z "$_metric" ] || _re="${_re}.*\<metric ${_metric}\>.*"
+	sed -i -e "/${_re}/d" "$_f"
+    ) <"$_f"
+}
 
 ######################################################################
 

@@ -505,6 +505,64 @@ EOF
 
 ######################################################################
 
+setup_ctdb_natgw ()
+{
+    debug "Setting up NAT gateway"
+
+    natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
+    mkdir -p "$natgw_config_dir"
+
+    # These will accumulate, 1 per test... but will be cleaned up at
+    # the end.
+    export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
+
+    # Read from stdin
+    while read _ip _master _dev ; do
+	echo "$_ip"
+	if [ "$_master" = "master" ] ; then
+	    export FAKE_CTDB_NATGW_MASTER="$_ip"
+	fi
+    done >"$CTDB_NATGW_NODES"
+
+    # Assume all of the nodes are on a /24 network and have IPv4
+    # addresses:
+    read _ip <"$CTDB_NATGW_NODES"
+    export CTDB_NATGW_PRIVATE_NETWORK="${_ip%.*}.0/24"
+
+    # These are fixed.  Probably don't use the same network for the
+    # private node IPs.  To unset the default gateway just set it to
+    # "".  :-)
+    export CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
+    export CTDB_NATGW_PUBLIC_IFACE="eth1"
+    export CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
+}
+
+ok_natgw_master_ip_addr_show ()
+{
+    _mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
+
+    # This is based on CTDB_NATGW_PUBLIC_IP
+    _brd="10.1.1.255"
+
+ok <<EOF
+1: ${CTDB_NATGW_PUBLIC_IFACE}: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether ${_mac} brd ff:ff:ff:ff:ff:ff
+    inet ${CTDB_NATGW_PUBLIC_IP} brd ${_brd} scope global ${CTDB_NATGW_PUBLIC_IFACE}
+       valid_lft forever preferred_lft forever
+EOF
+}
+
+ok_natgw_slave_ip_addr_show ()
+{
+    _mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
+ok <<EOF
+1: ${CTDB_NATGW_PUBLIC_IFACE}: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether ${_mac} brd ff:ff:ff:ff:ff:ff
+EOF
+}
+
+######################################################################
+
 # Samba/winbind fakery
 
 setup_samba ()

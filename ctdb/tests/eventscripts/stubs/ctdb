@@ -2,6 +2,12 @@
 
 prog="ctdb"
 
+# Print a message and exit.
+die ()
+{
+    echo "$1" >&2 ; exit ${2:-1}
+}
+
 not_implemented_exit_code=1
 
 usage ()
@@ -231,6 +237,66 @@ ctdb_shutdown ()
 
 ######################################################################
 
+FAKE_CTDB_NATGW_STATE="${FAKE_CTDB_STATE}/natgw_state"
+
+ctdb_setnatgwstate ()
+{
+    echo "$2" >"$FAKE_CTDB_NATGW_STATE"
+}
+
+ctdb_natgwlist ()
+{
+    [ -r "$CTDB_NATGW_NODES" ] || \
+	die "error: missing CTDB_NATGW_NODES=${CTDB_NATGW_NODES}"
+
+    # Determine the master node
+    _master="-1 0.0.0.0"
+    if [ -r "$FAKE_CTDB_NATGW_STATE" ] ; then
+	read _state <"$FAKE_CTDB_NATGW_STATE"
+	if [ "$_state" = "on" ] ; then
+	    _pnn=0
+	    while read _ip ; do
+		if [ "$FAKE_CTDB_NATGW_MASTER" = "$_ip" ] ; then
+		    _master="${_pnn} ${_ip}"
+		    break
+		fi
+		_pnn=$(($_pnn + 1))
+	    done <"$CTDB_NATGW_NODES"
+	fi
+    fi
+    echo "$_master"
+
+    # Now print the node information - it is clearer to do this in a
+    # second pass.  Any nodes before the master that have state not
+    # "off" are tagged as unhealthy, just so the output makes some
+    # sense.
+    _pnn=0
+    _found_master=false
+    while read _ip ; do
+	if [ "$FAKE_CTDB_NATGW_MASTER" = "$_ip" ] ; then
+	    _found_master=true
+	fi
+	if $_found_master ; then
+	    _outstate="HEALTHY"
+	else
+	    if [ $FAKE_CTDB_PNN -eq $_pnn -a "$_state" = "off" ] ; then
+		_outstate="HEALTHY"
+	    else
+		_outstate="UNHEALTHY"
+	    fi
+	fi
+	if [ $FAKE_CTDB_PNN -eq $_pnn ] ; then
+	    _outstate="${_outstate} (THIS NODE)"
+	fi
+	printf "pnn:%d %-16s ${_outstate}\n" $_pnn "$_ip"
+
+	_pnn=$(($_pnn + 1))
+    done <"$CTDB_NATGW_NODES"
+
+}
+
+######################################################################
+
 case "$1" in
     gettickles)
 	setup_tickles
@@ -323,12 +389,14 @@ case "$1" in
 	done
 	;;
     gratiousarp) : ;;  # Do nothing for now
-    killtcp)	 ctdb_killtcp "$@" ;;
-    ip)          ctdb_ip "$@" ;;
-    pnn|xpnn)    ctdb_pnn ;;
-    enable)      ctdb_enable "$@";;
-    disable)     ctdb_disable "$@";;
-    moveip)      ctdb_moveip "$@";;
-    shutdown)    ctdb_shutdown "$@";;
+    killtcp)	   ctdb_killtcp "$@" ;;
+    ip)            ctdb_ip "$@" ;;
+    pnn|xpnn)      ctdb_pnn ;;
+    enable)        ctdb_enable "$@";;
+    disable)       ctdb_disable "$@";;
+    moveip)        ctdb_moveip "$@";;
+    shutdown)      ctdb_shutdown "$@";;
+    setnatgwstate) ctdb_setnatgwstate "$@" ;;
+    natgwlist)     ctdb_natgwlist "$@" ;;
     *) not_implemented "$1" ;;
 esac
