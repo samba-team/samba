@@ -4115,13 +4115,13 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 				  const char *comment,
 				  bool disable,
 				  bool interactive,
+				  uint32_t password_history_length,
 				  NTSTATUS expected_success_status,
 				  struct samr_DomInfo1 *info1,
 				  struct samr_DomInfo12 *info12)
 {
 	union samr_DomainInfo info;
 	uint32_t badpwdcount;
-	uint32_t password_history_length = 1;
 	uint64_t lockout_threshold = 1;
 	uint32_t lockout_seconds = 5;
 	uint64_t delta_time_factor = 10 * 1000 * 1000;
@@ -4137,7 +4137,7 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 
 	info.info1 = *info1;
 
-	torture_comment(tctx, "setting password history length.\n");
+	torture_comment(tctx, "setting password history length to %d.\n", password_history_length);
 	info.info1.password_history_length = password_history_length;
 
 	torture_comment(tctx, "setting min password again.\n");
@@ -4315,6 +4315,7 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 		const char *comment;
 		bool disabled;
 		bool interactive;
+		uint32_t password_history_length;
 		NTSTATUS expected_success_status;
 	} creds[] = {
 		{
@@ -4330,6 +4331,13 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 			.expected_success_status= NT_STATUS_OK
 		},
 		{
+			.comment		= "network logon (enabled account, history len = 1)",
+			.disabled		= false,
+			.interactive		= false,
+			.expected_success_status= NT_STATUS_OK,
+			.password_history_length = 1
+		},
+		{
 			.comment		= "interactive logon (disabled account)",
 			.disabled		= true,
 			.interactive		= true,
@@ -4340,6 +4348,13 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 			.disabled		= false,
 			.interactive		= true,
 			.expected_success_status= NT_STATUS_OK
+		},
+		{
+			.comment		= "interactive logon (enabled account, history len = 1)",
+			.disabled		= false,
+			.interactive		= true,
+			.expected_success_status= NT_STATUS_OK,
+			.password_history_length = 1
 		},
 	};
 
@@ -4380,6 +4395,7 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 					     creds[i].comment,
 					     creds[i].disabled,
 					     creds[i].interactive,
+					     creds[i].password_history_length,
 					     creds[i].expected_success_status,
 					     &_info1, &_info12);
 		ret &= test_passed;
