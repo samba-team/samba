@@ -4364,7 +4364,7 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 	/* run tests */
 
 	for (i=0; i < ARRAY_SIZE(creds); i++) {
-
+		bool test_passed;
 		/* skip trust tests for now */
 		if (acct_flags & ACB_WSTRUST ||
 		    acct_flags & ACB_SVRTRUST ||
@@ -4372,7 +4372,7 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 			continue;
 		}
 
-		ret &= test_Password_lockout(p, np, tctx, acct_flags, acct_name,
+		test_passed = test_Password_lockout(p, np, tctx, acct_flags, acct_name,
 					     domain_handle, user_handle, password,
 					     machine_credentials,
 					     creds[i].comment,
@@ -4380,8 +4380,10 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 					     creds[i].interactive,
 					     creds[i].expected_success_status,
 					     &_info1, &_info12);
-		if (!ret) {
+		ret &= test_passed;
+		if (!test_passed) {
 			torture_result(tctx, TORTURE_FAIL, "TEST #%d (%s) failed\n", i, creds[i].comment);
+			break;
 		} else {
 			torture_comment(tctx, "TEST #%d (%s) succeeded\n", i, creds[i].comment);
 		}
