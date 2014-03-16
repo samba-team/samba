@@ -394,6 +394,8 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 
 	if (tdb->max_dead_records != 0) {
 
+		uint32_t magic = TDB_DEAD_MAGIC;
+
 		/*
 		 * Allow for some dead records per hash chain, mainly for
 		 * tdb's with a very high create/delete rate like locking.tdb.
@@ -410,8 +412,9 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 		/*
 		 * Just mark the record as dead.
 		 */
-		rec.magic = TDB_DEAD_MAGIC;
-		ret = tdb_rec_write(tdb, rec_ptr, &rec);
+		ret = tdb_ofs_write(
+			tdb, rec_ptr + offsetof(struct tdb_record, magic),
+			&magic);
 	}
 	else {
 		ret = tdb_do_delete(tdb, rec_ptr, &rec);
