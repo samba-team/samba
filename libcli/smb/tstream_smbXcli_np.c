@@ -1255,9 +1255,12 @@ static int tstream_smbXcli_np_readv_recv(struct tevent_req *req,
 
 struct tstream_smbXcli_np_disconnect_state {
 	struct tstream_context *stream;
+	struct tevent_req *subreq;
 };
 
 static void tstream_smbXcli_np_disconnect_done(struct tevent_req *subreq);
+static void tstream_smbXcli_np_disconnect_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state);
 
 static struct tevent_req *tstream_smbXcli_np_disconnect_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
@@ -1302,6 +1305,14 @@ static struct tevent_req *tstream_smbXcli_np_disconnect_send(TALLOC_CTX *mem_ctx
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, tstream_smbXcli_np_disconnect_done, req);
+	state->subreq = subreq;
+
+	tevent_req_set_cleanup_fn(req, tstream_smbXcli_np_disconnect_cleanup);
+
+	/*
+	 * Make sure we don't send any requests anymore.
+	 */
+	cli_nps->conn = NULL;
 
 	return req;
 }
@@ -1315,6 +1326,8 @@ static void tstream_smbXcli_np_disconnect_done(struct tevent_req *subreq)
 	struct tstream_smbXcli_np *cli_nps =
 		tstream_context_data(state->stream, struct tstream_smbXcli_np);
 	NTSTATUS status;
+
+	state->subreq = NULL;
 
 	if (cli_nps->is_smb1) {
 		status = smb1cli_close_recv(subreq);
@@ -1332,6 +1345,51 @@ static void tstream_smbXcli_np_disconnect_done(struct tevent_req *subreq)
 	cli_nps->tcon = NULL;
 
 	tevent_req_done(req);
+}
+
+static void tstream_smbXcli_np_disconnect_free(struct tevent_req *subreq);
+
+static void tstream_smbXcli_np_disconnect_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state)
+{
+	struct tstream_smbXcli_np_disconnect_state *state =
+		tevent_req_data(req, struct tstream_smbXcli_np_disconnect_state);
+	struct tstream_smbXcli_np *cli_nps = NULL;
+
+	if (state->subreq == NULL) {
+		return;
+	}
+
+	cli_nps = tstream_context_data(state->stream, struct tstream_smbXcli_np);
+
+	if (cli_nps->tcon == NULL) {
+		return;
+	}
+
+	/*
+	 * We're no longer interested in the result
+	 * any more, but need to make sure that the close
+	 * request arrives at the server if the smb connection,
+	 * session and tcon are still alive.
+	 *
+	 * We move the low level request to the tcon,
+	 * which means that it stays as long as the tcon
+	 * is available.
+	 */
+	talloc_steal(cli_nps->tcon, state->subreq);
+	tevent_req_set_callback(state->subreq,
+				tstream_smbXcli_np_disconnect_free,
+				NULL);
+	state->subreq = NULL;
+
+	cli_nps->conn = NULL;
+	cli_nps->session = NULL;
+	cli_nps->tcon = NULL;
+}
+
+static void tstream_smbXcli_np_disconnect_free(struct tevent_req *subreq)
+{
+	TALLOC_FREE(subreq);
 }
 
 static int tstream_smbXcli_np_disconnect_recv(struct tevent_req *req,
