@@ -2848,7 +2848,6 @@ class SamTests(samba.tests.TestCase):
 
     def test_protected_sid_objects(self):
         """Test deletion of objects with RID < 1000"""
-        self.ldb.create_ou("ou=ldaptestou," + self.base_dn)
         # a list of some well-known sids
         # objects in Builtin are aready covered by objectclass
         protected_list = [
