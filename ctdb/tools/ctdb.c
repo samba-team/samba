@@ -6433,7 +6433,6 @@ int main(int argc, const char *argv[])
 			DEBUG(DEBUG_ERR, ("Can't specify node(s) with \"ctdb %s\"\n", control));
 			exit(1);
 		}
-		close(2);
 		return ctdb_commands[i].fn(NULL, extra_argc-1, extra_argv+1);
 	}
 
