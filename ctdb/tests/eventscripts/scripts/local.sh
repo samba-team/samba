@@ -561,6 +561,49 @@ ok <<EOF
 EOF
 }
 
+ok_natgw_master_static_routes ()
+{
+    _nl="
+"
+    _t=""
+    for _i in $CTDB_NATGW_STATIC_ROUTES ; do
+	# This is intentionally different to the code in 11.natgw ;-)
+	case "$_i" in
+	    *@*)
+		_net=$(echo "$_i" | sed -e 's|@.*||')
+		_gw=$(echo "$_i" | sed -e 's|.*@||')
+		;;
+	    *)
+		_net="$_i"
+		_gw="$CTDB_NATGW_DEFAULT_GATEWAY"
+	esac
+
+	[ -n "$_gw" ] || continue
+	_t="${_t}${_t:+${_nl}}"
+	_t="${_t}${_net} via ${_gw} dev ethXXX  metric 10 "
+    done
+    ok "$_t"
+}
+
+ok_natgw_slave_static_routes ()
+{
+    _nl="
+"
+    _t=""
+    for _i in $CTDB_NATGW_STATIC_ROUTES ; do
+	# This is intentionally different to the code in 11.natgw ;-)
+	_net=$(echo "$_i" | sed -e 's|@.*||')
+
+	# The interface for the private network isn't specified as
+	# part of the NATGW configuration and isn't part of the
+	# command to add the route.  It is implicitly added by "ip
+	# route" but our stub doesn't do this and adds "ethXXX".
+	_t="${_t}${_t:+${_nl}}"
+	_t="${_t}${_net} via ${FAKE_CTDB_NATGW_MASTER} dev ethXXX  metric 10 "
+    done
+    ok "$_t"
+}
+
 ######################################################################
 
 # Samba/winbind fakery
