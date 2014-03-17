@@ -384,7 +384,11 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 
 	ret = idmap_autorid_getrange_int(db, range);
 	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(10, ("Failed to read range config for '%s': %s\n",
+			   range->domsid, nt_errstr(ret)));
 		if (read_only) {
+			DEBUG(10, ("Not allocating new range for '%s' because "
+				   "read-only is enabled.\n", range->domsid));
 			return NT_STATUS_NOT_FOUND;
 		}
 
