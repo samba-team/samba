@@ -87,6 +87,22 @@ static struct db_context *autorid_db;
 
 static bool ignore_builtin = false;
 
+static NTSTATUS idmap_autorid_get_alloc_range(struct idmap_domain *dom,
+					struct autorid_range_config *range)
+{
+	NTSTATUS status;
+
+	ZERO_STRUCT(*range);
+
+	fstrcpy(range->domsid, ALLOC_RANGE);
+
+	status = idmap_autorid_get_domainrange(autorid_db,
+					       range,
+					       dom->read_only);
+
+	return status;
+}
+
 static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 					  struct unixid *xid) {
 
@@ -101,12 +117,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 
 	/* fetch the range for the allocation pool */
 
-	ZERO_STRUCT(range);
-
-	fstrcpy(range.domsid, ALLOC_RANGE);
-
-	ret = idmap_autorid_get_domainrange(autorid_db, &range, dom->read_only);
-
+	ret = idmap_autorid_get_alloc_range(dom, &range);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(3, ("Could not determine range for allocation pool, "
 			  "check previous messages for reason\n"));
