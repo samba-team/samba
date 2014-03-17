@@ -42,6 +42,17 @@ setup_natgw ()
     cat >"$CTDB_NATGW_NODES"
 }
 
+setup_nodes ()
+{
+    debug "Setting up CTDB_NODES"
+
+    # These will accumulate, 1 per test... but will be cleaned up at
+    # the end.
+    export CTDB_NODES=$(mktemp --tmpdir="$TEST_VAR_DIR")
+
+    cat >"$CTDB_NODES"
+}
+
 simple_test ()
 {
     _out=$($VALGRIND $test_prog "$@" 2>&1)

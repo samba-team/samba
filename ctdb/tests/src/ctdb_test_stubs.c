@@ -17,6 +17,9 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+/* Useful for functions that don't get struct ctdb_context passed */
+static struct ctdb_context *ctdb_global;
+
 /* Read a nodemap from stdin.  Each line looks like:
  *  <PNN> <FLAGS> [RECMASTER] [CURRENT] [CAPABILITIES]
  * EOF or a blank line terminates input.
@@ -336,6 +339,11 @@ static bool current_node_is_connected (struct ctdb_context *ctdb)
 struct ctdb_context *ctdb_cmdline_client_stub(struct tevent_context *ev,
 					      struct timeval req_timeout)
 {
+	return ctdb_global;
+}
+
+struct tevent_context *tevent_context_init_stub(TALLOC_CTX *mem_ctx)
+{
 	struct ctdb_context *ctdb;
 
 	ctdb = talloc_zero(NULL, struct ctdb_context);
@@ -344,7 +352,9 @@ struct ctdb_context *ctdb_cmdline_client_stub(struct tevent_context *ev,
 
 	ctdb_test_stubs_fake_setup(ctdb);
 
-	return ctdb;
+	ctdb_global = ctdb;
+
+	return tevent_context_init_byname(mem_ctx, NULL);
 }
 
 /* Copied from ctdb_recover.c */
@@ -542,4 +552,28 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 {
 	*capabilities = ctdb->nodes[destnode]->capabilities;
 	return 0;
+}
+
+/* This is to support testing ctdb xpnn */
+
+bool ctdb_sys_have_ip_stub(ctdb_sock_addr *addr)
+{
+	int i;
+	struct ctdb_context *ctdb = ctdb_global;
+
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		ctdb_sock_addr node_addr;
+
+		if (ctdb->pnn == ctdb->nodes[i]->pnn) {
+			if (!parse_ip(ctdb->nodes[i]->address.address, NULL, 0,
+				      &node_addr)) {
+				continue;
+			}
+			if (ctdb_same_ip(addr, &node_addr)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
 }

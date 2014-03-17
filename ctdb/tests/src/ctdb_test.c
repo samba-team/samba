@@ -30,6 +30,8 @@
 
 #define ctdb_cmdline_client(x, y) \
 	ctdb_cmdline_client_stub(x, y)
+#define tevent_context_init(x) \
+	tevent_context_init_stub(x)
 #define ctdb_ctrl_getnodemap(ctdb, timelimit, pnn, tmp_ctx, nodemap) \
 	ctdb_ctrl_getnodemap_stub(ctdb, timelimit, pnn, tmp_ctx, nodemap)
 #define ctdb_ctrl_get_ifaces(ctdb, timelimit, pnn, tmp_ctx, ifaces) \
@@ -48,6 +50,8 @@
 	ctdb_client_check_message_handlers_stub(ctdb, ids, argc, result)
 #define ctdb_ctrl_getcapabilities(ctdb, timeout, destnode, capabilities) \
 	ctdb_ctrl_getcapabilities_stub(ctdb, timeout, destnode, capabilities)
+#define ctdb_sys_have_ip(addr) \
+	ctdb_sys_have_ip_stub(addr)
 
 #include "tools/ctdb.c"
 
@@ -57,6 +61,9 @@
 #endif /* CTDB_TEST_USE_MAIN */
 
 #undef ctdb_cmdline_client
+#undef tevent_context_init
+/* This is called in client/ctdb_client.c so needs a declaration... */
+struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 
 #include "common/cmdline.c"
 
@@ -69,6 +76,7 @@
 #undef ctdb_ctrl_getdebseqnum
 #undef ctdb_client_check_message_handlers
 #undef ctdb_ctrl_getcapabilities
+#undef ctdb_sys_have_ip
 
 #undef TIMELIMIT
 #include "tools/ctdb_vacuum.c"
