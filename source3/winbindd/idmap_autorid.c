@@ -346,8 +346,8 @@ static NTSTATUS idmap_autorid_map_sid_to_id(struct idmap_domain *dom,
 
 	/* bad things happened */
 	if (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
-		DEBUG(1, ("Looking up SID->ID mapping for %s failed\n",
-			  sid_string_dbg(map->sid)));
+		DEBUG(1, ("Looking up SID->ID mapping for %s failed: %s\n",
+			  sid_string_dbg(map->sid), nt_errstr(ret)));
 		return ret;
 	}
 
