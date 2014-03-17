@@ -102,7 +102,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	ret = gendb_search(sam_ctx,
 			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
-			   r->in.account->string);
+			   ldb_binary_encode_string(mem_ctx, r->in.account->string));
 	if (ret != 1) {
 		/* Don't give the game away:  (don't allow anonymous users to prove the existance of usernames) */
 		return NT_STATUS_WRONG_PASSWORD;
@@ -249,7 +249,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	ret = gendb_search(sam_ctx,
 			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
-			   r->in.account->string);
+			   ldb_binary_encode_string(mem_ctx, r->in.account->string));
 	if (ret != 1) {
 		/* Don't give the game away:  (don't allow anonymous users to prove the existance of usernames) */
 		status = NT_STATUS_WRONG_PASSWORD;
