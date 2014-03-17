@@ -614,11 +614,19 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	}
 
 	/*
-	 * Set up the share security descriptor
+	 * Set up the share security descriptor.
+	 * NOTE - we use the *INCOMING USER* session_info
+	 * here, as does (indirectly) change_to_user(),
+	 * which can be called on any incoming packet.
+	 * This way we set up the share access based
+	 * on the authenticated user, not the forced
+	 * user. See bug:
+	 *
+	 * https://bugzilla.samba.org/show_bug.cgi?id=9878
 	 */
 
 	status = check_user_share_access(conn,
-					conn->session_info,
+					vuser->session_info,
 					&conn->share_access,
 					&conn->read_only);
 	if (!NT_STATUS_IS_OK(status)) {
