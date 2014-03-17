@@ -351,7 +351,10 @@ static int tdb_purge_dead(struct tdb_context *tdb, uint32_t hash)
 	struct tdb_record rec;
 	tdb_off_t rec_ptr;
 
-	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
+	if (tdb_lock_nonblock(tdb, -1, F_WRLCK) == -1) {
+		/*
+		 * Don't block the freelist if not strictly necessary
+		 */
 		return -1;
 	}
 
