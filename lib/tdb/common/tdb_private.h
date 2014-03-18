@@ -272,6 +272,9 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		   void *private_data);
 tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash, int locktype,
 			   struct tdb_record *rec);
+tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
+			struct tdb_record *r, tdb_len_t length,
+			tdb_off_t *p_last_ptr);
 void tdb_io_init(struct tdb_context *tdb);
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size);
 tdb_off_t tdb_expand_adjust(tdb_off_t map_size, tdb_off_t size, int page_size);
