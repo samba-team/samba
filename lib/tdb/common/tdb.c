@@ -452,6 +452,8 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 	tdb_off_t best_rec_ptr = 0;
 	struct tdb_record best = { .rec_len = UINT32_MAX };
 
+	length += sizeof(tdb_off_t); /* tailer */
+
 	/* read in the hash top */
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
 		return 0;
@@ -518,9 +520,8 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		 * for key, data and tailer. If we find one, we don't have to
 		 * consult the central freelist.
 		 */
-		rec_ptr = tdb_find_dead(
-			tdb, hash, &rec,
-			key.dsize + dbuf.dsize + sizeof(tdb_off_t));
+		rec_ptr = tdb_find_dead(tdb, hash, &rec,
+					key.dsize + dbuf.dsize);
 
 		if (rec_ptr != 0) {
 			rec.key_len = key.dsize;
