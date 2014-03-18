@@ -449,6 +449,8 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 			       struct tdb_record *r, tdb_len_t length)
 {
 	tdb_off_t rec_ptr;
+	tdb_off_t best_rec_ptr = 0;
+	struct tdb_record best = { .rec_len = UINT32_MAX };
 
 	/* read in the hash top */
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
@@ -459,16 +461,20 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 		if (tdb_rec_read(tdb, rec_ptr, r) == -1)
 			return 0;
 
-		if (TDB_DEAD(r) && r->rec_len >= length) {
-			/*
-			 * First fit for simple coding, TODO: change to best
-			 * fit
-			 */
-			return rec_ptr;
+		if (TDB_DEAD(r) && (r->rec_len >= length) &&
+		    (r->rec_len < best.rec_len)) {
+			best_rec_ptr = rec_ptr;
+			best = *r;
 		}
 		rec_ptr = r->next;
 	}
-	return 0;
+
+	if (best.rec_len == UINT32_MAX) {
+		return 0;
+	}
+
+	*r = best;
+	return best_rec_ptr;
 }
 
 static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
