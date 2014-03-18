@@ -345,7 +345,7 @@ static int tdb_count_dead(struct tdb_context *tdb, uint32_t hash)
 /*
  * Purge all DEAD records from a hash chain
  */
-static int tdb_purge_dead(struct tdb_context *tdb, uint32_t hash)
+int tdb_purge_dead(struct tdb_context *tdb, uint32_t hash)
 {
 	int res = -1;
 	struct tdb_record rec;
