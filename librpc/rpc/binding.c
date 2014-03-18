@@ -532,7 +532,7 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_binding_get_transport(const struct dcerp
 _PUBLIC_ NTSTATUS dcerpc_binding_set_transport(struct dcerpc_binding *b,
 					       enum dcerpc_transport_t transport)
 {
-	char *tmp = discard_const_p(char, b->endpoint);
+	NTSTATUS status;
 
 	/*
 	 * TODO: we may want to check the transport value is
@@ -541,8 +541,6 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_transport(struct dcerpc_binding *b,
 	if (b->transport == transport) {
 		return NT_STATUS_OK;
 	}
-
-	b->transport = transport;
 
 	/*
 	 * This implicitly resets the endpoint
@@ -554,11 +552,14 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_transport(struct dcerpc_binding *b,
 	 * TODO: in future we may reset more options
 	 * here.
 	 */
-	talloc_free(tmp);
-	b->endpoint = NULL;
+	status = dcerpc_binding_set_string_option(b, "endpoint", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	b->assoc_group_id = 0;
 
+	b->transport = transport;
 	return NT_STATUS_OK;
 }
 
