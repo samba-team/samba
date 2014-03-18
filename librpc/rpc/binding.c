@@ -548,11 +548,16 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_transport(struct dcerpc_binding *b,
 	 * This implicitly resets the endpoint
 	 * as the endpoint is transport specific.
 	 *
+	 * It also resets the assoc group as it's
+	 * also endpoint specific.
+	 *
 	 * TODO: in future we may reset more options
 	 * here.
 	 */
 	talloc_free(tmp);
 	b->endpoint = NULL;
+
+	b->assoc_group_id = 0;
 
 	return NT_STATUS_OK;
 }
