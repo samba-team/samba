@@ -1328,14 +1328,14 @@ import "misc.idl", "security.idl";
 		[default] uint32 flags;
 	} lsa_ForestTrustCollisionFlags;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 index;
 		lsa_ForestTrustCollisionRecordType type;
 		[switch_is(type)] lsa_ForestTrustCollisionFlags flags;
 		lsa_String name;
 	} lsa_ForestTrustCollisionRecord;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 count;
 		[size_is(count)] lsa_ForestTrustCollisionRecord **entries;
 	} lsa_ForestTrustCollisionInfo;
