@@ -446,16 +446,20 @@ _PUBLIC_ int tdb_delete(struct tdb_context *tdb, TDB_DATA key)
  * See if we have a dead record around with enough space
  */
 static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
-			       struct tdb_record *r, tdb_len_t length)
+			       struct tdb_record *r, tdb_len_t length,
+			       tdb_off_t *p_last_ptr)
 {
-	tdb_off_t rec_ptr;
+	tdb_off_t rec_ptr, last_ptr;
 	tdb_off_t best_rec_ptr = 0;
+	tdb_off_t best_last_ptr = 0;
 	struct tdb_record best = { .rec_len = UINT32_MAX };
 
 	length += sizeof(tdb_off_t); /* tailer */
 
+	last_ptr = TDB_HASH_TOP(hash);
+
 	/* read in the hash top */
-	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
+	if (tdb_ofs_read(tdb, last_ptr, &rec_ptr) == -1)
 		return 0;
 
 	/* keep looking until we find the right record */
@@ -466,8 +470,10 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 		if (TDB_DEAD(r) && (r->rec_len >= length) &&
 		    (r->rec_len < best.rec_len)) {
 			best_rec_ptr = rec_ptr;
+			best_last_ptr = last_ptr;
 			best = *r;
 		}
+		last_ptr = rec_ptr;
 		rec_ptr = r->next;
 	}
 
@@ -476,6 +482,7 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 	}
 
 	*r = best;
+	*p_last_ptr = best_last_ptr;
 	return best_rec_ptr;
 }
 
@@ -514,6 +521,7 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		tdb_delete_hash(tdb, key, hash);
 
 	if (tdb->max_dead_records != 0) {
+		tdb_off_t last_ptr;
 		/*
 		 * Allow for some dead records per hash chain, look if we can
 		 * find one that can hold the new record. We need enough space
@@ -521,7 +529,8 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		 * consult the central freelist.
 		 */
 		rec_ptr = tdb_find_dead(tdb, hash, &rec,
-					key.dsize + dbuf.dsize);
+					key.dsize + dbuf.dsize,
+					&last_ptr);
 
 		if (rec_ptr != 0) {
 			rec.key_len = key.dsize;
