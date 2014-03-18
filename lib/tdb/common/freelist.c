@@ -273,7 +273,8 @@ static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb,
 
    0 is returned if the space could not be allocated
  */
-tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_record *rec)
+static tdb_off_t tdb_allocate_from_freelist(
+	struct tdb_context *tdb, tdb_len_t length, struct tdb_record *rec)
 {
 	tdb_off_t rec_ptr, last_ptr, newrec_ptr;
 	struct {
@@ -281,9 +282,6 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 		tdb_len_t rec_len;
 	} bestfit;
 	float multiplier = 1.0;
-
-	if (tdb_lock(tdb, -1, F_WRLCK) == -1)
-		return 0;
 
 	/* over-allocate to reduce fragmentation */
 	length *= 1.25;
@@ -297,7 +295,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 
 	/* read in the freelist top */
 	if (tdb_ofs_read(tdb, FREELIST_TOP, &rec_ptr) == -1)
-		goto fail;
+		return 0;
 
 	bestfit.rec_ptr = 0;
 	bestfit.last_ptr = 0;
@@ -310,7 +308,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 	 */
 	while (rec_ptr) {
 		if (tdb_rec_free_read(tdb, rec_ptr, rec) == -1) {
-			goto fail;
+			return 0;
 		}
 
 		if (rec->rec_len >= length) {
@@ -344,12 +342,11 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 
 	if (bestfit.rec_ptr != 0) {
 		if (tdb_rec_free_read(tdb, bestfit.rec_ptr, rec) == -1) {
-			goto fail;
+			return 0;
 		}
 
 		newrec_ptr = tdb_allocate_ofs(tdb, length, bestfit.rec_ptr,
 					      rec, bestfit.last_ptr);
-		tdb_unlock(tdb, -1, F_WRLCK);
 		return newrec_ptr;
 	}
 
@@ -357,12 +354,95 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 	   database and if we can then try again */
 	if (tdb_expand(tdb, length + sizeof(*rec)) == 0)
 		goto again;
- fail:
-	tdb_unlock(tdb, -1, F_WRLCK);
+
 	return 0;
 }
 
+static bool tdb_alloc_dead(
+	struct tdb_context *tdb, int hash, tdb_len_t length,
+	tdb_off_t *rec_ptr, struct tdb_record *rec)
+{
+	tdb_off_t last_ptr;
 
+	*rec_ptr = tdb_find_dead(tdb, hash, rec, length, &last_ptr);
+	if (*rec_ptr == 0) {
+		return false;
+	}
+	/*
+	 * Unlink the record from the hash chain, it's about to be moved into
+	 * another one.
+	 */
+	return (tdb_ofs_write(tdb, last_ptr, &rec->next) == 0);
+}
+
+/*
+ * Chain "hash" is assumed to be locked
+ */
+
+tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
+		       struct tdb_record *rec)
+{
+	tdb_off_t ret;
+	int i;
+
+	if (tdb->max_dead_records == 0) {
+		/*
+		 * No dead records to expect anywhere. Do the blocking
+		 * freelist lock without trying to steal from others
+		 */
+		goto blocking_freelist_allocate;
+	}
+
+	/*
+	 * The following loop tries to get the freelist lock nonblocking. If
+	 * it gets the lock, allocate from there. If the freelist is busy,
+	 * instead of waiting we try to steal dead records from other hash
+	 * chains.
+	 *
+	 * Be aware that we do nonblocking locks on the other hash chains as
+	 * well and fail gracefully. This way we avoid deadlocks (we block two
+	 * hash chains, something which is pretty bad normally)
+	 */
+
+	for (i=1; i<tdb->hash_size; i++) {
+
+		int list;
+
+		if (tdb_lock_nonblock(tdb, -1, F_WRLCK) == 0) {
+			/*
+			 * Under the freelist lock take the chance to give
+			 * back our dead records.
+			 */
+			tdb_purge_dead(tdb, hash);
+
+			ret = tdb_allocate_from_freelist(tdb, length, rec);
+			tdb_unlock(tdb, -1, F_WRLCK);
+			return ret;
+		}
+
+		list = BUCKET(hash+i);
+
+		if (tdb_lock_nonblock(tdb, list, F_WRLCK) == 0) {
+			bool got_dead;
+
+			got_dead = tdb_alloc_dead(tdb, list, length, &ret, rec);
+			tdb_unlock(tdb, list, F_WRLCK);
+
+			if (got_dead) {
+				return ret;
+			}
+		}
+	}
+
+blocking_freelist_allocate:
+
+	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
+		return 0;
+	}
+	ret = tdb_allocate_from_freelist(tdb, length, rec);
+	tdb_unlock(tdb, -1, F_WRLCK);
+	return ret;
+}
 
 /*
    return the size of the freelist - used to decide if we should repack

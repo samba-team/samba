@@ -550,26 +550,8 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		}
 	}
 
-	/*
-	 * We have to allocate some space from the freelist, so this means we
-	 * have to lock it. Use the chance to purge all the DEAD records from
-	 * the hash chain under the freelist lock.
-	 */
-
-	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
-		goto fail;
-	}
-
-	if ((tdb->max_dead_records != 0)
-	    && (tdb_purge_dead(tdb, hash) == -1)) {
-		tdb_unlock(tdb, -1, F_WRLCK);
-		goto fail;
-	}
-
 	/* we have to allocate some space */
-	rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize, &rec);
-
-	tdb_unlock(tdb, -1, F_WRLCK);
+	rec_ptr = tdb_allocate(tdb, hash, key.dsize + dbuf.dsize, &rec);
 
 	if (rec_ptr == 0) {
 		goto fail;
