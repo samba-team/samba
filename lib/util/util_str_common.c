@@ -24,7 +24,7 @@
 #include "includes.h"
 
 /**
-Do a case-insensitive, whitespace-ignoring string compare.
+Do a case-insensitive, whitespace-ignoring ASCII string compare.
 **/
 _PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
 {
@@ -43,6 +43,12 @@ _PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
 			psz1++;
 		while (isspace((int)*psz2))
 			psz2++;
+
+		/*
+		 * This does not do a genuine multi-byte comparison,
+		 * instead it just uses the fast-path for ASCII in
+		 * these common routines
+		 */
 		if (toupper_m((unsigned char)*psz1) != toupper_m((unsigned char)*psz2)
 		    || *psz1 == '\0'
 		    || *psz2 == '\0')
