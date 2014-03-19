@@ -70,8 +70,6 @@
 
 #define standard_sub_basic talloc_strdup
 
-static bool do_parameter(const char *, const char *, void *);
-
 #include "lib/param/param_global.h"
 
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
@@ -1121,7 +1119,7 @@ bool handle_include(struct loadparm_context *lp_ctx, int unused,
 	lpcfg_string_set(lp_ctx, ptr, fname);
 
 	if (file_exist(fname))
-		return pm_process(fname, do_section, do_parameter, lp_ctx);
+		return pm_process(fname, do_section, lpcfg_do_parameter, lp_ctx);
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
@@ -1695,7 +1693,7 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
  * Process a parameter.
  */
 
-static bool do_parameter(const char *pszParmName, const char *pszParmValue,
+bool lpcfg_do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata)
 {
 	struct loadparm_context *lp_ctx = (struct loadparm_context *)userdata;
@@ -2792,7 +2790,7 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	/* We get sections first, so have to start 'behind' to make up */
 	lp_ctx->currentService = NULL;
-	bRetval = pm_process(n2, do_section, do_parameter, lp_ctx);
+	bRetval = pm_process(n2, do_section, lpcfg_do_parameter, lp_ctx);
 
 	/* finish up the last section */
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
