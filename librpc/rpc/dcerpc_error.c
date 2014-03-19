@@ -129,3 +129,24 @@ _PUBLIC_ NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code)
 
 	return werror_to_ntstatus(werr);
 }
+
+_PUBLIC_ uint32_t dcerpc_fault_from_nt_status(NTSTATUS nt_status)
+{
+	int idx = 0;
+	WERROR werr;
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return DCERPC_NCA_S_PROTO_ERROR;
+	}
+
+	while (dcerpc_faults[idx].errstr != NULL) {
+		if (NT_STATUS_EQUAL(dcerpc_faults[idx].nt_status, nt_status)) {
+			return dcerpc_faults[idx].faultcode;
+		}
+		idx++;
+	}
+
+	werr = ntstatus_to_werror(nt_status);
+
+	return W_ERROR_V(werr);
+}
