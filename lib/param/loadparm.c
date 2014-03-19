@@ -2064,6 +2064,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	talloc_set_destructor(lp_ctx, lpcfg_destructor);
 	lp_ctx->bInGlobalSection = true;
 	lp_ctx->globals = talloc_zero(lp_ctx, struct loadparm_global);
+	/* This appears odd, but globals in s3 isn't a pointer */
+	lp_ctx->globals->ctx = lp_ctx->globals;
 	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
 	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, NUMPARAMETERS);
 
