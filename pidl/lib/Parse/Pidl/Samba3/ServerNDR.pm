@@ -24,6 +24,8 @@ $VERSION = '0.01';
 my $res;
 my $res_hdr;
 my $tabs = "";
+sub pidl_reset() { $res=""; $res_hdr="", $tabs=""; }
+sub pidl_return() { my $s = $res; my $h = $res_hdr; pidl_reset(); return ($s, $h) }
 sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs, 1); }
 sub pidl($) { my ($txt) = @_; $res .= $txt?$tabs.(shift)."\n":"\n"; }
@@ -297,8 +299,7 @@ sub Parse($$$)
 {
 	my($ndr,$header,$ndr_header) = @_;
 
-	$res = "";
-	$res_hdr = "";
+	pidl_reset();
 
 	pidl "/*";
 	pidl " * Unix SMB/CIFS implementation.";
@@ -315,7 +316,7 @@ sub Parse($$$)
 		ParseInterface($_) if ($_->{TYPE} eq "INTERFACE");
 	}
 
-	return ($res, $res_hdr);
+	return pidl_return();
 }
 
 1;
