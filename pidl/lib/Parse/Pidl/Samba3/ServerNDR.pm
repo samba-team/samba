@@ -100,8 +100,6 @@ sub CallWithStruct($$$$)
 
 	pidl "ZERO_STRUCT(r->out);" if ($hasout);
 
-	my $proto = "_$fn->{NAME}(struct pipes_struct *p, struct $fn->{NAME} *r";
-	my $ret = "_$fn->{NAME}($pipes_struct, r";
 	foreach (@{$fn->{ELEMENTS}}) {
 		my @dir = @{$_->{DIRECTION}};
 		if (grep(/in/, @dir) and grep(/out/, @dir)) {
@@ -119,8 +117,9 @@ sub CallWithStruct($$$$)
 			AllocOutVar($_, $mem_ctx, "r->out.$_->{NAME}", $env, $fail);
 		}
 	}
-	$ret .= ")";
-	$proto .= ");";
+
+	my $proto = "_$fn->{NAME}(struct pipes_struct *p, struct $fn->{NAME} *r)";
+	my $ret = "_$fn->{NAME}($pipes_struct, r)";
 
 	if ($fn->{RETURN_TYPE}) {
 		$ret = "r->out.result = $ret";
@@ -129,7 +128,7 @@ sub CallWithStruct($$$$)
 		$proto = "void $proto";
 	}
 
-	pidl_hdr "$proto";
+	pidl_hdr "$proto;";
 	pidl "$ret;";
 }
 
