@@ -72,7 +72,7 @@ struct parm_struct {
 	parm_class p_class;
 	offset_t offset;
 	bool (*special)(struct loadparm_context *lpcfg_ctx,
-			int snum, const char *, char **);
+			struct loadparm_service *, const char *, char **);
 	const struct enum_list *enum_list;
 	unsigned flags;
 	union {
@@ -282,7 +282,8 @@ unsigned int * get_flags(void);
 char * lp_string(TALLOC_CTX *, const char *);
 bool lp_string_set(char **, const char *);
 int getservicebyname(const char *, struct loadparm_service *);
-bool lp_include(struct loadparm_context *, int, const char *, char **);
+bool lp_include(struct loadparm_context *, struct loadparm_service *,
+	       	const char *, char **);
 void init_printer_values(TALLOC_CTX *, struct loadparm_service *);
 bool lp_do_section(const char *pszSectionName, void *userdata);
 bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue);

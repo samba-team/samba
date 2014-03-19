@@ -2367,7 +2367,8 @@ static void init_iconv(void)
 ***************************************************************************/
 static bool bAllowIncludeRegistry = true;
 
-bool lp_include(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+bool lp_include(struct loadparm_context *lp_ctx, struct loadparm_service *service,
+	       	const char *pszParmValue, char **ptr)
 {
 	char *fname;
 
@@ -2400,10 +2401,10 @@ bool lp_include(struct loadparm_context *lp_ctx, int snum, const char *pszParmVa
 
 	add_to_file_list(NULL, &file_lists, pszParmValue, fname);
 
-	if (snum < 0) {
+	if (service == NULL) {
 		string_set(Globals.ctx, ptr, fname);
 	} else {
-		string_set(ServicePtrs[snum], ptr, fname);
+		string_set(service, ptr, fname);
 	}
 
 	if (file_exist(fname)) {
@@ -2577,6 +2578,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ok;
 	struct loadparm_context *lp_ctx;
+	struct loadparm_service *service = NULL;
 
 	parmnum = lpcfg_map_parameter(pszParmName);
 
@@ -2643,6 +2645,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		}
 
 		mem_ctx = ServicePtrs[snum];
+		service = ServicePtrs[snum];
 	}
 
 	lp_ctx = loadparm_init_s3(frame,
@@ -2658,7 +2661,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	lp_ctx->bInGlobalSection = bInGlobalSection;
 	lp_ctx->flags = flags_list;
 
-	ok = set_variable(mem_ctx, snum, parmnum, parm_ptr, pszParmName, pszParmValue,
+	ok = set_variable(mem_ctx, service, parmnum, parm_ptr, pszParmName, pszParmValue,
 			    lp_ctx, (snum < 0));
 	TALLOC_FREE(frame);
 

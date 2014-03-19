@@ -233,6 +233,10 @@ static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
 static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 				const char *pszParmName, const char *pszParmValue);
+static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
+				       struct loadparm_service *service,
+				       const char *pszParmName,
+				       const char *pszParmValue, int flags);
 
 /* The following are helper functions for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -1069,7 +1073,7 @@ bool lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue,
  Handle the "realm" parameter
 ***************************************************************************/
 
-bool handle_realm(struct loadparm_context *lp_ctx, int unused,
+bool handle_realm(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 		  const char *pszParmValue, char **ptr)
 {
 	char *upper;
@@ -1103,13 +1107,13 @@ bool handle_realm(struct loadparm_context *lp_ctx, int unused,
  Handle the include operation.
 ***************************************************************************/
 
-bool handle_include(struct loadparm_context *lp_ctx, int unused,
+bool handle_include(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 			   const char *pszParmValue, char **ptr)
 {
 	char *fname;
 
 	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->lp_include(lp_ctx, unused, pszParmValue, ptr);
+		return lp_ctx->s3_fns->lp_include(lp_ctx, service, pszParmValue, ptr);
 	}
 
 	fname = standard_sub_basic(lp_ctx, pszParmValue);
@@ -1130,37 +1134,31 @@ bool handle_include(struct loadparm_context *lp_ctx, int unused,
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-bool handle_copy(struct loadparm_context *lp_ctx, int snum,
+bool handle_copy(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 			const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
 	struct loadparm_service *serviceTemp = NULL;
-	struct loadparm_service *current = NULL;
 
 	bRetval = false;
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
 	serviceTemp = lpcfg_getservicebyname(lp_ctx, pszParmValue);
-	if (lp_ctx->s3_fns != NULL) {
-		current = lp_ctx->s3_fns->get_servicebynum(snum);
-	} else {
-		current = lp_ctx->currentService;
-	}
 
-	if (current == NULL) {
+	if (service == NULL) {
 		DEBUG(0, ("Unable to copy service - invalid service destination"));
 		return false;
 	}
 
 	if (serviceTemp != NULL) {
-		if (serviceTemp == current) {
+		if (serviceTemp == service) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
-			copy_service(current,
+			copy_service(service,
 				     serviceTemp,
-				     current->copymap);
-			lpcfg_string_set(current, ptr, pszParmValue);
+				     service->copymap);
+			lpcfg_string_set(service, ptr, pszParmValue);
 
 			bRetval = true;
 		}
@@ -1173,7 +1171,7 @@ bool handle_copy(struct loadparm_context *lp_ctx, int snum,
 	return bRetval;
 }
 
-bool handle_debug_list(struct loadparm_context *lp_ctx, int unused,
+bool handle_debug_list(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 			const char *pszParmValue, char **ptr)
 {
 	if (lp_ctx->s3_fns != NULL) {
@@ -1185,7 +1183,7 @@ bool handle_debug_list(struct loadparm_context *lp_ctx, int unused,
 	return debug_parse_levels(pszParmValue);
 }
 
-bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
+bool handle_logfile(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 		    const char *pszParmValue, char **ptr)
 {
 	if (lp_ctx->s3_fns != NULL) {
@@ -1202,7 +1200,7 @@ bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
  * These special charset handling methods only run in the source3 code.
  */
 
-bool handle_charset(struct loadparm_context *lp_ctx, int snum,
+bool handle_charset(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 			const char *pszParmValue, char **ptr)
 {
 	if (lp_ctx->s3_fns) {
@@ -1220,7 +1218,7 @@ bool handle_charset(struct loadparm_context *lp_ctx, int snum,
 
 }
 
-bool handle_dos_charset(struct loadparm_context *lp_ctx, int snum,
+bool handle_dos_charset(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 			const char *pszParmValue, char **ptr)
 {
 	bool is_utf8 = false;
@@ -1265,7 +1263,7 @@ bool handle_dos_charset(struct loadparm_context *lp_ctx, int snum,
 	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 }
 
-bool handle_printing(struct loadparm_context *lp_ctx, int snum,
+bool handle_printing(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 			    const char *pszParmValue, char **ptr)
 {
 	static int parm_num = -1;
@@ -1280,11 +1278,11 @@ bool handle_printing(struct loadparm_context *lp_ctx, int snum,
 	}
 
 	if (lp_ctx->s3_fns) {
-		if ( snum < 0 ) {
+		if (service == NULL) {
 			s = lp_ctx->sDefault;
 			lp_ctx->s3_fns->init_printer_values(lp_ctx->globals->ctx, s);
 		} else {
-			s = lp_ctx->services[snum];
+			s = service;
 			lp_ctx->s3_fns->init_printer_values(s, s);
 		}
 	}
@@ -1292,7 +1290,8 @@ bool handle_printing(struct loadparm_context *lp_ctx, int snum,
 	return true;
 }
 
-bool handle_ldap_debug_level(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+bool handle_ldap_debug_level(struct loadparm_context *lp_ctx, struct loadparm_service *service,
+			     const char *pszParmValue, char **ptr)
 {
 	lp_ctx->globals->ldap_debug_level = lp_int(pszParmValue);
 
@@ -1302,7 +1301,8 @@ bool handle_ldap_debug_level(struct loadparm_context *lp_ctx, int snum, const ch
 	return true;
 }
 
-bool handle_netbios_aliases(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+bool handle_netbios_aliases(struct loadparm_context *lp_ctx, struct loadparm_service *service,
+			    const char *pszParmValue, char **ptr)
 {
 	TALLOC_FREE(lp_ctx->globals->netbios_aliases);
 	lp_ctx->globals->netbios_aliases = (const char **)str_list_make_v3(lp_ctx->globals->ctx,
@@ -1318,34 +1318,41 @@ bool handle_netbios_aliases(struct loadparm_context *lp_ctx, int snum, const cha
  * idmap related parameters
  */
 
-bool handle_idmap_backend(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+bool handle_idmap_backend(struct loadparm_context *lp_ctx, struct loadparm_service *service,
+			  const char *pszParmValue, char **ptr)
 {
 	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->lp_do_parameter(snum, "idmap config * : backend", pszParmValue);
+		lp_do_parameter_parametric(lp_ctx, service, "idmap config * : backend",
+					   pszParmValue, 0);
 	}
 
-	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+	return lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 }
 
-bool handle_idmap_uid(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+bool handle_idmap_uid(struct loadparm_context *lp_ctx, struct loadparm_service *service,
+		      const char *pszParmValue, char **ptr)
 {
 	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->lp_do_parameter(snum, "idmap config * : range", pszParmValue);
+		lp_do_parameter_parametric(lp_ctx, service, "idmap config * : range",
+					   pszParmValue, 0);
 	}
 
-	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+	return lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 }
 
-bool handle_idmap_gid(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+bool handle_idmap_gid(struct loadparm_context *lp_ctx, struct loadparm_service *service,
+		      const char *pszParmValue, char **ptr)
 {
 	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->lp_do_parameter(snum, "idmap config * : range", pszParmValue);
+		lp_do_parameter_parametric(lp_ctx, service, "idmap config * : range",
+					   pszParmValue, 0);
 	}
 
-	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+	return lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 }
 
-bool handle_smb_ports(struct loadparm_context *lp_ctx, int snum, const char *pszParmValue, char **ptr)
+bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *service,
+		      const char *pszParmValue, char **ptr)
 {
 	static int parm_num = -1;
 	int i;
@@ -1571,7 +1578,7 @@ static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr
 
 }
 
-bool set_variable(TALLOC_CTX *mem_ctx, int snum, int parmnum, void *parm_ptr,
+bool set_variable(TALLOC_CTX *mem_ctx, struct loadparm_service *service, int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
 			 struct loadparm_context *lp_ctx, bool on_globals)
 {
@@ -1580,7 +1587,7 @@ bool set_variable(TALLOC_CTX *mem_ctx, int snum, int parmnum, void *parm_ptr,
 
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
+		ok = parm_table[parmnum].special(lp_ctx, service, pszParmValue,
 						  (char **)parm_ptr);
 		if (!ok) {
 			return false;
@@ -1636,7 +1643,7 @@ bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 
 	parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
-	return set_variable(lp_ctx->globals->ctx, -1, parmnum, parm_ptr,
+	return set_variable(lp_ctx->globals->ctx, NULL, parmnum, parm_ptr,
 			    pszParmName, pszParmValue, lp_ctx, true);
 }
 
@@ -1685,7 +1692,7 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
 		    parm_table[i].p_class == parm_table[parmnum].p_class)
 			bitmap_clear(service->copymap, i);
 
-	return set_variable(service, -1, parmnum, parm_ptr, pszParmName,
+	return set_variable(service, service, parmnum, parm_ptr, pszParmName,
 			    pszParmValue, lp_ctx, false);
 }
 
