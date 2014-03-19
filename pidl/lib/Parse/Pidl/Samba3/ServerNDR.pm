@@ -48,9 +48,9 @@ sub DeclLevel($$)
 	return $res;
 }
 
-sub AllocOutVar($$$$$)
+sub AllocOutVar($$$$$$$)
 {
-	my ($e, $mem_ctx, $name, $env, $fail) = @_;
+	my ($e, $mem_ctx, $name, $env, $check, $cleanup, $return) = @_;
 
 	my $l = $e->{LEVELS}[0];
 
@@ -83,15 +83,18 @@ sub AllocOutVar($$$$$)
 		pidl "$name = talloc_zero($mem_ctx, " . DeclLevel($e, 1) . ");";
 	}
 
-	pidl "if ($name == NULL) {";
-	$fail->();
+	pidl "if (" . $check->($name) . ") {";
+	indent;
+	pidl $cleanup->($name) if defined($cleanup);
+	pidl $return->($name) if defined($return);
+	deindent;
 	pidl "}";
 	pidl "";
 }
 
-sub CallWithStruct($$$$)
+sub CallWithStruct($$$$$$)
 {
-	my ($pipes_struct, $mem_ctx, $fn, $fail) = @_;
+	my ($pipes_struct, $mem_ctx, $fn, $check, $cleanup, $return) = @_;
 	my $env = GenerateFunctionOutEnv($fn);
 	my $hasout = 0;
 	foreach (@{$fn->{ELEMENTS}}) {
@@ -114,7 +117,8 @@ sub CallWithStruct($$$$)
 			# noop
 		} elsif (grep(/out/, @dir) and not
 				 has_property($_, "represent_as")) {
-			AllocOutVar($_, $mem_ctx, "r->out.$_->{NAME}", $env, $fail);
+			AllocOutVar($_, $mem_ctx, "r->out.$_->{NAME}", $env,
+				    $check, $cleanup, $return);
 		}
 	}
 
@@ -175,10 +179,18 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 
-	CallWithStruct("p", "r", $fn, 
-	sub { 
-			pidl "\ttalloc_free(r);";
-			pidl "\treturn false;";
+	CallWithStruct("p", "r", $fn,
+		sub ($) {
+			my ($name) = @_;
+			return "${name} == NULL";
+		},
+		sub ($) {
+			my ($name) = @_;
+			return "talloc_free(r);";
+		},
+		sub ($) {
+			my ($name) = @_;
+			return "return false;";
 		}
 	);
 
