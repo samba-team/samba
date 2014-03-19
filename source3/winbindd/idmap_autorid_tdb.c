@@ -413,6 +413,8 @@ NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm)
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
+	DEBUG(1, ("Initialized HWM (%s) in autorid database.\n", hwm));
+
 	return NT_STATUS_OK;
 }
 
