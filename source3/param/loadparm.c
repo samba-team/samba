@@ -2409,7 +2409,7 @@ bool lp_include(struct loadparm_context *lp_ctx, int snum, const char *pszParmVa
 	if (file_exist(fname)) {
 		bool ret;
 		include_depth++;
-		ret = pm_process(fname, lp_do_section, do_parameter, NULL);
+		ret = pm_process(fname, lp_do_section, do_parameter, lp_ctx);
 		include_depth--;
 		TALLOC_FREE(fname);
 		return ret;
