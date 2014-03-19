@@ -641,13 +641,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 			  config->maxranges));
 	}
 
-	status = idmap_autorid_saveconfig(autorid_db, config);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to store configuration data!\n"));
-		goto error;
-	}
-
 	DEBUG(5, ("%d domain ranges with a size of %d are available\n",
 		  config->maxranges, config->rangesize));
 
@@ -665,6 +658,12 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
 
 	dom->private_data = commonconfig;
+
+	status = idmap_autorid_saveconfig(autorid_db, config);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to store configuration data!\n"));
+		goto error;
+	}
 
 	/* preallocate well-known SIDs in the pool */
 	status = idmap_autorid_preallocate_wellknown(dom);
