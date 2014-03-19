@@ -415,6 +415,8 @@ static bool reload_nmbd_services(bool test)
 		reload_nmbd_services( True );
 	}
 
+	reopen_logs();
+
 	return(ret);
 }
 
@@ -907,6 +909,8 @@ static bool open_sockets(bool isdaemon, int port)
 		DEBUG(0, ("error opening config file '%s'\n", get_dyn_CONFIGFILE()));
 		exit(1);
 	}
+
+	reopen_logs();
 
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
 	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
