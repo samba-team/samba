@@ -106,6 +106,7 @@ struct dcerpc_binding;
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
 NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
+uint32_t dcerpc_fault_from_nt_status(NTSTATUS nt_status);
 
 /* The following definitions come from ../librpc/rpc/binding.c  */
 
