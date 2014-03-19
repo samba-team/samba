@@ -520,36 +520,6 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 	if (flag != TDB_INSERT)
 		tdb_delete_hash(tdb, key, hash);
 
-	if (tdb->max_dead_records != 0) {
-		tdb_off_t last_ptr;
-		/*
-		 * Allow for some dead records per hash chain, look if we can
-		 * find one that can hold the new record. We need enough space
-		 * for key, data and tailer. If we find one, we don't have to
-		 * consult the central freelist.
-		 */
-		rec_ptr = tdb_find_dead(tdb, hash, &rec,
-					key.dsize + dbuf.dsize,
-					&last_ptr);
-
-		if (rec_ptr != 0) {
-			rec.key_len = key.dsize;
-			rec.data_len = dbuf.dsize;
-			rec.full_hash = hash;
-			rec.magic = TDB_MAGIC;
-			if (tdb_rec_write(tdb, rec_ptr, &rec) == -1
-			    || tdb->methods->tdb_write(
-				    tdb, rec_ptr + sizeof(rec),
-				    key.dptr, key.dsize) == -1
-			    || tdb->methods->tdb_write(
-				    tdb, rec_ptr + sizeof(rec) + key.dsize,
-				    dbuf.dptr, dbuf.dsize) == -1) {
-				goto fail;
-			}
-			goto done;
-		}
-	}
-
 	/* we have to allocate some space */
 	rec_ptr = tdb_allocate(tdb, hash, key.dsize + dbuf.dsize, &rec);
 

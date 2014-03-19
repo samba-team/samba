@@ -404,21 +404,9 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
 	 * hash chains, something which is pretty bad normally)
 	 */
 
-	for (i=1; i<tdb->hash_size; i++) {
+	for (i=0; i<tdb->hash_size; i++) {
 
 		int list;
-
-		if (tdb_lock_nonblock(tdb, -1, F_WRLCK) == 0) {
-			/*
-			 * Under the freelist lock take the chance to give
-			 * back our dead records.
-			 */
-			tdb_purge_dead(tdb, hash);
-
-			ret = tdb_allocate_from_freelist(tdb, length, rec);
-			tdb_unlock(tdb, -1, F_WRLCK);
-			return ret;
-		}
 
 		list = BUCKET(hash+i);
 
@@ -431,6 +419,18 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
 			if (got_dead) {
 				return ret;
 			}
+		}
+
+		if (tdb_lock_nonblock(tdb, -1, F_WRLCK) == 0) {
+			/*
+			 * Under the freelist lock take the chance to give
+			 * back our dead records.
+			 */
+			tdb_purge_dead(tdb, hash);
+
+			ret = tdb_allocate_from_freelist(tdb, length, rec);
+			tdb_unlock(tdb, -1, F_WRLCK);
+			return ret;
 		}
 	}
 
