@@ -128,7 +128,7 @@ static void popt_common_callback(poptContext con,
 
 	case 'O':
 		if (arg) {
-			lp_do_parameter(-1, "socket options", arg);
+			lp_set_cmdline("socket options", arg);
 		}
 		break;
 
