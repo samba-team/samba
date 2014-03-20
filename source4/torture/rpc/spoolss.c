@@ -513,30 +513,36 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumPrinterDrivers_args(struct torture_context *tctx,
-					 struct dcerpc_binding_handle *b,
-					 const char *server_name,
-					 const char *environment,
-					 uint32_t level,
-					 uint32_t *count_p,
-					 union spoolss_DriverInfo **info_p)
+static bool test_EnumPrinterDrivers_buffers(struct torture_context *tctx,
+					    struct dcerpc_binding_handle *b,
+					    const char *server_name,
+					    const char *environment,
+					    uint32_t level,
+					    uint32_t offered,
+					    uint32_t *count_p,
+					    union spoolss_DriverInfo **info_p)
 {
 	struct spoolss_EnumPrinterDrivers r;
 	uint32_t needed;
 	uint32_t count;
 	union spoolss_DriverInfo *info;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(tctx, offered);
+	}
 
 	r.in.server		= server_name;
 	r.in.environment	= environment;
 	r.in.level		= level;
-	r.in.buffer		= NULL;
-	r.in.offered		= 0;
+	r.in.buffer		= offered ? &buffer : NULL;
+	r.in.offered		= offered;
 	r.out.needed		= &needed;
 	r.out.count		= &count;
 	r.out.info		= &info;
 
-	torture_comment(tctx, "Testing EnumPrinterDrivers(%s) level %u\n",
-		r.in.environment, r.in.level);
+	torture_comment(tctx, "Testing EnumPrinterDrivers(%s) level %u, offered: %u\n",
+		r.in.environment, r.in.level, r.in.offered);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_spoolss_EnumPrinterDrivers_r(b, tctx, &r),
@@ -565,6 +571,20 @@ static bool test_EnumPrinterDrivers_args(struct torture_context *tctx,
 
 	return true;
 
+}
+
+
+static bool test_EnumPrinterDrivers_args(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 const char *server_name,
+					 const char *environment,
+					 uint32_t level,
+					 uint32_t *count_p,
+					 union spoolss_DriverInfo **info_p)
+{
+	return test_EnumPrinterDrivers_buffers(tctx, b, server_name,
+					       environment, level, 0,
+					       count_p, info_p);
 }
 
 static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
