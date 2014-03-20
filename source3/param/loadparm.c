@@ -2572,82 +2572,9 @@ void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm)
 
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
 {
-	int parmnum, i;
-	void *parm_ptr = NULL;	/* where we are going to store the result */
-	struct parmlist_entry **opt_list;
-	TALLOC_CTX *mem_ctx;
 	TALLOC_CTX *frame = talloc_stackframe();
-	bool ok;
 	struct loadparm_context *lp_ctx;
-	struct loadparm_service *service = NULL;
-
-	parmnum = lpcfg_map_parameter(pszParmName);
-
-	if (parmnum < 0) {
-		if (strchr(pszParmName, ':') == NULL) {
-			DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",
-				  pszParmName));
-			TALLOC_FREE(frame);
-			return true;
-		}
-
-		/*
-		 * We've got a parametric option
-		 */
-
-		if (snum < 0) {
-			opt_list = &Globals.param_opt;
-			set_param_opt(NULL, opt_list, pszParmName, pszParmValue, 0);
-		} else {
-			opt_list = &ServicePtrs[snum]->param_opt;
-			set_param_opt(ServicePtrs[snum], opt_list, pszParmName, pszParmValue, 0);
-		}
-
-		TALLOC_FREE(frame);
-		return true;
-	}
-
-	/* if it's already been set by the command line, then we don't
-	   override here */
-	if (flags_list[parmnum] & FLAG_CMDLINE) {
-		TALLOC_FREE(frame);
-		return true;
-	}
-
-	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
-		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
-			  pszParmName));
-	}
-
-	/* we might point at a service, the default service or a global */
-	if (snum < 0) {
-		parm_ptr = lp_parm_ptr(NULL, &parm_table[parmnum]);
-		mem_ctx = Globals.ctx;
-	} else {
-		if (parm_table[parmnum].p_class == P_GLOBAL) {
-			DEBUG(0,
-			      ("Global parameter %s found in service section!\n",
-			       pszParmName));
-			TALLOC_FREE(frame);
-			return true;
-		}
-		parm_ptr = lp_parm_ptr(ServicePtrs[snum], &parm_table[parmnum]);
-
-		if (!ServicePtrs[snum]->copymap)
-			init_copymap(ServicePtrs[snum]);
-
-		/* this handles the aliases - set the copymap for other entries with
-		   the same data pointer */
-		for (i = 0; parm_table[i].label; i++) {
-			if ((parm_table[i].offset == parm_table[parmnum].offset)
-			    && (parm_table[i].p_class == parm_table[parmnum].p_class)) {
-				bitmap_clear(ServicePtrs[snum]->copymap, i);
-			}
-		}
-
-		mem_ctx = ServicePtrs[snum];
-		service = ServicePtrs[snum];
-	}
+	bool ok;
 
 	lp_ctx = loadparm_init_s3(frame,
 				  loadparm_s3_helpers());
@@ -2662,8 +2589,13 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	lp_ctx->bInGlobalSection = bInGlobalSection;
 	lp_ctx->flags = flags_list;
 
-	ok = set_variable(mem_ctx, service, parmnum, parm_ptr, pszParmName, pszParmValue,
-			    lp_ctx, (snum < 0));
+	if (snum < 0) {
+		ok = lpcfg_do_global_parameter(lp_ctx, pszParmName, pszParmValue);
+	} else {
+		ok = lpcfg_do_service_parameter(lp_ctx, ServicePtrs[snum],
+						pszParmName, pszParmValue);
+	}
+
 	TALLOC_FREE(frame);
 
 	return ok;
