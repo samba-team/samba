@@ -2102,7 +2102,7 @@ static bool process_smbconf_service(struct smbconf_service *service)
 		}
 	}
 	if (iServiceIndex >= 0) {
-		return service_ok(iServiceIndex);
+		return lpcfg_service_ok(ServicePtrs[iServiceIndex]);
 	}
 	return true;
 }
@@ -2754,7 +2754,7 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 	bRetval = true;
 
 	if (iServiceIndex >= 0)
-		bRetval = service_ok(iServiceIndex);
+		bRetval = lpcfg_service_ok(ServicePtrs[iServiceIndex]);
 
 	/* if all is still well, move to the next record in the services array */
 	if (bRetval) {
@@ -3935,7 +3935,7 @@ static bool lp_load_ex(const char *pszFname,
 		DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
 		if (bRetval) {
 			if (iServiceIndex >= 0) {
-				bRetval = service_ok(iServiceIndex);
+				bRetval = lpcfg_service_ok(ServicePtrs[iServiceIndex]);
 			}
 		}
 

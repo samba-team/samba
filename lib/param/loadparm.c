@@ -229,7 +229,6 @@ FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)
 /* local prototypes */
 static struct loadparm_service *lpcfg_getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName);
-static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
 static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 				const char *pszParmName, const char *pszParmValue);
@@ -932,7 +931,7 @@ void copy_service(struct loadparm_service *pserviceDest,
  * Check a service for consistency. Return False if the service is in any way
  * incomplete or faulty, else True.
  */
-static bool lpcfg_service_ok(struct loadparm_service *service)
+bool lpcfg_service_ok(struct loadparm_service *service)
 {
 	bool bRetval;
 
