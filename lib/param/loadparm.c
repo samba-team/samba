@@ -2041,8 +2041,16 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_GLOBAL &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (!show_defaults && (lp_ctx->flags[i] & FLAG_DEFAULT))
-				continue;
+			if (!show_defaults) {
+				if (lp_ctx->flags && (lp_ctx->flags[i] & FLAG_DEFAULT)) {
+					continue;
+				}
+
+				if (is_default(lp_ctx->globals, i)) {
+					continue;
+				}
+			}
+
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			lpcfg_print_parameter(&parm_table[i], lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
 			fprintf(f, "\n");
