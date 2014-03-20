@@ -879,6 +879,8 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 		DEBUG(5, ("No configuration found. Storing initial "
 			  "configuration.\n"));
 	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Error loading configuration: %s\n",
+			  nt_errstr(status)));
 		goto done;
 	}
 
