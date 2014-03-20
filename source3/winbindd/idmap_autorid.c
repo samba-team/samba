@@ -598,6 +598,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+	dom->private_data = commonconfig;
 
 	commonconfig->rw_ops = talloc_zero(commonconfig, struct idmap_rw_ops);
 	if (commonconfig->rw_ops == NULL) {
@@ -656,8 +657,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	commonconfig->hwmkey_gid = ALLOC_HWM_GID;
 	commonconfig->rw_ops->get_new_id = idmap_autorid_allocate_id;
 	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
-
-	dom->private_data = commonconfig;
 
 	status = idmap_autorid_saveconfig(autorid_db, config);
 	if (!NT_STATUS_IS_OK(status)) {
