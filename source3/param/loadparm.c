@@ -2007,52 +2007,6 @@ struct loadparm_service *lp_default_loadparm_service()
 	return &sDefault;
 }
 
-/***************************************************************************
-Check a service for consistency. Return false if the service is in any way
-incomplete or faulty, else true.
-***************************************************************************/
-
-bool service_ok(int iService)
-{
-	bool bRetval;
-
-	bRetval = true;
-	if (ServicePtrs[iService]->szService[0] == '\0') {
-		DEBUG(0, ("The following message indicates an internal error:\n"));
-		DEBUG(0, ("No service name in service entry.\n"));
-		bRetval = false;
-	}
-
-	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
-	/* I can't see why you'd want a non-printable printer service...        */
-	if (strwicmp(ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
-		if (!ServicePtrs[iService]->printable) {
-			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
-			       ServicePtrs[iService]->szService));
-			ServicePtrs[iService]->printable = true;
-		}
-		/* [printers] service must also be non-browsable. */
-		if (ServicePtrs[iService]->browseable)
-			ServicePtrs[iService]->browseable = false;
-	}
-
-	if (ServicePtrs[iService]->path[0] == '\0' &&
-	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0 &&
-	    ServicePtrs[iService]->msdfs_proxy[0] == '\0'
-	    ) {
-		DEBUG(0, ("WARNING: No path in service %s - making it unavailable!\n",
-			ServicePtrs[iService]->szService));
-		ServicePtrs[iService]->bAvailable = false;
-	}
-
-	/* If a service is flagged unavailable, log the fact at level 1. */
-	if (!ServicePtrs[iService]->bAvailable)
-		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
-			  ServicePtrs[iService]->szService));
-
-	return (bRetval);
-}
-
 static struct smbconf_ctx *lp_smbconf_ctx(void)
 {
 	sbcErr err;

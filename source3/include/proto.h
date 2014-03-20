@@ -1023,7 +1023,6 @@ bool lp_canonicalize_parameter_with_value(const char *parm_name,
 void show_parameter_list(void);
 bool lp_invert_boolean(const char *str, const char **inverse_str);
 bool lp_canonicalize_boolean(const char *str, const char**canon_str);
-bool service_ok(int iService);
 bool process_registry_service(const char *service_name);
 bool process_registry_shares(void);
 bool lp_config_backend_is_registry(void);
