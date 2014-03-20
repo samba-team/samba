@@ -164,6 +164,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  struct file_id id);
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
+			struct file_id id,
 			const char *servicepath,
 			uint32_t orig_name_hash,
 			uint32_t new_name_hash,

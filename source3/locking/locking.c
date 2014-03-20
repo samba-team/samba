@@ -468,6 +468,7 @@ struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
+			struct file_id id,
 			const char *servicepath,
 			uint32_t orig_name_hash,
 			uint32_t new_name_hash,
@@ -523,7 +524,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	push_file_id_24(frm, &d->id);
+	push_file_id_24(frm, &id);
 
 	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
@@ -565,7 +566,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			  "pid %s file_id %s sharepath %s base_name %s "
 			  "stream_name %s\n",
 			  procid_str_static(&se->pid),
-			  file_id_string_tos(&d->id),
+			  file_id_string_tos(&id),
 			  d->servicepath, d->base_name,
 			has_stream ? d->stream_name : ""));
 

@@ -6141,7 +6141,7 @@ static void rename_open_files(connection_struct *conn,
 	}
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */
-	rename_share_filename(conn->sconn->msg_ctx, lck, conn->connectpath,
+	rename_share_filename(conn->sconn->msg_ctx, lck, id, conn->connectpath,
 			      orig_name_hash, new_name_hash,
 			      smb_fname_dst);
 
