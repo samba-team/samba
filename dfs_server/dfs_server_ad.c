@@ -38,6 +38,24 @@ struct dc_set {
 	uint32_t count;
 };
 
+static void shuffle_dc_set(struct dc_set *list)
+{
+       uint32_t i;
+
+       srandom(time(NULL));
+
+       for (i = list->count; i > 1; i--) {
+               uint32_t r;
+               const char *tmp;
+
+               r = random() % i;
+
+               tmp = list->names[i - 1];
+               list->names[i - 1] = list->names[r];
+               list->names[r] = tmp;
+       }
+}
+
 /*
   fill a referral type structure
  */
@@ -264,6 +282,8 @@ static NTSTATUS get_dcs_insite(TALLOC_CTX *ctx, struct ldb_context *ldb,
 		list->count++;
 		talloc_free(msg);
 	}
+
+	shuffle_dc_set(list);
 
 	talloc_free(r);
 	return NT_STATUS_OK;
