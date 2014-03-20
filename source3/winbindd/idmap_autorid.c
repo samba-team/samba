@@ -621,8 +621,8 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	    config->rangesize;
 
 	if (config->maxranges == 0) {
-		DEBUG(1, ("allowed uid range is smaller then rangesize, "
-			  "increase uid range or decrease rangesize\n"));
+		DEBUG(1, ("Allowed uid range is smaller than rangesize. "
+			  "Increase uid range or decrease rangesize.\n"));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto error;
 	}
