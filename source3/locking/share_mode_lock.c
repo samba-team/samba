@@ -385,14 +385,15 @@ struct share_mode_lock *get_share_mode_lock(
 		}
 		talloc_set_destructor(the_lock, the_lock_destructor);
 	} else {
+		if (!file_id_equal(&the_lock->data->id, &id)) {
+			DEBUG(1, ("Can not lock two share modes "
+				  "simultaneously\n"));
+			goto fail;
+		}
 		if (talloc_reference(lck, the_lock) == NULL) {
 			DEBUG(1, ("talloc_reference failed\n"));
 			goto fail;
 		}
-	}
-	if (!file_id_equal(&the_lock->data->id, &id)) {
-		DEBUG(1, ("Can not lock two share modes simultaneously\n"));
-		goto fail;
 	}
 	lck->data = the_lock->data;
 	return lck;
