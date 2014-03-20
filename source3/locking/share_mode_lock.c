@@ -331,7 +331,6 @@ static struct share_mode_lock *get_share_mode_lock_internal(
 		TALLOC_FREE(rec);
 		return NULL;
 	}
-	d->id = id;
 	d->record = talloc_move(d, &rec);
 	talloc_set_destructor(d, share_mode_data_destructor);
 
