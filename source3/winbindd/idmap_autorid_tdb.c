@@ -185,6 +185,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 
 	numstr = talloc_asprintf(mem_ctx, "%u", requested_rangenum);
 	if (!numstr) {
+		DEBUG(1, ("Talloc failed!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
