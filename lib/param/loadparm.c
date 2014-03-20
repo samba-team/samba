@@ -1997,9 +1997,9 @@ static bool do_section(const char *pszSectionName, void *userdata)
  * Determine if a particular base parameter is currently set to the default value.
  */
 
-static bool is_default(struct loadparm_service *sDefault, int i)
+static bool is_default(void *base_structure, int i)
 {
-	void *def_ptr = ((char *)sDefault) + parm_table[i].offset;
+	void *def_ptr = ((char *)base_structure) + parm_table[i].offset;
 	switch (parm_table[i].type) {
 		case P_CMDLIST:
 		case P_LIST:
