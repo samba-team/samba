@@ -109,6 +109,18 @@ NTSTATUS idmap_autorid_delete_range_by_num(struct db_context *db,
 NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm);
 
 /**
+ * Open and possibly create the autorid database.
+ */
+NTSTATUS idmap_autorid_db_open(const char *path,
+			       TALLOC_CTX *mem_ctx,
+			       struct db_context **db);
+
+/**
+ * Initialize the high watermark records in the database.
+ */
+NTSTATUS idmap_autorid_init_hwms(struct db_context *db);
+
+/**
  * Initialize an idmap_autorid database.
  * After this function has successfully completed, the following are true:
  * - the database exists

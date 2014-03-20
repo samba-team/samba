@@ -699,10 +699,10 @@ NTSTATUS idmap_autorid_delete_range_by_num(struct db_context *db,
 	return status;
 }
 
-/*
- * open and initialize the database which stores the ranges for the domains
+/**
+ * Open and possibly create the database.
  */
-NTSTATUS idmap_autorid_db_init(const char *path,
+NTSTATUS idmap_autorid_db_open(const char *path,
 			       TALLOC_CTX *mem_ctx,
 			       struct db_context **db)
 {
@@ -722,18 +722,47 @@ NTSTATUS idmap_autorid_db_init(const char *path,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Initialize high water mark for the currently used range to 0 */
+	return status;
+}
 
-	status = idmap_autorid_init_hwm(*db, HWM);
-	NT_STATUS_NOT_OK_RETURN(status);
+/**
+ * Initialize the high watermark records in the database.
+ */
+NTSTATUS idmap_autorid_init_hwms(struct db_context *db)
+{
+	NTSTATUS status;
 
-	status = idmap_autorid_init_hwm(*db, ALLOC_HWM_UID);
-	NT_STATUS_NOT_OK_RETURN(status);
+	status = idmap_autorid_init_hwm(db, HWM);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	status = idmap_autorid_init_hwm(*db, ALLOC_HWM_GID);
+	status = idmap_autorid_init_hwm(db, ALLOC_HWM_UID);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = idmap_autorid_init_hwm(db, ALLOC_HWM_GID);
 
 	return status;
 }
+
+NTSTATUS idmap_autorid_db_init(const char *path,
+			       TALLOC_CTX *mem_ctx,
+			       struct db_context **db)
+{
+	NTSTATUS status;
+
+	status = idmap_autorid_db_open(path, mem_ctx, db);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = idmap_autorid_init_hwms(*db);
+	return status;
+}
+
+
 
 struct idmap_autorid_fetch_config_state {
 	TALLOC_CTX *mem_ctx;
