@@ -2674,8 +2674,12 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 
 	DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
 
-	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
-				pszParmName, pszParmValue));
+	if (bInGlobalSection) {
+		return lpcfg_do_global_parameter(userdata, pszParmName, pszParmValue);
+	} else {
+		return lpcfg_do_service_parameter(userdata, ServicePtrs[iServiceIndex],
+						  pszParmName, pszParmValue);
+	}
 }
 
 /***************************************************************************
@@ -2723,6 +2727,7 @@ static void init_locals(void)
 
 bool lp_do_section(const char *pszSectionName, void *userdata)
 {
+	struct loadparm_context *lp_ctx = (struct loadparm_context *)userdata;
 	bool bRetval;
 	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
 			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
@@ -2734,6 +2739,7 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 
 	/* if we've just struck a global section, note the fact. */
 	bInGlobalSection = isglobal;
+	lp_ctx->bInGlobalSection = isglobal;
 
 	/* check for multiple global sections */
 	if (bInGlobalSection) {
@@ -3877,6 +3883,7 @@ static bool lp_load_ex(const char *pszFname,
 	char *n2 = NULL;
 	bool bRetval;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx;
 
 	bRetval = false;
 
@@ -3885,6 +3892,12 @@ static bool lp_load_ex(const char *pszFname,
 	bInGlobalSection = true;
 	bGlobalOnly = global_only;
 	bAllowIncludeRegistry = allow_include_registry;
+
+	lp_ctx = loadparm_init_s3(talloc_tos(),
+				  loadparm_s3_helpers());
+
+	lp_ctx->sDefault = &sDefault;
+	lp_ctx->bInGlobalSection = bInGlobalSection;
 
 	init_globals(initialize_globals);
 
@@ -3915,7 +3928,7 @@ static bool lp_load_ex(const char *pszFname,
 
 		add_to_file_list(NULL, &file_lists, pszFname, n2);
 
-		bRetval = pm_process(n2, lp_do_section, do_parameter, NULL);
+		bRetval = pm_process(n2, lp_do_section, do_parameter, lp_ctx);
 		TALLOC_FREE(n2);
 
 		/* finish up the last section */
@@ -3935,6 +3948,8 @@ static bool lp_load_ex(const char *pszFname,
 			 * for config_backend. Otherwise, init_globals would
 			 *  send us into an endless loop here.
 			 */
+			TALLOC_FREE(lp_ctx);
+
 			config_backend = CONFIG_BACKEND_REGISTRY;
 			/* start over */
 			DEBUG(1, ("lp_load_ex: changing to config backend "
