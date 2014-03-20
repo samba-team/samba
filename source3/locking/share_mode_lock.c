@@ -351,10 +351,12 @@ static struct share_mode_lock *get_share_mode_lock_internal(
  * talloc_reference.
  */
 static struct share_mode_lock *the_lock;
+static struct file_id the_lock_id;
 
 static int the_lock_destructor(struct share_mode_lock *l)
 {
 	the_lock = NULL;
+	ZERO_STRUCT(the_lock_id);
 	return 0;
 }
 
@@ -384,8 +386,9 @@ struct share_mode_lock *get_share_mode_lock(
 			goto fail;
 		}
 		talloc_set_destructor(the_lock, the_lock_destructor);
+		the_lock_id = id;
 	} else {
-		if (!file_id_equal(&the_lock->data->id, &id)) {
+		if (!file_id_equal(&the_lock_id, &id)) {
 			DEBUG(1, ("Can not lock two share modes "
 				  "simultaneously\n"));
 			goto fail;
