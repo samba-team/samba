@@ -389,6 +389,37 @@ NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 }
 
 /* initialize the given HWM to 0 if it does not exist yet */
+static NTSTATUS idmap_autorid_init_hwm_action(struct db_context *db,
+					      void *private_data)
+{
+	NTSTATUS status;
+	uint32_t hwmval;
+	const char *hwm;
+
+	hwm = (char *)private_data;
+
+	status = dbwrap_fetch_uint32_bystring(db, hwm, &hwmval);
+	if (NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("HWM (%s) already initialized in autorid database "
+			  "(value %"PRIu32").\n", hwm, hwmval));
+		return NT_STATUS_OK;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		DEBUG(0, ("Error fetching HWM (%s) from autorid "
+			  "database: %s\n", hwm, nt_errstr(status)));
+		return status;
+	}
+
+	status = dbwrap_trans_store_uint32_bystring(db, hwm, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Error storing HWM (%s) in autorid database: %s\n",
+			  hwm, nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm)
 {
 	NTSTATUS status;
@@ -406,7 +437,8 @@ NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm)
 		return status;
 	}
 
-	status = dbwrap_trans_store_uint32_bystring(db, hwm, 0);
+	status = dbwrap_trans_do(db, idmap_autorid_init_hwm_action,
+				 (void *)hwm);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Error initializing HWM (%s) in autorid database: "
 			  "%s\n", hwm, nt_errstr(status)));
