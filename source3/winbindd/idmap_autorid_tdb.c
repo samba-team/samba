@@ -175,26 +175,33 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		goto error;
 	}
 
-	if (requested_rangenum < hwm) {
-		/*
-		 * Set a specified range below the HWM:
-		 * We need to check that it is not yet taken.
-		 */
+	/*
+	 * Check that it is not yet taken.
+	 * If the range is requested and < HWM, we need
+	 * to check anyways, and otherwise, we also better
+	 * check in order to prevent further corruption
+	 * in case the db has been externally modified.
+	 */
 
-		numstr = talloc_asprintf(mem_ctx, "%u", requested_rangenum);
-		if (!numstr) {
-			ret = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
+	numstr = talloc_asprintf(mem_ctx, "%u", requested_rangenum);
+	if (!numstr) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
 
-		if (dbwrap_exists(db, string_term_tdb_data(numstr))) {
-			DEBUG(1, ("Requested range already in use.\n"));
+	if (dbwrap_exists(db, string_term_tdb_data(numstr))) {
+		DEBUG(1, ("Requested range '%s' is already in use.\n", numstr));
+
+		if (requested_rangenum < hwm) {
 			ret = NT_STATUS_INVALID_PARAMETER;
-			goto error;
+		} else {
+			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		TALLOC_FREE(numstr);
-	} else {
+		goto error;
+	}
+
+	if (requested_rangenum >= hwm) {
 		/*
 		 * requested or automatic range >= HWM:
 		 * increment the HWM.
