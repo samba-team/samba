@@ -956,6 +956,15 @@ static bool lpcfg_service_ok(struct loadparm_service *service)
 			service->browseable = false;
 	}
 
+	if (service->path[0] == '\0' &&
+	    strwicmp(service->szService, HOMES_NAME) != 0 &&
+	    service->msdfs_proxy[0] == '\0')
+	{
+		DEBUG(0, ("WARNING: No path in service %s - making it unavailable!\n",
+			service->szService));
+		service->bAvailable = false;
+	}
+
 	/* If a service is flagged unavailable, log the fact at level 0. */
 	if (!service->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
