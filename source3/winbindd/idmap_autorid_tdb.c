@@ -247,8 +247,11 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 			  "domain->range assignment: %s\n", nt_errstr(ret)));
 		goto error;
 	}
-	DEBUG(5, ("Acquired new range #%d for domain %s "
-		  "(domain_range_index=%"PRIu32")\n", requested_rangenum, keystr,
+
+	DEBUG(5, ("%s new range #%d for domain %s "
+		  "(domain_range_index=%"PRIu32")\n",
+		  (acquire?"Acquired":"Stored"),
+		  requested_rangenum, keystr,
 		  range->domain_range_index));
 
 	range->rangenum = requested_rangenum;
