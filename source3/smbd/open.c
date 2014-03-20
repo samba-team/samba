@@ -2426,7 +2426,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 */
 		state.delayed_for_oplocks = false;
 		state.async_open = false;
-		state.id = lck->data->id;
+		state.id = fsp->file_id;
 		defer_open(lck, request_time, timeval_set(0, 0), req, &state);
 		TALLOC_FREE(lck);
 		DEBUG(10, ("No Samba oplock around after EWOULDBLOCK. "
