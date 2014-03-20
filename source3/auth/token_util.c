@@ -394,7 +394,68 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 {
 	struct dom_sid dom_sid;
 	gid_t gid;
+	uid_t uid;
 	NTSTATUS status;
+
+	/* result->sids[0] is always the user sid. */
+	if (sid_to_uid(&result->sids[0], &uid)) {
+		/*
+		 * Now we must get any groups this user has been
+		 * added to in /etc/group and merge them in.
+		 * This has to be done in every code path
+		 * that creates an NT token, as remote users
+		 * may have been added to the local /etc/group
+		 * database. Tokens created merely from the
+		 * info3 structs (via the DC or via the krb5 PAC)
+		 * won't have these local groups. Note the
+		 * groups added here will only be UNIX groups
+		 * (S-1-22-2-XXXX groups) as getgroups_unix_user()
+		 * turns off winbindd before calling getgroups().
+		 *
+		 * NB. This is duplicating work already
+		 * done in the 'unix_user:' case of
+		 * create_token_from_sid() but won't
+		 * do anything other than be inefficient
+		 * in that case.
+		 */
+		struct passwd *pass = NULL;
+		gid_t *gids = NULL;
+		uint32_t getgroups_num_group_sids = 0;
+		int i;
+		TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+		pass = getpwuid_alloc(tmp_ctx, uid);
+		if (pass == NULL) {
+			DEBUG(1, ("getpwuid(%u) failed\n",
+				(unsigned int)uid));
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if (!getgroups_unix_user(tmp_ctx, pass->pw_name, pass->pw_gid,
+				&gids, &getgroups_num_group_sids)) {
+			DEBUG(1, ("getgroups_unix_user for user %s failed\n",
+				pass->pw_name));
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		for (i=0; i<getgroups_num_group_sids; i++) {
+			struct dom_sid grp_sid;
+			gid_to_sid(&grp_sid, gids[i]);
+
+			status = add_sid_to_array_unique(result,
+						 &grp_sid,
+						 &result->sids,
+						 &result->num_sids);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(3, ("Failed to add UNIX SID to nt token\n"));
+				TALLOC_FREE(tmp_ctx);
+				return status;
+			}
+		}
+		TALLOC_FREE(tmp_ctx);
+	}
 
 	/* Add in BUILTIN sids */
 
