@@ -210,21 +210,6 @@ smbtorture4_options = [
     ] + get_env_torture_options()
 
 
-def print_smbtorture4_version():
-    """Print the version of Samba smbtorture4 comes from.
-
-    :return: Whether smbtorture4 was successfully run
-    """
-    try:
-        sub = subprocess.Popen([smbtorture4, "-V"], stdout=sys.stderr)
-    except OSError, e:
-        if e.errno == errno.ENOENT:
-            return False
-        raise
-    sub.communicate("")
-    return (sub.returncode == 0)
-
-
 def plansmbtorture4testsuite(name, env, options, target, modname=None):
     if modname is None:
         modname = "samba4.%s" % name

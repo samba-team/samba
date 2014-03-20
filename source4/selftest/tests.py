@@ -40,8 +40,6 @@ else:
 nmblookup4 = binpath('nmblookup4')
 smbclient4 = binpath('smbclient4')
 
-print_smbtorture4_version()
-
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
 # Simple tests for LDAP and CLDAP

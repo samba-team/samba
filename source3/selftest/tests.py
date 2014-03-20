@@ -29,19 +29,14 @@ smbtorture4_options.extend([
    '--option=torture:writetimeupdatedelay=500000',
    ])
 
-smbtorture4_possible = print_smbtorture4_version()
-
 def plansmbtorture4testsuite(name, env, options, description=''):
     if description == '':
         modname = "samba3.%s" % (name, )
     else:
         modname = "samba3.%s %s" % (name, description)
 
-    if smbtorture4_possible:
-        selftesthelpers.plansmbtorture4testsuite(
-            name, env, options, target='samba3', modname=modname)
-    else:
-        skiptestsuite(name, "smbtorture4 is not available")
+    selftesthelpers.plansmbtorture4testsuite(
+        name, env, options, target='samba3', modname=modname)
 
 
 plantestsuite("samba3.blackbox.success", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_success.sh")])
