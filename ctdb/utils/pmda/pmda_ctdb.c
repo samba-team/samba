@@ -50,112 +50,112 @@ static pmdaMetric metrictab[] = {
 	{ NULL, { PMDA_PMID(0,0), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 	/* frozen */
-	{ NULL, { PMDA_PMID(1,2), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,1), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 	/* recovering */
-	{ NULL, { PMDA_PMID(3,3), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,2), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 	/* client_packets_sent */
-	{ NULL, { PMDA_PMID(4,4), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,3), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* client_packets_recv */
-	{ NULL, { PMDA_PMID(5,5), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,4), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* node_packets_sent */
-	{ NULL, { PMDA_PMID(6,6), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,5), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* node_packets_recv */
-	{ NULL, { PMDA_PMID(7,7), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,6), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* keepalive_packets_sent */
-	{ NULL, { PMDA_PMID(8,8), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,7), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* keepalive_packets_recv */
-	{ NULL, { PMDA_PMID(9,9), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,8), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* req_call */
-	{ NULL, { PMDA_PMID(10,10), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,0), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* reply_call */
-	{ NULL, { PMDA_PMID(10,11), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,1), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* req_dmaster */
-	{ NULL, { PMDA_PMID(10,12), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,2), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* reply_dmaster */
-	{ NULL, { PMDA_PMID(10,13), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,3), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* reply_error */
-	{ NULL, { PMDA_PMID(10,14), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,4), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* req_message */
-	{ NULL, { PMDA_PMID(10,15), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,5), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* req_control */
-	{ NULL, { PMDA_PMID(10,16), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,6), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* reply_control */
-	{ NULL, { PMDA_PMID(10,17), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(1,7), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* req_call */
-	{ NULL, { PMDA_PMID(11,18), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(2,0), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* req_message */
-	{ NULL, { PMDA_PMID(11,19), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(2,1), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* req_control */
-	{ NULL, { PMDA_PMID(11,20), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(2,2), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* call */
-	{ NULL, { PMDA_PMID(12,21), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(3,0), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,0) }, },
 	/* control */
-	{ NULL, { PMDA_PMID(12,22), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(3,1), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,0) }, },
 	/* traverse */
-	{ NULL, { PMDA_PMID(12,23), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(3,2), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,0) }, },
 	/* total_calls */
-	{ NULL, { PMDA_PMID(13,24), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,9), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* pending_calls */
-	{ NULL, { PMDA_PMID(14,25), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,10), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 	/* locks.num_calls */
-	{ NULL, { PMDA_PMID(15,27), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,11), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
-	/* locks.pending_calls */
-	{ NULL, { PMDA_PMID(16,27), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	/* locks.num_pending */
+	{ NULL, { PMDA_PMID(0,12), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 	/* childwrite_calls */
-	{ NULL, { PMDA_PMID(17,28), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
+	{ NULL, { PMDA_PMID(0,13), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
 	/* pending_childwrite_calls */
-	{ NULL, { PMDA_PMID(18,29), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,14), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 	/* memory_used */
-	{ NULL, { PMDA_PMID(19,30), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,15), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(1,0,0,PM_SPACE_BYTE,0,0) }, },
 	/* max_hop_count */
-	{ NULL, { PMDA_PMID(20,31), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,16), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
-	/* max_reclock_ctdbd */
-	{ NULL, { PMDA_PMID(21,32), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
+	/* reclock.ctdbd.max */
+	{ NULL, { PMDA_PMID(0,17), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
-	/* max_reclock_recd */
-	{ NULL, { PMDA_PMID(22,33), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
+	/* reclock.recd.max */
+	{ NULL, { PMDA_PMID(0,18), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
-	/* max_call_latency */
-	{ NULL, { PMDA_PMID(23,34), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
+	/* call_latency.max */
+	{ NULL, { PMDA_PMID(0,19), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
 	/* locks.latency.max */
-	{ NULL, { PMDA_PMID(24,35), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,20), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
 	/* childwrite_latency.max */
-	{ NULL, { PMDA_PMID(25,36), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,21), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
 	/* num_recoveries */
-	{ NULL, { PMDA_PMID(26,37), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+	{ NULL, { PMDA_PMID(0,22), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 };
 
@@ -276,32 +276,77 @@ pmda_ctdb_daemon_disconnect(void)
 }
 
 static int
-fill_node(unsigned int item, pmAtomValue *atom)
+fill_base(unsigned int item, pmAtomValue *atom)
 {
 	switch (item) {
+	case 0:
+		atom->ul = stats->num_clients;
+		break;
+	case 1:
+		atom->ul = stats->frozen;
+		break;
+	case 2:
+		atom->ul = stats->recovering;
+		break;
+	case 3:
+		atom->ul = stats->client_packets_sent;
+		break;
+	case 4:
+		atom->ul = stats->client_packets_recv;
+		break;
+	case 5:
+		atom->ul = stats->node_packets_sent;
+		break;
+	case 6:
+		atom->ul = stats->node_packets_recv;
+		break;
+	case 7:
+		atom->ul = stats->keepalive_packets_sent;
+		break;
+	case 8:
+		atom->ul = stats->keepalive_packets_recv;
+		break;
+	case 9:
+		atom->ul = stats->total_calls;
+		break;
 	case 10:
-		atom->ul = stats->node.req_call;
+		atom->ul = stats->pending_calls;
 		break;
 	case 11:
-		atom->ul = stats->node.reply_call;
+		atom->ul = stats->locks.num_calls;
 		break;
 	case 12:
-		atom->ul = stats->node.req_dmaster;
+		atom->ul = stats->locks.num_pending;
 		break;
 	case 13:
-		atom->ul = stats->node.reply_dmaster;
+		atom->ul = stats->childwrite_calls;
 		break;
 	case 14:
-		atom->ul = stats->node.reply_error;
+		atom->ul = stats->pending_childwrite_calls;
 		break;
 	case 15:
-		atom->ul = stats->node.req_message;
+		atom->ul = stats->memory_used;
 		break;
 	case 16:
-		atom->ul = stats->node.req_control;
+		atom->ul = stats->max_hop_count;
 		break;
 	case 17:
-		atom->ul = stats->node.reply_control;
+		atom->d = stats->reclock.ctdbd.max;
+		break;
+	case 18:
+		atom->d = stats->reclock.recd.max;
+		break;
+	case 19:
+		atom->d = stats->call_latency.max;
+		break;
+	case 20:
+		atom->d = stats->locks.latency.max;
+		break;
+	case 21:
+		atom->d = stats->childwrite_latency.max;
+		break;
+	case 22:
+		atom->d = stats->num_recoveries;
 		break;
 	default:
 		return PM_ERR_PMID;
@@ -311,16 +356,52 @@ fill_node(unsigned int item, pmAtomValue *atom)
 }
 
 static int
+fill_node(unsigned int item, pmAtomValue *atom)
+{
+	switch (item) {
+	case 0:
+	       atom->ul = stats->node.req_call;
+	       break;
+	case 1:
+	       atom->ul = stats->node.reply_call;
+	       break;
+	case 2:
+	       atom->ul = stats->node.req_dmaster;
+	       break;
+	case 3:
+	       atom->ul = stats->node.reply_dmaster;
+	       break;
+	case 4:
+	       atom->ul = stats->node.reply_error;
+	       break;
+	case 5:
+	       atom->ul = stats->node.req_message;
+	       break;
+	case 6:
+	       atom->ul = stats->node.req_control;
+	       break;
+	case 7:
+		atom->ul = stats->node.reply_control;
+		break;
+	default:
+		return PM_ERR_PMID;
+	}
+
+	return 0;
+}
+
+
+static int
 fill_client(unsigned int item, pmAtomValue *atom)
 {
 	switch (item) {
-	case 18:
+	case 0:
 		atom->ul = stats->client.req_call;
 		break;
-	case 19:
+	case 1:
 		atom->ul = stats->client.req_message;
 		break;
-	case 20:
+	case 2:
 		atom->ul = stats->client.req_control;
 		break;
 	default:
@@ -334,13 +415,13 @@ static int
 fill_timeout(unsigned int item, pmAtomValue *atom)
 {
 	switch (item) {
-	case 21:
+	case 0:
 		atom->ul = stats->timeouts.call;
 		break;
-	case 22:
+	case 1:
 		atom->ul = stats->timeouts.control;
 		break;
-	case 23:
+	case 2:
 		atom->ul = stats->timeouts.traverse;
 		break;
 	default:
@@ -372,91 +453,28 @@ pmda_ctdb_fetch_cb(pmdaMetric *mdesc, unsigned int inst, pmAtomValue *atom)
 
 	switch (id->cluster) {
 	case 0:
-		atom->ul = stats->num_clients;
+		ret = fill_base(id->item, atom);
+		if (ret) {
+			goto err_out;
+		}
 		break;
 	case 1:
-		atom->ul = stats->frozen;
-		break;
-	case 3:
-		atom->ul = stats->recovering;
-		break;
-	case 4:
-		atom->ul = stats->client_packets_sent;
-		break;
-	case 5:
-		atom->ul = stats->client_packets_recv;
-		break;
-	case 6:
-		atom->ul = stats->node_packets_sent;
-		break;
-	case 7:
-		atom->ul = stats->node_packets_recv;
-		break;
-	case 8:
-		atom->ul = stats->keepalive_packets_sent;
-		break;
-	case 9:
-		atom->ul = stats->keepalive_packets_recv;
-		break;
-	case 10:
 		ret = fill_node(id->item, atom);
 		if (ret) {
 			goto err_out;
 		}
 		break;
-	case 11:
+	case 2:
 		ret = fill_client(id->item, atom);
 		if (ret) {
 			goto err_out;
 		}
 		break;
-	case 12:
+	case 3:
 		ret = fill_timeout(id->item, atom);
 		if (ret) {
 			goto err_out;
 		}
-		break;
-	case 13:
-		atom->ul = stats->total_calls;
-		break;
-	case 14:
-		atom->ul = stats->pending_calls;
-		break;
-	case 15:
-		atom->ul = stats->locks.num_calls;
-		break;
-	case 16:
-		atom->ul = stats->locks.num_pending;
-		break;
-	case 17:
-		atom->ul = stats->childwrite_calls;
-		break;
-	case 18:
-		atom->ul = stats->pending_childwrite_calls;
-		break;
-	case 19:
-		atom->ul = stats->memory_used;
-		break;
-	case 20:
-		atom->ul = stats->max_hop_count;
-		break;
-	case 21:
-		atom->d = stats->reclock.ctdbd.max;
-		break;
-	case 22:
-		atom->d = stats->reclock.recd.max;
-		break;
-	case 23:
-		atom->d = stats->call_latency.max;
-		break;
-	case 24:
-		atom->d = stats->locks.latency.max;
-		break;
-	case 25:
-		atom->d = stats->childwrite_latency.max;
-		break;
-	case 26:
-		atom->d = stats->num_recoveries;
 		break;
 	default:
 		return PM_ERR_PMID;
