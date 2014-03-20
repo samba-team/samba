@@ -650,7 +650,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	commonconfig->rw_ops->get_new_id = idmap_autorid_allocate_id;
 	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
 
-	status = idmap_autorid_db_init(state_path("autorid.tdb"),
+	status = idmap_autorid_db_open(state_path("autorid.tdb"),
 				       NULL, /* TALLOC_CTX */
 				       &autorid_db);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -658,6 +658,11 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	}
 
 	commonconfig->db = autorid_db;
+
+	status = idmap_autorid_init_hwms(autorid_db);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
 
 	status = idmap_autorid_saveconfig(autorid_db, config);
 	if (!NT_STATUS_IS_OK(status)) {
