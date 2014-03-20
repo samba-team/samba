@@ -662,6 +662,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	uint16_t levels[] = { 1, 2, 3, 4, 5, 6, 8 };
+	uint16_t buffer_sizes[] = { 0, 1024, 6040, 0xffff };
 	int i, j, a;
 
 	/* FIXME: gd, come back and fix "" as server, and handle
@@ -674,6 +675,15 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 	environments[1] = ctx->environment;
 
 	for (a=0;a<ARRAY_SIZE(environments);a++) {
+
+	for (i=0;i<ARRAY_SIZE(buffer_sizes);i++) {
+		torture_assert(tctx,
+			test_EnumPrinterDrivers_buffers(tctx, b, server_name,
+							environments[a], 3,
+							buffer_sizes[i],
+							NULL, NULL),
+			"failed to enumerate drivers");
+	}
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
