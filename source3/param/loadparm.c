@@ -630,7 +630,7 @@ static bool apply_lp_set_cmdline(void)
  Initialise the global parameter structure.
 ***************************************************************************/
 
-static void init_globals(bool reinit_globals)
+static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 {
 	static bool done_init = false;
 	char *s = NULL;
@@ -3899,7 +3899,7 @@ static bool lp_load_ex(const char *pszFname,
 	lp_ctx->sDefault = &sDefault;
 	lp_ctx->bInGlobalSection = bInGlobalSection;
 
-	init_globals(initialize_globals);
+	init_globals(lp_ctx, initialize_globals);
 
 	free_file_list();
 
@@ -3948,13 +3948,15 @@ static bool lp_load_ex(const char *pszFname,
 			 * for config_backend. Otherwise, init_globals would
 			 *  send us into an endless loop here.
 			 */
-			TALLOC_FREE(lp_ctx);
 
 			config_backend = CONFIG_BACKEND_REGISTRY;
 			/* start over */
 			DEBUG(1, ("lp_load_ex: changing to config backend "
 				  "registry\n"));
-			init_globals(true);
+			init_globals(lp_ctx, true);
+
+			TALLOC_FREE(lp_ctx);
+
 			lp_kill_all_services();
 			ok = lp_load_ex(pszFname, global_only, save_defaults,
 					add_ipc, initialize_globals,
