@@ -611,6 +611,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+	commonconfig->private_data = config;
 
 	status = idmap_autorid_db_init(state_path("autorid.tdb"),
 				       NULL, /* TALLOC_CTX */
@@ -649,7 +650,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 				      "ignore builtin", false);
 
 	/* fill the TDB common configuration */
-	commonconfig->private_data = config;
 
 	commonconfig->db = autorid_db;
 	commonconfig->max_id = config->rangesize -1;
