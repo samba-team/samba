@@ -1082,15 +1082,9 @@ bool handle_realm(struct loadparm_context *lp_ctx, struct loadparm_service *serv
 		return false;
 	}
 
-	if (lp_ctx->s3_fns != NULL) {
-		lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
-		lp_ctx->s3_fns->lp_string_set(&lp_ctx->globals->realm, upper);
-		lp_ctx->s3_fns->lp_string_set(&lp_ctx->globals->dnsdomain, lower);
-	} else {
-		lpcfg_string_set(lp_ctx, ptr, pszParmValue);
-		lpcfg_string_set(lp_ctx, &lp_ctx->globals->realm, upper);
-		lpcfg_string_set(lp_ctx, &lp_ctx->globals->dnsdomain, lower);
-	}
+	lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
+	lpcfg_string_set(lp_ctx->globals->ctx, &lp_ctx->globals->realm, upper);
+	lpcfg_string_set(lp_ctx->globals->ctx, &lp_ctx->globals->dnsdomain, lower);
 
 	return true;
 }
@@ -1166,11 +1160,7 @@ bool handle_copy(struct loadparm_context *lp_ctx, struct loadparm_service *servi
 bool handle_debug_list(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 			const char *pszParmValue, char **ptr)
 {
-	if (lp_ctx->s3_fns != NULL) {
-		lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
-	} else {
-		lpcfg_string_set(lp_ctx, ptr, pszParmValue);
-	}
+	lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 
 	return debug_parse_levels(pszParmValue);
 }
@@ -1178,12 +1168,11 @@ bool handle_debug_list(struct loadparm_context *lp_ctx, struct loadparm_service 
 bool handle_logfile(struct loadparm_context *lp_ctx, struct loadparm_service *service,
 		    const char *pszParmValue, char **ptr)
 {
-	if (lp_ctx->s3_fns != NULL) {
-		lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
-	} else {
+	if (lp_ctx->s3_fns == NULL) {
 		debug_set_logfile(pszParmValue);
-		lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 	}
+
+	lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 
 	return true;
 }
@@ -1197,16 +1186,14 @@ bool handle_charset(struct loadparm_context *lp_ctx, struct loadparm_service *se
 {
 	if (lp_ctx->s3_fns) {
 		if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
-			lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
 			global_iconv_handle = smb_iconv_handle_reinit(NULL,
 							lpcfg_dos_charset(lp_ctx),
 							lpcfg_unix_charset(lp_ctx),
 							true, global_iconv_handle);
 		}
 
-		return true;
 	}
-	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+	return lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 
 }
 
@@ -1243,16 +1230,14 @@ bool handle_dos_charset(struct loadparm_context *lp_ctx, struct loadparm_service
 					DEFAULT_DOS_CHARSET));
 				pszParmValue = DEFAULT_DOS_CHARSET;
 			}
-			lp_ctx->s3_fns->lp_string_set(ptr, pszParmValue);
 			global_iconv_handle = smb_iconv_handle_reinit(NULL,
 							lpcfg_dos_charset(lp_ctx),
 							lpcfg_unix_charset(lp_ctx),
 							true, global_iconv_handle);
 		}
-		return true;
 	}
 
-	return lpcfg_string_set(lp_ctx, ptr, pszParmValue);
+	return lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 }
 
 bool handle_printing(struct loadparm_context *lp_ctx, struct loadparm_service *service,
