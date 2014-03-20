@@ -613,13 +613,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	}
 	commonconfig->private_data = config;
 
-	status = idmap_autorid_db_init(state_path("autorid.tdb"),
-				       NULL, /* TALLOC_CTX */
-				       &autorid_db);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
-	}
-
 	config->minvalue = dom->low_id;
 	config->rangesize = lp_parm_int(-1, "idmap config *",
 					"rangesize", 100000);
@@ -651,12 +644,20 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 
 	/* fill the TDB common configuration */
 
-	commonconfig->db = autorid_db;
 	commonconfig->max_id = config->rangesize -1;
 	commonconfig->hwmkey_uid = ALLOC_HWM_UID;
 	commonconfig->hwmkey_gid = ALLOC_HWM_GID;
 	commonconfig->rw_ops->get_new_id = idmap_autorid_allocate_id;
 	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
+
+	status = idmap_autorid_db_init(state_path("autorid.tdb"),
+				       NULL, /* TALLOC_CTX */
+				       &autorid_db);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	commonconfig->db = autorid_db;
 
 	status = idmap_autorid_saveconfig(autorid_db, config);
 	if (!NT_STATUS_IS_OK(status)) {
