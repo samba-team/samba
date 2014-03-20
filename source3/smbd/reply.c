@@ -6101,6 +6101,7 @@ static bool resolve_wildcards(TALLOC_CTX *ctx,
 
 static void rename_open_files(connection_struct *conn,
 			      struct share_mode_lock *lck,
+			      struct file_id id,
 			      uint32_t orig_name_hash,
 			      const struct smb_filename *smb_fname_dst)
 {
@@ -6109,7 +6110,7 @@ static void rename_open_files(connection_struct *conn,
 	NTSTATUS status;
 	uint32_t new_name_hash = 0;
 
-	for(fsp = file_find_di_first(conn->sconn, lck->data->id); fsp;
+	for(fsp = file_find_di_first(conn->sconn, id); fsp;
 	    fsp = file_find_di_next(fsp)) {
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
@@ -6135,7 +6136,7 @@ static void rename_open_files(connection_struct *conn,
 
 	if (!did_rename) {
 		DEBUG(10, ("rename_open_files: no open files on file_id %s "
-			   "for %s\n", file_id_string_tos(&lck->data->id),
+			   "for %s\n", file_id_string_tos(&id),
 			   smb_fname_str_dbg(smb_fname_dst)));
 	}
 
@@ -6498,7 +6499,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		notify_rename(conn, fsp->is_directory, fsp->fsp_name,
 			      smb_fname_dst);
 
-		rename_open_files(conn, lck, fsp->name_hash, smb_fname_dst);
+		rename_open_files(conn, lck, fsp->file_id, fsp->name_hash,
+				  smb_fname_dst);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
