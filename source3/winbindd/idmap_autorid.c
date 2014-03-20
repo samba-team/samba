@@ -580,6 +580,39 @@ static NTSTATUS idmap_autorid_preallocate_wellknown(struct idmap_domain *dom)
 	return NT_STATUS_IS_OK(status)?NT_STATUS_OK:NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS idmap_autorid_initialize_action(struct db_context *db,
+						void *private_data)
+{
+	struct idmap_domain *dom;
+	struct idmap_tdb_common_context *common;
+	struct autorid_global_config *config;
+	NTSTATUS status;
+
+	dom = (struct idmap_domain *)private_data;
+	common = (struct idmap_tdb_common_context *)dom->private_data;
+	config = (struct autorid_global_config *)common->private_data;
+
+	status = idmap_autorid_init_hwms(autorid_db);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = idmap_autorid_saveconfig(autorid_db, config);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to store configuration data!\n"));
+		return status;
+	}
+
+	status = idmap_autorid_preallocate_wellknown(dom);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to preallocate wellknown sids: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 {
 	struct idmap_tdb_common_context *commonconfig;
@@ -659,19 +692,14 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 
 	commonconfig->db = autorid_db;
 
-	status = idmap_autorid_init_hwms(autorid_db);
+	status = dbwrap_trans_do(autorid_db,
+				 idmap_autorid_initialize_action,
+				 dom);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to init the idmap database: %s\n",
+			  nt_errstr(status)));
 		goto error;
 	}
-
-	status = idmap_autorid_saveconfig(autorid_db, config);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to store configuration data!\n"));
-		goto error;
-	}
-
-	/* preallocate well-known SIDs in the pool */
-	status = idmap_autorid_preallocate_wellknown(dom);
 
 	goto done;
 
