@@ -396,7 +396,7 @@ NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm)
 
 	status = dbwrap_fetch_uint32_bystring(db, hwm, &hwmval);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))  {
-		status = dbwrap_trans_store_int32_bystring(db, hwm, 0);
+		status = dbwrap_trans_store_uint32_bystring(db, hwm, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,
 			      ("Unable to initialise HWM (%s) in autorid "
