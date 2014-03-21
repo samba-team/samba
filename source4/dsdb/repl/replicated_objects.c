@@ -834,13 +834,6 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;		
 	}
 
-	/* if this replication partner didn't need to be notified
-	   before this transaction then it still doesn't need to be
-	   notified, as the changes came from this server */	
-	if (seq_num2 > seq_num1 && seq_num1 <= *notify_uSN) {
-		*notify_uSN = seq_num2;
-	}
-
 	ret = ldb_transaction_commit(ldb);
 	if (ret != LDB_SUCCESS) {
 		/* restore previous schema */
@@ -852,6 +845,13 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		DEBUG(0,(__location__ " Failed to commit transaction\n"));
 		TALLOC_FREE(tmp_ctx);
 		return WERR_FOOBAR;
+	}
+
+	/* if this replication partner didn't need to be notified
+	   before this transaction then it still doesn't need to be
+	   notified, as the changes came from this server */
+	if (seq_num2 > seq_num1 && seq_num1 <= *notify_uSN) {
+		*notify_uSN = seq_num2;
 	}
 
 	/*
