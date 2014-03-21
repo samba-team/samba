@@ -4396,11 +4396,19 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 			}
 
 			if (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING) {
-				/* if we compare equal then do an
-				   update. This is used when a client
-				   asks for a FULL_SYNC, and can be
-				   used to recover a corrupt
-				   replica */
+				/*
+				 * if we compare equal then do an
+				 * update. This is used when a client
+				 * asks for a FULL_SYNC, and can be
+				 * used to recover a corrupt
+				 * replica.
+				 *
+				 * This call is a bit tricky, what we
+				 * are doing it turning the 'is_newer'
+				 * call into a 'not is older' by
+				 * swapping i and j, and negating the
+				 * outcome.
+				*/
 				cmp = !replmd_replPropertyMetaData1_is_newer(&rmd->ctr.ctr1.array[i],
 									     &nmd.ctr.ctr1.array[j]);
 			} else {
