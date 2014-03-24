@@ -513,14 +513,6 @@ done:
 	return ret;
 }
 
-#define CHECK(msg, ok)						\
-do {								\
-	if (!ok) {						\
-		DEBUG(10, ("SEC_VT check %s failed\n", msg));	\
-		return false;					\
-	}							\
-} while(0)
-
 #define CHECK_SYNTAX(msg, s1, s2)					\
 do {								\
 	if (!ndr_syntax_id_equal(&s1, &s2)) {				\
@@ -538,14 +530,20 @@ static bool dcerpc_sec_vt_bitmask_check(const uint32_t *bitmask1,
 					struct dcerpc_sec_vt *c)
 {
 	if (bitmask1 == NULL) {
-		CHECK("Bitmask1 must_process_command",
-		      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
+		if (c->command & DCERPC_SEC_VT_MUST_PROCESS) {
+			DEBUG(10, ("SEC_VT check Bitmask1 must_process_command "
+				   "failed\n"));
+			return false;
+		}
+
 		return true;
 	}
 
-	if (c->u.bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING) {
-		CHECK("Bitmask1 client_header_signing",
-		      *bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING);
+	if ((c->u.bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING)
+	 && (!(*bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING))) {
+		DEBUG(10, ("SEC_VT check Bitmask1 client_header_signing "
+			   "failed\n"));
+		return false;
 	}
 	return true;
 }
@@ -554,8 +552,12 @@ static bool dcerpc_sec_vt_pctx_check(const struct dcerpc_sec_vt_pcontext *pconte
 				     struct dcerpc_sec_vt *c)
 {
 	if (pcontext == NULL) {
-		CHECK("Pcontext must_process_command",
-		      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
+		if (c->command & DCERPC_SEC_VT_MUST_PROCESS) {
+			DEBUG(10, ("SEC_VT check Pcontext must_process_command "
+				   "failed\n"));
+			return false;
+		}
+
 		return true;
 	}
 
@@ -572,12 +574,19 @@ static bool dcerpc_sec_vt_hdr2_check(const struct dcerpc_sec_vt_header2 *header2
 				     struct dcerpc_sec_vt *c)
 {
 	if (header2 == NULL) {
-		CHECK("Header2 must_process_command",
-		      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
+		if (c->command & DCERPC_SEC_VT_MUST_PROCESS) {
+			DEBUG(10, ("SEC_VT check Header2 must_process_command failed\n"));
+			return false;
+		}
+
 		return true;
 	}
 
-	CHECK("Header2", dcerpc_sec_vt_header2_equal(header2, &c->u.header2));
+	if (!dcerpc_sec_vt_header2_equal(header2, &c->u.header2)) {
+		DEBUG(10, ("SEC_VT check Header2 failed\n"));
+		return false;
+	}
+
 	return true;
 }
 
@@ -621,8 +630,11 @@ bool dcerpc_sec_verification_trailer_check(
 		}
 
 		default:
-			CHECK("Unknown must_process_command",
-			      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
+			if (c->command & DCERPC_SEC_VT_MUST_PROCESS) {
+				DEBUG(10, ("SEC_VT check Unknown must_process_command failed\n"));
+				return false;
+			}
+
 			break;
 		}
 	}
