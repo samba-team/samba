@@ -133,27 +133,35 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 
 }
 
-int pthreadpool_finished_job(struct pthreadpool *pool, int *jobid)
+int pthreadpool_finished_jobs(struct pthreadpool *pool, int *jobids,
+			      unsigned num_jobids)
 {
-	int ret_jobid;
-	ssize_t nread;
+	ssize_t to_read, nread;
+	int ret;
 
 	nread = -1;
 	errno = EINTR;
 
+	to_read = sizeof(int) * num_jobids;
+
 	while ((nread == -1) && (errno == EINTR)) {
-		nread = read(pool->sig_pipe[0], &ret_jobid, sizeof(int));
+		nread = read(pool->sig_pipe[0], jobids, to_read);
 	}
 	if (nread == -1) {
-		return errno;
+		return -errno;
 	}
-	if (nread != sizeof(int)) {
-		return EINVAL;
+	if ((nread % sizeof(int)) != 0) {
+		return -EINVAL;
 	}
-	*jobid = ret_jobid;
 
 	pool->pipe_busy = 0;
-	return pthreadpool_write_to_pipe(pool);
+
+	ret = pthreadpool_write_to_pipe(pool);
+	if (ret != 0) {
+		return -ret;
+	}
+
+	return nread / sizeof(int);
 }
 
 int pthreadpool_destroy(struct pthreadpool *pool)

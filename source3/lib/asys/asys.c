@@ -295,9 +295,9 @@ int asys_result(struct asys_context *ctx, ssize_t *pret, int *perrno,
 	struct asys_job *job;
 	int ret, jobid;
 
-	ret = pthreadpool_finished_job(ctx->pool, &jobid);
-	if (ret != 0) {
-		return ret;
+	ret = pthreadpool_finished_jobs(ctx->pool, &jobid, 1);
+	if (ret < 0) {
+		return -ret;
 	}
 	if ((jobid < 0) || (jobid >= ctx->num_jobs)) {
 		return EIO;

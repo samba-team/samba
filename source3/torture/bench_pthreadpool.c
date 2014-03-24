@@ -50,15 +50,15 @@ bool run_bench_pthreadpool(int dummy)
 				  strerror(ret));
 			break;
 		}
-		ret = pthreadpool_finished_job(pool, &jobid);
-		if (ret != 0) {
+		ret = pthreadpool_finished_jobs(pool, &jobid, 1);
+		if (ret < 0) {
 			d_fprintf(stderr, "pthreadpool_finished_job failed: %s\n",
-				  strerror(ret));
+				  strerror(-ret));
 			break;
 		}
 	}
 
 	pthreadpool_destroy(pool);
 
-	return (ret == 0);
+	return (ret == 1);
 }

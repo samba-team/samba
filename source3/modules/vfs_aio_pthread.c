@@ -166,8 +166,8 @@ static void aio_open_handle_completion(struct tevent_context *event_ctx,
 		return;
 	}
 
-	ret = pthreadpool_finished_job(open_pool, &jobid);
-	if (ret) {
+	ret = pthreadpool_finished_jobs(open_pool, &jobid, 1);
+	if (ret != 1) {
 		smb_panic("aio_open_handle_completion");
 		/* notreached. */
 		return;

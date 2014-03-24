@@ -288,25 +288,26 @@ static void pthreadpool_join_children(struct pthreadpool *pool)
  * Fetch a finished job number from the signal pipe
  */
 
-int pthreadpool_finished_job(struct pthreadpool *pool, int *jobid)
+int pthreadpool_finished_jobs(struct pthreadpool *pool, int *jobids,
+			      unsigned num_jobids)
 {
-	int ret_jobid;
-	ssize_t nread;
+	ssize_t to_read, nread;
 
 	nread = -1;
 	errno = EINTR;
 
+	to_read = sizeof(int) * num_jobids;
+
 	while ((nread == -1) && (errno == EINTR)) {
-		nread = read(pool->sig_pipe[0], &ret_jobid, sizeof(int));
+		nread = read(pool->sig_pipe[0], jobids, to_read);
 	}
 	if (nread == -1) {
-		return errno;
+		return -errno;
 	}
-	if (nread != sizeof(int)) {
-		return EINVAL;
+	if ((nread % sizeof(int)) != 0) {
+		return -EINVAL;
 	}
-	*jobid = ret_jobid;
-	return 0;
+	return nread / sizeof(int);
 }
 
 /*

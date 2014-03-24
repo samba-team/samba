@@ -287,7 +287,7 @@ static void fncall_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	int i, num_pending;
 	int job_id;
 
-	if (pthreadpool_finished_job(ctx->pool, &job_id) != 0) {
+	if (pthreadpool_finished_jobs(ctx->pool, &job_id, 1) < 0) {
 		return;
 	}
 

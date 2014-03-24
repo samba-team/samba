@@ -71,8 +71,8 @@ static int test_jobs(int num_threads, int num_jobs)
 
 	for (i=0; i<num_jobs; i++) {
 		int jobid = -1;
-		ret = pthreadpool_finished_job(p, &jobid);
-		if ((ret != 0) || (jobid >= num_jobs)) {
+		ret = pthreadpool_finished_jobs(p, &jobid, 1);
+		if ((ret != 1) || (jobid >= num_jobs)) {
 			fprintf(stderr, "invalid job number %d\n", jobid);
 			return -1;
 		}
@@ -284,8 +284,8 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 				continue;
 			}
 
-			ret = pthreadpool_finished_job(pools[j], &jobid);
-			if ((ret != 0) || (jobid >= num_jobs * num_threads)) {
+			ret = pthreadpool_finished_jobs(pools[j], &jobid, 1);
+			if ((ret != 1) || (jobid >= num_jobs * num_threads)) {
 				fprintf(stderr, "invalid job number %d\n",
 					jobid);
 				return -1;
