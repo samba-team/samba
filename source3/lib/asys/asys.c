@@ -288,30 +288,41 @@ void asys_cancel(struct asys_context *ctx, void *private_data)
 	}
 }
 
-int asys_result(struct asys_context *ctx, ssize_t *pret, int *perrno,
-		void *pdata)
+int asys_results(struct asys_context *ctx, struct asys_result *results,
+		 unsigned num_results)
 {
-	void **pprivate_data = (void **)pdata;
-	struct asys_job *job;
-	int ret, jobid;
+	int jobids[num_results];
+	int i, ret;
 
-	ret = pthreadpool_finished_jobs(ctx->pool, &jobid, 1);
-	if (ret < 0) {
-		return -ret;
-	}
-	if ((jobid < 0) || (jobid >= ctx->num_jobs)) {
-		return EIO;
+	ret = pthreadpool_finished_jobs(ctx->pool, jobids, num_results);
+	if (ret <= 0) {
+		return ret;
 	}
 
-	job = ctx->jobs[jobid];
+	for (i=0; i<ret; i++) {
+		struct asys_result *result = &results[i];
+		struct asys_job *job;
+		int jobid;
 
-	if (job->canceled) {
-		return ECANCELED;
+		jobid = jobids[i];
+
+		if ((jobid < 0) || (jobid >= ctx->num_jobs)) {
+			return -EIO;
+		}
+
+		job = ctx->jobs[jobid];
+
+		if (job->canceled) {
+			result->ret = -1;
+			result->err = ECANCELED;
+		} else {
+			result->ret = job->ret;
+			result->err = job->err;
+		}
+		result->private_data = job->private_data;
+
+		job->busy = 0;
 	}
 
-	*pret = job->ret;
-	*perrno = job->err;
-	*pprivate_data = job->private_data;
-	job->busy = 0;
-	return 0;
+	return ret;
 }

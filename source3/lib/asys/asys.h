@@ -104,18 +104,28 @@ void asys_set_log_fn(struct asys_context *ctx, asys_log_fn fn,
 
 int asys_signalfd(struct asys_context *ctx);
 
+struct asys_result {
+	ssize_t ret;
+	int err;
+	void *private_data;
+};
+
 /**
- * @brief Pull the result from an async operation
+ * @brief Pull the results from async operations
  *
- * Whe the fd returned from asys_signalfd() is readable, an async
- * operation has finished. The result from the async operation can be
- * pulled with asys_result().
+ * Whe the fd returned from asys_signalfd() is readable, one or more async
+ * operations have finished. The result from the async operations can be pulled
+ * with asys_results().
  *
- * @param[in]	ctx	The asys context
- * @return		success: 0, failure: errno
+ * @param[in]	ctx	    The asys context
+ * @param[out]  results     The result strutcts
+ * @param[in]   num_results The length of the results array
+ * @return		    success: >=0, number of finished jobs
+ *                          failure: -errno
  */
-int asys_result(struct asys_context *ctx, ssize_t *pret, int *perrno,
-		void *pdata);
+int asys_results(struct asys_context *ctx, struct asys_result *results,
+		 unsigned num_results);
+
 void asys_cancel(struct asys_context *ctx, void *private_data);
 
 int asys_pread(struct asys_context *ctx, int fildes, void *buf, size_t nbyte,

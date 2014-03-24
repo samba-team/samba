@@ -64,20 +64,18 @@ int main(int argc, const char *argv[])
 	}
 
 	for (i=0; i<ntasks; i++) {
-		void *priv;
-		ssize_t retval;
-		int err;
+		struct asys_result result;
 		int *pidx;
 
-		ret = asys_result(ctx, &retval, &err, &priv);
-		if (ret == -1) {
-			errno = ret;
+		ret = asys_results(ctx, &result, 1);
+		if (ret < 0) {
+			errno = -ret;
 			perror("asys_result failed");
 			return 1;
 		}
-		pidx = (int *)priv;
+		pidx = (int *)result.private_data;
 
-		printf("%d returned %d\n", *pidx, (int)retval);
+		printf("%d returned %d\n", *pidx, (int)result.ret);
 	}
 
 	ret = asys_context_destroy(ctx);
