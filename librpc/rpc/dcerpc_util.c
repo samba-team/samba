@@ -513,19 +513,6 @@ done:
 	return ret;
 }
 
-#define CHECK_SYNTAX(msg, s1, s2)					\
-do {								\
-	if (!ndr_syntax_id_equal(&s1, &s2)) {				\
-		TALLOC_CTX *frame = talloc_stackframe();		\
-		DEBUG(10, ("SEC_VT check %s failed: %s vs. %s\n", msg,	\
-			   ndr_syntax_id_to_string(frame, &s1),		\
-			   ndr_syntax_id_to_string(frame, &s2)));	\
-		TALLOC_FREE(frame);					\
-		return false;						\
-	}								\
-} while(0)
-
-
 static bool dcerpc_sec_vt_bitmask_check(const uint32_t *bitmask1,
 					struct dcerpc_sec_vt *c)
 {
@@ -551,6 +538,9 @@ static bool dcerpc_sec_vt_bitmask_check(const uint32_t *bitmask1,
 static bool dcerpc_sec_vt_pctx_check(const struct dcerpc_sec_vt_pcontext *pcontext,
 				     struct dcerpc_sec_vt *c)
 {
+	TALLOC_CTX *mem_ctx;
+	bool ok;
+
 	if (pcontext == NULL) {
 		if (c->command & DCERPC_SEC_VT_MUST_PROCESS) {
 			DEBUG(10, ("SEC_VT check Pcontext must_process_command "
@@ -561,13 +551,34 @@ static bool dcerpc_sec_vt_pctx_check(const struct dcerpc_sec_vt_pcontext *pconte
 		return true;
 	}
 
-	CHECK_SYNTAX("Pcontect abstract_syntax",
-		     pcontext->abstract_syntax,
-		     c->u.pcontext.abstract_syntax);
-	CHECK_SYNTAX("Pcontext transfer_syntax",
-		     pcontext->transfer_syntax,
-		     c->u.pcontext.transfer_syntax);
-	return true;
+	mem_ctx = talloc_stackframe();
+	ok = ndr_syntax_id_equal(&pcontext->abstract_syntax,
+				 &c->u.pcontext.abstract_syntax);
+	if (!ok) {
+		DEBUG(10, ("SEC_VT check pcontext abstract_syntax failed: "
+			   "%s vs. %s\n",
+			   ndr_syntax_id_to_string(mem_ctx,
+					&pcontext->abstract_syntax),
+			   ndr_syntax_id_to_string(mem_ctx,
+					&c->u.pcontext.abstract_syntax)));
+		goto err_ctx_free;
+	}
+	ok = ndr_syntax_id_equal(&pcontext->transfer_syntax,
+				 &c->u.pcontext.transfer_syntax);
+	if (!ok) {
+		DEBUG(10, ("SEC_VT check pcontext transfer_syntax failed: "
+			   "%s vs. %s\n",
+			   ndr_syntax_id_to_string(mem_ctx,
+					&pcontext->transfer_syntax),
+			   ndr_syntax_id_to_string(mem_ctx,
+					&c->u.pcontext.transfer_syntax)));
+		goto err_ctx_free;
+	}
+
+	ok = true;
+err_ctx_free:
+	talloc_free(mem_ctx);
+	return ok;
 }
 
 static bool dcerpc_sec_vt_hdr2_check(const struct dcerpc_sec_vt_header2 *header2,
