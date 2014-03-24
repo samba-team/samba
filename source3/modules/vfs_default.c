@@ -793,39 +793,36 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 					uint16_t flags, void *p)
 {
 	struct asys_context *asys_ctx = (struct asys_context *)p;
+	struct asys_result results[outstanding_aio_calls];
+	int i, ret;
 
 	if ((flags & TEVENT_FD_READ) == 0) {
 		return;
 	}
 
-	while (true) {
+	ret = asys_results(asys_ctx, results, outstanding_aio_calls);
+	if (ret < 0) {
+		DEBUG(1, ("asys_results returned %s\n", strerror(-ret)));
+		return;
+	}
+
+	for (i=0; i<ret; i++) {
+		struct asys_result *result = &results[i];
 		struct tevent_req *req;
 		struct vfswrap_asys_state *state;
-		struct asys_result result;
-		int res;
 
-		res = asys_results(asys_ctx, &result, 1);
-		if (res < 0) {
-			DEBUG(1, ("asys_result returned %s\n",
-				  strerror(-res)));
-			return;
-		}
-		if (res == 0) {
-			return;
+		if ((result->ret == -1) && (result->err == ECANCELED)) {
+			continue;
 		}
 
-		if ((result.ret == -1) && (result.err == ECANCELED)) {
-			return;
-		}
-
-		req = talloc_get_type_abort(result.private_data,
+		req = talloc_get_type_abort(result->private_data,
 					    struct tevent_req);
 		state = tevent_req_data(req, struct vfswrap_asys_state);
 
 		talloc_set_destructor(state, NULL);
 
-		state->ret = result.ret;
-		state->err = result.err;
+		state->ret = result->ret;
+		state->err = result->err;
 		tevent_req_defer_callback(req, ev);
 		tevent_req_done(req);
 	}
