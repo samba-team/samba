@@ -534,6 +534,53 @@ do {								\
 } while(0)
 
 
+static bool dcerpc_sec_vt_bitmask_check(const uint32_t *bitmask1,
+					struct dcerpc_sec_vt *c)
+{
+	if (bitmask1 == NULL) {
+		CHECK("Bitmask1 must_process_command",
+		      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
+		return true;
+	}
+
+	if (c->u.bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING) {
+		CHECK("Bitmask1 client_header_signing",
+		      *bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING);
+	}
+	return true;
+}
+
+static bool dcerpc_sec_vt_pctx_check(const struct dcerpc_sec_vt_pcontext *pcontext,
+				     struct dcerpc_sec_vt *c)
+{
+	if (pcontext == NULL) {
+		CHECK("Pcontext must_process_command",
+		      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
+		return true;
+	}
+
+	CHECK_SYNTAX("Pcontect abstract_syntax",
+		     pcontext->abstract_syntax,
+		     c->u.pcontext.abstract_syntax);
+	CHECK_SYNTAX("Pcontext transfer_syntax",
+		     pcontext->transfer_syntax,
+		     c->u.pcontext.transfer_syntax);
+	return true;
+}
+
+static bool dcerpc_sec_vt_hdr2_check(const struct dcerpc_sec_vt_header2 *header2,
+				     struct dcerpc_sec_vt *c)
+{
+	if (header2 == NULL) {
+		CHECK("Header2 must_process_command",
+		      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
+		return true;
+	}
+
+	CHECK("Header2", dcerpc_sec_vt_header2_equal(header2, &c->u.header2));
+	return true;
+}
+
 bool dcerpc_sec_verification_trailer_check(
 		const struct dcerpc_sec_verification_trailer *vt,
 		const uint32_t *bitmask1,
@@ -547,45 +594,29 @@ bool dcerpc_sec_verification_trailer_check(
 	}
 
 	for (i=0; i < vt->count.count; i++) {
+		bool ok;
 		struct dcerpc_sec_vt *c = &vt->commands[i];
 
 		switch (c->command & DCERPC_SEC_VT_COMMAND_ENUM) {
 		case DCERPC_SEC_VT_COMMAND_BITMASK1:
-			if (bitmask1 == NULL) {
-				CHECK("Bitmask1 must_process_command",
-				      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
-				break;
-			}
-
-			if (c->u.bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING) {
-				CHECK("Bitmask1 client_header_signing",
-				      *bitmask1 & DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING);
+			ok = dcerpc_sec_vt_bitmask_check(bitmask1, c);
+			if (!ok) {
+				return false;
 			}
 			break;
 
 		case DCERPC_SEC_VT_COMMAND_PCONTEXT:
-			if (pcontext == NULL) {
-				CHECK("Pcontext must_process_command",
-				      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
-				break;
+			ok = dcerpc_sec_vt_pctx_check(pcontext, c);
+			if (!ok) {
+				return false;
 			}
-
-			CHECK_SYNTAX("Pcontect abstract_syntax",
-				     pcontext->abstract_syntax,
-				     c->u.pcontext.abstract_syntax);
-			CHECK_SYNTAX("Pcontext transfer_syntax",
-				     pcontext->transfer_syntax,
-				     c->u.pcontext.transfer_syntax);
 			break;
 
 		case DCERPC_SEC_VT_COMMAND_HEADER2: {
-			if (header2 == NULL) {
-				CHECK("Header2 must_process_command",
-				      !(c->command & DCERPC_SEC_VT_MUST_PROCESS));
-				break;
+			ok = dcerpc_sec_vt_hdr2_check(header2, c);
+			if (!ok) {
+				return false;
 			}
-
-			CHECK("Header2", dcerpc_sec_vt_header2_equal(header2, &c->u.header2));
 			break;
 		}
 
