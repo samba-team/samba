@@ -527,7 +527,7 @@ do {								\
 		TALLOC_CTX *frame = talloc_stackframe();		\
 		DEBUG(10, ("SEC_VT check %s failed: %s vs. %s\n", msg,	\
 			   ndr_syntax_id_to_string(frame, &s1),		\
-			   ndr_syntax_id_to_string(frame, &s1)));	\
+			   ndr_syntax_id_to_string(frame, &s2)));	\
 		TALLOC_FREE(frame);					\
 		return false;						\
 	}								\
