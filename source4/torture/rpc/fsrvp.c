@@ -36,6 +36,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/util/hresult.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "torture/rpc/torture_rpc.h"
@@ -384,7 +385,7 @@ static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 				   "following abort");
 	/*
 	 * XXX Windows 8 server beta returns FSRVP_E_BAD_STATE here rather than
-	 * FSRVP_E_BAD_ID / E_INVALIDARG.
+	 * FSRVP_E_BAD_ID / HRES_E_INVALIDARG.
 	 */
 	torture_assert(tctx, (r_scset_add.out.result != 0),
 		       "incorrect AddToShadowCopySet response following abort");
@@ -425,7 +426,7 @@ static bool test_fsrvp_bad_id(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "DeleteShareMapping failed");
 	torture_assert_int_equal(tctx, r_sharemap_del.out.result,
-				 E_INVALIDARG,
+				 HRES_ERROR_V(HRES_E_INVALIDARG),
 				 "incorrect DeleteShareMapping response");
 
 	torture_assert(tctx, test_fsrvp_sc_delete(tctx, p, sc_map), "sc del");

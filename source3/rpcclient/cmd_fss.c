@@ -23,6 +23,7 @@
 #include "rpcclient.h"
 #include "../librpc/gen_ndr/ndr_fsrvp.h"
 #include "../librpc/gen_ndr/ndr_fsrvp_c.h"
+#include "../libcli/util/hresult.h"
 
 static const struct {
 	uint32_t error_code;
@@ -98,6 +99,13 @@ static const char *get_error_str(uint32_t code)
 		if (code == fss_errors[i].error_code) {
 			result = fss_errors[i].error_str;
 			break;
+		}
+	}
+	/* error isn't specific fsrvp one, check hresult errors */
+	if (result == default_err) {
+		const char *hres_err = hresult_errstr_const(HRES_ERROR(code));
+		if (hres_err) {
+			result = hres_err;
 		}
 	}
 	return result;
