@@ -1243,6 +1243,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  torture/test_dbwrap_ctdb.c
                  torture/test_buffersize.c
                  torture/t_strappend.c
+                 torture/bench_pthreadpool.c
                  torture/wbc_async.c''',
                  deps='''
                  talloc
