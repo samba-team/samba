@@ -1523,19 +1523,19 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	 * corruption if we don't have this!
 	 */
 	objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
-	if (objectclass_el == NULL) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      __location__ ": objectClass missing on %s\n",
-			      ldb_dn_get_linearized(msg->dn));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/*
-	 * Now check if this objectClass means we need to do urgent replication
-	 */
-	if (!*is_urgent && replmd_check_urgent_objectclass(objectclass_el,
-							   situation)) {
-		*is_urgent = true;
+	if (objectclass_el != NULL) {
+		/*
+		 * Now check if this objectClass means we need to do urgent replication
+		 */
+		if (!*is_urgent && replmd_check_urgent_objectclass(objectclass_el,
+								   situation)) {
+			*is_urgent = true;
+		}
+	} else if (!ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		ldb_asprintf_errstring(ldb, __location__
+				       ": objectClass missing on %s\n",
+				       ldb_dn_get_linearized(msg->dn));
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
 	/*
