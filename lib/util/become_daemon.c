@@ -24,6 +24,9 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#if HAVE_SYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
 
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
@@ -75,8 +78,13 @@ _PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 
 _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout)
 {
+	pid_t newpid;
 	if (do_fork) {
-		if (fork()) {
+		newpid = fork();
+		if (newpid) {
+#if HAVE_SYSTEMD
+			sd_notifyf(0, "READY=0\nSTATUS=Starting process...\nMAINPID=%lu", (unsigned long) newpid);
+#endif /* HAVE_SYSTEMD */
 			_exit(0);
 		}
 	}
@@ -99,4 +107,31 @@ _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout
 	 * close.  stdout must be open if we are logging there, and we
 	 * never close stderr (but debug might dup it onto a log file) */
 	close_low_fds(do_fork, !log_stdout, false);
+}
+
+_PUBLIC_ void exit_daemon(const char *msg, int error)
+{
+#ifdef HAVE_SYSTEMD
+	if (msg == NULL) {
+		msg = strerror(error);
+	}
+
+	sd_notifyf(0, "STATUS=daemon failed to start: %s\n"
+				  "ERRNO=%i",
+				  msg,
+				  error);
+#endif
+	DEBUG(0, ("STATUS=daemon failed to start: %s, error code %d\n", msg, error));
+	exit(1);
+}
+
+_PUBLIC_ void daemon_ready(const char *daemon)
+{
+	if (daemon == NULL) {
+		daemon = "Samba";
+	}
+#ifdef HAVE_SYSTEMD
+	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...", daemon);
+#endif
+	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve connections", daemon));
 }

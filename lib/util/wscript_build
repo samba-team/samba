@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('samba-util',
                     server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
                     tevent_debug.c util_process.c''',
                   deps='DYNCONFIG',
-                  public_deps='talloc tevent execinfo uid_wrapper pthread LIBCRYPTO charset util_setid',
+                  public_deps='talloc tevent execinfo uid_wrapper pthread LIBCRYPTO charset util_setid systemd-daemon',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
                   local_include=False,

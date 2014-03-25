@@ -1092,6 +1092,10 @@ static bool open_sockets(bool isdaemon, int port)
                 exit(1);
         }
 
+	if (is_daemon && !opt_interactive) {
+		daemon_ready("nmbd");
+	}
+
 	TALLOC_FREE(frame);
 	process(msg);
 

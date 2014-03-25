@@ -3,7 +3,8 @@ Description=Samba SMB Daemon
 After=syslog.target network.target nmb.service winbind.service
 
 [Service]
-Type=forking
+Type=notify
+NotifyAccess=all
 PIDFile=/run/smbd.pid
 LimitNOFILE=16384
 EnvironmentFile=-/etc/sysconfig/samba
