@@ -389,12 +389,113 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/***************************************************
+ Merge in any groups from /etc/group.
+***************************************************/
+
+static NTSTATUS add_local_groups(struct security_token *result,
+				 bool is_guest)
+{
+	gid_t *gids = NULL;
+	uint32_t getgroups_num_group_sids = 0;
+	struct passwd *pass = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	int i;
+
+	if (is_guest) {
+		/*
+		 * Guest is a special case. It's always
+		 * a user that can be looked up, but
+		 * result->sids[0] is set to DOMAIN\Guest.
+		 * Lookup by account name instead.
+		 */
+		pass = Get_Pwnam_alloc(tmp_ctx, lp_guestaccount());
+	} else {
+		uid_t uid;
+
+		/* For non-guest result->sids[0] is always the user sid. */
+		if (!sid_to_uid(&result->sids[0], &uid)) {
+			/*
+			 * Non-mappable SID like SYSTEM.
+			 * Can't be in any /etc/group groups.
+			 */
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_OK;
+		}
+
+		pass = getpwuid_alloc(tmp_ctx, uid);
+		if (pass == NULL) {
+			DEBUG(1, ("SID %s -> getpwuid(%u) failed\n",
+				sid_string_dbg(&result->sids[0]),
+				(unsigned int)uid));
+		}
+	}
+
+	if (!pass) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/*
+	 * Now we must get any groups this user has been
+	 * added to in /etc/group and merge them in.
+	 * This has to be done in every code path
+	 * that creates an NT token, as remote users
+	 * may have been added to the local /etc/group
+	 * database. Tokens created merely from the
+	 * info3 structs (via the DC or via the krb5 PAC)
+	 * won't have these local groups. Note the
+	 * groups added here will only be UNIX groups
+	 * (S-1-22-2-XXXX groups) as getgroups_unix_user()
+	 * turns off winbindd before calling getgroups().
+	 *
+	 * NB. This is duplicating work already
+	 * done in the 'unix_user:' case of
+	 * create_token_from_sid() but won't
+	 * do anything other than be inefficient
+	 * in that case.
+	 */
+
+	if (!getgroups_unix_user(tmp_ctx, pass->pw_name, pass->pw_gid,
+			&gids, &getgroups_num_group_sids)) {
+		DEBUG(1, ("getgroups_unix_user for user %s failed\n",
+			pass->pw_name));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	for (i=0; i<getgroups_num_group_sids; i++) {
+		NTSTATUS status;
+		struct dom_sid grp_sid;
+		gid_to_sid(&grp_sid, gids[i]);
+
+		status = add_sid_to_array_unique(result,
+					 &grp_sid,
+					 &result->sids,
+					 &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Failed to add UNIX SID to nt token\n"));
+			TALLOC_FREE(tmp_ctx);
+			return status;
+		}
+	}
+	TALLOC_FREE(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS finalize_local_nt_token(struct security_token *result,
 					bool is_guest)
 {
 	struct dom_sid dom_sid;
 	gid_t gid;
 	NTSTATUS status;
+
+	/* Add any local groups. */
+
+	status = add_local_groups(result, is_guest);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* Add in BUILTIN sids */
 
