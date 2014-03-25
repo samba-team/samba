@@ -1449,21 +1449,44 @@ static int samldb_prim_group_trigger(struct samldb_ctx *ac)
 static int samldb_user_account_control_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	uint32_t user_account_control, old_user_account_control, account_type;
+	uint32_t old_uac;
+	uint32_t new_uac;
+	uint32_t raw_uac;
+	uint32_t old_ufa;
+	uint32_t new_ufa;
+	uint32_t old_acb;
+	uint32_t new_acb;
+	uint32_t clear_acb;
+	uint32_t old_atype;
+	uint32_t new_atype;
+	uint32_t old_pgrid;
+	uint32_t new_pgrid;
+	NTTIME old_lockoutTime;
 	struct ldb_message_element *el;
+	struct ldb_val *val;
+	struct ldb_val computer_val;
 	struct ldb_message *tmp_msg;
 	int ret;
 	struct ldb_result *res;
-	const char * const attrs[] = { "userAccountControl", "objectClass",
-				       "lockoutTime", NULL };
-	unsigned int i;
-	bool is_computer = false, uac_generated = false;
+	const char * const attrs[] = {
+		"objectClass",
+		"isCriticalSystemObject",
+		"userAccountControl",
+		"msDS-User-Account-Control-Computed",
+		"lockoutTime",
+		NULL
+	};
+	bool is_computer = false;
+	bool old_is_critical = false;
+	bool new_is_critical = false;
 
 	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
 					 ac->req->operation);
-	if (el == NULL) {
-		/* we are not affected */
-		return LDB_SUCCESS;
+	if (el == NULL || el->num_values == 0) {
+		ldb_asprintf_errstring(ldb,
+			"%08X: samldb: 'userAccountControl' can't be deleted!",
+			W_ERROR_V(WERR_DS_ILLEGAL_MOD_OPERATION));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	/* Create a temporary message for fetching the "userAccountControl" */
@@ -1475,15 +1498,18 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	user_account_control = ldb_msg_find_attr_as_uint(tmp_msg,
-							 "userAccountControl",
-							 0);
+	raw_uac = ldb_msg_find_attr_as_uint(tmp_msg,
+					    "userAccountControl",
+					    0);
+	new_acb = samdb_result_acct_flags(tmp_msg, NULL);
 	talloc_free(tmp_msg);
-
-	/* Temporary duplicate accounts aren't allowed */
-	if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
-		return LDB_ERR_OTHER;
-	}
+	/*
+	 * UF_LOCKOUT and UF_PASSWORD_EXPIRED are only generated
+	 * and not stored. We ignore them almost completely.
+	 *
+	 * The only exception is the resulting ACB_AUTOLOCK in clear_acb.
+	 */
+	new_uac = raw_uac & ~(UF_LOCKOUT|UF_PASSWORD_EXPIRED);
 
 	/* Fetch the old "userAccountControl" and "objectClass" */
 	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
@@ -1491,106 +1517,114 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	old_user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
-	if (old_user_account_control == 0) {
+	old_uac = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
+	if (old_uac == 0) {
 		return ldb_operr(ldb);
 	}
+	old_acb = samdb_result_acct_flags(res->msgs[0],
+					  "msDS-User-Account-Control-Computed");
+	old_lockoutTime = ldb_msg_find_attr_as_int64(res->msgs[0],
+						     "lockoutTime", 0);
+	old_is_critical = ldb_msg_find_attr_as_bool(res->msgs[0],
+						    "isCriticalSystemObject", 0);
+	/* When we do not have objectclass "omputer" we cannot switch to a (read-only) DC */
 	el = ldb_msg_find_element(res->msgs[0], "objectClass");
 	if (el == NULL) {
 		return ldb_operr(ldb);
 	}
-
-	/* When we do not have objectclass "computer" we cannot switch to a (read-only) DC */
-	for (i = 0; i < el->num_values; i++) {
-		if (ldb_attr_cmp((char *)el->values[i].data, "computer") == 0) {
-			is_computer = true;
-			break;
-		}
-	}
-	if (!is_computer &&
-	    (user_account_control & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT))) {
-		ldb_set_errstring(ldb,
-				  "samldb: Requested account type does need objectclass 'computer'!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+	computer_val = data_blob_string_const("computer");
+	val = ldb_msg_find_val(el, &computer_val);
+	if (val != NULL) {
+		is_computer = true;
 	}
 
-	/*
-	 * The functions "ds_uf2atype" and "ds_uf2prim_group_rid" are used as
-	 * detectors for account type changes.
-	 * So if the account type does change then we need to adjust the
-	 * "sAMAccountType", the "isCriticalSystemObject" and the
-	 * "primaryGroupID" attribute.
-	 */
-	if ((ds_uf2atype(user_account_control)
-	     == ds_uf2atype(old_user_account_control)) &&
-	    (ds_uf2prim_group_rid(user_account_control)
-	     == ds_uf2prim_group_rid(old_user_account_control))) {
-		return LDB_SUCCESS;
-	}
+	old_ufa = old_uac & UF_ACCOUNT_TYPE_MASK;
+	old_atype = ds_uf2atype(old_ufa);
+	old_pgrid = ds_uf2prim_group_rid(old_uac);
 
-	account_type = ds_uf2atype(user_account_control);
-	if (account_type == 0) {
+	new_ufa = new_uac & UF_ACCOUNT_TYPE_MASK;
+	if (new_ufa == 0) {
 		/*
 		 * When there is no account type embedded in "userAccountControl"
-		 * fall back to default "UF_NORMAL_ACCOUNT".
+		 * fall back to the old.
 		 */
-		if (user_account_control == 0) {
-			ldb_set_errstring(ldb,
-					  "samldb: Invalid user account control value!");
+		new_ufa = old_ufa;
+		new_uac |= new_ufa;
+	}
+	new_atype = ds_uf2atype(new_ufa);
+	new_pgrid = ds_uf2prim_group_rid(new_uac);
+
+	clear_acb = old_acb & ~new_acb;
+
+	switch (new_ufa) {
+	case UF_NORMAL_ACCOUNT:
+		new_is_critical = old_is_critical;
+		break;
+
+	case UF_INTERDOMAIN_TRUST_ACCOUNT:
+		new_is_critical = true;
+		break;
+
+	case UF_WORKSTATION_TRUST_ACCOUNT:
+		new_is_critical = false;
+		break;
+
+	case (UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT):
+		if (!is_computer) {
+			ldb_asprintf_errstring(ldb,
+				"%08X: samldb: UF_PARTIAL_SECRETS_ACCOUNT "
+				"requires objectclass 'computer'!",
+				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
+		new_is_critical = true;
+		break;
 
-		user_account_control |= UF_NORMAL_ACCOUNT;
-		uac_generated = true;
-		account_type = ATYPE_NORMAL_ACCOUNT;
+	case UF_SERVER_TRUST_ACCOUNT:
+		if (!is_computer) {
+			ldb_asprintf_errstring(ldb,
+				"%08X: samldb: UF_SERVER_TRUST_ACCOUNT "
+				"requires objectclass 'computer'!",
+				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+		new_is_critical = true;
+		break;
+
+	default:
+		ldb_asprintf_errstring(ldb,
+			"%08X: samldb: invalid userAccountControl[0x%08X]",
+			W_ERROR_V(WERR_INVALID_PARAMETER), raw_uac);
+		return LDB_ERR_OTHER;
 	}
-	ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg, "sAMAccountType",
-				 account_type);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+
+	if (old_atype != new_atype) {
+		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+					 "sAMAccountType", new_atype);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el = ldb_msg_find_element(ac->msg, "sAMAccountType");
+		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
-	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
-	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	/* As per MS-SAMR 3.1.1.8.10 these flags have not to be set */
-	if ((user_account_control & UF_LOCKOUT) != 0) {
-		/* "lockoutTime" reset as per MS-SAMR 3.1.1.8.10 */
-		uint64_t lockout_time = ldb_msg_find_attr_as_uint64(res->msgs[0],
-								    "lockoutTime",
-								    0);
-		if (lockout_time != 0) {
-			ldb_msg_remove_attr(ac->msg, "lockoutTime");
-			ret = samdb_msg_add_uint64(ldb, ac->msg, ac->msg,
-						   "lockoutTime", (NTTIME)0);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-			el = ldb_msg_find_element(ac->msg, "lockoutTime");
-			el->flags = LDB_FLAG_MOD_REPLACE;
+	if ((clear_acb & ACB_AUTOLOCK) && (old_lockoutTime != 0)) {
+		/* "pwdLastSet" reset as password expiration has been forced  */
+		ldb_msg_remove_attr(ac->msg, "lockoutTime");
+		ret = samdb_msg_add_uint64(ldb, ac->msg, ac->msg, "lockoutTime",
+					   (NTTIME)0);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
-
-		user_account_control &= ~UF_LOCKOUT;
-		uac_generated = true;
-	}
-	if ((user_account_control & UF_PASSWORD_EXPIRED) != 0) {
-		user_account_control &= ~UF_PASSWORD_EXPIRED;
-		uac_generated = true;
+		el = ldb_msg_find_element(ac->msg, "lockoutTime");
+		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	/* "isCriticalSystemObject" might be set/changed */
-	if (user_account_control
-	    & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
+	if (old_is_critical != new_is_critical) {
 		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
-					 "TRUE");
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		el = ldb_msg_find_element(ac->msg,
-					   "isCriticalSystemObject");
-		el->flags = LDB_FLAG_MOD_REPLACE;
-	} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
-		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
-					 "FALSE");
+					 new_is_critical ? "TRUE": "FALSE");
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1599,19 +1633,18 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
-		uint32_t rid = ds_uf2prim_group_rid(user_account_control);
-
+	if (!ldb_msg_find_element(ac->msg, "primaryGroupID") &&
+	    (old_pgrid != new_pgrid)) {
 		/* Older AD deployments don't know about the RODC group */
-		if (rid == DOMAIN_RID_READONLY_DCS) {
-			ret = samldb_prim_group_tester(ac, rid);
+		if (new_pgrid == DOMAIN_RID_READONLY_DCS) {
+			ret = samldb_prim_group_tester(ac, new_pgrid);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
 		}
 
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-					 "primaryGroupID", rid);
+					 "primaryGroupID", new_pgrid);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1621,9 +1654,9 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	}
 
 	/* Propagate eventual "userAccountControl" attribute changes */
-	if (uac_generated) {
+	if (old_uac != new_uac) {
 		char *tempstr = talloc_asprintf(ac->msg, "%d",
-						user_account_control);
+						new_uac);
 		if (tempstr == NULL) {
 			return ldb_module_oom(ac->module);
 		}
@@ -1633,6 +1666,8 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 						 ac->req->operation);
 		el->values[0].data = (uint8_t *) tempstr;
 		el->values[0].length = strlen(tempstr);
+	} else {
+		ldb_msg_remove_attr(ac->msg, "userAccountControl");
 	}
 
 	return LDB_SUCCESS;
