@@ -1101,12 +1101,15 @@ static WERROR init_srv_conn_info_0(struct srvsvc_NetConnCtr0 *ctr0,
  fill in a conn info level 1 structure.
  ********************************************************************/
 
-static WERROR init_srv_conn_info_1(struct srvsvc_NetConnCtr1 *ctr1,
+static WERROR init_srv_conn_info_1(const char *name,
+				   struct srvsvc_NetConnCtr1 *ctr1,
 				   uint32_t *resume_handle_p,
 				   uint32_t *total_entries)
 {
-	uint32_t num_entries = 0;
+	uint32_t num_entries = 0, snum = 0;
 	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
+	char *share_name = NULL;
+	struct server_id *svrid_arr = NULL;
 
 	DEBUG(5,("init_srv_conn_info_1\n"));
 
@@ -1117,7 +1120,43 @@ static WERROR init_srv_conn_info_1(struct srvsvc_NetConnCtr1 *ctr1,
 		return WERR_OK;
 	}
 
-	*total_entries = 1;
+	/* check if this is a server name or a share name */
+	if (name && (strlen(name) > 2)  && (name[0] == '\\') &&
+			(name[1] == '\\')) {
+
+		/* 'name' is a server name - this part is unimplemented */
+		*total_entries = 1;
+	} else {
+		 /* 'name' is a share name */
+		snum = find_service(talloc_tos(), name, &share_name);
+
+		if (!share_name) {
+			return WERR_NOMEM;
+		}
+
+		if (snum < 0) {
+			return WERR_INVALID_NAME;
+		}
+
+		/*
+		 * count the num of connections to this share. Also,
+		 * build a list of serverid's that own these
+		 * connections. The serverid list is used later to
+		 * identify the share connection on which an open exists.
+		 */
+
+		*total_entries = count_share_conns(talloc_tos(),
+						   share_name,
+						   &svrid_arr);
+	}
+
+	if (resume_handle >= *total_entries) {
+		if (resume_handle_p) {
+			*resume_handle_p = 0;
+		}
+		return WERR_OK;
+	}
+
 
 	ZERO_STRUCTP(ctr1);
 
@@ -1147,11 +1186,7 @@ static WERROR init_srv_conn_info_1(struct srvsvc_NetConnCtr1 *ctr1,
 	*total_entries = num_entries;
 
 	if (resume_handle_p) {
-		if (*resume_handle_p >= *total_entries) {
-			*resume_handle_p = 0;
-		} else {
-			*resume_handle_p = resume_handle;
-		}
+		*resume_handle_p = resume_handle;
 	}
 
 	return WERR_OK;
@@ -1344,7 +1379,8 @@ WERROR _srvsvc_NetConnEnum(struct pipes_struct *p,
 						    r->out.totalentries);
 			break;
 		case 1:
-			werr = init_srv_conn_info_1(r->in.info_ctr->ctr.ctr1,
+			werr = init_srv_conn_info_1(r->in.path,
+						    r->in.info_ctr->ctr.ctr1,
 						    r->in.resume_handle,
 						    r->out.totalentries);
 			break;
