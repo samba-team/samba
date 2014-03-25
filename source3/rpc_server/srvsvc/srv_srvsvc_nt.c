@@ -1157,29 +1157,65 @@ static WERROR init_srv_conn_info_1(const char *name,
 		return WERR_OK;
 	}
 
+	/*
+	 * We know num_entries must be positive, due to
+	 * the check resume_handle >= *total_entries above.
+	 */
+
+	num_entries = *total_entries - resume_handle;
 
 	ZERO_STRUCTP(ctr1);
 
-	for (; resume_handle < *total_entries; resume_handle++) {
+	ctr1->array = talloc_zero_array(talloc_tos(),
+					struct srvsvc_NetConnInfo1,
+					num_entries);
 
-		ctr1->array = talloc_realloc(talloc_tos(),
-						   ctr1->array,
-						   struct srvsvc_NetConnInfo1,
-						   num_entries+1);
-		if (!ctr1->array) {
-			return WERR_NOMEM;
-		}
+	W_ERROR_HAVE_NO_MEMORY(ctr1->array);
+
+	for (num_entries = 0; resume_handle < *total_entries;
+		num_entries++, resume_handle++) {
 
 		ctr1->array[num_entries].conn_id	= *total_entries;
 		ctr1->array[num_entries].conn_type	= 0x3;
-		ctr1->array[num_entries].num_open	= 1;
+
+		/*
+		 * if these are connections to a share, we are going to
+		 * compute the opens on them later. If it's for the server,
+		 * it's unimplemented.
+		 */
+
+		if (!share_name) {
+			ctr1->array[num_entries].num_open = 1;
+		}
+
 		ctr1->array[num_entries].num_users	= 1;
 		ctr1->array[num_entries].conn_time	= 3;
 		ctr1->array[num_entries].user		= "dummy_user";
 		ctr1->array[num_entries].share		= "IPC$";
+	}
 
-		/* move on to creating next connection */
-		num_entries++;
+	/* now compute open files on the share connections */
+
+	if (share_name) {
+
+		/*
+		 * the locking tdb, which has the open files information,
+		 * does not store share name or share (service) number, but
+		 * just the share path. So, we can compute open files only
+		 * on the share path. If more than one shares are  defined
+		 * on a share path, open files on all of them are included
+		 * in the count.
+		 *
+		 * To have the correct behavior in case multiple shares
+		 * are defined on the same path, changes to tdb records
+		 * would be required. That would be lot more effort, so
+		 * this seems a good stopgap fix.
+		 */
+
+		count_share_opens(ctr1->array, svrid_arr,
+				  lp_path(talloc_tos(), snum),
+				  num_entries, *total_entries);
+
 	}
 
 	ctr1->count = num_entries;
