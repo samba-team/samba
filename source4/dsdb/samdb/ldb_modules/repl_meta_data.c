@@ -1138,7 +1138,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 				       ": objectClass missing on %s\n",
 				       ldb_dn_get_linearized(msg->dn));
 		talloc_free(ac);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 	is_urgent = replmd_check_urgent_objectclass(objectclass_el,
 							REPL_URGENT_ON_CREATE);
@@ -3937,6 +3937,13 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		struct ldb_message_element *el = &msg->elements[i];
 
 		if (el->num_values == 0) {
+			if (ldb_attr_cmp(msg->elements[i].name, "objectClass") == 0) {
+				ldb_asprintf_errstring(ldb, __location__
+						       ": empty objectClass sent on %s, aborting replication\n",
+						       ldb_dn_get_linearized(msg->dn));
+				return replmd_replicated_request_error(ar, LDB_ERR_OBJECT_CLASS_VIOLATION);
+			}
+
 			DEBUG(4,(__location__ ": Removing attribute %s with num_values==0\n",
 				 el->name));
 			memmove(el, el+1, sizeof(*el)*(msg->num_elements - (i+1)));
@@ -4570,7 +4577,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 				ldb_asprintf_errstring(ldb, __location__
 						       ": objectClass removed on %s, aborting replication\n",
 						       ldb_dn_get_linearized(msg->dn));
-				return replmd_replicated_request_error(ar, LDB_ERR_OPERATIONS_ERROR);
+				return replmd_replicated_request_error(ar, LDB_ERR_OBJECT_CLASS_VIOLATION);
 			}
 		}
 	}
