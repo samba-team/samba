@@ -4654,6 +4654,50 @@ _PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 }
 
 /*
+ * Return the effective badPwdCount
+ *
+ * This requires that the user_msg have (if present):
+ *  - badPasswordTime
+ *  - badPwdCount
+ *
+ * This also requires that the domain_msg have (if present):
+ *  - lockOutObservationWindow
+ */
+static int dsdb_effective_badPwdCount(struct ldb_message *user_msg,
+				      int64_t lockOutObservationWindow,
+				      NTTIME now)
+{
+	int64_t badPasswordTime;
+	badPasswordTime = ldb_msg_find_attr_as_int64(user_msg, "badPasswordTime", 0);
+
+	if (badPasswordTime - lockOutObservationWindow >= now) {
+		return ldb_msg_find_attr_as_int(user_msg, "badPwdCount", 0);
+	} else {
+		return 0;
+	}
+}
+
+/*
+ * Return the effective badPwdCount
+ *
+ * This requires that the user_msg have (if present):
+ *  - badPasswordTime
+ *  - badPwdCount
+ *
+ */
+int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_dn *domain_dn,
+				       struct ldb_message *user_msg)
+{
+	struct timeval tv_now = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv_now);
+	int64_t lockOutObservationWindow = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn,
+							      "lockOutObservationWindow", NULL);
+	return dsdb_effective_badPwdCount(user_msg, lockOutObservationWindow, now);
+}
+
+/*
  * Prepare an update to the badPwdCount and associated attributes.
  *
  * This requires that the user_msg have (if present):
@@ -4673,7 +4717,7 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 				   struct ldb_message **_mod_msg)
 {
 	int i, ret, badPwdCount;
-	int64_t lockoutThreshold, lockOutObservationWindow, badPasswordTime;
+	int64_t lockoutThreshold, lockOutObservationWindow;
 	struct dom_sid *sid;
 	struct timeval tv_now = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv_now);
@@ -4710,11 +4754,6 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	lockOutObservationWindow = ldb_msg_find_attr_as_int64(domain_msg,
-						"lockOutObservationWindow", 0);
-
-	badPasswordTime = ldb_msg_find_attr_as_int64(user_msg, "badPasswordTime", 0);
-
 	mod_msg = ldb_msg_new(mem_ctx);
 	if (mod_msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -4725,11 +4764,10 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (badPasswordTime - lockOutObservationWindow >= now) {
-		badPwdCount = ldb_msg_find_attr_as_int(user_msg, "badPwdCount", 0);
-	} else {
-		badPwdCount = 0;
-	}
+	lockOutObservationWindow = ldb_msg_find_attr_as_int64(domain_msg,
+							      "lockOutObservationWindow", 0);
+
+	badPwdCount = dsdb_effective_badPwdCount(user_msg, lockOutObservationWindow, now);
 
 	badPwdCount++;
 
