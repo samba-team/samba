@@ -3,7 +3,8 @@ Description=Samba AD Daemon
 After=syslog.target network.target
 
 [Service]
-Type=forking
+Type=notify
+NotifyAccess=all
 PIDFile=/run/samba.pid
 LimitNOFILE=16384
 EnvironmentFile=-/etc/sysconfig/samba

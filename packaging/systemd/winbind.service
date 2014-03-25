@@ -3,7 +3,8 @@ Description=Samba Winbind Daemon
 After=syslog.target network.target nmb.service
 
 [Service]
-Type=forking
+Type=notify
+NotifyAccess=all
 PIDFile=/run/winbindd.pid
 EnvironmentFile=-/etc/sysconfig/samba
 ExecStart=/usr/sbin/winbindd "$WINBINDOPTIONS"

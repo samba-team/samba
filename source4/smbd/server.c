@@ -498,6 +498,10 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		return 1;
 	}
 
+	if (opt_daemon) {
+		daemon_ready("samba");
+	}
+
 	/* wait for events - this is where smbd sits for most of its
 	   life */
 	tevent_loop_wait(event_ctx);

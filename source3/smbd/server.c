@@ -1531,6 +1531,10 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	if (is_daemon && !interactive) {
+		daemon_ready("smbd");
+	}
+
 	/* only start other daemons if we are running as a daemon
 	 * -- bad things will happen if smbd is launched via inetd
 	 *  and we fork a copy of ourselves here */

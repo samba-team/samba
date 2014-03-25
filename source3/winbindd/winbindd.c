@@ -1589,6 +1589,11 @@ int main(int argc, const char **argv)
 	}
 
 	TALLOC_FREE(frame);
+
+	if (!interactive) {
+		daemon_ready("winbindd");
+	}
+
 	/* Loop waiting for requests */
 	while (1) {
 		frame = talloc_stackframe();
