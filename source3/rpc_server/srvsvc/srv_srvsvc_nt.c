@@ -61,6 +61,14 @@ struct sess_file_info {
 	uint32_t num_entries;
 };
 
+struct share_file_stat {
+	struct srvsvc_NetConnInfo1 *netconn_arr;
+	struct server_id *svrid_arr;
+	const char *in_sharepath;
+	uint32_t resp_entries;
+	uint32_t total_entries;
+};
+
 struct share_conn_stat {
 	TALLOC_CTX *ctx;
 	const char *sharename;
@@ -935,6 +943,47 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 	}
 
 	return WERR_OK;
+}
+
+/*******************************************************************
+ find the share connection on which this open exists.
+ ********************************************************************/
+
+static void share_file_fn(const struct share_mode_entry *e,
+			  const char *sharepath, const char *fname,
+			  void *data)
+{
+	struct share_file_stat *sfs = data;
+	uint32_t i;
+	uint32_t offset = sfs->total_entries - sfs->resp_entries;
+
+	if (strequal(sharepath, sfs->in_sharepath)) {
+		for (i=0; i < sfs->resp_entries; i++) {
+			if (serverid_equal(&e->pid, &sfs->svrid_arr[offset + i])) {
+				sfs->netconn_arr[i].num_open ++;
+				return;
+			}
+		}
+	}
+}
+
+/*******************************************************************
+ count number of open files on given share connections.
+ ********************************************************************/
+
+static void count_share_opens(struct srvsvc_NetConnInfo1 *arr,
+			      struct server_id *svrid_arr, char *sharepath,
+			      uint32_t resp_entries, uint32_t total_entries)
+{
+	struct share_file_stat sfs;
+
+	sfs.netconn_arr = arr;
+	sfs.svrid_arr = svrid_arr;
+	sfs.in_sharepath = sharepath;
+	sfs.resp_entries = resp_entries;
+	sfs.total_entries = total_entries;
+
+	share_mode_forall(share_file_fn, &sfs);
 }
 
 /****************************************************************************
