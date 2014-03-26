@@ -125,19 +125,15 @@ interface dcerpc
 		DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE;
 
 	typedef struct {
-		uint32 num_versions;
-		uint32 versions[num_versions];
-	} dcerpc_bind_nak_versions;
-
-	typedef [nodiscriminant] union {
-		[case(DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)]
-			dcerpc_bind_nak_versions v;
-		[default] ;
-	} dcerpc_bind_nak_versions_ctr;
+		uint8 rpc_vers;         /* RPC version */
+		uint8 rpc_vers_minor;   /* Minor version */
+	} dcerpc_bind_nak_version;
 
 	typedef struct {
 		dcerpc_bind_nak_reason reject_reason;
-		[switch_is(reject_reason)] dcerpc_bind_nak_versions_ctr versions;
+		uint8 num_versions;
+		dcerpc_bind_nak_version versions[num_versions];
+		[flag(NDR_REMAINING)] DATA_BLOB _pad;
 	} dcerpc_bind_nak;
 
 	const uint8 DCERPC_RESPONSE_LENGTH = 24;

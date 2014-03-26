@@ -457,6 +457,7 @@ static void dcesrv_call_set_list(struct dcesrv_call_state *call,
 static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 {
 	struct ncacn_packet pkt;
+	struct dcerpc_bind_nak_version version;
 	struct data_blob_list_item *rep;
 	NTSTATUS status;
 
@@ -467,9 +468,11 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	pkt.ptype = DCERPC_PKT_BIND_NAK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.bind_nak.reject_reason = reason;
-	if (pkt.u.bind_nak.reject_reason == DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED) {
-		pkt.u.bind_nak.versions.v.num_versions = 0;
-	}
+	version.rpc_vers = 5;
+	version.rpc_vers_minor = 0;
+	pkt.u.bind_nak.num_versions = 1;
+	pkt.u.bind_nak.versions = &version;
+	pkt.u.bind_nak._pad = data_blob_null;
 
 	rep = talloc(call, struct data_blob_list_item);
 	if (!rep) {
