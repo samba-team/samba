@@ -92,6 +92,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	struct messaging_tdb_context *ctx;
 	struct loadparm_context *lp_ctx;
 	static bool have_context = false;
+	const char *fname;
 
 	if (have_context) {
 		DEBUG(0, ("No two messaging contexts per process\n"));
@@ -122,9 +123,14 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	ctx->msg_ctx = msg_ctx;
 	ctx->have_context = &have_context;
 
-	ctx->tdb = tdb_wrap_open(ctx, lock_path("messages.tdb"), 0,
-				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_VOLATILE|TDB_INCOMPATIBLE_HASH,
-				 O_RDWR|O_CREAT,0600, lp_ctx);
+	fname = lock_path("messages.tdb");
+
+	ctx->tdb = tdb_wrap_open_(
+		ctx, fname, lpcfg_tdb_hash_size(lp_ctx, fname),
+		lpcfg_tdb_flags(lp_ctx, TDB_CLEAR_IF_FIRST|TDB_DEFAULT|
+				TDB_VOLATILE| TDB_INCOMPATIBLE_HASH),
+		O_RDWR|O_CREAT,0600);
+
 	talloc_unlink(result, lp_ctx);
 
 	if (!ctx->tdb) {
