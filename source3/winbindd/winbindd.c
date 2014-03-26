@@ -1551,8 +1551,7 @@ int main(int argc, const char **argv)
 				   winbind_event_context(),
 				   false);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
-		exit(1);
+		exit_daemon("Winbindd reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}
 
 	/*
@@ -1562,17 +1561,14 @@ int main(int argc, const char **argv)
 	 */
 	status = init_before_fork();
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("init_before_fork failed: %s\n", nt_errstr(status)));
-		exit(1);
+		exit_daemon(nt_errstr(status), map_errno_from_nt_status(status));
 	}
 
 	winbindd_register_handlers(winbind_messaging_context(), !Fork);
 
 	status = init_system_session_info();
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("ERROR: failed to setup system user info: %s.\n",
-			  nt_errstr(status)));
-		exit(1);
+		exit_daemon("Winbindd failed to setup system user info", map_errno_from_nt_status(status));
 	}
 
 	rpc_lsarpc_init(NULL);
@@ -1584,8 +1580,7 @@ int main(int argc, const char **argv)
 	/* setup listen sockets */
 
 	if (!winbindd_setup_listeners()) {
-		DEBUG(0,("winbindd_setup_listeners() failed\n"));
-		exit(1);
+		exit_daemon("Winbindd failed to setup listeners", EPIPE);
 	}
 
 	TALLOC_FREE(frame);
