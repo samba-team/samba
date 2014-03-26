@@ -59,12 +59,12 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 
 	fname = lock_path("serverid.tdb");
 
-	db = tdb_wrap_open_(mem_ctx, fname,
-			    lpcfg_tdb_hash_size(lp_ctx, fname),
-			    lpcfg_tdb_flags(lp_ctx,
-					    TDB_DEFAULT|TDB_CLEAR_IF_FIRST|
-					    TDB_INCOMPATIBLE_HASH),
-			    O_RDWR|O_CREAT, 0644);
+	db = tdb_wrap_open(mem_ctx, fname,
+			   lpcfg_tdb_hash_size(lp_ctx, fname),
+			   lpcfg_tdb_flags(lp_ctx,
+					   TDB_DEFAULT|TDB_CLEAR_IF_FIRST|
+					   TDB_INCOMPATIBLE_HASH),
+			   O_RDWR|O_CREAT, 0644);
 	talloc_unlink(mem_ctx, lp_ctx);
 	if (db == NULL) {
 		DEBUG(1, ("could not open serverid.tdb: %s\n",

@@ -50,7 +50,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 
 	blob.length = blobsize;
 	mem_ctx = talloc_new(NULL);
-	eadb = tdb_wrap_open_(
+	eadb = tdb_wrap_open(
 		mem_ctx, tdbname, 50000,
 		lpcfg_tdb_flags(py_default_loadparm_context(mem_ctx),
 				TDB_DEFAULT),
@@ -85,7 +85,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
-	eadb = tdb_wrap_open_(
+	eadb = tdb_wrap_open(
 		mem_ctx, tdbname, 50000,
 		lpcfg_tdb_flags(py_default_loadparm_context(mem_ctx),
 				TDB_DEFAULT),

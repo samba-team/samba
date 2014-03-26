@@ -240,7 +240,7 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 	lp_ctx = talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"),
 				       struct loadparm_context);
 
-	data->metadata->db = tdb_wrap_open_(
+	data->metadata->db = tdb_wrap_open(
 		data->metadata, filename, 10,
 		lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT), open_flags, 0660);
 	if (data->metadata->db == NULL) {

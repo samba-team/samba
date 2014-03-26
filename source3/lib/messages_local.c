@@ -125,7 +125,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 
 	fname = lock_path("messages.tdb");
 
-	ctx->tdb = tdb_wrap_open_(
+	ctx->tdb = tdb_wrap_open(
 		ctx, fname, lpcfg_tdb_hash_size(lp_ctx, fname),
 		lpcfg_tdb_flags(lp_ctx, TDB_CLEAR_IF_FIRST|TDB_DEFAULT|
 				TDB_VOLATILE| TDB_INCOMPATIBLE_HASH),
@@ -189,7 +189,7 @@ bool messaging_tdb_parent_init(TALLOC_CTX *mem_ctx)
 	 */
 
 	fname = lock_path("messages.tdb");
-	db = tdb_wrap_open_(
+	db = tdb_wrap_open(
 		mem_ctx, fname, lpcfg_tdb_hash_size(lp_ctx, fname),
 		lpcfg_tdb_flags(lp_ctx, TDB_CLEAR_IF_FIRST|TDB_DEFAULT|
 				TDB_VOLATILE|TDB_INCOMPATIBLE_HASH),

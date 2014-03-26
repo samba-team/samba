@@ -120,7 +120,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	/* allow xattrs to be stored in a external tdb */
 	eadb = share_string_option(pvfs, scfg, PVFS_EADB, NULL);
 	if (eadb != NULL) {
-		pvfs->ea_db = tdb_wrap_open_(
+		pvfs->ea_db = tdb_wrap_open(
 			pvfs, eadb, 50000,
 			lpcfg_tdb_flags(pvfs->ntvfs->ctx->lp_ctx, TDB_DEFAULT),
 			O_RDWR|O_CREAT, 0600);

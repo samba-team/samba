@@ -899,10 +899,10 @@ static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx)
 	if (path == NULL) {
 		return NULL;
 	}
-	t = tdb_wrap_open_(msg_ctx, path,
-			   lpcfg_tdb_hash_size(msg_ctx->lp_ctx, path),
-			   lpcfg_tdb_flags(msg_ctx->lp_ctx, 0),
-			   O_RDWR|O_CREAT, 0660);
+	t = tdb_wrap_open(msg_ctx, path,
+			  lpcfg_tdb_hash_size(msg_ctx->lp_ctx, path),
+			  lpcfg_tdb_flags(msg_ctx->lp_ctx, 0),
+			  O_RDWR|O_CREAT, 0660);
 	talloc_free(path);
 	return t;
 }
