@@ -479,7 +479,7 @@ ip_route_show ()
     ip_route_common "$@"
 
     # Missing file is just an empty table
-    cat "$FAKE_IP_STATE/routes/${_table}" 2>/dev/null || true
+    sort "$FAKE_IP_STATE/routes/${_table}" 2>/dev/null || true
 }
 
 ip_route_flush ()

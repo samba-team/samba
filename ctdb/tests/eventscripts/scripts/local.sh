@@ -675,6 +675,7 @@ ok_natgw_master_static_routes ()
 	_t="${_t}${_t:+${_nl}}"
 	_t="${_t}${_net} via ${_gw} dev ethXXX  metric 10 "
     done
+    _t=$(echo "$_t" | sort)
     ok "$_t"
 }
 
@@ -694,6 +695,7 @@ ok_natgw_slave_static_routes ()
 	_t="${_t}${_t:+${_nl}}"
 	_t="${_t}${_net} via ${FAKE_CTDB_NATGW_MASTER} dev ethXXX  metric 10 "
     done
+    _t=$(echo "$_t" | sort)
     ok "$_t"
 }
 

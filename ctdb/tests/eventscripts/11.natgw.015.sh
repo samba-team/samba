@@ -33,7 +33,7 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
-ok_null
+ok "NAT gateway configuration has changed"
 simple_test_event "ipreallocated"
 
 ok "default via ${FAKE_CTDB_NATGW_MASTER} dev ethXXX  metric 10 "
@@ -51,7 +51,7 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
-ok_null
+ok "NAT gateway configuration has changed"
 simple_test_event "ipreallocated"
 
 ok "default via ${CTDB_NATGW_DEFAULT_GATEWAY} dev ethXXX  metric 10 "
