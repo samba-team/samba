@@ -33,7 +33,7 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 	source='loadparm.c generic.c util.c',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
-	deps='DYNCONFIG server-role',
+	deps='DYNCONFIG server-role tdb',
 	public_deps='samba-util param_local.h',
 	public_headers='param.h',
 	autoproto='param_proto.h'

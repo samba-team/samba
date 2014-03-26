@@ -66,6 +66,7 @@
 #include "lib/param/s3_param.h"
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
+#include "tdb.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -2795,4 +2796,12 @@ int lpcfg_tdb_hash_size(struct loadparm_context *lp_ctx, const char *name)
 	}
 	return lpcfg_parm_int(lp_ctx, NULL, "tdb_hashsize", base, 0);
 
+}
+
+int lpcfg_tdb_flags(struct loadparm_context *lp_ctx, int tdb_flags)
+{
+	if (!lpcfg_use_mmap(lp_ctx)) {
+		tdb_flags |= TDB_NOMMAP;
+	}
+	return tdb_flags;
 }
