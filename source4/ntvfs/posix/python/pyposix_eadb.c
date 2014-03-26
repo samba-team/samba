@@ -83,8 +83,11 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
-	eadb = tdb_wrap_open(mem_ctx, tdbname, 50000,
-			     TDB_DEFAULT, O_RDWR|O_CREAT, 0600, py_default_loadparm_context(mem_ctx));
+	eadb = tdb_wrap_open_(
+		mem_ctx, tdbname, 50000,
+		lpcfg_tdb_flags(py_default_loadparm_context(mem_ctx),
+				TDB_DEFAULT),
+		O_RDWR|O_CREAT, 0600);
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
 		talloc_free(mem_ctx);
