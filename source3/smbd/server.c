@@ -1321,8 +1321,7 @@ extern void build_options(bool screen);
 				   ev_ctx,
 				   false);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
-		exit(1);
+		exit_daemon("reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}
 
 	if (!interactive) {
@@ -1333,8 +1332,7 @@ extern void build_options(bool screen);
 		 */
 		status = init_before_fork();
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("init_before_fork failed: %s\n", nt_errstr(status)));
-			exit(1);
+			exit_daemon(nt_errstr(status), map_errno_from_nt_status(status));
 		}
 	}
 
@@ -1367,7 +1365,7 @@ extern void build_options(bool screen);
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 
 	if (smbd_memcache() == NULL) {
-		exit(1);
+		exit_daemon("no memcache available", EACCES);
 	}
 
 	memcache_set_global(smbd_memcache());
@@ -1379,69 +1377,65 @@ extern void build_options(bool screen);
 		exit(1);
 
 	if (!secrets_init()) {
-		DEBUG(0, ("ERROR: smbd can not open secrets.tdb\n"));
-		exit(1);
+		exit_daemon("smbd can not open secrets.tdb", EACCES);
 	}
 
 	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
 		struct loadparm_context *lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 		if (!open_schannel_session_store(NULL, lp_ctx)) {
-			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
-			exit(1);
+			exit_daemon("ERROR: Samba cannot open schannel store for secured NETLOGON operations.", EACCES);
 		}
 		TALLOC_FREE(lp_ctx);
 	}
 
 	if(!get_global_sam_sid()) {
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
-		exit(1);
+		exit_daemon("Samba cannot create a SAM SID", EACCES);
 	}
 
 	server_id = messaging_server_id(msg_ctx);
 	status = smbXsrv_version_global_init(&server_id);
 	if (!NT_STATUS_IS_OK(status)) {
-		exit(1);
+		exit_daemon("Samba cannot init server context", EACCES);
 	}
 
 	status = smbXsrv_session_global_init();
 	if (!NT_STATUS_IS_OK(status)) {
-		exit(1);
+		exit_daemon("Samba cannot init session context", EACCES);
 	}
 
 	status = smbXsrv_tcon_global_init();
 	if (!NT_STATUS_IS_OK(status)) {
-		exit(1);
+		exit_daemon("Samba cannot init tcon context", EACCES);
 	}
 
 	if (!locking_init())
-		exit(1);
+		exit_daemon("Samba cannot init locking", EACCES);
 
 	if (!messaging_tdb_parent_init(ev_ctx)) {
-		exit(1);
+		exit_daemon("Samba cannot init TDB messaging", EACCES);
 	}
 
 	if (!smbd_parent_notify_init(NULL, msg_ctx, ev_ctx)) {
-		exit(1);
+		exit_daemon("Samba cannot init notification", EACCES);
 	}
 
 	if (!smbd_scavenger_init(NULL, msg_ctx, ev_ctx)) {
-		exit(1);
+		exit_daemon("Samba cannot init scavenging", EACCES);
 	}
 
 	if (!serverid_parent_init(ev_ctx)) {
-		exit(1);
+		exit_daemon("Samba cannot init server id", EACCES);
 	}
 
 	if (!W_ERROR_IS_OK(registry_init_full()))
-		exit(1);
+		exit_daemon("Samba cannot init registry", EACCES);
 
 	/* Open the share_info.tdb here, so we don't have to open
 	   after the fork on every single connection.  This is a small
 	   performance improvment and reduces the total number of system
 	   fds used. */
 	if (!share_info_db_init()) {
-		DEBUG(0,("ERROR: failed to load share info db.\n"));
-		exit(1);
+		exit_daemon("ERROR: failed to load share info db.", EACCES);
 	}
 
 	status = init_system_session_info();
@@ -1462,7 +1456,7 @@ extern void build_options(bool screen);
 	}
 	status = smbXsrv_open_global_init();
 	if (!NT_STATUS_IS_OK(status)) {
-		exit(1);
+		exit_daemon("Samba cannot init global open", map_errno_from_nt_status(status));
 	}
 
 	/* This MUST be done before start_epmd() because otherwise
@@ -1493,7 +1487,7 @@ extern void build_options(bool screen);
 	}
 
 	if (!dcesrv_ep_setup(ev_ctx, msg_ctx)) {
-		exit(1);
+		exit_daemon("Samba cannot setup ep pipe", EACCES);
 	}
 
 	if (is_daemon && !interactive) {
@@ -1514,7 +1508,7 @@ extern void build_options(bool screen);
 			bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
 
 			if (!printing_subsystem_init(ev_ctx, msg_ctx, true, bgq)) {
-				exit(1);
+				exit_daemon("Samba failed to init printing subsystem", EACCES);
 			}
 		}
 	} else if (!lp__disable_spoolss() &&
