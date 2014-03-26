@@ -109,7 +109,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 	if (acct_flags == ACB_NORMAL) {
 		container = "CN=Users";
 		obj_class = "user";
-
+		user_account_control = UF_NORMAL_ACCOUNT;
 	} else if (acct_flags == ACB_WSTRUST) {
 		if (cn_name[cn_name_len - 1] != '$') {
 			ldb_transaction_cancel(ldb);
@@ -118,6 +118,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		cn_name[cn_name_len - 1] = '\0';
 		container = "CN=Computers";
 		obj_class = "computer";
+		user_account_control = UF_WORKSTATION_TRUST_ACCOUNT;
 
 	} else if (acct_flags == ACB_SVRTRUST) {
 		if (cn_name[cn_name_len - 1] != '$') {
@@ -127,6 +128,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		cn_name[cn_name_len - 1] = '\0';
 		container = "OU=Domain Controllers";
 		obj_class = "computer";
+		user_account_control = UF_SERVER_TRUST_ACCOUNT;
 	} else if (acct_flags == ACB_DOMTRUST) {
 		DEBUG(3, ("Invalid account flags specified:  cannot create domain trusts via this interface (must use LSA CreateTrustedDomain calls\n"));
 		ldb_transaction_cancel(ldb);
@@ -142,6 +144,8 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	user_account_control |= UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD;
+
 	/* add core elements to the ldb_message for the user */
 	msg->dn = ldb_dn_copy(msg, ldb_get_default_basedn(ldb));
 	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s,%s", cn_name, container)) {
@@ -152,6 +156,9 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 
 	ldb_msg_add_string(msg, "sAMAccountName", account_name);
 	ldb_msg_add_string(msg, "objectClass", obj_class);
+	samdb_msg_add_uint(ldb, tmp_ctx, msg,
+			   "userAccountControl",
+			   user_account_control);
 
 	/* This is only here for migrations using pdb_samba4, the
 	 * caller and the samldb are responsible for ensuring it makes
@@ -214,47 +221,6 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 			 ldb_dn_get_linearized(msg->dn)));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	/* Change the account control to be the correct account type.
-	 * The default is for a workstation account */
-	user_account_control = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
-	user_account_control = (user_account_control &
-				~(UF_NORMAL_ACCOUNT |
-				  UF_INTERDOMAIN_TRUST_ACCOUNT |
-				  UF_WORKSTATION_TRUST_ACCOUNT |
-				  UF_SERVER_TRUST_ACCOUNT));
-	user_account_control |= ds_acb2uf(acct_flags);
-
-	talloc_free(msg);
-	msg = ldb_msg_new(tmp_ctx);
-	if (msg == NULL) {
-		ldb_transaction_cancel(ldb);
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	msg->dn = account_dn;
-
-	if (samdb_msg_add_uint(ldb, tmp_ctx, msg,
-			       "userAccountControl",
-			       user_account_control) != LDB_SUCCESS) {
-		ldb_transaction_cancel(ldb);
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* modify the samdb record */
-	ret = dsdb_replace(ldb, msg, 0);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to modify account record %s to set userAccountControl: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(ldb)));
-		ldb_transaction_cancel(ldb);
-		talloc_free(tmp_ctx);
-
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	ret = ldb_transaction_commit(ldb);
