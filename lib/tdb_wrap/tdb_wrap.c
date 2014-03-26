@@ -88,8 +88,7 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 						      int hash_size,
 						      int tdb_flags,
 						      int open_flags,
-						      mode_t mode,
-						      struct loadparm_context *lp_ctx)
+						      mode_t mode)
 {
 	struct tdb_wrap_private *result;
 	struct tdb_logging_context lctx;
@@ -101,22 +100,6 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 	result->name = talloc_strdup(result, name);
 	if (result->name == NULL) {
 		goto fail;
-	}
-
-	if (!lpcfg_use_mmap(lp_ctx)) {
-		tdb_flags |= TDB_NOMMAP;
-	}
-
-	if ((hash_size == 0) && (name != NULL)) {
-		const char *base;
-		base = strrchr_m(name, '/');
-
-		if (base != NULL) {
-			base += 1;
-		} else {
-			base = name;
-		}
-		hash_size = lpcfg_parm_int(lp_ctx, NULL, "tdb_hashsize", base, 0);
 	}
 
 	lctx.log_fn = tdb_wrap_log;
@@ -167,8 +150,25 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	}
 
 	if (w == NULL) {
+		if (!lpcfg_use_mmap(lp_ctx)) {
+			tdb_flags |= TDB_NOMMAP;
+		}
+
+		if ((hash_size == 0) && (name != NULL)) {
+			const char *base;
+			base = strrchr_m(name, '/');
+
+			if (base != NULL) {
+				base += 1;
+			} else {
+				base = name;
+			}
+			hash_size = lpcfg_parm_int(lp_ctx, NULL,
+						   "tdb_hashsize", base, 0);
+		}
+
 		w = tdb_wrap_private_open(result, name, hash_size, tdb_flags,
-					  open_flags, mode, lp_ctx);
+					  open_flags, mode);
 	} else {
 		/*
 		 * Correctly use talloc_reference: The tdb will be
