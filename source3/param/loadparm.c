@@ -4064,11 +4064,22 @@ Display the contents of the services array in human-readable form.
 void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 {
 	int iService;
+	struct loadparm_context *lp_ctx;
 
 	if (show_defaults)
 		defaults_saved = false;
 
-	dump_globals(f, defaults_saved);
+	lp_ctx = loadparm_init_s3(talloc_tos(),
+				  loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return;
+	}
+
+	lp_ctx->sDefault = &sDefault;
+	lp_ctx->services = ServicePtrs;
+
+	lpcfg_dump_globals(lp_ctx, f, !defaults_saved);
 
 	lpcfg_dump_a_service(&sDefault, &sDefault, f, flags_list, show_defaults);
 

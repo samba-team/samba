@@ -2030,7 +2030,7 @@ bool is_default(void *base_structure, int i)
  *Display the contents of the global structure.
  */
 
-static void lpcfg_dump_globals(struct loadparm_context *lp_ctx, FILE *f,
+void lpcfg_dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 			 bool show_defaults)
 {
 	int i;
