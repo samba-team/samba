@@ -947,12 +947,12 @@ static bool open_sockets(bool isdaemon, int port)
 	set_samba_nb_type();
 
 	if (!is_daemon && !is_a_socket(0)) {
-		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+		DEBUG(3, ("standard input is not a socket, assuming -D option\n"));
 		is_daemon = True;
 	}
 
 	if (is_daemon && !opt_interactive) {
-		DEBUG( 2, ( "Becoming a daemon.\n" ) );
+		DEBUG(3, ("Becoming a daemon.\n"));
 		become_daemon(Fork, no_process_group, log_stdout);
 	}
 
