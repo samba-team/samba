@@ -1215,6 +1215,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	struct tsocket_address *local;
 	NTSTATUS status;
 	int rc;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	rc = tsocket_address_inet_from_strings(mem_ctx,
 					       "ip",
@@ -1222,13 +1223,15 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 					       0,
 					       &local);
 	if (rc < 0) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = make_user_info(&user_info, user, user, domain, domain,
+	status = make_user_info(frame, &user_info, user, user, domain, domain,
 				lp_netbios_name(), local, lm_resp, nt_resp, NULL, NULL,
 				NULL, AUTH_PASSWORD_RESPONSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));
+		TALLOC_FREE(frame);
 		return status;
 	}
 	user_info->logon_parameters = logon_parameters;
@@ -1236,11 +1239,11 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	/* We don't want any more mapping of the username */
 	user_info->mapped_state = True;
 
-	status = check_sam_security_info3(challenge, talloc_tos(), user_info,
+	status = check_sam_security_info3(challenge, mem_ctx, user_info,
 					  pinfo3);
-	free_user_info(&user_info);
 	DEBUG(10, ("Authenticaticating user %s\\%s returned %s\n", domain,
 		   user, nt_errstr(status)));
+	TALLOC_FREE(frame);
 	return status;
 }
 

@@ -41,7 +41,8 @@ static int clear_string(char *password)
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
+NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
+			struct auth_usersupplied_info **ret_user_info,
 			const char *smb_name,
 			const char *internal_username,
 			const char *client_domain,
@@ -60,10 +61,7 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
 
-	/* FIXME: Have the caller provide a talloc context of the
-	 * correct lifetime (possibly talloc_tos(), but it depends on
-	 * the caller) */
-	user_info = talloc_zero(NULL, struct auth_usersupplied_info);
+	user_info = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	if (user_info == NULL) {
 		DEBUG(0,("talloc failed for user_info\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -161,13 +159,4 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
 	DEBUG(10,("made a user_info for %s (%s)\n", internal_username, smb_name));
 	*ret_user_info = user_info;
 	return NT_STATUS_OK;
-}
-
-/***************************************************************************
- Free a user_info struct
-***************************************************************************/
-
-void free_user_info(struct auth_usersupplied_info **user_info)
-{
-	TALLOC_FREE(*user_info);
 }

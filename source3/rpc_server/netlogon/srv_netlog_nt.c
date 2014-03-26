@@ -1578,7 +1578,8 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		if (*wksname == '\\') wksname++;
 
 		/* Standard challenge/response authentication */
-		if (!make_user_info_netlogon_network(&user_info,
+		if (!make_user_info_netlogon_network(talloc_tos(),
+						     &user_info,
 						     nt_username, nt_domain,
 						     wksname,
 						     p->remote_address,
@@ -1628,7 +1629,8 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 
 		auth_get_ntlm_challenge(auth_context, chal);
 
-		if (!make_user_info_netlogon_interactive(&user_info,
+		if (!make_user_info_netlogon_interactive(talloc_tos(),
+							 &user_info,
 							 nt_username, nt_domain,
 							 nt_workstation,
 							 p->remote_address,
@@ -1653,7 +1655,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	}
 
 	TALLOC_FREE(auth_context);
-	free_user_info(&user_info);
+	TALLOC_FREE(user_info);
 
 	DEBUG(5,("%s: check_password returned status %s\n",
 		  fn, nt_errstr(status)));

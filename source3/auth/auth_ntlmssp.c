@@ -116,7 +116,8 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 
 	lp_load(get_dyn_CONFIGFILE(), false, false, true, true);
 
-	nt_status = make_user_info_map(&mapped_user_info,
+	nt_status = make_user_info_map(talloc_tos(),
+                                       &mapped_user_info,
 				       user_info->client.account_name,
 				       user_info->client.domain_name,
 				       user_info->workstation_name,
@@ -148,7 +149,7 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 
 	username_was_mapped = mapped_user_info->was_mapped;
 
-	free_user_info(&mapped_user_info);
+	TALLOC_FREE(mapped_user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		nt_status = do_map_to_guest_server_info(mem_ctx,

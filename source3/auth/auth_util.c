@@ -89,7 +89,8 @@ static int _smb_create_user(const char *domain, const char *unix_username, const
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
 
-NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
+NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
+			    struct auth_usersupplied_info **user_info,
 			    const char *smb_name,
 			    const char *client_domain,
 			    const char *workstation_name,
@@ -141,7 +142,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 	 * it is our global SAM name, or for legacy behavior it is our
 	 * primary domain name */
 
-	result = make_user_info(user_info, smb_name, internal_username,
+	result = make_user_info(mem_ctx, user_info, smb_name, internal_username,
 			      client_domain, domain, workstation_name,
 			      remote_address, lm_pwd, nt_pwd,
 			      lm_interactive_pwd, nt_interactive_pwd,
@@ -160,7 +161,8 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
+bool make_user_info_netlogon_network(TALLOC_CTX *mem_ctx,
+				     struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *workstation_name,
@@ -176,7 +178,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
 
-	status = make_user_info_map(user_info,
+	status = make_user_info_map(mem_ctx, user_info,
 				    smb_name, client_domain, 
 				    workstation_name,
 				    remote_address,
@@ -200,7 +202,8 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info,
+bool make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
+					 struct auth_usersupplied_info **user_info,
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *workstation_name,
@@ -246,6 +249,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 		}
 
 		nt_status = make_user_info_map(
+			mem_ctx,
 			user_info, 
 			smb_name, client_domain, workstation_name,
 			remote_address,
@@ -271,7 +275,8 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
+bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
+			      struct auth_usersupplied_info **user_info,
 			      const char *smb_name, 
 			      const char *client_domain,
 			      const struct tsocket_address *remote_address,
@@ -318,7 +323,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 		return false;
 	}
 
-	ret = make_user_info(
+	ret = make_user_info(mem_ctx,
 		user_info, smb_name, smb_name, client_domain, client_domain, 
 		get_remote_machine_name(),
 		remote_address,
@@ -341,13 +346,15 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
+NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
+				      struct auth_usersupplied_info **user_info,
                                       const char *smb_name,
                                       const char *client_domain,
 				      const struct tsocket_address *remote_address,
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
-	return make_user_info(user_info, smb_name, smb_name, 
+	return make_user_info(mem_ctx,
+			      user_info, smb_name, smb_name,
 			      client_domain, client_domain, 
 			      get_remote_machine_name(),
 			      remote_address,
@@ -361,12 +368,14 @@ NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
  Create a guest user_info blob, for anonymous authentication.
 ****************************************************************************/
 
-bool make_user_info_guest(const struct tsocket_address *remote_address,
+bool make_user_info_guest(TALLOC_CTX *mem_ctx,
+			  const struct tsocket_address *remote_address,
 			  struct auth_usersupplied_info **user_info)
 {
 	NTSTATUS nt_status;
 
-	nt_status = make_user_info(user_info, 
+	nt_status = make_user_info(mem_ctx,
+				   user_info,
 				   "","", 
 				   "","", 
 				   "", 

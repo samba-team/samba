@@ -147,7 +147,8 @@ NTSTATUS auth_unix_init(void);
 /* The following definitions come from auth/auth_util.c  */
 struct tsocket_address;
 
-NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
+NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
+			    struct auth_usersupplied_info **user_info,
 			    const char *smb_name,
 			    const char *client_domain,
 			    const char *workstation_name,
@@ -158,7 +159,8 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const struct samr_Password *nt_interactive_pwd,
 			    const char *plaintext,
 			    enum auth_password_state password_state);
-bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
+bool make_user_info_netlogon_network(TALLOC_CTX *mem_ctx,
+				     struct auth_usersupplied_info **user_info,
 				     const char *smb_name,
 				     const char *client_domain,
 				     const char *workstation_name,
@@ -168,7 +170,8 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     int lm_pwd_len,
 				     const uchar *nt_network_pwd,
 				     int nt_pwd_len);
-bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info,
+bool make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
+					 struct auth_usersupplied_info **user_info,
 					 const char *smb_name,
 					 const char *client_domain,
 					 const char *workstation_name,
@@ -177,18 +180,21 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 					 const uchar chal[8],
 					 const uchar lm_interactive_pwd[16],
 					 const uchar nt_interactive_pwd[16]);
-bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
+bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
+			      struct auth_usersupplied_info **user_info,
 			      const char *smb_name,
 			      const char *client_domain,
 			      const struct tsocket_address *remote_address,
 			      const uint8 chal[8],
 			      DATA_BLOB plaintext_password);
-NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
+NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
+				      struct auth_usersupplied_info **user_info,
                                       const char *smb_name,
                                       const char *client_domain,
 				      const struct tsocket_address *remote_address,
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp);
-bool make_user_info_guest(const struct tsocket_address *remote_address,
+bool make_user_info_guest(TALLOC_CTX *mem_ctx,
+			  const struct tsocket_address *remote_address,
 			  struct auth_usersupplied_info **user_info);
 
 struct samu;
@@ -249,7 +255,8 @@ NTSTATUS session_extract_session_key(const struct auth_session_info *session_inf
 
 /* The following definitions come from auth/user_info.c  */
 
-NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
+NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
+			struct auth_usersupplied_info **ret_user_info,
 			const char *smb_name,
 			const char *internal_username,
 			const char *client_domain,

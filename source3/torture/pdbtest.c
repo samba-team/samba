@@ -277,7 +277,8 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 		return False;
 	}
 	
-	status = make_user_info(&user_info, pdb_get_username(pdb_entry), pdb_get_username(pdb_entry), 
+	status = make_user_info(mem_ctx,
+				&user_info, pdb_get_username(pdb_entry), pdb_get_username(pdb_entry),
 				pdb_get_domain(pdb_entry), pdb_get_domain(pdb_entry), lp_netbios_name(), 
 				tsocket_address, NULL, &nt_resp, NULL, NULL, NULL, 
 				AUTH_PASSWORD_RESPONSE);

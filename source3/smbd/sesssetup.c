@@ -100,14 +100,14 @@ static NTSTATUS check_guest_password(const struct tsocket_address *remote_addres
 	auth_context->get_ntlm_challenge(auth_context,
 					 chal);
 
-	if (!make_user_info_guest(remote_address, &user_info)) {
+	if (!make_user_info_guest(talloc_tos(), remote_address, &user_info)) {
 		TALLOC_FREE(auth_context);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	nt_status = auth_check_password_session_info(auth_context, 
 						     mem_ctx, user_info, session_info);
-	free_user_info(&user_info);
+	TALLOC_FREE(user_info);
 	TALLOC_FREE(auth_context);
 	return nt_status;
 }
@@ -874,10 +874,11 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
-		nt_status = make_user_info_for_reply_enc(&user_info, user,
-						domain,
-						sconn->remote_address,
-						lm_resp, nt_resp);
+		nt_status = make_user_info_for_reply_enc(talloc_tos(),
+							 &user_info, user,
+							 domain,
+							 sconn->remote_address,
+							 lm_resp, nt_resp);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			nt_status = auth_check_password_session_info(negprot_auth_context, 
 								     req, user_info, &session_info);
@@ -894,7 +895,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			plaintext_auth_context->get_ntlm_challenge(
 					plaintext_auth_context, chal);
 
-			if (!make_user_info_for_reply(&user_info,
+			if (!make_user_info_for_reply(talloc_tos(),
+						      &user_info,
 						      user, domain,
 						      sconn->remote_address,
 						      chal,
@@ -910,7 +912,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 	}
 
-	free_user_info(&user_info);
+	TALLOC_FREE(user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		data_blob_free(&nt_resp);
