@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Samba internal messaging functions
 
    Copyright (C) Andrew Tridgell 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -122,7 +122,7 @@ static void ping_message(struct imessaging_context *msg, void *private_data,
 /*
   return uptime of messaging server via irpc
 */
-static NTSTATUS irpc_uptime(struct irpc_message *msg, 
+static NTSTATUS irpc_uptime(struct irpc_message *msg,
 			    struct irpc_uptime *r)
 {
 	struct imessaging_context *ctx = talloc_get_type(msg->private_data, struct imessaging_context);
@@ -130,7 +130,7 @@ static NTSTATUS irpc_uptime(struct irpc_message *msg,
 	return NT_STATUS_OK;
 }
 
-/* 
+/*
    return the path to a messaging socket
 */
 static char *imessaging_path(struct imessaging_context *msg, struct server_id server_id)
@@ -159,7 +159,7 @@ static void imessaging_dispatch(struct imessaging_context *msg, struct imessagin
 
 	/* temporary IDs use an idtree, the rest use a array of pointers */
 	if (rec->header->msg_type >= MSG_TMP_BASE) {
-		d = (struct dispatch_fn *)idr_find(msg->dispatch_tree, 
+		d = (struct dispatch_fn *)idr_find(msg->dispatch_tree,
 						   rec->header->msg_type);
 	} else if (rec->header->msg_type < msg->num_types) {
 		d = msg->dispatch[rec->header->msg_type];
@@ -196,7 +196,7 @@ static void cluster_message_handler(struct imessaging_context *msg, DATA_BLOB pa
 	rec->retries       = 0;
 
 	if (packet.length != sizeof(*rec->header) + rec->header->length) {
-		DEBUG(0,("messaging: bad message header size %d should be %d\n", 
+		DEBUG(0,("messaging: bad message header size %d should be %d\n",
 			 rec->header->length, (int)(packet.length - sizeof(*rec->header))));
 		talloc_free(rec);
 		return;
@@ -221,7 +221,7 @@ static NTSTATUS try_send(struct imessaging_rec *rec)
 
 	/* rec->path is the path of the *other* socket, where we want
 	 * this to end up */
-	path = socket_address_from_strings(msg, msg->sock->backend_name, 
+	path = socket_address_from_strings(msg, msg->sock->backend_name,
 					   rec->path, 0);
 	if (!path) {
 		return NT_STATUS_NO_MEMORY;
@@ -239,7 +239,7 @@ static NTSTATUS try_send(struct imessaging_rec *rec)
 /*
   retry backed off messages
 */
-static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te, 
+static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te,
 			    struct timeval t, void *private_data)
 {
 	struct imessaging_context *msg = talloc_get_type(private_data,
@@ -271,12 +271,12 @@ static void imessaging_send_handler(struct imessaging_context *msg)
 				/* we're getting continuous write errors -
 				   backoff this record */
 				DLIST_REMOVE(msg->pending, rec);
-				DLIST_ADD_END(msg->retry_queue, rec, 
+				DLIST_ADD_END(msg->retry_queue, rec,
 					      struct imessaging_rec *);
 				if (msg->retry_te == NULL) {
-					msg->retry_te = 
+					msg->retry_te =
 						tevent_add_timer(msg->event.ev, msg,
-								timeval_current_ofs(1, 0), 
+								timeval_current_ofs(1, 0),
 								msg_retry_timer, msg);
 				}
 			}
@@ -285,10 +285,10 @@ static void imessaging_send_handler(struct imessaging_context *msg)
 		rec->retries = 0;
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_CTX *tmp_ctx = talloc_new(msg);
-			DEBUG(1,("messaging: Lost message from %s to %s of type %u - %s\n", 
+			DEBUG(1,("messaging: Lost message from %s to %s of type %u - %s\n",
 				 server_id_str(tmp_ctx, &rec->header->from),
 				 server_id_str(tmp_ctx, &rec->header->to),
-				 rec->header->msg_type, 
+				 rec->header->msg_type,
 				 nt_errstr(status)));
 			talloc_free(tmp_ctx);
 		}
@@ -313,17 +313,17 @@ static void imessaging_recv_handler(struct imessaging_context *msg)
 	/* see how many bytes are in the next packet */
 	status = socket_pending(msg->sock, &msize);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("socket_pending failed in messaging - %s\n", 
+		DEBUG(0,("socket_pending failed in messaging - %s\n",
 			 nt_errstr(status)));
 		return;
 	}
-	
+
 	packet = data_blob_talloc(msg, NULL, msize);
 	if (packet.data == NULL) {
 		/* assume this is temporary and retry */
 		return;
 	}
-	    
+
 	status = socket_recv(msg->sock, packet.data, msize, &msize);
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(&packet);
@@ -349,7 +349,7 @@ static void imessaging_recv_handler(struct imessaging_context *msg)
 	rec->retries       = 0;
 
 	if (msize != sizeof(*rec->header) + rec->header->length) {
-		DEBUG(0,("messaging: bad message header size %d should be %d\n", 
+		DEBUG(0,("messaging: bad message header size %d should be %d\n",
 			 rec->header->length, (int)(msize - sizeof(*rec->header))));
 		talloc_free(rec);
 		return;
@@ -444,7 +444,7 @@ void imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, vo
 	struct dispatch_fn *d, *next;
 
 	if (msg_type >= msg->num_types) {
-		d = (struct dispatch_fn *)idr_find(msg->dispatch_tree, 
+		d = (struct dispatch_fn *)idr_find(msg->dispatch_tree,
 						   msg_type);
 		if (!d) return;
 		idr_remove(msg->dispatch_tree, msg_type);
@@ -493,7 +493,7 @@ NTSTATUS imessaging_send(struct imessaging_context *msg, struct server_id server
 	rec->header->to       = server;
 	rec->header->length   = dlength;
 	if (dlength != 0) {
-		memcpy(rec->packet.data + sizeof(*rec->header), 
+		memcpy(rec->packet.data + sizeof(*rec->header),
 		       data->data, dlength);
 	}
 
@@ -622,11 +622,11 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	/* by stealing here we ensure that the socket is cleaned up (and even 
+	/* by stealing here we ensure that the socket is cleaned up (and even
 	   deleted) on exit */
 	talloc_steal(msg, msg->sock);
 
-	path = socket_address_from_strings(msg, msg->sock->backend_name, 
+	path = socket_address_from_strings(msg, msg->sock->backend_name,
 					   msg->path, 0);
 	if (!path) {
 		talloc_free(msg);
@@ -651,7 +651,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	if (auto_remove) {
 		talloc_set_destructor(msg, imessaging_cleanup);
 	}
-	
+
 	imessaging_register(msg, NULL, MSG_PING, ping_message);
 	imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
 	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
@@ -659,8 +659,8 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	return msg;
 }
 
-/* 
-   A hack, for the short term until we get 'client only' messaging in place 
+/*
+   A hack, for the short term until we get 'client only' messaging in place
 */
 struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 						  struct loadparm_context *lp_ctx,
@@ -694,7 +694,7 @@ struct irpc_list {
   register a irpc server function
 */
 NTSTATUS irpc_register(struct imessaging_context *msg_ctx,
-		       const struct ndr_interface_table *table, 
+		       const struct ndr_interface_table *table,
 		       int callnum, irpc_function_t fn, void *private_data)
 {
 	struct irpc_list *irpc;
@@ -903,7 +903,7 @@ static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx)
 	talloc_free(path);
 	return t;
 }
-	
+
 
 /*
   add a string name that this irpc server can be called on
@@ -1099,7 +1099,7 @@ void irpc_remove_name(struct imessaging_context *msg_ctx, const char *name)
 	for (i=0;i<count;i++) {
 		if (cluster_id_equal(&ids[i], &msg_ctx->server_id)) {
 			if (i < count-1) {
-				memmove(ids+i, ids+i+1, 
+				memmove(ids+i, ids+i+1,
 					sizeof(struct server_id) * (count-(i+1)));
 			}
 			rec.dsize -= sizeof(struct server_id);
