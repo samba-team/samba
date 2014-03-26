@@ -123,10 +123,9 @@ fail:
   wrapped connection to a tdb database
   to close just talloc_free() the tdb_wrap pointer
  */
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
-			       const char *name, int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode,
-			       struct loadparm_context *lp_ctx)
+struct tdb_wrap *tdb_wrap_open_(TALLOC_CTX *mem_ctx,
+				const char *name, int hash_size, int tdb_flags,
+				int open_flags, mode_t mode)
 {
 	struct tdb_wrap *result;
 	struct tdb_wrap_private *w;
@@ -150,23 +149,6 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	}
 
 	if (w == NULL) {
-		if (!lpcfg_use_mmap(lp_ctx)) {
-			tdb_flags |= TDB_NOMMAP;
-		}
-
-		if ((hash_size == 0) && (name != NULL)) {
-			const char *base;
-			base = strrchr_m(name, '/');
-
-			if (base != NULL) {
-				base += 1;
-			} else {
-				base = name;
-			}
-			hash_size = lpcfg_parm_int(lp_ctx, NULL,
-						   "tdb_hashsize", base, 0);
-		}
-
 		w = tdb_wrap_private_open(result, name, hash_size, tdb_flags,
 					  open_flags, mode);
 	} else {
@@ -194,3 +176,28 @@ fail:
 	return NULL;
 }
 
+struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
+			       const char *name, int hash_size, int tdb_flags,
+			       int open_flags, mode_t mode,
+			       struct loadparm_context *lp_ctx)
+{
+	if (!lpcfg_use_mmap(lp_ctx)) {
+		tdb_flags |= TDB_NOMMAP;
+	}
+
+	if ((hash_size == 0) && (name != NULL)) {
+		const char *base;
+		base = strrchr_m(name, '/');
+
+		if (base != NULL) {
+			base += 1;
+		} else {
+			base = name;
+		}
+		hash_size = lpcfg_parm_int(lp_ctx, NULL,
+					   "tdb_hashsize", base, 0);
+	}
+
+	return tdb_wrap_open_(mem_ctx, name, hash_size, tdb_flags, open_flags,
+			      mode);
+}
