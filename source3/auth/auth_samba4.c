@@ -31,6 +31,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+static NTSTATUS make_auth4_context_s4(TALLOC_CTX *mem_ctx,
+				      struct auth4_context **auth4_context);
+
 static struct idr_context *task_id_tree;
 
 static int free_task_id(struct server_id *server_id)
@@ -84,8 +87,8 @@ static struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
  */
 
 /* 
- * This hook is currently unused, as all NTLM logins go via the hooks
- * provided by make_auth4_context_s4() below.
+ * This hook is currently used by winbindd only, as all other NTLM
+ * logins go via the hooks provided by make_auth4_context_s4() below.
  *
  * This is only left in case we find a way that it might become useful
  * in future.  Importantly, this routine returns the information
@@ -107,22 +110,12 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth4_context *auth4_context;
-	struct loadparm_context *lp_ctx;
 
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(10, ("loadparm_init_s3 failed\n"));
-		talloc_free(frame);
-		return NT_STATUS_INVALID_SERVER_STATE;
+	nt_status = make_auth4_context_s4(mem_ctx, &auth4_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(frame);
+		goto done;
 	}
-
-	/* We create a private tevent context here to avoid nested loops in
-	 * the s3 one, as that may not be expected */
-	nt_status = auth_context_create(mem_ctx,
-					s4_event_context_init(frame), NULL, 
-					lp_ctx,
-					&auth4_context);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
 		
 	nt_status = auth_context_set_challenge(auth4_context, auth_context->challenge.data, "auth_samba4");
 	if (!NT_STATUS_IS_OK(nt_status)) {
