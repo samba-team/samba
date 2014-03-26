@@ -342,6 +342,11 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 
 	for (method=state->auth_ctx->methods; method; method = method->next) {
 
+		if (state->user_info->flags & USER_INFO_LOCAL_SAM_ONLY
+		    && !(method->ops->flags & AUTH_METHOD_LOCAL_SAM)) {
+			continue;
+		}
+
 		/* we fill in state->method here so debug messages in
 		   the callers know which method failed */
 		state->method = method;

@@ -107,6 +107,8 @@ typedef struct auth_methods
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
 
+	uint32_t flags;
+
 } auth_methods;
 
 typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
@@ -130,7 +132,8 @@ enum session_key_use_intent {
 
 /* Changed from 1 -> 2 to add the logon_parameters field. */
 /* Changed from 2 -> 3 when we reworked many auth structures to use IDL or be in common with Samba4 */
-#define AUTH_INTERFACE_VERSION 3
+/* Changed from 3 -> 4 when we reworked added the flags */
+#define AUTH_INTERFACE_VERSION 4
 
 #include "auth/proto.h"
 

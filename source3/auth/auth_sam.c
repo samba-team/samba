@@ -121,7 +121,7 @@ static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *par
 	}
 	result->auth = auth_samstrict_auth;
 	result->name = "sam";
-
+	result->flags = AUTH_METHOD_LOCAL_SAM;
         *auth_method = result;
 	return NT_STATUS_OK;
 }

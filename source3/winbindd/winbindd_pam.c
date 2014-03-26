@@ -1212,13 +1212,16 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 					  const DATA_BLOB *nt_resp,
 					  struct netr_SamInfo3 **pinfo3)
 {
+	struct auth_context *auth_context;
+	struct auth_serversupplied_info *server_info;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct tsocket_address *local;
+	struct netr_SamInfo3 *info3;
 	NTSTATUS status;
 	int rc;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	rc = tsocket_address_inet_from_strings(mem_ctx,
+	rc = tsocket_address_inet_from_strings(frame,
 					       "ip",
 					       "127.0.0.1",
 					       0,
@@ -1235,13 +1238,49 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(frame);
 		return status;
 	}
+
 	user_info->logon_parameters = logon_parameters;
 
 	/* We don't want any more mapping of the username */
 	user_info->mapped_state = True;
 
-	status = check_sam_security_info3(challenge, mem_ctx, user_info,
-					  pinfo3);
+	/* We don't want to come back to winbindd or to do PAM account checks */
+	user_info->flags |= USER_INFO_LOCAL_SAM_ONLY | USER_INFO_INFO3_AND_NO_AUTHZ;
+
+	status = make_auth_context_fixed(frame, &auth_context, challenge->data);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to test authentication with check_sam_security_info3: %s\n", nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = auth_check_ntlm_password(mem_ctx,
+					  auth_context,
+					  user_info,
+					  &server_info);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
+	if (info3 == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = serverinfo_to_SamInfo3(server_info, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		TALLOC_FREE(info3);
+		DEBUG(0, ("serverinfo_to_SamInfo3 failed: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	*pinfo3 = info3;
 	DEBUG(10, ("Authenticaticating user %s\\%s returned %s\n", domain,
 		   user, nt_errstr(status)));
 	TALLOC_FREE(frame);

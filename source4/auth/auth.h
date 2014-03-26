@@ -72,6 +72,7 @@ struct auth_operations {
 						       const char *principal,
 						       struct ldb_dn *user_dn,
 						       struct auth_user_info_dc **interim_info);
+	uint32_t flags;
 };
 
 struct auth_method_context {

@@ -145,14 +145,23 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 		goto done;
 	}
 
-	nt_status = make_server_info_info3(mem_ctx, user_info->client.account_name,
-					   user_info->mapped.domain_name, server_info,
-					info3);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(10, ("make_server_info_info3 failed: %s\n",
-			   nt_errstr(nt_status)));
-		TALLOC_FREE(frame);
-		return nt_status;
+	if (user_info->flags & USER_INFO_INFO3_AND_NO_AUTHZ) {
+		*server_info = make_server_info(mem_ctx);
+		if (*server_info == NULL) {
+			nt_status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		(*server_info)->info3 = talloc_steal(*server_info, info3);
+
+	} else {
+		nt_status = make_server_info_info3(mem_ctx, user_info->client.account_name,
+						   user_info->mapped.domain_name, server_info,
+						   info3);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(10, ("make_server_info_info3 failed: %s\n",
+				   nt_errstr(nt_status)));
+			goto done;
+		}
 	}
 
 	nt_status = NT_STATUS_OK;
@@ -356,6 +365,7 @@ static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 	result->auth = check_samba4_security;
 	result->prepare_gensec = prepare_gensec;
 	result->make_auth4_context = make_auth4_context_s4;
+	result->flags = AUTH_METHOD_LOCAL_SAM;
 
 	if (param && *param) {
 		auth_context->forced_samba4_methods = talloc_strdup(result, param);

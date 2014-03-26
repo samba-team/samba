@@ -210,6 +210,11 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		TALLOC_CTX *tmp_ctx;
 		NTSTATUS result;
 
+		if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY
+		    && !(auth_method->flags & AUTH_METHOD_LOCAL_SAM)) {
+			continue;
+		}
+
 		tmp_ctx = talloc_named(mem_ctx,
 				       0,
 				       "%s authentication for user %s\\%s",
@@ -253,7 +258,10 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		unix_username = (*pserver_info)->unix_name;
-		if (!(*pserver_info)->guest) {
+
+		/* We skip doing this step if the caller asked us not to */
+		if (!(user_info->flags & USER_INFO_INFO3_AND_NO_AUTHZ)
+		    && !(*pserver_info)->guest) {
 			const char *rhost;
 
 			if (tsocket_address_is_inet(user_info->remote_host, "ip")) {
