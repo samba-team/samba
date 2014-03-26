@@ -43,6 +43,7 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdb_wrap *db;
 	struct loadparm_context *lp_ctx;
+	const char *fname;
 
 	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
@@ -56,9 +57,14 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 	 * work.
 	 */
 
-	db = tdb_wrap_open(mem_ctx, lock_path("serverid.tdb"),
-			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT,
-			   0644, lp_ctx);
+	fname = lock_path("serverid.tdb");
+
+	db = tdb_wrap_open_(mem_ctx, fname,
+			    lpcfg_tdb_hash_size(lp_ctx, fname),
+			    lpcfg_tdb_flags(lp_ctx,
+					    TDB_DEFAULT|TDB_CLEAR_IF_FIRST|
+					    TDB_INCOMPATIBLE_HASH),
+			    O_RDWR|O_CREAT, 0644);
 	talloc_unlink(mem_ctx, lp_ctx);
 	if (db == NULL) {
 		DEBUG(1, ("could not open serverid.tdb: %s\n",
