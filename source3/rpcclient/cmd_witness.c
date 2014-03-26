@@ -366,8 +366,7 @@ static bool AsyncNotify_Move(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
 	for (n=0; n<num; n++) {
 		uint32_t flags = IVAL(pos,0);
 		struct in_addr ipv4;
-		struct in6_addr ipv6;
-		struct sockaddr_storage sas4, sas6;
+		struct sockaddr_storage sas4;
 		char *str4, *str6;
 		pos += 4;
 
@@ -376,9 +375,19 @@ static bool AsyncNotify_Move(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
 		str4 = print_canonical_sockaddr(mem_ctx, &sas4);
 		pos += 4;
 
-		memcpy(&ipv6.s6_addr, pos, 16);
-		in6_addr_to_sockaddr_storage(&sas6, ipv6);
-		str6 = print_canonical_sockaddr(mem_ctx, &sas6);
+		{
+#ifdef HAVE_IPV6
+			struct in6_addr ipv6;
+			struct sockaddr_storage sas6;
+
+			memcpy(&ipv6.s6_addr, pos, 16);
+			in6_addr_to_sockaddr_storage(&sas6, ipv6);
+			str6 = print_canonical_sockaddr(mem_ctx, &sas6);
+#else
+			DATA_BLOB ipv6 = data_blob(pos, 16);
+			str6 = data_blob_hex_string_upper(mem_ctx, &ipv6);
+#endif
+		}
 		pos += 16;
 
 		d_printf("Flags 0x%08x", flags);
