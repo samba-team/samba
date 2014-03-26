@@ -2778,3 +2778,21 @@ bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandato
 
 	return allowed;
 }
+
+int lpcfg_tdb_hash_size(struct loadparm_context *lp_ctx, const char *name)
+{
+	const char *base;
+
+	if (name == NULL) {
+		return 0;
+	}
+
+	base = strrchr_m(name, '/');
+	if (base != NULL) {
+		base += 1;
+	} else {
+		base = name;
+	}
+	return lpcfg_parm_int(lp_ctx, NULL, "tdb_hashsize", base, 0);
+
+}
