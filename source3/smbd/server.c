@@ -1307,8 +1307,10 @@ extern void build_options(bool screen);
 #endif
 
 	if (!is_daemon && !is_a_socket(0)) {
-		if (!interactive)
-			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+		if (!interactive) {
+			DEBUG(3, ("Standard input is not a socket, "
+				  "assuming -D option\n"));
+		}
 
 		/*
 		 * Setting is_daemon here prevents us from eventually calling
@@ -1319,7 +1321,7 @@ extern void build_options(bool screen);
 	}
 
 	if (is_daemon && !interactive) {
-		DEBUG( 3, ( "Becoming a daemon.\n" ) );
+		DEBUG(3, ("Becoming a daemon.\n"));
 		become_daemon(Fork, no_process_group, log_stdout);
 	}
 
