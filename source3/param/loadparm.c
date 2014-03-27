@@ -2729,46 +2729,6 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 	return bRetval;
 }
 
-
-/***************************************************************************
- Determine if a partcular base parameter is currentl set to the default value.
-***************************************************************************/
-
-static bool is_default(int i)
-{
-	switch (parm_table[i].type) {
-		case P_LIST:
-		case P_CMDLIST:
-			return str_list_equal((const char * const *)parm_table[i].def.lvalue,
-					      *(const char ***)lp_parm_ptr(NULL, 
-									   &parm_table[i]));
-		case P_STRING:
-		case P_USTRING:
-			return strequal(parm_table[i].def.svalue,
-					*(char **)lp_parm_ptr(NULL, 
-							      &parm_table[i]));
-		case P_BOOL:
-		case P_BOOLREV:
-			return parm_table[i].def.bvalue ==
-				*(bool *)lp_parm_ptr(NULL, 
-						     &parm_table[i]);
-		case P_CHAR:
-			return parm_table[i].def.cvalue ==
-				*(char *)lp_parm_ptr(NULL, 
-						     &parm_table[i]);
-		case P_INTEGER:
-		case P_OCTAL:
-		case P_ENUM:
-		case P_BYTES:
-			return parm_table[i].def.ivalue ==
-				*(int *)lp_parm_ptr(NULL, 
-						    &parm_table[i]);
-		case P_SEP:
-			break;
-	}
-	return false;
-}
-
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
@@ -2784,7 +2744,7 @@ static void dump_globals(FILE *f, bool show_defaults)
 		if (parm_table[i].p_class == P_GLOBAL &&
 		    !(parm_table[i].flags & FLAG_META) &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (show_defaults && is_default(i))
+			if (show_defaults && is_default(&Globals, i))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			lpcfg_print_parameter(&parm_table[i], lp_parm_ptr(NULL,
