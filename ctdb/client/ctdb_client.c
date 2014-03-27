@@ -709,6 +709,21 @@ again:
 		goto again;
 	}
 
+	/* if this is a request for read/write and we have delegations
+	   we have to revoke all delegations first
+	*/
+	if ((h->header.dmaster == ctdb_db->ctdb->pnn) &&
+	    (h->header.flags & CTDB_REC_RO_HAVE_DELEGATIONS)) {
+		ctdb_ltdb_unlock(ctdb_db, key);
+		ret = ctdb_client_force_migration(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_DEBUG,("ctdb_fetch_readonly_lock: force_migration failed\n"));
+			talloc_free(h);
+			return NULL;
+		}
+		goto again;
+	}
+
 	DEBUG(DEBUG_DEBUG,("ctdb_fetch_lock: we are dmaster - done\n"));
 	return h;
 }
