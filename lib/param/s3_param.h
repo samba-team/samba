@@ -16,8 +16,6 @@ struct loadparm_s3_helpers
 	char * (*lp_string)(TALLOC_CTX *ctx, const char *in);
 	bool (*lp_include)(struct loadparm_context*, struct loadparm_service *,
 		       	const char *, char **);
-	void (*init_printer_values)(struct loadparm_context *, TALLOC_CTX *,
-				    struct loadparm_service *);
 	void (*init_ldap_debugging)(void);
 	bool (*set_netbios_aliases)(const char **);
 	bool (*lp_do_parameter)(int, const char *, const char *);

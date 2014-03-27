@@ -1254,7 +1254,6 @@ bool handle_printing(struct loadparm_context *lp_ctx, struct loadparm_service *s
 			    const char *pszParmValue, char **ptr)
 {
 	static int parm_num = -1;
-	struct loadparm_service *s;
 
 	if (parm_num == -1) {
 		parm_num = lpcfg_map_parameter("printing");
@@ -1266,11 +1265,9 @@ bool handle_printing(struct loadparm_context *lp_ctx, struct loadparm_service *s
 
 	if (lp_ctx->s3_fns) {
 		if (service == NULL) {
-			s = lp_ctx->sDefault;
-			lp_ctx->s3_fns->init_printer_values(lp_ctx, lp_ctx->globals->ctx, s);
+			init_printer_values(lp_ctx, lp_ctx->globals->ctx, lp_ctx->sDefault);
 		} else {
-			s = service;
-			lp_ctx->s3_fns->init_printer_values(lp_ctx, s, s);
+			init_printer_values(lp_ctx, service, service);
 		}
 	}
 

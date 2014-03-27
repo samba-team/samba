@@ -70,7 +70,6 @@ static struct loadparm_s3_helpers s3_fns =
 	.dump = lp_dump,
 	.lp_string = lp_string,
 	.lp_include = lp_include,
-	.init_printer_values = init_printer_values,
 	.init_ldap_debugging = init_ldap_debugging,
 	.set_netbios_aliases = set_netbios_aliases,
 	.lp_do_parameter = lp_do_parameter,
