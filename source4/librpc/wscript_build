@@ -275,6 +275,11 @@ bld.SAMBA_PYTHON('python_dfs',
 	realname='samba/dcerpc/dfs.so'
 	)
 
+bld.SAMBA_PYTHON('python_dcerpc_dcerpc',
+	source='../../librpc/gen_ndr/py_dcerpc.c',
+	deps='NDR_DCERPC pytalloc-util pyrpc_util',
+	realname='samba/dcerpc/dcerpc.so'
+	)
 
 bld.SAMBA_PYTHON('python_unixinfo',
 	source='../../librpc/gen_ndr/py_unixinfo.c',
