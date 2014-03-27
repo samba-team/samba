@@ -590,24 +590,21 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	/* setup a handler for messages from other cluster nodes, if appropriate */
 	status = cluster_message_init(msg, server_id, cluster_message_handler);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(msg);
-		return NULL;
+		goto fail;
 	}
 
 	/* create the messaging directory if needed */
 
 	msg->lp_ctx = talloc_reference(msg, lp_ctx);
 	if (!msg->lp_ctx) {
-		talloc_free(msg);
-		return NULL;
+		goto fail;
 	}
 
 	msg->base_path     = lpcfg_imessaging_path(msg, lp_ctx);
 
 	ok = directory_create_or_exist_strict(msg->base_path, geteuid(), 0700);
 	if (!ok) {
-		talloc_free(msg);
-		return NULL;
+		goto fail;
 	}
 
 	msg->path          = imessaging_path(msg, server_id);
@@ -618,8 +615,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	status = socket_create("unix", SOCKET_TYPE_DGRAM, &msg->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(msg);
-		return NULL;
+		goto fail;
 	}
 
 	/* by stealing here we ensure that the socket is cleaned up (and even
@@ -629,15 +625,13 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	path = socket_address_from_strings(msg, msg->sock->backend_name,
 					   msg->path, 0);
 	if (!path) {
-		talloc_free(msg);
-		return NULL;
+		goto fail;
 	}
 
 	status = socket_listen(msg->sock, path, 50, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to setup messaging listener for '%s':%s\n", msg->path, nt_errstr(status)));
-		talloc_free(msg);
-		return NULL;
+		goto fail;
 	}
 
 	/* it needs to be non blocking for sends */
@@ -657,6 +651,9 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
 
 	return msg;
+fail:
+	talloc_free(msg);
+	return NULL;
 }
 
 /*
