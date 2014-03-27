@@ -39,7 +39,8 @@
 /* change the message version with any incompatible changes in the protocol */
 #define IMESSAGING_VERSION 1
 
-static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx);
+static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx,
+					 struct loadparm_context *lp_ctx);
 
 /*
   a pending irpc call
@@ -58,7 +59,6 @@ struct imessaging_context {
 	struct socket_context *sock;
 	const char *base_path;
 	const char *path;
-	struct loadparm_context *lp_ctx;
 	struct dispatch_fn **dispatch;
 	uint32_t num_types;
 	struct idr_context *dispatch_tree;
@@ -598,11 +598,6 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	/* create the messaging directory if needed */
 
-	msg->lp_ctx = talloc_reference(msg, lp_ctx);
-	if (!msg->lp_ctx) {
-		goto fail;
-	}
-
 	msg->base_path     = lpcfg_imessaging_path(msg, lp_ctx);
 	if (msg->base_path == NULL) {
 		goto fail;
@@ -631,7 +626,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->start_time    = timeval_current();
 
-	msg->names_db = irpc_namedb_open(msg);
+	msg->names_db = irpc_namedb_open(msg, lp_ctx);
 	if (msg->names_db == NULL) {
 		goto fail;
 	}
@@ -912,17 +907,16 @@ static int irpc_destructor(struct irpc_request *irpc)
 /*
   open the naming database
 */
-static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx)
+static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx,
+					 struct loadparm_context *lp_ctx)
 {
 	struct tdb_wrap *t;
 	char *path = talloc_asprintf(msg_ctx, "%s/names.tdb", msg_ctx->base_path);
 	if (path == NULL) {
 		return NULL;
 	}
-	t = tdb_wrap_open(msg_ctx, path,
-			  lpcfg_tdb_hash_size(msg_ctx->lp_ctx, path),
-			  lpcfg_tdb_flags(msg_ctx->lp_ctx, 0),
-			  O_RDWR|O_CREAT, 0660);
+	t = tdb_wrap_open(msg_ctx, path, lpcfg_tdb_hash_size(lp_ctx, path),
+			  lpcfg_tdb_flags(lp_ctx, 0), O_RDWR|O_CREAT, 0660);
 	talloc_free(path);
 	return t;
 }
