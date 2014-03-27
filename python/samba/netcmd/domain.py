@@ -850,7 +850,7 @@ class cmd_domain_demote(Command):
             remote_samdb.rename(newdn, dc_dn)
             raise CommandError("Error while sending a removeDsServer", e)
 
-        for s in ("CN=Entreprise,CN=Microsoft System Volumes,CN=System,CN=Configuration",
+        for s in ("CN=Enterprise,CN=Microsoft System Volumes,CN=System,CN=Configuration",
                   "CN=%s,CN=Microsoft System Volumes,CN=System,CN=Configuration" % lp.get("realm"),
                   "CN=Domain System Volumes (SYSVOL share),CN=File Replication Service,CN=System"):
             try:
@@ -859,7 +859,7 @@ class cmd_domain_demote(Command):
             except ldb.LdbError, l:
                 pass
 
-        for s in ("CN=Entreprise,CN=NTFRS Subscriptions",
+        for s in ("CN=Enterprise,CN=NTFRS Subscriptions",
                   "CN=%s, CN=NTFRS Subscriptions" % lp.get("realm"),
                   "CN=Domain system Volumes (SYSVOL Share), CN=NTFRS Subscriptions",
                   "CN=NTFRS Subscriptions"):
