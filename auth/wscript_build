@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('auth_sam_reply',
-                  source='auth_sam_reply.c',
+                  source='auth_sam_reply.c wbc_auth_util.c',
                   deps='talloc samba-security samba-util',
                   autoproto='auth_sam_reply.h',
                   private_library=True
