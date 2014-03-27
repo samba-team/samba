@@ -110,22 +110,24 @@ monitor_interfaces()
 		mark_up $iface
 		;;
 	    *)
-		[ -z "$iface" ] || {
-		    [ "$(basename $(readlink /sys/class/net/$iface/device/driver) 2>/dev/null)" = virtio_net ] ||
+		# Ignore virtio_net devices, assume they're always up
+		_driver_path="/sys/class/net/$iface/device/driver"
+		_driver=$(basename $(readlink "$_driver_path") 2>/dev/null)
+		[ "$_driver" = "virtio_net" ] && continue
+
+		ethtool $iface | grep -q 'Link detected: yes' || {
+		    # On some systems, this is not successful when a
+		    # cable is plugged but the interface has not been
+		    # brought up previously. Bring the interface up
+		    # and try again...
+		    ip link set $iface up
 		    ethtool $iface | grep -q 'Link detected: yes' || {
-			# On some systems, this is not successful when a
-			# cable is plugged but the interface has not been
-			# brought up previously. Bring the interface up and
-			# try again...
-			ip link set $iface up
-			ethtool $iface | grep -q 'Link detected: yes' || {
-			    echo "ERROR: No link on the public network interface $iface"
-			    mark_down $iface
-			    continue
-			}
+			echo "ERROR: No link on the public network interface $iface"
+			mark_down $iface
+			continue
 		    }
-		    mark_up $iface
 		}
+		mark_up $iface
 		;;
 	    esac
 
