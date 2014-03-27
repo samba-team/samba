@@ -224,7 +224,8 @@ def add_init_functions(self):
         sname = sname.replace('/','_')
         cflags.append('-DSTATIC_%s_MODULES=%s' % (sname, sentinel))
         if sentinel == 'NULL':
-            cflags.append('-DSTATIC_%s_MODULES_PROTO=' % sname)
+            proto = "extern void __%s_dummy_module_proto(void)" % (sname)
+            cflags.append('-DSTATIC_%s_MODULES_PROTO=%s' % (sname, proto))
         self.ccflags = cflags
         return
 
@@ -238,12 +239,14 @@ def add_init_functions(self):
         if init_fn_list == []:
             cflags.append('-DSTATIC_%s_MODULES=%s' % (m, sentinel))
             if sentinel == 'NULL':
-                cflags.append('-DSTATIC_%s_MODULES_PROTO' % m)
+                proto = "extern void __%s_dummy_module_proto(void)" % (m)
+                cflags.append('-DSTATIC_%s_MODULES_PROTO=%s' % (m, proto))
         else:
             cflags.append('-DSTATIC_%s_MODULES=%s' % (m, ','.join(init_fn_list) + ',' + sentinel))
             proto=''
             for f in init_fn_list:
-                proto = proto + '_MODULE_PROTO(%s)' % f
+                proto += '_MODULE_PROTO(%s)' % f
+            proto += "extern void __%s_dummy_module_proto(void)" % (m)
             cflags.append('-DSTATIC_%s_MODULES_PROTO=%s' % (m, proto))
     self.ccflags = cflags
 
