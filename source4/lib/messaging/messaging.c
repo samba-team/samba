@@ -39,6 +39,8 @@
 /* change the message version with any incompatible changes in the protocol */
 #define IMESSAGING_VERSION 1
 
+static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx);
+
 /*
   a pending irpc call
 */
@@ -65,6 +67,7 @@ struct imessaging_context {
 	struct irpc_list *irpc;
 	struct idr_context *idr;
 	const char **names;
+	struct tdb_wrap *names_db;
 	struct timeval start_time;
 	struct tevent_timer *retry_te;
 	struct {
@@ -628,6 +631,11 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->start_time    = timeval_current();
 
+	msg->names_db = irpc_namedb_open(msg);
+	if (msg->names_db == NULL) {
+		goto fail;
+	}
+
 	status = socket_create("unix", SOCKET_TYPE_DGRAM, &msg->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -925,16 +933,12 @@ static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx)
 */
 NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 {
-	struct tdb_wrap *t;
+	struct tdb_wrap *t = msg_ctx->names_db;
 	TDB_DATA rec;
 	int count;
 	NTSTATUS status = NT_STATUS_OK;
 
-	t = irpc_namedb_open(msg_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(t);
-
 	if (tdb_lock_bystring(t->tdb, name) != 0) {
-		talloc_free(t);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 	rec = tdb_fetch_bystring(t->tdb, name);
@@ -943,7 +947,6 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 	rec.dsize += sizeof(struct server_id);
 	if (rec.dptr == NULL) {
 		tdb_unlock_bystring(t->tdb, name);
-		talloc_free(t);
 		return NT_STATUS_NO_MEMORY;
 	}
 	((struct server_id *)rec.dptr)[count] = msg_ctx->server_id;
@@ -952,7 +955,6 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 	}
 	free(rec.dptr);
 	tdb_unlock_bystring(t->tdb, name);
-	talloc_free(t);
 
 	msg_ctx->names = str_list_add(msg_ctx->names, name);
 	talloc_steal(msg_ctx, msg_ctx->names);
@@ -967,31 +969,23 @@ struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 				      TALLOC_CTX *mem_ctx,
 				      const char *name)
 {
-	struct tdb_wrap *t;
+	struct tdb_wrap *t = msg_ctx->names_db;
 	TDB_DATA rec;
 	int count, i;
 	struct server_id *ret;
 
-	t = irpc_namedb_open(msg_ctx);
-	if (t == NULL) {
-		return NULL;
-	}
-
 	if (tdb_lock_bystring(t->tdb, name) != 0) {
-		talloc_free(t);
 		return NULL;
 	}
 	rec = tdb_fetch_bystring(t->tdb, name);
 	if (rec.dptr == NULL) {
 		tdb_unlock_bystring(t->tdb, name);
-		talloc_free(t);
 		return NULL;
 	}
 	count = rec.dsize / sizeof(struct server_id);
 	ret = talloc_array(mem_ctx, struct server_id, count+1);
 	if (ret == NULL) {
 		tdb_unlock_bystring(t->tdb, name);
-		talloc_free(t);
 		return NULL;
 	}
 	for (i=0;i<count;i++) {
@@ -1000,7 +994,6 @@ struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 	server_id_set_disconnected(&ret[i]);
 	free(rec.dptr);
 	tdb_unlock_bystring(t->tdb, name);
-	talloc_free(t);
 
 	return ret;
 }
@@ -1053,25 +1046,17 @@ static int all_servers_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data
 struct irpc_name_records *irpc_all_servers(struct imessaging_context *msg_ctx,
 					   TALLOC_CTX *mem_ctx)
 {
-	struct tdb_wrap *t;
+	struct tdb_wrap *t = msg_ctx->names_db;
 	int ret;
 	struct irpc_name_records *name_records = talloc_zero(mem_ctx, struct irpc_name_records);
 	if (name_records == NULL) {
 		return NULL;
 	}
 
-	t = irpc_namedb_open(msg_ctx);
-	if (t == NULL) {
-		return NULL;
-	}
-
 	ret = tdb_traverse_read(t->tdb, all_servers_func, name_records);
 	if (ret == -1) {
-		talloc_free(t);
 		return NULL;
 	}
-
-	talloc_free(t);
 
 	return name_records;
 }
@@ -1081,33 +1066,25 @@ struct irpc_name_records *irpc_all_servers(struct imessaging_context *msg_ctx,
 */
 void irpc_remove_name(struct imessaging_context *msg_ctx, const char *name)
 {
-	struct tdb_wrap *t;
+	struct tdb_wrap *t = msg_ctx->names_db;
 	TDB_DATA rec;
 	int count, i;
 	struct server_id *ids;
 
 	str_list_remove(msg_ctx->names, name);
 
-	t = irpc_namedb_open(msg_ctx);
-	if (t == NULL) {
-		return;
-	}
-
 	if (tdb_lock_bystring(t->tdb, name) != 0) {
-		talloc_free(t);
 		return;
 	}
 	rec = tdb_fetch_bystring(t->tdb, name);
 	if (rec.dptr == NULL) {
 		tdb_unlock_bystring(t->tdb, name);
-		talloc_free(t);
 		return;
 	}
 	count = rec.dsize / sizeof(struct server_id);
 	if (count == 0) {
 		free(rec.dptr);
 		tdb_unlock_bystring(t->tdb, name);
-		talloc_free(t);
 		return;
 	}
 	ids = (struct server_id *)rec.dptr;
@@ -1124,7 +1101,6 @@ void irpc_remove_name(struct imessaging_context *msg_ctx, const char *name)
 	tdb_store_bystring(t->tdb, name, rec, 0);
 	free(rec.dptr);
 	tdb_unlock_bystring(t->tdb, name);
-	talloc_free(t);
 }
 
 struct server_id imessaging_get_server_id(struct imessaging_context *msg_ctx)
