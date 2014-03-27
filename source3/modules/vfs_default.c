@@ -1538,6 +1538,18 @@ static uint64_t vfswrap_get_alloc_size(vfs_handle_struct *handle,
 #else
 #error SIZEOF_BLKCNT_T_NOT_A_SUPPORTED_VALUE
 #endif
+	if (result == 0) {
+		/*
+		 * Some file systems do not allocate a block for very
+		 * small files. But for non-empty file should report a
+		 * positive size.
+		 */
+
+		uint64_t filesize = get_file_size_stat(sbuf);
+		if (filesize > 0) {
+			result = MIN((uint64_t)STAT_ST_BLOCKSIZE, filesize);
+		}
+	}
 #else
 	result = get_file_size_stat(sbuf);
 #endif
