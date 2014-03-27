@@ -45,7 +45,7 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev,
 
 	printf("Trying to fetch lock the record ...\n");
 
-	h = ctdb_fetch_readonly_lock(ctdb_db, tmp_ctx, key, &data, false);
+	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 	if (h == NULL) {
 		printf("Failed to fetch record '%s' on node %d\n", 
 	       		(const char *)key.dptr, ctdb_get_pnn(ctdb));
