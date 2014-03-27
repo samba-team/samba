@@ -567,7 +567,7 @@ int foo()
                 if set_target:
                     SET_TARGET_TYPE(conf, lib, 'EMPTY')
         else:
-            conf.define('HAVE_LIB%s' % lib.upper().replace('-','_'), 1)
+            conf.define('HAVE_LIB%s' % lib.upper().replace('-','_').replace('.','_'), 1)
             conf.env['LIB_' + lib.upper()] = lib
             if set_target:
                 conf.SET_TARGET_TYPE(lib, 'SYSLIB')
