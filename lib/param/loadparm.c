@@ -2179,6 +2179,127 @@ static void lpcfg_add_auto_services(struct loadparm_context *lp_ctx,
 	return;
 }
 
+/***************************************************************************
+ Initialise the sDefault parameter structure for the printer values.
+***************************************************************************/
+
+void init_printer_values(struct loadparm_context *lp_ctx, TALLOC_CTX *ctx,
+			 struct loadparm_service *pService)
+{
+	/* choose defaults depending on the type of printing */
+	switch (pService->printing) {
+		case PRINT_BSD:
+		case PRINT_AIX:
+		case PRINT_LPRNT:
+		case PRINT_LPROS2:
+			lpcfg_string_set(ctx, &pService->lpq_command, "lpq -P'%p'");
+			lpcfg_string_set(ctx, &pService->lprm_command, "lprm -P'%p' %j");
+			lpcfg_string_set(ctx, &pService->print_command, "lpr -r -P'%p' %s");
+			break;
+
+		case PRINT_LPRNG:
+		case PRINT_PLP:
+			lpcfg_string_set(ctx, &pService->lpq_command, "lpq -P'%p'");
+			lpcfg_string_set(ctx, &pService->lprm_command, "lprm -P'%p' %j");
+			lpcfg_string_set(ctx, &pService->print_command, "lpr -r -P'%p' %s");
+			lpcfg_string_set(ctx, &pService->queuepause_command, "lpc stop '%p'");
+			lpcfg_string_set(ctx, &pService->queueresume_command, "lpc start '%p'");
+			lpcfg_string_set(ctx, &pService->lppause_command, "lpc hold '%p' %j");
+			lpcfg_string_set(ctx, &pService->lpresume_command, "lpc release '%p' %j");
+			break;
+
+		case PRINT_CUPS:
+		case PRINT_IPRINT:
+			/* set the lpq command to contain the destination printer
+			   name only.  This is used by cups_queue_get() */
+			lpcfg_string_set(ctx, &pService->lpq_command, "%p");
+			lpcfg_string_set(ctx, &pService->lprm_command, "");
+			lpcfg_string_set(ctx, &pService->print_command, "");
+			lpcfg_string_set(ctx, &pService->lppause_command, "");
+			lpcfg_string_set(ctx, &pService->lpresume_command, "");
+			lpcfg_string_set(ctx, &pService->queuepause_command, "");
+			lpcfg_string_set(ctx, &pService->queueresume_command, "");
+			break;
+
+		case PRINT_SYSV:
+		case PRINT_HPUX:
+			lpcfg_string_set(ctx, &pService->lpq_command, "lpstat -o%p");
+			lpcfg_string_set(ctx, &pService->lprm_command, "cancel %p-%j");
+			lpcfg_string_set(ctx, &pService->print_command, "lp -c -d%p %s; rm %s");
+			lpcfg_string_set(ctx, &pService->queuepause_command, "disable %p");
+			lpcfg_string_set(ctx, &pService->queueresume_command, "enable %p");
+#ifndef HPUX
+			lpcfg_string_set(ctx, &pService->lppause_command, "lp -i %p-%j -H hold");
+			lpcfg_string_set(ctx, &pService->lpresume_command, "lp -i %p-%j -H resume");
+#endif /* HPUX */
+			break;
+
+		case PRINT_QNX:
+			lpcfg_string_set(ctx, &pService->lpq_command, "lpq -P%p");
+			lpcfg_string_set(ctx, &pService->lprm_command, "lprm -P%p %j");
+			lpcfg_string_set(ctx, &pService->print_command, "lp -r -P%p %s");
+			break;
+
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
+
+	case PRINT_TEST:
+	case PRINT_VLP: {
+		const char *tdbfile;
+		TALLOC_CTX *tmp_ctx = talloc_new(ctx);
+		const char *tmp;
+
+		tmp = lpcfg_parm_string(lp_ctx, NULL, "vlp", "tdbfile");
+		if (tmp == NULL) {
+			tmp = "/tmp/vlp.tdb";
+		}
+
+		tdbfile = talloc_asprintf(tmp_ctx, "tdbfile=%s", tmp);
+		if (tdbfile == NULL) {
+			tdbfile="tdbfile=/tmp/vlp.tdb";
+		}
+
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s print %%p %%s",
+				      tdbfile);
+		lpcfg_string_set(ctx, &pService->print_command,
+			   tmp ? tmp : "vlp print %p %s");
+
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpq %%p",
+				      tdbfile);
+		lpcfg_string_set(ctx, &pService->lpq_command,
+			   tmp ? tmp : "vlp lpq %p");
+
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lprm %%p %%j",
+				      tdbfile);
+		lpcfg_string_set(ctx, &pService->lprm_command,
+			   tmp ? tmp : "vlp lprm %p %j");
+
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lppause %%p %%j",
+				      tdbfile);
+		lpcfg_string_set(ctx, &pService->lppause_command,
+			   tmp ? tmp : "vlp lppause %p %j");
+
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpresume %%p %%j",
+				      tdbfile);
+		lpcfg_string_set(ctx, &pService->lpresume_command,
+			   tmp ? tmp : "vlp lpresume %p %j");
+
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s queuepause %%p",
+				      tdbfile);
+		lpcfg_string_set(ctx, &pService->queuepause_command,
+			   tmp ? tmp : "vlp queuepause %p");
+
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s queueresume %%p",
+				      tdbfile);
+		lpcfg_string_set(ctx, &pService->queueresume_command,
+			   tmp ? tmp : "vlp queueresume %p");
+		TALLOC_FREE(tmp_ctx);
+
+		break;
+	}
+#endif /* DEVELOPER */
+
+	}
+}
 
 /**
  * Unload unused services.
