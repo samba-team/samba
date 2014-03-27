@@ -32,6 +32,8 @@ void initbase(void);
 
 staticforward PyTypeObject dcerpc_InterfaceType;
 
+static PyTypeObject *ndr_syntax_id_Type;
+
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
 {
 	NTSTATUS status;
@@ -368,11 +370,56 @@ static PyTypeObject dcerpc_InterfaceType = {
 	.tp_new = dcerpc_interface_new,
 };
 
+static PyObject *py_transfer_syntax_ndr_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	return py_dcerpc_syntax_init_helper(type, args, kwargs, &ndr_transfer_syntax_ndr);
+}
+
+static PyTypeObject py_transfer_syntax_ndr_SyntaxType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "base.transfer_syntax_ndr",
+	.tp_basicsize = sizeof(pytalloc_Object),
+	.tp_doc = "transfer_syntax_ndr()\n",
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_new = py_transfer_syntax_ndr_new,
+};
+
+static PyObject *py_transfer_syntax_ndr64_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	return py_dcerpc_syntax_init_helper(type, args, kwargs, &ndr_transfer_syntax_ndr64);
+}
+
+static PyTypeObject py_transfer_syntax_ndr64_SyntaxType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "base.transfer_syntax_ndr64",
+	.tp_basicsize = sizeof(pytalloc_Object),
+	.tp_doc = "transfer_syntax_ndr64()\n",
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_new = py_transfer_syntax_ndr64_new,
+};
+
 void initbase(void)
 {
 	PyObject *m;
+	PyObject *dep_samba_dcerpc_misc;
+
+	dep_samba_dcerpc_misc = PyImport_ImportModule("samba.dcerpc.misc");
+	if (dep_samba_dcerpc_misc == NULL)
+		return;
+
+	ndr_syntax_id_Type = (PyTypeObject *)PyObject_GetAttrString(dep_samba_dcerpc_misc, "ndr_syntax_id");
+	if (ndr_syntax_id_Type == NULL)
+		return;
+
+	py_transfer_syntax_ndr_SyntaxType.tp_base = ndr_syntax_id_Type;
+	py_transfer_syntax_ndr64_SyntaxType.tp_base = ndr_syntax_id_Type;
 
 	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
+		return;
+
+	if (PyType_Ready(&py_transfer_syntax_ndr_SyntaxType) < 0)
+		return;
+	if (PyType_Ready(&py_transfer_syntax_ndr64_SyntaxType) < 0)
 		return;
 
 	m = Py_InitModule3("base", NULL, "DCE/RPC protocol implementation");
@@ -381,4 +428,9 @@ void initbase(void)
 
 	Py_INCREF((PyObject *)&dcerpc_InterfaceType);
 	PyModule_AddObject(m, "ClientConnection", (PyObject *)&dcerpc_InterfaceType);
+
+	Py_INCREF((PyObject *)(void *)&py_transfer_syntax_ndr_SyntaxType);
+	PyModule_AddObject(m, "transfer_syntax_ndr", (PyObject *)(void *)&py_transfer_syntax_ndr_SyntaxType);
+	Py_INCREF((PyObject *)(void *)&py_transfer_syntax_ndr64_SyntaxType);
+	PyModule_AddObject(m, "transfer_syntax_ndr64", (PyObject *)(void *)&py_transfer_syntax_ndr64_SyntaxType);
 }
