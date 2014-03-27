@@ -56,7 +56,11 @@ interface dcerpc
 		uint32 alloc_hint;
 		uint16 context_id;
 		uint16 opnum;
-		[switch_is(ndr->flags & LIBNDR_FLAG_OBJECT_PRESENT)] dcerpc_object object;
+		/*
+		 * NDR_DCERPC_REQUEST_OBJECT_PRESENT
+		 * is defined differently for ndr_dcerpc.c and py_dcerpc.c
+		 */
+		[switch_is(NDR_DCERPC_REQUEST_OBJECT_PRESENT)] dcerpc_object object;
 		[flag(NDR_ALIGN8)]    DATA_BLOB _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB stub_and_verifier;
 	} dcerpc_request;
