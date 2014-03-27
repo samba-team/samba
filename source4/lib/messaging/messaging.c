@@ -601,6 +601,9 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	msg->base_path     = lpcfg_imessaging_path(msg, lp_ctx);
+	if (msg->base_path == NULL) {
+		goto fail;
+	}
 
 	ok = directory_create_or_exist_strict(msg->base_path, geteuid(), 0700);
 	if (!ok) {
@@ -608,9 +611,21 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	msg->path          = imessaging_path(msg, server_id);
+	if (msg->path == NULL) {
+		goto fail;
+	}
+
 	msg->server_id     = server_id;
 	msg->idr           = idr_init(msg);
+	if (msg->idr == NULL) {
+		goto fail;
+	}
+
 	msg->dispatch_tree = idr_init(msg);
+	if (msg->dispatch_tree == NULL) {
+		goto fail;
+	}
+
 	msg->start_time    = timeval_current();
 
 	status = socket_create("unix", SOCKET_TYPE_DGRAM, &msg->sock, 0);
