@@ -50,6 +50,10 @@ bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *type_na
 bool PyInterface_AddNdrRpcMethods(PyTypeObject *object, const struct PyNdrRpcMethodDef *mds);
 PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table);
 
+struct ndr_syntax_id;
+PyObject *py_dcerpc_syntax_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs,
+				       const struct ndr_syntax_id *syntax);
+
 PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 			       TALLOC_CTX *r_ctx, void *r);
 

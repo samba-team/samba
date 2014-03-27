@@ -304,6 +304,28 @@ bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpc
 	return true;
 }
 
+PyObject *py_dcerpc_syntax_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs,
+				       const struct ndr_syntax_id *syntax)
+{
+	PyObject *ret;
+	struct ndr_syntax_id *obj;
+	const char *kwnames[] = { NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, ":abstract_syntax", discard_const_p(char *, kwnames))) {
+		return NULL;
+	}
+
+	ret = pytalloc_new(struct ndr_syntax_id, type);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	obj = (struct ndr_syntax_id *)pytalloc_get_ptr(ret);
+	*obj = *syntax;
+
+	return ret;
+}
+
 void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
 {
 	if (p && NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
