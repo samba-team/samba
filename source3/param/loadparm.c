@@ -2730,43 +2730,6 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 }
 
 /***************************************************************************
-Display the contents of the global structure.
-***************************************************************************/
-
-static void dump_globals(FILE *f, bool show_defaults)
-{
-	int i;
-	struct parmlist_entry *data;
-
-	fprintf(f, "[global]\n");
-
-	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].p_class == P_GLOBAL &&
-		    !(parm_table[i].flags & FLAG_META) &&
-		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (show_defaults && is_default(&Globals, i))
-				continue;
-			fprintf(f, "\t%s = ", parm_table[i].label);
-			lpcfg_print_parameter(&parm_table[i], lp_parm_ptr(NULL,
-									  &parm_table[i]),
-					f);
-			fprintf(f, "\n");
-	}
-	if (Globals.param_opt != NULL) {
-		data = Globals.param_opt;
-		while(data) {
-			if (!show_defaults && (data->priority & FLAG_DEFAULT)) {
-				data = data->next;
-				continue;
-			}
-			fprintf(f, "\t%s = %s\n", data->key, data->value);
-			data = data->next;
-		}
-        }
-
-}
-
-/***************************************************************************
  Display the contents of a parameter of a single services record.
 ***************************************************************************/
 
