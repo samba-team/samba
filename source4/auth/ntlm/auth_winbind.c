@@ -24,95 +24,14 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
-#include "auth/auth_sam_reply.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "auth/auth_sam_reply.h"
 #include "libcli/security/security.h"
 
 _PUBLIC_ NTSTATUS auth4_winbind_init(void);
-
-static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
-					       struct wbcAuthUserInfo *info,
-					       struct netr_SamInfo3 *info3)
-{
-	int i, j;
-	struct samr_RidWithAttribute *rids = NULL;
-	struct dom_sid *user_sid;
-	struct dom_sid *group_sid;
-
-	user_sid = (struct dom_sid *)(void *)&info->sids[0].sid;
-	group_sid = (struct dom_sid *)(void *)&info->sids[1].sid;
-
-	info3->base.logon_time = info->logon_time;
-	info3->base.logoff_time = info->logoff_time;
-	info3->base.kickoff_time = info->kickoff_time;
-	info3->base.last_password_change = info->pass_last_set_time;
-	info3->base.allow_password_change = info->pass_can_change_time;
-	info3->base.force_password_change = info->pass_must_change_time;
-
-	info3->base.account_name.string = talloc_strdup(mem_ctx,
-							info->account_name);
-	info3->base.full_name.string = talloc_strdup(mem_ctx,
-						     info->full_name);
-	info3->base.logon_script.string = talloc_strdup(mem_ctx,
-							info->logon_script);
-	info3->base.profile_path.string = talloc_strdup(mem_ctx,
-							info->profile_path);
-	info3->base.home_directory.string = talloc_strdup(mem_ctx,
-							  info->home_directory);
-	info3->base.home_drive.string = talloc_strdup(mem_ctx,
-						      info->home_drive);
-	info3->base.logon_server.string = talloc_strdup(mem_ctx,
-							info->logon_server);
-	info3->base.logon_domain.string = talloc_strdup(mem_ctx,
-						  info->domain_name);
-
-	info3->base.logon_count = info->logon_count;
-	info3->base.bad_password_count = info->bad_password_count;
-	info3->base.user_flags = info->user_flags;
-	memcpy(info3->base.key.key, info->user_session_key,
-	       sizeof(info3->base.key.key));
-	memcpy(info3->base.LMSessKey.key, info->lm_session_key,
-	       sizeof(info3->base.LMSessKey.key));
-	info3->base.acct_flags = info->acct_flags;
-	info3->base.sub_auth_status = 0;
-	info3->base.last_successful_logon = 0;
-	info3->base.last_failed_logon = 0;
-	info3->base.failed_logon_count = 0;
-	info3->base.reserved = 0;
-
-	if (info->num_sids < 2) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	dom_sid_split_rid(mem_ctx, user_sid,
-			  &info3->base.domain_sid,
-			  &info3->base.rid);
-	dom_sid_split_rid(mem_ctx, group_sid, NULL,
-			  &info3->base.primary_gid);
-
-	/* We already handled the first two, now take care of the rest */
-	info3->base.groups.count = info->num_sids - 2;
-
-	rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
-			    info3->base.groups.count);
-	NT_STATUS_HAVE_NO_MEMORY(rids);
-
-	for (i = 2, j = 0; i < info->num_sids; ++i, ++j) {
-		struct dom_sid *tmp_sid;
-		tmp_sid = (struct dom_sid *)(void *)&info->sids[1].sid;
-
-		rids[j].attributes = info->sids[i].attributes;
-		dom_sid_split_rid(mem_ctx, tmp_sid,
-				  NULL, &rids[j].rid);
-	}
-	info3->base.groups.rids = rids;
-
-	return NT_STATUS_OK;
-}
-
 
 static NTSTATUS winbind_want_check(struct auth_method_context *ctx,
 				   TALLOC_CTX *mem_ctx,
@@ -245,7 +164,7 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 	struct wbcAuthErrorInfo *err = NULL;
 	wbcErr wbc_status;
 	NTSTATUS nt_status;
-	struct netr_SamInfo3 info3;
+	struct netr_SamInfo3 *info3;
 	union netr_Validation validation;
 
 
@@ -303,11 +222,14 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 			wbc_status, wbcErrorString(wbc_status)));
 		return NT_STATUS_LOGON_FAILURE;
 	}
-	nt_status = get_info3_from_wbcAuthUserInfo(mem_ctx, info, &info3);
+	info3 = wbcAuthUserInfo_to_netr_SamInfo3(mem_ctx, info);
 	wbcFreeMemory(info);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	if (!info3) {
+		DEBUG(1, ("wbcAuthUserInfo_to_netr_SamInfo3 failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	validation.sam3 = &info3;
+	validation.sam3 = info3;
 	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 							  user_info->client.account_name,
 							  3, &validation,
