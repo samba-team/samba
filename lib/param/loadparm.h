@@ -284,7 +284,7 @@ bool lp_string_set(char **, const char *);
 int getservicebyname(const char *, struct loadparm_service *);
 bool lp_include(struct loadparm_context *, struct loadparm_service *,
 	       	const char *, char **);
-void init_printer_values(TALLOC_CTX *, struct loadparm_service *);
+void init_printer_values(struct loadparm_context *, TALLOC_CTX *, struct loadparm_service *);
 bool lp_do_section(const char *pszSectionName, void *userdata);
 bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue);
 

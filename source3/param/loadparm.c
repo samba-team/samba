@@ -310,7 +310,8 @@ bool lp_string_set(char **dest, const char *src) {
  Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
 
-void init_printer_values(TALLOC_CTX *ctx, struct loadparm_service *pService)
+void init_printer_values(struct loadparm_context *lp_ctx, TALLOC_CTX *ctx,
+			 struct loadparm_service *pService)
 {
 	/* choose defaults depending on the type of printing */
 	switch (pService->printing) {
@@ -372,12 +373,14 @@ void init_printer_values(TALLOC_CTX *ctx, struct loadparm_service *pService)
 	case PRINT_VLP: {
 		const char *tdbfile;
 		TALLOC_CTX *tmp_ctx = talloc_new(ctx);
-		char *tmp;
+		const char *tmp;
 
-		tdbfile = talloc_asprintf(
-			tmp_ctx, "tdbfile=%s",
-			lp_parm_const_string(-1, "vlp", "tdbfile",
-					     "/tmp/vlp.tdb"));
+		tmp = lpcfg_parm_string(lp_ctx, NULL, "vlp", "tdbfile");
+		if (tmp == NULL) {
+			tmp = "/tmp/vlp.tdb";
+		}
+
+		tdbfile = talloc_asprintf(tmp_ctx, "tdbfile=%s", tmp);
 		if (tdbfile == NULL) {
 			tdbfile="tdbfile=/tmp/vlp.tdb";
 		}
@@ -678,7 +681,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	string_set(Globals.ctx, &sDefault.fstype, FSTYPE_STRING);
 	string_set(Globals.ctx, &sDefault.printjob_username, "%U");
 
-	init_printer_values(Globals.ctx, &sDefault);
+	init_printer_values(lp_ctx, Globals.ctx, &sDefault);
 
 	sDefault.ntvfs_handler = (const char **)str_list_make_v3(NULL, "unixuid default", NULL);
 

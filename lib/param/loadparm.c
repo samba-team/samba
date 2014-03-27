@@ -1267,10 +1267,10 @@ bool handle_printing(struct loadparm_context *lp_ctx, struct loadparm_service *s
 	if (lp_ctx->s3_fns) {
 		if (service == NULL) {
 			s = lp_ctx->sDefault;
-			lp_ctx->s3_fns->init_printer_values(lp_ctx->globals->ctx, s);
+			lp_ctx->s3_fns->init_printer_values(lp_ctx, lp_ctx->globals->ctx, s);
 		} else {
 			s = service;
-			lp_ctx->s3_fns->init_printer_values(s, s);
+			lp_ctx->s3_fns->init_printer_values(lp_ctx, s, s);
 		}
 	}
 
