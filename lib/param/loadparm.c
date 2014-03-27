@@ -1143,7 +1143,7 @@ bool handle_copy(struct loadparm_context *lp_ctx, struct loadparm_service *servi
 	serviceTemp = lpcfg_getservicebyname(lp_ctx, pszParmValue);
 
 	if (service == NULL) {
-		DEBUG(0, ("Unable to copy service - invalid service destination"));
+		DEBUG(0, ("Unable to copy service - invalid service destination.\n"));
 		return false;
 	}
 
