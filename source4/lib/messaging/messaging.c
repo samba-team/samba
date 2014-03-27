@@ -39,7 +39,7 @@
 /* change the message version with any incompatible changes in the protocol */
 #define IMESSAGING_VERSION 1
 
-static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx,
+static struct tdb_wrap *irpc_namedb_open(TALLOC_CTX *mem_ctx, const char *base_path,
 					 struct loadparm_context *lp_ctx);
 
 /*
@@ -626,7 +626,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->start_time    = timeval_current();
 
-	msg->names_db = irpc_namedb_open(msg, lp_ctx);
+	msg->names_db = irpc_namedb_open(msg, msg->base_path, lp_ctx);
 	if (msg->names_db == NULL) {
 		goto fail;
 	}
@@ -907,15 +907,15 @@ static int irpc_destructor(struct irpc_request *irpc)
 /*
   open the naming database
 */
-static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx,
+static struct tdb_wrap *irpc_namedb_open(TALLOC_CTX *mem_ctx, const char *base_path,
 					 struct loadparm_context *lp_ctx)
 {
 	struct tdb_wrap *t;
-	char *path = talloc_asprintf(msg_ctx, "%s/names.tdb", msg_ctx->base_path);
+	char *path = talloc_asprintf(mem_ctx, "%s/names.tdb", base_path);
 	if (path == NULL) {
 		return NULL;
 	}
-	t = tdb_wrap_open(msg_ctx, path, lpcfg_tdb_hash_size(lp_ctx, path),
+	t = tdb_wrap_open(mem_ctx, path, lpcfg_tdb_hash_size(lp_ctx, path),
 			  lpcfg_tdb_flags(lp_ctx, 0), O_RDWR|O_CREAT, 0660);
 	talloc_free(path);
 	return t;
