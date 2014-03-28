@@ -1460,7 +1460,8 @@ int main(int argc, const char **argv)
 	 */
 	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
 
-	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
+	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
 		DEBUG(0, ("server role = 'active directory domain controller' not compatible with running the winbindd binary. \n"));
 		DEBUGADD(0, ("You should start 'samba' instead, and it will control starting the internal AD DC winbindd implementation, which is not the same as this one\n"));
 		exit(1);

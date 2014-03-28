@@ -10,6 +10,14 @@ bld.SAMBA_MODULE('service_winbind',
 	internal_module=False,
 	)
 
+bld.SAMBA_MODULE('service_winbindd',
+	source='winbindd.c',
+	subsystem='service',
+	init_function='server_service_winbindd_init',
+	deps='process_model UTIL_RUNCMD',
+	internal_module=False,
+	)
+
 
 bld.SAMBA_SUBSYSTEM('WB_HELPER',
 	source='wb_async_helpers.c wb_utils.c',
