@@ -414,9 +414,10 @@ enum pdb_policy_type {
  * Changed to 20, pdb_secret calls
  * Changed to 21, set/enum_upn_suffixes. AB.
  * Changed to 22, idmap control functions
+ * Changed to 23, new idmap control functions
  */
 
-#define PASSDB_INTERFACE_VERSION 22
+#define PASSDB_INTERFACE_VERSION 23
 
 struct pdb_methods 
 {
@@ -630,6 +631,7 @@ struct pdb_methods
 	bool (*is_responsible_for_wellknown)(struct pdb_methods *methods);
 	bool (*is_responsible_for_unix_users)(struct pdb_methods *methods);
 	bool (*is_responsible_for_unix_groups)(struct pdb_methods *methods);
+	bool (*is_responsible_for_everything_else)(struct pdb_methods *methods);
 
 	void *private_data;  /* Private data of some kind */
 
@@ -939,6 +941,7 @@ bool pdb_is_responsible_for_builtin(void);
 bool pdb_is_responsible_for_wellknown(void);
 bool pdb_is_responsible_for_unix_users(void);
 bool pdb_is_responsible_for_unix_groups(void);
+bool pdb_is_responsible_for_everything_else(void);
 
 /* The following definitions come from passdb/pdb_util.c  */
 

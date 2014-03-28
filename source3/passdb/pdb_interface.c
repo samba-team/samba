@@ -2447,6 +2447,12 @@ static bool pdb_default_is_responsible_for_unix_groups(
 	return true;
 }
 
+static bool pdb_default_is_responsible_for_everything_else(
+					struct pdb_methods *methods)
+{
+	return false;
+}
+
 bool pdb_is_responsible_for_our_sam(void)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
@@ -2475,6 +2481,12 @@ bool pdb_is_responsible_for_unix_groups(void)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->is_responsible_for_unix_groups(pdb);
+}
+
+bool pdb_is_responsible_for_everything_else(void)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->is_responsible_for_everything_else(pdb);
 }
 
 /*******************************************************************
@@ -2637,6 +2649,8 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 				pdb_default_is_responsible_for_unix_users;
 	(*methods)->is_responsible_for_unix_groups =
 				pdb_default_is_responsible_for_unix_groups;
+	(*methods)->is_responsible_for_everything_else =
+				pdb_default_is_responsible_for_everything_else;
 
 	return NT_STATUS_OK;
 }

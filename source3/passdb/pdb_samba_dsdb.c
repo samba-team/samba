@@ -2152,6 +2152,11 @@ static bool pdb_samba_dsdb_is_responsible_for_wellknown(struct pdb_methods *m)
 	return true;
 }
 
+static bool pdb_samba_dsdb_is_responsible_for_everything_else(struct pdb_methods *m)
+{
+	return true;
+}
+
 static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 {
 	m->name = "samba_dsdb";
@@ -2205,6 +2210,8 @@ static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 	m->enum_trusteddoms = pdb_samba_dsdb_enum_trusteddoms;
 	m->is_responsible_for_wellknown =
 				pdb_samba_dsdb_is_responsible_for_wellknown;
+	m->is_responsible_for_everything_else =
+				pdb_samba_dsdb_is_responsible_for_everything_else;
 }
 
 static void free_private_data(void **vp)
