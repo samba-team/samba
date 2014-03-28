@@ -1513,7 +1513,7 @@ static void revoke_send_cb(struct ctdb_context *ctdb, uint32_t pnn, void *privat
 	struct ctdb_revoke_state *revoke_state = private_data;
 	struct ctdb_client_control_state *state;
 
-	state = ctdb_ctrl_updaterecord_send(ctdb, revoke_state, timeval_current_ofs(5,0), pnn, revoke_state->ctdb_db, revoke_state->key, revoke_state->header, revoke_state->data);
+	state = ctdb_ctrl_updaterecord_send(ctdb, revoke_state, timeval_current_ofs(ctdb->tunable.control_timeout,0), pnn, revoke_state->ctdb_db, revoke_state->key, revoke_state->header, revoke_state->data);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("Failure to send update record to revoke readonly delegation\n"));
 		revoke_state->status = -1;
@@ -1548,7 +1548,7 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
  
 	ctdb_trackingdb_traverse(ctdb, tdata, revoke_send_cb, state);
 
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(5, 0), ctdb_revoke_timeout_handler, state);
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(ctdb->tunable.control_timeout, 0), ctdb_revoke_timeout_handler, state);
 
 	while (state->finished == 0) {
 		event_loop_once(ctdb->ev);
