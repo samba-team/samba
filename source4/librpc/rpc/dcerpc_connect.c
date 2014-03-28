@@ -183,6 +183,11 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 		conn->in.fallback_to_anonymous  = false;
 	}
 
+	conn->in.options.min_protocol = PROTOCOL_NT1;
+	conn->in.options.max_protocol = PROTOCOL_NT1;
+
+	conn->in.options.signing = lpcfg_client_ipc_signing(lp_ctx);
+
 	/* send smb connect request */
 	conn_req = smb_composite_connect_send(conn, s->io.conn,
 					      s->io.resolve_ctx,
@@ -276,6 +281,17 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	}
 
 	lpcfg_smbcli_options(lp_ctx, &options);
+
+	options.min_protocol = lpcfg_client_ipc_min_protocol(lp_ctx);
+	if (options.min_protocol < PROTOCOL_SMB2_02) {
+		options.min_protocol = PROTOCOL_SMB2_02;
+	}
+	options.max_protocol = lpcfg_client_ipc_max_protocol(lp_ctx);
+	if (options.max_protocol < PROTOCOL_SMB2_02) {
+		options.max_protocol = PROTOCOL_SMB2_02;
+	}
+
+	options.signing = lpcfg_client_ipc_signing(lp_ctx);
 
 	/* send smb2 connect request */
 	subreq = smb2_connect_send(s, c->event_ctx,
@@ -773,6 +789,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	struct composite_context *ncacn_unix_req;
 	struct composite_context *ncalrpc_req;
 	enum dcerpc_transport_t transport;
+	enum protocol_types min_ipc_protocol;
 	uint32_t flags;
 
 	/* dcerpc pipe connect input parameters */
@@ -785,6 +802,11 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 
 	transport = dcerpc_binding_get_transport(s->binding);
 	flags = dcerpc_binding_get_flags(s->binding);
+
+	min_ipc_protocol = lpcfg_client_ipc_min_protocol(s->lp_ctx);
+	if (min_ipc_protocol >= PROTOCOL_SMB2_02) {
+		flags |= DCERPC_SMB2;
+	}
 
 	/* connect dcerpc pipe depending on required transport */
 	switch (transport) {
