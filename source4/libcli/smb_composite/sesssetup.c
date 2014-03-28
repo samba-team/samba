@@ -196,7 +196,11 @@ static void request_handler(struct smbcli_request *req)
 			state->setup.spnego.in.secblob = data_blob(NULL, 0);
 		}
 
-		if (NT_STATUS_IS_OK(state->remote_status)) {
+		if (cli_credentials_is_anonymous(state->io->in.credentials)) {
+			/*
+			 * anonymous => no signing
+			 */
+		} else if (NT_STATUS_IS_OK(state->remote_status)) {
 			DATA_BLOB session_key;
 
 			if (state->setup.spnego.in.secblob.length) {
@@ -347,17 +351,29 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		smb1cli_conn_activate_signing(session->transport->conn,
-					      session_key,
-					      state->setup.nt1.in.password2);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		/*
+		 * plain text => no signing
+		 */
+		return (*req)->status;
+	}
 
-		nt_status = smb1cli_session_set_session_key(session->smbXcli,
-							    session_key);
-		data_blob_free(&session_key);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+	if (cli_credentials_is_anonymous(io->in.credentials)) {
+		/*
+		 * anonymous => no signing
+		 */
+		return (*req)->status;
+	}
+
+	smb1cli_conn_activate_signing(session->transport->conn,
+				      session_key,
+				      state->setup.nt1.in.password2);
+
+	nt_status = smb1cli_session_set_session_key(session->smbXcli,
+						    session_key);
+	data_blob_free(&session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
 
 	return (*req)->status;
