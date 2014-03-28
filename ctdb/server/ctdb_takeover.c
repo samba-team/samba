@@ -2691,8 +2691,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 		return -1;
 	}
 
-	ZERO_STRUCT(ip);
-
 	/* Do the IP reassignment calculations */
 	ctdb_takeover_run_core(ctdb, ipflags, &all_ips, force_rebalance_nodes);
 
@@ -2716,6 +2714,14 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	async_data->fail_callback = takeover_run_fail_callback;
 	async_data->callback_data = takeover_data;
 
+	ZERO_STRUCT(ip); /* Avoid valgrind warnings for union */
+
+	/* Send a RELEASE_IP to all nodes that should not be hosting
+	 * each IP.  For each IP, all but one of these will be
+	 * redundant.  However, the redundant ones are used to tell
+	 * nodes which node should be hosting the IP so that commands
+	 * like "ctdb ip" can display a particular nodes idea of who
+	 * is hosting what. */
 	for (i=0;i<nodemap->num;i++) {
 		/* don't talk to unconnected nodes, but do talk to banned nodes */
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
@@ -2770,7 +2776,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	talloc_free(async_data);
 
 
-	/* tell all nodes to get their own IPs */
+	/* For each IP, send a TAKOVER_IP to the node that should be
+	 * hosting it.  Many of these will often be redundant (since
+	 * the allocation won't have changed) but they can be useful
+	 * to recover from inconsistencies. */
 	async_data = talloc_zero(tmp_ctx, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 
