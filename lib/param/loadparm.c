@@ -2294,7 +2294,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter_var(lp_ctx, "samba kcc command",
 					"%s/samba_kcc", dyn_SCRIPTSBINDIR);
 	lpcfg_do_global_parameter(lp_ctx, "template shell", "/bin/false");
-	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
+	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%D/%U");
 
 	lpcfg_do_global_parameter(lp_ctx, "client signing", "default");
 	lpcfg_do_global_parameter(lp_ctx, "server signing", "default");
