@@ -580,8 +580,6 @@ NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 					      &user_policy,
 					      &rid_array,
 					      &result);
-	num_groups = rid_array->count;
-
 	{
 		NTSTATUS _result;
 		dcerpc_samr_Close(b, mem_ctx, &user_policy, &_result);
@@ -590,9 +588,11 @@ NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!NT_STATUS_IS_OK(result) || num_groups == 0) {
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
+
+	num_groups = rid_array->count;
 
 	user_grpsids = talloc_array(mem_ctx, struct dom_sid, num_groups);
 	if (user_grpsids == NULL) {
