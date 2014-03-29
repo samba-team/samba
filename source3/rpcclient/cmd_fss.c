@@ -88,7 +88,7 @@ static NTSTATUS cmd_fss_is_path_sup(struct rpc_pipe_client *cli,
 	}
 
 	ZERO_STRUCT(r);
-	r.in.ShareName = talloc_asprintf(mem_ctx, "%s\\%s",
+	r.in.ShareName = talloc_asprintf(mem_ctx, "%s\\%s\\",
 					 cli->srv_name_slash, argv[1]);
 	if (r.in.ShareName == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -187,8 +187,24 @@ static NTSTATUS cmd_fss_create_expose_parse(TALLOC_CTX *mem_ctx, int argc,
 	}
 
 	for (i = 0; i < num_share_args; i++) {
-		map_array[i].ShareNameUNC = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
-					desthost, argv[i + num_non_share_args]);
+		/*
+		 * A trailing slash should to be present in the request UNC,
+		 * otherwise Windows Server 2012 FSRVP servers don't append
+		 * a '$' to exposed hidden share shadow-copies. E.g.
+		 *   AddToShadowCopySet(UNC=\\server\hidden$)
+		 *   CommitShadowCopySet()
+		 *   ExposeShadowCopySet()
+		 *   -> new share = \\server\hidden$@{ShadowCopy.ShadowCopyId}
+		 * But...
+		 *   AddToShadowCopySet(UNC=\\server\hidden$\)
+		 *   CommitShadowCopySet()
+		 *   ExposeShadowCopySet()
+		 *   -> new share = \\server\hidden$@{ShadowCopy.ShadowCopyId}$
+		 */
+		map_array[i].ShareNameUNC = talloc_asprintf(mem_ctx,
+							    "\\\\%s\\%s\\",
+							    desthost,
+						argv[i + num_non_share_args]);
 		if (map_array[i].ShareNameUNC == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -395,7 +411,7 @@ static NTSTATUS cmd_fss_delete(struct rpc_pipe_client *cli,
 	}
 
 	ZERO_STRUCT(r_sharemap_del);
-	r_sharemap_del.in.ShareName = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+	r_sharemap_del.in.ShareName = talloc_asprintf(tmp_ctx, "\\\\%s\\%s\\",
 						      cli->desthost, argv[1]);
 	if (r_sharemap_del.in.ShareName == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -449,7 +465,7 @@ static NTSTATUS cmd_fss_is_shadow_copied(struct rpc_pipe_client *cli,
 	}
 
 	ZERO_STRUCT(r);
-	r.in.ShareName = talloc_asprintf(mem_ctx, "%s\\%s",
+	r.in.ShareName = talloc_asprintf(mem_ctx, "%s\\%s\\",
 					 cli->srv_name_slash, argv[1]);
 	if (r.in.ShareName == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -504,7 +520,7 @@ static NTSTATUS cmd_fss_get_mapping(struct rpc_pipe_client *cli,
 	}
 
 	ZERO_STRUCT(r_sharemap_get);
-	r_sharemap_get.in.ShareName = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+	r_sharemap_get.in.ShareName = talloc_asprintf(tmp_ctx, "\\\\%s\\%s\\",
 						      cli->desthost, argv[1]);
 	if (r_sharemap_get.in.ShareName == NULL) {
 		status = NT_STATUS_NO_MEMORY;
