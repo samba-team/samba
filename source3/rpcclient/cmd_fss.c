@@ -215,6 +215,24 @@ static NTSTATUS cmd_fss_create_expose_parse(TALLOC_CTX *mem_ctx, int argc,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_fss_abort(TALLOC_CTX *mem_ctx,
+			      struct dcerpc_binding_handle *b,
+			      struct GUID *sc_set_id)
+{
+	NTSTATUS status;
+	struct fss_AbortShadowCopySet r_scset_abort;
+
+	ZERO_STRUCT(r_scset_abort);
+	r_scset_abort.in.ShadowCopySetId = *sc_set_id;
+	status = dcerpc_fss_AbortShadowCopySet_r(b, mem_ctx, &r_scset_abort);
+	if (!NT_STATUS_IS_OK(status) || (r_scset_abort.out.result != 0)) {
+		DEBUG(0, ("AbortShadowCopySet failed: %s result: 0x%x\n",
+			  nt_errstr(status), r_scset_abort.out.result));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS cmd_fss_create_expose(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx, int argc,
 				     const char **argv)
@@ -308,7 +326,7 @@ static NTSTATUS cmd_fss_create_expose(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(status) || (r_scset_add.out.result != 0)) {
 			DEBUG(0, ("AddToShadowCopySet failed: %s result: 0x%x\n",
 				  nt_errstr(status), r_scset_add.out.result));
-			goto err_out;
+			goto err_sc_set_abort;
 		}
 		printf("%s(%s): %s shadow-copy added to set\n",
 		       GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
@@ -326,7 +344,7 @@ static NTSTATUS cmd_fss_create_expose(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(status) || (r_scset_prep.out.result != 0)) {
 		DEBUG(0, ("PrepareShadowCopySet failed: %s result: 0x%x\n",
 			  nt_errstr(status), r_scset_prep.out.result));
-		goto err_out;
+		goto err_sc_set_abort;
 	}
 	printf("%s: prepare completed in %llu secs\n",
 	       GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
@@ -340,7 +358,7 @@ static NTSTATUS cmd_fss_create_expose(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(status) || (r_scset_commit.out.result != 0)) {
 		DEBUG(0, ("CommitShadowCopySet failed: %s result: 0x%x\n",
 			  nt_errstr(status), r_scset_commit.out.result));
-		goto err_out;
+		goto err_sc_set_abort;
 	}
 	printf("%s: commit completed in %llu secs\n",
 	       GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
@@ -376,6 +394,11 @@ static NTSTATUS cmd_fss_create_expose(struct rpc_pipe_client *cli,
 		       map->ShadowCopyShareName, map->ShareNameUNC);
 	}
 
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+
+err_sc_set_abort:
+	cmd_fss_abort(tmp_ctx, b, r_scset_start.out.pShadowCopySetId);
 err_out:
 	talloc_free(tmp_ctx);
 	return status;
