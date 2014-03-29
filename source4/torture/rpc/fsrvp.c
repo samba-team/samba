@@ -61,7 +61,7 @@ static bool test_fsrvp_is_path_supported(struct torture_context *tctx,
 	NTSTATUS status;
 
 	ZERO_STRUCT(r);
-	r.in.ShareName = talloc_asprintf(tctx,"\\\\%s\\%s",
+	r.in.ShareName = talloc_asprintf(tctx,"\\\\%s\\%s\\",
 					 dcerpc_server_name(p),
 					 FSHARE);
 	/* win8 beta sends this */
@@ -71,7 +71,7 @@ static bool test_fsrvp_is_path_supported(struct torture_context *tctx,
 				   "IsPathSupported failed");
 
 	ZERO_STRUCT(r);
-	r.in.ShareName = talloc_asprintf(tctx,"\\\\%s\\%s",
+	r.in.ShareName = talloc_asprintf(tctx,"\\\\%s\\%s\\",
 					 dcerpc_server_name(p),
 					 FSHARE);
 	/* also works without magic */
@@ -318,6 +318,7 @@ static bool test_fsrvp_sc_create_simple(struct torture_context *tctx,
 					 struct dcerpc_pipe *p)
 {
 	struct fssagent_share_mapping_1 *sc_map;
+	/* no trailing backslash - should work. See note in cmd_fss.c */
 	char *share_unc = talloc_asprintf(tctx, "\\\\%s\\%s",
 					  dcerpc_server_name(p), FSHARE);
 
@@ -332,7 +333,7 @@ static bool test_fsrvp_sc_create_simple(struct torture_context *tctx,
 static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 				    struct dcerpc_pipe *p)
 {
-	char *share_unc = talloc_asprintf(tctx, "\\\\%s\\%s",
+	char *share_unc = talloc_asprintf(tctx, "\\\\%s\\%s\\",
 					  dcerpc_server_name(p), FSHARE);
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct fss_IsPathSupported r_pathsupport_get;
@@ -400,7 +401,7 @@ static bool test_fsrvp_bad_id(struct torture_context *tctx,
 	struct fss_DeleteShareMapping r_sharemap_del;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
-	char *share_unc = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+	char *share_unc = talloc_asprintf(tmp_ctx, "\\\\%s\\%s\\",
 					  dcerpc_server_name(p), FSHARE);
 
 	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
@@ -558,7 +559,7 @@ static bool test_fsrvp_enum_created(struct torture_context *tctx,
 	struct fssagent_share_mapping_1 *sc_map;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
-	char *share_unc = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+	char *share_unc = talloc_asprintf(tmp_ctx, "\\\\%s\\%s\\",
 					  dcerpc_server_name(p), FSHARE);
 	extern struct cli_credentials *cmdline_credentials;
 	struct smb2_tree *tree_base;
