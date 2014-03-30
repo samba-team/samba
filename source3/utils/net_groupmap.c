@@ -586,7 +586,7 @@ static int net_groupmap_delete(struct net_context *c, int argc, const char **arg
 		return -1;
 	}
 
-	d_printf(_("Sucessfully removed %s from the mapping db\n"), ntgroup);
+	d_printf(_("Successfully removed %s from the mapping db\n"), ntgroup);
 
 	return 0;
 }

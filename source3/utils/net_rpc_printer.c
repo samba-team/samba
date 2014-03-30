@@ -2019,7 +2019,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 				goto done;
 			}
 
-			DEBUGADD(1,("Sucessfully added driver [%s] for printer [%s]\n",
+			DEBUGADD(1,("Successfully added driver [%s] for printer [%s]\n",
 				drivername, printername));
 
 		}
@@ -2038,7 +2038,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 			goto done;
 		}
 
-		DEBUGADD(1,("Sucessfully set driver %s for printer %s\n",
+		DEBUGADD(1,("Successfully set driver %s for printer %s\n",
 			drivername, printername));
 
 		/* close dst */
