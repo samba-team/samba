@@ -485,7 +485,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 client_domain,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
-			/* If NTLMv2 authentication has preceeded us
+			/* If NTLMv2 authentication has preceded us
 			 * (even if it failed), then use the session
 			 * key from that.  See the RPC-SAMLOGON
 			 * torture test */
@@ -514,7 +514,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 upper_client_domain,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
-			/* If NTLMv2 authentication has preceeded us
+			/* If NTLMv2 authentication has preceded us
 			 * (even if it failed), then use the session
 			 * key from that.  See the RPC-SAMLOGON
 			 * torture test */
@@ -542,7 +542,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 "",
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
-			/* If NTLMv2 authentication has preceeded us
+			/* If NTLMv2 authentication has preceded us
 			 * (even if it failed), then use the session
 			 * key from that.  See the RPC-SAMLOGON
 			 * torture test */
