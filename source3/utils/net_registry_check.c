@@ -378,7 +378,7 @@ static void check_ctx_transaction_stop(struct check_ctx *ctx, bool ok) {
 		return;
 	}
 	if (!ctx->opt.test && ok) {
-		d_printf("Commiting changes\n");
+		d_printf("Committing changes\n");
 		if (dbwrap_transaction_commit(ctx->odb) != 0) {
 			DEBUG(0, ("transaction_commit failed\n"));
 		}

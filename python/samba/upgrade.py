@@ -777,7 +777,7 @@ Please fix this account before attempting to upgrade again
         result.samdb.transaction_cancel()
         raise
 
-    logger.info("Commiting 'add groups' transaction to disk")
+    logger.info("Committing 'add groups' transaction to disk")
     result.samdb.transaction_commit()
 
     logger.info("Adding users")
@@ -811,7 +811,7 @@ Please fix this account before attempting to upgrade again
         result.samdb.transaction_cancel()
         raise
 
-    logger.info("Commiting 'add users' transaction to disk")
+    logger.info("Committing 'add users' transaction to disk")
     result.samdb.transaction_commit()
 
     logger.info("Adding users to groups")
@@ -828,7 +828,7 @@ Please fix this account before attempting to upgrade again
         result.samdb.transaction_cancel()
         raise
 
-    logger.info("Commiting 'add users to groups' transaction to disk")
+    logger.info("Committing 'add users to groups' transaction to disk")
     result.samdb.transaction_commit()
 
     # Set password for administrator
