@@ -2556,6 +2556,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	struct parmlist_entry **opt_list;
 	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	parmnum = lpcfg_map_parameter(pszParmName);
 
@@ -2563,6 +2564,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		if (strchr(pszParmName, ':') == NULL) {
 			DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",
 				  pszParmName));
+			TALLOC_FREE(frame);
 			return true;
 		}
 
@@ -2578,12 +2580,14 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			set_param_opt(ServicePtrs[snum], opt_list, pszParmName, pszParmValue, 0);
 		}
 
+		TALLOC_FREE(frame);
 		return true;
 	}
 
 	/* if it's already been set by the command line, then we don't
 	   override here */
 	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+		TALLOC_FREE(frame);
 		return true;
 	}
 
@@ -2600,6 +2604,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			DEBUG(0,
 			      ("Global parameter %s found in service section!\n",
 			       pszParmName));
+			TALLOC_FREE(frame);
 			return true;
 		}
 		parm_ptr = lp_local_ptr_by_snum(snum, &parm_table[parmnum]);
@@ -2625,14 +2630,13 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
 		bool ok;
-		struct loadparm_context *lp_ctx = loadparm_init_s3(talloc_tos(),
+		struct loadparm_context *lp_ctx = loadparm_init_s3(frame,
 								   loadparm_s3_helpers());
 		lp_ctx->sDefault = &sDefault;
 		lp_ctx->services = ServicePtrs;
 		ok = parm_table[parmnum].special(lp_ctx, snum, pszParmValue,
 						  (char **)parm_ptr);
-		TALLOC_FREE(lp_ctx);
-
+		TALLOC_FREE(frame);
 		return ok;
 	}
 
@@ -2659,6 +2663,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			i = sscanf(pszParmValue, "%o", (int *)parm_ptr);
 			if ( i != 1 ) {
 			    DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
+			    TALLOC_FREE(frame);
 				return false;
 			}
 			break;
@@ -2699,6 +2704,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		}
 		case P_ENUM:
 			if (!lp_set_enum_parm(&parm_table[parmnum], pszParmValue, (int*)parm_ptr)) {
+				TALLOC_FREE(frame);
 				return false;
 			}
 			break;
@@ -2706,6 +2712,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 	}
 
+	TALLOC_FREE(frame);
 	return true;
 }
 
