@@ -2818,12 +2818,14 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 {
 	bool ret;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	ret = lp_set_cmdline_helper(pszParmName, pszParmValue);
 	if (ret) {
 		store_lp_set_cmdline(pszParmName, pszParmValue);
 	}
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
