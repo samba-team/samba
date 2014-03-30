@@ -588,7 +588,7 @@ static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **arg
 		d_printf("%s\n%s\n%s",
 			 _("Usage:"),
 			 _("net ads gpo getgpo <gpo>"),
-			 _("  List speciefied GPO\n"
+			 _("  List specified GPO\n"
 			   "    gpo\t\tGPO to list\n"));
 		return -1;
 	}
