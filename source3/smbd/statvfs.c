@@ -151,7 +151,7 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
  sys_statvfs() is an abstraction layer over system-dependent statvfs()/statfs()
  for particular POSIX systems. Due to controversy of what is considered more important
  between LSB and FreeBSD/POSIX.1 (IEEE Std 1003.1-2001) we need to abstract the interface
- so that particular OS would use its prefered interface.
+ so that particular OS would use its preferred interface.
 */
 int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {

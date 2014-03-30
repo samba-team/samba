@@ -206,7 +206,7 @@ Unix has no equivalent notion. To implement this Samba uses either lock
 files based on the files inode and placed in a separate lock
 directory or a shared memory implementation. The lock file method 
 is clumsy and consumes processing and file resources,
-the shared memory implementation is vastly prefered and is turned on
+the shared memory implementation is vastly preferred and is turned on
 by default for those systems that support it.
 </para>
 
