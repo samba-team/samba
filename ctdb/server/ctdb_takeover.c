@@ -120,18 +120,17 @@ static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
 static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 					struct ctdb_vnn *vnn)
 {
-	struct ctdb_iface *i;
+	struct ctdb_iface *i, *next;
 
 	/* For each interface, check if there's an IP using it. */
-	i = ctdb->ifaces;
-	while (i != NULL) {
+	for (i = ctdb->ifaces; i != NULL; i = next) {
 		struct ctdb_vnn *tv;
 		bool found;
-		struct ctdb_iface *next = i->next;
+		next = i->next;
 
 		/* Only consider interfaces named in the given VNN. */
 		if (!vnn_has_interface_with_name(vnn, i->name)) {
-			goto next;
+			continue;
 		}
 
 		/* Is the "single IP" on this interface? */
@@ -139,7 +138,7 @@ static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 		    (ctdb->single_ip_vnn->ifaces[0] != NULL) &&
 		    (strcmp(i->name, ctdb->single_ip_vnn->ifaces[0]) == 0)) {
 			/* Found, next interface please... */
-			goto next;
+			continue;
 		}
 		/* Search for a vnn with this interface. */
 		found = false;
@@ -155,9 +154,6 @@ static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 			DLIST_REMOVE(ctdb->ifaces, i);
 			talloc_free(i);
 		}
-
-	next:
-		i = next;
 	}
 }
 
