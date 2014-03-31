@@ -109,29 +109,6 @@ local_tests = [
 for t in local_tests:
     plantestsuite("samba3.smbtorture_s3.%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "-e"])
 
-tests = ["--ping", "--separator",
-       "--own-domain",
-       "--all-domains",
-       "--trusted-domains",
-       "--domain-info=BUILTIN",
-       "--domain-info=$DOMAIN",
-       "--online-status",
-       "--online-status --domain=BUILTIN",
-       "--online-status --domain=$DOMAIN",
-       "--check-secret --domain=$DOMAIN",
-       "--change-secret --domain=$DOMAIN",
-       "--check-secret --domain=$DOMAIN",
-       "--online-status --domain=$DOMAIN",
-       #Didn't pass yet# "--domain-users",
-       "--domain-groups",
-       "--name-to-sid=$DC_USERNAME",
-       "--name-to-sid=$DOMAIN\\\\$DC_USERNAME",
-     #Didn't pass yet# "--user-info=$USERNAME",
-       "--user-groups=$DOMAIN\\\\$DC_USERNAME",
-       "--authenticate=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD",
-       "--allocate-uid",
-       "--allocate-gid"]
-
 plantestsuite("samba.vfstest.stream_depot", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/stream-depot/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
 plantestsuite("samba.vfstest.xattr-tdb-1", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/xattr-tdb-1/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
 plantestsuite("samba.vfstest.acl", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/vfstest-acl/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
@@ -148,8 +125,31 @@ for env in ["s3dc", "member", "s3member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration])
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER\\\\$USERNAME', '$PASSWORD', smbclient3, configuration])
 
+    tests = ["--ping", "--separator",
+             "--own-domain",
+             "--all-domains",
+             "--trusted-domains",
+             "--domain-info=BUILTIN",
+             "--domain-info=$DOMAIN",
+             "--online-status",
+             "--online-status --domain=BUILTIN",
+             "--online-status --domain=$DOMAIN",
+             "--check-secret --domain=$DOMAIN",
+             "--change-secret --domain=$DOMAIN",
+             "--check-secret --domain=$DOMAIN",
+             "--online-status --domain=$DOMAIN",
+             #Didn't pass yet# "--domain-users",
+             "--domain-groups",
+             "--name-to-sid=$DC_USERNAME",
+             "--name-to-sid=$DOMAIN\\\\$DC_USERNAME",
+             #Didn't pass yet# "--user-info=$USERNAME",
+             "--user-groups=$DOMAIN\\\\$DC_USERNAME",
+             "--authenticate=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD",
+             "--allocate-uid",
+             "--allocate-gid"]
+
     for t in tests:
-        plantestsuite("samba3.wbinfo_s3.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
+        plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
 
     plantestsuite(
         "samba3.wbinfo_sids2xids.(%s:local)" % env, "%s:local" % env,
@@ -166,7 +166,7 @@ for env in ["member", "s3member"]:
 
 env = "s3member"
 t = "--krb5auth=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD"
-plantestsuite("samba3.wbinfo_s3.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
+plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
 
 plantestsuite("samba3.ntlm_auth.krb5(ktest:local) old ccache", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, ntlm_auth3, '$PREFIX/ktest/krb5_ccache-2', '$SERVER', configuration])
 
