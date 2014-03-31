@@ -366,7 +366,11 @@ static NTSTATUS get_dcs(TALLOC_CTX *ctx, struct ldb_context *ldb,
 		/* All of this was to get the DN of the searched_site */
 		sitedn = r->msgs[0]->dn;
 
-		set_list = talloc_realloc(subctx, set_list, struct dc_set *, current_pos+1);
+		/*
+		 * We will realloc + 2 because we will need one additional place
+		 * for element at current_pos + 1 for the NULL element
+		 */
+		set_list = talloc_realloc(subctx, set_list, struct dc_set *, current_pos+2);
 		if (set_list == NULL) {
 			TALLOC_FREE(subctx);
 			return NT_STATUS_NO_MEMORY;
@@ -380,6 +384,9 @@ static NTSTATUS get_dcs(TALLOC_CTX *ctx, struct ldb_context *ldb,
 
 		set_list[current_pos]->names = NULL;
 		set_list[current_pos]->count = 0;
+
+		set_list[current_pos+1] = NULL;
+
 		status = get_dcs_insite(subctx, ldb, sitedn,
 					set_list[current_pos], need_fqdn);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -468,8 +475,6 @@ static NTSTATUS get_dcs(TALLOC_CTX *ctx, struct ldb_context *ldb,
 			}
 		}
 	}
-	current_pos++;
-	set_list[current_pos] = NULL;
 
 	*pset_list = talloc_move(ctx, &set_list);
 	talloc_free(subctx);
