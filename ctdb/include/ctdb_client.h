@@ -97,6 +97,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    bool persistent,
 				    uint32_t tdb_flags);
 
+int ctdb_detach(struct ctdb_context *ctdb, uint32_t db_id);
 
 /*
   find an attached ctdb_db handle given a name

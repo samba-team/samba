@@ -2120,6 +2120,25 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	return ctdb_db;
 }
 
+/*
+ * detach from a specific database - client call
+ */
+int ctdb_detach(struct ctdb_context *ctdb, uint32_t db_id)
+{
+	int ret;
+	int32_t status;
+	TDB_DATA data;
+
+	data.dsize = sizeof(db_id);
+	data.dptr = (uint8_t *)&db_id;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_DB_DETACH,
+			   0, data, NULL, NULL, &status, NULL, NULL);
+	if (ret != 0 || status != 0) {
+		return -1;
+	}
+	return 0;
+}
 
 /*
   setup a call for a database
