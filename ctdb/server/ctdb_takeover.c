@@ -2204,17 +2204,16 @@ finished:
 
 static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
 {
-	int i, num_healthy;
+	int i;
 
-	/* Count how many completely healthy nodes we have */
-	num_healthy = 0;
 	for (i=0;i<nodemap->num;i++) {
 		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
-			num_healthy++;
+			/* Found one completely healthy node */
+			return false;
 		}
 	}
 
-	return num_healthy == 0;
+	return true;
 }
 
 /* The calculation part of the IP allocation algorithm. */
