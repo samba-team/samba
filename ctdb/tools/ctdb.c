@@ -5179,6 +5179,45 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+ * detach from a database
+ */
+static int control_detach(struct ctdb_context *ctdb, int argc,
+			  const char **argv)
+{
+	uint32_t db_id;
+	uint8_t flags;
+	int ret, i, status = 0;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	assert_single_node_only();
+
+	for (i=0; i<argc; i++) {
+		if (!db_exists(ctdb, argv[i], &db_id, NULL, &flags)) {
+			continue;
+		}
+
+		if (flags & CTDB_DB_FLAGS_PERSISTENT) {
+			DEBUG(DEBUG_ERR, ("Persistent database '%s' "
+					  "cannot be detached\n", argv[i]));
+			status = -1;
+			continue;
+		}
+
+		ret = ctdb_detach(ctdb, db_id);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Database '%s' detach failed\n",
+					  argv[i]));
+			status = ret;
+		}
+	}
+
+	return status;
+}
+
+/*
   set db priority
  */
 static int control_setdbprio(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -6224,6 +6263,7 @@ static const struct {
 	{ "getlog",          control_getlog,            true,	false,  "get the log data from the in memory ringbuffer", "[<level>] [recoverd]" },
 	{ "clearlog",          control_clearlog,        true,	false,  "clear the log data from the in memory ringbuffer", "[recoverd]" },
 	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname> [persistent]" },
+	{ "detach",          control_detach,            false,	false,  "detach from a database",                 "<dbname|dbid> [<dbname|dbid> ...]" },
 	{ "dumpmemory",      control_dumpmemory,        true,	false,  "dump memory map to stdout" },
 	{ "rddumpmemory",    control_rddumpmemory,      true,	false,  "dump memory map from the recovery daemon to stdout" },
 	{ "getpid",          control_getpid,            true,	false,  "get ctdbd process ID" },
