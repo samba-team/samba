@@ -165,8 +165,9 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	const char *workstation_list;
 	NTTIME acct_expiry;
 	NTTIME must_change_time;
+	struct timeval tv_now = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv_now);
 
-	NTTIME now;
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
 
 	acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, domain_dn);
@@ -193,7 +194,6 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Test account expire time */
-	unix_to_nt_time(&now, time(NULL));
 	if (now > acct_expiry) {
 		DEBUG(2,("authsam_account_ok: Account for user '%s' has expired.\n", name_for_logs));
 		DEBUG(3,("authsam_account_ok: Account expired at '%s'.\n", 
