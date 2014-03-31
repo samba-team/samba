@@ -15,7 +15,7 @@ def flush_cache():
 
 domain = subprocess.Popen([wbinfo, "--own-domain"],
                           stdout=subprocess.PIPE).communicate()[0].strip()
-domsid = subprocess.Popen([wbinfo, "-n", domain + "\\"],
+domsid = subprocess.Popen([wbinfo, "-n", domain + "/"],
                           stdout=subprocess.PIPE).communicate()[0]
 domsid = domsid.split(' ')[0]
 

@@ -545,6 +545,7 @@ sub write_clientconf($$$)
 	resolv:host file = $prefix_abs/dns_host_file
 #We don't want to run 'speed' tests for very long
         torture:timelimit = 1
+        winbind separator = /
 ";
 	close(CF);
 }

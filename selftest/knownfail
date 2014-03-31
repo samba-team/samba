@@ -242,7 +242,6 @@
 #
 # The Samba4 winbind does not cover the full winbind protocol, so these are expected
 #
-^samba3.winbind.struct.info\(plugin_s4_dc\)
 ^samba3.winbind.struct.show_sequence\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcPingDc\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcPingDc2\(plugin_s4_dc\)

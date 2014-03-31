@@ -1020,6 +1020,7 @@ sub provision($$$$$$)
 	idmap config * : range = 100000-200000
 	winbind enum users = yes
 	winbind enum groups = yes
+	winbind separator = /
 
 #	min receivefile size = 4000
 

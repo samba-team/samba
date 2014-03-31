@@ -126,7 +126,7 @@ for env in ["s3dc", "member", "s3member", "dc", "s4member"]:
 
 for env in ["s3dc", "member", "s3member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration])
-    plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER\\\\$USERNAME', '$PASSWORD', smbclient3, configuration])
+    plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER/$USERNAME', '$PASSWORD', smbclient3, configuration])
 
     tests = ["--ping", "--separator",
              "--own-domain",
@@ -144,10 +144,10 @@ for env in ["s3dc", "member", "s3member"]:
              #Didn't pass yet# "--domain-users",
              "--domain-groups",
              "--name-to-sid=$DC_USERNAME",
-             "--name-to-sid=$DOMAIN\\\\$DC_USERNAME",
+             "--name-to-sid=$DOMAIN/$DC_USERNAME",
              #Didn't pass yet# "--user-info=$USERNAME",
-             "--user-groups=$DOMAIN\\\\$DC_USERNAME",
-             "--authenticate=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD",
+             "--user-groups=$DOMAIN/$DC_USERNAME",
+             "--authenticate=$DOMAIN/$DC_USERNAME%$DC_PASSWORD",
              "--allocate-uid",
              "--allocate-gid"]
 
@@ -168,7 +168,7 @@ for env in ["member", "s3member"]:
     plantestsuite("samba3.blackbox.net_cred_change.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_net_cred_change.sh"), configuration])
 
 env = "s3member"
-t = "--krb5auth=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD"
+t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
 
 plantestsuite("samba3.ntlm_auth.krb5(ktest:local) old ccache", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, ntlm_auth3, '$PREFIX/ktest/krb5_ccache-2', '$SERVER', configuration])
@@ -187,13 +187,13 @@ for env in ["s3dc"]:
     plantestsuite("samba3.blackbox.smbclient_s3.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration])
 
 for env in ["member", "s3member"]:
-    plantestsuite("samba3.blackbox.smbclient_s3.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER\\\\$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration])
+    plantestsuite("samba3.blackbox.smbclient_s3.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER/$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration])
 
 for env in ["s3dc"]:
     plantestsuite("samba3.blackbox.smbclient_s3.sign (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "--signing=required"])
 
 for env in ["member", "s3member"]:
-    plantestsuite("samba3.blackbox.smbclient_s3.sign (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER\\\\$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "--signing=required"])
+    plantestsuite("samba3.blackbox.smbclient_s3.sign (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER/$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "--signing=required"])
 
 for env in ["s3dc"]:
     # encrypted

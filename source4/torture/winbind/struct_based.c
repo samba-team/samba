@@ -1034,7 +1034,7 @@ static bool torture_winbind_struct_lookup_name_sid(struct torture_context *tortu
 	get_winbind_domain(torture, &domain);
 	do {
 		count++;
-		invalid_name = talloc_asprintf(torture, "%s\\%s%u",
+		invalid_name = talloc_asprintf(torture, "%s/%s%u",
 					       domain,
 					       invalid_user, count);
 	} while(name_is_in_list(invalid_name, (const char **)users) ||
