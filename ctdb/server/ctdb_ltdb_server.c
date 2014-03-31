@@ -1164,6 +1164,91 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	return 0;
 }
 
+/*
+ * a client has asked to detach from a database
+ */
+int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
+			       uint32_t client_id)
+{
+	uint32_t db_id;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_client *client = NULL;
+
+	db_id = *(uint32_t *)indata.dptr;
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR, ("Invalid dbid 0x%08x in DB detach\n",
+				  db_id));
+		return -1;
+	}
+
+	if (ctdb->tunable.allow_client_db_attach == 0) {
+		DEBUG(DEBUG_ERR, ("DB detach from database %s denied by "
+				  "tunable AllowClientDBAccess == 0\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+
+	if (ctdb_db->persistent) {
+		DEBUG(DEBUG_ERR, ("DB detach from persistent database %s "
+				  "denied\n", ctdb_db->db_name));
+		return -1;
+	}
+
+	/* Cannot detach from database when in recovery */
+	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+		DEBUG(DEBUG_ERR, ("DB detach denied while in recovery\n"));
+		return -1;
+	}
+
+	/* If a control comes from a client, then broadcast it to all nodes.
+	 * Do the actual detach only if the control comes from other daemons.
+	 */
+	if (client_id != 0) {
+		client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+		if (client != NULL) {
+			/* forward the control to all the nodes */
+			ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
+						 CTDB_CONTROL_DB_DETACH, 0,
+						 CTDB_CTRL_FLAG_NOREPLY,
+						 indata, NULL, NULL);
+			return 0;
+		}
+		DEBUG(DEBUG_ERR, ("Client has gone away. Failing DB detach "
+				  "for database '%s'\n", ctdb_db->db_name));
+		return -1;
+	}
+
+	/* Disable vacuuming and drop all vacuuming data */
+	talloc_free(ctdb_db->vacuum_handle);
+	talloc_free(ctdb_db->delete_queue);
+
+	/* Terminate any deferred fetch */
+	talloc_free(ctdb_db->deferred_fetch);
+
+	/* Terminate any traverses */
+	while (ctdb_db->traverse) {
+		talloc_free(ctdb_db->traverse);
+	}
+
+	/* Terminate any revokes */
+	while (ctdb_db->revokechild_active) {
+		talloc_free(ctdb_db->revokechild_active);
+	}
+
+	/* Free readonly tracking database */
+	if (ctdb_db->readonly) {
+		talloc_free(ctdb_db->rottdb);
+	}
+
+	DLIST_REMOVE(ctdb->db_list, ctdb_db);
+
+	DEBUG(DEBUG_NOTICE, ("Detached from database '%s'\n",
+			     ctdb_db->db_name));
+	talloc_free(ctdb_db);
+
+	return 0;
+}
 
 /*
   attach to all existing persistent databases

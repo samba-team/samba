@@ -900,6 +900,8 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       bool persistent, uint32_t client_id,
 			       struct ctdb_req_control *c,
 			       bool *async_reply);
+int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
+			       uint32_t client_id);
 
 int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 			 ctdb_fn_t fn, int id);

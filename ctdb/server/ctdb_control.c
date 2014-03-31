@@ -682,6 +682,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_RECEIVE_RECORDS:
 		return ctdb_control_receive_records(ctdb, indata, outdata);
 
+	case CTDB_CONTROL_DB_DETACH:
+		return ctdb_control_db_detach(ctdb, indata, client_id);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
