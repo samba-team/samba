@@ -3974,6 +3974,7 @@ static bool lp_load_ex(const char *pszFname,
 {
 	char *n2 = NULL;
 	bool bRetval;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	bRetval = false;
 
@@ -4024,6 +4025,7 @@ static bool lp_load_ex(const char *pszFname,
 		}
 
 		if (lp_config_backend_is_registry()) {
+			bool ok;
 			/* config backend changed to registry in config file */
 			/*
 			 * We need to use this extra global variable here to
@@ -4037,10 +4039,12 @@ static bool lp_load_ex(const char *pszFname,
 				  "registry\n"));
 			init_globals(true);
 			lp_kill_all_services();
-			return lp_load_ex(pszFname, global_only, save_defaults,
-					  add_ipc, initialize_globals,
-					  allow_include_registry,
-					  load_all_shares);
+			ok = lp_load_ex(pszFname, global_only, save_defaults,
+					add_ipc, initialize_globals,
+					allow_include_registry,
+					load_all_shares);
+			TALLOC_FREE(frame);
+			return ok;
 		}
 	} else if (lp_config_backend_is_registry()) {
 		bRetval = process_registry_globals();
@@ -4114,6 +4118,7 @@ static bool lp_load_ex(const char *pszFname,
 
 	bAllowIncludeRegistry = true;
 
+	TALLOC_FREE(frame);
 	return (bRetval);
 }
 
