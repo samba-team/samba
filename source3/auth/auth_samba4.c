@@ -353,6 +353,7 @@ static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS auth_samba4_init(void);
 NTSTATUS auth_samba4_init(void)
 {
 	smb_register_auth(AUTH_INTERFACE_VERSION, "samba4",
