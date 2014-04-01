@@ -50,6 +50,7 @@ do {								\
 		pam_set_data( pamh, "smb_setcred_return"	\
 		              , (void *) ret_data, NULL );	\
 	}							\
+	TALLOC_FREE(frame);					\
 	return retval;						\
 } while (0)
 
@@ -75,6 +76,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	const char *name;
 	void (*oldsig_handler)(int) = NULL;
 	bool found;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* Points to memory managed by the PAM library. Do not free. */
 	char *p = NULL;
@@ -195,6 +197,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	char *msg_str = NULL;
 	const char *pass = NULL;
 	int retval;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* Get the authtok; if we don't have one, silently fail. */
 	retval = _pam_get_item( pamh, PAM_AUTHTOK, &pass );
@@ -202,8 +205,10 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	if (retval != PAM_SUCCESS) {
 		_log_err(pamh, LOG_ALERT
 			, "pam_get_item returned error to pam_sm_authenticate" );
+		TALLOC_FREE(frame);
 		return PAM_AUTHTOK_RECOVER_ERR;
 	} else if (pass == NULL) {
+		TALLOC_FREE(frame);
 		return PAM_AUTHTOK_RECOVER_ERR;
 	}
 
@@ -220,6 +225,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 
 		SAFE_FREE(err_str);
 		SAFE_FREE(msg_str);
+		TALLOC_FREE(frame);
 		return PAM_IGNORE;
 	} else {
 		/* mimick 'update encrypted' as long as the 'no pw req' flag is not set */
@@ -237,6 +243,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	SAFE_FREE(err_str);
 	SAFE_FREE(msg_str);
 	pass = NULL;
+	TALLOC_FREE(frame);
 	return PAM_IGNORE;
 }
 
