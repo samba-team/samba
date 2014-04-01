@@ -1573,16 +1573,6 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		uac_generated = true;
 	}
 	if ((user_account_control & UF_PASSWORD_EXPIRED) != 0) {
-		/* "pwdLastSet" reset as password expiration has been forced  */
-		ldb_msg_remove_attr(ac->msg, "pwdLastSet");
-		ret = samdb_msg_add_uint64(ldb, ac->msg, ac->msg, "pwdLastSet",
-					   (NTTIME)0);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		el = ldb_msg_find_element(ac->msg, "pwdLastSet");
-		el->flags = LDB_FLAG_MOD_REPLACE;
-
 		user_account_control &= ~UF_PASSWORD_EXPIRED;
 		uac_generated = true;
 	}
