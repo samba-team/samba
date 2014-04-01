@@ -1285,11 +1285,15 @@ static int samldb_prim_group_set(struct samldb_ctx *ac)
 static int samldb_prim_group_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	const char * const attrs[] = { "primaryGroupID", "memberOf", NULL };
+	const char * const attrs[] = {
+		"primaryGroupID",
+		"memberOf",
+		"userAccountControl",
+		NULL };
 	struct ldb_result *res, *group_res;
 	struct ldb_message_element *el;
 	struct ldb_message *msg;
-	uint32_t prev_rid, new_rid;
+	uint32_t prev_rid, new_rid, uac;
 	struct dom_sid *prev_sid, *new_sid;
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
@@ -1309,6 +1313,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	uac = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
 
 	/* Finds out the DN of the old primary group */
 
@@ -1347,6 +1353,24 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	if (prev_rid == new_rid) {
 		return LDB_SUCCESS;
+	}
+
+	if ((uac & UF_SERVER_TRUST_ACCOUNT) && new_rid != DOMAIN_RID_DCS) {
+		ldb_asprintf_errstring(ldb,
+			"%08X: samldb: UF_SERVER_TRUST_ACCOUNT requires "
+			"primaryGroupID=%u!",
+			W_ERROR_V(WERR_DS_CANT_MOD_PRIMARYGROUPID),
+			DOMAIN_RID_DCS);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	if ((uac & UF_PARTIAL_SECRETS_ACCOUNT) && new_rid != DOMAIN_RID_READONLY_DCS) {
+		ldb_asprintf_errstring(ldb,
+			"%08X: samldb: UF_PARTIAL_SECRETS_ACCOUNT requires "
+			"primaryGroupID=%u!",
+			W_ERROR_V(WERR_DS_CANT_MOD_PRIMARYGROUPID),
+			DOMAIN_RID_READONLY_DCS);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	ret = dsdb_module_search(ac->module, ac, &group_res,
