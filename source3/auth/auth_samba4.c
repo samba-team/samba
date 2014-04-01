@@ -120,12 +120,14 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	nt_status = auth_context_set_challenge(auth4_context, auth_context->challenge.data, "auth_samba4");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(auth4_context);
+		TALLOC_FREE(frame);
 		return nt_status;
 	}
 
 	nt_status = auth_check_password(auth4_context, auth4_context, user_info, &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(auth4_context);
+		TALLOC_FREE(frame);
 		return nt_status;
 	}
 	
