@@ -366,7 +366,7 @@ static struct nss_info_methods hash_nss_methods = {
  state.
  **********************************************************************/
 
-NTSTATUS samba_init_module(void)
+NTSTATUS idmap_hash_init(void)
 {
 	static NTSTATUS idmap_status = NT_STATUS_UNSUCCESSFUL;
 	static NTSTATUS nss_status = NT_STATUS_UNSUCCESSFUL;

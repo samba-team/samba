@@ -381,7 +381,7 @@ static struct smb_perfcount_handlers perfcount_test_handlers = {
 	perfcount_test_end
 };
 
-NTSTATUS samba_init_module(void)
+NTSTATUS perfcount_test_init(void)
 {
 	return smb_register_perfcounter(SMB_PERFCOUNTER_INTERFACE_VERSION,
 					"pc_test", &perfcount_test_handlers);

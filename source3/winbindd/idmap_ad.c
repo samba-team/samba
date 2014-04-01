@@ -962,7 +962,7 @@ static struct nss_info_methods nss_sfu20_methods = {
  Initialize the plugins
  ***********************************************************************/
 
-NTSTATUS samba_init_module(void)
+NTSTATUS idmap_ad_init(void)
 {
 	static NTSTATUS status_idmap_ad = NT_STATUS_UNSUCCESSFUL;
 	static NTSTATUS status_nss_rfc2307 = NT_STATUS_UNSUCCESSFUL;

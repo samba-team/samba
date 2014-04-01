@@ -688,7 +688,7 @@ static struct idmap_methods autorid_methods = {
 	.allocate_id	 = idmap_autorid_allocate_id
 };
 
-NTSTATUS samba_init_module(void)
+NTSTATUS idmap_autorid_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION,
 				  "autorid", &autorid_methods);
