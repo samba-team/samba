@@ -97,6 +97,9 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 
 bool messaging_tdb_parent_init(TALLOC_CTX *mem_ctx);
 
+NTSTATUS messaging_tdb_cleanup(struct messaging_context *msg_ctx,
+			struct server_id pid);
+
 NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			      TALLOC_CTX *mem_ctx,
 			      struct messaging_backend **presult);
@@ -142,6 +145,9 @@ struct tevent_req *messaging_read_send(TALLOC_CTX *mem_ctx,
 				       uint32_t msg_type);
 int messaging_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			struct messaging_rec **presult);
+
+void messaging_cleanup_server(struct messaging_context *msg_ctx,
+				struct server_id pid);
 
 #include "librpc/gen_ndr/ndr_messaging.h"
 
