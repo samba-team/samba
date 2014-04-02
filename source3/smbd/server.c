@@ -455,6 +455,13 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 						parent);
 			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}
+
+		/*
+		 * Ensure we flush any stored messages
+		 * queued for the child process that
+		 * terminated uncleanly.
+		 */
+		messaging_cleanup_server(parent->msg_ctx, child_id);
 	}
 
 	if (!serverid_deregister(child_id)) {
