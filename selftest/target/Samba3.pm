@@ -1206,7 +1206,7 @@ domadmins:X:$gid_domadmins:
 	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 
-        my $cmd = Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name > /dev/null";
+        my $cmd = "UID_WRAPPER_ROOT=1 " . Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name > /dev/null";
 	unless (open(PWD, "|$cmd")) {
              warn("Unable to set password for test account\n$cmd");
              return undef;
