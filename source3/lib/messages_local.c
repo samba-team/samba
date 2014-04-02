@@ -45,6 +45,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "messages.h"
+#include "serverid.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/param/param.h"
 
@@ -198,6 +199,43 @@ static TDB_DATA message_key_pid(TALLOC_CTX *mem_ctx, struct server_id pid)
 	kbuf.dptr = (uint8 *)key;
 	kbuf.dsize = strlen(key)+1;
 	return kbuf;
+}
+
+/*******************************************************************
+ Called when a process has terminated abnormally. Remove all messages
+ pending for it.
+******************************************************************/
+
+NTSTATUS messaging_tdb_cleanup(struct messaging_context *msg_ctx,
+				struct server_id pid)
+{
+	struct messaging_tdb_context *ctx = talloc_get_type(
+					msg_ctx->local->private_data,
+					struct messaging_tdb_context);
+	struct tdb_wrap *tdb = ctx->tdb;
+	TDB_DATA key;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	key = message_key_pid(frame, pid);
+	/*
+	 * We have to lock the key to avoid
+	 * races in case the server_id was
+	 * re-used and is active (a remote
+	 * possibility, true). We only
+	 * clean up the database if we
+	 * know server_id doesn't exist
+	 * while checked under the chainlock.
+	 */
+	if (tdb_chainlock(tdb->tdb, key) != 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_LOCK_NOT_GRANTED;
+	}
+	if (!serverid_exists(&pid)) {
+		(void)tdb_delete(tdb->tdb, key);
+	}
+	tdb_chainunlock(tdb->tdb, key);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 /*
