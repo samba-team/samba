@@ -592,12 +592,12 @@ static NTSTATUS idmap_autorid_initialize_action(struct db_context *db,
 	common = (struct idmap_tdb_common_context *)dom->private_data;
 	config = (struct autorid_global_config *)common->private_data;
 
-	status = idmap_autorid_init_hwms(autorid_db);
+	status = idmap_autorid_init_hwms(db);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = idmap_autorid_saveconfig(autorid_db, config);
+	status = idmap_autorid_saveconfig(db, config);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to store configuration data!\n"));
 		return status;
