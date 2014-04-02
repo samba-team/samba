@@ -146,7 +146,7 @@ do { \
 	} \
 } while (0)
 
-/* promote an element to the from of a list */
+/* promote an element to the front of a list */
 #define DLIST_PROMOTE(list, p) \
 do { \
           DLIST_REMOVE(list, p); \
