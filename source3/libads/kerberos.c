@@ -615,6 +615,31 @@ static void add_sockaddr_unique(struct sockaddr_storage *addrs, int *num_addrs,
 	*num_addrs += 1;
 }
 
+/* print_canonical_sockaddr prints an ipv6 addr in the form of
+* [ipv6.addr]. This string, when put in a generated krb5.conf file is not
+* always properly dealt with by some older krb5 libraries. Adding the hard-coded
+* portnumber workarounds the issue. - gd */
+
+static char *print_canonical_sockaddr_with_port(TALLOC_CTX *mem_ctx,
+						const struct sockaddr_storage *pss)
+{
+	char *str = NULL;
+
+	str = print_canonical_sockaddr(mem_ctx, pss);
+	if (str == NULL) {
+		return NULL;
+	}
+
+	if (pss->ss_family != AF_INET6) {
+		return str;
+	}
+
+#if defined(HAVE_IPV6)
+	str = talloc_asprintf_append(str, ":88");
+#endif
+	return str;
+}
+
 static char *get_kdc_ip_string(char *mem_ctx,
 		const char *realm,
 		const char *sitename,
@@ -634,7 +659,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	struct netlogon_samlogon_response **responses = NULL;
 	NTSTATUS status;
 	char *kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n", "",
-					print_canonical_sockaddr(mem_ctx, pss));
+					print_canonical_sockaddr_with_port(mem_ctx, pss));
 
 	if (kdc_str == NULL) {
 		TALLOC_FREE(frame);
@@ -726,7 +751,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		/* Append to the string - inefficient but not done often. */
 		new_kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
 					      kdc_str,
-					      print_canonical_sockaddr(mem_ctx, &dc_addrs[i]));
+					      print_canonical_sockaddr_with_port(mem_ctx, &dc_addrs[i]));
 		if (new_kdc_str == NULL) {
 			goto fail;
 		}
