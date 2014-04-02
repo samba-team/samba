@@ -458,13 +458,9 @@ static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
 	uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int db;
-	uint32_t *nodes;
-
-	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
 
 	/* step through all local databases */
 	for (db=0; db<dbmap->num;db++) {
-		TDB_DATA data;
 		struct ctdb_db_priority db_prio;
 		int ret;
 
@@ -477,16 +473,11 @@ static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
 
 		DEBUG(DEBUG_INFO,("Update DB priority for db 0x%08x to %u\n", dbmap->dbs[db].dbid, db_prio.priority)); 
 
-		data.dptr  = (uint8_t *)&db_prio;
-		data.dsize = sizeof(db_prio);
-
-		if (ctdb_client_async_control(ctdb,
-					CTDB_CONTROL_SET_DB_PRIORITY,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, data,
-					NULL, NULL,
-					NULL) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to set DB priority for 0x%08x\n", db_prio.db_id));
+		ret = ctdb_ctrl_set_db_priority(ctdb, CONTROL_TIMEOUT(),
+						CTDB_CURRENT_NODE, &db_prio);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to set DB priority for 0x%08x\n",
+					 db_prio.db_id));
 		}
 	}
 

@@ -1425,7 +1425,8 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 	return 0;
 }
 
-int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata)
+int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
+				     uint32_t client_id)
 {
 	struct ctdb_db_priority *db_prio = (struct ctdb_db_priority *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
@@ -1444,6 +1445,13 @@ int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata)
 	ctdb_db->priority = db_prio->priority;
 	DEBUG(DEBUG_INFO,("Setting DB priority to %u for db 0x%08x\n", db_prio->priority, db_prio->db_id));
 
+	if (client_id != 0) {
+		/* Broadcast the update to the rest of the cluster */
+		ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
+					 CTDB_CONTROL_SET_DB_PRIORITY, 0,
+					 CTDB_CTRL_FLAG_NOREPLY, indata,
+					 NULL, NULL);
+	}
 	return 0;
 }
 

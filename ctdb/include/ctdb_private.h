@@ -1440,7 +1440,8 @@ int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 void ctdb_local_node_got_banned(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
-int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
+				     uint32_t client_id);
 void ctdb_ban_self(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);

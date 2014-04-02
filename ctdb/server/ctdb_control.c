@@ -603,7 +603,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_SET_DB_PRIORITY:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_db_priority));
-		return ctdb_control_set_db_priority(ctdb, indata);
+		return ctdb_control_set_db_priority(ctdb, indata, client_id);
 
 	case CTDB_CONTROL_GET_DB_PRIORITY: {
 		uint32_t db_id;
