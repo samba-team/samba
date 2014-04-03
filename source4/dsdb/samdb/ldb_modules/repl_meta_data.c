@@ -2998,6 +2998,20 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		return ldb_next_request(module, req);
 	}
 
+	/*
+	 * We have to allow dbcheck to remove an object that
+	 * is beyond repair, and to do so totally.  This could
+	 * mean we we can get a partial object from the other
+	 * DC, causing havoc, so dbcheck suggests
+	 * re-replication first.  dbcheck sets both DBCHECK
+	 * and RELAX in this situation.
+	 */
+	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)
+	    && ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		/* really, really remove it */
+		return ldb_next_request(module, req);
+	}
+
 	tmp_ctx = talloc_new(ldb);
 	if (!tmp_ctx) {
 		ldb_oom(ldb);
@@ -3041,17 +3055,25 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	}
 
 	if (next_deletion_state == OBJECT_REMOVED) {
-		struct auth_session_info *session_info =
-				(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-		if (security_session_user_level(session_info, NULL) != SECURITY_SYSTEM) {
-			ldb_asprintf_errstring(ldb, "Refusing to delete deleted object %s",
-					ldb_dn_get_linearized(old_msg->dn));
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+		/*
+		 * We have to prevent objects being deleted, even if
+		 * the administrator really wants them gone, as
+		 * without the tombstone, we can get a partial object
+		 * from the other DC, causing havoc.
+		 *
+		 * The only other valid case is when the 180 day
+		 * timeout has expired, when relax is specified.
+		 */
+		if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)) {
+			/* it is already deleted - really remove it this time */
+			talloc_free(tmp_ctx);
+			return ldb_next_request(module, req);
 		}
 
-		/* it is already deleted - really remove it this time */
-		talloc_free(tmp_ctx);
-		return ldb_next_request(module, req);
+		ldb_asprintf_errstring(ldb, "Refusing to delete tombstone object %s.  "
+				       "This check is to prevent corruption of the replicated state.",
+				       ldb_dn_get_linearized(old_msg->dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	rdn_name = ldb_dn_get_rdn_name(old_dn);
