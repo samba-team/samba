@@ -5277,8 +5277,8 @@ linked_attributes[0]:
 
 	attrs[0] = attr->lDAPDisplayName;
 	attrs[1] = "isDeleted";
-	attrs[1] = "isRecycled";
-	attrs[2] = NULL;
+	attrs[2] = "isRecycled";
+	attrs[3] = NULL;
 
 	/* get the existing message from the db for the object with
 	   this GUID, returning attribute being modified. We will then
