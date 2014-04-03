@@ -38,9 +38,9 @@ dbcheck_clean() {
 }
 
 # This should 'fail', because it returns the number of modified records.  
-# We don't need to run this against 4.1.0rc3
+# We don't need to run this against 4.1 releases
 dbcheck_acl_reset() {
-    if [ x$RELEASE != x"release-4-1-0rc3" ]; then
+    if [ x$RELEASE = x"release-4-0-0" -o x$RELEASE = x"alpha13" ]; then
        $PYTHON $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
     else 
 	return 1
