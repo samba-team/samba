@@ -1,0 +1,16 @@
+
+[global]
+	netbios name = LOCALDC
+	workgroup = SAMBADOMAIN
+	realm = SAMBA.EXAMPLE.COM
+	private dir = @@PREFIX@@/private
+	lock dir = @@PREFIX@@/
+	posix:eadb = @@PREFIX@@/private/eadb.tdb
+
+[sysvol]
+	path = @@PREFIX@@/sysvol
+	read only = no
+
+[netlogon]
+	path = @@PREFIX@@/sysvol/samba.example.com/scripts
+	read only = no

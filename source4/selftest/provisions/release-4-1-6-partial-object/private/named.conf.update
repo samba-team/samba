@@ -1,0 +1,7 @@
+/* this file is auto-generated - do not edit */
+update-policy {
+	grant SAMBA.EXAMPLE.COM ms-self * A AAAA;
+	grant Administrator@SAMBA.EXAMPLE.COM wildcard * A AAAA SRV CNAME;
+	grant PROMOTEDVDC$@samba.example.com wildcard * A AAAA SRV CNAME;
+	grant LOCALDC$@samba.example.com wildcard * A AAAA SRV CNAME;
+};

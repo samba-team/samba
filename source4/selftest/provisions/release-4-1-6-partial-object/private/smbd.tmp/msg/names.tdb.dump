@@ -1,0 +1,52 @@
+{
+key(10) = "dnsupdate\00"
+data(24) = "\B4r\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(13) = "wrepl_server\00"
+data(24) = "\ABr\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(12) = "wins_server\00"
+data(24) = "\AAr\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(11) = "nbt_server\00"
+data(24) = "\AAr\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(11) = "rpc_server\00"
+data(24) = "\A9r\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(13) = "cldap_server\00"
+data(24) = "\ADr\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(11) = "smb_server\00"
+data(24) = "\B9r\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(15) = "winbind_server\00"
+data(24) = "\B1r\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(11) = "kdc_server\00"
+data(24) = "\AFr\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(6) = "samba\00"
+data(24) = "\00\00\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(9) = "dreplsrv\00"
+data(24) = "\B0r\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(7) = "kccsrv\00"
+data(24) = "\B3r\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
+{
+key(12) = "ldap_server\00"
+data(24) = "\ACr\00\00\00\00\00\00\00\00\00\00\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+}
