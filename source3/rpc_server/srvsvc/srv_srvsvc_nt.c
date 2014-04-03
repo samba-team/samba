@@ -61,6 +61,13 @@ struct sess_file_info {
 	uint32_t num_entries;
 };
 
+struct share_conn_stat {
+	TALLOC_CTX *ctx;
+	const char *sharename;
+	struct server_id *svrid_arr;
+	int count;
+};
+
 /*******************************************************************
 ********************************************************************/
 
@@ -928,6 +935,63 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 	}
 
 	return WERR_OK;
+}
+
+/****************************************************************************
+ process an entry from the connection db.
+****************************************************************************/
+
+static int share_conn_fn(struct smbXsrv_tcon_global0 *tcon,
+			  void *data)
+{
+	struct share_conn_stat *scs = data;
+
+	if (!process_exists(tcon->server_id)) {
+		return 0;
+	}
+
+	if (strequal(tcon->share_name, scs->sharename)) {
+		scs->svrid_arr = talloc_realloc(scs->ctx, scs->svrid_arr,
+						struct server_id,
+						scs->count + 1);
+		if (!scs->svrid_arr) {
+			return 0;
+		}
+
+		scs->svrid_arr[scs->count] = tcon->server_id;
+		scs->count++;
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+ Count the connections to a share. Build an array of serverid's owning these
+ connections.
+****************************************************************************/
+
+static uint32_t count_share_conns(TALLOC_CTX *ctx, const char *sharename,
+				  struct server_id **arr)
+{
+	struct share_conn_stat scs;
+	NTSTATUS status;
+
+	scs.ctx = ctx;
+	scs.sharename = sharename;
+	scs.svrid_arr = NULL;
+	scs.count = 0;
+
+	status = smbXsrv_tcon_global_traverse(share_conn_fn, &scs);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("count_share_conns: traverse of "
+			 "smbXsrv_tcon_global.tdb failed - %s\n",
+			 nt_errstr(status)));
+		return 0;
+	}
+
+	*arr = scs.svrid_arr;
+	return scs.count;
 }
 
 /*******************************************************************
