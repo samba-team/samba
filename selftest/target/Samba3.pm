@@ -643,8 +643,6 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 		$ENV{NSS_WRAPPER_WINBIND_SO_PATH} = $env_vars->{NSS_WRAPPER_WINBIND_SO_PATH};
 
-		$ENV{UID_WRAPPER} = "1";
-
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.nmbd";
 
 		if ($nmbd ne "yes") {
@@ -700,8 +698,6 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 		$ENV{NSS_WRAPPER_WINBIND_SO_PATH} = $env_vars->{NSS_WRAPPER_WINBIND_SO_PATH};
 
-		$ENV{UID_WRAPPER} = "1";
-
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.winbindd";
 
 		if ($winbindd ne "yes") {
@@ -756,8 +752,6 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 		$ENV{NSS_WRAPPER_WINBIND_SO_PATH} = $env_vars->{NSS_WRAPPER_WINBIND_SO_PATH};
-
-		$ENV{UID_WRAPPER} = "1";
 
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.smbd";
 

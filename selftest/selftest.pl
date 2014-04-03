@@ -353,6 +353,9 @@ if ($opt_libuid_wrapper_so_path) {
 $ENV{LD_PRELOAD} = $ld_preload;
 print "LD_PRELOAD=$ENV{LD_PRELOAD}\n";
 
+# Enable uid_wrapper globally
+$ENV{UID_WRAPPER} = 1;
+
 my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {
 	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix_abs/w", $opt_socket_wrapper_pcap);
