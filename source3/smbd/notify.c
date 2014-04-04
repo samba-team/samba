@@ -211,11 +211,12 @@ void change_notify_reply(struct smb_request *req,
 	notify_buf->num_changes = 0;
 }
 
-static void notify_callback(void *private_data, const struct notify_event *e)
+static void notify_callback(void *private_data, struct timespec when,
+			    const struct notify_event *e)
 {
 	files_struct *fsp = (files_struct *)private_data;
 	DEBUG(10, ("notify_callback called for %s\n", fsp_str_dbg(fsp)));
-	notify_fsp(fsp, timespec_current(), e->action, e->path);
+	notify_fsp(fsp, when, e->action, e->path);
 }
 
 static void sys_notify_callback(struct sys_notify_context *ctx,

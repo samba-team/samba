@@ -44,7 +44,7 @@
 struct notify_list {
 	struct notify_list *next, *prev;
 	const char *path;
-	void (*callback)(void *, const struct notify_event *);
+	void (*callback)(void *, struct timespec, const struct notify_event *);
 	void *private_data;
 };
 
@@ -194,7 +194,8 @@ static int notify_context_destructor(struct notify_context *notify)
 
 NTSTATUS notify_add(struct notify_context *notify,
 		    const char *path, uint32_t filter, uint32_t subdir_filter,
-		    void (*callback)(void *, const struct notify_event *),
+		    void (*callback)(void *, struct timespec,
+				     const struct notify_event *),
 		    void *private_data)
 {
 	struct notify_db_entry e;
@@ -820,7 +821,8 @@ static void notify_handler(struct messaging_context *msg_ctx,
 
 	for (listel=notify->list;listel;listel=listel->next) {
 		if (listel->private_data == n->private_data) {
-			listel->callback(listel->private_data, n);
+			listel->callback(listel->private_data,
+					 timespec_current(), n);
 			break;
 		}
 	}

@@ -552,7 +552,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev);
 NTSTATUS notify_add(struct notify_context *notify,
 		    const char *path, uint32_t filter, uint32_t subdir_filter,
-		    void (*callback)(void *, const struct notify_event *),
+		    void (*callback)(void *, struct timespec,
+				     const struct notify_event *),
 		    void *private_data);
 NTSTATUS notify_remove(struct notify_context *notify, void *private_data);
 void notify_trigger(struct notify_context *notify,
