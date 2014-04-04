@@ -24,6 +24,12 @@
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/ndr_notify.h"
 
+struct notify_change_event {
+	struct timespec when;
+	uint32_t action;
+	const char *name;
+};
+
 struct notify_change_buf {
 	/*
 	 * If no requests are pending, changes are queued here. Simple array,
@@ -35,7 +41,7 @@ struct notify_change_buf {
 	 * asked we just return NT_STATUS_OK without specific changes.
 	 */
 	int num_changes;
-	struct notify_change *changes;
+	struct notify_change_event *changes;
 
 	/*
 	 * If no changes are around requests are queued here. Using a linked
@@ -87,8 +93,8 @@ struct notify_mid_map {
 	uint64_t mid;
 };
 
-static bool notify_change_record_identical(struct notify_change *c1,
-					struct notify_change *c2)
+static bool notify_change_record_identical(struct notify_change_event *c1,
+					   struct notify_change_event *c2)
 {
 	/* Note this is deliberately case sensitive. */
 	if (c1->action == c2->action &&
@@ -100,7 +106,7 @@ static bool notify_change_record_identical(struct notify_change *c1,
 
 static bool notify_marshall_changes(int num_changes,
 				uint32 max_offset,
-				struct notify_change *changes,
+				struct notify_change_event *changes,
 				DATA_BLOB *final_blob)
 {
 	int i;
@@ -111,7 +117,7 @@ static bool notify_marshall_changes(int num_changes,
 
 	for (i=0; i<num_changes; i++) {
 		enum ndr_err_code ndr_err;
-		struct notify_change *c;
+		struct notify_change_event *c;
 		struct FILE_NOTIFY_INFORMATION m;
 		DATA_BLOB blob;
 
@@ -437,7 +443,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 
 static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 {
-	struct notify_change *change, *changes;
+	struct notify_change_event *change, *changes;
 	char *tmp;
 
 	if (fsp->notify == NULL) {
@@ -483,7 +489,8 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 
 	if (!(changes = talloc_realloc(
 		      fsp->notify, fsp->notify->changes,
-		      struct notify_change, fsp->notify->num_changes+1))) {
+		      struct notify_change_event,
+		      fsp->notify->num_changes+1))) {
 		DEBUG(0, ("talloc_realloc failed\n"));
 		return;
 	}
