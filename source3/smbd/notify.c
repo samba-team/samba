@@ -63,7 +63,8 @@ struct notify_change_request {
 	void *backend_data;
 };
 
-static void notify_fsp(files_struct *fsp, uint32 action, const char *name);
+static void notify_fsp(files_struct *fsp, struct timespec when,
+		       uint32 action, const char *name);
 
 bool change_notify_fsp_has_changes(struct files_struct *fsp)
 {
@@ -214,7 +215,7 @@ static void notify_callback(void *private_data, const struct notify_event *e)
 {
 	files_struct *fsp = (files_struct *)private_data;
 	DEBUG(10, ("notify_callback called for %s\n", fsp_str_dbg(fsp)));
-	notify_fsp(fsp, e->action, e->path);
+	notify_fsp(fsp, timespec_current(), e->action, e->path);
 }
 
 static void sys_notify_callback(struct sys_notify_context *ctx,
@@ -223,7 +224,7 @@ static void sys_notify_callback(struct sys_notify_context *ctx,
 {
 	files_struct *fsp = (files_struct *)private_data;
 	DEBUG(10, ("sys_notify_callback called for %s\n", fsp_str_dbg(fsp)));
-	notify_fsp(fsp, e->action, e->path);
+	notify_fsp(fsp, timespec_current(), e->action, e->path);
 }
 
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
@@ -441,7 +442,8 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 	TALLOC_FREE(to_free);
 }
 
-static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
+static void notify_fsp(files_struct *fsp, struct timespec when,
+		       uint32 action, const char *name)
 {
 	struct notify_change_event *change, *changes;
 	char *tmp;
@@ -507,6 +509,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	string_replace(tmp, '/', '\\');
 	change->name = tmp;	
 
+	change->when = when;
 	change->action = action;
 	fsp->notify->num_changes += 1;
 
