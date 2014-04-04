@@ -767,30 +767,32 @@ done:
 	TALLOC_FREE(data.dptr);
 }
 
+struct notify_msg {
+	struct timespec when;
+	void *private_data;
+	uint32_t action;
+	char path[1];
+};
+
 static NTSTATUS notify_send(struct notify_context *notify,
 			    struct server_id *pid,
 			    const char *path, uint32_t action,
 			    void *private_data)
 {
-	struct notify_event ev;
-	DATA_BLOB data;
-	NTSTATUS status;
-	enum ndr_err_code ndr_err;
+	struct notify_msg m = {};
+	struct iovec iov[2];
 
-	ev.action = action;
-	ev.path = path;
-	ev.private_data = private_data;
+	m.when = timespec_current();
+	m.private_data = private_data;
+	m.action = action;
 
-	ndr_err = ndr_push_struct_blob(
-		&data, talloc_tos(), &ev,
-		(ndr_push_flags_fn_t)ndr_push_notify_event);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-	status = messaging_send(notify->msg, *pid, MSG_PVFS_NOTIFY,
-				&data);
-	TALLOC_FREE(data.data);
-	return status;
+	iov[0].iov_base = &m;
+	iov[0].iov_len = offsetof(struct notify_msg, path);
+	iov[1].iov_base = discard_const_p(char, path);
+	iov[1].iov_len = strlen(path)+1;
+
+	return messaging_send_iov(notify->msg, *pid, MSG_PVFS_NOTIFY,
+				  iov, ARRAY_SIZE(iov));
 }
 
 static void notify_handler(struct messaging_context *msg_ctx,
@@ -799,34 +801,31 @@ static void notify_handler(struct messaging_context *msg_ctx,
 {
 	struct notify_context *notify = talloc_get_type_abort(
 		private_data, struct notify_context);
-	enum ndr_err_code ndr_err;
-	struct notify_event *n;
+	struct notify_msg *m;
+	struct notify_event e;
 	struct notify_list *listel;
 
-	n = talloc(talloc_tos(), struct notify_event);
-	if (n == NULL) {
-		DEBUG(1, ("talloc failed\n"));
+	if (data->length == 0) {
+		DEBUG(1, ("%s: Got 0-sized MSG_PVFS_NOTIFY msg\n", __func__));
+		return;
+	}
+	if (data->data[data->length-1] != 0) {
+		DEBUG(1, ("%s: MSG_PVFS_NOTIFY path not 0-terminated\n",
+			  __func__));
 		return;
 	}
 
-	ndr_err = ndr_pull_struct_blob(
-		data, n, n, (ndr_pull_flags_fn_t)ndr_pull_notify_event);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(n);
-		return;
-	}
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(notify_event, n);
-	}
+	m = (struct notify_msg *)data->data;
+	e.action = m->action;
+	e.path = m->path;
+	e.private_data = m->private_data;
 
 	for (listel=notify->list;listel;listel=listel->next) {
-		if (listel->private_data == n->private_data) {
-			listel->callback(listel->private_data,
-					 timespec_current(), n);
+		if (listel->private_data == m->private_data) {
+			listel->callback(listel->private_data, m->when, &e);
 			break;
 		}
 	}
-	TALLOC_FREE(n);
 }
 
 struct notify_walk_idx_state {
