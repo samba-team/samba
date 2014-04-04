@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: pytalloc-util
 Description: Utility functions for using talloc objects with Python
 Version: @TALLOC_VERSION@
-Libs: -L${libdir} -lpytalloc-util
-Cflags: @LIB_RPATH@ -I${includedir}
+Libs: @LIB_RPATH@ -L${libdir} -lpytalloc-util
+Cflags: -I${includedir}
 URL: http://talloc.samba.org/
