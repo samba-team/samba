@@ -7,6 +7,6 @@ Name: tevent
 Description: An event system library
 Version: @PACKAGE_VERSION@
 Requires: talloc
-Libs: -L${libdir} -ltevent
-Cflags: @LIB_RPATH@ -I${includedir}
+Libs: @LIB_RPATH@ -L${libdir} -ltevent
+Cflags: -I${includedir}
 URL: http://samba.org/
