@@ -21,6 +21,11 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "../lib/util/unix_privs.h"
 #include "../lib/util/setid.h"
 
