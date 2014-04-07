@@ -324,6 +324,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_WERROR(struct ndr_pull *ndr, int ndr_flags, 
 	return NDR_ERR_SUCCESS;
 }
 
+/*
+  pull a HRESULT
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_HRESULT(struct ndr_pull *ndr, int ndr_flags, HRESULT *status)
+{
+	uint32_t v;
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*status = HRES_ERROR(v);
+	return NDR_ERR_SUCCESS;
+}
 
 /*
   parse a uint8_t enum
@@ -414,6 +425,20 @@ _PUBLIC_ void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR r
 {
 	ndr->print(ndr, "%-25s: %s", name, win_errstr(r));
 }
+
+/*
+  push a HRESULT
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_HRESULT(struct ndr_push *ndr, int ndr_flags, HRESULT status)
+{
+	return ndr_push_uint32(ndr, NDR_SCALARS, HRES_ERROR_V(status));
+}
+
+_PUBLIC_ void ndr_print_HRESULT(struct ndr_print *ndr, const char *name, HRESULT r)
+{
+	ndr->print(ndr, "%-25s: %s", name, hresult_errstr(r));
+}
+
 
 /*
   parse a set of bytes
