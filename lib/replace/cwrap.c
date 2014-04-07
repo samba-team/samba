@@ -25,6 +25,11 @@
 
 #include "replace.h"
 
+bool nss_wrapper_enabled(void)
+{
+	return false;
+}
+
 bool uid_wrapper_enabled(void)
 {
 	return false;
