@@ -367,13 +367,4 @@ struct addrinfo {
 #endif /* HAVE_LINUX_IPV6_V6ONLY_26 */
 #endif /* HAVE_IPV6 */
 
-#ifdef SOCKET_WRAPPER
-#ifndef SOCKET_WRAPPER_DISABLE
-#ifndef SOCKET_WRAPPER_NOT_REPLACE
-#define SOCKET_WRAPPER_REPLACE
-#endif /* SOCKET_WRAPPER_NOT_REPLACE */
-#include "../socket_wrapper/socket_wrapper.h"
-#endif /* SOCKET_WRAPPER_DISABLE */
-#endif /* SOCKET_WRAPPER */
-
 #endif

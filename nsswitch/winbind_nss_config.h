@@ -27,14 +27,6 @@
 #undef SIZEOF_LONG
 #endif
 
-/*
- * we don't need socket wrapper
- * nor nss wrapper here and we don't
- * want to depend on swrap_close()
- * so we better disable both
- */
-#define SOCKET_WRAPPER_NOT_REPLACE
-
 /* Include header files from data in config.h file */
 
 #ifndef NO_CONFIG_H

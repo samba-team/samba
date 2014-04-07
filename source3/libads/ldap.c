@@ -71,38 +71,6 @@ static void gotalarm_sig(int signum)
 	DEBUG(10, ("Opening connection to LDAP server '%s:%d', timeout "
 		   "%u seconds\n", server, port, to));
 
-#if defined(HAVE_LDAP_INIT_FD) && defined(SOCKET_WRAPPER)
-	/* Only use this private LDAP function if we are in make test,
-	 * as this is the best way to get the emulated TCP socket into
-	 * OpenLDAP */
-	if (socket_wrapper_dir() != NULL) {
-		int fd, ldap_err;
-		NTSTATUS status;
-		char *uri;
-
-		status = open_socket_out(ss, port, to, &fd);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return NULL;
-		}
-
-#ifndef LDAP_PROTO_TCP
-#define LDAP_PROTO_TCP 1
-#endif
-		uri = talloc_asprintf(talloc_tos(), "ldap://%s:%u", server, port);
-		if (uri == NULL) {
-			return NULL;
-		}
-		ldap_err = ldap_init_fd(fd, LDAP_PROTO_TCP, uri, &ldp);
-		talloc_free(uri);
-
-		if (ldap_err != LDAP_SUCCESS) {
-			return NULL;
-		}
-		return ldp;
-	}
-#endif
-
 	if (to) {
 		/* Setup timeout */
 		gotalarm = 0;

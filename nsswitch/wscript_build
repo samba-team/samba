@@ -6,7 +6,7 @@ host_os = sys.platform
 bld.SAMBA_LIBRARY('winbind-client',
 	source='wb_common.c',
 	deps='replace',
-	cflags='-DSOCKET_WRAPPER_DISABLE=1 -DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
+	cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
 	private_library=True
 	)
 

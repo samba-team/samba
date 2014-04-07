@@ -561,7 +561,6 @@ removeea setea
                            #define %s 1
                            #define NO_CONFIG_H 1
                            #define AUTOCONF_TEST 1
-                           #define SOCKET_WRAPPER_NOT_REPLACE
                            #include "replace.c"
                            #include "inet_ntop.c"
                            #include "snprintf.c"
@@ -617,7 +616,7 @@ def build(bld):
         REPLACE_HOSTCC_SOURCE,
         use_hostcc=True,
         use_global_deps=False,
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
+        cflags='-D_SAMBA_HOSTCC_',
         group='compiler_libraries',
         deps = extra_libs
     )
