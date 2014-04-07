@@ -94,10 +94,28 @@
     </para>
 
     <para>
-      Commands that reference a database have a
-      <parameter>DB</parameter> argument.  This is either a database
-      name, such as <filename>locking.tdb</filename> or a database ID
-      such as "0x42fe72c5".
+      Commands that reference a database use the following terms:
+      <variablelist>
+	<varlistentry>
+	  <term>DB</term>
+	  <listitem>
+	    <para>
+	      This is either a database name, such as
+	      <filename>locking.tdb</filename> or a database ID such
+	      as "0x42fe72c5".
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>DB-LIST</term>
+	  <listitem>
+	    <para>
+	      A space separated list of at least one
+	      <parameter>DB</parameter>.
+	    </para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
     </para>
   </refsect1>
 
@@ -1545,7 +1563,18 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
     <refsect2>
       <title>attach <parameter>DBNAME</parameter> [persistent]</title>
       <para>
-	This is a debugging command. This command will make the CTDB daemon create a new CTDB database and attach to it.
+	Create a new CTDB database called DBNAME and attach to it on
+	all nodes.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>detach <parameter>DB-LIST</parameter></title>
+      <para>
+	Detach specified non-persistent database(s) from the cluster. This
+	command will disconnect specified database(s) on all nodes in
+	the cluster.  This command should only be used when none of the
+	specified database(s) are in use.
       </para>
     </refsect2>
 
