@@ -1035,6 +1035,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 {
 	char *name_end;
 	char *namelist;
+	char *namelist_end;
 	char *nameptr;
 	int num_entries = 0;
 	int i;
@@ -1051,12 +1052,14 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 	}
 	nameptr = namelist;
 
+	namelist_end = &namelist[strlen(namelist)];
+
 	/* We need to make two passes over the string. The
 		first to count the number of elements, the second
 		to split it.
 	*/
 
-	while(*nameptr) {
+	while(nameptr <= namelist_end) {
 		if ( *nameptr == '/' ) {
 			/* cope with multiple (useless) /s) */
 			nameptr++;
@@ -1090,7 +1093,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 	/* Now copy out the names */
 	nameptr = namelist;
 	i = 0;
-	while(*nameptr) {
+	while(nameptr <= namelist_end) {
 		if ( *nameptr == '/' ) {
 			/* cope with multiple (useless) /s) */
 			nameptr++;
