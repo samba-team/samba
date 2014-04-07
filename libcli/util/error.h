@@ -22,6 +22,7 @@
 #include "libcli/util/werror.h"
 #include "libcli/util/doserr.h"
 #include "libcli/util/ntstatus.h"
+#include "libcli/util/hresult.h"
 
 /*****************************************************************************
 convert a NT status code to a dos class/code
