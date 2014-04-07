@@ -82,6 +82,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
+#define IDMAP_AUTORID_ALLOC_RESERVED 500
+
 /* handle to the tdb storing domain <-> range assignments */
 static struct db_context *autorid_db;
 
@@ -680,7 +682,8 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 
 	/* fill the TDB common configuration */
 
-	commonconfig->max_id = config->rangesize -1;
+	commonconfig->max_id = config->rangesize - 1
+			     - IDMAP_AUTORID_ALLOC_RESERVED;
 	commonconfig->hwmkey_uid = ALLOC_HWM_UID;
 	commonconfig->hwmkey_gid = ALLOC_HWM_GID;
 	commonconfig->rw_ops->get_new_id = idmap_autorid_allocate_id;
