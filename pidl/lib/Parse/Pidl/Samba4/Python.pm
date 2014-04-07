@@ -1059,6 +1059,11 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		return;
 	}
 
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "HRESULT") {
+		$self->pidl("$target = HRES_ERROR(PyInt_AsLong($cvar));");
+		return;
+	}
+
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "string_array") {
 		$self->pidl("$target = PyCObject_AsVoidPtr($cvar);");
 		return;
@@ -1210,6 +1215,10 @@ sub ConvertScalarToPython($$$)
 
 	if ($ctypename eq "WERROR") {
 		return "PyErr_FromWERROR($cvar)";
+	}
+
+	if ($ctypename eq "HRESULT") {
+		return "PyErr_FromHRESULT($cvar)";
 	}
 
 	if (($ctypename eq "string" or $ctypename eq "nbt_string" or $ctypename eq "nbt_name" or $ctypename eq "wrepl_nbt_name")) {
