@@ -70,6 +70,8 @@ $pad"."struct $fname *r)
 		$res .= "\treturn NT_STATUS_NOT_IMPLEMENTED;\n";
 	} elsif ($d->{RETURN_TYPE} eq "WERROR") {
 		$res .= "\treturn WERR_NOT_SUPPORTED;\n";
+	} elsif ($d->{RETURN_TYPE} eq "HRESULT") {
+		$res .= "\treturn HRES_ERROR_NOT_SUPPORTED;\n";
 	}
 
 	$res .= "}
