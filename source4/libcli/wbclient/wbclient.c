@@ -155,6 +155,10 @@ NTSTATUS wbc_sids_to_xids(struct tevent_context *ev, struct id_map *ids,
 
 	close(fd);
 
+	if (resp->result != WINBINDD_OK || p == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	p = resp->extra_data.data;
 
 	for (i=0; i<count; i++) {
