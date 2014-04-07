@@ -1,15 +1,83 @@
 #!/usr/bin/env python
 
-import Options
+import os
 
-def set_options(opt):
-    gr = opt.option_group('developer options')
-    gr.add_option('--enable-socket-wrapper',
-                   help=("Turn on socket wrapper library (default=no)"),
-                   action="store_true", dest='enable_socket_wrapper', default=False)
+VERSION="1.0.0"
 
 def configure(conf):
-    if (Options.options.enable_socket_wrapper or Options.options.developer or Options.options.enable_selftest):
-        conf.DEFINE('SOCKET_WRAPPER', 1)
-        conf.ADD_GLOBAL_DEPENDENCY('socket_wrapper')
+    if conf.CHECK_BUNDLED_SYSTEM('socket_wrapper', minversion=VERSION, set_target=False):
+        conf.DEFINE('USING_SYSTEM_SOCKET_WRAPPER', 1)
+        libsocket_wrapper_so_path = 'libsocket_wrapper.so'
+    else:
+        # check HAVE_GCC_THREAD_LOCAL_STORAGE
+        conf.CHECK_CODE('''
+            __thread int tls;
 
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_GCC_THREAD_LOCAL_STORAGE',
+            addmain=False,
+            msg='Checking for thread local storage')
+
+        # check HAVE_DESTRUCTOR_ATTRIBUTE
+        conf.CHECK_CODE('''
+            void test_destructor_attribute(void) __attribute__ ((destructor));
+
+            void test_destructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_DESTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library destructor support')
+
+        conf.CHECK_HEADERS('sys/signalfd.h')
+        conf.CHECK_HEADERS('sys/eventfd.h')
+        conf.CHECK_HEADERS('sys/timerfd.h')
+
+        conf.CHECK_STRUCTURE_MEMBER('struct msghdr',
+                                    'msg_control',
+                                    headers='sys/types.h sys/socket.h',
+                                    define='HAVE_STRUCT_MSGHDR_MSG_CONTROL')
+
+        conf.CHECK_FUNCS('getaddrinfo')
+        conf.CHECK_FUNCS('signalfd eventfd timerfd_create')
+
+        conf.CHECK_FUNCS_IN('bind',
+                            'socket',
+                            checklibc=True,
+                            headers='sys/types.h sys/socket.h')
+
+        conf.CHECK_C_PROTOTYPE('accept',
+                               'int accept(int s, struct sockaddr *addr, Psocklen_t addrlen)',
+                               define='HAVE_ACCEPT_PSOCKLEN_T', headers='sys/types.h sys/socket.h')
+
+        conf.CHECK_C_PROTOTYPE('ioctl',
+                               'int ioctl(int s, int r, ...)',
+                               define='HAVE_IOCTL_INT', headers='unistd.h sys/ioctl.h')
+
+        # Create full path to socket_wrapper
+        srcdir = os.path.realpath(conf.srcdir)
+        libsocket_wrapper_so_path = srcdir + '/bin/default/lib/socket_wrapper/libsocket-wrapper.so'
+
+    conf.DEFINE('LIBSOCKET_WRAPPER_SO_PATH', libsocket_wrapper_so_path)
+    conf.DEFINE('SOCKET_WRAPPER', 1)
+
+def build(bld):
+    if not bld.CONFIG_SET("USING_SYSTEM_SOCKET_WRAPPER"):
+        # We need to do it this way or the library wont work.
+        # Using private_library=True will add symbol version which
+        # breaks preloading!
+        bld.SAMBA_LIBRARY('socket_wrapper',
+                          source='socket_wrapper.c',
+                          cflags='-DNDEBUG',
+                          deps='dl',
+                          install=False,
+                          realname='libsocket-wrapper.so')

@@ -1,24 +1,25 @@
 /*
  * Copyright (C) Jelmer Vernooij 2005,2008 <jelmer@samba.org>
  * Copyright (C) Stefan Metzmacher 2006-2009 <metze@samba.org>
+ * Copyright (C) Andreas Schneider 2013 <asn@samba.org>
  *
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the author nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -41,16 +42,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_LIBREPLACE
-
-#define SOCKET_WRAPPER_NOT_REPLACE
-#include "replace.h"
-#include "system/network.h"
-#include "system/filesys.h"
-#include "system/time.h"
-
-#else /* HAVE_LIBREPLACE */
-
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -59,39 +50,70 @@
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#ifdef HAVE_SYS_SIGNALFD_H
+#include <sys/signalfd.h>
+#endif
+#ifdef HAVE_SYS_EVENTFD_H
+#include <sys/eventfd.h>
+#endif
+#ifdef HAVE_SYS_TIMERFD_H
+#include <sys/timerfd.h>
+#endif
+#include <sys/uio.h>
 #include <errno.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <arpa/inet.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <unistd.h>
+
+enum swrap_dbglvl_e {
+	SWRAP_LOG_ERROR = 0,
+	SWRAP_LOG_WARN,
+	SWRAP_LOG_DEBUG,
+	SWRAP_LOG_TRACE
+};
+
+/* GCC have printf type attribute check. */
+#ifdef HAVE_FUNCTION_ATTRIBUTE_FORMAT
+#define PRINTF_ATTRIBUTE(a,b) __attribute__ ((__format__ (__printf__, a, b)))
+#else
+#define PRINTF_ATTRIBUTE(a,b)
+#endif /* HAVE_FUNCTION_ATTRIBUTE_FORMAT */
+
+#ifdef HAVE_DESTRUCTOR_ATTRIBUTE
+#define DESTRUCTOR_ATTRIBUTE __attribute__ ((destructor))
+#else
+#define DESTRUCTOR_ATTRIBUTE
+#endif
+
+#ifdef HAVE_GCC_THREAD_LOCAL_STORAGE
+# define SWRAP_THREAD __thread
+#else
+# define SWRAP_THREAD
+#endif
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
 
-#ifndef discard_const_p
-#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
-#endif
-
-/**
- * zero a structure
- */
 #ifndef ZERO_STRUCT
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 #endif
 
-#endif /* HAVE_LIBREPLACE */
+#ifndef discard_const
+#define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
+#endif
 
-#include "socket_wrapper.h"
-
-#ifndef _PUBLIC_
-#define _PUBLIC_
+#ifndef discard_const_p
+#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 #endif
 
 #define SWRAP_DLIST_ADD(list,item) do { \
@@ -125,35 +147,7 @@
 	(item)->next	= NULL; \
 } while (0)
 
-/* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
- * for now */
-#define REWRITE_CALLS 
-
-#ifdef REWRITE_CALLS
-#define real_accept accept
-#define real_connect connect
-#define real_bind bind
-#define real_listen listen
-#define real_getpeername getpeername
-#define real_getsockname getsockname
-#define real_getsockopt getsockopt
-#define real_setsockopt setsockopt
-#define real_recvfrom recvfrom
-#define real_sendto sendto
-#define real_sendmsg sendmsg
-#define real_ioctl ioctl
-#define real_recv recv
-#define real_read read
-#define real_send send
-#define real_readv readv
-#define real_writev writev
-#define real_socket socket
-#define real_close close
-#define real_dup dup
-#define real_dup2 dup2
-#endif
-
-#ifdef HAVE_GETTIMEOFDAY_TZ
+#if defined(HAVE_GETTIMEOFDAY_TZ) || defined(HAVE_GETTIMEOFDAY_TZ_VOID)
 #define swrapGetTimeOfDay(tval) gettimeofday(tval,NULL)
 #else
 #define swrapGetTimeOfDay(tval)	gettimeofday(tval)
@@ -161,8 +155,8 @@
 
 /* we need to use a very terse format here as IRIX 6.4 silently
    truncates names to 16 chars, so if we use a longer name then we
-   can't tell which port a packet came from with recvfrom() 
-   
+   can't tell which port a packet came from with recvfrom()
+
    with this format we have 8 chars left for the directory name
 */
 #define SOCKET_FORMAT "%c%02X%04X"
@@ -171,10 +165,575 @@
 #define SOCKET_TYPE_CHAR_TCP_V6		'X'
 #define SOCKET_TYPE_CHAR_UDP_V6		'Y'
 
+/*
+ * Cut down to 1500 byte packets for stream sockets,
+ * which makes it easier to format PCAP capture files
+ * (as the caller will simply continue from here)
+ */
+#define SOCKET_MAX_PACKET 1500
+
+#define SOCKET_MAX_SOCKETS 1024
+
 /* This limit is to avoid broadcast sendto() needing to stat too many
  * files.  It may be raised (with a performance cost) to up to 254
  * without changing the format above */
 #define MAX_WRAPPED_INTERFACES 40
+
+struct socket_info_fd {
+	struct socket_info_fd *prev, *next;
+	int fd;
+};
+
+struct socket_info
+{
+	struct socket_info_fd *fds;
+
+	int family;
+	int type;
+	int protocol;
+	int bound;
+	int bcast;
+	int is_server;
+	int connected;
+	int defer_connect;
+
+	char *tmp_path;
+
+	struct sockaddr *myname;
+	socklen_t myname_len;
+
+	struct sockaddr *peername;
+	socklen_t peername_len;
+
+	struct {
+		unsigned long pck_snd;
+		unsigned long pck_rcv;
+	} io;
+
+	struct socket_info *prev, *next;
+};
+
+/*
+ * File descriptors are shared between threads so we should share socket
+ * information too.
+ */
+struct socket_info *sockets;
+
+/* Function prototypes */
+
+bool socket_wrapper_enabled(void);
+void swrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
+
+#ifdef NDEBUG
+# define SWRAP_LOG(...)
+#else
+
+static void swrap_log(enum swrap_dbglvl_e dbglvl, const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
+# define SWRAP_LOG(dbglvl, ...) swrap_log((dbglvl), __VA_ARGS__)
+
+static void swrap_log(enum swrap_dbglvl_e dbglvl, const char *format, ...)
+{
+	char buffer[1024];
+	va_list va;
+	const char *d;
+	unsigned int lvl = 0;
+
+	d = getenv("SOCKET_WRAPPER_DEBUGLEVEL");
+	if (d != NULL) {
+		lvl = atoi(d);
+	}
+
+	va_start(va, format);
+	vsnprintf(buffer, sizeof(buffer), format, va);
+	va_end(va);
+
+	if (lvl >= dbglvl) {
+		switch (dbglvl) {
+			case SWRAP_LOG_ERROR:
+				fprintf(stderr,
+					"SWRAP_ERROR(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+			case SWRAP_LOG_WARN:
+				fprintf(stderr,
+					"SWRAP_WARN(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+			case SWRAP_LOG_DEBUG:
+				fprintf(stderr,
+					"SWRAP_DEBUG(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+			case SWRAP_LOG_TRACE:
+				fprintf(stderr,
+					"SWRAP_TRACE(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+		}
+	}
+}
+#endif
+
+/*********************************************************
+ * SWRAP LOADING LIBC FUNCTIONS
+ *********************************************************/
+
+#include <dlfcn.h>
+
+struct swrap_libc_fns {
+	int (*libc_accept)(int sockfd,
+			   struct sockaddr *addr,
+			   socklen_t *addrlen);
+	int (*libc_bind)(int sockfd,
+			 const struct sockaddr *addr,
+			 socklen_t addrlen);
+	int (*libc_close)(int fd);
+	int (*libc_connect)(int sockfd,
+			    const struct sockaddr *addr,
+			    socklen_t addrlen);
+	int (*libc_dup)(int fd);
+	int (*libc_dup2)(int oldfd, int newfd);
+#ifdef HAVE_EVENTFD
+	int (*libc_eventfd)(int count, int flags);
+#endif
+	int (*libc_getpeername)(int sockfd,
+				struct sockaddr *addr,
+				socklen_t *addrlen);
+	int (*libc_getsockname)(int sockfd,
+				struct sockaddr *addr,
+				socklen_t *addrlen);
+	int (*libc_getsockopt)(int sockfd,
+			       int level,
+			       int optname,
+			       void *optval,
+			       socklen_t *optlen);
+	int (*libc_ioctl)(int d, unsigned long int request, ...);
+	int (*libc_listen)(int sockfd, int backlog);
+	int (*libc_open)(const char *pathname, int flags, mode_t mode);
+	int (*libc_pipe)(int pipefd[2]);
+	int (*libc_read)(int fd, void *buf, size_t count);
+	ssize_t (*libc_readv)(int fd, const struct iovec *iov, int iovcnt);
+	int (*libc_recv)(int sockfd, void *buf, size_t len, int flags);
+	int (*libc_recvfrom)(int sockfd,
+			     void *buf,
+			     size_t len,
+			     int flags,
+			     struct sockaddr *src_addr,
+			     socklen_t *addrlen);
+	int (*libc_recvmsg)(int sockfd, const struct msghdr *msg, int flags);
+	int (*libc_send)(int sockfd, const void *buf, size_t len, int flags);
+	int (*libc_sendmsg)(int sockfd, const struct msghdr *msg, int flags);
+	int (*libc_sendto)(int sockfd,
+			   const void *buf,
+			   size_t len,
+			   int flags,
+			   const  struct sockaddr *dst_addr,
+			   socklen_t addrlen);
+	int (*libc_setsockopt)(int sockfd,
+			       int level,
+			       int optname,
+			       const void *optval,
+			       socklen_t optlen);
+#ifdef HAVE_SIGNALFD
+	int (*libc_signalfd)(int fd, const sigset_t *mask, int flags);
+#endif
+	int (*libc_socket)(int domain, int type, int protocol);
+	int (*libc_socketpair)(int domain, int type, int protocol, int sv[2]);
+#ifdef HAVE_TIMERFD_CREATE
+	int (*libc_timerfd_create)(int clockid, int flags);
+#endif
+	ssize_t (*libc_writev)(int fd, const struct iovec *iov, int iovcnt);
+};
+
+struct swrap {
+	void *libc_handle;
+	void *libsocket_handle;
+
+	bool initialised;
+	bool enabled;
+
+	char *socket_dir;
+
+	struct swrap_libc_fns fns;
+};
+
+static struct swrap swrap;
+
+/* prototypes */
+static const char *socket_wrapper_dir(void);
+
+#define LIBC_NAME "libc.so"
+
+enum swrap_lib {
+    SWRAP_LIBC,
+    SWRAP_LIBNSL,
+    SWRAP_LIBSOCKET,
+};
+
+#ifndef NDEBUG
+static const char *swrap_str_lib(enum swrap_lib lib)
+{
+	switch (lib) {
+	case SWRAP_LIBC:
+		return "libc";
+	case SWRAP_LIBNSL:
+		return "libnsl";
+	case SWRAP_LIBSOCKET:
+		return "libsocket";
+	}
+
+	/* Compiler would warn us about unhandled enum value if we get here */
+	return "unknown";
+}
+#endif
+
+static void *swrap_load_lib_handle(enum swrap_lib lib)
+{
+	int flags = RTLD_LAZY;
+	void *handle = NULL;
+	int i;
+
+#ifdef HAVE_APPLE
+	return RTLD_NEXT;
+#endif
+
+#ifdef RTLD_DEEPBIND
+	flags |= RTLD_DEEPBIND;
+#endif
+
+	switch (lib) {
+	case SWRAP_LIBNSL:
+		/* FALL TROUGH */
+	case SWRAP_LIBSOCKET:
+#ifdef HAVE_LIBSOCKET
+		handle = swrap.libsocket_handle;
+		if (handle == NULL) {
+			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+				char soname[256] = {0};
+
+				snprintf(soname, sizeof(soname), "libsocket.so.%d", i);
+				handle = dlopen(soname, flags);
+			}
+
+			swrap.libsocket_handle = handle;
+		}
+		break;
+#endif
+		/* FALL TROUGH */
+	case SWRAP_LIBC:
+		handle = swrap.libc_handle;
+		if (handle == NULL) {
+			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+				char soname[256] = {0};
+
+				snprintf(soname, sizeof(soname), "libc.so.%d", i);
+				handle = dlopen(soname, flags);
+			}
+
+			swrap.libc_handle = handle;
+		}
+		break;
+	}
+
+	if (handle == NULL) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Failed to dlopen library: %s\n",
+			  dlerror());
+		exit(-1);
+	}
+
+	return handle;
+}
+
+static void *_swrap_load_lib_function(enum swrap_lib lib, const char *fn_name)
+{
+	void *handle;
+	void *func;
+
+	handle = swrap_load_lib_handle(lib);
+
+	func = dlsym(handle, fn_name);
+	if (func == NULL) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+				"Failed to find %s: %s\n",
+				fn_name, dlerror());
+		exit(-1);
+	}
+
+	SWRAP_LOG(SWRAP_LOG_TRACE,
+			"Loaded %s from %s",
+			fn_name, swrap_str_lib(lib));
+	return func;
+}
+
+#define swrap_load_lib_function(lib, fn_name) \
+	if (swrap.fns.libc_##fn_name == NULL) { \
+		*(void **) (&swrap.fns.libc_##fn_name) = \
+			_swrap_load_lib_function(lib, #fn_name); \
+	}
+
+
+/*
+ * IMPORTANT
+ *
+ * Functions expeciall from libc need to be loaded individually, you can't load
+ * all at once or gdb will segfault at startup. The same applies to valgrind and
+ * has probably something todo with with the linker.
+ * So we need load each function at the point it is called the first time.
+ */
+static int libc_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, accept);
+
+	return swrap.fns.libc_accept(sockfd, addr, addrlen);
+}
+
+static int libc_bind(int sockfd,
+		     const struct sockaddr *addr,
+		     socklen_t addrlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, bind);
+
+	return swrap.fns.libc_bind(sockfd, addr, addrlen);
+}
+
+static int libc_close(int fd)
+{
+	swrap_load_lib_function(SWRAP_LIBC, close);
+
+	return swrap.fns.libc_close(fd);
+}
+
+static int libc_connect(int sockfd,
+			const struct sockaddr *addr,
+			socklen_t addrlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, connect);
+
+	return swrap.fns.libc_connect(sockfd, addr, addrlen);
+}
+
+static int libc_dup(int fd)
+{
+	swrap_load_lib_function(SWRAP_LIBC, dup);
+
+	return swrap.fns.libc_dup(fd);
+}
+
+static int libc_dup2(int oldfd, int newfd)
+{
+	swrap_load_lib_function(SWRAP_LIBC, dup2);
+
+	return swrap.fns.libc_dup2(oldfd, newfd);
+}
+
+#ifdef HAVE_EVENTFD
+static int libc_eventfd(int count, int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBC, eventfd);
+
+	return swrap.fns.libc_eventfd(count, flags);
+}
+#endif
+
+static int libc_getpeername(int sockfd,
+			    struct sockaddr *addr,
+			    socklen_t *addrlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, getpeername);
+
+	return swrap.fns.libc_getpeername(sockfd, addr, addrlen);
+}
+
+static int libc_getsockname(int sockfd,
+			    struct sockaddr *addr,
+			    socklen_t *addrlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, getsockname);
+
+	return swrap.fns.libc_getsockname(sockfd, addr, addrlen);
+}
+
+static int libc_getsockopt(int sockfd,
+			   int level,
+			   int optname,
+			   void *optval,
+			   socklen_t *optlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, getsockopt);
+
+	return swrap.fns.libc_getsockopt(sockfd, level, optname, optval, optlen);
+}
+
+static int libc_vioctl(int d, unsigned long int request, va_list ap)
+{
+	long int args[4];
+	int rc;
+	int i;
+
+	swrap_load_lib_function(SWRAP_LIBC, ioctl);
+
+	for (i = 0; i < 4; i++) {
+		args[i] = va_arg(ap, long int);
+	}
+
+	rc = swrap.fns.libc_ioctl(d,
+				  request,
+				  args[0],
+				  args[1],
+				  args[2],
+				  args[3]);
+
+	return rc;
+}
+
+static int libc_listen(int sockfd, int backlog)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, listen);
+
+	return swrap.fns.libc_listen(sockfd, backlog);
+}
+
+static int libc_vopen(const char *pathname, int flags, va_list ap)
+{
+	long int mode = 0;
+	int fd;
+
+	swrap_load_lib_function(SWRAP_LIBC, open);
+
+	mode = va_arg(ap, long int);
+
+	fd = swrap.fns.libc_open(pathname, flags, (mode_t)mode);
+
+	return fd;
+}
+
+static int libc_pipe(int pipefd[2])
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, pipe);
+
+	return swrap.fns.libc_pipe(pipefd);
+}
+
+static int libc_read(int fd, void *buf, size_t count)
+{
+	swrap_load_lib_function(SWRAP_LIBC, read);
+
+	return swrap.fns.libc_read(fd, buf, count);
+}
+
+static ssize_t libc_readv(int fd, const struct iovec *iov, int iovcnt)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, readv);
+
+	return swrap.fns.libc_readv(fd, iov, iovcnt);
+}
+
+static int libc_recv(int sockfd, void *buf, size_t len, int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, recv);
+
+	return swrap.fns.libc_recv(sockfd, buf, len, flags);
+}
+
+static int libc_recvfrom(int sockfd,
+			 void *buf,
+			 size_t len,
+			 int flags,
+			 struct sockaddr *src_addr,
+			 socklen_t *addrlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, recvfrom);
+
+	return swrap.fns.libc_recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
+}
+
+static int libc_recvmsg(int sockfd, struct msghdr *msg, int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, recvmsg);
+
+	return swrap.fns.libc_recvmsg(sockfd, msg, flags);
+}
+
+static int libc_send(int sockfd, const void *buf, size_t len, int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, send);
+
+	return swrap.fns.libc_send(sockfd, buf, len, flags);
+}
+
+static int libc_sendmsg(int sockfd, const struct msghdr *msg, int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, sendmsg);
+
+	return swrap.fns.libc_sendmsg(sockfd, msg, flags);
+}
+
+static int libc_sendto(int sockfd,
+		       const void *buf,
+		       size_t len,
+		       int flags,
+		       const  struct sockaddr *dst_addr,
+		       socklen_t addrlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, sendto);
+
+	return swrap.fns.libc_sendto(sockfd, buf, len, flags, dst_addr, addrlen);
+}
+
+static int libc_setsockopt(int sockfd,
+			   int level,
+			   int optname,
+			   const void *optval,
+			   socklen_t optlen)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, setsockopt);
+
+	return swrap.fns.libc_setsockopt(sockfd, level, optname, optval, optlen);
+}
+
+#ifdef HAVE_SIGNALFD
+static int libc_signalfd(int fd, const sigset_t *mask, int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, signalfd);
+
+	return swrap.fns.libc_signalfd(fd, mask, flags);
+}
+#endif
+
+static int libc_socket(int domain, int type, int protocol)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, socket);
+
+	return swrap.fns.libc_socket(domain, type, protocol);
+}
+
+static int libc_socketpair(int domain, int type, int protocol, int sv[2])
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, socketpair);
+
+	return swrap.fns.libc_socketpair(domain, type, protocol, sv);
+}
+
+#ifdef HAVE_TIMERFD_CREATE
+static int libc_timerfd_create(int clockid, int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBC, timerfd_create);
+
+	return swrap.fns.libc_timerfd_create(clockid, flags);
+}
+#endif
+
+static ssize_t libc_writev(int fd, const struct iovec *iov, int iovcnt)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, writev);
+
+	return swrap.fns.libc_writev(fd, iov, iovcnt);
+}
+
+/*********************************************************
+ * SWRAP HELPER FUNCTIONS
+ *********************************************************/
 
 #ifdef HAVE_IPV6
 /*
@@ -234,43 +793,7 @@ static size_t socket_length(int family)
 	return 0;
 }
 
-struct socket_info_fd {
-	struct socket_info_fd *prev, *next;
-	int fd;
-};
-
-struct socket_info
-{
-	struct socket_info_fd *fds;
-
-	int family;
-	int type;
-	int protocol;
-	int bound;
-	int bcast;
-	int is_server;
-	int connected;
-	int defer_connect;
-
-	char *tmp_path;
-
-	struct sockaddr *myname;
-	socklen_t myname_len;
-
-	struct sockaddr *peername;
-	socklen_t peername_len;
-
-	struct {
-		unsigned long pck_snd;
-		unsigned long pck_rcv;
-	} io;
-
-	struct socket_info *prev, *next;
-};
-
-static struct socket_info *sockets;
-
-const char *socket_wrapper_dir(void)
+static const char *socket_wrapper_dir(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DIR");
 	if (s == NULL) {
@@ -279,10 +802,19 @@ const char *socket_wrapper_dir(void)
 	if (strncmp(s, "./", 2) == 0) {
 		s += 2;
 	}
+
+	SWRAP_LOG(SWRAP_LOG_TRACE, "socket_wrapper_dir: %s", s);
 	return s;
 }
 
-unsigned int socket_wrapper_default_iface(void)
+bool socket_wrapper_enabled(void)
+{
+	const char *s = socket_wrapper_dir();
+
+	return s != NULL ? true : false;
+}
+
+static unsigned int socket_wrapper_default_iface(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DEFAULT_IFACE");
 	if (s) {
@@ -311,6 +843,9 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 		errno = EINVAL;
 		return -1;
 	}
+
+	SWRAP_LOG(SWRAP_LOG_TRACE, "type %c iface %u port %u",
+			type, iface, prt);
 
 	if (iface == 0 || iface > MAX_WRAPPED_INTERFACES) {
 		errno = EINVAL;
@@ -396,6 +931,10 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 			a_type = SOCKET_TYPE_CHAR_UDP;
 			b_type = SOCKET_TYPE_CHAR_UDP;
 			break;
+		default:
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			errno = ESOCKTNOSUPPORT;
+			return -1;
 		}
 
 		prt = ntohs(in->sin_port);
@@ -434,6 +973,10 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		case SOCK_DGRAM:
 			type = SOCKET_TYPE_CHAR_UDP_V6;
 			break;
+		default:
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			errno = ESOCKTNOSUPPORT;
+			return -1;
 		}
 
 		/* XXX no multicast/broadcast */
@@ -454,11 +997,13 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	}
 #endif
 	default:
+		SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family!\n");
 		errno = ENETUNREACH;
 		return -1;
 	}
 
 	if (prt == 0) {
+		SWRAP_LOG(SWRAP_LOG_WARN, "Port not set\n");
 		errno = EINVAL;
 		return -1;
 	}
@@ -466,12 +1011,14 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	if (is_bcast) {
 		snprintf(un->sun_path, sizeof(un->sun_path), "%s/EINVAL", 
 			 socket_wrapper_dir());
+		SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 		/* the caller need to do more processing */
 		return 0;
 	}
 
 	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
 		 socket_wrapper_dir(), type, iface, prt);
+	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 
 	return 0;
 }
@@ -510,6 +1057,10 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			a_type = SOCKET_TYPE_CHAR_UDP;
 			b_type = SOCKET_TYPE_CHAR_UDP;
 			break;
+		default:
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			errno = ESOCKTNOSUPPORT;
+			return -1;
 		}
 
 		if (addr == 0) {
@@ -551,6 +1102,10 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		case SOCK_DGRAM:
 			type = SOCKET_TYPE_CHAR_UDP_V6;
 			break;
+		default:
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			errno = ESOCKTNOSUPPORT;
+			return -1;
 		}
 
 		/* XXX no multicast/broadcast */
@@ -573,6 +1128,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	}
 #endif
 	default:
+		SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family\n");
 		errno = EADDRNOTAVAIL;
 		return -1;
 	}
@@ -603,12 +1159,14 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 
 	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
 		 socket_wrapper_dir(), type, iface, prt);
+	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 	return 0;
 }
 
 static struct socket_info *find_socket_info(int fd)
 {
 	struct socket_info *i;
+
 	for (i = sockets; i; i = i->next) {
 		struct socket_info_fd *f;
 		for (f = i->fds; f; f = f->next) {
@@ -621,12 +1179,41 @@ static struct socket_info *find_socket_info(int fd)
 	return NULL;
 }
 
-static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr *in_addr, socklen_t in_len, 
-				  struct sockaddr_un *out_addr, int alloc_sock, int *bcast)
+static void swrap_remove_stale(int fd)
+{
+	struct socket_info *si = find_socket_info(fd);
+	struct socket_info_fd *fi;
+
+	if (si != NULL) {
+		for (fi = si->fds; fi; fi = fi->next) {
+			if (fi->fd == fd) {
+				SWRAP_LOG(SWRAP_LOG_TRACE, "remove stale wrapper for %d", fd);
+				SWRAP_DLIST_REMOVE(si->fds, fi);
+				free(fi);
+				break;
+			}
+		}
+
+		if (si->fds == NULL) {
+			SWRAP_DLIST_REMOVE(sockets, si);
+		}
+	}
+}
+
+static int sockaddr_convert_to_un(struct socket_info *si,
+				  const struct sockaddr *in_addr,
+				  socklen_t in_len,
+				  struct sockaddr_un *out_addr,
+				  int alloc_sock,
+				  int *bcast)
 {
 	struct sockaddr *out = (struct sockaddr *)(void *)out_addr;
-	if (!out_addr)
+
+	(void) in_len; /* unused */
+
+	if (out_addr == NULL) {
 		return 0;
+	}
 
 	out->sa_family = AF_UNIX;
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
@@ -643,6 +1230,7 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 		case SOCK_DGRAM:
 			break;
 		default:
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -656,6 +1244,7 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 	}
 
 	errno = EAFNOSUPPORT;
+	SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family\n");
 	return -1;
 }
 
@@ -686,6 +1275,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 		case SOCK_DGRAM:
 			break;
 		default:
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -698,6 +1288,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 		break;
 	}
 
+	SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family\n");
 	errno = EAFNOSUPPORT;
 	return -1;
 }
@@ -977,7 +1568,10 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 	}
 
 	base = (uint8_t *)malloc(alloc_len);
-	if (!base) return NULL;
+	if (base == NULL) {
+		return NULL;
+	}
+	memset(base, 0x0, alloc_len);
 
 	buf = base;
 
@@ -1422,7 +2016,7 @@ static void swrap_dump_packet(struct socket_info *si,
 
 	fd = swrap_get_pcap_fd(file_name);
 	if (fd != -1) {
-		if (write(fd, packet, packet_len) != packet_len) {
+		if (write(fd, packet, packet_len) != (ssize_t)packet_len) {
 			free(packet);
 			return;
 		}
@@ -1431,12 +2025,45 @@ static void swrap_dump_packet(struct socket_info *si,
 	free(packet);
 }
 
-_PUBLIC_ int swrap_socket(int family, int type, int protocol)
+/****************************************************************************
+ *   SIGNALFD
+ ***************************************************************************/
+
+#ifdef HAVE_SIGNALFD
+static int swrap_signalfd(int fd, const sigset_t *mask, int flags)
+{
+	int rc;
+
+	rc = libc_signalfd(fd, mask, flags);
+	if (rc != -1) {
+		swrap_remove_stale(fd);
+	}
+
+	return rc;
+}
+
+int signalfd(int fd, const sigset_t *mask, int flags)
+{
+	return swrap_signalfd(fd, mask, flags);
+}
+#endif
+
+/****************************************************************************
+ *   SOCKET
+ ***************************************************************************/
+
+static int swrap_socket(int family, int type, int protocol)
 {
 	struct socket_info *si;
 	struct socket_info_fd *fi;
 	int fd;
 	int real_type = type;
+
+	/*
+	 * Remove possible addition flags passed to socket() so
+	 * do not fail checking the type.
+	 * See https://lwn.net/Articles/281965/
+	 */
 #ifdef SOCK_CLOEXEC
 	real_type &= ~SOCK_CLOEXEC;
 #endif
@@ -1444,8 +2071,8 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 	real_type &= ~SOCK_NONBLOCK;
 #endif
 
-	if (!socket_wrapper_dir()) {
-		return real_socket(family, type, protocol);
+	if (!socket_wrapper_enabled()) {
+		return libc_socket(family, type, protocol);
 	}
 
 	switch (family) {
@@ -1455,7 +2082,7 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 #endif
 		break;
 	case AF_UNIX:
-		return real_socket(family, type, protocol);
+		return libc_socket(family, type, protocol);
 	default:
 		errno = EAFNOSUPPORT;
 		return -1;
@@ -1489,13 +2116,24 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 		return -1;
 	}
 
-	/* We must call real_socket with type, from the caller, not the version we removed
-	   SOCK_CLOEXEC and SOCK_NONBLOCK from */
-	fd = real_socket(AF_UNIX, type, 0);
+	/*
+	 * We must call libc_socket with type, from the caller, not the version
+	 * we removed SOCK_CLOEXEC and SOCK_NONBLOCK from
+	 */
+	fd = libc_socket(AF_UNIX, type, 0);
 
-	if (fd == -1) return -1;
+	if (fd == -1) {
+		return -1;
+	}
 
-	si = (struct socket_info *)calloc(1, sizeof(struct socket_info));
+	/* Check if we have a stale fd and remove it */
+	si = find_socket_info(fd);
+	if (si != NULL) {
+		swrap_remove_stale(fd);
+	}
+
+	si = (struct socket_info *)malloc(sizeof(struct socket_info));
+	memset(si, 0, sizeof(struct socket_info));
 	if (si == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -1523,7 +2161,83 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 	return fd;
 }
 
-_PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+int socket(int family, int type, int protocol)
+{
+	return swrap_socket(family, type, protocol);
+}
+
+/****************************************************************************
+ *   SOCKETPAIR
+ ***************************************************************************/
+
+static int swrap_socketpair(int family, int type, int protocol, int sv[2])
+{
+	int rc;
+
+	rc = libc_socketpair(family, type, protocol, sv);
+	if (rc != -1) {
+		swrap_remove_stale(sv[0]);
+		swrap_remove_stale(sv[1]);
+	}
+
+	return rc;
+}
+
+int socketpair(int family, int type, int protocol, int sv[2])
+{
+	return swrap_socketpair(family, type, protocol, sv);
+}
+
+/****************************************************************************
+ *   SOCKETPAIR
+ ***************************************************************************/
+
+#ifdef HAVE_TIMERFD_CREATE
+static int swrap_timerfd_create(int clockid, int flags)
+{
+	int fd;
+
+	fd = libc_timerfd_create(clockid, flags);
+	if (fd != -1) {
+		swrap_remove_stale(fd);
+	}
+
+	return fd;
+}
+
+int timerfd_create(int clockid, int flags)
+{
+	return swrap_timerfd_create(clockid, flags);
+}
+#endif
+
+/****************************************************************************
+ *   PIPE
+ ***************************************************************************/
+
+static int swrap_pipe(int pipefd[2])
+{
+	int rc;
+
+	rc = libc_pipe(pipefd);
+	if (rc != -1) {
+		swrap_remove_stale(pipefd[0]);
+		swrap_remove_stale(pipefd[1]);
+	}
+
+	return rc;
+}
+
+int pipe(int pipefd[2])
+{
+	return swrap_pipe(pipefd);
+}
+
+/****************************************************************************
+ *   ACCEPT
+ ***************************************************************************/
+
+static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
 	struct socket_info *parent_si, *child_si;
 	struct socket_info_fd *child_fi;
@@ -1538,7 +2252,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
 	parent_si = find_socket_info(s);
 	if (!parent_si) {
-		return real_accept(s, addr, addrlen);
+		return libc_accept(s, addr, addrlen);
 	}
 
 	/* 
@@ -1559,8 +2273,12 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	memset(&un_addr, 0, sizeof(un_addr));
 	memset(&un_my_addr, 0, sizeof(un_my_addr));
 
-	ret = real_accept(s, (struct sockaddr *)(void *)&un_addr, &un_addrlen);
+	ret = libc_accept(s, (struct sockaddr *)(void *)&un_addr, &un_addrlen);
 	if (ret == -1) {
+		if (errno == ENOTSOCK) {
+			/* Remove stale fds */
+			swrap_remove_stale(s);
+		}
 		free(my_addr);
 		return ret;
 	}
@@ -1577,7 +2295,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	}
 
 	child_si = (struct socket_info *)malloc(sizeof(struct socket_info));
-	memset(child_si, 0, sizeof(*child_si));
+	memset(child_si, 0, sizeof(struct socket_info));
 
 	child_fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
 	if (child_fi == NULL) {
@@ -1610,11 +2328,13 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		*addrlen = len;
 	}
 
-	ret = real_getsockname(fd, (struct sockaddr *)(void *)&un_my_addr,
+	ret = libc_getsockname(fd,
+			       (struct sockaddr *)(void *)&un_my_addr,
 			       &un_my_addrlen);
 	if (ret == -1) {
 		free(child_fi);
 		free(child_si);
+		free(my_addr);
 		close(fd);
 		return ret;
 	}
@@ -1630,17 +2350,32 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return ret;
 	}
 
+	SWRAP_LOG(SWRAP_LOG_TRACE,
+		  "accept() path=%s, fd=%d",
+		  un_my_addr.sun_path, s);
+
 	child_si->myname_len = len;
 	child_si->myname = sockaddr_dup(my_addr, len);
 	free(my_addr);
 
 	SWRAP_DLIST_ADD(sockets, child_si);
 
-	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
-	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
-	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_ACK, NULL, 0);
+	if (addr != NULL) {
+		swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
+		swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
+		swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_ACK, NULL, 0);
+	}
 
 	return fd;
+}
+
+#ifdef HAVE_ACCEPT_PSOCKLEN_T
+int accept(int s, struct sockaddr *addr, Psocklen_t addrlen)
+#else
+int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+#endif
+{
+	return swrap_accept(s, addr, (socklen_t *)addrlen);
 }
 
 static int autobind_start_init;
@@ -1734,14 +2469,14 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		autobind_start = 10000;
 	}
 
-	for (i=0;i<1000;i++) {
+	for (i = 0; i < SOCKET_MAX_SOCKETS; i++) {
 		port = autobind_start + i;
 		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
 			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
 			 type, socket_wrapper_default_iface(), port);
 		if (stat(un_addr.sun_path, &st) == 0) continue;
 
-		ret = real_bind(fd, (struct sockaddr *)(void *)&un_addr,
+		ret = libc_bind(fd, (struct sockaddr *)(void *)&un_addr,
 				sizeof(un_addr));
 		if (ret == -1) return ret;
 
@@ -1750,7 +2485,13 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		autobind_start = port + 1;
 		break;
 	}
-	if (i == 1000) {
+	if (i == SOCKET_MAX_SOCKETS) {
+		SWRAP_LOG(SWRAP_LOG_ERROR, "Too many open unix sockets (%u) for "
+					   "interface "SOCKET_FORMAT,
+					   SOCKET_MAX_SOCKETS,
+					   type,
+					   socket_wrapper_default_iface(),
+					   0);
 		errno = ENFILE;
 		return -1;
 	}
@@ -1761,8 +2502,12 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 	return 0;
 }
 
+/****************************************************************************
+ *   CONNECT
+ ***************************************************************************/
 
-_PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
+static int swrap_connect(int s, const struct sockaddr *serv_addr,
+			 socklen_t addrlen)
 {
 	int ret;
 	struct sockaddr_un un_addr;
@@ -1770,7 +2515,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	int bcast = 0;
 
 	if (!si) {
-		return real_connect(s, serv_addr, addrlen);
+		return libc_connect(s, serv_addr, addrlen);
 	}
 
 	if (si->bound == 0) {
@@ -1798,9 +2543,15 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	} else {
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
 
-		ret = real_connect(s, (struct sockaddr *)(void *)&un_addr,
+		ret = libc_connect(s,
+				   (struct sockaddr *)(void *)&un_addr,
 				   sizeof(struct sockaddr_un));
 	}
+
+	SWRAP_LOG(SWRAP_LOG_TRACE,
+		  "connect() path=%s, fd=%d",
+		  un_addr.sun_path, s);
+
 
 	/* to give better errors */
 	if (ret == -1 && errno == ENOENT) {
@@ -1821,14 +2572,23 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	return ret;
 }
 
-_PUBLIC_ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
+int connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
+{
+	return swrap_connect(s, serv_addr, addrlen);
+}
+
+/****************************************************************************
+ *   BIND
+ ***************************************************************************/
+
+static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 {
 	int ret;
 	struct sockaddr_un un_addr;
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_bind(s, myaddr, addrlen);
+		return libc_bind(s, myaddr, addrlen);
 	}
 
 	si->myname_len = addrlen;
@@ -1839,8 +2599,12 @@ _PUBLIC_ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 
 	unlink(un_addr.sun_path);
 
-	ret = real_bind(s, (struct sockaddr *)(void *)&un_addr,
+	ret = libc_bind(s, (struct sockaddr *)(void *)&un_addr,
 			sizeof(struct sockaddr_un));
+
+	SWRAP_LOG(SWRAP_LOG_TRACE,
+		  "bind() path=%s, fd=%d",
+		  un_addr.sun_path, s);
 
 	if (ret == 0) {
 		si->bound = 1;
@@ -1849,26 +2613,77 @@ _PUBLIC_ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	return ret;
 }
 
-_PUBLIC_ int swrap_listen(int s, int backlog)
+int bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
+{
+	return swrap_bind(s, myaddr, addrlen);
+}
+
+/****************************************************************************
+ *   LISTEN
+ ***************************************************************************/
+
+static int swrap_listen(int s, int backlog)
 {
 	int ret;
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_listen(s, backlog);
+		return libc_listen(s, backlog);
 	}
 
-	ret = real_listen(s, backlog);
+	ret = libc_listen(s, backlog);
 
 	return ret;
 }
 
-_PUBLIC_ int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
+int listen(int s, int backlog)
+{
+	return swrap_listen(s, backlog);
+}
+
+/****************************************************************************
+ *   OPEN
+ ***************************************************************************/
+
+static int swrap_vopen(const char *pathname, int flags, va_list ap)
+{
+	int ret;
+
+	ret = libc_vopen(pathname, flags, ap);
+	if (ret != -1) {
+		/*
+		 * There are methods for closing descriptors (libc-internal code
+		 * paths, direct syscalls) which close descriptors in ways that
+		 * we can't intercept, so try to recover when we notice that
+		 * that's happened
+		 */
+		swrap_remove_stale(ret);
+	}
+	return ret;
+}
+
+int open(const char *pathname, int flags, ...)
+{
+	va_list ap;
+	int fd;
+
+	va_start(ap, flags);
+	fd = swrap_vopen(pathname, flags, ap);
+	va_end(ap);
+
+	return fd;
+}
+
+/****************************************************************************
+ *   GETPEERNAME
+ ***************************************************************************/
+
+static int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_getpeername(s, name, addrlen);
+		return libc_getpeername(s, name, addrlen);
 	}
 
 	if (!si->peername)
@@ -1883,12 +2698,25 @@ _PUBLIC_ int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 	return 0;
 }
 
-_PUBLIC_ int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
+#ifdef HAVE_ACCEPT_PSOCKLEN_T
+int getpeername(int s, struct sockaddr *name, Psocklen_t addrlen)
+#else
+int getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
+#endif
+{
+	return swrap_getpeername(s, name, (socklen_t *)addrlen);
+}
+
+/****************************************************************************
+ *   GETSOCKNAME
+ ***************************************************************************/
+
+static int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_getsockname(s, name, addrlen);
+		return libc_getsockname(s, name, addrlen);
 	}
 
 	memcpy(name, si->myname, si->myname_len);
@@ -1897,32 +2725,76 @@ _PUBLIC_ int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 	return 0;
 }
 
-_PUBLIC_ int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+#ifdef HAVE_ACCEPT_PSOCKLEN_T
+int getsockname(int s, struct sockaddr *name, Psocklen_t addrlen)
+#else
+int getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
+#endif
+{
+	return swrap_getsockname(s, name, (socklen_t *)addrlen);
+}
+
+/****************************************************************************
+ *   GETSOCKOPT
+ ***************************************************************************/
+
+static int swrap_getsockopt(int s, int level, int optname,
+			    void *optval, socklen_t *optlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_getsockopt(s, level, optname, optval, optlen);
+		return libc_getsockopt(s,
+				       level,
+				       optname,
+				       optval,
+				       optlen);
 	}
 
 	if (level == SOL_SOCKET) {
-		return real_getsockopt(s, level, optname, optval, optlen);
-	} 
+		return libc_getsockopt(s,
+				       level,
+				       optname,
+				       optval,
+				       optlen);
+	}
 
 	errno = ENOPROTOOPT;
 	return -1;
 }
 
-_PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen)
+#ifdef HAVE_ACCEPT_PSOCKLEN_T
+int getsockopt(int s, int level, int optname, void *optval, Psocklen_t optlen)
+#else
+int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+#endif
+{
+	return swrap_getsockopt(s, level, optname, optval, (socklen_t *)optlen);
+}
+
+/****************************************************************************
+ *   SETSOCKOPT
+ ***************************************************************************/
+
+static int swrap_setsockopt(int s, int level, int optname,
+			    const void *optval, socklen_t optlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_setsockopt(s, level, optname, optval, optlen);
+		return libc_setsockopt(s,
+				       level,
+				       optname,
+				       optval,
+				       optlen);
 	}
 
 	if (level == SOL_SOCKET) {
-		return real_setsockopt(s, level, optname, optval, optlen);
+		return libc_setsockopt(s,
+				       level,
+				       optname,
+				       optval,
+				       optlen);
 	}
 
 	switch (si->family) {
@@ -1938,22 +2810,36 @@ _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *o
 	}
 }
 
-_PUBLIC_ int swrap_ioctl(int s, int r, void *p)
+int setsockopt(int s, int level, int optname,
+	       const void *optval, socklen_t optlen)
 {
-	int ret;
+	return swrap_setsockopt(s, level, optname, optval, optlen);
+}
+
+/****************************************************************************
+ *   IOCTL
+ ***************************************************************************/
+
+static int swrap_vioctl(int s, unsigned long int r, va_list va)
+{
 	struct socket_info *si = find_socket_info(s);
+	va_list ap;
 	int value;
+	int rc;
 
 	if (!si) {
-		return real_ioctl(s, r, p);
+		return libc_vioctl(s, r, va);
 	}
 
-	ret = real_ioctl(s, r, p);
+	va_copy(ap, va);
+
+	rc = libc_vioctl(s, r, va);
 
 	switch (r) {
 	case FIONREAD:
-		value = *((int *)p);
-		if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
+		value = *((int *)va_arg(ap, int *));
+
+		if (rc == -1 && errno != EAGAIN && errno != ENOBUFS) {
 			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
 		} else if (value == 0) { /* END OF FILE */
 			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
@@ -1961,7 +2847,27 @@ _PUBLIC_ int swrap_ioctl(int s, int r, void *p)
 		break;
 	}
 
-	return ret;
+	va_end(ap);
+
+	return rc;
+}
+
+#ifdef HAVE_IOCTL_INT
+int ioctl(int s, int r, ...)
+#else
+int ioctl(int s, unsigned long int r, ...)
+#endif
+{
+	va_list va;
+	int rc;
+
+	va_start(va, r);
+
+	rc = swrap_vioctl(s, (unsigned long int) r, va);
+
+	va_end(va);
+
+	return rc;
 }
 
 static ssize_t swrap_sendmsg_before(int fd,
@@ -1997,23 +2903,17 @@ static ssize_t swrap_sendmsg_before(int fd,
 			break;
 		}
 
-		/*
-		 * cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here)
-		 */
-
-		for (i=0; i < msg->msg_iovlen; i++) {
+		for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
 			size_t nlen;
 			nlen = len + msg->msg_iov[i].iov_len;
-			if (nlen > 1500) {
+			if (nlen > SOCKET_MAX_PACKET) {
 				break;
 			}
 		}
 		msg->msg_iovlen = i;
 		if (msg->msg_iovlen == 0) {
 			*tmp_iov = msg->msg_iov[0];
-			tmp_iov->iov_len = MIN(tmp_iov->iov_len, 1500);
+			tmp_iov->iov_len = MIN(tmp_iov->iov_len, SOCKET_MAX_PACKET);
 			msg->msg_iov = tmp_iov;
 			msg->msg_iovlen = 1;
 		}
@@ -2051,7 +2951,15 @@ static ssize_t swrap_sendmsg_before(int fd,
 
 		if (si->bound == 0) {
 			ret = swrap_auto_bind(fd, si, si->family);
-			if (ret == -1) return -1;
+			if (ret == -1) {
+				if (errno == ENOTSOCK) {
+					swrap_remove_stale(fd);
+					return -ENOTSOCK;
+				} else {
+					SWRAP_LOG(SWRAP_LOG_ERROR, "swrap_sendmsg_before failed");
+					return -1;
+				}
+			}
 		}
 
 		if (!si->defer_connect) {
@@ -2062,7 +2970,8 @@ static ssize_t swrap_sendmsg_before(int fd,
 					     tmp_un, 0, NULL);
 		if (ret == -1) return -1;
 
-		ret = real_connect(fd, (struct sockaddr *)(void *)tmp_un,
+		ret = libc_connect(fd,
+				   (struct sockaddr *)(void *)tmp_un,
 				   sizeof(*tmp_un));
 
 		/* to give better errors */
@@ -2084,7 +2993,8 @@ static ssize_t swrap_sendmsg_before(int fd,
 	return 0;
 }
 
-static void swrap_sendmsg_after(struct socket_info *si,
+static void swrap_sendmsg_after(int fd,
+				struct socket_info *si,
 				struct msghdr *msg,
 				const struct sockaddr *to,
 				ssize_t ret)
@@ -2097,11 +3007,16 @@ static void swrap_sendmsg_after(struct socket_info *si,
 	size_t remain;
 
 	/* to give better errors */
-	if (ret == -1 && saved_errno == ENOENT) {
-		saved_errno = EHOSTUNREACH;
+	if (ret == -1) {
+		if (saved_errno == ENOENT) {
+			saved_errno = EHOSTUNREACH;
+		} else if (saved_errno == ENOTSOCK) {
+			/* If the fd is not a socket, remove it */
+			swrap_remove_stale(fd);
+		}
 	}
 
-	for (i=0; i < msg->msg_iovlen; i++) {
+	for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
 		avail += msg->msg_iov[i].iov_len;
 	}
 
@@ -2119,8 +3034,8 @@ static void swrap_sendmsg_after(struct socket_info *si,
 		return;
 	}
 
-	for (i=0; i < msg->msg_iovlen; i++) {
-		size_t this_time = MIN(remain, msg->msg_iov[i].iov_len);
+	for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
+		size_t this_time = MIN(remain, (size_t)msg->msg_iov[i].iov_len);
 		memcpy(buf + ofs,
 		       msg->msg_iov[i].iov_base,
 		       this_time);
@@ -2156,61 +3071,298 @@ static void swrap_sendmsg_after(struct socket_info *si,
 	errno = saved_errno;
 }
 
-_PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+static int swrap_recvmsg_before(int fd,
+				struct socket_info *si,
+				struct msghdr *msg,
+				struct iovec *tmp_iov)
 {
-	struct sockaddr_un un_addr;
-	socklen_t un_addrlen = sizeof(un_addr);
-	int ret;
-	struct socket_info *si = find_socket_info(s);
-	struct sockaddr_storage ss;
-	socklen_t ss_len = sizeof(ss);
+	size_t i, len = 0;
+	ssize_t ret;
 
-	if (!si) {
-		return real_recvfrom(s, buf, len, flags, from, fromlen);
-	}
+	(void)fd; /* unused */
 
-	if (!from) {
-		from = (struct sockaddr *)(void *)&ss;
-		fromlen = &ss_len;
-	}
+	switch (si->type) {
+	case SOCK_STREAM:
+		if (!si->connected) {
+			errno = ENOTCONN;
+			return -1;
+		}
 
-	if (si->type == SOCK_STREAM) {
-		/* cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here) */
-		len = MIN(len, 1500);
-	}
+		if (msg->msg_iovlen == 0) {
+			break;
+		}
 
-	/* irix 6.4 forgets to null terminate the sun_path string :-( */
-	memset(&un_addr, 0, sizeof(un_addr));
-	ret = real_recvfrom(s, buf, len, flags,
-			    (struct sockaddr *)(void *)&un_addr, &un_addrlen);
-	if (ret == -1) 
-		return ret;
+		for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
+			size_t nlen;
+			nlen = len + msg->msg_iov[i].iov_len;
+			if (nlen > SOCKET_MAX_PACKET) {
+				break;
+			}
+		}
+		msg->msg_iovlen = i;
+		if (msg->msg_iovlen == 0) {
+			*tmp_iov = msg->msg_iov[0];
+			tmp_iov->iov_len = MIN(tmp_iov->iov_len, SOCKET_MAX_PACKET);
+			msg->msg_iov = tmp_iov;
+			msg->msg_iovlen = 1;
+		}
+		break;
 
-	if (sockaddr_convert_from_un(si, &un_addr, un_addrlen,
-				     si->family, from, fromlen) == -1) {
+	case SOCK_DGRAM:
+		if (msg->msg_name == NULL) {
+			errno = EINVAL;
+			return -1;
+		}
+
+		if (msg->msg_iovlen == 0) {
+			break;
+		}
+
+		if (si->bound == 0) {
+			ret = swrap_auto_bind(fd, si, si->family);
+			if (ret == -1) {
+				/*
+				 * When attempting to read or write to a
+				 * descriptor, if an underlying autobind fails
+				 * because it's not a socket, stop intercepting
+				 * uses of that descriptor.
+				 */
+				if (errno == ENOTSOCK) {
+					swrap_remove_stale(fd);
+					return -ENOTSOCK;
+				} else {
+					SWRAP_LOG(SWRAP_LOG_ERROR,
+						  "swrap_recvmsg_before failed");
+					return -1;
+				}
+			}
+		}
+		break;
+	default:
+		errno = EHOSTUNREACH;
 		return -1;
 	}
 
-	swrap_dump_packet(si, from, SWRAP_RECVFROM, buf, ret);
+	return 0;
+}
+
+static int swrap_recvmsg_after(int fd,
+			       struct socket_info *si,
+			       struct msghdr *msg,
+			       const struct sockaddr_un *un_addr,
+			       socklen_t un_addrlen,
+			       ssize_t ret)
+{
+	int saved_errno = errno;
+	size_t i;
+	uint8_t *buf;
+	off_t ofs = 0;
+	size_t avail = 0;
+	size_t remain;
+
+	/* to give better errors */
+	if (ret == -1) {
+		if (saved_errno == ENOENT) {
+			saved_errno = EHOSTUNREACH;
+		} else if (saved_errno == ENOTSOCK) {
+			/* If the fd is not a socket, remove it */
+			swrap_remove_stale(fd);
+		}
+	}
+
+	for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
+		avail += msg->msg_iov[i].iov_len;
+	}
+
+	if (avail == 0) {
+		errno = saved_errno;
+		return 0;
+	}
+
+	if (ret == -1) {
+		remain = MIN(80, avail);
+	} else {
+		remain = ret;
+	}
+
+	/* we capture it as one single packet */
+	buf = (uint8_t *)malloc(remain);
+	if (!buf) {
+		/* we just not capture the packet */
+		errno = saved_errno;
+		return -1;
+	}
+
+	for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
+		size_t this_time = MIN(remain, (size_t)msg->msg_iov[i].iov_len);
+		memcpy(buf + ofs,
+		       msg->msg_iov[i].iov_base,
+		       this_time);
+		ofs += this_time;
+		remain -= this_time;
+	}
+
+	switch (si->type) {
+	case SOCK_STREAM:
+		if (ret == -1 && saved_errno != EAGAIN && saved_errno != ENOBUFS) {
+			swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+		} else if (ret == 0) { /* END OF FILE */
+			swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+		} else if (ret > 0) {
+			swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
+		}
+		break;
+
+	case SOCK_DGRAM:
+		if (ret == -1) {
+			break;
+		}
+
+		if (un_addr != NULL) {
+			int rc;
+
+			rc = sockaddr_convert_from_un(si,
+						      un_addr,
+						      un_addrlen,
+						      si->family,
+						      msg->msg_name,
+						      &msg->msg_namelen);
+			if (rc == -1) {
+				return -1;
+			}
+
+			swrap_dump_packet(si,
+					  msg->msg_name,
+					  SWRAP_RECVFROM,
+					  buf,
+					  ret);
+		} else {
+			swrap_dump_packet(si,
+					  msg->msg_name,
+					  SWRAP_RECV,
+					  buf,
+					  ret);
+		}
+
+		break;
+	}
+
+	free(buf);
+	errno = saved_errno;
+	return 0;
+}
+
+/****************************************************************************
+ *   RECVFROM
+ ***************************************************************************/
+
+static ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags,
+			      struct sockaddr *from, socklen_t *fromlen)
+{
+	struct sockaddr_un from_addr;
+	socklen_t from_addrlen = sizeof(from_addr);
+	ssize_t ret;
+	struct socket_info *si = find_socket_info(s);
+	struct sockaddr_storage ss;
+	socklen_t ss_len = sizeof(ss);
+	struct msghdr msg;
+	struct iovec tmp;
+	int tret;
+
+	if (!si) {
+		return libc_recvfrom(s,
+				     buf,
+				     len,
+				     flags,
+				     from,
+				     fromlen);
+	}
+
+	tmp.iov_base = buf;
+	tmp.iov_len = len;
+
+	ZERO_STRUCT(msg);
+	if (from != NULL && fromlen != NULL) {
+		msg.msg_name = from;   /* optional address */
+		msg.msg_namelen = *fromlen; /* size of address */
+	} else {
+		msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
+		msg.msg_namelen = ss_len; /* size of address */
+	}
+	msg.msg_iov = &tmp;            /* scatter/gather array */
+	msg.msg_iovlen = 1;            /* # elements in msg_iov */
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	msg.msg_control = NULL;        /* ancillary data, see below */
+	msg.msg_controllen = 0;        /* ancillary data buffer len */
+	msg.msg_flags = 0;             /* flags on received message */
+#endif
+
+	tret = swrap_recvmsg_before(s, si, &msg, &tmp);
+	if (tret < 0) {
+		return -1;
+	}
+
+	buf = msg.msg_iov[0].iov_base;
+	len = msg.msg_iov[0].iov_len;
+
+	/* irix 6.4 forgets to null terminate the sun_path string :-( */
+	memset(&from_addr, 0, sizeof(from_addr));
+	ret = libc_recvfrom(s,
+			    buf,
+			    len,
+			    flags,
+			    (struct sockaddr *)(void *)&from_addr,
+			    &from_addrlen);
+	if (ret == -1) {
+		return ret;
+	}
+
+	tret = swrap_recvmsg_after(s,
+				   si,
+				   &msg,
+				   &from_addr,
+				   from_addrlen,
+				   ret);
+	if (tret != 0) {
+		return tret;
+	}
+
+	if (from != NULL && fromlen != NULL) {
+		*fromlen = msg.msg_namelen;
+	}
 
 	return ret;
 }
 
+#ifdef HAVE_ACCEPT_PSOCKLEN_T
+ssize_t recvfrom(int s, void *buf, size_t len, int flags,
+		 struct sockaddr *from, Psocklen_t fromlen)
+#else
+ssize_t recvfrom(int s, void *buf, size_t len, int flags,
+		 struct sockaddr *from, socklen_t *fromlen)
+#endif
+{
+	return swrap_recvfrom(s, buf, len, flags, from, (socklen_t *)fromlen);
+}
 
-_PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+/****************************************************************************
+ *   SENDTO
+ ***************************************************************************/
+
+static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
+			    const struct sockaddr *to, socklen_t tolen)
 {
 	struct msghdr msg;
 	struct iovec tmp;
 	struct sockaddr_un un_addr;
 	const struct sockaddr_un *to_un = NULL;
 	ssize_t ret;
+	int rc;
 	struct socket_info *si = find_socket_info(s);
 	int bcast = 0;
 
 	if (!si) {
-		return real_sendto(s, buf, len, flags, to, tolen);
+		return libc_sendto(s, buf, len, flags, to, tolen);
 	}
 
 	tmp.iov_base = discard_const_p(char, buf);
@@ -2221,14 +3373,16 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 	msg.msg_namelen = tolen;       /* size of address */
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
-#if 0 /* not available on solaris */
+#if HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;        /* ancillary data, see below */
 	msg.msg_controllen = 0;        /* ancillary data buffer len */
 	msg.msg_flags = 0;             /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
-	if (ret == -1) return -1;
+	rc = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
+	if (rc < 0) {
+		return -1;
+	}
 
 	buf = msg.msg_iov[0].iov_base;
 	len = msg.msg_iov[0].iov_len;
@@ -2247,7 +3401,10 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 			if (stat(un_addr.sun_path, &st) != 0) continue;
 
 			/* ignore the any errors in broadcast sends */
-			real_sendto(s, buf, len, flags,
+			libc_sendto(s,
+				    buf,
+				    len,
+				    flags,
 				    (struct sockaddr *)(void *)&un_addr,
 				    sizeof(un_addr));
 		}
@@ -2257,81 +3414,154 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		return len;
 	}
 
-	ret = real_sendto(s, buf, len, flags, (struct sockaddr *)msg.msg_name,
+	ret = libc_sendto(s,
+			  buf,
+			  len,
+			  flags,
+			  (struct sockaddr *)msg.msg_name,
 			  msg.msg_namelen);
 
-	swrap_sendmsg_after(si, &msg, to, ret);
+	swrap_sendmsg_after(s, si, &msg, to, ret);
 
 	return ret;
 }
 
-_PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
+ssize_t sendto(int s, const void *buf, size_t len, int flags,
+	       const struct sockaddr *to, socklen_t tolen)
 {
-	int ret;
-	struct socket_info *si = find_socket_info(s);
-
-	if (!si) {
-		return real_recv(s, buf, len, flags);
-	}
-
-	if (si->type == SOCK_STREAM) {
-		/* cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here) */
-		len = MIN(len, 1500);
-	}
-
-	ret = real_recv(s, buf, len, flags);
-	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
-		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else if (ret == 0) { /* END OF FILE */
-		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else if (ret > 0) {
-		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
-	}
-
-	return ret;
+	return swrap_sendto(s, buf, len, flags, to, tolen);
 }
 
-_PUBLIC_ ssize_t swrap_read(int s, void *buf, size_t len)
+/****************************************************************************
+ *   READV
+ ***************************************************************************/
+
+static ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 {
-	int ret;
-	struct socket_info *si = find_socket_info(s);
+	struct socket_info *si;
+	struct msghdr msg;
+	struct sockaddr_storage ss;
+	socklen_t ss_len = sizeof(ss);
+	struct iovec tmp;
+	ssize_t ret;
+	int tret;
 
-	if (!si) {
-		return real_read(s, buf, len);
+	si = find_socket_info(s);
+	if (si == NULL) {
+		return libc_recv(s, buf, len, flags);
 	}
 
-	if (si->type == SOCK_STREAM) {
-		/* cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here) */
-		len = MIN(len, 1500);
+	tmp.iov_base = buf;
+	tmp.iov_len = len;
+
+	ZERO_STRUCT(msg);
+	msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
+	msg.msg_namelen = ss_len;      /* size of address */
+	msg.msg_iov = &tmp;            /* scatter/gather array */
+	msg.msg_iovlen = 1;            /* # elements in msg_iov */
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	msg.msg_control = NULL;        /* ancillary data, see below */
+	msg.msg_controllen = 0;        /* ancillary data buffer len */
+	msg.msg_flags = 0;             /* flags on received message */
+#endif
+
+	tret = swrap_recvmsg_before(s, si, &msg, &tmp);
+	if (tret < 0) {
+		return -1;
 	}
 
-	ret = real_read(s, buf, len);
-	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
-		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else if (ret == 0) { /* END OF FILE */
-		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else if (ret > 0) {
-		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
+	buf = msg.msg_iov[0].iov_base;
+	len = msg.msg_iov[0].iov_len;
+
+	ret = libc_recv(s, buf, len, flags);
+
+	tret = swrap_recvmsg_after(s, si, &msg, NULL, 0, ret);
+	if (tret != 0) {
+		return tret;
 	}
 
 	return ret;
 }
 
+ssize_t recv(int s, void *buf, size_t len, int flags)
+{
+	return swrap_recv(s, buf, len, flags);
+}
 
-_PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
+/****************************************************************************
+ *   READ
+ ***************************************************************************/
+
+static ssize_t swrap_read(int s, void *buf, size_t len)
+{
+	struct socket_info *si;
+	struct msghdr msg;
+	struct iovec tmp;
+	struct sockaddr_storage ss;
+	socklen_t ss_len = sizeof(ss);
+	ssize_t ret;
+	int tret;
+
+	si = find_socket_info(s);
+	if (si == NULL) {
+		return libc_read(s, buf, len);
+	}
+
+	tmp.iov_base = buf;
+	tmp.iov_len = len;
+
+	ZERO_STRUCT(msg);
+	msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
+	msg.msg_namelen = ss_len;      /* size of address */
+	msg.msg_iov = &tmp;            /* scatter/gather array */
+	msg.msg_iovlen = 1;            /* # elements in msg_iov */
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	msg.msg_control = NULL;        /* ancillary data, see below */
+	msg.msg_controllen = 0;        /* ancillary data buffer len */
+	msg.msg_flags = 0;             /* flags on received message */
+#endif
+
+	tret = swrap_recvmsg_before(s, si, &msg, &tmp);
+	if (tret < 0) {
+		if (tret == -ENOTSOCK) {
+			return libc_read(s, buf, len);
+		}
+		return -1;
+	}
+
+	buf = msg.msg_iov[0].iov_base;
+	len = msg.msg_iov[0].iov_len;
+
+	ret = libc_read(s, buf, len);
+
+	tret = swrap_recvmsg_after(s, si, &msg, NULL, 0, ret);
+	if (tret != 0) {
+		return tret;
+	}
+
+	return ret;
+}
+
+ssize_t read(int s, void *buf, size_t len)
+{
+	return swrap_read(s, buf, len);
+}
+
+/****************************************************************************
+ *   SEND
+ ***************************************************************************/
+
+static ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 {
 	struct msghdr msg;
 	struct iovec tmp;
 	struct sockaddr_un un_addr;
 	ssize_t ret;
+	int rc;
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_send(s, buf, len, flags);
+		return libc_send(s, buf, len, flags);
 	}
 
 	tmp.iov_base = discard_const_p(char, buf);
@@ -2342,26 +3572,91 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 	msg.msg_namelen = 0;           /* size of address */
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
-#if 0 /* not available on solaris */
+#if HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;        /* ancillary data, see below */
 	msg.msg_controllen = 0;        /* ancillary data buffer len */
 	msg.msg_flags = 0;             /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
-	if (ret == -1) return -1;
+	rc = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
+	if (rc < 0) {
+		return -1;
+	}
 
 	buf = msg.msg_iov[0].iov_base;
 	len = msg.msg_iov[0].iov_len;
 
-	ret = real_send(s, buf, len, flags);
+	ret = libc_send(s, buf, len, flags);
 
-	swrap_sendmsg_after(si, &msg, NULL, ret);
+	swrap_sendmsg_after(s, si, &msg, NULL, ret);
 
 	return ret;
 }
 
-_PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
+ssize_t send(int s, const void *buf, size_t len, int flags)
+{
+	return swrap_send(s, buf, len, flags);
+}
+
+/****************************************************************************
+ *   RECVMSG
+ ***************************************************************************/
+
+static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
+{
+	struct sockaddr_un from_addr;
+	socklen_t from_addrlen = sizeof(from_addr);
+	struct socket_info *si;
+	struct msghdr msg;
+	struct iovec tmp;
+
+	ssize_t ret;
+	int rc;
+
+	si = find_socket_info(s);
+	if (si == NULL) {
+		return libc_recvmsg(s, omsg, flags);
+	}
+
+	tmp.iov_base = NULL;
+	tmp.iov_len = 0;
+
+	ZERO_STRUCT(msg);
+	msg.msg_name = (struct sockaddr *)&from_addr; /* optional address */
+	msg.msg_namelen = from_addrlen;            /* size of address */
+	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
+	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	msg.msg_control = omsg->msg_control;       /* ancillary data, see below */
+	msg.msg_controllen = omsg->msg_controllen; /* ancillary data buffer len */
+	msg.msg_flags = omsg->msg_flags;           /* flags on received message */
+#endif
+
+	rc = swrap_recvmsg_before(s, si, &msg, &tmp);
+	if (rc < 0) {
+		return -1;
+	}
+
+	ret = libc_recvmsg(s, &msg, flags);
+
+	rc = swrap_recvmsg_after(s, si, omsg, &from_addr, from_addrlen, ret);
+	if (rc != 0) {
+		return rc;
+	}
+
+	return ret;
+}
+
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags)
+{
+	return swrap_recvmsg(sockfd, msg, flags);
+}
+
+/****************************************************************************
+ *   SENDMSG
+ ***************************************************************************/
+
+static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 {
 	struct msghdr msg;
 	struct iovec tmp;
@@ -2369,30 +3664,34 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 	const struct sockaddr_un *to_un = NULL;
 	const struct sockaddr *to = NULL;
 	ssize_t ret;
+	int rc;
 	struct socket_info *si = find_socket_info(s);
 	int bcast = 0;
 
 	if (!si) {
-		return real_sendmsg(s, omsg, flags);
+		return libc_sendmsg(s, omsg, flags);
 	}
+
+	ZERO_STRUCT(un_addr);
 
 	tmp.iov_base = NULL;
 	tmp.iov_len = 0;
 
-	msg = *omsg;
-#if 0
+	ZERO_STRUCT(msg);
 	msg.msg_name = omsg->msg_name;             /* optional address */
 	msg.msg_namelen = omsg->msg_namelen;       /* size of address */
 	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
 	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
-	/* the following is not available on solaris */
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = omsg->msg_control;       /* ancillary data, see below */
 	msg.msg_controllen = omsg->msg_controllen; /* ancillary data buffer len */
 	msg.msg_flags = omsg->msg_flags;           /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
-	if (ret == -1) return -1;
+	rc = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
+	if (rc < 0) {
+		return -1;
+	}
 
 	if (bcast) {
 		struct stat st;
@@ -2405,7 +3704,7 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 		size_t avail = 0;
 		size_t remain;
 
-		for (i=0; i < msg.msg_iovlen; i++) {
+		for (i = 0; i < (size_t)msg.msg_iovlen; i++) {
 			avail += msg.msg_iov[i].iov_len;
 		}
 
@@ -2418,8 +3717,8 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 			return -1;
 		}
 
-		for (i=0; i < msg.msg_iovlen; i++) {
-			size_t this_time = MIN(remain, msg.msg_iov[i].iov_len);
+		for (i = 0; i < (size_t)msg.msg_iovlen; i++) {
+			size_t this_time = MIN(remain, (size_t)msg.msg_iov[i].iov_len);
 			memcpy(buf + ofs,
 			       msg.msg_iov[i].iov_base,
 			       this_time);
@@ -2438,7 +3737,7 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 			msg.msg_namelen = sizeof(un_addr); /* size of address */
 
 			/* ignore the any errors in broadcast sends */
-			real_sendmsg(s, &msg, flags);
+			libc_sendmsg(s, &msg, flags);
 		}
 
 		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
@@ -2447,95 +3746,89 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 		return len;
 	}
 
-	ret = real_sendmsg(s, &msg, flags);
+	ret = libc_sendmsg(s, &msg, flags);
 
-	swrap_sendmsg_after(si, &msg, to, ret);
+	swrap_sendmsg_after(s, si, &msg, to, ret);
 
 	return ret;
 }
 
-int swrap_readv(int s, const struct iovec *vector, size_t count)
+ssize_t sendmsg(int s, const struct msghdr *omsg, int flags)
 {
-	int ret;
-	struct socket_info *si = find_socket_info(s);
-	struct iovec v;
+	return swrap_sendmsg(s, omsg, flags);
+}
 
-	if (!si) {
-		return real_readv(s, vector, count);
+/****************************************************************************
+ *   READV
+ ***************************************************************************/
+
+static ssize_t swrap_readv(int s, const struct iovec *vector, int count)
+{
+	struct socket_info *si;
+	struct msghdr msg;
+	struct iovec tmp;
+	struct sockaddr_storage ss;
+	socklen_t ss_len = sizeof(ss);
+	ssize_t ret;
+	int rc;
+
+	si = find_socket_info(s);
+	if (si == NULL) {
+		return libc_readv(s, vector, count);
 	}
 
-	if (!si->connected) {
-		errno = ENOTCONN;
+	tmp.iov_base = NULL;
+	tmp.iov_len = 0;
+
+	ZERO_STRUCT(msg);
+	msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
+	msg.msg_namelen = ss_len;      /* size of address */
+	msg.msg_iov = discard_const_p(struct iovec, vector); /* scatter/gather array */
+	msg.msg_iovlen = count;        /* # elements in msg_iov */
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	msg.msg_control = NULL;        /* ancillary data, see below */
+	msg.msg_controllen = 0;        /* ancillary data buffer len */
+	msg.msg_flags = 0;             /* flags on received message */
+#endif
+
+	rc = swrap_recvmsg_before(s, si, &msg, &tmp);
+	if (rc < 0) {
+		if (rc == -ENOTSOCK) {
+			return libc_readv(s, vector, count);
+		}
 		return -1;
 	}
 
-	if (si->type == SOCK_STREAM && count > 0) {
-		/* cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here) */
-		size_t i, len = 0;
+	ret = libc_readv(s, msg.msg_iov, msg.msg_iovlen);
 
-		for (i=0; i < count; i++) {
-			size_t nlen;
-			nlen = len + vector[i].iov_len;
-			if (nlen > 1500) {
-				break;
-			}
-		}
-		count = i;
-		if (count == 0) {
-			v = vector[0];
-			v.iov_len = MIN(v.iov_len, 1500);
-			vector = &v;
-			count = 1;
-		}
-	}
-
-	ret = real_readv(s, vector, count);
-	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
-		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else if (ret == 0) { /* END OF FILE */
-		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else if (ret > 0) {
-		uint8_t *buf;
-		off_t ofs = 0;
-		size_t i;
-		size_t remain = ret;
-
-		/* we capture it as one single packet */
-		buf = (uint8_t *)malloc(ret);
-		if (!buf) {
-			/* we just not capture the packet */
-			errno = 0;
-			return ret;
-		}
-
-		for (i=0; i < count; i++) {
-			size_t this_time = MIN(remain, vector[i].iov_len);
-			memcpy(buf + ofs,
-			       vector[i].iov_base,
-			       this_time);
-			ofs += this_time;
-			remain -= this_time;
-		}
-
-		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
-		free(buf);
+	rc = swrap_recvmsg_after(s, si, &msg, NULL, 0, ret);
+	if (rc != 0) {
+		return rc;
 	}
 
 	return ret;
 }
 
-ssize_t swrap_writev(int s, const struct iovec *vector, size_t count)
+ssize_t readv(int s, const struct iovec *vector, int count)
+{
+	return swrap_readv(s, vector, count);
+}
+
+/****************************************************************************
+ *   WRITEV
+ ***************************************************************************/
+
+static ssize_t swrap_writev(int s, const struct iovec *vector, int count)
 {
 	struct msghdr msg;
 	struct iovec tmp;
 	struct sockaddr_un un_addr;
 	ssize_t ret;
+	int rc;
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_writev(s, vector, count);
+		return libc_writev(s, vector, count);
 	}
 
 	tmp.iov_base = NULL;
@@ -2546,30 +3839,44 @@ ssize_t swrap_writev(int s, const struct iovec *vector, size_t count)
 	msg.msg_namelen = 0;           /* size of address */
 	msg.msg_iov = discard_const_p(struct iovec, vector); /* scatter/gather array */
 	msg.msg_iovlen = count;        /* # elements in msg_iov */
-#if 0 /* not available on solaris */
+#if HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;        /* ancillary data, see below */
 	msg.msg_controllen = 0;        /* ancillary data buffer len */
 	msg.msg_flags = 0;             /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
-	if (ret == -1) return -1;
+	rc = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
+	if (rc < 0) {
+		if (rc == -ENOTSOCK) {
+			return libc_readv(s, vector, count);
+		}
+		return -1;
+	}
 
-	ret = real_writev(s, msg.msg_iov, msg.msg_iovlen);
+	ret = libc_writev(s, msg.msg_iov, msg.msg_iovlen);
 
-	swrap_sendmsg_after(si, &msg, NULL, ret);
+	swrap_sendmsg_after(s, si, &msg, NULL, ret);
 
 	return ret;
 }
 
-_PUBLIC_ int swrap_close(int fd)
+ssize_t writev(int s, const struct iovec *vector, int count)
+{
+	return swrap_writev(s, vector, count);
+}
+
+/****************************
+ * CLOSE
+ ***************************/
+
+static int swrap_close(int fd)
 {
 	struct socket_info *si = find_socket_info(fd);
 	struct socket_info_fd *fi;
 	int ret;
 
 	if (!si) {
-		return real_close(fd);
+		return libc_close(fd);
 	}
 
 	for (fi = si->fds; fi; fi = fi->next) {
@@ -2582,7 +3889,7 @@ _PUBLIC_ int swrap_close(int fd)
 
 	if (si->fds) {
 		/* there are still references left */
-		return real_close(fd);
+		return libc_close(fd);
 	}
 
 	SWRAP_DLIST_REMOVE(sockets, si);
@@ -2591,7 +3898,7 @@ _PUBLIC_ int swrap_close(int fd)
 		swrap_dump_packet(si, NULL, SWRAP_CLOSE_SEND, NULL, 0);
 	}
 
-	ret = real_close(fd);
+	ret = libc_close(fd);
 
 	if (si->myname && si->peername) {
 		swrap_dump_packet(si, NULL, SWRAP_CLOSE_RECV, NULL, 0);
@@ -2609,7 +3916,16 @@ _PUBLIC_ int swrap_close(int fd)
 	return ret;
 }
 
-_PUBLIC_ int swrap_dup(int fd)
+int close(int fd)
+{
+	return swrap_close(fd);
+}
+
+/****************************
+ * DUP
+ ***************************/
+
+static int swrap_dup(int fd)
 {
 	struct socket_info *si;
 	struct socket_info_fd *fi;
@@ -2617,7 +3933,7 @@ _PUBLIC_ int swrap_dup(int fd)
 	si = find_socket_info(fd);
 
 	if (!si) {
-		return real_dup(fd);
+		return libc_dup(fd);
 	}
 
 	fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
@@ -2626,7 +3942,7 @@ _PUBLIC_ int swrap_dup(int fd)
 		return -1;
 	}
 
-	fi->fd = real_dup(fd);
+	fi->fd = libc_dup(fd);
 	if (fi->fd == -1) {
 		int saved_errno = errno;
 		free(fi);
@@ -2634,11 +3950,23 @@ _PUBLIC_ int swrap_dup(int fd)
 		return -1;
 	}
 
+	/* Make sure we don't have an entry for the fd */
+	swrap_remove_stale(fi->fd);
+
 	SWRAP_DLIST_ADD(si->fds, fi);
 	return fi->fd;
 }
 
-_PUBLIC_ int swrap_dup2(int fd, int newfd)
+int dup(int fd)
+{
+	return swrap_dup(fd);
+}
+
+/****************************
+ * DUP2
+ ***************************/
+
+static int swrap_dup2(int fd, int newfd)
 {
 	struct socket_info *si;
 	struct socket_info_fd *fi;
@@ -2646,7 +3974,7 @@ _PUBLIC_ int swrap_dup2(int fd, int newfd)
 	si = find_socket_info(fd);
 
 	if (!si) {
-		return real_dup2(fd, newfd);
+		return libc_dup2(fd, newfd);
 	}
 
 	if (find_socket_info(newfd)) {
@@ -2661,7 +3989,7 @@ _PUBLIC_ int swrap_dup2(int fd, int newfd)
 		return -1;
 	}
 
-	fi->fd = real_dup2(fd, newfd);
+	fi->fd = libc_dup2(fd, newfd);
 	if (fi->fd == -1) {
 		int saved_errno = errno;
 		free(fi);
@@ -2669,6 +3997,58 @@ _PUBLIC_ int swrap_dup2(int fd, int newfd)
 		return -1;
 	}
 
+	/* Make sure we don't have an entry for the fd */
+	swrap_remove_stale(fi->fd);
+
 	SWRAP_DLIST_ADD(si->fds, fi);
 	return fi->fd;
+}
+
+int dup2(int fd, int newfd)
+{
+	return swrap_dup2(fd, newfd);
+}
+
+/****************************
+ * DUP2
+ ***************************/
+
+#ifdef HAVE_EVENTFD
+static int swrap_eventfd(int count, int flags)
+{
+	int fd;
+
+	fd = libc_eventfd(count, flags);
+	if (fd != -1) {
+		swrap_remove_stale(fd);
+	}
+
+	return fd;
+}
+
+int eventfd(int count, int flags)
+{
+	return swrap_eventfd(count, flags);
+}
+#endif
+
+/****************************
+ * DESTRUCTOR
+ ***************************/
+
+/*
+ * This function is called when the library is unloaded and makes sure that
+ * sockets get closed and the unix file for the socket are unlinked.
+ */
+void swrap_destructor(void)
+{
+	struct socket_info *s = sockets;
+
+	while (s != NULL) {
+		struct socket_info_fd *f = s->fds;
+		if (f != NULL) {
+			swrap_close(f->fd);
+		}
+		s = sockets;
+	}
 }
