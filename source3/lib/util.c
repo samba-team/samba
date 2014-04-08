@@ -1096,11 +1096,13 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 
 		/* find the next '/' or consume remaining */
 		name_end = strchr_m(nameptr, '/');
-		if (name_end == NULL)
-			name_end = (char *)nameptr + strlen(nameptr);
-
-		/* next segment please */
-		nameptr = name_end + 1;
+		if (name_end == NULL) {
+			/* Point nameptr at the terminating '\0' */
+			nameptr += strlen(nameptr);
+		} else {
+			/* next segment please */
+			nameptr = name_end + 1;
+		}
 		num_entries++;
 	}
 
@@ -1130,10 +1132,9 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 
 		/* find the next '/' or consume remaining */
 		name_end = strchr_m(nameptr, '/');
-		if (name_end)
+		if (name_end != NULL) {
 			*name_end = '\0';
-		else
-			name_end = nameptr + strlen(nameptr);
+		}
 
 		(*ppname_array)[i].is_wild = ms_has_wild(nameptr);
 		if(((*ppname_array)[i].name = SMB_STRDUP(nameptr)) == NULL) {
@@ -1142,8 +1143,13 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 			return;
 		}
 
-		/* next segment please */
-		nameptr = name_end + 1;
+		if (name_end == NULL) {
+			/* Point nameptr at the terminating '\0' */
+			nameptr += strlen(nameptr);
+		} else {
+			/* next segment please */
+			nameptr = name_end + 1;
+		}
 		i++;
 	}
 
