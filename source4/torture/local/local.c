@@ -74,6 +74,7 @@
 	torture_dsdb_dn,
 	torture_dsdb_syntax,
 	torture_registry,
+	torture_local_verif_trailer,
 	NULL
 };
 
