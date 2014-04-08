@@ -30,6 +30,11 @@ bool nss_wrapper_enabled(void)
 	return false;
 }
 
+bool nss_wrapper_hosts_enabled(void)
+{
+	return false;
+}
+
 bool uid_wrapper_enabled(void)
 {
 	return false;
