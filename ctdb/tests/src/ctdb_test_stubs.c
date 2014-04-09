@@ -550,6 +550,15 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   uint32_t *capabilities)
 {
+	if (ctdb->nodes[destnode]->flags & NODE_FLAGS_DISCONNECTED) {
+		DEBUG(DEBUG_ERR,
+		      ("ctdb_control error: 'ctdb_control to disconnected node\n"));
+		/* Placeholder for line#, instead of __location__ */
+		DEBUG(DEBUG_ERR,
+		      ("__LOCATION__ ctdb_ctrl_getcapabilities_recv failed\n"));
+		return -1;
+	}
+
 	*capabilities = ctdb->nodes[destnode]->capabilities;
 	return 0;
 }

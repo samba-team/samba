@@ -1191,9 +1191,16 @@ filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
 	ret->num = 0;
 
 	for (i = 0; i < nodemap->num; i++) {
-		int res = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(),
-						    nodemap->nodes[i].pnn,
-						    &capabilities);
+		int res;
+
+		/* Disconnected nodes have no capabilities! */
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		res = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(),
+						nodemap->nodes[i].pnn,
+						&capabilities);
 		if (res != 0) {
 			DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n",
 					  nodemap->nodes[i].pnn));
