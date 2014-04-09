@@ -146,7 +146,7 @@ NTSTATUS wbc_sids_to_xids(struct tevent_context *ev, struct id_map *ids,
 	req.cmd = WINBINDD_SIDS_TO_XIDS;
 	req.pid = getpid();
 	req.extra_data.data = sids;
-	req.extra_len = sidslen;
+	req.extra_len = (p - sids);
 
 	ret = wb_simple_trans(ev, fd, &req, mem_ctx, &resp, &err);
 	if (ret == -1) {
