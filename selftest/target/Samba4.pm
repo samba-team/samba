@@ -931,7 +931,7 @@ sub provision_s4member($$$)
 				   "2008",
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
-				   "", "", undef);
+				   "passdb backend = samba_dsdb", "", undef);
 	unless ($ret) {
 		return undef;
 	}
@@ -970,6 +970,7 @@ sub provision_rpc_proxy($$$)
 	print "PROVISIONING RPC PROXY...";
 
 	my $extra_smbconf_options = "
+        passdb backend = samba_dsdb
 
 	# rpc_proxy
 	dcerpc_remote:binding = ncacn_ip_tcp:$dcvars->{SERVER}
