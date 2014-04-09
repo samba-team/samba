@@ -473,24 +473,54 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 
 	if (req && req->unread_bytes) {
 		int sockfd = req->sconn->sock;
-		int old_flags;
 		SMB_ASSERT(req->unread_bytes == N);
 		/* VFS_RECVFILE must drain the socket
 		 * before returning. */
 		req->unread_bytes = 0;
-		/* Ensure the socket is blocking. */
-		old_flags = fcntl(sockfd, F_GETFL, 0);
-		if (set_blocking(sockfd, true) == -1) {
-			return (ssize_t)-1;
+		/*
+		 * Leave the socket non-blocking and
+		 * use SMB_VFS_RECVFILE. If it returns
+		 * EAGAIN || EWOULDBLOCK temporarily set
+		 * the socket blocking and retry
+		 * the RECVFILE.
+		 */
+		while (total < N) {
+			ret = SMB_VFS_RECVFILE(sockfd,
+						fsp,
+						offset + total,
+						N - total);
+#if defined(EWOULDBLOCK)
+			if (ret == 0 || (ret == -1 &&
+				(errno == EAGAIN || errno == EWOULDBLOCK))) {
+#else /* EWOULDBLOCK */
+			if (ret == 0 || (ret == -1 && errno == EAGAIN)) {
+#endif /* EWOULDBLOCK */
+				int old_flags;
+				/* Ensure the socket is blocking. */
+				old_flags = fcntl(sockfd, F_GETFL, 0);
+				if (set_blocking(sockfd, true) == -1) {
+					return (ssize_t)-1;
+				}
+				ret = SMB_VFS_RECVFILE(sockfd,
+							fsp,
+							offset + total,
+							N - total);
+				if (fcntl(sockfd, F_SETFL, old_flags) == -1) {
+					return (ssize_t)-1;
+				}
+				if (ret == -1) {
+					return (ssize_t)-1;
+				}
+				total += ret;
+				return (ssize_t)total;
+			}
+			/* Any other error case. */
+			if (ret == -1) {
+				return ret;
+			}
+			total += ret;
 		}
-		ret = SMB_VFS_RECVFILE(sockfd,
-					fsp,
-					offset,
-					N);
-		if (fcntl(sockfd, F_SETFL, old_flags) == -1) {
-			return (ssize_t)-1;
-		}
-		return ret;
+		return (ssize_t)total;
 	}
 
 	while (total < N) {
