@@ -70,7 +70,9 @@ static DNS_ERROR dns_tcp_open( const char *nameserver,
 	s_in.sin_addr.s_addr = ulAddress;
 	s_in.sin_port = htons( DNS_TCP_PORT );
 
-	res = connect(conn->s, (struct sockaddr*)&s_in, sizeof( s_in ));
+	do {
+		res = connect(conn->s, (struct sockaddr*)&s_in, sizeof( s_in ));
+	} while ((res == -1) && (errno == EINTR));
 	if (res == -1) {
 		TALLOC_FREE(conn);
 		return ERROR_DNS_CONNECTION_FAILED;
@@ -155,7 +157,11 @@ static DNS_ERROR write_all(int fd, uint8_t *data, size_t len)
 
 	while (total < len) {
 
-		ssize_t ret = write(fd, data + total, len - total);
+		ssize_t ret;
+
+		do {
+			ret = write(fd, data + total, len - total);
+		} while ((ret == -1) && (errno == EINTR));
 
 		if (ret <= 0) {
 			/*
@@ -187,9 +193,11 @@ static DNS_ERROR dns_send_udp(struct dns_connection *conn,
 {
 	ssize_t ret;
 
-	ret = sendto(conn->s, buf->data, buf->offset, 0,
+	do {
+		ret = sendto(conn->s, buf->data, buf->offset, 0,
 		     (struct sockaddr *)&conn->RecvAddr,
 		     sizeof(conn->RecvAddr));
+	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret != buf->offset) {
 		return ERROR_DNS_SOCKET_ERROR;
@@ -225,12 +233,21 @@ static DNS_ERROR read_all(int fd, uint8_t *data, size_t len)
 		pfd.events = POLLIN|POLLHUP;
 
 		fd_ready = poll(&pfd, 1, 10000);
+		if (fd_ready == -1) {
+			if (errno == EINTR) {
+				continue;
+			}
+			return ERROR_DNS_SOCKET_ERROR;
+		}
 		if ( fd_ready == 0 ) {
 			/* read timeout */
 			return ERROR_DNS_SOCKET_ERROR;
 		}
 
-		ret = read(fd, data + total, len - total);
+		do {
+			ret = read(fd, data + total, len - total);
+		} while ((ret == -1) && (errno == EINTR));
+
 		if (ret <= 0) {
 			/* EOF or error */
 			return ERROR_DNS_SOCKET_ERROR;
@@ -300,7 +317,9 @@ static DNS_ERROR dns_receive_udp(TALLOC_CTX *mem_ctx,
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	received = recv(conn->s, (void *)buf->data, 512, 0);
+	do {
+		received = recv(conn->s, (void *)buf->data, 512, 0);
+	} while ((received == -1) && (errno == EINTR));
 
 	if (received == -1) {
 		TALLOC_FREE(buf);
