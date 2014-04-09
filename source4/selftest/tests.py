@@ -504,7 +504,7 @@ for env in ['vampire_dc', 'promoted_dc']:
 
     plantestsuite("samba4.blackbox.samba_tool_demote(%s)" % env, env, [os.path.join(samba4srcdir, "utils/tests/test_demote.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', '$DC_SERVER', '$PREFIX/%s' % env, smbclient4])
 
-for env in ["dc", "s4member", "rodc", "promoted_dc"]:
+for env in ["dc", "s4member", "rodc", "promoted_dc", "plugin_s4_dc"]:
     plantestsuite("samba4.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
 # TODO: Verifying the databases really should be a part of the
