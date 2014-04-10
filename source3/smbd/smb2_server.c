@@ -2837,17 +2837,6 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	return NT_STATUS_OK;
 }
 
-static size_t get_min_receive_file_size(struct smbd_smb2_request *smb2_req)
-{
-	if (smb2_req->do_signing) {
-		return 0;
-	}
-	if (smb2_req->do_encryption) {
-		return 0;
-	}
-	return (size_t)lp_min_receive_file_size();
-}
-
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 {
 	NTSTATUS status;
@@ -2969,7 +2958,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 		return NT_STATUS_NO_MEMORY;
 	}
 	state->req->sconn = sconn;
-	state->min_recv_size = get_min_receive_file_size(state->req);
+	state->min_recv_size = lp_min_receive_file_size();
 
 	TEVENT_FD_READABLE(sconn->smb2.fde);
 
@@ -3337,7 +3326,7 @@ got_full:
 		req = state->req;
 		ZERO_STRUCTP(state);
 		state->req = req;
-		state->min_recv_size = get_min_receive_file_size(state->req);
+		state->min_recv_size = lp_min_receive_file_size();
 		req = NULL;
 		goto again;
 	}
