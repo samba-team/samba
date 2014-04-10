@@ -142,8 +142,8 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 /*
  * map a SID to xid using the idmap_tdb like pool
  */
-static NTSTATUS idmap_autorid_map_id_to_sid(struct idmap_domain *dom,
-					    struct id_map *map)
+static NTSTATUS idmap_autorid_id_to_sid_alloc(struct idmap_domain *dom,
+					      struct id_map *map)
 {
 	NTSTATUS ret;
 
@@ -225,7 +225,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 			  "checking for mapping\n",
 			  map->xid.id));
 		TALLOC_FREE(data.dptr);
-		return idmap_autorid_map_id_to_sid(dom, map);
+		return idmap_autorid_id_to_sid_alloc(dom, map);
 	}
 
 	ok = dom_sid_parse_endp((const char *)data.dptr, &domsid, &q);
