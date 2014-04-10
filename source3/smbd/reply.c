@@ -4598,12 +4598,12 @@ bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
 			    const uint8_t *inbuf)
 {
 	size_t numtowrite;
-	connection_struct *conn = NULL;
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
-	struct smbXsrv_tcon *tcon;
+	uint16_t fnum;
+	struct smbXsrv_open *op = NULL;
+	struct files_struct *fsp = NULL;
 	NTSTATUS status;
-	NTTIME now = 0;
 
 	if (is_encrypted_packet(sconn, inbuf)) {
 		/* Can't do this on encrypted
@@ -4622,19 +4622,30 @@ bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
 		return false;
 	}
 
-	status = smb1srv_tcon_lookup(sconn->conn, SVAL(inbuf, smb_tid),
-				     now, &tcon);
+	fnum = SVAL(inbuf, smb_vwv2);
+	status = smb1srv_open_lookup(sconn->conn,
+				     fnum,
+				     0, /* now */
+				     &op);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("is_valid_writeX_buffer: bad tid\n"));
+		DEBUG(10,("is_valid_writeX_buffer: bad fnum\n"));
 		return false;
 	}
-	conn = tcon->compat;
+	fsp = op->compat;
+	if (fsp == NULL) {
+		DEBUG(10,("is_valid_writeX_buffer: bad fsp\n"));
+		return false;
+	}
+	if (fsp->conn == NULL) {
+		DEBUG(10,("is_valid_writeX_buffer: bad fsp->conn\n"));
+		return false;
+	}
 
-	if (IS_IPC(conn)) {
+	if (IS_IPC(fsp->conn)) {
 		DEBUG(10,("is_valid_writeX_buffer: IPC$ tid\n"));
 		return false;
 	}
-	if (IS_PRINT(conn)) {
+	if (IS_PRINT(fsp->conn)) {
 		DEBUG(10,("is_valid_writeX_buffer: printing tid\n"));
 		return false;
 	}
