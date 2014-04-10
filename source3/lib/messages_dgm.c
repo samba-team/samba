@@ -407,3 +407,57 @@ NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 	TALLOC_FREE(lockfile_name);
 	return NT_STATUS_OK;
 }
+
+NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
+{
+	struct messaging_dgm_context *ctx = talloc_get_type_abort(
+		msg_ctx->local->private_data, struct messaging_dgm_context);
+	char *msgdir_name;
+	DIR *msgdir;
+	struct dirent *dp;
+	pid_t our_pid = getpid();
+
+	/*
+	 * We scan the socket directory and not the lock directory. Otherwise
+	 * we would race against messaging_dgm_lockfile_create's open(O_CREAT)
+	 * and fcntl(SETLK).
+	 */
+
+	msgdir_name = talloc_asprintf(talloc_tos(), "%s/msg", ctx->cache_dir);
+	if (msgdir_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	msgdir = opendir(msgdir_name);
+	TALLOC_FREE(msgdir_name);
+	if (msgdir == NULL) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	while ((dp = readdir(msgdir)) != NULL) {
+		NTSTATUS status;
+		unsigned long pid;
+
+		pid = strtoul(dp->d_name, NULL, 10);
+		if (pid == 0) {
+			/*
+			 * . and .. and other malformed entries
+			 */
+			continue;
+		}
+		if (pid == our_pid) {
+			/*
+			 * fcntl(F_GETLK) will succeed for ourselves, we hold
+			 * that lock ourselves.
+			 */
+			continue;
+		}
+
+		status = messaging_dgm_cleanup(msg_ctx, pid);
+		DEBUG(10, ("messaging_dgm_cleanup(%lu) returned %s\n",
+			   pid, nt_errstr(status)));
+	}
+	closedir(msgdir);
+
+	return NT_STATUS_OK;
+}
