@@ -3271,6 +3271,9 @@ again:
 	/*
 	 * Now we analyze the NBT header
 	 */
+	if (state->hdr.nbt[0] != 0x00) {
+		state->min_recv_size = 0;
+	}
 	state->pktlen = smb2_len(state->hdr.nbt);
 	if (state->pktlen == 0) {
 		goto got_full;
