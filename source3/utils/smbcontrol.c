@@ -968,6 +968,25 @@ static bool do_num_children(struct tevent_context *ev_ctx,
 	return num_replies;
 }
 
+static bool do_dgm_cleanup(struct tevent_context *ev_ctx,
+			   struct messaging_context *msg_ctx,
+			   const struct server_id pid,
+			   const int argc, const char **argv)
+{
+	NTSTATUS status;
+
+	if (pid.pid != 0) {
+		status = messaging_dgm_cleanup(msg_ctx, pid.pid);
+	} else {
+		status = messaging_dgm_wipe(msg_ctx);
+	}
+
+	printf("cleanup(%u) returned %s\n", (unsigned)pid.pid,
+	       nt_errstr(status));
+
+	return NT_STATUS_IS_OK(status);
+}
+
 /* Shutdown a server process */
 
 static bool do_shutdown(struct tevent_context *ev_ctx,
@@ -1378,6 +1397,7 @@ static const struct {
 	{ "notify-cleanup", do_notify_cleanup },
 	{ "num-children", do_num_children,
 	  "Print number of smbd child processes" },
+	{ "dgm-cleanup", do_dgm_cleanup },
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };
