@@ -535,6 +535,7 @@ setup_ctdb_natgw ()
     export CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
     export CTDB_NATGW_PUBLIC_IFACE="eth1"
     export CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
+    export CTDB_NATGW_SLAVE_ONLY=""
 }
 
 ok_natgw_master_ip_addr_show ()

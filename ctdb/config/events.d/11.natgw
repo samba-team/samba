@@ -18,10 +18,12 @@ natgw_check_config ()
 {
     [ -r "$CTDB_NATGW_NODES" ] || \
 	die "error: CTDB_NATGW_NODES=${CTDB_NATGW_NODES} unreadable"
-    [ -n "$CTDB_NATGW_PUBLIC_IP" ] || \
-	die "Invalid configuration: CTDB_NATGW_PUBLIC_IP not set"
-    [ -n "$CTDB_NATGW_PUBLIC_IFACE" ] || \
-	die "Invalid configuration: CTDB_NATGW_PUBLIC_IFACE not set"
+    if [ "$CTDB_NATGW_SLAVE_ONLY" != "yes" ] ; then
+	[ -n "$CTDB_NATGW_PUBLIC_IP" ] || \
+	    die "Invalid configuration: CTDB_NATGW_PUBLIC_IP not set"
+	[ -n "$CTDB_NATGW_PUBLIC_IFACE" ] || \
+	    die "Invalid configuration: CTDB_NATGW_PUBLIC_IFACE not set"
+    fi
     [ -n "$CTDB_NATGW_PRIVATE_NETWORK" ] || \
 	die "Invalid configuration: CTDB_NATGW_PRIVATE_NETWORK not set"
 

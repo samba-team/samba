@@ -537,7 +537,11 @@
 	  <term>CTDB_NATGW_SLAVE_ONLY=yes|no</term>
 	  <listitem>
 	    <para>
-	      When set to "yes" a node can not be a NAT gateway master node.
+	      When set to "yes" a node can not be a NAT gateway master
+	      node.  In this case
+	      <varname>CTDB_NATGW_PUBLIC_IFACE</varname> and
+	      <varname>CTDB_NATGW_PUBLIC_IP</varname> are optional
+	      and unused.
 	    </para>
 	    <para>
 	      Default is no.
