@@ -1,4 +1,118 @@
                    ==============================
+                   Release Notes for Samba 4.0.17
+                           April 15, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.0.
+
+
+Changes since 4.0.16:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9878: Make "force user" work as expected.
+    * BUG 9942: Fix problem with server taking too long to respond to a
+      MSG_PRINTER_DRVUPGRADE message.
+    * BUG 9993: s3-printing: Fix obvious memory leak in
+      printer_list_get_printer().
+    * BUG 10344: SessionLogoff on a signed connection with an outstanding notify
+      request crashes smbd.
+    * BUG 10431: Fix STATUS_NO_MEMORY response from Query File Posix Lock request.
+    * BUG 10508: smbd: Correctly add remote users into local groups.
+    * BUG 10534: Cleanup messages.tdb record after unclean smbd shutdown.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9911: Fix build on AIX with IBM XL C/C++ (gettext detection issues).
+    * BUG 10308: Fix String Conversion Errors with Samba 4.1.0 Build on AIX 7.1.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * smbd: Split create_conn_struct into a fn that does not change the
+      working dir.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * BUG 10458: Fix 'wbinfo -i' with one-way trust.
+    * s3:rpc_server: Minor refactoring of process_request_pdu().
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 10471: Don't respond with NXDOMAIN to records that exist with another
+      type.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 10504: lsa.idl: Define lsa.ForestTrustCollisionInfo and
+      ForestTrustCollisionRecord as public structs.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 10439: Increase max netbios name components.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10188: doc: Add "spoolss: architecture" parameter usage.
+    * BUG 10484: Initial FSRVP rpcclient requests fail with
+      NT_STATUS_PIPE_NOT_AVAILABLE.
+
+
+o   Daniel Liberman <danielvl@gmail.com>
+    * BUG 10387: 'net ads search' on high latency networks can return a partial
+      list with no error indication.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10344: SessionLogoff on a signed connection with an outstanding notify
+      request crashes smbd.
+    * BUG 10422: max xmit > 64kb leads to segmentation fault.
+    * BUG 10444: smbd_server_connection_terminate("CTDB_SRVID_RELEASE_IP")
+      panics from within ctdbd_migrate() with invalid lock_order.
+    * BUG 10464: samba4 services not binding on IPv6 addresses causing
+      connection delays.
+    * tevent: Fix crash bug in tevent_queue_immediate_trigger().
+
+
+o   Garming Sam <garming@catalyst.net.nz>
+    * BUG 10378: dfs: Always call create_conn_struct with root privileges.
+
+
+o   Andreas Schneider <asn@cryptomilk.org>
+    * BUG 10472: pidl: waf should have an option for the dir to install perl
+      files and do not glob.
+    * BUG 10474: s3-spoolssd: Don't register spoolssd if epmd is not running.
+    * BUG 10481: s3-rpc_server: Fix handling of fragmented rpc requests.
+
+
+o   Gustavo Zacarias <gustavo@zacarias.com.ar>
+    * BUG 10506: Make 'smbreadline' build with readline 6.3.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.16
                            March 11, 2014
                    ==============================
@@ -61,8 +175,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.0.15
