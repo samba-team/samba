@@ -2841,7 +2841,19 @@ static size_t get_min_receive_file_size(struct smbd_smb2_request *smb2_req)
 
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 {
+	NTSTATUS status;
 	uint32_t flags;
+	uint64_t file_id_persistent;
+	uint64_t file_id_volatile;
+	struct smbXsrv_open *op = NULL;
+	struct files_struct *fsp = NULL;
+	const uint8_t *body = NULL;
+
+	/*
+	 * This is only called with a pktbuf
+	 * of at least SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN
+	 * bytes
+	 */
 
 	if (IVAL(state->pktbuf, 0) == SMB2_TF_MAGIC) {
 		/* Transform header. Cannot recvfile. */
@@ -2870,6 +2882,35 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 	}
 	if (flags & SMB2_HDR_FLAG_SIGNED) {
 		/* Signed. Cannot recvfile. */
+		return false;
+	}
+
+	body = &state->pktbuf[SMB2_HDR_BODY];
+
+	file_id_persistent	= BVAL(body, 0x10);
+	file_id_volatile	= BVAL(body, 0x18);
+
+	status = smb2srv_open_lookup(state->req->sconn->conn,
+				     file_id_persistent,
+				     file_id_volatile,
+				     0, /* now */
+				     &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	fsp = op->compat;
+	if (fsp == NULL) {
+		return false;
+	}
+	if (fsp->conn == NULL) {
+		return false;
+	}
+
+	if (IS_IPC(fsp->conn)) {
+		return false;
+	}
+	if (IS_PRINT(fsp->conn)) {
 		return false;
 	}
 
