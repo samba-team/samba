@@ -444,7 +444,9 @@ static NTSTATUS smbXsrv_open_local_lookup(struct smbXsrv_open_table *table,
 		return NT_STATUS_FILE_CLOSED;
 	}
 
-	state.op->idle_time = now;
+	if (now != 0) {
+		state.op->idle_time = now;
+	}
 
 	*_open = state.op;
 	return state.op->status;
