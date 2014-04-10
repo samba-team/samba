@@ -340,9 +340,9 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 /*
  * map a SID to xid using the idmap_tdb like pool
  */
-static NTSTATUS idmap_autorid_map_sid_to_id(struct idmap_domain *dom,
-					    struct id_map *map,
-					    struct idmap_tdb_common_context *ctx)
+static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
+					struct id_map *map,
+					struct idmap_tdb_common_context *ctx)
 {
 	NTSTATUS ret;
 	int res;
@@ -451,8 +451,8 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 			DEBUG(10, ("SID %s is well-known, using pool\n",
 				   sid_string_dbg(ids[i]->sid)));
 
-			ret = idmap_autorid_map_sid_to_id(dom, ids[i],
-							  commoncfg);
+			ret = idmap_autorid_sid_to_id_alloc(dom, ids[i],
+							    commoncfg);
 
 			if (!NT_STATUS_IS_OK(ret) &&
 			    !NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
