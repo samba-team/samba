@@ -181,6 +181,7 @@ static void background_job_waited(struct tevent_req *subreq)
 		if (written == -1) {
 			_exit(1);
 		}
+		TALLOC_FREE(state->msg);
 		_exit(0);
 	}
 
