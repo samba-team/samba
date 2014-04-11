@@ -348,6 +348,8 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
 	NTSTATUS ret;
 	int res;
 
+	map->status = ID_UNKNOWN;
+
 	/* see if we already have a mapping */
 	ret = idmap_tdb_common_sid_to_unixid(dom, map);
 
@@ -366,6 +368,7 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
 	if (dom->read_only) {
 		DEBUG(3, ("Not allocating new mapping for %s, because backend "
 			  "is read-only\n", sid_string_dbg(map->sid)));
+		map->status = ID_UNMAPPED;
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -380,18 +383,17 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
 	}
 
 	ret = idmap_tdb_common_new_mapping(dom, map);
-
-	map->status = (NT_STATUS_IS_OK(ret))?ID_MAPPED:ID_UNMAPPED;
-
 	if (!NT_STATUS_IS_OK(ret)) {
 		if (dbwrap_transaction_cancel(ctx->db) != 0) {
 			smb_panic("Cancelling transaction failed");
 		}
+		map->status = ID_UNMAPPED;
 		return ret;
 	}
 
 	res = dbwrap_transaction_commit(ctx->db);
 	if (res == 0) {
+		map->status = ID_MAPPED;
 		return ret;
 	}
 
