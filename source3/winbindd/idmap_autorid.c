@@ -394,7 +394,7 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
 	res = dbwrap_transaction_commit(ctx->db);
 	if (res == 0) {
 		map->status = ID_MAPPED;
-		return ret;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(2, ("transaction_commit failed\n"));
