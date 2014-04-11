@@ -465,7 +465,7 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 				goto failure;
 			}
 
-			if (ids[i]->status == ID_MAPPED) {
+			if (NT_STATUS_IS_OK(ret) && ids[i]->status == ID_MAPPED) {
 				num_mapped++;
 			}
 
@@ -524,7 +524,7 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 			goto failure;
 		}
 
-		if (NT_STATUS_IS_OK(ret)) {
+		if (NT_STATUS_IS_OK(ret) && ids[i]->status == ID_MAPPED) {
 			num_mapped++;
 		}
 	}
