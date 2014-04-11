@@ -402,6 +402,18 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
 
 }
 
+static bool idmap_autorid_domsid_is_for_alloc(struct dom_sid *sid)
+{
+	bool match;
+
+	match = sid_check_is_wellknown_domain(sid, NULL);
+	if (match) {
+		return true;
+	}
+
+	return false;
+}
+
 static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 					struct idmap_domain *dom,
 					struct id_map *map)
@@ -429,8 +441,8 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	if (sid_check_is_wellknown_domain(&domainsid, NULL)) {
-		DEBUG(10, ("SID %s is well-known, using pool\n",
+	if (idmap_autorid_domsid_is_for_alloc(&domainsid)) {
+		DEBUG(10, ("SID %s is for ALLOC range.\n",
 			   sid_string_dbg(map->sid)));
 
 		return idmap_autorid_sid_to_id_alloc(dom, map, common);
