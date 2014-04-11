@@ -261,7 +261,8 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
  Single sid to id lookup function.
 **********************************/
 
-static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
+static NTSTATUS idmap_autorid_sid_to_id_rid(
+					struct autorid_global_config *global,
 					struct autorid_range_config *range,
 					struct id_map *map)
 {
@@ -511,7 +512,7 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 			goto failure;
 		}
 
-		ret = idmap_autorid_sid_to_id(global, &range, ids[i]);
+		ret = idmap_autorid_sid_to_id_rid(global, &range, ids[i]);
 
 		if ((!NT_STATUS_IS_OK(ret)) &&
 		    (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
