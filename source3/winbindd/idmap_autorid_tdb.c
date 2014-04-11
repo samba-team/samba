@@ -453,7 +453,7 @@ NTSTATUS idmap_autorid_init_hwm(struct db_context *db, const char *hwm)
 	}
 
 	status = dbwrap_trans_do(db, idmap_autorid_init_hwm_action,
-				 (void *)hwm);
+				 discard_const(hwm));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Error initializing HWM (%s) in autorid database: "
 			  "%s\n", hwm, nt_errstr(status)));
