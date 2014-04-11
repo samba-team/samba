@@ -263,11 +263,6 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 
 	map->xid.id = reduced_rid + range->low_id;
 	map->xid.type = ID_TYPE_BOTH;
-
-	/* We **really** should have some way of validating
-	   the SID exists and is the correct type here.  But
-	   that is a deficiency in the idmap_rid design. */
-
 	map->status = ID_MAPPED;
 
 	return NT_STATUS_OK;
