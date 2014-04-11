@@ -49,6 +49,7 @@ struct autorid_range_config {
 	uint32_t rangenum;
 	uint32_t domain_range_index;
 	uint32_t low_id;
+	uint32_t high_id;
 };
 
 /**

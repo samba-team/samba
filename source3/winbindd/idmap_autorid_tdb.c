@@ -258,6 +258,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 
 	range->low_id = globalcfg->minvalue
 		      + range->rangenum * globalcfg->rangesize;
+	range->high_id = range->low_id  + globalcfg->rangesize - 1;
 
 	ret = NT_STATUS_OK;
 
@@ -339,6 +340,7 @@ static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 	}
 	range->low_id = globalcfg->minvalue
 		      + range->rangenum * globalcfg->rangesize;
+	range->high_id = range->low_id  + globalcfg->rangesize - 1;
 
 	TALLOC_FREE(globalcfg);
 done:
