@@ -340,6 +340,76 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 	return ret;
 }
 
+static bool idmap_autorid_sid_is_special(struct dom_sid *sid)
+{
+	bool match;
+
+	match = sid_check_is_in_wellknown_domain(sid);
+	if (match) {
+		return true;
+	}
+
+	return false;
+}
+
+static NTSTATUS idmap_autorid_sid_to_id_special(struct idmap_domain *dom,
+						struct id_map *map)
+{
+	struct idmap_tdb_common_context *common =
+		talloc_get_type_abort(dom->private_data,
+				      struct idmap_tdb_common_context);
+	uint32_t count;
+	struct autorid_range_config range;
+	NTSTATUS status;
+	uint32_t free_id;
+
+	status = idmap_autorid_get_alloc_range(dom, &range);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Take the next free ID, counting from the top */
+	free_id = 0;
+	for (count = 0; count < IDMAP_AUTORID_ALLOC_RESERVED; count++) {
+		struct id_map test_map;
+		struct dom_sid sid;
+
+		test_map.sid = &sid;
+		test_map.xid.type = map->xid.type;
+		test_map.xid.id = range.high_id - count;
+		test_map.status = ID_UNKNOWN;
+
+		status = idmap_tdb_common_unixid_to_sid(dom, &test_map);
+		if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
+			free_id = test_map.xid.id;
+			break;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/* error - get out */
+			return status;
+		}
+
+		/* mapping exists - try next ID */
+	}
+
+	if (free_id == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	map->status = ID_MAPPED;
+	map->xid.id = free_id;
+
+	status = common->rw_ops->set_mapping(dom, map);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("Error storing new mapping: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct idmap_autorid_sid_to_id_alloc_ctx {
 	struct idmap_domain *dom;
 	struct id_map *map;
@@ -352,6 +422,22 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc_action(
 	struct idmap_autorid_sid_to_id_alloc_ctx *ctx;
 
 	ctx = (struct idmap_autorid_sid_to_id_alloc_ctx *)private_data;
+
+	if (idmap_autorid_sid_is_special(ctx->map->sid)) {
+		NTSTATUS ret;
+
+		ret = idmap_autorid_sid_to_id_special(ctx->dom, ctx->map);
+		if (NT_STATUS_IS_OK(ret)) {
+			return NT_STATUS_OK;
+		}
+		if (!NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, ret)) {
+			return ret;
+		}
+
+		DEBUG(10, ("Sepecial sid %s not mapped. falling back to "
+			   "regular allocation\n",
+			   sid_string_dbg(ctx->map->sid)));
+	}
 
 	return idmap_tdb_common_new_mapping(ctx->dom, ctx->map);
 }
