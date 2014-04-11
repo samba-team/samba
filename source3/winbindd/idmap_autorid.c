@@ -402,6 +402,80 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
 
 }
 
+static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
+					struct idmap_domain *dom,
+					struct id_map *map)
+{
+	struct autorid_global_config *global =
+		talloc_get_type_abort(common->private_data,
+				      struct autorid_global_config);
+	struct winbindd_tdc_domain *domain;
+	struct autorid_range_config range;
+	uint32_t rid;
+	struct dom_sid domainsid;
+	NTSTATUS ret;
+
+	ZERO_STRUCT(range);
+	map->status = ID_UNKNOWN;
+
+	DEBUG(10, ("Trying to map %s\n", sid_string_dbg(map->sid)));
+
+	sid_copy(&domainsid, map->sid);
+	if (!sid_split_rid(&domainsid, &rid)) {
+		DEBUG(4, ("Could not determine domain SID from %s, "
+			  "ignoring mapping request\n",
+			  sid_string_dbg(map->sid)));
+		map->status = ID_UNMAPPED;
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	if (sid_check_is_wellknown_domain(&domainsid, NULL)) {
+		DEBUG(10, ("SID %s is well-known, using pool\n",
+			   sid_string_dbg(map->sid)));
+
+		return idmap_autorid_sid_to_id_alloc(dom, map, common);
+	}
+
+	if (dom_sid_equal(&domainsid, &global_sid_Builtin) && ignore_builtin) {
+		DEBUG(10, ("Ignoring request for BUILTIN domain\n"));
+		map->status = ID_UNMAPPED;
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	/*
+	 * Check if the domain is around
+	 */
+	domain = wcache_tdc_fetch_domainbysid(talloc_tos(),
+					      &domainsid);
+	if (domain == NULL) {
+		DEBUG(10, ("Ignoring unknown domain sid %s\n",
+			   sid_string_dbg(&domainsid)));
+		map->status = ID_UNMAPPED;
+		return NT_STATUS_NONE_MAPPED;
+	}
+	TALLOC_FREE(domain);
+
+	sid_to_fstring(range.domsid, &domainsid);
+
+	range.domain_range_index = rid / (global->rangesize);
+
+	ret = idmap_autorid_get_domainrange(autorid_db, &range, dom->read_only);
+	if (NT_STATUS_EQUAL(ret, NT_STATUS_NOT_FOUND) && dom->read_only) {
+		DEBUG(10, ("read-only is enabled, did not allocate "
+			   "new range for domain %s\n",
+			   sid_string_dbg(&domainsid)));
+		map->status = ID_UNMAPPED;
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(3, ("Could not determine range for domain, "
+			  "check previous messages for reason\n"));
+		return ret;
+	}
+
+	return idmap_autorid_sid_to_id_rid(global, &range, map);
+}
+
 /**********************************
  lookup a set of sids.
 **********************************/
@@ -410,7 +484,6 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 					      struct id_map **ids)
 {
 	struct idmap_tdb_common_context *commoncfg;
-	struct autorid_global_config *global;
 	NTSTATUS ret;
 	int i;
 	int num_tomap = 0;
@@ -426,102 +499,14 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 	    talloc_get_type_abort(dom->private_data,
 				  struct idmap_tdb_common_context);
 
-	global = talloc_get_type(commoncfg->private_data,
-				 struct autorid_global_config);
-
 	for (i = 0; ids[i]; i++) {
-		struct winbindd_tdc_domain *domain;
-		struct autorid_range_config range;
-		uint32_t rid;
-		struct dom_sid domainsid;
-
-		ZERO_STRUCT(range);
-
-		DEBUG(10, ("Trying to map %s\n", sid_string_dbg(ids[i]->sid)));
-
-		sid_copy(&domainsid, ids[i]->sid);
-		if (!sid_split_rid(&domainsid, &rid)) {
-			DEBUG(4, ("Could not determine domain SID from %s, "
-				  "ignoring mapping request\n",
-				  sid_string_dbg(ids[i]->sid)));
-			continue;
-		}
-
-		/* is this a well-known SID? */
-
-		if (sid_check_is_wellknown_domain(&domainsid, NULL)) {
-
-			DEBUG(10, ("SID %s is well-known, using pool\n",
-				   sid_string_dbg(ids[i]->sid)));
-
-			ret = idmap_autorid_sid_to_id_alloc(dom, ids[i],
-							    commoncfg);
-
-			if (!NT_STATUS_IS_OK(ret) &&
-			    !NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
-				DEBUG(3, ("Unexpected error resolving "
-					  "SID (%s)\n",
-					  sid_string_dbg(ids[i]->sid)));
-				goto failure;
-			}
-
-			if (NT_STATUS_IS_OK(ret) && ids[i]->status == ID_MAPPED) {
-				num_mapped++;
-			}
-
-			continue;
-		}
-
-		/* BUILTIN is passdb's job */
-		if (dom_sid_equal(&domainsid, &global_sid_Builtin) &&
-		    ignore_builtin) {
-			DEBUG(10, ("Ignoring request for BUILTIN domain\n"));
-			continue;
-		}
-
-		/*
-		 * Check if the domain is around
-		 */
-		domain = wcache_tdc_fetch_domainbysid(talloc_tos(),
-						      &domainsid);
-		if (domain == NULL) {
-			DEBUG(10, ("Ignoring unknown domain sid %s\n",
-				   sid_string_dbg(&domainsid)));
-			continue;
-		}
-		TALLOC_FREE(domain);
-
-		sid_to_fstring(range.domsid, &domainsid);
-
-		/* Calculate domain_range_index for multi-range support */
-		range.domain_range_index = rid / (global->rangesize);
-
-		ret = idmap_autorid_get_domainrange(autorid_db, &range,
-						    dom->read_only);
-
-		/* read-only mode and a new domain range would be required? */
-		if (NT_STATUS_EQUAL(ret, NT_STATUS_NOT_FOUND) &&
-		    dom->read_only) {
-			DEBUG(10, ("read-only is enabled, did not allocate "
-				   "new range for domain %s\n",
-				   sid_string_dbg(&domainsid)));
-			continue;
-		}
-
-		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG(3, ("Could not determine range for domain, "
-				  "check previous messages for reason\n"));
-			goto failure;
-		}
-
-		ret = idmap_autorid_sid_to_id_rid(global, &range, ids[i]);
-
+		ret = idmap_autorid_sid_to_id(commoncfg, dom, ids[i]);
 		if ((!NT_STATUS_IS_OK(ret)) &&
 		    (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
 			/* some fatal error occurred, log it */
 			DEBUG(3, ("Unexpected error resolving a SID (%s)\n",
 				  sid_string_dbg(ids[i]->sid)));
-			goto failure;
+			return ret;
 		}
 
 		if (NT_STATUS_IS_OK(ret) && ids[i]->status == ID_MAPPED) {
@@ -536,10 +521,6 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 	}
 
 	return STATUS_SOME_UNMAPPED;
-
-      failure:
-	return ret;
-
 }
 
 static NTSTATUS idmap_autorid_preallocate_wellknown(struct idmap_domain *dom)
