@@ -341,9 +341,10 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 /*
  * map a SID to xid using the idmap_tdb like pool
  */
-static NTSTATUS idmap_autorid_sid_to_id_alloc(struct idmap_domain *dom,
-					struct id_map *map,
-					struct idmap_tdb_common_context *ctx)
+static NTSTATUS idmap_autorid_sid_to_id_alloc(
+					struct idmap_tdb_common_context *ctx,
+					struct idmap_domain *dom,
+					struct id_map *map)
 {
 	NTSTATUS ret;
 	int res;
@@ -445,7 +446,7 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 		DEBUG(10, ("SID %s is for ALLOC range.\n",
 			   sid_string_dbg(map->sid)));
 
-		return idmap_autorid_sid_to_id_alloc(dom, map, common);
+		return idmap_autorid_sid_to_id_alloc(common, dom, map);
 	}
 
 	if (dom_sid_equal(&domainsid, &global_sid_Builtin) && ignore_builtin) {
