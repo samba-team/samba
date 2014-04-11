@@ -50,6 +50,7 @@
 #include "serverid.h"
 #include "messages.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/background.h"
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
@@ -584,6 +585,55 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		}
 	}
 	return;
+}
+
+static int mess_parent_dgm_cleanup(void *private_data);
+static void mess_parent_dgm_cleanup_done(struct tevent_req *req);
+
+bool messaging_parent_dgm_cleanup_init(struct messaging_context *msg)
+{
+	struct tevent_req *req;
+
+	req = background_job_send(
+		msg, msg->event_ctx, msg, NULL, 0,
+		lp_parm_int(-1, "messaging", "messaging dgm cleanup interval", 60*15),
+		mess_parent_dgm_cleanup, msg);
+	if (req == NULL) {
+		return false;
+	}
+	tevent_req_set_callback(req, mess_parent_dgm_cleanup_done, msg);
+	return true;
+}
+
+static int mess_parent_dgm_cleanup(void *private_data)
+{
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
+	NTSTATUS status;
+
+	status = messaging_dgm_wipe(msg_ctx);
+	DEBUG(10, ("messaging_dgm_wipe returned %s\n", nt_errstr(status)));
+	return lp_parm_int(-1, "messaging", "messaging dgm cleanup interval", 60*15);
+}
+
+static void mess_parent_dgm_cleanup_done(struct tevent_req *req)
+{
+	struct messaging_context *msg = tevent_req_callback_data(
+		req, struct messaging_context);
+	NTSTATUS status;
+
+	status = background_job_recv(req);
+	TALLOC_FREE(req);
+	DEBUG(1, ("messaging dgm cleanup job ended with %s\n", nt_errstr(status)));
+
+	req = background_job_send(
+		msg, msg->event_ctx, msg, NULL, 0,
+		lp_parm_int(-1, "messaging", "messaging dgm cleanup interval", 60*15),
+		mess_parent_dgm_cleanup, msg);
+	if (req == NULL) {
+		DEBUG(1, ("background_job_send failed\n"));
+	}
+	tevent_req_set_callback(req, mess_parent_dgm_cleanup_done, msg);
 }
 
 /** @} **/
