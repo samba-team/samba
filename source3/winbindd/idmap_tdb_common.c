@@ -383,11 +383,7 @@ NTSTATUS idmap_tdb_common_unixid_to_sid(struct idmap_domain * dom,
 	if (!dom || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-/* TODO: do we really make sure the database is open again? should have been
- * done while initing the module
-	status = idmap_tdb2_open_db(dom);
-	NT_STATUS_NOT_OK_RETURN(status);
-*/
+
 	ctx =
 	    talloc_get_type_abort(dom->private_data,
 				  struct idmap_tdb_common_context);
