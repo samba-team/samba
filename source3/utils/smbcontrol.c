@@ -1580,6 +1580,7 @@ int main(int argc, const char **argv)
 	}
 
 	ret = !do_command(evt_ctx, msg_ctx, argc, argv);
+	TALLOC_FREE(msg_ctx);
 	TALLOC_FREE(frame);
 	return ret;
 }
