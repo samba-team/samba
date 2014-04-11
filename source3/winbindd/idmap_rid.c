@@ -87,10 +87,6 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map
 
 	sid_compose(map->sid, &domain->sid, map->xid.id - dom->low_id + ctx->base_rid);
 
-	/* We **really** should have some way of validating 
-	   the SID exists and is the correct type here.  But 
-	   that is a deficiency in the idmap_rid design. */
-
 	map->status = ID_MAPPED;
 	map->xid.type = ID_TYPE_BOTH;
 
