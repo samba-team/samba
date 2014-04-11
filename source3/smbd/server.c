@@ -445,8 +445,13 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 {
 	struct smbd_child_pid *child;
 	struct server_id child_id;
+	NTSTATUS status;
 
 	child_id = pid_to_procid(pid);
+
+	status = messaging_dgm_cleanup(parent->msg_ctx, pid);
+	DEBUG(10, ("%s: messaging_dgm_cleanup returned %s\n",
+		   __func__, nt_errstr(status)));
 
 	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {
@@ -465,8 +470,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	}
 
 	if (unclean_shutdown) {
-		NTSTATUS status;
-
 		/* a child terminated uncleanly so tickle all
 		   processes to see if they can grab any of the
 		   pending locks
@@ -483,10 +486,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 						parent);
 			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}
-
-		status = messaging_dgm_cleanup(parent->msg_ctx, pid);
-		DEBUG(10, ("%s: messaging_dgm_cleanup returned %s\n",
-			   __func__, nt_errstr(status)));
 	}
 
 	if (!serverid_deregister(child_id)) {
