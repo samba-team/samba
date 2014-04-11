@@ -483,6 +483,7 @@ static bool cups_pcap_load_async(struct tevent_context *ev,
 	close(fds[0]);
 	cups_cache_reload_async(fds[1]);
 	close(fds[1]);
+	TALLOC_FREE(msg_ctx);
 	_exit(0);
 }
 
