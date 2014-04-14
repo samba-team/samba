@@ -67,14 +67,14 @@ bool cli_api(struct cli_state *cli,
 	 * talloc
 	 */
 
-	*rparam = (char *)memdup(my_rparam, num_my_rparam);
+	*rparam = (char *)smb_memdup(my_rparam, num_my_rparam);
 	if (*rparam == NULL) {
 		goto fail;
 	}
 	*rprcnt = num_my_rparam;
 	TALLOC_FREE(my_rparam);
 
-	*rdata = (char *)memdup(my_rdata, num_my_rdata);
+	*rdata = (char *)smb_memdup(my_rdata, num_my_rdata);
 	if (*rdata == NULL) {
 		goto fail;
 	}

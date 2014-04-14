@@ -503,10 +503,10 @@ void load_interfaces(void)
 	total_probed = get_interfaces(talloc_tos(), &ifaces);
 
 	if (total_probed > 0) {
-		probed_ifaces = (struct iface_struct *)memdup(ifaces,
+		probed_ifaces = (struct iface_struct *)smb_memdup(ifaces,
 				sizeof(ifaces[0])*total_probed);
 		if (!probed_ifaces) {
-			DEBUG(0,("ERROR: memdup failed\n"));
+			DEBUG(0,("ERROR: smb_memdup failed\n"));
 			exit(1);
 		}
 	}

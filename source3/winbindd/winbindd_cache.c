@@ -3556,7 +3556,7 @@ static struct cache_entry *create_centry_validate(const char *kstr, TDB_DATA dat
 	struct cache_entry *centry;
 
 	centry = SMB_XMALLOC_P(struct cache_entry);
-	centry->data = (unsigned char *)memdup(data.dptr, data.dsize);
+	centry->data = (unsigned char *)smb_memdup(data.dptr, data.dsize);
 	if (!centry->data) {
 		SAFE_FREE(centry);
 		return NULL;

@@ -1774,7 +1774,7 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 	/* In a traverse function we must make a copy of
 	   dbuf before modifying it. */
 
-	locks = (struct lock_struct *)memdup(value.dptr, value.dsize);
+	locks = (struct lock_struct *)smb_memdup(value.dptr, value.dsize);
 	if (!locks) {
 		return -1; /* Terminate traversal. */
 	}

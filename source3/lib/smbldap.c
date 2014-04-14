@@ -353,7 +353,7 @@ static void smbldap_set_mod_internal(LDAPMod *** modlist, int modop, const char 
 		mods[i]->mod_bvalues[j] = SMB_MALLOC_P(struct berval);
 		SMB_ASSERT(mods[i]->mod_bvalues[j] != NULL);
 
-		mods[i]->mod_bvalues[j]->bv_val = (char *)memdup(blob->data, blob->length);
+		mods[i]->mod_bvalues[j]->bv_val = (char *)smb_memdup(blob->data, blob->length);
 		SMB_ASSERT(mods[i]->mod_bvalues[j]->bv_val != NULL);
 		mods[i]->mod_bvalues[j]->bv_len = blob->length;
 

@@ -218,7 +218,7 @@ static void thread_set_title(struct tevent_context *ev, const char *title)
 static int thread_mutex_init(smb_mutex_t *mutex, const char *name)
 {
 	pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
-	mutex->mutex = memdup(&m, sizeof(m));
+	mutex->mutex = smb_memdup(&m, sizeof(m));
 	if (! mutex->mutex) {
 		errno = ENOMEM;
 		return -1;
@@ -294,7 +294,7 @@ static int thread_mutex_unlock(smb_mutex_t *mutex, const char *name)
 static int thread_rwlock_init(smb_rwlock_t *rwlock, const char *name)
 {
 	pthread_rwlock_t m = PTHREAD_RWLOCK_INITIALIZER;
-	rwlock->rwlock = memdup(&m, sizeof(m));
+	rwlock->rwlock = smb_memdup(&m, sizeof(m));
 	if (! rwlock->rwlock) {
 		errno = ENOMEM;
 		return -1;
