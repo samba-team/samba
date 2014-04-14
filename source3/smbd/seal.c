@@ -245,7 +245,7 @@ NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 
 	/* Return the raw blob. */
 	SAFE_FREE(*ppdata);
-	*ppdata = (unsigned char *)memdup(response.data, response.length);
+	*ppdata = (unsigned char *)smb_memdup(response.data, response.length);
 	if ((*ppdata) == NULL && response.length > 0)
 		return NT_STATUS_NO_MEMORY;
 	*p_data_size = response.length;
