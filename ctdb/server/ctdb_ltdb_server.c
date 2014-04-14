@@ -115,6 +115,11 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		 * fails. So storing the empty record makes sure that we do not
 		 * need to change the client code.
 		 */
+		if ((header->flags & CTDB_REC_FLAG_VACUUM_MIGRATED) &&
+		    (ctdb_db->ctdb->pnn == header->dmaster)) {
+			keep = true;
+			schedule_for_deletion = true;
+		}
 		if (!(header->flags & CTDB_REC_FLAG_VACUUM_MIGRATED)) {
 			keep = true;
 		} else if (ctdb_db->ctdb->pnn != header->dmaster) {
