@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "lib/afs/afs_funcs.h"
 
 #ifdef WITH_FAKE_KASERVER
 
@@ -30,7 +31,6 @@
 
 #include <afs/param.h>
 #include <afs/stds.h>
-#include <afs/afs.h>
 #include <afs/auth.h>
 #include <afs/venus.h>
 #include <asm/unistd.h>
@@ -92,7 +92,7 @@ static bool afs_createtoken(const char *username, const char *cell,
 	struct afs_key key;
 	des_key_schedule key_schedule;
 
-	if (!secrets_init()) 
+	if (!secrets_init())
 		return false;
 
 	if (!secrets_fetch_afs_key(cell, &key)) {
@@ -103,8 +103,8 @@ static bool afs_createtoken(const char *username, const char *cell,
 	ct->AuthHandle = key.kvno;
 
 	/* Build the ticket. This is going to be encrypted, so in our
-           way we fill in ct while we still have the unencrypted
-           form. */
+	   way we fill in ct while we still have the unencrypted
+	   form. */
 
 	p = clear_ticket;
 
@@ -121,7 +121,7 @@ static bool afs_createtoken(const char *username, const char *cell,
 	p += strlen(p)+1;
 
 	/* Alice's network layer address. At least Openafs-1.2.10
-           ignores this, so we fill in a dummy value here. */
+	   ignores this, so we fill in a dummy value here. */
 	SIVAL(p, 0, 0);
 	p += 4;
 
@@ -129,7 +129,7 @@ static bool afs_createtoken(const char *username, const char *cell,
 	generate_random_buffer((uint8_t *)p, 8);
 
 	/* Our client code needs the the key in the clear, it does not
-           know the server-key ... */
+	   know the server-key ... */
 	memcpy(ct->HandShakeKey, p, 8);
 
 	p += 8;
@@ -160,7 +160,7 @@ static bool afs_createtoken(const char *username, const char *cell,
 	p += 4;
 
 	/* And here comes Bob's name and instance, in this case the
-           AFS server. */
+	   AFS server. */
 	strncpy(p, "afs", sizeof(clear_ticket)-PTR_DIFF(p,clear_ticket)-1);
 	p += strlen(p)+1;
 	strncpy(p, "", sizeof(clear_ticket)-PTR_DIFF(p,clear_ticket)-1);

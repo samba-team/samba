@@ -30,6 +30,7 @@
 #include "auth.h"
 #include "lib/param/loadparm.h"
 #include "messages.h"
+#include "lib/afs/afs_funcs.h"
 
 static bool canonicalize_connect_path(connection_struct *conn)
 {

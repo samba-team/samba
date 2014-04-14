@@ -22,6 +22,7 @@
 #include "utils/net_afs.h"
 #include "secrets.h"
 #include "system/filesys.h"
+#include "lib/afs/afs_funcs.h"
 
 int net_afs_usage(struct net_context *c, int argc, const char **argv)
 {

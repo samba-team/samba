@@ -41,6 +41,7 @@
 #include "auth/kerberos/pac_utils.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/crypto/gse_krb5.h"
+#include "lib/afs/afs_funcs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

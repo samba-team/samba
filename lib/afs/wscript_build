@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+bld.SAMBA3_SUBSYSTEM('LIBAFS',
+                    source='afs_funcs.c',
+                    deps='samba-util LIBAFS_SETTOKEN')
+

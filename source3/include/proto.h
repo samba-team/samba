@@ -35,12 +35,6 @@ bool allow_access(const char **deny_list,
 
 /* The following definitions come from lib/adt_tree.c  */
 
-
-/* The following definitions come from lib/afs.c  */
-
-char *afs_createtoken_str(const char *username, const char *cell);
-bool afs_login(connection_struct *conn);
-
 /* The following definitions come from lib/afs_settoken.c  */
 
 int afs_syscall(int subcall, const char *path, int cmd, char *cmarg, int follow);
