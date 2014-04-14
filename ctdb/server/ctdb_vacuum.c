@@ -446,12 +446,8 @@ static int delete_queue_traverse(void *param, void *data)
 
 	vdata->count.delete_queue.total++;
 
-	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
+	res = tdb_chainlock_nonblock(ctdb_db->ltdb->tdb, dd->key);
 	if (res != 0) {
-		DEBUG(DEBUG_ERR,
-		      (__location__ " Error getting chainlock on record with "
-		       "key hash [0x%08x] on database db[%s].\n",
-		       hash, ctdb_db->db_name));
 		vdata->count.delete_queue.error++;
 		return 0;
 	}
