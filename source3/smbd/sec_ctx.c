@@ -331,11 +331,8 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct 
 	TALLOC_FREE(ctx_p->token);
 
 	if (ngroups) {
-		ctx_p->ut.groups = (gid_t *)smb_memdup(groups,
-						       sizeof(gid_t) * ngroups);
-		if (!ctx_p->ut.groups) {
-			smb_panic("memdup failed");
-		}
+		ctx_p->ut.groups = (gid_t *)smb_xmemdup(groups,
+						        sizeof(gid_t) * ngroups);
 	} else {
 		ctx_p->ut.groups = NULL;
 	}
