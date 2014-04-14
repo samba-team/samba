@@ -524,7 +524,7 @@ char *smb_xstrndup(const char *s, size_t n);
 /**
  Like strdup but for memory.
 **/
-_PUBLIC_ void *memdup(const void *p, size_t size);
+_PUBLIC_ void *smb_memdup(const void *p, size_t size);
 
 /**
  * see if a range of memory is all zero. A NULL pointer is considered

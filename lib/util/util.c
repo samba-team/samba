@@ -693,7 +693,7 @@ char *smb_xstrndup(const char *s, size_t n)
  Like strdup but for memory.
 **/
 
-_PUBLIC_ void *memdup(const void *p, size_t size)
+_PUBLIC_ void *smb_memdup(const void *p, size_t size)
 {
 	void *p2;
 	if (size == 0)

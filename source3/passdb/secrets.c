@@ -144,7 +144,7 @@ void *secrets_fetch(const char *key, size_t *size)
 		return NULL;
 	}
 
-	result = memdup(dbuf.dptr, dbuf.dsize);
+	result = smb_memdup(dbuf.dptr, dbuf.dsize);
 	if (result == NULL) {
 		return NULL;
 	}
