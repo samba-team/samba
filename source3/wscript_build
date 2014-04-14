@@ -468,10 +468,6 @@ bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
                     source='libads/ldap_printer.c',
                     deps='samba-util krb5samba')
 
-bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
-                    source='lib/afs_settoken.c',
-                    deps='samba-util')
-
 bld.SAMBA3_LIBRARY('smbconf',
                    source='''lib/smbconf/smbconf_init.c
                    lib/smbconf/smbconf_reg.c''',

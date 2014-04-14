@@ -27,6 +27,7 @@
 #include "lib/popt/popt.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/afs/afs_settoken.h"
 
 #ifdef DBGC_CLASS
 #undef DBGC_CLASS

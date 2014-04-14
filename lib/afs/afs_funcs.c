@@ -28,6 +28,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "lib/afs/afs_settoken.h"
 
 #include <afs/param.h>
 #include <afs/stds.h>

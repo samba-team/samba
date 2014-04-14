@@ -35,11 +35,6 @@ bool allow_access(const char **deny_list,
 
 /* The following definitions come from lib/adt_tree.c  */
 
-/* The following definitions come from lib/afs_settoken.c  */
-
-int afs_syscall(int subcall, const char *path, int cmd, char *cmarg, int follow);
-bool afs_settoken_str(const char *token_string);
-
 /* The following definitions come from lib/audit.c  */
 
 const char *audit_category_str(uint32 category);

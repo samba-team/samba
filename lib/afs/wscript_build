@@ -4,3 +4,7 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS',
                     source='afs_funcs.c',
                     deps='samba-util LIBAFS_SETTOKEN')
 
+bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
+                    source='afs_settoken.c',
+                    deps='samba-util')
+

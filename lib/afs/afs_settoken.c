@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Generate AFS tickets
  *  Copyright (C) Volker Lendecke 2004
@@ -7,17 +7,18 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "includes.h"
+#include "lib/afs/afs_settoken.h"
 
 #ifdef WITH_FAKE_KASERVER
 
@@ -27,7 +28,7 @@
 
 #include <afs/param.h>
 #include <afs/stds.h>
-#include <afs/afs.h>
+#include <afs/afs_args.h>
 #include <afs/auth.h>
 #include <afs/venus.h>
 #include <asm/unistd.h>
@@ -92,7 +93,7 @@ static bool afs_decode_token(const char *string, char **cell,
 		DEBUG(10, ("sscanf AuthHandle failed\n"));
 		return false;
 	}
-		
+
 	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
 		DEBUG(10, ("strtok_r failed\n"));
 		return false;
@@ -120,7 +121,7 @@ static bool afs_decode_token(const char *string, char **cell,
 		DEBUG(10, ("sscanf ViceId failed\n"));
 		return false;
 	}
-		
+
 	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
 		DEBUG(10, ("strtok_r failed\n"));
 		return false;
@@ -130,7 +131,7 @@ static bool afs_decode_token(const char *string, char **cell,
 		DEBUG(10, ("sscanf BeginTimestamp failed\n"));
 		return false;
 	}
-		
+
 	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
 		DEBUG(10, ("strtok_r failed\n"));
 		return false;
@@ -140,7 +141,7 @@ static bool afs_decode_token(const char *string, char **cell,
 		DEBUG(10, ("sscanf EndTimestamp failed\n"));
 		return false;
 	}
-		
+
 	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
 		DEBUG(10, ("strtok_r failed\n"));
 		return false;
@@ -166,7 +167,7 @@ static bool afs_decode_token(const char *string, char **cell,
   This is currently highly Linux and OpenAFS-specific. The correct API
   call for this would be ktc_SetToken. But to do that we would have to
   import a REALLY big bunch of libraries which I would currently like
-  to avoid. 
+  to avoid.
 */
 
 static bool afs_settoken(const char *cell,
@@ -235,8 +236,9 @@ bool afs_settoken_str(const char *token_string)
 	if (!afs_decode_token(token_string, &cell, &ticket, &ct))
 		return false;
 
-	if (geteuid() != sec_initial_uid())
-		ct.ViceId = getuid();
+	if (geteuid() != 0) {
+		ct.ViceId = geteuid();
+	}
 
 	result = afs_settoken(cell, &ct, ticket);
 
