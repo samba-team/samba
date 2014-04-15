@@ -75,8 +75,33 @@ static ssize_t default_sys_recvfile(int fromfd,
 		ssize_t read_ret;
 		size_t toread = MIN(bufsize,count - total);
 
-		/* Read from socket - ignore EINTR. */
-		read_ret = sys_read(fromfd, buffer, toread);
+		/*
+		 * Read from socket - ignore EINTR.
+		 * Can't use sys_read() as that also
+		 * ignores EAGAIN and EWOULDBLOCK.
+		 */
+		do {
+			read_ret = read(fromfd, buffer, toread);
+		} while (read_ret == -1 && errno == EINTR);
+
+#if defined(EWOULDBLOCK)
+		if (read_ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+#else
+		if (read_ret == -1 && (errno == EAGAIN)) {
+#endif
+			/*
+			 * fromfd socket is in non-blocking mode.
+			 * If we already read some and wrote
+			 * it successfully, return that.
+			 * Only return -1 if this is the first read
+			 * attempt. Caller will handle both cases.
+			 */
+			if (total_written != 0) {
+				return total_written;
+			}
+			return -1;
+		}
+
 		if (read_ret <= 0) {
 			/* EOF or socket error. */
 			return -1;
@@ -183,6 +208,23 @@ ssize_t sys_recvfile(int fromfd,
 				try_splice_call = false;
 				return default_sys_recvfile(fromfd, tofd,
 							    offset, count);
+			}
+#if defined(EWOULDBLOCK)
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+#else
+			if (errno == EAGAIN) {
+#endif
+				/*
+				 * fromfd socket is in non-blocking mode.
+				 * If we already read some and wrote
+				 * it successfully, return that.
+				 * Only return -1 if this is the first read
+				 * attempt. Caller will handle both cases.
+				 */
+				if (total_written != 0) {
+					return total_written;
+				}
+				return -1;
 			}
 			break;
 		}
