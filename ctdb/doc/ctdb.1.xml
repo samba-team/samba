@@ -1576,6 +1576,10 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
 	the cluster.  This command should only be used when none of the
 	specified database(s) are in use.
       </para>
+      <para>
+	All nodes should be active and tunable AllowClientDBAccess should
+	be disabled on all nodes before detaching databases.
+      </para>
     </refsect2>
 
     <refsect2>

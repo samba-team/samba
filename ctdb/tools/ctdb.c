@@ -5194,12 +5194,76 @@ static int control_detach(struct ctdb_context *ctdb, int argc,
 	uint32_t db_id;
 	uint8_t flags;
 	int ret, i, status = 0;
+	struct ctdb_node_map *nodemap = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	uint32_t recmode;
 
 	if (argc < 1) {
 		usage();
 	}
 
 	assert_single_node_only();
+
+	ret = ctdb_ctrl_getrecmode(ctdb, tmp_ctx, TIMELIMIT(), options.pnn,
+				    &recmode);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Database cannot be detached "
+				  "when recovery is active\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx,
+				   &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n",
+				  options.pnn));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	for (i=0; i<nodemap->num; i++) {
+		uint32_t value;
+
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			DEBUG(DEBUG_ERR, ("Database cannot be detached on "
+					  "inactive (stopped or banned) node "
+					  "%u\n", nodemap->nodes[i].pnn));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
+		ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(),
+					    nodemap->nodes[i].pnn,
+					    "AllowClientDBAttach",
+					    &value);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get tunable "
+					  "AllowClientDBAttach from node %u\n",
+					   nodemap->nodes[i].pnn));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
+		if (value == 1) {
+			DEBUG(DEBUG_ERR, ("Database access is still active on "
+					  "node %u. Set AllowClientDBAttach=0 "
+					  "on all nodes.\n",
+					  nodemap->nodes[i].pnn));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+	}
+
+	talloc_free(tmp_ctx);
 
 	for (i=0; i<argc; i++) {
 		if (!db_exists(ctdb, argv[i], &db_id, NULL, &flags)) {
