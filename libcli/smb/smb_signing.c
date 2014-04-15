@@ -407,6 +407,11 @@ bool smb_signing_is_allowed(struct smb_signing_state *si)
 	return si->allowed;
 }
 
+bool smb_signing_is_desired(struct smb_signing_state *si)
+{
+	return si->desired;
+}
+
 bool smb_signing_is_mandatory(struct smb_signing_state *si)
 {
 	return si->mandatory;

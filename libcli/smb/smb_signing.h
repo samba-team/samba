@@ -47,6 +47,7 @@ bool smb_signing_activate(struct smb_signing_state *si,
 			  const DATA_BLOB response);
 bool smb_signing_is_active(struct smb_signing_state *si);
 bool smb_signing_is_allowed(struct smb_signing_state *si);
+bool smb_signing_is_desired(struct smb_signing_state *si);
 bool smb_signing_is_mandatory(struct smb_signing_state *si);
 bool smb_signing_set_negotiated(struct smb_signing_state *si,
 				bool allowed, bool mandatory);
