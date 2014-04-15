@@ -250,7 +250,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	struct timespec ts;
 	ssize_t ret;
 	struct smbd_server_connection *sconn = req->sconn;
-	bool signing_enabled = false;
+	bool signing_desired = false;
 	bool signing_required = false;
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
@@ -313,10 +313,10 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	signing_enabled = smb_signing_is_allowed(req->sconn->smb1.signing_state);
+	signing_desired = smb_signing_is_desired(req->sconn->smb1.signing_state);
 	signing_required = smb_signing_is_mandatory(req->sconn->smb1.signing_state);
 
-	if (signing_enabled) {
+	if (signing_desired) {
 		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
 		/* No raw mode with smb signing. */
 		capabilities &= ~CAP_RAW_MODE;

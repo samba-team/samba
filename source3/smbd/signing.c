@@ -169,7 +169,7 @@ static void smbd_shm_signing_free(TALLOC_CTX *mem_ctx, void *ptr)
 
 bool srv_init_signing(struct smbd_server_connection *conn)
 {
-	bool allowed;
+	bool allowed = true;
 	bool desired;
 	bool mandatory = false;
 
@@ -186,9 +186,12 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	 * This matches Windows behavior and is needed
 	 * because not every client that requires signing
 	 * sends FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED.
+	 *
+	 * Note that we'll always allow signing if the client
+	 * does send FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED.
 	 */
 
-	allowed = desired = lpcfg_server_signing_allowed(lp_ctx, &mandatory);
+	desired = lpcfg_server_signing_allowed(lp_ctx, &mandatory);
 	talloc_unlink(conn, lp_ctx);
 
 	if (lp_async_smb_echo_handler()) {
