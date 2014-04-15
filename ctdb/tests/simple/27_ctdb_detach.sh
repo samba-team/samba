@@ -35,12 +35,33 @@ ctdb_restart_when_done
 
 ######################################################################
 
+try_command_on_node 0 "$CTDB listnodes -Y"
+listnodes_output="$out"
+numnodes=$(wc -l <<<"$listnodes_output")
+
+######################################################################
+
+# Confirm that the database is attached
+check_db ()
+{
+    db="$1"
+    try_command_on_node all $CTDB getdbmap
+    local num_db=$(grep -cF "$db" <<<"$out") || true
+    if [ $num_db -eq $numnodes ]; then
+	echo "GOOD: database $db is attached on all nodes"
+    else
+	echo "BAD: database $db is not attached on all nodes"
+	echo "$out"
+	exit 1
+    fi
+}
+
 # Confirm that no nodes have databases attached
 check_no_db ()
 {
     db="$1"
     try_command_on_node all $CTDB getdbmap
-    local num_db=$(grep -c "$db" <<<"$out") || true
+    local num_db=$(grep -cF "$db" <<<"$out") || true
     if [ $num_db -eq 0 ]; then
 	echo "GOOD: database $db is not attached any more"
     else
@@ -58,28 +79,48 @@ testdb3="detach_test3.tdb"
 testdb4="detach_test4.tdb"
 
 echo "Create test databases"
-echo "    $testdb1"
-try_command_on_node 0 $CTDB attach $testdb1
-echo "    $testdb2"
-try_command_on_node 0 $CTDB attach $testdb2
-echo "    $testdb3"
-try_command_on_node 0 $CTDB attach $testdb3
-echo "    $testdb4"
-try_command_on_node 0 $CTDB attach $testdb4
+for db in "$testdb1" "$testdb2" "$testdb3" "$testdb4" ; do
+    echo "  $db"
+    try_command_on_node 0 $CTDB attach "$db"
+done
+
+for db in "$testdb1" "$testdb2" "$testdb3" "$testdb4" ; do
+    check_db "$db"
+done
 
 ######################################################################
 
-echo "Detach single test database $testdb1"
-try_command_on_node 1 $CTDB detach $testdb1
+echo
+echo "Ensuring AllowClientDBAttach=1 on all nodes"
+try_command_on_node all $CTDB setvar AllowClientDBAttach 1
 
-check_no_db $testdb1
+echo "Check failure detaching single test database $testdb1"
+try_command_on_node 1 "! $CTDB detach $testdb1"
+check_db "$testdb1"
+
+echo
+echo "Setting AllowClientDBAttach=0 on node 0"
+try_command_on_node 0 $CTDB setvar AllowClientDBAttach 0
+
+echo "Check failure detaching single test database $testdb1"
+try_command_on_node 1 "! $CTDB detach $testdb1"
+check_db "$testdb1"
+
+echo
+echo "Setting AllowClientDBAttach=0 on all nodes"
+try_command_on_node all $CTDB setvar AllowClientDBAttach 0
+
+echo "Check detaching single test database $testdb1"
+try_command_on_node 1 "$CTDB detach $testdb1"
+check_no_db "$testdb1"
 
 ######################################################################
 
+echo
 echo "Detach multiple test databases"
 echo "    $testdb2, $testdb3, $testdb4"
 try_command_on_node 0 $CTDB detach $testdb2 $testdb3 $testdb4
 
-check_no_db $testdb2
-check_no_db $testdb3
-check_no_db $testdb4
+for db in "$testdb2" "$testdb3" "$testdb4" ; do
+    check_no_db "$db"
+done
