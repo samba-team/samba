@@ -1182,9 +1182,10 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 
-	if (ctdb->tunable.allow_client_db_attach == 0) {
-		DEBUG(DEBUG_ERR, ("DB detach from database %s denied by "
-				  "tunable AllowClientDBAccess == 0\n",
+	if (ctdb->tunable.allow_client_db_attach == 1) {
+		DEBUG(DEBUG_ERR, ("DB detach from database %s denied. "
+				  "Clients are allowed access to databases "
+				  "(AllowClientDBAccess == 1)\n",
 				  ctdb_db->db_name));
 		return -1;
 	}
