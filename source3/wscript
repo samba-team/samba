@@ -49,6 +49,9 @@ def set_options(opt):
 
     opt.SAMBA3_ADD_OPTION('regedit', default=None)
 
+    opt.SAMBA3_ADD_OPTION('fake-kaserver',
+                          help=("Include AFS fake-kaserver support"), default=False)
+
     opt.add_option('--with-ctdb-dir',
                    help=("Directory under which ctdb is installed"),
                    action="store", dest='ctdb_dir', default=None)
@@ -1797,6 +1800,16 @@ main() {
             conf.fatal("ncurses not available, but --with-regedit was specified")
         else:
             Logs.info("ncurses not available, not building regedit")
+
+    conf.CHECK_FUNCS_IN('DES_pcbc_encrypt', 'crypto')
+    if Options.options.with_fake_kaserver == True:
+        conf.CHECK_HEADERS('afs/param.h afs/stds.h', together=True)
+        conf.CHECK_HEADERS('afs/param.h afs/stds.h', together=True)
+        if (conf.CONFIG_SET('HAVE_AFS_PARAM_H') and conf.CONFIG_SET('HAVE_AFS_STDS_H') and conf.CONFIG_SET('HAVE_DES_PCBC_ENCRYPT')):
+            conf.DEFINE('WITH_FAKE_KASERVER', '1')
+        else:
+            conf.fatal('AFS headers not available, but --with-fake-kaserver was specified')
+
 
 
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
