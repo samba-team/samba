@@ -371,10 +371,14 @@ int ldb_transaction_start(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
-	}
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s", 
-			  ldb_errstring(module->ldb));				
+		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s",
+				  ldb_errstring(module->ldb));
+		}
+	} else {
+		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction success");
+		}
 	}
 	return status;
 }
