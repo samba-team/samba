@@ -25,6 +25,13 @@ bld.SAMBA_MODULE('gensec_schannel',
 	deps='COMMON_SCHANNEL NDR_SCHANNEL samba-credentials auth_session'
 	)
 
+bld.SAMBA_MODULE('gensec_ncalrpc',
+	source='ncalrpc.c',
+	subsystem='gensec',
+	init_function='gensec_ncalrpc_as_system_init',
+	deps='samba-util auth_session'
+	)
+
 bld.SAMBA_MODULE('gensec_external',
 	source='external.c',
 	autoproto='external_proto.h',
