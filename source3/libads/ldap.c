@@ -228,33 +228,27 @@ bool ads_closest_dc(ADS_STRUCT *ads)
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
  */
-static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
+static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
+			    struct sockaddr_storage *ss)
 {
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = false;
-	struct sockaddr_storage ss;
 	char addr[INET6_ADDRSTRLEN];
 
-	if (!server || !*server) {
+	if (ss == NULL) {
 		TALLOC_FREE(frame);
 		return False;
 	}
 
-	if (!resolve_name(server, &ss, 0x20, true)) {
-		DEBUG(5,("ads_try_connect: unable to resolve name %s\n",
-			 server ));
-		TALLOC_FREE(frame);
-		return false;
-	}
-	print_sockaddr(addr, sizeof(addr), &ss);
+	print_sockaddr(addr, sizeof(addr), ss);
 
 	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n", 
 		addr, ads->server.realm));
 
 	ZERO_STRUCT( cldap_reply );
 
-	if ( !ads_cldap_netlogon_5(frame, &ss, ads->server.realm, &cldap_reply ) ) {
+	if ( !ads_cldap_netlogon_5(frame, ss, ads->server.realm, &cldap_reply ) ) {
 		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", addr));
 		ret = false;
 		goto out;
@@ -298,7 +292,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.domain_name);
 
 	ads->ldap.port = gc ? LDAP_GC_PORT : LDAP_PORT;
-	ads->ldap.ss = ss;
+	ads->ldap.ss = *ss;
 
 	/* Store our site name. */
 	sitename_store( cldap_reply.domain_name, cldap_reply.client_site);
@@ -330,6 +324,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	bool use_own_domain = False;
 	char *sitename;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	bool ok = false;
 
 	/* if the realm and workgroup are both empty, assume they are ours */
 
@@ -384,12 +379,14 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		DEBUG(6,("ads_find_dc: (ldap) looking for %s '%s'\n",
 			(got_realm ? "realm" : "domain"), realm));
 
-		if (get_dc_name(domain, realm, srv_name, &ip_out)) {
+		ok = get_dc_name(domain, realm, srv_name, &ip_out);
+		if (ok) {
 			/*
 			 * we call ads_try_connect() to fill in the
 			 * ads->config details
 			 */
-			if (ads_try_connect(ads, srv_name, false)) {
+			ok = ads_try_connect(ads, false, &ip_out);
+			if (ok) {
 				return NT_STATUS_OK;
 			}
 		}
@@ -445,7 +442,8 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 			}
 		}
 
-		if ( ads_try_connect(ads, server, false) ) {
+		ok = ads_try_connect(ads, false, &ip_list[i].ss);
+		if (ok) {
 			SAFE_FREE(ip_list);
 			TALLOC_FREE(sitename);
 			return NT_STATUS_OK;
@@ -630,9 +628,19 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		TALLOC_FREE(s);
 	}
 
-	if (ads->server.ldap_server)
-	{
-		if (ads_try_connect(ads, ads->server.ldap_server, ads->server.gc)) {
+	if (ads->server.ldap_server) {
+		bool ok = false;
+		struct sockaddr_storage ss;
+
+		ok = resolve_name(ads->server.ldap_server, &ss, 0x20, true);
+		if (!ok) {
+			DEBUG(5,("ads_connect: unable to resolve name %s\n",
+				 ads->server.ldap_server));
+			status = ADS_ERROR_NT(NT_STATUS_NOT_FOUND);
+			goto out;
+		}
+		ok = ads_try_connect(ads, ads->server.gc, &ss);
+		if (ok) {
 			goto got_connection;
 		}
 
