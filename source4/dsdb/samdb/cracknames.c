@@ -663,7 +663,6 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		char *unparsed_name;
 
 		ret = smb_krb5_init_context(mem_ctx, 
-					    NULL,
 					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
 					    &smb_krb5_context);
 
@@ -704,7 +703,6 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		char *service;
 
 		ret = smb_krb5_init_context(mem_ctx, 
-					    NULL,
 					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
 					    &smb_krb5_context);
 

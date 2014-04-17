@@ -45,7 +45,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = smb_krb5_init_context(ctx, ctx->event_ctx, ctx->lp_ctx, &smb_krb5_context);
+	ret = smb_krb5_init_context(ctx, ctx->lp_ctx, &smb_krb5_context);
 	if (ret) {
 		return NT_STATUS_NO_MEMORY; 
 	}

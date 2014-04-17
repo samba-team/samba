@@ -3741,7 +3741,6 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 		struct lsa_DomainInfoKerberos *k = &info->kerberos_info;
 		struct smb_krb5_context *smb_krb5_context;
 		int ret = smb_krb5_init_context(mem_ctx,
-							dce_call->event_ctx,
 							dce_call->conn->dce_ctx->lp_ctx,
 							&smb_krb5_context);
 		if (ret != 0) {
