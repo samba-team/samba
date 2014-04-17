@@ -377,7 +377,9 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 	struct update_kt_private *data = talloc_get_type(ldb_module_get_private(module), struct update_kt_private);
 	struct dn_list *p;
 	struct smb_krb5_context *smb_krb5_context;
-	int krb5_ret = smb_krb5_init_context(data, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"),
+	int krb5_ret = smb_krb5_init_context(data,
+					     NULL,
+					     ldb_get_opaque(ldb, "loadparm"),
 					     &smb_krb5_context);
 	TALLOC_CTX *tmp_ctx = NULL;
 

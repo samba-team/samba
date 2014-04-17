@@ -2231,7 +2231,7 @@ static int setup_io(struct ph_context *ac,
 	/* Some operations below require kerberos contexts */
 
 	if (smb_krb5_init_context(ac,
-				  ldb_get_event_context(ldb),
+				  NULL,
 				  (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm"),
 				  &io->smb_krb5_context) != 0) {
 		return ldb_operr(ldb);
