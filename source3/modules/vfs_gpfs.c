@@ -327,7 +327,7 @@ again:
 	*len = size;
 
 	errno = 0;
-	ret = smbd_gpfs_getacl((char *)fname, flags, aclbuf);
+	ret = smbd_gpfs_getacl(discard_const_p(char, fname), flags, aclbuf);
 	if ((ret != 0) && (errno == ENOSPC)) {
 		/*
 		 * get the size needed to accommodate the complete buffer
@@ -1127,7 +1127,8 @@ static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	result = smbd_gpfs_putacl((char *)name, GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA, gpfs_acl);
+	result = smbd_gpfs_putacl(discard_const_p(char, name),
+				  GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA, gpfs_acl);
 
 	SAFE_FREE(gpfs_acl);
 	return result;
@@ -1217,7 +1218,6 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	files_struct    fake_fsp; /* TODO: rationalize parametrization */
 	SMB4ACE_T       *smbace;
 	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status;
 
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));
 
@@ -1358,7 +1358,6 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 	struct xattr_DOSATTRIB dosattrib;
         enum ndr_err_code ndr_err;
         DATA_BLOB blob;
-        const char *attrstr = value;
         unsigned int dosmode=0;
         struct gpfs_winattr attrs;
         int ret = 0;
@@ -1381,7 +1380,7 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 		return SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags);
         }
 
-	blob.data = (uint8_t *)attrstr;
+	blob.data = discard_const_p(uint8_t, value);
 	blob.length = size;
 
 	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &dosattrib,
