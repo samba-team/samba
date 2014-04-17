@@ -919,6 +919,26 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	apply_lp_set_cmdline();
 }
 
+/* Convenience routine to setup an lp_context with additional s3 variables */
+static struct loadparm_context *setup_lp_context(TALLOC_CTX *mem_ctx)
+{
+	struct loadparm_context *lp_ctx;
+
+	lp_ctx = loadparm_init_s3(mem_ctx,
+				  loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return NULL;
+	}
+
+	lp_ctx->sDefault = &sDefault;
+	lp_ctx->services = NULL; /* We do not want to access this directly */
+	lp_ctx->bInGlobalSection = bInGlobalSection;
+	lp_ctx->flags = flags_list;
+
+	return lp_ctx;
+}
+
 /*******************************************************************
  Convenience routine to grab string parameters into talloced memory
  and run standard_sub_basic on them. The buffers can be written to by
@@ -2412,18 +2432,11 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	struct loadparm_context *lp_ctx;
 	bool ok;
 
-	lp_ctx = loadparm_init_s3(frame,
-				  loadparm_s3_helpers());
+	lp_ctx = setup_lp_context(frame);
 	if (lp_ctx == NULL) {
-		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		TALLOC_FREE(frame);
 		return false;
 	}
-
-	lp_ctx->sDefault = &sDefault;
-	lp_ctx->services = NULL; /* We do not want to access this directly */
-	lp_ctx->bInGlobalSection = bInGlobalSection;
-	lp_ctx->flags = flags_list;
 
 	if (snum < 0) {
 		ok = lpcfg_do_global_parameter(lp_ctx, pszParmName, pszParmValue);
@@ -2486,9 +2499,9 @@ bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx;
 
-	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	lp_ctx = setup_lp_context(frame);
 	if (lp_ctx == NULL) {
-		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		TALLOC_FREE(frame);
 		return false;
 	}
 
@@ -2618,10 +2631,9 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 {
 	bool result = false;
-
 	struct loadparm_context *lp_ctx;
 
-	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	lp_ctx = setup_lp_context(talloc_tos());
 	if (lp_ctx == NULL) {
 		return false;
 	}
@@ -3652,11 +3664,7 @@ static bool lp_load_ex(const char *pszFname,
 	bGlobalOnly = global_only;
 	bAllowIncludeRegistry = allow_include_registry;
 
-	lp_ctx = loadparm_init_s3(talloc_tos(),
-				  loadparm_s3_helpers());
-
-	lp_ctx->sDefault = &sDefault;
-	lp_ctx->bInGlobalSection = bInGlobalSection;
+	lp_ctx = setup_lp_context(talloc_tos());
 
 	init_globals(lp_ctx, initialize_globals);
 
@@ -3914,15 +3922,10 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 	if (show_defaults)
 		defaults_saved = false;
 
-	lp_ctx = loadparm_init_s3(talloc_tos(),
-				  loadparm_s3_helpers());
+	lp_ctx = setup_lp_context(talloc_tos());
 	if (lp_ctx == NULL) {
-		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return;
 	}
-
-	lp_ctx->sDefault = &sDefault;
-	lp_ctx->services = ServicePtrs;
 
 	lpcfg_dump_globals(lp_ctx, f, !defaults_saved);
 
