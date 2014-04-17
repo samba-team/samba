@@ -37,7 +37,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "cldap_server/cldap_server.h"
 
-struct private_data {
+struct rootdse_private_data {
 	unsigned int num_controls;
 	char **controls;
 	unsigned int num_partitions;
@@ -227,7 +227,7 @@ static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *d
 static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *msg)
 {
 	struct ldb_context *ldb;
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(ac->module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(ac->module), struct rootdse_private_data);
 	const char * const *attrs = ac->req->op.search.attrs;
 	char **server_sasl;
 	const struct dsdb_schema *schema;
@@ -654,7 +654,7 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request *req)
 {
 	unsigned int i, j;
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	bool is_untrusted;
 
 	if (!req->controls) {
@@ -717,7 +717,7 @@ static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request
 static int rootdse_filter_operations(struct ldb_module *module, struct ldb_request *req)
 {
 	struct auth_session_info *session_info;
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	bool is_untrusted = ldb_req_is_untrusted(req);
 	bool is_anonymous = true;
 	if (is_untrusted == false) {
@@ -855,7 +855,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 static int rootdse_register_control(struct ldb_module *module, struct ldb_request *req)
 {
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	char **list;
 
 	list = talloc_realloc(priv, priv->controls, char *, priv->num_controls + 1);
@@ -876,7 +876,7 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 
 static int rootdse_register_partition(struct ldb_module *module, struct ldb_request *req)
 {
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	struct ldb_dn **list;
 
 	list = talloc_realloc(priv, priv->partitions, struct ldb_dn *, priv->num_partitions + 1);
@@ -916,14 +916,14 @@ static int rootdse_init(struct ldb_module *module)
 	int ret;
 	struct ldb_context *ldb;
 	struct ldb_result *res;
-	struct private_data *data;
+	struct rootdse_private_data *data;
 	const char *attrs[] = { "msDS-Behavior-Version", NULL };
 	const char *ds_attrs[] = { "dsServiceName", NULL };
 	TALLOC_CTX *mem_ctx;
 
 	ldb = ldb_module_get_ctx(module);
 
-	data = talloc_zero(module, struct private_data);
+	data = talloc_zero(module, struct rootdse_private_data);
 	if (data == NULL) {
 		return ldb_oom(ldb);
 	}
