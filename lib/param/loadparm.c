@@ -1751,14 +1751,8 @@ bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	/* reset the CMDLINE flag in case this has been called before */
 	lp_ctx->flags[parmnum] &= ~FLAG_CMDLINE;
 
-	if (lp_ctx->s3_fns != NULL) {
-		if (!lp_ctx->s3_fns->lp_do_parameter(-1, pszParmName, pszParmValue)) {
-			return false;
-		}
-	} else {
-		if (!lpcfg_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
-			return false;
-		}
+	if (!lpcfg_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
+		return false;
 	}
 
 	lp_ctx->flags[parmnum] |= FLAG_CMDLINE;
