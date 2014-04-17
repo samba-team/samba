@@ -43,7 +43,6 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			     struct messaging_context *msg_ctx,
 			     const char *pipe_name,
 			     enum dcerpc_transport_t transport,
-			     bool ncalrpc_as_system,
 			     const struct tsocket_address *local_address,
 			     const struct tsocket_address *remote_address,
 			     struct auth_session_info *session_info,
@@ -55,7 +54,6 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
 				     transport, RPC_LITTLE_ENDIAN,
-				     ncalrpc_as_system,
 				     remote_address, local_address, &p);
 	if (ret) {
 		*perrno = ret;
@@ -380,8 +378,10 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	ret = make_server_pipes_struct(npc,
 				       npc->msg_ctx,
 				       npc->pipe_name, NCACN_NP,
-					false, npc->server, npc->client, npc->session_info,
-					&npc->p, &error);
+				       npc->server,
+				       npc->client,
+				       npc->session_info,
+				       &npc->p, &error);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to create pipes_struct! (%s)\n",
 			  strerror(error)));
@@ -941,7 +941,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 dcerpc_ncacn_disconnect_fn fn) {
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	struct tevent_req *subreq;
-	bool system_user = false;
 	char *pipe_name;
 	NTSTATUS status;
 	int sys_errno;
@@ -1034,8 +1033,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 						close(s);
 						return;
 					}
-
-					system_user = true;
 				}
 			}
 			/* FALL TROUGH */
@@ -1095,7 +1092,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				      ncacn_conn->msg_ctx,
 				      pipe_name,
 				      ncacn_conn->transport,
-				      system_user,
 				      ncacn_conn->server,
 				      ncacn_conn->client,
 				      ncacn_conn->session_info,
