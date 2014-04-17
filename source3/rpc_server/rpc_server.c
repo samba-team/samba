@@ -1013,6 +1013,28 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					  "uid - %s!\n", strerror(errno)));
 			} else {
 				if (uid == sec_initial_uid()) {
+					TALLOC_FREE(ncacn_conn->client);
+
+					rc = tsocket_address_unix_from_path(ncacn_conn,
+									    "/root/ncalrpc_as_system",
+									    &ncacn_conn->client);
+					if (rc < 0) {
+						DEBUG(0, ("Out of memory!\n"));
+						talloc_free(ncacn_conn);
+						close(s);
+						return;
+					}
+
+					TALLOC_FREE(ncacn_conn->client_name);
+					ncacn_conn->client_name = tsocket_address_unix_path(ncacn_conn->client,
+											    ncacn_conn);
+					if (ncacn_conn->client == NULL) {
+						DEBUG(0, ("Out of memory!\n"));
+						talloc_free(ncacn_conn);
+						close(s);
+						return;
+					}
+
 					system_user = true;
 				}
 			}
