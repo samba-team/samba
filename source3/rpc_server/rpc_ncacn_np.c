@@ -145,7 +145,6 @@ NTSTATUS make_internal_rpc_pipe_socketpair(TALLOC_CTX *mem_ctx,
 				      npc->msg_ctx,
 				      npc->pipe_name,
 				      NCACN_NP,
-				      false,
 				      npc->server,
 				      npc->client,
 				      npc->session_info,
@@ -204,7 +203,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("Create pipe requested %s\n", pipe_name));
 
 	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
-				     NCALRPC, RPC_LITTLE_ENDIAN, false,
+				     NCALRPC, RPC_LITTLE_ENDIAN,
 				     remote_address, NULL, &p);
 	if (ret) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));

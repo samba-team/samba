@@ -120,8 +120,6 @@ struct pipes_struct {
 
 	struct pipe_auth_data auth;
 
-	bool ncalrpc_as_system;
-
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */
@@ -176,7 +174,7 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 			   struct messaging_context *msg_ctx,
 			   const char *pipe_name,
 			   enum dcerpc_transport_t transport,
-			   bool endian, bool ncalrpc_as_system,
+			   bool endian,
 			   const struct tsocket_address *remote_address,
 			   const struct tsocket_address *local_address,
 			   struct pipes_struct **_p);

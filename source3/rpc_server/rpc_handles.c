@@ -48,7 +48,7 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 			   struct messaging_context *msg_ctx,
 			   const char *pipe_name,
 			   enum dcerpc_transport_t transport,
-			   bool endian, bool ncalrpc_as_system,
+			   bool endian,
 			   const struct tsocket_address *remote_address,
 			   const struct tsocket_address *local_address,
 			   struct pipes_struct **_p)
@@ -69,7 +69,6 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 	p->msg_ctx = msg_ctx;
 	p->transport = transport;
 	p->endian = endian;
-	p->ncalrpc_as_system = ncalrpc_as_system;
 
 	p->remote_address = tsocket_address_copy(remote_address, p);
 	if (p->remote_address == NULL) {
