@@ -734,27 +734,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		case DCERPC_AUTH_TYPE_NONE:
 			break;
 
-		case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
-			if (p->transport == NCALRPC && p->ncalrpc_as_system) {
-				TALLOC_FREE(p->session_info);
-
-				status = make_session_info_system(p,
-								  &p->session_info);
-				if (!NT_STATUS_IS_OK(status)) {
-					goto err_exit;
-				}
-
-				auth_resp = data_blob_talloc(pkt,
-							     "NCALRPC_AUTH_OK",
-							     15);
-
-				p->auth.auth_type = DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM;
-				p->pipe_bound = true;
-			} else {
-				goto err_exit;
-			}
-			break;
-
 		default:
 			if (!pipe_auth_generic_bind(p, pkt,
 						    &auth_info, &auth_resp)) {
