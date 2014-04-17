@@ -262,7 +262,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		}
 
 		backends = talloc_zero_array(gensec_settings,
-					     const struct gensec_security_ops *, 5);
+					     const struct gensec_security_ops *, 6);
 		if (backends == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -281,6 +281,8 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_SPNEGO);
 
 		backends[idx++] = gensec_security_by_auth_type(NULL, DCERPC_AUTH_TYPE_SCHANNEL);
+
+		backends[idx++] = gensec_security_by_auth_type(NULL, DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM);
 
 		/*
 		 * This is anonymous for now, because we just use it
