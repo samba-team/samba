@@ -190,8 +190,17 @@ static int merge_with_left_record(struct tdb_context *tdb,
 	return 0;
 }
 
-/* Add an element into the freelist. Merge adjacent records if
-   necessary. */
+/**
+ * Add an element into the freelist.
+ *
+ * We merge the new record into the left record if it is also a
+ * free record, but not with the right one. This makes the
+ * operation O(1) instead of O(n): merging with the right record
+ * requires a traverse of the freelist to find the previous
+ * record in the free list.
+ *
+ * This prevents db traverses from being O(n^2) after a lot of deletes.
+ */
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 {
 	tdb_off_t left;
@@ -243,11 +252,6 @@ left:
 	}
 
 	/* It's free - expand to include it. */
-
-	/* we now merge the new record into the left record, rather than the other
-	   way around. This makes the operation O(1) instead of O(n). This change
-	   prevents traverse from being O(n^2) after a lot of deletes */
-
 	if (merge_with_left_record(tdb, left, &l, rec) != 0) {
 		goto fail;
 	}
