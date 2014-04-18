@@ -343,7 +343,8 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                    lib/audit.c
                    lib/tevent_wait.c
                    lib/idmap_cache.c
-                   lib/util_ea.c''',
+                   lib/util_ea.c
+                   lib/background.c''',
                    deps='''
                         samba3util
                         LIBTSOCKET
@@ -554,7 +555,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    smbd/error.c
                    printing/printspoolss.c
                    printing/spoolssd.c
-                   lib/background.c
                    lib/sessionid_tdb.c
                    lib/conn_tdb.c
                    smbd/fake_file.c
