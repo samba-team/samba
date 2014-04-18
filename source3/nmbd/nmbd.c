@@ -1009,6 +1009,10 @@ static bool open_sockets(bool isdaemon, int port)
 	if (!nmbd_setup_sig_hup_handler(msg))
 		exit_daemon("NMBD failed to setup SIGHUP handler", EINVAL);
 
+	if (!messaging_parent_dgm_cleanup_init(msg)) {
+		exit(1);
+	}
+
 	/* get broadcast messages */
 
 	if (!serverid_register(messaging_server_id(msg),
