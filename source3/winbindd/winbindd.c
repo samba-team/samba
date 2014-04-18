@@ -1566,6 +1566,10 @@ int main(int argc, const char **argv)
 
 	winbindd_register_handlers(winbind_messaging_context(), !Fork);
 
+	if (!messaging_parent_dgm_cleanup_init(winbind_messaging_context())) {
+		exit(1);
+	}
+
 	status = init_system_session_info();
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Winbindd failed to setup system user info", map_errno_from_nt_status(status));
