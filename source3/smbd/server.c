@@ -1448,6 +1448,10 @@ extern void build_options(bool screen);
 		exit_daemon("Samba cannot init notification", EACCES);
 	}
 
+	if (!messaging_parent_dgm_cleanup_init(msg_ctx)) {
+		exit(1);
+	}
+
 	if (!smbd_scavenger_init(NULL, msg_ctx, ev_ctx)) {
 		exit_daemon("Samba cannot init scavenging", EACCES);
 	}
