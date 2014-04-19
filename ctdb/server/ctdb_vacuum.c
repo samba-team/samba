@@ -1483,9 +1483,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	DEBUG(DEBUG_INFO, ("Repacking %s with %u freelist entries\n",
 			   name, freelist_size));
 
-	/*
-	 * repack and implicitely get rid of the records we can delete
-	 */
 	if (ctdb_repack_tdb(ctdb_db->ltdb->tdb, mem_ctx, vdata) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to repack '%s'\n", name));
 		talloc_free(vdata);
