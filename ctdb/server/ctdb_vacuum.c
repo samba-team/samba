@@ -1170,11 +1170,29 @@ done:
 /**
  * initialize the vacuum_data
  */
-static int ctdb_vacuum_init_vacuum_data(struct ctdb_db_context *ctdb_db,
-					struct vacuum_data *vdata)
+static struct vacuum_data *ctdb_vacuum_init_vacuum_data(
+					struct ctdb_db_context *ctdb_db,
+					TALLOC_CTX *mem_ctx)
 {
 	int i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	struct vacuum_data *vdata;
+
+	vdata = talloc_zero(mem_ctx, struct vacuum_data);
+	if (vdata == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return NULL;
+	}
+
+	vdata->ctdb = ctdb_db->ctdb;
+	vdata->ctdb_db = ctdb_db;
+	vdata->delete_list = trbt_create(vdata, 0);
+	if (vdata->delete_list == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		goto fail;
+	}
+
+	vdata->start = timeval_current();
 
 	vdata->count.delete_queue.added_to_delete_list = 0;
 	vdata->count.delete_queue.added_to_vacuum_fetch_list = 0;
@@ -1199,7 +1217,7 @@ static int ctdb_vacuum_init_vacuum_data(struct ctdb_db_context *ctdb_db,
 						ctdb->num_nodes);
 	if (vdata->vacuum_fetch_list == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		return -1;
+		goto fail;
 	}
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		vdata->vacuum_fetch_list[i] = (struct ctdb_marshall_buffer *)
@@ -1207,12 +1225,17 @@ static int ctdb_vacuum_init_vacuum_data(struct ctdb_db_context *ctdb_db,
 					 offsetof(struct ctdb_marshall_buffer, data));
 		if (vdata->vacuum_fetch_list[i] == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-			return -1;
+			talloc_free(vdata);
+			return NULL;
 		}
 		vdata->vacuum_fetch_list[i]->db_id = ctdb_db->db_id;
 	}
 
-	return 0;
+	return vdata;
+
+fail:
+	talloc_free(vdata);
+	return NULL;
 }
 
 /**
@@ -1248,11 +1271,12 @@ static int ctdb_vacuum_init_vacuum_data(struct ctdb_db_context *ctdb_db,
  * This executes in the child context.
  */
 static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
-			  struct vacuum_data *vdata,
 			  bool full_vacuum_run)
 {
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	int ret, pnn;
+	struct vacuum_data *vdata;
+	TALLOC_CTX *tmp_ctx;
 
 	DEBUG(DEBUG_INFO, (__location__ " Entering %s vacuum run for db "
 			   "%s db_id[0x%08x]\n",
@@ -1273,9 +1297,16 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 	ctdb->pnn = pnn;
 
-	ret = ctdb_vacuum_init_vacuum_data(ctdb_db, vdata);
-	if (ret != 0) {
-		return ret;
+	tmp_ctx = talloc_new(ctdb_db);
+	if (tmp_ctx == NULL) {
+		DEBUG(DEBUG_ERR, ("Out of memory!\n"));
+		return -1;
+	}
+
+	vdata = ctdb_vacuum_init_vacuum_data(ctdb_db, tmp_ctx);
+	if (vdata == NULL) {
+		talloc_free(tmp_ctx);
+		return -1;
 	}
 
 	if (full_vacuum_run) {
@@ -1287,6 +1318,8 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
 
 	ctdb_process_delete_list(ctdb_db, vdata);
+
+	talloc_free(tmp_ctx);
 
 	/* this ensures we run our event queue */
 	ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
@@ -1305,27 +1338,9 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
 	const char *name = ctdb_db->db_name;
 	int freelist_size = 0;
-	struct vacuum_data *vdata;
 	int ret;
 
-	vdata = talloc_zero(mem_ctx, struct vacuum_data);
-	if (vdata == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		return -1;
-	}
-
-	vdata->ctdb = ctdb_db->ctdb;
-	vdata->delete_list = trbt_create(vdata, 0);
-	vdata->ctdb_db = ctdb_db;
-	if (vdata->delete_list == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		talloc_free(vdata);
-		return -1;
-	}
-
-	vdata->start = timeval_current();
-
-	if (ctdb_vacuum_db(ctdb_db, vdata, full_vacuum_run) != 0) {
+	if (ctdb_vacuum_db(ctdb_db, full_vacuum_run) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to vacuum '%s'\n", name));
 	}
 
@@ -1333,7 +1348,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 		freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
 		if (freelist_size == -1) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
-			talloc_free(vdata);
 			return -1;
 		}
 	}
@@ -1343,7 +1357,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	 */
 	if ((repack_limit == 0 || (uint32_t)freelist_size < repack_limit))
 	{
-		talloc_free(vdata);
 		return 0;
 	}
 
@@ -1353,10 +1366,8 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	ret = tdb_repack(ctdb_db->ltdb->tdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to repack '%s'\n", name));
-		talloc_free(vdata);
 		return -1;
 	}
-	talloc_free(vdata);
 
 	return 0;
 }
