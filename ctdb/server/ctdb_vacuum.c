@@ -53,7 +53,6 @@ struct ctdb_vacuum_handle {
 
 /*  a list of records to possibly delete */
 struct vacuum_data {
-	uint32_t repack_limit;
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
 	struct tdb_context *dest_db;
@@ -1316,7 +1315,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	}
 
 	vdata->ctdb = ctdb_db->ctdb;
-	vdata->repack_limit = repack_limit;
 	vdata->delete_list = trbt_create(vdata, 0);
 	vdata->ctdb_db = ctdb_db;
 	if (vdata->delete_list == NULL) {
