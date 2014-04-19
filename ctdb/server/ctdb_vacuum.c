@@ -1307,6 +1307,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	const char *name = ctdb_db->db_name;
 	int freelist_size = 0;
 	struct vacuum_data *vdata;
+	int ret;
 
 	vdata = talloc_zero(mem_ctx, struct vacuum_data);
 	if (vdata == NULL) {
@@ -1354,7 +1355,8 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	DEBUG(DEBUG_INFO, ("Repacking %s with %u freelist entries\n",
 			   name, freelist_size));
 
-	if (tdb_repack(ctdb_db->ltdb->tdb) != 0) {
+	ret = tdb_repack(ctdb_db->ltdb->tdb);
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to repack '%s'\n", name));
 		talloc_free(vdata);
 		return -1;
