@@ -1509,9 +1509,6 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 			_exit(1);
 		}
 
-		/* 
-		 * repack the db
-		 */
 		if ((ctdb->tunable.vacuum_fast_path_count > 0) &&
 		    (vacuum_handle->fast_path_count == 0))
 		{
