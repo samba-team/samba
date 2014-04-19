@@ -1480,8 +1480,8 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 		return 0;
 	}
 
-	DEBUG(DEBUG_INFO,("Repacking %s with %u freelist entries and %u records to delete\n", 
-			name, freelist_size, vdata->count.delete_list.left));
+	DEBUG(DEBUG_INFO, ("Repacking %s with %u freelist entries\n",
+			   name, freelist_size));
 
 	/*
 	 * repack and implicitely get rid of the records we can delete
