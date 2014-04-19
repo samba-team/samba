@@ -1326,10 +1326,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	}
 
 	vdata->start = timeval_current();
- 
-	/*
-	 * gather all records that can be deleted in vdata
-	 */
+
 	if (ctdb_vacuum_db(ctdb_db, vdata, full_vacuum_run) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to vacuum '%s'\n", name));
 	}
