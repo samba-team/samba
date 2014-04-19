@@ -1332,7 +1332,6 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
  * called from the child context
  */
 static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
-				     TALLOC_CTX *mem_ctx,
 				     bool full_vacuum_run)
 {
 	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
@@ -1522,8 +1521,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		{
 			full_vacuum_run = true;
 		}
-		cc = ctdb_vacuum_and_repack_db(ctdb_db, child_ctx,
-					       full_vacuum_run);
+		cc = ctdb_vacuum_and_repack_db(ctdb_db, full_vacuum_run);
 
 		write(child_ctx->fd[1], &cc, 1);
 		_exit(0);
