@@ -838,7 +838,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	}
 
 again:
-	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 
+	ctdb_db->ltdb = tdb_wrap_open(ctdb_db, ctdb_db->db_path,
 				      ctdb->tunable.database_hash_size, 
 				      tdb_flags, 
 				      O_CREAT|O_RDWR, mode);
