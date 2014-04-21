@@ -813,7 +813,7 @@ msg.msg_acctrightslen = sizeof(fd);
                         'PUTUTLINE_RETURNS_UTMP', headers='utmp.h',
                         msg="Checking whether pututline returns pointer")
         conf.CHECK_SIZEOF(['((struct utmp *)NULL)->ut_line'], headers='utmp.h',
-                          define='SIZEOF_UTMP_UT_LINE')
+                          define='SIZEOF_UTMP_UT_LINE', critical=False)
         if not conf.CONFIG_SET('SIZEOF_UTMP_UT_LINE'):
             conf.env.with_utmp = False
         elif int(conf.env.SIZEOF_UTMP_UT_LINE) < 15:
