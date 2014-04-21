@@ -390,9 +390,68 @@ def configure(conf):
     else:
         conf.define('SHLIBEXT', "so", quote=True)
 
-    conf.CHECK_CODE('long one = 1; return ((char *)(&one))[0]',
-                    execute=True,
-                    define='WORDS_BIGENDIAN')
+    # First try a header check for cross-compile friendlyness
+    conf.CHECK_CODE(code = """#ifdef __BYTE_ORDER
+                        #define B __BYTE_ORDER
+                        #elif defined(BYTE_ORDER)
+                        #define B BYTE_ORDER
+                        #endif
+
+                        #ifdef __LITTLE_ENDIAN
+                        #define LITTLE __LITTLE_ENDIAN
+                        #elif defined(LITTLE_ENDIAN)
+                        #define LITTLE LITTLE_ENDIAN
+                        #endif
+
+                        #if !defined(LITTLE) || !defined(B) || LITTLE != B
+                        #error Not little endian.
+                        #endif
+                        int main(void) { return 0; }""",
+                            addmain=False,
+                            headers="endian.h sys/endian.h",
+                            define="HAVE_LITTLE_ENDIAN")
+    conf.CHECK_CODE(code = """#ifdef __BYTE_ORDER
+                        #define B __BYTE_ORDER
+                        #elif defined(BYTE_ORDER)
+                        #define B BYTE_ORDER
+                        #endif
+
+                        #ifdef __BIG_ENDIAN
+                        #define BIG __BIG_ENDIAN
+                        #elif defined(BIG_ENDIAN)
+                        #define BIG BIG_ENDIAN
+                        #endif
+
+                        #if !defined(BIG) || !defined(B) || BIG != B
+                        #error Not big endian.
+                        #endif
+                        int main(void) { return 0; }""",
+                            addmain=False,
+                            headers="endian.h sys/endian.h",
+                            define="HAVE_BIG_ENDIAN")
+
+    if not conf.CONFIG_SET("HAVE_BIG_ENDIAN") and not conf.CONFIG_SET("HAVE_LITTLE_ENDIAN"):
+        # That didn't work!  Do runtime test.
+        conf.CHECK_CODE("""union { int i; char c[sizeof(int)]; } u;
+            u.i = 0x01020304;
+            return u.c[0] == 0x04 && u.c[1] == 0x03 && u.c[2] == 0x02 && u.c[3] == 0x01 ? 0 : 1;""",
+                          addmain=True, execute=True,
+                          define='HAVE_LITTLE_ENDIAN',
+                          msg="Checking for HAVE_LITTLE_ENDIAN - runtime")
+        conf.CHECK_CODE("""union { int i; char c[sizeof(int)]; } u;
+            u.i = 0x01020304;
+            return u.c[0] == 0x01 && u.c[1] == 0x02 && u.c[2] == 0x03 && u.c[3] == 0x04 ? 0 : 1;""",
+                          addmain=True, execute=True,
+                          define='HAVE_BIG_ENDIAN',
+                          msg="Checking for HAVE_BIG_ENDIAN - runtime")
+
+    # Extra sanity check.
+    if conf.CONFIG_SET("HAVE_BIG_ENDIAN") == conf.CONFIG_SET("HAVE_LITTLE_ENDIAN"):
+        Logs.error("Failed endian determination.  The PDP-11 is back?")
+	sys.exit(1)
+    else:
+        if conf.CONFIG_SET("HAVE_BIG_ENDIAN"):
+            conf.DEFINE('WORDS_BIGENDIAN', 1)
 
     # check if signal() takes a void function
     if conf.CHECK_CODE('return *(signal (0, 0)) (0) == 1',
