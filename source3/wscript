@@ -277,18 +277,20 @@ int main(int argc, char **argv)
                                 headers='sys/types.h sys/stat.h unistd.h')
 
     if "HAVE_BLKCNT_T" in conf.env:
-	conf.CHECK_CODE('''
-	return sizeof(blkcnt_t) == 4 ? 0 : 1''',
-		'SIZEOF_BLKCNT_T_4', execute=True,
-		headers='replace.h sys/types.h sys/stat.h unistd.h',
-		msg="Checking whether blkcnt_t is 32 bit")
+        conf.CHECK_CODE('''
+        static int test_array[1 - 2 * !(((long int)(sizeof(blkcnt_t))) <= 4)];''',
+                'SIZEOF_BLKCNT_T_4',
+                headers='replace.h sys/types.h sys/stat.h unistd.h',
+                msg="Checking whether blkcnt_t is 32 bit")
 
+    # If sizeof is 4 it can't be 8
     if "HAVE_BLKCNT_T" in conf.env:
-	conf.CHECK_CODE('''
-	return sizeof(blkcnt_t) == 8 ? 0 : 1''',
-		'SIZEOF_BLKCNT_T_8', execute=True,
-		headers='replace.h sys/types.h sys/stat.h unistd.h',
-		msg="Checking whether blkcnt_t is 64 bit")
+        if not conf.CONFIG_SET('SIZEOF_BLKCNT_T_4'):
+            conf.CHECK_CODE('''
+            static int test_array[1 - 2 * !(((long int)(sizeof(blkcnt_t))) <= 8)];''',
+                    'SIZEOF_BLKCNT_T_8',
+                    headers='replace.h sys/types.h sys/stat.h unistd.h',
+                    msg="Checking whether blkcnt_t is 64 bit")
 
     # Check for POSIX capability support
     conf.CHECK_FUNCS_IN('cap_get_proc', 'cap', headers='sys/capability.h')
