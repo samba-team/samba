@@ -932,6 +932,7 @@ class NTDSConnection(object):
                             (tdnstr, estr))
 
         if "objectGUID" in res[0]:
+            msg = res[0]
             self.transport_dnstr = tdnstr
             self.transport_guid = \
                 misc.GUID(samdb.schema_format_value("objectGUID",
