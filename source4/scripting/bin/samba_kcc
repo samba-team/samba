@@ -1910,13 +1910,13 @@ class KCC(object):
         # currently importing an ldif for a test run
         if self.samdb is None:
             try:
-                self.samdb = SamDB(url=lp.samdb_url(),
+                self.samdb = SamDB(url=dburl,
                                    session_info=system_session(),
                                    credentials=creds, lp=lp)
 
             except ldb.LdbError, (num, msg):
                 logger.error("Unable to open sam database %s : %s" %
-                             (lp.samdb_url(), msg))
+                             (dburl, msg))
                 return 1
 
         try:
@@ -2027,7 +2027,7 @@ class KCC(object):
                                credentials=creds, lp=lp)
         except ldb.LdbError, (enum, estr):
             logger.error("Unable to open sam database (%s) : %s" %
-                         (lp.samdb_url(), estr))
+                         (dburl, estr))
             return 1
 
         if os.path.exists(ldif_file):
