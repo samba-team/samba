@@ -2037,8 +2037,8 @@ class KCC(object):
 
         try:
             f = open(ldif_file, "w")
-        except (enum, estr):
-            logger.error("Unable to open (%s) : %s" % (ldif_file, estr))
+        except IOError as ioerr:
+            logger.error("Unable to open (%s) : %s" % (ldif_file, str(ioerr)))
             return 1
 
         try:
