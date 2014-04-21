@@ -1946,6 +1946,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	struct security_descriptor *psd = NULL;
 	bool is_disk_op;
 	int max_connections = 0;
+	SMB_STRUCT_STAT st;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
 	DEBUG(5,("_srvsvc_NetShareAdd: %d\n", __LINE__));
@@ -2043,6 +2044,16 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	/* Check if the pathname is valid. */
 	if (!(path = valid_share_pathname(p->mem_ctx, pathname))) {
 		return WERR_OBJECT_PATH_INVALID;
+	}
+
+	ret = sys_lstat(path, &st, false);
+	if (ret == -1 && (errno != EACCES)) {
+		/*
+		 * If path has any other than permission
+		 * problem, return WERR_BADFILE (as Windows
+		 * does.
+		 */
+		return WERR_BADFILE;
 	}
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
