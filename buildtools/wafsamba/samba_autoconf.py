@@ -304,23 +304,27 @@ def CHECK_FUNCS(conf, list, link=True, lib=None, headers=None):
 
 
 @conf
-def CHECK_SIZEOF(conf, vars, headers=None, define=None):
+def CHECK_SIZEOF(conf, vars, headers=None, define=None, critical=True):
     '''check the size of a type'''
-    ret = True
     for v in TO_LIST(vars):
         v_define = define
+        ret = False
         if v_define is None:
             v_define = 'SIZEOF_%s' % v.upper().replace(' ', '_')
-        if not CHECK_CODE(conf,
-                          'printf("%%u", (unsigned)sizeof(%s))' % v,
-                          define=v_define,
-                          execute=True,
-                          define_ret=True,
-                          quote=False,
-                          headers=headers,
-                          local_include=False,
-                          msg="Checking size of %s" % v):
-            ret = False
+        for size in list((1, 2, 4, 8, 16, 32)):
+            if CHECK_CODE(conf,
+                      'static int test_array[1 - 2 * !(((long int)(sizeof(%s))) <= %d)];' % (v, size),
+                      define=v_define,
+                      quote=False,
+                      headers=headers,
+                      local_include=False,
+                      msg="Checking if size of %s == %d" % (v, size)):
+                conf.DEFINE(v_define, size)
+                ret = True
+                break
+        if not ret and critical:
+            Logs.error("Couldn't determine size of '%s'" % v)
+            sys.exit(1)
     return ret
 
 @conf
