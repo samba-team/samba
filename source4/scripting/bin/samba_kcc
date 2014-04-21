@@ -1683,7 +1683,7 @@ class KCC(object):
 
                 # Pull out the NCReplica with the dn that
                 # matches NC (x) we are examining.
-                p_of_x = dsa.current_rep_table[nc_x.nc_dnstr]
+                p_of_x = dc_s.current_rep_table[nc_x.nc_dnstr]
 
                 # Replica (p) of NC (x) must be partial
                 if not p_of_x.is_partial():
