@@ -502,7 +502,7 @@ class DirectoryServiceAgent(object):
         """Is dsa at minimum windows level greater than or equal to (version)
 
         :param version: Windows version to test against
-            (e.g. DS_BEHAVIOR_WIN2008)
+            (e.g. DS_DOMAIN_FUNCTION_2008)
         """
         if self.dsa_behavior >= version:
             return True

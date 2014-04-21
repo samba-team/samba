@@ -1009,10 +1009,10 @@ class KCC(object):
 
             # IF AmIRODC() and cr!nCName corresponds to default NC then
             #     Let dsaobj be the nTDSDSA object of the dc
-            #     IF  dsaobj.msDS-Behavior-Version < DS_BEHAVIOR_WIN2008
+            #     IF  dsaobj.msDS-Behavior-Version < DS_DOMAIN_FUNCTION_2008
             #         Skip dc
             if self.my_dsa.is_ro() and part.is_default():
-                if not dsa.is_minimum_behavior(DS_BEHAVIOR_WIN2008):
+                if not dsa.is_minimum_behavior(dsdb.DS_DOMAIN_FUNCTION_2008):
                     continue
 
             # IF t!name != "IP" and the parent object of dc has no value for
@@ -1651,7 +1651,7 @@ class KCC(object):
             # an RODC, at least one writable domain controller in
             # the domain must be running Windows Server 2008
             if ro and not partial and nc_x.nc_type == NCType.domain:
-                if not dc_s.is_minimum_behavior(DS_BEHAVIOR_WIN2008):
+                if not dc_s.is_minimum_behavior(dsdb.DS_DOMAIN_FUNCTION_2008):
                     continue
 
             # If we haven't been told to turn off stale connection
@@ -1724,7 +1724,7 @@ class KCC(object):
                 # is no minimum windows behavior for those since GCs
                 # have always been present.
                 if ro and not partial and nc_x.nc_type == NCType.domain:
-                    if not dc_s.is_minimum_behavior(DS_BEHAVIOR_WIN2008):
+                    if not dc_s.is_minimum_behavior(dsdb.DS_DOMAIN_FUNCTION_2008):
                         continue
 
                 # If we haven't been told to turn off stale connection
