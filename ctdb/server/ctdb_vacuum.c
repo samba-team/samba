@@ -744,6 +744,7 @@ static void ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
 	if (ret == -1 || vdata->traverse_error) {
 		DEBUG(DEBUG_ERR, (__location__ " Traverse error in vacuuming "
 				  "'%s'\n", ctdb_db->db_name));
+		return;
 	}
 
 	if (vdata->count.db_traverse.total > 0) {
