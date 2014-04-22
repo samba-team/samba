@@ -124,3 +124,36 @@ try_command_on_node 0 $CTDB detach $testdb2 $testdb3 $testdb4
 for db in "$testdb2" "$testdb3" "$testdb4" ; do
     check_no_db "$db"
 done
+
+######################################################################
+
+echo
+echo "Attach a single test database"
+try_command_on_node all $CTDB setvar AllowClientDBAttach 1
+try_command_on_node 0 $CTDB attach $testdb1
+check_db "$testdb1"
+
+echo
+echo "Write a key to database"
+try_command_on_node 0 $CTDB writekey $testdb1 foo bar
+try_command_on_node 0 $CTDB catdb $testdb1
+num_keys=$(echo "$out" | sed -n -e 's/Dumped \([0-9]*\) records/\1/p') || true
+if [ -n "$num_keys" -a $num_keys -eq 1 ]; then
+    echo "GOOD: Key added to database"
+else
+    echo "BAD: Key did not get added to database"
+    echo "$out"
+    exit 1
+fi
+
+echo
+echo "Detach test database"
+try_command_on_node all $CTDB setvar AllowClientDBAttach 0
+try_command_on_node 0 $CTDB detach $testdb1
+check_no_db "$testdb1"
+
+echo
+echo "Re-attach test database"
+try_command_on_node all $CTDB setvar AllowClientDBAttach 1
+try_command_on_node 0 $CTDB attach $testdb1
+check_db "$testdb1"
