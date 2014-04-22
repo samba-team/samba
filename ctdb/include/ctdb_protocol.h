@@ -114,6 +114,10 @@ struct ctdb_call_info {
 #define CTDB_SRVID_VACUUM_FETCH 0xF700000000000000LL
 
 /*
+ * a message to tell recovery daemon to detach a database
+ */
+#define CTDB_SRVID_DETACH_DATABASE 0xF701000000000000LL
+/*
   a message to tell the recovery daemon to write a talloc memdump
   to the log
  */

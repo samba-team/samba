@@ -1095,6 +1095,47 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 
 /*
+ * handler for database detach
+ */
+static void detach_database_handler(struct ctdb_context *ctdb, uint64_t srvid,
+				    TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data,
+						    struct ctdb_recoverd);
+	uint32_t db_id;
+	struct vacuum_info *v, *vnext;
+	struct ctdb_db_context *ctdb_db;
+
+	if (data.dsize != sizeof(db_id)) {
+		return;
+	}
+	db_id = *(uint32_t *)data.dptr;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (ctdb_db == NULL) {
+		/* database is not attached */
+		return;
+	}
+
+	/* Stop any active vacuum fetch */
+	v = rec->vacuum_info;
+	while (v != NULL) {
+		vnext = v->next;
+
+		if (v->ctdb_db->db_id == db_id) {
+			talloc_free(v);
+		}
+		v = vnext;
+	}
+
+	DLIST_REMOVE(ctdb->db_list, ctdb_db);
+
+	DEBUG(DEBUG_NOTICE, ("Detached from database '%s'\n",
+			     ctdb_db->db_name));
+	talloc_free(ctdb_db);
+}
+
+/*
   called when ctdb_wait_timeout should finish
  */
 static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te, 
@@ -4144,6 +4185,11 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	ctdb_client_set_message_handler(ctdb,
 					CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
 					disable_takeover_runs_handler, rec);
+
+	/* register a message port for detaching database */
+	ctdb_client_set_message_handler(ctdb,
+					CTDB_SRVID_DETACH_DATABASE,
+					detach_database_handler, rec);
 
 	for (;;) {
 		TALLOC_CTX *mem_ctx = talloc_new(ctdb);
