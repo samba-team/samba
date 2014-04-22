@@ -46,6 +46,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	int i, n;
 	char buf[12];
 	int ret;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	load_case_tables();
 
@@ -56,12 +57,14 @@ static void pong_message(struct messaging_context *msg_ctx,
 	if (!(evt_ctx = samba_tevent_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
+		TALLOC_FREE(frame);
 		exit(1);
 	}
 
 	if (argc != 3) {
 		fprintf(stderr, "%s: Usage - %s pid count\n", argv[0],
 			argv[0]);
+		TALLOC_FREE(frame);
 		exit(1);
 	}
 
@@ -152,6 +155,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 		       (ping_count+pong_count)/timeval_elapsed(&tv));
 	}
 
+	TALLOC_FREE(frame);
 	return (0);
 }
 
