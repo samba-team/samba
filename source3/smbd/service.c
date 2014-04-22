@@ -430,7 +430,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 }
 
 /****************************************************************************
-  set relavent user and group settings corresponding to force user/group
+  Set relevant user and group settings corresponding to force user/group
   configuration for the given snum.
 ****************************************************************************/
 
