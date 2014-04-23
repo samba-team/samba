@@ -3842,8 +3842,8 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 
 	printf("Data: size:%d ptr:[%.*s]\n", (int)data.dsize, (int)data.dsize, data.dptr);
 
-	talloc_free(ctdb_db);
 	talloc_free(tmp_ctx);
+	talloc_free(ctdb_db);
 	return 0;
 }
 
@@ -3892,8 +3892,8 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 	}
 
 	talloc_free(h);
-	talloc_free(ctdb_db);
 	talloc_free(tmp_ctx);
+	talloc_free(ctdb_db);
 	return 0;
 }
 
