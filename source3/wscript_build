@@ -1084,6 +1084,7 @@ bld.SAMBA3_BINARY('net',
                  utils/net_printing.c
                  utils/net_rpc_trust.c
                  utils/net_rpc_conf.c
+                 utils/net_afs.c
                  registry/reg_parse.c
                  registry/reg_format.c
                  registry/reg_import.c
