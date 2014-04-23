@@ -428,8 +428,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	DATA_BLOB auth_blob;
 	NTSTATUS status;
 
-	if (auth->auth_type == DCERPC_AUTH_TYPE_NONE ||
-	    auth->auth_type == DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM) {
+	if (auth->auth_type == DCERPC_AUTH_TYPE_NONE) {
 		return NT_STATUS_OK;
 	}
 
@@ -467,7 +466,6 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	/* Generate any auth sign/seal and add the auth footer. */
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
-	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 		status = NT_STATUS_OK;
 		break;
 	default:
@@ -564,7 +562,6 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
-	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 		return NT_STATUS_OK;
 
 	default:

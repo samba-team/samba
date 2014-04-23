@@ -1107,12 +1107,6 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_TYPE_NONE:
 		break;
 
-	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
-		auth_token = data_blob_talloc(mem_ctx,
-					      "NCALRPC_AUTH_TOKEN",
-					      18);
-		break;
-
 	default:
 		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx,
 						       &auth_token,
@@ -1829,7 +1823,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	switch(pauth->auth_type) {
 
 	case DCERPC_AUTH_TYPE_NONE:
-	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 		/* Bind complete. */
 		tevent_req_done(req);
 		return;
@@ -1862,7 +1855,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	switch(pauth->auth_type) {
 
 	case DCERPC_AUTH_TYPE_NONE:
-	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 		/* Bind complete. */
 		tevent_req_done(req);
 		return;
@@ -2293,30 +2285,6 @@ struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c,
 	return h;
 }
 
-NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
-				  struct pipe_auth_data **presult)
-{
-	struct pipe_auth_data *result;
-
-	result = talloc_zero(mem_ctx, struct pipe_auth_data);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result->auth_type = DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM;
-	result->auth_level = DCERPC_AUTH_LEVEL_CONNECT;
-
-	result->user_name = talloc_strdup(result, "");
-	result->domain = talloc_strdup(result, "");
-	if ((result->user_name == NULL) || (result->domain == NULL)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*presult = result;
-	return NT_STATUS_OK;
-}
-
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 			       struct pipe_auth_data **presult)
 {
@@ -2419,6 +2387,22 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
  fail:
 	TALLOC_FREE(result);
 	return status;
+}
+
+NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
+				  struct pipe_auth_data **presult)
+{
+	return rpccli_generic_bind_data(mem_ctx,
+					DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM,
+					DCERPC_AUTH_LEVEL_CONNECT,
+					NULL, /* server */
+					"host", /* target_service */
+					NAME_NT_AUTHORITY, /* domain */
+					"SYSTEM",
+					"", /* password */
+					CRED_DONT_USE_KERBEROS,
+					NULL, /* netlogon_creds_CredentialState */
+					presult);
 }
 
 /**
@@ -3186,7 +3170,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (cli->auth->auth_type) {
-	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 	case DCERPC_AUTH_TYPE_NONE:
 		sk = data_blob_const(a->transport_session_key.data,
 				     a->transport_session_key.length);
