@@ -710,8 +710,6 @@ NTSTATUS idmap_autorid_db_open(const char *path,
 			       TALLOC_CTX *mem_ctx,
 			       struct db_context **db)
 {
-	NTSTATUS status;
-
 	if (*db != NULL) {
 		/* its already open */
 		return NT_STATUS_OK;
@@ -726,7 +724,7 @@ NTSTATUS idmap_autorid_db_open(const char *path,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /**
