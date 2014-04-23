@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth.h"
+#include "libcli/security/security.h"
 
 NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 				     TALLOC_CTX *mem_ctx,
@@ -31,10 +32,50 @@ NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 				     uint32_t session_info_flags,
 				     struct auth_session_info **session_info)
 {
-	struct auth_serversupplied_info *server_info = talloc_get_type_abort(server_returned_info,
-									     struct auth_serversupplied_info);
+	struct auth_user_info_dc *user_info = NULL;
+	struct auth_serversupplied_info *server_info = NULL;
 	NTSTATUS nt_status;
 
+	/*
+	 * This is a hack, some callers...
+	 *
+	 * Some callers pass auth_user_info_dc, the SCHANNEL and
+	 * NCALRPC_AS_SYSTEM gensec modules.
+	 *
+	 * While the reset passes auth3_check_password() returned.
+	 */
+	user_info = talloc_get_type(server_returned_info,
+				    struct auth_user_info_dc);
+	if (user_info != NULL) {
+		const struct dom_sid *sid;
+		int cmp;
+
+		/*
+		 * This should only be called from SCHANNEL or NCALRPC_AS_SYSTEM
+		 */
+		if (user_info->num_sids != 1) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		sid = &user_info->sids[PRIMARY_USER_SID_INDEX];
+
+		cmp = dom_sid_compare(sid, &global_sid_System);
+		if (cmp == 0) {
+			return make_session_info_system(mem_ctx, session_info);
+		}
+
+		cmp = dom_sid_compare(sid, &global_sid_Anonymous);
+		if (cmp == 0) {
+			/*
+			 * TODO: use auth_anonymous_session_info() here?
+			 */
+			return make_session_info_guest(mem_ctx, session_info);
+		}
+
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	server_info = talloc_get_type_abort(server_returned_info,
+					    struct auth_serversupplied_info);
 	nt_status = create_local_token(mem_ctx,
 				       server_info,
 				       NULL,
