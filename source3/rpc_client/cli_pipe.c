@@ -1104,10 +1104,16 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 	NTSTATUS ret = NT_STATUS_OK;
 
 	switch (auth->auth_type) {
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_KRB5:
-	case DCERPC_AUTH_TYPE_SPNEGO:
+	case DCERPC_AUTH_TYPE_NONE:
+		break;
+
+	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
+		auth_token = data_blob_talloc(mem_ctx,
+					      "NCALRPC_AUTH_TOKEN",
+					      18);
+		break;
+
+	default:
 		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx,
 						       &auth_token,
 						       &auth->client_hdr_signing);
@@ -1117,19 +1123,6 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 			return ret;
 		}
 		break;
-
-	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
-		auth_token = data_blob_talloc(mem_ctx,
-					      "NCALRPC_AUTH_TOKEN",
-					      18);
-		break;
-
-	case DCERPC_AUTH_TYPE_NONE:
-		break;
-
-	default:
-		/* "Can't" happen. */
-		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (auth_token.length != 0) {
@@ -1841,10 +1834,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_SPNEGO:
-	case DCERPC_AUTH_TYPE_KRB5:
+	default:
 		/* Paranoid lenght checks */
 		if (pkt->frag_length < DCERPC_AUTH_TRAILER_LENGTH
 						+ pkt->auth_length) {
@@ -1863,9 +1853,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 			return;
 		}
 		break;
-
-	default:
-		goto err_out;
 	}
 
 	/*
@@ -1880,10 +1867,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_KRB5:
-	case DCERPC_AUTH_TYPE_SPNEGO:
+	default:
 		gensec_security = talloc_get_type_abort(pauth->auth_ctx,
 						struct gensec_security);
 
@@ -1911,20 +1895,12 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 							&auth_token);
 		}
 		break;
-
-	default:
-		goto err_out;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 	}
 	return;
-
-err_out:
-	DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
-		 (unsigned int)state->cli->auth->auth_type));
-	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 }
 
 static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
@@ -3210,17 +3186,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (cli->auth->auth_type) {
-	case DCERPC_AUTH_TYPE_SPNEGO:
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_KRB5:
-		gensec_security = talloc_get_type_abort(a->auth_ctx,
-						struct gensec_security);
-		status = gensec_session_key(gensec_security, mem_ctx, &sk);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		make_dup = false;
-		break;
 	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 	case DCERPC_AUTH_TYPE_NONE:
 		sk = data_blob_const(a->transport_session_key.data,
@@ -3228,6 +3193,13 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		make_dup = true;
 		break;
 	default:
+		gensec_security = talloc_get_type(a->auth_ctx,
+						  struct gensec_security);
+		status = gensec_session_key(gensec_security, mem_ctx, &sk);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		make_dup = false;
 		break;
 	}
 

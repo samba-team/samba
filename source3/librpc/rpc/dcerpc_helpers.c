@@ -382,6 +382,10 @@ static NTSTATUS get_generic_auth_footer(struct gensec_security *gensec_security,
 					DATA_BLOB *data, DATA_BLOB *full_pkt,
 					DATA_BLOB *auth_token)
 {
+	if (gensec_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
@@ -466,18 +470,12 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 		status = NT_STATUS_OK;
 		break;
-	case DCERPC_AUTH_TYPE_SPNEGO:
-	case DCERPC_AUTH_TYPE_KRB5:
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-		gensec_security = talloc_get_type_abort(auth->auth_ctx,
-						struct gensec_security);
+	default:
+		gensec_security = talloc_get_type(auth->auth_ctx,
+						  struct gensec_security);
 		status = add_generic_auth_footer(gensec_security,
 						 auth->auth_level,
 						 rpc_out);
-		break;
-	default:
-		status = NT_STATUS_INVALID_PARAMETER;
 		break;
 	}
 
@@ -569,15 +567,11 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 		return NT_STATUS_OK;
 
-	case DCERPC_AUTH_TYPE_SPNEGO:
-	case DCERPC_AUTH_TYPE_KRB5:
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-
+	default:
 		DEBUG(10, ("GENSEC auth\n"));
 
-		gensec_security = talloc_get_type_abort(auth->auth_ctx,
-						struct gensec_security);
+		gensec_security = talloc_get_type(auth->auth_ctx,
+						  struct gensec_security);
 		status = get_generic_auth_footer(gensec_security,
 						 auth->auth_level,
 						 &data, &full_pkt,
@@ -586,11 +580,6 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			return status;
 		}
 		break;
-	default:
-		DEBUG(0, ("process_request_pdu: "
-			  "unknown auth type %u set.\n",
-			  (unsigned int)auth->auth_type));
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* TODO: remove later
