@@ -38,6 +38,7 @@ struct schannel_state {
 	uint64_t seq_num;
 	bool initiator;
 	struct netlogon_creds_CredentialState *creds;
+	struct auth_user_info_dc *user_info_dc;
 };
 
 #define SETUP_SEQNUM(state, buf, initiator) do { \
@@ -58,14 +59,13 @@ static struct schannel_state *netsec_create_state(
 {
 	struct schannel_state *state;
 
-	state = talloc(gensec, struct schannel_state);
+	state = talloc_zero(gensec, struct schannel_state);
 	if (state == NULL) {
 		return NULL;
 	}
 
 	state->gensec = gensec;
 	state->initiator = initiator;
-	state->seq_num = 0;
 	state->creds = netlogon_creds_copy(state, creds);
 	if (state->creds == NULL) {
 		talloc_free(state);
@@ -580,6 +580,13 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		status = auth_anonymous_user_info_dc(state,
+				lpcfg_netbios_name(gensec_security->settings->lp_ctx),
+				&state->user_info_dc);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
 		bind_schannel_ack.MessageType = NL_NEGOTIATE_RESPONSE;
 		bind_schannel_ack.Flags = 0;
 		bind_schannel_ack.Buffer.dummy = 0x6c0000; /* actually I think
@@ -610,7 +617,43 @@ static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 				      TALLOC_CTX *mem_ctx,
 				      struct auth_session_info **_session_info)
 {
-	return auth_anonymous_session_info(mem_ctx, gensec_security->settings->lp_ctx, _session_info);
+	struct schannel_state *state =
+		talloc_get_type(gensec_security->private_data,
+		struct schannel_state);
+	struct auth4_context *auth_ctx = gensec_security->auth_context;
+	struct auth_session_info *session_info = NULL;
+	uint32_t session_info_flags = 0;
+	NTSTATUS status;
+
+	if (auth_ctx == NULL) {
+		DEBUG(0, ("Cannot generate a session_info without the auth_context\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (auth_ctx->generate_session_info == NULL) {
+		DEBUG(0, ("Cannot generate a session_info without the generate_session_info hook\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (gensec_security->want_features & GENSEC_FEATURE_UNIX_TOKEN) {
+		session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
+	}
+
+	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+
+	status = auth_ctx->generate_session_info(
+				auth_ctx,
+				mem_ctx,
+				state->user_info_dc,
+				state->user_info_dc->info->account_name,
+				session_info_flags,
+				&session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*_session_info = session_info;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
