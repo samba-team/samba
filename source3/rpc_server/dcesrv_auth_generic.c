@@ -90,6 +90,10 @@ NTSTATUS auth_generic_server_step(struct gensec_security *gensec_security,
 {
 	NTSTATUS status;
 
+	if (gensec_security == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	/* this has to be done as root in order to verify the password */
 	become_root();
 	status = gensec_update(gensec_security, mem_ctx, *token_in, token_out);

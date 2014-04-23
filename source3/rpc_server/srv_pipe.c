@@ -929,21 +929,12 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		goto err;
 	}
 
-	switch (auth_info.auth_type) {
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_KRB5:
-	case DCERPC_AUTH_TYPE_SPNEGO:
-		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
-						    struct gensec_security);
-		status = auth_generic_server_step(gensec_security,
-					     pkt, &auth_info.credentials,
-					     &response);
-		break;
-	default:
-		DEBUG(1, (__location__ ": incorrect auth type (%u).\n",
-			  (unsigned int)auth_info.auth_type));
-		return false;
-	}
+	gensec_security = talloc_get_type(p->auth.auth_ctx,
+					  struct gensec_security);
+
+	status = auth_generic_server_step(gensec_security,
+					  pkt, &auth_info.credentials,
+					  &response);
 
 	if (NT_STATUS_EQUAL(status,
 			    NT_STATUS_MORE_PROCESSING_REQUIRED) ||
@@ -1065,26 +1056,12 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			goto err_exit;
 		}
 
-
-		switch (auth_info.auth_type) {
-		case DCERPC_AUTH_TYPE_SPNEGO:
-		case DCERPC_AUTH_TYPE_KRB5:
-		case DCERPC_AUTH_TYPE_NTLMSSP:
-			gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
-						    struct gensec_security);
-			status = auth_generic_server_step(gensec_security,
-						     pkt,
-						     &auth_info.credentials,
-						     &auth_resp);
-			break;
-
-		default:
-			DEBUG(3, (__location__ ": Usupported auth type (%d) "
-				  "in alter-context call\n",
-				  auth_info.auth_type));
-			goto err_exit;
-		}
-
+		gensec_security = talloc_get_type(p->auth.auth_ctx,
+						  struct gensec_security);
+		status = auth_generic_server_step(gensec_security,
+						  pkt,
+						  &auth_info.credentials,
+						  &auth_resp);
 		if (NT_STATUS_IS_OK(status)) {
 			/* third leg of auth, verify auth info */
 			status = pipe_auth_verify_final(p);
