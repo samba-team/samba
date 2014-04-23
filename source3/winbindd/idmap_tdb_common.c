@@ -413,7 +413,7 @@ NTSTATUS idmap_tdb_common_unixid_to_sid(struct idmap_domain * dom,
 		break;
 
 	default:
-		DEBUG(2, ("INVALID unix ID type: 0x02%x\n", map->xid.type));
+		DEBUG(2, ("INVALID unix ID type: 0x%02x\n", map->xid.type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
