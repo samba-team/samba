@@ -731,32 +731,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		}
 
 		switch (auth_type) {
-		case DCERPC_AUTH_TYPE_NTLMSSP:
-			if (!pipe_auth_generic_bind(p, pkt,
-						    &auth_info, &auth_resp)) {
-				goto err_exit;
-			}
-			assoc_gid = 0x7a77;
-			break;
-
-		case DCERPC_AUTH_TYPE_SCHANNEL:
-			if (!pipe_auth_generic_bind(p, pkt,
-						    &auth_info, &auth_resp)) {
-				goto err_exit;
-			}
-			if (!session_info_set_session_key(p->session_info, generic_session_key())) {
-				DEBUG(0, ("session_info_set_session_key failed\n"));
-				goto err_exit;
-			}
-			p->pipe_bound = true;
-			break;
-
-		case DCERPC_AUTH_TYPE_SPNEGO:
-		case DCERPC_AUTH_TYPE_KRB5:
-			if (!pipe_auth_generic_bind(p, pkt,
-						    &auth_info, &auth_resp)) {
-				goto err_exit;
-			}
+		case DCERPC_AUTH_TYPE_NONE:
 			break;
 
 		case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
@@ -780,12 +755,12 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			}
 			break;
 
-		case DCERPC_AUTH_TYPE_NONE:
-			break;
-
 		default:
-			DEBUG(0, ("Unknown auth type %x requested.\n", auth_type));
-			goto err_exit;
+			if (!pipe_auth_generic_bind(p, pkt,
+						    &auth_info, &auth_resp)) {
+				goto err_exit;
+			}
+			break;
 		}
 	}
 
