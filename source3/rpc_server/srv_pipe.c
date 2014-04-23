@@ -48,6 +48,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p);
+
 /**
  * Dump everything from the start of the end up of the provided data
  * into a file, but only at debug level >= 50
@@ -458,6 +460,17 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 	if (p->auth.hdr_signing) {
 		gensec_want_feature(gensec_security,
 				    GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return true;
+	}
+
+	status = pipe_auth_verify_final(p);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("pipe_auth_verify_final failed: %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
 	return true;
