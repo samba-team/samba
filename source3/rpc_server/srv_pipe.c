@@ -508,6 +508,11 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
+	if ((*session_info)->unix_token == NULL) {
+		DEBUG(1, ("Auth module failed to provide unix_token\n"));
+		return false;
+	}
+
 	/*
 	 * We're an authenticated bind over smb, so the session key needs to
 	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
