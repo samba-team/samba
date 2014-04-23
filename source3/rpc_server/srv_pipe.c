@@ -526,22 +526,23 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 {
 	struct gensec_security *gensec_security;
+	bool ok;
 
-	switch (p->auth.auth_type) {
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-	case DCERPC_AUTH_TYPE_KRB5:
-	case DCERPC_AUTH_TYPE_SPNEGO:
-		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
-							struct gensec_security);
-		if (!pipe_auth_generic_verify_final(p, gensec_security,
-						p->auth.auth_level,
-						&p->session_info)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		break;
-	default:
-		DEBUG(0, (__location__ ": incorrect auth type (%u).\n",
-			  (unsigned int)p->auth.auth_type));
+	if (p->auth.auth_type == DCERPC_AUTH_TYPE_NONE) {
+		p->pipe_bound = true;
+		return NT_STATUS_OK;
+	}
+
+	gensec_security = talloc_get_type(p->auth.auth_ctx,
+					  struct gensec_security);
+	if (gensec_security == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ok = pipe_auth_generic_verify_final(p, gensec_security,
+					    p->auth.auth_level,
+					    &p->session_info);
+	if (!ok) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
