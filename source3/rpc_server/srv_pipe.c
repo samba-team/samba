@@ -435,9 +435,11 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 						    response,
 						    p->remote_address,
 						    &gensec_security);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
-		DEBUG(0, (__location__ ": auth_generic_server_authtype_start failed: %s\n",
-			  nt_errstr(status)));
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		DEBUG(0, (__location__ ": auth_generic_server_authtype_start[%u/%u] failed: %s\n",
+			  auth_info->auth_type, auth_info->auth_level, nt_errstr(status)));
 		return false;
 	}
 

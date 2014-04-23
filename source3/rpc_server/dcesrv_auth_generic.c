@@ -59,7 +59,7 @@ static NTSTATUS auth_generic_server_authtype_start_as_root(TALLOC_CTX *mem_ctx,
 
 	/* steal gensec context to the caller */
 	*ctx = talloc_move(mem_ctx, &gensec_security);
-	return NT_STATUS_OK;
+	return status;
 }
 
 NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
