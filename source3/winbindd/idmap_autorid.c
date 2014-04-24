@@ -340,6 +340,22 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 	return ret;
 }
 
+struct idmap_autorid_sid_to_id_alloc_ctx {
+	struct idmap_domain *dom;
+	struct id_map *map;
+};
+
+static NTSTATUS idmap_autorid_sid_to_id_alloc_action(
+				struct db_context *db,
+				void *private_data)
+{
+	struct idmap_autorid_sid_to_id_alloc_ctx *ctx;
+
+	ctx = (struct idmap_autorid_sid_to_id_alloc_ctx *)private_data;
+
+	return idmap_tdb_common_new_mapping(ctx->dom, ctx->map);
+}
+
 /*
  * map a SID to xid using the idmap_tdb like pool
  */
@@ -349,7 +365,7 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(
 					struct id_map *map)
 {
 	NTSTATUS ret;
-	int res;
+	struct idmap_autorid_sid_to_id_alloc_ctx alloc_ctx;
 
 	map->status = ID_UNKNOWN;
 
@@ -378,31 +394,19 @@ static NTSTATUS idmap_autorid_sid_to_id_alloc(
 	DEBUG(10, ("Creating new mapping in pool for %s\n",
 		   sid_string_dbg(map->sid)));
 
-	/* create new mapping */
-	res = dbwrap_transaction_start(ctx->db);
-	if (res != 0) {
-		DEBUG(2, ("transaction_start failed\n"));
+	alloc_ctx.dom = dom;
+	alloc_ctx.map = map;
+
+	ret = dbwrap_trans_do(ctx->db, idmap_autorid_sid_to_id_alloc_action,
+			      &alloc_ctx);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1, ("Failed to create a new mapping in alloc range: %s\n",
+			  nt_errstr(ret)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	ret = idmap_tdb_common_new_mapping(dom, map);
-	if (!NT_STATUS_IS_OK(ret)) {
-		if (dbwrap_transaction_cancel(ctx->db) != 0) {
-			smb_panic("Cancelling transaction failed");
-		}
-		map->status = ID_UNMAPPED;
-		return ret;
-	}
-
-	res = dbwrap_transaction_commit(ctx->db);
-	if (res == 0) {
-		map->status = ID_MAPPED;
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(2, ("transaction_commit failed\n"));
-	return NT_STATUS_INTERNAL_DB_CORRUPTION;
-
+	map->status = ID_MAPPED;
+	return NT_STATUS_OK;
 }
 
 static bool idmap_autorid_domsid_is_for_alloc(struct dom_sid *sid)
