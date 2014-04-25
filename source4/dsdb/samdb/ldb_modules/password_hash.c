@@ -43,6 +43,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "../lib/crypto/crypto.h"
 #include "param/param.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 
 /* If we have decided there is a reason to work on this request, then
  * setup all the password hash types correctly.
@@ -645,7 +646,7 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb;
 	krb5_error_code krb5_ret;
-	Principal *salt_principal;
+	krb5_principal salt_principal;
 	krb5_salt salt;
 	krb5_keyblock key;
 	krb5_data cleartext_data;
@@ -680,7 +681,7 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 			return ldb_oom(ldb);
 		}
 		
-		krb5_ret = krb5_make_principal(io->smb_krb5_context->krb5_context,
+		krb5_ret = smb_krb5_make_principal(io->smb_krb5_context->krb5_context,
 					       &salt_principal,
 					       io->ac->status->domain_data.realm,
 					       "host", saltbody, NULL);
@@ -698,12 +699,12 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 			p[0] = '\0';
 		}
 
-		krb5_ret = krb5_make_principal(io->smb_krb5_context->krb5_context,
+		krb5_ret = smb_krb5_make_principal(io->smb_krb5_context->krb5_context,
 					       &salt_principal,
 					       io->ac->status->domain_data.realm,
 					       user_principal_name, NULL);
 	} else {
-		krb5_ret = krb5_make_principal(io->smb_krb5_context->krb5_context,
+		krb5_ret = smb_krb5_make_principal(io->smb_krb5_context->krb5_context,
 					       &salt_principal,
 					       io->ac->status->domain_data.realm,
 					       io->u.sAMAccountName, NULL);
