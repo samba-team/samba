@@ -300,6 +300,9 @@ krb5_enctype ms_suptype_to_ietf_enctype(uint32_t enctype_bitmap);
 krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
 					     uint32_t enctype_bitmap,
 					     krb5_enctype **enctypes);
+int smb_krb5_get_pw_salt(krb5_context context,
+			 krb5_principal host_princ,
+			 krb5_data *psalt);
 
 #endif /* HAVE_KRB5 */
 

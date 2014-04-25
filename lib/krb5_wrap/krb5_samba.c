@@ -181,6 +181,48 @@ int create_kerberos_key_from_string_direct(krb5_context context,
 #error UNKNOWN_CREATE_KEY_FUNCTIONS
 #endif
 
+
+/**
+* @brief Create a salt for a given principal
+*
+* @param context	The initialized krb5_context
+* @param host_princ	The krb5_principal to create the salt for
+* @param psalt		A pointer to a krb5_data struct
+*
+* caller has to free the contents of psalt with kerberos_free_data_contents
+* when function has succeeded
+*
+* @return krb5_error_code, returns 0 on success, error code otherwise
+*/
+
+int smb_krb5_get_pw_salt(krb5_context context,
+			 krb5_principal host_princ,
+			 krb5_data *psalt)
+#if defined(HAVE_KRB5_GET_PW_SALT)
+/* Heimdal */
+{
+	int ret;
+	krb5_salt salt;
+
+	ret = krb5_get_pw_salt(context, host_princ, &salt);
+	if (ret) {
+		return ret;
+	}
+
+	psalt->data = salt.saltvalue.data;
+	psalt->length = salt.saltvalue.length;
+
+	return ret;
+}
+#elif defined(HAVE_KRB5_PRINCIPAL2SALT)
+/* MIT */
+{
+	return krb5_principal2salt(context, host_princ, psalt);
+}
+#else
+#error UNKNOWN_SALT_FUNCTIONS
+#endif
+
 #if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
  krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 					    krb5_enctype **enctypes)
