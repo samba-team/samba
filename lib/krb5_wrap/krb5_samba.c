@@ -205,55 +205,6 @@ int smb_krb5_create_key_from_string(krb5_context context,
 	return ret;
 }
 
-
-#if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_C_STRING_TO_KEY)
-/* MIT */
-int create_kerberos_key_from_string_direct(krb5_context context,
-						  krb5_principal host_princ,
-						  krb5_data *password,
-						  krb5_keyblock *key,
-						  krb5_enctype enctype)
-{
-	int ret = 0;
-	krb5_data salt;
-
-	ret = krb5_principal2salt(context, host_princ, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
-		return ret;
-	}
-	ret = krb5_c_string_to_key(context, enctype, password, &salt, key);
-	SAFE_FREE(salt.data);
-
-	return ret;
-}
-#elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
-/* Heimdal */
-int create_kerberos_key_from_string_direct(krb5_context context,
-						  krb5_principal host_princ,
-						  krb5_data *password,
-						  krb5_keyblock *key,
-						  krb5_enctype enctype)
-{
-	int ret;
-	krb5_salt salt;
-
-	ret = krb5_get_pw_salt(context, host_princ, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
-		return ret;
-	}
-
-	ret = krb5_string_to_key_salt(context, enctype, (const char *)password->data, salt, key);
-	krb5_free_salt(context, salt);
-
-	return ret;
-}
-#else
-#error UNKNOWN_CREATE_KEY_FUNCTIONS
-#endif
-
-
 /**
 * @brief Create a salt for a given principal
 *

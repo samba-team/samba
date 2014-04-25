@@ -134,11 +134,6 @@ int create_kerberos_key_from_string(krb5_context context,
 				    krb5_keyblock *key,
 				    krb5_enctype enctype,
 				    bool no_salt);
-int create_kerberos_key_from_string_direct(krb5_context context,
-					   krb5_principal host_princ,
-					   krb5_data *password,
-					   krb5_keyblock *key,
-					   krb5_enctype enctype);
 
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
