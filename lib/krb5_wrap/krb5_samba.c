@@ -134,6 +134,78 @@ bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
 #error UNKNOWN_ADDRTYPE
 #endif
 
+/**
+* @brief Create a keyblock based on input parameters
+*
+* @param context	The krb5_context
+* @param host_princ	The krb5_principal to use
+* @param salt		The optional salt, if ommitted, salt is calculated with
+*			the provided principal.
+* @param password	The krb5_data containing the password
+* @param enctype	The krb5_enctype to use for the keyblock generation
+* @param key		The returned krb5_keyblock, caller needs to free with
+*			krb5_free_keyblock().
+*
+* @return krb5_error_code
+*/
+int smb_krb5_create_key_from_string(krb5_context context,
+				    krb5_principal *host_princ,
+				    krb5_data *salt,
+				    krb5_data *password,
+				    krb5_enctype enctype,
+				    krb5_keyblock *key)
+{
+	int ret = 0;
+
+	if (host_princ == NULL && salt == NULL) {
+		return -1;
+	}
+
+#if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_C_STRING_TO_KEY)
+{/* MIT */
+	krb5_data _salt;
+
+	if (salt == NULL) {
+		ret = krb5_principal2salt(context, *host_princ, &_salt);
+		if (ret) {
+			DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
+			return ret;
+		}
+	} else {
+		_salt = *salt;
+	}
+	ret = krb5_c_string_to_key(context, enctype, password, &_salt, key);
+	if (salt == NULL) {
+		SAFE_FREE(_salt.data);
+	}
+}
+#elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
+{/* Heimdal */
+	krb5_salt _salt;
+
+	if (salt == NULL) {
+		ret = krb5_get_pw_salt(context, *host_princ, &_salt);
+		if (ret) {
+			DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
+			return ret;
+		}
+	} else {
+		_salt.saltvalue = *salt;
+		_salt.salttype = KRB5_PW_SALT;
+	}
+
+	ret = krb5_string_to_key_salt(context, enctype, (const char *)password->data, _salt, key);
+	if (salt == NULL) {
+		krb5_free_salt(context, _salt);
+	}
+}
+#else
+#error UNKNOWN_CREATE_KEY_FUNCTIONS
+#endif
+	return ret;
+}
+
+
 #if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_C_STRING_TO_KEY)
 /* MIT */
 int create_kerberos_key_from_string_direct(krb5_context context,
