@@ -218,7 +218,9 @@ def etags(ctx):
     source_root = os.path.dirname(Utils.g_module.root_path)
     cmd = 'rm -f %s/TAGS && (find %s -name "*.[ch]" | egrep -v \.inst\. | xargs -n 100 etags -a)' % (source_root, source_root)
     print("Running: %s" % cmd)
-    os.system(cmd)
+    status = os.system(cmd)
+    if os.WEXITSTATUS(status):
+        raise Utils.WafError('etags failed')
 
 def ctags(ctx):
     "build 'tags' file using ctags"
@@ -226,7 +228,9 @@ def ctags(ctx):
     source_root = os.path.dirname(Utils.g_module.root_path)
     cmd = 'ctags --python-kinds=-i $(find %s -name "*.[ch]" | grep -v "*_proto\.h" | egrep -v \.inst\.) $(find %s -name "*.py")' % (source_root, source_root)
     print("Running: %s" % cmd)
-    os.system(cmd)
+    status = os.system(cmd)
+    if os.WEXITSTATUS(status):
+        raise Utils.WafError('ctags failed')
 
 # putting this here enabled build in the list
 # of commands in --help
@@ -249,14 +253,18 @@ def pydoctor(ctx):
     cmd='PYTHONPATH=%s pydoctor --introspect-c-modules --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba --add-module %s --add-module %s --add-module %s' % (
         bp, mpaths['tdb'], mpaths['ldb'], mpaths['talloc'], mpaths['ntdb'])
     print("Running: %s" % cmd)
-    os.system(cmd)
+    status = os.system(cmd)
+    if os.WEXITSTATUS(status):
+        raise Utils.WafError('pydoctor failed')
 
 
 def pep8(ctx):
     '''run pep8 validator'''
     cmd='PYTHONPATH=bin/python pep8 -r bin/python/samba'
     print("Running: %s" % cmd)
-    os.system(cmd)
+    status = os.system(cmd)
+    if os.WEXITSTATUS(status):
+        raise Utils.WafError('pep8 failed')
 
 
 def wafdocs(ctx):
@@ -270,7 +278,9 @@ def wafdocs(ctx):
     for f in list:
         cmd += ' --add-module %s' % f
     print("Running: %s" % cmd)
-    os.system(cmd)
+    status = os.system(cmd)
+    if os.WEXITSTATUS(status):
+        raise Utils.WafError('wafdocs failed')
 
 
 def dist():
