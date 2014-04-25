@@ -63,15 +63,16 @@ bld.SAMBA_LIBRARY('db-glue',
 	)
 
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
-	source='mit_samba.c',
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue PAC_GLUE samba-hostconfig com_err'
-	)
-
-
-bld.SAMBA_LIBRARY('mit-samba',
-	source='',
-	deps='MIT_SAMBA',
-	external_library=True,
-	realname='mit_samba.so'
-	)
-
+                    source='mit_samba.c',
+                    deps='''
+                         ldb
+                         auth4_sam
+                         auth_sam_reply
+                         samba-credentials
+                         hdb
+                         db-glue
+                         PAC_GLUE
+                         samba-hostconfig
+                         com_err
+                         ''',
+                    enabled=not bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'))
