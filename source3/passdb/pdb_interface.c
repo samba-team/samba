@@ -35,6 +35,7 @@
 #include "../lib/util/util_pw.h"
 #include "passdb/pdb_secrets.h"
 #include "lib/util_sid_passdb.h"
+#include "idmap_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -1206,25 +1207,54 @@ bool pdb_get_seq_num(time_t *seq_num)
 bool pdb_uid_to_sid(uid_t uid, struct dom_sid *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->uid_to_sid(pdb, uid, sid);
+	bool ret;
+
+	ret = pdb->uid_to_sid(pdb, uid, sid);
+
+	if (ret == true) {
+		struct unixid id;
+		id.id = uid;
+		id.type = ID_TYPE_UID;
+		idmap_cache_set_sid2unixid(sid, &id);
+	}
+
+	return ret;
 }
 
 bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->gid_to_sid(pdb, gid, sid);
+	bool ret;
+
+	ret = pdb->gid_to_sid(pdb, gid, sid);
+
+	if (ret == true) {
+		struct unixid id;
+		id.id = gid;
+		id.type = ID_TYPE_GID;
+		idmap_cache_set_sid2unixid(sid, &id);
+	}
+
+	return ret;
 }
 
 bool pdb_sid_to_id(const struct dom_sid *sid, struct unixid *id)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	bool ret;
 
 	/* only ask the backend if it is responsible */
 	if (!sid_check_object_is_for_passdb(sid)) {
 		return false;
 	}
 
-	return pdb->sid_to_id(pdb, sid, id);
+	ret = pdb->sid_to_id(pdb, sid, id);
+
+	if (ret == true) {
+		idmap_cache_set_sid2unixid(sid, id);
+	}
+
+	return ret;
 }
 
 uint32_t pdb_capabilities(void)
