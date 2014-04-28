@@ -63,6 +63,7 @@ parser.add_option("--all-names", action="store_true")
 parser.add_option("--all-interfaces", action="store_true")
 parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
 parser.add_option("--update-list", type="string", help="Add DNS names from the given file")
+parser.add_option("--update-cache", type="string", help="Cache database of already registered records")
 parser.add_option("--fail-immediately", action='store_true', help="Exit on first failure")
 parser.add_option("--no-credentials", dest='nocreds', action='store_true', help="don't try and get credentials")
 parser.add_option("--no-substiutions", dest='nosubs', action='store_true', help="don't try and expands variables in file specified by --update-list")
@@ -278,12 +279,14 @@ def get_subst_vars(samdb):
     return vars
 
 
-def call_nsupdate(d):
+def call_nsupdate(d, op="add"):
     """call nsupdate for an entry."""
     global ccachename, nsupdate_cmd, krb5conf
 
+    assert(op in ["add", "delete"])
+
     if opts.verbose:
-        print "Calling nsupdate for %s" % d
+        print "Calling nsupdate for %s (%s)" % (d, op)
 
     if opts.use_file is not None:
         try:
@@ -299,8 +302,13 @@ def call_nsupdate(d):
         wfile = os.fdopen(tmp_fd, 'a')
         rfile.seek(0)
         for line in rfile:
+            if op == "delete":
+                l = parse_dns_line(line, {})
+                if str(l).lower() == str(d).lower():
+                    continue
             wfile.write(line)
-        wfile.write(str(d)+"\n")
+        if op == "add":
+            wfile.write(str(d)+"\n")
         os.rename(tmpfile, opts.use_file)
         fcntl.lockf(rfile, fcntl.LOCK_UN)
         return
@@ -312,18 +320,18 @@ def call_nsupdate(d):
     if getattr(d, 'nameservers', None):
         f.write('server %s\n' % d.nameservers[0])
     if d.type == "A":
-        f.write("update add %s %u A %s\n" % (normalised_name, default_ttl, d.ip))
+        f.write("update %s %s %u A %s\n" % (op, normalised_name, default_ttl, d.ip))
     if d.type == "AAAA":
-        f.write("update add %s %u AAAA %s\n" % (normalised_name, default_ttl, d.ip))
+        f.write("update %s %s %u AAAA %s\n" % (op, normalised_name, default_ttl, d.ip))
     if d.type == "SRV":
-        if d.existing_port is not None:
+        if op == "add" and d.existing_port is not None:
             f.write("update delete %s SRV 0 %s %s %s\n" % (normalised_name, d.existing_weight,
                                                            d.existing_port, d.dest))
-        f.write("update add %s %u SRV 0 100 %s %s\n" % (normalised_name, default_ttl, d.port, d.dest))
+        f.write("update %s %s %u SRV 0 100 %s %s\n" % (op, normalised_name, default_ttl, d.port, d.dest))
     if d.type == "CNAME":
-        f.write("update add %s %u CNAME %s\n" % (normalised_name, default_ttl, d.dest))
+        f.write("update %s %s %u CNAME %s\n" % (op, normalised_name, default_ttl, d.dest))
     if d.type == "NS":
-        f.write("update add %s %u NS %s\n" % (normalised_name, default_ttl, d.dest))
+        f.write("update %s %s %u NS %s\n" % (op, normalised_name, default_ttl, d.dest))
     if opts.verbose:
         f.write("show\n")
     f.write("send\n")
@@ -359,9 +367,11 @@ def call_nsupdate(d):
 
 
 
-def rodc_dns_update(d, t):
+def rodc_dns_update(d, t, op):
     '''a single DNS update via the RODC netlogon call'''
     global sub_vars
+
+    assert(op in ["add", "delete"])
 
     if opts.verbose:
         print "Calling netlogon RODC update for %s" % d
@@ -386,7 +396,10 @@ def rodc_dns_update(d, t):
     name.weight   = 0
     if d.port is not None:
         name.port = int(d.port)
-    name.dns_register = True
+    if op == "add":
+        name.dns_register = True
+    else:
+        name.dns_register = False
     dns_names.names = [ name ]
     site_name = sub_vars['SITE'].decode('utf-8')
 
@@ -405,9 +418,11 @@ def rodc_dns_update(d, t):
         sys.exit(1)
 
 
-def call_rodc_update(d):
+def call_rodc_update(d, op="add"):
     '''RODCs need to use the netlogon API for nsupdate'''
     global lp, sub_vars
+
+    assert(op in ["add", "delete"])
 
     # we expect failure for 3268 if we aren't a GC
     if d.port is not None and int(d.port) == 3268:
@@ -428,7 +443,7 @@ def call_rodc_update(d):
         subname = samba.substitute_var(map[t], sub_vars)
         if subname.lower() == d.name.lower():
             # found a match - do the update
-            rodc_dns_update(d, t)
+            rodc_dns_update(d, t, op)
             return
     if opts.verbose:
         print("Unable to map to netlogon DNS update: %s" % d)
@@ -439,6 +454,11 @@ if opts.update_list:
     dns_update_list = opts.update_list
 else:
     dns_update_list = lp.private_path('dns_update_list')
+
+if opts.update_cache:
+    dns_update_cache = opts.update_cache
+else:
+    dns_update_cache = lp.private_path('dns_update_cache')
 
 # use our private krb5.conf to avoid problems with the wrong domain
 # bind9 nsupdate wants the default domain set
@@ -458,8 +478,31 @@ else:
 # build up a list of update commands to pass to nsupdate
 update_list = []
 dns_list = []
+cache_list = []
+delete_list = []
 
 dup_set = set()
+cache_set = set()
+
+rebuild_cache = False
+try:
+    cfile = open(dns_update_cache, 'r+')
+except IOError:
+    # Perhaps create it
+    cfile = open(dns_update_cache, 'w+')
+    # Open it for reading again, in case someone else got to it first
+    cfile = open(dns_update_cache, 'r+')
+fcntl.lockf(cfile, fcntl.LOCK_EX)
+for line in cfile:
+    line = line.strip()
+    if line == '' or line[0] == "#":
+        continue
+    c = parse_dns_line(line, {})
+    if c is None:
+        continue
+    if str(c) not in cache_set:
+        cache_list.append(c)
+        cache_set.add(str(c))
 
 # read each line, and check that the DNS name exists
 for line in file:
@@ -497,17 +540,50 @@ for d in dns_list:
 
 # now check if the entries already exist on the DNS server
 for d in dns_list:
+    found = False
+    for c in cache_list:
+        if str(c).lower() == str(d).lower():
+            found = True
+            break
+    if not found:
+        rebuild_cache = True
     if opts.all_names or not check_dns_name(d):
         update_list.append(d)
 
-if len(update_list) == 0:
+for c in cache_list:
+    found = False
+    for d in dns_list:
+        if str(c).lower() == str(d).lower():
+            found = True
+            break
+    if found:
+        continue
+    rebuild_cache = True
+    if not opts.all_names and not check_dns_name(c):
+        continue
+    delete_list.append(c)
+
+if len(delete_list) == 0 and len(update_list) == 0 and not rebuild_cache:
     if opts.verbose:
         print "No DNS updates needed"
     sys.exit(0)
 
 # get our krb5 creds
-if not opts.nocreds:
-    get_credentials(lp)
+if len(delete_list) != 0 or len(update_list) != 0:
+    if not opts.nocreds:
+        get_credentials(lp)
+
+# ask nsupdate to delete entries as needed
+for d in delete_list:
+    if am_rodc:
+        if d.name.lower() == domain.lower():
+            continue
+        if not d.type in [ 'A', 'AAAA' ]:
+            call_rodc_update(d, op="delete")
+        else:
+            call_nsupdate(d, op="delete")
+    else:
+        call_nsupdate(d, op="delete")
 
 # ask nsupdate to add entries as needed
 for d in update_list:
@@ -520,6 +596,15 @@ for d in update_list:
             call_nsupdate(d)
     else:
         call_nsupdate(d)
+
+if rebuild_cache:
+    (file_dir, file_name) = os.path.split(dns_update_cache)
+    (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
+    wfile = os.fdopen(tmp_fd, 'a')
+    for d in dns_list:
+        wfile.write(str(d)+"\n")
+    os.rename(tmpfile, dns_update_cache)
+fcntl.lockf(cfile, fcntl.LOCK_UN)
 
 # delete the ccache if we created it
 if ccachename is not None:

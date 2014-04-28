@@ -397,6 +397,7 @@ struct dnsupdate_RODC_state {
 	struct irpc_message *msg;
 	struct dnsupdate_RODC *r;
 	char *tmp_path;
+	char *tmp_path2;
 	int fd;
 };
 
@@ -406,6 +407,9 @@ static int dnsupdate_RODC_destructor(struct dnsupdate_RODC_state *st)
 		close(st->fd);
 	}
 	unlink(st->tmp_path);
+	if (st->tmp_path2 != NULL) {
+		unlink(st->tmp_path2);
+	}
 	return 0;
 }
 
@@ -482,6 +486,13 @@ static NTSTATUS dnsupdate_dnsupdate_RODC(struct irpc_message *msg,
 	}
 
 	talloc_set_destructor(st, dnsupdate_RODC_destructor);
+
+	st->tmp_path2 = talloc_asprintf(st, "%s.cache", st->tmp_path);
+	if (!st->tmp_path2) {
+		talloc_free(st);
+		r->out.result = NT_STATUS_NO_MEMORY;
+		return NT_STATUS_OK;
+	}
 
 	sid_dn = ldb_dn_new_fmt(st, s->samdb, "<SID=%s>", dom_sid_string(st, r->in.dom_sid));
 	if (!sid_dn) {
@@ -575,6 +586,8 @@ static NTSTATUS dnsupdate_dnsupdate_RODC(struct irpc_message *msg,
 				dns_update_command,
 				"--update-list",
 				st->tmp_path,
+				"--update-cache",
+				st->tmp_path2,
 				NULL);
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
