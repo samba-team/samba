@@ -1259,7 +1259,7 @@ domadmins:X:$gid_domadmins:
 	print DNS_UPDATE_LIST "AAAA $server. $server_ipv6\n";
 	close(DNS_UPDATE_LIST);
 
-        if (system("$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$dns_host_file -s $conffile --update-list=$prefix/dns_update_list --no-substiutions --no-credentials") != 0) {
+        if (system("$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$dns_host_file -s $conffile --update-list=$prefix/dns_update_list --update-cache=$prefix/dns_update_cache --no-substiutions --no-credentials") != 0) {
                 die "Unable to update hostname into $dns_host_file";
         }
 
