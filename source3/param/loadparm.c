@@ -4105,6 +4105,8 @@ static bool lp_load_ex(const char *pszFname,
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
 		lp_do_parameter(-1, "passdb backend", "samba_dsdb");
 
+		lp_do_parameter(-1, "winbindd:use external pipes", "true");
+
 		lp_do_parameter(-1, "rpc_server:default", "external");
 		lp_do_parameter(-1, "rpc_server:svcctl", "embedded");
 		lp_do_parameter(-1, "rpc_server:srvsvc", "embedded");

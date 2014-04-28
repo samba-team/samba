@@ -54,12 +54,22 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a samr connection */
-	status = rpc_pipe_open_internal(mem_ctx,
-					&ndr_table_samr.syntax_id,
-					session_info,
-					NULL,
-					winbind_messaging_context(),
-					&cli);
+	if (lp_parm_bool(-1, "winbindd", "use external pipes", false)) {
+		status = rpc_pipe_open_interface(mem_ctx,
+						 &ndr_table_samr,
+						 session_info,
+						 NULL,
+						 winbind_messaging_context(),
+						 &cli);
+	} else {
+		status = rpc_pipe_open_internal(mem_ctx,
+						&ndr_table_samr.syntax_id,
+						session_info,
+						NULL,
+						winbind_messaging_context(),
+						&cli);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("open_samr_pipe: Could not connect to samr_pipe: %s\n",
 			  nt_errstr(status)));
@@ -129,12 +139,21 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a lsa connection */
-	status = rpc_pipe_open_internal(mem_ctx,
-					&ndr_table_lsarpc.syntax_id,
-					session_info,
-					NULL,
-					winbind_messaging_context(),
-					&cli);
+	if (lp_parm_bool(-1, "winbindd", "use external pipes", false)) {
+		status = rpc_pipe_open_interface(mem_ctx,
+						 &ndr_table_lsarpc,
+						 session_info,
+						 NULL,
+						 winbind_messaging_context(),
+						 &cli);
+	} else {
+		status = rpc_pipe_open_internal(mem_ctx,
+						&ndr_table_lsarpc.syntax_id,
+						session_info,
+						NULL,
+						winbind_messaging_context(),
+						&cli);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("open_lsa_pipe: Could not connect to lsa_pipe: %s\n",
 			  nt_errstr(status)));
