@@ -932,6 +932,7 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 	proxy_state = make_external_rpc_pipe_p(mem_ctx, pipe_name,
 						local, remote, session_info);
 	if (!proxy_state) {
+		DEBUG(1, ("Unable to make proxy_state for connection to %s.\n", pipe_name));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1059,6 +1060,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 
 	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
 	if (pipe_name == NULL) {
+		DEBUG(1, ("Unable to find pipe name to forward %s to.\n", table->name));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
