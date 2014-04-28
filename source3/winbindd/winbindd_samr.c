@@ -46,13 +46,11 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status;
 
-	if (session_info == NULL) {
-		status = make_session_info_system(mem_ctx, &session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("open_samr_pipe: Could not create auth_session_info: %s\n",
-				  nt_errstr(status)));
-			return status;
-		}
+	status = make_session_info_system(mem_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("open_samr_pipe: Could not create auth_session_info: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	/* create a samr connection */
@@ -123,13 +121,11 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status;
 
-	if (session_info == NULL) {
-		status = make_session_info_system(mem_ctx, &session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("open_lsa_pipe: Could not create auth_session_info: %s\n",
-				  nt_errstr(status)));
-			return status;
-		}
+	status = make_session_info_system(mem_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("open_lsa_pipe: Could not create auth_session_info: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	/* create a lsa connection */
