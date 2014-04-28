@@ -900,6 +900,10 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.samba_kcc_command = str_list_make_v3_const(NULL, s, NULL);
 	TALLOC_FREE(s);
 
+#ifdef MIT_KDC_PATH
+	Globals.mit_kdc_command = str_list_make_v3_const(NULL, MIT_KDC_PATH, NULL);
+#endif
+
 	s = talloc_asprintf(talloc_tos(), "%s/samba_dnsupdate", get_dyn_SCRIPTSBINDIR());
 	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
