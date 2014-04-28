@@ -42,6 +42,7 @@ import samba
 import optparse
 from samba import getopt as options
 from ldb import SCOPE_BASE
+from samba import dsdb
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import netlogon, winbind
@@ -168,10 +169,13 @@ class dnsobj(object):
 def parse_dns_line(line, sub_vars):
     """parse a DNS line from."""
     if line.startswith("SRV _ldap._tcp.pdc._msdcs.") and not samdb.am_pdc():
+        # We keep this as compat to the dns_update_list of 4.0/4.1
         if opts.verbose:
             print "Skipping PDC entry (%s) as we are not a PDC" % line
         return None
     subline = samba.substitute_var(line, sub_vars)
+    if subline == '' or subline[0] == "#":
+        return None
     return dnsobj(subline)
 
 
@@ -255,7 +259,60 @@ def get_subst_vars(samdb):
     res = samdb.search(base=samdb.get_default_basedn(), scope=SCOPE_BASE, attrs=["objectGUID"])
     guid = samdb.schema_format_value("objectGUID", res[0]['objectGUID'][0])
     vars['DOMAINGUID'] = guid
+
+    vars['IF_DC'] = ""
+    vars['IF_RWDC'] = "# "
+    vars['IF_RODC'] = "# "
+    vars['IF_PDC'] = "# "
+    vars['IF_GC'] = "# "
+    vars['IF_RWGC'] = "# "
+    vars['IF_ROGC'] = "# "
+    vars['IF_DNS_DOMAIN'] = "# "
+    vars['IF_RWDNS_DOMAIN'] = "# "
+    vars['IF_RODNS_DOMAIN'] = "# "
+    vars['IF_DNS_FOREST'] = "# "
+    vars['IF_RWDNS_FOREST'] = "# "
+    vars['IF_R0DNS_FOREST'] = "# "
+
     am_rodc = samdb.am_rodc()
+    if am_rodc:
+        vars['IF_RODC'] = ""
+    else:
+        vars['IF_RWDC'] = ""
+
+    if samdb.am_pdc():
+        vars['IF_PDC'] = ""
+
+    # check if we "are DNS server"
+    res = samdb.search(base=samdb.get_config_basedn(),
+                   expression='(objectguid=%s)' % vars['NTDSGUID'],
+                   attrs=["options", "msDS-hasMasterNCs"])
+
+    if len(res) == 1:
+        if "options" in res[0]:
+            options = int(res[0]["options"][0])
+            if (options & dsdb.DS_NTDSDSA_OPT_IS_GC) != 0:
+                vars['IF_GC'] = ""
+                if am_rodc:
+                    vars['IF_ROGC'] = ""
+                else:
+                    vars['IF_RWGC'] = ""
+
+        basedn = str(samdb.get_default_basedn())
+        if "msDS-hasMasterNCs" in res[0]:
+            for e in res[0]["msDS-hasMasterNCs"]:
+                if str(e) == "DC=DomainDnsZones,%s" % basedn:
+                    vars['IF_DNS_DOMAIN'] = ""
+                    if am_rodc:
+                        vars['IF_RODNS_DOMAIN'] = ""
+                    else:
+                        vars['IF_RWDNS_DOMAIN'] = ""
+                if str(e) == "DC=ForestDnsZones,%s" % basedn:
+                    vars['IF_DNS_FOREST'] = ""
+                    if am_rodc:
+                        vars['IF_RODNS_FOREST'] = ""
+                    else:
+                        vars['IF_RWDNS_FOREST'] = ""
 
     return vars
 
