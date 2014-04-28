@@ -136,20 +136,20 @@ class dnsobj(object):
         self.existing_port = None
         self.existing_weight = None
         self.type = list[0]
-        self.name = list[1].lower()
+        self.name = list[1]
         if self.type == 'SRV':
             if len(list) < 4:
                 raise Exception("Invalid DNS entry %r" % string_form)
-            self.dest = list[2].lower()
+            self.dest = list[2]
             self.port = list[3]
         elif self.type in ['A', 'AAAA']:
             self.ip   = list[2] # usually $IP, which gets replaced
         elif self.type == 'CNAME':
-            self.dest = list[2].lower()
+            self.dest = list[2]
         elif self.type == 'NS':
-            self.dest = list[2].lower()
+            self.dest = list[2]
         else:
-            raise Exception("Received unexpected DNS reply of type %s" % self.type)
+            raise Exception("Received unexpected DNS reply of type %s: %s" % (self.type, string_form))
 
     def __str__(self):
         if d.type == "A":
