@@ -1029,16 +1029,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
-        rdn0 = (str(dn).split(",", 1))[0]
-        rdn0_attr = (str(rdn0).split("=", 1))[0]
         if "dn" in map(str.lower, attrs):
             attrs.append("name")
         if "distinguishedname" in map(str.lower, attrs):
             attrs.append("name")
-        if str(rdn0_attr).lower() in map(str.lower, attrs):
+        if str(dn.get_rdn_name()).lower() in map(str.lower, attrs):
             attrs.append("name")
         if 'name' in map(str.lower, attrs):
-            attrs.append(rdn0_attr)
+            attrs.append(dn.get_rdn_name())
             attrs.append("isDeleted")
             attrs.append("systemFlags")
         if '*' in attrs:
@@ -1083,11 +1081,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         except KeyError, e:
             deleted_objects_dn = ldb.Dn(self.samdb, "CN=Deleted Objects,%s" % nc_dn)
 
-        rdn1_attr = obj.dn.get_rdn_name()
-        rdn1_val = obj.dn.get_rdn_value()
-
-        rdn2_attr = None
-        rdn2_val = None
+        object_rdn_attr = None
+        object_rdn_val = None
         name_val = None
         isDeleted = False
         systemFlags = 0
@@ -1107,14 +1102,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 else:
                     name_val = obj[attrname][0]
 
-            if str(attrname).lower() == str(rdn1_attr).lower():
-                rdn2_attr = attrname
+            if str(attrname).lower() == str(obj.dn.get_rdn_name()).lower():
+                object_rdn_attr = attrname
                 if len(obj[attrname]) != 1:
                     error_count += 1
                     self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
                                 (len(obj[attrname]), attrname, str(obj.dn)))
                 else:
-                    rdn2_val = obj[attrname][0]
+                    object_rdn_val = obj[attrname][0]
 
             if str(attrname).lower() == 'isdeleted':
                 if obj[attrname][0] != "FALSE":
@@ -1218,9 +1213,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if name_val is None:
                 error_count += 1
                 self.report("ERROR: Not fixing missing 'name' on '%s'" % (str(obj.dn)))
-            if rdn2_attr is None:
+            if object_rdn_attr is None:
                 error_count += 1
-                self.report("ERROR: Not fixing missing '%s' on '%s'" % (rdn1_attr, str(obj.dn)))
+                self.report("ERROR: Not fixing missing '%s' on '%s'" % (obj.dn.get_rdn_name(), str(obj.dn)))
 
         if name_val is not None:
             parent_dn = None
@@ -1230,17 +1225,17 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if parent_dn is None:
                 parent_dn = obj.dn.parent()
             expected_dn = ldb.Dn(self.samdb, "RDN=RDN,%s" % (parent_dn))
-            expected_dn.set_component(0, rdn1_attr, name_val)
+            expected_dn.set_component(0, obj.dn.get_rdn_name(), name_val)
 
             if obj.dn == deleted_objects_dn:
                 expected_dn = obj.dn
 
             if expected_dn != obj.dn:
                 error_count += 1
-                self.err_wrong_dn(obj, expected_dn, rdn2_attr, rdn2_val, name_val)
-            elif rdn1_val != rdn2_val:
+                self.err_wrong_dn(obj, expected_dn, object_rdn_attr, object_rdn_val, name_val)
+            elif obj.dn.get_rdn_value() != object_rdn_val:
                 error_count += 1
-                self.report("ERROR: Not fixing %s=%r on '%s'" % (rdn2_attr, rdn2_val, str(obj.dn)))
+                self.report("ERROR: Not fixing %s=%r on '%s'" % (object_rdn_attr, object_rdn_val, str(obj.dn)))
 
         show_dn = True
         if got_repl_property_meta_data:
