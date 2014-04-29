@@ -67,6 +67,13 @@ bool run_dbwrap_watch1(int dummy)
 	}
 	TALLOC_FREE(rec);
 
+	status = dbwrap_store_int32_bystring(db, "different_key", 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "dbwrap_store_int32 failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
 	status = dbwrap_store_int32_bystring(db, keystr, 1);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "dbwrap_store_int32 failed: %s\n",
