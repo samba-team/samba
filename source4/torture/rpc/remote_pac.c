@@ -476,22 +476,15 @@ static bool test_PACVerify_workstation_des(struct torture_context *tctx,
 	struct samr_SetUserInfo r;
 	union samr_UserInfo user_info;
 	struct dcerpc_pipe *samr_pipe = torture_join_samr_pipe(join_ctx);
-
-#ifdef AD_DC_BUILD_IS_ENABLED
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_error_code ret;
 
 	ret = cli_credentials_get_krb5_context(cmdline_credentials, tctx->lp_ctx, &smb_krb5_context);
 	torture_assert_int_equal(tctx, ret, 0, "cli_credentials_get_krb5_context() failed");
 
-	if (krb5_config_get_bool_default(smb_krb5_context->krb5_context, NULL, FALSE,
-					 "libdefaults",
-					 "allow_weak_crypto", NULL) == FALSE) {
+	if (smb_krb5_get_allowed_weak_crypto(smb_krb5_context->krb5_context) == FALSE) {
 		torture_skip(tctx, "Cannot test DES without [libdefaults] allow_weak_crypto = yes");
 	}
-#else
-	torture_skip(tctx, "Skipping DES test in non-AD DC build");
-#endif
 
 	/* Mark this workstation with DES-only */
 	user_info.info16.acct_flags = ACB_USE_DES_KEY_ONLY | ACB_WSTRUST;
