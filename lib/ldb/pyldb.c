@@ -601,7 +601,7 @@ static PyMethodDef py_ldb_dn_methods[] = {
 		"S.get_extended_component(name) -> string\n\n"
 		"returns a DN extended component as a binary string"},
 	{ "set_extended_component", (PyCFunction)py_ldb_dn_set_extended_component, METH_VARARGS,
-		"S.set_extended_component(name, value) -> string\n\n"
+		"S.set_extended_component(name, value) -> None\n\n"
 		"set a DN extended component as a binary string"},
 	{ NULL }
 };
