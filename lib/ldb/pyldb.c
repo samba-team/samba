@@ -193,7 +193,7 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 				      ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
 }
 
-static PyObject *PyObject_FromLdbValue(struct ldb_val *val)
+static PyObject *PyObject_FromLdbValue(const struct ldb_val *val)
 {
 	return PyString_FromStringAndSize((const char *)val->data, val->length);
 }
