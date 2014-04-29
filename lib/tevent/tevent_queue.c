@@ -144,10 +144,6 @@ static void tevent_queue_immediate_trigger(struct tevent_context *ev,
 		return;
 	}
 
-	if (!q->list) {
-		return;
-	}
-
 	q->list->triggered = true;
 	q->list->trigger(q->list->req, q->list->private_data);
 }
