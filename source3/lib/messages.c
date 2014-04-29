@@ -526,7 +526,8 @@ static void messaging_read_cleanup(struct tevent_req *req,
 	}
 }
 
-static void messaging_read_done(struct tevent_req *req, struct messaging_rec *rec)
+static void messaging_read_done(struct tevent_req *req,
+				struct messaging_rec *rec)
 {
 	struct messaging_read_state *state = tevent_req_data(
 		req, struct messaging_read_state);
