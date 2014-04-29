@@ -550,7 +550,9 @@ int messaging_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		tevent_req_received(req);
 		return err;
 	}
-	*presult = talloc_move(mem_ctx, &state->rec);
+	if (presult != NULL) {
+		*presult = talloc_move(mem_ctx, &state->rec);
+	}
 	return 0;
 }
 
