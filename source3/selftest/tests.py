@@ -102,6 +102,7 @@ local_tests = [
     "LOCAL-CONVERT-STRING",
     "LOCAL-CONV-AUTH-INFO",
     "LOCAL-IDMAP-TDB-COMMON",
+    "LOCAL-MESSAGING-READ1",
     "LOCAL-hex_encode_buf",
     "LOCAL-sprintf_append",
     "LOCAL-remove_duplicate_addrs2"]
