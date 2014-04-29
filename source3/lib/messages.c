@@ -475,7 +475,7 @@ struct tevent_req *messaging_read_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct messaging_read_state *state;
-	size_t waiters_len;
+	size_t new_waiters_len;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct messaging_read_state);
@@ -486,21 +486,21 @@ struct tevent_req *messaging_read_send(TALLOC_CTX *mem_ctx,
 	state->msg_ctx = msg_ctx;
 	state->msg_type = msg_type;
 
-	waiters_len = talloc_array_length(msg_ctx->waiters);
+	new_waiters_len = talloc_array_length(msg_ctx->new_waiters);
 
-	if (waiters_len == msg_ctx->num_waiters) {
+	if (new_waiters_len == msg_ctx->num_new_waiters) {
 		struct tevent_req **tmp;
 
-		tmp = talloc_realloc(msg_ctx, msg_ctx->waiters,
-				     struct tevent_req *, waiters_len+1);
+		tmp = talloc_realloc(msg_ctx, msg_ctx->new_waiters,
+				     struct tevent_req *, new_waiters_len+1);
 		if (tevent_req_nomem(tmp, req)) {
 			return tevent_req_post(req, ev);
 		}
-		msg_ctx->waiters = tmp;
+		msg_ctx->new_waiters = tmp;
 	}
 
-	msg_ctx->waiters[msg_ctx->num_waiters] = req;
-	msg_ctx->num_waiters += 1;
+	msg_ctx->new_waiters[msg_ctx->num_new_waiters] = req;
+	msg_ctx->num_new_waiters += 1;
 	tevent_req_set_cleanup_fn(req, messaging_read_cleanup);
 
 	return req;
@@ -512,15 +512,20 @@ static void messaging_read_cleanup(struct tevent_req *req,
 	struct messaging_read_state *state = tevent_req_data(
 		req, struct messaging_read_state);
 	struct messaging_context *msg_ctx = state->msg_ctx;
-	struct tevent_req **waiters = msg_ctx->waiters;
 	unsigned i;
 
 	tevent_req_set_cleanup_fn(req, NULL);
 
 	for (i=0; i<msg_ctx->num_waiters; i++) {
-		if (waiters[i] == req) {
-			waiters[i] = waiters[msg_ctx->num_waiters-1];
-			msg_ctx->num_waiters -= 1;
+		if (msg_ctx->waiters[i] == req) {
+			msg_ctx->waiters[i] = NULL;
+			return;
+		}
+	}
+
+	for (i=0; i<msg_ctx->num_new_waiters; i++) {
+		if (msg_ctx->new_waiters[i] == req) {
+			msg_ctx->new_waiters[i] = NULL;
 			return;
 		}
 	}
@@ -556,6 +561,34 @@ int messaging_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+static bool messaging_append_new_waiters(struct messaging_context *msg_ctx)
+{
+	if (msg_ctx->num_new_waiters == 0) {
+		return true;
+	}
+
+	if (talloc_array_length(msg_ctx->waiters) <
+	    (msg_ctx->num_waiters + msg_ctx->num_new_waiters)) {
+		struct tevent_req **tmp;
+		tmp = talloc_realloc(
+			msg_ctx, msg_ctx->waiters, struct tevent_req *,
+			msg_ctx->num_waiters + msg_ctx->num_new_waiters);
+		if (tmp == NULL) {
+			DEBUG(1, ("%s: talloc failed\n", __func__));
+			return false;
+		}
+		msg_ctx->waiters = tmp;
+	}
+
+	memcpy(&msg_ctx->waiters[msg_ctx->num_waiters], msg_ctx->new_waiters,
+	       sizeof(struct tevent_req *) * msg_ctx->num_new_waiters);
+
+	msg_ctx->num_waiters += msg_ctx->num_new_waiters;
+	msg_ctx->num_new_waiters = 0;
+
+	return true;
+}
+
 /*
   Dispatch one messaging_rec
 */
@@ -578,14 +611,39 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		}
 	}
 
-	for (i=0; i<msg_ctx->num_waiters; i++) {
-		struct tevent_req *req = msg_ctx->waiters[i];
-		struct messaging_read_state *state = tevent_req_data(
-			req, struct messaging_read_state);
+	if (!messaging_append_new_waiters(msg_ctx)) {
+		return;
+	}
 
+	i = 0;
+	while (i < msg_ctx->num_waiters) {
+		struct tevent_req *req;
+		struct messaging_read_state *state;
+
+		req = msg_ctx->waiters[i];
+		if (req == NULL) {
+			/*
+			 * This got cleaned up. In the meantime,
+			 * move everything down one. We need
+			 * to keep the order of waiters, as
+			 * other code may depend on this.
+			 */
+			if (i <  msg_ctx->num_waiters - 1) {
+				memmove(&msg_ctx->waiters[i],
+					&msg_ctx->waiters[i+1],
+					sizeof(struct tevent_req *) *
+						(msg_ctx->num_waiters - i - 1));
+			}
+			msg_ctx->num_waiters -= 1;
+			continue;
+		}
+
+		state = tevent_req_data(req, struct messaging_read_state);
 		if (state->msg_type == rec->msg_type) {
 			messaging_read_done(req, rec);
 		}
+
+		i += 1;
 	}
 	return;
 }

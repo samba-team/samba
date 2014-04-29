@@ -76,6 +76,9 @@ struct messaging_context {
 	struct tevent_context *event_ctx;
 	struct messaging_callback *callbacks;
 
+	struct tevent_req **new_waiters;
+	unsigned num_new_waiters;
+
 	struct tevent_req **waiters;
 	unsigned num_waiters;
 
