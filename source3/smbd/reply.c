@@ -2917,9 +2917,10 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 			status = do_unlink(conn, req, smb_fname, dirtype);
 			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
-				continue;
+				goto out;
 			}
 
 			count++;
