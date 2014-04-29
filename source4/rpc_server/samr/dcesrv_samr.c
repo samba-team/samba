@@ -1746,13 +1746,22 @@ static NTSTATUS dcesrv_samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	/* search for the group record */
-	ret = gendb_search(d_state->sam_ctx,
-			   mem_ctx, d_state->domain_dn, &msgs, attrs,
-			   "(&(objectSid=%s)(objectClass=group)"
-			   "(|(groupType=%d)(groupType=%d)))",
-			   ldap_encode_ndr_dom_sid(mem_ctx, sid),
-			   GTYPE_SECURITY_UNIVERSAL_GROUP,
-			   GTYPE_SECURITY_GLOBAL_GROUP);
+	if (d_state->builtin) {
+		ret = gendb_search(d_state->sam_ctx,
+				   mem_ctx, d_state->domain_dn, &msgs, attrs,
+				   "(&(objectSid=%s)(objectClass=group)"
+				   "(groupType=%d))",
+				   ldap_encode_ndr_dom_sid(mem_ctx, sid),
+				   GTYPE_SECURITY_BUILTIN_LOCAL_GROUP);
+	} else {
+		ret = gendb_search(d_state->sam_ctx,
+				   mem_ctx, d_state->domain_dn, &msgs, attrs,
+				   "(&(objectSid=%s)(objectClass=group)"
+				   "(|(groupType=%d)(groupType=%d)))",
+				   ldap_encode_ndr_dom_sid(mem_ctx, sid),
+				   GTYPE_SECURITY_UNIVERSAL_GROUP,
+				   GTYPE_SECURITY_GLOBAL_GROUP);
+	}
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
