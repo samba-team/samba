@@ -142,3 +142,106 @@ fail:
 	TALLOC_FREE(ev);
 	return retval;
 }
+
+struct msg_free_state {
+	struct tevent_req **to_free;
+};
+
+static void msg_free_done(struct tevent_req *subreq);
+
+static struct tevent_req *msg_free_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct messaging_context *msg_ctx,
+					uint32_t msg_type,
+					struct tevent_req **to_free)
+{
+	struct tevent_req *req, *subreq;
+	struct msg_free_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct msg_free_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->to_free = to_free;
+
+	subreq = messaging_read_send(state, ev, msg_ctx, msg_type);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, msg_free_done, req);
+	return req;
+}
+
+static void msg_free_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct msg_free_state *state = tevent_req_data(
+		req, struct msg_free_state);
+	int ret;
+
+	ret = messaging_read_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_error(req, ret)) {
+		return;
+	}
+	TALLOC_FREE(*state->to_free);
+	tevent_req_done(req);
+}
+
+bool run_messaging_read2(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg_ctx = NULL;
+	struct tevent_req *req1 = NULL;
+	struct tevent_req *req2 = NULL;
+	unsigned count = 0;
+	NTSTATUS status;
+	bool retval = false;
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		fprintf(stderr, "tevent_context_init failed\n");
+		goto fail;
+	}
+	msg_ctx = messaging_init(ev, ev);
+	if (msg_ctx == NULL) {
+		fprintf(stderr, "messaging_init failed\n");
+		goto fail;
+	}
+
+	req1 = msg_free_send(ev, ev, msg_ctx, MSG_SMB_NOTIFY, &req2);
+	if (req1 == NULL) {
+		fprintf(stderr, "msg_count_send failed\n");
+		goto fail;
+	}
+	req2 = msg_count_send(ev, ev, msg_ctx, MSG_SMB_NOTIFY, &count);
+	if (req1 == NULL) {
+		fprintf(stderr, "msg_count_send failed\n");
+		goto fail;
+	}
+	status = messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
+				    MSG_SMB_NOTIFY, NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "messaging_send_buf failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req1, ev) != 0) {
+		fprintf(stderr, "tevent_req_poll failed\n");
+		goto fail;
+	}
+
+	if (count != 0) {
+		fprintf(stderr, "Got %u msgs, expected none\n", count);
+		goto fail;
+	}
+
+	retval = true;
+fail:
+	TALLOC_FREE(req1);
+	TALLOC_FREE(msg_ctx);
+	TALLOC_FREE(ev);
+	return retval;
+}
