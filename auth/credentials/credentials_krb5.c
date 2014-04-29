@@ -595,7 +595,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		return ret;
 	}
 
-#ifdef SAMBA4_USES_HEIMDAL /* MIT lacks krb5_get_default_in_tkt_etypes */
+
 	/*
 	 * transfer the enctypes from the smb_krb5_context to the gssapi layer
 	 *
@@ -607,9 +607,8 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	 * and used for the AS-REQ, so it wasn't possible to disable the usage
 	 * of AES keys.
 	 */
-	min_stat = krb5_get_default_in_tkt_etypes(ccache->smb_krb5_context->krb5_context,
-						  KRB5_PDU_NONE,
-						  &etypes);
+	min_stat = get_kerberos_allowed_etypes(ccache->smb_krb5_context->krb5_context,
+					       &etypes);
 	if (min_stat == 0) {
 		OM_uint32 num_ktypes;
 
@@ -618,7 +617,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		maj_stat = gss_krb5_set_allowable_enctypes(&min_stat, gcc->creds,
 							   num_ktypes,
 							   (int32_t *) etypes);
-		krb5_xfree (etypes);
+		SAFE_FREE(etypes);
 		if (maj_stat) {
 			talloc_free(gcc);
 			if (min_stat) {
@@ -630,7 +629,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 			return ret;
 		}
 	}
-#endif
+
 #ifdef SAMBA4_USES_HEIMDAL /* MIT lacks GSS_KRB5_CRED_NO_CI_FLAGS_X */
 
 	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
