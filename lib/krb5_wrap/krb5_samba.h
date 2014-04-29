@@ -306,6 +306,8 @@ int smb_krb5_create_key_from_string(krb5_context context,
 				    krb5_enctype enctype,
 				    krb5_keyblock *key);
 
+krb5_boolean smb_krb5_get_allowed_weak_crypto(krb5_context context);
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,

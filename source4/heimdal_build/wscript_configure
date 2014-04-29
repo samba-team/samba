@@ -162,6 +162,7 @@ conf.define('HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96', 1)
 conf.define('HAVE_KRB5_PRINCIPAL_GET_NUM_COMP', 1)
 conf.define('HAVE_GSSAPI_GSSAPI_SPNEGO_H', 1)
 conf.define('HAVE_FLAGS_IN_KRB5_CREDS', 1)
+conf.define('HAVE_KRB5_CONFIG_GET_BOOL_DEFAULT', 1)
 
 heimdal_includedirs = []
 heimdal_libdirs = []

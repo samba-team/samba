@@ -62,6 +62,8 @@ conf.CHECK_FUNCS_IN('des_set_key','crypto')
 conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
 conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
 
+conf.CHECK_HEADERS('profile.h')
+
 if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5'):
     have_gssapi=True
 
@@ -103,7 +105,9 @@ conf.CHECK_FUNCS('''
        krb5_get_init_creds_keyblock krb5_get_init_creds_keytab
        krb5_make_principal krb5_build_principal_alloc_va
        krb5_cc_get_lifetime krb5_cc_retrieve_cred
-       krb5_free_checksum_contents krb5_c_make_checksum krb5_create_checksum''',
+       krb5_free_checksum_contents krb5_c_make_checksum krb5_create_checksum
+       krb5_config_get_bool_default krb5_get_profile
+       ''',
      lib='krb5 k5crypto')
 conf.CHECK_DECLS('''krb5_get_credentials_for_user
                     krb5_auth_con_set_req_cksumtype''',

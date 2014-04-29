@@ -2405,6 +2405,59 @@ char *smb_get_krb5_error_message(krb5_context context,
 	return ret;
 }
 
+
+/**
+* @brief Return the kerberos library setting for "libdefaults:allow_weak_crypto"
+*
+* @param context	The krb5_context
+*
+* @return krb5_boolean
+*
+* Function returns true if weak crypto is allowd, false if not
+*/
+
+krb5_boolean smb_krb5_get_allowed_weak_crypto(krb5_context context)
+#if defined(HAVE_KRB5_CONFIG_GET_BOOL_DEFAULT)
+{
+	return krb5_config_get_bool_default(context,
+					    NULL,
+					    FALSE,
+					    "libdefaults",
+					    "allow_weak_crypto",
+					    NULL);
+}
+#elif defined(HAVE_PROFILE_H) && defined(HAVE_KRB5_GET_PROFILE)
+{
+#include <profile.h>
+	krb5_error_code ret;
+	krb5_boolean ret_default = false;
+	profile_t profile;
+	int ret_profile;
+
+	ret = krb5_get_profile(context,
+			       &profile);
+	if (ret) {
+		return ret_default;
+	}
+
+	ret = profile_get_boolean(profile,
+				  "libdefaults",
+				  "allow_weak_crypto",
+				  NULL, /* subsubname */
+				  ret_default, /* def_val */
+				  &ret_profile /* *ret_default */);
+	if (ret) {
+		return ret_default;
+	}
+
+	profile_release(profile);
+
+	return ret_profile;
+}
+#else
+#error UNKNOWN_KRB5_CONFIG_ROUTINES
+#endif
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
