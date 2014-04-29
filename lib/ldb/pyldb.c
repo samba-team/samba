@@ -556,6 +556,103 @@ static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
 	return PyBool_FromLong(ldb_dn_compare_base(base, dn) == 0);
 }
 
+static PyObject *py_ldb_dn_get_component_name(PyLdbDnObject *self, PyObject *args)
+{
+	struct ldb_dn *dn;
+	const char *name;
+	unsigned int num = 0;
+
+	if (!PyArg_ParseTuple(args, "I", &num))
+		return NULL;
+
+	dn = pyldb_Dn_AsDn((PyObject *)self);
+
+	name = ldb_dn_get_component_name(dn, num);
+	if (name == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	return PyString_FromString(name);
+}
+
+static PyObject *py_ldb_dn_get_component_value(PyLdbDnObject *self, PyObject *args)
+{
+	struct ldb_dn *dn;
+	const struct ldb_val *val;
+	unsigned int num = 0;
+
+	if (!PyArg_ParseTuple(args, "I", &num))
+		return NULL;
+
+	dn = pyldb_Dn_AsDn((PyObject *)self);
+
+	val = ldb_dn_get_component_val(dn, num);
+	if (val == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	return PyObject_FromLdbValue(val);
+}
+
+static PyObject *py_ldb_dn_set_component(PyLdbDnObject *self, PyObject *args)
+{
+	unsigned int num = 0;
+	char *name = NULL;
+	PyObject *value = Py_None;
+	struct ldb_val val = { NULL, };
+	int err;
+
+	if (!PyArg_ParseTuple(args, "IsO", &num, &name, &value))
+		return NULL;
+
+	if (value != Py_None) {
+		if (!PyString_Check(value)) {
+			PyErr_SetString(PyExc_TypeError, "Expected a string argument");
+			return NULL;
+		}
+		val.data = (uint8_t *)PyString_AsString(value);
+		val.length = PyString_Size(value);
+	}
+
+	err = ldb_dn_set_component(self->dn, num, name, val);
+	if (err != LDB_SUCCESS) {
+		PyErr_SetString(PyExc_TypeError, "Failed to set component");
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_ldb_dn_get_rdn_name(PyLdbDnObject *self)
+{
+	struct ldb_dn *dn;
+	const char *name;
+
+	dn = pyldb_Dn_AsDn((PyObject *)self);
+
+	name = ldb_dn_get_rdn_name(dn);
+	if (name == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	return PyString_FromString(name);
+}
+
+static PyObject *py_ldb_dn_get_rdn_value(PyLdbDnObject *self)
+{
+	struct ldb_dn *dn;
+	const struct ldb_val *val;
+
+	dn = pyldb_Dn_AsDn((PyObject *)self);
+
+	val = ldb_dn_get_rdn_val(dn);
+	if (val == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	return PyObject_FromLdbValue(val);
+}
+
 static PyMethodDef py_ldb_dn_methods[] = {
 	{ "validate", (PyCFunction)py_ldb_dn_validate, METH_NOARGS, 
 		"S.validate() -> bool\n"
@@ -603,6 +700,21 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "set_extended_component", (PyCFunction)py_ldb_dn_set_extended_component, METH_VARARGS,
 		"S.set_extended_component(name, value) -> None\n\n"
 		"set a DN extended component as a binary string"},
+	{ "get_component_name", (PyCFunction)py_ldb_dn_get_component_name, METH_VARARGS,
+		"S.get_component_name(num) -> string\n"
+		"get the attribute name of the specified component" },
+	{ "get_component_value", (PyCFunction)py_ldb_dn_get_component_value, METH_VARARGS,
+		"S.get_component_value(num) -> string\n"
+		"get the attribute value of the specified component as a binary string" },
+	{ "set_component", (PyCFunction)py_ldb_dn_set_component, METH_VARARGS,
+		"S.get_component_value(num, name, value) -> None\n"
+		"set the attribute name and value of the specified component" },
+	{ "get_rdn_name", (PyCFunction)py_ldb_dn_get_rdn_name, METH_NOARGS,
+		"S.get_rdn_name() -> string\n"
+		"get the RDN attribute name" },
+	{ "get_rdn_value", (PyCFunction)py_ldb_dn_get_rdn_value, METH_NOARGS,
+		"S.get_rdn_value() -> string\n"
+		"get the RDN attribute value as a binary string" },
 	{ NULL }
 };
 
