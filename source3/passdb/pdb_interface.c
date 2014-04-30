@@ -1519,7 +1519,10 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 				id->id = uid;
 				break;
 			default:
-				DEBUG(5, ("SID %s is our domain, but is not mapped to a user or group (got %d)\n",
+				DEBUG(5, ("SID %s belongs to our domain, and "
+					  "an object exists in the database, "
+					   "but it is neither a user nor a "
+					   "group (got type %d).\n",
 					  sid_string_dbg(sid), type));
 				ret = false;
 			}
