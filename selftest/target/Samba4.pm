@@ -123,6 +123,9 @@ sub check_or_start($$$)
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{KRB5CCNAME} = "$env_vars->{KRB5_CCACHE}.samba";
+		if (defined($ENV{MITKRB5})) {
+			$ENV{KRB5_KDC_PROFILE} = $env_vars->{MITKDC_CONFIG};
+		}
 		$ENV{SELFTEST_WINBINDD_SOCKET_DIR} = $env_vars->{SELFTEST_WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
@@ -440,6 +443,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{smb_conf} = "$ctx->{etcdir}/smb.conf";
 	$ctx->{krb5_conf} = "$ctx->{etcdir}/krb5.conf";
 	$ctx->{krb5_ccache} = "$prefix_abs/krb5_ccache";
+	$ctx->{mitkdc_conf} = "$ctx->{etcdir}/mitkdc.conf";
 	$ctx->{privatedir} = "$prefix_abs/private";
 	$ctx->{ncalrpcdir} = "$prefix_abs/ncalrpc";
 	$ctx->{lockdir} = "$prefix_abs/lockdir";
@@ -617,6 +621,7 @@ sub provision_raw_step1($$)
 	}
 
 	Samba::mk_krb5_conf($ctx);
+	Samba::mk_mitkdc_conf($ctx, abs_path(Samba::bindir_path($self, "shared")));
 
 	open(PWD, ">$ctx->{nsswrap_passwd}");
 	if ($ctx->{unix_uid} != 0) {
@@ -680,6 +685,7 @@ nogroup:x:65534:nobody
 	my $ret = {
 		KRB5_CONFIG => $ctx->{krb5_conf},
 		KRB5_CCACHE => $ctx->{krb5_ccache},
+		MITKDC_CONFIG => $ctx->{mitkdc_conf},
 		PIDDIR => $ctx->{piddir},
 		SERVER => $ctx->{hostname},
 		SERVER_IP => $ctx->{ipv4},
@@ -1367,6 +1373,7 @@ sub provision_subdom_dc($$$)
 	}
 
 	Samba::mk_krb5_conf($ctx);
+	Samba::mk_mitkdc_conf($ctx, abs_path(Samba::bindir_path($self, "shared")));
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
@@ -1675,6 +1682,7 @@ sub provision_rodc($$$)
 	$ctx->{kdc_ipv4} = $ret->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $ret->{SERVER_IPV6};
 	Samba::mk_krb5_conf($ctx);
+	Samba::mk_mitkdc_conf($ctx, abs_path(Samba::bindir_path($self, "shared")));
 
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
 	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
