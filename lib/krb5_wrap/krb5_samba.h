@@ -316,6 +316,11 @@ krb5_boolean smb_krb5_get_allowed_weak_crypto(krb5_context context);
 #endif
 #endif
 
+char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
+					 krb5_context context,
+					 krb5_const_principal principal,
+					 unsigned int component);
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,

@@ -871,6 +871,43 @@ done:
 }
 #endif
 
+/*
+ * @brief Get talloced string component of a principal
+ *
+ * @param[in] mem_ctx		The TALLOC_CTX
+ * @param[in] context		The krb5_context
+ * @param[in] principal		The principal
+ * @param[in] component		The component
+ * @return string component
+ *
+ * Caller must talloc_free if the return value is not NULL.
+ *
+ */
+
+/* caller has to free returned string with free() */
+char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
+					 krb5_context context,
+					 krb5_const_principal principal,
+					 unsigned int component)
+{
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
+	return talloc_strdup(mem_ctx, krb5_principal_get_comp_string(context, principal, component));
+#else
+	krb5_data *data;
+
+	if (component >= krb5_princ_size(context, principal)) {
+		return NULL;
+	}
+
+	data = krb5_princ_component(context, principal, component);
+	if (data == NULL) {
+		return NULL;
+	}
+
+	return talloc_strndup(mem_ctx, data->data, data->length);
+#endif
+}
+
 /* Prototypes */
 
  krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,	/* FILE:/tmp/krb5cc_0 */
