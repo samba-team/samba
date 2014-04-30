@@ -1524,7 +1524,8 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 				ret = false;
 			}
 		} else {
-			DEBUG(5, ("SID %s is or domain, but is unmapped\n",
+			DEBUG(5, ("SID %s belongs to our domain, but there is "
+				  "no corresponding object in the database.\n",
 				  sid_string_dbg(sid)));
 		}
 		goto done;
