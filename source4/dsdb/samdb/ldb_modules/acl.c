@@ -552,14 +552,17 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	if (principal->name.name_string.len < 2) {
+	if (krb5_princ_size(krb_ctx, principal) < 2) {
 		goto fail;
 	}
 
-	instanceName = principal->name.name_string.val[1];
-	serviceType = principal->name.name_string.val[0];
-	if (principal->name.name_string.len == 3) {
-		serviceName = principal->name.name_string.val[2];
+	instanceName = smb_krb5_principal_get_comp_string(mem_ctx, krb_ctx,
+							  principal, 1);
+	serviceType = smb_krb5_principal_get_comp_string(mem_ctx, krb_ctx,
+							 principal, 0);
+	if (krb5_princ_size(krb_ctx, principal) == 3) {
+		serviceName = smb_krb5_principal_get_comp_string(mem_ctx, krb_ctx,
+								 principal, 2);
 	} else {
 		serviceName = NULL;
 	}

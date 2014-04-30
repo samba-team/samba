@@ -325,7 +325,7 @@ bld.SAMBA_MODULE('ldb_acl',
 	init_function='ldb_acl_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc samba-security samdb DSDB_MODULE_HELPERS'
+	deps='talloc samba-security samdb DSDB_MODULE_HELPERS krb5samba'
 	)
 
 
