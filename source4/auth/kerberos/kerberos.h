@@ -75,14 +75,6 @@ krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_con
 const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i );
 #endif
 
-#ifndef krb5_princ_size
-#if defined(HAVE_KRB5_PRINCIPAL_GET_NUM_COMP)
-#define krb5_princ_size krb5_principal_get_num_comp
-#else
-#error krb5_princ_size unavailable
-#endif
-#endif
-
 /* Samba wrapper function for krb5 functionality. */
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct PAC_DATA *pac_data,
