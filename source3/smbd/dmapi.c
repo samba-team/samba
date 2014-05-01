@@ -277,7 +277,7 @@ uint32 dmapi_file_flags(const char * const path)
 		return 0;
 	}
 
-	dmapi_session = *(dm_sessid_t *)dmapi_session_ptr;
+	dmapi_session = *(const dm_sessid_t *)dmapi_session_ptr;
 	if (dmapi_session == DM_NO_SESSION) {
 		return 0;
 	}
