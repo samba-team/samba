@@ -626,9 +626,6 @@ bool is_stat_open(uint32 access_mask);
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid);
 bool is_deferred_open_async(const void *ptr);
-NTSTATUS open_file_fchmod(connection_struct *conn,
-			  struct smb_filename *smb_fname,
-			  files_struct **result);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 			  struct smb_filename *smb_dname);
 void msg_file_was_renamed(struct messaging_context *msg,
