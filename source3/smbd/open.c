@@ -1082,6 +1082,11 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 		smb_panic(str);
 	}
 
+	if (share_entry->share_file_id == 0) {
+		/* INTERNAL_OPEN_ONLY */
+		return;
+	}
+
 	if (!is_valid_share_mode_entry(share_entry)) {
 		return;
 	}
@@ -2029,9 +2034,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		   create_options, (unsigned int)unx_mode, oplock_request,
 		   (unsigned int)private_flags));
 
-	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {
-		DEBUG(0, ("No smb request but not an internal only open!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+	if (req == NULL) {
+		/* Ensure req == NULL means INTERNAL_OPEN_ONLY */
+		SMB_ASSERT(((oplock_request & INTERNAL_OPEN_ONLY) != 0));
+	} else {
+		/* And req != NULL means no INTERNAL_OPEN_ONLY */
+		SMB_ASSERT(((oplock_request & INTERNAL_OPEN_ONLY) == 0));
 	}
 
 	/*
