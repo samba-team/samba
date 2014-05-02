@@ -709,7 +709,7 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 				memmove(&msg_ctx->waiters[i],
 					&msg_ctx->waiters[i+1],
 					sizeof(struct tevent_req *) *
-						(msg_ctx->num_waiters - i - 1));
+					    (msg_ctx->num_waiters - i - 1));
 			}
 			msg_ctx->num_waiters -= 1;
 			continue;
@@ -735,7 +735,8 @@ bool messaging_parent_dgm_cleanup_init(struct messaging_context *msg)
 
 	req = background_job_send(
 		msg, msg->event_ctx, msg, NULL, 0,
-		lp_parm_int(-1, "messaging", "messaging dgm cleanup interval", 60*15),
+		lp_parm_int(-1, "messaging", "messaging dgm cleanup interval",
+			    60*15),
 		mess_parent_dgm_cleanup, msg);
 	if (req == NULL) {
 		return false;
@@ -752,7 +753,8 @@ static int mess_parent_dgm_cleanup(void *private_data)
 
 	status = messaging_dgm_wipe(msg_ctx);
 	DEBUG(10, ("messaging_dgm_wipe returned %s\n", nt_errstr(status)));
-	return lp_parm_int(-1, "messaging", "messaging dgm cleanup interval", 60*15);
+	return lp_parm_int(-1, "messaging", "messaging dgm cleanup interval",
+			   60*15);
 }
 
 static void mess_parent_dgm_cleanup_done(struct tevent_req *req)
@@ -763,11 +765,13 @@ static void mess_parent_dgm_cleanup_done(struct tevent_req *req)
 
 	status = background_job_recv(req);
 	TALLOC_FREE(req);
-	DEBUG(1, ("messaging dgm cleanup job ended with %s\n", nt_errstr(status)));
+	DEBUG(1, ("messaging dgm cleanup job ended with %s\n",
+		  nt_errstr(status)));
 
 	req = background_job_send(
 		msg, msg->event_ctx, msg, NULL, 0,
-		lp_parm_int(-1, "messaging", "messaging dgm cleanup interval", 60*15),
+		lp_parm_int(-1, "messaging", "messaging dgm cleanup interval",
+			    60*15),
 		mess_parent_dgm_cleanup, msg);
 	if (req == NULL) {
 		DEBUG(1, ("background_job_send failed\n"));
