@@ -491,6 +491,14 @@ struct tevent_req *messaging_filtered_read_send(
 	state->filter = filter;
 	state->private_data = private_data;
 
+	/*
+	 * We add ourselves to the "new_waiters" array, not the "waiters"
+	 * array. If we are called from within messaging_read_done,
+	 * messaging_dispatch_rec will be in an active for-loop on
+	 * "waiters". We must be careful not to mess with this array, because
+	 * it could mean that a single event is being delivered twice.
+	 */
+
 	new_waiters_len = talloc_array_length(msg_ctx->new_waiters);
 
 	if (new_waiters_len == msg_ctx->num_new_waiters) {
@@ -520,6 +528,14 @@ static void messaging_filtered_read_cleanup(struct tevent_req *req,
 	unsigned i;
 
 	tevent_req_set_cleanup_fn(req, NULL);
+
+	/*
+	 * Just set the [new_]waiters entry to NULL, be careful not to mess
+	 * with the other "waiters" array contents. We are often called from
+	 * within "messaging_dispatch_rec", which loops over
+	 * "waiters". Messing with the "waiters" array will mess up that
+	 * for-loop.
+	 */
 
 	for (i=0; i<msg_ctx->num_waiters; i++) {
 		if (msg_ctx->waiters[i] == req) {
