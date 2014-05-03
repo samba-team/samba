@@ -487,8 +487,8 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 					bool is_guest)
 {
 	struct dom_sid dom_sid;
-	gid_t gid;
 	NTSTATUS status;
+	struct acct_info *info;
 
 	/* Add any local groups. */
 
@@ -527,11 +527,18 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 		}
 	}
 
+	info = talloc_zero(talloc_tos(), struct acct_info);
+	if (info == NULL) {
+		DEBUG(0, ("talloc failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Deal with the BUILTIN\Administrators group.  If the SID can
 	   be resolved then assume that the add_aliasmem( S-1-5-32 )
 	   handled it. */
 
-	if (!sid_to_gid(&global_sid_Builtin_Administrators, &gid)) {
+	status = pdb_get_aliasinfo(&global_sid_Builtin_Administrators, info);
+	if (!NT_STATUS_IS_OK(status)) {
 
 		become_root();
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &dom_sid)) {
@@ -562,7 +569,8 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 	   be resolved then assume that the add_aliasmem( S-1-5-32 )
 	   handled it. */
 
-	if (!sid_to_gid(&global_sid_Builtin_Users, &gid)) {
+	status = pdb_get_aliasinfo(&global_sid_Builtin_Users, info);
+	if (!NT_STATUS_IS_OK(status)) {
 
 		become_root();
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &dom_sid)) {
@@ -581,6 +589,8 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 				  "Can Winbind allocate gids?\n"));
 		}
 	}
+
+	TALLOC_FREE(info);
 
 	/* Deal with local groups */
 
