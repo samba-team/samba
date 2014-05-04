@@ -122,7 +122,7 @@ struct poll_funcs {
 	void (*timeout_free)(struct poll_timeout *t);
 
 	/**
-	 * @brief private data for use by the implmentation
+	 * @brief private data for use by the implementation
 	 */
 
 	void *private_data;
