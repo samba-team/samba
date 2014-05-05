@@ -89,10 +89,12 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 
 /*
-  on powerpc we can use the magic instructions to load/store
-  in little endian
-*/
-#if (defined(__powerpc__) && defined(__GNUC__))
+ * On powerpc we can use the magic instructions to load/store in little endian.
+ * The instructions are reverse-indexing, so assume a big endian Power
+ * processor. Power8 can be big or little endian, so we need to explicitly
+ * check.
+ */
+#if (defined(__powerpc__) && defined(__GNUC__) && HAVE_BIG_ENDIAN)
 static __inline__ uint16_t ld_le16(const uint16_t *addr)
 {
 	uint16_t val;
