@@ -74,8 +74,9 @@ static void deferred_echodata(struct tevent_context *ev, struct tevent_timer *te
 */
 static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r)
 {
+	struct irpc_test_data *data = talloc_get_type_abort(irpc->private_data, struct irpc_test_data);
 	irpc->defer_reply = true;
-	tevent_add_timer(irpc->ev, irpc, timeval_zero(), deferred_echodata, irpc);
+	tevent_add_timer(data->ev, irpc, timeval_zero(), deferred_echodata, irpc);
 	return NT_STATUS_OK;
 }
 
@@ -261,11 +262,11 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 		       "Failed to init second messaging context");
 
 	/* register the server side function */
-	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
-	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
+	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, data);
+	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ADDONE, irpc_AddOne, data);
 
-	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
-	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
+	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, data);
+	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, data);
 
 	return true;
 }
