@@ -1384,8 +1384,6 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 	hs->table = table;
 	hs->timeout = IRPC_CALL_TIMEOUT;
 
-	dcerpc_binding_handle_set_sync_ev(h, msg_ctx->event.ev);
-
 	return h;
 }
 
