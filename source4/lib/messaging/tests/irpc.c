@@ -102,6 +102,11 @@ static bool test_addone(struct torture_context *test, const void *_data,
 	r.in.in_data = value;
 
 	test_debug = true;
+	/*
+	 * Note: this makes use of nested event loops
+	 * as client and server use the same loop.
+	 */
+	dcerpc_binding_handle_set_sync_ev(irpc_handle, data->ev);
 	status = dcerpc_echo_AddOne_r(irpc_handle, test, &r);
 	test_debug = false;
 	torture_assert_ntstatus_ok(test, status, "AddOne failed");
@@ -136,6 +141,11 @@ static bool test_echodata(struct torture_context *tctx,
 	r.in.in_data = (unsigned char *)talloc_strdup(mem_ctx, "0123456789");
 	r.in.len = strlen((char *)r.in.in_data);
 
+	/*
+	 * Note: this makes use of nested event loops
+	 * as client and server use the same loop.
+	 */
+	dcerpc_binding_handle_set_sync_ev(irpc_handle, data->ev);
 	status = dcerpc_echo_EchoData_r(irpc_handle, mem_ctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "EchoData failed");
 
