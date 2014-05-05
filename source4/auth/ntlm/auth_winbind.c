@@ -136,6 +136,8 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 	s->req.in.validation_level	= 3;
 
+	/* Note: this makes use of nested event loops... */
+	dcerpc_binding_handle_set_sync_ev(irpc_handle, ctx->auth_ctx->event_ctx);
 	status = dcerpc_winbind_SamLogon_r(irpc_handle, s, &s->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
