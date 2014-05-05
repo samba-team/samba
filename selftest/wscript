@@ -230,6 +230,9 @@ def cmd_testonly(opt):
     # FIXME REMOVE ME!
     env.OPTIONS += " --use-dns-faking"
 
+    if CONFIG_GET(opt, 'USING_SYSTEM_KRB5') and CONFIG_GET(opt, 'MIT_KDC_PATH'):
+        env.OPTIONS += " --mitkrb5"
+
     if not CONFIG_GET(opt, 'HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X'):
         # older MIT krb5 libraries (< 1.14) don't have
         # GSS_KRB5_CRED_NO_CI_FLAGS_X
