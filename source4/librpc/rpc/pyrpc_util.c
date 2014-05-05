@@ -83,6 +83,12 @@ static NTSTATUS pyrpc_irpc_connect(TALLOC_CTX *mem_ctx, const char *irpc_server,
 		return NT_STATUS_INVALID_PIPE_STATE;
 	}
 
+	/*
+	 * Note: this allows nested event loops to happen,
+	 * but as there's no top level event loop it's not that critical.
+	 */
+	dcerpc_binding_handle_set_sync_ev(*binding_handle, event_ctx);
+
 	return NT_STATUS_OK;
 }
 
