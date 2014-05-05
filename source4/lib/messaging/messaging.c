@@ -71,7 +71,6 @@ struct imessaging_context {
 	struct timeval start_time;
 	struct tevent_timer *retry_te;
 	struct {
-		struct tevent_context *ev;
 		struct tevent_fd *fde;
 	} event;
 };
@@ -262,7 +261,7 @@ static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te,
 /*
   handle a socket write event
 */
-static void imessaging_send_handler(struct imessaging_context *msg)
+static void imessaging_send_handler(struct imessaging_context *msg, struct tevent_context *ev)
 {
 	while (msg->pending) {
 		struct imessaging_rec *rec = msg->pending;
@@ -278,9 +277,9 @@ static void imessaging_send_handler(struct imessaging_context *msg)
 					      struct imessaging_rec *);
 				if (msg->retry_te == NULL) {
 					msg->retry_te =
-						tevent_add_timer(msg->event.ev, msg,
-								timeval_current_ofs(1, 0),
-								msg_retry_timer, msg);
+						tevent_add_timer(ev, msg,
+								 timeval_current_ofs(1, 0),
+								 msg_retry_timer, msg);
 				}
 			}
 			break;
@@ -306,7 +305,7 @@ static void imessaging_send_handler(struct imessaging_context *msg)
 /*
   handle a new incoming packet
 */
-static void imessaging_recv_handler(struct imessaging_context *msg)
+static void imessaging_recv_handler(struct imessaging_context *msg, struct tevent_context *ev)
 {
 	struct imessaging_rec *rec;
 	NTSTATUS status;
@@ -372,10 +371,10 @@ static void imessaging_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	struct imessaging_context *msg = talloc_get_type(private_data,
 							struct imessaging_context);
 	if (flags & TEVENT_FD_WRITE) {
-		imessaging_send_handler(msg);
+		imessaging_send_handler(msg, ev);
 	}
 	if (flags & TEVENT_FD_READ) {
-		imessaging_recv_handler(msg);
+		imessaging_recv_handler(msg, ev);
 	}
 }
 
@@ -655,7 +654,6 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	/* it needs to be non blocking for sends */
 	set_blocking(socket_get_fd(msg->sock), false);
 
-	msg->event.ev   = ev;
 	msg->event.fde	= tevent_add_fd(ev, msg, socket_get_fd(msg->sock),
 				        TEVENT_FD_READ, imessaging_handler, msg);
 	tevent_fd_set_auto_close(msg->event.fde);
@@ -834,7 +832,6 @@ static void irpc_handler_request(struct imessaging_context *msg_ctx,
 	m->msg_ctx     = msg_ctx;
 	m->irpc        = i;
 	m->data        = r;
-	m->ev          = msg_ctx->event.ev;
 
 	m->header.status = i->fn(m, r);
 
@@ -1362,9 +1359,9 @@ static const struct dcerpc_binding_handle_ops irpc_bh_ops = {
 
 /* initialise a irpc binding handle */
 struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
-					struct imessaging_context *msg_ctx,
-					struct server_id server_id,
-					const struct ndr_interface_table *table)
+						  struct imessaging_context *msg_ctx,
+						  struct server_id server_id,
+						  const struct ndr_interface_table *table)
 {
 	struct dcerpc_binding_handle *h;
 	struct irpc_bh_state *hs;
@@ -1388,9 +1385,9 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 }
 
 struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
-					struct imessaging_context *msg_ctx,
-					const char *dest_task,
-					const struct ndr_interface_table *table)
+							  struct imessaging_context *msg_ctx,
+							  const char *dest_task,
+							  const struct ndr_interface_table *table)
 {
 	struct dcerpc_binding_handle *h;
 	struct server_id *sids;
