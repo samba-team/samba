@@ -307,7 +307,7 @@ NTSTATUS nbtd_proxy_wins_challenge(struct irpc_message *msg,
 
 	s->io.in.nbtd_server	= nbtd_server;
 	s->io.in.nbt_port       = lpcfg_nbt_port(nbtd_server->task->lp_ctx);
-	s->io.in.event_ctx	= msg->ev;
+	s->io.in.event_ctx	= nbtd_server->task->event_ctx;
 	s->io.in.name		= &req->in.name;
 	s->io.in.num_addresses	= req->in.num_addrs;
 	s->io.in.addresses	= talloc_array(s, const char *, req->in.num_addrs);
@@ -366,7 +366,7 @@ NTSTATUS nbtd_proxy_wins_release_demand(struct irpc_message *msg,
 	s->req = req;
 
 	s->io.in.nbtd_server	= nbtd_server;
-	s->io.in.event_ctx	= msg->ev;
+	s->io.in.event_ctx	= nbtd_server->task->event_ctx;
 	s->io.in.name		= &req->in.name;
 	s->io.in.num_addresses	= req->in.num_addrs;
 	s->io.in.addresses	= talloc_array(s, const char *, req->in.num_addrs);
