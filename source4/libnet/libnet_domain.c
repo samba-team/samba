@@ -207,7 +207,7 @@ static void continue_domain_open_lookup(struct tevent_req *subreq)
 	r = &s->open;
 
 	/* check the rpc layer status */
-	if (!composite_is_ok(c));
+	if (!composite_is_ok(c)) return;
 
 	/* check the rpc call itself status */
 	if (!NT_STATUS_IS_OK(s->lookup.out.result)) {
