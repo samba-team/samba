@@ -41,6 +41,8 @@ void task_server_terminate(struct task_server *task, const char *reason, bool fa
 		irpc_handle = irpc_binding_handle_by_name(task, task->msg_ctx,
 							  "samba", &ndr_table_irpc);
 		if (irpc_handle != NULL) {
+			/* Note: this makes use of nested event loops... */
+			dcerpc_binding_handle_set_sync_ev(irpc_handle, event_ctx);
 			r.in.reason = reason;
 			dcerpc_samba_terminate_r(irpc_handle, task, &r);
 		}
