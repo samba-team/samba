@@ -747,6 +747,12 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 				data_blob_const(r->in.logon->generic->data,
 						r->in.logon->generic->length);
 
+			/*
+			 * TODO: make this async and avoid
+			 * dcerpc_binding_handle_set_sync_ev()
+			 */
+			dcerpc_binding_handle_set_sync_ev(irpc_handle,
+							  dce_call->event_ctx);
 			status = dcerpc_kdc_check_generic_kerberos_r(irpc_handle,
 								     mem_ctx,
 								     &check);
