@@ -30,7 +30,8 @@
 
 struct messaging_dgm_context {
 	struct messaging_context *msg_ctx;
-	struct poll_funcs msg_callbacks;
+	struct poll_funcs *msg_callbacks;
+	void *tevent_handle;
 	struct unix_msg_ctx *dgm_ctx;
 	char *cache_dir;
 	int lockfile_fd;
@@ -224,7 +225,18 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 		return map_nt_error_from_unix(ret);
 	}
 
-	poll_funcs_init_tevent(&ctx->msg_callbacks, msg_ctx->event_ctx);
+	ctx->msg_callbacks = poll_funcs_init_tevent(ctx);
+	if (ctx->msg_callbacks == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ctx->tevent_handle = poll_funcs_tevent_register(
+		ctx, ctx->msg_callbacks, msg_ctx->event_ctx);
+	if (ctx->tevent_handle == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ok = directory_create_or_exist_strict(socket_dir, sec_initial_uid(),
 					      0700);
@@ -239,7 +251,7 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 
 	generate_random_buffer((uint8_t *)&cookie, sizeof(cookie));
 
-	ret = unix_msg_init(socket_name, &ctx->msg_callbacks, 1024, cookie,
+	ret = unix_msg_init(socket_name, ctx->msg_callbacks, 1024, cookie,
 			    messaging_dgm_recv, ctx, &ctx->dgm_ctx);
 	TALLOC_FREE(socket_name);
 	if (ret != 0) {

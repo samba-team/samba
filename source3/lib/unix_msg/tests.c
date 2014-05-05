@@ -32,7 +32,8 @@ static void expect_messages(struct tevent_context *ev, struct cb_state *state,
 
 int main(void)
 {
-	struct poll_funcs funcs;
+	struct poll_funcs *funcs;
+	void *tevent_handle;
 	const char *sock1 = "sock1";
 	const char *sock2 = "sock2";
 	struct unix_msg_ctx *ctx1, *ctx2;
@@ -52,9 +53,19 @@ int main(void)
 		perror("tevent_context_init failed");
 		return 1;
 	}
-	poll_funcs_init_tevent(&funcs, ev);
 
-	ret = unix_msg_init(sock1, &funcs, 256, 1,
+	funcs = poll_funcs_init_tevent(ev);
+	if (funcs == NULL) {
+		fprintf(stderr, "poll_funcs_init_tevent failed\n");
+		return 1;
+	}
+	tevent_handle = poll_funcs_tevent_register(ev, funcs, ev);
+	if (tevent_handle == NULL) {
+		fprintf(stderr, "poll_funcs_register_tevent failed\n");
+		return 1;
+	}
+
+	ret = unix_msg_init(sock1, funcs, 256, 1,
 			    recv_cb, &state, &ctx1);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
@@ -62,7 +73,7 @@ int main(void)
 		return 1;
 	}
 
-	ret = unix_msg_init(sock1, &funcs, 256, 1,
+	ret = unix_msg_init(sock1, funcs, 256, 1,
 			    recv_cb, &state, &ctx1);
 	if (ret == 0) {
 		fprintf(stderr, "unix_msg_init succeeded unexpectedly\n");
@@ -74,7 +85,7 @@ int main(void)
 		return 1;
 	}
 
-	ret = unix_msg_init(sock2, &funcs, 256, 1,
+	ret = unix_msg_init(sock2, funcs, 256, 1,
 			    recv_cb, &state, &ctx2);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
@@ -201,6 +212,8 @@ int main(void)
 
 	unix_msg_free(ctx1);
 	unix_msg_free(ctx2);
+	talloc_free(tevent_handle);
+	talloc_free(funcs);
 	talloc_free(ev);
 
 	return 0;

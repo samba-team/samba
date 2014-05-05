@@ -1,6 +1,6 @@
 /*
  * Unix SMB/CIFS implementation.
- * Copyright (C) Volker Lendecke 2013
+ * Copyright (C) Volker Lendecke 2013,2014
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,17 @@
 #include "poll_funcs.h"
 #include "tevent.h"
 
-void poll_funcs_init_tevent(struct poll_funcs *f, struct tevent_context *ev);
+/*
+ * Create a new, empty instance of "struct poll_funcs" to be served by tevent.
+ */
+struct poll_funcs *poll_funcs_init_tevent(TALLOC_CTX *mem_ctx);
+
+/*
+ * Register a tevent_context to handle the watches that the user of
+ * "poll_funcs" showed interest in. talloc_free() the returned pointer when
+ * "ev" is not supposed to handle the events anymore.
+ */
+void *poll_funcs_tevent_register(TALLOC_CTX *mem_ctx, struct poll_funcs *f,
+				 struct tevent_context *ev);
 
 #endif
