@@ -1463,12 +1463,12 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		case P_CMDLIST:
 			TALLOC_FREE(*(char ***)parm_ptr);
 			*(const char * const **)parm_ptr
-				= (const char * const *)str_list_make(mem_ctx,
+				= (const char * const *)str_list_make_v3(mem_ctx,
 								      pszParmValue, NULL);
 			break;
 		case P_LIST:
 		{
-			char **new_list = str_list_make(mem_ctx,
+			char **new_list = str_list_make_v3(mem_ctx,
 							pszParmValue, NULL);
 			if (new_list == NULL) {
 				break;
