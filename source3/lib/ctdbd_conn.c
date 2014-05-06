@@ -469,10 +469,6 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			messaging_send(conn->msg_ctx,
 				       messaging_server_id(conn->msg_ctx),
 				       MSG_SMB_BRL_VALIDATE, &data_blob_null);
-			messaging_send(conn->msg_ctx,
-				       messaging_server_id(conn->msg_ctx),
-				       MSG_DBWRAP_G_LOCK_RETRY,
-				       &data_blob_null);
 			TALLOC_FREE(hdr);
 			goto next_pkt;
 		}
@@ -685,11 +681,6 @@ static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
 		messaging_send(conn->msg_ctx,
 			       messaging_server_id(conn->msg_ctx),
 			       MSG_SMB_BRL_VALIDATE, &data_blob_null);
-
-		messaging_send(conn->msg_ctx,
-			       messaging_server_id(conn->msg_ctx),
-			       MSG_DBWRAP_G_LOCK_RETRY,
-			       &data_blob_null);
 
 		TALLOC_FREE(buf);
 		return NT_STATUS_OK;
