@@ -1377,8 +1377,14 @@ static int control_one_scriptstatus(struct ctdb_context *ctdb,
 	}
 
 	if (!options.machinereadable) {
+		int num_run = 0;
+		for (i=0; i<script_status->num_scripts; i++) {
+			if (script_status->scripts[i].status != -ENOEXEC) {
+				num_run++;
+			}
+		}
 		printf("%d scripts were executed last %s cycle\n",
-		       script_status->num_scripts,
+		       num_run,
 		       ctdb_eventscript_call_names[type]);
 	}
 	for (i=0; i<script_status->num_scripts; i++) {
