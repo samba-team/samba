@@ -49,6 +49,7 @@ static krb5_error_code seek_and_delete_old_entries(krb5_context context,
 	krb5_keytab_entry kt_entry;
 	krb5_keytab_entry zero_kt_entry;
 	char *ktprinc = NULL;
+	krb5_kvno old_kvno = kvno - 1;
 
 	ZERO_STRUCT(cursor);
 	ZERO_STRUCT(zero_csr);
@@ -115,12 +116,14 @@ static krb5_error_code seek_and_delete_old_entries(krb5_context context,
 		 * changes, all kerberizied sessions will 'break' until either
 		 * the client reboots or the client's session key expires and
 		 * they get a new session ticket with the new kvno.
+		 * Some keytab files only store the kvno in 8bits, limit
+		 * the compare accordingly.
 		 */
 
-		if (!flush && (kt_entry.vno == kvno - 1)) {
+		if (!flush && ((kt_entry.vno & 0xff) == (old_kvno & 0xff))) {
 			DEBUG(5, (__location__ ": Saving previous (kvno %d) "
 				  "entry for principal: %s.\n",
-				  kvno - 1, princ_s));
+				  old_kvno, princ_s));
 			continue;
 		}
 
