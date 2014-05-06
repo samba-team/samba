@@ -198,16 +198,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_push_db(ctdb, indata);
 
 	case CTDB_CONTROL_GET_RECMODE: {
-		int i;
-		if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
-			return CTDB_RECOVERY_ACTIVE;
-		}		  
-		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-			if (ctdb->freeze_mode[i] == CTDB_FREEZE_FROZEN) {
-				return CTDB_RECOVERY_ACTIVE;
-			}
-		}
-		return CTDB_RECOVERY_NORMAL;
+		return ctdb->recovery_mode;
 	}
 
 	case CTDB_CONTROL_SET_RECMASTER: {
