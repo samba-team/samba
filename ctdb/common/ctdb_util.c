@@ -248,36 +248,29 @@ struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       TDB_DATA data)
 {
 	struct ctdb_rec_data *r;
-	size_t m_size, r_size;
 	struct ctdb_marshall_buffer *m2;
+	uint32_t length, offset;
 
-	r = ctdb_marshall_record(mem_ctx, reqid, key, header, data);
-	if (r == NULL) {
-		talloc_free(m);
+	length = ctdb_marshall_record_size(key, header, data);
+
+	if (m == NULL) {
+		offset = offsetof(struct ctdb_marshall_buffer, data);
+		m2 = talloc_zero_size(mem_ctx, offset + length);
+	} else {
+		offset = talloc_get_size(m);
+		m2 = talloc_realloc_size(mem_ctx, m, offset + length);
+	}
+	if (m2 == NULL) {
+		TALLOC_FREE(m);
 		return NULL;
 	}
 
 	if (m == NULL) {
-		m = talloc_zero_size(mem_ctx, offsetof(struct ctdb_marshall_buffer, data));
-		if (m == NULL) {
-			return NULL;
-		}
-		m->db_id = db_id;
+		m2->db_id = db_id;
 	}
 
-	m_size = talloc_get_size(m);
-	r_size = talloc_get_size(r);
-
-	m2 = talloc_realloc_size(mem_ctx, m,  m_size + r_size);
-	if (m2 == NULL) {
-		talloc_free(m);
-		return NULL;
-	}
-
-	memcpy(m_size + (uint8_t *)m2, r, r_size);
-
-	talloc_free(r);
-
+	r = (struct ctdb_rec_data *)((uint8_t *)m2 + offset);
+	ctdb_marshall_record_copy(r, reqid, key, header, data, length);
 	m2->count++;
 
 	return m2;
