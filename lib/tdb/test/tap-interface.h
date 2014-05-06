@@ -54,4 +54,5 @@
 	} \
 } while(0)
 #define ok1(e) ok((e), "%s:%s", __location__, #e)
+#define skip(n, ...) diag(__VA_ARGS__)
 #define exit_status() 0
