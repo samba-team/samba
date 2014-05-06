@@ -970,6 +970,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  RPC_SERVER
                  WB_REQTRANS
                  TDB_VALIDATE
+                 MESSAGING
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}')

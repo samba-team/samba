@@ -39,6 +39,9 @@
 #include "messages.h"
 #include "../lib/util/pidfile.h"
 #include "util_cluster.h"
+#include "source4/lib/messaging/irpc.h"
+#include "source4/lib/messaging/messaging.h"
+#include "lib/param/param.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -83,6 +86,33 @@ struct messaging_context *winbind_messaging_context(void)
 	 * to avoid side effects in forked children exiting.
 	 */
 	msg = messaging_init(NULL, winbind_event_context());
+	if (msg == NULL) {
+		smb_panic("Could not init winbindd's messaging context.\n");
+	}
+	return msg;
+}
+
+struct imessaging_context *winbind_imessaging_context(void)
+{
+	static struct imessaging_context *msg = NULL;
+	struct loadparm_context *lp_ctx;
+
+	if (msg != NULL) {
+		return msg;
+	}
+
+	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		smb_panic("Could not load smb.conf to init winbindd's imessaging context.\n");
+	}
+
+	/*
+	 * Note we MUST use the NULL context here, not the autofree context,
+	 * to avoid side effects in forked children exiting.
+	 */
+	msg = imessaging_init(NULL, lp_ctx, procid_self(), winbind_event_context(), false);
+	talloc_unlink(NULL, lp_ctx);
+
 	if (msg == NULL) {
 		smb_panic("Could not init winbindd's messaging context.\n");
 	}
@@ -1587,6 +1617,8 @@ int main(int argc, const char **argv)
 	if (!winbindd_setup_listeners()) {
 		exit_daemon("Winbindd failed to setup listeners", EPIPE);
 	}
+
+	irpc_add_name(winbind_imessaging_context(), "winbind_server");
 
 	TALLOC_FREE(frame);
 
