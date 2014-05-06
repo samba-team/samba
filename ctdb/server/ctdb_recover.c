@@ -1092,8 +1092,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 	}	    
 
 
-	outdata->dptr = (uint8_t *)records;
-	outdata->dsize = talloc_get_size(records);
+	*outdata = ctdb_marshall_finish(records);
 
 	return 0;
 }
@@ -1290,9 +1289,7 @@ int32_t ctdb_control_receive_records(struct ctdb_context *ctdb,
 		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
 	}
 
-
-	outdata->dptr = (uint8_t *)records;
-	outdata->dsize = talloc_get_size(records);
+	*outdata = ctdb_marshall_finish(records);
 
 	return 0;
 }

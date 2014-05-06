@@ -775,8 +775,7 @@ static void ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 				   vfl->count, ctdb->nodes[i]->pnn,
 				   ctdb_db->db_name));
 
-		data.dsize = talloc_get_size(vfl);
-		data.dptr  = (void *)vfl;
+		data = ctdb_marshall_finish(vfl);
 		if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn,
 					     CTDB_SRVID_VACUUM_FETCH,
 					     data) != 0)
@@ -901,8 +900,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		      "delete list for first marshalling.\n"));
 	}
 
-	indata.dsize = talloc_get_size(recs->records);
-	indata.dptr  = (void *)recs->records;
+	indata = ctdb_marshall_finish(recs->records);
 
 	for (i = 0; i < num_active_nodes; i++) {
 		struct ctdb_marshall_buffer *records;
@@ -1009,8 +1007,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		goto done;
 	}
 
-	indata.dsize = talloc_get_size(recs->records);
-	indata.dptr  = (void *)recs->records;
+	indata = ctdb_marshall_finish(recs->records);
 
 	for (i = 0; i < num_active_nodes; i++) {
 		struct ctdb_marshall_buffer *records;
