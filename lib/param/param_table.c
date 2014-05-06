@@ -363,7 +363,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "netbios aliases",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(netbios_aliases),
 		.special	= handle_netbios_aliases,
@@ -390,7 +390,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "interfaces",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(interfaces),
 		.special	= NULL,
@@ -438,7 +438,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "auth methods",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(auth_methods),
 		.special	= NULL,
@@ -790,7 +790,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "invalid users",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(invalid_users),
 		.special	= NULL,
@@ -799,7 +799,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "valid users",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(valid_users),
 		.special	= NULL,
@@ -808,7 +808,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "admin users",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(admin_users),
 		.special	= NULL,
@@ -817,7 +817,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "read list",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(read_list),
 		.special	= NULL,
@@ -826,7 +826,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "write list",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(write_list),
 		.special	= NULL,
@@ -1080,7 +1080,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "hosts allow",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(hosts_allow),
 		.special	= NULL,
@@ -1089,7 +1089,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "allow hosts",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(hosts_allow),
 		.special	= NULL,
@@ -1098,7 +1098,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "hosts deny",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(hosts_deny),
 		.special	= NULL,
@@ -1107,7 +1107,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "deny hosts",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(hosts_deny),
 		.special	= NULL,
@@ -1116,7 +1116,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "preload modules",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(preload_modules),
 		.special	= NULL,
@@ -1321,7 +1321,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "smb ports",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(smb_ports),
 		.special	= NULL,
@@ -1554,7 +1554,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "name resolve order",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(name_resolve_order),
 		.special	= NULL,
@@ -1671,7 +1671,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "svcctl list",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(svcctl_list),
 		.special	= NULL,
@@ -1964,7 +1964,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "cluster addresses",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(cluster_addresses),
 		.special	= NULL,
@@ -2773,7 +2773,7 @@ struct parm_struct parm_table[] = {
 
 	{
 		.label		= "init logon delayed hosts",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(init_logon_delayed_hosts),
 		.special        = NULL,
@@ -2925,7 +2925,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "wins server",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(wins_server_list),
 		.special	= NULL,
@@ -3249,7 +3249,7 @@ struct parm_struct parm_table[] = {
 
 	{
 		.label		= "eventlog list",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(eventlog_list),
 		.special	= NULL,
@@ -3696,7 +3696,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "usershare prefix allow list",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(usershare_prefix_allow_list),
 		.special	= NULL,
@@ -3705,7 +3705,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "usershare prefix deny list",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(usershare_prefix_deny_list),
 		.special	= NULL,
@@ -3870,7 +3870,7 @@ struct parm_struct parm_table[] = {
 
 	{
 		.label		= "vfs objects",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(vfs_objects),
 		.special	= NULL,
@@ -3879,7 +3879,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "vfs object",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(vfs_objects),
 		.special	= NULL,
@@ -4102,7 +4102,7 @@ struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "winbind nss info",
-		.type		= P_LIST,
+		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(winbind_nss_info),
 		.special	= NULL,
