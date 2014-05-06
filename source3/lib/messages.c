@@ -461,6 +461,7 @@ static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 struct messaging_filtered_read_state {
 	struct tevent_context *ev;
 	struct messaging_context *msg_ctx;
+	void *tevent_handle;
 
 	bool (*filter)(struct messaging_rec *rec, void *private_data);
 	void *private_data;
@@ -490,6 +491,18 @@ struct tevent_req *messaging_filtered_read_send(
 	state->msg_ctx = msg_ctx;
 	state->filter = filter;
 	state->private_data = private_data;
+
+	/*
+	 * We have to defer the callback here, as we might be called from
+	 * within a different tevent_context than state->ev
+	 */
+	tevent_req_defer_callback(req, state->ev);
+
+	state->tevent_handle = messaging_dgm_register_tevent_context(
+		state, msg_ctx, ev);
+	if (tevent_req_nomem(state, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	/*
 	 * We add ourselves to the "new_waiters" array, not the "waiters"
@@ -528,6 +541,8 @@ static void messaging_filtered_read_cleanup(struct tevent_req *req,
 	unsigned i;
 
 	tevent_req_set_cleanup_fn(req, NULL);
+
+	TALLOC_FREE(state->tevent_handle);
 
 	/*
 	 * Just set the [new_]waiters entry to NULL, be careful not to mess
