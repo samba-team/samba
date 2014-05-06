@@ -186,9 +186,6 @@ class SmbDotConfTests(TestCase):
             exceptions = ['client lanman auth',
                           'client plaintext auth',
                           'registry shares',
-                          'idmap backend',
-                          'idmap gid',
-                          'idmap uid',
                           'smb ports'])
 
     def test_default_s4(self):
