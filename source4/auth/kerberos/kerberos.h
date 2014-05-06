@@ -50,16 +50,6 @@ struct keytab_container {
 #define TOK_ID_GSS_GETMIC	((const uint8_t *)"\x01\x01")
 #define TOK_ID_GSS_WRAP		((const uint8_t *)"\x02\x01")
 
-#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
-#define KRB5_KEY_TYPE(k)	((k)->keytype)
-#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
-#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
-#else
-#define	KRB5_KEY_TYPE(k)	((k)->enctype)
-#define KRB5_KEY_LENGTH(k)	((k)->length)
-#define KRB5_KEY_DATA(k)	((k)->contents)
-#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
-
 #define ENC_ALL_TYPES (ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5 |	\
 		       ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256)
 
