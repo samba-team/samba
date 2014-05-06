@@ -267,11 +267,18 @@ static void thaw_priority(struct ctdb_context *ctdb, uint32_t priority)
 /*
   thaw the databases
  */
-int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority)
+int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
+			  bool check_recmode)
 {
-
 	if (priority > NUM_DB_PRIORITIES) {
-		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n", priority));
+		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n",
+				 priority));
+		return -1;
+	}
+
+	if (check_recmode && ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+		DEBUG(DEBUG_ERR, ("Failing to thaw databases while "
+				  "recovery is active\n"));
 		return -1;
 	}
 

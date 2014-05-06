@@ -623,7 +623,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	/* force the databases to thaw */
 	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
 		if (ctdb->freeze_handles[i] != NULL) {
-			ctdb_control_thaw(ctdb, i);
+			ctdb_control_thaw(ctdb, i, false);
 		}
 	}
 
