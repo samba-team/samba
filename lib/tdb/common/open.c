@@ -392,6 +392,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	if (header.rwlocks != 0 &&
 	    header.rwlocks != TDB_HASH_RWLOCK_MAGIC) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: spinlocks no longer supported\n"));
+		errno = ENOSYS;
 		goto fail;
 	}
 	tdb->hash_size = header.hash_size;
