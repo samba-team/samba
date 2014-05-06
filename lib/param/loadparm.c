@@ -1043,8 +1043,10 @@ bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx)
 			f->modtime = mod_time;
 			talloc_free(f->subfname);
 			f->subfname = talloc_strdup(f, n2);
+			TALLOC_FREE(n2);
 			return true;
 		}
+		TALLOC_FREE(n2);
 	}
 	return false;
 }
