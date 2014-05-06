@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "idmap.h"
 #include "../libcli/security/security.h"
+#include "../libcli/auth/netlogon_creds_cli.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
@@ -716,4 +717,42 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 
 	DEBUG(5, ("winbindd_dual_ping_dc succeeded\n"));
 	return NT_STATUS_OK;
+}
+
+NTSTATUS _wbint_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
+						  struct wbint_DsrUpdateReadOnlyServerDnsRecords *r)
+{
+	struct winbindd_domain *domain;
+	NTSTATUS status;
+	struct rpc_pipe_client *netlogon_pipe;
+
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+		goto done;
+	}
+
+	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(domain->conn.netlogon_creds,
+								      netlogon_pipe->binding_handle,
+								      r->in.site_name,
+								      r->in.dns_ttl,
+								      r->in.dns_names);
+
+	/* Pass back result code - zero for success, other values for
+	   specific failures. */
+
+	DEBUG(3,("DNS records for domain %s %s\n", domain->name,
+		NT_STATUS_IS_OK(status) ? "changed" : "unchanged"));
+
+ done:
+	DEBUG(NT_STATUS_IS_OK(status) ? 5 : 2,
+	      ("Update of DNS records via RW DC %s returned %s\n",
+	       domain->name, nt_errstr(status)));
+
+	return status;
 }

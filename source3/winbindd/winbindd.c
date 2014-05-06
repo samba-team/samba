@@ -42,6 +42,7 @@
 #include "source4/lib/messaging/irpc.h"
 #include "source4/lib/messaging/messaging.h"
 #include "lib/param/param.h"
+#include "source4/librpc/gen_ndr/ndr_winbind.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1147,6 +1148,7 @@ bool winbindd_use_cache(void)
 static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 				       bool foreground)
 {
+	NTSTATUS status;
 	/* Setup signal handlers */
 
 	if (!winbindd_setup_sig_term_handler(true))
@@ -1246,6 +1248,12 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 		}
 	}
 
+	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
+			       wb_irpc_DsrUpdateReadOnlyServerDnsRecords, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not register IRPC handler for wb_irpc_DsrUpdateReadOnlyServerDnsRecords\n"));
+		exit(1);
+	}
 }
 
 struct winbindd_addrchanged_state {

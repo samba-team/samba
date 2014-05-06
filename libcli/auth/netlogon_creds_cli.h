@@ -132,5 +132,19 @@ NTSTATUS netlogon_creds_cli_LogonSamLogon(
 				union netr_Validation **validation,
 				uint8_t *authoritative,
 				uint32_t *flags);
+struct tevent_req *netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_send(TALLOC_CTX *mem_ctx,
+									     struct tevent_context *ev,
+									     struct netlogon_creds_cli_context *context,
+									     struct dcerpc_binding_handle *b,
+									     const char *site_name,
+									     uint32_t dns_ttl,
+									     struct NL_DNS_NAME_INFO_ARRAY *dns_names);
+NTSTATUS netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_recv(struct tevent_req *req);
+NTSTATUS netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(
+				struct netlogon_creds_cli_context *context,
+				struct dcerpc_binding_handle *b,
+				const char *site_name,
+				uint32_t dns_ttl,
+				struct NL_DNS_NAME_INFO_ARRAY *dns_names);
 
 #endif /* NETLOGON_CREDS_CLI_H */

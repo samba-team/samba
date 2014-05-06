@@ -908,4 +908,9 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 /* The following definitions come from winbindd/winbindd_ads.c  */
 ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name);
 
+/* The following definitions come from winbindd/winbindd_update_rodc_dns.c  */
+struct irpc_message;
+struct winbind_DsrUpdateReadOnlyServerDnsRecords;
+NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *msg,
+						   struct winbind_DsrUpdateReadOnlyServerDnsRecords *req);
 #endif /*  _WINBINDD_PROTO_H_  */

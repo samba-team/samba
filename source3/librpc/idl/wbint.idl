@@ -167,4 +167,10 @@ interface wbint
     NTSTATUS wbint_PingDc(
 	[out,string,charset(UTF8)] char **dcname
 	);
+
+    NTSTATUS wbint_DsrUpdateReadOnlyServerDnsRecords(
+	[in,unique] [string,charset(UTF16)] uint16 *site_name,
+	[in] uint32 dns_ttl,
+	[in,out,ref] NL_DNS_NAME_INFO_ARRAY *dns_names
+	);
 }
