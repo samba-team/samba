@@ -99,6 +99,9 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 			    struct messaging_backend **presult);
 NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid);
 NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx);
+void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
+					    struct messaging_context *msg_ctx,
+					    struct tevent_context *ev);
 
 NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			      TALLOC_CTX *mem_ctx,

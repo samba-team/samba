@@ -473,3 +473,12 @@ NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
 
 	return NT_STATUS_OK;
 }
+
+void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
+					    struct messaging_context *msg_ctx,
+					    struct tevent_context *ev)
+{
+	struct messaging_dgm_context *ctx = talloc_get_type_abort(
+		msg_ctx->local->private_data, struct messaging_dgm_context);
+	return poll_funcs_tevent_register(mem_ctx, ctx->msg_callbacks, ev);
+}
