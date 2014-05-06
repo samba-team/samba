@@ -181,34 +181,22 @@ static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
 					   TDB_DATA key)
 {
 	struct ctdb_context *ctdb = vdata->ctdb;
-	struct ctdb_rec_data *rec;
 	uint32_t lmaster;
-	size_t old_size;
 	struct ctdb_marshall_buffer *vfl;
 
 	lmaster = ctdb_lmaster(ctdb, &key);
 
 	vfl = vdata->vacuum_fetch_list[lmaster];
 
-	rec = ctdb_marshall_record(vfl, ctdb->pnn, key, NULL, tdb_null);
-	if (rec == NULL) {
+	vfl = ctdb_marshall_add(ctdb, vfl, vfl->db_id, ctdb->pnn,
+				key, NULL, tdb_null);
+	if (vfl == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		vdata->traverse_error = true;
 		return -1;
 	}
 
-	old_size = talloc_get_size(vfl);
-	vfl = talloc_realloc_size(NULL, vfl, old_size + rec->length);
-	if (vfl == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
-		vdata->traverse_error = true;
-		return -1;
-	}
 	vdata->vacuum_fetch_list[lmaster] = vfl;
-
-	vfl->count++;
-	memcpy(old_size+(uint8_t *)vfl, rec, rec->length);
-	talloc_free(rec);
 
 	return 0;
 }
@@ -294,23 +282,17 @@ static int delete_marshall_traverse(void *param, void *data)
 {
 	struct delete_record_data *dd = talloc_get_type(data, struct delete_record_data);
 	struct delete_records_list *recs = talloc_get_type(param, struct delete_records_list);
-	struct ctdb_rec_data *rec;
-	size_t old_size;
+	struct ctdb_marshall_buffer *m;
 
-	rec = ctdb_marshall_record(dd, recs->records->db_id, dd->key, &dd->hdr, tdb_null);
-	if (rec == NULL) {
+	m = ctdb_marshall_add(recs, recs->records, recs->records->db_id,
+			      recs->records->db_id,
+			      dd->key, &dd->hdr, tdb_null);
+	if (m == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to marshall record\n"));
-		return 0;
-	}
-
-	old_size = talloc_get_size(recs->records);
-	recs->records = talloc_realloc_size(recs, recs->records, old_size + rec->length);
-	if (recs->records == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
 		return -1;
 	}
-	recs->records->count++;
-	memcpy(old_size+(uint8_t *)(recs->records), rec, rec->length);
+
+	recs->records = m;
 	return 0;
 }
 
