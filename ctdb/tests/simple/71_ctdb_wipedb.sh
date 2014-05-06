@@ -52,6 +52,16 @@ db_ctdb_tstore 1 "$test_db" "DEF" "DEF"
 # 4.
 echo "Wipe database"
 try_command_on_node 0 $CTDB wipedb "$test_db"
+
+# check that the database is wiped
+num_records=$(db_ctdb_cattdb_count_records 1 "$test_db")
+if [ $num_records = "0" ] ; then
+    echo "OK: Database was wiped"
+else
+    echo "BAD: We did not end up with an empty database"
+    exit 1
+fi
+
 echo "Force a recovery"
 try_command_on_node 0 $CTDB recover
 
