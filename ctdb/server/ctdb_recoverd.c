@@ -379,8 +379,23 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *re
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
-	/* freeze all nodes */
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+
+	data.dsize = sizeof(uint32_t);
+	data.dptr = (unsigned char *)&rec_mode;
+
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMODE,
+					nodes, 0,
+					CONTROL_TIMEOUT(),
+					false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode. Recovery failed.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	/* freeze all nodes */
 	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
 		int i;
 
@@ -397,21 +412,6 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *re
 				return -1;
 			}
 		}
-	}
-
-
-	data.dsize = sizeof(uint32_t);
-	data.dptr = (unsigned char *)&rec_mode;
-
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMODE,
-					nodes, 0,
-					CONTROL_TIMEOUT(),
-					false, data,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode. Recovery failed.\n"));
-		talloc_free(tmp_ctx);
-		return -1;
 	}
 
 	talloc_free(tmp_ctx);
@@ -3654,15 +3654,15 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		if (ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
 			DEBUG(DEBUG_ERR,("Node is stopped or banned but recovery mode is not active. Activate recovery mode and lock databases\n"));
 
-			ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node in STOPPED or BANNED state\n"));
-				return;
-			}
 			ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode in STOPPED or BANNED state\n"));
 
+				return;
+			}
+			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node in STOPPED or BANNED state\n"));
 				return;
 			}
 		}

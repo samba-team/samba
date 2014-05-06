@@ -70,11 +70,11 @@ void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 	*/
 	ctdb->vnn_map->generation = INVALID_GENERATION;
 
+	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
 		ctdb_start_freeze(ctdb, i);
 	}
 	ctdb_release_all_ips(ctdb);
-	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 }
 
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
