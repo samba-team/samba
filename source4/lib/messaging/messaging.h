@@ -18,8 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _MESSAGES_H_
-#define _MESSAGES_H_
+#ifndef _SOURCE4_LIB_MESSAGING_MESSAGES_H_
+#define _SOURCE4_LIB_MESSAGING_MESSAGES_H_
 
 #include "librpc/gen_ndr/server_id.h"
 
