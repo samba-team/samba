@@ -33,7 +33,7 @@
 #define plan_tests(num)
 #define fail(...) do { \
 	fprintf(stderr, __VA_ARGS__); \
-	fprintf(stdout, "\n"); \
+	fprintf(stderr, "\n"); \
 	fflush(stderr); \
 	exit(1); \
 } while(0)
