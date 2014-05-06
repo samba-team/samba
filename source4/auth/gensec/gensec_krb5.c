@@ -719,6 +719,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	} else {
 		/* Found pac */
 		pac_blob = data_blob_talloc(tmp_ctx, pac_data.data, pac_data.length);
+		kerberos_free_data_contents(context, &pac_data);
 		if (!pac_blob.data) {
 			free(principal_string);
 			krb5_free_principal(context, client_principal);
