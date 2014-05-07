@@ -1019,14 +1019,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
-	if (entry_ex->entry.principal == NULL) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
-
-	ret = copy_Principal(principal, entry_ex->entry.principal);
+	ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
 	if (ret) {
 		krb5_clear_error_message(context);
 		goto out;
