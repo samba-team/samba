@@ -397,10 +397,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		key.mkvno = 0;
 		key.salt = NULL; /* No salt for this enc type */
 
-		ret = krb5_keyblock_init(context,
-					 ENCTYPE_ARCFOUR_HMAC,
-					 hash->hash, sizeof(hash->hash),
-					 &key.key);
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      hash->hash,
+						      sizeof(hash->hash),
+						      &key.key);
 		if (ret) {
 			goto out;
 		}
@@ -445,11 +446,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 			/* TODO: maybe pass the iteration_count somehow... */
 
-			ret = krb5_keyblock_init(context,
-						 pkb4->keys[i].keytype,
-						 pkb4->keys[i].value->data,
-						 pkb4->keys[i].value->length,
-						 &key.key);
+			ret = smb_krb5_keyblock_init_contents(context,
+							      pkb4->keys[i].keytype,
+							      pkb4->keys[i].value->data,
+							      pkb4->keys[i].value->length,
+							      &key.key);
 			if (ret == KRB5_PROG_ETYPE_NOSUPP) {
 				DEBUG(2,("Unsupported keytype ignored - type %u\n",
 					 pkb4->keys[i].keytype));
@@ -502,11 +503,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 				}
 			}
 
-			ret = krb5_keyblock_init(context,
-						 pkb3->keys[i].keytype,
-						 pkb3->keys[i].value->data,
-						 pkb3->keys[i].value->length,
-						 &key.key);
+			ret = smb_krb5_keyblock_init_contents(context,
+							      pkb3->keys[i].keytype,
+							      pkb3->keys[i].value->data,
+							      pkb3->keys[i].value->length,
+							      &key.key);
 			if (ret) {
 				if (key.salt) {
 					free_Salt(key.salt);
@@ -1210,11 +1211,11 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	if (password_hash != NULL) {
 		Key key = {};
 
-		ret = krb5_keyblock_init(context,
-					 ENCTYPE_ARCFOUR_HMAC,
-					 password_hash->hash,
-					 sizeof(password_hash->hash),
-					 &key.key);
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      password_hash->hash,
+						      sizeof(password_hash->hash),
+						      &key.key);
 		if (ret != 0) {
 			goto out;
 		}
