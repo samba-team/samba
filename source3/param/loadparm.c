@@ -2641,6 +2641,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		return ok;
 	}
 
+	TALLOC_FREE(frame);
+
 	/* now switch on the type of variable it is */
 	switch (parm_table[parmnum].type)
 	{
@@ -2664,7 +2666,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			i = sscanf(pszParmValue, "%o", (int *)parm_ptr);
 			if ( i != 1 ) {
 			    DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
-			    TALLOC_FREE(frame);
 				return false;
 			}
 			break;
@@ -2740,7 +2741,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		}
 		case P_ENUM:
 			if (!lp_set_enum_parm(&parm_table[parmnum], pszParmValue, (int*)parm_ptr)) {
-				TALLOC_FREE(frame);
 				return false;
 			}
 			break;
@@ -2748,7 +2748,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 	}
 
-	TALLOC_FREE(frame);
 	return true;
 }
 
