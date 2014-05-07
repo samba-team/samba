@@ -884,8 +884,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	*entry_ex->entry.max_renew = kdc_db_ctx->policy.renewal_lifetime;
 
-	entry_ex->entry.generation = NULL;
-
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
@@ -1237,8 +1235,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	entry_ex->entry.max_life = NULL;
 
 	entry_ex->entry.max_renew = NULL;
-
-	entry_ex->entry.generation = NULL;
 
 	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
 	if (entry_ex->entry.etypes == NULL) {
