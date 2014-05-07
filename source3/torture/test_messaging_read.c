@@ -91,6 +91,7 @@ bool run_messaging_read1(int dummy)
 	unsigned count2 = 0;
 	NTSTATUS status;
 	bool retval = false;
+	int i;
 
 	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
@@ -121,9 +122,11 @@ bool run_messaging_read1(int dummy)
 		goto fail;
 	}
 
-	if (tevent_loop_once(ev) != 0) {
-		fprintf(stderr, "tevent_loop_once failed\n");
-		goto fail;
+	for (i=0; i<3; i++) {
+		if (tevent_loop_once(ev) != 0) {
+			fprintf(stderr, "tevent_loop_once failed\n");
+			goto fail;
+		}
 	}
 
 	printf("%u/%u\n", count1, count2);
