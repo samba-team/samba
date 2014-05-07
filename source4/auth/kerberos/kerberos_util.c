@@ -218,6 +218,8 @@ static krb5_error_code impersonate_principal_from_credentials(
 	 * flags:
 	 * KRB5_INIT_CREDS_NO_C_CANON_CHECK;
 	 * KRB5_INIT_CREDS_NO_C_NO_EKU_CHECK;
+	 *
+	 * On MIT: Set pkinit_eku_checking to none
 	 */
 	krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context,
 					  krb_options, true);
