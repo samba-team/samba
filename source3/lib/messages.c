@@ -344,7 +344,8 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 static bool messaging_is_self_send(const struct messaging_context *msg_ctx,
 				   const struct server_id *dst)
 {
-	return server_id_equal(&msg_ctx->id, dst);
+	return ((msg_ctx->id.vnn == dst->vnn) &&
+		(msg_ctx->id.pid == dst->pid));
 }
 
 /*
