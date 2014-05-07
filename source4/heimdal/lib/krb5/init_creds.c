@@ -379,7 +379,7 @@ krb5_get_init_creds_opt_set_process_last_req(krb5_context context,
 					     void *ctx)
 {
     krb5_error_code ret;
-    ret = require_ext_opt(context, opt, "init_creds_opt_set_win2k");
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_process_last_req");
     if (ret)
 	return ret;
 
