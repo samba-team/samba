@@ -374,6 +374,13 @@ static int winbind_open_pipe_sock(int recursing, int need_priv)
 	/* try and get priv pipe */
 
 	request.wb_flags = WBFLAG_RECURSE;
+
+	/* Note that response needs to be initialized to avoid
+	 * crashing on clean up after WINBINDD_PRIV_PIPE_DIR call failed
+	 * as interface version (from the first request) returned as a fstring,
+	 * thus response.extra_data.data will not be NULL even though
+	 * winbindd response did not write over it due to a failure */
+	ZERO_STRUCT(response);
 	if (winbindd_request_response(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
 		if ((fd = winbind_named_pipe_sock((char *)response.extra_data.data)) != -1) {
