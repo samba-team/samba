@@ -341,6 +341,12 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 	}
 }
 
+static bool messaging_is_self_send(const struct messaging_context *msg_ctx,
+				   const struct server_id *dst)
+{
+	return server_id_equal(&msg_ctx->id, dst);
+}
+
 /*
   Send a message to a particular server
 */
@@ -358,7 +364,7 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 						msg_ctx->remote);
 	}
 
-	if (server_id_equal(&msg_ctx->id, &server)) {
+	if (messaging_is_self_send(msg_ctx, &server)) {
 		struct messaging_rec rec;
 		rec.msg_version = MESSAGE_VERSION;
 		rec.msg_type = msg_type & MSG_TYPE_MASK;
@@ -735,7 +741,7 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		if (server_id_equal(&msg_ctx->id, &rec->dest)) {
+		if (messaging_is_self_send(msg_ctx, &rec->dest)) {
 			/*
 			 * This is a self-send. We are called here from
 			 * messaging_send(), and we don't want to directly
