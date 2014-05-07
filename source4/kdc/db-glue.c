@@ -646,9 +646,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * both realm values in the principal are set
 			 * to the upper case, canonical realm
 			 */
-			ret = krb5_make_principal(context, &entry_ex->entry.principal,
-						  lpcfg_realm(lp_ctx), "krbtgt",
-						  lpcfg_realm(lp_ctx), NULL);
+			ret = smb_krb5_make_principal(context, &entry_ex->entry.principal,
+						      lpcfg_realm(lp_ctx), "krbtgt",
+						      lpcfg_realm(lp_ctx), NULL);
 			if (ret) {
 				krb5_clear_error_message(context);
 				goto out;
@@ -672,7 +672,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		}
 
 	} else if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
-		ret = krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
@@ -683,7 +683,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * packet, and has a different meaning between AS-REQ
 		 * and TGS-REQ.  We only change the principal in the AS-REQ case
 		 */
-		ret = krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
@@ -746,9 +746,10 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* use 'whenCreated' */
 		entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
 		/* use 'kadmin' for now (needed by mit_samba) */
-		ret = krb5_make_principal(context,
-					  &entry_ex->entry.created_by.principal,
-					  lpcfg_realm(lp_ctx), "kadmin", NULL);
+
+		ret = smb_krb5_make_principal(context,
+					      &entry_ex->entry.created_by.principal,
+					      lpcfg_realm(lp_ctx), "kadmin", NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
@@ -764,9 +765,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* use 'whenChanged' */
 		entry_ex->entry.modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
 		/* use 'kadmin' for now (needed by mit_samba) */
-		ret = krb5_make_principal(context,
-					  &entry_ex->entry.modified_by->principal,
-					  lpcfg_realm(lp_ctx), "kadmin", NULL);
+		ret = smb_krb5_make_principal(context,
+					      &entry_ex->entry.modified_by->principal,
+					      lpcfg_realm(lp_ctx), "kadmin", NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
@@ -1010,9 +1011,9 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	/* use 'whenCreated' */
 	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
 	/* use 'kadmin' for now (needed by mit_samba) */
-	ret = krb5_make_principal(context,
-			    &entry_ex->entry.created_by.principal,
-			    realm, "kadmin", NULL);
+	ret = smb_krb5_make_principal(context,
+				      &entry_ex->entry.created_by.principal,
+				      realm, "kadmin", NULL);
 	if (ret) {
 		krb5_clear_error_message(context);
 		goto out;
