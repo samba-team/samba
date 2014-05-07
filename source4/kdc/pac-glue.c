@@ -98,22 +98,22 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				     deleg_blob->data,
 				     deleg_blob->length);
 		if (ret != 0) {
-			krb5_data_free(&pac_data);
+			kerberos_free_data_contents(context, &pac_data);
 			return ret;
 		}
 	}
 
 	ret = krb5_pac_init(context, pac);
 	if (ret != 0) {
-		krb5_data_free(&pac_data);
-		krb5_data_free(&deleg_data);
+		kerberos_free_data_contents(context, &pac_data);
+		kerberos_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
 	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &pac_data);
-	krb5_data_free(&pac_data);
+	kerberos_free_data_contents(context, &pac_data);
 	if (ret != 0) {
-		krb5_data_free(&deleg_data);
+		kerberos_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
@@ -121,7 +121,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		ret = krb5_pac_add_buffer(context, *pac,
 					  PAC_TYPE_CONSTRAINED_DELEGATION,
 					  &deleg_data);
-		krb5_data_free(&deleg_data);
+		kerberos_free_data_contents(context, &deleg_data);
 		if (ret != 0) {
 			return ret;
 		}
@@ -324,7 +324,7 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				&info, PAC_TYPE_CONSTRAINED_DELEGATION,
 				(ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			krb5_data_free(&old_data);
+			kerberos_free_data_contents(context, &old_data);
 			nt_status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
 			talloc_free(tmp_ctx);
@@ -334,7 +334,7 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(_d);
 		info.constrained_delegation.info = &_d;
 	}
-	krb5_data_free(&old_data);
+	kerberos_free_data_contents(context, &old_data);
 
 	ret = krb5_unparse_name(context, server_principal, &server);
 	if (ret) {
@@ -364,7 +364,7 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	SAFE_FREE(server);
 	SAFE_FREE(proxy);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		krb5_data_free(&old_data);
+		kerberos_free_data_contents(context, &old_data);
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
 		talloc_free(tmp_ctx);
