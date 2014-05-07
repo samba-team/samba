@@ -487,7 +487,7 @@ static void free_one_parameter_common(void *parm_ptr,
 	    (parm.type == P_USTRING))
 	{
 		string_free((char**)parm_ptr);
-	} else if (parm.type == P_LIST) {
+	} else if (parm.type == P_LIST || parm.type == P_CMDLIST) {
 		TALLOC_FREE(*((char***)parm_ptr));
 	}
 }
