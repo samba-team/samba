@@ -115,5 +115,6 @@ bool run_qpathinfo_bufsize(int dummy);
 bool run_bench_pthreadpool(int dummy);
 bool run_messaging_read1(int dummy);
 bool run_messaging_read2(int dummy);
+bool run_messaging_read3(int dummy);
 
 #endif /* __TORTURE_H__ */

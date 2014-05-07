@@ -104,6 +104,7 @@ local_tests = [
     "LOCAL-IDMAP-TDB-COMMON",
     "LOCAL-MESSAGING-READ1",
     "LOCAL-MESSAGING-READ2",
+    "LOCAL-MESSAGING-READ3",
     "LOCAL-hex_encode_buf",
     "LOCAL-sprintf_append",
     "LOCAL-remove_duplicate_addrs2"]
