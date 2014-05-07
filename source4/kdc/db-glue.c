@@ -1718,8 +1718,6 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 	krb5_error_code ret;
 	struct samba_kdc_seq *priv = kdc_db_ctx->seq_ctx;
 	TALLOC_CTX *mem_ctx;
-	hdb_entry_ex entry_ex;
-	memset(&entry_ex, '\0', sizeof(entry_ex));
 
 	if (!priv) {
 		return HDB_ERR_NOENTRY;
