@@ -2300,7 +2300,7 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
  */
 
 char *smb_krb5_principal_get_realm(krb5_context context,
-				   krb5_principal principal)
+				   krb5_const_principal principal)
 {
 #ifdef HAVE_KRB5_PRINCIPAL_GET_REALM /* Heimdal */
 	return discard_const_p(char, krb5_principal_get_realm(context, principal));
