@@ -476,7 +476,7 @@ static void *_swrap_load_lib_function(enum swrap_lib lib, const char *fn_name)
 /*
  * IMPORTANT
  *
- * Functions expeciall from libc need to be loaded individually, you can't load
+ * Functions especially from libc need to be loaded individually, you can't load
  * all at once or gdb will segfault at startup. The same applies to valgrind and
  * has probably something todo with with the linker.
  * So we need load each function at the point it is called the first time.
@@ -1601,7 +1601,7 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 		ip->v4.tos		= 0x00;
 		ip->v4.packet_length	= htons(wire_len - icmp_truncate_len);
 		ip->v4.identification	= htons(0xFFFF);
-		ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+		ip->v4.flags		= 0x40; /* BIT 1 set - means don't fragment */
 		ip->v4.fragment		= htons(0x0000);
 		ip->v4.ttl		= 0xFF;
 		ip->v4.protocol		= protocol;
@@ -1640,7 +1640,7 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 			ip->v4.tos		= 0x00;
 			ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
 			ip->v4.identification	= htons(0xFFFF);
-			ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+			ip->v4.flags		= 0x40; /* BIT 1 set - means don't fragment */
 			ip->v4.fragment		= htons(0x0000);
 			ip->v4.ttl		= 0xFF;
 			ip->v4.protocol		= icmp_protocol;
@@ -2395,7 +2395,7 @@ static int autobind_start;
 
 /* using sendto() or connect() on an unbound socket would give the
    recipient no way to reply, as unlike UDP and TCP, a unix domain
-   socket can't auto-assign emphemeral port numbers, so we need to
+   socket can't auto-assign ephemeral port numbers, so we need to
    assign it here.
    Note: this might change the family from ipv6 to ipv4
 */
