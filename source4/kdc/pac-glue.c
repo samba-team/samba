@@ -474,7 +474,7 @@ int kdc_check_pac(krb5_context context,
 	krb5_keyblock keyblock;
 	Key *key;
 	if (kdc_sig->type == CKSUMTYPE_HMAC_MD5) {
-		etype = ETYPE_ARCFOUR_HMAC_MD5;
+		etype = ENCTYPE_ARCFOUR_HMAC;
 	} else {
 		ret = krb5_cksumtype_to_enctype(context, 
 						kdc_sig->type,
