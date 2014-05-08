@@ -516,7 +516,9 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	OM_uint32 maj_stat, min_stat;
 	struct gssapi_creds_container *gcc;
 	struct ccache_container *ccache;
+#ifdef SAMBA4_USES_HEIMDAL
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+#endif
 	krb5_enctype *etypes = NULL;
 
 	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold && 
