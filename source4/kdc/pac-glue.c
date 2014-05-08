@@ -420,9 +420,9 @@ krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status)
 	krb5_error_code ret;
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE))
-		ret = KRB5KDC_ERR_KEY_EXPIRED;
+		ret = KRB5KDC_ERR_KEY_EXP;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED))
-		ret = KRB5KDC_ERR_KEY_EXPIRED;
+		ret = KRB5KDC_ERR_KEY_EXP;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_EXPIRED))
 		ret = KRB5KDC_ERR_CLIENT_REVOKED;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED))
