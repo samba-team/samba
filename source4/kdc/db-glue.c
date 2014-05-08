@@ -785,11 +785,19 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	}
 
 	if (rid == DOMAIN_RID_KRBTGT) {
+		char *realm = NULL;
+
 		entry_ex->entry.valid_end = NULL;
 		entry_ex->entry.pw_end = NULL;
 
 		entry_ex->entry.flags.invalid = 0;
 		entry_ex->entry.flags.server = 1;
+
+		realm = smb_krb5_principal_get_realm(context, principal);
+		if (realm == NULL) {
+			ret = ENOMEM;
+			goto out;
+		}
 
 		/* Don't mark all requests for the krbtgt/realm as
 		 * 'change password', as otherwise we could get into
@@ -799,9 +807,12 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		    && principal->name.name_string.len == 2
 		    && (strcmp(principal->name.name_string.val[0], "kadmin") == 0)
 		    && (strcmp(principal->name.name_string.val[1], "changepw") == 0)
-		    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->realm)) {
+		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
 			entry_ex->entry.flags.change_pw = 1;
 		}
+
+		SAFE_FREE(realm);
+
 		entry_ex->entry.flags.client = 0;
 		entry_ex->entry.flags.forwardable = 1;
 		entry_ex->entry.flags.ok_as_delegate = 1;
@@ -1368,8 +1379,20 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
-
+	char *realm_from_princ, *realm_from_princ_malloc;
 	krb5_principal alloc_principal = NULL;
+
+	realm_from_princ_malloc = smb_krb5_principal_get_realm(context, principal);
+	if (realm_from_princ_malloc == NULL) {
+		/* can't happen */
+		return HDB_ERR_NOENTRY;
+	}
+	realm_from_princ = talloc_strdup(mem_ctx, realm_from_princ_malloc);
+	free(realm_from_princ_malloc);
+	if (realm_from_princ == NULL) {
+		return HDB_ERR_NOENTRY;
+	}
+
 	if (principal->name.name_string.len != 2
 	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
@@ -1378,7 +1401,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 	/* krbtgt case.  Either us or a trusted realm */
 
-	if (lpcfg_is_my_domain_or_realm(lp_ctx, principal->realm)
+	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
 	    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->name.name_string.val[1])) {
 		/* us, or someone quite like us */
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
@@ -1451,19 +1474,21 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 		/* Either an inbound or outbound trust */
 
-		if (strcasecmp(lpcfg_realm(lp_ctx), principal->realm) == 0) {
+		if (strcasecmp(lpcfg_realm(lp_ctx), realm_from_princ) == 0) {
 			/* look for inbound trust */
 			direction = INBOUND;
 			realm = principal->name.name_string.val[1];
 		} else if (strcasecmp(lpcfg_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
 			/* look for outbound trust */
 			direction = OUTBOUND;
-			realm = principal->realm;
+			realm = realm_from_princ;
 		} else {
 			krb5_warnx(context, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
-				   principal->realm, principal->name.name_string.val[1]);
+				   realm_from_princ,
+				   principal->name.name_string.val[1]);
 			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
-					       principal->realm, principal->name.name_string.val[1]);
+					       realm_from_princ,
+					       principal->name.name_string.val[1]);
 			return HDB_ERR_NOENTRY;
 		}
 
