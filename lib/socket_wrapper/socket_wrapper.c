@@ -3155,7 +3155,7 @@ static int swrap_recvmsg_after(int fd,
 {
 	int saved_errno = errno;
 	size_t i;
-	uint8_t *buf;
+	uint8_t *buf = NULL;
 	off_t ofs = 0;
 	size_t avail = 0;
 	size_t remain;
@@ -3187,7 +3187,7 @@ static int swrap_recvmsg_after(int fd,
 
 	/* we capture it as one single packet */
 	buf = (uint8_t *)malloc(remain);
-	if (!buf) {
+	if (buf == NULL) {
 		/* we just not capture the packet */
 		errno = saved_errno;
 		return -1;
@@ -3228,7 +3228,7 @@ static int swrap_recvmsg_after(int fd,
 						      msg->msg_name,
 						      &msg->msg_namelen);
 			if (rc == -1) {
-				return -1;
+				goto done;
 			}
 
 			swrap_dump_packet(si,
@@ -3247,6 +3247,7 @@ static int swrap_recvmsg_after(int fd,
 		break;
 	}
 
+done:
 	free(buf);
 	errno = saved_errno;
 	return 0;
