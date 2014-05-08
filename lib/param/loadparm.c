@@ -1410,7 +1410,7 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		case P_BOOL: {
 			bool b;
 			if (!set_boolean(pszParmValue, &b)) {
-				DEBUG(0, ("set_variable(%s): value is not "
+				DEBUG(0, ("set_variable_helper(%s): value is not "
 					  "boolean!\n", pszParmValue));
 				return false;
 			}
@@ -1421,7 +1421,7 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		case P_BOOLREV: {
 			bool b;
 			if (!set_boolean(pszParmValue, &b)) {
-				DEBUG(0, ("set_variable(%s): value is not "
+				DEBUG(0, ("set_variable_helper(%s): value is not "
 					  "boolean!\n", pszParmValue));
 				return false;
 			}
@@ -1455,7 +1455,7 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 				}
 			}
 
-			DEBUG(0, ("set_variable(%s): value is not "
+			DEBUG(0, ("set_variable_helper(%s): value is not "
 			          "a valid size specifier!\n", pszParmValue));
 			return false;
 		}
@@ -1464,8 +1464,9 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			TALLOC_FREE(*(char ***)parm_ptr);
 			*(const char * const **)parm_ptr
 				= (const char * const *)str_list_make_v3(mem_ctx,
-								      pszParmValue, NULL);
+									 pszParmValue, NULL);
 			break;
+
 		case P_LIST:
 		{
 			char **new_list = str_list_make_v3(mem_ctx,
@@ -1502,6 +1503,7 @@ bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			}
 			break;
 		}
+
 		case P_STRING:
 			lpcfg_string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
