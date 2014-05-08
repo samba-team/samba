@@ -19,7 +19,8 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4',
                   source='hdb-samba4.c hdb-samba4-plugin.c',
                   deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue samba-hostconfig com_err',
                   includes=kdc_include,
-                  private_library=True
+                  private_library=True,
+                  enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
                   )
 
 # A plugin for Heimdal's kadmin for users who need to operate that tool
@@ -36,7 +37,8 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4_PLUGIN',
 bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 	source='wdc-samba4.c',
         includes=kdc_include,
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err'
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err',
+	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
 
 
