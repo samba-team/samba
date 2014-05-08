@@ -805,8 +805,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * Instead, only do it when request is for the kpasswd service */
 		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER
 		    && krb5_princ_size(context, principal) == 2
-		    && (strcmp(principal->name.name_string.val[0], "kadmin") == 0)
-		    && (strcmp(principal->name.name_string.val[1], "changepw") == 0)
+		    && (strcmp(krb5_principal_get_comp_string(context, principal, 0), "kadmin") == 0)
+		    && (strcmp(krb5_principal_get_comp_string(context, principal, 1), "changepw") == 0)
 		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
 			entry_ex->entry.flags.change_pw = 1;
 		}
@@ -1394,7 +1394,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	}
 
 	if (krb5_princ_size(context, principal) != 2
-	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
+	    || (strcmp(krb5_principal_get_comp_string(context, principal, 0), KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
 		return HDB_ERR_NOENTRY;
 	}
@@ -1402,7 +1402,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	/* krbtgt case.  Either us or a trusted realm */
 
 	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
-	    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->name.name_string.val[1])) {
+	    && lpcfg_is_my_domain_or_realm(lp_ctx, krb5_principal_get_comp_string(context, principal, 1))) {
 		/* us, or someone quite like us */
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
@@ -1477,18 +1477,18 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		if (strcasecmp(lpcfg_realm(lp_ctx), realm_from_princ) == 0) {
 			/* look for inbound trust */
 			direction = INBOUND;
-			realm = principal->name.name_string.val[1];
-		} else if (strcasecmp(lpcfg_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
+			realm = krb5_principal_get_comp_string(context, principal, 1);
+		} else if (strcasecmp(lpcfg_realm(lp_ctx), krb5_principal_get_comp_string(context, principal, 1)) == 0) {
 			/* look for outbound trust */
 			direction = OUTBOUND;
 			realm = realm_from_princ;
 		} else {
 			krb5_warnx(context, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
 				   realm_from_princ,
-				   principal->name.name_string.val[1]);
+				   krb5_principal_get_comp_string(context, principal, 1));
 			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
 					       realm_from_princ,
-					       principal->name.name_string.val[1]);
+					       krb5_principal_get_comp_string(context, principal, 1));
 			return HDB_ERR_NOENTRY;
 		}
 
@@ -1601,7 +1601,8 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 						       krb5_princ_size(context, principal));
 				return ret;
 			}
-			ret = krb5_parse_name(context, principal->name.name_string.val[0],
+			ret = krb5_parse_name(context,
+					      krb5_principal_get_comp_string(context, principal, 0),
 					      &enterprise_prinicpal);
 			if (ret) {
 				talloc_free(mem_ctx);
