@@ -30,7 +30,7 @@
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
 #include "ntdomain.h"
-#include "librpc/gen_ndr/srv_wbint.h"
+#include "librpc/gen_ndr/srv_winbind.h"
 
 struct wbint_bh_state {
 	struct winbindd_domain *domain;
@@ -283,7 +283,7 @@ struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 	h = dcerpc_binding_handle_create(mem_ctx,
 					 &wbint_bh_ops,
 					 NULL,
-					 &ndr_table_wbint,
+					 &ndr_table_winbind,
 					 &hs,
 					 struct wbint_bh_state,
 					 __location__);
@@ -304,7 +304,7 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 	int num_fns;
 	bool ret;
 
-	wbint_get_pipe_fns(&fns, &num_fns);
+	winbind_get_pipe_fns(&fns, &num_fns);
 
 	if (state->request->data.ndrcmd >= num_fns) {
 		return WINBINDD_ERROR;

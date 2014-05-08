@@ -26,7 +26,7 @@
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "librpc/gen_ndr/dcerpc.h"
-#include "librpc/gen_ndr/wbint.h"
+#include "librpc/gen_ndr/winbind.h"
 
 #include "talloc_dict.h"
 

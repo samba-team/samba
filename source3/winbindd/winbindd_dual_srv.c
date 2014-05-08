@@ -25,7 +25,7 @@
 #include "winbindd/winbindd_proto.h"
 #include "rpc_client/cli_pipe.h"
 #include "ntdomain.h"
-#include "librpc/gen_ndr/srv_wbint.h"
+#include "librpc/gen_ndr/srv_winbind.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "idmap.h"
 #include "../libcli/security/security.h"
@@ -719,8 +719,8 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
-						  struct wbint_DsrUpdateReadOnlyServerDnsRecords *r)
+NTSTATUS _winbind_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
+						    struct winbind_DsrUpdateReadOnlyServerDnsRecords *r)
 {
 	struct winbindd_domain *domain;
 	NTSTATUS status;
@@ -755,4 +755,11 @@ NTSTATUS _wbint_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 	       domain->name, nt_errstr(status)));
 
 	return status;
+}
+
+NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
+			   struct winbind_SamLogon *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }

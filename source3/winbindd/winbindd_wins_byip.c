@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "librpc/gen_ndr/ndr_wbint_c.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "libsmb/nmblib.h"
 
 struct winbindd_wins_byip_state {

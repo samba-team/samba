@@ -964,8 +964,8 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  LIBCLI_SAMR
                  SLCACHE
                  RPC_NDR_DSSETUP
-                 RPC_NDR_WBINT
-                 SRV_NDR_WBINT
+                 RPC_NDR_WINBIND
+                 SRV_NDR_WINBIND
                  RPC_SAMR
                  RPC_LSARPC
                  RPC_SERVER

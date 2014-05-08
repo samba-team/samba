@@ -28,7 +28,7 @@
 #include "winbindd.h"
 #include "tdb_validate.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/ndr_wbint.h"
+#include "../librpc/gen_ndr/ndr_winbind.h"
 #include "ads.h"
 #include "nss_info.h"
 #include "../libcli/security/security.h"

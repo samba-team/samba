@@ -22,7 +22,7 @@
 #include "winbindd.h"
 #include "../libcli/security/security.h"
 #include "idmap_cache.h"
-#include "librpc/gen_ndr/ndr_wbint_c.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 struct wb_sids2xids_state {
 	struct tevent_context *ev;

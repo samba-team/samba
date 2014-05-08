@@ -663,3 +663,18 @@ bld.SAMBA_LIBRARY('dcerpc-binding',
     pc_files=[],
     public_headers='rpc/rpc_common.h',
     vnum='0.0.1')
+
+bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
+	source='gen_ndr/ndr_winbind.c',
+	public_deps='ndr'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_WINBIND',
+	source='gen_ndr/ndr_winbind_c.c',
+	public_deps='dcerpc NDR_WINBIND'
+	)
+
+bld.SAMBA3_SUBSYSTEM('SRV_NDR_WINBIND',
+	source='gen_ndr/srv_winbind.c',
+	public_deps='NDR_WINBIND'
+	)

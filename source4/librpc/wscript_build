@@ -51,11 +51,6 @@ bld.SAMBA_SUBSYSTEM('NDR_WINSREPL',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
-	source='gen_ndr/ndr_winbind.c',
-	public_deps='NDR_IDMAP ndr ndr-standard'
-	)
-
 # create a grouping library to consolidate our samba4 specific NDR code
 bld.SAMBA_LIBRARY('ndr-samba4',
 	source=[],
@@ -87,7 +82,7 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
         NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI
         NDR_FRSTRANS NDR_NFS4ACL NDR_NTP_SIGND NDR_DCOM NDR_WMI
         NDR_NAMED_PIPE_AUTH NDR_NTLMSSP NDR_DFSBLOBS NDR_DNSP
-        NDR_NTPRINTING NDR_DNS NDR_BACKUPKEY NDR_PREG NDR_WBINT''',
+        NDR_NTPRINTING NDR_DNS NDR_BACKUPKEY NDR_PREG''',
         depends_on='GEN_NDR_TABLES'
         )
 
@@ -96,12 +91,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_IRPC',
 	source='gen_ndr/ndr_irpc_c.c',
 	public_deps='dcerpc NDR_IRPC'
 	)
-
-bld.SAMBA_SUBSYSTEM('RPC_NDR_WINBIND',
-	source='gen_ndr/ndr_winbind_c.c',
-	public_deps='dcerpc NDR_WINBIND'
-	)
-
 
 bld.SAMBA_LIBRARY('dcerpc-samr',
 	source='',
@@ -305,7 +294,7 @@ bld.SAMBA_PYTHON('python_server_id',
 	)
 
 bld.SAMBA_PYTHON('python_winbind',
-	source='gen_ndr/py_winbind.c',
+	source='../../librpc/gen_ndr/py_winbind.c',
 	deps='RPC_NDR_WINBIND pytalloc-util pyrpc_util python_netlogon',
 	realname='samba/dcerpc/winbind.so'
 	)

@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "librpc/gen_ndr/ndr_wbint_c.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "source4/lib/messaging/irpc.h"
 
@@ -51,7 +50,7 @@ NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *msg,
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	subreq = dcerpc_wbint_DsrUpdateReadOnlyServerDnsRecords_send(s, winbind_event_context(),
+	subreq = dcerpc_winbind_DsrUpdateReadOnlyServerDnsRecords_send(s, winbind_event_context(),
 								     dom_child_handle(domain),
 								     req->in.site_name,
 								     req->in.dns_ttl,
@@ -77,7 +76,7 @@ static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct tevent_req
 
 	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback called\n"));
 
-	status = dcerpc_wbint_DsrUpdateReadOnlyServerDnsRecords_recv(subreq, s, &result);
+	status = dcerpc_winbind_DsrUpdateReadOnlyServerDnsRecords_recv(subreq, s, &result);
 	any_nt_status_not_ok(status, result, &status);
 	TALLOC_FREE(subreq);
 

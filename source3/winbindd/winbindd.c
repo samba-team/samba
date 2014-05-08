@@ -42,7 +42,7 @@
 #include "source4/lib/messaging/irpc.h"
 #include "source4/lib/messaging/messaging.h"
 #include "lib/param/param.h"
-#include "source4/librpc/gen_ndr/ndr_winbind.h"
+#include "librpc/gen_ndr/ndr_winbind.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

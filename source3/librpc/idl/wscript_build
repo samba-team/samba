@@ -11,8 +11,3 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     ''',
                     options='--includedir=%s --header --ndr-parser' % topinclude,
                     output_dir='../gen_ndr')
-
-bld.SAMBA_PIDL_LIST('PIDL',
-                    'wbint.idl',
-                    options='--includedir=%s --header --ndr-parser --samba3-ndr-server --client' % topinclude,
-                    output_dir='../gen_ndr')
