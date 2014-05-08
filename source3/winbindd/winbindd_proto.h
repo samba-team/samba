@@ -394,6 +394,17 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 				    struct netr_SamInfo3 **info3);
 
+NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32_t logon_parameters,
+			       const char *name_user,
+			       const char *name_domain,
+			       const char *workstation,
+			       const uint8_t chal[8],
+			       DATA_BLOB lm_response,
+			       DATA_BLOB nt_response,
+			       struct netr_SamInfo3 **info3);
+
 /* The following definitions come from winbindd/winbindd_util.c  */
 
 struct winbindd_domain *domain_list(void);

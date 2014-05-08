@@ -128,10 +128,39 @@ static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *m
 					domain, IRPC_CALL_TIMEOUT);
 }
 
+static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
+				 struct winbind_SamLogon *req)
+{
+	struct winbindd_domain *domain;
+	const char *target_domain_name;
+	if (req->in.logon.network == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+	target_domain_name = req->in.logon.network->identity_info.domain_name.string;
+
+	domain = find_auth_domain(0, target_domain_name);
+	if (domain == NULL) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	DEBUG(5, ("wb_irpc_SamLogon called\n"));
+
+	return wb_irpc_forward_rpc_call(msg, msg,
+					winbind_event_context(),
+					req, NDR_WINBIND_SAMLOGON,
+					"winbind_SamLogon",
+					domain, IRPC_CALL_TIMEOUT);
+}
+
 NTSTATUS wb_irpc_register(void)
 {
 	NTSTATUS status;
 	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
 			       wb_irpc_DsrUpdateReadOnlyServerDnsRecords, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_SAMLOGON,
+			       wb_irpc_SamLogon, NULL);
 	return status;
 }

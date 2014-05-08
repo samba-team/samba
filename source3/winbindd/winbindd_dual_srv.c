@@ -758,8 +758,34 @@ NTSTATUS _winbind_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 }
 
 NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
-			   struct winbind_SamLogon *r)
+			struct winbind_SamLogon *r)
 {
-	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct winbindd_domain *domain;
+	NTSTATUS status;
+	DATA_BLOB lm_response, nt_response;
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	/* TODO: Handle interactive logons here */
+	if (r->in.validation_level != 3 ||
+	    r->in.logon.network == NULL ||
+	    (r->in.logon_level != NetlogonNetworkInformation
+	     && r->in.logon_level != NetlogonNetworkTransitiveInformation)) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+
+	lm_response = data_blob_talloc(p->mem_ctx, r->in.logon.network->lm.data, r->in.logon.network->lm.length);
+	nt_response = data_blob_talloc(p->mem_ctx, r->in.logon.network->nt.data, r->in.logon.network->nt.length);
+
+	status = winbind_dual_SamLogon(domain, p->mem_ctx,
+				       r->in.logon.network->identity_info.parameter_control,
+				       r->in.logon.network->identity_info.account_name.string,
+				       r->in.logon.network->identity_info.domain_name.string,
+				       r->in.logon.network->identity_info.workstation.string,
+				       r->in.logon.network->challenge,
+				       lm_response, nt_response, &r->out.validation.sam3);
+	return status;
 }

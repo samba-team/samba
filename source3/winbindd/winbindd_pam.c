@@ -1866,6 +1866,76 @@ done:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
+NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32_t logon_parameters,
+			       const char *name_user,
+			       const char *name_domain,
+			       const char *workstation,
+			       const uint8_t chal[8],
+			       DATA_BLOB lm_response,
+			       DATA_BLOB nt_response,
+			       struct netr_SamInfo3 **info3)
+{
+	NTSTATUS result;
+
+	if (strequal(name_domain, get_global_sam_name())) {
+		DATA_BLOB chal_blob = data_blob_const(
+			chal, 8);
+
+		result = winbindd_dual_auth_passdb(
+			mem_ctx,
+			logon_parameters,
+			name_domain, name_user,
+			&chal_blob, &lm_response, &nt_response, info3);
+		goto process_result;
+	}
+
+	result = winbind_samlogon_retry_loop(domain,
+					     mem_ctx,
+					     logon_parameters,
+					     domain->dcname,
+					     name_user,
+					     name_domain,
+					     /* Bug #3248 - found by Stefan Burkei. */
+					     workstation, /* We carefully set this above so use it... */
+					     chal,
+					     lm_response,
+					     nt_response,
+					     info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+process_result:
+
+	if (NT_STATUS_IS_OK(result)) {
+		struct dom_sid user_sid;
+
+		sid_compose(&user_sid, (*info3)->base.domain_sid,
+			    (*info3)->base.rid);
+		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
+					   &user_sid);
+		netsamlogon_cache_store(name_user, *info3);
+	}
+
+done:
+
+	/* give us a more useful (more correct?) error code */
+	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
+	    (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
+		result = NT_STATUS_NO_LOGON_SERVERS;
+	}
+
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
+	      ("NTLM CRAP authentication for user [%s]\\[%s] returned %s\n",
+	       name_domain,
+	       name_user,
+	       nt_errstr(result)));
+
+	return result;
+}
+
 enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state)
 {
@@ -1916,46 +1986,22 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 					   state->request->data.auth_crap.nt_resp_len);
 	}
 
-	if (strequal(name_domain, get_global_sam_name())) {
-		DATA_BLOB chal_blob = data_blob_const(
-			state->request->data.auth_crap.chal,
-			sizeof(state->request->data.auth_crap.chal));
-
-		result = winbindd_dual_auth_passdb(
-			state->mem_ctx,
-			state->request->data.auth_crap.logon_parameters,
-			name_domain, name_user,
-			&chal_blob, &lm_resp, &nt_resp, &info3);
-		goto process_result;
-	}
-
-	result = winbind_samlogon_retry_loop(domain,
-					     state->mem_ctx,
-					     state->request->data.auth_crap.logon_parameters,
-					     domain->dcname,
-					     name_user,
-					     name_domain,
-					     /* Bug #3248 - found by Stefan Burkei. */
-					     workstation, /* We carefully set this above so use it... */
-					     state->request->data.auth_crap.chal,
-					     lm_resp,
-					     nt_resp,
-					     &info3);
+	result = winbind_dual_SamLogon(domain,
+				       state->mem_ctx,
+				       state->request->data.auth_crap.logon_parameters,
+				       name_user,
+				       name_domain,
+				       /* Bug #3248 - found by Stefan Burkei. */
+				       workstation, /* We carefully set this above so use it... */
+				       state->request->data.auth_crap.chal,
+				       lm_resp,
+				       nt_resp,
+				       &info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-process_result:
-
 	if (NT_STATUS_IS_OK(result)) {
-		struct dom_sid user_sid;
-
-		sid_compose(&user_sid, info3->base.domain_sid,
-			    info3->base.rid);
-		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
-					   &user_sid);
-		netsamlogon_cache_store(name_user, info3);
-
 		/* Check if the user is in the right group */
 
 		result = check_info3_in_group(
@@ -1979,24 +2025,11 @@ process_result:
 
 done:
 
-	/* give us a more useful (more correct?) error code */
-	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
-	    (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
-		result = NT_STATUS_NO_LOGON_SERVERS;
-	}
-
 	if (state->request->flags & WBFLAG_PAM_NT_STATUS_SQUASH) {
 		result = nt_status_squash(result);
 	}
 
 	set_auth_errors(state->response, result);
-
-	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
-	      ("NTLM CRAP authentication for user [%s]\\[%s] returned %s (PAM: %d)\n",
-	       name_domain,
-	       name_user,
-	       state->response->data.auth.nt_status_string,
-	       state->response->data.auth.pam_error));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
