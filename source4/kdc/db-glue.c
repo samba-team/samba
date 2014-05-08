@@ -919,7 +919,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		goto out;
 	}
 	for (i=0; i < entry_ex->entry.etypes->len; i++) {
-		entry_ex->entry.etypes->val[i] = entry_ex->entry.keys.val[i].key.keytype;
+		entry_ex->entry.etypes->val[i] = KRB5_KEY_TYPE(&entry_ex->entry.keys.val[i].key);
 	}
 
 
@@ -1255,7 +1255,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 	for (i=0; i < entry_ex->entry.etypes->len; i++) {
-		entry_ex->entry.etypes->val[i] = entry_ex->entry.keys.val[i].key.keytype;
+		entry_ex->entry.etypes->val[i] = KRB5_KEY_TYPE(&entry_ex->entry.keys.val[i].key);
 	}
 
 
