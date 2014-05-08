@@ -2643,15 +2643,29 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	TALLOC_FREE(frame);
 
-	/* now switch on the type of variable it is */
+	/* switch on the type of variable it is */
 	switch (parm_table[parmnum].type)
 	{
-		case P_BOOL:
-			*(bool *)parm_ptr = lp_bool(pszParmValue);
+		case P_BOOL: {
+			bool b;
+			if (!set_boolean(pszParmValue, &b)) {
+				DEBUG(0, ("set_variable_helper(%s): value is not "
+					  "boolean!\n", pszParmValue));
+				return false;
+			}
+			*(bool *)parm_ptr = b;
+			}
 			break;
 
-		case P_BOOLREV:
-			*(bool *)parm_ptr = !lp_bool(pszParmValue);
+		case P_BOOLREV: {
+			bool b;
+			if (!set_boolean(pszParmValue, &b)) {
+				DEBUG(0, ("set_variable_helper(%s): value is not "
+					  "boolean!\n", pszParmValue));
+				return false;
+			}
+			*(bool *)parm_ptr = !b;
+			}
 			break;
 
 		case P_INTEGER:
@@ -2665,7 +2679,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		case P_OCTAL:
 			i = sscanf(pszParmValue, "%o", (int *)parm_ptr);
 			if ( i != 1 ) {
-			    DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
+				DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
 				return false;
 			}
 			break;
@@ -2680,8 +2694,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 				}
 			}
 
-			DEBUG(0,("lp_do_parameter(%s): value is not "
-			    "a valid size specifier!\n", pszParmValue));
+			DEBUG(0, ("set_variable_helper(%s): value is not "
+			          "a valid size specifier!\n", pszParmValue));
 			return false;
 		}
 
@@ -2722,28 +2736,26 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 		}
 		case P_CMDLIST:
-			TALLOC_FREE(*((char ***)parm_ptr));
-			*(char ***)parm_ptr = str_list_make_v3(
-				NULL, pszParmValue, NULL);
+			TALLOC_FREE(*(char ***)parm_ptr);
+			*(const char * const **)parm_ptr
+				= (const char * const *)str_list_make_v3(mem_ctx,
+									 pszParmValue, NULL);
 			break;
 
 		case P_STRING:
-			string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
+			lpcfg_string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_USTRING:
-		{
-			char *upper_string = strupper_talloc(talloc_tos(), 
-							     pszParmValue);
-			string_set(mem_ctx, (char **)parm_ptr, upper_string);
-			TALLOC_FREE(upper_string);
+			lpcfg_string_set_upper(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
-		}
+
 		case P_ENUM:
 			if (!lp_set_enum_parm(&parm_table[parmnum], pszParmValue, (int*)parm_ptr)) {
 				return false;
 			}
 			break;
+
 		case P_SEP:
 			break;
 	}
