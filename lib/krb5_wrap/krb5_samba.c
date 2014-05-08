@@ -2313,6 +2313,50 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 #endif
 }
 
+/*
+ * smb_krb5_principal_set_realm
+ *
+ * @brief Get realm of a principal
+ *
+ * @param[in] context		The krb5_context
+ * @param[in] principal		The principal
+ * @param[in] realm		The realm
+ * @return			0 on success, a krb5_error_code on error.
+ *
+ */
+
+krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
+					     krb5_principal principal,
+					     const char *realm)
+{
+#ifdef HAVE_KRB5_PRINCIPAL_SET_REALM /* Heimdal */
+	return krb5_principal_set_realm(context, principal, realm);
+#elif defined(krb5_princ_realm) && defined(krb5_princ_set_realm) /* MIT */
+	krb5_error_code ret;
+	krb5_data data;
+	krb5_data *old_data;
+
+	old_data = krb5_princ_realm(context, principal);
+
+	data.magic = 0;
+	data.length = strlen(realm);
+	data.data = malloc(data.length);
+	if (data.data == NULL) {
+		return ENOMEM;
+	}
+
+	/* free realm before setting */
+	free(old_data->data);
+
+	krb5_princ_set_realm(context, principal, &data);
+
+	return ret;
+#else
+#error UNKNOWN_PRINC_SET_REALM_FUNCTION
+#endif
+}
+
+
 /************************************************************************
  Routine to get the default realm from the kerberos credentials cache.
  Caller must free if the return value is not NULL.

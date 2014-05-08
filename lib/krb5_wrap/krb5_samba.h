@@ -254,6 +254,10 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_const_principal principal);
 
+krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
+					     krb5_principal principal,
+					     const char *realm);
+
 char *kerberos_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
 						   const char *service,
 						   const char *remote_name,
