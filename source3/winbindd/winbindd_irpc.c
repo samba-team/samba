@@ -4,6 +4,7 @@
    Copyright (C) Volker Lendecke 2009
    Copyright (C) Guenther Deschner 2009
    Copyright (C) Andrew Bartlett 2014
+   Copyright (C) Andrew Tridgell 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,64 +26,106 @@
 #include "source4/lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winbind.h"
 
-struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state {
+struct wb_irpc_forward_state {
 	struct irpc_message *msg;
 	struct winbind_DsrUpdateReadOnlyServerDnsRecords *req;
+
+	const char *opname;
+	struct dcesrv_call_state *dce_call;
 };
 
-static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct tevent_req *subreq);
-
-NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *msg,
-				 struct winbind_DsrUpdateReadOnlyServerDnsRecords *req)
+/*
+  called when the forwarded rpc request is finished
+ */
+static void wb_irpc_forward_callback(struct tevent_req *subreq)
 {
-	struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state *s;
+	struct wb_irpc_forward_state *st =
+		tevent_req_callback_data(subreq,
+		struct wb_irpc_forward_state);
+	const char *opname = st->opname;
+	NTSTATUS status;
+
+	status = dcerpc_binding_handle_call_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("RPC callback failed for %s - %s\n",
+			 opname, nt_errstr(status)));
+		irpc_send_reply(st->msg, status);
+	}
+
+	irpc_send_reply(st->msg, status);
+}
+
+
+
+/**
+ * Forward a RPC call using IRPC to another task
+ */
+
+static NTSTATUS wb_irpc_forward_rpc_call(struct irpc_message *msg, TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 void *r, uint32_t callid,
+					 const char *opname,
+					 struct winbindd_domain *domain,
+					 uint32_t timeout)
+{
+	struct wb_irpc_forward_state *st;
+	struct dcerpc_binding_handle *binding_handle;
 	struct tevent_req *subreq;
-	struct winbindd_domain *domain;
 
-	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords called\n"));
+	st = talloc(mem_ctx, struct wb_irpc_forward_state);
+	if (st == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	s = talloc(msg, struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state);
-	NT_STATUS_HAVE_NO_MEMORY(s);
+	st->msg = msg;
+	st->opname   = opname;
 
-	s->msg = msg;
-	s->req = req;
+	binding_handle =  dom_child_handle(domain);
+	if (binding_handle == NULL) {
+		DEBUG(0,("%s: Failed to forward request to winbind handler for %s\n",
+			 opname, domain->name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-	domain = find_our_domain();
+	/* reset timeout for the handle */
+	dcerpc_binding_handle_set_timeout(binding_handle, timeout);
+
+	/* forward the call */
+	subreq = dcerpc_binding_handle_call_send(st, ev,
+						 binding_handle,
+						 NULL, &ndr_table_winbind,
+						 callid,
+						 msg, r);
+	if (subreq == NULL) {
+		DEBUG(0,("%s: Failed to forward request to winbind handler for %s\n",
+			 opname, domain->name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* mark the request as replied async */
+	msg->defer_reply = true;
+
+	/* setup the callback */
+	tevent_req_set_callback(subreq, wb_irpc_forward_callback, st);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *msg,
+						   struct winbind_DsrUpdateReadOnlyServerDnsRecords *req)
+{
+	struct winbindd_domain *domain = find_our_domain();
 	if (domain == NULL) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	subreq = dcerpc_winbind_DsrUpdateReadOnlyServerDnsRecords_send(s, winbind_event_context(),
-								     dom_child_handle(domain),
-								     req->in.site_name,
-								     req->in.dns_ttl,
-								     req->in.dns_names);
-	if (!subreq) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords called\n"));
 
-	tevent_req_set_callback(subreq,
-				wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback,
-				s);
-
-	msg->defer_reply = true;
-	return NT_STATUS_OK;
-}
-
-static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct tevent_req *subreq)
-{
-	struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state *s =
-		tevent_req_callback_data(subreq,
-		struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state);
-	NTSTATUS status, result;
-
-	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback called\n"));
-
-	status = dcerpc_winbind_DsrUpdateReadOnlyServerDnsRecords_recv(subreq, s, &result);
-	any_nt_status_not_ok(status, result, &status);
-	TALLOC_FREE(subreq);
-
-	irpc_send_reply(s->msg, status);
+	return wb_irpc_forward_rpc_call(msg, msg,
+					winbind_event_context(),
+					req, NDR_WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
+					"winbind_DsrUpdateReadOnlyServerDnsRecords",
+					domain, IRPC_CALL_TIMEOUT);
 }
 
 NTSTATUS wb_irpc_register(void)
