@@ -378,40 +378,6 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* this function allocates 'data' using malloc.
- * The caller is responsible for freeing it */
-void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
-{
-	PA_DATA pa;
-	unsigned char *buf;
-	size_t len;
-	krb5_error_code ret = 0;
-
-	if (!e_data)
-		return;
-
-	pa.padata_type		= KRB5_PADATA_PW_SALT;
-	pa.padata_value.length	= 12;
-	pa.padata_value.data	= malloc(pa.padata_value.length);
-	if (!pa.padata_value.data) {
-		e_data->length = 0;
-		e_data->data = NULL;
-		return;
-	}
-
-	SIVAL(pa.padata_value.data, 0, NT_STATUS_V(nt_status));
-	SIVAL(pa.padata_value.data, 4, 0);
-	SIVAL(pa.padata_value.data, 8, 1);
-
-	ASN1_MALLOC_ENCODE(PA_DATA, buf, len, &pa, &len, ret);
-	free(pa.padata_value.data);
-
-	e_data->data   = buf;
-	e_data->length = len;
-
-	return;
-}
-
 /* function to map policy errors */
 krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status)
 {

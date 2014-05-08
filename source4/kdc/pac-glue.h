@@ -49,8 +49,6 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				const krb5_principal proxy_principal,
 				DATA_BLOB *pac_blob);
 
-void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data);
-
 krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status);
 
 NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
