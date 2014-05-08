@@ -66,7 +66,7 @@ static const char *trust_attrs[] = {
 };
 
 
-static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, KerberosTime default_val)
+static time_t ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, time_t default_val)
 {
     const char *tmp;
     const char *gentime;
