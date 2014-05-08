@@ -393,10 +393,6 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 	void *handle = NULL;
 	int i;
 
-#ifdef HAVE_APPLE
-	return RTLD_NEXT;
-#endif
-
 #ifdef RTLD_DEEPBIND
 	flags |= RTLD_DEEPBIND;
 #endif
@@ -436,10 +432,14 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 	}
 
 	if (handle == NULL) {
+#ifdef RTLD_NEXT
+		handle = swrap.libc_handle = swrap.libsocket_handle = RTLD_NEXT;
+#else
 		SWRAP_LOG(SWRAP_LOG_ERROR,
 			  "Failed to dlopen library: %s\n",
 			  dlerror());
 		exit(-1);
+#endif
 	}
 
 	return handle;
