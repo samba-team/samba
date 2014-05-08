@@ -664,7 +664,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * this appears to be required regardless of
 			 * the canonicalize flag from the client
 			 */
-			ret = krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
 			if (ret) {
 				krb5_clear_error_message(context);
 				goto out;
@@ -703,7 +703,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * we determine from our records */
 			
 			/* this has to be with malloc() */
-			ret = krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
 			if (ret) {
 				krb5_clear_error_message(context);
 				goto out;
@@ -1033,7 +1033,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	 * we determine from our records
 	 */
 
-	ret = krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
+	ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
 	if (ret) {
 		krb5_clear_error_message(context);
 		goto out;
