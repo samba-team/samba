@@ -2572,6 +2572,26 @@ krb5_boolean smb_krb5_get_allowed_weak_crypto(krb5_context context)
 #error UNKNOWN_KRB5_CONFIG_ROUTINES
 #endif
 
+/**
+* @brief Return the type of a krb5_principal
+*
+* @param context	The krb5_context
+* @param principal	The const krb5_principal
+*
+* @return integer type of the principal
+*/
+int smb_krb5_principal_get_type(krb5_context context,
+				krb5_const_principal principal)
+{
+#ifdef HAVE_KRB5_PRINCIPAL_GET_TYPE /* Heimdal */
+	return krb5_principal_get_type(context, principal);
+#elif defined(krb5_princ_type) /* MIT */
+	return krb5_princ_type(context, principal);
+#else
+#error	UNKNOWN_PRINC_GET_TYPE_FUNCTION
+#endif
+}
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
