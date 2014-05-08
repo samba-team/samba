@@ -26,7 +26,10 @@
 #include <ldb.h>
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
-#include "kdc/kdc-glue.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
+#include <hdb.h>
+#include "kdc/samba_kdc.h"
 #include "kdc/pac-glue.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
