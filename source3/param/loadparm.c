@@ -2699,6 +2699,13 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			return false;
 		}
 
+		case P_CMDLIST:
+			TALLOC_FREE(*(char ***)parm_ptr);
+			*(const char * const **)parm_ptr
+				= (const char * const *)str_list_make_v3(mem_ctx,
+									 pszParmValue, NULL);
+			break;
+
 		case P_LIST:
 		{
 			char **new_list = str_list_make_v3(mem_ctx,
@@ -2735,12 +2742,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			}
 			break;
 		}
-		case P_CMDLIST:
-			TALLOC_FREE(*(char ***)parm_ptr);
-			*(const char * const **)parm_ptr
-				= (const char * const *)str_list_make_v3(mem_ctx,
-									 pszParmValue, NULL);
-			break;
 
 		case P_STRING:
 			lpcfg_string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
