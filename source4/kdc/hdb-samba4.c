@@ -37,6 +37,8 @@
 #include "kdc/db-glue.h"
 #include "auth/auth_sam.h"
 #include <ldb.h>
+#include "sdb.h"
+#include "sdb_hdb.h"
 
 static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
@@ -87,33 +89,74 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 					     hdb_entry_ex *entry_ex)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
+	struct sdb_entry_ex sdb_entry_ex = {};
+	krb5_error_code code, ret;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
-	return samba_kdc_fetch(context, kdc_db_ctx, principal, flags, kvno, entry_ex);
+	code = samba_kdc_fetch(context,
+			       kdc_db_ctx,
+			       principal,
+			       flags,
+			       kvno,
+			       &sdb_entry_ex);
+	/*
+	 * If SDB_ERR_WRONG_REALM is returned we need to process the sdb_entry
+	 * to fill the principal in the HDB entry.
+	 */
+	if (code != 0 && code != SDB_ERR_WRONG_REALM) {
+		return code;
+	}
+
+	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry_ex);
+	sdb_free_entry(&sdb_entry_ex);
+
+	if (code == 0 && ret != 0) {
+		code = ret;
+	}
+
+	return code;
 }
 
 static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsigned flags,
 					hdb_entry_ex *entry)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
+	struct sdb_entry_ex sdb_entry_ex = {};
+	krb5_error_code ret;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
-	return samba_kdc_firstkey(context, kdc_db_ctx, entry);
+	ret = samba_kdc_firstkey(context, kdc_db_ctx, &sdb_entry_ex);
+	if (ret) {
+		return ret;
+	}
+
+	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry);
+	sdb_free_entry(&sdb_entry_ex);
+	return ret;
 }
 
 static krb5_error_code hdb_samba4_nextkey(krb5_context context, HDB *db, unsigned flags,
 				   hdb_entry_ex *entry)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
+	struct sdb_entry_ex sdb_entry_ex = {};
+	krb5_error_code ret;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
-	return samba_kdc_nextkey(context, kdc_db_ctx, entry);
+	ret = samba_kdc_nextkey(context, kdc_db_ctx, &sdb_entry_ex);
+	if (ret) {
+		return ret;
+	}
+
+	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry);
+	sdb_free_entry(&sdb_entry_ex);
+	return ret;
 }
 
 static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
