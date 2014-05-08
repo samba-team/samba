@@ -804,7 +804,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * trouble, and not enforce the password expirty.
 		 * Instead, only do it when request is for the kpasswd service */
 		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER
-		    && principal->name.name_string.len == 2
+		    && krb5_princ_size(context, principal) == 2
 		    && (strcmp(principal->name.name_string.val[0], "kadmin") == 0)
 		    && (strcmp(principal->name.name_string.val[1], "changepw") == 0)
 		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
@@ -1393,7 +1393,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		return HDB_ERR_NOENTRY;
 	}
 
-	if (principal->name.name_string.len != 2
+	if (krb5_princ_size(context, principal) != 2
 	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
 		return HDB_ERR_NOENTRY;
@@ -1594,11 +1594,11 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 
 		if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 			/* Need to reparse the enterprise principal to find the real target */
-			if (principal->name.name_string.len != 1) {
+			if (krb5_princ_size(context, principal) != 1) {
 				ret = KRB5_PARSE_MALFORMED;
 				krb5_set_error_message(context, ret, "samba_kdc_lookup_server: request for an "
 						       "enterprise principal with wrong (%d) number of components",
-						       principal->name.name_string.len);
+						       krb5_princ_size(context, principal));
 				return ret;
 			}
 			ret = krb5_parse_name(context, principal->name.name_string.val[0],
