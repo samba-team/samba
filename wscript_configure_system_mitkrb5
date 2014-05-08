@@ -108,6 +108,7 @@ conf.CHECK_FUNCS('''
        krb5_free_checksum_contents krb5_c_make_checksum krb5_create_checksum
        krb5_config_get_bool_default krb5_get_profile
        krb5_data_copy
+       krb5_keyblock_init
        ''',
      lib='krb5 k5crypto')
 conf.CHECK_DECLS('''krb5_get_credentials_for_user
