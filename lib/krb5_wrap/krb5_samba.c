@@ -735,6 +735,39 @@ void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
 }
 
 /*
+ * @brief copy a buffer into a krb5_data struct
+ *
+ * @param[in] p			The krb5_data
+ * @param[in] data		The data to copy
+ * @param[in] length		The length of the data to copy
+ * @return krb5_error_code
+ *
+ * Caller has to free krb5_data with kerberos_free_data_contents().
+ */
+
+krb5_error_code krb5_copy_data_contents(krb5_data *p,
+					const void *data,
+					size_t len)
+{
+#if defined(HAVE_KRB5_DATA_COPY)
+	return krb5_data_copy(p, data, len);
+#else
+	if (len) {
+		p->data = malloc(len);
+		if (p->data == NULL) {
+			return ENOMEM;
+		}
+		memmove(p->data, data, len);
+	} else {
+		p->data = NULL;
+	}
+	p->length = len;
+	p->magic = KV5M_DATA;
+	return 0;
+#endif
+}
+
+/*
   get a kerberos5 ticket for the given service
 */
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
