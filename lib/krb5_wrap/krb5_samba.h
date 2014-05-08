@@ -64,6 +64,10 @@
 #define AP_OPTS_USE_SUBKEY 0
 #endif
 
+#ifndef KRB5_PW_SALT
+#define KRB5_PW_SALT 3
+#endif
+
 typedef struct {
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	krb5_address **addrs;
