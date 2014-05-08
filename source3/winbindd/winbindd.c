@@ -42,7 +42,6 @@
 #include "source4/lib/messaging/irpc.h"
 #include "source4/lib/messaging/messaging.h"
 #include "lib/param/param.h"
-#include "librpc/gen_ndr/ndr_winbind.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1248,10 +1247,10 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 		}
 	}
 
-	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
-			       wb_irpc_DsrUpdateReadOnlyServerDnsRecords, NULL);
+	status = wb_irpc_register();
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Could not register IRPC handler for wb_irpc_DsrUpdateReadOnlyServerDnsRecords\n"));
+		DEBUG(0, ("Could not register IRPC handlers\n"));
 		exit(1);
 	}
 }

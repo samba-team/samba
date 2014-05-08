@@ -1,8 +1,9 @@
 /*
    Unix SMB/CIFS implementation.
-   async implementation of WINBINDD_CHANGE_MACHINE_ACCT
+   async implementation of commands submitted over IRPC
    Copyright (C) Volker Lendecke 2009
    Copyright (C) Guenther Deschner 2009
+   Copyright (C) Andrew Bartlett 2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "source4/lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_winbind.h"
 
 struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state {
 	struct irpc_message *msg;
@@ -81,4 +83,12 @@ static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct tevent_req
 	TALLOC_FREE(subreq);
 
 	irpc_send_reply(s->msg, status);
+}
+
+NTSTATUS wb_irpc_register(void)
+{
+	NTSTATUS status;
+	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
+			       wb_irpc_DsrUpdateReadOnlyServerDnsRecords, NULL);
+	return status;
 }

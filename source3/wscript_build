@@ -943,7 +943,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  winbindd/winbindd_list_groups.c
                  winbindd/winbindd_check_machine_acct.c
                  winbindd/winbindd_change_machine_acct.c
-                 winbindd/winbindd_update_rodc_dns.c
+                 winbindd/winbindd_irpc.c
                  winbindd/winbindd_ping_dc.c
                  winbindd/winbindd_pam_auth.c
                  winbindd/winbindd_pam_logoff.c
