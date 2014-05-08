@@ -608,6 +608,18 @@ static int libc_vopen(const char *pathname, int flags, va_list ap)
 	return fd;
 }
 
+static int libc_open(const char *pathname, int flags, ...)
+{
+	va_list ap;
+	int fd;
+
+	va_start(ap, flags);
+	fd = libc_vopen(pathname, flags, ap);
+	va_end(ap);
+
+	return fd;
+}
+
 static int libc_pipe(int pipefd[2])
 {
 	swrap_load_lib_function(SWRAP_LIBSOCKET, pipe);
@@ -1707,7 +1719,7 @@ static int swrap_get_pcap_fd(const char *fname)
 
 	if (fd != -1) return fd;
 
-	fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_APPEND, 0644);
+	fd = libc_open(fname, O_WRONLY|O_CREAT|O_EXCL|O_APPEND, 0644);
 	if (fd != -1) {
 		struct swrap_file_hdr file_hdr;
 		file_hdr.magic		= 0xA1B2C3D4;
@@ -1725,7 +1737,7 @@ static int swrap_get_pcap_fd(const char *fname)
 		return fd;
 	}
 
-	fd = open(fname, O_WRONLY|O_APPEND, 0644);
+	fd = libc_open(fname, O_WRONLY|O_APPEND, 0644);
 
 	return fd;
 }
