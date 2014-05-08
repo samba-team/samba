@@ -68,6 +68,12 @@
 #define KRB5_PW_SALT 3
 #endif
 
+/* CKSUMTYPE_HMAC_MD5 in Heimdal
+   CKSUMTYPE_HMAC_MD5_ARCFOUR in MIT */
+#if defined(CKSUMTYPE_HMAC_MD5_ARCFOUR) && !defined(CKSUMTYPE_HMAC_MD5)
+#define CKSUMTYPE_HMAC_MD5 CKSUMTYPE_HMAC_MD5_ARCFOUR
+#endif
+
 typedef struct {
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	krb5_address **addrs;
