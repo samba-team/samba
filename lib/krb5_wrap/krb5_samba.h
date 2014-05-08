@@ -342,6 +342,10 @@ krb5_error_code krb5_copy_data_contents(krb5_data *p,
 int smb_krb5_principal_get_type(krb5_context context,
 				krb5_const_principal principal);
 
+#if !defined(HAVE_KRB5_WARNX)
+krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...);
+#endif
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,

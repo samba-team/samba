@@ -2592,6 +2592,29 @@ int smb_krb5_principal_get_type(krb5_context context,
 #endif
 }
 
+/**
+* @brief Generate a krb5 warning, forwarding to com_err
+*
+* @param context	The krb5_context
+* @param fmt		The message format
+* @param ...		The message arguments
+*
+* @return
+*/
+#if !defined(HAVE_KRB5_WARNX)
+krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	DEBUG(1,(fmt, args));
+	DEBUGADD(1,("\n"));
+	va_end(args);
+
+	return 0;
+}
+#endif
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
