@@ -1881,14 +1881,23 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, NULL, 3, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, NULL, 34, &wct, &vwv,
 			      &num_bytes, &bytes);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	state->cr.oplock_level = CVAL(vwv+2, 0);
 	state->fnum = SVAL(vwv+2, 1);
-	/* TODO - fill in state->cr.. */
+	state->cr.create_action = IVAL(vwv+3, 1);
+	state->cr.creation_time = BVAL(vwv+5, 1);
+	state->cr.last_access_time = BVAL(vwv+9, 1);
+	state->cr.last_write_time = BVAL(vwv+13, 1);
+	state->cr.change_time   = BVAL(vwv+17, 1);
+	state->cr.file_attributes = IVAL(vwv+21, 1);
+	state->cr.allocation_size = BVAL(vwv+23, 1);
+	state->cr.end_of_file   = BVAL(vwv+27, 1);
+
 	tevent_req_done(req);
 }
 
@@ -1904,7 +1913,9 @@ NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
 		return status;
 	}
 	*pfnum = state->fnum;
-	/* TODO - fill in *cr.. */
+	if (cr != NULL) {
+		*cr = state->cr;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -2089,8 +2100,17 @@ static void cli_nttrans_create_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	state->cr.oplock_level = CVAL(param, 0);
 	state->fnum = SVAL(param, 2);
-	/* TODO - fill in state->cr.. */
+	state->cr.create_action = IVAL(param, 4);
+	state->cr.creation_time = BVAL(param, 12);
+	state->cr.last_access_time = BVAL(param, 20);
+	state->cr.last_write_time = BVAL(param, 28);
+	state->cr.change_time   = BVAL(param, 36);
+	state->cr.file_attributes = IVAL(param, 44);
+	state->cr.allocation_size = BVAL(param, 48);
+	state->cr.end_of_file   = BVAL(param, 56);
+
 	TALLOC_FREE(param);
 	tevent_req_done(req);
 }
@@ -2107,7 +2127,9 @@ NTSTATUS cli_nttrans_create_recv(struct tevent_req *req,
 		return status;
 	}
 	*fnum = state->fnum;
-	/* TODO - fill in *cr.. */
+	if (cr != NULL) {
+		*cr = state->cr;
+	}
 	return NT_STATUS_OK;
 }
 
