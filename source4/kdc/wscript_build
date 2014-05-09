@@ -72,6 +72,14 @@ bld.SAMBA_SUBSYSTEM('sdb_hdb',
 	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
 
+bld.SAMBA_SUBSYSTEM('sdb_kdb',
+	source='sdb_to_kdb.c',
+	includes=kdc_include,
+	deps='sdb kdb5',
+	autoproto='sdb_kdb.h',
+	enabled=bld.CONFIG_SET('HAVE_KDB_H')
+	)
+
 bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
         includes=kdc_include,
