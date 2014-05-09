@@ -26,6 +26,10 @@ if conf.env.KRB5_CONFIG:
     krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
 
     conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+                   package="kdb", uselib_store="KDB5")
+    krb5_define_syslib(conf, "kdb5", conf.env['LIB_KDB5'])
+
+    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
                package="gssapi", uselib_store="GSSAPI")
     krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
     if 'k5crypto' in conf.env['LIB_GSSAPI']:
@@ -57,6 +61,7 @@ if conf.env.KRB5_CONFIG:
 conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
 conf.CHECK_FUNCS_IN('_et_list', 'com_err')
 conf.CHECK_HEADERS('com_err.h', lib='com_err')
+conf.CHECK_HEADERS('kdb.h', lib='kdb5')
 
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
 possible_gssapi_headers="gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h gssapi/gssapi_oid.h"
