@@ -485,4 +485,12 @@ bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
 	return false;
 }
 
+bool winbind_lookup_usersids(TALLOC_CTX *mem_ctx,
+			     const struct dom_sid *user_sid,
+			     uint32_t *p_num_sids,
+			     struct dom_sid **p_sids)
+{
+	return false;
+}
+
 #endif     /* WITH_WINBIND */
