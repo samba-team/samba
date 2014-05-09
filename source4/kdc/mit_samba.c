@@ -343,7 +343,7 @@ static int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 
 	ret = samba_kdc_check_s4u2proxy(ctx->context,
 					ctx->db_ctx,
-					entry,
+					skdc_entry,
 					target_principal);
 
 	krb5_free_principal(ctx->context, target_principal);

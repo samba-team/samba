@@ -1985,7 +1985,7 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 krb5_error_code
 samba_kdc_check_s4u2proxy(krb5_context context,
 			  struct samba_kdc_db_context *kdc_db_ctx,
-			  hdb_entry_ex *entry,
+			  struct samba_kdc_entry *skdc_entry,
 			  krb5_const_principal target_principal)
 {
 	krb5_error_code ret;
@@ -1996,7 +1996,6 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 	struct ldb_val val;
 	unsigned int i;
 	bool found = false;
-	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 
 	TALLOC_CTX *mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_check_s4u2proxy");
 
@@ -2008,7 +2007,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		return ret;
 	}
 
-	client_dn = ldb_dn_get_linearized(p->msg->dn);
+	client_dn = ldb_dn_get_linearized(skdc_entry->msg->dn);
 	if (!client_dn) {
 		if (errno == 0) {
 			errno = ENOMEM;
@@ -2050,7 +2049,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		return ret;
 	}
 
-	el = ldb_msg_find_element(p->msg, "msDS-AllowedToDelegateTo");
+	el = ldb_msg_find_element(skdc_entry->msg, "msDS-AllowedToDelegateTo");
 	if (el == NULL) {
 		goto bad_option;
 	}
