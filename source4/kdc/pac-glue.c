@@ -220,10 +220,9 @@ int samba_krbtgt_is_in_db(struct hdb_entry_ex *princ, bool *is_in_db, bool *is_u
 }
 
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
-				struct hdb_entry_ex *client,
+				struct samba_kdc_entry *p,
 				DATA_BLOB **_pac_blob)
 {
-	struct samba_kdc_entry *p = talloc_get_type(client->ctx, struct samba_kdc_entry);
 	struct auth_user_info_dc *user_info_dc;
 	DATA_BLOB *pac_blob;
 	NTSTATUS nt_status;

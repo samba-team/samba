@@ -34,13 +34,16 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	DATA_BLOB *pac_blob;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
+	struct samba_kdc_entry *skdc_entry =
+		talloc_get_type_abort(client->ctx,
+		struct samba_kdc_entry);
 
 	mem_ctx = talloc_named(client->ctx, 0, "samba_get_pac context");
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
 
-	nt_status = samba_kdc_get_pac_blob(mem_ctx, client, &pac_blob);
+	nt_status = samba_kdc_get_pac_blob(mem_ctx, skdc_entry, &pac_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
@@ -62,7 +65,9 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 					   struct hdb_entry_ex *krbtgt,
 					   krb5_pac *pac)
 {
-	struct samba_kdc_entry *p = talloc_get_type(server->ctx, struct samba_kdc_entry);
+	struct samba_kdc_entry *p =
+		talloc_get_type_abort(server->ctx,
+		struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_kdc_reget_pac context");
 	DATA_BLOB *pac_blob;
 	DATA_BLOB *deleg_blob = NULL;
@@ -92,10 +97,16 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	}
 
 	if (is_untrusted) {
+		struct samba_kdc_entry *client_skdc_entry = NULL;
+
 		if (client == NULL) {
 			return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 		}
-		nt_status = samba_kdc_get_pac_blob(mem_ctx, client, &pac_blob);
+
+		client_skdc_entry = talloc_get_type_abort(client->ctx,
+							  struct samba_kdc_entry);
+
+		nt_status = samba_kdc_get_pac_blob(mem_ctx, client_skdc_entry, &pac_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
 			return EINVAL;

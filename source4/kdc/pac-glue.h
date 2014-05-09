@@ -31,7 +31,7 @@ bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry);
 int samba_krbtgt_is_in_db(struct hdb_entry_ex *princ, bool *is_in_db, bool *is_untrusted);
 
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
-				struct hdb_entry_ex *client,
+				struct samba_kdc_entry *skdc_entry,
 				DATA_BLOB **_pac_blob);
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
