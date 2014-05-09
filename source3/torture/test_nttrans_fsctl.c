@@ -51,7 +51,7 @@ bool run_nttrans_fsctl(int dummy)
 		READ_CONTROL_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE| FILE_SHARE_DELETE,
-		FILE_CREATE, 0, 0, NULL, NULL, 0, &fnum);
+		FILE_CREATE, 0, 0, NULL, NULL, 0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "cli_nttrans_create returned %s\n",
 			  nt_errstr(status));

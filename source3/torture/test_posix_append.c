@@ -57,7 +57,7 @@ bool run_posix_append(int dummy)
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OVERWRITE_IF,
 		FILE_NON_DIRECTORY_FILE|FILE_DELETE_ON_CLOSE,
-		0, &fnum);
+		0, &fnum, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_ntcreate failed: %s\n", nt_errstr(status));

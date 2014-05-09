@@ -177,7 +177,7 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	nt_status = cli_ntcreate(cli_share_src, src_name, 0,
 				 READ_CONTROL_ACCESS, 0,
 				 FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
-				 0x0, 0x0, &fnum_src);
+				 0x0, 0x0, &fnum_src, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUGADD(0,("cannot open %s %s on originating server %s\n",
 			is_file?"file":"dir", src_name, nt_errstr(nt_status)));
@@ -214,7 +214,7 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	nt_status = cli_ntcreate(cli_share_dst, dst_name, 0,
 				 WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS, 0,
 				 FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
-				 0x0, 0x0, &fnum_dst);
+				 0x0, 0x0, &fnum_dst, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("failed to open %s on the destination server: %s: %s\n",
 			is_file?"file":"dir", dst_name, nt_errstr(nt_status)));
@@ -331,7 +331,8 @@ NTSTATUS net_copy_file(struct net_context *c,
 		nt_status = cli_open(cli_share_src, src_name, O_RDONLY, DENY_NONE, &fnum_src);
 	else
 		nt_status = cli_ntcreate(cli_share_src, src_name, 0, READ_CONTROL_ACCESS, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum_src);
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN, 0x0, 0x0, &fnum_src, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUGADD(0,("cannot open %s %s on originating server %s\n",

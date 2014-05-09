@@ -811,7 +811,7 @@ static uint16 get_fileinfo(struct cli_state *cli, const char *filename)
 
 	status = cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
 			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-			      FILE_OPEN, 0x0, 0x0, &fnum);
+			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
 		return 0;
@@ -859,7 +859,7 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
 
 	status = cli_ntcreate(cli, filename, 0, desired_access,
 			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-			      FILE_OPEN, 0x0, 0x0, &fnum);
+			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
 		return NULL;
@@ -923,7 +923,7 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 	status = cli_ntcreate(cli, filename, 0,
 			      desired_access,
 			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-			      FILE_OPEN, 0x0, 0x0, &fnum);
+			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
 		return false;

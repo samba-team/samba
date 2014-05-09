@@ -90,7 +90,7 @@ static void cli_symlink_create_done(struct tevent_req *subreq)
 	size_t data_len;
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->fnum);
+	status = cli_ntcreate_recv(subreq, &state->fnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -275,7 +275,7 @@ static void cli_readlink_opened(struct tevent_req *subreq)
 		req, struct cli_readlink_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->fnum);
+	status = cli_ntcreate_recv(subreq, &state->fnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

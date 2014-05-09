@@ -1795,6 +1795,7 @@ NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 struct cli_ntcreate_state {
 	uint16_t vwv[24];
 	uint16_t fnum;
+	struct smb_create_returns cr;
 };
 
 static void cli_ntcreate_done(struct tevent_req *subreq);
@@ -1887,10 +1888,13 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 		return;
 	}
 	state->fnum = SVAL(vwv+2, 1);
+	/* TODO - fill in state->cr.. */
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum)
+NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
+		uint16_t *pfnum,
+		struct smb_create_returns *cr)
 {
 	struct cli_ntcreate_state *state = tevent_req_data(
 		req, struct cli_ntcreate_state);
@@ -1900,6 +1904,7 @@ NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum)
 		return status;
 	}
 	*pfnum = state->fnum;
+	/* TODO - fill in *cr.. */
 	return NT_STATUS_OK;
 }
 
@@ -1912,7 +1917,8 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint32_t CreateDisposition,
 		      uint32_t CreateOptions,
 		      uint8_t SecurityFlags,
-		      uint16_t *pfid)
+		      uint16_t *pfid,
+		      struct smb_create_returns *cr)
 {
 	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev;
@@ -1929,7 +1935,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 					CreateDisposition,
 					CreateOptions,
 					pfid,
-					NULL);
+					cr);
 	}
 
 	frame = talloc_stackframe();
@@ -1962,7 +1968,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_ntcreate_recv(req, pfid);
+	status = cli_ntcreate_recv(req, pfid, cr);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -1970,6 +1976,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 
 struct cli_nttrans_create_state {
 	uint16_t fnum;
+	struct smb_create_returns cr;
 };
 
 static void cli_nttrans_create_done(struct tevent_req *subreq);
@@ -2083,11 +2090,14 @@ static void cli_nttrans_create_done(struct tevent_req *subreq)
 		return;
 	}
 	state->fnum = SVAL(param, 2);
+	/* TODO - fill in state->cr.. */
 	TALLOC_FREE(param);
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_nttrans_create_recv(struct tevent_req *req, uint16_t *fnum)
+NTSTATUS cli_nttrans_create_recv(struct tevent_req *req,
+			uint16_t *fnum,
+			struct smb_create_returns *cr)
 {
 	struct cli_nttrans_create_state *state = tevent_req_data(
 		req, struct cli_nttrans_create_state);
@@ -2097,6 +2107,7 @@ NTSTATUS cli_nttrans_create_recv(struct tevent_req *req, uint16_t *fnum)
 		return status;
 	}
 	*fnum = state->fnum;
+	/* TODO - fill in *cr.. */
 	return NT_STATUS_OK;
 }
 
@@ -2112,7 +2123,8 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
 			    struct security_descriptor *secdesc,
 			    struct ea_struct *eas,
 			    int num_eas,
-			    uint16_t *pfid)
+			    uint16_t *pfid,
+			    struct smb_create_returns *cr)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -2141,7 +2153,7 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_nttrans_create_recv(req, pfid);
+	status = cli_nttrans_create_recv(req, pfid, cr);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -2433,7 +2445,8 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 				create_disposition,
 				create_options,
 				0,
-				pfnum);
+				pfnum,
+				NULL);
 
 	/* Try and cope will all varients of "we don't do this call"
 	   and fall back to openX. */

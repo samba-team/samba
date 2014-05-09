@@ -204,7 +204,7 @@ static void tstream_cli_np_open_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	if (state->is_smb1) {
-		status = cli_ntcreate_recv(subreq, &state->fnum);
+		status = cli_ntcreate_recv(subreq, &state->fnum, NULL);
 	} else {
 		status = smb2cli_create_recv(subreq,
 					     &state->fid_persistent,

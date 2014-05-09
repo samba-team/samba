@@ -4925,7 +4925,8 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, "\\", 0, READ_CONTROL_ACCESS, 0,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
+			FILE_SHARE_READ|FILE_SHARE_WRITE,
+			FILE_OPEN, 0x0, 0x0, &fnum, NULL))) {
 		cli_query_secdesc(cli, fnum, mem_ctx, &root_sd);
 	}
 
