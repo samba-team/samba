@@ -150,10 +150,11 @@ bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry)
 }
 
 /* Was the krbtgt in this DB (ie, should we check the incoming signature) and was it an RODC */
-int samba_krbtgt_is_in_db(struct hdb_entry_ex *princ, bool *is_in_db, bool *is_untrusted)
+int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
+			  bool *is_in_db,
+			  bool *is_untrusted)
 {
 	NTSTATUS status;
-	struct samba_kdc_entry *p = talloc_get_type(princ->ctx, struct samba_kdc_entry);
 	int rodc_krbtgt_number, trust_direction;
 	uint32_t rid;
 

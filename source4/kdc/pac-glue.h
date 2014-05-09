@@ -28,7 +28,9 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 
 bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry);
 
-int samba_krbtgt_is_in_db(struct hdb_entry_ex *princ, bool *is_in_db, bool *is_untrusted);
+int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
+			  bool *is_in_db,
+			  bool *is_untrusted);
 
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct samba_kdc_entry *skdc_entry,
