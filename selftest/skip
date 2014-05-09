@@ -108,3 +108,4 @@ bench # don't run benchmarks in our selftest
 ^samba4.blackbox.ktpass # this test isn't portable ...
 ^samba4.rpc.unixinfo # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba.tests.dcerpc.unix  # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
+GETADDRINFO # socket wrapper doesn't support threads
