@@ -52,7 +52,7 @@ struct samba_kdc_entry {
 	struct samba_kdc_db_context *kdc_db_ctx;
 	struct ldb_message *msg;
 	struct ldb_dn *realm_dn;
-	hdb_entry_ex *entry_ex;
+	void *entry_ex;
 };
 
 extern struct hdb_method hdb_samba4_interface;
