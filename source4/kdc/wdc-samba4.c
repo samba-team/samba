@@ -77,7 +77,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	}
 
 	/* The user account may be set not to want the PAC */
-	if (!samba_princ_needs_pac(server)) {
+	if (!samba_princ_needs_pac(p)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
 	}

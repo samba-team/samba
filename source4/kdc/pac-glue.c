@@ -135,15 +135,13 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	return ret;
 }
 
-bool samba_princ_needs_pac(struct hdb_entry_ex *princ)
+bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry)
 {
 
-	struct samba_kdc_entry *p = talloc_get_type(princ->ctx, struct samba_kdc_entry);
 	uint32_t userAccountControl;
 
-
 	/* The service account may be set not to want the PAC */
-	userAccountControl = ldb_msg_find_attr_as_uint(p->msg, "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(skdc_entry->msg, "userAccountControl", 0);
 	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
 		return false;
 	}
@@ -231,7 +229,7 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 
 	/* The user account may be set not to want the PAC */
-	if ( ! samba_princ_needs_pac(client)) {
+	if ( ! samba_princ_needs_pac(p)) {
 		*_pac_blob = NULL;
 		return NT_STATUS_OK;
 	}

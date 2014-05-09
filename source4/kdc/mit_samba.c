@@ -230,9 +230,15 @@ static int mit_samba_update_pac_data(struct mit_samba_context *ctx,
 	NTSTATUS nt_status;
 	krb5_pac pac = NULL;
 	int ret;
+	struct samba_kdc_entry *skdc_entry = NULL;
+
+	if (client) {
+		skdc_entry = talloc_get_type_abort(client->ctx,
+						   struct samba_kdc_entry);
+	}
 
 	/* The user account may be set not to want the PAC */
-    	if (client && !samba_princ_needs_pac(client)) {
+	if (client && !samba_princ_needs_pac(skdc_entry)) {
 		return EINVAL;
 	}
 
