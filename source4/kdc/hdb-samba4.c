@@ -143,12 +143,15 @@ hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
 				     krb5_const_principal certificate_principal)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
+	struct samba_kdc_entry *skdc_entry;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
+	skdc_entry = talloc_get_type_abort(entry->ctx,
+					   struct samba_kdc_entry);
 
 	return samba_kdc_check_pkinit_ms_upn_match(context, kdc_db_ctx,
-						   entry,
+						   skdc_entry,
 						   certificate_principal);
 }
 

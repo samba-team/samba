@@ -1930,7 +1930,7 @@ samba_kdc_check_s4u2self(krb5_context context,
 krb5_error_code
 samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 				    struct samba_kdc_db_context *kdc_db_ctx,
-				     hdb_entry_ex *entry,
+				    struct samba_kdc_entry *skdc_entry,
 				     krb5_const_principal certificate_principal)
 {
 	krb5_error_code ret;
@@ -1938,7 +1938,6 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 	struct ldb_message *msg;
 	struct dom_sid *orig_sid;
 	struct dom_sid *target_sid;
-	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 	const char *ms_upn_check_attrs[] = {
 		"objectSid", NULL
 	};
@@ -1960,7 +1959,7 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 		return ret;
 	}
 
-	orig_sid = samdb_result_dom_sid(mem_ctx, p->msg, "objectSid");
+	orig_sid = samdb_result_dom_sid(mem_ctx, skdc_entry->msg, "objectSid");
 	target_sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
 
 	/* Consider these to be the same principal, even if by a different
