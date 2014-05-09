@@ -2387,6 +2387,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 	unsigned int openfn = 0;
 	unsigned int dos_deny = 0;
 	uint32_t access_mask, share_mode, create_disposition, create_options;
+	struct smb_create_returns cr;
 
 	/* Do the initial mapping into OpenX parameters. */
 	if (flags & O_CREAT) {
@@ -2468,7 +2469,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 				create_options,
 				0,
 				pfnum,
-				NULL);
+				&cr);
 
 	/* Try and cope will all varients of "we don't do this call"
 	   and fall back to openX. */
@@ -2483,6 +2484,25 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 			NT_STATUS_EQUAL(status,NT_STATUS_CTL_FILE_NOT_SUPPORTED) ||
 			NT_STATUS_EQUAL(status,NT_STATUS_UNSUCCESSFUL)) {
 		goto try_openx;
+	}
+
+	if (NT_STATUS_IS_OK(status) &&
+	    (create_options & FILE_NON_DIRECTORY_FILE) &&
+	    (cr.file_attributes & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		/*
+		 * Some (broken) servers return a valid handle
+		 * for directories even if FILE_NON_DIRECTORY_FILE
+		 * is set. Just close the handle and set the
+		 * error explicitly to NT_STATUS_FILE_IS_A_DIRECTORY.
+		 */
+		status = cli_close(cli, *pfnum);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		status = NT_STATUS_FILE_IS_A_DIRECTORY;
+		/* Set this so libsmbclient can retrieve it. */
+		cli->raw_status = status;
 	}
 
 	return status;
