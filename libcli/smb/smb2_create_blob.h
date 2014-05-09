@@ -33,7 +33,7 @@ struct smb2_create_blobs {
 	struct smb2_create_blob *blobs;
 };
 
-struct smb2_create_returns {
+struct smb_create_returns {
 	uint8_t oplock_level;
 	uint32_t create_action;
 	NTTIME creation_time;

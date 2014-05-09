@@ -34,7 +34,7 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 			uint32_t create_disposition,
 			uint32_t create_options,
 			uint16_t *pfid,
-			struct smb2_create_returns *cr);
+			struct smb_create_returns *cr);
 
 NTSTATUS cli_smb2_close_fnum(struct cli_state *cli, uint16_t fnum);
 NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dirname);

@@ -163,7 +163,7 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 			uint32_t create_disposition,
 			uint32_t create_options,
 			uint16_t *pfid,
-			struct smb2_create_returns *cr)
+			struct smb_create_returns *cr)
 {
 	NTSTATUS status;
 	struct smb2_hnd h;
@@ -660,7 +660,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 				uint32_t *attributes)
 {
 	NTSTATUS status;
-	struct smb2_create_returns cr;
+	struct smb_create_returns cr;
 	uint16_t fnum = 0xffff;
 	size_t namelen = strlen(name);
 

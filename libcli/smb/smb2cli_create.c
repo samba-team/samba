@@ -29,7 +29,7 @@ struct smb2cli_create_state {
 
 	uint64_t fid_persistent;
 	uint64_t fid_volatile;
-	struct smb2_create_returns cr;
+	struct smb_create_returns cr;
 	struct smb2_create_blobs blobs;
 };
 
@@ -225,7 +225,7 @@ static void smb2cli_create_done(struct tevent_req *subreq)
 NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 			     uint64_t *fid_persistent,
 			     uint64_t *fid_volatile,
-			     struct smb2_create_returns *cr)
+			     struct smb_create_returns *cr)
 {
 	struct smb2cli_create_state *state =
 		tevent_req_data(req,
@@ -258,7 +258,7 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			struct smb2_create_blobs *blobs,
 			uint64_t *fid_persistent,
 			uint64_t *fid_volatile,
-			struct smb2_create_returns *cr)
+			struct smb_create_returns *cr)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
