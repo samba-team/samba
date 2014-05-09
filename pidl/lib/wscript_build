@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # install the pidl modules
-bld.INSTALL_FILES(bld.env.PERL_VENDORLIB_DIR,
+bld.INSTALL_FILES(bld.env.PERL_LIB_INSTALL_DIR,
                   '''
                   Parse/Pidl.pm
                   Parse/Pidl/Samba4.pm
@@ -32,6 +32,6 @@ bld.INSTALL_FILES(bld.env.PERL_VENDORLIB_DIR,
                   flat=False)
 
 if not bld.CONFIG_SET('USING_SYSTEM_PARSE_YAPP_DRIVER'):
-    bld.INSTALL_FILES(bld.env.PERL_VENDORLIB_DIR,
+    bld.INSTALL_FILES(bld.env.PERL_LIB_INSTALL_DIR,
                       'Parse/Yapp/Driver.pm',
                       flat=False)
