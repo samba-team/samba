@@ -29,7 +29,7 @@ NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum)
 	return cli_ntcreate(cli, FAKE_FILE_NAME_QUOTA_WIN32,
 		 0x00000016, DESIRED_ACCESS_PIPE,
 		 0x00000000, FILE_SHARE_READ|FILE_SHARE_WRITE,
-		 FILE_OPEN, 0x00000000, 0x03, quota_fnum);
+		 FILE_OPEN, 0x00000000, 0x03, quota_fnum, NULL);
 }
 
 void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)

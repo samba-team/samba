@@ -356,7 +356,9 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 				     uint32_t CreateDisposition,
 				     uint32_t CreateOptions,
 				     uint8_t SecurityFlags);
-NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum);
+NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
+			uint16_t *pfnum,
+			struct smb_create_returns *cr);
 NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      const char *fname,
 		      uint32_t CreatFlags,
@@ -366,7 +368,8 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint32_t CreateDisposition,
 		      uint32_t CreateOptions,
 		      uint8_t SecurityFlags,
-		      uint16_t *pfid);
+		      uint16_t *pfid,
+		      struct smb_create_returns *cr);
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
 			    size_t str_len, size_t *pconverted_size);
 uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
@@ -600,7 +603,9 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 					   struct security_descriptor *secdesc,
 					   struct ea_struct *eas,
 					   int num_eas);
-NTSTATUS cli_nttrans_create_recv(struct tevent_req *req, uint16_t *fnum);
+NTSTATUS cli_nttrans_create_recv(struct tevent_req *req,
+			uint16_t *fnum,
+			struct smb_create_returns *cr);
 NTSTATUS cli_nttrans_create(struct cli_state *cli,
 			    const char *fname,
 			    uint32_t CreatFlags,
@@ -613,7 +618,8 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
 			    struct security_descriptor *secdesc,
 			    struct ea_struct *eas,
 			    int num_eas,
-			    uint16_t *pfid);
+			    uint16_t *pfid,
+			    struct smb_create_returns *cr);
 
 /* The following definitions come from libsmb/clifsinfo.c  */
 

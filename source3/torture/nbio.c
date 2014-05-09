@@ -166,7 +166,7 @@ void nb_createx(const char *fname,
 				0x0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, 
 				create_disposition, 
-				create_options, 0, &fd);
+				create_options, 0, &fd, NULL);
 	if (!NT_STATUS_IS_OK(status) && handle != -1) {
 		printf("ERROR: cli_ntcreate failed for %s - %s\n",
 		       fname, nt_errstr(status));

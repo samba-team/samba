@@ -234,7 +234,7 @@ static void chain3_ntcreate_done(struct tevent_req *subreq)
 		req, struct chain3_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->fnum);
+	status = cli_ntcreate_recv(subreq, &state->fnum, NULL);
 	TALLOC_FREE(subreq);
 	printf("cli_ntcreate returned %s, fnum=%u\n", nt_errstr(status),
 	       (unsigned)state->fnum);

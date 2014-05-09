@@ -904,7 +904,7 @@ cacl_get(SMBCCTX *context,
 		status = cli_ntcreate(targetcli, targetpath, 0,
 				      CREATE_ACCESS_READ, 0,
 				      FILE_SHARE_READ|FILE_SHARE_WRITE,
-				      FILE_OPEN, 0x0, 0x0, &fnum);
+				      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("cacl_get failed to open %s: %s\n",
 				  targetpath, nt_errstr(status)));
@@ -1563,7 +1563,7 @@ cacl_set(SMBCCTX *context,
 
 	status = cli_ntcreate(targetcli, targetpath, 0, CREATE_ACCESS_READ, 0,
 			      FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
-			      0x0, 0x0, &fnum);
+			      0x0, 0x0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
                 DEBUG(5, ("cacl_set failed to open %s: %s\n",
                           targetpath, nt_errstr(status)));
@@ -1671,7 +1671,7 @@ cacl_set(SMBCCTX *context,
 	status = cli_ntcreate(targetcli, targetpath, 0,
 			      WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS, 0,
 			      FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
-			      0x0, 0x0, &fnum);
+			      0x0, 0x0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("cacl_set failed to open %s: %s\n",
                           targetpath, nt_errstr(status)));

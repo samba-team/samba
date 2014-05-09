@@ -60,7 +60,7 @@ bool run_cleanup1(int dummy)
 		FILE_GENERIC_READ|FILE_GENERIC_WRITE|DELETE_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OPEN, FILE_DELETE_ON_CLOSE, 0, &fnum);
+		FILE_OPEN, FILE_DELETE_ON_CLOSE, 0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("2nd open of %s failed (%s)\n", fname,
 		       nt_errstr(status));
@@ -89,7 +89,7 @@ bool run_cleanup2(int dummy)
 		cli1, fname, 0, FILE_GENERIC_READ|FILE_GENERIC_WRITE,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OVERWRITE_IF, 0, 0, &fnum1);
+		FILE_OVERWRITE_IF, 0, 0, &fnum1, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return false;
@@ -110,7 +110,7 @@ bool run_cleanup2(int dummy)
 		cli2, fname, 0, FILE_GENERIC_READ|FILE_GENERIC_WRITE,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OPEN, 0, 0, &fnum2);
+		FILE_OPEN, 0, 0, &fnum2, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return false;
@@ -144,7 +144,7 @@ bool run_cleanup2(int dummy)
 		cli2, fname, 0, FILE_GENERIC_READ|FILE_GENERIC_WRITE,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OPEN, 0, 0, &fnum2);
+		FILE_OPEN, 0, 0, &fnum2, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return false;
@@ -352,7 +352,7 @@ bool run_cleanup4(int dummy)
 		FILE_GENERIC_READ|DELETE_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_DELETE,
-		FILE_OVERWRITE_IF, 0, 0, &fnum1);
+		FILE_OVERWRITE_IF, 0, 0, &fnum1, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("creating file failed: %s\n",
 		       nt_errstr(status));
@@ -364,7 +364,7 @@ bool run_cleanup4(int dummy)
 		FILE_GENERIC_READ|DELETE_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_DELETE,
-		FILE_OPEN, 0, 0, &fnum2);
+		FILE_OPEN, 0, 0, &fnum2, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("opening file 1st time failed: %s\n",
 		       nt_errstr(status));
@@ -390,7 +390,7 @@ bool run_cleanup4(int dummy)
 		FILE_GENERIC_WRITE|DELETE_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OPEN, 0, 0, &fnum2);
+		FILE_OPEN, 0, 0, &fnum2, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 		printf("opening file 2nd time returned: %s\n",
 		       nt_errstr(status));
