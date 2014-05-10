@@ -61,6 +61,14 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			      struct PAC_LOGON_INFO *pac_logon_info,
 			      struct auth_user_info_dc **_user_info_dc);
+
+/* The following definitions come from auth/wbc_auth_util.c  */
+
+struct wbcAuthUserInfo;
+
+struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
+						       const struct wbcAuthUserInfo *info);
+
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
 
