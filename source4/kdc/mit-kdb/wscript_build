@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+bld.SAMBA_LIBRARY('mit-kdb-samba',
+                  source='''
+                         kdb_samba.c
+                         kdb_samba_common.c
+                         kdb_samba_masterkey.c
+                         kdb_samba_pac.c
+                         kdb_samba_policies.c
+                         kdb_samba_principals.c
+                         ''',
+                  private_library=True,
+                  realname='samba.so',
+                  install_path='${LIBDIR}/krb5/plugins/kdb',
+                  deps='''
+                       MIT_SAMBA
+                       com_err
+                       krb5
+                       kdb5
+                       ''',
+                  enabled=bld.CONFIG_SET('HAVE_KDB_H'))
