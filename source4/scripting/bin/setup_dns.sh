@@ -18,10 +18,15 @@ RSUFFIX=$(echo $DOMAIN | sed s/[\.]/,DC=/g)
 
 OBJECTGUID=$(bin/ldbsearch -s base -H "$PRIVATEDIR/sam.ldb" -b "CN=NTDS Settings,CN=$HOSTNAME,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=$RSUFFIX" objectguid|grep ^objectGUID| cut -d: -f2)
 
+samba4kinit=kinit
+if test -x $BINDIR/samba4kinit; then
+	samba4kinit=bin/samba4kinit
+fi
+
 echo "Found objectGUID $OBJECTGUID"
 
 echo "Running kinit for $HOSTNAME\$@$DOMAIN"
-bin/samba4kinit -e arcfour-hmac-md5 -k -t "$PRIVATEDIR/secrets.keytab" $HOSTNAME\$@$DOMAIN || exit 1
+$samba4kinit -e arcfour-hmac-md5 -k -t "$PRIVATEDIR/secrets.keytab" $HOSTNAME\$@$DOMAIN || exit 1
 echo "Adding $HOSTNAME.$DOMAIN"
 scripting/bin/nsupdate-gss --noverify $HOSTNAME $DOMAIN $IP 300 || {
     echo "Failed to add A record"

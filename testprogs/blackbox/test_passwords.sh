@@ -21,11 +21,19 @@ shift 7
 failed=0
 
 samba4bindir="$BINDIR"
-samba4kinit="$samba4bindir/samba4kinit"
+samba4kinit=kinit
+if test -x $BINDIR/samba4kinit; then
+	samba4kinit=$BINDIR/samba4kinit
+fi
+
 samba_tool="$samba4bindir/samba-tool"
 smbpasswd="$samba4bindir/smbpasswd"
 rkpty="$samba4bindir/rkpty"
-samba4kpasswd="$samba4bindir/samba4kpasswd"
+samba4kpasswd=kpasswd
+if test -x $BINDIR/samba4kpasswd; then
+	samba4kpasswd=$BINDIR/samba4kpasswd
+fi
+
 newuser="$samba_tool user create"
 
 . `dirname $0`/subunit.sh

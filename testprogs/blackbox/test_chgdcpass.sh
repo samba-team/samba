@@ -23,7 +23,12 @@ failed=0
 
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-samba4kinit="$samba4bindir/samba4kinit"
+
+samba4kinit=kinit
+if test -x $BINDIR/samba4kinit; then
+	samba4kinit=bin/samba4kinit
+fi
+
 
 machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
 

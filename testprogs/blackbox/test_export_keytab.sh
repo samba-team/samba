@@ -20,9 +20,13 @@ shift 6
 failed=0
 
 samba4bindir="$BINDIR"
-samba4kinit="$samba4bindir/samba4kinit"
 samba_tool="$samba4bindir/samba-tool"
 newuser="$samba_tool user create"
+
+samba4kinit=kinit
+if test -x $BINDIR/samba4kinit; then
+	samba4kinit=$BINDIR/samba4kinit
+fi
 
 . `dirname $0`/subunit.sh
 
