@@ -254,3 +254,30 @@
 ^samba3.winbind.wbclient.wbcGetSidAliases\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcLogonUser\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcChangeUserPassword\(plugin_s4_dc\)
+^samba4.blackbox.wbinfo\(dc:local\).wbinfo -N against dc
+^samba4.blackbox.wbinfo\(dc:local\).wbinfo -I against dc
+^samba4.blackbox.wbinfo\(dc:local\).wbinfo  --trusted-domains against dc
+^samba4.blackbox.wbinfo\(dc:local\).wbinfo --all-domains against dc
+^samba4.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo -N against plugin_s4_dc
+^samba4.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo -I against plugin_s4_dc
+^samba4.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo  --trusted-domains against plugin_s4_dc
+^samba4.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo --all-domains against plugin_s4_dc
+^samba4.blackbox.wbinfo\(s4member:local\).wbinfo -N against s4member
+^samba4.blackbox.wbinfo\(s4member:local\).wbinfo -I against s4member
+^samba4.blackbox.wbinfo\(s4member:local\).wbinfo  --trusted-domains against s4member
+^samba4.blackbox.wbinfo\(s4member:local\).wbinfo --all-domains against s4member
+^samba4.blackbox.wbinfo\(rodc:local\).wbinfo -N against rodc
+^samba4.blackbox.wbinfo\(rodc:local\).wbinfo -I against rodc
+^samba4.blackbox.wbinfo\(rodc:local\).wbinfo  --trusted-domains against rodc
+^samba4.blackbox.wbinfo\(rodc:local\).wbinfo --all-domains against rodc
+^samba4.blackbox.wbinfo\(promoted_dc:local\).wbinfo -N against promoted_dc
+^samba4.blackbox.wbinfo\(promoted_dc:local\).wbinfo -I against promoted_dc
+^samba4.blackbox.wbinfo\(promoted_dc:local\).wbinfo  --trusted-domains against promoted_dc
+^samba4.blackbox.wbinfo\(promoted_dc:local\).wbinfo --all-domains against promoted_dc
+#
+# This makes less sense when not running against an AD DC
+#
+^samba4.blackbox.wbinfo\(s3member:local\).wbinfo -U against s3member
+^samba4.blackbox.wbinfo\(s3member:local\).wbinfo -G against s3member
+^samba4.blackbox.wbinfo\(s3member:local\).wbinfo -U check for sane mapping
+^samba4.blackbox.wbinfo\(s3member:local\).wbinfo -G check for sane mapping
