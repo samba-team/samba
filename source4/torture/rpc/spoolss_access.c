@@ -845,7 +845,7 @@ static bool test_openprinter_wrap(struct torture_context *tctx,
 
 	talloc_free(t);
 
-	return true;
+	return ret;
 }
 
 struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
