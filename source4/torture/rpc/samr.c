@@ -363,19 +363,19 @@ static bool test_SetUserInfo(struct dcerpc_binding_handle *b, struct torture_con
 			   SAMR_FIELD_COMMENT);
 
 	test_account_name = talloc_asprintf(tctx, "%sxx7-1", base_account_name);
-	TEST_USERINFO_STRING(7, account_name,  1, account_name, base_account_name, 0);
+	TEST_USERINFO_STRING(7, account_name,  1, account_name, test_account_name, 0);
 	test_account_name = talloc_asprintf(tctx, "%sxx7-3", base_account_name);
-	TEST_USERINFO_STRING(7, account_name,  3, account_name, base_account_name, 0);
+	TEST_USERINFO_STRING(7, account_name,  3, account_name, test_account_name, 0);
 	test_account_name = talloc_asprintf(tctx, "%sxx7-5", base_account_name);
-	TEST_USERINFO_STRING(7, account_name,  5, account_name, base_account_name, 0);
+	TEST_USERINFO_STRING(7, account_name,  5, account_name, test_account_name, 0);
 	test_account_name = talloc_asprintf(tctx, "%sxx7-6", base_account_name);
-	TEST_USERINFO_STRING(7, account_name,  6, account_name, base_account_name, 0);
+	TEST_USERINFO_STRING(7, account_name,  6, account_name, test_account_name, 0);
 	test_account_name = talloc_asprintf(tctx, "%sxx7-7", base_account_name);
-	TEST_USERINFO_STRING(7, account_name,  7, account_name, base_account_name, 0);
+	TEST_USERINFO_STRING(7, account_name,  7, account_name, test_account_name, 0);
 	test_account_name = talloc_asprintf(tctx, "%sxx7-21", base_account_name);
-	TEST_USERINFO_STRING(7, account_name, 21, account_name, base_account_name, 0);
+	TEST_USERINFO_STRING(7, account_name, 21, account_name, test_account_name, 0);
 	test_account_name = base_account_name;
-	TEST_USERINFO_STRING(21, account_name, 21, account_name, base_account_name,
+	TEST_USERINFO_STRING(21, account_name, 21, account_name, test_account_name,
 			   SAMR_FIELD_ACCOUNT_NAME);
 
 	TEST_USERINFO_STRING(6, full_name,  1, full_name, "xx6-1 full_name", 0);
@@ -2303,7 +2303,6 @@ static bool test_ChangePasswordUser2_ntstatus(struct dcerpc_pipe *p, struct tort
 					      const char *password, NTSTATUS status)
 {
 	struct samr_ChangePasswordUser2 r;
-	bool ret = true;
 	struct lsa_String server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
@@ -2970,7 +2969,7 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_binding_handle *b,
 	NTSTATUS status;
 	uint16_t levels[] = { /* 3, */ 5, 21 };
 	int i;
-	NTTIME pwdlastset3 = 0;
+	/* NTTIME pwdlastset3 = 0; */
 	NTTIME pwdlastset5 = 0;
 	NTTIME pwdlastset21 = 0;
 
@@ -3009,7 +3008,7 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_binding_handle *b,
 
 		switch (levels[i]) {
 		case 3:
-			pwdlastset3 = info->info3.last_password_change;
+			/* pwdlastset3 = info->info3.last_password_change; */
 			break;
 		case 5:
 			pwdlastset5 = info->info5.last_password_change;
@@ -7252,7 +7251,7 @@ static bool test_QueryDomainInfo2(struct dcerpc_binding_handle *b,
 		}
 	}
 
-	return true;
+	return ret;
 }
 
 /* Test whether querydispinfo level 5 and enumdomgroups return the same
