@@ -87,16 +87,18 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		return 0;
 	}
 
-	ret = krb5_data_copy(&pac_data, pac_blob->data, pac_blob->length);
+	ret = krb5_copy_data_contents(&pac_data,
+				      pac_blob->data,
+				      pac_blob->length);
 	if (ret != 0) {
 		return ret;
 	}
 
 	ZERO_STRUCT(deleg_data);
 	if (deleg_blob) {
-		ret = krb5_data_copy(&deleg_data,
-				     deleg_blob->data,
-				     deleg_blob->length);
+		ret = krb5_copy_data_contents(&deleg_data,
+					      deleg_blob->data,
+					      deleg_blob->length);
 		if (ret != 0) {
 			kerberos_free_data_contents(context, &pac_data);
 			return ret;
