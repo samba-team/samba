@@ -119,4 +119,4 @@ bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
                          sdb_kdb
                          kdb5
                          ''',
-                    enabled=not bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'))
+                    enabled=(not bld.CONFIG_SET('SAMBA4_USES_HEIMDAL') and bld.CONFIG_SET('HAVE_KDB_H')) )

@@ -26,23 +26,14 @@
 #include <kdb.h>
 #include "kdc/sdb.h"
 #include "kdc/sdb_kdb.h"
-#include "mit_samba_interface.h"
 #include "auth/kerberos/kerberos.h"
 #include "kdc/samba_kdc.h"
 #include "kdc/pac-glue.h"
 #include "kdc/db-glue.h"
 
-const int mit_samba_interface_version = MIT_SAMBA_INTERFACE_VERSION;
+#include "mit_samba.h"
 
-struct mit_samba_context {
-	struct auth_session_info *session_info;
-
-	/* for compat with hdb plugin common code */
-	krb5_context context;
-	struct samba_kdc_db_context *db_ctx;
-};
-
-static void mit_samba_context_free(struct mit_samba_context *ctx)
+void mit_samba_context_free(struct mit_samba_context *ctx)
 {
 	/* free heimdal's krb5_context */
 	if (ctx->context) {
@@ -53,7 +44,7 @@ static void mit_samba_context_free(struct mit_samba_context *ctx)
 	talloc_free(ctx);
 }
 
-static int mit_samba_context_init(struct mit_samba_context **_ctx)
+int mit_samba_context_init(struct mit_samba_context **_ctx)
 {
 	NTSTATUS status;
 	struct mit_samba_context *ctx;
@@ -112,10 +103,10 @@ done:
 }
 
 
-static int mit_samba_get_principal(struct mit_samba_context *ctx,
-				   char *principal_string,
-				   unsigned int flags,
-				   krb5_db_entry **_kentry)
+int mit_samba_get_principal(struct mit_samba_context *ctx,
+			    char *principal_string,
+			    unsigned int flags,
+			    krb5_db_entry **_kentry)
 {
 	krb5_principal principal;
 	struct sdb_entry_ex sentry;
@@ -164,8 +155,8 @@ done:
 	return ret;
 }
 
-static int mit_samba_get_firstkey(struct mit_samba_context *ctx,
-				  krb5_db_entry **_kentry)
+int mit_samba_get_firstkey(struct mit_samba_context *ctx,
+			   krb5_db_entry **_kentry)
 {
 	struct sdb_entry_ex sentry;
 	krb5_db_entry *kentry;
@@ -202,8 +193,8 @@ static int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 	return ret;
 }
 
-static int mit_samba_get_nextkey(struct mit_samba_context *ctx,
-				 krb5_db_entry **_kentry)
+int mit_samba_get_nextkey(struct mit_samba_context *ctx,
+			  krb5_db_entry **_kentry)
 {
 	struct sdb_entry_ex sentry;
 	krb5_db_entry *kentry;
@@ -240,16 +231,16 @@ static int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 	return ret;
 }
 
-static int mit_samba_get_pac_data(struct mit_samba_context *ctx,
-				  krb5_db_entry *client,
-				  DATA_BLOB *data)
+int mit_samba_get_pac_data(struct mit_samba_context *ctx,
+			   krb5_db_entry *client,
+			   DATA_BLOB *data)
 {
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB *pac_blob;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry;
 
-	skdc_entry = talloc_get_type_abort(client->ctx,
+	skdc_entry = talloc_get_type_abort(client->e_data,
 					   struct samba_kdc_entry);
 
 	tmp_ctx = talloc_named(ctx, 0, "mit_samba_get_pac_data context");
@@ -275,10 +266,10 @@ static int mit_samba_get_pac_data(struct mit_samba_context *ctx,
 	return 0;
 }
 
-static int mit_samba_update_pac_data(struct mit_samba_context *ctx,
-				     krb5_db_entry *client,
-				     DATA_BLOB *pac_data,
-				     DATA_BLOB *logon_data)
+int mit_samba_update_pac_data(struct mit_samba_context *ctx,
+			      krb5_db_entry *client,
+			      DATA_BLOB *pac_data,
+			      DATA_BLOB *logon_data)
 {
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB *logon_blob;
@@ -289,7 +280,7 @@ static int mit_samba_update_pac_data(struct mit_samba_context *ctx,
 	struct samba_kdc_entry *skdc_entry = NULL;
 
 	if (client) {
-		skdc_entry = talloc_get_type_abort(client->ctx,
+		skdc_entry = talloc_get_type_abort(client->e_data,
 						   struct samba_kdc_entry);
 	}
 
@@ -391,14 +382,14 @@ static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 	return;
 }
 
-static int mit_samba_check_client_access(struct mit_samba_context *ctx,
-					 krb5_db_entry *client,
-					 const char *client_name,
-					 krb5_db_entry *server,
-					 const char *server_name,
-					 const char *netbios_name,
-					 bool password_change,
-					 DATA_BLOB *e_data)
+int mit_samba_check_client_access(struct mit_samba_context *ctx,
+				  krb5_db_entry *client,
+				  const char *client_name,
+				  krb5_db_entry *server,
+				  const char *server_name,
+				  const char *netbios_name,
+				  bool password_change,
+				  DATA_BLOB *e_data)
 {
 	struct samba_kdc_entry *skdc_entry;
 	NTSTATUS nt_status;
@@ -423,10 +414,10 @@ static int mit_samba_check_client_access(struct mit_samba_context *ctx,
 	return 0;
 }
 
-static int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
-				     struct samba_kdc_entry *entry,
-				     const char *target_name,
-				     bool is_nt_enterprise_name)
+int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
+			      krb5_db_entry *kentry,
+			      const char *target_name,
+			      bool is_nt_enterprise_name)
 {
 #if 1
 	/*
@@ -460,15 +451,3 @@ static int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 	return ret;
 #endif
 }
-
-struct mit_samba_function_table mit_samba_function_table = {
-	mit_samba_context_init,
-	mit_samba_context_free,
-	mit_samba_get_principal,
-	mit_samba_get_firstkey,
-	mit_samba_get_nextkey,
-	mit_samba_get_pac_data,
-	mit_samba_update_pac_data,
-	mit_samba_check_client_access,
-	mit_samba_check_s4u2proxy
-};

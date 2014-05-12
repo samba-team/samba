@@ -1,0 +1,74 @@
+/*
+   MIT-Samba4 library
+
+   Copyright (c) 2010, Simo Sorce <idra@samba.org>
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _MIT_SAMBA_H
+#define _MIT_SAMBA_H
+
+struct mit_samba_context {
+	struct auth_session_info *session_info;
+
+	/* for compat with hdb plugin common code */
+	krb5_context context;
+	struct samba_kdc_db_context *db_ctx;
+};
+
+int mit_samba_context_init(struct mit_samba_context **_ctx);
+
+void mit_samba_context_free(struct mit_samba_context *ctx);
+
+int mit_samba_get_principal(struct mit_samba_context *ctx,
+				   char *principal_string,
+				   unsigned int flags,
+				   krb5_db_entry **_kentry);
+
+int mit_samba_get_firstkey(struct mit_samba_context *ctx,
+			   krb5_db_entry **_kentry);
+
+int mit_samba_get_nextkey(struct mit_samba_context *ctx,
+			  krb5_db_entry **_kentry);
+
+int mit_samba_get_pac_data(struct mit_samba_context *ctx,
+			   krb5_db_entry *client,
+			   DATA_BLOB *data);
+
+int mit_samba_update_pac_data(struct mit_samba_context *ctx,
+			      krb5_db_entry *client,
+			      DATA_BLOB *pac_data,
+			      DATA_BLOB *logon_data);
+
+int mit_samba_update_pac_data(struct mit_samba_context *ctx,
+			      krb5_db_entry *client,
+			      DATA_BLOB *pac_data,
+			      DATA_BLOB *logon_data);
+
+int mit_samba_check_client_access(struct mit_samba_context *ctx,
+				  krb5_db_entry *client,
+				  const char *client_name,
+				  krb5_db_entry *server,
+				  const char *server_name,
+				  const char *netbios_name,
+				  bool password_change,
+				  DATA_BLOB *e_data);
+
+int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
+			      krb5_db_entry *kentry,
+			      const char *target_name,
+			      bool is_nt_enterprise_name);
+
+#endif /* _MIT_SAMBA_H */
