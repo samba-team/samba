@@ -81,4 +81,9 @@ NTSTATUS kdc_tcp_proxy_recv(struct tevent_req *req,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *out);
 
+/* from kdc-glue.c */
+int kdc_check_pac(krb5_context krb5_context,
+		  DATA_BLOB server_sig,
+		  struct PAC_SIGNATURE_DATA *kdc_sig,
+		  hdb_entry_ex *ent);
 #endif

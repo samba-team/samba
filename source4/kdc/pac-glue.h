@@ -55,7 +55,3 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 				       const char *client_name,
 				       const char *workstation,
 				       bool password_change);
-int kdc_check_pac(krb5_context krb5_context,
-		  DATA_BLOB server_sig,
-		  struct PAC_SIGNATURE_DATA *kdc_sig,
-		  hdb_entry_ex *ent);

@@ -7,12 +7,22 @@ else:
     kdc_include = getattr(bld.env, "CPPPATH_KDC")
 
 bld.SAMBA_MODULE('service_kdc',
-	source='kdc.c kpasswdd.c proxy.c',
-	subsystem='service',
-	init_function='server_service_kdc_init',
-	deps='kdc HDB_SAMBA4 WDC_SAMBA4 samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET com_err samba_server_gensec PAC_GLUE',
-	internal_module=False,
-	)
+                 source='kdc.c kpasswdd.c proxy.c',
+                 subsystem='service',
+                 init_function='server_service_kdc_init',
+                 deps='''
+                      kdc
+                      HDB_SAMBA4
+                      WDC_SAMBA4
+                      samba-hostconfig
+                      LIBTSOCKET
+                      LIBSAMBA_TSOCKET
+                      com_err
+                      samba_server_gensec
+                      PAC_GLUE
+                      KDC-GLUE
+                 ''',
+                 internal_module=False)
 
 
 bld.SAMBA_LIBRARY('HDB_SAMBA4',
@@ -34,10 +44,17 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4_PLUGIN',
                   enabled = (bld.CONFIG_SET("USING_SYSTEM_KRB5") and bld.CONFIG_SET("USING_SYSTEM_HDB"))
                   )
 
+bld.SAMBA_SUBSYSTEM('KDC-GLUE',
+	source='kdc-glue.c',
+        includes=kdc_include,
+	deps='hdb PAC_GLUE',
+	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
+	)
+
 bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 	source='wdc-samba4.c',
         includes=kdc_include,
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err',
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err KDC-GLUE',
 	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
 
