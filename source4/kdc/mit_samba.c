@@ -52,7 +52,7 @@ int mit_samba_context_init(struct mit_samba_context **_ctx)
 	int ret;
 	struct samba_kdc_base_context base_ctx;
 
-	ctx = talloc(NULL, struct mit_samba_context);
+	ctx = talloc_zero(NULL, struct mit_samba_context);
 	if (!ctx) {
 		ret = ENOMEM;
 		goto done;
