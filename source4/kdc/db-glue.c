@@ -436,7 +436,9 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 				key.salt->type = KRB5_PW_SALT;
 
-				ret = krb5_data_copy(&key.salt->salt, salt.data, salt.length);
+				ret = krb5_copy_data_contents(&key.salt->salt,
+							      salt.data,
+							      salt.length);
 				if (ret) {
 					free(key.salt);
 					key.salt = NULL;
@@ -495,7 +497,9 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 				key.salt->type = KRB5_PW_SALT;
 
-				ret = krb5_data_copy(&key.salt->salt, salt.data, salt.length);
+				ret = krb5_copy_data_contents(&key.salt->salt,
+							      salt.data,
+							      salt.length);
 				if (ret) {
 					free(key.salt);
 					key.salt = NULL;
