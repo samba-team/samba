@@ -57,7 +57,7 @@ sub bindir_path($$) {
 
 	my $valpath = "$object->{bindir}/$path";
 
-	return $valpath if (-f $valpath);
+	return $valpath if (-f $valpath or -d $valpath);
 	return $path;
 }
 
