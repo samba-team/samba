@@ -28,7 +28,6 @@
 #include "auth/auth_sam_reply.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include <hdb.h>
 #include "kdc/samba_kdc.h"
 #include "kdc/pac-glue.h"
 #include "param/param.h"

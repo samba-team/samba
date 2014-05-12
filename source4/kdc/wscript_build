@@ -62,7 +62,7 @@ bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
         includes=kdc_include,
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb samba-hostconfig com_err'
+	deps='ldb auth4_sam auth_sam_reply samba-credentials samba-hostconfig com_err'
 	)
 
 bld.SAMBA_LIBRARY('pac',
