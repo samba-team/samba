@@ -112,10 +112,11 @@ bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
                          auth4_sam
                          auth_sam_reply
                          samba-credentials
-                         hdb
                          db-glue
                          PAC_GLUE
                          samba-hostconfig
                          com_err
+                         sdb_kdb
+                         kdb5
                          ''',
                     enabled=not bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'))

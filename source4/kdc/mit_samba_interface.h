@@ -43,18 +43,18 @@ struct mit_samba_function_table {
 
     /* db */
     int (*get_principal)(struct mit_samba_context *, char *,
-                         unsigned int, hdb_entry_ex **);
-    int (*get_firstkey)(struct mit_samba_context *, hdb_entry_ex **);
-    int (*get_nextkey)(struct mit_samba_context *, hdb_entry_ex **);
+                         unsigned int, krb5_db_entry **);
+    int (*get_firstkey)(struct mit_samba_context *, krb5_db_entry **);
+    int (*get_nextkey)(struct mit_samba_context *, krb5_db_entry **);
 
     /* windc */
-    int (*get_pac)(struct mit_samba_context *, hdb_entry_ex *, DATA_BLOB *);
-    int (*update_pac)(struct mit_samba_context *, hdb_entry_ex *,
+    int (*get_pac)(struct mit_samba_context *, krb5_db_entry *, DATA_BLOB *);
+    int (*update_pac)(struct mit_samba_context *, krb5_db_entry *,
                       DATA_BLOB *, DATA_BLOB *);
     int (*client_access)(struct mit_samba_context *,
-                         hdb_entry_ex *, const char *,
-                         hdb_entry_ex *, const char *,
+                         krb5_db_entry *, const char *,
+                         krb5_db_entry *, const char *,
                          const char *, bool, DATA_BLOB *);
     int (*check_s4u2proxy)(struct mit_samba_context *,
-                           hdb_entry_ex *, const char *, bool);
+                           krb5_db_entry *, const char *, bool);
 };

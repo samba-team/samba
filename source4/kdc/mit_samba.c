@@ -23,7 +23,9 @@
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "system/kerberos.h"
-#include <hdb.h>
+#include <kdb.h>
+#include "kdc/sdb.h"
+#include "kdc/sdb_kdb.h"
 #include "mit_samba_interface.h"
 #include "auth/kerberos/kerberos.h"
 #include "kdc/samba_kdc.h"
@@ -113,14 +115,16 @@ done:
 static int mit_samba_get_principal(struct mit_samba_context *ctx,
 				   char *principal_string,
 				   unsigned int flags,
-				   hdb_entry_ex **_hentry)
+				   krb5_db_entry **_kentry)
 {
 	krb5_principal principal;
-	hdb_entry_ex *hentry;
+	struct sdb_entry_ex sentry;
+	krb5_db_entry *kentry;
 	int ret;
+	int sflags = 0;
 
-	hentry = talloc(ctx, hdb_entry_ex);
-	if (!hentry) {
+	kentry = malloc(sizeof(krb5_db_entry));
+	if (kentry == NULL) {
 		return ENOMEM;
 	}
 
@@ -130,66 +134,114 @@ static int mit_samba_get_principal(struct mit_samba_context *ctx,
 	}
 
 	ret = samba_kdc_fetch(ctx->context, ctx->db_ctx,
-			      principal, flags, 0, hentry);
+			      principal, sflags, 0, &sentry);
+	switch (ret) {
+	case 0:
+		break;
+	case SDB_ERR_NOENTRY:
+		ret = KRB5_KDB_NOENTRY;
+		goto done;
+	case SDB_ERR_WRONG_REALM:
+		ret = KRB5KDC_ERR_WRONG_REALM;
+		break;
+	case SDB_ERR_NOT_FOUND_HERE:
+		/* FIXME: RODC support */
+	default:
+		goto done;
+	}
 
-	krb5_free_principal(ctx->context, principal);
+	ret = sdb_entry_ex_to_kdb_entry_ex(ctx->context, &sentry, kentry);
+
+	krb5_free_principal(NULL, principal);
+	sdb_free_entry(&sentry);
 
 done:
 	if (ret) {
-		talloc_free(hentry);
+		free(kentry);
 	} else {
-		talloc_steal(hentry->ctx, hentry);
-		*_hentry = hentry;
+		*_kentry = kentry;
 	}
 	return ret;
 }
 
 static int mit_samba_get_firstkey(struct mit_samba_context *ctx,
-				  hdb_entry_ex **_hentry)
+				  krb5_db_entry **_kentry)
 {
-	hdb_entry_ex *hentry;
+	struct sdb_entry_ex sentry;
+	krb5_db_entry *kentry;
 	int ret;
 
-	hentry = talloc(ctx, hdb_entry_ex);
-	if (!hentry) {
+	kentry = malloc(sizeof(krb5_db_entry));
+	if (kentry == NULL) {
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, hentry);
+	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, &sentry);
+	switch (ret) {
+	case 0:
+		break;
+	case SDB_ERR_NOENTRY:
+		free(kentry);
+		return KRB5_KDB_NOENTRY;
+	case SDB_ERR_NOT_FOUND_HERE:
+		/* FIXME: RODC support */
+	default:
+		free(kentry);
+		return ret;
+	}
+
+	ret = sdb_entry_ex_to_kdb_entry_ex(ctx->context, &sentry, kentry);
+
+	sdb_free_entry(&sentry);
 
 	if (ret) {
-		talloc_free(hentry);
+		free(kentry);
 	} else {
-		talloc_steal(hentry->ctx, hentry);
-		*_hentry = hentry;
+		*_kentry = kentry;
 	}
 	return ret;
 }
 
 static int mit_samba_get_nextkey(struct mit_samba_context *ctx,
-				 hdb_entry_ex **_hentry)
+				 krb5_db_entry **_kentry)
 {
-	hdb_entry_ex *hentry;
+	struct sdb_entry_ex sentry;
+	krb5_db_entry *kentry;
 	int ret;
 
-	hentry = talloc(ctx, hdb_entry_ex);
-	if (!hentry) {
+	kentry = malloc(sizeof(krb5_db_entry));
+	if (kentry == NULL) {
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, hentry);
+	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, &sentry);
+	switch (ret) {
+	case 0:
+		break;
+	case SDB_ERR_NOENTRY:
+		free(kentry);
+		return KRB5_KDB_NOENTRY;
+	case SDB_ERR_NOT_FOUND_HERE:
+		/* FIXME: RODC support */
+	default:
+		free(kentry);
+		return ret;
+	}
+
+	ret = sdb_entry_ex_to_kdb_entry_ex(ctx->context, &sentry, kentry);
+
+	sdb_free_entry(&sentry);
 
 	if (ret) {
-		talloc_free(hentry);
+		free(kentry);
 	} else {
-		talloc_steal(hentry->ctx, hentry);
-		*_hentry = hentry;
+		*_kentry = kentry;
 	}
 	return ret;
 }
 
 static int mit_samba_get_pac_data(struct mit_samba_context *ctx,
-				  hdb_entry_ex *client,
+				  krb5_db_entry *client,
 				  DATA_BLOB *data)
 {
 	TALLOC_CTX *tmp_ctx;
@@ -224,7 +276,7 @@ static int mit_samba_get_pac_data(struct mit_samba_context *ctx,
 }
 
 static int mit_samba_update_pac_data(struct mit_samba_context *ctx,
-				     hdb_entry_ex *client,
+				     krb5_db_entry *client,
 				     DATA_BLOB *pac_data,
 				     DATA_BLOB *logon_data)
 {
@@ -340,20 +392,20 @@ static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 }
 
 static int mit_samba_check_client_access(struct mit_samba_context *ctx,
-					 hdb_entry_ex *client,
+					 krb5_db_entry *client,
 					 const char *client_name,
-					 hdb_entry_ex *server,
+					 krb5_db_entry *server,
 					 const char *server_name,
 					 const char *netbios_name,
 					 bool password_change,
 					 DATA_BLOB *e_data)
 {
-	struct samba_kdc_entry *kdc_entry;
+	struct samba_kdc_entry *skdc_entry;
 	NTSTATUS nt_status;
 
-	kdc_entry = talloc_get_type(client->ctx, struct samba_kdc_entry);
+	skdc_entry = talloc_get_type(client->e_data, struct samba_kdc_entry);
 
-	nt_status = samba_kdc_check_client_access(kdc_entry,
+	nt_status = samba_kdc_check_client_access(skdc_entry,
 						  client_name,
 						  netbios_name,
 						  password_change);
@@ -372,7 +424,7 @@ static int mit_samba_check_client_access(struct mit_samba_context *ctx,
 }
 
 static int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
-				     hdb_entry_ex *entry,
+				     struct samba_kdc_entry *entry,
 				     const char *target_name,
 				     bool is_nt_enterprise_name)
 {
