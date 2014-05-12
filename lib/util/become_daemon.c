@@ -125,13 +125,13 @@ _PUBLIC_ void exit_daemon(const char *msg, int error)
 	exit(1);
 }
 
-_PUBLIC_ void daemon_ready(const char *daemon)
+_PUBLIC_ void daemon_ready(const char *name)
 {
-	if (daemon == NULL) {
-		daemon = "Samba";
+	if (name == NULL) {
+		name = "Samba";
 	}
 #ifdef HAVE_SYSTEMD
-	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...", daemon);
+	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...", name);
 #endif
-	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve connections", daemon));
+	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve connections", name));
 }
