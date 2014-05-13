@@ -833,6 +833,35 @@ class TestInvalidQueries(DNSTest):
         self.assertEquals(response.answers[0].rdata,
                           os.getenv('SERVER_IP'))
 
+    def test_one_a_reply(self):
+        "send a reply instead of a query"
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "%s.%s" % ('fakefakefake', self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
+        print "asking for ", q.name
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        p.operation |= dns.DNS_FLAG_REPLY
+        s = None
+        try:
+            send_packet = ndr.ndr_pack(p)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            host=os.getenv('SERVER_IP')
+            s.connect((host, 53))
+            tcp_packet = struct.pack('!H', len(send_packet))
+            tcp_packet += send_packet
+            s.send(tcp_packet, 0)
+            recv_packet = s.recv(0xffff + 2, 0)
+            self.assertEquals(0, len(recv_packet))
+        finally:
+            if s is not None:
+                s.close()
+
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
