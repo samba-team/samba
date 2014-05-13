@@ -46,7 +46,7 @@ struct messaging_dgm_hdr {
 
 static NTSTATUS messaging_dgm_send(struct messaging_context *msg_ctx,
 				   struct server_id pid, int msg_type,
-				   const DATA_BLOB *data,
+				   const struct iovec *iov, int iovlen,
 				   struct messaging_backend *backend);
 static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			       uint8_t *msg, size_t msg_len,
@@ -288,7 +288,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 
 static NTSTATUS messaging_dgm_send(struct messaging_context *msg_ctx,
 				   struct server_id pid, int msg_type,
-				   const DATA_BLOB *data,
+				   const struct iovec *iov, int iovlen,
 				   struct messaging_backend *backend)
 {
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
@@ -297,7 +297,7 @@ static NTSTATUS messaging_dgm_send(struct messaging_context *msg_ctx,
 	char buf[PATH_MAX];
 	char *dst_sock, *to_free;
 	struct messaging_dgm_hdr hdr;
-	struct iovec iov[2];
+	struct iovec iov2[iovlen + 1];
 	ssize_t pathlen;
 	int ret;
 
@@ -314,17 +314,16 @@ static NTSTATUS messaging_dgm_send(struct messaging_context *msg_ctx,
 	hdr.dst = pid;
 	hdr.src = msg_ctx->id;
 
-	DEBUG(10, ("%s: Sending message 0x%x len %u to %s\n", __func__,
-		   (unsigned)hdr.msg_type, (unsigned)data->length,
+	DEBUG(10, ("%s: Sending message 0x%x to %s\n", __func__,
+		   (unsigned)hdr.msg_type,
 		   server_id_str(talloc_tos(), &pid)));
 
-	iov[0].iov_base = &hdr;
-	iov[0].iov_len = sizeof(hdr);
-	iov[1].iov_base = data->data;
-	iov[1].iov_len = data->length;
+	iov2[0].iov_base = &hdr;
+	iov2[0].iov_len = sizeof(hdr);
+	memcpy(iov2+1, iov, iovlen*sizeof(struct iovec));
 
 	become_root();
-	ret = unix_msg_send(ctx->dgm_ctx, dst_sock, iov, ARRAY_SIZE(iov));
+	ret = unix_msg_send(ctx->dgm_ctx, dst_sock, iov2, iovlen + 1);
 	unbecome_root();
 
 	TALLOC_FREE(to_free);

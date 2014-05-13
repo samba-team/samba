@@ -90,21 +90,33 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 
 static NTSTATUS messaging_ctdb_send(struct messaging_context *msg_ctx,
 				    struct server_id pid, int msg_type,
-				    const DATA_BLOB *data,
+				    const struct iovec *iov, int iovlen,
 				    struct messaging_backend *backend)
 {
 	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
 		backend->private_data, struct messaging_ctdbd_context);
 
 	struct messaging_rec msg;
+	uint8_t *buf;
+	NTSTATUS status;
+
+	buf = iov_buf(talloc_tos(), iov, iovlen);
+	if (buf == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 
 	msg.msg_version	= MESSAGE_VERSION;
 	msg.msg_type	= msg_type;
 	msg.dest	= pid;
 	msg.src		= msg_ctx->id;
-	msg.buf		= *data;
+	msg.buf		= data_blob_const(buf, talloc_get_size(buf));
 
-	return ctdbd_messaging_send(ctx->conn, pid.vnn, pid.pid, &msg);
+	status = ctdbd_messaging_send(ctx->conn, pid.vnn, pid.pid, &msg);
+
+	TALLOC_FREE(buf);
+
+	return status;
 }
 
 static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)

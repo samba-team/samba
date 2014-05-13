@@ -355,29 +355,12 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, uint32_t msg_type,
 			const DATA_BLOB *data)
 {
-	if (server_id_is_disconnected(&server)) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
+	struct iovec iov;
 
-	if (!procid_is_local(&server)) {
-		return msg_ctx->remote->send_fn(msg_ctx, server,
-						msg_type, data,
-						msg_ctx->remote);
-	}
+	iov.iov_base = data->data;
+	iov.iov_len = data->length;
 
-	if (messaging_is_self_send(msg_ctx, &server)) {
-		struct messaging_rec rec;
-		rec.msg_version = MESSAGE_VERSION;
-		rec.msg_type = msg_type & MSG_TYPE_MASK;
-		rec.dest = server;
-		rec.src = msg_ctx->id;
-		rec.buf = *data;
-		messaging_dispatch_rec(msg_ctx, &rec);
-		return NT_STATUS_OK;
-	}
-
-	return msg_ctx->local->send_fn(msg_ctx, server, msg_type, data,
-				       msg_ctx->local);
+	return messaging_send_iov(msg_ctx, server, msg_type, &iov, 1);
 }
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
@@ -392,19 +375,40 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const struct iovec *iov, int iovlen)
 {
-	uint8_t *buf;
-	NTSTATUS status;
-
-	buf = iov_buf(talloc_tos(), iov, iovlen);
-	if (buf == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (server_id_is_disconnected(&server)) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	status = messaging_send_buf(msg_ctx, server, msg_type,
-				    buf, talloc_get_size(buf));
+	if (!procid_is_local(&server)) {
+		return msg_ctx->remote->send_fn(msg_ctx, server,
+						msg_type, iov, iovlen,
+						msg_ctx->remote);
+	}
 
-	TALLOC_FREE(buf);
-	return status;
+	if (messaging_is_self_send(msg_ctx, &server)) {
+		struct messaging_rec rec;
+		uint8_t *buf;
+		DATA_BLOB data;
+
+		buf = iov_buf(talloc_tos(), iov, iovlen);
+		if (buf == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		data = data_blob_const(buf, talloc_get_size(buf));
+
+		rec.msg_version = MESSAGE_VERSION;
+		rec.msg_type = msg_type & MSG_TYPE_MASK;
+		rec.dest = server;
+		rec.src = msg_ctx->id;
+		rec.buf = data;
+		messaging_dispatch_rec(msg_ctx, &rec);
+		TALLOC_FREE(buf);
+		return NT_STATUS_OK;
+	}
+
+	return msg_ctx->local->send_fn(msg_ctx, server, msg_type, iov, iovlen,
+				       msg_ctx->local);
 }
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
