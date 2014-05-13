@@ -273,7 +273,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/sock_exec.c''',
                    deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash')
 
-if bld.CONFIG_GET("CTDB_CFLAGS"):
+if bld.CONFIG_GET("CTDB_CFLAGS") and bld.CONFIG_GET("CTDB_INCLUDE"):
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
                      lib/cluster_support.c
                      lib/dbwrap/dbwrap_ctdb.c
@@ -302,6 +302,7 @@ bld.SAMBA3_LIBRARY('samba-cluster-support',
                    source=SAMBA_CLUSTER_SUPPORT_SOURCES,
                    deps=SAMBA_CLUSTER_SUPPORT_DEPS,
                    cflags=bld.CONFIG_GET("CTDB_CFLAGS"),
+                   includes=bld.CONFIG_GET("CTDB_INCLUDE"),
                    allow_undefined_symbols=True,
                    private_library=True)
 

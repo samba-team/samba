@@ -1451,8 +1451,10 @@ main() {
             includes = ''
 
         if Options.options.ctdb_dir:
-            CTDB_CFLAGS = '-I' + Options.options.ctdb_dir + '/include'
-            includes = includes + ' ' + Options.options.ctdb_dir + '/include'
+            CTDB_INCLUDE = Options.options.ctdb_dir + '/include'
+        else:
+            CTDB_INCLUDE = conf.srcdir + '/ctdb/include'
+        includes = includes + ' ' + CTDB_INCLUDE
 
         if not conf.env.USING_SYSTEM_TDB:
             includes = includes + ' ' + srcdir + '/lib/tdb/include'
@@ -1716,6 +1718,7 @@ main() {
     if have_cluster_support:
         Logs.info("building with cluster support")
         conf.env['CTDB_CFLAGS'] = CTDB_CFLAGS
+        conf.env['CTDB_INCLUDE'] = CTDB_INCLUDE
     else:
         if Options.options.with_cluster_support == False:
             Logs.info("building without cluster support (--without-cluster-support)")
