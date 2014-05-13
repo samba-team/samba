@@ -92,7 +92,8 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 	struct tdb_record rec;
 	char *ret = NULL;
 	bool locked;
-	size_t len, unc = 0;
+	size_t unc = 0;
+	int len;
 	struct tdb_record recovery;
 
 	/* Read-only databases use no locking at all: it's best-effort.
@@ -163,13 +164,8 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 	for (off = 0; off < tdb->hash_size; off++)
 		tally_add(&hashval, get_hash_length(tdb, off));
 
-	/* 20 is max length of a %zu. */
-	len = strlen(SUMMARY_FORMAT) + 35*20 + 1;
-	ret = (char *)malloc(len);
-	if (!ret)
-		goto unlock;
 
-	snprintf(ret, len, SUMMARY_FORMAT,
+	len = asprintf(&ret, SUMMARY_FORMAT,
 		 tdb->map_size, keys.total+data.total,
 		 keys.num,
 		 (tdb->hash_fn == tdb_jenkins_hash)?"yes":"no",
@@ -194,6 +190,9 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 		 * 100.0 / tdb->map_size,
 		 tdb->hash_size * sizeof(tdb_off_t)
 		 * 100.0 / tdb->map_size);
+	if (len == -1) {
+		goto unlock;
+	}
 
 unlock:
 	if (locked) {
