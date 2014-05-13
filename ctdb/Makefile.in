@@ -62,7 +62,8 @@ ifeq ($(CC),gcc)
 EXTRA_CFLAGS=-Wno-format-zero-length -Wno-deprecated-declarations -fPIC
 endif
 
-CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
+CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -I$(srcdir)/include/internal \
+       -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        $(TALLOC_CFLAGS) $(TEVENT_CFLAGS) $(TDB_CFLAGS) -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DCTDB_VARDIR=\"$(localstatedir)/lib/ctdb\" \
