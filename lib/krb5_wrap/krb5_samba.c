@@ -2338,11 +2338,11 @@ krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 
 	old_data = krb5_princ_realm(context, principal);
 
-	data.magic = 0;
-	data.length = strlen(realm);
-	data.data = malloc(data.length);
-	if (data.data == NULL) {
-		return ENOMEM;
+	ret = krb5_copy_data_contents(&data,
+				      realm,
+				      strlen(realm));
+	if (ret) {
+		return ret;
 	}
 
 	/* free realm before setting */
