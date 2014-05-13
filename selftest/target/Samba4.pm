@@ -511,6 +511,8 @@ sub provision_raw_prepare($$$$$$$$$$)
 	chomp $unix_name;
 	$ctx->{unix_name} = $unix_name;
 	$ctx->{unix_uid} = $>;
+	my @mygid = split(" ", $();
+	$ctx->{unix_gid} = $mygid[0];
 	$ctx->{unix_gids_str} = $);
 	@{$ctx->{unix_gids}} = split(" ", $ctx->{unix_gids_str});
 
@@ -688,6 +690,7 @@ wheel:x:10:
 users:x:100:
 nobody:x:65533:
 nogroup:x:65534:nobody
+$ctx->{unix_name}:x:$ctx->{unix_gid}:
 ";
 	close(GRP);
         my $gid_rfc2307test = 65532;
