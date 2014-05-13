@@ -8,7 +8,7 @@ bld.SAMBA_LIBRARY('ldbsamba',
                   source='ldif_handlers.c',
                   autoproto='ldif_handlers_proto.h',
                   public_deps='ldb',
-                  deps='samba-security ndr NDR_DRSBLOBS NDR_DNSP ldbwrap samdb-common SAMDB_SCHEMA tdb pyldb-util errors',
+                  deps='samba-security ndr NDR_DRSBLOBS NDR_DNSP ldbwrap samdb-common SAMDB_SCHEMA tdb errors',
                   private_library=True
                   )
 
@@ -20,7 +20,7 @@ bld.SAMBA_SUBSYSTEM('ldbwrap',
 
 
 bld.SAMBA_PYTHON('python_samba__ldb', 'pyldb.c',
-                 deps='ldbsamba pyparam_util ldbwrap',
+                 deps='ldbsamba pyparam_util ldbwrap pyldb-util',
                  realname='samba/_ldb.so')
 
 bld.SAMBA_MODULE('ldbsamba_extensions',
