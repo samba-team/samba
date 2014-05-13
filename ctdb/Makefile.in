@@ -158,6 +158,9 @@ $(CTDB_VERSION_H):
 	@echo Generating $@
 	$(WRAPPER) ./packaging/mkversion.sh
 
+server/ctdb_daemon.c: $(CTDB_VERSION_H)
+tools/ctdb.c: $(CTDB_VERSION_H)
+
 bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
