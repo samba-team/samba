@@ -2193,6 +2193,10 @@ static void free_private_data(void **vp)
 static NTSTATUS pdb_samba_dsdb_init_secrets(struct pdb_methods *m)
 {
 	struct pdb_domain_info *dom_info;
+	struct dom_sid stored_sid;
+	struct GUID stored_guid;
+	bool sid_exists_and_matches = false;
+	bool guid_exists_and_matches = false;
 	bool ret;
 
 	dom_info = pdb_samba_dsdb_get_domain_info(m, m);
@@ -2200,20 +2204,38 @@ static NTSTATUS pdb_samba_dsdb_init_secrets(struct pdb_methods *m)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	secrets_clear_domain_protection(dom_info->name);
-	ret = secrets_store_domain_sid(dom_info->name,
-				       &dom_info->sid);
-	if (!ret) {
-		goto done;
+	ret = secrets_fetch_domain_sid(dom_info->name, &stored_sid);
+	if (ret) {
+		if (dom_sid_equal(&stored_sid, &dom_info->sid)) {
+			sid_exists_and_matches = true;
+		}
 	}
-	ret = secrets_store_domain_guid(dom_info->name,
-				        &dom_info->guid);
-	if (!ret) {
-		goto done;
+
+	if (sid_exists_and_matches == false) {
+		secrets_clear_domain_protection(dom_info->name);
+		ret = secrets_store_domain_sid(dom_info->name,
+					       &dom_info->sid);
+		ret &= secrets_mark_domain_protected(dom_info->name);
+		if (!ret) {
+			goto done;
+		}
 	}
-	ret = secrets_mark_domain_protected(dom_info->name);
-	if (!ret) {
-		goto done;
+
+	ret = secrets_fetch_domain_guid(dom_info->name, &stored_guid);
+	if (ret) {
+		if (GUID_equal(&stored_guid, &dom_info->guid)) {
+			guid_exists_and_matches = true;
+		}
+	}
+
+	if (guid_exists_and_matches == false) {
+		secrets_clear_domain_protection(dom_info->name);
+		ret = secrets_store_domain_guid(dom_info->name,
+					       &dom_info->guid);
+		ret &= secrets_mark_domain_protected(dom_info->name);
+		if (!ret) {
+			goto done;
+		}
 	}
 
 done:
