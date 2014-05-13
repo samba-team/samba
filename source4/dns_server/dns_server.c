@@ -156,6 +156,12 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (state->in_packet.operation & DNS_FLAG_REPLY) {
+		DEBUG(1, ("Won't reply to replies.\n"));
+		tevent_req_werror(req, WERR_INVALID_PARAM);
+		return tevent_req_post(req, ev);
+	}
+
 	state->state.flags = state->in_packet.operation;
 	state->state.flags |= DNS_FLAG_REPLY;
 
