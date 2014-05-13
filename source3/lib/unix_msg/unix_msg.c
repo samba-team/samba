@@ -233,8 +233,22 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 {
 	struct unix_dgram_ctx *ctx = (struct unix_dgram_ctx *)private_data;
 	ssize_t received;
+	struct msghdr msg;
+	struct iovec iov;
 
-	received = recv(fd, ctx->recv_buf, ctx->max_msg, 0);
+	iov = (struct iovec) {
+		.iov_base = (void *)ctx->recv_buf,
+		.iov_len = ctx->max_msg,
+	};
+
+	msg = (struct msghdr) {
+		.msg_iov = &iov,
+		.msg_iovlen = 1,
+		.msg_control = NULL,
+		.msg_controllen = 0,
+	};
+
+	received = recvmsg(fd, &msg, 0);
 	if (received == -1) {
 		if ((errno == EAGAIN) ||
 #ifdef EWOULDBLOCK
