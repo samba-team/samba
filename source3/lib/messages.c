@@ -803,7 +803,6 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 
 		i += 1;
 	}
-	return;
 }
 
 static int mess_parent_dgm_cleanup(void *private_data);
