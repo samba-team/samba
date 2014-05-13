@@ -29,6 +29,7 @@
 #include "dbwrap/dbwrap.h"
 #include "../librpc/ndr/libndr.h"
 #include "util_tdb.h"
+#include "libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -106,9 +107,12 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 
 	ret = secrets_store(domain_sid_keystr(domain), sid, sizeof(struct dom_sid ));
 
-	/* Force a re-query, in case we modified our domain */
-	if (ret)
-		reset_global_sam_sid();
+	/* Force a re-query, in the case where we modified our domain */
+	if (ret) {
+		if (dom_sid_equal(get_global_sam_sid(), sid) == false) {
+			reset_global_sam_sid();
+		}
+	}
 	return ret;
 }
 
