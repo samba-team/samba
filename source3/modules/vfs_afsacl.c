@@ -30,8 +30,7 @@
 #define DBGC_CLASS DBGC_VFS
 
 #include <afs/stds.h>
-#include <afs/afs.h>
-#include <afs/auth.h>
+#include <afs/afs_args.h>
 #include <afs/venus.h>
 #include <afs/prs_fs.h>
 
