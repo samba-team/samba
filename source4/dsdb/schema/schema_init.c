@@ -97,8 +97,6 @@ struct dsdb_schema *dsdb_schema_copy_shallow(TALLOC_CTX *mem_ctx,
 	}
 
 	/* leave reload_seq_number = 0 so it will be refresh ASAP */
-	schema_copy->refresh_fn = schema->refresh_fn;
-	schema_copy->loaded_from_module = schema->loaded_from_module;
 
 	return schema_copy;
 
