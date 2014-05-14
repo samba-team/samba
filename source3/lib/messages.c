@@ -785,7 +785,7 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			 * to keep the order of waiters, as
 			 * other code may depend on this.
 			 */
-			if (i <  msg_ctx->num_waiters - 1) {
+			if (i < msg_ctx->num_waiters - 1) {
 				memmove(&msg_ctx->waiters[i],
 					&msg_ctx->waiters[i+1],
 					sizeof(struct tevent_req *) *
