@@ -55,7 +55,7 @@ static struct db_context *serverid_db(void)
 
 bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 {
-	struct tdb_wrap *db;
+	struct db_context *db;
 
 	db = serverid_db();
 	if (db == NULL) {
