@@ -28,6 +28,10 @@ if conf.env.KRB5_CONFIG:
     conf.check_cfg(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
                package="gssapi", uselib_store="GSSAPI")
     krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
+    if 'k5crypto' in conf.env['LIB_GSSAPI']:
+        krb5_define_syslib(conf, "k5crypto", conf.env['LIB_GSSAPI'])
+    if 'com_err' in conf.env['LIB_GSSAPI']:
+        krb5_define_syslib(conf, "com_err", conf.env['LIB_GSSAPI'])
     if 'gssapi_krb5' in conf.env['LIB_GSSAPI']:
         krb5_define_syslib(conf, "gssapi_krb5", conf.env['LIB_GSSAPI'])
 
