@@ -17,6 +17,9 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef UTIL_DEBUG_H
+#define UTIL_DEBUG_H
+
 void (*do_debug_v)(const char *, va_list ap);
 const char *debug_extra;
 void (*do_debug_add_v)(const char *, va_list ap);
@@ -25,3 +28,4 @@ void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 void do_debug_add(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 void dump_data(int level, const uint8_t *buf1, size_t len);
 
+#endif /* UTIL_DEBUG_H */

@@ -1,3 +1,5 @@
+#ifndef CTDB_CMDLINE_H
+#define CTDB_CMDLINE_H
 
 extern struct poptOption popt_ctdb_cmdline[];
 
@@ -5,3 +7,4 @@ extern struct poptOption popt_ctdb_cmdline[];
 
 struct ctdb_context *ctdb_cmdline_init(struct event_context *ev);
 
+#endif /* CTDB_CMDLINE_H */
