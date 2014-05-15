@@ -127,17 +127,19 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 					     netbios_name,
 					     password_change,
 					     &int_data);
-	if (code) {
-		goto done;
+
+	if (int_data.length && int_data.data) {
+
+		/* make sure the mapped return code is returned - gd */
+		int code_tmp;
+
+		d = ks_make_data(int_data.data, int_data.length);
+
+		code_tmp = decode_krb5_padata_sequence(&d, &e_data);
+		if (code_tmp == 0) {
+			*e_data_out = e_data;
+		}
 	}
-
-	d = ks_make_data(int_data.data, int_data.length);
-
-	code = decode_krb5_padata_sequence(&d, &e_data);
-	if (code == 0) {
-		*e_data_out = e_data;
-	}
-
 done:
 	free(realm);
 	free(server_name);
