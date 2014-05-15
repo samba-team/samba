@@ -540,6 +540,60 @@ out:
 	return ret;
 }
 
+static int principal_comp_strcmp_int(krb5_context context,
+				     krb5_const_principal principal,
+				     unsigned int component,
+				     const char *string,
+				     bool do_strcasecmp)
+{
+	const char *p;
+	size_t len;
+
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
+	p = krb5_principal_get_comp_string(context, principal, component);
+	if (p == NULL) {
+		return -1;
+	}
+	len = strlen(p);
+#else
+	krb5_data *d;
+	if (component >= krb5_princ_size(context, principal)) {
+		return -1;
+	}
+
+	d = krb5_princ_component(context, principal, component);
+	if (d == NULL) {
+		return -1;
+	}
+
+	p = d->data;
+	len = d->length;
+#endif
+	if (do_strcasecmp) {
+		return strncasecmp(p, string, len);
+	} else {
+		return strncmp(p, string, len);
+	}
+}
+
+static int principal_comp_strcasecmp(krb5_context context,
+				     krb5_const_principal principal,
+				     unsigned int component,
+				     const char *string)
+{
+	return principal_comp_strcmp_int(context, principal,
+					 component, string, true);
+}
+
+static int principal_comp_strcmp(krb5_context context,
+				 krb5_const_principal principal,
+				 unsigned int component,
+				 const char *string)
+{
+	return principal_comp_strcmp_int(context, principal,
+					 component, string, false);
+}
+
 /*
  * Construct an hdb_entry from a directory entry.
  */
