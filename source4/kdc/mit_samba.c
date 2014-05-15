@@ -292,6 +292,53 @@ done:
 	return ret;
 }
 
+/* provide header, function is exported but there are no public headers */
+
+krb5_error_code encode_krb5_padata_sequence(krb5_pa_data *const *rep, krb5_data **code);
+
+/* this function allocates 'data' using malloc.
+ * The caller is responsible for freeing it */
+static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
+{
+	krb5_error_code ret = 0;
+	krb5_pa_data pa, *ppa = NULL;
+	krb5_data *d = NULL;
+
+	if (!e_data)
+		return;
+
+	e_data->data   = NULL;
+	e_data->length = 0;
+
+	pa.magic		= KV5M_PA_DATA;
+	pa.pa_type		= KRB5_PADATA_PW_SALT;
+	pa.length		= 12;
+	pa.contents		= malloc(pa.length);
+	if (!pa.contents) {
+		return;
+	}
+
+	SIVAL(pa.contents, 0, NT_STATUS_V(nt_status));
+	SIVAL(pa.contents, 4, 0);
+	SIVAL(pa.contents, 8, 1);
+
+	ppa = &pa;
+
+	ret = encode_krb5_padata_sequence(&ppa, &d);
+	free(pa.contents);
+	if (ret) {
+		return;
+	}
+
+	e_data->data   = (uint8_t *)d->data;
+	e_data->length = d->length;
+
+	/* free d, not d->data - gd */
+	free(d);
+
+	return;
+}
+
 static int mit_samba_check_client_access(struct mit_samba_context *ctx,
 					 hdb_entry_ex *client,
 					 const char *client_name,
