@@ -839,37 +839,17 @@ static krb5_data fill_krb5_data(void *data, size_t length)
 static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 {
 	krb5_error_code ret = 0;
-	PA_DATA pa;
-	unsigned char *buf;
-	size_t len;
-
-	if (!e_data)
-		return;
-
-	e_data->data   = NULL;
-	e_data->length = 0;
-
-	pa.padata_type		= KRB5_PADATA_PW_SALT;
-	pa.padata_value.length	= 12;
-	pa.padata_value.data	= malloc(pa.padata_value.length);
-	if (!pa.padata_value.data) {
+	e_data->data = malloc(12);
+	if (e_data->data == NULL) {
 		e_data->length = 0;
 		e_data->data = NULL;
 		return;
 	}
+	e_data->length = 12;
 
-	SIVAL(pa.padata_value.data, 0, NT_STATUS_V(nt_status));
-	SIVAL(pa.padata_value.data, 4, 0);
-	SIVAL(pa.padata_value.data, 8, 1);
-
-	ASN1_MALLOC_ENCODE(PA_DATA, buf, len, &pa, &len, ret);
-	free(pa.padata_value.data);
-	if (ret) {
-		return;
-	}
-
-	e_data->data   = buf;
-	e_data->length = len;
+	SIVAL(e_data->data, 0, NT_STATUS_V(nt_status));
+	SIVAL(e_data->data, 4, 0);
+	SIVAL(e_data->data, 8, 1);
 
 	return;
 }
