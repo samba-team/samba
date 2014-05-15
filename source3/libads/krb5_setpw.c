@@ -575,7 +575,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	ADS_STATUS aret;
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
-	const char *realm = NULL;
+	char *realm = NULL;
 	unsigned int realm_len = 0;
 	krb5_creds creds, *credsp = NULL;
 	krb5_ccache ccache = NULL;
@@ -615,7 +615,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 				   &creds.server,
 				   realm_len,
 				   realm, "kadmin", "changepw", NULL);
-
+	free(realm);
 	ret = krb5_get_credentials(context, 0, ccache, &creds, &credsp);
 	if (ret) {
 		krb5_cc_close(context, ccache);
@@ -692,7 +692,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     krb5_get_init_creds_opt opts;
     krb5_creds creds;
     char *chpw_princ = NULL, *password;
-    const char *realm = NULL;
+    char *realm = NULL;
 
     initialize_krb5_error_table();
     ret = krb5_init_context(&context);
@@ -719,10 +719,12 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     /* We have to obtain an INITIAL changepw ticket for changing password */
     if (asprintf(&chpw_princ, "kadmin/changepw@%s", realm) == -1) {
 	krb5_free_context(context);
+	free(realm);
 	DEBUG(1,("ads_krb5_chg_password: asprintf fail\n"));
 	return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
     }
 
+    free(realm);
     password = SMB_STRDUP(oldpw);
     ret = krb5_get_init_creds_password(context, &creds, princ, password,
 					   kerb_prompter, NULL, 
