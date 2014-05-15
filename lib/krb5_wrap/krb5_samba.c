@@ -2297,19 +2297,21 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
  * @param[in] principal		The principal
  * @return pointer to the realm
  *
+ * Caller must free if the return value is not NULL.
+ *
  */
 
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_const_principal principal)
 {
 #ifdef HAVE_KRB5_PRINCIPAL_GET_REALM /* Heimdal */
-	return discard_const_p(char, krb5_principal_get_realm(context, principal));
+	return strdup(discard_const_p(char, krb5_principal_get_realm(context, principal)));
 #elif defined(krb5_princ_realm) /* MIT */
 	krb5_data *realm;
 	realm = krb5_princ_realm(context, principal);
-	return discard_const_p(char, realm->data);
+	return strndup(realm->data, realm->length);
 #else
-	return NULL;
+#error UNKNOWN_GET_PRINC_REALM_FUNCTIONS
 #endif
 }
 
