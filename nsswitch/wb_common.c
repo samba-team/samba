@@ -171,30 +171,26 @@ static int make_safe_fd(int fd)
 /**
  * @internal
  *
- * @brief Check if we have priviliged access.
+ * @brief Check if we talk to the priviliged pipe which should be owned by root.
  *
- * This checks if we have uid_wrapper running and if yes turns it of so that we
- * can check if we have access.
+ * This checks if we have uid_wrapper running and if this is the case it will
+ * allow to connect to the winbind privileged pipe even it is not owned by root.
  *
- * @param[in]  uid      The uid to compare if we have access.
+ * @param[in]  uid      The uid to check if we can safely talk to the pipe.
  *
  * @return              If we have access it returns true, else false.
  */
-static bool winbind_privileged_access(uid_t uid)
+static bool winbind_privileged_pipe_is_root(uid_t uid)
 {
-	uid_t euid;
-
-	if (uid_wrapper_enabled()) {
-		setenv("UID_WRAPPER_MYUID", "1", 1);
+	if (uid == 0) {
+		return true;
 	}
 
-	euid = geteuid();
-
 	if (uid_wrapper_enabled()) {
-		unsetenv("UID_WRAPPER_MYUID");
+		return true;
 	}
 
-	return (uid == euid);
+	return false;
 }
 
 /* Connect to winbindd socket */
@@ -215,9 +211,12 @@ static int winbind_named_pipe_sock(const char *dir)
 		return -1;
 	}
 
-	/* This tells uid_wrapper to return the userid for the geteuid check */
+	/*
+	 * This tells us that the pipe is owned by a privileged
+	 * process, as we will be sending passwords to it.
+	 */
 	if (!S_ISDIR(st.st_mode) ||
-	    !winbind_privileged_access(st.st_uid)) {
+	    !winbind_privileged_pipe_is_root(st.st_uid)) {
 		errno = ENOENT;
 		return -1;
 	}
@@ -245,9 +244,12 @@ static int winbind_named_pipe_sock(const char *dir)
 	SAFE_FREE(path);
 	/* Check permissions on unix socket file */
 
-	/* This tells uid_wrapper to return the userid for the geteuid check */
+	/*
+	 * This tells us that the pipe is owned by a privileged
+	 * process, as we will be sending passwords to it.
+	 */
 	if (!S_ISSOCK(st.st_mode) ||
-	    !winbind_privileged_access(st.st_uid)) {
+	    !winbind_privileged_pipe_is_root(st.st_uid)) {
 		errno = ENOENT;
 		return -1;
 	}
