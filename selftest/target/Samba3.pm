@@ -935,10 +935,10 @@ sub provision($$$$$$)
 	##
 
 	my ($max_uid, $max_gid);
-	my ($uid_nobody, $uid_root, $uid_pdbtest);
+	my ($uid_nobody, $uid_root, $uid_pdbtest, $uid_pdbtest2);
 	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers, $gid_domadmins);
 
-	if ($unix_uid < 0xffff - 2) {
+	if ($unix_uid < 0xffff - 4) {
 		$max_uid = 0xffff;
 	} else {
 		$max_uid = $unix_uid;
@@ -947,8 +947,9 @@ sub provision($$$$$$)
 	$uid_root = $max_uid - 1;
 	$uid_nobody = $max_uid - 2;
 	$uid_pdbtest = $max_uid - 3;
+	$uid_pdbtest2 = $max_uid - 4;
 
-	if ($unix_gids[0] < 0xffff - 3) {
+	if ($unix_gids[0] < 0xffff - 5) {
 		$max_gid = 0xffff;
 	} else {
 		$max_gid = $unix_gids[0];
@@ -1180,6 +1181,7 @@ sub provision($$$$$$)
 	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix_abs:/bin/false
 $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
+pdbtest2:x:$uid_pdbtest2:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false

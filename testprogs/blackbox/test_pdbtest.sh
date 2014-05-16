@@ -5,16 +5,17 @@
 
 if [ $# -lt 2 ]; then
 cat <<EOF
-Usage: test_pdbtest.sh SERVER PREFIX SMBCLIENT SMB_CONF
+Usage: test_pdbtest.sh SERVER PREFIX USER SMBCLIENT SMB_CONF
 EOF
 exit 1;
 fi
 
 SERVER=$1
 PREFIX=$2
-smbclient=$3
-SMB_CONF=$4
-shift 4
+USER=$3
+smbclient=$4
+SMB_CONF=$5
+shift 5
 failed=0
 
 samba4bindir="$BINDIR"
@@ -45,7 +46,7 @@ test_smbclient() {
 UID_WRAPPER_ROOT=1
 export UID_WRAPPER_ROOT
 
-testit "pdbtest" $VALGRIND $BINDIR/pdbtest -u pdbtest || failed=`expr $failed + 1`
+testit "pdbtest" $VALGRIND $BINDIR/pdbtest -u $USER $@ || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@01%
 
@@ -57,14 +58,14 @@ expect retype new password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "create user with pdbedit" $rkpty ./tmpsmbpasswdscript $VALGRIND $pdbedit -a pdbtest --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
+testit "create user with pdbedit" $rkpty ./tmpsmbpasswdscript $VALGRIND $pdbedit -a $USER --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
-test_smbclient "Test login with user (ntlm)" 'ls' -k no -Updbtest%$NEWUSERPASS $@ || failed=`expr $failed + 1`
+test_smbclient "Test login with user (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS $@ || failed=`expr $failed + 1`
 
-testit "modify user"  $VALGRIND $pdbedit --modify pdbtest --drive="D:" $@ || failed=`expr $failed + 1`
+testit "modify user"  $VALGRIND $pdbedit --modify $USER --drive="D:" $@ || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user (ntlm)" 'ls' -k no -Updbtest%$NEWUSERPASS $@|| failed=`expr $failed + 1`
+test_smbclient "Test login with user (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS $@|| failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@02%
 
@@ -76,28 +77,28 @@ expect Retype new SMB password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "set user password with smbpasswd" $rkpty ./tmpsmbpasswdscript $smbpasswd -L pdbtest -c $SMB_CONF || failed=`expr $failed + 1`
+testit "set user password with smbpasswd" $rkpty ./tmpsmbpasswdscript $smbpasswd -L $USER -c $SMB_CONF || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
-test_smbclient "Test login with user (ntlm)" 'ls' -k no -Updbtest%$NEWUSERPASS $@|| failed=`expr $failed + 1`
+test_smbclient "Test login with user (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS $@|| failed=`expr $failed + 1`
 
-testit "modify user - disabled"  $VALGRIND $net sam set disabled pdbtest yes $@ || failed=`expr $failed + 1`
+testit "modify user - disabled"  $VALGRIND $net sam set disabled $USER yes $@ || failed=`expr $failed + 1`
 
-testit_expect_failure  "Test login with disabled suer" $VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k no -Updbtest@%$USERPASS && failed=`expr $failed + 1`
+testit_expect_failure  "Test login with disabled suer" $VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k no -U$USER@%$USERPASS && failed=`expr $failed + 1`
 
-testit "modify user - enabled"  $VALGRIND $net sam set disabled pdbtest no $@ || failed=`expr $failed + 1`
+testit "modify user - enabled"  $VALGRIND $net sam set disabled $USER no $@ || failed=`expr $failed + 1`
 
-test_smbclient "Test login with re-enabled user (ntlm)" 'ls' -k no -Updbtest%$NEWUSERPASS || failed=`expr $failed + 1`
+test_smbclient "Test login with re-enabled user (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS || failed=`expr $failed + 1`
 
-testit "modify user - must change password now"  $VALGRIND $net sam set pwdmustchangenow pdbtest yes $@ || failed=`expr $failed + 1`
+testit "modify user - must change password now"  $VALGRIND $net sam set pwdmustchangenow $USER yes $@ || failed=`expr $failed + 1`
 
-testit_expect_failure  "Test login with expired password" $VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k no -Updbtest@%$USERPASS && failed=`expr $failed + 1`
+testit_expect_failure  "Test login with expired password" $VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k no -U$USER@%$USERPASS && failed=`expr $failed + 1`
 
-testit "modify user - disable password expiry"  $VALGRIND $net sam set pwnoexp pdbtest yes $@ || failed=`expr $failed + 1`
+testit "modify user - disable password expiry"  $VALGRIND $net sam set pwnoexp $USER yes $@ || failed=`expr $failed + 1`
 
-test_smbclient "Test login with no expiry (ntlm)" 'ls' -k no -Updbtest%$NEWUSERPASS || failed=`expr $failed + 1`
+test_smbclient "Test login with no expiry (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS || failed=`expr $failed + 1`
 
-testit "del user"  $VALGRIND $pdbedit -x pdbtest $@ || failed=`expr $failed + 1`
+testit "del user"  $VALGRIND $pdbedit -x $USER $@ || failed=`expr $failed + 1`
 
 rm ./tmpsmbpasswdscript
 

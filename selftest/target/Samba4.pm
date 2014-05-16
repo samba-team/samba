@@ -679,6 +679,9 @@ root:x:0:0:root gecos:$ctx->{prefix_abs}:/bin/false
 $ctx->{unix_name}:x:$ctx->{unix_uid}:100:$ctx->{unix_name} gecos:$ctx->{prefix_abs}:/bin/false
 nobody:x:65534:65533:nobody gecos:$ctx->{prefix_abs}:/bin/false
 pdbtest:x:65533:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
+pdbtest2:x:65532:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
+pdbtest3:x:65531:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
+pdbtest4:x:65530:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
 ";
 	close(PWD);
         my $uid_rfc2307test = 65533;
