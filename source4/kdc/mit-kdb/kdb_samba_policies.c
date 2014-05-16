@@ -363,7 +363,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 		goto done;
 	}
 
-	authdata = malloc(2 * sizeof(krb5_authdata *));
+	authdata = calloc(2, sizeof(krb5_authdata *));
 	if (authdata == NULL) {
 		goto done;
 	}
