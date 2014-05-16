@@ -520,7 +520,7 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
  Make a auth_info struct for the auth subsystem
  - Allow the caller to specify the methods to use, including optionally the SAM to use
 ***************************************************************************/
-_PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
+_PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * const *methods, 
 					      struct tevent_context *ev,
 					      struct imessaging_context *msg,
 					      struct loadparm_context *lp_ctx,

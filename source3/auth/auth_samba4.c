@@ -31,7 +31,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static NTSTATUS make_auth4_context_s4(TALLOC_CTX *mem_ctx,
+static NTSTATUS make_auth4_context_s4(const struct auth_context *auth_context,
+				      TALLOC_CTX *mem_ctx,
 				      struct auth4_context **auth4_context);
 
 static struct idr_context *task_id_tree;
@@ -111,7 +112,7 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	struct auth_user_info_dc *user_info_dc;
 	struct auth4_context *auth4_context;
 
-	nt_status = make_auth4_context_s4(mem_ctx, &auth4_context);
+	nt_status = make_auth4_context_s4(auth_context, mem_ctx, &auth4_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(frame);
 		goto done;
@@ -178,7 +179,8 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
  * token is generated and used in the SMB and LDAP servers, for NTLM
  * and for Kerberos.
  */
-static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
+static NTSTATUS prepare_gensec(struct auth_context *auth_context,
+			       TALLOC_CTX *mem_ctx,
 			       struct gensec_security **gensec_context)
 {
 	NTSTATUS status;
@@ -270,7 +272,8 @@ static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
  * consistency between NTLM logins and NTLMSSP logins, as NTLMSSP is
  * handled by the hook above.
  */
-static NTSTATUS make_auth4_context_s4(TALLOC_CTX *mem_ctx,
+static NTSTATUS make_auth4_context_s4(const struct auth_context *auth_context,
+				      TALLOC_CTX *mem_ctx,
 				      struct auth4_context **auth4_context)
 {
 	NTSTATUS status;
@@ -311,12 +314,17 @@ static NTSTATUS make_auth4_context_s4(TALLOC_CTX *mem_ctx,
 	}
 	talloc_reparent(frame, msg_ctx, server_id);
 
-	status = auth_context_create(mem_ctx,
-					event_ctx,
-					msg_ctx,
-					lp_ctx,
-					auth4_context);
-
+	/* Allow forcing a specific auth4 module */
+	if (!auth_context->forced_samba4_methods) {
+		status = auth_context_create(mem_ctx,
+					     event_ctx,
+					     msg_ctx,
+					     lp_ctx,
+					     auth4_context);
+	} else {
+		const char * const *forced_auth_methods = (const char * const *)str_list_make(mem_ctx, auth_context->forced_samba4_methods, NULL);
+		status = auth_context_create_methods(mem_ctx, forced_auth_methods, event_ctx, msg_ctx, lp_ctx, NULL, auth4_context);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start auth server code: %s\n", nt_errstr(status)));
 		TALLOC_FREE(frame);
@@ -348,6 +356,13 @@ static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 	result->auth = check_samba4_security;
 	result->prepare_gensec = prepare_gensec;
 	result->make_auth4_context = make_auth4_context_s4;
+
+	if (param && *param) {
+		auth_context->forced_samba4_methods = talloc_strdup(result, param);
+		if (!auth_context->forced_samba4_methods) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
         *auth_method = result;
 	return NT_STATUS_OK;

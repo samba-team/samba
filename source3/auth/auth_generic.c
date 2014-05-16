@@ -163,7 +163,7 @@ NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_co
 	}
 
 	if (auth_context->make_auth4_context) {
-		nt_status = auth_context->make_auth4_context(mem_ctx, auth4_context_out);
+		nt_status = auth_context->make_auth4_context(auth_context, mem_ctx, auth4_context_out);
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 
@@ -197,7 +197,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 	}
 
 	if (auth_context->prepare_gensec) {
-		nt_status = auth_context->prepare_gensec(tmp_ctx,
+		nt_status = auth_context->prepare_gensec(auth_context, tmp_ctx,
 							 &gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			TALLOC_FREE(tmp_ctx);

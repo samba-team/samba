@@ -66,10 +66,14 @@ struct auth_serversupplied_info {
 	char *unix_name;
 };
 
-typedef NTSTATUS (*prepare_gensec_fn)(TALLOC_CTX *mem_ctx,
+struct auth_context;
+
+typedef NTSTATUS (*prepare_gensec_fn)(const struct auth_context *auth_context, 
+				      TALLOC_CTX *mem_ctx,
 				      struct gensec_security **gensec_context);
 
-typedef NTSTATUS (*make_auth4_context_fn)(TALLOC_CTX *mem_ctx,
+typedef NTSTATUS (*make_auth4_context_fn)(const struct auth_context *auth_context, 
+					  TALLOC_CTX *mem_ctx,
 					  struct auth4_context **auth4_context);
 
 struct auth_context {
@@ -83,6 +87,7 @@ struct auth_context {
 
 	prepare_gensec_fn prepare_gensec;
 	make_auth4_context_fn make_auth4_context;
+	const char *forced_samba4_methods;
 };
 
 typedef struct auth_methods
