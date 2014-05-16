@@ -80,6 +80,8 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/param/loadparm.h"
 #include "libcli/auth/netlogon_creds_cli.h"
+#include "auth.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1607,6 +1609,47 @@ done:
 	return ret;
 }
 
+NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
+			       const struct ndr_interface_table *table,
+			       struct rpc_pipe_client **ret_pipe)
+{
+	struct rpc_pipe_client *cli = NULL;
+	const struct auth_session_info *session_info;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+
+	session_info = get_session_info_system();
+	SMB_ASSERT(session_info != NULL);
+
+	/* create a connection to the specified pipe */
+	if (lp_parm_bool(-1, "winbindd", "use external pipes", false)) {
+		status = rpc_pipe_open_interface(mem_ctx,
+						 table,
+						 session_info,
+						 NULL,
+						 winbind_messaging_context(),
+						 &cli);
+	} else {
+		status = rpc_pipe_open_internal(mem_ctx,
+						&table->syntax_id,
+						session_info,
+						NULL,
+						winbind_messaging_context(),
+						&cli);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("open_internal_pipe: Could not connect to %s pipe: %s\n",
+			  table->name, nt_errstr(status)));
+		return status;
+	}
+
+	if (ret_pipe) {
+		*ret_pipe = cli;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				   struct winbindd_cm_conn *new_conn)
 {
@@ -1893,12 +1936,12 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 	NTSTATUS result;
 
 	/* Internal connections never use the network. */
-	if (domain->internal) {
-		domain->initialized = True;
-		return NT_STATUS_OK;
+	if (dom_sid_equal(&domain->sid, &global_sid_Builtin)) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	if (connection_ok(domain)) {
+	/* Still ask the internal LSA and SAMR server about the local domain */
+	if (domain->internal || connection_ok(domain)) {
 		if (!domain->initialized) {
 			set_dc_type_and_flags(domain);
 		}
@@ -1918,7 +1961,7 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 
 NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 {
-	if (domain->internal) {
+	if (dom_sid_equal(&domain->sid, &global_sid_Builtin)) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -2081,7 +2124,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	union dssetup_DsRoleInfo info;
 	union lsa_PolicyInformation *lsa_info = NULL;
 
-	if (!connection_ok(domain)) {
+	if (!domain->internal && !connection_ok(domain)) {
 		return;
 	}
 
@@ -2094,9 +2137,15 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
-	status = cli_rpc_pipe_open_noauth(domain->conn.cli,
-					  &ndr_table_dssetup,
-					  &cli);
+	if (domain->internal) {
+		status = wb_open_internal_pipe(mem_ctx,
+					       &ndr_table_dssetup,
+					       &cli);
+	} else {
+		status = cli_rpc_pipe_open_noauth(domain->conn.cli,
+						  &ndr_table_dssetup,
+						  &cli);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
@@ -2145,9 +2194,14 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	}
 
 no_dssetup:
-	status = cli_rpc_pipe_open_noauth(domain->conn.cli,
-					  &ndr_table_lsarpc, &cli);
-
+	if (domain->internal) {
+		status = wb_open_internal_pipe(mem_ctx,
+					       &ndr_table_lsarpc,
+					       &cli);
+	} else {
+		status = cli_rpc_pipe_open_noauth(domain->conn.cli,
+						  &ndr_table_lsarpc, &cli);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_LSARPC on domain %s: (%s)\n",
@@ -2267,9 +2321,9 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 {
 	/* we always have to contact our primary domain */
 
-	if ( domain->primary ) {
+	if ( domain->primary || domain->internal) {
 		DEBUG(10,("set_dc_type_and_flags: setting up flags for "
-			  "primary domain\n"));
+			  "primary or internal domain\n"));
 		set_dc_type_and_flags_connect( domain );
 		return;		
 	}

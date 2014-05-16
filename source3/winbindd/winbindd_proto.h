@@ -163,6 +163,11 @@ void winbind_msg_domain_online(struct messaging_context *msg_ctx,
 
 void set_domain_offline(struct winbindd_domain *domain);
 void set_domain_online_request(struct winbindd_domain *domain);
+
+struct ndr_interface_table;
+NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
+			       const struct ndr_interface_table *table,
+			       struct rpc_pipe_client **ret_pipe);
 void invalidate_cm_connection(struct winbindd_cm_conn *conn);
 void close_conns_after_fork(void);
 NTSTATUS init_dc_connection(struct winbindd_domain *domain);

@@ -576,11 +576,7 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		fstrcpy(domain->dcname, state->request->data.init_conn.dcname);
 	}
 
-	if (domain->internal) {
-		domain->initialized = true;
-	} else {
-		init_dc_connection(domain);
-	}
+	init_dc_connection(domain);
 
 	if (!domain->initialized) {
 		/* If we return error here we can't do any cached authentication,
@@ -621,9 +617,13 @@ bool init_domain_list(void)
 
 	/* Local SAM */
 
-	(void)add_trusted_domain(get_global_sam_name(), NULL,
-				    &cache_methods, get_global_sam_sid());
-
+	if ( role == ROLE_ACTIVE_DIRECTORY_DC ) {
+		(void)add_trusted_domain(get_global_sam_name(), lp_dnsdomain(),
+					 &cache_methods, get_global_sam_sid());
+	} else {
+		(void)add_trusted_domain(get_global_sam_name(), NULL,
+					 &cache_methods, get_global_sam_sid());
+	}
 	/* Add ourselves as the first entry. */
 
 	if ( role == ROLE_DOMAIN_MEMBER ) {
