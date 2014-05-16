@@ -866,8 +866,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * Instead, only do it when request is for the kpasswd service */
 		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER
 		    && krb5_princ_size(context, principal) == 2
-		    && (strcmp(krb5_principal_get_comp_string(context, principal, 0), "kadmin") == 0)
-		    && (strcmp(krb5_principal_get_comp_string(context, principal, 1), "changepw") == 0)
+		    && (principal_comp_strcmp(context, principal, 0, "kadmin") == 0)
+		    && (principal_comp_strcmp(context, principal, 1, "changepw") == 0)
 		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
 			entry_ex->entry.flags.change_pw = 1;
 		}
@@ -1455,7 +1455,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	}
 
 	if (krb5_princ_size(context, principal) != 2
-	    || (strcmp(krb5_principal_get_comp_string(context, principal, 0), KRB5_TGS_NAME) != 0)) {
+	    || (principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
 		return HDB_ERR_NOENTRY;
 	}
@@ -1535,7 +1535,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			/* look for inbound trust */
 			direction = INBOUND;
 			realm = krb5_principal_get_comp_string(context, principal, 1);
-		} else if (strcasecmp(lpcfg_realm(lp_ctx), krb5_principal_get_comp_string(context, principal, 1)) == 0) {
+		} else if (principal_comp_strcasecmp(context, principal, 1, lpcfg_realm(lp_ctx)) == 0) {
 			/* look for outbound trust */
 			direction = OUTBOUND;
 			realm = realm_from_princ;
