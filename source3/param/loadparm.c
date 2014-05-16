@@ -1153,6 +1153,7 @@ FN_LOCAL_CONST_STRING(const_servicename, szService)
 
 /* These functions cannot be auto-generated */
 FN_LOCAL_BOOL(autoloaded, autoloaded)
+FN_GLOBAL_CONST_STRING(dnsdomain, dnsdomain)
 
 /* local prototypes */
 
