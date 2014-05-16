@@ -1442,6 +1442,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 	char *realm_from_princ, *realm_from_princ_malloc;
+	char *realm_princ_comp = smb_krb5_principal_get_comp_string(mem_ctx, context, principal, 1);
 
 	realm_from_princ_malloc = smb_krb5_principal_get_realm(context, principal);
 	if (realm_from_princ_malloc == NULL) {
@@ -1463,7 +1464,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	/* krbtgt case.  Either us or a trusted realm */
 
 	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
-	    && lpcfg_is_my_domain_or_realm(lp_ctx, krb5_principal_get_comp_string(context, principal, 1))) {
+	    && lpcfg_is_my_domain_or_realm(lp_ctx, realm_princ_comp)) {
 		/* us, or someone quite like us */
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
@@ -1534,7 +1535,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		if (strcasecmp(lpcfg_realm(lp_ctx), realm_from_princ) == 0) {
 			/* look for inbound trust */
 			direction = INBOUND;
-			realm = krb5_principal_get_comp_string(context, principal, 1);
+			realm = realm_princ_comp;
 		} else if (principal_comp_strcasecmp(context, principal, 1, lpcfg_realm(lp_ctx)) == 0) {
 			/* look for outbound trust */
 			direction = OUTBOUND;
@@ -1542,10 +1543,10 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		} else {
 			krb5_warnx(context, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
 				   realm_from_princ,
-				   krb5_principal_get_comp_string(context, principal, 1));
+				   realm_princ_comp);
 			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
 					       realm_from_princ,
-					       krb5_principal_get_comp_string(context, principal, 1));
+					       realm_princ_comp);
 			return HDB_ERR_NOENTRY;
 		}
 
