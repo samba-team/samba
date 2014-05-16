@@ -289,6 +289,7 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rdata.minimum, 3600)
 
 
 class TestDNSUpdates(DNSTest):

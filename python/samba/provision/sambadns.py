@@ -130,6 +130,7 @@ class SOARecord(dnsp.DnssrvRpcRecord):
         soa.expire = expire
         soa.mname = mname
         soa.rname = rname
+        soa.minimum = minimum
         self.data = soa
 
 
