@@ -301,7 +301,9 @@ void messaging_dgm_destroy(void)
 	TALLOC_FREE(global_dgm_context);
 }
 
-int messaging_dgm_send(pid_t pid, const struct iovec *iov, int iovlen)
+int messaging_dgm_send(pid_t pid,
+		       const struct iovec *iov, int iovlen,
+		       const int *fds, size_t num_fds)
 {
 	struct messaging_dgm_context *ctx = global_dgm_context;
 	struct sockaddr_un dst;
@@ -322,7 +324,7 @@ int messaging_dgm_send(pid_t pid, const struct iovec *iov, int iovlen)
 
 	DEBUG(10, ("%s: Sending message to %u\n", __func__, (unsigned)pid));
 
-	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov, iovlen, NULL, 0);
+	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov, iovlen, fds, num_fds);
 
 	return ret;
 }

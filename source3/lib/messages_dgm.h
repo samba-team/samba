@@ -31,7 +31,9 @@ int messaging_dgm_init(struct tevent_context *ev,
 				       void *private_data),
 		       void *recv_cb_private_data);
 void messaging_dgm_destroy(void);
-int messaging_dgm_send(pid_t pid, const struct iovec *iov, int iovlen);
+int messaging_dgm_send(pid_t pid,
+		       const struct iovec *iov, int iovlen,
+		       const int *fds, size_t num_fds);
 int messaging_dgm_cleanup(pid_t pid);
 int messaging_dgm_wipe(void);
 void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,

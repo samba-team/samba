@@ -91,6 +91,7 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 static int messaging_ctdb_send(struct server_id src,
 			       struct server_id pid, int msg_type,
 			       const struct iovec *iov, int iovlen,
+			       const int *fds, size_t num_fds,
 			       struct messaging_backend *backend)
 {
 	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
@@ -98,6 +99,10 @@ static int messaging_ctdb_send(struct server_id src,
 	struct messaging_rec msg;
 	uint8_t *buf;
 	NTSTATUS status;
+
+	if (num_fds > 0) {
+		return ENOSYS;
+	}
 
 	buf = iov_buf(talloc_tos(), iov, iovlen);
 	if (buf == NULL) {

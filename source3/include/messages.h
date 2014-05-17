@@ -69,6 +69,7 @@ struct messaging_backend {
 	int (*send_fn)(struct server_id src,
 		       struct server_id pid, int msg_type,
 		       const struct iovec *iov, int iovlen,
+		       const int *fds, size_t num_fds,
 		       struct messaging_backend *backend);
 	void *private_data;
 };

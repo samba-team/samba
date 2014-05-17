@@ -468,6 +468,7 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 	if (!procid_is_local(&server)) {
 		ret = msg_ctx->remote->send_fn(msg_ctx->id, server,
 					       msg_type, iov, iovlen,
+					       NULL, 0,
 					       msg_ctx->remote);
 		if (ret != 0) {
 			return map_nt_error_from_unix(ret);
@@ -510,7 +511,7 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
 	become_root();
-	ret = messaging_dgm_send(server.pid, iov2, iovlen+1);
+	ret = messaging_dgm_send(server.pid, iov2, iovlen+1, NULL, 0);
 	unbecome_root();
 
 	if (ret != 0) {
