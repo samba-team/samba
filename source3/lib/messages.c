@@ -442,7 +442,7 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 	iov.iov_base = data->data;
 	iov.iov_len = data->length;
 
-	return messaging_send_iov(msg_ctx, server, msg_type, &iov, 1);
+	return messaging_send_iov(msg_ctx, server, msg_type, &iov, 1, NULL, 0);
 }
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
@@ -455,7 +455,8 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 
 NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
-			    const struct iovec *iov, int iovlen)
+			    const struct iovec *iov, int iovlen,
+			    const int *fds, size_t num_fds)
 {
 	int ret;
 	struct messaging_hdr hdr;
@@ -465,7 +466,15 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
+	if (num_fds > INT8_MAX) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
 	if (!procid_is_local(&server)) {
+		if (num_fds > 0) {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+
 		ret = msg_ctx->remote->send_fn(msg_ctx->id, server,
 					       msg_type, iov, iovlen,
 					       NULL, 0,
@@ -483,6 +492,10 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		/*
 		 * Self-send, directly dispatch
 		 */
+
+		if (num_fds > 0) {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
 
 		buf = iov_buf(talloc_tos(), iov, iovlen);
 		if (buf == NULL) {
@@ -511,7 +524,7 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
 	become_root();
-	ret = messaging_dgm_send(server.pid, iov2, iovlen+1, NULL, 0);
+	ret = messaging_dgm_send(server.pid, iov2, iovlen+1, fds, num_fds);
 	unbecome_root();
 
 	if (ret != 0) {

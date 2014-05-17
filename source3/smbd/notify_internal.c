@@ -792,7 +792,7 @@ static NTSTATUS notify_send(struct notify_context *notify,
 	iov[1].iov_len = strlen(path)+1;
 
 	return messaging_send_iov(notify->msg, *pid, MSG_PVFS_NOTIFY,
-				  iov, ARRAY_SIZE(iov));
+				  iov, ARRAY_SIZE(iov), NULL, 0);
 }
 
 static void notify_handler(struct messaging_context *msg_ctx,
