@@ -318,7 +318,7 @@ int messaging_dgm_send(pid_t pid, const struct iovec *iov, int iovlen)
 
 	DEBUG(10, ("%s: Sending message to %u\n", __func__, (unsigned)pid));
 
-	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov, iovlen);
+	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov, iovlen, NULL, 0);
 
 	return ret;
 }

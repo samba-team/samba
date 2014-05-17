@@ -65,7 +65,7 @@ int main(int argc, const char *argv[])
 		unsigned j;
 
 		for (j=0; j<100000; j++) {
-			ret = unix_msg_send(ctxs[i], &dst, &iov, 1);
+			ret = unix_msg_send(ctxs[i], &dst, &iov, 1, NULL, 0);
 			if (ret != 0) {
 				fprintf(stderr, "unix_msg_send failed: %s\n",
 					strerror(ret));

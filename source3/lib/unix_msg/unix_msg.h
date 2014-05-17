@@ -93,11 +93,14 @@ int unix_msg_init(const struct sockaddr_un *addr,
  * @param[in] dst_sock The destination socket path
  * @param[in] iov The message
  * @param[in] iovlen The number of iov structs
+ * @param[in] fds - optional fd array
+ * @param[in] num_fds - fd array size
  * @return 0 on success, errno on failure
  */
 
 int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
-		  const struct iovec *iov, int iovlen);
+		  const struct iovec *iov, int iovlen,
+		  const int *fds, size_t num_fds);
 
 /**
  * @brief Free a unix_msg_ctx

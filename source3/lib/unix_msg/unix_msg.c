@@ -851,7 +851,8 @@ int unix_msg_init(const struct sockaddr_un *addr,
 }
 
 int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
-		  const struct iovec *iov, int iovlen)
+		  const struct iovec *iov, int iovlen,
+		  const int *fds, size_t num_fds)
 {
 	ssize_t msglen;
 	size_t sent;
@@ -869,6 +870,16 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		return EINVAL;
 	}
 
+#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	if (num_fds > 0) {
+		return ENOSYS;
+	}
+#endif /* ! HAVE_STRUCT_MSGHDR_MSG_CONTROL */
+
+	if (num_fds > INT8_MAX) {
+		return EINVAL;
+	}
+
 	if (msglen <= (ctx->fragment_len - sizeof(uint64_t))) {
 		uint64_t cookie = 0;
 
@@ -880,7 +891,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		}
 
 		return unix_dgram_send(ctx->dgram, dst, iov_copy, iovlen+1,
-				       NULL, 0);
+				       fds, num_fds);
 	}
 
 	hdr = (struct unix_msg_hdr) {
@@ -936,8 +947,19 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		}
 		sent += (fragment_len - sizeof(ctx->cookie) - sizeof(hdr));
 
-		ret = unix_dgram_send(ctx->dgram, dst, iov_copy, iov_index,
-				      NULL, 0);
+		/*
+		 * only the last fragment should pass the fd array.
+		 * That simplifies the receiver a lot.
+		 */
+		if (sent < msglen) {
+			ret = unix_dgram_send(ctx->dgram, dst,
+					      iov_copy, iov_index,
+					      NULL, 0);
+		} else {
+			ret = unix_dgram_send(ctx->dgram, dst,
+					      iov_copy, iov_index,
+					      fds, num_fds);
+		}
 		if (ret != 0) {
 			break;
 		}
