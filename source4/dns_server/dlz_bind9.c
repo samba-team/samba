@@ -210,7 +210,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 	}
 
 	default:
-		state->log(ISC_LOG_ERROR, "samba b9_putrr: unhandled record type %u",
+		state->log(ISC_LOG_ERROR, "samba_dlz b9_format: unhandled record type %u",
 			   rec->wType);
 		return false;
 	}
@@ -379,14 +379,14 @@ static bool b9_parse(struct dlz_bind9_data *state,
 		break;
 
 	default:
-		state->log(ISC_LOG_ERROR, "samba b9_parse: unhandled record type %u",
+		state->log(ISC_LOG_ERROR, "samba_dlz b9_parse: unhandled record type %u",
 			   rec->wType);
 		return false;
 	}
 
 	/* we should be at the end of the buffer now */
 	if (strtok_r(NULL, "\t ", &saveptr) != NULL) {
-		state->log(ISC_LOG_ERROR, "samba b9_parse: unexpected data at end of string for '%s'",
+		state->log(ISC_LOG_ERROR, "samba_dlz b9_parse: unexpected data at end of string for '%s'",
 		           rdatastr);
 		return false;
 	}
@@ -1496,7 +1496,7 @@ static bool b9_record_match(struct dlz_bind9_data *state,
 			rec1->data.soa.expire == rec2->data.soa.expire &&
 			rec1->data.soa.minimum == rec2->data.soa.minimum;
 	default:
-		state->log(ISC_LOG_ERROR, "samba b9_putrr: unhandled record type %u",
+		state->log(ISC_LOG_ERROR, "samba_dlz b9_record_match: unhandled record type %u",
 			   rec1->wType);
 		break;
 	}
