@@ -1315,6 +1315,8 @@ sub provision_fl2003dc($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING DC...";
+        my $extra_conf_options = "allow dns updates = nonsecure and secure
+                                  server services = +winbindd -winbind";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc6",
@@ -1322,7 +1324,7 @@ sub provision_fl2003dc($$)
 				   "samba2003.example.com",
 				   "2003",
 				   "locDCpass6",
-				   undef, "allow dns updates = nonsecure and secure", "", undef);
+				   undef, $extra_conf_options, "", undef);
 
 	unless (defined $ret) {
 		return undef;
@@ -1513,6 +1515,7 @@ sub provision_plugin_s4_dc($$)
 	lpq cache time = 0
 	print notify backchannel = yes
 
+        server services = +winbindd -winbind
 ";
 
 	my $extra_smbconf_shares = "

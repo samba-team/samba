@@ -246,10 +246,6 @@
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo -I against dc
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo  --trusted-domains against dc
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo --all-domains against dc
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo -N against plugin_s4_dc
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo -I against plugin_s4_dc
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo  --trusted-domains against plugin_s4_dc
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo --all-domains against plugin_s4_dc
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo -N against s4member
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo -I against s4member
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo  --trusted-domains against s4member
@@ -276,37 +272,20 @@
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-gid
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-uid
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-gid
+^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo --getdcname against plugin_s4_dc\(plugin_s4_dc:local\)
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
 ^samba.wbinfo_simple.\(member:local\).--user-info
 ^samba.wbinfo_simple.\(s3member:local\).--user-info
+^samba4.winbind.struct.getpwent\(plugin_s4_dc:local\)
 #
 # These just happen to fail for some reason (probably because they run against the s4 winbind)
 #
-^samba4.winbind.pac.pac\(plugin_s4_dc:local\)
 ^samba4.winbind.pac.pac\(s4member:local\)
 ^samba4.winbind.struct.show_sequence\(s4member:local\)
-^samba4.winbind.struct.show_sequence\(plugin_s4_dc:local\)
 ^samba4.winbind.struct.getdcname\(s3member:local\)
 ^samba4.winbind.struct.lookup_name_sid\(s3member:local\)
-^samba4.winbind.wbclient.wbcPingDc\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcPingDc2\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcListTrusts\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcLookupDomainController\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcLookupDomainControllerEx\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcResolveWinsByName\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcResolveWinsByIP\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcLookupRids\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcGetSidAliases\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcLogonUser\(fl2003dc:local\)
-^samba4.winbind.wbclient.wbcChangeUserPassword\(fl2003dc:local\)
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--all-domains.wbinfo\(plugin_s4_dc:local\)
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--trusted-domains.wbinfo\(plugin_s4_dc:local\)
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--online-status.wbinfo\(plugin_s4_dc:local\)
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--online-status --domain=BUILTIN.wbinfo\(plugin_s4_dc:local\)
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--online-status --domain=PLUGINDOMAIN.wbinfo\(plugin_s4_dc:local\)
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--change-secret --domain=PLUGINDOMAIN.wbinfo\(plugin_s4_dc:local\)
 ^samba.wbinfo_simple.\(dc:local\).--all-domains.wbinfo\(dc:local\)
 ^samba.wbinfo_simple.\(dc:local\).--trusted-domains.wbinfo\(dc:local\)
 ^samba.wbinfo_simple.\(dc:local\).--online-status.wbinfo\(dc:local\)
@@ -336,10 +315,6 @@
 ^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo -I against promoted_dc\(promoted_dc:local\)
 ^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo  --trusted-domains against promoted_dc\(promoted_dc:local\)
 ^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo --all-domains against promoted_dc\(promoted_dc:local\)
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo -N against plugin_s4_dc\(plugin_s4_dc:local\)
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo -I against plugin_s4_dc\(plugin_s4_dc:local\)
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo  --trusted-domains against plugin_s4_dc\(plugin_s4_dc:local\)
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo --all-domains against plugin_s4_dc\(plugin_s4_dc:local\)
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U against s3member\(s3member:local\)
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U check for sane mapping\(s3member:local\)
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G against s3member\(s3member:local\)
