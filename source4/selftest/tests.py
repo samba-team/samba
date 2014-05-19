@@ -370,21 +370,60 @@ plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share'
 
 wb_opts = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=1\"", "--option=\"torture:winbindd_separator=/\"", "--option=\"torture:winbindd_netbios_name=$SERVER\"", "--option=\"torture:winbindd_netbios_domain=$DOMAIN\""]
 
-winbind_struct_tests = smbtorture4_testsuites("winbind.struct")
-winbind_ndr_tests = smbtorture4_testsuites("winbind.ndr")
-for env in ["plugin_s4_dc", "dc", "s4member"]:
-    for t in winbind_struct_tests:
-        plansmbtorture4testsuite(t, env, wb_opts + ['//_none_/_none_'])
+winbind_ad_client_tests = smbtorture4_testsuites("winbind.struct") + smbtorture4_testsuites("winbind.pac")
+winbind_wbclient_tests = smbtorture4_testsuites("winbind.wbclient")
+for env in ["plugin_s4_dc", "s4member", "s3member"]:
+    for t in winbind_ad_client_tests:
+        plansmbtorture4testsuite(t, "%s:local" % env, wb_opts + ['//$SERVER/tmp', '--realm=$REALM', '--machine-pass', '--option=torture:addc=$DC_SERVER'])
 
-    for t in winbind_ndr_tests:
-        plansmbtorture4testsuite(t, env, wb_opts + ['//_none_/_none_'])
+for env in ["s3dc", "fl2003dc"]:
+    for t in winbind_wbclient_tests:
+        plansmbtorture4testsuite(t, "%s:local" % env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
+
+for env in ["s3dc", "member", "plugin_s4_dc", "dc", "s3member", "s4member"]:
+    tests = ["--ping", "--separator",
+             "--own-domain",
+             "--all-domains",
+             "--trusted-domains",
+             "--domain-info=BUILTIN",
+             "--domain-info=$DOMAIN",
+             "--online-status",
+             "--online-status --domain=BUILTIN",
+             "--online-status --domain=$DOMAIN",
+             "--check-secret --domain=$DOMAIN",
+             "--change-secret --domain=$DOMAIN",
+             "--check-secret --domain=$DOMAIN",
+             "--online-status --domain=$DOMAIN",
+             #Didn't pass yet# "--domain-users",
+             "--domain-groups",
+             "--name-to-sid=$DC_USERNAME",
+             "--name-to-sid=$DOMAIN/$DC_USERNAME",
+             #Didn't pass yet# "--user-info=$USERNAME",
+             "--user-groups=$DOMAIN/$DC_USERNAME",
+             "--authenticate=$DOMAIN/$DC_USERNAME%$DC_PASSWORD",
+             "--allocate-uid",
+             "--allocate-gid"]
+
+    for t in tests:
+        plantestsuite("samba.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
+
+    plantestsuite(
+        "samba.wbinfo_sids2xids.(%s:local)" % env, "%s:local" % env,
+        [os.path.join(samba3srcdir, "script/tests/test_wbinfo_sids2xids.sh")])
+
+    plantestsuite(
+        "samba.ntlm_auth.diagnostics(%s:local)" % env, "%s:local" % env,
+        [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_diagnostics.sh"), ntlm_auth3, '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
+
+    plantestsuite("samba.ntlm_auth.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, ntlm_auth3,  '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
+
 
 nsstest4 = binpath("nsstest")
 for env in ["plugin_s4_dc", "dc", "s4member", "s3dc", "s3member", "member"]:
     if os.path.exists(nsstest4):
-        plantestsuite("samba4.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "default/nsswitch/libnss-winbind.so")])
+        plantestsuite("samba.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "default/nsswitch/libnss-winbind.so")])
     else:
-        skiptestsuite("samba4.nss.test using winbind(%s)" % env, "nsstest not available")
+        skiptestsuite("samba.nss.test using winbind(%s)" % env, "nsstest not available")
 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
 def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
@@ -505,7 +544,7 @@ for env in ['vampire_dc', 'promoted_dc']:
     plantestsuite("samba4.blackbox.samba_tool_demote(%s)" % env, env, [os.path.join(samba4srcdir, "utils/tests/test_demote.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', '$DC_SERVER', '$PREFIX/%s' % env, smbclient4])
 
 for env in ["dc", "s4member", "rodc", "promoted_dc", "plugin_s4_dc", "s3member"]:
-    plantestsuite("samba4.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
+    plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
 # TODO: Verifying the databases really should be a part of the
 # environment teardown.

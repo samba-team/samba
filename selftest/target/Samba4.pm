@@ -1323,6 +1323,34 @@ sub provision_fl2003dc($$)
 				   "locDCpass6",
 				   undef, "allow dns updates = nonsecure and secure", "", undef);
 
+	unless (defined $ret) {
+		return undef;
+	}
+
+	$ret->{DC_SERVER} = $ret->{SERVER};
+	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $ret->{USERNAME};
+	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+
+	my @samba_tool_options;
+	push (@samba_tool_options, Samba::bindir_path($self, "samba-tool"));
+	push (@samba_tool_options, "domain");
+	push (@samba_tool_options, "passwordsettings");
+	push (@samba_tool_options, "set");
+	push (@samba_tool_options, "--configfile=$ret->{SERVERCONFFILE}");
+	push (@samba_tool_options, "--min-pwd-age=0");
+	push (@samba_tool_options, "--history-length=1");
+
+	my $samba_tool_cmd = join(" ", @samba_tool_options);
+
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to set min password age to 0: \n$samba_tool_cmd\n");
+		return undef;
+	}
+
+        return $ret;
+
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
 		return undef;

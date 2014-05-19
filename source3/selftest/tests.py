@@ -23,8 +23,6 @@ sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../
 import selftesthelpers
 from selftesthelpers import *
 smbtorture4_options.extend([
-   '--option="torture:winbindd_netbios_name=$SERVER"',
-   '--option="torture:winbindd_netbios_domain=$DOMAIN"',
    '--option=torture:sharedelay=100000',
    '--option=torture:writetimeupdatedelay=500000',
    ])
@@ -127,42 +125,6 @@ for env in ["s3dc", "member", "s3member", "dc", "s4member"]:
 for env in ["s3dc", "member", "s3member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration])
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER/$USERNAME', '$PASSWORD', smbclient3, configuration])
-
-    tests = ["--ping", "--separator",
-             "--own-domain",
-             "--all-domains",
-             "--trusted-domains",
-             "--domain-info=BUILTIN",
-             "--domain-info=$DOMAIN",
-             "--online-status",
-             "--online-status --domain=BUILTIN",
-             "--online-status --domain=$DOMAIN",
-             "--check-secret --domain=$DOMAIN",
-             "--change-secret --domain=$DOMAIN",
-             "--check-secret --domain=$DOMAIN",
-             "--online-status --domain=$DOMAIN",
-             #Didn't pass yet# "--domain-users",
-             "--domain-groups",
-             "--name-to-sid=$DC_USERNAME",
-             "--name-to-sid=$DOMAIN/$DC_USERNAME",
-             #Didn't pass yet# "--user-info=$USERNAME",
-             "--user-groups=$DOMAIN/$DC_USERNAME",
-             "--authenticate=$DOMAIN/$DC_USERNAME%$DC_PASSWORD",
-             "--allocate-uid",
-             "--allocate-gid"]
-
-    for t in tests:
-        plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
-
-    plantestsuite(
-        "samba3.wbinfo_sids2xids.(%s:local)" % env, "%s:local" % env,
-        [os.path.join(samba3srcdir, "script/tests/test_wbinfo_sids2xids.sh")])
-
-    plantestsuite(
-        "samba3.ntlm_auth.diagnostics(%s:local)" % env, "%s:local" % env,
-        [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_diagnostics.sh"), ntlm_auth3, '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
-
-    plantestsuite("samba3.ntlm_auth.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, ntlm_auth3,  '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
 
 for env in ["member", "s3member"]:
     plantestsuite("samba3.blackbox.net_cred_change.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_net_cred_change.sh"), configuration])
@@ -311,8 +273,6 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
 
 local = ["local.ndr"]
 
-winbind = ["winbind.struct", "winbind.wbclient", "winbind.pac"]
-
 idmap = [ "idmap.rfc2307" ]
 
 rap = ["rap.basic", "rap.rpc", "rap.printing", "rap.sam"]
@@ -323,7 +283,7 @@ nbt = ["nbt.dgram" ]
 
 libsmbclient = ["libsmbclient"]
 
-tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt + libsmbclient + idmap
+tests= base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap
 
 for t in tests:
     if t == "base.delaywrite":
