@@ -450,6 +450,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	if (colors) {
 		start_color();
 		use_default_colors();
+		assume_default_colors(COLOR_WHITE, COLOR_BLUE);
 	}
 
 	regedit = talloc_zero(mem_ctx, struct regedit);
