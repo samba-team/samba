@@ -654,6 +654,8 @@ sub provision_raw_step1($$)
 	server signing = on
 
         idmap_ldb:use rfc2307=yes
+	winbind enum users = yes
+	winbind enum groups = yes
 ";
 
 	print CONFFILE "
