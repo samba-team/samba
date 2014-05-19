@@ -969,7 +969,7 @@ static void init_globals(bool reinit_globals)
 
 	string_set(Globals.ctx, &Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
 
-	Globals.server_services = (const char **)str_list_make_v3(NULL, "s3fs rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd kcc dnsupdate dns", NULL);
+	Globals.server_services = (const char **)str_list_make_v3(NULL, "s3fs rpc nbt wrepl ldap cldap kdc drepl winbindd ntp_signd kcc dnsupdate dns", NULL);
 
 	Globals.dcerpc_endpoint_servers = (const char **)str_list_make_v3(NULL, "epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey dnsserver", NULL);
 

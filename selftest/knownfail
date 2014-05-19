@@ -247,18 +247,6 @@
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo -I against dc
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo  --trusted-domains against dc
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo --all-domains against dc
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo -N against s4member
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo -I against s4member
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo  --trusted-domains against s4member
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo --all-domains against s4member
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo -N against rodc
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo -I against rodc
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo  --trusted-domains against rodc
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo --all-domains against rodc
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo -N against promoted_dc
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo -I against promoted_dc
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo  --trusted-domains against promoted_dc
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo --all-domains against promoted_dc
 #
 # This makes less sense when not running against an AD DC
 #
@@ -276,12 +264,17 @@
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
+^samba4.winbind.struct.domain_info\(s4member:local\)
+^samba4.winbind.struct.getdcname\(s4member:local\)
+^samba4.winbind.struct.lookup_name_sid\(s4member:local\)
+^samba.blackbox.wbinfo\(s4member:local\).wbinfo -r against s4member\(s4member:local\)
+^samba.blackbox.wbinfo\(s4member:local\).wbinfo --user-sids against s4member\(s4member:local\)
 ^samba4.winbind.struct.getpwent\(plugin_s4_dc:local\)
+^samba.wbinfo_simple.\(s4member:local\).--user-groups
+^samba.nss.test using winbind\(s4member\)
 #
 # These just happen to fail for some reason (probably because they run against the s4 winbind)
 #
-^samba4.winbind.pac.pac\(s4member:local\)
-^samba4.winbind.struct.show_sequence\(s4member:local\)
 ^samba4.winbind.struct.getdcname\(s3member:local\)
 ^samba4.winbind.struct.lookup_name_sid\(s3member:local\)
 ^samba.wbinfo_simple.\(dc:local\).--all-domains.wbinfo\(dc:local\)
@@ -291,28 +284,12 @@
 ^samba.wbinfo_simple.\(dc:local\).--online-status --domain=SAMBADOMAIN.wbinfo\(dc:local\)
 ^samba.wbinfo_simple.\(dc:local\).--change-secret --domain=SAMBADOMAIN.wbinfo\(dc:local\)
 ^samba.wbinfo_simple.\(dc:local\).--online-status --domain=SAMBADOMAIN.wbinfo\(dc:local\)
-^samba.wbinfo_simple.\(s4member:local\).--all-domains.wbinfo\(s4member:local\)
-^samba.wbinfo_simple.\(s4member:local\).--trusted-domains.wbinfo\(s4member:local\)
-^samba.wbinfo_simple.\(s4member:local\).--online-status.wbinfo\(s4member:local\)
-^samba.wbinfo_simple.\(s4member:local\).--online-status --domain=BUILTIN.wbinfo\(s4member:local\)
-^samba.wbinfo_simple.\(s4member:local\).--online-status --domain=SAMBADOMAIN.wbinfo\(s4member:local\)
-^samba.wbinfo_simple.\(s4member:local\).--change-secret --domain=SAMBADOMAIN.wbinfo\(s4member:local\)
-^samba.blackbox.wbinfo\(dc:local\).wbinfo -N against dc\(dc:local\)
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo -I against dc\(dc:local\)
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo  --trusted-domains against dc\(dc:local\)
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo --all-domains against dc\(dc:local\)
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo -N against s4member\(s4member:local\)
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo -I against s4member\(s4member:local\)
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo  --trusted-domains against s4member\(s4member:local\)
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo --all-domains against s4member\(s4member:local\)
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo -N against rodc\(rodc:local\)
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo -I against rodc\(rodc:local\)
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo  --trusted-domains against rodc\(rodc:local\)
-^samba.blackbox.wbinfo\(rodc:local\).wbinfo --all-domains against rodc\(rodc:local\)
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo -N against promoted_dc\(promoted_dc:local\)
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo -I against promoted_dc\(promoted_dc:local\)
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo  --trusted-domains against promoted_dc\(promoted_dc:local\)
-^samba.blackbox.wbinfo\(promoted_dc:local\).wbinfo --all-domains against promoted_dc\(promoted_dc:local\)
+#
+# These do not work against winbindd in member mode for unknown reasons
+#
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U against s3member\(s3member:local\)
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U check for sane mapping\(s3member:local\)
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G against s3member\(s3member:local\)

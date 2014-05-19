@@ -1276,7 +1276,8 @@ sub provision_dc($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING DC...";
-        my $extra_conf_options = "netbios aliases = localDC1-a";
+        my $extra_conf_options = "netbios aliases = localDC1-a
+        server services = +winbind -winbindd";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
@@ -1328,8 +1329,7 @@ sub provision_fl2003dc($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING DC...";
-        my $extra_conf_options = "allow dns updates = nonsecure and secure
-                                  server services = +winbindd -winbind";
+        my $extra_conf_options = "allow dns updates = nonsecure and secure";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc6",
@@ -1527,8 +1527,6 @@ sub provision_plugin_s4_dc($$)
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
 	print notify backchannel = yes
-
-        server services = +winbindd -winbind
 ";
 
 	my $extra_smbconf_shares = "
@@ -1603,6 +1601,7 @@ sub provision_chgdcpass($$)
 	print "PROVISIONING CHGDCPASS...";
 	my $extra_provision_options = undef;
 	push (@{$extra_provision_options}, "--dns-backend=BIND9_DLZ");
+	my $extra_conf_options = "server services = +winbind -winbindd";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "chgdcpass",
@@ -1610,7 +1609,7 @@ sub provision_chgdcpass($$)
 				   "chgdcpassword.samba.example.com",
 				   "2008",
 				   "chgDCpass1",
-				   undef, "", "",
+				   undef, $extra_conf_options, "",
 				   $extra_provision_options);
 
 	return undef unless(defined $ret);
@@ -1619,8 +1618,10 @@ sub provision_chgdcpass($$)
 		return undef;
 	}
 	
-	# Remove secrets.tdb from this environment to test that we still start up
-	# on systems without the new matching secrets.tdb records
+	# Remove secrets.tdb from this environment to test that we
+	# still start up on systems without the new matching
+	# secrets.tdb records.  For this reason we don't run winbindd
+	# in this environment
 	unless (unlink("$ret->{PRIVATEDIR}/secrets.tdb") || unlink("$ret->{PRIVATEDIR}/secrets.ntdb")) {
 		warn("Unable to remove $ret->{PRIVATEDIR}/secrets.tdb added during provision");
 		return undef;
