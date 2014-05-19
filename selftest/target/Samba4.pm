@@ -922,7 +922,20 @@ sub provision_s4member($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
 	print "PROVISIONING MEMBER...";
+	my $extra_smb_conf = "
+        passdb backend = samba_dsdb
+winbindd:use external pipes = true
 
+rpc_server:default = external
+rpc_server:svcctl = embedded
+rpc_server:srvsvc = embedded
+rpc_server:eventlog = embedded
+rpc_server:ntsvcs = embedded
+rpc_server:winreg = embedded
+rpc_server:spoolss = embedded
+rpc_daemon:spoolssd = embedded
+rpc_server:tcpip = no
+";
 	my $ret = $self->provision($prefix,
 				   "member server",
 				   "s4member",
@@ -931,7 +944,7 @@ sub provision_s4member($$$)
 				   "2008",
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
-				   "passdb backend = samba_dsdb", "", undef);
+				   $extra_smb_conf, "", undef);
 	unless ($ret) {
 		return undef;
 	}
