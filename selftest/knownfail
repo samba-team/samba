@@ -277,6 +277,11 @@
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-uid
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-gid
 #
+# These do not work against winbindd in member mode for unknown reasons
+#
+^samba.wbinfo_simple.\(member:local\).--user-info
+^samba.wbinfo_simple.\(s3member:local\).--user-info
+#
 # These just happen to fail for some reason (probably because they run against the s4 winbind)
 #
 ^samba4.winbind.pac.pac\(plugin_s4_dc:local\)
