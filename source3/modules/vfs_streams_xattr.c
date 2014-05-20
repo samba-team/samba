@@ -29,6 +29,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+struct streams_xattr_config {
+	const char *prefix;
+	size_t prefix_len;
+	bool store_stream_type;
+};
+
 struct stream_io {
 	char *base;
 	char *xattr_name;
@@ -95,32 +101,40 @@ static ssize_t get_xattr_size(connection_struct *conn,
  * Given a stream name, populate xattr_name with the xattr name to use for
  * accessing the stream.
  */
-static NTSTATUS streams_xattr_get_name(TALLOC_CTX *ctx,
+static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
+				       TALLOC_CTX *ctx,
 				       const char *stream_name,
 				       char **xattr_name)
 {
 	char *stype;
+	struct streams_xattr_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
+				return NT_STATUS_UNSUCCESSFUL);
 
 	stype = strchr_m(stream_name + 1, ':');
 
 	*xattr_name = talloc_asprintf(ctx, "%s%s",
-				      SAMBA_XATTR_DOSSTREAM_PREFIX,
+				      config->prefix,
 				      stream_name + 1);
 	if (*xattr_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (stype == NULL) {
-		/* Append an explicit stream type if one wasn't specified. */
-		*xattr_name = talloc_asprintf(ctx, "%s:$DATA",
-					       *xattr_name);
-		if (*xattr_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
+	if (stype != NULL) {
 		/* Normalize the stream type to upercase. */
 		if (!strupper_m(strrchr_m(*xattr_name, ':') + 1)) {
 			return NT_STATUS_INVALID_PARAMETER;
+		}
+	} else if (config->store_stream_type) {
+		/*
+		 * Append an explicit stream type if one wasn't
+		 * specified.
+		 */
+		*xattr_name = talloc_asprintf(ctx, "%s%s",
+					      *xattr_name, ":$DATA");
+		if (*xattr_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -145,7 +159,7 @@ static bool streams_xattr_recheck(struct stream_io *sio)
 		return false;
 	}
 
-	status = streams_xattr_get_name(talloc_tos(),
+	status = streams_xattr_get_name(sio->handle, talloc_tos(),
 					sio->fsp->fsp_name->stream_name,
 					&xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -271,8 +285,8 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	}
 
 	/* Derive the xattr name to lookup. */
-	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
-					&xattr_name);
+	status = streams_xattr_get_name(handle, talloc_tos(),
+					smb_fname->stream_name, &xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
@@ -322,8 +336,8 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 	}
 
 	/* Derive the xattr name to lookup. */
-	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
-					&xattr_name);
+	status = streams_xattr_get_name(handle, talloc_tos(),
+					smb_fname->stream_name, &xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
@@ -386,8 +400,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		return ret;
 	}
 
-	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
-					&xattr_name);
+	status = streams_xattr_get_name(handle, talloc_tos(),
+					smb_fname->stream_name, &xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto fail;
@@ -541,8 +555,8 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,
 		return ret;
 	}
 
-	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
-					&xattr_name);
+	status = streams_xattr_get_name(handle, talloc_tos(),
+					smb_fname->stream_name, &xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto fail;
@@ -597,14 +611,14 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 	}
 
 	/* Get the xattr names. */
-	status = streams_xattr_get_name(talloc_tos(),
+	status = streams_xattr_get_name(handle, talloc_tos(),
 					smb_fname_src->stream_name,
 					&src_xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto fail;
 	}
-	status = streams_xattr_get_name(talloc_tos(),
+	status = streams_xattr_get_name(handle, talloc_tos(),
 					smb_fname_dst->stream_name,
 					&dst_xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -650,7 +664,7 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 	return ret;
 }
 
-static NTSTATUS walk_xattr_streams(connection_struct *conn, files_struct *fsp,
+static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle, files_struct *fsp,
 				   const char *fname,
 				   bool (*fn)(struct ea_struct *ea,
 					      void *private_data),
@@ -659,9 +673,12 @@ static NTSTATUS walk_xattr_streams(connection_struct *conn, files_struct *fsp,
 	NTSTATUS status;
 	char **names;
 	size_t i, num_names;
-	size_t prefix_len = strlen(SAMBA_XATTR_DOSSTREAM_PREFIX);
+	struct streams_xattr_config *config;
 
-	status = get_ea_names_from_file(talloc_tos(), conn, fsp, fname,
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
+				return NT_STATUS_UNSUCCESSFUL);
+
+	status = get_ea_names_from_file(talloc_tos(), handle->conn, fsp, fname,
 					&names, &num_names);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -670,20 +687,26 @@ static NTSTATUS walk_xattr_streams(connection_struct *conn, files_struct *fsp,
 	for (i=0; i<num_names; i++) {
 		struct ea_struct ea;
 
-		if (strncmp(names[i], SAMBA_XATTR_DOSSTREAM_PREFIX,
-			    prefix_len) != 0) {
+		if (strncmp(names[i], config->prefix,
+			    config->prefix_len) != 0) {
+			continue;
+		}
+		if (samba_private_attr_name(names[i])) {
 			continue;
 		}
 
-		status = get_ea_value(names, conn, fsp, fname, names[i], &ea);
+		status = get_ea_value(names, handle->conn, fsp, fname,
+				      names[i], &ea);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("Could not get ea %s for file %s: %s\n",
 				   names[i], fname, nt_errstr(status)));
 			continue;
 		}
 
-		ea.name = talloc_asprintf(ea.value.data, ":%s",
-					  names[i] + prefix_len);
+		ea.name = talloc_asprintf(
+			ea.value.data, ":%s%s",
+			names[i] + config->prefix_len,
+			config->store_stream_type ? "" : ":$DATA");
 		if (ea.name == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			continue;
@@ -803,7 +826,7 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		 */
 		status = NT_STATUS_OK;
 	} else {
-		status = walk_xattr_streams(handle->conn, fsp, fname,
+		status = walk_xattr_streams(handle, fsp, fname,
 				    collect_one_stream, &state);
 	}
 
@@ -827,6 +850,44 @@ static uint32_t streams_xattr_fs_capabilities(struct vfs_handle_struct *handle,
 			enum timestamp_set_resolution *p_ts_res)
 {
 	return SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) | FILE_NAMED_STREAMS;
+}
+
+static int streams_xattr_connect(vfs_handle_struct *handle,
+				 const char *service, const char *user)
+{
+	struct streams_xattr_config *config;
+	const char *default_prefix = SAMBA_XATTR_DOSSTREAM_PREFIX;
+	const char *prefix;
+
+	config = talloc_zero(handle->conn, struct streams_xattr_config);
+	if (config == NULL) {
+		DEBUG(1, ("talloc_zero() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	prefix = lp_parm_const_string(SNUM(handle->conn),
+				      "streams_xattr", "prefix",
+				      default_prefix);
+	config->prefix = talloc_strdup(config, prefix);
+	if (config->prefix == NULL) {
+		DEBUG(1, ("talloc_strdup() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+	config->prefix_len = strlen(config->prefix);
+	DEBUG(10, ("streams_xattr using stream prefix: %s\n", config->prefix));
+
+	config->store_stream_type = lp_parm_bool(SNUM(handle->conn),
+						 "streams_xattr",
+						 "store_stream_type",
+						 true);
+
+	SMB_VFS_HANDLE_SET_DATA(handle, config,
+				NULL, struct stream_xattr_config,
+				return -1);
+
+	return 0;
 }
 
 static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
@@ -1031,6 +1092,7 @@ static int streams_xattr_fallocate(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.fs_capabilities_fn = streams_xattr_fs_capabilities,
+	.connect_fn = streams_xattr_connect,
 	.open_fn = streams_xattr_open,
 	.stat_fn = streams_xattr_stat,
 	.fstat_fn = streams_xattr_fstat,
