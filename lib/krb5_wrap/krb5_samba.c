@@ -25,6 +25,10 @@
 #include "krb5_samba.h"
 #include "lib/util/asn1.h"
 
+#ifdef HAVE_COM_ERR_H
+#include <com_err.h>
+#endif /* HAVE_COM_ERR_H */
+
 #ifndef KRB5_AUTHDATA_WIN2K_PAC
 #define KRB5_AUTHDATA_WIN2K_PAC 128
 #endif
@@ -2609,8 +2613,7 @@ krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	DEBUG(1,(fmt, args));
-	DEBUGADD(1,("\n"));
+	com_err_va("kdb_samba", errno, fmt, args);
 	va_end(args);
 
 	return 0;
