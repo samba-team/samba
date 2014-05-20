@@ -20,6 +20,8 @@
 #include "regedit_treeview.h"
 #include "lib/registry/registry.h"
 
+#define HEADING_X 3
+
 struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
 				const char *name, struct registry_key *key)
 {
@@ -284,6 +286,16 @@ fail:
 	return WERR_NOMEM;
 }
 
+void tree_view_set_selected(struct tree_view *view, bool select)
+{
+	attr_t attr = A_NORMAL;
+
+	if (select) {
+		attr = A_REVERSE;
+	}
+	mvwchgat(view->window, 0, HEADING_X, 3, attr, 0, NULL);
+}
+
 void tree_view_show(struct tree_view *view)
 {
 	post_menu(view->menu);
@@ -300,6 +312,9 @@ static int tree_view_free(struct tree_view *view)
 	}
 	if (view->panel) {
 		del_panel(view->panel);
+	}
+	if (view->sub) {
+		delwin(view->sub);
 	}
 	if (view->window) {
 		delwin(view->window);
@@ -332,6 +347,14 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 	if (view->window == NULL) {
 		goto fail;
 	}
+	view->sub = subwin(view->window, nlines - 2, ncols - 2,
+			   begin_y + 1, begin_x + 1);
+	if (view->sub == NULL) {
+		goto fail;
+	}
+	box(view->window, 0, 0);
+	mvwprintw(view->window, 0, HEADING_X, "Key");
+
 	view->panel = new_panel(view->window);
 	if (view->panel == NULL) {
 		goto fail;
@@ -344,6 +367,7 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 	}
 	set_menu_format(view->menu, nlines, 1);
 	set_menu_win(view->menu, view->window);
+	set_menu_sub(view->menu, view->sub);
 	menu_opts_off(view->menu, O_SHOWDESC);
 	set_menu_mark(view->menu, "* ");
 
@@ -360,15 +384,21 @@ fail:
 void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 			     int begin_y, int begin_x)
 {
-	WINDOW *nwin;
+	WINDOW *nwin, *nsub;
 
 	unpost_menu(view->menu);
 	nwin = newwin(nlines, ncols, begin_y, begin_x);
+	nsub = subwin(nwin, nlines - 2, ncols - 2, begin_y + 1, begin_x + 1);
 	replace_panel(view->panel, nwin);
+	delwin(view->sub);
 	delwin(view->window);
 	view->window = nwin;
+	view->sub = nsub;
+	box(view->window, 0, 0);
+	mvwprintw(view->window, 0, HEADING_X, "Key");
 	set_menu_format(view->menu, nlines, 1);
 	set_menu_win(view->menu, view->window);
+	set_menu_sub(view->menu, view->sub);
 	post_menu(view->menu);
 }
 

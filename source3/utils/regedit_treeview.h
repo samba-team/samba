@@ -43,6 +43,7 @@ struct tree_view {
 
 	struct tree_node *root;
 	WINDOW *window;
+	WINDOW *sub;
 	PANEL *panel;
 	MENU *menu;
 	ITEM **current_items;
@@ -61,6 +62,7 @@ size_t tree_node_print_path(WINDOW *label, struct tree_node *node);
 struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 				int nlines, int ncols,
 				int begin_y, int begin_x);
+void tree_view_set_selected(struct tree_view *view, bool select);
 void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 			     int begin_y, int begin_x);
 void tree_view_show(struct tree_view *view);
