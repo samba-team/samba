@@ -3551,6 +3551,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  bool interactive)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct smbXsrv_client *client;
 	struct smbXsrv_connection *xconn;
 	struct smbd_server_connection *sconn;
 	struct sockaddr_storage ss_srv;
@@ -3568,32 +3569,50 @@ void smbd_process(struct tevent_context *ev_ctx,
 	int ret;
 	int tmp;
 
-	xconn = talloc_zero(ev_ctx, struct smbXsrv_connection);
+	client = talloc_zero(ev_ctx, struct smbXsrv_client);
+	if (client == NULL) {
+		DEBUG(0,("talloc_zero(struct smbXsrv_client)\n"));
+		exit_server_cleanly("talloc_zero(struct smbXsrv_client).\n");
+	}
+
+	/*
+	 * TODO: remove this...:-)
+	 */
+	global_smbXsrv_client = client;
+
+	client->ev_ctx = ev_ctx;
+	client->msg_ctx = msg_ctx;
+
+	sconn = talloc_zero(client, struct smbd_server_connection);
+	if (sconn == NULL) {
+		exit_server("failed to create smbd_server_connection");
+	}
+
+	client->sconn = sconn;
+	sconn->client = client;
+
+	sconn->ev_ctx = ev_ctx;
+	sconn->msg_ctx = msg_ctx;
+
+	xconn = talloc_zero(client, struct smbXsrv_connection);
 	if (xconn == NULL) {
 		DEBUG(0,("talloc_zero(struct smbXsrv_connection)\n"));
 		exit_server_cleanly("talloc_zero(struct smbXsrv_connection).\n");
 	}
+	/* for now we only have one connection */
+	DLIST_ADD_END(client->connections, xconn, NULL);
+	xconn->client = client;
 
 	xconn->ev_ctx = ev_ctx;
 	xconn->msg_ctx = msg_ctx;
 	xconn->transport.sock = sock_fd;
 	smbd_echo_init(xconn);
 
-	sconn = talloc_zero(xconn, struct smbd_server_connection);
-	if (!sconn) {
-		exit_server("failed to create smbd_server_connection");
-	}
-
-	xconn->sconn = sconn;
-	sconn->conn = xconn;
-
 	/*
 	 * TODO: remove this...:-)
 	 */
-	global_smbXsrv_connection = xconn;
-
-	sconn->ev_ctx = ev_ctx;
-	sconn->msg_ctx = msg_ctx;
+	xconn->sconn = sconn;
+	sconn->conn = xconn;
 
 	if (!interactive) {
 		smbd_setup_sig_term_handler(sconn);
@@ -3867,10 +3886,10 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("failed to create smbd_server_connection fde");
 	}
 
-	sconn->conn->local_address = sconn->local_address;
-	sconn->conn->remote_address = sconn->remote_address;
-	sconn->conn->remote_hostname = sconn->remote_hostname;
-	sconn->conn->protocol = PROTOCOL_NONE;
+	xconn->local_address = sconn->local_address;
+	xconn->remote_address = sconn->remote_address;
+	xconn->remote_hostname = sconn->remote_hostname;
+	xconn->protocol = PROTOCOL_NONE;
 
 	TALLOC_FREE(frame);
 

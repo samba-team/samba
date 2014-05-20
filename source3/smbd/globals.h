@@ -330,7 +330,13 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 				struct file_id id,
 				struct deferred_open_record *open_rec);
 
+struct smbXsrv_client;
+
 struct smbXsrv_connection {
+	struct smbXsrv_connection *prev, *next;
+
+	struct smbXsrv_client *client;
+
 	struct smbd_server_connection *sconn;
 
 	const struct tsocket_address *local_address;
@@ -854,8 +860,9 @@ struct smbd_server_connection {
 	struct tevent_fd *asys_fde;
 
 	struct smbXsrv_connection *conn;
+	struct smbXsrv_client *client;
 };
 
-extern struct smbXsrv_connection *global_smbXsrv_connection;
+extern struct smbXsrv_client *global_smbXsrv_client;
 
 void smbd_init_globals(void);

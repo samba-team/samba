@@ -77,6 +77,27 @@ interface smbXsrv
 		[in] smbXsrv_version_globalB blob
 		);
 
+	/* client */
+
+	typedef struct {
+		[ignore] struct tevent_context		*ev_ctx;
+		[ignore] struct messaging_context	*msg_ctx;
+
+		/*
+		 * There's just one 'sconn' per client.
+		 * It holds the FSA layer details, which are global
+		 * per client (process).
+		 */
+		[ignore] struct smbd_server_connection	*sconn;
+
+		/*
+		 * For now this is only one connection!
+		 * With multi-channel support we'll get more than
+		 * one in future.
+		 */
+		[ignore] struct smbXsrv_connection	*connections;
+	} smbXsrv_client;
+
 	/* sessions */
 
 	typedef struct {

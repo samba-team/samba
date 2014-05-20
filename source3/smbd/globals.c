@@ -90,7 +90,7 @@ struct smbd_parent_context *am_parent = NULL;
 struct memcache *smbd_memcache_ctx = NULL;
 bool exit_firsttime = true;
 
-struct smbXsrv_connection *global_smbXsrv_connection = NULL;
+struct smbXsrv_client *global_smbXsrv_client = NULL;
 
 struct memcache *smbd_memcache(void)
 {

@@ -85,12 +85,17 @@ static void exit_server_common(enum server_exit_reason how,
 static void exit_server_common(enum server_exit_reason how,
 	const char *reason)
 {
-	struct smbXsrv_connection *xconn = global_smbXsrv_connection;
+	struct smbXsrv_client *client = global_smbXsrv_client;
+	struct smbXsrv_connection *xconn = NULL;
 	struct smbd_server_connection *sconn = NULL;
 	struct messaging_context *msg_ctx = server_messaging_context();
 
-	if (xconn != NULL) {
-		sconn = xconn->sconn;
+	if (client != NULL) {
+		sconn = client->sconn;
+		/*
+		 * Here we typically have just one connection
+		 */
+		xconn = client->connections;
 	}
 
 	if (!exit_firsttime)
@@ -99,9 +104,11 @@ static void exit_server_common(enum server_exit_reason how,
 
 	change_to_root_user();
 
-	if (sconn) {
-		NTSTATUS status;
-
+	if (xconn != NULL) {
+		/*
+		 * This is typically the disconnect for the only
+		 * (or with multi-channel last) connection of the client
+		 */
 		if (NT_STATUS_IS_OK(xconn->transport.status)) {
 			switch (how) {
 			case SERVER_EXIT_ABNORMAL:
@@ -114,11 +121,21 @@ static void exit_server_common(enum server_exit_reason how,
 		}
 
 		TALLOC_FREE(xconn->smb1.negprot.auth_context);
+	}
 
+	change_to_root_user();
+
+	if (sconn != NULL) {
 		if (lp_log_writeable_files_on_exit()) {
 			bool found = false;
 			files_forall(sconn, log_writeable_file_fn, &found);
 		}
+	}
+
+	change_to_root_user();
+
+	if (xconn != NULL) {
+		NTSTATUS status;
 
 		/*
 		 * Note: this is a no-op for smb2 as
@@ -145,9 +162,9 @@ static void exit_server_common(enum server_exit_reason how,
 			how = SERVER_EXIT_ABNORMAL;
 			reason = "smbXsrv_session_logoff_all failed";
 		}
-
-		change_to_root_user();
 	}
+
+	change_to_root_user();
 
 	/* 3 second timeout. */
 	print_notify_send_messages(msg_ctx, 3);
@@ -200,9 +217,17 @@ static void exit_server_common(enum server_exit_reason how,
 	 * we need to force the order of freeing the following,
 	 * because smbd_msg_ctx is not a talloc child of smbd_server_conn.
 	 */
+	if (client != NULL) {
+		for (; xconn != NULL; xconn = xconn->next) {
+			DLIST_REMOVE(client->connections, xconn);
+			talloc_free(xconn);
+		}
+		TALLOC_FREE(client->sconn);
+	}
 	sconn = NULL;
 	xconn = NULL;
-	TALLOC_FREE(global_smbXsrv_connection);
+	client = NULL;
+	TALLOC_FREE(global_smbXsrv_client);
 	server_messaging_context_free();
 	server_event_context_free();
 	TALLOC_FREE(smbd_memcache_ctx);
