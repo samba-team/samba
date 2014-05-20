@@ -3814,8 +3814,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 		}
 	}
 
-	sconn->nbt.got_session = false;
-
 	tmp = lp_max_xmit();
 	tmp = MAX(tmp, SMB_BUFFER_SIZE_MIN);
 	tmp = MIN(tmp, SMB_BUFFER_SIZE_MAX);

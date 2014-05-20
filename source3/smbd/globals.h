@@ -345,6 +345,12 @@ struct smbXsrv_connection {
 
 	struct {
 		struct {
+			bool got_session;
+		} nbt;
+	} transport;
+
+	struct {
+		struct {
 			uint32_t capabilities;
 			struct GUID guid;
 			uint16_t security_mode;
@@ -658,9 +664,6 @@ struct smbd_server_connection {
 	struct messaging_context *msg_ctx;
 	struct sys_notify_context *sys_notify_ctx;
 	struct notify_context *notify_ctx;
-	struct {
-		bool got_session;
-	} nbt;
 	bool using_smb2;
 	int trans_num;
 

@@ -533,6 +533,7 @@ static void reply_called_name_not_present(char *outbuf)
 
 void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inbuf_size)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	/*
@@ -556,7 +557,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 
 		*name1 = *name2 = 0;
 
-		if (sconn->nbt.got_session) {
+		if (xconn->transport.nbt.got_session) {
 			exit_server_cleanly("multiple session request not permitted");
 		}
 
@@ -642,7 +643,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		reload_services(sconn, conn_snum_used, true);
 		reopen_logs();
 
-		sconn->nbt.got_session = true;
+		xconn->transport.nbt.got_session = true;
 		break;
 	}
 
