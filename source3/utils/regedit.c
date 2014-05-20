@@ -30,14 +30,14 @@
 #include <panel.h>
 
 #define KEY_START_X 	0
-#define KEY_START_Y 	3
+#define KEY_START_Y 	1
 #define KEY_WIDTH 	(COLS / 4)
 #define KEY_HEIGHT	(LINES - KEY_START_Y - 2)
 #define VAL_START_X 	KEY_WIDTH
-#define VAL_START_Y 	3
+#define VAL_START_Y 	1
 #define VAL_WIDTH 	(COLS - KEY_WIDTH)
 #define VAL_HEIGHT	(LINES - VAL_START_Y - 2)
-#define HEADING_START_Y	(KEY_START_Y - 1)
+
 #define HELP1_START_Y	(LINES - 2)
 #define HELP1_START_X	0
 #define HELP1_WIDTH	(LINES)
@@ -164,24 +164,13 @@ static void print_help(struct regedit *regedit)
 
 static void print_heading(struct regedit *regedit)
 {
-	move(HEADING_START_Y, 0);
-	clrtoeol();
-
 	if (regedit->tree_input) {
-		attron(A_REVERSE);
+		tree_view_set_selected(regedit->keys, true);
+		value_list_set_selected(regedit->vl, false);
 	} else {
-		attroff(A_REVERSE);
+		tree_view_set_selected(regedit->keys, false);
+		value_list_set_selected(regedit->vl, true);
 	}
-	mvprintw(HEADING_START_Y, KEY_START_X, "Key");
-	attroff(A_REVERSE);
-
-	if (!regedit->tree_input) {
-		attron(A_REVERSE);
-	} else {
-		attroff(A_REVERSE);
-	}
-	mvprintw(HEADING_START_Y, VAL_START_X, "Value");
-	attroff(A_REVERSE);
 
 	print_help(regedit);
 }

@@ -20,6 +20,8 @@
 #include "regedit_valuelist.h"
 #include "lib/registry/registry.h"
 
+#define HEADING_X 3
+
 static void value_list_free_items(ITEM **items)
 {
 	size_t i;
@@ -87,6 +89,14 @@ struct value_list *value_list_new(TALLOC_CTX *ctx, int nlines, int ncols,
 	if (vl->window == NULL) {
 		goto fail;
 	}
+	vl->sub = subwin(vl->window, nlines - 2, ncols - 2,
+			 begin_y + 1, begin_x + 1);
+	if (vl->sub == NULL) {
+		goto fail;
+	}
+	box(vl->window, 0, 0);
+	mvwprintw(vl->window, 0, HEADING_X, "Value");
+
 	vl->panel = new_panel(vl->window);
 	if (vl->panel == NULL) {
 		goto fail;
@@ -99,6 +109,7 @@ struct value_list *value_list_new(TALLOC_CTX *ctx, int nlines, int ncols,
 
 	set_menu_format(vl->menu, nlines, 1);
 	set_menu_win(vl->menu, vl->window);
+	set_menu_sub(vl->menu, vl->sub);
 
 	menu_opts_on(vl->menu, O_SHOWDESC);
 	set_menu_mark(vl->menu, "* ");
@@ -111,18 +122,34 @@ fail:
 	return NULL;
 }
 
+void value_list_set_selected(struct value_list *vl, bool select)
+{
+	attr_t attr = A_NORMAL;
+
+	if (select) {
+		attr = A_REVERSE;
+	}
+	mvwchgat(vl->window, 0, HEADING_X, 5, attr, 0, NULL);
+}
+
 void value_list_resize(struct value_list *vl, int nlines, int ncols,
 		       int begin_y, int begin_x)
 {
-	WINDOW *nwin;
+	WINDOW *nwin, *nsub;
 
 	unpost_menu(vl->menu);
 	nwin = newwin(nlines, ncols, begin_y, begin_x);
+	nsub = subwin(nwin, nlines - 2, ncols - 2, begin_y + 1, begin_x + 1);
 	replace_panel(vl->panel, nwin);
+	delwin(vl->sub);
 	delwin(vl->window);
 	vl->window = nwin;
+	vl->sub = nsub;
+	box(vl->window, 0, 0);
+	mvwprintw(vl->window, 0, HEADING_X, "Value");
 	set_menu_format(vl->menu, nlines, 1);
 	set_menu_win(vl->menu, vl->window);
+	set_menu_sub(vl->menu, vl->sub);
 	post_menu(vl->menu);
 }
 

@@ -37,6 +37,7 @@ struct value_item {
 
 struct value_list {
 	WINDOW *window;
+	WINDOW *sub;
 	PANEL *panel;
 	MENU *menu;
 	ITEM **items;
@@ -46,6 +47,7 @@ struct value_list {
 struct value_list *value_list_new(TALLOC_CTX *ctx, int nlines, int ncols,
 				  int begin_y, int begin_x);
 void value_list_show(struct value_list *vl);
+void value_list_set_selected(struct value_list *vl, bool select);
 WERROR value_list_load(struct value_list *vl, struct registry_key *key);
 void value_list_resize(struct value_list *vl, int nlines, int ncols,
 		       int begin_y, int begin_x);
