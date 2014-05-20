@@ -253,20 +253,21 @@ WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 	}
 
 	for (i = 0, node = list; node != NULL; ++i, node = node->next) {
-		const char *label = node->name;
+		char prefix = ' ';
 
 		/* Add a '+' marker to indicate that the item has
 		   descendants. */
 		if (tree_node_has_children(node)) {
-			SMB_ASSERT(node->label == NULL);
-			node->label = talloc_asprintf(node, "+%s", node->name);
-			if (node->label == NULL) {
-				goto fail;
-			}
-			label = node->label;
+			prefix = '+';
 		}
 
-		items[i] = new_item(label, node->name);
+		SMB_ASSERT(node->label == NULL);
+		node->label = talloc_asprintf(node, "%c%s", prefix, node->name);
+		if (node->label == NULL) {
+			goto fail;
+		}
+
+		items[i] = new_item(node->label, node->name);
 		set_item_userptr(items[i], node);
 	}
 
