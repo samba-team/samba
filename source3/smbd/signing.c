@@ -29,7 +29,7 @@
  Called to validate an incoming packet from the client.
 ************************************************************/
 
-bool srv_check_sign_mac(struct smbd_server_connection *conn,
+bool srv_check_sign_mac(struct smbXsrv_connection *conn,
 			const char *inbuf, uint32_t *seqnum,
 			bool trusted_channel)
 {
@@ -75,7 +75,7 @@ bool srv_check_sign_mac(struct smbd_server_connection *conn,
  Called to sign an outgoing packet to the client.
 ************************************************************/
 
-void srv_calculate_sign_mac(struct smbd_server_connection *conn,
+void srv_calculate_sign_mac(struct smbXsrv_connection *conn,
 			    char *outbuf, uint32_t seqnum)
 {
 	uint8_t *outhdr;
@@ -96,7 +96,7 @@ void srv_calculate_sign_mac(struct smbd_server_connection *conn,
 /***********************************************************
  Called to indicate a oneway request
 ************************************************************/
-void srv_cancel_sign_response(struct smbd_server_connection *conn)
+void srv_cancel_sign_response(struct smbXsrv_connection *conn)
 {
 	smb_signing_cancel_reply(conn->smb1.signing_state, true);
 }
@@ -167,7 +167,7 @@ static void smbd_shm_signing_free(TALLOC_CTX *mem_ctx, void *ptr)
  Called by server negprot when signing has been negotiated.
 ************************************************************/
 
-bool srv_init_signing(struct smbd_server_connection *conn)
+bool srv_init_signing(struct smbXsrv_connection *conn)
 {
 	bool allowed = true;
 	bool desired;
@@ -229,7 +229,7 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	return true;
 }
 
-void srv_set_signing_negotiated(struct smbd_server_connection *conn,
+void srv_set_signing_negotiated(struct smbXsrv_connection *conn,
 				bool allowed, bool mandatory)
 {
 	smb_signing_set_negotiated(conn->smb1.signing_state,
@@ -241,7 +241,7 @@ void srv_set_signing_negotiated(struct smbd_server_connection *conn,
  reads/writes if it is.
 ************************************************************/
 
-bool srv_is_signing_active(struct smbd_server_connection *conn)
+bool srv_is_signing_active(struct smbXsrv_connection *conn)
 {
 	return smb_signing_is_active(conn->smb1.signing_state);
 }
@@ -252,7 +252,7 @@ bool srv_is_signing_active(struct smbd_server_connection *conn)
  in the negprot.
 ************************************************************/
 
-bool srv_is_signing_negotiated(struct smbd_server_connection *conn)
+bool srv_is_signing_negotiated(struct smbXsrv_connection *conn)
 {
 	return smb_signing_is_negotiated(conn->smb1.signing_state);
 }
@@ -261,7 +261,7 @@ bool srv_is_signing_negotiated(struct smbd_server_connection *conn)
  Turn on signing from this packet onwards.
 ************************************************************/
 
-void srv_set_signing(struct smbd_server_connection *conn,
+void srv_set_signing(struct smbXsrv_connection *conn,
 		     const DATA_BLOB user_session_key,
 		     const DATA_BLOB response)
 {

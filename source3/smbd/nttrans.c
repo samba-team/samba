@@ -1339,12 +1339,14 @@ static void call_nt_transact_create(connection_struct *conn,
 
 void reply_ntcancel(struct smb_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
+
 	/*
 	 * Go through and cancel any pending change notifies.
 	 */
 
 	START_PROFILE(SMBntcancel);
-	srv_cancel_sign_response(req->sconn);
+	srv_cancel_sign_response(xconn);
 	remove_pending_change_notify_requests_by_mid(req->sconn, req->mid);
 	remove_pending_lock_requests_by_mid_smb1(req->sconn, req->mid);
 

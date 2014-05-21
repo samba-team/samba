@@ -3212,7 +3212,7 @@ static void send_file_readbraw(connection_struct *conn,
 
 	if ( !req_is_in_chain(req) && (nread > 0) && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
-	    lp_use_sendfile(SNUM(conn), req->sconn->smb1.signing_state) ) {
+	    lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
 		ssize_t sendfile_read = -1;
 		char header[4];
 		DATA_BLOB header_blob;
@@ -3323,6 +3323,7 @@ void reply_readbraw(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	off_t startpos;
@@ -3332,7 +3333,7 @@ void reply_readbraw(struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active(sconn) || req->encrypted) {
+	if (srv_is_signing_active(xconn) || req->encrypted) {
 		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
@@ -3726,7 +3727,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	    !req->encrypted &&
 	    (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
-	    lp_use_sendfile(SNUM(conn), req->sconn->smb1.signing_state) ) {
+	    lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
 
@@ -3925,7 +3926,7 @@ static size_t calc_max_read_pdu(const struct smb_request *req)
 		return xconn->smb1.sessions.max_send;
 	}
 
-	if (srv_is_signing_active(req->sconn)) {
+	if (srv_is_signing_active(xconn)) {
 		return 0x1FFFF;
 	}
 
@@ -4148,7 +4149,7 @@ void reply_writebraw(struct smb_request *req)
 	 */
 	SCVAL(discard_const_p(uint8_t, req->inbuf),smb_com,SMBwritec);
 
-	if (srv_is_signing_active(req->sconn)) {
+	if (srv_is_signing_active(xconn)) {
 		END_PROFILE(SMBwritebraw);
 		exit_server_cleanly("reply_writebraw: SMB signing is active - "
 				"raw reads/writes are disallowed.");

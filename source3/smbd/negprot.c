@@ -319,8 +319,8 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	signing_desired = smb_signing_is_desired(req->sconn->smb1.signing_state);
-	signing_required = smb_signing_is_mandatory(req->sconn->smb1.signing_state);
+	signing_desired = smb_signing_is_desired(xconn->smb1.signing_state);
+	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
 
 	if (signing_desired) {
 		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;

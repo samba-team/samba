@@ -3074,6 +3074,7 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 			 char **ppdata,
 			 int *ret_data_len)
 {
+	struct smbXsrv_connection *xconn = conn->sconn->conn;
 	char *pdata, *end_data;
 	int data_len = 0, len;
 	const char *vname = volume_label(talloc_tos(), SNUM(conn));
@@ -3446,8 +3447,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		case SMB_QUERY_CIFS_UNIX_INFO:
 		{
 			bool large_write = lp_min_receive_file_size() &&
-					!srv_is_signing_active(conn->sconn);
-			bool large_read = !srv_is_signing_active(conn->sconn);
+					!srv_is_signing_active(xconn);
+			bool large_read = !srv_is_signing_active(xconn);
 			int encrypt_caps = 0;
 
 			if (!lp_unix_extensions()) {

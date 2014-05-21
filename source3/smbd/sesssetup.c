@@ -331,7 +331,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				register_homes_share(session_info->unix_info->unix_name);
 		}
 
-		if (srv_is_signing_negotiated(sconn) &&
+		if (srv_is_signing_negotiated(xconn) &&
 		    action == 0 &&
 		    session->global->signing_key.length > 0)
 		{
@@ -339,7 +339,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			 * Try and turn on server signing on the first non-guest
 			 * sessionsetup.
 			 */
-			srv_set_signing(sconn,
+			srv_set_signing(xconn,
 				session->global->signing_key,
 				data_blob_null);
 		}
@@ -618,7 +618,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	 * It finds out when it needs to turn into a noop
 	 * itself.
 	 */
-	srv_set_signing_negotiated(req->sconn,
+	srv_set_signing_negotiated(xconn,
 				   signing_allowed,
 				   signing_mandatory);
 
@@ -1029,7 +1029,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 
-	if (srv_is_signing_negotiated(sconn) &&
+	if (srv_is_signing_negotiated(xconn) &&
 	    action == 0 &&
 	    session->global->signing_key.length > 0)
 	{
@@ -1037,7 +1037,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		 * Try and turn on server signing on the first non-guest
 		 * sessionsetup.
 		 */
-		srv_set_signing(sconn,
+		srv_set_signing(xconn,
 			session->global->signing_key,
 			nt_resp.data ? nt_resp : lm_resp);
 	}

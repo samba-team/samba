@@ -375,6 +375,7 @@ struct smbXsrv_connection {
 			 */
 			int max_send;
 		} sessions;
+		struct smb_signing_state *signing_state;
 	} smb1;
 	struct {
 		struct {
@@ -763,8 +764,6 @@ struct smbd_server_connection {
 			uint32_t client_cap_low;
 			uint32_t client_cap_high;
 		} unix_info;
-
-		struct smb_signing_state *signing_state;
 
 		struct notify_mid_map *notify_mid_maps;
 

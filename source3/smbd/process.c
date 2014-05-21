@@ -231,7 +231,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 
 	if (do_signing) {
 		/* Sign the outgoing packet if required. */
-		srv_calculate_sign_mac(sconn, buf_out, seqnum);
+		srv_calculate_sign_mac(xconn, buf_out, seqnum);
 	}
 
 	if (do_encrypt) {
@@ -480,6 +480,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 				       char **buffer, unsigned int timeout,
 				       size_t *p_unread, size_t *plen)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	char lenbuf[4];
 	size_t len;
 	int min_recv_size = lp_min_receive_file_size();
@@ -496,7 +497,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	if (CVAL(lenbuf,0) == 0 && min_recv_size &&
 	    (smb_len_large(lenbuf) > /* Could be a UNIX large writeX. */
 		(min_recv_size + STANDARD_WRITE_AND_X_HEADER_SIZE)) &&
-	    !srv_is_signing_active(sconn) &&
+	    !srv_is_signing_active(xconn) &&
 	    sconn->smb1.echo_handler.trusted_fde == NULL) {
 
 		return receive_smb_raw_talloc_partial_read(
@@ -540,6 +541,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 				   uint32_t *seqnum,
 				   bool trusted_channel)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	size_t len = 0;
 	NTSTATUS status;
 
@@ -569,7 +571,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(sconn, *buffer, seqnum, trusted_channel)) {
+	if (!srv_check_sign_mac(xconn, *buffer, seqnum, trusted_channel)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -3738,7 +3740,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		DEBUG(0,("Changed root to %s\n", lp_root_directory(talloc_tos())));
 	}
 
-	if (!srv_init_signing(sconn)) {
+	if (!srv_init_signing(conn)) {
 		exit_server("Failed to init smb_signing");
 	}
 

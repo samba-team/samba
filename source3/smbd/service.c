@@ -522,6 +522,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 					int snum, struct user_struct *vuser,
 					const char *pdev)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
@@ -858,7 +859,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
 			 tsocket_address_string(conn->sconn->remote_address,
 						talloc_tos()) );
-		dbgtext( "%s", srv_is_signing_active(sconn) ? "signed " : "");
+		dbgtext( "%s", srv_is_signing_active(xconn) ? "signed " : "");
 		dbgtext( "connect to service %s ",
 			 lp_servicename(talloc_tos(), snum) );
 		dbgtext( "initially as user %s ",
