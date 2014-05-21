@@ -32,10 +32,10 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 					       uint16_t in_flags);
 static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
 				     uint16_t *out_flags,
-				     NTTIME *out_creation_time,
-				     NTTIME *out_last_access_time,
-				     NTTIME *out_last_write_time,
-				     NTTIME *out_change_time,
+				     struct timespec *out_creation_ts,
+				     struct timespec *out_last_access_ts,
+				     struct timespec *out_last_write_ts,
+				     struct timespec *out_change_ts,
 				     uint64_t *out_allocation_size,
 				     uint64_t *out_end_of_file,
 				     uint32_t *out_file_attributes);
@@ -84,10 +84,11 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 		struct smbd_smb2_request);
 	DATA_BLOB outbody;
 	uint16_t out_flags = 0;
-	NTTIME out_creation_time = 0;
-	NTTIME out_last_access_time = 0;
-	NTTIME out_last_write_time = 0;
-	NTTIME out_change_time = 0;
+	connection_struct *conn = req->tcon->compat;
+	struct timespec out_creation_ts = { 0, };
+	struct timespec out_last_access_ts = { 0, };
+	struct timespec out_last_write_ts = { 0, };
+	struct timespec out_change_ts = { 0, };
 	uint64_t out_allocation_size = 0;
 	uint64_t out_end_of_file = 0;
 	uint32_t out_file_attributes = 0;
@@ -96,10 +97,10 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 
 	status = smbd_smb2_close_recv(subreq,
 				      &out_flags,
-				      &out_creation_time,
-				      &out_last_access_time,
-				      &out_last_write_time,
-				      &out_change_time,
+				      &out_creation_ts,
+				      &out_last_access_ts,
+				      &out_last_write_ts,
+				      &out_change_ts,
 				      &out_allocation_size,
 				      &out_end_of_file,
 				      &out_file_attributes);
@@ -128,10 +129,14 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 	SSVAL(outbody.data, 0x00, 0x3C);	/* struct size */
 	SSVAL(outbody.data, 0x02, out_flags);
 	SIVAL(outbody.data, 0x04, 0);		/* reserved */
-	SBVAL(outbody.data, 0x08, out_creation_time);
-	SBVAL(outbody.data, 0x10, out_last_access_time);
-	SBVAL(outbody.data, 0x18, out_last_write_time);
-	SBVAL(outbody.data, 0x20, out_change_time);
+	put_long_date_timespec(conn->ts_res,
+		(char *)outbody.data + 0x08, out_creation_ts);
+	put_long_date_timespec(conn->ts_res,
+		(char *)outbody.data + 0x10, out_last_access_ts);
+	put_long_date_timespec(conn->ts_res,
+		(char *)outbody.data + 0x18, out_last_write_ts);
+	put_long_date_timespec(conn->ts_res,
+		(char *)outbody.data + 0x20, out_change_ts);
 	SBVAL(outbody.data, 0x28, out_allocation_size);
 	SBVAL(outbody.data, 0x30, out_end_of_file);
 	SIVAL(outbody.data, 0x38, out_file_attributes);
@@ -148,10 +153,10 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				struct files_struct *fsp,
 				uint16_t in_flags,
 				uint16_t *out_flags,
-				NTTIME *out_creation_time,
-				NTTIME *out_last_access_time,
-				NTTIME *out_last_write_time,
-				NTTIME *out_change_time,
+				struct timespec *out_creation_ts,
+				struct timespec *out_last_access_ts,
+				struct timespec *out_last_write_ts,
+				struct timespec *out_change_ts,
 				uint64_t *out_allocation_size,
 				uint64_t *out_end_of_file,
 				uint32_t *out_file_attributes)
@@ -160,23 +165,18 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	struct smb_request *smbreq;
 	connection_struct *conn = req->tcon->compat;
 	struct smb_filename *smb_fname = NULL;
-	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	uint64_t allocation_size = 0;
 	uint64_t file_size = 0;
 	uint32_t dos_attrs = 0;
 	uint16_t flags = 0;
 	bool posix_open = false;
 
-	ZERO_STRUCT(create_date_ts);
-	ZERO_STRUCT(adate_ts);
-	ZERO_STRUCT(mdate_ts);
-	ZERO_STRUCT(cdate_ts);
+	ZERO_STRUCTP(out_creation_ts);
+	ZERO_STRUCTP(out_last_access_ts);
+	ZERO_STRUCTP(out_last_write_ts);
+	ZERO_STRUCTP(out_change_ts);
 
 	*out_flags = 0;
-	*out_creation_time = 0;
-	*out_last_access_time = 0;
-	*out_last_write_time = 0;
-	*out_change_time = 0;
 	*out_allocation_size = 0;
 	*out_end_of_file = 0;
 	*out_file_attributes = 0;
@@ -212,16 +212,16 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 		if (ret == 0) {
 			flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
 			dos_attrs = dos_mode(conn, smb_fname);
-			mdate_ts = smb_fname->st.st_ex_mtime;
-			adate_ts = smb_fname->st.st_ex_atime;
-			create_date_ts = get_create_timespec(conn, NULL, smb_fname);
-			cdate_ts = get_change_timespec(conn, NULL, smb_fname);
+			*out_last_write_ts = smb_fname->st.st_ex_mtime;
+			*out_last_access_ts = smb_fname->st.st_ex_atime;
+			*out_creation_ts = get_create_timespec(conn, NULL, smb_fname);
+			*out_change_ts = get_change_timespec(conn, NULL, smb_fname);
 
 			if (lp_dos_filetime_resolution(SNUM(conn))) {
-				dos_filetime_timespec(&create_date_ts);
-				dos_filetime_timespec(&mdate_ts);
-				dos_filetime_timespec(&adate_ts);
-				dos_filetime_timespec(&cdate_ts);
+				dos_filetime_timespec(out_creation_ts);
+				dos_filetime_timespec(out_last_write_ts);
+				dos_filetime_timespec(out_last_access_ts);
+				dos_filetime_timespec(out_change_ts);
 			}
 			if (!(dos_attrs & FILE_ATTRIBUTE_DIRECTORY)) {
 				file_size = get_file_size_stat(&smb_fname->st);
@@ -232,19 +232,6 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	}
 
 	*out_flags = flags;
-
-	round_timespec(conn->ts_res, &create_date_ts);
-	unix_timespec_to_nt_time(out_creation_time, create_date_ts);
-
-	round_timespec(conn->ts_res, &adate_ts);
-	unix_timespec_to_nt_time(out_last_access_time, adate_ts);
-
-	round_timespec(conn->ts_res, &mdate_ts);
-	unix_timespec_to_nt_time(out_last_write_time, mdate_ts);
-
-	round_timespec(conn->ts_res, &cdate_ts);
-	unix_timespec_to_nt_time(out_change_time, cdate_ts);
-
 	*out_allocation_size = allocation_size;
 	*out_end_of_file = file_size;
 	*out_file_attributes = dos_attrs;
@@ -257,10 +244,10 @@ struct smbd_smb2_close_state {
 	struct files_struct *in_fsp;
 	uint16_t in_flags;
 	uint16_t out_flags;
-	NTTIME out_creation_time;
-	NTTIME out_last_access_time;
-	NTTIME out_last_write_time;
-	NTTIME out_change_time;
+	struct timespec out_creation_ts;
+	struct timespec out_last_access_ts;
+	struct timespec out_last_write_ts;
+	struct timespec out_change_ts;
 	uint64_t out_allocation_size;
 	uint64_t out_end_of_file;
 	uint32_t out_file_attributes;
@@ -302,10 +289,10 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 				 state->in_fsp,
 				 state->in_flags,
 				 &state->out_flags,
-				 &state->out_creation_time,
-				 &state->out_last_access_time,
-				 &state->out_last_write_time,
-				 &state->out_change_time,
+				 &state->out_creation_ts,
+				 &state->out_last_access_ts,
+				 &state->out_last_write_ts,
+				 &state->out_change_ts,
 				 &state->out_allocation_size,
 				 &state->out_end_of_file,
 				 &state->out_file_attributes);
@@ -340,10 +327,10 @@ static void smbd_smb2_close_do(struct tevent_req *subreq)
 				 state->in_fsp,
 				 state->in_flags,
 				 &state->out_flags,
-				 &state->out_creation_time,
-				 &state->out_last_access_time,
-				 &state->out_last_write_time,
-				 &state->out_change_time,
+				 &state->out_creation_ts,
+				 &state->out_last_access_ts,
+				 &state->out_last_write_ts,
+				 &state->out_change_ts,
 				 &state->out_allocation_size,
 				 &state->out_end_of_file,
 				 &state->out_file_attributes);
@@ -355,10 +342,10 @@ static void smbd_smb2_close_do(struct tevent_req *subreq)
 
 static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
 				     uint16_t *out_flags,
-				     NTTIME *out_creation_time,
-				     NTTIME *out_last_access_time,
-				     NTTIME *out_last_write_time,
-				     NTTIME *out_change_time,
+				     struct timespec *out_creation_ts,
+				     struct timespec *out_last_access_ts,
+				     struct timespec *out_last_write_ts,
+				     struct timespec *out_change_ts,
 				     uint64_t *out_allocation_size,
 				     uint64_t *out_end_of_file,
 				     uint32_t *out_file_attributes)
@@ -374,10 +361,10 @@ static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
 	}
 
 	*out_flags = state->out_flags;
-	*out_creation_time = state->out_creation_time;
-	*out_last_access_time = state->out_last_access_time;
-	*out_last_write_time = state->out_last_write_time;
-	*out_change_time = state->out_change_time;
+	*out_creation_ts = state->out_creation_ts;
+	*out_last_access_ts = state->out_last_access_ts;
+	*out_last_write_ts = state->out_last_write_ts;
+	*out_change_ts = state->out_change_ts;
 	*out_allocation_size = state->out_allocation_size;
 	*out_end_of_file = state->out_end_of_file;
 	*out_file_attributes = state->out_file_attributes;
