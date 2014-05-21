@@ -120,7 +120,7 @@ uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf)
  Refuse to allow clients to overwrite our private xattrs.
 ****************************************************************************/
 
-static bool samba_private_attr_name(const char *unix_ea_name)
+bool samba_private_attr_name(const char *unix_ea_name)
 {
 	static const char * const prohibited_ea_names[] = {
 		SAMBA_POSIX_INHERITANCE_EA_NAME,

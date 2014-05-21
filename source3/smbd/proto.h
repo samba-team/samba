@@ -1056,6 +1056,7 @@ NTSTATUS check_access(connection_struct *conn,
 				uint32_t access_mask);
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
 uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf);
+bool samba_private_attr_name(const char *unix_ea_name);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		      files_struct *fsp, const char *fname,
 		      const char *ea_name, struct ea_struct *pea);
