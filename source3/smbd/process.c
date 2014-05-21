@@ -247,7 +247,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 
 	len = smb_len_large(buf_out) + 4;
 
-	ret = write_data(sconn->sock, buf_out, len);
+	ret = write_data(xconn->transport.sock, buf_out, len);
 	if (ret <= 0) {
 		int saved_errno = errno;
 		/*
@@ -2442,6 +2442,7 @@ static void smbd_server_connection_write_handler(
 static void smbd_server_connection_read_handler(
 	struct smbd_server_connection *sconn, int fd)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	uint8_t *inbuf = NULL;
 	size_t inbuf_len = 0;
 	size_t unread_bytes = 0;
@@ -2464,7 +2465,7 @@ static void smbd_server_connection_read_handler(
 		}
 	}
 
-	from_client = (sconn->sock == fd);
+	from_client = (xconn->transport.sock == fd);
 
 	if (async_echo && from_client) {
 		smbd_lock_socket(sconn);
@@ -2511,6 +2512,7 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 {
 	struct smbd_server_connection *conn = talloc_get_type(private_data,
 					      struct smbd_server_connection);
+	struct smbXsrv_connection *xconn = conn->conn;
 
 	if (!NT_STATUS_IS_OK(conn->status)) {
 		/*
@@ -2526,7 +2528,7 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
-		smbd_server_connection_read_handler(conn, conn->sock);
+		smbd_server_connection_read_handler(conn, xconn->transport.sock);
 		return;
 	}
 }
@@ -2713,7 +2715,7 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 	}
 
 	smbd_lock_socket(sconn);
-	ret = send_keepalive(sconn->sock);
+	ret = send_keepalive(xconn->transport.sock);
 	smbd_unlock_socket(sconn);
 
 	if (!ret) {
@@ -2802,6 +2804,7 @@ static struct tevent_req *smbd_echo_read_send(
 {
 	struct tevent_req *req, *subreq;
 	struct smbd_echo_read_state *state;
+	struct smbXsrv_connection *xconn = sconn->conn;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_echo_read_state);
@@ -2811,7 +2814,7 @@ static struct tevent_req *smbd_echo_read_send(
 	state->ev = ev;
 	state->sconn = sconn;
 
-	subreq = wait_for_read_send(state, ev, sconn->sock);
+	subreq = wait_for_read_send(state, ev, xconn->transport.sock);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2854,6 +2857,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 	struct smbd_echo_read_state *state = tevent_req_data(
 		req, struct smbd_echo_read_state);
 	struct smbd_server_connection *sconn = state->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	bool ok;
 	NTSTATUS status;
 	size_t unread = 0;
@@ -2873,7 +2877,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!fd_is_readable(sconn->sock)) {
+	if (!fd_is_readable(xconn->transport.sock)) {
 		DEBUG(10,("echo_handler[%d] the parent smbd was faster\n",
 			  (int)getpid()));
 
@@ -2885,7 +2889,8 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 			return;
 		}
 
-		subreq = wait_for_read_send(state, state->ev, sconn->sock);
+		subreq = wait_for_read_send(state, state->ev,
+					    xconn->transport.sock);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -2893,7 +2898,9 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	status = receive_smb_talloc(state, sconn, sconn->sock, &state->buf,
+	status = receive_smb_talloc(state, sconn,
+				    xconn->transport.sock,
+				    &state->buf,
 				    0 /* timeout */,
 				    &unread,
 				    &encrypted,
@@ -3546,6 +3553,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	conn->ev_ctx = ev_ctx;
 	conn->msg_ctx = msg_ctx;
+	conn->transport.sock = sock_fd;
 
 	sconn = talloc_zero(conn, struct smbd_server_connection);
 	if (!sconn) {
@@ -3562,7 +3570,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	sconn->ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
-	sconn->sock = sock_fd;
 	smbd_echo_init(sconn);
 
 	if (!interactive) {
@@ -3590,10 +3597,10 @@ void smbd_process(struct tevent_context *ev_ctx,
 	}
 
 	/* Ensure child is set to blocking mode */
-	set_blocking(sconn->sock,True);
+	set_blocking(sock_fd,True);
 
-	set_socket_options(sconn->sock, "SO_KEEPALIVE");
-	set_socket_options(sconn->sock, lp_socket_options());
+	set_socket_options(sock_fd, "SO_KEEPALIVE");
+	set_socket_options(sock_fd, lp_socket_options());
 
 	sa_socklen = sizeof(ss_clnt);
 	ret = getpeername(sock_fd, sa_clnt, &sa_socklen);
@@ -3828,11 +3835,11 @@ void smbd_process(struct tevent_context *ev_ctx,
 	}
 
 	sconn->smb1.fde = tevent_add_fd(ev_ctx,
-						  sconn,
-						  sconn->sock,
-						  TEVENT_FD_READ,
-						  smbd_server_connection_handler,
-						  sconn);
+					sconn,
+					sock_fd,
+					TEVENT_FD_READ,
+					smbd_server_connection_handler,
+					sconn);
 	if (!sconn->smb1.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}

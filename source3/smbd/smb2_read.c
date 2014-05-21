@@ -190,7 +190,7 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 	ssize_t ret;
 	int saved_errno;
 
-	nread = SMB_VFS_SENDFILE(fsp->conn->sconn->sock,
+	nread = SMB_VFS_SENDFILE(xconn->transport.sock,
 				 fsp,
 				 hdr,
 				 in_offset,
@@ -256,7 +256,7 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 
 normal_read:
 	/* Send out the header. */
-	ret = write_data(fsp->conn->sconn->sock,
+	ret = write_data(xconn->transport.sock,
 			 (const char *)hdr->data, hdr->length);
 	if (ret != hdr->length) {
 		saved_errno = errno;

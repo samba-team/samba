@@ -139,7 +139,12 @@ bool reload_services(struct smbd_server_connection *sconn,
 		     bool (*snumused) (struct smbd_server_connection *, int),
 		     bool test)
 {
+	struct smbXsrv_connection *xconn = NULL;
 	bool ret;
+
+	if (sconn != NULL) {
+		xconn = sconn->conn;
+	}
 
 	if (lp_loaded()) {
 		char *fname = lp_next_configfile(talloc_tos());
@@ -173,9 +178,9 @@ bool reload_services(struct smbd_server_connection *sconn,
 
 	load_interfaces();
 
-	if (sconn != NULL) {
-		set_socket_options(sconn->sock, "SO_KEEPALIVE");
-		set_socket_options(sconn->sock, lp_socket_options());
+	if (xconn != NULL) {
+		set_socket_options(xconn->transport.sock, "SO_KEEPALIVE");
+		set_socket_options(xconn->transport.sock, lp_socket_options());
 	}
 
 	mangle_reset_cache();

@@ -431,6 +431,7 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 				     const char *name, int name_type)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	char *trim_name;
 	char *trim_name_type;
 	const char *retarget_parm;
@@ -443,7 +444,7 @@ static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 	bool ret = false;
 	uint8_t outbuf[10];
 
-	if (get_socket_port(sconn->sock) != NBT_SMB_PORT) {
+	if (get_socket_port(xconn->transport.sock) != NBT_SMB_PORT) {
 		return false;
 	}
 
@@ -3059,7 +3060,7 @@ ssize_t fake_sendfile(files_struct *fsp, off_t startpos, size_t nread)
 			memset(buf + ret, '\0', cur_read - ret);
 		}
 
-		ret = write_data(xconn->sconn->sock, buf, cur_read);
+		ret = write_data(xconn->transport.sock, buf, cur_read);
 		if (ret != cur_read) {
 			int saved_errno = errno;
 			/*
@@ -3133,7 +3134,7 @@ void sendfile_short_send(files_struct *fsp,
 			ssize_t ret;
 
 			to_write = MIN(SHORT_SEND_BUFSIZE, smb_maxcnt - nread);
-			ret = write_data(xconn->sconn->sock, buf, to_write);
+			ret = write_data(xconn->transport.sock, buf, to_write);
 			if (ret != to_write) {
 				int saved_errno = errno;
 				/*
@@ -3166,7 +3167,7 @@ static void reply_readbraw_error(struct smbd_server_connection *sconn)
 	SIVAL(header,0,0);
 
 	smbd_lock_socket(sconn);
-	if (write_data(sconn->sock,header,4) != 4) {
+	if (write_data(xconn->transport.sock,header,4) != 4) {
 		int saved_errno = errno;
 		/*
 		 * Try and give an error message saying what
@@ -3216,7 +3217,7 @@ static void send_file_readbraw(connection_struct *conn,
 		_smb_setlen(header,nread);
 		header_blob = data_blob_const(header, 4);
 
-		sendfile_read = SMB_VFS_SENDFILE(sconn->sock, fsp,
+		sendfile_read = SMB_VFS_SENDFILE(xconn->transport.sock, fsp,
 						 &header_blob, startpos,
 						 nread);
 		if (sendfile_read == -1) {
@@ -3294,7 +3295,7 @@ normal_readbraw:
 	}
 
 	_smb_setlen(outbuf,ret);
-	if (write_data(sconn->sock, outbuf, 4+ret) != 4+ret) {
+	if (write_data(xconn->transport.sock, outbuf, 4+ret) != 4+ret) {
 		int saved_errno = errno;
 		/*
 		 * Try and give an error message saying what
@@ -3750,7 +3751,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		construct_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
-		nread = SMB_VFS_SENDFILE(req->sconn->sock, fsp, &header,
+		nread = SMB_VFS_SENDFILE(xconn->transport.sock, fsp, &header,
 					 startpos, smb_maxcnt);
 		if (nread == -1) {
 			saved_errno = errno;
@@ -3832,7 +3833,7 @@ normal_read:
 		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */
-		ret = write_data(req->sconn->sock, (char *)headerbuf,
+		ret = write_data(xconn->transport.sock, (char *)headerbuf,
 				 sizeof(headerbuf));
 		if (ret != sizeof(headerbuf)) {
 			saved_errno = errno;
@@ -4255,7 +4256,7 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	/* Now read the raw data into the buffer and write it */
-	status = read_smb_length(req->sconn->sock, buf, SMB_SECONDARY_WAIT,
+	status = read_smb_length(xconn->transport.sock, buf, SMB_SECONDARY_WAIT,
 				 &numtowrite);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_server_cleanly("secondary writebraw failed");
@@ -4279,7 +4280,7 @@ void reply_writebraw(struct smb_request *req)
 				(int)tcount,(int)nwritten,(int)numtowrite));
 		}
 
-		status = read_data(req->sconn->sock, buf+4, numtowrite);
+		status = read_data(xconn->transport.sock, buf+4, numtowrite);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Try and give an error message
@@ -4342,7 +4343,7 @@ void reply_writebraw(struct smb_request *req)
 		 * sending a NBSSkeepalive. Thanks to DaveCB at Sun for this.
 		 * JRA.
 		 */
-		if (!send_keepalive(req->sconn->sock)) {
+		if (!send_keepalive(xconn->transport.sock)) {
 			exit_server_cleanly("reply_writebraw: send of "
 				"keepalive failed");
 		}
@@ -4710,6 +4711,7 @@ bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
 void reply_write_and_X(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	files_struct *fsp;
 	struct lock_struct lock;
 	off_t startpos;
@@ -4866,7 +4868,7 @@ void reply_write_and_X(struct smb_request *req)
 out:
 	if (req->unread_bytes) {
 		/* writeX failed. drain socket. */
-		if (drain_socket(req->sconn->sock, req->unread_bytes) !=
+		if (drain_socket(xconn->transport.sock, req->unread_bytes) !=
 				req->unread_bytes) {
 			smb_panic("failed to drain pending bytes");
 		}

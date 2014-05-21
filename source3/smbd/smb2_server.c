@@ -200,6 +200,8 @@ bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size)
 
 static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
+
 	TALLOC_FREE(sconn->smb1.fde);
 
 	sconn->smb2.send_queue = NULL;
@@ -216,7 +218,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 
 	sconn->smb2.fde = tevent_add_fd(sconn->ev_ctx,
 					sconn,
-					sconn->sock,
+					xconn->transport.sock,
 					TEVENT_FD_READ,
 					smbd_smb2_connection_handler,
 					sconn);
@@ -225,7 +227,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 	}
 
 	/* Ensure child is set to non-blocking mode */
-	set_blocking(sconn->sock, false);
+	set_blocking(xconn->transport.sock, false);
 	return NT_STATUS_OK;
 }
 
@@ -2661,6 +2663,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    DATA_BLOB *info,
 				    const char *location)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	DATA_BLOB body;
 	DATA_BLOB _dyn;
 	uint8_t *outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
@@ -2675,7 +2678,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 		size_t ret;
 
 		errno = 0;
-		ret = drain_socket(req->sconn->sock, unread_bytes);
+		ret = drain_socket(xconn->transport.sock, unread_bytes);
 		if (ret != unread_bytes) {
 			NTSTATUS error;
 
@@ -3096,6 +3099,7 @@ static int socket_error_from_errno(int ret,
 
 static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	int ret;
 	int err;
 	bool retry;
@@ -3148,7 +3152,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 			continue;
 		}
 
-		ret = writev(sconn->sock, e->vector, e->count);
+		ret = writev(xconn->transport.sock, e->vector, e->count);
 		if (ret == 0) {
 			/* propagate end of file */
 			return NT_STATUS_INTERNAL_ERROR;
@@ -3206,6 +3210,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
 				     uint16_t fde_flags)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request_read_state *state = &sconn->smb2.request_read_state;
 	struct smbd_smb2_request *req = NULL;
 	size_t min_recvfile_size = UINT32_MAX;
@@ -3248,7 +3253,7 @@ again:
 		state->vector.iov_len = NBT_HDR_SIZE;
 	}
 
-	ret = readv(sconn->sock, &state->vector, 1);
+	ret = readv(xconn->transport.sock, &state->vector, 1);
 	if (ret == 0) {
 		/* propagate end of file */
 		return NT_STATUS_END_OF_FILE;
