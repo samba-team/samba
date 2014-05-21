@@ -860,7 +860,8 @@ void send_trans2_replies(connection_struct *conn,
 	int data_alignment_offset = 0;
 	bool overflow = False;
 	struct smbd_server_connection *sconn = req->sconn;
-	int max_send = sconn->smb1.sessions.max_send;
+	struct smbXsrv_connection *xconn = sconn->conn;
+	int max_send = xconn->smb1.sessions.max_send;
 
 	/* Modify the data_to_send and datasize and set the error if
 	   we're trying to send more than max_data_bytes. We still send

@@ -1556,6 +1556,7 @@ void reply_search(struct smb_request *req)
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	struct dptr_struct *dirptr = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 
 	START_PROFILE(SMBsearch);
 
@@ -1705,7 +1706,7 @@ void reply_search(struct smb_request *req)
 	} else {
 		unsigned int i;
 		size_t hdr_size = ((uint8_t *)smb_buf(req->outbuf) + 3 - req->outbuf);
-		size_t available_space = sconn->smb1.sessions.max_send - hdr_size;
+		size_t available_space = xconn->smb1.sessions.max_send - hdr_size;
 
 		maxentries = MIN(maxentries, available_space/DIR_STRUCT_SIZE);
 
@@ -3477,6 +3478,7 @@ void reply_lockread(struct smb_request *req)
 	struct byte_range_lock *br_lck = NULL;
 	char *p = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 
 	START_PROFILE(SMBlockread);
 
@@ -3531,13 +3533,13 @@ void reply_lockread(struct smb_request *req)
 	/*
 	 * However the requested READ size IS affected by max_send. Insanity.... JRA.
 	 */
-	maxtoread = sconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
+	maxtoread = xconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
 
 	if (numtoread > maxtoread) {
 		DEBUG(0,("reply_lockread: requested read size (%u) is greater than maximum allowed (%u/%u). \
 Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 			(unsigned int)numtoread, (unsigned int)maxtoread,
-			(unsigned int)sconn->smb1.sessions.max_send));
+			(unsigned int)xconn->smb1.sessions.max_send));
 		numtoread = maxtoread;
 	}
 
@@ -3586,6 +3588,7 @@ void reply_read(struct smb_request *req)
 	files_struct *fsp;
 	struct lock_struct lock;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 
 	START_PROFILE(SMBread);
 
@@ -3614,13 +3617,13 @@ void reply_read(struct smb_request *req)
 	/*
 	 * The requested read size cannot be greater than max_send. JRA.
 	 */
-	maxtoread = sconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
+	maxtoread = xconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
 
 	if (numtoread > maxtoread) {
 		DEBUG(0,("reply_read: requested read size (%u) is greater than maximum allowed (%u/%u). \
 Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 			(unsigned int)numtoread, (unsigned int)maxtoread,
-			(unsigned int)sconn->smb1.sessions.max_send));
+			(unsigned int)xconn->smb1.sessions.max_send));
 		numtoread = maxtoread;
 	}
 
@@ -3899,16 +3902,18 @@ nosendfile_read:
 
 static size_t calc_max_read_pdu(const struct smb_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
+
 	if (req->sconn->conn->protocol < PROTOCOL_NT1) {
-		return req->sconn->smb1.sessions.max_send;
+		return xconn->smb1.sessions.max_send;
 	}
 
 	if (!lp_large_readwrite()) {
-		return req->sconn->smb1.sessions.max_send;
+		return xconn->smb1.sessions.max_send;
 	}
 
 	if (req_is_in_chain(req)) {
-		return req->sconn->smb1.sessions.max_send;
+		return xconn->smb1.sessions.max_send;
 	}
 
 	if (req->encrypted) {
@@ -3917,7 +3922,7 @@ static size_t calc_max_read_pdu(const struct smb_request *req)
 		 * limit. There are padding considerations
 		 * that make that tricky.
 		 */
-		return req->sconn->smb1.sessions.max_send;
+		return xconn->smb1.sessions.max_send;
 	}
 
 	if (srv_is_signing_active(req->sconn)) {

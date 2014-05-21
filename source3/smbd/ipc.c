@@ -108,7 +108,8 @@ void send_trans_reply(connection_struct *conn,
 	int ldata  = rdata  ? rdata_len : 0;
 	int lparam = rparam ? rparam_len : 0;
 	struct smbd_server_connection *sconn = req->sconn;
-	int max_send = sconn->smb1.sessions.max_send;
+	struct smbXsrv_connection *xconn = sconn->conn;
+	int max_send = xconn->smb1.sessions.max_send;
 	/* HACK: make sure we send at least 128 byte in one go */
 	int hdr_overhead = SMB_BUFFER_SIZE_MIN - 128;
 

@@ -68,7 +68,8 @@ static void send_nt_replies(connection_struct *conn,
 	int alignment_offset = 1;
 	int data_alignment_offset = 0;
 	struct smbd_server_connection *sconn = req->sconn;
-	int max_send = sconn->smb1.sessions.max_send;
+	struct smbXsrv_connection *xconn = sconn->conn;
+	int max_send = xconn->smb1.sessions.max_send;
 
 	/*
 	 * If there genuinely are no parameters or data to send just send

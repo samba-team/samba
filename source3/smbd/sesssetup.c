@@ -132,6 +132,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	uint64_t vuid = req->vuid;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	uint16_t action = 0;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
@@ -140,7 +141,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
-	if (!sconn->smb1.sessions.done_sesssetup) {
+	if (!xconn->smb1.sessions.done_sesssetup) {
 		global_client_caps = client_caps;
 
 		if (!(global_client_caps & CAP_STATUS32)) {
@@ -381,13 +382,13 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			return;
 		}
 
-		if (!sconn->smb1.sessions.done_sesssetup) {
+		if (!xconn->smb1.sessions.done_sesssetup) {
 			if (smb_bufsize < SMB_BUFFER_SIZE_MIN) {
 				reply_force_doserror(req, ERRSRV, ERRerror);
 				return;
 			}
-			sconn->smb1.sessions.max_send = smb_bufsize;
-			sconn->smb1.sessions.done_sesssetup = true;
+			xconn->smb1.sessions.max_send = smb_bufsize;
+			xconn->smb1.sessions.done_sesssetup = true;
 		}
 
 		/* current_user_info is changed on new vuid */
@@ -683,7 +684,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		const uint8_t *save_p = req->buf;
 		uint16 byte_count;
 
-		if (!sconn->smb1.sessions.done_sesssetup) {
+		if (!xconn->smb1.sessions.done_sesssetup) {
 			global_client_caps = IVAL(req->vwv+11, 0);
 
 			if (!(global_client_caps & CAP_STATUS32)) {
@@ -1090,14 +1091,14 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	SSVAL(discard_const_p(char, req->inbuf),smb_uid,sess_vuid);
 	req->vuid = sess_vuid;
 
-	if (!sconn->smb1.sessions.done_sesssetup) {
+	if (!xconn->smb1.sessions.done_sesssetup) {
 		if (smb_bufsize < SMB_BUFFER_SIZE_MIN) {
 			reply_force_doserror(req, ERRSRV, ERRerror);
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
-		sconn->smb1.sessions.max_send = smb_bufsize;
-		sconn->smb1.sessions.done_sesssetup = true;
+		xconn->smb1.sessions.max_send = smb_bufsize;
+		xconn->smb1.sessions.done_sesssetup = true;
 	}
 
 	END_PROFILE(SMBsesssetupX);
