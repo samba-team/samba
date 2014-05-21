@@ -85,10 +85,10 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 			TALLOC_CTX *mem_ctx,
 			uint8_t *out_oplock_level,
 			uint32_t *out_create_action,
-			NTTIME *out_creation_time,
-			NTTIME *out_last_access_time,
-			NTTIME *out_last_write_time,
-			NTTIME *out_change_time,
+			struct timespec *out_creation_ts,
+			struct timespec *out_last_access_ts,
+			struct timespec *out_last_write_ts,
+			struct timespec *out_change_ts,
 			uint64_t *out_allocation_size,
 			uint64_t *out_end_of_file,
 			uint32_t *out_file_attributes,
@@ -269,10 +269,11 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	DATA_BLOB outdyn;
 	uint8_t out_oplock_level = 0;
 	uint32_t out_create_action = 0;
-	NTTIME out_creation_time = 0;
-	NTTIME out_last_access_time = 0;
-	NTTIME out_last_write_time = 0;
-	NTTIME out_change_time = 0;
+	connection_struct *conn = smb2req->tcon->compat;
+	struct timespec out_creation_ts = { 0, };
+	struct timespec out_last_access_ts = { 0, };
+	struct timespec out_last_write_ts = { 0, };
+	struct timespec out_change_ts = { 0, };
 	uint64_t out_allocation_size = 0;
 	uint64_t out_end_of_file = 0;
 	uint32_t out_file_attributes = 0;
@@ -288,10 +289,10 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 				       smb2req,
 				       &out_oplock_level,
 				       &out_create_action,
-				       &out_creation_time,
-				       &out_last_access_time,
-				       &out_last_write_time,
-				       &out_change_time,
+				       &out_creation_ts,
+				       &out_last_access_ts,
+				       &out_last_write_ts,
+				       &out_change_ts,
 				       &out_allocation_size,
 				       &out_end_of_file,
 				       &out_file_attributes,
@@ -340,14 +341,18 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	SCVAL(outbody.data, 0x03, 0);		/* reserved */
 	SIVAL(outbody.data, 0x04,
 	      out_create_action);		/* create action */
-	SBVAL(outbody.data, 0x08,
-	      out_creation_time);		/* creation time */
-	SBVAL(outbody.data, 0x10,
-	      out_last_access_time);		/* last access time */
-	SBVAL(outbody.data, 0x18,
-	      out_last_write_time);		/* last write time */
-	SBVAL(outbody.data, 0x20,
-	      out_change_time);			/* change time */
+	put_long_date_timespec(conn->ts_res,
+	      (char *)outbody.data + 0x08,
+	      out_creation_ts);			/* creation time */
+	put_long_date_timespec(conn->ts_res,
+	      (char *)outbody.data + 0x10,
+	      out_last_access_ts);		/* last access time */
+	put_long_date_timespec(conn->ts_res,
+	      (char *)outbody.data + 0x18,
+	      out_last_write_ts);		/* last write time */
+	put_long_date_timespec(conn->ts_res,
+	      (char *)outbody.data + 0x20,
+	      out_change_ts);			/* change time */
 	SBVAL(outbody.data, 0x28,
 	      out_allocation_size);		/* allocation size */
 	SBVAL(outbody.data, 0x30,
@@ -385,10 +390,10 @@ struct smbd_smb2_create_state {
 	DATA_BLOB private_data;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
-	NTTIME out_creation_time;
-	NTTIME out_last_access_time;
-	NTTIME out_last_write_time;
-	NTTIME out_change_time;
+	struct timespec out_creation_ts;
+	struct timespec out_last_access_ts;
+	struct timespec out_last_write_ts;
+	struct timespec out_change_ts;
 	uint64_t out_allocation_size;
 	uint64_t out_end_of_file;
 	uint32_t out_file_attributes;
@@ -1051,16 +1056,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		update_stat_ex_mtime(&result->fsp_name->st, write_time_ts);
 	}
 
-	unix_timespec_to_nt_time(&state->out_creation_time,
-			get_create_timespec(smb1req->conn, result,
-					result->fsp_name));
-	unix_timespec_to_nt_time(&state->out_last_access_time,
-			result->fsp_name->st.st_ex_atime);
-	unix_timespec_to_nt_time(&state->out_last_write_time,
-			result->fsp_name->st.st_ex_mtime);
-	unix_timespec_to_nt_time(&state->out_change_time,
-			get_change_timespec(smb1req->conn, result,
-					result->fsp_name));
+	state->out_creation_ts = get_create_timespec(smb1req->conn,
+					result, result->fsp_name);
+	state->out_last_access_ts = result->fsp_name->st.st_ex_atime;
+	state->out_last_write_ts = result->fsp_name->st.st_ex_mtime;
+	state->out_change_ts = get_change_timespec(smb1req->conn,
+					result, result->fsp_name);
 	state->out_allocation_size =
 			SMB_VFS_GET_ALLOC_SIZE(smb1req->conn, result,
 					       &(result->fsp_name->st));
@@ -1083,10 +1084,10 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 			TALLOC_CTX *mem_ctx,
 			uint8_t *out_oplock_level,
 			uint32_t *out_create_action,
-			NTTIME *out_creation_time,
-			NTTIME *out_last_access_time,
-			NTTIME *out_last_write_time,
-			NTTIME *out_change_time,
+			struct timespec *out_creation_ts,
+			struct timespec *out_last_access_ts,
+			struct timespec *out_last_write_ts,
+			struct timespec *out_change_ts,
 			uint64_t *out_allocation_size,
 			uint64_t *out_end_of_file,
 			uint32_t *out_file_attributes,
@@ -1105,10 +1106,10 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 
 	*out_oplock_level	= state->out_oplock_level;
 	*out_create_action	= state->out_create_action;
-	*out_creation_time	= state->out_creation_time;
-	*out_last_access_time	= state->out_last_access_time;
-	*out_last_write_time	= state->out_last_write_time;
-	*out_change_time	= state->out_change_time;
+	*out_creation_ts	= state->out_creation_ts;
+	*out_last_access_ts	= state->out_last_access_ts;
+	*out_last_write_ts	= state->out_last_write_ts;
+	*out_change_ts		= state->out_change_ts;
 	*out_allocation_size	= state->out_allocation_size;
 	*out_end_of_file	= state->out_end_of_file;
 	*out_file_attributes	= state->out_file_attributes;
