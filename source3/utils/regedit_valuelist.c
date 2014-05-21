@@ -54,6 +54,9 @@ static int value_list_free(struct value_list *vl)
 	if (vl->panel) {
 		del_panel(vl->panel);
 	}
+	if (vl->sub) {
+		delwin(vl->sub);
+	}
 	if (vl->window) {
 		delwin(vl->window);
 	}
