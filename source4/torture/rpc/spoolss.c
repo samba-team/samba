@@ -3881,6 +3881,37 @@ static bool test_ResumePrinter(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_printer_purge(struct torture_context *tctx,
+			       struct dcerpc_binding_handle *b,
+			       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinter r;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	info_ctr.level = 0;
+	info_ctr.info.info0 = NULL;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	r.in.handle		= handle;
+	r.in.info_ctr		= &info_ctr;
+	r.in.devmode_ctr	= &devmode_ctr;
+	r.in.secdesc_ctr	= &secdesc_ctr;
+	r.in.command		= SPOOLSS_PRINTER_CONTROL_PURGE;
+
+	torture_comment(tctx, "Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_PURGE\n");
+
+	status = dcerpc_spoolss_SetPrinter_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "SetPrinter failed");
+	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
+
+	return true;
+}
+
 static bool test_GetPrinterData_checktype(struct torture_context *tctx,
 					  struct dcerpc_binding_handle *b,
 					  struct policy_handle *handle,
@@ -8293,6 +8324,58 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_print_test_purge(struct torture_context *tctx,
+				  void *private_data)
+{
+	struct torture_printer_context *t =
+	   (struct torture_printer_context *)talloc_get_type_abort(private_data,
+						struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint32_t num_jobs = 8;
+	uint32_t *job_ids;
+	int i;
+	bool ret = true;
+	uint32_t count;
+	union spoolss_JobInfo *info;
+
+	torture_assert(tctx,
+		test_PausePrinter(tctx, b, &t->handle),
+		"failed to pause printer");
+
+	job_ids = talloc_zero_array(tctx, uint32_t, num_jobs);
+	for (i=0; i < num_jobs; i++) {
+		ret = test_DoPrintTest_add_one_job(tctx, b, &t->handle,
+						   "TorturePrintJob",
+						   &job_ids[i]);
+		torture_assert(tctx, ret, "failed to add print job");
+	}
+
+	torture_assert(tctx,
+		test_EnumJobs_args(tctx, b, &t->handle, 1, &count, &info),
+		"EnumJobs level 1 failed");
+
+	torture_assert_int_equal(tctx, count, num_jobs,
+				 "unexpected number of jobs in queue");
+
+	torture_assert(tctx,
+		test_printer_purge(tctx, b, &t->handle),
+		"failed to purge printer");
+
+	torture_assert(tctx,
+		test_EnumJobs_args(tctx, b, &t->handle, 1, &count, &info),
+		"EnumJobs level 1 failed");
+
+	torture_assert_int_equal(tctx, count, 0,
+				 "unexpected number of jobs in queue");
+
+	torture_assert(tctx,
+		test_ResumePrinter(tctx, b, &t->handle),
+		"failed to resume printer");
+
+	return true;
+}
+
 static bool test_printer_sd(struct torture_context *tctx,
 			    void *private_data)
 {
@@ -8768,6 +8851,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "print_test_extended", test_print_test_extended);
 	torture_tcase_add_simple_test(tcase, "print_test_smbd", test_print_test_smbd);
 	torture_tcase_add_simple_test(tcase, "print_test_properties", test_print_test_properties);
+	torture_tcase_add_simple_test(tcase, "print_test_purge", test_print_test_purge);
 	torture_tcase_add_simple_test(tcase, "printer_info", test_printer_info);
 	torture_tcase_add_simple_test(tcase, "sd", test_printer_sd);
 	torture_tcase_add_simple_test(tcase, "dm", test_printer_dm);
