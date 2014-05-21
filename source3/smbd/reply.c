@@ -694,6 +694,7 @@ void reply_tcon(struct smb_request *req)
 	const char *p2;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 
 	START_PROFILE(SMBtcon);
@@ -735,7 +736,7 @@ void reply_tcon(struct smb_request *req)
 	}
 
 	reply_outbuf(req, 2, 0);
-	SSVAL(req->outbuf,smb_vwv0,sconn->smb1.negprot.max_recv);
+	SSVAL(req->outbuf,smb_vwv0,xconn->smb1.negprot.max_recv);
 	SSVAL(req->outbuf,smb_vwv1,conn->cnum);
 	SSVAL(req->outbuf,smb_tid,conn->cnum);
 
@@ -771,6 +772,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	bool session_key_updated = false;
 	uint16_t optional_support = 0;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 
 	START_PROFILE(SMBtconX);
 
@@ -818,7 +820,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (sconn->smb1.negprot.encrypted_passwords) {
+	if (xconn->smb1.negprot.encrypted_passwords) {
 		p = req->buf + passlen;
 	} else {
 		p = req->buf + passlen + 1;

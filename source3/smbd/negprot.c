@@ -33,27 +33,28 @@ extern fstring remote_proto;
 
 static void get_challenge(struct smbd_server_connection *sconn, uint8 buff[8])
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	NTSTATUS nt_status;
 
 	/* We might be called more than once, multiple negprots are
 	 * permitted */
-	if (sconn->smb1.negprot.auth_context) {
+	if (xconn->smb1.negprot.auth_context) {
 		DEBUG(3, ("get challenge: is this a secondary negprot? "
 			  "sconn->negprot.auth_context is non-NULL!\n"));
-			TALLOC_FREE(sconn->smb1.negprot.auth_context);
+		TALLOC_FREE(xconn->smb1.negprot.auth_context);
 	}
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 	nt_status = make_auth4_context(
-		sconn, &sconn->smb1.negprot.auth_context);
+		xconn, &xconn->smb1.negprot.auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("make_auth_context_subsystem returned %s",
 			  nt_errstr(nt_status)));
 		smb_panic("cannot make_negprot_global_auth_context!");
 	}
 	DEBUG(10, ("get challenge: getting challenge\n"));
-	sconn->smb1.negprot.auth_context->get_ntlm_challenge(
-		sconn->smb1.negprot.auth_context, buff);
+	xconn->smb1.negprot.auth_context->get_ntlm_challenge(
+		xconn->smb1.negprot.auth_context, buff);
 }
 
 /****************************************************************************
@@ -65,6 +66,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 	int secword=0;
 	time_t t = time(NULL);
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	uint16_t raw;
 	if (lp_async_smb_echo_handler()) {
 		raw = 0;
@@ -72,19 +74,19 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 		raw = (lp_read_raw()?1:0) | (lp_write_raw()?2:0);
 	}
 
-	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
+	xconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
 	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-	if (sconn->smb1.negprot.encrypted_passwords) {
+	if (xconn->smb1.negprot.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	reply_outbuf(req, 13, sconn->smb1.negprot.encrypted_passwords?8:0);
+	reply_outbuf(req, 13, xconn->smb1.negprot.encrypted_passwords?8:0);
 
 	SSVAL(req->outbuf,smb_vwv0,choice);
 	SSVAL(req->outbuf,smb_vwv1,secword);
 	/* Create a token value and add it to the outgoing packet. */
-	if (sconn->smb1.negprot.encrypted_passwords) {
+	if (xconn->smb1.negprot.encrypted_passwords) {
 		get_challenge(sconn, (uint8 *)smb_buf(req->outbuf));
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
@@ -93,7 +95,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg, FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(req->outbuf,smb_vwv2, sconn->smb1.negprot.max_recv);
+	SSVAL(req->outbuf,smb_vwv2, xconn->smb1.negprot.max_recv);
 	SSVAL(req->outbuf,smb_vwv3, lp_max_mux()); /* maxmux */
 	SSVAL(req->outbuf,smb_vwv4, 1);
 	SSVAL(req->outbuf,smb_vwv5, raw); /* tell redirector we support
@@ -115,6 +117,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 	int secword=0;
 	time_t t = time(NULL);
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	uint16_t raw;
 	if (lp_async_smb_echo_handler()) {
 		raw = 0;
@@ -122,21 +125,21 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 		raw = (lp_read_raw()?1:0) | (lp_write_raw()?2:0);
 	}
 
-	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
+	xconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
 	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-	if (sconn->smb1.negprot.encrypted_passwords) {
+	if (xconn->smb1.negprot.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	reply_outbuf(req, 13, sconn->smb1.negprot.encrypted_passwords?8:0);
+	reply_outbuf(req, 13, xconn->smb1.negprot.encrypted_passwords?8:0);
 
 	SSVAL(req->outbuf,smb_vwv0, choice);
 	SSVAL(req->outbuf,smb_vwv1, secword);
 	SIVAL(req->outbuf,smb_vwv6, getpid());
 
 	/* Create a token value and add it to the outgoing packet. */
-	if (sconn->smb1.negprot.encrypted_passwords) {
+	if (xconn->smb1.negprot.encrypted_passwords) {
 		get_challenge(sconn, (uint8 *)smb_buf(req->outbuf));
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
@@ -145,7 +148,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(req->outbuf,smb_vwv2,sconn->smb1.negprot.max_recv);
+	SSVAL(req->outbuf,smb_vwv2,xconn->smb1.negprot.max_recv);
 	SSVAL(req->outbuf,smb_vwv3,lp_max_mux());
 	SSVAL(req->outbuf,smb_vwv4,1);
 	SSVAL(req->outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
@@ -159,6 +162,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 
 DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	DATA_BLOB blob = data_blob_null;
 	DATA_BLOB blob_out = data_blob_null;
 	nstring dos_name;
@@ -188,7 +192,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 		TALLOC_FREE(gensec_security);
 	}
 
-	sconn->smb1.negprot.spnego = true;
+	xconn->smb1.negprot.spnego = true;
 
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
@@ -250,10 +254,11 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	struct timespec ts;
 	ssize_t ret;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	bool signing_desired = false;
 	bool signing_required = false;
 
-	sconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
+	xconn->smb1.negprot.encrypted_passwords = lp_encrypt_passwords();
 
 	/* Check the flags field to see if this is Vista.
 	   WinXP sets it and Vista does not. But we have to 
@@ -273,7 +278,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
 
-	if (sconn->smb1.negprot.encrypted_passwords &&
+	if (xconn->smb1.negprot.encrypted_passwords &&
 	    lp_use_spnego() &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
 		negotiate_spnego = True;
@@ -310,7 +315,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		capabilities |= CAP_DFS;
 
 	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-	if (sconn->smb1.negprot.encrypted_passwords) {
+	if (xconn->smb1.negprot.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
@@ -334,7 +339,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	SSVAL(req->outbuf,smb_vwv1+1, lp_max_mux()); /* maxmpx */
 	SSVAL(req->outbuf,smb_vwv2+1, 1); /* num vcs */
 	SIVAL(req->outbuf,smb_vwv3+1,
-	      sconn->smb1.negprot.max_recv); /* max buffer. LOTS! */
+	      xconn->smb1.negprot.max_recv); /* max buffer. LOTS! */
 	SIVAL(req->outbuf,smb_vwv5+1, 0x10000); /* raw size. full 64k */
 	SIVAL(req->outbuf,smb_vwv7+1, getpid()); /* session key */
 	SIVAL(req->outbuf,smb_vwv9+1, capabilities); /* capabilities */
@@ -344,7 +349,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
-		if (sconn->smb1.negprot.encrypted_passwords) {
+		if (xconn->smb1.negprot.encrypted_passwords) {
 			uint8 chal[8];
 			/* note that we do not send a challenge at all if
 			   we are using plaintext */
@@ -517,14 +522,15 @@ void reply_negprot(struct smb_request *req)
 	int i;
 	size_t converted_size;
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 
 	START_PROFILE(SMBnegprot);
 
-	if (sconn->smb1.negprot.done) {
+	if (xconn->smb1.negprot.done) {
 		END_PROFILE(SMBnegprot);
 		exit_server_cleanly("multiple negprot's are not permitted");
 	}
-	sconn->smb1.negprot.done = true;
+	xconn->smb1.negprot.done = true;
 
 	if (req->buflen == 0) {
 		DEBUG(0, ("negprot got no protocols\n"));

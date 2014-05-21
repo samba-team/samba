@@ -3828,7 +3828,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	tmp = MAX(tmp, SMB_BUFFER_SIZE_MIN);
 	tmp = MIN(tmp, SMB_BUFFER_SIZE_MAX);
 
-	sconn->smb1.negprot.max_recv = tmp;
+	conn->smb1.negprot.max_recv = tmp;
 
 	sconn->smb1.sessions.done_sesssetup = false;
 	sconn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;

@@ -355,6 +355,19 @@ struct smbXsrv_connection {
 
 	struct {
 		struct {
+			bool encrypted_passwords;
+			bool spnego;
+			struct auth4_context *auth_context;
+			bool done;
+			/*
+			 * Size of the data we can receive. Set by us.
+			 * Can be modified by the max xmit parameter.
+			 */
+			int max_recv;
+		} negprot;
+	} smb1;
+	struct {
+		struct {
 			uint32_t capabilities;
 			struct GUID guid;
 			uint16_t security_mode;
@@ -733,18 +746,6 @@ struct smbd_server_connection {
 			 */
 			int ref_count;
 		} echo_handler;
-
-		struct {
-			bool encrypted_passwords;
-			bool spnego;
-			struct auth4_context *auth_context;
-			bool done;
-			/*
-			 * Size of the data we can receive. Set by us.
-			 * Can be modified by the max xmit parameter.
-			 */
-			int max_recv;
-		} negprot;
 
 		struct {
 			uint16_t client_major;
