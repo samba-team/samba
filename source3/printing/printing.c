@@ -3365,13 +3365,28 @@ WERROR print_queue_purge(const struct auth_session_info *server_info,
 	if ( can_job_admin )
 		become_root();
 
-	for (i=0;i<njobs;i++) {
-		bool owner = is_owner(server_info, lp_const_servicename(snum),
-				      queue[i].sysjob);
+	for (i = 0; i < njobs; i++) {
+		struct tdb_print_db *pdb;
+		int jobid;
+		bool owner;
+		pdb = get_print_db_byname(lp_const_servicename(snum));
+		if (pdb == NULL) {
+			DEBUG(1, ("failed to find printdb for %s\n",
+				  lp_const_servicename(snum)));
+			continue;
+		}
+		jobid = sysjob_to_jobid_pdb(pdb, queue[i].sysjob);
+		if (jobid == (uint32_t)-1) {
+			DEBUG(2, ("jobid for system job %d not found\n",
+				  queue[i].sysjob));
+			continue;	/* unix job */
+		}
+		owner = is_owner(server_info, lp_const_servicename(snum),
+				 jobid);
 
 		if (owner || can_job_admin) {
 			print_job_delete1(server_event_context(), msg_ctx,
-					  snum, queue[i].sysjob);
+					  snum, jobid);
 		}
 	}
 
