@@ -50,6 +50,9 @@
 #define PATH_WIDTH	(COLS - 6)
 #define PATH_WIDTH_MAX	1024
 
+#define PAIR_YELLOW_CYAN 1
+#define PAIR_BLACK_CYAN 2
+
 struct regedit {
 	WINDOW *main_window;
 	WINDOW *path_label;
@@ -73,6 +76,8 @@ static void show_path(struct regedit *regedit)
 	}
 	copywin(regedit->path_label, regedit->main_window, 0, start_pad,
 		PATH_START_Y, start_win, PATH_START_Y, PATH_MAX_Y, false);
+
+	mvchgat(0, 0, COLS, A_BOLD, PAIR_YELLOW_CYAN, NULL);
 }
 
 static void print_path(struct regedit *regedit, struct tree_node *node)
@@ -147,15 +152,16 @@ static void print_help(struct regedit *regedit)
 
 	move(HELP1_START_Y, HELP1_START_X);
 	clrtoeol();
-	attron(A_REVERSE);
+	attron(COLOR_PAIR(PAIR_BLACK_CYAN));
 	mvaddstr(HELP1_START_Y, HELP1_START_X, help);
 	pad = COLS - strlen(msg) - strlen(help);
 	for (i = 0; i < pad; ++i) {
 		addch(' ');
 	}
-	attron(A_BOLD);
+	attroff(COLOR_PAIR(PAIR_BLACK_CYAN));
+	attron(COLOR_PAIR(PAIR_YELLOW_CYAN) | A_BOLD);
 	addstr(msg);
-	attroff(A_REVERSE | A_BOLD);
+	attroff(COLOR_PAIR(PAIR_YELLOW_CYAN) | A_BOLD);
 
 	move(HELP2_START_Y, HELP2_START_X);
 	clrtoeol();
@@ -440,6 +446,8 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 		start_color();
 		use_default_colors();
 		assume_default_colors(COLOR_WHITE, COLOR_BLUE);
+		init_pair(PAIR_YELLOW_CYAN, COLOR_YELLOW, COLOR_CYAN);
+		init_pair(PAIR_BLACK_CYAN, COLOR_BLACK, COLOR_CYAN);
 	}
 
 	regedit = talloc_zero(mem_ctx, struct regedit);
