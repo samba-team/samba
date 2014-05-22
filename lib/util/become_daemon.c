@@ -133,5 +133,6 @@ _PUBLIC_ void daemon_ready(const char *name)
 #ifdef HAVE_SYSTEMD
 	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...", name);
 #endif
-	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve connections", name));
+	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve "
+		  "connections\n", name));
 }
