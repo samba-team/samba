@@ -236,6 +236,16 @@ void tree_view_clear(struct tree_view *view)
 	view->current_items = NULL;
 }
 
+static int item_comp(ITEM **a, ITEM **b)
+{
+	struct tree_node *nodea, *nodeb;
+
+	nodea = item_userptr(*a);
+	nodeb = item_userptr(*b);
+
+	return strcmp(nodea->name, nodeb->name);
+}
+
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 {
 	ITEM **items;
@@ -272,6 +282,8 @@ WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 		items[i] = new_item(node->label, node->name);
 		set_item_userptr(items[i], node);
 	}
+
+	TYPESAFE_QSORT(items, n_items, item_comp);
 
 	unpost_menu(view->menu);
 	set_menu_items(view->menu, items);
