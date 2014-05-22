@@ -21,6 +21,8 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "librpc/gen_ndr/auth.h"
+#include "auth/auth_sam_reply.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
