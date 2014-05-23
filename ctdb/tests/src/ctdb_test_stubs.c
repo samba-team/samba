@@ -30,6 +30,10 @@ static struct ctdb_context *ctdb_global;
  * -CTDB_CAP_RECMASTER.  LVS can be faked on by adding
  * CTDB_CAP_LVS.
  */
+
+/* A fake flag that is only supported by some functions */
+#define NODE_FLAGS_FAKE_TIMEOUT 0x80000000
+
 void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 {
 	char line[1024];
@@ -95,6 +99,12 @@ void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 				capabilities &= ~CTDB_CAP_NATGW;
 			} else if (strcmp(tok, "CTDB_CAP_LVS") == 0) {
 				capabilities |= CTDB_CAP_LVS;
+			} else if (strcmp(tok, "TIMEOUT") == 0) {
+				/* This can be done with just a flag
+				 * value but it is probably clearer
+				 * and less error-prone to fake this
+				 * with an explicit token */
+				flags |= NODE_FLAGS_FAKE_TIMEOUT;
 			}
 			tok = strtok(NULL, " \t");
 		}
@@ -550,6 +560,19 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   uint32_t *capabilities)
 {
+
+	if (ctdb->nodes[destnode]->flags & NODE_FLAGS_FAKE_TIMEOUT) {
+		/* Placeholder for line#, instead of __location__ */
+		DEBUG(DEBUG_ERR,
+		      ("__LOCATION__ control timed out."
+		       " reqid:1234567890 opcode:80 dstnode:%d\n", destnode));
+		DEBUG(DEBUG_ERR,
+		      ("__LOCATION__ ctdb_control_recv failed\n"));
+		DEBUG(DEBUG_ERR,
+		      ("__LOCATION__ ctdb_ctrl_getcapabilities_recv failed\n"));
+		return -1;
+	}
+
 	if (ctdb->nodes[destnode]->flags & NODE_FLAGS_DISCONNECTED) {
 		DEBUG(DEBUG_ERR,
 		      ("ctdb_control error: 'ctdb_control to disconnected node\n"));

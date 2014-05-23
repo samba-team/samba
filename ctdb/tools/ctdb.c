@@ -1179,7 +1179,8 @@ filter_nodemap_by_addrs(struct ctdb_context *ctdb,
 static struct ctdb_node_map *
 filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
 			       struct ctdb_node_map *nodemap,
-			       uint32_t required_capabilities)
+			       uint32_t required_capabilities,
+			       bool first_only)
 {
 	int i;
 	uint32_t capabilities;
@@ -1213,6 +1214,9 @@ filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
 
 		ret->nodes[ret->num] = nodemap->nodes[i];
 		ret->num++;
+		if (first_only) {
+			break;
+		}
 	}
 
 	return ret;
@@ -1252,7 +1256,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	int i, ret;
 	struct pnn_node *natgw_nodes = NULL;
 	struct ctdb_node_map *orig_nodemap=NULL;
-	struct ctdb_node_map *cnodemap, *nodemap;
+	struct ctdb_node_map *nodemap;
 	uint32_t mypnn, pnn;
 	const char *ip;
 
@@ -1293,21 +1297,15 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		goto done;
 	}
 
-	/* Get a nodemap that includes only the nodes with the NATGW
-	 * capability */
-	cnodemap = filter_nodemap_by_capabilities(ctdb, nodemap,
-						  CTDB_CAP_NATGW);
-	if (cnodemap == NULL) {
-		ret = -1;
-		goto done;
-	}
-
 	ret = 2; /* matches ENOENT */
 	pnn = -1;
 	ip = "0.0.0.0";
+	/* For each flag mask... */
 	for (i = 0; exclude_flags[i] != 0; i++) {
+		/* ... get a nodemap that excludes nodes with with
+		 * masked flags... */
 		struct ctdb_node_map *t =
-			filter_nodemap_by_flags(ctdb, cnodemap,
+			filter_nodemap_by_flags(ctdb, nodemap,
 						exclude_flags[i]);
 		if (t == NULL) {
 			/* No memory */
@@ -1315,10 +1313,23 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 			goto done;
 		}
 		if (t->num > 0) {
-			ret = 0;
-			pnn = t->nodes[0].pnn;
-			ip = ctdb_addr_to_str(&t->nodes[0].addr);
-			break;
+			/* ... and find the first node with the NATGW
+			 * capability */
+			struct ctdb_node_map *n;
+			n = filter_nodemap_by_capabilities(ctdb, t,
+							   CTDB_CAP_NATGW,
+							   true);
+			if (n == NULL) {
+				/* No memory */
+				ret = -1;
+				goto done;
+			}
+			if (n->num > 0) {
+				ret = 0;
+				pnn = n->nodes[0].pnn;
+				ip = ctdb_addr_to_str(&n->nodes[0].addr);
+				break;
+			}
 		}
 		talloc_free(t);
 	}
@@ -3569,7 +3580,7 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	nodemap = filter_nodemap_by_capabilities(ctdb, orig_nodemap,
-						 CTDB_CAP_LVS);
+						 CTDB_CAP_LVS, false);
 	if (nodemap == NULL) {
 		/* No memory */
 		ret = -1;
@@ -3609,24 +3620,15 @@ done:
 static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_node_map *orig_nodemap=NULL;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map *nodemap=NULL;
 	int i, ret;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn,
-				   tmp_ctx, &orig_nodemap);
+				   tmp_ctx, &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
 		talloc_free(tmp_ctx);
 		return -1;
-	}
-
-	nodemap = filter_nodemap_by_capabilities(ctdb, orig_nodemap,
-						 CTDB_CAP_LVS);
-	if (nodemap == NULL) {
-		/* No memory */
-		ret = -1;
-		goto done;
 	}
 
 	for (i = 0; lvs_exclude_flags[i] != 0; i++) {
@@ -3639,11 +3641,23 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 			goto done;
 		}
 		if (t->num > 0) {
-			ret = 0;
-			printf(options.machinereadable ?
-			       "%d\n" : "Node %d is LVS master\n",
-				t->nodes[0].pnn);
-			goto done;
+			struct ctdb_node_map *n;
+			n = filter_nodemap_by_capabilities(ctdb,
+							   t,
+							   CTDB_CAP_LVS,
+							   true);
+			if (n == NULL) {
+				/* No memory */
+				ret = -1;
+				goto done;
+			}
+			if (n->num > 0) {
+				ret = 0;
+				printf(options.machinereadable ?
+				       "%d\n" : "Node %d is LVS master\n",
+				       n->nodes[0].pnn);
+				goto done;
+			}
 		}
 		talloc_free(t);
 	}
