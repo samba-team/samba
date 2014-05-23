@@ -2670,21 +2670,6 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 	return ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
 }
 
-static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
-			       struct sockaddr_storage *client)
-{
-	socklen_t length;
-	length = sizeof(*server);
-	if (getsockname(sock, (struct sockaddr *)server, &length) != 0) {
-		return -1;
-	}
-	length = sizeof(*client);
-	if (getpeername(sock, (struct sockaddr *)client, &length) != 0) {
-		return -1;
-	}
-	return 0;
-}
-
 static void msg_kill_client_ip(struct messaging_context *msg_ctx,
 				  void *private_data, uint32_t msg_type,
 				  struct server_id server_id, DATA_BLOB *data)
