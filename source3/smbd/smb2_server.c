@@ -327,6 +327,11 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 		uint8_t *body = NULL;
 		uint32_t dyn_size;
 		uint8_t *dyn = NULL;
+		struct iovec *iov_alloc = NULL;
+
+		if (iov != req->in._vector) {
+			iov_alloc = iov;
+		}
 
 		if (verified_buflen > taken) {
 			len = verified_buflen - taken;
@@ -388,7 +393,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 				DEBUG(1, ("invalid session[%llu] in "
 					  "SMB2_TRANSFORM header\n",
 					   (unsigned long long)uid));
-				TALLOC_FREE(iov);
+				TALLOC_FREE(iov_alloc);
 				return NT_STATUS_USER_SESSION_DELETED;
 			}
 
@@ -401,7 +406,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 							  conn->protocol,
 							  tf_iov, 2);
 			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(iov);
+				TALLOC_FREE(iov_alloc);
 				return status;
 			}
 
@@ -459,11 +464,6 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 
 		if (num_iov >= ARRAY_SIZE(req->in._vector)) {
 			struct iovec *iov_tmp = NULL;
-			struct iovec *iov_alloc = NULL;
-
-			if (iov != req->in._vector) {
-				iov_alloc = iov;
-			}
 
 			iov_tmp = talloc_realloc(mem_ctx, iov_alloc,
 						 struct iovec,
