@@ -418,6 +418,20 @@ struct smbXsrv_connection {
 		struct msg_state *msg_state;
 	} smb1;
 	struct {
+		struct smbd_smb2_request_read_state {
+			struct smbd_smb2_request *req;
+			struct {
+				uint8_t nbt[NBT_HDR_SIZE];
+				bool done;
+			} hdr;
+			struct iovec vector;
+			bool doing_receivefile;
+			size_t min_recv_size;
+			size_t pktfull;
+			size_t pktlen;
+			uint8_t *pktbuf;
+		} request_read_state;
+
 		struct {
 			uint32_t capabilities;
 			struct GUID guid;
@@ -773,19 +787,6 @@ struct smbd_server_connection {
 		} locks;
 	} smb1;
 	struct {
-		struct smbd_smb2_request_read_state {
-			struct smbd_smb2_request *req;
-			struct {
-				uint8_t nbt[NBT_HDR_SIZE];
-				bool done;
-			} hdr;
-			struct iovec vector;
-			bool doing_receivefile;
-			size_t min_recv_size;
-			size_t pktfull;
-			size_t pktlen;
-			uint8_t *pktbuf;
-		} request_read_state;
 		struct smbd_smb2_send_queue *send_queue;
 		size_t send_queue_len;
 		bool negprot_2ff;

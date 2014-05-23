@@ -2953,8 +2953,8 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 
 static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *sconn)
 {
-	struct smbd_smb2_request_read_state *state = &sconn->smb2.request_read_state;
 	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	size_t max_send_queue_len;
 	size_t cur_send_queue_len;
 
@@ -3212,7 +3212,7 @@ static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
 				     uint16_t fde_flags)
 {
 	struct smbXsrv_connection *xconn = sconn->conn;
-	struct smbd_smb2_request_read_state *state = &sconn->smb2.request_read_state;
+	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	struct smbd_smb2_request *req = NULL;
 	size_t min_recvfile_size = UINT32_MAX;
 	int ret;
