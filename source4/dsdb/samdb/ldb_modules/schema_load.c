@@ -161,6 +161,7 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *new_schema;
+	struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
 	time_t ts, lastts;	
 	
 	struct schema_load_private_data *private_data = talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
@@ -199,12 +200,12 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	}
 	schema->last_refresh = ts;
 
-	ret = dsdb_module_load_partition_usn(module, schema->base_dn, &current_usn, NULL, NULL);
+	ret = dsdb_module_load_partition_usn(module, schema_dn, &current_usn, NULL, NULL);
 	if (ret != LDB_SUCCESS || current_usn == schema->loaded_usn) {
 		return schema;
 	}
 
-	ret = dsdb_schema_from_db(module, schema->base_dn, current_usn, &new_schema);
+	ret = dsdb_schema_from_db(module, schema_dn, current_usn, &new_schema);
 	if (ret != LDB_SUCCESS) {
 		return schema;
 	}
