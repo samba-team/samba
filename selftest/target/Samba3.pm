@@ -1301,7 +1301,7 @@ sub wait_for_start($$$$$)
 	    print "checking for winbindd\n";
 	    my $count = 0;
 	    do {
-		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " -p");
+		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --ping-dc");
 		if ($ret != 0) {
 		    sleep(2);
 		}
