@@ -113,8 +113,8 @@ static int schema_metadata_get_uint64(struct ldb_module *module,
 	TALLOC_CTX *tmp_ctx;
 
 	if (!data || !data->metadata) {
-		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-					"schema: metadata tdb not initialized");
+		*value = default_value;
+		return LDB_SUCCESS;
 	}
 
 	tmp_ctx = talloc_new(NULL);
