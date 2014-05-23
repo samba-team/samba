@@ -345,6 +345,7 @@ struct smbXsrv_connection {
 
 	struct {
 		int sock;
+		struct tevent_fd *fde;
 
 		struct {
 			bool got_session;
@@ -700,8 +701,6 @@ struct smbd_server_connection {
 	} oplocks;
 
 	struct {
-		struct tevent_fd *fde;
-
 		struct {
 
 			/*

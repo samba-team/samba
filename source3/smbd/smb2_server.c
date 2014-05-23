@@ -202,7 +202,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 {
 	struct smbXsrv_connection *xconn = sconn->conn;
 
-	TALLOC_FREE(sconn->smb1.fde);
+	TALLOC_FREE(xconn->transport.fde);
 
 	sconn->smb2.send_queue = NULL;
 

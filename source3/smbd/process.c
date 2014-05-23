@@ -2518,8 +2518,8 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 		/*
 		 * we're not supposed to do any io
 		 */
-		TEVENT_FD_NOT_READABLE(conn->smb1.fde);
-		TEVENT_FD_NOT_WRITEABLE(conn->smb1.fde);
+		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
+		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
 		return;
 	}
 
@@ -3834,13 +3834,13 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("init_dptrs() failed");
 	}
 
-	sconn->smb1.fde = tevent_add_fd(ev_ctx,
-					sconn,
-					sock_fd,
-					TEVENT_FD_READ,
-					smbd_server_connection_handler,
-					sconn);
-	if (!sconn->smb1.fde) {
+	conn->transport.fde = tevent_add_fd(ev_ctx,
+					    sconn,
+					    sock_fd,
+					    TEVENT_FD_READ,
+					    smbd_server_connection_handler,
+					    sconn);
+	if (!conn->transport.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
 
