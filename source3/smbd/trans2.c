@@ -3709,6 +3709,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				 unsigned int max_data_bytes)
 {
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	char *pdata = *ppdata;
 	char *params = *pparams;
 	uint16 info_level;
@@ -3819,7 +3820,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 					return;
 				}
 
-				if (req->sconn->smb1.echo_handler.trusted_fde) {
+				if (xconn->smb1.echo_handler.trusted_fde) {
 					DEBUG( 2,("call_trans2setfsinfo: "
 						"request transport encryption disabled"
 						"with 'fork echo handler = yes'\n"));

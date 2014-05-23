@@ -115,7 +115,6 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn);
 
 void smbd_lock_socket(struct smbd_server_connection *sconn);
 void smbd_unlock_socket(struct smbd_server_connection *sconn);
-void smbd_echo_init(struct smbd_server_connection *sconn);
 
 NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
@@ -354,6 +353,38 @@ struct smbXsrv_connection {
 	} transport;
 
 	struct {
+		struct {
+			/*
+			 * fd for the fcntl lock and process shared
+			 * robust mutex to coordinate access to the
+			 * client socket. When the system supports
+			 * process shared robust mutexes, those are
+			 * used. If not, then the fcntl lock will be
+			 * used.
+			 */
+			int socket_lock_fd;
+#ifdef HAVE_ROBUST_MUTEXES
+			pthread_mutex_t *socket_mutex;
+#endif
+
+			/*
+			 * fd for the trusted pipe from
+			 * echo handler child
+			 */
+			int trusted_fd;
+
+			/*
+			 * fde for the trusted_fd
+			 */
+			struct tevent_fd *trusted_fde;
+
+			/*
+			 * Reference count for the fcntl lock to
+			 * allow recursive locks.
+			 */
+			int ref_count;
+		} echo_handler;
+
 		struct {
 			bool encrypted_passwords;
 			bool spnego;
@@ -725,39 +756,6 @@ struct smbd_server_connection {
 	} oplocks;
 
 	struct {
-		struct {
-
-			/*
-			 * fd for the fcntl lock and process shared
-			 * robust mutex to coordinate access to the
-			 * client socket. When the system supports
-			 * process shared robust mutexes, those are
-			 * used. If not, then the fcntl lock will be
-			 * used.
-			 */
-			int socket_lock_fd;
-#ifdef HAVE_ROBUST_MUTEXES
-			pthread_mutex_t *socket_mutex;
-#endif
-
-			/*
-			 * fd for the trusted pipe from
-			 * echo handler child
-			 */
-			int trusted_fd;
-
-			/*
-			 * fde for the trusted_fd
-			 */
-			struct tevent_fd *trusted_fde;
-
-			/*
-			 * Reference count for the fcntl lock to
-			 * allow recursive locks.
-			 */
-			int ref_count;
-		} echo_handler;
-
 		struct {
 			uint16_t client_major;
 			uint16_t client_minor;

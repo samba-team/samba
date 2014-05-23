@@ -3344,7 +3344,7 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
-	if (sconn->smb1.echo_handler.trusted_fde) {
+	if (xconn->smb1.echo_handler.trusted_fde) {
 		DEBUG(2,("SMBreadbraw rejected with NOT_SUPPORTED because of "
 			 "'async smb echo handler = yes'\n"));
 		reply_readbraw_error(sconn);
@@ -4162,7 +4162,7 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	if (req->sconn->smb1.echo_handler.trusted_fde) {
+	if (xconn->smb1.echo_handler.trusted_fde) {
 		DEBUG(2,("SMBwritebraw rejected with NOT_SUPPORTED because of "
 			 "'async smb echo handler = yes'\n"));
 		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
