@@ -658,9 +658,8 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 		return EINVAL;
 	}
 
-	if ((iovlen < 16) &&
-	    (msglen <= (ctx->fragment_len - sizeof(uint64_t)))) {
-		struct iovec tmp_iov[16];
+	if (msglen <= (ctx->fragment_len - sizeof(uint64_t))) {
+		struct iovec tmp_iov[iovlen+1];
 		uint64_t cookie = 0;
 
 		tmp_iov[0].iov_base = &cookie;
