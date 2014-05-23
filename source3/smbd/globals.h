@@ -434,6 +434,52 @@ struct smbXsrv_connection {
 		struct smbd_smb2_send_queue *send_queue;
 		size_t send_queue_len;
 
+		struct {
+			/*
+			 * seq_low is the lowest sequence number
+			 * we will accept.
+			 */
+			uint64_t seq_low;
+			/*
+			 * seq_range is the range of credits we have
+			 * granted from the sequence windows starting
+			 * at seq_low.
+			 *
+			 * This gets incremented when new credits are
+			 * granted and gets decremented when the
+			 * lowest sequence number is consumed
+			 * (when seq_low gets incremented).
+			 */
+			uint16_t seq_range;
+			/*
+			 * The number of credits we have currently granted
+			 * to the client.
+			 *
+			 * This gets incremented when new credits are
+			 * granted and gets decremented when any credit
+			 * is comsumed.
+			 *
+			 * Note: the decrementing is different compared
+			 *       to seq_range.
+			 */
+			uint16_t granted;
+			/*
+			 * The maximum number of credits we will ever
+			 * grant to the client.
+			 *
+			 * Typically we will only grant 1/16th of
+			 * max_credits.
+			 *
+			 * This is the "server max credits" parameter.
+			 */
+			uint16_t max;
+			/*
+			 * a bitmap of size max_credits
+			 */
+			struct bitmap *bitmap;
+			bool multicredit;
+		} credits;
+
 		bool allow_2ff;
 		struct {
 			uint32_t capabilities;
@@ -796,49 +842,6 @@ struct smbd_server_connection {
 			bool blocking_lock_unlock_state;
 		} locks;
 		struct smbd_smb2_request *requests;
-		/*
-		 * seqnum_low is the lowest sequence number
-		 * we will accept.
-		 */
-		uint64_t seqnum_low;
-		/*
-		 * seqnum_range is the range of credits we have
-		 * granted from the sequence windows starting
-		 * at seqnum_low.
-		 *
-		 * This gets incremented when new credits are
-		 * granted and gets decremented when the
-		 * lowest sequence number is consumed
-		 * (when seqnum_low gets incremented).
-		 */
-		uint16_t seqnum_range;
-		/*
-		 * credits_grantedThe number of credits we have currently granted
-		 * to the client.
-		 *
-		 * This gets incremented when new credits are
-		 * granted and gets decremented when any credit
-		 * is comsumed.
-		 *
-		 * Note: the decrementing is different compared
-		 *       to seqnum_range.
-		 */
-		uint16_t credits_granted;
-		/*
-		 * The maximum number of credits we will ever
-		 * grant to the client.
-		 *
-		 * Typically we will only grant 1/16th of
-		 * max_credits.
-		 *
-		 * This is the "server max credits" parameter.
-		 */
-		uint16_t max_credits;
-		/*
-		 * a bitmap of size max_credits
-		 */
-		struct bitmap *credits_bitmap;
-		bool supports_multicredit;
 	} smb2;
 
 	/*

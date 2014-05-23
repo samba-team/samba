@@ -300,7 +300,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		/* largeMTU is not supported over NBT (tcp port 139) */
 		if (p != NBT_SMB_PORT) {
 			capabilities |= SMB2_CAP_LARGE_MTU;
-			req->sconn->smb2.supports_multicredit = true;
+			xconn->smb2.credits.multicredit = true;
 
 			/* Windows 2012R2 allows up to 8 MB */
 			max_limit = 0x800000; /* 8MB */

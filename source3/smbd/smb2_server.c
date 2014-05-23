@@ -204,13 +204,13 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 
 	TALLOC_FREE(xconn->transport.fde);
 
-	sconn->smb2.seqnum_low = 0;
-	sconn->smb2.seqnum_range = 1;
-	sconn->smb2.credits_granted = 1;
-	sconn->smb2.max_credits = lp_smb2_max_credits();
-	sconn->smb2.credits_bitmap = bitmap_talloc(sconn,
-						   sconn->smb2.max_credits);
-	if (sconn->smb2.credits_bitmap == NULL) {
+	xconn->smb2.credits.seq_low = 0;
+	xconn->smb2.credits.seq_range = 1;
+	xconn->smb2.credits.granted = 1;
+	xconn->smb2.credits.max = lp_smb2_max_credits();
+	xconn->smb2.credits.bitmap = bitmap_talloc(xconn,
+						   xconn->smb2.credits.max);
+	if (xconn->smb2.credits.bitmap == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -578,34 +578,38 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 static bool smb2_validate_sequence_number(struct smbd_server_connection *sconn,
 					  uint64_t message_id, uint64_t seq_id)
 {
-	struct bitmap *credits_bm = sconn->smb2.credits_bitmap;
+	struct smbXsrv_connection *xconn = sconn->conn;
+	struct bitmap *credits_bm = xconn->smb2.credits.bitmap;
 	unsigned int offset;
+	uint64_t seq_tmp;
 
-	if (seq_id < sconn->smb2.seqnum_low) {
+	seq_tmp = xconn->smb2.credits.seq_low;
+	if (seq_id < seq_tmp) {
 		DEBUG(0,("smb2_validate_sequence_number: bad message_id "
 			"%llu (sequence id %llu) "
 			"(granted = %u, low = %llu, range = %u)\n",
 			(unsigned long long)message_id,
 			(unsigned long long)seq_id,
-			(unsigned int)sconn->smb2.credits_granted,
-			(unsigned long long)sconn->smb2.seqnum_low,
-			(unsigned int)sconn->smb2.seqnum_range));
+			(unsigned int)xconn->smb2.credits.granted,
+			(unsigned long long)xconn->smb2.credits.seq_low,
+			(unsigned int)xconn->smb2.credits.seq_range));
 		return false;
 	}
 
-	if (seq_id >= sconn->smb2.seqnum_low + sconn->smb2.seqnum_range) {
+	seq_tmp += xconn->smb2.credits.seq_range;
+	if (seq_id >= seq_tmp) {
 		DEBUG(0,("smb2_validate_sequence_number: bad message_id "
 			"%llu (sequence id %llu) "
 			"(granted = %u, low = %llu, range = %u)\n",
 			(unsigned long long)message_id,
 			(unsigned long long)seq_id,
-			(unsigned int)sconn->smb2.credits_granted,
-			(unsigned long long)sconn->smb2.seqnum_low,
-			(unsigned int)sconn->smb2.seqnum_range));
+			(unsigned int)xconn->smb2.credits.granted,
+			(unsigned long long)xconn->smb2.credits.seq_low,
+			(unsigned int)xconn->smb2.credits.seq_range));
 		return false;
 	}
 
-	offset = seq_id % sconn->smb2.max_credits;
+	offset = seq_id % xconn->smb2.credits.max;
 
 	if (bitmap_query(credits_bm, offset)) {
 		DEBUG(0,("smb2_validate_sequence_number: duplicate message_id "
@@ -614,9 +618,9 @@ static bool smb2_validate_sequence_number(struct smbd_server_connection *sconn,
 			"(bm offset %u)\n",
 			(unsigned long long)message_id,
 			(unsigned long long)seq_id,
-			(unsigned int)sconn->smb2.credits_granted,
-			(unsigned long long)sconn->smb2.seqnum_low,
-			(unsigned int)sconn->smb2.seqnum_range,
+			(unsigned int)xconn->smb2.credits.granted,
+			(unsigned long long)xconn->smb2.credits.seq_low,
+			(unsigned int)xconn->smb2.credits.seq_range,
 			offset));
 		return false;
 	}
@@ -624,7 +628,7 @@ static bool smb2_validate_sequence_number(struct smbd_server_connection *sconn,
 	/* Mark the message_ids as seen in the bitmap. */
 	bitmap_set(credits_bm, offset);
 
-	if (seq_id != sconn->smb2.seqnum_low) {
+	if (seq_id != xconn->smb2.credits.seq_low) {
 		return true;
 	}
 
@@ -635,13 +639,13 @@ static bool smb2_validate_sequence_number(struct smbd_server_connection *sconn,
 	while (bitmap_query(credits_bm, offset)) {
 		DEBUG(10,("smb2_validate_sequence_number: clearing "
 			  "id %llu (position %u) from bitmap\n",
-			  (unsigned long long)(sconn->smb2.seqnum_low),
+			  (unsigned long long)(xconn->smb2.credits.seq_low),
 			  offset));
 		bitmap_clear(credits_bm, offset);
 
-		sconn->smb2.seqnum_low += 1;
-		sconn->smb2.seqnum_range -= 1;
-		offset = sconn->smb2.seqnum_low % sconn->smb2.max_credits;
+		xconn->smb2.credits.seq_low += 1;
+		xconn->smb2.credits.seq_range -= 1;
+		offset = xconn->smb2.credits.seq_low % xconn->smb2.credits.max;
 	}
 
 	return true;
@@ -650,6 +654,7 @@ static bool smb2_validate_sequence_number(struct smbd_server_connection *sconn,
 static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 				const uint8_t *inhdr)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	uint64_t message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	uint16_t opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 	uint16_t credit_charge = 1;
@@ -660,7 +665,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 		return true;
 	}
 
-	if (sconn->smb2.supports_multicredit) {
+	if (xconn->smb2.credits.multicredit) {
 		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
 		credit_charge = MAX(credit_charge, 1);
 	}
@@ -670,20 +675,20 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 		   "seqnum low/range: %llu/%llu\n",
 		   (unsigned long long) message_id,
 		   (unsigned long long) credit_charge,
-		   (unsigned long long) sconn->smb2.credits_granted,
-		   (unsigned long long) sconn->smb2.seqnum_low,
-		   (unsigned long long) sconn->smb2.seqnum_range));
+		   (unsigned long long) xconn->smb2.credits.granted,
+		   (unsigned long long) xconn->smb2.credits.seq_low,
+		   (unsigned long long) xconn->smb2.credits.seq_range));
 
-	if (sconn->smb2.credits_granted < credit_charge) {
+	if (xconn->smb2.credits.granted < credit_charge) {
 		DEBUG(0, ("smb2_validate_message_id: client used more "
 			  "credits than granted, mid %llu, charge %llu, "
 			  "credits_granted %llu, "
 			  "seqnum low/range: %llu/%llu\n",
 			  (unsigned long long) message_id,
 			  (unsigned long long) credit_charge,
-			  (unsigned long long) sconn->smb2.credits_granted,
-			  (unsigned long long) sconn->smb2.seqnum_low,
-			  (unsigned long long) sconn->smb2.seqnum_range));
+			  (unsigned long long) xconn->smb2.credits.granted,
+			  (unsigned long long) xconn->smb2.credits.seq_low,
+			  (unsigned long long) xconn->smb2.credits.seq_range));
 		return false;
 	}
 
@@ -711,7 +716,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 	}
 
 	/* substract used credits */
-	sconn->smb2.credits_granted -= credit_charge;
+	xconn->smb2.credits.granted -= credit_charge;
 
 	return true;
 }
@@ -760,6 +765,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 			const struct iovec *in_vector,
 			struct iovec *out_vector)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	const uint8_t *inhdr = (const uint8_t *)in_vector->iov_base;
 	uint8_t *outhdr = (uint8_t *)out_vector->iov_base;
 	uint16_t credit_charge = 1;
@@ -785,10 +791,10 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	 *       Which means we would grant more credits
 	 *       for client which use multi credit requests.
 	 */
-	current_max_credits = sconn->smb2.max_credits / 16;
+	current_max_credits = xconn->smb2.credits.max / 16;
 	current_max_credits = MAX(current_max_credits, 1);
 
-	if (sconn->smb2.supports_multicredit) {
+	if (xconn->smb2.credits.multicredit) {
 		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
 		credit_charge = MAX(credit_charge, 1);
 	}
@@ -798,9 +804,9 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	out_flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	out_status = NT_STATUS(IVAL(outhdr, SMB2_HDR_STATUS));
 
-	SMB_ASSERT(sconn->smb2.max_credits >= sconn->smb2.credits_granted);
+	SMB_ASSERT(xconn->smb2.credits.max >= xconn->smb2.credits.granted);
 
-	if (sconn->smb2.max_credits < credit_charge) {
+	if (xconn->smb2.credits.max < credit_charge) {
 		smbd_server_connection_terminate(sconn,
 			"client error: credit charge > max credits\n");
 		return;
@@ -842,7 +848,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 		additional_credits = MIN(additional_credits, additional_max);
 
 		credits_granted = credit_charge + additional_credits;
-	} else if (sconn->smb2.credits_granted == 0) {
+	} else if (xconn->smb2.credits.granted == 0) {
 		/*
 		 * Make sure the client has always at least one credit
 		 */
@@ -864,19 +870,19 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	 *    this makes sure the client consumes the lowest sequence
 	 *    number, before we can grant additional credits.
 	 */
-	credits_possible = UINT64_MAX - sconn->smb2.seqnum_low;
+	credits_possible = UINT64_MAX - xconn->smb2.credits.seq_low;
 	if (credits_possible > 0) {
 		/* remove UINT64_MAX */
 		credits_possible -= 1;
 	}
 	credits_possible = MIN(credits_possible, current_max_credits);
-	credits_possible -= sconn->smb2.seqnum_range;
+	credits_possible -= xconn->smb2.credits.seq_range;
 
 	credits_granted = MIN(credits_granted, credits_possible);
 
 	SSVAL(outhdr, SMB2_HDR_CREDIT, credits_granted);
-	sconn->smb2.credits_granted += credits_granted;
-	sconn->smb2.seqnum_range += credits_granted;
+	xconn->smb2.credits.granted += credits_granted;
+	xconn->smb2.credits.seq_range += credits_granted;
 
 	DEBUG(10,("smb2_set_operation_credit: requested %u, charge %u, "
 		"granted %u, current possible/max %u/%u, "
@@ -886,10 +892,10 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 		(unsigned int)credits_granted,
 		(unsigned int)credits_possible,
 		(unsigned int)current_max_credits,
-		(unsigned int)sconn->smb2.credits_granted,
-		(unsigned int)sconn->smb2.max_credits,
-		(unsigned long long)sconn->smb2.seqnum_low,
-		(unsigned int)sconn->smb2.seqnum_range));
+		(unsigned int)xconn->smb2.credits.granted,
+		(unsigned int)xconn->smb2.credits.max,
+		(unsigned long long)xconn->smb2.credits.seq_low,
+		(unsigned int)xconn->smb2.credits.seq_range));
 }
 
 static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
@@ -1805,13 +1811,14 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 						uint32_t data_length)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	uint16_t needed_charge;
 	uint16_t credit_charge = 1;
 	const uint8_t *inhdr;
 
 	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
-	if (req->sconn->smb2.supports_multicredit) {
+	if (xconn->smb2.credits.multicredit) {
 		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
 		credit_charge = MAX(credit_charge, 1);
 	}
@@ -2970,7 +2977,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 		return NT_STATUS_OK;
 	}
 
-	max_send_queue_len = MAX(1, sconn->smb2.max_credits/16);
+	max_send_queue_len = MAX(1, xconn->smb2.credits.max/16);
 	cur_send_queue_len = xconn->smb2.send_queue_len;
 
 	if (cur_send_queue_len > max_send_queue_len) {
