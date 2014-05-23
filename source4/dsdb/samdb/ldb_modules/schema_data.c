@@ -144,6 +144,8 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	WERROR status;
 	bool rodc = false;
 	int ret;
+	struct schema_data_private_data *mc;
+	mc = talloc_get_type(ldb_module_get_private(module), struct schema_data_private_data);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -160,12 +162,6 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	schema = dsdb_get_schema(ldb, req);
 	if (!schema) {
 		return ldb_next_request(module, req);
-	}
-
-	if (schema->base_dn == NULL) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			  "schema_data_add: base_dn NULL\n");
-		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = samdb_rodc(ldb, &rodc);
@@ -190,7 +186,7 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		 * the provision code needs to create
 		 * the schema root object.
 		 */
-		cmp = ldb_dn_compare(req->op.add.message->dn, schema->base_dn);
+		cmp = ldb_dn_compare(req->op.add.message->dn, mc->schema_dn);
 		if (cmp == 0) {
 			return ldb_next_request(module, req);
 		}
@@ -201,7 +197,7 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_oom(ldb);
 	}
 
-	cmp = ldb_dn_compare(parent_dn, schema->base_dn);
+	cmp = ldb_dn_compare(parent_dn, mc->schema_dn);
 	if (cmp != 0) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			  "schema_data_add: no direct child :%s\n",
@@ -257,6 +253,8 @@ static int schema_data_modify(struct ldb_module *module, struct ldb_request *req
 	bool rodc = false;
 	int ret;
 	struct ldb_control *sd_propagation_control;
+	struct schema_data_private_data *mc;
+	mc = talloc_get_type(ldb_module_get_private(module), struct schema_data_private_data);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -295,7 +293,7 @@ static int schema_data_modify(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
-	cmp = ldb_dn_compare(req->op.mod.message->dn, schema->base_dn);
+	cmp = ldb_dn_compare(req->op.mod.message->dn, mc->schema_dn);
 	if (cmp == 0) {
 		static const char * const constrained_attrs[] = {
 			"schemaInfo",

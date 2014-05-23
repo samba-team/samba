@@ -508,11 +508,6 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		s->self_made_schema = dsdb_new_schema(s);
 		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
 
-		s->self_made_schema->base_dn = ldb_dn_new(s->self_made_schema,
-						s->ldb,
-						c->forest->schema_dn_str);
-		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema->base_dn);
-
 		status = dsdb_load_prefixmap_from_drsuapi(s->self_made_schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);

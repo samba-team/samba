@@ -201,8 +201,6 @@ struct dsdb_schema_info {
 
 
 struct dsdb_schema {
-	struct ldb_dn *base_dn;
-
 	struct dsdb_schema_prefixmap *prefixmap;
 
 	/* 

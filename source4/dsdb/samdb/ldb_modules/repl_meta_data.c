@@ -67,6 +67,7 @@ struct replmd_private {
 		uint64_t mod_usn;
 		uint64_t mod_usn_urgent;
 	} *ncs;
+	struct ldb_dn *schema_dn;
 };
 
 struct la_entry {
@@ -239,6 +240,8 @@ static int replmd_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ldb_module_set_private(module, replmd_private);
+
+	replmd_private->schema_dn = ldb_get_schema_basedn(ldb);
 
 	return ldb_next_init(module);
 }
@@ -888,6 +891,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	bool remove_current_guid = false;
 	bool is_urgent = false;
 	struct ldb_message_element *objectclass_el;
+	struct replmd_private *replmd_private =
+		talloc_get_type_abort(ldb_module_get_private(module), struct replmd_private);
 
         /* check if there's a show relax control (used by provision to say 'I know what I'm doing') */
         control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
@@ -1179,7 +1184,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	if (control) {
 		control->critical = 0;
 	}
-	if (ldb_dn_compare_base(ac->schema->base_dn, req->op.add.message->dn) != 0) {
+	if (ldb_dn_compare_base(replmd_private->schema_dn, req->op.add.message->dn) != 0) {
 
 		/* Update the usn in the SAMLDB_MSDS_INTID_OPAQUE opaque */
 		msds_intid_struct = (struct samldb_msds_intid_persistant *) ldb_get_opaque(ldb, SAMLDB_MSDS_INTID_OPAQUE);
@@ -2471,6 +2476,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	unsigned int functional_level;
 	const DATA_BLOB *guid_blob;
 	struct ldb_control *sd_propagation_control;
+	struct replmd_private *replmd_private =
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -2609,7 +2616,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	if (!ldb_dn_compare_base(ac->schema->base_dn, msg->dn)) {
+	if (!ldb_dn_compare_base(replmd_private->schema_dn, msg->dn)) {
 		/* Update the usn in the SAMLDB_MSDS_INTID_OPAQUE opaque */
 		msds_intid_struct = (struct samldb_msds_intid_persistant *) ldb_get_opaque(ldb, SAMLDB_MSDS_INTID_OPAQUE);
 		if (msds_intid_struct) {

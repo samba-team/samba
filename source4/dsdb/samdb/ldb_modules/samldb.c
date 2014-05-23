@@ -509,7 +509,8 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 			continue;
 		}
 
-		ret = dsdb_module_load_partition_usn(ac->module, schema->base_dn, &current_usn, NULL, NULL);
+		ret = dsdb_module_load_partition_usn(ac->module, schema_dn,
+						     &current_usn, NULL, NULL);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 				      __location__": Searching for schema USN failed: %s\n",

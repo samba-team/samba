@@ -58,12 +58,6 @@ struct dsdb_schema *dsdb_schema_copy_shallow(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	/* schema base_dn */
-	schema_copy->base_dn = ldb_dn_copy(schema_copy, schema->base_dn);
-	if (!schema_copy->base_dn) {
-		goto failed;
-	}
-
 	/* copy prexiMap & schemaInfo */
 	schema_copy->prefixmap = dsdb_schema_pfm_copy_shallow(schema_copy,
 							      schema->prefixmap);
@@ -930,8 +924,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 							      "dsdb", "schema update allowed",
 							      false);
 	}
-
-	schema->base_dn = talloc_steal(schema, schema_res->msgs[0]->dn);
 
 	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
 	if (!prefix_val) {
