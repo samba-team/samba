@@ -34,8 +34,7 @@ static void smbd_smb2_connection_handler(struct tevent_context *ev,
 					 struct tevent_fd *fde,
 					 uint16_t flags,
 					 void *private_data);
-static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
-				     uint16_t fde_flags);
+static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn);
 
 static const struct smbd_smb2_dispatch_table {
 	uint16_t opcode;
@@ -1265,7 +1264,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	DLIST_ADD_END(nreq->sconn->smb2.send_queue, &nreq->queue_entry, NULL);
 	nreq->sconn->smb2.send_queue_len++;
 
-	status = smbd_smb2_io_handler(sconn, TEVENT_FD_WRITE);
+	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1598,7 +1597,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	DLIST_ADD_END(sconn->smb2.send_queue, &state->queue_entry, NULL);
 	sconn->smb2.send_queue_len++;
 
-	status = smbd_smb2_io_handler(sconn, TEVENT_FD_WRITE);
+	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn,
 						 nt_errstr(status));
@@ -2499,7 +2498,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	DLIST_ADD_END(req->sconn->smb2.send_queue, &req->queue_entry, NULL);
 	req->sconn->smb2.send_queue_len++;
 
-	status = smbd_smb2_io_handler(sconn, TEVENT_FD_WRITE);
+	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2829,7 +2828,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	DLIST_ADD_END(state->sconn->smb2.send_queue, &state->queue_entry, NULL);
 	state->sconn->smb2.send_queue_len++;
 
-	status = smbd_smb2_io_handler(sconn, TEVENT_FD_WRITE);
+	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
