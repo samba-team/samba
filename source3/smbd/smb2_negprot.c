@@ -78,7 +78,8 @@ void reply_smb2002(struct smb_request *req, uint16_t choice)
  */
 void reply_smb20ff(struct smb_request *req, uint16_t choice)
 {
-	req->sconn->smb2.negprot_2ff = true;
+	struct smbXsrv_connection *xconn = req->sconn->conn;
+	xconn->smb2.allow_2ff = true;
 	reply_smb20xx(req, SMB2_DIALECT_REVISION_2FF);
 }
 
@@ -169,6 +170,7 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	const uint8_t *indyn = NULL;
@@ -234,8 +236,8 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 		dialect = SVAL(indyn, c*2);
 		if (dialect == SMB2_DIALECT_REVISION_2FF) {
-			if (req->sconn->smb2.negprot_2ff) {
-				req->sconn->smb2.negprot_2ff = false;
+			if (xconn->smb2.allow_2ff) {
+				xconn->smb2.allow_2ff = false;
 				protocol = PROTOCOL_SMB2_10;
 				break;
 			}
