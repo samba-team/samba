@@ -431,6 +431,8 @@ struct smbXsrv_connection {
 			size_t pktlen;
 			uint8_t *pktbuf;
 		} request_read_state;
+		struct smbd_smb2_send_queue *send_queue;
+		size_t send_queue_len;
 
 		struct {
 			uint32_t capabilities;
@@ -787,8 +789,6 @@ struct smbd_server_connection {
 		} locks;
 	} smb1;
 	struct {
-		struct smbd_smb2_send_queue *send_queue;
-		size_t send_queue_len;
 		bool negprot_2ff;
 		struct {
 			/* The event that makes us process our blocking lock queue */

@@ -204,8 +204,6 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 
 	TALLOC_FREE(xconn->transport.fde);
 
-	sconn->smb2.send_queue = NULL;
-
 	sconn->smb2.seqnum_low = 0;
 	sconn->smb2.seqnum_range = 1;
 	sconn->smb2.credits_granted = 1;
@@ -1263,8 +1261,8 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	nreq->queue_entry.mem_ctx = nreq;
 	nreq->queue_entry.vector = nreq->out.vector;
 	nreq->queue_entry.count = nreq->out.vector_count;
-	DLIST_ADD_END(nreq->sconn->smb2.send_queue, &nreq->queue_entry, NULL);
-	nreq->sconn->smb2.send_queue_len++;
+	DLIST_ADD_END(conn->smb2.send_queue, &nreq->queue_entry, NULL);
+	conn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1424,6 +1422,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		talloc_get_type_abort(private_data,
 		struct smbd_smb2_request);
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request_pending_state *state = NULL;
 	uint8_t *outhdr = NULL;
 	const uint8_t *inhdr = NULL;
@@ -1565,11 +1564,10 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	if (req->do_encryption) {
 		struct smbXsrv_session *x = req->session;
-		struct smbXsrv_connection *conn = x->connection;
 		DATA_BLOB encryption_key = x->global->encryption_key;
 
 		status = smb2_signing_encrypt_pdu(encryption_key,
-					conn->protocol,
+					xconn->protocol,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1579,11 +1577,10 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		}
 	} else if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
-		struct smbXsrv_connection *conn = x->connection;
 		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 
 		status = smb2_signing_sign_pdu(signing_key,
-					conn->protocol,
+					xconn->protocol,
 					&state->vector[1+SMBD_SMB2_HDR_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1596,8 +1593,8 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	state->queue_entry.mem_ctx = state;
 	state->queue_entry.vector = state->vector;
 	state->queue_entry.count = ARRAY_SIZE(state->vector);
-	DLIST_ADD_END(sconn->smb2.send_queue, &state->queue_entry, NULL);
-	sconn->smb2.send_queue_len++;
+	DLIST_ADD_END(xconn->smb2.send_queue, &state->queue_entry, NULL);
+	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2512,8 +2509,8 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	req->queue_entry.mem_ctx = req;
 	req->queue_entry.vector = req->out.vector;
 	req->queue_entry.count = req->out.vector_count;
-	DLIST_ADD_END(req->sconn->smb2.send_queue, &req->queue_entry, NULL);
-	req->sconn->smb2.send_queue_len++;
+	DLIST_ADD_END(conn->smb2.send_queue, &req->queue_entry, NULL);
+	conn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2841,8 +2838,8 @@ static NTSTATUS smbd_smb2_send_break(struct smbd_server_connection *sconn,
 	state->queue_entry.mem_ctx = state;
 	state->queue_entry.vector = state->vector;
 	state->queue_entry.count = ARRAY_SIZE(state->vector);
-	DLIST_ADD_END(state->sconn->smb2.send_queue, &state->queue_entry, NULL);
-	state->sconn->smb2.send_queue_len++;
+	DLIST_ADD_END(conn->smb2.send_queue, &state->queue_entry, NULL);
+	conn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2974,7 +2971,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 	}
 
 	max_send_queue_len = MAX(1, sconn->smb2.max_credits/16);
-	cur_send_queue_len = sconn->smb2.send_queue_len;
+	cur_send_queue_len = xconn->smb2.send_queue_len;
 
 	if (cur_send_queue_len > max_send_queue_len) {
 		/*
@@ -3105,13 +3102,13 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 	int err;
 	bool retry;
 
-	if (sconn->smb2.send_queue == NULL) {
+	if (xconn->smb2.send_queue == NULL) {
 		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
 		return NT_STATUS_OK;
 	}
 
-	while (sconn->smb2.send_queue != NULL) {
-		struct smbd_smb2_send_queue *e = sconn->smb2.send_queue;
+	while (xconn->smb2.send_queue != NULL) {
+		struct smbd_smb2_send_queue *e = xconn->smb2.send_queue;
 
 		if (e->sendfile_header != NULL) {
 			size_t size = 0;
@@ -3143,8 +3140,8 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 			e->sendfile_header->length = size;
 			e->count = 0;
 
-			sconn->smb2.send_queue_len--;
-			DLIST_REMOVE(sconn->smb2.send_queue, e);
+			xconn->smb2.send_queue_len--;
+			DLIST_REMOVE(xconn->smb2.send_queue, e);
 			/*
 			 * This triggers the sendfile path via
 			 * the destructor.
@@ -3200,8 +3197,8 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 			return NT_STATUS_OK;
 		}
 
-		sconn->smb2.send_queue_len--;
-		DLIST_REMOVE(sconn->smb2.send_queue, e);
+		xconn->smb2.send_queue_len--;
+		DLIST_REMOVE(xconn->smb2.send_queue, e);
 		talloc_free(e->mem_ctx);
 	}
 
