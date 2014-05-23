@@ -48,6 +48,7 @@ static NTSTATUS smbd_smb2_notify_recv(struct tevent_req *req,
 static void smbd_smb2_request_notify_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	uint16_t in_flags;
@@ -74,7 +75,7 @@ NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req)
 	 * 0x00010000 is what Windows 7 uses,
 	 * Windows 2008 uses 0x00080000
 	 */
-	if (in_output_buffer_length > req->sconn->smb2.max_trans) {
+	if (in_output_buffer_length > xconn->smb2.server.max_trans) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 

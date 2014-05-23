@@ -394,10 +394,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		conn->smb2.server.max_trans = max_trans;
 		conn->smb2.server.max_read  = max_read;
 		conn->smb2.server.max_write = max_write;
-
-		req->sconn->smb2.max_trans = max_trans;
-		req->sconn->smb2.max_read  = max_read;
-		req->sconn->smb2.max_write = max_write;
 	}
 
 	return smbd_smb2_request_done(req, outbody, &outdyn);

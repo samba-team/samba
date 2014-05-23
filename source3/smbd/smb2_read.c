@@ -43,6 +43,7 @@ static NTSTATUS smbd_smb2_read_recv(struct tevent_req *req,
 static void smbd_smb2_request_read_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	uint32_t in_length;
@@ -68,10 +69,10 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 	in_remaining_bytes	= IVAL(inbody, 0x28);
 
 	/* check the max read size */
-	if (in_length > req->sconn->smb2.max_read) {
+	if (in_length > xconn->smb2.server.max_read) {
 		DEBUG(2,("smbd_smb2_request_process_read: "
 			 "client ignored max read: %s: 0x%08X: 0x%08X\n",
-			__location__, in_length, req->sconn->smb2.max_read));
+			__location__, in_length, xconn->smb2.server.max_read));
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 

@@ -38,6 +38,7 @@ static NTSTATUS smbd_smb2_write_recv(struct tevent_req *req,
 static void smbd_smb2_request_write_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	uint16_t in_data_offset;
@@ -82,10 +83,10 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	}
 
 	/* check the max write size */
-	if (in_data_length > req->sconn->smb2.max_write) {
+	if (in_data_length > xconn->smb2.server.max_write) {
 		DEBUG(2,("smbd_smb2_request_process_write : "
 			"client ignored max write :%s: 0x%08X: 0x%08X\n",
-			__location__, in_data_length, req->sconn->smb2.max_write));
+			__location__, in_data_length, xconn->smb2.server.max_write));
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 

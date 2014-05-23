@@ -839,9 +839,6 @@ struct smbd_server_connection {
 		 */
 		struct bitmap *credits_bitmap;
 		bool supports_multicredit;
-		uint32_t max_trans;
-		uint32_t max_read;
-		uint32_t max_write;
 	} smb2;
 
 	/*
