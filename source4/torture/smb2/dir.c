@@ -41,6 +41,7 @@
 
 struct file_elem {
 	char *name;
+	NTTIME create_time;
 	bool found;
 };
 
@@ -89,6 +90,7 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 		    DNAME, files[i].name);
 		status = smb2_create(tree, mem_ctx, &create);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
+		files[i].create_time = create.out.create_time;
 		smb2_util_close(tree, create.out.file.handle);
 	}
  done:
@@ -130,17 +132,27 @@ static bool test_find(struct torture_context *tctx,
 		for (i = 0; i < count; i++) {
 			bool expected;
 			const char *found = d[i].both_directory_info.name.s;
+			NTTIME ctime = d[i].both_directory_info.create_time;
 
 			if (!strcmp(found, ".") || !strcmp(found, ".."))
 				continue;
 
 			expected = false;
 			for (j = 0; j < NFILES; j++) {
-				if (!strcmp(files[j].name, found)) {
-					files[j].found = true;
-					expected = true;
-					break;
+				if (strcmp(files[j].name, found) != 0) {
+					continue;
 				}
+
+				if (files[j].create_time != ctime) {
+					torture_result(tctx, TORTURE_FAIL,
+					    "(%s): create_time mismatch for %s"
+					    "\n", __location__, found);
+					ret = false;
+					goto done;
+				}
+				files[j].found = true;
+				expected = true;
+				break;
 			}
 
 			if (expected)
