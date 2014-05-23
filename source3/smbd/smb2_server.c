@@ -216,13 +216,13 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->smb2.fde = tevent_add_fd(sconn->ev_ctx,
+	xconn->transport.fde = tevent_add_fd(sconn->ev_ctx,
 					sconn,
 					xconn->transport.sock,
 					TEVENT_FD_READ,
 					smbd_smb2_connection_handler,
 					sconn);
-	if (sconn->smb2.fde == NULL) {
+	if (xconn->transport.fde == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2994,7 +2994,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 	state->req->sconn = sconn;
 	state->min_recv_size = lp_min_receive_file_size();
 
-	TEVENT_FD_READABLE(sconn->smb2.fde);
+	TEVENT_FD_READABLE(xconn->transport.fde);
 
 	return NT_STATUS_OK;
 }
@@ -3106,7 +3106,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 	bool retry;
 
 	if (sconn->smb2.send_queue == NULL) {
-		TEVENT_FD_NOT_WRITEABLE(sconn->smb2.fde);
+		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
 		return NT_STATUS_OK;
 	}
 
@@ -3161,7 +3161,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 		err = socket_error_from_errno(ret, errno, &retry);
 		if (retry) {
 			/* retry later */
-			TEVENT_FD_WRITEABLE(sconn->smb2.fde);
+			TEVENT_FD_WRITEABLE(xconn->transport.fde);
 			return NT_STATUS_OK;
 		}
 		if (err != 0) {
@@ -3196,7 +3196,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 
 		if (e->count > 0) {
 			/* we have more to write */
-			TEVENT_FD_WRITEABLE(sconn->smb2.fde);
+			TEVENT_FD_WRITEABLE(xconn->transport.fde);
 			return NT_STATUS_OK;
 		}
 
@@ -3225,8 +3225,8 @@ static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
 		/*
 		 * we're not supposed to do any io
 		 */
-		TEVENT_FD_NOT_READABLE(sconn->smb2.fde);
-		TEVENT_FD_NOT_WRITEABLE(sconn->smb2.fde);
+		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
+		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
 		return NT_STATUS_OK;
 	}
 
@@ -3242,7 +3242,7 @@ static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
 	}
 
 	if (state->req == NULL) {
-		TEVENT_FD_NOT_READABLE(sconn->smb2.fde);
+		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
 		return NT_STATUS_OK;
 	}
 
@@ -3262,7 +3262,7 @@ again:
 	err = socket_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */
-		TEVENT_FD_READABLE(sconn->smb2.fde);
+		TEVENT_FD_READABLE(xconn->transport.fde);
 		return NT_STATUS_OK;
 	}
 	if (err != 0) {
@@ -3276,7 +3276,7 @@ again:
 		state->vector.iov_base = (void *)base;
 		state->vector.iov_len -= ret;
 		/* we have more to read */
-		TEVENT_FD_READABLE(sconn->smb2.fde);
+		TEVENT_FD_READABLE(xconn->transport.fde);
 		return NT_STATUS_OK;
 	}
 

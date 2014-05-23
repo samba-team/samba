@@ -788,7 +788,6 @@ struct smbd_server_connection {
 		} request_read_state;
 		struct smbd_smb2_send_queue *send_queue;
 		size_t send_queue_len;
-		struct tevent_fd *fde;
 		bool negprot_2ff;
 		struct {
 			/* The event that makes us process our blocking lock queue */
