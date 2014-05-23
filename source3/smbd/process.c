@@ -220,7 +220,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 	ssize_t ret;
 	char *buf_out = buffer;
 
-	if (!NT_STATUS_IS_OK(sconn->status)) {
+	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
 		 * we're not supposed to do any io
 		 */
@@ -2514,7 +2514,7 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 					      struct smbd_server_connection);
 	struct smbXsrv_connection *xconn = conn->conn;
 
-	if (!NT_STATUS_IS_OK(conn->status)) {
+	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
 		 * we're not supposed to do any io
 		 */
@@ -2540,8 +2540,9 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 {
 	struct smbd_server_connection *conn = talloc_get_type(private_data,
 					      struct smbd_server_connection);
+	struct smbXsrv_connection *xconn = conn->conn;
 
-	if (!NT_STATUS_IS_OK(conn->status)) {
+	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
 		 * we're not supposed to do any io
 		 */
@@ -2574,8 +2575,9 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 	struct smbd_release_ip_state *state =
 		talloc_get_type_abort(private_data,
 		struct smbd_release_ip_state);
+	struct smbXsrv_connection *xconn = state->sconn->conn;
 
-	if (!NT_STATUS_EQUAL(state->sconn->status, NT_STATUS_ADDRESS_CLOSED)) {
+	if (!NT_STATUS_EQUAL(xconn->transport.status, NT_STATUS_ADDRESS_CLOSED)) {
 		/*
 		 * smbd_server_connection_terminate() already triggered ?
 		 */
@@ -2593,10 +2595,11 @@ static bool release_ip(const char *ip, void *priv)
 	struct smbd_release_ip_state *state =
 		talloc_get_type_abort(priv,
 		struct smbd_release_ip_state);
+	struct smbXsrv_connection *xconn = state->sconn->conn;
 	const char *addr = state->addr;
 	const char *p = addr;
 
-	if (!NT_STATUS_IS_OK(state->sconn->status)) {
+	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/* avoid recursion */
 		return false;
 	}
@@ -2638,7 +2641,7 @@ static bool release_ip(const char *ip, void *priv)
 		/*
 		 * Make sure we don't get any io on the connection.
 		 */
-		state->sconn->status = NT_STATUS_ADDRESS_CLOSED;
+		xconn->transport.status = NT_STATUS_ADDRESS_CLOSED;
 		return true;
 	}
 

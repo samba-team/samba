@@ -102,13 +102,13 @@ static void exit_server_common(enum server_exit_reason how,
 	if (sconn) {
 		NTSTATUS status;
 
-		if (NT_STATUS_IS_OK(sconn->status)) {
+		if (NT_STATUS_IS_OK(conn->transport.status)) {
 			switch (how) {
 			case SERVER_EXIT_ABNORMAL:
-				sconn->status = NT_STATUS_INTERNAL_ERROR;
+				conn->transport.status = NT_STATUS_INTERNAL_ERROR;
 				break;
 			case SERVER_EXIT_NORMAL:
-				sconn->status = NT_STATUS_LOCAL_DISCONNECT;
+				conn->transport.status = NT_STATUS_LOCAL_DISCONNECT;
 				break;
 			}
 		}
