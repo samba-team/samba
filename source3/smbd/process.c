@@ -215,6 +215,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	size_t len = 0;
 	ssize_t ret;
 	char *buf_out = buffer;
@@ -248,16 +249,16 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 
 	ret = write_data(sconn->sock, buf_out, len);
 	if (ret <= 0) {
-
-		char addr[INET6_ADDRSTRLEN];
+		int saved_errno = errno;
 		/*
 		 * Try and give an error message saying what
 		 * client failed.
 		 */
 		DEBUG(1,("pid[%d] Error writing %d bytes to client %s. %d. (%s)\n",
 			 (int)getpid(), (int)len,
-			 get_peer_addr(sconn->sock, addr, sizeof(addr)),
-			 (int)ret, strerror(errno) ));
+			 smbXsrv_connection_dbg(xconn),
+			 (int)ret, strerror(saved_errno)));
+		errno = saved_errno;
 
 		srv_free_enc_buffer(sconn, buf_out);
 		goto out;
@@ -2703,6 +2704,7 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 {
 	struct smbd_server_connection *sconn = talloc_get_type_abort(
 		private_data, struct smbd_server_connection);
+	struct smbXsrv_connection *xconn = sconn->conn;
 	bool ret;
 
 	if (sconn->using_smb2) {
@@ -2715,15 +2717,16 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 	smbd_unlock_socket(sconn);
 
 	if (!ret) {
-		char addr[INET6_ADDRSTRLEN];
+		int saved_errno = errno;
 		/*
 		 * Try and give an error message saying what
 		 * client failed.
 		 */
 		DEBUG(0, ("send_keepalive failed for client %s. "
 			  "Error %s - exiting\n",
-			  get_peer_addr(sconn->sock, addr, sizeof(addr)),
-			  strerror(errno)));
+			  smbXsrv_connection_dbg(xconn),
+			  strerror(saved_errno)));
+		errno = saved_errno;
 		return False;
 	}
 	return True;

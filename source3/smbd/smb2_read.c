@@ -185,8 +185,10 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 	uint64_t in_offset = state->in_offset;
 	files_struct *fsp = state->fsp;
 	const DATA_BLOB *hdr = state->smb2req->queue_entry.sendfile_header;
+	struct smbXsrv_connection *xconn = state->smb2req->sconn->conn;
 	ssize_t nread;
 	ssize_t ret;
+	int saved_errno;
 
 	nread = SMB_VFS_SENDFILE(fsp->conn->sconn->sock,
 				 fsp,
@@ -198,6 +200,8 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 		fsp_str_dbg(fsp) ));
 
 	if (nread == -1) {
+		saved_errno = errno;
+
 		/*
 		 * Returning ENOSYS means no data at all was sent.
 		   Do this as a normal read. */
@@ -214,11 +218,12 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 			set_use_sendfile(SNUM(fsp->conn), false);
 			nread = fake_sendfile(fsp, in_offset, in_length);
 			if (nread == -1) {
-				DEBUG(0,("smb2_sendfile_send_data: "
-					"fake_sendfile failed for "
-					"file %s (%s).\n",
-					fsp_str_dbg(fsp),
-					strerror(errno)));
+				saved_errno = errno;
+				DEBUG(0,("smb2_sendfile_send_data: fake_sendfile "
+					 "failed for file %s (%s) for client %s. "
+					 "Terminating\n",
+					 fsp_str_dbg(fsp), strerror(saved_errno),
+					 smbXsrv_connection_dbg(xconn)));
 				exit_server_cleanly("smb2_sendfile_send_data: "
 					"fake_sendfile failed");
 			}
@@ -226,9 +231,9 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 		}
 
 		DEBUG(0,("smb2_sendfile_send_data: sendfile failed for file "
-			"%s (%s). Terminating\n",
-			fsp_str_dbg(fsp),
-			strerror(errno)));
+			 "%s (%s) for client %s. Terminating\n",
+			 fsp_str_dbg(fsp), strerror(saved_errno),
+			 smbXsrv_connection_dbg(xconn)));
 		exit_server_cleanly("smb2_sendfile_send_data: sendfile failed");
 	} else if (nread == 0) {
 		/*
@@ -254,29 +259,21 @@ normal_read:
 	ret = write_data(fsp->conn->sconn->sock,
 			 (const char *)hdr->data, hdr->length);
 	if (ret != hdr->length) {
-		char addr[INET6_ADDRSTRLEN];
-		/*
-		 * Try and give an error message saying what
-		 * client failed.
-		 */
-		DEBUG(0, ("smb2_sendfile_send_data: write_data failed "
-			  "for client %s. Error %s\n",
-			  get_peer_addr(fsp->conn->sconn->sock, addr,
-					sizeof(addr)),
-			  strerror(errno)));
-
+		saved_errno = errno;
 		DEBUG(0,("smb2_sendfile_send_data: write_data failed for file "
-			 "%s (%s). Terminating\n", fsp_str_dbg(fsp),
-			 strerror(errno)));
+			 "%s (%s) for client %s. Terminating\n",
+			 fsp_str_dbg(fsp), strerror(saved_errno),
+			 smbXsrv_connection_dbg(xconn)));
 		exit_server_cleanly("smb2_sendfile_send_data: write_data failed");
 	}
 	nread = fake_sendfile(fsp, in_offset, in_length);
 	if (nread == -1) {
-		DEBUG(0,("smb2_sendfile_send_data: "
-			"fake_sendfile failed for file "
-			"%s (%s). Terminating\n",
-			fsp_str_dbg(fsp),
-			strerror(errno)));
+		saved_errno = errno;
+		DEBUG(0,("smb2_sendfile_send_data: fake_sendfile "
+			 "failed for file %s (%s) for client %s. "
+			 "Terminating\n",
+			 fsp_str_dbg(fsp), strerror(saved_errno),
+			 smbXsrv_connection_dbg(xconn)));
 		exit_server_cleanly("smb2_sendfile_send_data: "
 			"fake_sendfile failed");
 	}

@@ -3023,6 +3023,7 @@ static void fail_readraw(void)
 
 ssize_t fake_sendfile(files_struct *fsp, off_t startpos, size_t nread)
 {
+	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
 	size_t bufsize;
 	size_t tosend = nread;
 	char *buf;
@@ -3057,19 +3058,19 @@ ssize_t fake_sendfile(files_struct *fsp, off_t startpos, size_t nread)
 			memset(buf + ret, '\0', cur_read - ret);
 		}
 
-		if (write_data(fsp->conn->sconn->sock, buf, cur_read)
-		    != cur_read) {
-			char addr[INET6_ADDRSTRLEN];
+		ret = write_data(xconn->sconn->sock, buf, cur_read);
+		if (ret != cur_read) {
+			int saved_errno = errno;
 			/*
 			 * Try and give an error message saying what
 			 * client failed.
 			 */
 			DEBUG(0, ("write_data failed for client %s. "
 				  "Error %s\n",
-				  get_peer_addr(fsp->conn->sconn->sock, addr,
-						sizeof(addr)),
-				  strerror(errno)));
+				  smbXsrv_connection_dbg(xconn),
+				  strerror(saved_errno)));
 			SAFE_FREE(buf);
+			errno = saved_errno;
 			return -1;
 		}
 		tosend -= cur_read;
@@ -3090,6 +3091,8 @@ void sendfile_short_send(files_struct *fsp,
 				size_t headersize,
 				size_t smb_maxcnt)
 {
+	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
+
 #define SHORT_SEND_BUFSIZE 1024
 	if (nread < headersize) {
 		DEBUG(0,("sendfile_short_send: sendfile failed to send "
@@ -3126,21 +3129,21 @@ void sendfile_short_send(files_struct *fsp,
 			 * about efficiency here :-)
 			 */
 			size_t to_write;
+			ssize_t ret;
 
 			to_write = MIN(SHORT_SEND_BUFSIZE, smb_maxcnt - nread);
-			if (write_data(fsp->conn->sconn->sock, buf, to_write)
-			    != to_write) {
-				char addr[INET6_ADDRSTRLEN];
+			ret = write_data(xconn->sconn->sock, buf, to_write);
+			if (ret != to_write) {
+				int saved_errno = errno;
 				/*
 				 * Try and give an error message saying what
 				 * client failed.
 				 */
 				DEBUG(0, ("write_data failed for client %s. "
 					  "Error %s\n",
-					  get_peer_addr(
-						  fsp->conn->sconn->sock, addr,
-						  sizeof(addr)),
-					  strerror(errno)));
+					  smbXsrv_connection_dbg(xconn),
+					  strerror(saved_errno)));
+				errno = saved_errno;
 				exit_server_cleanly("sendfile_short_send: "
 						    "write_data failed");
 			}
@@ -3156,21 +3159,23 @@ void sendfile_short_send(files_struct *fsp,
 
 static void reply_readbraw_error(struct smbd_server_connection *sconn)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	char header[4];
 
 	SIVAL(header,0,0);
 
 	smbd_lock_socket(sconn);
 	if (write_data(sconn->sock,header,4) != 4) {
-		char addr[INET6_ADDRSTRLEN];
+		int saved_errno = errno;
 		/*
 		 * Try and give an error message saying what
 		 * client failed.
 		 */
 		DEBUG(0, ("write_data failed for client %s. "
 			  "Error %s\n",
-			  get_peer_addr(sconn->sock, addr, sizeof(addr)),
-			  strerror(errno)));
+			  smbXsrv_connection_dbg(xconn),
+			  strerror(saved_errno)));
+		errno = saved_errno;
 
 		fail_readraw();
 	}
@@ -3189,6 +3194,7 @@ static void send_file_readbraw(connection_struct *conn,
 			       ssize_t mincount)
 {
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	char *outbuf = NULL;
 	ssize_t ret=0;
 
@@ -3288,16 +3294,15 @@ normal_readbraw:
 
 	_smb_setlen(outbuf,ret);
 	if (write_data(sconn->sock, outbuf, 4+ret) != 4+ret) {
-		char addr[INET6_ADDRSTRLEN];
+		int saved_errno = errno;
 		/*
 		 * Try and give an error message saying what
 		 * client failed.
 		 */
-		DEBUG(0, ("write_data failed for client %s. "
-			  "Error %s\n",
-			  get_peer_addr(fsp->conn->sconn->sock, addr,
-					sizeof(addr)),
-			  strerror(errno)));
+		DEBUG(0, ("write_data failed for client %s. Error %s\n",
+			  smbXsrv_connection_dbg(xconn),
+			  strerror(saved_errno)));
+		errno = saved_errno;
 
 		fail_readraw();
 	}
@@ -3690,6 +3695,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			    files_struct *fsp, off_t startpos,
 			    size_t smb_maxcnt)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	ssize_t nread = -1;
 	struct lock_struct lock;
 	int saved_errno = 0;
@@ -3746,6 +3752,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		nread = SMB_VFS_SENDFILE(req->sconn->sock, fsp, &header,
 					 startpos, smb_maxcnt);
 		if (nread == -1) {
+			saved_errno = errno;
+
 			/* Returning ENOSYS means no data at all was sent.
 			   Do this as a normal read. */
 			if (errno == ENOSYS) {
@@ -3765,11 +3773,15 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 				nread = fake_sendfile(fsp, startpos,
 						      smb_maxcnt);
 				if (nread == -1) {
+					saved_errno = errno;
 					DEBUG(0,("send_file_readX: "
 						 "fake_sendfile failed for "
-						 "file %s (%s).\n",
+						 "file %s (%s) for client %s. "
+						 "Terminating\n",
 						 fsp_str_dbg(fsp),
-						 strerror(errno)));
+						 smbXsrv_connection_dbg(xconn),
+						 strerror(saved_errno)));
+					errno = saved_errno;
 					exit_server_cleanly("send_file_readX: fake_sendfile failed");
 				}
 				DEBUG(3, ("send_file_readX: fake_sendfile %s max=%d nread=%d\n",
@@ -3813,35 +3825,37 @@ normal_read:
 
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
 		uint8 headerbuf[smb_size + 2*12];
+		ssize_t ret;
 
 		construct_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */
-		if (write_data(req->sconn->sock, (char *)headerbuf,
-			       sizeof(headerbuf)) != sizeof(headerbuf)) {
-
-			char addr[INET6_ADDRSTRLEN];
+		ret = write_data(req->sconn->sock, (char *)headerbuf,
+				 sizeof(headerbuf));
+		if (ret != sizeof(headerbuf)) {
+			saved_errno = errno;
 			/*
 			 * Try and give an error message saying what
 			 * client failed.
 			 */
-			DEBUG(0, ("write_data failed for client %s. "
-				  "Error %s\n",
-				  get_peer_addr(req->sconn->sock, addr,
-						sizeof(addr)),
-				  strerror(errno)));
-
 			DEBUG(0,("send_file_readX: write_data failed for file "
-				 "%s (%s). Terminating\n", fsp_str_dbg(fsp),
-				 strerror(errno)));
+				 "%s (%s) for client %s. Terminating\n",
+				 fsp_str_dbg(fsp),
+				 smbXsrv_connection_dbg(xconn),
+				 strerror(saved_errno)));
+			errno = saved_errno;
 			exit_server_cleanly("send_file_readX sendfile failed");
 		}
 		nread = fake_sendfile(fsp, startpos, smb_maxcnt);
 		if (nread == -1) {
-			DEBUG(0,("send_file_readX: fake_sendfile failed for "
-				 "file %s (%s).\n", fsp_str_dbg(fsp),
-				 strerror(errno)));
+			saved_errno = errno;
+			DEBUG(0,("send_file_readX: fake_sendfile failed for file "
+				 "%s (%s) for client %s. Terminating\n",
+				 fsp_str_dbg(fsp),
+				 smbXsrv_connection_dbg(xconn),
+				 strerror(saved_errno)));
+			errno = saved_errno;
 			exit_server_cleanly("send_file_readX: fake_sendfile failed");
 		}
 		goto strict_unlock;
@@ -4103,6 +4117,7 @@ static NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 void reply_writebraw(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	char *buf = NULL;
 	ssize_t nwritten=0;
 	ssize_t total_written=0;
@@ -4266,14 +4281,12 @@ void reply_writebraw(struct smb_request *req)
 		status = read_data(req->sconn->sock, buf+4, numtowrite);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			char addr[INET6_ADDRSTRLEN];
 			/* Try and give an error message
 			 * saying what client failed. */
 			DEBUG(0, ("reply_writebraw: Oversize secondary write "
 				  "raw read failed (%s) for client %s. "
 				  "Terminating\n", nt_errstr(status),
-				  get_peer_addr(req->sconn->sock, addr,
-						sizeof(addr))));
+				  smbXsrv_connection_dbg(xconn)));
 			exit_server_cleanly("secondary writebraw failed");
 		}
 
