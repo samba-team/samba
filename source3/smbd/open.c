@@ -1153,7 +1153,7 @@ static bool has_delete_on_close(struct share_mode_lock *lck,
 
 /****************************************************************************
  Deal with share modes
- Invarient: Share mode must be locked on entry and exit.
+ Invariant: Share mode must be locked on entry and exit.
  Returns -1 on error, or number of share modes on success (may be zero).
 ****************************************************************************/
 
