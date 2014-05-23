@@ -3512,8 +3512,12 @@ void smbd_process(struct tevent_context *ev_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smbXsrv_connection *conn;
 	struct smbd_server_connection *sconn;
-	struct sockaddr_storage ss;
-	struct sockaddr *sa = NULL;
+	struct sockaddr_storage ss_srv;
+	void *sp_srv = (void *)&ss_srv;
+	struct sockaddr *sa_srv = (struct sockaddr *)sp_srv;
+	struct sockaddr_storage ss_clnt;
+	void *sp_clnt = (void *)&ss_clnt;
+	struct sockaddr *sa_clnt = (struct sockaddr *)sp_clnt;
 	socklen_t sa_socklen;
 	struct tsocket_address *local_address = NULL;
 	struct tsocket_address *remote_address = NULL;
@@ -3580,16 +3584,15 @@ void smbd_process(struct tevent_context *ev_ctx,
 	set_socket_options(sconn->sock, "SO_KEEPALIVE");
 	set_socket_options(sconn->sock, lp_socket_options());
 
-	sa = (struct sockaddr *)(void *)&ss;
-	sa_socklen = sizeof(ss);
-	ret = getpeername(sconn->sock, sa, &sa_socklen);
+	sa_socklen = sizeof(ss_clnt);
+	ret = getpeername(sock_fd, sa_clnt, &sa_socklen);
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getpeername() failed - %s\n", strerror(errno)));
 		exit_server_cleanly("getpeername() failed.\n");
 	}
 	ret = tsocket_address_bsd_from_sockaddr(sconn,
-						sa, sa_socklen,
+						sa_clnt, sa_socklen,
 						&remote_address);
 	if (ret != 0) {
 		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
@@ -3597,16 +3600,15 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server_cleanly("tsocket_address_bsd_from_sockaddr remote failed.\n");
 	}
 
-	sa = (struct sockaddr *)(void *)&ss;
-	sa_socklen = sizeof(ss);
-	ret = getsockname(sconn->sock, sa, &sa_socklen);
+	sa_socklen = sizeof(ss_srv);
+	ret = getsockname(sock_fd, sa_srv, &sa_socklen);
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getsockname() failed - %s\n", strerror(errno)));
 		exit_server_cleanly("getsockname() failed.\n");
 	}
 	ret = tsocket_address_bsd_from_sockaddr(sconn,
-						sa, sa_socklen,
+						sa_srv, sa_socklen,
 						&local_address);
 	if (ret != 0) {
 		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
@@ -3792,22 +3794,12 @@ void smbd_process(struct tevent_context *ev_ctx,
 		 * tickle acks, triggering a reconnection by the
 		 * client.
 		 */
+		NTSTATUS status;
 
-		struct sockaddr_storage srv, clnt;
-
-		if (client_get_tcp_info(sconn->sock, &srv, &clnt) == 0) {
-			NTSTATUS status;
-			status = smbd_register_ips(sconn, &srv, &clnt);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
-					  nt_errstr(status)));
-			}
-		} else {
-			int level = (errno == ENOTCONN)?2:0;
-			DEBUG(level,("Unable to get tcp info for "
-				     "smbd_register_ips: %s\n",
-				     strerror(errno)));
-			exit_server_cleanly("client_get_tcp_info() failed.\n");
+		status = smbd_register_ips(sconn, &ss_srv, &ss_clnt);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("ctdbd_register_ips failed: %s\n",
+				  nt_errstr(status)));
 		}
 	}
 
