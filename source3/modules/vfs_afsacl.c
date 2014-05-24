@@ -1038,7 +1038,6 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	struct afs_acl acl;
 	size_t sd_size;
 	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
 
 	DEBUG(5, ("afsacl_get_nt_acl: %s\n", name));
 
@@ -1063,7 +1062,7 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	return (sd_size != 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
-NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
+static NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32 security_info_sent,
 			 const struct security_descriptor *psd)
