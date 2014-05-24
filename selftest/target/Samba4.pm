@@ -916,7 +916,7 @@ $extra_smbconf_shares
 	return $self->provision_raw_step2($ctx, $ret);
 }
 
-sub provision_member($$$)
+sub provision_s4member($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
 	print "PROVISIONING MEMBER...";
@@ -1703,7 +1703,7 @@ sub setup_env($$$)
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
 		}
-		return $self->setup_member("$path/s4member", $self->{vars}->{dc});
+		return $self->setup_s4member("$path/s4member", $self->{vars}->{dc});
 	} elsif ($envname eq "rodc") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1729,18 +1729,18 @@ sub setup_env($$$)
 	}
 }
 
-sub setup_member($$$)
+sub setup_s4member($$$)
 {
 	my ($self, $path, $dc_vars) = @_;
 
-	my $env = $self->provision_member($path, $dc_vars);
+	my $env = $self->provision_s4member($path, $dc_vars);
 
 	if (defined $env) {
 		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
-		$self->{vars}->{member} = $env;
+		$self->{vars}->{s4member} = $env;
 	}
 
 	return $env;
