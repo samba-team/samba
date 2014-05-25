@@ -128,10 +128,13 @@ def dist(appname='', version=''):
 
 
     def list_directory_files(abspath):
+        curdir = os.getcwd()
+        os.chdir(srcdir)
         out_files = []
         for root, dirs, files in os.walk(abspath):
             for f in files:
                 out_files.append(os.path.join(root, f))
+        os.chdir(curdir)
         return out_files
 
 
