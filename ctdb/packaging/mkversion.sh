@@ -28,12 +28,17 @@ if [ -z "$OUTPUT" ]; then
     OUTPUT="include/ctdb_version.h"
 fi
 
+VERSION=$2
+RELEASE=1
+
 # We use tags and determine the version, as follows:
 # ctdb-0.9.1  (First release of 0.9).
 # ctdb-0.9.23 (23rd minor release of the 112 version)
 #
 # If we're not directly on a tag, this is a devel release; we append
 # .0.<patchnum>.<checksum>.devel to the release.
+if [ -z "$VERSION" ]; then
+
 TAG=`git describe --match "samba-*"`
 case "$TAG" in
     samba-*)
@@ -55,6 +60,8 @@ case "$TAG" in
 	echo Invalid tag "$TAG" >&2
 	;;
 esac
+
+fi
 
 cat > "$OUTPUT" <<EOF
 /* This file is auto-genrated by packaging/mkversion.sh */
