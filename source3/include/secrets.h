@@ -130,6 +130,7 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 				   const char *realm,
 				   const char *salting_principal, uint32_t supported_enc_types,
 				   const struct dom_sid *domain_sid, uint32_t last_change_time,
+				   uint32_t secure_channel,
 				   bool delete_join);
 
 /* The following definitions come from passdb/secrets_lsa.c  */

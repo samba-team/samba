@@ -408,6 +408,7 @@ static int secrets_tdb_sync_prepare_commit(struct ldb_module *module)
 						    samdb_result_dom_sid(tmp_ctx, p->msg, "objectSid"),
 
 						    lct,
+						    (uint32_t)ldb_msg_find_attr_as_int(p->msg, "secureChannelType", 0),
 						    p->do_delete);
 		if (ret == false) {
 			ldb_asprintf_errstring(ldb, "Failed to update secrets.tdb from entry %s in %s",

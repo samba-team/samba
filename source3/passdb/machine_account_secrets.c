@@ -482,11 +482,13 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 				   const char *realm,
 				   const char *salting_principal, uint32_t supported_enc_types,
 				   const struct dom_sid *domain_sid, uint32_t last_change_time,
+				   uint32_t secure_channel_type,
 				   bool delete_join)
 {
 	bool ret;
 	uint8_t last_change_time_store[4];
 	TALLOC_CTX *frame = talloc_stackframe();
+	uint8_t sec_channel_bytes[4];
 	void *value;
 
 	if (delete_join) {
@@ -516,13 +518,23 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 		return ret;
 	}
 
-	/* We delete this and instead have the read code fall back to
-	 * a default based on server role, as our caller can't specify
-	 * this with any more certainty */
-	value = secrets_fetch(machine_sec_channel_type_keystr(domain), NULL);
-	if (value) {
-		SAFE_FREE(value);
-		ret = secrets_delete(machine_sec_channel_type_keystr(domain));
+	if (secure_channel_type == 0) {
+		/* We delete this and instead have the read code fall back to
+		 * a default based on server role, as our caller can't specify
+		 * this with any more certainty */
+		value = secrets_fetch(machine_sec_channel_type_keystr(domain), NULL);
+		if (value) {
+			SAFE_FREE(value);
+			ret = secrets_delete(machine_sec_channel_type_keystr(domain));
+			if (!ret) {
+				TALLOC_FREE(frame);
+				return ret;
+			}
+		}
+	} else {
+		SIVAL(&sec_channel_bytes, 0, secure_channel_type);
+		ret = secrets_store(machine_sec_channel_type_keystr(domain), 
+				    &sec_channel_bytes, sizeof(sec_channel_bytes));
 		if (!ret) {
 			TALLOC_FREE(frame);
 			return ret;
