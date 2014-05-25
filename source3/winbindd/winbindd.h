@@ -164,6 +164,7 @@ struct winbindd_domain {
 	bool active_directory;                 /* is this a win2k active directory ? */
 	bool primary;                          /* is this our primary domain ? */
 	bool internal;                         /* BUILTIN and member SAM */
+	bool rodc;                             /* Are we an RODC for this AD domain? (do some operations locally) */
 	bool online;			       /* is this domain available ? */
 	time_t startup_time;		       /* When we set "startup" true. monotonic clock */
 	bool startup;                          /* are we in the first 30 seconds after startup_time ? */

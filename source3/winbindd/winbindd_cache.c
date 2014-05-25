@@ -132,7 +132,8 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	}
 
 	if ( !domain->initialized ) {
-		init_dc_connection( domain );
+		/* We do not need a connection to an RW DC for cache operation */
+		init_dc_connection(domain, false);
 	}
 
 	/* 

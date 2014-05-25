@@ -1185,7 +1185,7 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 	}
 
 	if (!contact_domain->initialized) {
-		init_dc_connection(contact_domain);
+		init_dc_connection(contact_domain, false);
 	}
 
 	if (!contact_domain->active_directory) {
@@ -1541,7 +1541,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 		uint32 acct_flags;
 		struct dcerpc_binding_handle *b;
 
-		status_tmp = cm_connect_sam(domain, mem_ctx,
+		status_tmp = cm_connect_sam(domain, mem_ctx, false,
 					    &samr_pipe, &samr_domain_handle);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
@@ -1664,7 +1664,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 				"request in startup mode.\n", domain->name ));
 
 			winbindd_flush_negative_conn_cache(domain);
-			result = init_dc_connection(domain);
+			result = init_dc_connection(domain, false);
 		}
 	}
 
@@ -2079,7 +2079,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 
 	/* Get sam handle */
 
-	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli,
+	result = cm_connect_sam(contact_domain, state->mem_ctx, true, &cli,
 				&dom_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
@@ -2352,7 +2352,7 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 
 	/* Get sam handle */
 
-	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli, &dom_pol);
+	result = cm_connect_sam(contact_domain, state->mem_ctx, true, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
 		goto done;

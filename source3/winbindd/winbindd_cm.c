@@ -94,7 +94,7 @@ struct dc_name_ip {
 extern struct winbindd_methods reconnect_methods;
 extern bool override_logfile;
 
-static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
+static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool need_rw_dc);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
 static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs);
@@ -176,7 +176,7 @@ static void msg_try_to_go_online(struct messaging_context *msg,
 			   the offline handler if false. Bypasses online
 			   check so always does network calls. */
 
-			init_dc_connection_network(domain);
+			init_dc_connection_network(domain, true);
 			break;
 		}
 	}
@@ -1931,9 +1931,13 @@ static bool connection_ok(struct winbindd_domain *domain)
 /* Initialize a new connection up to the RPC BIND.
    Bypass online status check so always does network calls. */
 
-static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
+static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool need_rw_dc)
 {
 	NTSTATUS result;
+	bool skip_connection = domain->internal;
+	if (need_rw_dc && domain->rodc) {
+		skip_connection = false;
+	}
 
 	/* Internal connections never use the network. */
 	if (dom_sid_equal(&domain->sid, &global_sid_Builtin)) {
@@ -1941,7 +1945,7 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 	}
 
 	/* Still ask the internal LSA and SAMR server about the local domain */
-	if (domain->internal || connection_ok(domain)) {
+	if (skip_connection || connection_ok(domain)) {
 		if (!domain->initialized) {
 			set_dc_type_and_flags(domain);
 		}
@@ -1959,7 +1963,7 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 	return result;
 }
 
-NTSTATUS init_dc_connection(struct winbindd_domain *domain)
+NTSTATUS init_dc_connection(struct winbindd_domain *domain, bool need_rw_dc)
 {
 	if (dom_sid_equal(&domain->sid, &global_sid_Builtin)) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -1970,14 +1974,14 @@ NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	return init_dc_connection_network(domain);
+	return init_dc_connection_network(domain, need_rw_dc);
 }
 
-static NTSTATUS init_dc_connection_rpc(struct winbindd_domain *domain)
+static NTSTATUS init_dc_connection_rpc(struct winbindd_domain *domain, bool need_rw_dc)
 {
 	NTSTATUS status;
 
-	status = init_dc_connection(domain);
+	status = init_dc_connection(domain, need_rw_dc);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2382,6 +2386,7 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 }
 
 NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
+			bool need_rw_dc,
 			struct rpc_pipe_client **cli, struct policy_handle *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
@@ -2392,10 +2397,12 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	const char *domain_name = NULL;
 
 	if (sid_check_is_our_sam(&domain->sid)) {
-		return open_internal_samr_conn(mem_ctx, domain, cli, sam_handle);
+		if (domain->rodc == false || need_rw_dc == false) {
+			return open_internal_samr_conn(mem_ctx, domain, cli, sam_handle);
+		}
 	}
 
-	status = init_dc_connection_rpc(domain);
+	status = init_dc_connection_rpc(domain, need_rw_dc);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2605,7 +2612,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
 
-	status = init_dc_connection_rpc(domain);
+	status = init_dc_connection_rpc(domain, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2656,7 +2663,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct netlogon_creds_cli_context *p_creds;
 
-	result = init_dc_connection_rpc(domain);
+	result = init_dc_connection_rpc(domain, false);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -2829,7 +2836,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	*cli = NULL;
 
-	result = init_dc_connection_rpc(domain);
+	result = init_dc_connection_rpc(domain, true);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
