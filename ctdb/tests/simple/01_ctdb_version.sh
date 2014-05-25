@@ -33,11 +33,11 @@ set -e
 
 cluster_is_healthy
 
-if ! try_command_on_node -v 0 "rpm -q ctdb" ; then
+if ! try_command_on_node -v 0 "rpm -qf $0" ; then
     echo "No useful output from rpm, SKIPPING rest of test".
     exit 0
 fi
-rpm_ver="${out#ctdb-}"
+rpm_ver="${out#ctdb-tests-}"
 # Some version of RPM append the architecture to the version.
 # And also remove the release suffix.
 arch=$(uname -m)

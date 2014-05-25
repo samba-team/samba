@@ -29,7 +29,7 @@ if [ -f "${_test_dir}/run_tests.sh" ] ; then
     fi
 fi
 
-_test_bin_dir="${TEST_BIN_DIR:-${_test_dir}/bin}"
+_test_bin_dir="${TEST_BIN_DIR:-${ctdb_dir}/bin}"
 if [ -d "$_test_bin_dir" ] ; then
     PATH="${_test_bin_dir}:$PATH"
 fi
