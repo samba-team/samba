@@ -48,11 +48,6 @@ struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size);
 
 /*******************************************************************
- Duplicate a struct security_descriptor structure.
-********************************************************************/
-struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_descriptor *src);
-
-/*******************************************************************
  Convert a secdesc into a byte stream
 ********************************************************************/
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,

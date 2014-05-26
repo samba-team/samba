@@ -242,22 +242,6 @@ error_exit:
 }
 
 /*******************************************************************
- Duplicate a struct security_descriptor structure.
-********************************************************************/
-
-struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_descriptor *src)
-{
-	size_t dummy;
-
-	if(src == NULL)
-		return NULL;
-
-	return make_sec_desc( ctx, src->revision, src->type,
-				src->owner_sid, src->group_sid, src->sacl,
-				src->dacl, &dummy);
-}
-
-/*******************************************************************
  Convert a secdesc into a byte stream
 ********************************************************************/
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
