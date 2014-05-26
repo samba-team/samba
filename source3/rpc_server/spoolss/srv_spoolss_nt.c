@@ -846,14 +846,6 @@ static bool is_monitoring_event(struct printer_handle *p, uint16_t notify_type,
 #define SETUP_SPOOLSS_NOTIFY_DATA_DEVMODE(_data, _devmode) \
 	_data->data.devmode.devmode = _devmode;
 
-#define SETUP_SPOOLSS_NOTIFY_DATA_SECDESC(_data, _sd) \
-	_data->data.sd.sd = dup_sec_desc(mem_ctx, _sd); \
-	if (!_data->data.sd.sd) { \
-		_data->data.sd.sd_size = 0; \
-	} \
-	_data->data.sd.sd_size = \
-		ndr_size_security_descriptor(_data->data.sd.sd, 0);
-
 static void init_systemtime_buffer(TALLOC_CTX *mem_ctx,
 				   struct tm *t,
 				   const char **pp,
@@ -2943,7 +2935,9 @@ static void spoolss_notify_security_desc(struct messaging_context *msg_ctx,
 					 struct spoolss_PrinterInfo2 *pinfo2,
 					 TALLOC_CTX *mem_ctx)
 {
-	SETUP_SPOOLSS_NOTIFY_DATA_SECDESC(data, pinfo2->secdesc);
+	data->data.sd.sd = dup_sec_desc(mem_ctx, pinfo2->secdesc);
+	data->data.sd.sd_size = ndr_size_security_descriptor(data->data.sd.sd,
+							     0);
 }
 
 /*******************************************************************
