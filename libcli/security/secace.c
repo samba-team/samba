@@ -70,32 +70,6 @@ void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum securi
 }
 
 /*******************************************************************
- adds new SID with its permissions to ACE list
-********************************************************************/
-
-NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, unsigned *num, const struct dom_sid *sid, uint32_t mask)
-{
-	unsigned int i = 0;
-	
-	if (!ctx || !pp_new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
-
-	*num += 1;
-	
-	if((pp_new[0] = talloc_zero_array(ctx, struct security_ace, *num )) == 0)
-		return NT_STATUS_NO_MEMORY;
-
-	for (i = 0; i < *num - 1; i ++)
-		sec_ace_copy(&(*pp_new)[i], &old[i]);
-
-	(*pp_new)[i].type  = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	(*pp_new)[i].flags = 0;
-	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + ndr_size_dom_sid(sid, 0);
-	(*pp_new)[i].access_mask = mask;
-	(*pp_new)[i].trustee = *sid;
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
   modify SID's permissions at ACL 
 ********************************************************************/
 
