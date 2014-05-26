@@ -292,7 +292,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - New version 1.10
 * Tue May 25 2010 : Version 1.9
  - Lots of changes
-* Wed Mar 25 2010 : Version 1.0.114
+* Thu Mar 25 2010 : Version 1.0.114
  - Lots of changes from Metze
 * Wed Jan 13 2010 : Version 1.0.113
  - Incorrect use of dup2() could cause ctdb to spin eating 100% cpu.
@@ -418,7 +418,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - Try to avoid running the "monitor" event when databases are frozen.
  - Add logging for every time we create a filedescriptor so we can trap
    fd leaks.
-* Thu Oct 14 2009 : Version 1.0.97
+* Wed Oct 14 2009 : Version 1.0.97
  - From martins : update onnode.
    Update onnode to allow specifying an alternative nodes file from
    the command line and also to be able to specify hostnames on the
@@ -448,9 +448,9 @@ Performance Co-Pilot (PCP) support for CTDB
    while waiting for the second databaso to become locked.
  - Be aggressive and ban nodes where the recovery transaction start call
    fails.
-* Thu Oct 10 2009 : Version 1.0.94
+* Sat Oct 10 2009 : Version 1.0.94
  - Be very aggressive and quickly ban nodes that can not freeze their databases
-* Tue Oct 8 2009 : Version 1.0.93
+* Thu Oct 8 2009 : Version 1.0.93
  - When adding an ip, make sure to update this assignment on all nodes
    so it wont show up as -1 on other nodes.
  - When adding an ip and immediately deleting it, it was possible that
@@ -622,7 +622,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - include 11.natgw eventscript in thew install so that the NATGW feature works
 * Tue Mar 31 2009 : Version 1.0.77
  - Update the 99.routing eventscript to also try to add the routes (back) during a releaseip event. Similar to the reasons why we must add addresses back during releaseip in 10.interfaces
-* Wed Mar 24 2009 : Version 1.0.76
+* Wed Mar 25 2009 : Version 1.0.76
  - Add a debugging command "xpnn" which can print the pnn of the node even when ctdbd is not running.
  - Redo the NATGW implementation to allow multiple disjoing NATGW groups in the same cluster.
 * Tue Mar 24 2009 : Version 1.0.75
@@ -696,7 +696,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - Update "ctdb ping" to return an error code if the ping fail so that it
    can be used in scripts.
  - Update to how to synchronize management of node flags across the cluster.
-* Thu Dec 3 2008 : Version 1.0.67
+* Wed Dec 3 2008 : Version 1.0.67
  - Add a document describing the recovery process.
  - Fix a bug in "ctdb setdebug" where it would refuse to set a negative
    debug level.
@@ -724,7 +724,7 @@ Performance Co-Pilot (PCP) support for CTDB
    line tool. If set, this overrides the default socket the ctdb tool will
    use.
  - Add logging of high latency operations.
-* Mon Oct 22 2008 : Version 1.0.64
+* Wed Oct 22 2008 : Version 1.0.64
  - Add a context and a timed event so that once we have been in recovery for
    too long we drop all public addresses.
 * Mon Oct 20 2008 : Version 1.0.63
