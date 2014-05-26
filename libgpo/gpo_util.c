@@ -773,7 +773,13 @@ NTSTATUS gpo_copy(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	gpo->security_descriptor = dup_sec_desc(gpo, gpo_src->security_descriptor);
+	if (gpo_src->security_descriptor == NULL) {
+		/* existing SD assumed */
+		TALLOC_FREE(gpo);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	gpo->security_descriptor = security_descriptor_copy(gpo,
+						gpo_src->security_descriptor);
 	if (gpo->security_descriptor == NULL) {
 		TALLOC_FREE(gpo);
 		return NT_STATUS_NO_MEMORY;
