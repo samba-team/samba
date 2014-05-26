@@ -2935,7 +2935,12 @@ static void spoolss_notify_security_desc(struct messaging_context *msg_ctx,
 					 struct spoolss_PrinterInfo2 *pinfo2,
 					 TALLOC_CTX *mem_ctx)
 {
-	data->data.sd.sd = dup_sec_desc(mem_ctx, pinfo2->secdesc);
+	if (pinfo2->secdesc == NULL) {
+		data->data.sd.sd = NULL;
+	} else {
+		data->data.sd.sd = security_descriptor_copy(mem_ctx,
+							    pinfo2->secdesc);
+	}
 	data->data.sd.sd_size = ndr_size_security_descriptor(data->data.sd.sd,
 							     0);
 }
@@ -4071,7 +4076,10 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 		/* don't use talloc_steal() here unless you do a deep steal of all
 		   the SEC_DESC members */
 
-		r->secdesc	= dup_sec_desc(mem_ctx, info2->secdesc);
+		r->secdesc = security_descriptor_copy(mem_ctx, info2->secdesc);
+		if (r->secdesc == NULL) {
+			return WERR_NOMEM;
+		}
 	}
 
 	return WERR_OK;
@@ -4094,8 +4102,10 @@ static WERROR construct_printer_info3(TALLOC_CTX *mem_ctx,
 		/* don't use talloc_steal() here unless you do a deep steal of all
 		   the SEC_DESC members */
 
-		r->secdesc = dup_sec_desc(mem_ctx, info2->secdesc);
-		W_ERROR_HAVE_NO_MEMORY(r->secdesc);
+		r->secdesc = security_descriptor_copy(mem_ctx, info2->secdesc);
+		if (r->secdesc == NULL) {
+			return WERR_NOMEM;
+		}
 	}
 
 	return WERR_OK;
