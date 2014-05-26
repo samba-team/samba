@@ -1643,7 +1643,17 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 
 		/* copy secdesc (info level 2) */
 		info_dst.info2.devmode = NULL;
-		info_dst.info2.secdesc = dup_sec_desc(mem_ctx, info_src.info3.secdesc);
+		if (info_src.info3.secdesc == NULL) {
+			info_dst.info2.secdesc = NULL;
+		} else {
+			info_dst.info2.secdesc
+				= security_descriptor_copy(mem_ctx,
+							info_src.info3.secdesc);
+			if (info_dst.info2.secdesc == NULL) {
+				nt_status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		}
 
 		if (c->opt_verbose)
 			display_sec_desc(info_dst.info2.secdesc);
