@@ -564,21 +564,19 @@ struct security_ace *security_ace_create(TALLOC_CTX *mem_ctx,
 					 uint8_t flags)
 
 {
-	struct dom_sid *sid;
 	struct security_ace *ace;
+	bool ok;
 
 	ace = talloc_zero(mem_ctx, struct security_ace);
 	if (ace == NULL) {
 		return NULL;
 	}
 
-	sid = dom_sid_parse_talloc(ace, sid_str);
-	if (sid == NULL) {
+	ok = dom_sid_parse(sid_str, &ace->trustee);
+	if (!ok) {
 		talloc_free(ace);
 		return NULL;
 	}
-
-	ace->trustee = *sid;
 	ace->type = type;
 	ace->access_mask = access_mask;
 	ace->flags = flags;
