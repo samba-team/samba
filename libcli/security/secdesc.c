@@ -425,39 +425,6 @@ struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
 }
 
 /*******************************************************************
- Add a new SID with its permissions to struct security_descriptor.
-********************************************************************/
-
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, const struct dom_sid *sid, uint32_t mask, size_t *sd_size)
-{
-	struct security_descriptor *sd   = 0;
-	struct security_acl  *dacl = 0;
-	struct security_ace  *ace  = 0;
-	NTSTATUS  status;
-
-	if (!ctx || !psd || !sid || !sd_size)
-		return NT_STATUS_INVALID_PARAMETER;
-
-	*sd_size = 0;
-
-	status = sec_ace_add_sid(ctx, &ace, psd[0]->dacl->aces, &psd[0]->dacl->num_aces, sid, mask);
-
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
-		return NT_STATUS_UNSUCCESSFUL;
-
-	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid,
-		psd[0]->group_sid, psd[0]->sacl, dacl, sd_size)))
-		return NT_STATUS_UNSUCCESSFUL;
-
-	*psd = sd;
-	 sd  = 0;
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
  Modify a SID's permissions in a struct security_descriptor.
 ********************************************************************/
 
