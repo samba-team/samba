@@ -28,9 +28,13 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 #      "--with system_talloc"
 #      "--with system_tdb"
 #      "--with system_tevent"
-%define with_included_talloc %{?_with_system_talloc: 0} %{?!_with_system_talloc: 1}
-%define with_included_tdb %{?_with_system_tdb: 0} %{?!_with_system_tdb: 1}
-%define with_included_tevent %{?_with_system_tevent: 0} %{?!_with_system_tevent: 1}
+#%define with_included_talloc %{?_with_system_talloc: 0} %{?!_with_system_talloc: 1}
+#%define with_included_tdb %{?_with_system_tdb: 0} %{?!_with_system_tdb: 1}
+#%define with_included_tevent %{?_with_system_tevent: 0} %{?!_with_system_tevent: 1}
+
+%define with_included_talloc 0
+%define with_included_tevent 0
+%define with_included_tdb 0
 
 # Required minimum library versions when building with system libraries
 %define libtalloc_version 2.0.8
@@ -83,16 +87,10 @@ fi
 
 export CC
 
-CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
-%if %with_included_talloc
-	--with-included-talloc \
-%endif
-%if %with_included_tdb
-	--with-included-tdb \
-%endif
-%if %with_included_tevent
-	--with-included-tevent \
-%endif
+CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./buildtools/bin/waf configure \
+	--builtin-libraries=replace,popt \
+	--bundled-libraries=!talloc,!tevent,!tdb \
+	--minimum-library-version=talloc:%libtalloc_version,tdb:%libtdb_version,tevent:%libtevent_version \
 %if %with_pcp_pmda
 	--enable-pmda \
 %endif
@@ -101,8 +99,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--mandir=%{_mandir} \
 	--localstatedir="/var"
 
-make docdir=%{_docdir} showflags
-make docdir=%{_docdir}
+./buildtools/bin/waf build
 
 %install
 # Clean up in case there is trash left from a previous build
@@ -112,7 +109,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sudoers.d
 
-make DESTDIR=$RPM_BUILD_ROOT docdir=%{_docdir} install install_tests
+DESTDIR=$RPM_BUILD_ROOT ./buildtools/bin/waf install
 
 install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 
@@ -124,6 +121,8 @@ mkdir -p $RPM_BUILD_ROOT%{initdir}
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 %endif
 
+# This is a hack. All documents should be installed in /usr/share/doc.
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d/README
 cp config/events.d/README README.eventscripts
 cp config/notify.d.README README.notify.d
 
