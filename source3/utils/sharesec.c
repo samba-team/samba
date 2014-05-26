@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "../libcli/security/security.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 #include "passdb/machine_sid.h"
 
 static TALLOC_CTX *ctx;
@@ -417,6 +418,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	struct security_descriptor *old = NULL;
 	size_t sd_size = 0;
 	uint32 i, j;
+	char *sd_str;
 
 	if (mode != SMB_ACL_SET && mode != SMB_SD_DELETE) {
 	    if (!(old = get_share_security( mem_ctx, sharename, &sd_size )) ) {
@@ -437,7 +439,11 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		/* should not happen */
 		return 0;
 	case SMB_ACL_VIEW:
-		sec_desc_print( stdout, old);
+		sd_str = ndr_print_struct_string(mem_ctx,
+				(ndr_print_fn_t)ndr_print_security_descriptor,
+				"", old);
+		fprintf(stdout, "%s\n", sd_str);
+		talloc_free(sd_str);
 		return 0;
 	case SMB_ACL_DELETE:
 	    for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
@@ -456,9 +462,11 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		}
 
 		if (!found) {
-		printf("ACL for ACE:");
-		print_ace(stdout, &sd->dacl->aces[i]);
-		printf(" not found\n");
+			sd_str = ndr_print_struct_string(mem_ctx,
+					(ndr_print_fn_t)ndr_print_security_ace,
+					"", &sd->dacl->aces[i]);
+			printf("ACL for ACE: %s not found\n", sd_str);
+			talloc_free(sd_str);
 		}
 	    }
 	    break;
