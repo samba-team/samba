@@ -405,8 +405,11 @@ struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct secur
 	/* max buffer size (allocated size) */
 	dst->sd_size = (uint32_t)len;
 
-	if(sec_desc && ((dst->sd = dup_sec_desc(ctx, sec_desc)) == NULL)) {
-		return NULL;
+	if (sec_desc != NULL) {
+		dst->sd = security_descriptor_copy(ctx, sec_desc);
+		if (dst->sd == NULL) {
+			return NULL;
+		}
 	}
 
 	return dst;
