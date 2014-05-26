@@ -3670,12 +3670,12 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	if (!psd_orig) {
+	if (psd_orig == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	psd = dup_sec_desc(talloc_tos(), psd_orig);
-	if (!psd) {
+	psd = security_descriptor_copy(talloc_tos(), psd_orig);
+	if (psd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
