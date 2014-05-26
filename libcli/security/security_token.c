@@ -84,12 +84,14 @@ bool security_token_is_sid(const struct security_token *token, const struct dom_
 bool security_token_is_sid_string(const struct security_token *token, const char *sid_string)
 {
 	bool ret;
-	struct dom_sid *sid = dom_sid_parse_talloc(NULL, sid_string);
-	if (!sid) return false;
+	struct dom_sid sid;
 
-	ret = security_token_is_sid(token, sid);
+	ret = dom_sid_parse(sid_string, &sid);
+	if (!ret) {
+		return false;
+	}
 
-	talloc_free(sid);
+	ret = security_token_is_sid(token, &sid);
 	return ret;
 }
 
