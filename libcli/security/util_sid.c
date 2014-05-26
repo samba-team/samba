@@ -225,10 +225,10 @@ void sid_copy(struct dom_sid *dst, const struct dom_sid *src)
 {
 	int i;
 
-	ZERO_STRUCTP(dst);
-
-	dst->sid_rev_num = src->sid_rev_num;
-	dst->num_auths = src->num_auths;
+	*dst = (struct dom_sid) {
+		.sid_rev_num = src->sid_rev_num,
+		.num_auths = src->num_auths,
+	};
 
 	memcpy(&dst->id_auth[0], &src->id_auth[0], sizeof(src->id_auth));
 
