@@ -406,9 +406,9 @@ static NTSTATUS create_lsa_policy_handle(TALLOC_CTX *mem_ctx,
 
 	info->name = talloc_strdup(info, name);
 
-	if (sd) {
-		info->sd = dup_sec_desc(info, sd);
-		if (!info->sd) {
+	if (sd != NULL) {
+		info->sd = security_descriptor_copy(info, sd);
+		if (info->sd == NULL) {
 			talloc_free(info);
 			return NT_STATUS_NO_MEMORY;
 		}
