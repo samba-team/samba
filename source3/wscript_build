@@ -278,7 +278,6 @@ if bld.CONFIG_GET("CTDB_CFLAGS") and bld.CONFIG_GET("CTDB_INCLUDE"):
                      lib/cluster_support.c
                      lib/dbwrap/dbwrap_ctdb.c
                      lib/messages_ctdbd.c
-                     lib/ctdb_packet.c
                      lib/ctdbd_conn.c
                      lib/ctdb_conn.c
                      torture/test_ctdbconn.c
