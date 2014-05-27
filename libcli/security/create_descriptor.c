@@ -125,19 +125,15 @@ static bool desc_ace_has_generic(TALLOC_CTX *mem_ctx,
 
 /* creates an ace in which the generic information is expanded */
 
-static void desc_expand_generic(TALLOC_CTX *mem_ctx,
-				struct security_ace *new_ace,
+static void desc_expand_generic(struct security_ace *new_ace,
 				struct dom_sid *owner,
 				struct dom_sid *group)
 {
-	struct dom_sid *co, *cg;
-	co = dom_sid_parse_talloc(mem_ctx,  SID_CREATOR_OWNER);
-	cg = dom_sid_parse_talloc(mem_ctx,  SID_CREATOR_GROUP);
 	new_ace->access_mask = map_generic_rights_ds(new_ace->access_mask);
-	if (dom_sid_equal(&new_ace->trustee, co)) {
+	if (dom_sid_equal(&new_ace->trustee, &global_sid_Creator_Owner)) {
 		new_ace->trustee = *owner;
 	}
-	if (dom_sid_equal(&new_ace->trustee, cg)) {
+	if (dom_sid_equal(&new_ace->trustee, &global_sid_Creator_Group)) {
 		new_ace->trustee = *group;
 	}
 	new_ace->flags = 0x0;
@@ -222,8 +218,7 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 						    return NULL;
 					    }
 					    tmp_acl->aces[tmp_acl->num_aces] = *ace;
-					    desc_expand_generic(tmp_ctx,
-								&tmp_acl->aces[tmp_acl->num_aces],
+					    desc_expand_generic(&tmp_acl->aces[tmp_acl->num_aces],
 								owner,
 								group);
 					    tmp_acl->aces[tmp_acl->num_aces].flags = SEC_ACE_FLAG_INHERITED_ACE;
@@ -294,8 +289,7 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 		 * and another one where these are translated */
 		if (desc_ace_has_generic(tmp_ctx, ace)) {
 			if (!(ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
-				desc_expand_generic(tmp_ctx,
-						    &tmp_acl->aces[tmp_acl->num_aces-1],
+				desc_expand_generic(&tmp_acl->aces[tmp_acl->num_aces-1],
 						    owner,
 						    group);
 			} else {
@@ -306,8 +300,7 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 							       tmp_acl->num_aces+1);
 				/* add a new ACE with expanded generic info */
 				tmp_acl->aces[tmp_acl->num_aces] = *ace;
-				desc_expand_generic(tmp_ctx,
-						    &tmp_acl->aces[tmp_acl->num_aces],
+				desc_expand_generic(&tmp_acl->aces[tmp_acl->num_aces],
 						    owner,
 						    group);
 				tmp_acl->num_aces++;
