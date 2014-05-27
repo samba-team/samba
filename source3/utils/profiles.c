@@ -130,11 +130,12 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	/* swap out the SIDs in the security descriptor */
 
 	if (nk->sec_desc->sec_desc == NULL) {
-		new_sd = NULL;
-	} else {
-		new_sd = security_descriptor_copy(outfile->mem_ctx,
-						  nk->sec_desc->sec_desc);
+		fprintf(stderr, "Invalid (NULL) security descriptor!\n");
+		return false;
 	}
+
+	new_sd = security_descriptor_copy(outfile->mem_ctx,
+					  nk->sec_desc->sec_desc);
 	if (new_sd == NULL) {
 		fprintf(stderr, "Failed to copy security descriptor!\n");
 		return False;
