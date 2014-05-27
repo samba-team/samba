@@ -22,10 +22,10 @@
 #include <pcp/pmapi.h>
 #include <pcp/impl.h>
 #include <pcp/pmda.h>
-#include "../../include/includes.h"
-#include "../../include/ctdb.h"
-#include "../../include/ctdb_private.h"
-#include "../../include/ctdb_protocol.h"
+#include "includes.h"
+#include "ctdb.h"
+#include "ctdb_private.h"
+#include "ctdb_protocol.h"
 #include "domain.h"
 
 /*
