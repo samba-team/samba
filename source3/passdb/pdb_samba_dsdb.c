@@ -339,6 +339,7 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 
 	msg = ldb_msg_new(frame);
 	if (!msg) {
+		talloc_free(frame);
 		return false;
 	}
 
@@ -375,6 +376,7 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 					   pw, strlen(pw),
 					   (void *)&pw_utf16.data,
 					   &pw_utf16.length)) {
+			talloc_free(frame);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		ret |= ldb_msg_add_value(msg, "clearTextPassword", &pw_utf16, NULL);
@@ -1011,6 +1013,7 @@ static NTSTATUS pdb_samba_dsdb_getgrgid(struct pdb_methods *m, GROUP_MAP *map,
 
 	status = idmap_xids_to_sids(state->idmap_ctx, tmp_ctx, id_maps);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
 		return status;
 	}
 	status = pdb_samba_dsdb_getgrsid(m, map, *id_map.sid);
@@ -1521,6 +1524,7 @@ static NTSTATUS pdb_samba_dsdb_delete_alias(struct pdb_methods *m,
 
 	if (ldb_transaction_start(state->ldb) != LDB_SUCCESS) {
 		DEBUG(0, ("Failed to start transaction in dsdb_add_domain_alias(): %s\n", ldb_errstring(state->ldb)));
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -1542,15 +1546,18 @@ static NTSTATUS pdb_samba_dsdb_delete_alias(struct pdb_methods *m,
 		DEBUG(10, ("ldb_delete failed %s\n",
 			   ldb_errstring(state->ldb)));
 		ldb_transaction_cancel(state->ldb);
+		talloc_free(tmp_ctx);
 		return NT_STATUS_LDAP(rc);
 	}
 
 	if (ldb_transaction_commit(state->ldb) != LDB_SUCCESS) {
 		DEBUG(0, ("Failed to commit transaction in pdb_samba_dsdb_delete_alias(): %s\n",
 			  ldb_errstring(state->ldb)));
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -2061,6 +2068,7 @@ static bool pdb_samba_dsdb_gid_to_sid(struct pdb_methods *m, gid_t gid,
 
 	status = idmap_xids_to_sids(state->idmap_ctx, tmp_ctx, id_maps);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
 		return false;
 	}
 	*sid = *id_map.sid;
