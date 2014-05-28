@@ -28,7 +28,6 @@ void sec_ace_copy(struct security_ace *ace_dest, const struct security_ace *ace_
 void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum security_ace_type type,
 		  uint32_t mask, uint8_t flag);
 NTSTATUS sec_ace_mod_sid(struct security_ace *ace, size_t num, const struct dom_sid *sid, uint32_t mask);
-bool sec_ace_equal(const struct security_ace *s1, const struct security_ace *s2);
 int nt_ace_inherit_comp( const struct security_ace *a1, const struct security_ace *a2);
 int nt_ace_canon_comp( const struct security_ace *a1, const struct security_ace *a2);
 void dacl_sort_into_canonical_order(struct security_ace *srclist, unsigned int num_aces);

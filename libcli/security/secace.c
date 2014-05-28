@@ -88,38 +88,6 @@ NTSTATUS sec_ace_mod_sid(struct security_ace *ace, size_t num, const struct dom_
 	return NT_STATUS_NOT_FOUND;
 }
 
-/*******************************************************************
- Compares two struct security_ace structures
-********************************************************************/
-
-bool sec_ace_equal(const struct security_ace *s1, const struct security_ace *s2)
-{
-	/* Trivial case */
-
-	if (!s1 && !s2) {
-		return true;
-	}
-
-	if (!s1 || !s2) {
-		return false;
-	}
-
-	/* Check top level stuff */
-
-	if (s1->type != s2->type || s1->flags != s2->flags ||
-	    s1->access_mask != s2->access_mask) {
-		return false;
-	}
-
-	/* Check SID */
-
-	if (!dom_sid_equal(&s1->trustee, &s2->trustee)) {
-		return false;
-	}
-
-	return true;
-}
-
 int nt_ace_inherit_comp(const struct security_ace *a1, const struct security_ace *a2)
 {
 	int a1_inh = a1->flags & SEC_ACE_FLAG_INHERITED_ACE;
