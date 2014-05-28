@@ -34,7 +34,6 @@
 #include <unistd.h>
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "ibwrapper.h"
 
 #include <infiniband/kern-abi.h>
@@ -1013,7 +1012,7 @@ int ibw_stop(struct ibw_ctx *ctx)
 	DEBUG(DEBUG_DEBUG, ("ibw_stop\n"));
 
 	for(p=ctx->conn_list; p!=NULL; p=p->next) {
-		if (ctx->state==IBWC_ERROR || ctx->state==IBWC_CONNECTED) {
+		if (p->state==IBWC_ERROR || p->state==IBWC_CONNECTED) {
 			if (ibw_disconnect(p))
 				return -1;
 		}

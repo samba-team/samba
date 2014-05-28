@@ -1,4 +1,4 @@
-AC_ARG_ENABLE(--enable-infiniband, 
+AC_ARG_ENABLE(infiniband,
 [  --enable-infiniband         Turn on infiniband support (default=no)])
 
 HAVE_INFINIBAND=no

@@ -92,6 +92,8 @@ CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
+CTDB_IB_OBJ = @INFINIBAND_WRAPPER_OBJ@
+
 CTDB_EXTERNAL_OBJ = $(POPT_OBJ) $(TALLOC_OBJ) $(TDB_OBJ) \
 	$(REPLACE_OBJ) $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
 
@@ -107,7 +109,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o \
 	server/ctdb_keepalive.o server/ctdb_logging.o server/ctdb_uptime.o \
 	server/ctdb_vacuum.o server/ctdb_banning.o server/ctdb_statistics.o \
 	server/ctdb_update_record.o server/ctdb_lock.o \
-	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
+	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) $(CTDB_IB_OBJ)
 
 TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_fetch_readonly_once tests/bin/ctdb_fetch_readonly_loop \
@@ -282,9 +284,9 @@ CTDB_TEST_OBJ =  $(TALLOC_OBJ) $(TDB_OBJ) \
 
 tests/src/ctdb_takeover_tests.o: tests/src/ctdb_takeover_tests.c $(CTDBD_TEST_C)
 
-tests/bin/ctdb_takeover_tests: $(CTDB_TEST_OBJ) tests/src/ctdb_takeover_tests.o
+tests/bin/ctdb_takeover_tests: $(CTDB_TEST_OBJ) tests/src/ctdb_takeover_tests.o $(CTDB_IB_OBJ)
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_TEST_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_IB_OBJ) $(CTDB_TEST_OBJ) $(LIB_FLAGS)
 
 tests/src/ctdb_functest.o: tests/src/ctdb_functest.c tests/src/ctdb_test.c $(CTDB_TEST_C)
 
@@ -302,9 +304,9 @@ tests/bin/ctdb_lock_tdb: tests/src/ctdb_lock_tdb.o $(CTDB_CLIENT_OBJ)
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $^ $(LIB_FLAGS)
 
-tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
+tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o $(CTDB_IB_OBJ)
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(CTDB_IB_OBJ) $(LIB_FLAGS)
 
 manpages:
 	$(MAKE) -C doc

@@ -26,6 +26,7 @@
 #include "ctdb_private.h"
 #include "ibwrapper.h"
 #include "ibw_ctdb.h"
+#include "lib/util/dlinklist.h"
 
 static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 {
@@ -99,7 +100,7 @@ static int ctdb_ibw_initialise(struct ctdb_context *ctdb)
  */
 static int ctdb_ibw_start(struct ctdb_context *ctdb)
 {
-	int i, ret;
+	int i;
 
 	/* everything async here */
 	for (i=0;i<ctdb->num_nodes;i++) {

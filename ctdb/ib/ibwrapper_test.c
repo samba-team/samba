@@ -325,7 +325,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 				n - sizeof(uint32_t) - 2);
 			DEBUG(DEBUG_DEBUG, ("[%d]msg varsize %u/sum %u from %s\n",
 				op,
-				n - sizeof(uint32_t) - 2,
+				(uint32_t)(n - sizeof(uint32_t) - 2),
 				(uint32_t)sum,
 				tconn->id ? tconn->id : "NULL"));
 			if (sum!=((unsigned char *)buf)[n-1]) {
