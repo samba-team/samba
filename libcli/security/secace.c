@@ -89,38 +89,6 @@ NTSTATUS sec_ace_mod_sid(struct security_ace *ace, size_t num, const struct dom_
 }
 
 /*******************************************************************
- delete SID from ACL
-********************************************************************/
-
-NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, uint32_t *num, const struct dom_sid *sid)
-{
-	unsigned int i     = 0;
-	unsigned int n_del = 0;
-
-	if (!ctx || !pp_new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
-
-	if (*num) {
-		if((pp_new[0] = talloc_zero_array(ctx, struct security_ace, *num )) == 0)
-			return NT_STATUS_NO_MEMORY;
-	} else {
-		pp_new[0] = NULL;
-	}
-
-	for (i = 0; i < *num; i ++) {
-		if (!dom_sid_equal(&old[i].trustee, sid))
-			sec_ace_copy(&(*pp_new)[i], &old[i]);
-		else
-			n_del ++;
-	}
-	if (n_del == 0)
-		return NT_STATUS_NOT_FOUND;
-	else {
-		*num -= n_del;
-		return NT_STATUS_OK;
-	}
-}
-
-/*******************************************************************
  Compares two struct security_ace structures
 ********************************************************************/
 
