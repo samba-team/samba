@@ -71,15 +71,3 @@ struct security_acl *make_sec_acl(TALLOC_CTX *ctx,
 
 	return dst;
 }
-
-/*******************************************************************
- Duplicate a SEC_ACL structure.
-********************************************************************/
-
-struct security_acl *dup_sec_acl(TALLOC_CTX *ctx, struct security_acl *src)
-{
-	if(src == NULL)
-		return NULL;
-
-	return make_sec_acl(ctx, src->revision, src->num_aces, src->aces);
-}
