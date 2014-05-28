@@ -602,7 +602,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		for (j=0; j < i; j++) {
 			struct security_ace *aj = &new_ace_list[j];
 
-			if (!sec_ace_equal(ai, aj)) {
+			if (!security_ace_equal(ai, aj)) {
 				continue;
 			}
 
