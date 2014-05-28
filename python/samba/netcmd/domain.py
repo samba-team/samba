@@ -512,9 +512,6 @@ class cmd_domain_dcpromo(Command):
         else:
             logger.setLevel(logging.INFO)
 
-        if site is None:
-            site = "Default-First-Site-Name"
-
         netbios_name = lp.get("netbios name")
 
         if not role is None:
