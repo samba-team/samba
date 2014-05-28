@@ -285,7 +285,7 @@ static bool add_ace(TALLOC_CTX *mem_ctx, struct security_acl **the_acl, struct s
 
 static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 {
-	if (sec_ace_equal(ace1, ace2))
+	if (security_ace_equal(ace1, ace2))
 		return 0;
 
 	if (ace1->type != ace2->type)
@@ -314,7 +314,8 @@ static void sort_acl(struct security_acl *the_acl)
 	TYPESAFE_QSORT(the_acl->aces, the_acl->num_aces, ace_compare);
 
 	for (i=1;i<the_acl->num_aces;) {
-		if (sec_ace_equal(&the_acl->aces[i-1], &the_acl->aces[i])) {
+		if (security_ace_equal(&the_acl->aces[i-1],
+				       &the_acl->aces[i])) {
 			int j;
 			for (j=i; j<the_acl->num_aces-1; j++) {
 				the_acl->aces[j] = the_acl->aces[j+1];
@@ -365,7 +366,8 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		bool found = False;
 
 		for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-		    if (sec_ace_equal(&sd->dacl->aces[i], &old->dacl->aces[j])) {
+		    if (security_ace_equal(&sd->dacl->aces[i],
+					   &old->dacl->aces[j])) {
 			uint32 k;
 			for (k=j; k<old->dacl->num_aces-1;k++) {
 			    old->dacl->aces[k] = old->dacl->aces[k+1];
