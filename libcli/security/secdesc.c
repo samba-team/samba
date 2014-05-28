@@ -411,39 +411,6 @@ NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, u
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Delete a SID from a struct security_descriptor.
-********************************************************************/
-
-NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, size_t *sd_size)
-{
-	struct security_descriptor *sd   = 0;
-	struct security_acl  *dacl = 0;
-	struct security_ace  *ace  = 0;
-	NTSTATUS  status;
-
-	if (!ctx || !psd[0] || !sid || !sd_size)
-		return NT_STATUS_INVALID_PARAMETER;
-
-	*sd_size = 0;
-
-	status = sec_ace_del_sid(ctx, &ace, psd[0]->dacl->aces, &psd[0]->dacl->num_aces, sid);
-
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
-		return NT_STATUS_UNSUCCESSFUL;
-
-	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid,
-		psd[0]->group_sid, psd[0]->sacl, dacl, sd_size)))
-		return NT_STATUS_UNSUCCESSFUL;
-
-	*psd = sd;
-	 sd  = 0;
-	return NT_STATUS_OK;
-}
-
 /*
  * Determine if an struct security_ace is inheritable
  */

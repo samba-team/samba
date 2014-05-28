@@ -94,10 +94,6 @@ struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
 ********************************************************************/
 NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32_t mask);
 
-/*******************************************************************
- Delete a SID from a struct security_descriptor.
-********************************************************************/
-NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, size_t *sd_size);
 bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr, bool container);
 NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 					struct security_descriptor **ppsd,
