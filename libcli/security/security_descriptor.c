@@ -344,17 +344,29 @@ NTSTATUS security_descriptor_sacl_del(struct security_descriptor *sd,
 /*
   compare two security ace structures
 */
-bool security_ace_equal(const struct security_ace *ace1, 
+bool security_ace_equal(const struct security_ace *ace1,
 			const struct security_ace *ace2)
 {
-	if (ace1 == ace2) return true;
-	if (!ace1 || !ace2) return false;
-	if (ace1->type != ace2->type) return false;
-	if (ace1->flags != ace2->flags) return false;
-	if (ace1->access_mask != ace2->access_mask) return false;
-	if (!dom_sid_equal(&ace1->trustee, &ace2->trustee)) return false;
+	if (ace1 == ace2) {
+		return true;
+	}
+	if ((ace1 == NULL) || (ace2 == NULL)) {
+		return false;
+	}
+	if (ace1->type != ace2->type) {
+		return false;
+	}
+	if (ace1->flags != ace2->flags) {
+		return false;
+	}
+	if (ace1->access_mask != ace2->access_mask) {
+		return false;
+	}
+	if (!dom_sid_equal(&ace1->trustee, &ace2->trustee)) {
+		return false;
+	}
 
-	return true;	
+	return true;
 }
 
 
