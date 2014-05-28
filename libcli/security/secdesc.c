@@ -161,9 +161,6 @@ struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_desc
 /*******************************************************************
  Creates a struct security_descriptor structure
 ********************************************************************/
-
-#define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16_t) + 4 * sizeof(uint32_t))
-
 struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16_t type,
@@ -171,73 +168,57 @@ struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size)
 {
 	struct security_descriptor *dst;
-	uint32_t offset     = 0;
 
 	if (sd_size != NULL) {
 		*sd_size = 0;
 	}
 
-	if(( dst = talloc_zero(ctx, struct security_descriptor)) == NULL)
+	dst = security_descriptor_initialise(ctx);
+	if (dst == NULL) {
 		return NULL;
+	}
 
 	dst->revision = revision;
 	dst->type = type;
 
-	if (sacl)
+	if (sacl != NULL) {
+		dst->sacl = security_acl_dup(dst, sacl);
+		if (dst->sacl == NULL) {
+			goto err_sd_free;
+		}
 		dst->type |= SEC_DESC_SACL_PRESENT;
-	if (dacl)
+	}
+
+	if (dacl != NULL) {
+		dst->dacl = security_acl_dup(dst, dacl);
+		if (dst->dacl == NULL) {
+			goto err_sd_free;
+		}
 		dst->type |= SEC_DESC_DACL_PRESENT;
-
-	dst->owner_sid = NULL;
-	dst->group_sid   = NULL;
-	dst->sacl      = NULL;
-	dst->dacl      = NULL;
-
-	if(owner_sid && ((dst->owner_sid = dom_sid_dup(dst,owner_sid)) == NULL))
-		goto error_exit;
-
-	if(grp_sid && ((dst->group_sid = dom_sid_dup(dst,grp_sid)) == NULL))
-		goto error_exit;
-
-	if(sacl && ((dst->sacl = dup_sec_acl(dst, sacl)) == NULL))
-		goto error_exit;
-
-	if(dacl && ((dst->dacl = dup_sec_acl(dst, dacl)) == NULL))
-		goto error_exit;
-
-	if (sd_size == NULL) {
-		return dst;
 	}
 
-	offset = SEC_DESC_HEADER_SIZE;
-
-	/*
-	 * Work out the linearization sizes.
-	 */
-
-	if (dst->sacl != NULL) {
-		offset += dst->sacl->size;
-	}
-	if (dst->dacl != NULL) {
-		offset += dst->dacl->size;
+	if (owner_sid != NULL) {
+		dst->owner_sid = dom_sid_dup(dst, owner_sid);
+		if (dst->owner_sid == NULL) {
+			goto err_sd_free;
+		}
 	}
 
-	if (dst->owner_sid != NULL) {
-		offset += ndr_size_dom_sid(dst->owner_sid, 0);
+	if (grp_sid != NULL) {
+		dst->group_sid = dom_sid_dup(dst, grp_sid);
+		if (dst->group_sid == NULL) {
+			goto err_sd_free;
+		}
 	}
-
-	if (dst->group_sid != NULL) {
-		offset += ndr_size_dom_sid(dst->group_sid, 0);
-	}
-
-	*sd_size = (size_t)offset;
-	return dst;
-
-error_exit:
 
 	if (sd_size != NULL) {
-		*sd_size = 0;
+		*sd_size = ndr_size_security_descriptor(dst, 0);
 	}
+
+	return dst;
+
+err_sd_free:
+	talloc_free(dst);
 	return NULL;
 }
 
