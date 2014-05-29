@@ -715,7 +715,7 @@ done:
  */
 static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 {
-	struct lock_context *lock_ctx, *next_ctx, *active_ctx;
+	struct lock_context *lock_ctx, *next_ctx;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 	const char *helper = BINDIR "/ctdb_lock_helper";
@@ -752,21 +752,11 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 			}
 			talloc_free(lock_ctx);
 		} else {
-			active_ctx = find_lock_context(ctdb->lock_current, lock_ctx->ctdb_db,
-						       lock_ctx->key, lock_ctx->priority,
-						       lock_ctx->type, lock_ctx->key_hash);
-			if (active_ctx == NULL) {
-				if (lock_ctx->ctdb_db == NULL ||
-				    lock_ctx->ctdb_db->lock_num_current < MAX_LOCK_PROCESSES_PER_DB) {
-					/* Found a lock context with lock requests */
-					break;
-				}
+			if (lock_ctx->ctdb_db == NULL ||
+			    lock_ctx->ctdb_db->lock_num_current < MAX_LOCK_PROCESSES_PER_DB) {
+				/* Found a lock context with lock requests */
+				break;
 			}
-
-			/* There is already a child waiting for the
-			 * same key.  So don't schedule another child
-			 * just yet.
-			 */
 		}
 		lock_ctx = next_ctx;
 	}
