@@ -65,27 +65,6 @@
 struct messaging_context;
 struct messaging_rec;
 
-/*
- * struct messaging_context belongs to messages.c, but because we still have
- * messaging_dispatch, we need it here. Once we get rid of signals for
- * notifying processes, this will go.
- */
-
-struct messaging_context {
-	struct server_id id;
-	struct tevent_context *event_ctx;
-	struct messaging_callback *callbacks;
-
-	struct tevent_req **new_waiters;
-	unsigned num_new_waiters;
-
-	struct tevent_req **waiters;
-	unsigned num_waiters;
-
-	struct messaging_backend *local;
-	struct messaging_backend *remote;
-};
-
 struct messaging_backend {
 	NTSTATUS (*send_fn)(struct server_id src,
 			    struct server_id pid, int msg_type,
