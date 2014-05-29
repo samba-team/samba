@@ -862,4 +862,10 @@ static void mess_parent_dgm_cleanup_done(struct tevent_req *req)
 	tevent_req_set_callback(req, mess_parent_dgm_cleanup_done, msg);
 }
 
+struct messaging_backend *messaging_local_backend(
+	struct messaging_context *msg_ctx)
+{
+	return msg_ctx->local;
+}
+
 /** @} **/

@@ -369,8 +369,9 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 
 NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 {
+	struct messaging_backend *be = messaging_local_backend(msg_ctx);
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
-		msg_ctx->local->private_data, struct messaging_dgm_context);
+		be->private_data, struct messaging_dgm_context);
 	char *lockfile_name, *socket_name;
 	int fd, ret;
 	struct flock lck = {};
@@ -421,8 +422,9 @@ NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 
 NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
 {
+	struct messaging_backend *be = messaging_local_backend(msg_ctx);
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
-		msg_ctx->local->private_data, struct messaging_dgm_context);
+		be->private_data, struct messaging_dgm_context);
 	char *msgdir_name;
 	DIR *msgdir;
 	struct dirent *dp;
@@ -477,7 +479,8 @@ void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
 					    struct messaging_context *msg_ctx,
 					    struct tevent_context *ev)
 {
+	struct messaging_backend *be = messaging_local_backend(msg_ctx);
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
-		msg_ctx->local->private_data, struct messaging_dgm_context);
+		be->private_data, struct messaging_dgm_context);
 	return poll_funcs_tevent_register(mem_ctx, ctx->msg_callbacks, ev);
 }
