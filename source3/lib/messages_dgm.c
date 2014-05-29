@@ -232,7 +232,8 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 	}
 
 	ctx->tevent_handle = poll_funcs_tevent_register(
-		ctx, ctx->msg_callbacks, msg_ctx->event_ctx);
+		ctx, ctx->msg_callbacks,
+		messaging_tevent_context(msg_ctx));
 	if (ctx->tevent_handle == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;

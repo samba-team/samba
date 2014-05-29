@@ -116,6 +116,8 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev);
 
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
+struct tevent_context *messaging_tevent_context(
+	struct messaging_context *msg_ctx);
 struct messaging_backend *messaging_local_backend(
 	struct messaging_context *msg_ctx);
 

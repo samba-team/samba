@@ -868,4 +868,10 @@ struct messaging_backend *messaging_local_backend(
 	return msg_ctx->local;
 }
 
+struct tevent_context *messaging_tevent_context(
+	struct messaging_context *msg_ctx)
+{
+	return msg_ctx->event_ctx;
+}
+
 /** @} **/
