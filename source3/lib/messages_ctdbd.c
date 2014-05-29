@@ -88,7 +88,7 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 	return global_ctdbd_connection;
 }
 
-static NTSTATUS messaging_ctdb_send(struct messaging_context *msg_ctx,
+static NTSTATUS messaging_ctdb_send(struct server_id src,
 				    struct server_id pid, int msg_type,
 				    const struct iovec *iov, int iovlen,
 				    struct messaging_backend *backend)
@@ -109,7 +109,7 @@ static NTSTATUS messaging_ctdb_send(struct messaging_context *msg_ctx,
 	msg.msg_version	= MESSAGE_VERSION;
 	msg.msg_type	= msg_type;
 	msg.dest	= pid;
-	msg.src		= msg_ctx->id;
+	msg.src		= src;
 	msg.buf		= data_blob_const(buf, talloc_get_size(buf));
 
 	status = ctdbd_messaging_send(ctx->conn, pid.vnn, pid.pid, &msg);

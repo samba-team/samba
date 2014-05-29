@@ -44,7 +44,7 @@ struct messaging_dgm_hdr {
 	struct server_id src;
 };
 
-static NTSTATUS messaging_dgm_send(struct messaging_context *msg_ctx,
+static NTSTATUS messaging_dgm_send(struct server_id src,
 				   struct server_id pid, int msg_type,
 				   const struct iovec *iov, int iovlen,
 				   struct messaging_backend *backend);
@@ -286,7 +286,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	return 0;
 }
 
-static NTSTATUS messaging_dgm_send(struct messaging_context *msg_ctx,
+static NTSTATUS messaging_dgm_send(struct server_id src,
 				   struct server_id pid, int msg_type,
 				   const struct iovec *iov, int iovlen,
 				   struct messaging_backend *backend)
@@ -312,7 +312,7 @@ static NTSTATUS messaging_dgm_send(struct messaging_context *msg_ctx,
 	hdr.msg_version = MESSAGE_VERSION;
 	hdr.msg_type = msg_type & MSG_TYPE_MASK;
 	hdr.dst = pid;
-	hdr.src = msg_ctx->id;
+	hdr.src = src;
 
 	DEBUG(10, ("%s: Sending message 0x%x to %s\n", __func__,
 		   (unsigned)hdr.msg_type,

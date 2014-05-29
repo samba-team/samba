@@ -380,7 +380,7 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 	}
 
 	if (!procid_is_local(&server)) {
-		return msg_ctx->remote->send_fn(msg_ctx, server,
+		return msg_ctx->remote->send_fn(msg_ctx->id, server,
 						msg_type, iov, iovlen,
 						msg_ctx->remote);
 	}
@@ -407,8 +407,8 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	return msg_ctx->local->send_fn(msg_ctx, server, msg_type, iov, iovlen,
-				       msg_ctx->local);
+	return msg_ctx->local->send_fn(msg_ctx->id, server, msg_type,
+				       iov, iovlen, msg_ctx->local);
 }
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
