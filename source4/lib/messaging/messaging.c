@@ -564,7 +564,7 @@ int imessaging_cleanup(struct imessaging_context *msg)
 /*
   create the listening socket and setup the dispatcher
 
-  use temporary=true when you want a destructor to remove the
+  use auto_remove=true when you want a destructor to remove the
   associated messaging socket and database entry on talloc free. Don't
   use this in processes that may fork and a child may talloc free this
   memory
