@@ -41,6 +41,28 @@ bool server_id_equal(const struct server_id *p1, const struct server_id *p2)
 	return true;
 }
 
+char *server_id_str_buf(struct server_id id, struct server_id_buf *dst)
+{
+	if (server_id_is_disconnected(&id)) {
+		strlcpy(dst->buf, "disconnected", sizeof(dst->buf));
+	} else if ((id.vnn == NONCLUSTER_VNN) && (id.task_id == 0)) {
+		snprintf(dst->buf, sizeof(dst->buf), "%llu",
+			 (unsigned long long)id.pid);
+	} else if (id.vnn == NONCLUSTER_VNN) {
+		snprintf(dst->buf, sizeof(dst->buf), "%llu.%u",
+			 (unsigned long long)id.pid, (unsigned)id.task_id);
+	} else if (id.task_id == 0) {
+		snprintf(dst->buf, sizeof(dst->buf), "%u:%llu",
+			 (unsigned)id.vnn, (unsigned long long)id.pid);
+	} else {
+		snprintf(dst->buf, sizeof(dst->buf), "%u:%llu.%u",
+			 (unsigned)id.vnn,
+			 (unsigned long long)id.pid,
+			 (unsigned)id.task_id);
+	}
+	return dst->buf;
+}
+
 char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
 {
 	if (server_id_is_disconnected(id)) {

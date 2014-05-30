@@ -984,6 +984,10 @@ char *data_path(TALLOC_CTX *mem_ctx, const char *name);
 const char *shlib_ext(void);
 
 struct server_id;
+
+struct server_id_buf { char buf[48]; }; /* probably a bit too large ... */
+char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
+
 bool server_id_equal(const struct server_id *p1, const struct server_id *p2);
 char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id);
 struct server_id server_id_from_string(uint32_t local_vnn,
