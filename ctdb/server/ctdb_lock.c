@@ -57,7 +57,7 @@ static const char * const lock_type_str[] = {
 	"lock_record",
 	"lock_db",
 	"lock_alldb_prio",
-	"lock_db",
+	"lock_alldb",
 };
 
 struct lock_request;
