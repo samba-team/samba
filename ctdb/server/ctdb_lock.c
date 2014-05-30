@@ -838,6 +838,11 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
+	if ((request = talloc_zero(lock_ctx, struct lock_request)) == NULL) {
+		talloc_free(lock_ctx);
+		return NULL;
+	}
+
 	lock_ctx->type = type;
 	lock_ctx->ctdb = ctdb;
 	lock_ctx->ctdb_db = ctdb_db;
@@ -856,6 +861,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	lock_ctx->priority = priority;
 	lock_ctx->auto_mark = auto_mark;
 
+	lock_ctx->request = request;
 	lock_ctx->child = -1;
 
 	DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
@@ -868,17 +874,11 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	/* Start the timer when we activate the context */
 	lock_ctx->start_time = timeval_current();
 
-	if ((request = talloc_zero(lock_ctx, struct lock_request)) == NULL) {
-		talloc_free(lock_ctx);
-		return NULL;
-	}
-
 	request->lctx = lock_ctx;
 	request->callback = callback;
 	request->private_data = private_data;
 
 	talloc_set_destructor(request, ctdb_lock_request_destructor);
-	lock_ctx->request = request;
 
 	ctdb_lock_schedule(ctdb);
 
