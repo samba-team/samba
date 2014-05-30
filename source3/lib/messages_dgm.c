@@ -142,29 +142,26 @@ fail_free:
 	return ret;
 }
 
-static int messaging_dgm_lockfile_remove(const char *cache_dir, pid_t pid)
+static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
+					 const char *cache_dir, pid_t pid)
 {
-	fstring fname;
-	char buf[PATH_MAX];
-	char *lockfile_name, *to_free;
-	ssize_t len;
+	char *lockfile_name;
 	int ret;
 
-	fstr_sprintf(fname, "lck/%u", (unsigned)pid);
-
-	len = full_path_tos(cache_dir, fname, buf, sizeof(buf),
-			    &lockfile_name, &to_free);
-	if (len == -1) {
+	lockfile_name = talloc_asprintf(
+		tmp_ctx, "%s/lck/%u", cache_dir, (unsigned)pid);
+	if (lockfile_name == NULL) {
 		return ENOMEM;
 	}
 
 	ret = unlink(lockfile_name);
 	if (ret == -1) {
 		ret = errno;
-		DEBUG(10, ("%s: unlink failed: %s\n", __func__,
-			   strerror(ret)));
+		DEBUG(10, ("%s: unlink(%s) failed: %s\n", __func__,
+			   lockfile_name, strerror(ret)));
 	}
-	TALLOC_FREE(to_free);
+
+	TALLOC_FREE(lockfile_name);
 	return ret;
 }
 
@@ -286,7 +283,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	unix_msg_free(c->dgm_ctx);
 
 	if (getpid() == pid.pid) {
-		(void)messaging_dgm_lockfile_remove(c->cache_dir, pid.pid);
+		(void)messaging_dgm_lockfile_remove(c, c->cache_dir, pid.pid);
 	}
 	close(c->lockfile_fd);
 	return 0;
