@@ -71,18 +71,18 @@ struct lock_context {
 	TDB_DATA key;
 	uint32_t priority;
 	bool auto_mark;
-	struct lock_request *req_queue;
+	struct lock_request *request;
 	pid_t child;
 	int fd[2];
 	struct tevent_fd *tfd;
 	struct tevent_timer *ttimer;
 	struct timeval start_time;
 	uint32_t key_hash;
+	bool can_schedule;
 };
 
 /* lock_request is the client specific part for a lock request */
 struct lock_request {
-	struct lock_request *next, *prev;
 	struct lock_context *lctx;
 	void (*callback)(void *, bool);
 	void *private_data;
@@ -305,10 +305,9 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
  */
 static int ctdb_lock_request_destructor(struct lock_request *lock_request)
 {
-	DLIST_REMOVE(lock_request->lctx->req_queue, lock_request);
+	lock_request->lctx->request = NULL;
 	return 0;
 }
-
 
 void ctdb_lock_free_request_context(struct lock_request *lock_req)
 {
@@ -327,7 +326,7 @@ void ctdb_lock_free_request_context(struct lock_request *lock_req)
  */
 static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 {
-	struct lock_request *request, *next;
+	struct lock_request *request;
 
 	if (lock_ctx->auto_mark && locked) {
 		switch (lock_ctx->type) {
@@ -349,19 +348,12 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 		}
 	}
 
-	/* Iterate through all callbacks */
-	request = lock_ctx->req_queue;
-	while (request) {
-		if (lock_ctx->auto_mark) {
-			/* Reset the destructor, so request is not removed from the list */
-			talloc_set_destructor(request, NULL);
-		}
-
-		/* In case, callback frees the request, store next */
-		next = request->next;
-		request->callback(request->private_data, locked);
-		request = next;
+	request = lock_ctx->request;
+	if (lock_ctx->auto_mark) {
+		/* Reset the destructor, so request is not removed from the list */
+		talloc_set_destructor(request, NULL);
 	}
+	request->callback(request->private_data, locked);
 
 	if (lock_ctx->auto_mark && locked) {
 		switch (lock_ctx->type) {
@@ -750,8 +742,8 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	lock_ctx = ctdb->lock_pending;
 	while (lock_ctx != NULL) {
 		next_ctx = lock_ctx->next;
-		if (! lock_ctx->req_queue) {
-			DEBUG(DEBUG_INFO, ("Removing lock context without lock requests\n"));
+		if (! lock_ctx->request) {
+			DEBUG(DEBUG_INFO, ("Removing lock context without lock request\n"));
 			DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
 			ctdb->lock_num_pending--;
 			CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
@@ -949,7 +941,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	request->private_data = private_data;
 
 	talloc_set_destructor(request, ctdb_lock_request_destructor);
-	DLIST_ADD_END(lock_ctx->req_queue, request, NULL);
+	lock_ctx->request = request;
 
 	ctdb_lock_schedule(ctdb);
 
