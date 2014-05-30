@@ -903,53 +903,41 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-#if 0
-	/* Disable this optimization to ensure first-in-first-out fair
-	 * scheduling of lock requests */
-
-	/* get a context for this key - search only the pending contexts,
-	 * current contexts might in the middle of processing callbacks */
-	lock_ctx = find_lock_context(ctdb->lock_pending, ctdb_db, key, priority, type);
-#endif
-
-	/* No existing context, create one */
+	lock_ctx = talloc_zero(ctdb, struct lock_context);
 	if (lock_ctx == NULL) {
-		lock_ctx = talloc_zero(ctdb, struct lock_context);
-		if (lock_ctx == NULL) {
-			DEBUG(DEBUG_ERR, ("Failed to create a new lock context\n"));
+		DEBUG(DEBUG_ERR, ("Failed to create a new lock context\n"));
+		return NULL;
+	}
+
+	lock_ctx->type = type;
+	lock_ctx->ctdb = ctdb;
+	lock_ctx->ctdb_db = ctdb_db;
+	lock_ctx->key.dsize = key.dsize;
+	if (key.dsize > 0) {
+		lock_ctx->key.dptr = talloc_memdup(lock_ctx, key.dptr, key.dsize);
+		if (lock_ctx->key.dptr == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ "Memory allocation error\n"));
+			talloc_free(lock_ctx);
 			return NULL;
 		}
-
-		lock_ctx->type = type;
-		lock_ctx->ctdb = ctdb;
-		lock_ctx->ctdb_db = ctdb_db;
-		lock_ctx->key.dsize = key.dsize;
-		if (key.dsize > 0) {
-			lock_ctx->key.dptr = talloc_memdup(lock_ctx, key.dptr, key.dsize);
-			if (lock_ctx->key.dptr == NULL) {
-				DEBUG(DEBUG_ERR, (__location__ "Memory allocation error\n"));
-				talloc_free(lock_ctx);
-				return NULL;
-			}
-			lock_ctx->key_hash = ctdb_hash(&key);
-		} else {
-			lock_ctx->key.dptr = NULL;
-		}
-		lock_ctx->priority = priority;
-		lock_ctx->auto_mark = auto_mark;
-
-		lock_ctx->child = -1;
-
-		DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
-		ctdb->lock_num_pending++;
-		CTDB_INCREMENT_STAT(ctdb, locks.num_pending);
-		if (ctdb_db) {
-			CTDB_INCREMENT_DB_STAT(ctdb_db, locks.num_pending);
-		}
-
-		/* Start the timer when we activate the context */
-		lock_ctx->start_time = timeval_current();
+		lock_ctx->key_hash = ctdb_hash(&key);
+	} else {
+		lock_ctx->key.dptr = NULL;
 	}
+	lock_ctx->priority = priority;
+	lock_ctx->auto_mark = auto_mark;
+
+	lock_ctx->child = -1;
+
+	DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
+	ctdb->lock_num_pending++;
+	CTDB_INCREMENT_STAT(ctdb, locks.num_pending);
+	if (ctdb_db) {
+		CTDB_INCREMENT_DB_STAT(ctdb_db, locks.num_pending);
+	}
+
+	/* Start the timer when we activate the context */
+	lock_ctx->start_time = timeval_current();
 
 	if ((request = talloc_zero(lock_ctx, struct lock_request)) == NULL) {
 		talloc_free(lock_ctx);
