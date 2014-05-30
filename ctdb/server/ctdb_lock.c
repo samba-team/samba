@@ -76,8 +76,6 @@ struct lock_context {
 	int fd[2];
 	struct tevent_fd *tfd;
 	struct tevent_timer *ttimer;
-	pid_t block_child;
-	int block_fd[2];
 	struct timeval start_time;
 	uint32_t key_hash;
 };
@@ -941,7 +939,6 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 		lock_ctx->auto_mark = auto_mark;
 
 		lock_ctx->child = -1;
-		lock_ctx->block_child = -1;
 
 		DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
 		ctdb->lock_num_pending++;
