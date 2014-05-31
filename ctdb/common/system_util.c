@@ -59,10 +59,14 @@ void set_scheduler(void)
 #else /* no AIX */
 #if HAVE_SCHED_SETSCHEDULER
 	struct sched_param p;
+	int policy = SCHED_FIFO;
 
 	p.sched_priority = 1;
 
-	if (sched_setscheduler(0, SCHED_FIFO, &p) == -1) {
+#ifdef SCHED_RESET_ON_FORK
+	policy |= SCHED_RESET_ON_FORK;
+#endif
+	if (sched_setscheduler(0, policy, &p) == -1) {
 		DEBUG(DEBUG_CRIT,("Unable to set scheduler to SCHED_FIFO (%s)\n",
 			 strerror(errno)));
 	} else {
@@ -92,12 +96,14 @@ void reset_scheduler(void)
 #endif
 #else /* no AIX */
 #if HAVE_SCHED_SETSCHEDULER
+#ifndef SCHED_RESET_ON_FORK
 	struct sched_param p;
 
 	p.sched_priority = 0;
 	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_OTHER\n"));
 	}
+#endif
 #endif
 #endif
 }
