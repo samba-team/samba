@@ -552,7 +552,7 @@ union {
 msg.msg_control = control_un.control;
 msg.msg_controllen = sizeof(control_un.control);
 ''',
-        'HAVE_MSGHDR_MSG_CONTROL',
+        'HAVE_STRUCT_MSGHDR_MSG_CONTROL',
         msg='Checking if we can use msg_control for passing file descriptors',
         headers='sys/types.h stdlib.h stddef.h sys/socket.h sys/un.h')
     conf.CHECK_CODE('''
@@ -1841,7 +1841,7 @@ main() {
     if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
         default_shared_modules.extend(TO_LIST('vfs_fileid'))
 
-    if (conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS')):
+    if (conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS')):
         default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
 
     if Options.options.with_pthreadpool:
