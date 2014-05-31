@@ -27,6 +27,10 @@
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_unix.h"
 
+#if !defined(HAVE_MSGHDR_MSG_CONTROL) && !defined(HAVE_MSGHDR_MSG_ACCTRIGHTS)
+# error Can not pass file descriptors
+#endif
+
 #undef recvmsg
 
 #ifndef MAP_FILE
@@ -152,9 +156,11 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 	ssize_t n;
 #ifndef HAVE_MSGHDR_MSG_CONTROL
 	int newfd;
-#endif
 
-#ifdef	HAVE_MSGHDR_MSG_CONTROL
+	msg.msg_accrights = (caddr_t) &newfd;
+	msg.msg_accrightslen = sizeof(int);
+#else
+
 	union {
 	  struct cmsghdr	cm;
 	  char				control[CMSG_SPACE(sizeof(int))];
@@ -163,13 +169,6 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 
 	msg.msg_control = control_un.control;
 	msg.msg_controllen = sizeof(control_un.control);
-#else
-#if HAVE_MSGHDR_MSG_ACCTRIGHTS
-	msg.msg_accrights = (caddr_t) &newfd;
-	msg.msg_accrightslen = sizeof(int);
-#else
-#error Can not pass file descriptors
-#endif
 #endif
 
 	msg.msg_name = NULL;
