@@ -27,7 +27,7 @@
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_unix.h"
 
-#if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_MSGHDR_MSG_ACCTRIGHTS)
+#if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_STRUCT_MSGHDR_MSG_ACCTRIGHTS)
 # error Can not pass file descriptors
 #endif
 
