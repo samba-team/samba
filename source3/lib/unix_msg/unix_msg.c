@@ -244,8 +244,10 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 	msg = (struct msghdr) {
 		.msg_iov = &iov,
 		.msg_iovlen = 1,
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 		.msg_control = NULL,
 		.msg_controllen = 0,
+#endif
 	};
 
 	received = recvmsg(fd, &msg, 0);
@@ -509,8 +511,10 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx, const char *dst_sock,
 	msg.msg_namelen = sizeof(addr);
 	msg.msg_iov = discard_const_p(struct iovec, iov);
 	msg.msg_iovlen = iovlen;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;
 	msg.msg_controllen = 0;
+#endif
 	msg.msg_flags = 0;
 
 	ret = sendmsg(ctx->sock, &msg, 0);
