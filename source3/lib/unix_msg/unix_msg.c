@@ -637,7 +637,7 @@ int unix_msg_init(const struct sockaddr_un *addr,
 	return 0;
 }
 
-int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
+int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		  const struct iovec *iov, int iovlen)
 {
 	ssize_t msglen;
@@ -646,15 +646,6 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 	struct iovec *iov_copy;
 	struct unix_msg_hdr hdr;
 	struct iovec src_iov;
-	struct sockaddr_un dst;
-	size_t dst_len;
-
-	dst_len = strlen(dst_sock)+1;
-	if (dst_len >= sizeof(dst.sun_path)) {
-		return ENAMETOOLONG;
-	}
-	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
-	memcpy(dst.sun_path, dst_sock, dst_len);
 
 	if (iovlen < 0) {
 		return EINVAL;
@@ -676,7 +667,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 			       sizeof(struct iovec) * iovlen);
 		}
 
-		return unix_dgram_send(ctx->dgram, &dst, tmp_iov, iovlen+1);
+		return unix_dgram_send(ctx->dgram, dst, tmp_iov, iovlen+1);
 	}
 
 	hdr.msglen = msglen;
@@ -734,7 +725,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 		}
 		sent += (fragment_len - sizeof(ctx->cookie) - sizeof(hdr));
 
-		ret = unix_dgram_send(ctx->dgram, &dst, iov_copy, iov_index);
+		ret = unix_dgram_send(ctx->dgram, dst, iov_copy, iov_index);
 		if (ret != 0) {
 			break;
 		}

@@ -300,21 +300,19 @@ static NTSTATUS messaging_dgm_send(struct server_id src,
 {
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
 		backend->private_data, struct messaging_dgm_context);
-	fstring pid_str;
-	char buf[PATH_MAX];
-	char *dst_sock, *to_free;
 	struct messaging_dgm_hdr hdr;
 	struct iovec iov2[iovlen + 1];
-	ssize_t pathlen;
 	struct server_id_buf idbuf;
+	struct sockaddr_un dst;
+	ssize_t dst_pathlen;
 	int ret;
 
-	fstr_sprintf(pid_str, "msg/%u", (unsigned)pid.pid);
+	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
 
-	pathlen = full_path_tos(ctx->cache_dir, pid_str, buf, sizeof(buf),
-				&dst_sock, &to_free);
-	if (pathlen == -1) {
-		return NT_STATUS_NO_MEMORY;
+	dst_pathlen = snprintf(dst.sun_path, sizeof(dst.sun_path),
+			       "%s/msg/%u", ctx->cache_dir, (unsigned)pid.pid);
+	if (dst_pathlen >= sizeof(dst.sun_path)) {
+		return NT_STATUS_NAME_TOO_LONG;
 	}
 
 	hdr.msg_version = MESSAGE_VERSION;
@@ -331,10 +329,8 @@ static NTSTATUS messaging_dgm_send(struct server_id src,
 	memcpy(iov2+1, iov, iovlen*sizeof(struct iovec));
 
 	become_root();
-	ret = unix_msg_send(ctx->dgm_ctx, dst_sock, iov2, iovlen + 1);
+	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov2, iovlen + 1);
 	unbecome_root();
-
-	TALLOC_FREE(to_free);
 
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);

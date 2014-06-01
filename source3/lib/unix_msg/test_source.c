@@ -13,6 +13,7 @@ int main(int argc, const char *argv[])
 	int ret;
 	unsigned i;
 	unsigned num_ctxs = 1;
+	struct sockaddr_un dst;
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s <sockname> [num_contexts]\n", argv[0]);
@@ -57,11 +58,14 @@ int main(int argc, const char *argv[])
 	iov.iov_base = &i;
 	iov.iov_len = sizeof(i);
 
+	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
+	strlcpy(dst.sun_path, argv[1], sizeof(dst.sun_path));
+
 	for (i=0; i<num_ctxs; i++) {
 		unsigned j;
 
 		for (j=0; j<100000; j++) {
-			ret = unix_msg_send(ctxs[i], argv[1], &iov, 1);
+			ret = unix_msg_send(ctxs[i], &dst, &iov, 1);
 			if (ret != 0) {
 				fprintf(stderr, "unix_msg_send failed: %s\n",
 					strerror(ret));

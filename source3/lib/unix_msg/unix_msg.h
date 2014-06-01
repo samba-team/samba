@@ -95,7 +95,7 @@ int unix_msg_init(const struct sockaddr_un *addr,
  * @return 0 on success, errno on failure
  */
 
-int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
+int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		  const struct iovec *iov, int iovlen);
 
 /**

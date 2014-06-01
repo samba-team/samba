@@ -102,7 +102,7 @@ int main(void)
 	state.buf = NULL;
 	state.buflen = 0;
 
-	ret = unix_msg_send(ctx1, addr2.sun_path, NULL, 0);
+	ret = unix_msg_send(ctx1, &addr2, NULL, 0);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_send failed: %s\n",
 			strerror(ret));
@@ -119,7 +119,7 @@ int main(void)
 	state.buf = &msg;
 	state.buflen = sizeof(msg);
 
-	ret = unix_msg_send(ctx1, addr2.sun_path, &iov, 1);
+	ret = unix_msg_send(ctx1, &addr2, &iov, 1);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_send failed: %s\n",
 			strerror(ret));
@@ -140,13 +140,13 @@ int main(void)
 	state.buflen = sizeof(buf);
 
 	for (i=0; i<3; i++) {
-		ret = unix_msg_send(ctx1, addr2.sun_path, &iov, 1);
+		ret = unix_msg_send(ctx1, &addr2, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
 			return 1;
 		}
-		ret = unix_msg_send(ctx2, addr2.sun_path, &iov, 1);
+		ret = unix_msg_send(ctx2, &addr2, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
@@ -185,7 +185,7 @@ int main(void)
 			j++;
 		}
 
-		ret = unix_msg_send(ctx1, addr1.sun_path, iovs, j);
+		ret = unix_msg_send(ctx1, &addr1, iovs, j);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
@@ -198,13 +198,13 @@ int main(void)
 	printf("Filling send queues before freeing\n");
 
 	for (i=0; i<5; i++) {
-		ret = unix_msg_send(ctx1, addr2.sun_path, &iov, 1);
+		ret = unix_msg_send(ctx1, &addr2, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
 			return 1;
 		}
-		ret = unix_msg_send(ctx1, addr1.sun_path, &iov, 1);
+		ret = unix_msg_send(ctx1, &addr1, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
