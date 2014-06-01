@@ -124,7 +124,8 @@ class DNSTest(TestCase):
                     s.close()
 
     def hexdump(self, src, length=8):
-        N=0; result=''
+        N = 0
+        result = ''
         while src:
            s,src = src[:length],src[length:]
            hexa = ' '.join(["%02X"%ord(x) for x in s])
