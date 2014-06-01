@@ -135,7 +135,7 @@ static int prepare_socket(int sock)
 	return prepare_socket_cloexec(sock);
 }
 
-static int unix_dgram_init(const char *path, size_t max_msg,
+static int unix_dgram_init(const struct sockaddr_un *addr, size_t max_msg,
 			   const struct poll_funcs *ev_funcs,
 			   void (*recv_callback)(struct unix_dgram_ctx *ctx,
 						 uint8_t *msg, size_t msg_len,
@@ -144,15 +144,11 @@ static int unix_dgram_init(const char *path, size_t max_msg,
 			   struct unix_dgram_ctx **result)
 {
 	struct unix_dgram_ctx *ctx;
-	struct sockaddr_un addr = { 0, };
 	size_t pathlen;
 	int ret;
 
-	if (path != NULL) {
-		pathlen = strlen(path)+1;
-		if (pathlen > sizeof(addr.sun_path)) {
-			return ENAMETOOLONG;
-		}
+	if (addr != NULL) {
+		pathlen = strlen(addr->sun_path)+1;
 	} else {
 		pathlen = 1;
 	}
@@ -161,8 +157,8 @@ static int unix_dgram_init(const char *path, size_t max_msg,
 	if (ctx == NULL) {
 		return ENOMEM;
 	}
-	if (path != NULL) {
-		memcpy(ctx->path, path, pathlen);
+	if (addr != NULL) {
+		memcpy(ctx->path, addr->sun_path, pathlen);
 	} else {
 		ctx->path[0] = '\0';
 	}
@@ -194,12 +190,10 @@ static int unix_dgram_init(const char *path, size_t max_msg,
 		goto fail_close;
 	}
 
-	if (path != NULL) {
-		addr.sun_family = AF_UNIX;
-		memcpy(addr.sun_path, path, pathlen);
-
-		ret = bind(ctx->sock, (struct sockaddr *)(void *)&addr,
-				sizeof(addr));
+	if (addr != NULL) {
+		ret = bind(ctx->sock,
+			   (const struct sockaddr *)(const void *)addr,
+			   sizeof(*addr));
 		if (ret == -1) {
 			ret = errno;
 			goto fail_close;
@@ -633,6 +627,8 @@ int unix_msg_init(const char *path, const struct poll_funcs *ev_funcs,
 		  struct unix_msg_ctx **result)
 {
 	struct unix_msg_ctx *ctx;
+	struct sockaddr_un addr;
+	struct sockaddr_un *paddr = NULL;
 	int ret;
 
 	ctx = malloc(sizeof(*ctx));
@@ -640,7 +636,18 @@ int unix_msg_init(const char *path, const struct poll_funcs *ev_funcs,
 		return ENOMEM;
 	}
 
-	ret = unix_dgram_init(path, fragment_len, ev_funcs,
+	if (path != NULL) {
+		size_t pathlen = strlen(path)+1;
+
+		if (pathlen > sizeof(addr.sun_path)) {
+			return ENAMETOOLONG;
+		}
+		addr = (struct sockaddr_un) { .sun_family = AF_UNIX };
+		memcpy(addr.sun_path, path, pathlen);
+		paddr = &addr;
+	}
+
+	ret = unix_dgram_init(paddr, fragment_len, ev_funcs,
 			      unix_msg_recv, ctx, &ctx->dgram);
 	if (ret != 0) {
 		free(ctx);
