@@ -465,25 +465,19 @@ static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
 	unix_dgram_send_queue_free(q);
 }
 
-static int unix_dgram_send(struct unix_dgram_ctx *ctx, const char *dst_sock,
+static int unix_dgram_send(struct unix_dgram_ctx *ctx,
+			   const struct sockaddr_un *dst,
 			   const struct iovec *iov, int iovlen)
 {
 	struct unix_dgram_send_queue *q;
-	struct sockaddr_un addr = { 0, };
 	struct msghdr msg;
-	size_t dst_len;
 	int ret;
-
-	dst_len = strlen(dst_sock);
-	if (dst_len >= sizeof(addr.sun_path)) {
-		return ENAMETOOLONG;
-	}
 
 	/*
 	 * To preserve message ordering, we have to queue a message when
 	 * others are waiting in line already.
 	 */
-	q = find_send_queue(ctx, dst_sock);
+	q = find_send_queue(ctx, dst->sun_path);
 	if (q != NULL) {
 		return queue_msg(q, iov, iovlen);
 	}
@@ -492,11 +486,8 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx, const char *dst_sock,
 	 * Try a cheap nonblocking send
 	 */
 
-	addr.sun_family = AF_UNIX;
-	memcpy(addr.sun_path, dst_sock, dst_len);
-
-	msg.msg_name = &addr;
-	msg.msg_namelen = sizeof(addr);
+	msg.msg_name = discard_const_p(struct sockaddr_un, dst);
+	msg.msg_namelen = sizeof(*dst);
 	msg.msg_iov = discard_const_p(struct iovec, iov);
 	msg.msg_iovlen = iovlen;
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -517,7 +508,7 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx, const char *dst_sock,
 		return errno;
 	}
 
-	ret = unix_dgram_send_queue_init(ctx, &addr, &q);
+	ret = unix_dgram_send_queue_init(ctx, dst, &q);
 	if (ret != 0) {
 		return ret;
 	}
@@ -667,6 +658,15 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 	struct iovec *iov_copy;
 	struct unix_msg_hdr hdr;
 	struct iovec src_iov;
+	struct sockaddr_un dst;
+	size_t dst_len;
+
+	dst_len = strlen(dst_sock);
+	if (dst_len >= sizeof(dst.sun_path)) {
+		return ENAMETOOLONG;
+	}
+	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
+	memcpy(dst.sun_path, dst_sock, dst_len);
 
 	if (iovlen < 0) {
 		return EINVAL;
@@ -688,8 +688,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 			       sizeof(struct iovec) * iovlen);
 		}
 
-		return unix_dgram_send(ctx->dgram, dst_sock, tmp_iov,
-				       iovlen+1);
+		return unix_dgram_send(ctx->dgram, &dst, tmp_iov, iovlen+1);
 	}
 
 	hdr.msglen = msglen;
@@ -747,8 +746,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 		}
 		sent += (fragment_len - sizeof(ctx->cookie) - sizeof(hdr));
 
-		ret = unix_dgram_send(ctx->dgram, dst_sock,
-				      iov_copy, iov_index);
+		ret = unix_dgram_send(ctx->dgram, &dst, iov_copy, iov_index);
 		if (ret != 0) {
 			break;
 		}
