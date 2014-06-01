@@ -186,7 +186,8 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, off_t offset, off_t coun
 {
 	bool ret;
 
-	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
+	DEBUG(8,("posix_fcntl_lock %d %d %jd %jd %d\n",
+		 fsp->fh->fd,op,(intmax_t)offset,(intmax_t)count,type));
 
 	ret = SMB_VFS_LOCK(fsp, op, offset, count, type);
 
@@ -1165,9 +1166,9 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 	off_t count;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
 
-	DEBUG(5,("set_posix_lock_posix_flavour: File %s, offset = %.0f, count "
-		 "= %.0f, type = %s\n", fsp_str_dbg(fsp),
-		 (double)u_offset, (double)u_count,
+	DEBUG(5,("set_posix_lock_posix_flavour: File %s, offset = %ju, count "
+		 "= %ju, type = %s\n", fsp_str_dbg(fsp),
+		 (uintmax_t)u_offset, (uintmax_t)u_count,
 		 posix_lock_type_name(lock_type)));
 
 	/*
@@ -1181,8 +1182,8 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 
 	if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,posix_lock_type)) {
 		*errno_ret = errno;
-		DEBUG(5,("set_posix_lock_posix_flavour: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
-			posix_lock_type_name(posix_lock_type), (double)offset, (double)count, strerror(errno) ));
+		DEBUG(5,("set_posix_lock_posix_flavour: Lock fail !: Type = %s: offset = %ju, count = %ju. Errno = %s\n",
+			posix_lock_type_name(posix_lock_type), (intmax_t)offset, (intmax_t)count, strerror(errno) ));
 		return False;
 	}
 	return True;
