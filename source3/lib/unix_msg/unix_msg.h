@@ -75,7 +75,9 @@ struct unix_msg_ctx;
  * @return 0 on success, errno on failure
  */
 
-int unix_msg_init(const char *path, const struct poll_funcs *ev_funcs,
+
+int unix_msg_init(const struct sockaddr_un *addr,
+		  const struct poll_funcs *ev_funcs,
 		  size_t fragment_size, uint64_t cookie,
 		  void (*recv_callback)(struct unix_msg_ctx *ctx,
 					uint8_t *msg, size_t msg_len,

@@ -34,8 +34,7 @@ int main(void)
 {
 	struct poll_funcs *funcs;
 	void *tevent_handle;
-	const char *sock1 = "sock1";
-	const char *sock2 = "sock2";
+	struct sockaddr_un addr1, addr2;
 	struct unix_msg_ctx *ctx1, *ctx2;
 	struct tevent_context *ev;
 	struct iovec iov;
@@ -45,8 +44,13 @@ int main(void)
 
 	struct cb_state state;
 
-	unlink(sock1);
-	unlink(sock2);
+	addr1 = (struct sockaddr_un) { .sun_family = AF_UNIX };
+	strlcpy(addr1.sun_path, "sock1", sizeof(addr1.sun_path));
+	unlink(addr1.sun_path);
+
+	addr2 = (struct sockaddr_un) { .sun_family = AF_UNIX };
+	strlcpy(addr2.sun_path, "sock2", sizeof(addr2.sun_path));
+	unlink(addr2.sun_path);
 
 	ev = tevent_context_init(NULL);
 	if (ev == NULL) {
@@ -65,7 +69,7 @@ int main(void)
 		return 1;
 	}
 
-	ret = unix_msg_init(sock1, funcs, 256, 1,
+	ret = unix_msg_init(&addr1, funcs, 256, 1,
 			    recv_cb, &state, &ctx1);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
@@ -73,7 +77,7 @@ int main(void)
 		return 1;
 	}
 
-	ret = unix_msg_init(sock1, funcs, 256, 1,
+	ret = unix_msg_init(&addr1, funcs, 256, 1,
 			    recv_cb, &state, &ctx1);
 	if (ret == 0) {
 		fprintf(stderr, "unix_msg_init succeeded unexpectedly\n");
@@ -85,7 +89,7 @@ int main(void)
 		return 1;
 	}
 
-	ret = unix_msg_init(sock2, funcs, 256, 1,
+	ret = unix_msg_init(&addr2, funcs, 256, 1,
 			    recv_cb, &state, &ctx2);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
@@ -98,7 +102,7 @@ int main(void)
 	state.buf = NULL;
 	state.buflen = 0;
 
-	ret = unix_msg_send(ctx1, sock2, NULL, 0);
+	ret = unix_msg_send(ctx1, addr2.sun_path, NULL, 0);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_send failed: %s\n",
 			strerror(ret));
@@ -115,7 +119,7 @@ int main(void)
 	state.buf = &msg;
 	state.buflen = sizeof(msg);
 
-	ret = unix_msg_send(ctx1, sock2, &iov, 1);
+	ret = unix_msg_send(ctx1, addr2.sun_path, &iov, 1);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_send failed: %s\n",
 			strerror(ret));
@@ -136,13 +140,13 @@ int main(void)
 	state.buflen = sizeof(buf);
 
 	for (i=0; i<3; i++) {
-		ret = unix_msg_send(ctx1, sock2, &iov, 1);
+		ret = unix_msg_send(ctx1, addr2.sun_path, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
 			return 1;
 		}
-		ret = unix_msg_send(ctx2, sock2, &iov, 1);
+		ret = unix_msg_send(ctx2, addr2.sun_path, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
@@ -181,7 +185,7 @@ int main(void)
 			j++;
 		}
 
-		ret = unix_msg_send(ctx1, sock1, iovs, j);
+		ret = unix_msg_send(ctx1, addr1.sun_path, iovs, j);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
@@ -194,13 +198,13 @@ int main(void)
 	printf("Filling send queues before freeing\n");
 
 	for (i=0; i<5; i++) {
-		ret = unix_msg_send(ctx1, sock2, &iov, 1);
+		ret = unix_msg_send(ctx1, addr2.sun_path, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));
 			return 1;
 		}
-		ret = unix_msg_send(ctx1, sock1, &iov, 1);
+		ret = unix_msg_send(ctx1, addr1.sun_path, &iov, 1);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_send failed: %s\n",
 				strerror(ret));

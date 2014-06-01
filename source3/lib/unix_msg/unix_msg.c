@@ -603,7 +603,8 @@ static void unix_msg_recv(struct unix_dgram_ctx *ctx,
 			  uint8_t *msg, size_t msg_len,
 			  void *private_data);
 
-int unix_msg_init(const char *path, const struct poll_funcs *ev_funcs,
+int unix_msg_init(const struct sockaddr_un *addr,
+		  const struct poll_funcs *ev_funcs,
 		  size_t fragment_len, uint64_t cookie,
 		  void (*recv_callback)(struct unix_msg_ctx *ctx,
 					uint8_t *msg, size_t msg_len,
@@ -612,8 +613,6 @@ int unix_msg_init(const char *path, const struct poll_funcs *ev_funcs,
 		  struct unix_msg_ctx **result)
 {
 	struct unix_msg_ctx *ctx;
-	struct sockaddr_un addr;
-	struct sockaddr_un *paddr = NULL;
 	int ret;
 
 	ctx = malloc(sizeof(*ctx));
@@ -621,18 +620,7 @@ int unix_msg_init(const char *path, const struct poll_funcs *ev_funcs,
 		return ENOMEM;
 	}
 
-	if (path != NULL) {
-		size_t pathlen = strlen(path)+1;
-
-		if (pathlen > sizeof(addr.sun_path)) {
-			return ENAMETOOLONG;
-		}
-		addr = (struct sockaddr_un) { .sun_family = AF_UNIX };
-		memcpy(addr.sun_path, path, pathlen);
-		paddr = &addr;
-	}
-
-	ret = unix_dgram_init(paddr, fragment_len, ev_funcs,
+	ret = unix_dgram_init(addr, fragment_len, ev_funcs,
 			      unix_msg_recv, ctx, &ctx->dgram);
 	if (ret != 0) {
 		free(ctx);
@@ -661,7 +649,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const char *dst_sock,
 	struct sockaddr_un dst;
 	size_t dst_len;
 
-	dst_len = strlen(dst_sock);
+	dst_len = strlen(dst_sock)+1;
 	if (dst_len >= sizeof(dst.sun_path)) {
 		return ENAMETOOLONG;
 	}

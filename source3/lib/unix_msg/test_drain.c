@@ -17,7 +17,7 @@ static void recv_cb(struct unix_msg_ctx *ctx,
 int main(int argc, const char *argv[])
 {
 	struct poll_funcs *funcs;
-	const char *sock;
+	struct sockaddr_un addr;
 	struct unix_msg_ctx *ctx;
 	struct tevent_context *ev;
 	int ret;
@@ -29,8 +29,9 @@ int main(int argc, const char *argv[])
 		return 1;
 	}
 
-	sock = argv[1];
-	unlink(sock);
+	addr = (struct sockaddr_un) { .sun_family = AF_UNIX };
+	strlcpy(addr.sun_path, argv[1], sizeof(addr.sun_path));
+	unlink(addr.sun_path);
 
 	ev = tevent_context_init(NULL);
 	if (ev == NULL) {
@@ -43,7 +44,7 @@ int main(int argc, const char *argv[])
 		return 1;
 	}
 
-	ret = unix_msg_init(sock, funcs, 256, 1, recv_cb, &state, &ctx);
+	ret = unix_msg_init(&addr, funcs, 256, 1, recv_cb, &state, &ctx);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
 			strerror(ret));

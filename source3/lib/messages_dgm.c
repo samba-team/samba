@@ -179,7 +179,9 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 	int ret;
 	bool ok;
 	const char *cache_dir;
-	char *socket_dir, *socket_name;
+	char *socket_dir;
+	struct sockaddr_un socket_address;
+	size_t sockname_len;
 	uint64_t cookie;
 
 	cache_dir = lp_cache_directory();
@@ -209,10 +211,14 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 	if (socket_dir == NULL) {
 		goto fail_nomem;
 	}
-	socket_name = talloc_asprintf(ctx, "%s/%u", socket_dir,
-				      (unsigned)pid.pid);
-	if (socket_name == NULL) {
-		goto fail_nomem;
+
+	socket_address = (struct sockaddr_un) { .sun_family = AF_UNIX };
+	sockname_len = snprintf(socket_address.sun_path,
+				sizeof(socket_address.sun_path),
+				"%s/%u", socket_dir, (unsigned)pid.pid);
+	if (sockname_len >= sizeof(socket_address.sun_path)) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NAME_TOO_LONG;
 	}
 
 	sec_init();
@@ -249,13 +255,12 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 	}
 	TALLOC_FREE(socket_dir);
 
-	unlink(socket_name);
+	unlink(socket_address.sun_path);
 
 	generate_random_buffer((uint8_t *)&cookie, sizeof(cookie));
 
-	ret = unix_msg_init(socket_name, ctx->msg_callbacks, 1024, cookie,
+	ret = unix_msg_init(&socket_address, ctx->msg_callbacks, 1024, cookie,
 			    messaging_dgm_recv, ctx, &ctx->dgm_ctx);
-	TALLOC_FREE(socket_name);
 	if (ret != 0) {
 		DEBUG(1, ("unix_msg_init failed: %s\n", strerror(ret)));
 		TALLOC_FREE(result);
