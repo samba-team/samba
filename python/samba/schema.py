@@ -160,7 +160,7 @@ def get_linked_attributes(schemadn,schemaldb):
     attrs = ["linkID", "lDAPDisplayName"]
     res = schemaldb.search(expression="(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))", base=schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
     attributes = {}
-    for i in range (0, len(res)):
+    for i in range(0, len(res)):
         expression = "(&(objectclass=attributeSchema)(linkID=%d)(attributeSyntax=2.5.5.1))" % (int(res[i]["linkID"][0])+1)
         target = schemaldb.searchone(basedn=schemadn,
                                      expression=expression,
@@ -178,7 +178,7 @@ def get_dnsyntax_attributes(schemadn,schemaldb):
         base=schemadn, scope=SCOPE_ONELEVEL,
         attrs=["linkID", "lDAPDisplayName"])
     attributes = []
-    for i in range (0, len(res)):
+    for i in range(0, len(res)):
         attributes.append(str(res[i]["lDAPDisplayName"]))
     return attributes
 

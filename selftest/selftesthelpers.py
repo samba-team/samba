@@ -18,7 +18,6 @@
 # three separated by newlines. All other lines in the output are considered
 # comments.
 
-import errno
 import os
 import subprocess
 import sys

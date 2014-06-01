@@ -203,24 +203,24 @@ class drs_Replicate(object):
         # setup for a GetNCChanges call
         req8 = drsuapi.DsGetNCChangesRequest8()
 
-        req8.destination_dsa_guid           = destination_dsa_guid
-        req8.source_dsa_invocation_id       = source_dsa_invocation_id
-        req8.naming_context                 = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn              = dn
-        req8.highwatermark                  = drsuapi.DsReplicaHighWaterMark()
-        req8.highwatermark.tmp_highest_usn  = 0
-        req8.highwatermark.reserved_usn     = 0
-        req8.highwatermark.highest_usn      = 0
-        req8.uptodateness_vector            = None
+        req8.destination_dsa_guid = destination_dsa_guid
+        req8.source_dsa_invocation_id = source_dsa_invocation_id
+        req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
+        req8.naming_context.dn = dn
+        req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
+        req8.highwatermark.tmp_highest_usn = 0
+        req8.highwatermark.reserved_usn = 0
+        req8.highwatermark.highest_usn = 0
+        req8.uptodateness_vector = None
         if replica_flags is not None:
             req8.replica_flags = replica_flags
         elif exop == drsuapi.DRSUAPI_EXOP_REPL_SECRET:
-            req8.replica_flags              = 0
+            req8.replica_flags = 0
         else:
-            req8.replica_flags              = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                                               drsuapi.DRSUAPI_DRS_PER_SYNC |
-                                               drsuapi.DRSUAPI_DRS_GET_ANC |
-                                               drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+            req8.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                                  drsuapi.DRSUAPI_DRS_PER_SYNC |
+                                  drsuapi.DRSUAPI_DRS_GET_ANC |
+                                  drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
             if rodc:
                 req8.replica_flags |= drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING
             else:

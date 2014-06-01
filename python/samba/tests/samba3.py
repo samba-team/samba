@@ -63,7 +63,7 @@ class RegistryTestCase(TestCase):
 class PassdbTestCase(TestCaseInTempDir):
 
     def setUp(self):
-        super (PassdbTestCase, self).setUp()
+        super(PassdbTestCase, self).setUp()
         os.system("cp -r %s %s" % (DATADIR, self.tempdir))
         datadir = os.path.join(self.tempdir, "samba3")
 
