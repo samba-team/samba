@@ -296,19 +296,14 @@ static int unix_dgram_init_pthreadpool(struct unix_dgram_ctx *ctx)
 }
 
 static int unix_dgram_send_queue_init(
-	struct unix_dgram_ctx *ctx, const char *path,
+	struct unix_dgram_ctx *ctx, const struct sockaddr_un *dst,
 	struct unix_dgram_send_queue **result)
 {
 	struct unix_dgram_send_queue *q;
-	struct sockaddr_un addr = { 0, };
 	size_t pathlen;
 	int ret, err;
 
-	pathlen = strlen(path)+1;
-
-	if (pathlen > sizeof(addr.sun_path)) {
-		return ENAMETOOLONG;
-	}
+	pathlen = strlen(dst->sun_path)+1;
 
 	q = malloc(offsetof(struct unix_dgram_send_queue, path) + pathlen);
 	if (q == NULL) {
@@ -316,7 +311,7 @@ static int unix_dgram_send_queue_init(
 	}
 	q->ctx = ctx;
 	q->msgs = NULL;
-	memcpy(q->path, path, pathlen);
+	memcpy(q->path, dst->sun_path, pathlen);
 
 	q->sock = socket(AF_UNIX, SOCK_DGRAM, 0);
 	if (q->sock == -1) {
@@ -329,11 +324,10 @@ static int unix_dgram_send_queue_init(
 		goto fail_close;
 	}
 
-	addr.sun_family = AF_UNIX;
-	memcpy(addr.sun_path, path, pathlen+1);
-
 	do {
-		ret = connect(q->sock, (struct sockaddr *)&addr, sizeof(addr));
+		ret = connect(q->sock,
+			      (const struct sockaddr *)(const void *)dst,
+			      sizeof(*dst));
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret == -1) {
@@ -523,7 +517,7 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx, const char *dst_sock,
 		return errno;
 	}
 
-	ret = unix_dgram_send_queue_init(ctx, dst_sock, &q);
+	ret = unix_dgram_send_queue_init(ctx, &addr, &q);
 	if (ret != 0) {
 		return ret;
 	}
