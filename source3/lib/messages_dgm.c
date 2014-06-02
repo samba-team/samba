@@ -130,6 +130,7 @@ static int messaging_dgm_lockfile_create(const char *cache_dir, pid_t pid,
 		goto fail_unlink;
 	}
 
+	TALLOC_FREE(lockfile_name);
 	*plockfile_fd = lockfile_fd;
 	return 0;
 
