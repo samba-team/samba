@@ -1982,9 +1982,9 @@ class RepsFromTo(object):
             self.__dict__['to_be_deleted'] = value
 
         elif item in ['version']:
-            raise AttributeError, "Attempt to set readonly attribute %s" % item
+            raise AttributeError("Attempt to set readonly attribute %s" % item)
         else:
-            raise AttributeError, "Unknown attribute %s" % item
+            raise AttributeError("Unknown attribute %s" % item)
 
         self.__dict__['update_flags'] |= drsuapi.DRSUAPI_DRS_UPDATE_ADDRESS
 
@@ -2023,7 +2023,7 @@ class RepsFromTo(object):
         elif item in ['update_flags']:
             return self.__dict__['update_flags']
 
-        raise AttributeError, "Unknwown attribute %s" % item
+        raise AttributeError("Unknwown attribute %s" % item)
 
     def is_modified(self):
         return (self.update_flags != 0x0)
