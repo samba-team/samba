@@ -10,9 +10,9 @@ def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
                       with_name="with", without_name="without"):
     if default is None:
         default_str="auto"
-    elif default == True:
+    elif default is True:
         default_str="yes"
-    elif default == False:
+    elif default is False:
         default_str="no"
     else:
         default_str=str(default)

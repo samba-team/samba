@@ -349,10 +349,10 @@ def SAMBA_BINARY(bld, binname, source,
     # only specify PIE flags for binaries
     pie_cflags = cflags
     pie_ldflags = TO_LIST(ldflags)
-    if bld.env['ENABLE_PIE'] == True:
+    if bld.env['ENABLE_PIE'] is True:
         pie_cflags += ' -fPIE'
         pie_ldflags.extend(TO_LIST('-pie'))
-    if bld.env['ENABLE_RELRO'] == True:
+    if bld.env['ENABLE_RELRO'] is True:
         pie_ldflags.extend(TO_LIST('-Wl,-z,relro,-z,now'))
 
     # first create a target for building the object files for this binary
@@ -726,7 +726,7 @@ sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
     lineno = 0
     for line in source_file:
         newline = line
-        if lineno == 0 and task.env["PYTHON_SPECIFIED"] == True and line[:2] == "#!":
+        if lineno == 0 and task.env["PYTHON_SPECIFIED"] is True and line[:2] == "#!":
             newline = replacement_shebang
         elif pattern in line:
             newline = line.replace(pattern, replacement)
