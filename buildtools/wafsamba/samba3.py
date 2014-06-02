@@ -6,16 +6,17 @@ from optparse import SUPPRESS_HELP
 from samba_utils import os_path_relpath, TO_LIST
 from samba_autoconf import library_flags
 
+
 def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
                       with_name="with", without_name="without"):
     if default is None:
-        default_str="auto"
+        default_str = "auto"
     elif default is True:
-        default_str="yes"
+        default_str = "yes"
     elif default is False:
-        default_str="no"
+        default_str = "no"
     else:
-        default_str=str(default)
+        default_str = str(default)
 
     if help == ():
         help = ("Build with %s support (default=%s)" % (option, default_str))
