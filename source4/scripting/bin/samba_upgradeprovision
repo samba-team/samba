@@ -1786,7 +1786,7 @@ if __name__ == '__main__':
         # as we are assured that on this DNs we will have differences !
         # Also the check must be done in a clever way as for the moment we just
         # compare SDDL
-        if dnNotToRecalculateFound == False and (opts.debugchangesd or opts.debugall):
+        if dnNotToRecalculateFound is False and (opts.debugchangesd or opts.debugall):
             message(CHANGESD, "Checking recalculated SDs")
             check_updated_sd(new_ldbs.sam, ldbs.sam, names)
 
