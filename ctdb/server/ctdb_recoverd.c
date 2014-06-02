@@ -1799,6 +1799,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
+	if (rec->election_timeout) {
+		/* an election is in progress */
+		DEBUG(DEBUG_ERR, ("do_recovery called while election in progress - try again later\n"));
+		return -1;
+	}
+
 	ban_misbehaving_nodes(rec, &self_ban);
 	if (self_ban) {
 		DEBUG(DEBUG_NOTICE, ("This node was banned, aborting recovery\n"));
