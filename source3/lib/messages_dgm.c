@@ -57,9 +57,8 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c);
 static int messaging_dgm_lockfile_create(const char *cache_dir, pid_t pid,
 					 int *plockfile_fd, uint64_t unique)
 {
-	char buf[PATH_MAX];
-	char *dir, *to_free;
-	ssize_t dirlen;
+	fstring buf;
+	char *dir;
 	char *lockfile_name;
 	int lockfile_fd;
 	struct flock lck = {};
@@ -67,9 +66,8 @@ static int messaging_dgm_lockfile_create(const char *cache_dir, pid_t pid,
 	ssize_t written;
 	bool ok;
 
-	dirlen = full_path_tos(cache_dir, "lck", buf, sizeof(buf),
-			       &dir, &to_free);
-	if (dirlen == -1) {
+	dir = talloc_asprintf(talloc_tos(), "%s/lck", cache_dir);
+	if (dir == NULL) {
 		return ENOMEM;
 	}
 
@@ -78,13 +76,13 @@ static int messaging_dgm_lockfile_create(const char *cache_dir, pid_t pid,
 		ret = errno;
 		DEBUG(1, ("%s: Could not create lock directory: %s\n",
 			  __func__, strerror(ret)));
-		TALLOC_FREE(to_free);
+		TALLOC_FREE(dir);
 		return ret;
 	}
 
 	lockfile_name = talloc_asprintf(talloc_tos(), "%s/%u", dir,
 					(unsigned)pid);
-	TALLOC_FREE(to_free);
+	TALLOC_FREE(dir);
 	if (lockfile_name == NULL) {
 		DEBUG(1, ("%s: talloc_asprintf failed\n", __func__));
 		return ENOMEM;
