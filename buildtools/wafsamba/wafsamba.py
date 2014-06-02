@@ -726,7 +726,8 @@ sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
     lineno = 0
     for line in source_file:
         newline = line
-        if lineno == 0 and task.env["PYTHON_SPECIFIED"] is True and line[:2] == "#!":
+        if (lineno == 0 and task.env["PYTHON_SPECIFIED"] is True and
+                line[:2] == "#!"):
             newline = replacement_shebang
         elif pattern in line:
             newline = line.replace(pattern, replacement)

@@ -98,10 +98,9 @@ class TestSource(TestCase):
                 incorrect.append((fname, 'no copyright line found\n'))
 
         if incorrect:
-            help_text = ["Some files have missing or incorrect copyright"
-                         " statements.",
-                         "",
-                        ]
+            help_text = [
+                "Some files have missing or incorrect copyright"
+                " statements.", ""]
             for fname, comment in incorrect:
                 help_text.append(fname)
                 help_text.append((' ' * 4) + comment)
@@ -230,18 +229,19 @@ class TestSource(TestCase):
         'E203',      # whitespace before ':'
         'E222',      # multiple spaces after operator
         'E301',      # expected 1 blank line, found 0
-        'E211',      # whitespace before '('
-        'E701',      # multiple statements on one line (colon)
         ]
 
     def test_pep8(self):
         pep8.process_options()
-        pep8.options.repeat = True
         pep8_errors = []
+        pep8_error_count = {}
         pep8_warnings = []
         for fname, text in get_source_file_contents():
             def report_error(line_number, offset, text, check):
                 code = text[:4]
+                if code not in pep8_error_count:
+                    pep8_error_count[code] = 0
+                pep8_error_count[code] += 1
                 if code in self.pep8_ignore:
                     code = 'W' + code[1:]
                 text = code + text[4:]
@@ -259,6 +259,5 @@ class TestSource(TestCase):
             d = {}
             for (fname, line_no, offset, text, check) in pep8_errors:
                 d.setdefault(fname, []).append(line_no - 1)
-            self.fail(self._format_message(d,
-                'There were %d PEP8 errors:' % len(pep8_errors)))
-
+            self.fail(self._format_message(
+                d, 'There were %d PEP8 errors:' % len(pep8_errors)))

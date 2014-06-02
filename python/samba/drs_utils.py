@@ -222,7 +222,8 @@ class drs_Replicate(object):
                                   drsuapi.DRSUAPI_DRS_GET_ANC |
                                   drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
             if rodc:
-                req8.replica_flags |= drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING
+                req8.replica_flags |= (
+                    drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
             else:
                 req8.replica_flags |= drsuapi.DRSUAPI_DRS_WRIT_REP
         req8.max_object_count = 402

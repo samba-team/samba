@@ -58,13 +58,36 @@ planpythontestsuite("none", "samba.tests.samdb")
 planpythontestsuite("none", "samba.tests.hostconfig")
 planpythontestsuite("none", "samba.tests.messaging")
 planpythontestsuite("none", "samba.tests.samba3sam")
-planpythontestsuite("none", "wafsamba.tests.test_suite", extra_path=[os.path.join(samba4srcdir, "..", "buildtools"), os.path.join(samba4srcdir, "..", "buildtools", "wafadmin")])
-plantestsuite("samba4.blackbox.dbcheck.alpha13", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"), '$PREFIX_ABS/provision', 'alpha13', configuration])
-plantestsuite("samba4.blackbox.dbcheck.release-4-0-0", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"), '$PREFIX_ABS/provision', 'release-4-0-0', configuration])
-plantestsuite("samba4.blackbox.dbcheck.release-4-1-0rc3", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"), '$PREFIX_ABS/provision', 'release-4-1-0rc3', configuration])
-plantestsuite("samba4.blackbox.dbcheck.release-4-1-6-partial-object", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"), '$PREFIX_ABS/provision', 'release-4-1-6-partial-object', configuration])
-plantestsuite("samba4.blackbox.upgradeprovision.alpha13", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "upgradeprovision-oldrelease.sh"), '$PREFIX_ABS/provision', 'alpha13', configuration])
-plantestsuite("samba4.blackbox.upgradeprovision.release-4-0-0", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "upgradeprovision-oldrelease.sh"), '$PREFIX_ABS/provision', 'release-4-0-0', configuration])
+planpythontestsuite(
+    "none", "wafsamba.tests.test_suite",
+    extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
+                os.path.join(samba4srcdir, "..", "buildtools", "wafadmin")])
+plantestsuite(
+    "samba4.blackbox.dbcheck.alpha13", "none",
+    ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"),
+     '$PREFIX_ABS/provision', 'alpha13', configuration])
+plantestsuite(
+    "samba4.blackbox.dbcheck.release-4-0-0", "none",
+    ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"),
+     '$PREFIX_ABS/provision', 'release-4-0-0', configuration])
+plantestsuite(
+    "samba4.blackbox.dbcheck.release-4-1-0rc3", "none",
+    ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"),
+     '$PREFIX_ABS/provision', 'release-4-1-0rc3', configuration])
+plantestsuite(
+    "samba4.blackbox.dbcheck.release-4-1-6-partial-object", "none",
+    ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"),
+     '$PREFIX_ABS/provision', 'release-4-1-6-partial-object', configuration])
+plantestsuite(
+    "samba4.blackbox.upgradeprovision.alpha13", "none",
+    ["PYTHON=%s" % python,
+     os.path.join(bbdir, "upgradeprovision-oldrelease.sh"),
+     '$PREFIX_ABS/provision', 'alpha13', configuration])
+plantestsuite(
+    "samba4.blackbox.upgradeprovision.release-4-0-0", "none",
+    ["PYTHON=%s" % python,
+     os.path.join(bbdir, "upgradeprovision-oldrelease.sh"),
+     '$PREFIX_ABS/provision', 'release-4-0-0', configuration])
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")

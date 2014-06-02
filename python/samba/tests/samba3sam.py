@@ -186,12 +186,12 @@ class Samba3SamTestCase(MapBaseTestCase):
 
     def test_s3sam_modify(self):
         # Adding a record that will be fallbacked
-        self.ldb.add({"dn": "cn=Foo",
+        self.ldb.add({
+            "dn": "cn=Foo",
             "foo": "bar",
             "blah": "Blie",
             "cn": "Foo",
-            "showInAdvancedViewOnly": "TRUE"}
-            )
+            "showInAdvancedViewOnly": "TRUE"})
 
         # Checking for existence of record (local)
         # TODO: This record must be searched in the local database, which is

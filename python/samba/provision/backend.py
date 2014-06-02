@@ -369,13 +369,16 @@ class OpenLDAPBackend(LDAPBackend):
                 memberof_config += read_and_sub_file(
                     setup_path("memberof.conf"), {
                         "MEMBER_ATTR": att,
-                        "MEMBEROF_ATTR" : lnkattr[att] })
+                        "MEMBEROF_ATTR": lnkattr[att]})
 
-        refint_config = read_and_sub_file(setup_path("refint.conf"),
-                                      { "LINK_ATTRS" : refint_attributes})
+        refint_config = read_and_sub_file(
+            setup_path("refint.conf"), {"LINK_ATTRS": refint_attributes})
 
         attrs = ["linkID", "lDAPDisplayName"]
-        res = self.schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+        res = self.schema.ldb.search(
+            expression="(&(objectclass=attributeSchema)"
+                       "(searchFlags:1.2.840.113556.1.4.803:=1))",
+            base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
         index_config = ""
         for i in range(0, len(res)):
             index_attr = res[i]["lDAPDisplayName"][0]
@@ -734,7 +737,10 @@ class FDSBackend(LDAPBackend):
             f.close()
 
         attrs = ["lDAPDisplayName"]
-        res = self.schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+        res = self.schema.ldb.search(
+            expression="(&(objectclass=attributeSchema)"
+                       "(searchFlags:1.2.840.113556.1.4.803:=1))",
+            base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
 
         for i in range(0, len(res)):
             attr = res[i]["lDAPDisplayName"][0]
