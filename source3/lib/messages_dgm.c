@@ -54,7 +54,8 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c);
 
-static int messaging_dgm_lockfile_create(const char *cache_dir, pid_t pid,
+static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
+					 const char *cache_dir, pid_t pid,
 					 int *plockfile_fd, uint64_t unique)
 {
 	fstring buf;
@@ -66,7 +67,7 @@ static int messaging_dgm_lockfile_create(const char *cache_dir, pid_t pid,
 	ssize_t written;
 	bool ok;
 
-	dir = talloc_asprintf(talloc_tos(), "%s/lck", cache_dir);
+	dir = talloc_asprintf(tmp_ctx, "%s/lck", cache_dir);
 	if (dir == NULL) {
 		return ENOMEM;
 	}
@@ -80,7 +81,7 @@ static int messaging_dgm_lockfile_create(const char *cache_dir, pid_t pid,
 		return ret;
 	}
 
-	lockfile_name = talloc_asprintf(talloc_tos(), "%s/%u", dir,
+	lockfile_name = talloc_asprintf(tmp_ctx, "%s/%u", dir,
 					(unsigned)pid);
 	TALLOC_FREE(dir);
 	if (lockfile_name == NULL) {
@@ -221,7 +222,7 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 
 	sec_init();
 
-	ret = messaging_dgm_lockfile_create(cache_dir, pid.pid,
+	ret = messaging_dgm_lockfile_create(ctx, cache_dir, pid.pid,
 					    &ctx->lockfile_fd, pid.unique_id);
 	if (ret != 0) {
 		DEBUG(1, ("%s: messaging_dgm_create_lockfile failed: %s\n",
