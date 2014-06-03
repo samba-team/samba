@@ -414,6 +414,9 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 	 * the length
 	 */
 	result = (char *)talloc_memdup(mem_ctx, buf, len+1);
+	if (result == NULL) {
+		return NULL;
+	}
 
 	/*
 	 * beautify the talloc_report output
