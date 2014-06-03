@@ -3157,6 +3157,9 @@ static int swrap_msghdr_add_socket_info(struct socket_info *si,
 static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
 				   uint8_t *cm_data,
 				   size_t *cm_data_space);
+static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
+					    uint8_t *cm_data,
+					    size_t *cm_data_space);
 
 static int swrap_sendmsg_filter_cmsghdr(struct msghdr *msg,
 					uint8_t *cm_data,
@@ -3174,7 +3177,9 @@ static int swrap_sendmsg_filter_cmsghdr(struct msghdr *msg,
 	     cmsg = CMSG_NXTHDR(msg, cmsg)) {
 		switch (cmsg->cmsg_level) {
 		case IPPROTO_IP:
-			/* TODO swrap_sendmsg_filter_cmsg_socket */
+			rc = swrap_sendmsg_filter_cmsg_socket(cmsg,
+							      cm_data,
+							      cm_data_space);
 			break;
 		default:
 			rc = swrap_sendmsg_copy_cmsg(cmsg,
@@ -3210,6 +3215,35 @@ static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
 	memcpy(p, cmsg, cmsg->cmsg_len);
 
 	return 0;
+}
+
+static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
+					    uint8_t *cm_data,
+					    size_t *cm_data_space)
+{
+	int rc = -1;
+
+	switch(cmsg->cmsg_type) {
+#ifdef IP_PKTINFO
+	case IP_PKTINFO:
+		/* TODO swrap_msghdr_filter_cmsg_pktinfo */
+		break;
+#endif
+#ifdef IPV6_PKTINFO
+	case IPV6_PKTINFO:
+		/* TODO swrap_msghdr_filter_cmsg_pktinfo */
+		break;
+#endif
+#ifdef IP_RECVDSTADDR
+	case IP_RECVDSTADDR:
+		/* TODO swrap_msghdr_filter_cmsg_pktinfo */
+		break;
+#endif
+	default:
+		break;
+	}
+
+	return rc;
 }
 #endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
