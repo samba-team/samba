@@ -73,4 +73,8 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 
 int dialog_select_type(TALLOC_CTX *ctx, int *type);
 
+struct regedit_search_opts;
+
+int dialog_search_input(TALLOC_CTX *ctx, struct regedit_search_opts *opts);
+
 #endif

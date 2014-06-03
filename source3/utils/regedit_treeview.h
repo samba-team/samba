@@ -70,5 +70,9 @@ void tree_view_clear(struct tree_view *view);
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list);
 bool tree_node_has_children(struct tree_node *node);
 WERROR tree_node_load_children(struct tree_node *node);
+void tree_node_insert_sorted(struct tree_node *list, struct tree_node *node);
+bool tree_view_is_node_visible(struct tree_view *view, struct tree_node *node);
+void tree_view_set_current_node(struct tree_view *view, struct tree_node *node);
+struct tree_node *tree_view_get_current_node(struct tree_view *view);
 
 #endif

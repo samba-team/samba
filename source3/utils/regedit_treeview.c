@@ -117,7 +117,7 @@ struct tree_node *tree_node_last(struct tree_node *list)
 	return list;
 }
 
-bool tree_node_has_children(struct tree_node *node)
+static uint32_t get_num_subkeys(struct tree_node *node)
 {
 	const char *classname;
 	uint32_t num_subkeys;
@@ -128,20 +128,49 @@ bool tree_node_has_children(struct tree_node *node)
 	uint32_t max_valbufsize;
 	WERROR rv;
 
-	if (node->child_head) {
-		return true;
-	}
-
 	rv = reg_key_get_info(node, node->key, &classname, &num_subkeys,
 			      &num_values, &last_change_time,
 			      &max_subkeynamelen, &max_valnamelen,
 			      &max_valbufsize);
 
 	if (W_ERROR_IS_OK(rv)) {
-		return num_subkeys != 0;
+		return num_subkeys;
 	}
 
-	return false;
+	return 0;
+}
+
+bool tree_node_has_children(struct tree_node *node)
+{
+	if (node->child_head) {
+		return true;
+	}
+
+	return get_num_subkeys(node) > 0;
+}
+
+static int node_cmp(struct tree_node **a, struct tree_node **b)
+{
+	return strcmp((*a)->name, (*b)->name);
+}
+
+void tree_node_insert_sorted(struct tree_node *list, struct tree_node *node)
+{
+	list = tree_node_first(list);
+
+	if (node_cmp(&list, &node) >= 0) {
+		tree_node_append(node, list);
+		if (list->parent) {
+			list->parent->child_head = node;
+		}
+		return;
+	}
+
+	while (list->next && node_cmp(&list->next, &node) < 0) {
+		list = list->next;
+	}
+
+	tree_node_append(list, node);
 }
 
 WERROR tree_node_load_children(struct tree_node *node)
@@ -149,43 +178,63 @@ WERROR tree_node_load_children(struct tree_node *node)
 	struct registry_key *key;
 	const char *key_name, *klass;
 	NTTIME modified;
-	uint32_t i;
+	uint32_t i, nsubkeys;
 	WERROR rv;
-	struct tree_node *new_node, *prev;
+	struct tree_node *prev, **array;
 
 	/* does this node already have it's children loaded? */
 	if (node->child_head)
 		return WERR_OK;
 
-	for (prev = NULL, i = 0; ; ++i) {
+	nsubkeys = get_num_subkeys(node);
+	if (nsubkeys == 0)
+		return WERR_OK;
+
+	array = talloc_zero_array(node, struct tree_node *, nsubkeys);
+	if (array == NULL) {
+		return WERR_NOMEM;
+	}
+
+	for (i = 0; i < nsubkeys; ++i) {
 		rv = reg_key_get_subkey_by_index(node, node->key, i,
 						 &key_name, &klass,
 						 &modified);
 		if (!W_ERROR_IS_OK(rv)) {
-			if (W_ERROR_EQUAL(rv, WERR_NO_MORE_ITEMS)) {
-				break;
-			}
-
-			return rv;
+			goto finish;
 		}
 
 		rv = reg_open_key(node, node->key, key_name, &key);
 		if (!W_ERROR_IS_OK(rv)) {
-			return rv;
+			goto finish;
 		}
 
-		new_node = tree_node_new(node, node, key_name, key);
-		if (new_node == NULL) {
-			return WERR_NOMEM;
+		array[i] = tree_node_new(node, node, key_name, key);
+		if (array[i] == NULL) {
+			rv = WERR_NOMEM;
+			goto finish;
 		}
-
-		if (prev) {
-			tree_node_append(prev, new_node);
-		}
-		prev = new_node;
 	}
 
-	return WERR_OK;
+	TYPESAFE_QSORT(array, nsubkeys, node_cmp);
+
+	for (i = 1, prev = array[0]; i < nsubkeys; ++i) {
+		tree_node_append(prev, array[i]);
+		prev = array[i];
+	}
+	node->child_head = array[0];
+
+	rv = WERR_OK;
+
+finish:
+	if (!W_ERROR_IS_OK(rv)) {
+		for (i = 0; i < nsubkeys; ++i) {
+			talloc_free(array[i]);
+		}
+		node->child_head = NULL;
+	}
+	talloc_free(array);
+
+	return rv;
 }
 
 void tree_node_free_recursive(struct tree_node *list)
@@ -236,16 +285,6 @@ void tree_view_clear(struct tree_view *view)
 	view->current_items = NULL;
 }
 
-static int item_comp(ITEM **a, ITEM **b)
-{
-	struct tree_node *nodea, *nodeb;
-
-	nodea = item_userptr(*a);
-	nodeb = item_userptr(*b);
-
-	return strcmp(nodea->name, nodeb->name);
-}
-
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 {
 	ITEM **items;
@@ -283,8 +322,6 @@ WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 		set_item_userptr(items[i], node);
 	}
 
-	TYPESAFE_QSORT(items, n_items, item_comp);
-
 	unpost_menu(view->menu);
 	set_menu_items(view->menu, items);
 	tree_view_free_current_items(view->current_items);
@@ -296,6 +333,33 @@ fail:
 	tree_view_free_current_items(items);
 
 	return WERR_NOMEM;
+}
+
+/* is this node in the current level? */
+bool tree_view_is_node_visible(struct tree_view *view, struct tree_node *node)
+{
+	struct tree_node *first;
+
+	first = item_userptr(view->current_items[0]);
+
+	return first->parent == node->parent;
+}
+
+void tree_view_set_current_node(struct tree_view *view, struct tree_node *node)
+{
+	ITEM **it;
+
+	for (it = view->current_items; *it; ++it) {
+		if (item_userptr(*it) == node) {
+			set_current_item(view->menu, *it);
+			return;
+		}
+	}
+}
+
+struct tree_node *tree_view_get_current_node(struct tree_view *view)
+{
+	return item_userptr(current_item(view->menu));
 }
 
 void tree_view_set_selected(struct tree_view *view, bool select)

@@ -1207,3 +1207,17 @@ finish:
 
 	return sel;
 }
+
+int dialog_search_input(TALLOC_CTX *ctx, struct regedit_search_opts *opts)
+{
+	int rv;
+	// TODO
+
+	opts->search_key = 1;
+	opts->search_recursive = 1;
+	opts->search_nocase = 1;
+
+	rv = dialog_input(ctx, &opts->query, "Search", "Query");
+
+	return rv;
+}

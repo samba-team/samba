@@ -59,4 +59,17 @@ WERROR reg_open_samba3(TALLOC_CTX *mem_ctx, struct registry_context **ctx);
 
 int regedit_getch(void);
 
+typedef bool (*regedit_search_match_fn_t)(const char *, const char *);
+
+struct regedit_search_opts {
+	const char *query;
+	regedit_search_match_fn_t match;
+	struct tree_node *node;
+	unsigned int search_key:1;
+	unsigned int search_value:1;
+	unsigned int search_recursive:1;
+	unsigned int search_relative:1;
+	unsigned int search_nocase:1;
+};
+
 #endif
