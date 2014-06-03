@@ -2829,6 +2829,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	struct sockaddr_un un_addr;
 	struct socket_info *si = find_socket_info(s);
 	int bind_error = 0;
+	bool in_use;
 
 	if (!si) {
 		return libc_bind(s, myaddr, addrlen);
@@ -2881,6 +2882,12 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 
 	if (bind_error != 0) {
 		errno = bind_error;
+		return -1;
+	}
+
+	in_use = check_addr_port_in_use(myaddr, addrlen);
+	if (in_use) {
+		errno = EADDRINUSE;
 		return -1;
 	}
 
