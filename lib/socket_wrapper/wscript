@@ -60,6 +60,7 @@ def configure(conf):
 
         conf.CHECK_FUNCS('getaddrinfo')
         conf.CHECK_FUNCS('signalfd eventfd timerfd_create')
+        conf.CHECK_FUNCS('bindresvport')
 
         conf.CHECK_FUNCS_IN('bind',
                             'socket',

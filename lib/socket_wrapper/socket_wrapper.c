@@ -111,6 +111,13 @@ enum swrap_dbglvl_e {
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 #endif
 
+#ifndef ZERO_STRUCTP
+#define ZERO_STRUCTP(x) do { \
+		if ((x) != NULL) \
+			memset((char *)(x), 0, sizeof(*(x))); \
+	} while(0)
+#endif
+
 #ifndef discard_const
 #define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 #endif
@@ -2751,6 +2758,86 @@ int bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 {
 	return swrap_bind(s, myaddr, addrlen);
 }
+
+/****************************************************************************
+ *   BINDRESVPORT
+ ***************************************************************************/
+
+#ifdef HAVE_BINDRESVPORT
+static int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen);
+
+static int swrap_bindresvport_sa(int sd, struct sockaddr *sa)
+{
+	struct sockaddr_storage myaddr;
+	socklen_t salen;
+	static uint16_t port;
+	uint16_t i;
+	int rc = -1;
+	int af;
+
+#define SWRAP_STARTPORT 600
+#define SWRAP_ENDPORT (IPPORT_RESERVED - 1)
+#define SWRAP_NPORTS (SWRAP_ENDPORT - SWRAP_STARTPORT + 1)
+
+	if (port == 0) {
+		port = (getpid() % SWRAP_NPORTS) + SWRAP_STARTPORT;
+	}
+
+	if (sa == NULL) {
+		salen = sizeof(struct sockaddr);
+		sa = (struct sockaddr *)&myaddr;
+
+		rc = swrap_getsockname(sd, (struct sockaddr *)&myaddr, &salen);
+		if (rc < 0) {
+			return -1;
+		}
+
+		af = sa->sa_family;
+		memset(&myaddr, 0, salen);
+	} else {
+		af = sa->sa_family;
+	}
+
+	for (i = 0; i < SWRAP_NPORTS; i++, port++) {
+		switch(af) {
+		case AF_INET: {
+			struct sockaddr_in *sinp = (struct sockaddr_in *)sa;
+
+			salen = sizeof(struct sockaddr_in);
+			sinp->sin_port = htons(port);
+			break;
+		}
+		case AF_INET6: {
+			struct sockaddr_in6 *sin6p = (struct sockaddr_in6 *)sa;
+
+			salen = sizeof(struct sockaddr_in6);
+			sin6p->sin6_port = htons(port);
+			break;
+		}
+		default:
+			errno = EAFNOSUPPORT;
+			return -1;
+		}
+		sa->sa_family = af;
+
+		if (port > SWRAP_ENDPORT) {
+			port = SWRAP_STARTPORT;
+		}
+
+		rc = swrap_bind(sd, (struct sockaddr *)sa, salen);
+		if (rc == 0 || errno != EADDRINUSE) {
+			break;
+		}
+	}
+
+	return rc;
+}
+
+int bindresvport(int sockfd, struct sockaddr_in *sinp)
+{
+	return swrap_bindresvport_sa(sockfd, (struct sockaddr *)sinp);
+}
+#endif
 
 /****************************************************************************
  *   LISTEN
