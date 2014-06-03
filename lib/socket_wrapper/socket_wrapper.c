@@ -202,6 +202,9 @@ struct socket_info
 
 	char *tmp_path;
 
+	struct sockaddr *bindname;
+	socklen_t bindname_len;
+
 	struct sockaddr *myname;
 	socklen_t myname_len;
 
@@ -1107,6 +1110,21 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			errno = EADDRNOTAVAIL;
 			return -1;
 		}
+
+		/* Store the bind address for connect() */
+		if (si->bindname == NULL) {
+			struct sockaddr_in bind_in;
+			socklen_t blen = sizeof(struct sockaddr_in);
+
+			ZERO_STRUCT(bind_in);
+			bind_in.sin_family = in->sin_family;
+			bind_in.sin_port = in->sin_port;
+			bind_in.sin_addr.s_addr = htonl(0x7F000000 | iface);
+
+			si->bindname = sockaddr_dup(&bind_in, blen);
+			si->bindname_len = blen;
+		}
+
 		break;
 	}
 #ifdef HAVE_IPV6
@@ -1144,6 +1162,22 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			return -1;
 		}
 
+		/* Store the bind address for connect() */
+		if (si->bindname == NULL) {
+			struct sockaddr_in6 bind_in;
+			socklen_t blen = sizeof(struct sockaddr_in6);
+
+			ZERO_STRUCT(bind_in);
+			bind_in.sin6_family = in->sin6_family;
+			bind_in.sin6_port = in->sin6_port;
+
+			bind_in.sin6_addr = *swrap_ipv6();
+			bind_in.sin6_addr.s6_addr[15] = iface;
+
+			si->bindname = sockaddr_dup(&bind_in, blen);
+			si->bindname_len = blen;
+		}
+
 		break;
 	}
 #endif
@@ -1169,6 +1203,8 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			if (stat(un->sun_path, &st) == 0) continue;
 
 			set_port(si->family, prt, si->myname);
+			set_port(si->family, prt, si->bindname);
+
 			break;
 		}
 		if (prt == 10000) {
@@ -2583,6 +2619,23 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 		si->peername = sockaddr_dup(serv_addr, addrlen);
 		si->connected = 1;
 
+		/*
+		 * When we connect() on a socket than we have to bind the
+		 * outgoing connection on the interface we use for the
+		 * transport. We already bound it on the right interface
+		 * but here we have to update the name so getsockname()
+		 * returns correct information.
+		 */
+		if (si->bindname != NULL) {
+			free(si->myname);
+
+			si->myname = si->bindname;
+			si->myname_len = si->bindname_len;
+
+			si->bindname = NULL;
+			si->bindname_len = 0;
+		}
+
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_ACK, NULL, 0);
 	} else {
@@ -3924,6 +3977,10 @@ static int swrap_close(int fd)
 	if (si->myname && si->peername) {
 		swrap_dump_packet(si, NULL, SWRAP_CLOSE_RECV, NULL, 0);
 		swrap_dump_packet(si, NULL, SWRAP_CLOSE_ACK, NULL, 0);
+	}
+
+	if (si->bindname != NULL) {
+		free(si->bindname);
 	}
 
 	if (si->myname) free(si->myname);
