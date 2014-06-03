@@ -434,6 +434,8 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 #ifdef LIBC_SO
 		if (handle == NULL) {
 			handle = dlopen(LIBC_SO, flags);
+
+			swrap.libc_handle = handle;
 		}
 #endif
 		if (handle == NULL) {
