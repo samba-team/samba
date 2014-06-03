@@ -301,6 +301,7 @@ static NTSTATUS messaging_dgm_send(struct server_id src,
 	struct messaging_dgm_hdr hdr;
 	struct iovec iov2[iovlen + 1];
 	ssize_t pathlen;
+	struct server_id_buf idbuf;
 	int ret;
 
 	fstr_sprintf(pid_str, "msg/%u", (unsigned)pid.pid);
@@ -318,7 +319,7 @@ static NTSTATUS messaging_dgm_send(struct server_id src,
 
 	DEBUG(10, ("%s: Sending message 0x%x to %s\n", __func__,
 		   (unsigned)hdr.msg_type,
-		   server_id_str(talloc_tos(), &pid)));
+		   server_id_str_buf(pid, &idbuf)));
 
 	iov2[0].iov_base = &hdr;
 	iov2[0].iov_len = sizeof(hdr);
@@ -344,6 +345,7 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 		private_data, struct messaging_dgm_context);
 	struct messaging_dgm_hdr *hdr;
 	struct messaging_rec rec;
+	struct server_id_buf idbuf;
 
 	if (msg_len < sizeof(*hdr)) {
 		DEBUG(1, ("message too short: %u\n", (unsigned)msg_len));
@@ -364,7 +366,7 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 
 	DEBUG(10, ("%s: Received message 0x%x len %u from %s\n", __func__,
 		   (unsigned)hdr->msg_type, (unsigned)rec.buf.length,
-		   server_id_str(talloc_tos(), &rec.src)));
+		   server_id_str_buf(rec.src, &idbuf)));
 
 	messaging_dispatch_rec(dgm_ctx->msg_ctx, &rec);
 }
