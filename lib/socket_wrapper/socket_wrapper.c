@@ -3098,6 +3098,17 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 	return 0;
 }
 
+static int swrap_msghdr_add_socket_info(struct socket_info *si,
+					struct msghdr *omsg)
+{
+	int rc = 0;
+
+	if (si->pktinfo > 0) {
+		rc = swrap_msghdr_add_pktinfo(si, omsg);
+	}
+
+	return rc;
+}
 #endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
 static ssize_t swrap_sendmsg_before(int fd,
