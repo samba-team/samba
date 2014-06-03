@@ -48,6 +48,11 @@ def configure(conf):
                                     headers='sys/types.h sys/socket.h',
                                     define='HAVE_STRUCT_MSGHDR_MSG_CONTROL')
 
+        conf.CHECK_STRUCTURE_MEMBER('struct in6_pktinfo',
+                                    'ipi6_addr',
+                                    headers='sys/types.h sys/socket.h netinet/in.h',
+                                    define='HAVE_STRUCT_IN6_PKTINFO')
+
         conf.CHECK_FUNCS('getaddrinfo')
         conf.CHECK_FUNCS('signalfd eventfd timerfd_create')
 
