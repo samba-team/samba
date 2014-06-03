@@ -125,6 +125,18 @@ enum swrap_dbglvl_e {
 # endif /* IPV6_RECVPKTINFO */
 #endif /* IPV6_PKTINFO */
 
+/*
+ * On BSD IP_PKTINFO has a different name because during
+ * the time when they implemented it, there was no RFC.
+ * The name for IPv6 is the same as on Linux.
+ */
+#ifndef IP_PKTINFO
+# ifdef IP_RECVDSTADDR
+#  define IP_PKTINFO IP_RECVDSTADDR
+# endif
+#endif
+
+
 #define SWRAP_DLIST_ADD(list,item) do { \
 	if (!(list)) { \
 		(item)->prev	= NULL; \
@@ -3053,10 +3065,15 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 {
 	/* Add packet info */
 	switch (si->pktinfo) {
-#if defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO)
+#if defined(IP_PKTINFO)
+/* && (defined(HAVE_STRUCT_IN_PKTINFO) || defined(IP_RECVDSTADDR)) */
 	case AF_INET: {
 		struct sockaddr_in *sin;
+#if defined(HAVE_STRUCT_IN_PKTINFO)
 		struct in_pktinfo pkt;
+#elif defined(IP_RECVDSTADDR)
+		struct in_addr pkt;
+#endif
 
 		if (si->bindname_len == sizeof(struct sockaddr_in)) {
 			sin = (struct sockaddr_in*)si->bindname;
@@ -3069,8 +3086,12 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 
 		ZERO_STRUCT(pkt);
 
+#if defined(HAVE_STRUCT_IN_PKTINFO)
 		pkt.ipi_ifindex = socket_wrapper_default_iface();
 		pkt.ipi_addr.s_addr = sin->sin_addr.s_addr;
+#elif defined(IP_RECVDSTADDR)
+		pkt = sin->sin_addr;
+#endif
 
 		swrap_msghdr_add_cmsghdr(msg, IPPROTO_IP, IP_PKTINFO,
 					 &pkt, sizeof(pkt));
