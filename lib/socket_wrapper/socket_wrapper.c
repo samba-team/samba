@@ -2761,6 +2761,7 @@ int open(const char *pathname, int flags, ...)
 static int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
+	socklen_t len;
 
 	if (!si) {
 		return libc_getpeername(s, name, addrlen);
@@ -2772,7 +2773,12 @@ static int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 		return -1;
 	}
 
-	memcpy(name, si->peername, si->peername_len);
+	len = MIN(*addrlen, si->peername_len);
+	if (len == 0) {
+		return 0;
+	}
+
+	memcpy(name, si->peername, len);
 	*addrlen = si->peername_len;
 
 	return 0;
@@ -2794,12 +2800,18 @@ int getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 static int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
+	socklen_t len;
 
 	if (!si) {
 		return libc_getsockname(s, name, addrlen);
 	}
 
-	memcpy(name, si->myname, si->myname_len);
+	len = MIN(*addrlen, si->myname_len);
+	if (len == 0) {
+		return 0;
+	}
+
+	memcpy(name, si->myname, len);
 	*addrlen = si->myname_len;
 
 	return 0;
