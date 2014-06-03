@@ -3053,7 +3053,7 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 {
 	/* Add packet info */
 	switch (si->pktinfo) {
-#ifdef IP_PKTINFO
+#if defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO)
 	case AF_INET: {
 		struct sockaddr_in *sin;
 		struct in_pktinfo pkt;
