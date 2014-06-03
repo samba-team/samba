@@ -129,8 +129,6 @@ play in a Windows networking world.
 </partintro>
 
 	<?latex \cleardoublepage ?>
-	<xi:include href="SBE-KerberosFastStart.xml"/>
-	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-DomainAppsSupport.xml"/>
 	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-HighAvailability.xml"/>
