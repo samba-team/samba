@@ -52,7 +52,13 @@ struct tevent_sigcounter {
 	uint32_t seen;
 };
 
+#if defined(HAVE___SYNC_FETCH_AND_ADD)
+#define TEVENT_SIG_INCREMENT(s) __sync_fetch_and_add(&((s).count), 1)
+#elif defined(HAVE_ATOMIC_ADD_32)
+#define TEVENT_SIG_INCREMENT(s) atomic_add_32(&((s).count), 1)
+#else
 #define TEVENT_SIG_INCREMENT(s) (s).count++
+#endif
 #define TEVENT_SIG_SEEN(s, n) (s).seen += (n)
 #define TEVENT_SIG_PENDING(s) ((s).seen != (s).count)
 

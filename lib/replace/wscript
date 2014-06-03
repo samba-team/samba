@@ -110,6 +110,7 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_HEADERS('sys/extattr.h sys/ea.h sys/proplist.h sys/cdefs.h')
     conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h malloc.h')
     conf.CHECK_HEADERS('syscall.h sys/syscall.h inttypes.h')
+    conf.CHECK_HEADERS('sys/atomic.h')
 
     # Check for process set name support
     conf.CHECK_CODE('''
@@ -228,6 +229,30 @@ struct foo bar = { .y = 'X', .x = 1 };
                        'HAVE_UCONTEXT_T',
                        msg="Checking whether we have ucontext_t",
                        headers='signal.h sys/ucontext.h')
+
+    # Check for atomic builtins. */
+    conf.CHECK_CODE('''
+                    int main(void) {
+                        int i;
+                        (void)__sync_fetch_and_add(&i, 1);
+                        return 0;
+                    }
+                    ''',
+                    'HAVE___SYNC_FETCH_AND_ADD',
+                    msg='Checking for __sync_fetch_and_add compiler builtin')
+
+    conf.CHECK_CODE('''
+                    #include <stdint.h>
+                    #include <sys/atomic.h>
+                    int main(void) {
+                        int32_t i;
+                        atomic_add_32(&i, 1);
+                        return 0;
+                    }
+                    ''',
+                    'HAVE_ATOMIC_ADD_32',
+                    headers='stdint.h sys/atomic.h',
+                    msg='Checking for atomic_add_32 compiler builtin')
 
     # these may be builtins, so we need the link=False strategy
     conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
