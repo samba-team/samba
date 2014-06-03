@@ -3441,7 +3441,7 @@ static ssize_t swrap_sendmsg_before(int fd,
 		if (cmlen == 0) {
 			msg->msg_controllen = 0;
 			msg->msg_control = NULL;
-		} else if (cmlen < msg->msg_controllen) {
+		} else if (cmlen < msg->msg_controllen && cmbuf != NULL) {
 			memcpy(msg->msg_control, cmbuf, cmlen);
 			msg->msg_controllen = cmlen;
 		}
