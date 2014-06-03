@@ -3196,14 +3196,14 @@ static int swrap_msghdr_add_socket_info(struct socket_info *si,
 }
 
 static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
-				   uint8_t *cm_data,
+				   uint8_t **cm_data,
 				   size_t *cm_data_space);
 static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
-					    uint8_t *cm_data,
+					    uint8_t **cm_data,
 					    size_t *cm_data_space);
 
 static int swrap_sendmsg_filter_cmsghdr(struct msghdr *msg,
-					uint8_t *cm_data,
+					uint8_t **cm_data,
 					size_t *cm_data_space) {
 	struct cmsghdr *cmsg;
 	int rc = -1;
@@ -3234,7 +3234,7 @@ static int swrap_sendmsg_filter_cmsghdr(struct msghdr *msg,
 }
 
 static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
-				   uint8_t *cm_data,
+				   uint8_t **cm_data,
 				   size_t *cm_data_space)
 {
 	size_t cmspace;
@@ -3244,13 +3244,13 @@ static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
 		(*cm_data_space) +
 		CMSG_SPACE(cmsg->cmsg_len - CMSG_ALIGN(sizeof(struct cmsghdr)));
 
-	p = realloc(cm_data, cmspace);
+	p = realloc((*cm_data), cmspace);
 	if (p == NULL) {
 		return -1;
 	}
-	cm_data = p;
+	(*cm_data) = p;
 
-	p = cm_data + (*cm_data_space);
+	p = (*cm_data) + (*cm_data_space);
 	*cm_data_space = cmspace;
 
 	memcpy(p, cmsg, cmsg->cmsg_len);
@@ -3259,12 +3259,12 @@ static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
 }
 
 static int swrap_sendmsg_filter_cmsg_pktinfo(struct cmsghdr *cmsg,
-					    uint8_t *cm_data,
+					    uint8_t **cm_data,
 					    size_t *cm_data_space);
 
 
 static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
-					    uint8_t *cm_data,
+					    uint8_t **cm_data,
 					    size_t *cm_data_space)
 {
 	int rc = -1;
@@ -3292,7 +3292,7 @@ static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
 }
 
 static int swrap_sendmsg_filter_cmsg_pktinfo(struct cmsghdr *cmsg,
-					     uint8_t *cm_data,
+					     uint8_t **cm_data,
 					     size_t *cm_data_space)
 {
 	(void)cmsg; /* unused */
@@ -3432,7 +3432,7 @@ static ssize_t swrap_sendmsg_before(int fd,
 		uint8_t *cmbuf = NULL;
 		size_t cmlen = 0;
 
-		ret = swrap_sendmsg_filter_cmsghdr(msg, cmbuf, &cmlen);
+		ret = swrap_sendmsg_filter_cmsghdr(msg, &cmbuf, &cmlen);
 		if (ret < 0) {
 			free(cmbuf);
 			return -1;
