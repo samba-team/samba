@@ -1267,6 +1267,89 @@ static struct socket_info *find_socket_info(int fd)
 	return NULL;
 }
 
+static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
+{
+	struct socket_info *s;
+
+	/* first catch invalid input */
+	switch (sa->sa_family) {
+	case AF_INET:
+		if (len < sizeof(struct sockaddr_in)) {
+			return false;
+		}
+		break;
+#if HAVE_IPV6
+	case AF_INET6:
+		if (len < sizeof(struct sockaddr_in6)) {
+			return false;
+		}
+		break;
+#endif
+	default:
+		return false;
+		break;
+	}
+
+	for (s = sockets; s != NULL; s = s->next) {
+		if (s->myname == NULL) {
+			continue;
+		}
+		if (s->myname->sa_family != sa->sa_family) {
+			continue;
+		}
+		switch (s->myname->sa_family) {
+		case AF_INET: {
+			struct sockaddr_in *sin1, *sin2;
+
+			sin1 = (struct sockaddr_in *)s->myname;
+			sin2 = (struct sockaddr_in *)sa;
+
+			if (sin1->sin_addr.s_addr == htonl(INADDR_ANY)) {
+				continue;
+			}
+			if (sin1->sin_port != sin2->sin_port) {
+				continue;
+			}
+			if (sin1->sin_addr.s_addr != sin2->sin_addr.s_addr) {
+				continue;
+			}
+
+			/* found */
+			return true;
+			break;
+		}
+#if HAVE_IPV6
+		case AF_INET6: {
+			struct sockaddr_in6 *sin1, *sin2;
+
+			sin1 = (struct sockaddr_in6 *)s->myname;
+			sin2 = (struct sockaddr_in6 *)sa;
+
+			if (sin1->sin6_port != sin2->sin6_port) {
+				continue;
+			}
+			if (!IN6_ARE_ADDR_EQUAL(&sin1->sin6_addr,
+						&sin2->sin6_addr))
+			{
+				continue;
+			}
+
+			/* found */
+			return true;
+			break;
+		}
+#endif
+		default:
+			continue;
+			break;
+
+		}
+	}
+
+	return false;
+}
+
+
 static void swrap_remove_stale(int fd)
 {
 	struct socket_info *si = find_socket_info(fd);
