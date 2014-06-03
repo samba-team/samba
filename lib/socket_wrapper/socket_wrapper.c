@@ -2964,6 +2964,77 @@ int ioctl(int s, unsigned long int r, ...)
 	return rc;
 }
 
+/*****************
+ * CMSG
+ *****************/
+
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+/**
+ * @brief Add a cmsghdr to a msghdr.
+ *
+ * This is an function to add any type of cmsghdr. It will operate on the
+ * msg->msg_control and msg->msg_controllen you pass in by adapting them to
+ * the buffer position after the added cmsg element. Hence, this function is
+ * intended to be used with an intermediate msghdr and not on the original
+ * one handed in by the client.
+ *
+ * @param[in]  msg      The msghdr to which to add the cmsg.
+ *
+ * @param[in]  level    The cmsg level to set.
+ *
+ * @param[in]  type     The cmsg type to set.
+ *
+ * @param[in]  data     The cmsg data to set.
+ *
+ * @param[in]  len      the length of the data to set.
+ */
+static void swrap_msghdr_add_cmsghdr(struct msghdr *msg,
+				     int level,
+				     int type,
+				     const void *data,
+				     size_t len)
+{
+	size_t cmlen = CMSG_LEN(len);
+	size_t cmspace = CMSG_SPACE(len);
+	uint8_t cmbuf[cmspace];
+	struct cmsghdr *cm = (struct cmsghdr *)cmbuf;
+	uint8_t *p;
+
+	memset(cmbuf, 0, cmspace);
+
+	if (msg->msg_controllen < cmlen) {
+		cmlen = msg->msg_controllen;
+		msg->msg_flags |= MSG_CTRUNC;
+	}
+
+	if (msg->msg_controllen < cmspace) {
+		cmspace = msg->msg_controllen;
+	}
+
+	/*
+	 * We copy the full input data into an intermediate cmsghdr first
+	 * in order to more easily cope with truncation.
+	 */
+	cm->cmsg_len = cmlen;
+	cm->cmsg_level = level;
+	cm->cmsg_type = type;
+	memcpy(CMSG_DATA(cm), data, len);
+
+	/*
+	 * We now copy the possibly truncated buffer.
+	 * We copy cmlen bytes, but consume cmspace bytes,
+	 * leaving the possible padding uninitialiazed.
+	 */
+	p = (uint8_t *)msg->msg_control;
+	memcpy(p, cm, cmlen);
+	p += cmspace;
+	msg->msg_control = p;
+	msg->msg_controllen -= cmspace;
+
+	return;
+}
+#endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
+
 static ssize_t swrap_sendmsg_before(int fd,
 				    struct socket_info *si,
 				    struct msghdr *msg,
