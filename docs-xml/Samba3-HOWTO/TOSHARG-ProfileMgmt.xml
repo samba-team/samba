@@ -1174,7 +1174,7 @@ it is necessary to disable roaming profile handling in the registry of each such
 </para>
 
 <para>
-With Samba-3, you can have a global profile setting in &smb.conf;, and you can override this by
+With Samba, you can have a global profile setting in &smb.conf;, and you can override this by
 per-user settings using the Domain User Manager (as with MS Windows NT4/200x). </para>
 
 <para> In any case, you can configure only one profile per user. That profile can be either: </para>

@@ -572,7 +572,7 @@ productivity.</para>
 	<indexterm><primary>LDAP</primary></indexterm>
 	<indexterm><primary>LDAP</primary><secondary>backend</secondary></indexterm>
 	<indexterm><primary>SID</primary></indexterm>
-	When Samba-3 is configured to use an LDAP backend, it stores the domain
+	When Samba is configured to use an LDAP backend, it stores the domain
 	account information in a directory entry. This account entry contains the
 	domain SID. An unintended but exploitable side effect is that this makes it
 	possible to operate with more than one PDC on a distributed network.
@@ -658,7 +658,7 @@ productivity.</para>
 	<indexterm><primary>LDAP</primary></indexterm>
 	<indexterm><primary>UID</primary></indexterm>
 	<indexterm><primary>GID</primary></indexterm>
-	Samba-3 has the ability to use multiple password (authentication and
+	Samba has the ability to use multiple password (authentication and
 	identity resolution) backends. The diagram in <link linkend="chap7idres"/>
 	demonstrates how Samba uses winbind, LDAP, and NIS, the traditional system
 	password database. The diagram only documents the mechanisms for
@@ -1271,7 +1271,7 @@ index default               sub
 		<itemizedlist>
 			<listitem><para>
 			<indexterm><primary>LDAP</primary></indexterm><indexterm><primary>BDC</primary></indexterm>
-			Where Samba-3 is used as a domain controller, the use of LDAP is an 
+			Where Samba is used as a domain controller, the use of LDAP is an
 			essential component to permit the use of BDCs.
 			</para></listitem>
 

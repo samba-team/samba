@@ -9,14 +9,14 @@
 	you designed and built a network that provides a high degree of flexibility, integrity,
 	and dependability. It was enough for the basic needs each was designed to fulfill. In
 	this chapter you address a more complex set of needs. The solution you explore 
-	introduces you to basic features that are specific to Samba-3.
+	introduces you to basic features that are specific to Samba.
 	</para>
 
 	<para>
 	You should note that a working and secure solution could be implemented using Samba-2.2.x. 
-	In the exercises presented here, you are gradually using more Samba-3-specific features,
+	In the exercises presented here, you are gradually using more Samba-specific features,
 	so caution is advised for anyone who tries to use Samba-2.2.x with the guidance here given. 
-	To avoid confusion, this book is all about Samba-3. Let's get the exercises in this 
+	To avoid confusion, this book is all about Samba. Let's get the exercises in this
 	chapter underway.
 	</para>
 
@@ -175,7 +175,7 @@
 
 	<para>
 	Many of the conclusions you draw here are obvious. Some requirements are not very clear
-	or may simply be your means of drawing the most out of Samba-3. Much can be done more simply
+	or may simply be your means of drawing the most out of Samba. Much can be done more simply
 	than you will demonstrate here, but keep in mind that the network must scale to at least 500
 	users. This means that some functionality will be overdesigned for the current 130-user
 	environment.
@@ -234,7 +234,7 @@
 		<para>
 		The configuration of Web serving, Web proxy services, electronic mail, and the details of
 		generic antivirus handling are beyond the scope of this book and therefore are not
-		covered except insofar as this affects Samba-3.
+		covered except insofar as this affects Samba.
 		</para>
 
 		<para>
@@ -788,7 +788,7 @@ echo -e "\nNAT firewall done.\n"
 	<title>Samba Configuration Steps</title>
 
 		<step><para>
-		Install the Samba-3 binary RPM from the Samba-Team FTP site. Assuming that the binary
+		Install the Samba binary RPM from the Samba-Team FTP site. Assuming that the binary
 		RPM file is called <filename>samba-3.0.20-1.i386.rpm</filename>, one way to install this
 		file is as follows:
 <screen>
@@ -2461,7 +2461,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		<para>
 		The guideline provided in <emphasis>TOSHARG2</emphasis>, Chapter 10, Section 10.1.2,
 		is to limit the number of accounts in the tdbsam backend to 250. This is the point
-		at which most networks tend to want backup domain controllers (BDCs). Samba-3 does
+		at which most networks tend to want backup domain controllers (BDCs). Samba does
 		not provide a mechanism for replicating tdbsam data so it can be used by a BDC. The
 		limitation of 250 users per tdbsam is predicated only on the need for replication,
 		not on the limits<footnote><para>Bench tests have shown that tdbsam is a very
@@ -2540,11 +2540,11 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<answer>
 
 		<para>
-		The default order by which Samba-3 attempts to communicate with MS Windows clients is via port 445 (the TCP port
+		The default order by which Samba attempts to communicate with MS Windows clients is via port 445 (the TCP port
 		used by Windows clients when NetBIOS-less SMB over TCP/IP is in use). TCP port 139 is the primary port used for NetBIOS
 		over TCP/IP. In this configuration Windows network operations are predicated around NetBIOS over TCP/IP. By
 		specifying the use of only port 139, the intent is to reduce unsuccessful service connection attempts.
-		The result of this is improved network performance. Where Samba-3 is installed as an Active Directory Domain
+		The result of this is improved network performance. Where Samba is installed as an Active Directory Domain
 		member, the default behavior is highly beneficial and should not be changed.
 		</para>
 

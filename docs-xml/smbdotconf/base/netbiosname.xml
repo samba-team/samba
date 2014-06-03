@@ -12,8 +12,8 @@
 		</para>
 
 		<para>
-		There is a bug in Samba-3 that breaks operation of browsing and access to shares if the netbios name
-		is set to the literal name <literal>PIPE</literal>. To avoid this problem, do not name your Samba-3
+		There is a bug in Samba that breaks operation of browsing and access to shares if the netbios name
+		is set to the literal name <literal>PIPE</literal>. To avoid this problem, do not name your Samba
 		server <literal>PIPE</literal>.
 		</para>
 </description>

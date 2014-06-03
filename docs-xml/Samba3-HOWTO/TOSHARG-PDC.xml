@@ -240,7 +240,7 @@ The following functionalities are not provided by Samba-4:
 
 <para>
 <indexterm><primary>group</primary><secondary>mapping</secondary></indexterm>
-Samba-3 implements group mapping between Windows NT groups and UNIX groups (this is really quite complicated
+Samba implements group mapping between Windows NT groups and UNIX groups (this is really quite complicated
 to explain in a short space). This is discussed more fully in <link linkend="groupmapping">Group Mapping: MS
 Windows and UNIX</link>.
 </para>
@@ -412,7 +412,7 @@ sustainable choice and competition in the FIM market place.
 <indexterm><primary>identity information</primary></indexterm>
 Primary domain control, if it is to be scalable to meet the needs of large sites, must therefore be capable of
 using LDAP. The rapid adoption of OpenLDAP, and Samba configurations that use it, is ample proof that the era
-of the directory has started. Samba-3 does not demand the use of LDAP, but the demand for a mechanism by which
+of the directory has started. Samba does not demand the use of LDAP, but the demand for a mechanism by which
 user and group identity information can be distributed makes it an an unavoidable option.
 </para>
 
@@ -511,7 +511,7 @@ particular logon authentication request.
 <indexterm><primary>promote</primary></indexterm>
 <indexterm><primary>demote</primary></indexterm>
 A Windows NT4 BDC can be promoted to a PDC. If the PDC is online at the time that a BDC is promoted to PDC,
-the previous PDC is automatically demoted to a BDC. With Samba-3, this is not an automatic operation; the PDC
+the previous PDC is automatically demoted to a BDC. With Samba, this is not an automatic operation; the PDC
 and BDC must be manually configured, and other appropriate changes also need to be made.
 </para>
 
@@ -535,8 +535,8 @@ time choices offered are:
 <para>
 <indexterm><primary>domain</primary><secondary>control</secondary><tertiary>role</tertiary></indexterm>
 <indexterm><primary>native member</primary></indexterm>
-Samba-3 servers can readily be converted to and from domain controller roles through simple changes to the
-&smb.conf; file. Samba-3 is capable of acting fully as a native member of a Windows 200x server Active
+Samba servers can readily be converted to and from domain controller roles through simple changes to the
+&smb.conf; file. Samba is capable of acting fully as a native member of a Windows 200x server Active
 Directory domain.
 </para>
 
@@ -550,8 +550,8 @@ domain member server to or from a domain control, and to install or remove activ
 <para>
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
 <indexterm><primary>SAM</primary><secondary>replication</secondary></indexterm>
-New to Samba-3 is the ability to function fully as an MS Windows NT4-style domain controller,
-excluding the SAM replication components. However, please be aware that Samba-3 also supports the
+New to Samba is the ability to function fully as an MS Windows NT4-style domain controller,
+excluding the SAM replication components. However, please be aware that Samba also supports the
 MS Windows 200x domain control protocols.
 </para>
 
@@ -604,7 +604,7 @@ information regarding domain membership.
 </para></note>
 
 <para>
-The following are necessary for configuring Samba-3 as an MS Windows NT4-style PDC for MS Windows
+The following are necessary for configuring Samba as an MS Windows NT4-style PDC for MS Windows
 NT4/200x/XP clients:
 </para>
 
@@ -666,7 +666,7 @@ A domain controller is an SMB/CIFS server that:
 <indexterm><primary>browse list</primary></indexterm>
 It is rather easy to configure Samba to provide these. Each Samba domain controller must provide the NETLOGON
 service that Samba calls the <smbconfoption name="domain logons"/> functionality (after the name of the
-parameter in the &smb.conf; file). Additionally, one server in a Samba-3 domain must advertise itself as the
+parameter in the &smb.conf; file). Additionally, one server in a Samba domain must advertise itself as the
 domain master browser.<footnote><para>See <link linkend="NetworkBrowsing">Network
 Browsing</link>.</para></footnote> This causes the PDC to claim a domain-specific NetBIOS name that identifies
 it as a DMB for its given domain or workgroup. Local master browsers (LMBs) in the same domain or workgroup on
@@ -789,7 +789,7 @@ The basic options shown in <link linkend="pdc-example">this example</link> are e
 		<indexterm><primary></primary></indexterm>
 		This share is used to store user desktop profiles. Each user must have a directory at the root
 		of this share. This directory must be write-enabled for the user and must be globally read-enabled.
-		Samba-3 has a VFS module called <quote>fake_permissions</quote> that may be installed on this share. This will
+		Samba has a VFS module called <quote>fake_permissions</quote> that may be installed on this share. This will
 		allow a Samba administrator to make the directory read-only to everyone. Of course this is useful
 		only after the profile has been properly created.
 		</para></listitem>
@@ -1092,7 +1092,7 @@ sure that you have the entry correct for the Machine Trust Account in <filename>
 the Samba PDC.  If you added the account using an editor rather than using the smbpasswd utility, make sure
 that the account name is the machine NetBIOS name with a <quote>$</quote> appended to it (i.e.,
 computer_name$). There must be an entry in both the POSIX UNIX system account backend as well as in the
-SambaSAMAccount backend. The default backend for Samba-3 (i.e., the parameter <parameter>passdb
+SambaSAMAccount backend. The default backend for Samba (i.e., the parameter <parameter>passdb
 backend</parameter> is not specified in the &smb.conf; file, or if specified is set to
 <literal>smbpasswd</literal>, are respectively the <filename>/etc/passwd</filename> and
 <filename>/etc/samba/smbpasswd</filename> (or <filename>/usr/local/samba/lib/private/smbpasswd</filename> if
@@ -1139,7 +1139,7 @@ then try again.
 After successfully joining the domain, user logons fail with one of two messages: one to the
 effect that the domain controller cannot be found; the other claims that the account does not
 exist in the domain or that the password is incorrect. This may be due to incompatible
-settings between the Windows client and the Samba-3 server for <emphasis>schannel</emphasis>
+settings between the Windows client and the Samba server for <emphasis>schannel</emphasis>
 (secure channel) settings or <emphasis>smb signing</emphasis> settings. Check your Samba
 settings for <emphasis>client schannel</emphasis>, <emphasis>server schannel</emphasis>,
 <emphasis>client signing</emphasis>, <emphasis>server signing</emphasis> by executing:
@@ -1155,7 +1155,7 @@ Control Panel. The Policy settings are found in the Local Policies/Security Opti
 </para>
 
 <para>
-It is important that these be set consistently with the Samba-3 server settings.
+It is important that these be set consistently with the Samba server settings.
 </para>
 
 </sect2>

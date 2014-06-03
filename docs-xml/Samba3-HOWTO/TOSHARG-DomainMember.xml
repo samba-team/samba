@@ -55,7 +55,7 @@ server) or a Samba server a member of an MS Windows domain security context.
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>domain control</primary></indexterm>
 <indexterm><primary>Server Type</primary><secondary>Domain Member</secondary></indexterm>
-Samba-3 can join an MS Windows NT4-style domain as a native member server, an 
+Samba can join an MS Windows NT4-style domain as a native member server, an
 MS Windows Active Directory domain as a native member server, or a Samba domain
 control network. Domain membership has many advantages:
 </para>
@@ -193,7 +193,7 @@ as follows:
 	<indexterm><primary>/etc/passwd</primary></indexterm>
 	A corresponding UNIX account, typically stored in <filename>/etc/passwd</filename>. Work is in progress to
 	allow a simplified mode of operation that does not require UNIX user accounts, but this has not been a feature
-	of the early releases of Samba-3, and is not currently planned for release either.
+	of the early releases of Samba, and is not currently planned for release either.
 	</para></listitem>
 </itemizedlist>
 </para>
@@ -606,7 +606,7 @@ and be fully trusted by it.
 </para>
 
 <sect2>
-<title>Joining an NT4-type Domain with Samba-3</title>
+<title>Joining an NT4-type Domain with Samba</title>
 
 <para><link linkend="assumptions">Assumptions</link> lists names that are used in the remainder of this chapter.</para>
 
@@ -807,7 +807,7 @@ but in most cases the following will suffice:
 <indexterm significance="preferred"><primary>ADS</primary><see>Active Directory</see></indexterm>
 <indexterm><primary>KDC</primary></indexterm>
 <indexterm><primary>Kerberos</primary></indexterm>
-This is a rough guide to setting up Samba-3 with Kerberos authentication against a
+This is a rough guide to setting up Samba with Kerberos authentication against a
 Windows 200x KDC. A familiarity with Kerberos is assumed.
 </para> 
 
@@ -1007,7 +1007,7 @@ On the UNIX/Linux system, this command must be executed by an account that has U
 <indexterm><primary>kinit</primary></indexterm>
 <indexterm><primary>net</primary><secondary>ads</secondary><tertiary>join</tertiary></indexterm>
 When making a Windows client a member of an ADS domain within a complex organization, you
-may want to create the machine trust account within a particular organizational unit. Samba-3 permits
+may want to create the machine trust account within a particular organizational unit. Samba permits
 this to be done using the following syntax:
 <screen>
 &rootprompt; <userinput>kinit Administrator@your.kerberos.REALM</userinput>

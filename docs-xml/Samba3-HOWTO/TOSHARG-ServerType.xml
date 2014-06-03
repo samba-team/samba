@@ -64,18 +64,18 @@ So, what are the benefits of the features mentioned in this chapter?
 <itemizedlist>
 	<listitem><para>
 	<indexterm><primary>domain</primary><secondary>controller</secondary></indexterm>
-	Samba-3 can replace an MS Windows NT4 domain controller.
+	Samba can replace an MS Windows NT4 domain controller.
 	</para></listitem>
 
 	<listitem><para>
 	<indexterm><primary>active directory</primary></indexterm>
-	Samba-3 offers excellent interoperability with MS Windows NT4-style
+	Samba offers excellent interoperability with MS Windows NT4-style
 	domains as well as natively with Microsoft Active Directory domains.
 	</para></listitem>
 
 	<listitem><para>
 	<indexterm><primary>interdomain</primary><secondary>trustrs</secondary></indexterm>
-	Samba-3 permits full NT4-style interdomain trusts.
+	Samba permits full NT4-style interdomain trusts.
 	</para></listitem>
 
 	<listitem><para>
@@ -88,7 +88,7 @@ So, what are the benefits of the features mentioned in this chapter?
 	<listitem><para>
 	<indexterm><primary>account</primary><secondary>database</secondary><tertiary>backends</tertiary></indexterm>
 	<indexterm><primary>encrypted</primary></indexterm>
-	Samba-3 permits use of multiple concurrent account database backends.
+	Samba permits use of multiple concurrent account database backends.
 	(Encrypted passwords that are stored in the account database are in
 	formats that are unique to Windows networking).
 	</para></listitem>
@@ -96,7 +96,7 @@ So, what are the benefits of the features mentioned in this chapter?
 	<listitem><para>
 	<indexterm><primary>replicated</primary></indexterm>
 	The account database backends can be distributed
-	and replicated using multiple methods. This gives Samba-3
+	and replicated using multiple methods. This gives Samba
 	greater flexibility than MS Windows NT4 and in many cases a
 	significantly higher utility than Active Directory domains
 	with MS Windows 200x.
@@ -388,7 +388,7 @@ domain members. This is contrary to popular belief.
 </para>
 
 <para>
-If you are using Active Directory, starting with Samba-3 you can join as a native AD member. Why would you
+If you are using Active Directory, starting with Samba you can join as a native AD member. Why would you
 want to do that?  Your security policy might prohibit the use of NT-compatible authentication protocols. All
 your machines are running Windows 2000 and above and all use Kerberos. In this case, Samba, as an NT4-style
 domain, would still require NT-compatible authentication data. Samba in AD-member mode can accept Kerberos

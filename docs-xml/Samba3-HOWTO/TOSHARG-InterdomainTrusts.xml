@@ -27,11 +27,11 @@
 <indexterm><primary>trust relationships</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>LDAP-based</primary></indexterm>
-Samba-3 supports NT4-style domain trust relationships. This is a feature that many sites
-will want to use if they migrate to Samba-3 from an NT4-style domain and do not want to
+Samba supports NT4-style domain trust relationships. This is a feature that many sites
+will want to use if they migrate to Samba from an NT4-style domain and do not want to
 adopt Active Directory or an LDAP-based authentication backend. This chapter explains
 some background information regarding trust relationships and how to create them. It is now
-possible for Samba-3 to trust NT4 (and vice versa), as well as to create Samba-to-Samba 
+possible for Samba to trust NT4 (and vice versa), as well as to create Samba-to-Samba
 trusts.
 </para>
 
@@ -74,7 +74,7 @@ trusted domain.
 <para>
 <indexterm><primary>scalability</primary></indexterm>
 <indexterm><primary>trust relationships</primary></indexterm>
-Samba-3 can participate in Samba-to-Samba as well as in Samba-to-MS Windows NT4-style
+Samba can participate in Samba-to-Samba as well as in Samba-to-MS Windows NT4-style
 trust relationships. This imparts to Samba scalability similar to that with MS Windows NT4.
 </para>
 
@@ -84,7 +84,7 @@ trust relationships. This imparts to Samba scalability similar to that with MS W
 <indexterm><primary>LDAP</primary></indexterm>
 <indexterm><primary>interdomain trusts</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
-Given that Samba-3 can function with a scalable backend authentication database such as LDAP, and given its
+Given that Samba can function with a scalable backend authentication database such as LDAP, and given its
 ability to run in primary as well as backup domain control modes, the administrator would be well-advised to
 consider alternatives to the use of interdomain trusts simply because, by the very nature of how trusts
 function, this system is fragile.  That was, after all, a key reason for the development and adoption of
@@ -165,7 +165,7 @@ Relationships are explicit and not transitive.
 New to MS Windows 2000 ADS security contexts is the fact that trust relationships are two-way by default.
 Also, all inter-ADS domain trusts are transitive. In the case of the red, white, and blue domains, with
 Windows 2000 and ADS, the red and blue domains can trust each other. This is an inherent feature of ADS
-domains. Samba-3 implements MS Windows NT4-style interdomain trusts and interoperates with MS Windows 200x ADS
+domains. Samba implements MS Windows NT4-style interdomain trusts and interoperates with MS Windows 200x ADS
 security domains in similar manner to MS Windows NT4-style domains.
 </para>
 
@@ -339,7 +339,7 @@ is at an early stage, so do not be surprised if something does not function as i
 <indexterm><primary>Windows NT4 Server</primary></indexterm>
 <indexterm><primary>between domains</primary></indexterm>
 Each of the procedures described next assumes the peer domain in the trust relationship is controlled by a
-Windows NT4 server. However, the remote end could just as well be another Samba-3  domain. It can be clearly
+Windows NT4 server. However, the remote end could just as well be another Samba  domain. It can be clearly
 seen, after reading this document, that combining Samba-specific parts of what's written in the following
 sections leads to trust between domains in a purely Samba environment.
 </para>
@@ -590,7 +590,7 @@ Create a single-sided trust under the NT4 Domain User Manager, then execute:
 </para>
 
 <para>
-It works with Samba-3  and NT4 domains, and also with Samba-3 and Windows 200x ADS in mixed mode.
+It works with Samba  and NT4 domains, and also with Samba-3 and Windows 200x ADS in mixed mode.
 Both domain controllers, Samba and NT must have the same WINS server; otherwise,
 the trust will never work. 
 </para>

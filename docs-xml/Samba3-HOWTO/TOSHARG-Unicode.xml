@@ -38,7 +38,7 @@ is deserving of special mention.
 <para>
 <indexterm><primary>codepages</primary></indexterm>
 Samba-2.x supported a single locale through a mechanism called 
-<emphasis>codepages</emphasis>. Samba-3 is destined to become a truly transglobal
+<emphasis>codepages</emphasis>. Samba is destined to become a truly transglobal
 file- and printer-sharing platform.
 </para>
 
@@ -421,7 +421,7 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 			</para>
 
 			<para>
-			To use CAP encoding on Samba-3, you should use the unix charset parameter and VFS 
+			To use CAP encoding on Samba, you should use the unix charset parameter and VFS
 			as in <link linkend="vfscap-intl">the VFS CAP smb.conf file</link>.
 			</para>
 

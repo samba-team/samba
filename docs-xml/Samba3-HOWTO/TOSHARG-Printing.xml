@@ -564,7 +564,7 @@ globally set share settings and specify other values).
 <indexterm><primary>SOFTQ printing system</primary></indexterm>
 		The <smbconfoption name="printing"/> parameter is normally a service-level parameter. Since it is included
 		here in the <smbconfsection name="[global]"/> section, it will take effect for all printer shares that are not
-		defined differently. Samba-3 no longer supports the SOFTQ printing system.
+		defined differently. Samba no longer supports the SOFTQ printing system.
 		</para></caution>
 	</listitem></varlistentry>
 
@@ -1092,7 +1092,7 @@ The additional functionality provided by the new SPOOLSS support includes:
 <para>
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>LDAP</primary></indexterm>
-A benefit of updating is that Samba-3 is able to publish its printers to Active Directory (or LDAP).
+A benefit of updating is that Samba is able to publish its printers to Active Directory (or LDAP).
 </para>
 
 <para>
@@ -1197,7 +1197,7 @@ system, which is responsible for all further processing, as needed.
 <indexterm><primary>read-write access</primary></indexterm>
 <indexterm><primary>ACLs</primary></indexterm>
 	These parameters, including the <parameter>printer driver file</parameter> parameter,
-	are now removed and cannot be used in installations of Samba-3. The share name
+	are now removed and cannot be used in installations of Samba. The share name
 	<smbconfsection name="[print$]"/> is now used for the location of downloadable printer
 	drivers. It is taken from the <smbconfsection name="[print$]"/> service created
 	by Windows NT PCs when a printer is shared by them. Windows NT print servers always have a
@@ -3157,7 +3157,7 @@ follow several paths. Here are possible scenarios for migration:
 
 	<listitem><para>
 	An existing <filename>printers.def</filename> file (the one specified in the now removed parameter
-	<parameter>printer driver file</parameter>) will no longer work with Samba-3. In 3.0, smbd attempts
+	<parameter>printer driver file</parameter>) will no longer work with Samba. In 3.0, smbd attempts
 	to locate Windows 9x/Me driver files for the printer in <smbconfsection name="[print$]"/>
 	and additional settings in the TDB and only there; if it fails, it will <emphasis>not</emphasis>
 	(as 2.2.x used to do) drop down to using a <filename>printers.def</filename> (and all associated

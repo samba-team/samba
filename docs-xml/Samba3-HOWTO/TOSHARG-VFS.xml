@@ -126,7 +126,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	<title>default_quota</title>
 
 	<para>
-	This module allows the default quota values, in the windows explorer GUI, to be stored on a Samba-3 server.
+	This module allows the default quota values, in the windows explorer GUI, to be stored on a Samba server.
 	The challenge is that linux filesystems only store quotas for users and groups, but no default quotas.
 	</para>
 
@@ -556,7 +556,7 @@ quotasettings:	gid nolimit = no
 <indexterm><primary>Debian Sarge</primary></indexterm>
 	At the time of this writing, not much testing has been done.  I tested the shadow copy VFS module with a
 	specific scenario which was not deployed in a production environment, but more as a proof of concept.  The
-	scenario involved a Samba-3 file server on Debian Sarge with an XFS file system and LVM1.  I do NOT recommend
+	scenario involved a Samba file server on Debian Sarge with an XFS file system and LVM1.  I do NOT recommend
 	you use this as a solution without doing your own due diligence with regard to all the components presented
 	here.  That said, following is an basic outline of how I got things going.
 	</para>

@@ -17,7 +17,7 @@
 <indexterm><primary>GID</primary></indexterm>
 The Microsoft Windows operating system has a number of features that impose specific challenges
 to interoperability with the operating systems on which Samba is implemented. This chapter deals
-explicitly with the mechanisms Samba-3 (version 3.0.8 and later) uses to overcome one of the
+explicitly with the mechanisms Samba (version 3.0.8 and later) uses to overcome one of the
 key challenges in the integration of Samba servers into an MS Windows networking environment.
 This chapter deals with identity mapping (IDMAP) of Windows security identifiers (SIDs)
 to UNIX UIDs and GIDs.
@@ -120,8 +120,8 @@ on Server Types and Security Modes</link>.
 	<indexterm><primary>NT4</primary></indexterm>
 	<indexterm><primary>SID</primary></indexterm>
 	<indexterm><primary>Active Directory</primary></indexterm>
-	Samba-3 can act as a Windows NT4 PDC or BDC, thereby providing domain control protocols that
-	are compatible with Windows NT4. Samba-3 file and print sharing protocols are compatible with
+	Samba can act as a Windows NT4 PDC or BDC, thereby providing domain control protocols that
+	are compatible with Windows NT4. Samba file and print sharing protocols are compatible with
 	all versions of MS Windows products. Windows NT4, as with MS Active Directory,
 	extensively makes use of Windows SIDs.
 	</para>
@@ -130,7 +130,7 @@ on Server Types and Security Modes</link>.
 	<indexterm><primary>MS Windows SID</primary></indexterm>
 	<indexterm><primary>UID</primary></indexterm>
 	<indexterm><primary>GID</primary></indexterm>
-	Samba-3 domain member servers and clients must interact correctly with MS Windows SIDs. Incoming
+	Samba domain member servers and clients must interact correctly with MS Windows SIDs. Incoming
 	Windows SIDs must be translated to local UNIX UIDs and GIDs. Outgoing information from the Samba
 	server must provide to MS Windows clients and servers appropriate SIDs.
 	</para>
@@ -235,7 +235,7 @@ on Server Types and Security Modes</link>.
 				server that is a member of a Windows NT4 domain or an ADS domain. A typical example
 				is an appliance like file server on which no local accounts are configured and
 				winbind is used to obtain account credentials from the domain controllers for the
-				domain. The domain control can be provided by Samba-3, MS Windows NT4, or MS Windows
+				domain. The domain control can be provided by Samba, MS Windows NT4, or MS Windows
 				Active Directory.
 				</para>
 
@@ -452,7 +452,7 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	IDMAP information can be written directly to the LDAP server so long as all domain controllers
-	have access to the master (writable) LDAP server. Samba-3 at this time does not handle LDAP redirects
+	have access to the master (writable) LDAP server. Samba at this time does not handle LDAP redirects
 	in the IDMAP backend. This means that it is is unsafe to use a slave (replicate) LDAP server with
 	the IDMAP facility.
 	</para>
@@ -819,7 +819,7 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
 	<para>
 	<indexterm><primary>ADAM</primary></indexterm>
 	<indexterm><primary>ADS</primary></indexterm>
-	The storage of IDMAP information in LDAP can be used with both NT4/Samba-3-style domains and
+	The storage of IDMAP information in LDAP can be used with both NT4/Samba-style domains and
 	ADS domains. OpenLDAP is a commonly used LDAP server for this purpose, although any
 	standards-complying LDAP server can be used. It is therefore possible to deploy this IDMAP
 	configuration using the Sun iPlanet LDAP server, Novell eDirectory, Microsoft ADS plus ADAM,
@@ -855,7 +855,7 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
 
 	<para>
 	<indexterm><primary>realm</primary></indexterm>
-	In the case of an NT4 or Samba-3-style domain the <parameter>realm</parameter> is not used, and the
+	In the case of an NT4 or Samba-style domain the <parameter>realm</parameter> is not used, and the
 	command used to join the domain is <command>net rpc join</command>. The above example also demonstrates
 	advanced error-reporting techniques that are documented in <link linkend="dbglvl">Reporting Bugs</link>.
 	</para>

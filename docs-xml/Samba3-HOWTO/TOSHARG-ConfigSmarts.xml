@@ -120,7 +120,7 @@ Those who elect to create multiple Samba servers should have the ability to read
 the Samba source code, and to modify it as needed. This mode of deployment is considered beyond the scope of
 this book. However, if someone will contribute more comprehensive documentation we will gladly review it, and
 if it is suitable extend this section of this chapter. Until such documentation becomes available the hosting
-of multiple samba servers on a single host is considered not supported for Samba-3 by the Samba Team.
+of multiple samba servers on a single host is considered not supported for Samba by the Samba Team.
 </para>
 
 </sect2>

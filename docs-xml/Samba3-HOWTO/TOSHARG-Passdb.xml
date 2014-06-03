@@ -110,7 +110,7 @@ entities.
 <title>New Account Storage Systems</title>
 
 <para>
-Samba-3 introduces a number of new password backend capabilities.
+Samba introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
 </para>
@@ -137,7 +137,7 @@ Samba-3 introduces a number of new password backend capabilities.
 			The <emphasis>tdbsam</emphasis> password backend stores the old <emphasis>
 			smbpasswd</emphasis> information plus the extended MS Windows NT/200x
 			SAM information into a binary format TDB (trivial database) file.
-			The inclusion of the extended information makes it possible for Samba-3
+			The inclusion of the extended information makes it possible for Samba
 			to implement the same account and system access controls that are possible
 			with MS Windows NT4/200x-based systems.
 			</para>
@@ -169,7 +169,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>Samba schema</primary></indexterm>
 <indexterm><primary>schema file</primary></indexterm>
 <indexterm><primary>examples/LDAP</primary></indexterm>
-			Samba-3 has a new and extended LDAP implementation that requires configuration
+			Samba has a new and extended LDAP implementation that requires configuration
 			of OpenLDAP with a new format Samba schema. The new format schema file is
 			included in the <filename class="directory">examples/LDAP</filename> directory of the Samba distribution.
 			</para>
@@ -480,7 +480,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>domain member servers</primary></indexterm>
 <indexterm><primary>NFS</primary></indexterm>
 <indexterm><primary>rsync</primary></indexterm>
-	Samba-3 has a special facility that makes it possible to maintain identical UIDs and GIDs
+	Samba has a special facility that makes it possible to maintain identical UIDs and GIDs
 	on all servers in a distributed network. A distributed network is one where there exists
 	a PDC, one or more BDCs, and/or one or more domain member servers. Why is this important?
 	This is important if files are being shared over more than one protocol (e.g., NFS) and where
@@ -974,7 +974,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 		The need to be familiar with the Samba tools and facilities that permit information systems operation
 		in compliance with government laws and regulations is clear to all. The <command>pdbedit</command> is
 		currently the only Samba tool that provides the capacity to manage account and systems access controls
-		and policies. During the remaining life-cycle of the Samba-3 series it is possible the new tools may
+		and policies. During the remaining life-cycle of the Samba series it is possible the new tools may
 		be implemented to aid in this important area.
 		</para>
 
@@ -1600,7 +1600,7 @@ To set the maximum (infinite) lockout time use the value of -1.
 <warning><para>
 Account policies must be set individually on each PDC and BDC. At this time (Samba 3.0.11 to Samba 3.0.14a)
 account policies are not replicated automatically. This may be fixed before Samba 3.0.20 ships or some
-time there after. Please check the WHATSNEW.txt file in the Samba-3 tarball for specific update notiations
+time there after. Please check the WHATSNEW.txt file in the Samba tarball for specific update notiations
 regarding this facility.
 </para></warning>
 
@@ -2063,7 +2063,7 @@ objectclass: dcObject
 objectclass: organization
 dc: quenya
 o: Quenya Org Network
-description: The Samba-3 Network LDAP Example
+description: The Samba Network LDAP Example
 
 # Organizational Role for Directory Management
 dn: cn=Manager,dc=quenya,dc=org
@@ -2140,7 +2140,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 		<note><para>
 <indexterm><primary>secrets.tdb</primary></indexterm>
 		Before Samba can access the LDAP server, you need to store the LDAP admin password
-		in the Samba-3 <filename>secrets.tdb</filename> database by:
+		in the Samba <filename>secrets.tdb</filename> database by:
 <indexterm><primary>smbpasswd</primary></indexterm>
 <screen>
 &rootprompt;<userinput>smbpasswd -w <replaceable>secret</replaceable></userinput>
@@ -2270,11 +2270,11 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <indexterm><primary>posixGroup</primary></indexterm>
 <indexterm><primary>Domain Groups</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
-			In Samba-3, the group management system is based on POSIX
+			In Samba, the group management system is based on POSIX
 			groups. This means that Samba makes use of the posixGroup ObjectClass.
 			For now, there is no NT-like group system management (global and local
-			groups). Samba-3 knows only about <constant>Domain Groups</constant>
-			and, unlike MS Windows 2000 and Active Directory, Samba-3 does not
+			groups). Samba knows only about <constant>Domain Groups</constant>
+			and, unlike MS Windows 2000 and Active Directory, Samba does not
 			support nested groups.
 			</para>
 
@@ -2537,7 +2537,7 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 		<title>Password Synchronization</title>
 
 		<para>
-		Samba-3 and later can update the non-Samba (LDAP) password stored with an account. When
+		Samba and later can update the non-Samba (LDAP) password stored with an account. When
 		using pam_ldap, this allows changing both UNIX and Windows passwords at once.
 		</para>
 

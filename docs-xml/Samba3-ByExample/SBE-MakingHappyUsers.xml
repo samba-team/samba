@@ -363,7 +363,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 	<indexterm><primary>OpenLDAP</primary></indexterm>
 	The implementation of Samba BDCs necessitates the installation and configuration of LDAP.
 	For this site, you use OpenLDAP, the open source software LDAP server platform. Commercial
-	LDAP servers in current use with Samba-3 include:
+	LDAP servers in current use with Samba include:
 	</para>
 
 	<itemizedlist>
@@ -395,7 +395,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 	A word of caution is fully in order. OpenLDAP is purely an LDAP server, and unlike commercial
 	offerings, it requires that you manually edit the server configuration files and manually
 	initialize the LDAP directory database. OpenLDAP itself has only command-line tools to
-	help you to get OpenLDAP and Samba-3 running as required, albeit with some learning curve challenges.
+	help you to get OpenLDAP and Samba running as required, albeit with some learning curve challenges.
 	</para>
 
 	<para>
@@ -447,13 +447,13 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 	if you find the challenge of learning about LDAP directories, schemas, configuration, and management
 	tools and the creation of shell and Perl scripts a bit
 	challenging. OpenLDAP can be easily customized, though it includes
-	many ready-to-use schemas. Samba-3 provides an OpenLDAP schema file
+	many ready-to-use schemas. Samba provides an OpenLDAP schema file
 	that is required for use as a passdb backend.
 	</para>
 
 	<para>
 	<indexterm><primary>interoperability</primary></indexterm>
-	For those who are willing to brave the process of installing and configuring LDAP and Samba-3 interoperability,
+	For those who are willing to brave the process of installing and configuring LDAP and Samba interoperability,
 	there are a few nice Web-based tools that may help you to manage your users and groups more effectively.
 	The Web-based tools you might like to consider include the
 	<ulink url="http://lam.sourceforge.net/">LDAP Account Manager</ulink> (LAM) and the Webmin-based
@@ -519,7 +519,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 	The solution provided is a minimal approach to getting OpenLDAP running as an identity management directory
 	server for UNIX system accounts as well as for Samba. From the OpenLDAP perspective, UNIX system
 	accounts are stored POSIX schema extensions. Samba provides its own schema to permit storage of account 
-	attributes Samba needs. Samba-3 can use the LDAP backend to store:
+	attributes Samba needs. Samba can use the LDAP backend to store:
 	</para>
 	
 	<itemizedlist>
@@ -539,7 +539,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 	<indexterm><primary>NSS</primary></indexterm>
 	<indexterm><primary>UID</primary></indexterm>
 	<indexterm><primary>nss_ldap</primary></indexterm>
-	The use of LDAP with Samba-3 makes it necessary to store UNIX accounts as well as Windows Networking
+	The use of LDAP with Samba makes it necessary to store UNIX accounts as well as Windows Networking
 	accounts in the LDAP backend. This implies the need to use the 
 	<ulink url="http://www.padl.com/Contents/OpenSourceSoftware.html">PADL LDAP tools</ulink>. The resolution 
 	of the UNIX group name to its GID must be enabled from either the <filename>/etc/group</filename> 
@@ -857,7 +857,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 		</para>
 
 		<para>
-		This book is about Samba-3, so you can confine the printing style to just the smart
+		This book is about Samba, so you can confine the printing style to just the smart
 		style of installation. Those interested in further information regarding intelligent
 		printing should review documentation on the Easy Software Products Web site.
 		</para>
@@ -1249,12 +1249,12 @@ slapd[12164]: conn=1 fd=10 closed
 
 
 	<itemizedlist>
-		<listitem><para>Samba-3 PDC Server Configuration</para>
+		<listitem><para>Samba PDC Server Configuration</para>
 			<orderedlist>
 				<listitem><para>DHCP and DNS servers</para></listitem>
 				<listitem><para>OpenLDAP server</para></listitem>
 				<listitem><para>PAM and NSS client tools</para></listitem>
-				<listitem><para>Samba-3 PDC</para></listitem>
+				<listitem><para>Samba PDC</para></listitem>
 				<listitem><para>Idealx smbldap scripts</para></listitem>
 				<listitem><para>LDAP initialization</para></listitem>
 				<listitem><para>Create user and group accounts</para></listitem>
@@ -1265,7 +1265,7 @@ slapd[12164]: conn=1 fd=10 closed
 				<listitem><para>Configuration of user rights and privileges</para></listitem>
 			</orderedlist>
 		</listitem>
-		<listitem><para>Samba-3 BDC Server Configuration</para>
+		<listitem><para>Samba BDC Server Configuration</para>
 			<orderedlist>
 				<listitem><para>DHCP and DNS servers</para></listitem>
 				<listitem><para>PAM and NSS client tools</para></listitem>
@@ -1383,8 +1383,8 @@ They could just as well be located under the rdn <constant>cn=NextFreeUnixId</co
 	</table>
 
 	<para>
-	Samba-3 and OpenLDAP will have a degree of interdependence that is unavoidable. The method
-	for bootstrapping the LDAP and Samba-3 configuration is relatively straightforward. If you
+	Samba and OpenLDAP will have a degree of interdependence that is unavoidable. The method
+	for bootstrapping the LDAP and Samba configuration is relatively straightforward. If you
 	follow these guidelines, the resulting system should work fine.
 	</para>
 
@@ -1781,7 +1781,7 @@ Press enter to see a dump of your service definitions
 		<step><para>
 		<indexterm><primary>secrets.tdb</primary></indexterm>
 		<indexterm><primary>smbpasswd</primary></indexterm>
-		Samba-3 communicates with the LDAP server. The password that it uses to
+		Samba communicates with the LDAP server. The password that it uses to
 		authenticate to the LDAP server must be stored in the <filename>secrets.tdb</filename>
 		file. Execute the following to create the new <filename>secrets.tdb</filename> files
 		and store the password for the LDAP Manager:
@@ -1797,7 +1797,7 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 		<step><para>
 		<indexterm><primary>smbd</primary></indexterm>
 		<indexterm><primary>net</primary><secondary>getlocalsid</secondary></indexterm>
-		Samba-3 generates a Windows Security Identifier (SID) only when <command>smbd</command>
+		Samba generates a Windows Security Identifier (SID) only when <command>smbd</command>
 		has been started. For this reason, you start Samba. After a few seconds delay,
 		execute:
 <screen>
@@ -1856,7 +1856,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	</procedure>
 
 	<para>
-	Your Samba-3 PDC is now ready to communicate with the LDAP password backend. Let's get on with
+	Your Samba PDC is now ready to communicate with the LDAP password backend. Let's get on with
 	configuration of the LDAP server.
 	</para>
 
@@ -1925,7 +1925,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 
 	<para>
 	<indexterm><primary>Idealx</primary><secondary>smbldap-tools</secondary></indexterm>
-	The Idealx scripts, or equivalent, are necessary to permit Samba-3 to manage accounts
+	The Idealx scripts, or equivalent, are necessary to permit Samba to manage accounts
 	on the LDAP server. You have chosen the Idealx scripts because they are the best-known
 	LDAP configuration scripts. The use of these scripts will help avoid the necessity
 	to create custom scripts. It is easy to download them from the Idealx
@@ -2232,7 +2232,7 @@ writing new configuration file:
 	</para>
 
 	<para>
-	At this time, Samba-3 requires that on a PDC all UNIX (POSIX) group accounts that are
+	At this time, Samba requires that on a PDC all UNIX (POSIX) group accounts that are
 	mapped (linked) to Windows domain group accounts must be in the LDAP database. It does not
 	hurt to have UNIX user and group accounts in both the system files as well as in the LDAP
 	database. From a UNIX system perspective, the NSS resolver checks system files before
@@ -2295,7 +2295,7 @@ writing new configuration file:
 	<indexterm><primary>directory</primary><secondary>People container</secondary></indexterm>
 	<indexterm><primary>directory</primary><secondary>Computers container</secondary></indexterm>
 	In the following examples, as the LDAP database is initialized, we do create a container
-	for Computer (machine) accounts. In the Samba-3 &smb.conf; files, specific use is made
+	for Computer (machine) accounts. In the Samba &smb.conf; files, specific use is made
 	of the People container, not the Computers container, for domain member accounts. This is not a
 	mistake; it is a deliberate action that is necessitated by the fact that the resolution of 
 	a machine (computer) account to a UID is done via NSS. The only way this can be handled is
@@ -2672,7 +2672,7 @@ drwx------   7 stans  Domain Users     568 Dec 17 01:43 stans/
 		<step><para>
 		<indexterm><primary>ldapsam</primary></indexterm>
 		<indexterm><primary>pdbedit</primary></indexterm>
-		The final validation step involves making certain that Samba-3 can obtain the user
+		The final validation step involves making certain that Samba can obtain the user
 		accounts from the LDAP ldapsam passwd backend. Execute the following command as shown:
 <screen>
 &rootprompt; pdbedit -Lv chrisr
@@ -2757,7 +2757,7 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 
 		<step><para>
 		The server you have so carefully built is now ready for another important step. You 
-		start the Samba-3 server and validate its operation. Execute the following to render all 
+		start the Samba server and validate its operation. Execute the following to render all
 		the processes needed fully operative so that, on system reboot, they are automatically 
 		started:
 <screen>
@@ -2800,7 +2800,7 @@ Joined domain MEGANET2.
 
 		<step><para>
 		<indexterm><primary>smbclient</primary></indexterm>
-		You may now check Samba-3 operation as follows:
+		You may now check Samba operation as follows:
 <screen>
 &rootprompt; smbclient -L massive -U%
 
@@ -2858,9 +2858,9 @@ smb: \> q
 
 	<para>
 	<indexterm><primary>CUPS</primary></indexterm>
-	The configuration for Samba-3 to enable CUPS raw-print-through printing has already been
+	The configuration for Samba to enable CUPS raw-print-through printing has already been
 	taken care of in the &smb.conf; file. The only preparation needed for <constant>smart</constant>
-	printing to be possible involves creation of the directories in which Samba-3 stores
+	printing to be possible involves creation of the directories in which Samba stores
 	Windows printing driver files.
 	</para>
 
@@ -2964,7 +2964,7 @@ application/octet-stream
 </sect1>
 
 <sect1 id="sbehap-bldg1">
-	<title>Samba-3 BDC Configuration</title>
+	<title>Samba BDC Configuration</title>
 
 	<procedure>
 	<title>Configuration of BDC Called: <constant>BLDG1</constant></title>
@@ -3054,7 +3054,7 @@ PIOps:x:1002:
 
 		<step><para>
 		<indexterm><primary>smbpasswd</primary></indexterm>
-		You must now set the LDAP administrative password into the Samba-3 <filename>secrets.tdb</filename>
+		You must now set the LDAP administrative password into the Samba <filename>secrets.tdb</filename>
 		file by executing this command:
 <screen>
 &rootprompt; smbpasswd -w not24get
@@ -3065,7 +3065,7 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 		<step><para>
 		Now you must obtain the domain SID from the PDC and store it into the
 		<filename>secrets.tdb</filename> file also. This step is not necessary with an LDAP
-		passdb backend because Samba-3 obtains the domain SID from the 
+		passdb backend because Samba obtains the domain SID from the
 		sambaDomain object it automatically stores in the LDAP backend. It does not hurt to
 		add the SID to the <filename>secrets.tdb</filename>, and if you wish to do so, this 
 		command can achieve that:
@@ -3074,7 +3074,7 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 Storing SID S-1-5-21-3504140859-1010554828-2431957765 \
                            for Domain MEGANET2 in secrets.tdb
 </screen>
-		When configuring a Samba-3 BDC that has an LDAP backend, there is no need to take
+		When configuring a Samba BDC that has an LDAP backend, there is no need to take
 		any special action to join it to the domain. However, winbind communicates with the
 		domain controller that is running on the localhost and must be able to authenticate,
 		thus requiring that the BDC should be joined to the domain. The process of joining
@@ -3094,7 +3094,7 @@ Joined domain MEGANET2.
 		<indexterm>
 			<primary>pdbedit</primary>
 		</indexterm>
-		Verify that user and group account resolution works via Samba-3 tools as follows:
+		Verify that user and group account resolution works via Samba tools as follows:
 <screen>
 &rootprompt; pdbedit -L
 root:0:root
@@ -3123,7 +3123,7 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 
                 <step><para>
                 The server you have so carefully built is now ready for another important step. Now
-                start the Samba-3 server and validate its operation. Execute the following to render all
+                start the Samba server and validate its operation. Execute the following to render all
                 the processes needed fully operative so that, upon system reboot, they are automatically
                 started:
 <screen>
@@ -3136,7 +3136,7 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 &rootprompt; rcsmb start
 &rootprompt; rcwinbind start
 </screen>
-		Samba-3 should now be running and is ready for a quick test. But not quite yet!
+		Samba should now be running and is ready for a quick test. But not quite yet!
                 </para></step>
 
 		<step><para>

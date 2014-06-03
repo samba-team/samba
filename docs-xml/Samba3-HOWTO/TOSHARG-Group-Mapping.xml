@@ -406,7 +406,7 @@
 	</para>
 
 	<orderedlist>
-		<listitem><para>For Samba-3 domain controllers and domain member servers/clients.</para></listitem>
+		<listitem><para>For Samba domain controllers and domain member servers/clients.</para></listitem>
 		<listitem><para>To manage domain member Windows workstations.</para></listitem>
 	</orderedlist>
 
@@ -489,7 +489,7 @@
 	When first installed, Windows NT4/200x/XP are preconfigured with certain user, group, and
 	alias entities. Each has a well-known RID. These must be preserved for continued
 	integrity of operation. Samba must be provisioned with certain essential domain groups that require
-	the appropriate RID value. When Samba-3 is configured to use <constant>tdbsam</constant>, the essential
+	the appropriate RID value. When Samba is configured to use <constant>tdbsam</constant>, the essential
 	domain groups are automatically created. It is the LDAP administrator's responsibility to create
 	(provision) the default NT groups.
 	</para>

@@ -123,12 +123,12 @@
 	<title>TDB Database File Information</title>
 
 	<para>
-	This section contains brief descriptions of the databases that are used by Samba-3.
+	This section contains brief descriptions of the databases that are used by Samba.
 	</para>
 
 	<para>
 <indexterm><primary>tdb file locations</primary></indexterm>
-	The directory in which Samba stores the tdb files is determined by compile-time directives. Samba-3 stores
+	The directory in which Samba stores the tdb files is determined by compile-time directives. Samba stores
 	tdb files in two locations. The best way to determine these locations is to execute the following
 	command:
 <screen>
@@ -136,7 +136,7 @@
    PRIVATE_DIR: /etc/samba/private
 </screen>
 	This means that the confidential tdb files are stored in the <filename>/etc/samba/private</filename>
-	directory. Samba-3 also uses a number of tdb files that contain more mundane data. The location of
+	directory. Samba also uses a number of tdb files that contain more mundane data. The location of
 	these files can be found by executing:
 <screen>
 &rootprompt; smbd -b | grep LOCKDIR

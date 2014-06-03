@@ -4,7 +4,7 @@
   <title>The 500-User Office</title>
 
 	<para>
-	The Samba-3 networking you explored in <link linkend="secure"/> covers the finer points of 
+	The Samba networking you explored in <link linkend="secure"/> covers the finer points of
 	configuration of peripheral services such as DHCP and DNS, and WINS. You experienced
 	implementation of a simple configuration of the services that are important adjuncts 
 	to successful deployment of Samba. 
@@ -1766,7 +1766,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 			</para></listitem>
 
 			<listitem><para>
-			Joining a Samba-3 domain member server to a Samba-3 domain
+			Joining a Samba domain member server to a Samba-3 domain
 			</para></listitem>
 
 			<listitem><para>
@@ -1936,7 +1936,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 	<answer>
 
 		<para>
-		Unless configured to do otherwise, the default behavior with Samba-3 and Windows XP Professional
+		Unless configured to do otherwise, the default behavior with Samba and Windows XP Professional
 		clients is to use roaming profiles.
 		</para>
 

@@ -110,7 +110,7 @@ must be defined in the <smbconfsection name="global"/> section of the &smb.conf;
 <indexterm><primary>rights</primary></indexterm>
 <indexterm><primary>privileges</primary></indexterm>
 <indexterm><primary>manage privileges</primary></indexterm>
-Currently, the rights supported in Samba-3 are listed in <link linkend="rp-privs"/>.
+Currently, the rights supported in Samba are listed in <link linkend="rp-privs"/>.
 The remainder of this chapter explains how to manage and use these privileges on Samba servers.
 </para>
 

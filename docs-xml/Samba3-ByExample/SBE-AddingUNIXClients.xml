@@ -306,7 +306,7 @@
 	<indexterm><primary>Domain Member</primary><secondary>client</secondary></indexterm>
 	<indexterm><primary>Domain Controller</primary></indexterm>
 	The domain member server and the domain member client are at the center of focus in this chapter.
-	Configuration of Samba-3 domain controller is covered in earlier chapters, so if your 
+	Configuration of Samba domain controller is covered in earlier chapters, so if your
 	interest is in domain controller configuration, you will not find that here. You will find good
 	oil that helps you to add domain member servers and clients.
 	</para>
@@ -1071,12 +1071,12 @@ Joined domain MEGANET2.
 	<indexterm><primary>Active Directory</primary><secondary>join</secondary></indexterm>
 	<indexterm><primary>Kerberos</primary></indexterm>
 	<indexterm><primary>Domain Member</primary><secondary>server</secondary></indexterm>
-	One of the much-sought-after features new to Samba-3 is the ability to join an Active Directory
+	One of the much-sought-after features new to Samba is the ability to join an Active Directory
 	domain using Kerberos protocols. This makes it possible to operate an entire Windows network
 	without the need to run NetBIOS over TCP/IP and permits more secure networking in general. An
 	exhaustively complete discussion of the protocols is not possible in this book; perhaps a
-	later book may explore the intricacies of the NetBIOS-less operation that Samba-3 can participate
-	in. For now, we simply focus on how a Samba-3 server can be made a domain member server.
+	later book may explore the intricacies of the NetBIOS-less operation that Samba can participate
+	in. For now, we simply focus on how a Samba server can be made a domain member server.
 	</para>
 
 	<para>
@@ -1084,22 +1084,22 @@ Joined domain MEGANET2.
 	<indexterm><primary>LDAP</primary></indexterm>
 	<indexterm><primary>Identity resolution</primary></indexterm>
 	<indexterm><primary>Kerberos</primary></indexterm>
-	The diagram in <link linkend="ch9-adsdc"/> demonstrates how Samba-3 interfaces with
+	The diagram in <link linkend="ch9-adsdc"/> demonstrates how Samba interfaces with
 	Microsoft Active Directory components. It should be noted that if Microsoft Windows Services
 	for UNIX (SFU) has been installed and correctly configured, it is possible to use client LDAP
-	for identity resolution just as can be done with Samba-3 when using an LDAP passdb backend.
+	for identity resolution just as can be done with Samba when using an LDAP passdb backend.
 	The UNIX tool that you need for this, as in the case of LDAP on UNIX/Linux, is the PADL
 	Software nss_ldap tool-set. Compared with use of winbind and Kerberos, the use of 
 	LDAP-based identity resolution is a little less secure. In view of the fact that this solution
 	requires additional software to be installed on the Windows 200x ADS domain controllers,
-	and that means more management overhead, it is likely that most Samba-3 ADS client sites
+	and that means more management overhead, it is likely that most Samba ADS client sites
 	may elect to use winbind.
 	</para>
 
 	<para>
-	Do not attempt to use this procedure if you are not 100 percent certain that the build of Samba-3
+	Do not attempt to use this procedure if you are not 100 percent certain that the build of Samba
 	you are using has been compiled and linked with all the tools necessary for this to work.
-	Given the importance of this step, you must first validate that the Samba-3 message block
+	Given the importance of this step, you must first validate that the Samba message block
 	daemon (<command>smbd</command>) has the necessary features.
 	</para>
 
@@ -1123,7 +1123,7 @@ Joined domain MEGANET2.
 
 		<step><para>
 		<indexterm><primary>smbd</primary></indexterm>
-		Before you try to use Samba-3, you want to know for certain that your executables have
+		Before you try to use Samba, you want to know for certain that your executables have
 		support for Kerberos and for LDAP. Execute the following to identify whether or
 		not this build is perhaps suitable for use:
 <screen>
@@ -1201,7 +1201,7 @@ massive:/usr/sbin # smbd -b | grep LDAP
 		<indexterm><primary>SerNet</primary></indexterm>
 		<indexterm><primary>validated</primary></indexterm>
 		The next step is to identify which version of the Kerberos libraries have been used.
-		In order to permit Samba-3 to interoperate with Windows 2003 Active Directory, it is
+		In order to permit Samba to interoperate with Windows 2003 Active Directory, it is
 		essential that it has been linked with either MIT Kerberos version 1.3.1 or later,
 		or that it has been linked with Heimdal Kerberos 0.6 plus specific patches. You may
 		identify what version of the MIT Kerberos libraries are installed on your system by
@@ -1220,8 +1220,8 @@ massive:/usr/sbin # smbd -b | grep LDAP
 		</para>
 
 		<para>
-		From this point on, you are certain that the Samba-3 build you are using has the
-		necessary capabilities. You can now configure Samba-3 and the NSS. 
+		From this point on, you are certain that the Samba build you are using has the
+		necessary capabilities. You can now configure Samba and the NSS.
 		</para></step>
 
 		<step><para>
@@ -1271,7 +1271,7 @@ massive:/usr/sbin # smbd -b | grep LDAP
 Using short domain name -- LONDON
 Joined 'FRAN' to realm 'LONDON.ABMAS.BIZ'
 </screen>
-		You have successfully made your Samba-3 server a member of the ADS domain
+		You have successfully made your Samba server a member of the ADS domain
 		using Kerberos protocols.
 		</para>
 
@@ -1420,7 +1420,7 @@ LONDON+DnsUpdateProxy:x:10008:
 		<indexterm><primary>net</primary><secondary>ads</secondary><tertiary>info</tertiary></indexterm>
 		<indexterm><primary>Active Directory</primary><secondary>server</secondary></indexterm>
 		<indexterm><primary>Kerberos</primary></indexterm>
-		You may now perform final verification that communications between Samba-3 winbind and
+		You may now perform final verification that communications between Samba winbind and
 		the Active Directory server is using Kerberos protocols. Execute the following:
 <screen>
 &rootprompt; net ads info
@@ -1516,7 +1516,7 @@ Permissions:
         [Read All Properties]
 -------------- End Of Security Descriptor
 </programlisting>
-		And now you have conclusive proof that your Samba-3 ADS domain member server
+		And now you have conclusive proof that your Samba ADS domain member server
 		called <constant>FRAN</constant> is able to communicate fully with the ADS
 		domain controllers.
 		</para></step>
@@ -1525,7 +1525,7 @@ Permissions:
 
 
 	<para>
-	Your Samba-3 ADS domain member server is ready for use. During training sessions,
+	Your Samba ADS domain member server is ready for use. During training sessions,
 	you may be asked what is inside the <filename>winbindd_cache.tdb and winbindd_idmap.tdb</filename>
 	files. Since curiosity just took hold of you, execute the following:
 <programlisting>
@@ -1813,7 +1813,7 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
         <para>
         <indexterm><primary>ADAM</primary></indexterm>
         <indexterm><primary>ADS</primary></indexterm>
-        The storage of IDMAP information in LDAP can be used with both NT4/Samba-3-style domains as well as
+        The storage of IDMAP information in LDAP can be used with both NT4/Samba-style domains as well as
         with ADS domains. OpenLDAP is a commonly used LDAP server for this purpose, although any standards-compliant
         LDAP server can be used. It is therefore possible to deploy this IDMAP configuration using
         the Sun iPlanet LDAP server, Novell eDirectory, Microsoft ADS plus ADAM, and so on.
@@ -1847,10 +1847,10 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
 
         <para>
         <indexterm><primary>realm</primary></indexterm>
-        In the case of an NT4 or Samba-3-style domain the <parameter>realm</parameter> is not used, and the
+        In the case of an NT4 or Samba-style domain the <parameter>realm</parameter> is not used, and the
         command used to join the domain is <command>net rpc join</command>. The above example also demonstrates
         advanced error reporting techniques that are documented in the chapter called "Reporting Bugs" in
-	<quote>The Official Samba-3 HOWTO and Reference Guide, Second Edition</quote> (TOSHARG2).
+	<quote>The Official Samba HOWTO and Reference Guide, Second Edition</quote> (TOSHARG2).
         </para>
 
         <para>
@@ -2190,7 +2190,7 @@ hosts:  files wins
 	You should note that it is possible to use LDAP-based PAM and NSS tools to permit distributed
 	systems logons (SSO), providing user and group accounts are stored in an LDAP directory. This
 	provides logon services for UNIX/Linux users, while Windows users obtain their sign-on
-	support via Samba-3.
+	support via Samba.
 	</para>
 
 	<para>
@@ -2218,7 +2218,7 @@ hosts:  files wins
 
 		<para>
 		The following steps provide a Linux system that users can log onto using
-		Windows NT4 (or Samba-3) domain network credentials:
+		Windows NT4 (or Samba) domain network credentials:
 		</para>
 
 		<procedure>
@@ -2751,7 +2751,7 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 	<question>
 
 		<para>
-		Is proper DNS operation necessary for Samba-3 plus LDAP? If so, what must I put into
+		Is proper DNS operation necessary for Samba plus LDAP? If so, what must I put into
 		my DNS configuration?
 		</para>
 
@@ -2813,7 +2813,7 @@ hosts: files dns wins
 
 		<para>
 		Our Windows 2003 Server Active Directory domain runs with NetBIOS disabled. Can we
-		use Samba-3 with that configuration?
+		use Samba with that configuration?
 		</para>
 
 	</question>
@@ -2851,8 +2851,8 @@ hosts: files dns wins
 	      </indexterm><indexterm>
 		<primary>authentication</primary>
 	      </indexterm>
-		No. This is not okay. It means that your Samba-3 client has joined the ADS domain as
-		a Windows NT4 client, and Samba-3 will not be using Kerberos-based authentication.
+		No. This is not okay. It means that your Samba client has joined the ADS domain as
+		a Windows NT4 client, and Samba will not be using Kerberos-based authentication.
 		</para>
 
 	</answer>

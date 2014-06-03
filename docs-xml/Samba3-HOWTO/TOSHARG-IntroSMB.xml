@@ -72,7 +72,7 @@ should have no difficulty finding answers to your current concerns also.
 	<para>
 	The real people behind Samba are users like you. You have inspired the
 	developers (the Samba Team) to do more than any of them imagined could or should
-	be done. User feedback drives Samba development. Samba-3 in particular incorporates
+	be done. User feedback drives Samba development. Samba in particular incorporates
 	a huge amount of work done as a result of user requests, suggestions and direct
 	code contributions.
 	</para>
@@ -132,7 +132,7 @@ should have no difficulty finding answers to your current concerns also.
 	<para>
 	Existing Samba books are largely addressed to the UNIX administrator.
 	From the perspective of this target group the existing books serve
-	an adequate purpose, with one exception &smbmdash; now that Samba-3 is out
+	an adequate purpose, with one exception &smbmdash; now that Samba is out
 	they need to be updated!
 	</para>
 
@@ -162,7 +162,7 @@ should have no difficulty finding answers to your current concerns also.
 	<variablelist>
 		<varlistentry><term>General Installation</term>
 			<listitem><para>
-			Designed to help you get Samba-3 running quickly.
+			Designed to help you get Samba running quickly.
 			The Fast Start chapter is a direct response to requests from
 			Microsoft network administrators for some sample configurations
 			that <emphasis>just work</emphasis>.
@@ -181,7 +181,7 @@ should have no difficulty finding answers to your current concerns also.
 		<varlistentry><term>Advanced Configuration</term>
 			<listitem><para>
 			The mechanics of network browsing have long been the Achilles heel of
-			all Microsoft Windows users. Samba-3 introduces new user and machine
+			all Microsoft Windows users. Samba introduces new user and machine
 			account management facilities, a new way to map UNIX groups and Windows
 			groups, Interdomain trusts, new loadable file system drivers (VFS), and
 			more. New with this document is expanded printing documentation, as well
@@ -215,7 +215,7 @@ should have no difficulty finding answers to your current concerns also.
 	</variablelist>
 		
 <para>
-Welcome to Samba-3 and the first published document to help you and your users to enjoy a whole
+Welcome to Samba and the first published document to help you and your users to enjoy a whole
 new world of interoperability between Microsoft Windows and the rest of the world.
 </para>
 

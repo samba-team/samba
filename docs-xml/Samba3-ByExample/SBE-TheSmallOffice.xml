@@ -173,7 +173,7 @@
 		The &smb.conf; file you are creating in this exercise can be used with equal effectiveness
 		with Samba-2.2.x series releases. This is deliberate so that in the next chapter it is
 		possible to start with the installation that you have created here, migrate it
-		to a Samba-3 configuration, and then secure the system further. Configurations following
+		to a Samba configuration, and then secure the system further. Configurations following
 		this one utilize features that may not be supported in Samba-2.2.x releases.
 		However, you should note that the examples in each chapter start with the assumption
 		that a fresh new installation is being effected.
@@ -316,7 +316,7 @@
 		</para></step>
 
 		<step><para>
-		Install the Samba-3 binary RPM from the Samba-Team FTP site.
+		Install the Samba binary RPM from the Samba-Team FTP site.
 		</para></step>
 
 		<step><para>
@@ -1138,7 +1138,7 @@ smb: \> q
 	<answer>
 
 		<para>
-		Samba-3 does not permit a Domain Group to become visible to Domain network clients unless the account
+		Samba does not permit a Domain Group to become visible to Domain network clients unless the account
 		has a UNIX group account equivalent. The Domain groups that should be given UNIX equivalents are
 		<guimenu>Domain Guests</guimenu>, <guimenu>Domain Users</guimenu>, and <guimenu>Domain Admins</guimenu>.
 		</para>
@@ -1221,7 +1221,7 @@ smb: \> q
 
 		<para>
 		If it becomes necessary to change either the server name or the Domain name, be sure to back up the respective
-		SID before the change is made. You can back up the SID using the <command>net getlocalsid</command> (Samba-3)
+		SID before the change is made. You can back up the SID using the <command>net getlocalsid</command> (Samba)
 		or the <command>smbpasswd</command> (Samba-2.2.x). To change the SID, you use the same tool. Be sure
 		to check the man page for this command for detailed instructions regarding the steps involved.
 		</para>
@@ -1240,13 +1240,13 @@ smb: \> q
 	<answer>
 
 		<para>
-		Samba-3 implements a Windows NT4-style security domain architecture. This type of Domain cannot
+		Samba implements a Windows NT4-style security domain architecture. This type of Domain cannot
 		be managed using tools present on a Windows XP Professional installation. You may download from the
 		Microsoft Web site the SRVTOOLS.EXE package. Extract it into the directory from which you wish to use
 		it. This package extracts the tools: <command>User Manager for Domains</command>, <command>Server Manager</command>, and <command>Event
-		Viewer</command>. You may use the <guimenu>User Manager for Domains</guimenu> to manage your Samba-3
+		Viewer</command>. You may use the <guimenu>User Manager for Domains</guimenu> to manage your Samba
 		Domain user and group accounts. Of course, you do need to be logged on as the <constant>Administrator</constant>
-		for the Samba-3 Domain. It may help to log on as the <constant>root</constant> account.
+		for the Samba Domain. It may help to log on as the <constant>root</constant> account.
 		</para>
 
 	</answer>

@@ -432,7 +432,7 @@ that are in common use today. These are:
 <indexterm><primary>Network ID</primary></indexterm>
 <indexterm><primary>configuration wizard</primary></indexterm>
 		Clicking the <guimenu>Network ID</guimenu> button will launch the configuration wizard. Do not use this with
-		Samba-3. If you wish to change the computer name or join or leave the domain, click the <guimenu>Change</guimenu> button.
+		Samba. If you wish to change the computer name or join or leave the domain, click the <guimenu>Change</guimenu> button.
 		See <link linkend="wxpp004"></link>.
 		<figure id="wxpp004"><title>The Computer Name Panel.</title><imagefile>wxpp004</imagefile></figure>
 		</para></step>
@@ -463,7 +463,7 @@ that are in common use today. These are:
 
         <para>
 <indexterm><primary>root</primary></indexterm>
-		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="wxpp008"></link>.
+		Enter the name <quote>root</quote> and the root password from your Samba server. See <link linkend="wxpp008"></link>.
 		<figure id="wxpp008">
 			<title>Computer Name Changes &smbmdash; Username and Password Panel.</title><imagefile>wxpp008</imagefile>
 		</figure>

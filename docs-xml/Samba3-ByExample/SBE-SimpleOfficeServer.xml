@@ -18,7 +18,7 @@
 	This chapter lays the groundwork for understanding the basics of Samba operation. 
 	Instead of a bland technical discussion, each principle is demonstrated by way of a 
 	real-world scenario for which a working solution<footnote><para>The examples given mirror those documented
-	in The Official Samba-3 HOWTO and Reference Guide, Second Edition (TOSHARG2) Chapter 2, Section 2.3.1. You may gain additional
+	in The Official Samba HOWTO and Reference Guide, Second Edition (TOSHARG2) Chapter 2, Section 2.3.1. You may gain additional
 	insight from the standalone server configurations covered in TOSHARG2, sections 2.3.1.2 through 2.3.1.4.
 	</para></footnote> is fully described.
 	</para>
@@ -147,7 +147,7 @@
 		<title>Samba Server Configuration</title>
 
 			<step><para>
-			Download the Samba-3 RPM packages for Red Hat Fedora Core2 from the Samba
+			Download the Samba RPM packages for Red Hat Fedora Core2 from the Samba
 			<ulink url="http://www.samba.org">FTP servers.</ulink>
 			</para></step>
 
@@ -556,7 +556,7 @@ Password changed
 				directories are created with the same owner and group as the directory in which they are
 				created. Any new directories created still have the same owner, group, and permissions as the
 				directory they are in. This should eliminate all permissions-based file access problems.  For
-				more information on this subject, refer to TOSHARG2<footnote><para>The Official Samba-3 HOWTO and
+				more information on this subject, refer to TOSHARG2<footnote><para>The Official Samba HOWTO and
 						Reference Guide, Chapter 15, File, Directory and Share Access Controls.</para></footnote> or refer
 				to the UNIX man page for the <command>chmod</command> and the <command>chown</command> commands.
 				</para></step>
@@ -564,7 +564,7 @@ Password changed
 				<step><para>
 				Install the &smb.conf; file shown in <link linkend="charity-smbconfnew"/> in the
 				<filename>/etc/samba</filename> directory. This newer &smb.conf; file uses user-mode security
-				and is more suited to the mode of operation of Samba-3 than the older share-mode security
+				and is more suited to the mode of operation of Samba than the older share-mode security
 				configuration that was shown in the first edition of this book.
 				</para>
 
@@ -1097,7 +1097,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 		</table>
 
 		<procedure>
-		<title>Migration from Windows NT4 Workstation System to Samba-3</title>
+		<title>Migration from Windows NT4 Workstation System to Samba</title>
 
 	    <step><para><indexterm>
 		  <primary>migration</primary>
@@ -1113,7 +1113,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 			</para></step>
 
 			<step><para>
-			Install the latest Samba-3 binary Red Hat Linux RPM that is available from the
+			Install the latest Samba binary Red Hat Linux RPM that is available from the
 			Samba FTP site.
 			</para></step>
 
@@ -1248,8 +1248,8 @@ application/octet-stream
 			</step>
 
 			<step><para>
-			Verify that the files are being copied correctly from the Windows NT4 machine to the Samba-3 server.
-			This is best done on the Samba-3 server. Check the contents of the directory tree under 
+			Verify that the files are being copied correctly from the Windows NT4 machine to the Samba server.
+			This is best done on the Samba server. Check the contents of the directory tree under
 			<filename>/data</filename> by executing the following command:
 <screen>
 &rootprompt; ls -aR /data

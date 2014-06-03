@@ -6,9 +6,9 @@
     <para><indexterm>
 	<primary>experiment</primary>
       </indexterm>
-	By this point in the book, you have been exposed to many Samba-3 features and capabilities.
+	By this point in the book, you have been exposed to many Samba features and capabilities.
 	More importantly, if you have implemented the examples given, you are well on your way to becoming 
-	a Samba-3 networking guru who knows a lot about Microsoft Windows. If you have taken the time to 
+	a Samba networking guru who knows a lot about Microsoft Windows. If you have taken the time to
 	practice, you likely have thought of improvements and scenarios with which you can experiment. You 
 	are rather well plugged in to the many flexible ways Samba can be used.
 	</para>
@@ -16,7 +16,7 @@
     <para><indexterm>
 	<primary>criticism</primary>
       </indexterm>
-	This is a book about Samba-3. Understandably, its intent is to present it in a positive light. 
+	This is a book about Samba. Understandably, its intent is to present it in a positive light.
 	The casual observer might conclude that this book is one-eyed about Samba. It is &smbmdash; what 
 	would you expect? This chapter exposes some criticisms that have been raised concerning 
 	the use of Samba. For each criticism, there are good answers and appropriate solutions.
@@ -31,7 +31,7 @@
     <para><indexterm>
 	<primary>straw-man</primary>
       </indexterm>
-	This chapter provides a shameless self-promotion of Samba-3. The objections raised were not pulled
+	This chapter provides a shameless self-promotion of Samba. The objections raised were not pulled
 	out of thin air. They were drawn from comments made by Samba users and from criticism during 
 	discussions with Windows network administrators. The tone of the objections reflects as closely 
 	as possible that of the original. The case presented is a straw-man example that is designed to 
@@ -66,11 +66,11 @@
 	  <primary>Active Directory</primary>
 	</indexterm>
 	You have accepted the fact that Abmas Video Rentals will use Microsoft Active Directory.
-	The IT team, led by Stan Soroka, is committed to Samba-3 and to maintaining a uniform technology platform. 
+	The IT team, led by Stan Soroka, is committed to Samba and to maintaining a uniform technology platform.
 	Stan Soroka's team voiced its disapproval over the decision to permit this business to continue to 
 	operate with a solution that is viewed by Christine and her group as <quote>an island of broken 
 	technologies.</quote> This comment was made by one of Christine's staff as they were installing a new 
-	Samba-3 server at the new business.
+	Samba server at the new business.
 	</para>
 
 
@@ -260,7 +260,7 @@
 	    <primary>consultant</primary>
 	  </indexterm>
 	I am experiencing difficulty in handling the sharp push for Kerberos. He claims that Kerberos, OpenLDAP, 
-	plus Samba-3 will seamlessly replace Microsoft Active Directory. I am a little out of my depth with respect 
+	plus Samba will seamlessly replace Microsoft Active Directory. I am a little out of my depth with respect
 	to the feasibility of such a move, but have taken steps to pull both of them into line. With your consent, 
 	I would like to hire the services of a well-known Samba consultant to set the record straight.
 	</para>
@@ -316,7 +316,7 @@
 	</indexterm><indexterm>
 	  <primary>employment</primary>
 	</indexterm>
-	Samba-3 is a tool. No one is pounding your door to make you use Samba. That is a choice that you are free to 
+	Samba is a tool. No one is pounding your door to make you use Samba. That is a choice that you are free to
 	make or reject. It is likely that your decision to use Samba can greatly benefit your company. 
 	The Samba Team obviously believes that the Samba software is a worthy choice. 
 	If you hire a consultant to assist with the installation and/or deployment of Samba, or if you hire 
@@ -722,7 +722,7 @@
 				The report correctly mentions that Samba did not support the most recent
 				<constant>schannel</constant> and <constant>digital sign'n'seal</constant> features
 				of Microsoft Windows NT/200x/XPPro products. This is one of the key features 
-				of the Samba-3 release. Market research reports take so long to generate that they are
+				of the Samba release. Market research reports take so long to generate that they are
 				seldom a reflection of current practice, and in many respects reports are like a
 				pathology report &smbmdash; they reflect accurately (at best) status at a snapshot in time.
 				Meanwhile, the world moves on.
@@ -1769,7 +1769,7 @@ other::r-x
 	      </indexterm><indexterm>
 		<primary>schannel</primary>
 	      </indexterm>
-			Sign'n'seal (plus schannel support) has been implemented in Samba-3. Beware of potential
+			Sign'n'seal (plus schannel support) has been implemented in Samba. Beware of potential
 			problems acknowledged by Microsoft as having been fixed but reported by some as still
 			possibly an open issue.
 			</para></listitem>
@@ -1784,8 +1784,8 @@ other::r-x
 		<primary>inter-operability</primary>
 	      </indexterm>
 			The combination of Kerberos 5, plus OpenLDAP, plus Samba, cannot replace Microsoft
-			Active Directory. The possibility to do this is not planned in the current Samba-3
-			roadmap. Samba-3 does aim to provide further improvements in interoperability so that
+			Active Directory. The possibility to do this is not planned in the current Samba
+			roadmap. Samba does aim to provide further improvements in interoperability so that
 			UNIX/Linux systems may be fully integrated into Active Directory domains.
 			</para></listitem>
 
@@ -1828,8 +1828,8 @@ other::r-x
 	      </indexterm><indexterm>
 		<primary>registry change</primary>
 	      </indexterm>
-		No. Samba-3 fully supports <constant>Sign'n'seal</constant> as well as <constant>schannel</constant>
-		operation. The registry change should not be applied when Samba-3 is used as a domain controller.
+		No. Samba fully supports <constant>Sign'n'seal</constant> as well as <constant>schannel</constant>
+		operation. The registry change should not be applied when Samba is used as a domain controller.
 		</para>
 
 	</answer>
@@ -1839,7 +1839,7 @@ other::r-x
 	<question>
 
 		<para>
-		Does Samba-3 support Active Directory?
+		Does Samba support Active Directory?
 		</para>
 
 	</question>
@@ -1848,9 +1848,9 @@ other::r-x
 	    <para><indexterm>
 		<primary>Active Directory</primary>
 	      </indexterm>
-		Yes. Samba-3 can be a fully participating native mode Active Directory client. Samba-3 does not
+		Yes. Samba can be a fully participating native mode Active Directory client. Samba-3 does not
 		provide Active Directory services. It cannot be used to replace a Microsoft Active Directory
-		server implementation. Samba-3 can function as an Active Directory client (workstation) toolkit,
+		server implementation. Samba can function as an Active Directory client (workstation) toolkit,
 		and it can function as an Active Directory domain member server.
 		</para>
 
@@ -1863,7 +1863,7 @@ other::r-x
 	    <para><indexterm>
 		<primary>mixed-mode</primary>
 	      </indexterm>
-		When Samba-3 is used with Active Directory, is it necessary to run mixed-mode operation, as was
+		When Samba is used with Active Directory, is it necessary to run mixed-mode operation, as was
 		necessary with Samba-2?
 		</para>
 
@@ -1873,9 +1873,9 @@ other::r-x
 	    <para><indexterm>
 		<primary>native</primary>
 	      </indexterm>
-		No. Samba-3 can be used with NetBIOS over TCP/IP disabled, just as can be done with Windows 200x
+		No. Samba can be used with NetBIOS over TCP/IP disabled, just as can be done with Windows 200x
 		Server and 200x/XPPro client products. It is no longer necessary to run mixed-mode operation,
-		because Samba-3 can join a native Windows 2003 Server ADS domain.
+		because Samba can join a native Windows 2003 Server ADS domain.
 		</para>
 
 	</answer>
@@ -1908,7 +1908,7 @@ other::r-x
 	    <para><indexterm>
 		<primary>share ACLs</primary>
 	      </indexterm>
-		Is it mandatory to set share ACLs to get a secure Samba-3 server?
+		Is it mandatory to set share ACLs to get a secure Samba server?
 		</para>
 
 	</question>
@@ -1925,7 +1925,7 @@ other::r-x
 	      </indexterm><indexterm>
 		<primary>security</primary>
 	      </indexterm>
-		No. Samba-3 honors UNIX/Linux file system security, supports Windows 200x ACLs, and provides 
+		No. Samba honors UNIX/Linux file system security, supports Windows 200x ACLs, and provides
 		means of securing shares through share definition controls in the &smb.conf; file. The additional
 		support for share-level ACLs is like frosting on the cake. It adds to security but is not essential
 		to it.
@@ -2017,7 +2017,7 @@ other::r-x
 	    <para><indexterm>
 		<primary>Computer Management</primary>
 	      </indexterm>
-		In the book, <quote>The Official Samba-3 HOWTO and Reference Guide</quote>, you recommended use
+		In the book, <quote>The Official Samba HOWTO and Reference Guide</quote>, you recommended use
 		of the Windows NT4 Server Manager (part of the <filename>SRVTOOLS.EXE</filename>) utility. Why
 		have you mentioned only the use of the Windows 200x/XP MMC Computer Management utility?
 		</para>

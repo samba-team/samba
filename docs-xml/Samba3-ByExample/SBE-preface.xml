@@ -15,8 +15,8 @@
 	<para>
 	This book is your means to the straight path. It provides step-by-step,
 	proven, working examples of Samba deployments.  If you want to deploy
-	Samba-3 with the least effort, or if you want to become an expert at deploying
-	Samba-3 without having to search through lots of documentation, this
+	Samba with the least effort, or if you want to become an expert at deploying
+	Samba without having to search through lots of documentation, this
 	book is the ticket to your destination.
 	</para>
 
@@ -41,7 +41,7 @@
 	</para>
 
 	<para>
-	The focus of attention in this book is Samba-3. Specific notes are made in
+	The focus of attention in this book is Samba. Specific notes are made in
 	respect of how Samba may be made secure. This book does not attempt to provide
 	detailed information regarding secure operation and configuration of peripheral
 	services and applications such as OpenLDAP, DNS and DHCP, the need for which
@@ -74,7 +74,7 @@
 	environmental contexts, providing documented step-by-step implementations.
 	All example case configuration files, scripts, and other tools are provided
 	on the CD-ROM. This book is descriptive, provides detailed diagrams, and
-	makes deployment of Samba-3 a breeze.
+	makes deployment of Samba a breeze.
 	</para>
 
 	<sect2>
@@ -86,7 +86,7 @@
 	and enhancements between samba-3.0.2 and samba-3.0.14 (the current release) that
 	necessitate this documentation update. This update has the specific intent to
 	refocus this book so that its guidance can be followed for samba-3.0.20
-	and beyond. Further changes are expected as Samba-3 matures further and will 
+	and beyond. Further changes are expected as Samba matures further and will
 	be reflected in future updates.
 	</para>
 
@@ -455,7 +455,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 8 &smbmdash; Updating Samba-3.</term><listitem>
+		<term>Chapter 8 &smbmdash; Updating Samba.</term><listitem>
 		<para>
 		This chapter is the result of repeated requests for better documentation of the steps
 		that must be followed when updating or upgrading a Samba server. It attempts to cover
@@ -472,7 +472,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 9 &smbmdash; Migrating NT4 Domain to Samba-3.</term><listitem>
+		<term>Chapter 9 &smbmdash; Migrating NT4 Domain to Samba.</term><listitem>
 		<para>
 		Another six months have passed. Abmas has acquired yet another company. You will find a
 		way to migrate all users off the old network onto the existing network without loss
@@ -491,7 +491,7 @@
 		<term>Chapter 10 &smbmdash; Migrating NetWare 4.11 Server to Samba.</term><listitem>
 		<para>
 		Misty Stanley-Jones has contributed information that summarizes her experience at migration
-		from a NetWare server to Samba-3.
+		from a NetWare server to Samba.
 		</para>
 
 		<para><emphasis>TechInfo</emphasis> &smbmdash; The documentation provided demonstrates
@@ -522,7 +522,7 @@
 		<varlistentry>
                 <term>Chapter 12 &smbmdash; Integrating Additional Services.</term><listitem>
                 <para>
-		The battle is almost over, Samba-3 has won the day. Your team are delighted and now you
+		The battle is almost over, Samba has won the day. Your team are delighted and now you
 		find yourself at yet another cross-roads. Abmas have acquired a snack food business, you
 		made promises you must keep. IT costs must be reduced, you have new resistance, but you
 		will win again. This time you choose to install the Squid proxy server to validate the
@@ -532,7 +532,7 @@
 
 		<para><emphasis>TechInfo</emphasis> &smbmdash; Samba provides the <command>ntlm_auth</command>
 		module that makes it possible for MS Windows Internet Explorer to connect via the Squid Web
-		and FTP proxy server. You will configure Samba-3 as well as Squid to deliver authenticated
+		and FTP proxy server. You will configure Samba as well as Squid to deliver authenticated
 		access control using the Active Directory Domain user security credentials.
                 </para>
                 </listitem>

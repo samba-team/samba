@@ -23,7 +23,7 @@
 	Successful completion of this primer requires two Microsoft Windows 9x/Me Workstations
 	as well as two Microsoft Windows XP Professional Workstations, each equipped with an Ethernet
 	card connected using a hub. Also required is one additional server (either Windows
-	NT4 Server, Windows 2000 Server, or a Samba-3 on UNIX/Linux server) running a network
+	NT4 Server, Windows 2000 Server, or a Samba on UNIX/Linux server) running a network
 	sniffer and analysis application (Wireshark is a good choice). All work should be undertaken
 	on a quiet network where there is no other traffic. It is best to use a dedicated hub
 	with only the machines under test connected at the time of the exercises.
@@ -118,7 +118,7 @@
 	</para>
 
 	<para>
-	Recommended preparatory reading: <emphasis>The Official Samba-3 HOWTO and Reference Guide, Second
+	Recommended preparatory reading: <emphasis>The Official Samba HOWTO and Reference Guide, Second
 	Edition</emphasis> (TOSHARG2) Chapter 9, <quote>Network Browsing,</quote> and Chapter 3,
 	<quote>Server Types and Security Modes.</quote>
 	</para>
@@ -751,7 +751,7 @@
 	</sect2>
 
 	<sect2>
-	<title>Windows 200x/XP Client Interaction with Samba-3</title>
+	<title>Windows 200x/XP Client Interaction with Samba</title>
 
 	<para>
 	By now you may be asking, <quote>Why did you choose to work with Windows 9x/Me?</quote>
@@ -946,7 +946,7 @@
 		networking operations. Such passwords cannot be provided from the UNIX <filename>/etc/passwd</filename>
 		database and thus must be stored elsewhere on the UNIX system in a manner that Samba can
 		use. Samba-2.x permitted such encrypted passwords to be stored in the <constant>smbpasswd</constant>
-		file or in an LDAP database. Samba-3 permits use of multiple <parameter>passdb backend</parameter>
+		file or in an LDAP database. Samba permits use of multiple <parameter>passdb backend</parameter>
 		databases in concurrent deployment. Refer to <emphasis>TOSHARG2</emphasis>, Chapter 10, <quote>Account Information Databases.</quote>
 		</para></listitem>
 	</itemizedlist>
@@ -1142,7 +1142,7 @@
 	<question>
 
 		<para>
-		Is it possible to reduce network broadcast activity with Samba-3?
+		Is it possible to reduce network broadcast activity with Samba?
 		</para>
 
 	</question>
@@ -1169,7 +1169,7 @@
 
 		<note><para>
 		Use of SMB without NetBIOS is possible only on Windows 200x/XP Professional clients and servers, as
-		well as with Samba-3.
+		well as with Samba.
 		</para></note>
 
 	</answer>
@@ -1205,7 +1205,7 @@
 		</para>
 
 		<para>
-		Samba-3 supports Microsoft encrypted passwords. Be advised not to reintroduce plain-text password handling.
+		Samba supports Microsoft encrypted passwords. Be advised not to reintroduce plain-text password handling.
 		Just create user accounts by running <command>smbpasswd -a 'username'</command>
 		</para>
 
@@ -1231,7 +1231,7 @@
 
 		<para>
 		The parameter in the &smb.conf; file that controls this behavior is known as <parameter>encrypt
-		passwords</parameter>. The default setting for this in Samba-3 is <constant>Yes (Enabled)</constant>.
+		passwords</parameter>. The default setting for this in Samba is <constant>Yes (Enabled)</constant>.
 		</para>
 
 	</answer>
@@ -1242,7 +1242,7 @@
 
 		<para>
 		Is it necessary to specify <smbconfoption name="encrypt passwords">Yes</smbconfoption>
-		when Samba-3 is configured as a domain member?
+		when Samba is configured as a domain member?
 		</para>
 
 	</question>
@@ -1259,7 +1259,7 @@
 	<question>
 
 		<para>
-		Is it necessary to specify a <parameter>guest account</parameter> when Samba-3 is configured
+		Is it necessary to specify a <parameter>guest account</parameter> when Samba is configured
 		as a domain member server?
 		</para>
 

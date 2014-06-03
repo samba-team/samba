@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="nw4migration">
-  <title>Migrating NetWare Server to Samba-3</title>
+  <title>Migrating NetWare Server to Samba</title>
 
 	<para>
 	<indexterm><primary>Novell</primary></indexterm>
@@ -136,7 +136,7 @@
 	grapple with a similar migration challenge. Let there be no confusion,
 	the information presented in this chapter is provided to demonstrate
 	how Misty dealt with a particular NetWare migration requirement, and
-	it provides an overall approach to the implementation of a Samba-3
+	it provides an overall approach to the implementation of a Samba
 	environment that is significantly divergent from that presented in
 	<link linkend="happy"/>.
 	</para>

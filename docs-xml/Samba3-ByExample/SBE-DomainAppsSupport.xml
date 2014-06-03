@@ -10,8 +10,8 @@
 	<indexterm><primary>smbpasswd</primary></indexterm>
 	<indexterm><primary>ldapsam</primary></indexterm>
 	<indexterm><primary>Active Directory</primary></indexterm>
-	You've come a long way now. You have pretty much mastered Samba-3 for 
-	most uses it can be put to. Up until now, you have cast Samba-3 in the leading 
+	You've come a long way now. You have pretty much mastered Samba for
+	most uses it can be put to. Up until now, you have cast Samba in the leading
 	role, and where authentication was required, you have used one or another of 
 	Samba's many authentication backends (from flat text files with smbpasswd 
 	to LDAP directory integration with ldapsam). Now you can design a 
@@ -42,7 +42,7 @@
 	</para>
 
 	<para>
-	You have decided to set the ball rolling by introducing Samba-3 into the network 
+	You have decided to set the ball rolling by introducing Samba into the network
 	gradually, taking over key services and easing the way to a full migration and, 
 	therefore, integration into Abmas's existing business later.
 	</para>
@@ -135,9 +135,9 @@
 		<indexterm><primary>Kerberos</primary></indexterm><indexterm><primary>token</primary></indexterm>
 		Functionally, the user's Internet Explorer requests a browsing session with the 
 		Squid proxy, for which it offers its AD authentication token. Squid hands off 
-		the authentication request to the Samba-3 authentication helper application
+		the authentication request to the Samba authentication helper application
 		called <command>ntlm_auth</command>. This helper is a hook into winbind, the 
-		Samba-3 NTLM authentication daemon. Winbind enables UNIX services to authenticate 
+		Samba NTLM authentication daemon. Winbind enables UNIX services to authenticate
 		against Microsoft Windows domains, including Active Directory domains. As Active 
 		Directory authentication is a modified Kerberos authentication, winbind is assisted 
 		in this by local Kerberos 5 libraries configured to check passwords with the Active 
@@ -159,7 +159,7 @@
 			</para></listitem>
 
 			<listitem><para>
-			Configuring, compiling, and then installing the supporting Samba-3 components
+			Configuring, compiling, and then installing the supporting Samba components
 			</para></listitem>
 
 			<listitem><para>
@@ -192,7 +192,7 @@
 	<indexterm><primary>Squid</primary></indexterm>
 	First, your system needs to be prepared and in a known good state to proceed. This consists 
 	of making sure that everything the system depends on is present and that everything that could 
-	interfere or conflict with the system is removed. You will be configuring the Squid and Samba-3 
+	interfere or conflict with the system is removed. You will be configuring the Squid and Samba
 	packages and updating them if necessary. If conflicting packages of these programs are installed, 
 	they must be removed.
 	</para>
@@ -416,12 +416,12 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 
 	<para>
 	<indexterm><primary>Active Directory</primary></indexterm>
-	Samba must be configured to correctly use Active Directory. Samba-3 must be used, since it 
+	Samba must be configured to correctly use Active Directory. Samba must be used, since it
 	has the necessary components to interface with Active Directory.
 	</para>
 
 	<procedure>
-	<title>Securing Samba-3 With ADS Support Steps</title>
+	<title>Securing Samba With ADS Support Steps</title>
 
 		<step><para>
 		<indexterm><primary>Red Hat Linux</primary></indexterm>
@@ -429,7 +429,7 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 		<indexterm><primary>Red Hat Fedora Linux</primary></indexterm>
 		<indexterm><primary>MIT KRB5</primary></indexterm>
 		<indexterm><primary>ntlm_auth</primary></indexterm>
-		Download the latest stable Samba-3 for Red Hat Linux from the official Samba Team
+		Download the latest stable Samba for Red Hat Linux from the official Samba Team
 		<ulink url="http://ftp.samba.org">FTP site.</ulink> The official Samba Team
 		RPMs for Red Hat Fedora Linux contain the <command>ntlm_auth</command> tool
 		needed, and are linked against MIT KRB5 version 1.3.1 and therefore are ready for use.
@@ -523,7 +523,7 @@ LONDON+DnsUpdateProxy
 		<step><para>
 		<indexterm><primary>Squid</primary></indexterm>
 		<indexterm><primary>ntlm_auth</primary></indexterm>
-		Squid uses the <command>ntlm_auth</command> helper build with Samba-3.
+		Squid uses the <command>ntlm_auth</command> helper build with Samba.
 		You may test <command>ntlm_auth</command> with the command:
 <screen>
 &rootprompt; /usr/bin/ntlm_auth --username=jht
@@ -573,7 +573,7 @@ password: XXXXXXXX
 	<indexterm><primary>NSS</primary></indexterm>
 	<indexterm><primary>winbind</primary></indexterm>
 	<indexterm><primary>authentication</primary></indexterm>
-	For Squid to benefit from Samba-3, NSS must be updated to allow winbind as a valid route to user authentication.
+	For Squid to benefit from Samba, NSS must be updated to allow winbind as a valid route to user authentication.
 	</para>
 
 	<para>
@@ -624,7 +624,7 @@ group: files winbind
 	<para>
 	<indexterm><primary>Squid</primary></indexterm>
 	<indexterm><primary>Active Directory</primary><secondary>authentication</secondary></indexterm>
-	Squid must be configured correctly to interact with the Samba-3 
+	Squid must be configured correctly to interact with the Samba
 	components that handle Active Directory authentication.
 	</para>
 
@@ -863,14 +863,14 @@ group: files winbind
 		<indexterm><primary>daemon</primary></indexterm>
 		<indexterm><primary>smbd</primary></indexterm>
 		<indexterm><primary>file and print server</primary></indexterm>
-		Samba-3 is a file and print server. The core components that provide this functionality are <command>smbd</command>,
+		Samba is a file and print server. The core components that provide this functionality are <command>smbd</command>,
 		<command>nmbd</command>, and the identity resolver daemon, <command>winbindd</command>.
 		</para>
 
 		<para>
 		<indexterm><primary>SMB/CIFS</primary></indexterm>
 		<indexterm><primary>smbclient</primary></indexterm>
-		Samba-3 is an SMB/CIFS client. The core component that provides this is called <command>smbclient</command>.
+		Samba is an SMB/CIFS client. The core component that provides this is called <command>smbclient</command>.
 		</para>
 
 		<para>
@@ -879,10 +879,10 @@ group: files winbind
 		<indexterm><primary>validation</primary></indexterm>
 		<indexterm><primary>inter-operability</primary></indexterm>
 		<indexterm><primary>authentication</primary></indexterm>
-		Samba-3 includes a number of helper tools, plug-in modules, utilities, and test and validation facilities.
-		Samba-3 includes glue modules that help provide interoperability between MS Windows clients and UNIX/Linux
+		Samba includes a number of helper tools, plug-in modules, utilities, and test and validation facilities.
+		Samba includes glue modules that help provide interoperability between MS Windows clients and UNIX/Linux
 		servers and clients. It includes Winbind agents that make it possible to authenticate UNIX/Linux access attempts
-		as well as logins to an SMB/CIFS authentication server backend. Samba-3 includes name service switch (NSS) modules
+		as well as logins to an SMB/CIFS authentication server backend. Samba includes name service switch (NSS) modules
 		to permit identity resolution via SMB/CIFS servers (Windows NT4/200x, Samba, and a host of other commercial
 		server products).
 		</para>

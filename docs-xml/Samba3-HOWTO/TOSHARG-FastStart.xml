@@ -875,16 +875,16 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 
 	<para>
 	A more scalable domain control authentication backend option might use
-	Microsoft Active Directory or an LDAP-based backend. Samba-3 provides
-	for both options as a domain member server. As a PDC, Samba-3 is not able to provide
+	Microsoft Active Directory or an LDAP-based backend. Samba provides
+	for both options as a domain member server. As a PDC, Samba is not able to provide
 	an exact alternative to the functionality that is available with Active Directory.
-	Samba-3 can provide a scalable LDAP-based PDC/BDC solution.
+	Samba can provide a scalable LDAP-based PDC/BDC solution.
 	</para>
 
 	<para>
 	The tdbsam authentication backend provides no facility to replicate
 	the contents of the database, except by external means (i.e., there is no self-contained protocol
-	in Samba-3 for Security Account Manager database [SAM] replication).
+	in Samba for Security Account Manager database [SAM] replication).
 	</para>
 
 	<note><para>
@@ -897,7 +897,7 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 		<para>
 		The engineering office network server we present here is designed to demonstrate use
 		of the new tdbsam password backend. The tdbsam
-		facility is new to Samba-3. It is designed to provide many user and machine account controls
+		facility is new to Samba. It is designed to provide many user and machine account controls
 		that are possible with Microsoft Windows NT4. It is safe to use this in smaller networks.
 		</para>
 
@@ -1047,7 +1047,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 		<title>A Big Organization</title>
 
 		<para>
-		In this section we finally get to review in brief a Samba-3 configuration that
+		In this section we finally get to review in brief a Samba configuration that
 		uses a Lightweight Directory Access (LDAP)-based authentication backend. The
 		main reasons for this choice are to provide the ability to host primary
 		and Backup Domain Control (BDC), as well as to enable a higher degree of
@@ -1058,7 +1058,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 			<title>The Primary Domain Controller</title>
 
 			<para>
-			This is an example of a minimal configuration to run a Samba-3 PDC
+			This is an example of a minimal configuration to run a Samba PDC
 			using an LDAP authentication backend. It is assumed that the operating system
 			has been correctly configured.
 			</para>

@@ -93,7 +93,7 @@ the Samba web site.
 This section <emphasis>Samba-3 by Example</emphasis> covers two main topics: How to add
 Samba Domain Member Servers and Samba Domain Member Clients to a Samba domain, the other
 subject is that of how to migrate from and NT4 Domain, a NetWare server, or from an earlier
-Samba version to environments that use the most recent Samba-3 release. 
+Samba version to environments that use the most recent Samba release.
 </para>
 
 <para>

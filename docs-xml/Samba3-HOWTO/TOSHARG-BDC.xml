@@ -33,8 +33,8 @@ we will do our best to provide a solution.
 <indexterm><primary>BDC</primary></indexterm>
 <indexterm><primary>LDAP</primary><secondary>slave</secondary></indexterm>
 <indexterm><primary>scalability</primary></indexterm>
-Samba-3 can act as a Backup Domain Controller (BDC) to another Samba Primary Domain Controller (PDC). A
-Samba-3 PDC can operate with an LDAP account backend. The LDAP backend can be either a common master LDAP
+Samba can act as a Backup Domain Controller (BDC) to another Samba Primary Domain Controller (PDC). A
+Samba PDC can operate with an LDAP account backend. The LDAP backend can be either a common master LDAP
 server or a slave server. The use of a slave LDAP server has the benefit that when the master is down, clients
 may still be able to log onto the network.  This effectively gives Samba a high degree of scalability and is
 an effective solution for large organizations. If you use an LDAP slave server for a PDC, you will need to
@@ -47,7 +47,7 @@ you will have stability and operational problems.
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
 <indexterm><primary>non-LDAP</primary><secondary>backend</secondary></indexterm>
 <indexterm><primary>propagate</primary></indexterm>
-It is not possible to run a Samba-3 BDC with a non-LDAP backend, as that backend must allow some form of
+It is not possible to run a Samba BDC with a non-LDAP backend, as that backend must allow some form of
 "two-way" propagation of changes from the BDC to the master.  At this time only LDAP delivers the capability
 to propagate identity database changes from the BDC to the PDC. The BDC can use a slave LDAP server, while it
 is preferable for the PDC to use as its primary an LDAP master server.
@@ -175,8 +175,8 @@ trigger them to obtain the update and then apply that to their own copy of the S
 <indexterm><primary>SAM</primary><secondary>delta file</secondary></indexterm>
 <indexterm><primary>PDC</primary></indexterm>
 <indexterm><primary>BDC</primary></indexterm>
-Samba-3 cannot participate in true SAM replication and is therefore not able to
-employ precisely the same protocols used by MS Windows NT4. A Samba-3 BDC will
+Samba cannot participate in true SAM replication and is therefore not able to
+employ precisely the same protocols used by MS Windows NT4. A Samba BDC will
 not create SAM update delta files. It will not interoperate with a PDC (NT4 or Samba)
 to synchronize the SAM from delta files that are held by BDCs.
 </para>
@@ -184,8 +184,8 @@ to synchronize the SAM from delta files that are held by BDCs.
 <para>
 <indexterm><primary>PDC</primary></indexterm>
 <indexterm><primary>BDC</primary></indexterm>
-Samba-3 cannot function as a BDC to an MS Windows NT4 PDC, and Samba-3 cannot
-function correctly as a PDC to an MS Windows NT4 BDC. Both Samba-3 and MS Windows
+Samba cannot function as a BDC to an MS Windows NT4 PDC, and Samba-3 cannot
+function correctly as a PDC to an MS Windows NT4 BDC. Both Samba and MS Windows
 NT4 can function as a BDC to its own type of PDC.
 </para>
 
@@ -208,7 +208,7 @@ maintenance of domain security as well as in network integrity.
 In the event that the NT4 PDC should need to be taken out of service, or if it dies, one of the NT4 BDCs can
 be promoted to a PDC. If this happens while the original NT4 PDC is online, it is automatically demoted to an
 NT4 BDC. This is an important aspect of domain controller management. The tool that is used to effect a
-promotion or a demotion is the Server Manager for Domains. It should be noted that Samba-3 BDCs cannot be
+promotion or a demotion is the Server Manager for Domains. It should be noted that Samba BDCs cannot be
 promoted in this manner because reconfiguration of Samba requires changes to the &smb.conf; file. It is easy
 enough to manuall change the &smb.conf; file and then restart relevant Samba network services.
 </para>
@@ -619,7 +619,7 @@ shared. The BDC will however depend on local resolution of UIDs and GIDs via NSS
 <indexterm><primary>ID mapping</primary></indexterm>
 <indexterm><primary>domain member server</primary></indexterm>
 <indexterm><primary>idmap backend</primary></indexterm>
-Samba-3 has introduced a new ID mapping facility. One of the features of this facility is that it
+Samba has introduced a new ID mapping facility. One of the features of this facility is that it
 allows greater flexibility in how user and group IDs are handled in respect to NT domain user and group
 SIDs. One of the new facilities provides for explicitly ensuring that UNIX/Linux UID and GID values
 will be consistent on the PDC, all BDCs, and all domain member servers. The parameter that controls this

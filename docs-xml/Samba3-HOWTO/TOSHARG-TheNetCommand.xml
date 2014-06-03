@@ -16,7 +16,7 @@
 <indexterm><primary>remote management</primary></indexterm>
 <indexterm><primary>command-line</primary></indexterm>
 <indexterm><primary>scripted control</primary></indexterm>
-The <command>net</command> command is one of the new features of Samba-3 and is an attempt to provide a useful
+The <command>net</command> command is one of the new features of Samba and is an attempt to provide a useful
 tool for the majority of remote management operations necessary for common tasks. The <command>net</command>
 tool is flexible by design and is intended for command-line use as well as for scripted control application.
 </para>
@@ -37,7 +37,7 @@ provided should look at the <command>net</command> command before searching else
 </para>
 
 <para>
-A Samba-3 administrator cannot afford to gloss over this chapter because to do so will almost certainly cause
+A Samba administrator cannot afford to gloss over this chapter because to do so will almost certainly cause
 the infliction of self-induced pain, agony, and desperation. Be warned: this is an important chapter.
 </para>
 
@@ -51,7 +51,7 @@ the infliction of self-induced pain, agony, and desperation. Be warned: this is 
 <indexterm><primary>BDC</primary></indexterm>
 <indexterm><primary>DMS</primary></indexterm>
 <indexterm><primary>authentication</primary></indexterm>
-	The tasks that follow the installation of a Samba-3 server, whether standalone or domain member, of a
+	The tasks that follow the installation of a Samba server, whether standalone or domain member, of a
 	domain controller (PDC or BDC) begins with the need to create administrative rights. Of course, the
 	creation of user and group accounts is essential for both a standalone server and a PDC.
 	In the case of a BDC or a Domain Member server (DMS), domain user and group accounts are obtained from
@@ -83,7 +83,7 @@ the infliction of self-induced pain, agony, and desperation. Be warned: this is 
 <indexterm><primary>domain authentication</primary></indexterm>
 <indexterm><primary>trust accounts</primary></indexterm>
 <indexterm><primary>net</primary></indexterm>
-	UNIX systems that are hosting a Samba-3 server that is running as a member (PDC, BDC, or DMS) must have
+	UNIX systems that are hosting a Samba server that is running as a member (PDC, BDC, or DMS) must have
 	a machine security account in the domain authentication database (or directory). The creation of such
 	security (or trust) accounts is also handled using the <command>net</command> command.
 	</para>
@@ -107,7 +107,7 @@ the infliction of self-induced pain, agony, and desperation. Be warned: this is 
 <indexterm><primary>net</primary></indexterm>
 <indexterm><primary>man pages</primary></indexterm>
 	The overall picture should be clear now: the <command>net</command> command plays a central role
-	on the Samba-3 stage. This role will continue to be developed. The inclusion of this chapter is
+	on the Samba stage. This role will continue to be developed. The inclusion of this chapter is
 	evidence of its importance, one that has grown in complexity to the point that it is no longer considered
 	prudent to cover its use fully in the online UNIX man pages.
 	</para>
@@ -165,7 +165,7 @@ the infliction of self-induced pain, agony, and desperation. Be warned: this is 
 <indexterm><primary>domain</primary><secondary>groups</secondary></indexterm>
 <indexterm><primary>local</primary><secondary>groups</secondary></indexterm>
 <indexterm><primary>domain user accounts</primary></indexterm>
-	Samba-3 recognizes two types of groups: <emphasis>domain groups</emphasis> and <emphasis>local
+	Samba recognizes two types of groups: <emphasis>domain groups</emphasis> and <emphasis>local
 	groups</emphasis>. Domain groups can contain (have as members) only domain user accounts. Local groups
 	can contain local users, domain users, and domain groups as members.
 	</para>
@@ -1069,7 +1069,7 @@ Deleted user account.
 	</para>
 
 	<para>
-	A Samba-3 server that is a Windows ADS domain member can execute the following command to detach from the
+	A Samba server that is a Windows ADS domain member can execute the following command to detach from the
 	domain:
 <indexterm><primary>net</primary><secondary>ads</secondary><tertiary>leave</tertiary></indexterm>
 <screen>
@@ -1760,7 +1760,7 @@ Computer             User name            Client Type        Opens Idle time
 	<title>Printers and ADS</title>
 
 	<para>
-	When Samba-3 is used within an MS Windows ADS environment, printers shared via Samba will not be browseable
+	When Samba is used within an MS Windows ADS environment, printers shared via Samba will not be browseable
 	until they have been published to the ADS domain. Information regarding published printers may be obtained
 	from the ADS server by executing the <command>net ads print info</command> command following this syntax:
 <indexterm><primary>net</primary><secondary>ads</secondary><tertiary>printer info</tertiary></indexterm>

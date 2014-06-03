@@ -43,7 +43,7 @@ Dynamic-DNS service for NetBIOS networking names.
 <indexterm><primary>DNS</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
 MS Windows 2000 and later versions can be configured to operate with no NetBIOS
-over TCP/IP. Samba-3 and later versions also support this mode of operation.
+over TCP/IP. Samba and later versions also support this mode of operation.
 When the use of NetBIOS over TCP/IP has been disabled, the primary
 means for resolution of MS Windows machine names is via DNS and Active Directory.
 The following information assumes that your site is running NetBIOS over TCP/IP.
@@ -1562,7 +1562,7 @@ document.
 <indexterm><primary>NetBIOS over TCP/IP</primary></indexterm>
 <indexterm><primary>DNS/LDAP/ADS</primary></indexterm>
 <indexterm><primary>name resolution</primary></indexterm>
-MS Windows 2000 and later versions, as with Samba-3 and later versions, can be
+MS Windows 2000 and later versions, as with Samba and later versions, can be
 configured to not use NetBIOS over TCP/IP. When configured this way,
 it is imperative that name resolution (using DNS/LDAP/ADS) be correctly
 configured and operative. Browsing will not work if name resolution
@@ -1745,7 +1745,7 @@ settings; for Samba, this is in the &smb.conf; file.
 <indexterm><primary>NetBIOS over TCP/IP</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>DNS</primary></indexterm>
-It is possible to operate Samba-3 without NetBIOS over TCP/IP. If you do this, be warned that if used outside
+It is possible to operate Samba without NetBIOS over TCP/IP. If you do this, be warned that if used outside
 of MS ADS, this will forgo network browsing support. ADS permits network browsing support through DNS,
 providing appropriate DNS records are inserted for all Samba servers.
 </para>

@@ -50,7 +50,7 @@
 
 		<para>
 		Clicking the <guimenu>Network ID</guimenu> button launches the configuration wizard. Do not use this with
-		Samba-3. If you wish to change the computer name, or join or leave the domain, click the <guimenu>Change</guimenu> button.
+		Samba. If you wish to change the computer name, or join or leave the domain, click the <guimenu>Change</guimenu> button.
 		See <link linkend="swxpp004"></link>.
 		<figure id="swxpp004"><title>The Computer Name Panel.</title><imagefile>wxpp004</imagefile></figure>
 		</para></step>
@@ -76,7 +76,7 @@
 		</para>
 
 		<para>
-		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="swxpp008"></link>.
+		Enter the name <quote>root</quote> and the root password from your Samba server. See <link linkend="swxpp008"></link>.
 		<figure id="swxpp008"><title>Computer Name Changes &smbmdash; User name and Password Panel</title><imagefile>wxpp008</imagefile></figure>
 		</para></step>
 

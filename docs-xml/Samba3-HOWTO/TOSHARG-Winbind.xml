@@ -589,7 +589,7 @@ way things are going.
 <para>
 <indexterm><primary>winbindd</primary></indexterm>
 <indexterm><primary>daemon</primary></indexterm>
-The latest version of Samba-3 includes a functioning winbindd daemon. Please refer to the <ulink
+The latest version of Samba includes a functioning winbindd daemon. Please refer to the <ulink
 url="http://samba.org/">main Samba Web page</ulink>, or better yet, your closest Samba mirror site for
 instructions on downloading the source code.
 </para>
@@ -633,7 +633,7 @@ needed to compile PAM-aware applications.
 <indexterm><primary>Winbind</primary></indexterm>
 <indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
 PAM is a standard component of most current generation UNIX/Linux systems. Unfortunately, few systems install
-the <filename>pam-devel</filename> libraries that are needed to build PAM-enabled Samba. Additionally, Samba-3
+the <filename>pam-devel</filename> libraries that are needed to build PAM-enabled Samba. Additionally, Samba
 may auto-install the Winbind files into their correct locations on your system, so before you get too far down
 the track, be sure to check if the following configuration is really
 necessary. You may only need to configure

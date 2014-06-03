@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="upgrades">
-<title>Updating Samba-3</title>
+<title>Updating Samba</title>
 
 <para>
 <indexterm><primary>migrate</primary></indexterm>
@@ -16,9 +16,9 @@ installing a new Samba server to replace an older existing Samba server.
 <para>
 <indexterm><primary>smbpasswd</primary></indexterm>
 <indexterm><primary>passdb backend</primary></indexterm>
-There has also been much talk about migration of Samba-3 from an smbpasswd
+There has also been much talk about migration of Samba from an smbpasswd
 passdb backend to the use of the tdbsam or ldapsam facilities that are new
-to Samba-3.
+to Samba.
 </para>
 
 <para>
@@ -231,7 +231,7 @@ caution was on the side of the victor.
 	<indexterm><primary>stand-alone server</primary></indexterm>
 	<indexterm><primary>SAS</primary></indexterm>
 	<indexterm><primary>SID</primary></indexterm>
-	In Samba-3 on a domain controller (PDC or BDC), the domain name controls the domain
+	In Samba on a domain controller (PDC or BDC), the domain name controls the domain
 	SID. On all prior versions the hostname (computer name, or NetBIOS name) controlled
 	the SID. On a standalone server the hostname still controls the SID.
 	</para>
@@ -239,7 +239,7 @@ caution was on the side of the victor.
 	<para>
 	<indexterm><primary>net</primary><secondary>getlocalsid</secondary></indexterm>
 	<indexterm><primary>net</primary><secondary>setlocalsid</secondary></indexterm>
-	The local machine SID can be backed up using this procedure (Samba-3):
+	The local machine SID can be backed up using this procedure (Samba):
 <screen>
 &rootprompt; net getlocalsid > /etc/samba/my-local-SID
 </screen>
@@ -261,7 +261,7 @@ SID for domain FRODO is: S-1-5-21-726309263-4128913605-1168186429
 
 	<para>
 	Where the <filename>secrets.tdb</filename> file exists and a version of Samba 2.x or later
-	has been used, there is no specific need to go through this update process. Samba-3 has the
+	has been used, there is no specific need to go through this update process. Samba has the
 	ability to read the older tdb file and to perform an in-situ update to the latest tdb format.
 	This is not a reversible process &smbmdash; it is a one-way upgrade.
 	</para>
@@ -295,7 +295,7 @@ SID for domain FRODO is: S-1-5-21-726309263-4128913605-1168186429
 <screen>
 &rootprompt; rpcclient hostname lsaquery -Uroot%password
 </screen>
-	This can also be done with Samba-3 by executing:
+	This can also be done with Samba by executing:
 <screen>
 &rootprompt; net rpc info -Uroot%password
 Domain Name: MIDEARTH
@@ -430,7 +430,7 @@ Num local groups: 0
 
 	<para>
 	<indexterm><primary>compile-time</primary></indexterm>
-	Samba-3 provides a neat new way to track the location of all control files as well as to
+	Samba provides a neat new way to track the location of all control files as well as to
 	find the compile-time options used as the Samba package was built. Here  is how the dark
 	secrets of the internals of the location of control files within Samba executables can
 	be uncovered:
@@ -481,7 +481,7 @@ Paths:
 	<indexterm><primary>codepage</primary></indexterm>
 	<indexterm><primary>internationalization</primary></indexterm>
 	Samba-2.x had no support for Unicode; instead, all national language character-set support in file names
-	was done using particular locale codepage mapping techniques. Samba-3 supports Unicode in file names, thus
+	was done using particular locale codepage mapping techniques. Samba supports Unicode in file names, thus
 	providing true internationalization support.
 	</para>
 
@@ -495,7 +495,7 @@ Paths:
 
 	<para>
 	<indexterm><primary>UTF-8</primary></indexterm>
-	Files that are created with Samba-3 will use UTF-8 encoding. Should the file system ever end up with a
+	Files that are created with Samba will use UTF-8 encoding. Should the file system ever end up with a
 	mix of codepage (unix charset)-encoded file names and UTF-8-encoded file names, the mess will take some
 	effort to set straight.
 	</para>
@@ -681,7 +681,7 @@ Samba-2.x could be compiled with LDAP support.
 
 	<para>
 	<indexterm><primary>parameters</primary></indexterm>
-	The following parameters are new to Samba-3 and should be correctly configured.
+	The following parameters are new to Samba and should be correctly configured.
 	Please refer to <link linkend="secure"/> through <link linkend="net2000users"/>
 	in this book for examples of use of the new parameters shown here:
 	<indexterm><primary>add group script</primary></indexterm>
@@ -709,7 +709,7 @@ Samba-2.x could be compiled with LDAP support.
 	<indexterm><primary>add machine script</primary></indexterm>
 	<indexterm><primary>add user script</primary></indexterm>
 	The <parameter>add machine script</parameter> functionality was previously
-	handled by the <parameter>add user script</parameter>, which in Samba-3 is
+	handled by the <parameter>add user script</parameter>, which in Samba is
 	used exclusively to add user accounts.
 	</para>
 
@@ -748,7 +748,7 @@ Samba-2.x could be compiled with LDAP support.
 	<para>
 	Samba version 2.x could be compiled for use either with or without LDAP.
 	The LDAP control settings in the &smb.conf; file in this old version are
-	completely different (and less complete) than they are with Samba-3. This
+	completely different (and less complete) than they are with Samba. This
 	means that after migrating the control files, it is necessary to reconfigure
 	the LDAP settings entirely.
 	</para>
@@ -911,20 +911,20 @@ the procedure outlined above.
 </para>
 
 	<sect2>
-	<title>Samba-3 to Samba-3 Updates on the Same Server</title>
+	<title>Samba to Samba-3 Updates on the Same Server</title>
 
 	<para>
 	The guidance in this section deals with updates to an existing
-	Samba-3 server installation.
+	Samba server installation.
 	</para>
 
 	<sect3>
 	<title>Updating from Samba Versions Earlier than 3.0.5</title>
 
 	<para>
-	With the provision that the binary Samba-3 package has been built
-	with the same path and feature settings as the existing Samba-3
-	package that is being updated, an update of Samba-3 versions 3.0.0
+	With the provision that the binary Samba package has been built
+	with the same path and feature settings as the existing Samba
+	package that is being updated, an update of Samba versions 3.0.0
 	through 3.0.4 can be updated to 3.0.5 without loss of functionality
 	and without need to change either the &smb.conf; file or, where
 	used, the LDAP schema.
@@ -938,9 +938,9 @@ the procedure outlined above.
 	<para>
 	<indexterm><primary>schema</primary></indexterm>
 	<indexterm><primary>LDAP</primary><secondary>schema</secondary></indexterm>
-	When updating versions of Samba-3 prior to 3.0.6 to 3.0.6 through 3.0.10,
+	When updating versions of Samba prior to 3.0.6 to 3.0.6 through 3.0.10,
 	it is necessary only to update the LDAP schema (where LDAP is used).
-	Always use the LDAP schema file that is shipped with the latest Samba-3
+	Always use the LDAP schema file that is shipped with the latest Samba
 	update.
 	</para>
 
@@ -1002,7 +1002,7 @@ back to searching the 'ldap suffix' in some cases.
 	</sect2>
 
 	<sect2>
-	<title>Migrating Samba-3 to a New Server</title>
+	<title>Migrating Samba to a New Server</title>
 
 	<para>
 	The two most likely candidates for replacement of a server are
