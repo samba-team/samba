@@ -73,6 +73,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <unistd.h>
+#ifdef HAVE_GNU_LIB_NAMES_H
+#include <gnu/lib-names.h>
+#endif
 
 enum swrap_dbglvl_e {
 	SWRAP_LOG_ERROR = 0,
@@ -418,6 +421,11 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 		/* FALL TROUGH */
 	case SWRAP_LIBC:
 		handle = swrap.libc_handle;
+#ifdef LIBC_SO
+		if (handle == NULL) {
+			handle = dlopen(LIBC_SO, flags);
+		}
+#endif
 		if (handle == NULL) {
 			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
 				char soname[256] = {0};
