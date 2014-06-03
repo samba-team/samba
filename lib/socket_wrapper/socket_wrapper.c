@@ -3400,6 +3400,7 @@ static int swrap_recvmsg_after(int fd,
 	off_t ofs = 0;
 	size_t avail = 0;
 	size_t remain;
+	int rc;
 
 	/* to give better errors */
 	if (ret == -1) {
@@ -3416,8 +3417,8 @@ static int swrap_recvmsg_after(int fd,
 	}
 
 	if (avail == 0) {
-		errno = saved_errno;
-		return 0;
+		rc = 0;
+		goto done;
 	}
 
 	if (ret == -1) {
@@ -3460,8 +3461,6 @@ static int swrap_recvmsg_after(int fd,
 		}
 
 		if (un_addr != NULL) {
-			int rc;
-
 			rc = sockaddr_convert_from_un(si,
 						      un_addr,
 						      un_addrlen,
@@ -3488,10 +3487,23 @@ static int swrap_recvmsg_after(int fd,
 		break;
 	}
 
+	rc = 0;
 done:
 	free(buf);
 	errno = saved_errno;
-	return 0;
+
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	if (rc == 0 &&
+	    msg->msg_controllen > 0 &&
+	    msg->msg_control != NULL) {
+		rc = swrap_msghdr_add_socket_info(si, msg);
+		if (rc < 0) {
+			return -1;
+		}
+	}
+#endif
+
+	return rc;
 }
 
 /****************************************************************************
