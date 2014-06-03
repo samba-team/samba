@@ -119,6 +119,12 @@ enum swrap_dbglvl_e {
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 #endif
 
+#ifdef IPV6_PKTINFO
+# ifndef IPV6_RECVPKTINFO
+#  define IPV6_RECVPKTINFO IPV6_PKTINFO
+# endif /* IPV6_RECVPKTINFO */
+#endif /* IPV6_PKTINFO */
+
 #define SWRAP_DLIST_ADD(list,item) do { \
 	if (!(list)) { \
 		(item)->prev	= NULL; \
@@ -199,6 +205,7 @@ struct socket_info
 	int is_server;
 	int connected;
 	int defer_connect;
+	int pktinfo;
 
 	char *tmp_path;
 
@@ -2872,9 +2879,23 @@ static int swrap_setsockopt(int s, int level, int optname,
 
 	switch (si->family) {
 	case AF_INET:
+		if (level == IPPROTO_IP) {
+#ifdef IP_PKTINFO
+			if (optname == IP_PKTINFO) {
+				si->pktinfo = AF_INET;
+			}
+#endif /* IP_PKTINFO */
+		}
 		return 0;
 #ifdef HAVE_IPV6
 	case AF_INET6:
+		if (level == IPPROTO_IPV6) {
+#ifdef IPV6_RECVPKTINFO
+			if (optname == IPV6_RECVPKTINFO) {
+				si->pktinfo = AF_INET6;
+			}
+#endif /* IPV6_PKTINFO */
+		}
 		return 0;
 #endif
 	default:
