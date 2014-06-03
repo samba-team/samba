@@ -3033,6 +3033,71 @@ static void swrap_msghdr_add_cmsghdr(struct msghdr *msg,
 
 	return;
 }
+
+static int swrap_msghdr_add_pktinfo(struct socket_info *si,
+				    struct msghdr *msg)
+{
+	/* Add packet info */
+	switch (si->pktinfo) {
+#ifdef IP_PKTINFO
+	case AF_INET: {
+		struct sockaddr_in *sin;
+		struct in_pktinfo pkt;
+
+		if (si->bindname_len == sizeof(struct sockaddr_in)) {
+			sin = (struct sockaddr_in*)si->bindname;
+		} else {
+			if (si->myname_len != sizeof(struct sockaddr_in)) {
+				return 0;
+			}
+			sin = (struct sockaddr_in*)si->myname;
+		}
+
+		ZERO_STRUCT(pkt);
+
+		pkt.ipi_ifindex = socket_wrapper_default_iface();
+		pkt.ipi_addr.s_addr = sin->sin_addr.s_addr;
+
+		swrap_msghdr_add_cmsghdr(msg, IPPROTO_IP, IP_PKTINFO,
+					 &pkt, sizeof(pkt));
+
+		break;
+	}
+#endif /* IP_PKTINFO */
+#if defined(HAVE_IPV6)
+	case AF_INET6: {
+#if defined(IPV6_PKTINFO) && defined(HAVE_STRUCT_IN6_PKTINFO)
+		struct sockaddr_in6 *sin6;
+		struct in6_pktinfo pkt6;
+
+		if (si->bindname_len == sizeof(struct sockaddr_in6)) {
+			sin6 = (struct sockaddr_in6*)si->bindname;
+		} else {
+			if (si->myname_len != sizeof(struct sockaddr_in6)) {
+				return 0;
+			}
+			sin6 = (struct sockaddr_in6*)si->myname;
+		}
+
+		ZERO_STRUCT(pkt6);
+
+		pkt6.ipi6_ifindex = socket_wrapper_default_iface();
+		pkt6.ipi6_addr = sin6->sin6_addr;
+
+		swrap_msghdr_add_cmsghdr(msg, IPPROTO_IPV6, IPV6_PKTINFO,
+					&pkt6, sizeof(pkt6));
+#endif /* HAVE_STRUCT_IN6_PKTINFO */
+
+		break;
+	}
+#endif /* IPV6_PKTINFO */
+	default:
+		return -1;
+	}
+
+	return 0;
+}
+
 #endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
 static ssize_t swrap_sendmsg_before(int fd,
