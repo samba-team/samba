@@ -65,29 +65,19 @@ char *server_id_str_buf(struct server_id id, struct server_id_buf *dst)
 
 char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
 {
-	if (server_id_is_disconnected(id)) {
-		return talloc_strdup(mem_ctx, "disconnected");
-	} else if (id->vnn == NONCLUSTER_VNN && id->task_id == 0) {
-		return talloc_asprintf(mem_ctx,
-				       "%llu",
-				       (unsigned long long)id->pid);
-	} else if (id->vnn == NONCLUSTER_VNN) {
-		return talloc_asprintf(mem_ctx,
-				       "%llu.%u",
-				       (unsigned long long)id->pid,
-				       (unsigned)id->task_id);
-	} else if (id->task_id == 0) {
-		return talloc_asprintf(mem_ctx,
-				       "%u:%llu",
-				       (unsigned)id->vnn,
-				       (unsigned long long)id->pid);
-	} else {
-		return talloc_asprintf(mem_ctx,
-				       "%u:%llu.%u",
-				       (unsigned)id->vnn,
-				       (unsigned long long)id->pid,
-				       (unsigned)id->task_id);
+	struct server_id_buf tmp;
+	char *result;
+
+	result = talloc_strdup(mem_ctx, server_id_str_buf(*id, &tmp));
+	if (result == NULL) {
+		return NULL;
 	}
+
+	/*
+	 * beautify the talloc_report output
+	 */
+	talloc_set_name_const(result, result);
+	return result;
 }
 
 struct server_id server_id_from_string(uint32_t local_vnn,
