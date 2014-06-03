@@ -3877,8 +3877,10 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	struct socket_info *si;
 	struct msghdr msg;
 	struct iovec tmp;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	size_t msg_ctrllen_filled;
 	size_t msg_ctrllen_left;
+#endif
 
 	ssize_t ret;
 	int rc;
