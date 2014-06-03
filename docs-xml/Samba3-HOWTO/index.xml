@@ -174,8 +174,6 @@ The chapters in this part each cover specific Samba features.
 	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-NT4Migration.xml"/>
 	<?latex \cleardoublepage ?>
-	<xi:include href="TOSHARG-SWAT.xml"/>
-	<?latex \cleardoublepage ?>
 
 </part>
 
