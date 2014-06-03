@@ -2995,6 +2995,15 @@ int ioctl(int s, unsigned long int r, ...)
  *****************/
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+
+#ifndef CMSG_ALIGN
+# ifdef _ALIGN /* BSD */
+#define CMSG_ALIGN _ALIGN
+# else
+#error NO_CMSG_ALIGN
+# endif /* _ALIGN */
+#endif /* CMSG_ALIGN */
+
 /**
  * @brief Add a cmsghdr to a msghdr.
  *
@@ -3145,6 +3154,10 @@ static int swrap_msghdr_add_socket_info(struct socket_info *si,
 	return rc;
 }
 
+static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
+				   uint8_t *cm_data,
+				   size_t *cm_data_space);
+
 static int swrap_sendmsg_filter_cmsghdr(struct msghdr *msg,
 					uint8_t *cm_data,
 					size_t *cm_data_space) {
@@ -3164,12 +3177,39 @@ static int swrap_sendmsg_filter_cmsghdr(struct msghdr *msg,
 			/* TODO swrap_sendmsg_filter_cmsg_socket */
 			break;
 		default:
-			/* TODO swrap_sendmsg_copy_cmsg */
+			rc = swrap_sendmsg_copy_cmsg(cmsg,
+						     cm_data,
+						     cm_data_space);
 			break;
 		}
 	}
 
 	return rc;
+}
+
+static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
+				   uint8_t *cm_data,
+				   size_t *cm_data_space)
+{
+	size_t cmspace;
+	uint8_t *p;
+
+	cmspace =
+		(*cm_data_space) +
+		CMSG_SPACE(cmsg->cmsg_len - CMSG_ALIGN(sizeof(struct cmsghdr)));
+
+	p = realloc(cm_data, cmspace);
+	if (p == NULL) {
+		return -1;
+	}
+	cm_data = p;
+
+	p = cm_data + (*cm_data_space);
+	*cm_data_space = cmspace;
+
+	memcpy(p, cmsg, cmsg->cmsg_len);
+
+	return 0;
 }
 #endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
