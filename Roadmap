@@ -1,23 +1,22 @@
-Copyright (C) 1997-2008 Samba-Team
+Copyright (C) 1997-2014 Samba-Team
 
 The Samba-Team are committed to an aggressive program to deliver quality
 controlled software to a well defined roadmap.
 
-Please also look at the Samba3 and Samba4 pages of wiki.samba.org for more
+Please also look at the Release planning pages of wiki.samba.org for more
 information.
 
 The following development objectives for future releases
 are in progress:
 ----------------------------------------------------------------------------
-Samba-3.5.x		This release turned into maintenance mode since we
-			released 3.6.
+Samba-3.6.x		This release turned into security maintenance mode since we
+			released 4.1.
 
-Samba-3.6.x		This is the current stable Samba 3 release intended
-			for all Samba production server.
-
-Samba-4.0		Our next release including the AD domain controller
+Samba-4.0.x		Our previous release including the AD domain controller
                         feature, the file server and other functionality
                         from Samba 3.6 as well as the new SMB3 protocol.
+
+Samba-4.1.x		Our current release.
 
 
 Note that it is a given that the Samba-Team will continue to track
