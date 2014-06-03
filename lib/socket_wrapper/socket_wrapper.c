@@ -2844,6 +2844,12 @@ int getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
  *   GETSOCKOPT
  ***************************************************************************/
 
+#ifndef SO_PROTOCOL
+# ifdef SO_PROTOTYPE /* The Solaris name */
+#  define SO_PROTOCOL SO_PROTOTYPE
+# endif /* SO_PROTOTYPE */
+#endif /* SO_PROTOCOL */
+
 static int swrap_getsockopt(int s, int level, int optname,
 			    void *optval, socklen_t *optlen)
 {
@@ -2858,11 +2864,46 @@ static int swrap_getsockopt(int s, int level, int optname,
 	}
 
 	if (level == SOL_SOCKET) {
-		return libc_getsockopt(s,
-				       level,
-				       optname,
-				       optval,
-				       optlen);
+		switch (optname) {
+#ifdef SO_DOMAIN
+		case SO_DOMAIN:
+			if (optval == NULL || optlen == NULL ||
+			    *optlen < (socklen_t)sizeof(int)) {
+				errno = EINVAL;
+				return -1;
+			}
+
+			*optlen = sizeof(int);
+			*(int *)optval = si->family;
+			return 0;
+#endif /* SO_DOMAIN */
+		case SO_PROTOCOL:
+			if (optval == NULL || optlen == NULL ||
+			    *optlen < (socklen_t)sizeof(int)) {
+				errno = EINVAL;
+				return -1;
+			}
+
+			*optlen = sizeof(int);
+			*(int *)optval = si->protocol;
+			return 0;
+		case SO_TYPE:
+			if (optval == NULL || optlen == NULL ||
+			    *optlen < (socklen_t)sizeof(int)) {
+				errno = EINVAL;
+				return -1;
+			}
+
+			*optlen = sizeof(int);
+			*(int *)optval = si->type;
+			return 0;
+		default:
+			return libc_getsockopt(s,
+					       level,
+					       optname,
+					       optval,
+					       optlen);
+		}
 	}
 
 	errno = ENOPROTOOPT;
