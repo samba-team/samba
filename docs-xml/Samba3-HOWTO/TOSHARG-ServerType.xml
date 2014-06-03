@@ -88,7 +88,7 @@ So, what are the benefits of the features mentioned in this chapter?
 	<listitem><para>
 	<indexterm><primary>account</primary><secondary>database</secondary><tertiary>backends</tertiary></indexterm>
 	<indexterm><primary>encrypted</primary></indexterm>
-	Samba permits use of multiple concurrent account database backends.
+	Samba permits use of multiple account database backends.
 	(Encrypted passwords that are stored in the account database are in
 	formats that are unique to Windows networking).
 	</para></listitem>

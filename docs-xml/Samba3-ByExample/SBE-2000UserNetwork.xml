@@ -679,9 +679,8 @@ productivity.</para>
 	<indexterm><primary>mysqlsam</primary></indexterm>
 	<indexterm><primary>LDAP</primary></indexterm>
 	<indexterm><primary>distributed</primary></indexterm>
-	Samba is capable of using the <constant>smbpasswd</constant>,
-	<constant>tdbsam</constant>, <constant>xmlsam</constant>,
-	and <constant>mysqlsam</constant> authentication databases. The SMB
+	Samba is capable of using the <constant>smbpasswd</constant> and
+	<constant>tdbsam</constant>. The SMB
 	passwords can, of course, also be stored in an LDAP ldapsam
 	backend. LDAP is the preferred passdb backend for distributed network
 	operations.
@@ -689,9 +688,7 @@ productivity.</para>
 
 	<para>
 	<indexterm><primary>passdb backend</primary></indexterm>
-	Additionally, it is possible to use multiple passdb backends
-	concurrently as well as have multiple LDAP backends. As a result, you
-	can specify a failover LDAP backend. The syntax for specifying a
+	You can specify a failover LDAP backend. The syntax for specifying a
 	single LDAP backend in &smb.conf; is:
 <screen>
 ...
@@ -721,48 +718,6 @@ passdb backend = ldapsam:"ldap://master.abmas.biz \
 		<imagefile scale="65">ch7-fail-overLDAP</imagefile>
 	</figure>
 	</para>
-
-	<para>
-	Some folks have tried to implement this without the use of double quotes. This is the type of entry they
-	created:
-<screen>
-...
-passdb backend = ldapsam:ldap://master.abmas.biz \
-                 ldapsam:ldap://slave.abmas.biz
-...
-</screen>
-	<indexterm><primary>contiguous directory</primary></indexterm>
-	The effect of this style of entry is that Samba lists the users
-	that are in both LDAP databases. If both contain the same information,
-	it results in each record being shown twice. This is, of course, not the
-	solution desired for a failover implementation. The net effect of this
-	configuration is shown in <link linkend="ch7dualadd"/>
-	</para>
-
-	<figure id="ch7dualadd">
-		<title>Samba Configuration to Use Dual LDAP Databases - Broken - Do Not Use!</title>
-		<imagefile scale="55">ch7-dual-additive-LDAP</imagefile>
-	</figure>
-
-	<para>
-	If, however, each LDAP database contains unique information, this may 
-	well be an advantageous way to effectively integrate multiple LDAP databases 
-	into one seemingly contiguous directory. Only the first database will be updated.
-	An example of this configuration is shown in <link linkend="ch7dualok"/>.
-	</para>
-
-	<figure id="ch7dualok">
-		<title>Samba Configuration to Use Two LDAP Databases - The result is additive.</title>
-		<imagefile scale="55">ch7-dual-additive-LDAP-Ok</imagefile>
-	</figure>
-
-	<note><para>
-	When the use of ldapsam is specified twice, as shown here, it is imperative
-	that the two LDAP directories must be disjoint. If the entries are for a
-	master LDAP server as well as its own slave server, updates to the LDAP
-	database may end up being lost or corrupted. You may safely use multiple
-	LDAP backends only if both are entirely separate from each other.
-	</para></note>
 
     <para>
 	It is assumed that the network you are working with follows in a

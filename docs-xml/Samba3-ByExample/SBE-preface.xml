@@ -425,8 +425,8 @@
 		further challenges ahead.
 		</para>
 
-		<para><emphasis>TechInfo</emphasis> &smbmdash; Slave LDAP servers are introduced. Samba is
-		configured to use multiple LDAP backends. This is a brief chapter; it assumes that the
+		<para><emphasis>TechInfo</emphasis> &smbmdash; Slave
+		LDAP servers are introduced. This is a brief chapter; it assumes that the
 		technology has been mastered and gets right down to concepts and how to deploy them.
 		</para>
 		</listitem>
