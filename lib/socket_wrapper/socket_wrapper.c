@@ -2223,8 +2223,40 @@ static int swrap_socket(int family, int type, int protocol)
 	si->type = real_type;
 	si->protocol = protocol;
 
+	/*
+	 * Setup myname so getsockname() can succeed to find out the socket
+	 * type.
+	 */
+	switch(si->family) {
+	case AF_INET: {
+		struct sockaddr_in sin = {
+			.sin_family = AF_INET,
+		};
+
+		si->myname_len = sizeof(struct sockaddr_in);
+		si->myname = sockaddr_dup(&sin, si->myname_len);
+		break;
+	}
+	case AF_INET6: {
+		struct sockaddr_in6 sin6 = {
+			.sin6_family = AF_INET6,
+		};
+
+		si->myname_len = sizeof(struct sockaddr_in6);
+		si->myname = sockaddr_dup(&sin6, si->myname_len);
+		break;
+	}
+	default:
+		free(si);
+		errno = EINVAL;
+		return -1;
+	}
+
 	fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
 	if (fi == NULL) {
+		if (si->myname != NULL) {
+			free (si->myname);
+		}
 		free(si);
 		errno = ENOMEM;
 		return -1;
@@ -2503,6 +2535,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		in.sin_addr.s_addr = htonl(127<<24 | 
 					   socket_wrapper_default_iface());
 
+		free(si->myname);
 		si->myname_len = sizeof(in);
 		si->myname = sockaddr_dup(&in, si->myname_len);
 		break;
@@ -2532,6 +2565,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		in6.sin6_family = AF_INET6;
 		in6.sin6_addr = *swrap_ipv6();
 		in6.sin6_addr.s6_addr[15] = socket_wrapper_default_iface();
+		free(si->myname);
 		si->myname_len = sizeof(in6);
 		si->myname = sockaddr_dup(&in6, si->myname_len);
 		break;
@@ -2685,6 +2719,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 		return libc_bind(s, myaddr, addrlen);
 	}
 
+	free(si->myname);
 	si->myname_len = addrlen;
 	si->myname = sockaddr_dup(myaddr, addrlen);
 
