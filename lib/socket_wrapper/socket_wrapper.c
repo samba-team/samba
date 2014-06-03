@@ -3863,6 +3863,8 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	struct socket_info *si;
 	struct msghdr msg;
 	struct iovec tmp;
+	size_t msg_ctrllen_filled;
+	size_t msg_ctrllen_left;
 
 	ssize_t ret;
 	int rc;
@@ -3881,6 +3883,9 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
 	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	msg_ctrllen_filled = 0;
+	msg_ctrllen_left = omsg->msg_controllen;
+
 	msg.msg_control = omsg->msg_control;       /* ancillary data, see below */
 	msg.msg_controllen = omsg->msg_controllen; /* ancillary data buffer len */
 	msg.msg_flags = omsg->msg_flags;           /* flags on received message */
@@ -3893,10 +3898,44 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 
 	ret = libc_recvmsg(s, &msg, flags);
 
-	rc = swrap_recvmsg_after(s, si, omsg, &from_addr, from_addrlen, ret);
+	msg.msg_name = omsg->msg_name;
+	msg.msg_namelen = omsg->msg_namelen;
+
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	msg_ctrllen_filled += msg.msg_controllen;
+	msg_ctrllen_left -= msg.msg_controllen;
+
+	if (omsg->msg_control != NULL) {
+		uint8_t *p;
+
+		p = omsg->msg_control;
+		p += msg_ctrllen_filled;
+
+		msg.msg_control = p;
+		msg.msg_controllen = msg_ctrllen_left;
+	} else {
+		msg.msg_control = NULL;
+		msg.msg_controllen = 0;
+	}
+#endif
+
+	rc = swrap_recvmsg_after(s, si, &msg, &from_addr, from_addrlen, ret);
 	if (rc != 0) {
 		return rc;
 	}
+
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	if (omsg->msg_control != NULL) {
+		/* msg.msg_controllen = space left */
+		msg_ctrllen_left = msg.msg_controllen;
+		msg_ctrllen_filled = omsg->msg_controllen - msg_ctrllen_left;
+	}
+
+	/* Update the original message length */
+	omsg->msg_controllen = msg_ctrllen_filled;
+	omsg->msg_flags = msg.msg_flags;
+#endif
+	omsg->msg_iovlen = msg.msg_iovlen;
 
 	return ret;
 }
