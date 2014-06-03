@@ -3386,6 +3386,28 @@ static ssize_t swrap_sendmsg_before(int fd,
 		return -1;
 	}
 
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	if (msg->msg_controllen > 0 && msg->msg_control != NULL) {
+		uint8_t *cmbuf = NULL;
+		size_t cmlen = 0;
+
+		ret = swrap_sendmsg_filter_cmsghdr(msg, cmbuf, &cmlen);
+		if (ret < 0) {
+			free(cmbuf);
+			return -1;
+		}
+
+		if (cmlen == 0) {
+			msg->msg_controllen = 0;
+			msg->msg_control = NULL;
+		} else if (cmlen < msg->msg_controllen) {
+			memcpy(msg->msg_control, cmbuf, cmlen);
+			msg->msg_controllen = cmlen;
+		}
+		free(cmbuf);
+	}
+#endif
+
 	return 0;
 }
 
@@ -4133,8 +4155,15 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
 	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	msg.msg_control = omsg->msg_control;       /* ancillary data, see below */
-	msg.msg_controllen = omsg->msg_controllen; /* ancillary data buffer len */
+	if (msg.msg_controllen > 0 && msg.msg_control != NULL) {
+		/* omsg is a const so use a local buffer for modifications */
+		uint8_t cmbuf[omsg->msg_controllen];
+
+		memcpy(cmbuf, omsg->msg_control, omsg->msg_controllen);
+
+		msg.msg_control = cmbuf;       /* ancillary data, see below */
+		msg.msg_controllen = omsg->msg_controllen; /* ancillary data buffer len */
+	}
 	msg.msg_flags = omsg->msg_flags;           /* flags on received message */
 #endif
 
