@@ -853,6 +853,7 @@ static const char *socket_wrapper_dir(void)
 	if (s == NULL) {
 		return NULL;
 	}
+	/* TODO use realpath(3) here, when we add support for threads */
 	if (strncmp(s, "./", 2) == 0) {
 		s += 2;
 	}
@@ -2724,13 +2725,59 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	int ret;
 	struct sockaddr_un un_addr;
 	struct socket_info *si = find_socket_info(s);
+	int bind_error = 0;
 
 	if (!si) {
 		return libc_bind(s, myaddr, addrlen);
 	}
 
-	if (si->family != myaddr->sa_family) {
-		errno = EAFNOSUPPORT;
+	switch (si->family) {
+	case AF_INET: {
+		const struct sockaddr_in *sin;
+		if (addrlen < sizeof(struct sockaddr_in)) {
+			bind_error = EINVAL;
+			break;
+		}
+
+		sin = (struct sockaddr_in *)myaddr;
+
+		if (sin->sin_family != AF_INET) {
+			bind_error = EAFNOSUPPORT;
+		}
+
+		/* special case for AF_UNSPEC */
+		if (sin->sin_family == AF_UNSPEC &&
+		    (sin->sin_addr.s_addr == htonl(INADDR_ANY)))
+		{
+			bind_error = 0;
+		}
+
+		break;
+	}
+#ifdef HAVE_IPV6
+	case AF_INET6: {
+		const struct sockaddr_in6 *sin6;
+		if (addrlen < sizeof(struct sockaddr_in6)) {
+			bind_error = EINVAL;
+			break;
+		}
+
+		sin6 = (struct sockaddr_in6 *)myaddr;
+
+		if (sin6->sin6_family != AF_INET6) {
+			bind_error = EAFNOSUPPORT;
+		}
+
+		break;
+	}
+#endif
+	default:
+		bind_error = EINVAL;
+		break;
+	}
+
+	if (bind_error != 0) {
+		errno = bind_error;
 		return -1;
 	}
 
