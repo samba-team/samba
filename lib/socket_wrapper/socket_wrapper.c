@@ -1309,6 +1309,26 @@ static int sockaddr_convert_to_un(struct socket_info *si,
 #endif
 
 	switch (in_addr->sa_family) {
+	case AF_UNSPEC: {
+		struct sockaddr_in *sin;
+		if (si->family != AF_INET) {
+			break;
+		}
+		if (in_len < sizeof(struct sockaddr_in)) {
+			break;
+		}
+		sin = (struct sockaddr_in *)in_addr;
+		if(sin->sin_addr.s_addr != htonl(INADDR_ANY)) {
+			break;
+		}
+
+		/*
+		 * Note: in the special case of AF_UNSPEC and INADDR_ANY,
+		 * AF_UNSPEC is mapped to AF_INET and must be treated here.
+		 */
+
+		/* FALL THROUGH */
+	}
 	case AF_INET:
 #ifdef HAVE_IPV6
 	case AF_INET6:
