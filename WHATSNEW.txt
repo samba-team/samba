@@ -1,4 +1,121 @@
                    =============================
+                   Release Notes for Samba 4.1.8
+                           June 3, 2014
+                   =============================
+
+
+This is the latest stable release of Samba 4.1.
+
+Please note that this bug fix release also addresses two minor security issues
+without being a dedicated security release:
+
+  o CVE-2014-0239: dns: Don't reply to replies (bug #10609).
+  o CVE-2014-0178: Malformed FSCTL_SRV_ENUMERATE_SNAPSHOTS response
+    (bug #10549).
+
+For more details including security advisories and patches, please see
+
+  http://www.samba.org/samba/history/security.html
+
+
+Changes since 4.1.7:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10548: build: Fix ordering problems with lib-provided and internal
+      RPATHs.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3124: s3: smb2: Fix 'xcopy /d' with samba shares.
+    * BUG 10544: s3: lib/util: Fix logic inside set_namearray loops.
+    * BUG 10564: Fix lock order violation and file lost.
+    * BUG 10577: Fix wildcard unlink to fail if we get an error rather than
+      trying to continue.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10569: dsdb: Do checks for invalid renames in samldb, before
+      repl_meta_data.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 10239: s3: nmbd: Reset debug settings after reading config file.
+    * BUG 10544: s3: lib/util: set_namearray reads across end of namelist
+    * BUG 10556: lib-util: Rename memdup to smb_memdup and fix all callers.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 10609: CVE-2014-0239: dns: Don't reply to replies.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 10517: Use exit_daemon() to communicate status of startup to
+      systemd.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10590: byteorder: Do not assume PowerPC is big-endian.
+    * BUG 10612: printing: Fix purge of all print jobs.
+
+
+o   Benjamin Franzke <benjaminfranzke@googlemail.com>
+    * BUG 10524: Fix adding NetApps.
+
+
+o   Abhidnya Joshi <achirmul@in.ibm.com>
+    * BUG 10547: idmap_autorid: Fix failure in reverse lookup if ID is from
+      domain range index #0.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10472: script/autobuild: Make use of
+      '--with-perl-{arch,lib}-install-dir'.
+
+
+o   Noel Power <nopower@suse.com>
+    * BUG 10554: Fix read of deleted memory in reply_writeclose()'.
+
+
+o   Jose A. Rivera <jarrpa@redhat.com>
+    * BUG 10151: Extra ':' in msg for Waf Cross Compile Build System with
+      Cross-answers command.
+    * BUG 10348: Fix empty body in if-statement in continue_domain_open_lookup.
+
+
+o   Christof Schmitt <christof.schmitt@us.ibm.com>
+    * BUG 10549: CVE-2014-0178: Malformed FSCTL_SRV_ENUMERATE_SNAPSHOTS
+      response.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10472: wafsamba: Fix the installation on FreeBSD.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.1.7
                            April 17, 2014
                    =============================
@@ -108,8 +225,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.1.6
