@@ -2213,7 +2213,8 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 			<para>
 			<indexterm><primary>GPL</primary></indexterm>
-			Samba is provided under the terms of the GNU GPL Version 2, a copy of which is provided
+			Samba is provided under the terms of the GNU
+			GPL Version 3, a copy of which is provided
 			with the source code.
 			</para>
 		</sect3>
