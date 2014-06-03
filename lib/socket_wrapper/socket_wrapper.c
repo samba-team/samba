@@ -2719,6 +2719,11 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 		return libc_bind(s, myaddr, addrlen);
 	}
 
+	if (si->family != myaddr->sa_family) {
+		errno = EAFNOSUPPORT;
+		return -1;
+	}
+
 	free(si->myname);
 	si->myname_len = addrlen;
 	si->myname = sockaddr_dup(myaddr, addrlen);
