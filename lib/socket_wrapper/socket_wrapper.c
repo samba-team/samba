@@ -3217,6 +3217,11 @@ static int swrap_sendmsg_copy_cmsg(struct cmsghdr *cmsg,
 	return 0;
 }
 
+static int swrap_sendmsg_filter_cmsg_pktinfo(struct cmsghdr *cmsg,
+					    uint8_t *cm_data,
+					    size_t *cm_data_space);
+
+
 static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
 					    uint8_t *cm_data,
 					    size_t *cm_data_space)
@@ -3226,17 +3231,16 @@ static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
 	switch(cmsg->cmsg_type) {
 #ifdef IP_PKTINFO
 	case IP_PKTINFO:
-		/* TODO swrap_msghdr_filter_cmsg_pktinfo */
+		rc = swrap_sendmsg_filter_cmsg_pktinfo(cmsg,
+						       cm_data,
+						       cm_data_space);
 		break;
 #endif
 #ifdef IPV6_PKTINFO
 	case IPV6_PKTINFO:
-		/* TODO swrap_msghdr_filter_cmsg_pktinfo */
-		break;
-#endif
-#ifdef IP_RECVDSTADDR
-	case IP_RECVDSTADDR:
-		/* TODO swrap_msghdr_filter_cmsg_pktinfo */
+		rc = swrap_sendmsg_filter_cmsg_pktinfo(cmsg,
+						       cm_data,
+						       cm_data_space);
 		break;
 #endif
 	default:
@@ -3244,6 +3248,21 @@ static int swrap_sendmsg_filter_cmsg_socket(struct cmsghdr *cmsg,
 	}
 
 	return rc;
+}
+
+static int swrap_sendmsg_filter_cmsg_pktinfo(struct cmsghdr *cmsg,
+					     uint8_t *cm_data,
+					     size_t *cm_data_space)
+{
+	(void)cmsg; /* unused */
+	(void)cm_data; /* unused */
+	(void)cm_data_space; /* unused */
+
+	/*
+	 * Passing a IP pktinfo to a unix socket might be rejected by the
+	 * Kernel, at least on FreeBSD. So skip this cmsg.
+	 */
+	return 0;
 }
 #endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
