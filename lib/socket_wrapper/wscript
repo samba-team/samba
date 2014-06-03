@@ -42,6 +42,7 @@ def configure(conf):
         conf.CHECK_HEADERS('sys/eventfd.h')
         conf.CHECK_HEADERS('sys/timerfd.h')
         conf.CHECK_HEADERS('gnu/lib-names.h')
+        conf.CHECK_HEADERS('rpc/rpc.h')
 
         conf.CHECK_STRUCTURE_MEMBER('struct msghdr',
                                     'msg_control',

@@ -76,6 +76,9 @@
 #ifdef HAVE_GNU_LIB_NAMES_H
 #include <gnu/lib-names.h>
 #endif
+#ifdef HAVE_RPC_RPC_H
+#include <rpc/rpc.h>
+#endif
 
 enum swrap_dbglvl_e {
 	SWRAP_LOG_ERROR = 0,
