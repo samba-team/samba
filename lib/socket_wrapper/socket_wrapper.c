@@ -3144,6 +3144,33 @@ static int swrap_msghdr_add_socket_info(struct socket_info *si,
 
 	return rc;
 }
+
+static int swrap_sendmsg_filter_cmsghdr(struct msghdr *msg,
+					uint8_t *cm_data,
+					size_t *cm_data_space) {
+	struct cmsghdr *cmsg;
+	int rc = -1;
+
+	/* Nothing to do */
+	if (msg->msg_controllen == 0 || msg->msg_control == NULL) {
+		return 0;
+	}
+
+	for (cmsg = CMSG_FIRSTHDR(msg);
+	     cmsg != NULL;
+	     cmsg = CMSG_NXTHDR(msg, cmsg)) {
+		switch (cmsg->cmsg_level) {
+		case IPPROTO_IP:
+			/* TODO swrap_sendmsg_filter_cmsg_socket */
+			break;
+		default:
+			/* TODO swrap_sendmsg_copy_cmsg */
+			break;
+		}
+	}
+
+	return rc;
+}
 #endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
 static ssize_t swrap_sendmsg_before(int fd,
