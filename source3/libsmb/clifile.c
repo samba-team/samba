@@ -4132,6 +4132,32 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return status;
 }
 
+NTSTATUS cli_disk_size(struct cli_state *cli, uint64_t *bsize, uint64_t *total, uint64_t *avail)
+{
+	int old_bsize, old_total, old_avail;
+	NTSTATUS status;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_dskattr(cli, &old_bsize, &old_total, &old_avail);
+	} else {
+		status = cli_dskattr(cli, &old_bsize, &old_total, &old_avail);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (bsize) {
+		*bsize = (uint64_t)old_bsize;
+	}
+	if (total) {
+		*total = (uint64_t)old_total;
+	}
+	if (avail) {
+		*avail = (uint64_t)old_avail;
+	}
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Create and open a temporary file.
 ****************************************************************************/

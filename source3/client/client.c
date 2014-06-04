@@ -298,7 +298,7 @@ static void send_message(const char *username)
 
 static int do_dskattr(void)
 {
-	int total, bsize, avail;
+	uint64_t total, bsize, avail;
 	struct cli_state *targetcli = NULL;
 	char *targetpath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -312,14 +312,16 @@ static int do_dskattr(void)
 		return 1;
 	}
 
-	status = cli_dskattr(targetcli, &bsize, &total, &avail);
+	status = cli_disk_size(targetcli, &bsize, &total, &avail);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Error in dskattr: %s\n", nt_errstr(status));
 		return 1;
 	}
 
-	d_printf("\n\t\t%d blocks of size %d. %d blocks available\n",
-		 total, bsize, avail);
+	d_printf("\n\t\t%" PRIu64
+		" blocks of size %" PRIu64
+		". %" PRIu64 " blocks available\n",
+		total, bsize, avail);
 
 	return 0;
 }
