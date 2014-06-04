@@ -973,10 +973,14 @@ static bool do_dgm_cleanup(struct tevent_context *ev_ctx,
 			   const struct server_id pid,
 			   const int argc, const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (pid.pid != 0) {
-		status = messaging_dgm_cleanup(msg_ctx, pid.pid);
+		int ret;
+		ret = messaging_dgm_cleanup(msg_ctx, pid.pid);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(ret);
+		}
 	} else {
 		status = messaging_dgm_wipe(msg_ctx);
 	}

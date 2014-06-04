@@ -445,13 +445,13 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 {
 	struct smbd_child_pid *child;
 	struct server_id child_id;
-	NTSTATUS status;
+	int ret;
 
 	child_id = pid_to_procid(pid);
 
-	status = messaging_dgm_cleanup(parent->msg_ctx, pid);
+	ret = messaging_dgm_cleanup(parent->msg_ctx, pid);
 	DEBUG(10, ("%s: messaging_dgm_cleanup returned %s\n",
-		   __func__, nt_errstr(status)));
+		   __func__, ret ? strerror(ret) : "ok"));
 
 	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {

@@ -368,7 +368,7 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 	messaging_dispatch_rec(dgm_ctx->msg_ctx, &rec);
 }
 
-NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
+int messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 {
 	struct messaging_backend *be = messaging_local_backend(msg_ctx);
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
@@ -376,26 +376,25 @@ NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 	char *lockfile_name, *socket_name;
 	int fd, ret;
 	struct flock lck = {};
-	NTSTATUS status = NT_STATUS_OK;
 
 	lockfile_name = talloc_asprintf(talloc_tos(), "%s/lck/%u",
 					ctx->cache_dir, (unsigned)pid);
 	if (lockfile_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 	socket_name = talloc_asprintf(lockfile_name, "%s/msg/%u",
 				      ctx->cache_dir, (unsigned)pid);
 	if (socket_name == NULL) {
 		TALLOC_FREE(lockfile_name);
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	fd = open(lockfile_name, O_NONBLOCK|O_WRONLY, 0);
 	if (fd == -1) {
-		status = map_nt_error_from_unix(errno);
+		ret = errno;
 		DEBUG(10, ("%s: open(%s) failed: %s\n", __func__,
-			   lockfile_name, strerror(errno)));
-		return status;
+			   lockfile_name, strerror(ret)));
+		return ret;
 	}
 
 	lck.l_type = F_WRLCK;
@@ -405,12 +404,12 @@ NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 
 	ret = fcntl(fd, F_SETLK, &lck);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		ret = errno;
 		DEBUG(10, ("%s: Could not get lock: %s\n", __func__,
-			   strerror(errno)));
+			   strerror(ret)));
 		TALLOC_FREE(lockfile_name);
 		close(fd);
-		return status;
+		return ret;
 	}
 
 	(void)unlink(socket_name);
@@ -418,7 +417,7 @@ NTSTATUS messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 	(void)close(fd);
 
 	TALLOC_FREE(lockfile_name);
-	return NT_STATUS_OK;
+	return 0;
 }
 
 NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
@@ -449,7 +448,6 @@ NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
 	}
 
 	while ((dp = readdir(msgdir)) != NULL) {
-		NTSTATUS status;
 		unsigned long pid;
 
 		pid = strtoul(dp->d_name, NULL, 10);
@@ -467,9 +465,9 @@ NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
 			continue;
 		}
 
-		status = messaging_dgm_cleanup(msg_ctx, pid);
+		ret = messaging_dgm_cleanup(msg_ctx, pid);
 		DEBUG(10, ("messaging_dgm_cleanup(%lu) returned %s\n",
-			   pid, nt_errstr(status)));
+			   pid, ret ? strerror(ret) : "ok"));
 	}
 	closedir(msgdir);
 
