@@ -420,7 +420,7 @@ int messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 	return 0;
 }
 
-NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
+int messaging_dgm_wipe(struct messaging_context *msg_ctx)
 {
 	struct messaging_backend *be = messaging_local_backend(msg_ctx);
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
@@ -429,6 +429,7 @@ NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
 	DIR *msgdir;
 	struct dirent *dp;
 	pid_t our_pid = getpid();
+	int ret;
 
 	/*
 	 * We scan the socket directory and not the lock directory. Otherwise
@@ -438,14 +439,16 @@ NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
 
 	msgdir_name = talloc_asprintf(talloc_tos(), "%s/msg", ctx->cache_dir);
 	if (msgdir_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	msgdir = opendir(msgdir_name);
-	TALLOC_FREE(msgdir_name);
 	if (msgdir == NULL) {
-		return map_nt_error_from_unix(errno);
+		ret = errno;
+		TALLOC_FREE(msgdir_name);
+		return ret;
 	}
+	TALLOC_FREE(msgdir_name);
 
 	while ((dp = readdir(msgdir)) != NULL) {
 		unsigned long pid;
@@ -471,7 +474,7 @@ NTSTATUS messaging_dgm_wipe(struct messaging_context *msg_ctx)
 	}
 	closedir(msgdir);
 
-	return NT_STATUS_OK;
+	return 0;
 }
 
 void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,

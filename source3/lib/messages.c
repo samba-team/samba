@@ -879,10 +879,11 @@ static int mess_parent_dgm_cleanup(void *private_data)
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
-	NTSTATUS status;
+	int ret;
 
-	status = messaging_dgm_wipe(msg_ctx);
-	DEBUG(10, ("messaging_dgm_wipe returned %s\n", nt_errstr(status)));
+	ret = messaging_dgm_wipe(msg_ctx);
+	DEBUG(10, ("messaging_dgm_wipe returned %s\n",
+		   ret ? strerror(ret) : "ok"));
 	return lp_parm_int(-1, "messaging", "messaging dgm cleanup interval",
 			   60*15);
 }

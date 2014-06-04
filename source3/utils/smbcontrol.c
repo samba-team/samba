@@ -973,22 +973,18 @@ static bool do_dgm_cleanup(struct tevent_context *ev_ctx,
 			   const struct server_id pid,
 			   const int argc, const char **argv)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	int ret;
 
 	if (pid.pid != 0) {
-		int ret;
 		ret = messaging_dgm_cleanup(msg_ctx, pid.pid);
-		if (ret != 0) {
-			status = map_nt_error_from_unix(ret);
-		}
 	} else {
-		status = messaging_dgm_wipe(msg_ctx);
+		ret = messaging_dgm_wipe(msg_ctx);
 	}
 
 	printf("cleanup(%u) returned %s\n", (unsigned)pid.pid,
-	       nt_errstr(status));
+	       ret ? strerror(ret) : "ok");
 
-	return NT_STATUS_IS_OK(status);
+	return (ret == 0);
 }
 
 /* Shutdown a server process */
