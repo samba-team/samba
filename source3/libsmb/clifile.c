@@ -4130,12 +4130,57 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 
 NTSTATUS cli_disk_size(struct cli_state *cli, uint64_t *bsize, uint64_t *total, uint64_t *avail)
 {
+	uint64_t sectors_per_block;
+	uint64_t bytes_per_sector;
 	int old_bsize, old_total, old_avail;
 	NTSTATUS status;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return cli_smb2_dskattr(cli, bsize, total, avail);
 	}
+
+	/*
+	 * Try the trans2 disk full size info call first.
+	 * We already use this in SMBC_fstatvfs_ctx().
+	 * Ignore 'actual_available_units' as we only
+	 * care about the quota for the caller.
+	 */
+
+	status = cli_get_fs_full_size_info(cli,
+			total,
+			avail,
+			NULL,
+			&sectors_per_block,
+			&bytes_per_sector);
+
+        /* Try and cope will all varients of "we don't do this call"
+           and fall back to cli_dskattr. */
+
+	if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_IMPLEMENTED) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_NOT_SUPPORTED) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_INFO_CLASS) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_PROCEDURE_NOT_FOUND) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_LEVEL) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_PARAMETER) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_DEVICE_REQUEST) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_DEVICE_STATE) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_CTL_FILE_NOT_SUPPORTED) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_UNSUCCESSFUL)) {
+		goto try_dskattr;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (bsize) {
+		*bsize = sectors_per_block *
+			 bytes_per_sector;
+	}
+
+	return NT_STATUS_OK;
+
+  try_dskattr:
 
 	/* Old SMB1 core protocol fallback. */
 	status = cli_dskattr(cli, &old_bsize, &old_total, &old_avail);
