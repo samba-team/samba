@@ -4094,10 +4094,6 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_dskattr(cli, bsize, total, avail);
-	}
-
 	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -4138,11 +4134,11 @@ NTSTATUS cli_disk_size(struct cli_state *cli, uint64_t *bsize, uint64_t *total, 
 	NTSTATUS status;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		status = cli_smb2_dskattr(cli, &old_bsize, &old_total, &old_avail);
-	} else {
-		status = cli_dskattr(cli, &old_bsize, &old_total, &old_avail);
+		return cli_smb2_dskattr(cli, bsize, total, avail);
 	}
 
+	/* Old SMB1 core protocol fallback. */
+	status = cli_dskattr(cli, &old_bsize, &old_total, &old_avail);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -1411,7 +1411,7 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
  Synchronous only.
 ***************************************************************/
 
-NTSTATUS cli_smb2_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
+NTSTATUS cli_smb2_dskattr(struct cli_state *cli, uint64_t *bsize, uint64_t *total, uint64_t *avail)
 {
 	NTSTATUS status;
 	uint16_t fnum = 0xffff;
@@ -1492,13 +1492,13 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, int *bsize, int *total, int *av
 	bytes_per_sector = IVAL(outbuf.data, 20);
 
 	if (bsize) {
-		*bsize = (int)(sectors_per_unit * bytes_per_sector);
+		*bsize = (uint64_t)sectors_per_unit * (uint64_t)bytes_per_sector;
 	}
 	if (total) {
-		*total = (int)total_size;
+		*total = total_size;
 	}
 	if (avail) {
-		*avail = (int)size_free;
+		*avail = size_free;
 	}
 
 	status = NT_STATUS_OK;

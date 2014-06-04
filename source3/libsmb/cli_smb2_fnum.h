@@ -100,9 +100,9 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
                         time_t access_time,
                         time_t write_time);
 NTSTATUS cli_smb2_dskattr(struct cli_state *cli,
-			int *bsize,
-			int *total,
-			int *avail);
+			uint64_t *bsize,
+			uint64_t *total,
+			uint64_t *avail);
 NTSTATUS cli_smb2_query_security_descriptor(struct cli_state *cli,
 			uint16_t fnum,
 			uint32_t sec_info,
