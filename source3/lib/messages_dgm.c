@@ -44,10 +44,10 @@ struct messaging_dgm_hdr {
 	struct server_id src;
 };
 
-static NTSTATUS messaging_dgm_send(struct server_id src,
-				   struct server_id pid, int msg_type,
-				   const struct iovec *iov, int iovlen,
-				   struct messaging_backend *backend);
+static int messaging_dgm_send(struct server_id src,
+			      struct server_id pid, int msg_type,
+			      const struct iovec *iov, int iovlen,
+			      struct messaging_backend *backend);
 static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			       uint8_t *msg, size_t msg_len,
 			       void *private_data);
@@ -292,10 +292,10 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	return 0;
 }
 
-static NTSTATUS messaging_dgm_send(struct server_id src,
-				   struct server_id pid, int msg_type,
-				   const struct iovec *iov, int iovlen,
-				   struct messaging_backend *backend)
+static int messaging_dgm_send(struct server_id src,
+			      struct server_id pid, int msg_type,
+			      const struct iovec *iov, int iovlen,
+			      struct messaging_backend *backend)
 {
 	struct messaging_dgm_context *ctx = talloc_get_type_abort(
 		backend->private_data, struct messaging_dgm_context);
@@ -311,7 +311,7 @@ static NTSTATUS messaging_dgm_send(struct server_id src,
 	dst_pathlen = snprintf(dst.sun_path, sizeof(dst.sun_path),
 			       "%s/msg/%u", ctx->cache_dir, (unsigned)pid.pid);
 	if (dst_pathlen >= sizeof(dst.sun_path)) {
-		return NT_STATUS_NAME_TOO_LONG;
+		return ENAMETOOLONG;
 	}
 
 	hdr.msg_version = MESSAGE_VERSION;
@@ -331,10 +331,7 @@ static NTSTATUS messaging_dgm_send(struct server_id src,
 	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov2, iovlen + 1);
 	unbecome_root();
 
-	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
-	}
-	return NT_STATUS_OK;
+	return ret;
 }
 
 static void messaging_dgm_recv(struct unix_msg_ctx *ctx,

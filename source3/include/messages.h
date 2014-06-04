@@ -66,10 +66,10 @@ struct messaging_context;
 struct messaging_rec;
 
 struct messaging_backend {
-	NTSTATUS (*send_fn)(struct server_id src,
-			    struct server_id pid, int msg_type,
-			    const struct iovec *iov, int iovlen,
-			    struct messaging_backend *backend);
+	int (*send_fn)(struct server_id src,
+		       struct server_id pid, int msg_type,
+		       const struct iovec *iov, int iovlen,
+		       struct messaging_backend *backend);
 	void *private_data;
 };
 

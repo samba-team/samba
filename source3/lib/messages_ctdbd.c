@@ -88,10 +88,10 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 	return global_ctdbd_connection;
 }
 
-static NTSTATUS messaging_ctdb_send(struct server_id src,
-				    struct server_id pid, int msg_type,
-				    const struct iovec *iov, int iovlen,
-				    struct messaging_backend *backend)
+static int messaging_ctdb_send(struct server_id src,
+			       struct server_id pid, int msg_type,
+			       const struct iovec *iov, int iovlen,
+			       struct messaging_backend *backend)
 {
 	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
 		backend->private_data, struct messaging_ctdbd_context);
@@ -102,7 +102,7 @@ static NTSTATUS messaging_ctdb_send(struct server_id src,
 
 	buf = iov_buf(talloc_tos(), iov, iovlen);
 	if (buf == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 
@@ -116,7 +116,10 @@ static NTSTATUS messaging_ctdb_send(struct server_id src,
 
 	TALLOC_FREE(buf);
 
-	return status;
+	if (NT_STATUS_IS_OK(status)) {
+		return 0;
+	}
+	return map_errno_from_nt_status(status);
 }
 
 static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)

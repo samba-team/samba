@@ -412,14 +412,20 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const struct iovec *iov, int iovlen)
 {
+	int ret;
+
 	if (server_id_is_disconnected(&server)) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	if (!procid_is_local(&server)) {
-		return msg_ctx->remote->send_fn(msg_ctx->id, server,
-						msg_type, iov, iovlen,
-						msg_ctx->remote);
+		ret = msg_ctx->remote->send_fn(msg_ctx->id, server,
+					       msg_type, iov, iovlen,
+					       msg_ctx->remote);
+		if (ret != 0) {
+			return map_nt_error_from_unix(ret);
+		}
+		return NT_STATUS_OK;
 	}
 
 	if (messaging_is_self_send(msg_ctx, &server)) {
@@ -444,8 +450,12 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	return msg_ctx->local->send_fn(msg_ctx->id, server, msg_type,
-				       iov, iovlen, msg_ctx->local);
+	ret = msg_ctx->local->send_fn(msg_ctx->id, server, msg_type,
+				      iov, iovlen, msg_ctx->local);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
