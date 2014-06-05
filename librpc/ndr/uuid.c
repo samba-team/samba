@@ -197,15 +197,7 @@ _PUBLIC_ bool GUID_all_zero(const struct GUID *u)
 
 _PUBLIC_ bool GUID_equal(const struct GUID *u1, const struct GUID *u2)
 {
-	if (u1->time_low != u2->time_low ||
-	    u1->time_mid != u2->time_mid ||
-	    u1->time_hi_and_version != u2->time_hi_and_version ||
-	    u1->clock_seq[0] != u2->clock_seq[0] ||
-	    u1->clock_seq[1] != u2->clock_seq[1] ||
-	    memcmp(u1->node, u2->node, 6) != 0) {
-		return false;
-	}
-	return true;
+	return (GUID_compare(u1, u2) == 0);
 }
 
 _PUBLIC_ int GUID_compare(const struct GUID *u1, const struct GUID *u2)
