@@ -69,4 +69,7 @@ unsigned int tstream_smbXcli_np_set_timeout(struct tstream_context *stream,
  */
 #define TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE 4280
 
+void tstream_smbXcli_np_set_max_data(struct tstream_context *stream,
+				     uint32_t max_data);
+
 #endif /*  _CLI_NP_TSTREAM_H_ */
