@@ -733,6 +733,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
 	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
+		int num_binds = 0;
 		char **wcard = iface_list_wildcard(kdc);
 		NT_STATUS_HAVE_NO_MEMORY(wcard);
 		for (i=0; wcard[i]; i++) {
@@ -740,17 +741,24 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 				status = kdc_add_socket(kdc, model_ops,
 							"kdc", wcard[i], kdc_port,
 							kdc_process, false);
-				NT_STATUS_NOT_OK_RETURN(status);
+				if (NT_STATUS_IS_OK(status)) {
+					num_binds++;
+				}
 			}
 
 			if (kpasswd_port) {
 				status = kdc_add_socket(kdc, model_ops,
 							"kpasswd", wcard[i], kpasswd_port,
 							kpasswdd_process, false);
-				NT_STATUS_NOT_OK_RETURN(status);
+				if (NT_STATUS_IS_OK(status)) {
+					num_binds++;
+				}
 			}
 		}
 		talloc_free(wcard);
+		if (num_binds == 0) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
 		done_wildcard = true;
 	}
 
