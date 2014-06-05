@@ -57,8 +57,8 @@ void drepl_reps_update(struct dreplsrv_service *s, const char *reps_attr,
 	}
 
 	for (i=0; i<count; i++) {
-		if (GUID_compare(source_dsa_obj_guid,
-				 &reps[i].ctr.ctr1.source_dsa_obj_guid) == 0) {
+		if (GUID_equal(source_dsa_obj_guid,
+			       &reps[i].ctr.ctr1.source_dsa_obj_guid)) {
 			break;
 		}
 	}

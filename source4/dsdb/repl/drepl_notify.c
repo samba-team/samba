@@ -255,14 +255,14 @@ static struct dreplsrv_partition_source_dsa *dreplsrv_find_notify_dsa(struct dre
 
 	/* first check the sources list */
 	for (s=p->sources; s; s=s->next) {
-		if (GUID_compare(&s->repsFrom1->source_dsa_obj_guid, guid) == 0) {
+		if (GUID_equal(&s->repsFrom1->source_dsa_obj_guid, guid)) {
 			return s;
 		}
 	}
 
 	/* then the notifies list */
 	for (s=p->notifies; s; s=s->next) {
-		if (GUID_compare(&s->repsFrom1->source_dsa_obj_guid, guid) == 0) {
+		if (GUID_equal(&s->repsFrom1->source_dsa_obj_guid, guid)) {
 			return s;
 		}
 	}

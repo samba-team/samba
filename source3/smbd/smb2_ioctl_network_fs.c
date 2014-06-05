@@ -395,7 +395,7 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (GUID_compare(&in_guid, &conn->smb2.client.guid) != 0) {
+	if (!GUID_equal(&in_guid, &conn->smb2.client.guid)) {
 		*disconnect = true;
 		return NT_STATUS_ACCESS_DENIED;
 	}

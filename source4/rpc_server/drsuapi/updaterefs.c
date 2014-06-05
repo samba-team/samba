@@ -50,8 +50,8 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<reps.count; i++) {
-		if (GUID_compare(&dest->source_dsa_obj_guid, 
-				 &reps.r[i].ctr.ctr1.source_dsa_obj_guid) == 0) {
+		if (GUID_equal(&dest->source_dsa_obj_guid,
+			       &reps.r[i].ctr.ctr1.source_dsa_obj_guid)) {
 			if (options & DRSUAPI_DRS_GETCHG_CHECK) {
 				return WERR_OK;
 			} else {
@@ -97,7 +97,8 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<reps.count; i++) {
-		if (GUID_compare(dest_guid, &reps.r[i].ctr.ctr1.source_dsa_obj_guid) == 0) {
+		if (GUID_equal(dest_guid,
+			       &reps.r[i].ctr.ctr1.source_dsa_obj_guid)) {
 			if (i+1 < reps.count) {
 				memmove(&reps.r[i], &reps.r[i+1], sizeof(reps.r[i])*(reps.count-(i+1)));
 			}

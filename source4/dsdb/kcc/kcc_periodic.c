@@ -42,8 +42,8 @@
  */
 static bool kccsrv_same_source_dsa(struct repsFromToBlob *r1, struct repsFromToBlob *r2)
 {
-	return GUID_compare(&r1->ctr.ctr1.source_dsa_obj_guid,
-			    &r2->ctr.ctr1.source_dsa_obj_guid) == 0;
+	return GUID_equal(&r1->ctr.ctr1.source_dsa_obj_guid,
+			  &r2->ctr.ctr1.source_dsa_obj_guid);
 }
 
 /*
@@ -498,7 +498,7 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 		struct GUID ntds_guid, invocation_id;
 
 		ntds_guid = samdb_result_guid(res->msgs[i], "objectGUID");
-		if (GUID_compare(&ntds_guid, &s->ntds_guid) == 0) {
+		if (GUID_equal(&ntds_guid, &s->ntds_guid)) {
 			/* don't replicate with ourselves */
 			continue;
 		}

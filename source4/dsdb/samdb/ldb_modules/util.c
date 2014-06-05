@@ -742,7 +742,7 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct GUID op_featur
 
 			search_guid = samdb_result_guid(res->msgs[0], "msDS-OptionalFeatureGUID");
 
-			if (GUID_compare(&search_guid, &op_feature_guid) == 0) {
+			if (GUID_equal(&search_guid, &op_feature_guid)) {
 				*feature_enabled = true;
 				break;
 			}

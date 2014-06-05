@@ -364,7 +364,7 @@ static struct dreplsrv_partition_source_dsa *dreplsrv_find_source_dsa(struct dre
 {
 	struct dreplsrv_partition_source_dsa *s;
 	for (s=list; s; s=s->next) {
-		if (GUID_compare(&s->repsFrom1->source_dsa_obj_guid, guid) == 0) {
+		if (GUID_equal(&s->repsFrom1->source_dsa_obj_guid, guid)) {
 			return s;
 		}
 	}
@@ -415,8 +415,8 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 
 	/* re-use an existing source if found */
 	for (s2=*listp; s2; s2=s2->next) {
-		if (GUID_compare(&s2->repsFrom1->source_dsa_obj_guid, 
-				 &source->repsFrom1->source_dsa_obj_guid) == 0) {
+		if (GUID_equal(&s2->repsFrom1->source_dsa_obj_guid,
+				 &source->repsFrom1->source_dsa_obj_guid)) {
 			talloc_free(s2->repsFrom1->other_info);
 			*s2->repsFrom1 = *source->repsFrom1;
 			talloc_steal(s2, s2->repsFrom1->other_info);
