@@ -204,7 +204,8 @@ def configure(conf):
         conf.CHECK_HEADERS('systemd/sd-daemon.h', lib='systemd-daemon')
         conf.CHECK_LIB('systemd-daemon', shlib=True)
 
-    if conf.CONFIG_SET('HAVE_SYSTEMD_SD_DAEMON_H'):
+    if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_DAEMON_H') and
+        conf.CONFIG_SET('HAVE_LIBSYSTEMD_DAEMON')):
         conf.DEFINE('HAVE_SYSTEMD', '1')
         conf.env['ENABLE_SYSTEMD'] = True
     else:
