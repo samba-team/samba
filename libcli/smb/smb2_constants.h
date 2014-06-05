@@ -181,9 +181,6 @@
 
 /* SMB2 lease bits */
 #define SMB2_LEASE_NONE                                  0x00
-#define SMB2_LEASE_READ                                  0x01
-#define SMB2_LEASE_HANDLE                                0x02
-#define SMB2_LEASE_WRITE                                 0x04
 
 /* SMB2 lease flags */
 #define SMB2_LEASE_FLAG_BREAK_IN_PROGRESS                0x00000002

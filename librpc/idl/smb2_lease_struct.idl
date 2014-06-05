@@ -1,0 +1,33 @@
+#include "idl_types.h"
+
+/*
+  miscellaneous IDL structures
+*/
+
+[
+	pointer_default(unique)
+]
+interface smb2_lease_struct
+{
+	/*
+	 * SMB2 lease structure (per MS-SMB2 2.2.13)
+	 */
+	typedef [public] struct {
+		hyper data[2];
+	} smb2_lease_key;
+
+	typedef [public,bitmap32bit] bitmap {
+		SMB2_LEASE_READ = 0x01,
+		SMB2_LEASE_WRITE = 0x02,
+		SMB2_LEASE_HANDLE = 0x04
+	} smb2_lease_state;
+
+	typedef [public] struct {
+		smb2_lease_key lease_key;
+		smb2_lease_state lease_state;
+		uint32 lease_flags;
+		uint32 lease_duration;	/* should be 0 */
+		smb2_lease_key parent_lease_key;
+		uint16 lease_epoch;
+	} smb2_lease;
+};

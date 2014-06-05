@@ -25,6 +25,7 @@
 #include "source4/libcli/raw/smb.h"
 #include "../libcli/smb/smb_common.h"
 #include "librpc/gen_ndr/misc.h" /* for struct GUID */
+#include "librpc/gen_ndr/smb2_lease_struct.h"
 
 /* this structure is just a wrapper for a string, the only reason we
    bother with this is that it allows us to check the length provided

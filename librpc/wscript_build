@@ -353,6 +353,12 @@ bld.SAMBA_SUBSYSTEM('NDR_XATTR',
     public_deps='ndr NDR_SECURITY'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_SMB2_LEASE_STRUCT',
+    source='gen_ndr/ndr_smb2_lease_struct.c',
+    public_deps='ndr',
+    public_headers='gen_ndr/smb2_lease_struct.h'
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_SCHANNEL',
     source='ndr/ndr_schannel.c gen_ndr/ndr_schannel.c',
     public_deps='ndr ndr_nbt'

@@ -40,7 +40,10 @@ def build(bld):
 		smb2cli_echo.c
                 tstream_smbXcli_np.c
 	''',
-	deps='LIBCRYPTO errors gensec krb5samba smb_transport',
+	deps='''
+                LIBCRYPTO NDR_SMB2_LEASE_STRUCT errors gensec krb5samba
+                smb_transport
+        ''',
 	public_deps='talloc samba-util',
 	private_library=True,
 	public_headers='''
