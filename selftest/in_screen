@@ -69,8 +69,14 @@ cleanup() {
 rm -f $basedir/$SERVERNAME.status $basedir/$SERVERNAME.log
 echo $$ > $basedir/$SERVERNAME.parent.pid
 trap cleanup SIGINT SIGTERM SIGPIPE
+
 if [[ "$TMUX" ]]; then
-    tmux new-window -n test:$SERVERNAME "bash $basedir/$SERVERNAME.launch"
+    TMUX_CMD=tmux
+    if [[ $TMUX = *tmate* ]]; then
+        TMUX_CMD=tmate
+    fi
+
+    $TMUX_CMD new-window -n test:$SERVERNAME "bash $basedir/$SERVERNAME.launch"
 else
     screen -r -X screen -t test:$SERVERNAME bash $basedir/$SERVERNAME.launch
 fi
