@@ -1267,6 +1267,7 @@ static struct socket_info *find_socket_info(int fd)
 	return NULL;
 }
 
+#if 0 /* FIXME */
 static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
 {
 	struct socket_info *s;
@@ -1348,7 +1349,7 @@ static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
 
 	return false;
 }
-
+#endif
 
 static void swrap_remove_stale(int fd)
 {
@@ -2829,7 +2830,9 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	struct sockaddr_un un_addr;
 	struct socket_info *si = find_socket_info(s);
 	int bind_error = 0;
+#if 0 /* FIXME */
 	bool in_use;
+#endif
 
 	if (!si) {
 		return libc_bind(s, myaddr, addrlen);
@@ -2885,11 +2888,13 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 		return -1;
 	}
 
+#if 0 /* FIXME */
 	in_use = check_addr_port_in_use(myaddr, addrlen);
 	if (in_use) {
 		errno = EADDRINUSE;
 		return -1;
 	}
+#endif
 
 	free(si->myname);
 	si->myname_len = addrlen;
