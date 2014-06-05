@@ -838,12 +838,16 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 					continue;
 				}
 
-				if (!smbd_open_one_socket(parent,
-							  ev_ctx,
-							  &ss,
-							  port)) {
-					return false;
-				}
+				/*
+				 * If we fail to open any sockets
+				 * in this loop the parent-sockets == NULL
+				 * case below will prevent us from starting.
+				 */
+
+				(void)smbd_open_one_socket(parent,
+						  ev_ctx,
+						  &ss,
+						  port);
 			}
 		}
 	}
