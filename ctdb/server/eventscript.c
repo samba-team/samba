@@ -754,8 +754,9 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 	if (!check_options(state->call, state->options)) {
-		DEBUG(DEBUG_ERR, ("Bad eventscript options '%s' for %s\n",
-				  ctdb_eventscript_call_names[state->call], state->options));
+		DEBUG(DEBUG_ERR, ("Bad eventscript options '%s' for '%s'\n",
+				  state->options,
+				  ctdb_eventscript_call_names[state->call]));
 		talloc_free(state);
 		return -1;
 	}
