@@ -471,7 +471,7 @@ void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate)
 	ctdb->runstate = runstate;
 }
 
-void ctdb_mkdir_p_or_die(struct ctdb_context *ctdb, const char *dir, int mode)
+void mkdir_p_or_die(const char *dir, int mode)
 {
 	int ret;
 

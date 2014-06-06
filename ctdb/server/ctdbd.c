@@ -256,13 +256,13 @@ int main(int argc, const char *argv[])
 	ctdb_load_nodes_file(ctdb);
 
 	ctdb->db_directory = options.db_dir;
-	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory, 0700);
+	mkdir_p_or_die(ctdb->db_directory, 0700);
 
 	ctdb->db_directory_persistent = options.db_dir_persistent;
-	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory_persistent, 0700);
+	mkdir_p_or_die(ctdb->db_directory_persistent, 0700);
 
 	ctdb->db_directory_state = options.db_dir_state;
-	ctdb_mkdir_p_or_die(ctdb, ctdb->db_directory_state, 0700);
+	mkdir_p_or_die(ctdb->db_directory_state, 0700);
 
 	if (options.public_interface) {
 		ctdb->default_public_interface = talloc_strdup(ctdb, options.public_interface);
