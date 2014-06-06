@@ -923,6 +923,21 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
+	  <term>CTDB_GANESHA_REC_SUBDIR<parameter>SUBDIR</parameter></term>
+	  <listitem>
+	    <para>
+	      SUBDIR is the name of a top-level subdirectory in the
+	      first cluster filesystem.  This subdirectory is used to
+	      allow communication between NFS-Ganesha and the
+	      <filename>60.ganesha</filename> script.
+	    </para>
+	    <para>
+	      Default is ".ganesha".
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
 	  <term>CTDB_MANAGES_NFS=yes|no</term>
 	  <listitem>
 	    <para>

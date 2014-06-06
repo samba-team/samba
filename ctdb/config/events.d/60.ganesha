@@ -82,22 +82,24 @@ get_nodenum()
 
 create_ganesha_recdirs ()
 {
+    [ -n "$CTDB_GANESHA_REC_SUBDIR" ] || CTDB_GANESHA_REC_SUBDIR=".ganesha"
+
     MOUNTS=$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)
     if [ -z "$MOUNTS" ]; then
       echo "startup $CTDB_CLUSTER_FILESYSTEM_TYPE not ready"
       exit 0
     fi
     MNTPT=$(echo "$MOUNTS" | sort | awk 'NR == 1 {print $3}')
-    mkdir -p $MNTPT/.ganesha
+    mkdir -p $MNTPT/$CTDB_GANESHA_REC_SUBDIR
     if [ -e $GANRECDIR ]; then
         if [ ! -L $GANRECDIR ] ; then
             rm -rf $GANRECDIR
-            if ! ln -s $MNTPT/.ganesha  $GANRECDIR ; then
+            if ! ln -s $MNTPT/$CTDB_GANESHA_REC_SUBDIR  $GANRECDIR ; then
                 echo "ln failed"
             fi
         fi
     else
-        if ! ln -sf $MNTPT/.ganesha  $GANRECDIR ; then
+        if ! ln -sf $MNTPT/$CTDB_GANESHA_REC_SUBDIR  $GANRECDIR ; then
             echo "ln failed"
         fi
     fi
