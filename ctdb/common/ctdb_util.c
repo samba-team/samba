@@ -377,10 +377,10 @@ void ctdb_restore_scheduler(struct ctdb_context *ctdb)
 
 	ti = 0ULL;
 	if (getthrds64(getpid(), &te, sizeof(te), &ti, 1) != 1) {
-		ctdb_fatal(ctdb, "Unable to get thread information\n");
+		DEBUG(DEBUG_ERR, ("Unable to get thread information\n"));
 	}
 	if (thread_setsched(te.ti_tid, 0, SCHED_OTHER) == -1) {
-		ctdb_fatal(ctdb, "Unable to set scheduler to SCHED_OTHER\n");
+		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_OTHER\n"));
 	}
 #endif
 #else /* no AIX */
@@ -389,7 +389,7 @@ void ctdb_restore_scheduler(struct ctdb_context *ctdb)
 
 	p.sched_priority = 0;
 	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
-		ctdb_fatal(ctdb, "Unable to set scheduler to SCHED_OTHER\n");
+		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_OTHER\n"));
 	}
 #endif
 #endif
