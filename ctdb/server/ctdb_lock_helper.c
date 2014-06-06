@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "tdb.h"
 #include "system/filesys.h"
-#include "../include/ctdb_private.h"
+#include "ctdb_private.h"
 
 static char *progname = NULL;
 

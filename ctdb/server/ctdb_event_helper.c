@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "ctdb_private.h"
 
 static char *progname = NULL;
 
@@ -36,17 +37,6 @@ static void sigterm(int sig)
 		kill(-pid, SIGKILL);
 	}
 	_exit(0);
-}
-
-static void set_close_on_exec(int fd)
-{
-	int v;
-
-	v = fcntl(fd, F_GETFD, 0);
-	if (v == -1) {
-		return;
-	}
-	fcntl(fd, F_SETFD, v | FD_CLOEXEC);
 }
 
 static int check_executable(const char *path)

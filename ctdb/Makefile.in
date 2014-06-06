@@ -180,13 +180,16 @@ bin/ltdbtool: tools/ltdbtool.o $(TDB_OBJ)
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $+ $(TDB_LIBS) $(LIB_FLAGS)
 
-bin/ctdb_lock_helper: server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ)
-	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ) $(TDB_LIBS) $(LIB_FLAGS)
+HELPER_COMMON_OBJ = common/system_util.o common/ctdb_logging.o \
+		    lib/util/debug.o lib/util/util_time.o lib/util/util_file.o
 
-bin/ctdb_event_helper: server/ctdb_event_helper.o $(REPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
+bin/ctdb_lock_helper: server/ctdb_lock_helper.o $(HELPER_COMMON_OBJ) $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_event_helper.o $(REPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_lock_helper.o $(HELPER_COMMON_OBJ) $(CTDB_EXTERNAL_OBJ) $(LIB_FLAGS)
+
+bin/ctdb_event_helper: server/ctdb_event_helper.o $(HELPER_COMMON_OBJ) $(CTDB_EXTERNAL_OBJ)
+	@echo Linking $@
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_event_helper.o $(HELPER_COMMON_OBJ) $(CTDB_EXTERNAL_OBJ) $(LIB_FLAGS)
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o $(POPT_OBJ)
 	@echo Linking $@
