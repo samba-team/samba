@@ -25,9 +25,6 @@
 #include "system/shmem.h"
 #include "../include/ctdb_private.h"
 
-int LogLevel = DEBUG_NOTICE;
-int this_log_level = 0;
-
 /*
   return error string for last error
 */
@@ -405,43 +402,6 @@ unsigned ctdb_addr_to_port(ctdb_sock_addr *addr)
 	}
 
 	return 0;
-}
-
-struct debug_levels debug_levels[] = {
-	{DEBUG_EMERG,	"EMERG"},
-	{DEBUG_ALERT,	"ALERT"},
-	{DEBUG_CRIT,	"CRIT"},
-	{DEBUG_ERR,	"ERR"},
-	{DEBUG_WARNING,	"WARNING"},
-	{DEBUG_NOTICE,	"NOTICE"},
-	{DEBUG_INFO,	"INFO"},
-	{DEBUG_DEBUG,	"DEBUG"},
-	{0, NULL}
-};
-
-const char *get_debug_by_level(int32_t level)
-{
-	int i;
-
-	for (i=0; debug_levels[i].description != NULL; i++) {
-		if (debug_levels[i].level == level) {
-			return debug_levels[i].description;
-		}
-	}
-	return "Unknown";
-}
-
-int32_t get_debug_by_desc(const char *desc)
-{
-	int i;
-
-	for (i=0; debug_levels[i].description != NULL; i++) {
-		if (!strcasecmp(debug_levels[i].description, desc)) {
-			return debug_levels[i].level;
-		}
-	}
-
-	return DEBUG_ERR;
 }
 
 /* we don't lock future pages here; it would increase the chance that
