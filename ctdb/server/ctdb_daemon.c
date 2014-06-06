@@ -94,7 +94,7 @@ static void ctdb_start_periodic_events(struct ctdb_context *ctdb)
 	ctdb_start_time_tickd(ctdb);
 }
 
-static void block_signal(int signum)
+static void ignore_signal(int signum)
 {
 	struct sigaction act;
 
@@ -1169,7 +1169,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 			exit(11);
 		}
 	}
-	block_signal(SIGPIPE);
+	ignore_signal(SIGPIPE);
 
 	ctdbd_pid = getpid();
 	ctdb->ctdbd_pid = ctdbd_pid;
