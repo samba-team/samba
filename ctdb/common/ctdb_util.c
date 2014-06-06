@@ -407,22 +407,6 @@ unsigned ctdb_addr_to_port(ctdb_sock_addr *addr)
 	return 0;
 }
 
-void ctdb_block_signal(int signum)
-{
-	sigset_t set;
-	sigemptyset(&set);
-	sigaddset(&set,signum);
-	sigprocmask(SIG_BLOCK,&set,NULL);
-}
-
-void ctdb_unblock_signal(int signum)
-{
-	sigset_t set;
-	sigemptyset(&set);
-	sigaddset(&set,signum);
-	sigprocmask(SIG_UNBLOCK,&set,NULL);
-}
-
 struct debug_levels debug_levels[] = {
 	{DEBUG_EMERG,	"EMERG"},
 	{DEBUG_ALERT,	"ALERT"},
