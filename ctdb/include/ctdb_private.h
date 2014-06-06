@@ -512,7 +512,6 @@ struct ctdb_context {
 	bool do_checkpublicip;
 	struct trbt_tree *server_ids; 
 	bool do_setsched;
-	void *saved_scheduler_param;
 	const char *event_script_dir;
 	const char *notification_script;
 	const char *default_public_interface;

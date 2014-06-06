@@ -342,11 +342,6 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 		return;
 	}
 
-	if (ctdb->saved_scheduler_param == NULL) {
-		ctdb->saved_scheduler_param = talloc_size(ctdb, sizeof(te));
-	}
-	*(struct thrdentry64 *)ctdb->saved_scheduler_param = te;
-
 	if (thread_setsched(te.ti_tid, 0, SCHED_RR) == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_RR (%s)\n",
 				  strerror(errno)));
@@ -357,16 +352,7 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 #else /* no AIX */
 #if HAVE_SCHED_SETSCHEDULER
 	struct sched_param p;
-	if (ctdb->saved_scheduler_param == NULL) {
-		ctdb->saved_scheduler_param = talloc_size(ctdb, sizeof(p));
-	}
 
-	if (sched_getparam(0, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
-		DEBUG(DEBUG_ERR,("Unable to get old scheduler params\n"));
-		return;
-	}
-
-	p = *(struct sched_param *)ctdb->saved_scheduler_param;
 	p.sched_priority = 1;
 
 	if (sched_setscheduler(0, SCHED_FIFO, &p) == -1) {
@@ -386,28 +372,24 @@ void ctdb_restore_scheduler(struct ctdb_context *ctdb)
 {
 #ifdef _AIX_
 #if HAVE_THREAD_SETSCHED
-	struct thrdentry64 te, *saved;
+	struct thrdentry64 te;
 	tid64_t ti;
 
 	ti = 0ULL;
 	if (getthrds64(getpid(), &te, sizeof(te), &ti, 1) != 1) {
 		ctdb_fatal(ctdb, "Unable to get thread information\n");
 	}
-	if (ctdb->saved_scheduler_param == NULL) {
-		ctdb_fatal(ctdb, "No saved scheduler parameters\n");
-	}
-	saved = (struct thrdentry64 *)ctdb->saved_scheduler_param;
-	if (thread_setsched(te.ti_tid, saved->ti_pri, saved->ti_policy) == -1) {
-		ctdb_fatal(ctdb, "Unable to restore old scheduler parameters\n");
+	if (thread_setsched(te.ti_tid, 0, SCHED_OTHER) == -1) {
+		ctdb_fatal(ctdb, "Unable to set scheduler to SCHED_OTHER\n");
 	}
 #endif
 #else /* no AIX */
 #if HAVE_SCHED_SETSCHEDULER
-	if (ctdb->saved_scheduler_param == NULL) {
-		ctdb_fatal(ctdb, "No saved scheduler parameters\n");
-	}
-	if (sched_setscheduler(0, SCHED_OTHER, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
-		ctdb_fatal(ctdb, "Unable to restore old scheduler parameters\n");
+	struct sched_param p;
+
+	p.sched_priority = 0;
+	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
+		ctdb_fatal(ctdb, "Unable to set scheduler to SCHED_OTHER\n");
 	}
 #endif
 #endif
