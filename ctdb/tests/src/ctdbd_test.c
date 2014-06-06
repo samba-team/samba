@@ -53,6 +53,7 @@ bool fast_start;
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"
 #include "common/ctdb_fork.c"
+#include "common/system_util.c"
 
 /* CTDB_SERVER_OBJ */
 #include "server/ctdb_daemon.c"

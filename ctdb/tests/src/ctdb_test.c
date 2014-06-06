@@ -102,6 +102,7 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"
 #include "common/ctdb_fork.c"
+#include "common/system_util.c"
 
 /* CTDB_CLIENT_OBJ */
 #include "client/ctdb_client.c"
