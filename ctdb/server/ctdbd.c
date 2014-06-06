@@ -164,7 +164,6 @@ int main(int argc, const char *argv[])
 
 	talloc_enable_null_tracking();
 
-	ctdb_block_signal(SIGPIPE);
 	fault_setup("ctdbd");
 
 	ev = event_context_init(NULL);
