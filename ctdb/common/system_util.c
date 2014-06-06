@@ -23,6 +23,258 @@
 
 #include <libgen.h>
 
+
+#if HAVE_SCHED_H
+#include <sched.h>
+#endif
+
+#if HAVE_PROCINFO_H
+#include <procinfo.h>
+#endif
+
+/*
+  if possible, make this task real time
+ */
+void set_scheduler(void)
+{
+#ifdef _AIX_
+#if HAVE_THREAD_SETSCHED
+	struct thrdentry64 te;
+	tid64_t ti;
+
+	ti = 0ULL;
+	if (getthrds64(getpid(), &te, sizeof(te), &ti, 1) != 1) {
+		DEBUG(DEBUG_ERR, ("Unable to get thread information\n"));
+		return;
+	}
+
+	if (thread_setsched(te.ti_tid, 0, SCHED_RR) == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_RR (%s)\n",
+				  strerror(errno)));
+	} else {
+		DEBUG(DEBUG_NOTICE, ("Set scheduler to SCHED_RR\n"));
+	}
+#endif
+#else /* no AIX */
+#if HAVE_SCHED_SETSCHEDULER
+	struct sched_param p;
+
+	p.sched_priority = 1;
+
+	if (sched_setscheduler(0, SCHED_FIFO, &p) == -1) {
+		DEBUG(DEBUG_CRIT,("Unable to set scheduler to SCHED_FIFO (%s)\n",
+			 strerror(errno)));
+	} else {
+		DEBUG(DEBUG_NOTICE,("Set scheduler to SCHED_FIFO\n"));
+	}
+#endif
+#endif
+}
+
+/*
+  reset scheduler from real-time to normal scheduling
+ */
+void reset_scheduler(void)
+{
+#ifdef _AIX_
+#if HAVE_THREAD_SETSCHED
+	struct thrdentry64 te;
+	tid64_t ti;
+
+	ti = 0ULL;
+	if (getthrds64(getpid(), &te, sizeof(te), &ti, 1) != 1) {
+		DEBUG(DEBUG_ERR, ("Unable to get thread information\n"));
+	}
+	if (thread_setsched(te.ti_tid, 0, SCHED_OTHER) == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_OTHER\n"));
+	}
+#endif
+#else /* no AIX */
+#if HAVE_SCHED_SETSCHEDULER
+	struct sched_param p;
+
+	p.sched_priority = 0;
+	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_OTHER\n"));
+	}
+#endif
+#endif
+}
+
+void set_nonblocking(int fd)
+{
+	int v;
+
+	v = fcntl(fd, F_GETFL, 0);
+	if (v == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to get file status flags - %s\n",
+				      strerror(errno)));
+		return;
+	}
+        if (fcntl(fd, F_SETFL, v | O_NONBLOCK) == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to set non_blocking on fd - %s\n",
+				      strerror(errno)));
+	}
+}
+
+void set_close_on_exec(int fd)
+{
+	int v;
+
+	v = fcntl(fd, F_GETFD, 0);
+	if (v == -1) {
+		DEBUG(DEBUG_WARNING, ("Failed to get file descriptor flags - %s\n",
+				      strerror(errno)));
+		return;
+	}
+	if (fcntl(fd, F_SETFD, v | FD_CLOEXEC) != 0) {
+		DEBUG(DEBUG_WARNING, ("Failed to set close_on_exec on fd - %s\n",
+				      strerror(errno)));
+	}
+}
+
+
+bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
+{
+	sin->sin_family = AF_INET;
+	sin->sin_port   = htons(port);
+
+	if (inet_pton(AF_INET, s, &sin->sin_addr) != 1) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to translate %s into sin_addr\n", s));
+		return false;
+	}
+
+	return true;
+}
+
+static bool parse_ipv6(const char *s, const char *ifaces, unsigned port, ctdb_sock_addr *saddr)
+{
+	saddr->ip6.sin6_family   = AF_INET6;
+	saddr->ip6.sin6_port     = htons(port);
+	saddr->ip6.sin6_flowinfo = 0;
+	saddr->ip6.sin6_scope_id = 0;
+
+	if (inet_pton(AF_INET6, s, &saddr->ip6.sin6_addr) != 1) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to translate %s into sin6_addr\n", s));
+		return false;
+	}
+
+	if (ifaces && IN6_IS_ADDR_LINKLOCAL(&saddr->ip6.sin6_addr)) {
+		if (strchr(ifaces, ',')) {
+			DEBUG(DEBUG_ERR, (__location__ " Link local address %s "
+					  "is specified for multiple ifaces %s\n",
+					  s, ifaces));
+			return false;
+		}
+		saddr->ip6.sin6_scope_id = if_nametoindex(ifaces);
+	}
+
+	return true;
+}
+
+/*
+  parse an ip
+ */
+bool parse_ip(const char *addr, const char *ifaces, unsigned port, ctdb_sock_addr *saddr)
+{
+	char *p;
+	bool ret;
+
+	ZERO_STRUCTP(saddr); /* valgrind :-) */
+
+	/* now is this a ipv4 or ipv6 address ?*/
+	p = index(addr, ':');
+	if (p == NULL) {
+		ret = parse_ipv4(addr, port, &saddr->ip);
+	} else {
+		ret = parse_ipv6(addr, ifaces, port, saddr);
+	}
+
+	return ret;
+}
+
+/*
+  parse a ip/mask pair
+ */
+bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr, unsigned *mask)
+{
+	char *p;
+	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
+	char *endp = NULL;
+	ssize_t len;
+	bool ret;
+
+	ZERO_STRUCT(*addr);
+
+	len = strlen(str);
+	if (len >= sizeof(s)) {
+		DEBUG(DEBUG_ERR, ("Address %s is unreasonably long\n", str));
+		return false;
+	}
+
+	strncpy(s, str, len+1);
+
+	p = rindex(s, '/');
+	if (p == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a mask\n", s));
+		return false;
+	}
+
+	*mask = strtoul(p+1, &endp, 10);
+	if (endp == NULL || *endp != 0) {
+		/* trailing garbage */
+		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the mask in %s\n", s));
+		return false;
+	}
+	*p = 0;
+
+
+	/* now is this a ipv4 or ipv6 address ?*/
+	ret = parse_ip(s, ifaces, 0, addr);
+
+	return ret;
+}
+
+/*
+  parse a ip:port pair
+ */
+bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
+{
+	char *p;
+	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
+	unsigned port;
+	char *endp = NULL;
+	ssize_t len;
+	bool ret;
+
+	len = strlen(addr);
+	if (len >= sizeof(s)) {
+		DEBUG(DEBUG_ERR, ("Address %s is unreasonably long\n", addr));
+		return false;
+	}
+
+	strncpy(s, addr, len+1);
+
+	p = rindex(s, ':');
+	if (p == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a port number\n", s));
+		return false;
+	}
+
+	port = strtoul(p+1, &endp, 10);
+	if (endp == NULL || *endp != 0) {
+		/* trailing garbage */
+		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the port in %s\n", s));
+		return false;
+	}
+	*p = 0;
+
+	/* now is this a ipv4 or ipv6 address ?*/
+	ret = parse_ip(s, NULL, port, saddr);
+
+	return ret;
+}
+
 int mkdir_p(const char *dir, int mode)
 {
 	char t[PATH_MAX];
