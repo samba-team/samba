@@ -76,6 +76,8 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	reset_scheduler();
+
 	log_fd = atoi(argv[1]);
 	write_fd = atoi(argv[2]);
 
