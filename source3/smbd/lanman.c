@@ -128,7 +128,7 @@ static int CopyExpanded(connection_struct *conn,
 		return 0;
 	}
 	l = push_ascii(*dst,buf,*p_space_remaining, STR_TERMINATE);
-	if (l == -1) {
+	if (l == 0) {
 		return 0;
 	}
 	(*dst) += l;
@@ -143,7 +143,7 @@ static int CopyAndAdvance(char **dst, char *src, int *n)
 		return 0;
 	}
 	l = push_ascii(*dst,src,*n, STR_TERMINATE);
-	if (l == -1) {
+	if (l == 0) {
 		return 0;
 	}
 	(*dst) += l;
