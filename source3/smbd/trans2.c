@@ -3766,31 +3766,31 @@ static void call_trans2setfsinfo(connection_struct *conn,
 					NT_STATUS_INVALID_PARAMETER);
 				return;
 			}
-			sconn->smb1.unix_info.client_major = SVAL(pdata,0);
-			sconn->smb1.unix_info.client_minor = SVAL(pdata,2);
-			sconn->smb1.unix_info.client_cap_low = IVAL(pdata,4);
-			sconn->smb1.unix_info.client_cap_high = IVAL(pdata,8);
+			xconn->smb1.unix_info.client_major = SVAL(pdata,0);
+			xconn->smb1.unix_info.client_minor = SVAL(pdata,2);
+			xconn->smb1.unix_info.client_cap_low = IVAL(pdata,4);
+			xconn->smb1.unix_info.client_cap_high = IVAL(pdata,8);
 			/* Just print these values for now. */
 			DEBUG(10, ("call_trans2setfsinfo: set unix_info info. "
 				   "major = %u, minor = %u cap_low = 0x%x, "
 				   "cap_high = 0x%xn",
-				   (unsigned int)sconn->
+				   (unsigned int)xconn->
 				   smb1.unix_info.client_major,
-				   (unsigned int)sconn->
+				   (unsigned int)xconn->
 				   smb1.unix_info.client_minor,
-				   (unsigned int)sconn->
+				   (unsigned int)xconn->
 				   smb1.unix_info.client_cap_low,
-				   (unsigned int)sconn->
+				   (unsigned int)xconn->
 				   smb1.unix_info.client_cap_high));
 
 			/* Here is where we must switch to posix pathname processing... */
-			if (sconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+			if (xconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
 				lp_set_posix_pathnames();
 				mangle_change_to_posix();
 			}
 
-			if ((sconn->smb1.unix_info.client_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) &&
-			    !(sconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)) {
+			if ((xconn->smb1.unix_info.client_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) &&
+			    !(xconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)) {
 				/* Client that knows how to do posix locks,
 				 * but not posix open/mkdir operations. Set a
 				 * default type for read/write checks. */

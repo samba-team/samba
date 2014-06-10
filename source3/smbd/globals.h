@@ -407,6 +407,13 @@ struct smbXsrv_connection {
 			int max_send;
 		} sessions;
 		struct smb_signing_state *signing_state;
+
+		struct {
+			uint16_t client_major;
+			uint16_t client_minor;
+			uint32_t client_cap_low;
+			uint32_t client_cap_high;
+		} unix_info;
 	} smb1;
 	struct {
 		struct {
@@ -756,13 +763,6 @@ struct smbd_server_connection {
 	} oplocks;
 
 	struct {
-		struct {
-			uint16_t client_major;
-			uint16_t client_minor;
-			uint32_t client_cap_low;
-			uint32_t client_cap_high;
-		} unix_info;
-
 		struct notify_mid_map *notify_mid_maps;
 
 		struct {
