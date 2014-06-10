@@ -214,12 +214,12 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	xconn->transport.fde = tevent_add_fd(sconn->ev_ctx,
-					sconn,
+	xconn->transport.fde = tevent_add_fd(xconn->ev_ctx,
+					xconn,
 					xconn->transport.sock,
 					TEVENT_FD_READ,
 					smbd_smb2_connection_handler,
-					sconn);
+					xconn);
 	if (xconn->transport.fde == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3218,10 +3218,10 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbd_server_connection *sconn)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_io_handler(struct smbd_server_connection *sconn,
+static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 				     uint16_t fde_flags)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	struct smbd_smb2_request *req = NULL;
 	size_t min_recvfile_size = UINT32_MAX;
@@ -3383,7 +3383,7 @@ got_full:
 	req->request_time = timeval_current();
 	now = timeval_to_nttime(&req->request_time);
 
-	status = smbd_smb2_inbuf_parse_compound(req->sconn->conn,
+	status = smbd_smb2_inbuf_parse_compound(xconn,
 						now,
 						state->pktbuf,
 						state->pktlen,
@@ -3452,12 +3452,13 @@ static void smbd_smb2_connection_handler(struct tevent_context *ev,
 					 uint16_t flags,
 					 void *private_data)
 {
-	struct smbd_server_connection *sconn =
+	struct smbXsrv_connection *xconn =
 		talloc_get_type_abort(private_data,
-		struct smbd_server_connection);
+		struct smbXsrv_connection);
+	struct smbd_server_connection *sconn = xconn->sconn;
 	NTSTATUS status;
 
-	status = smbd_smb2_io_handler(sconn, flags);
+	status = smbd_smb2_io_handler(xconn, flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
