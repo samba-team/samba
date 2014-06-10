@@ -92,7 +92,7 @@ pid_t ctdb_fork_no_free_ringbuffer(struct ctdb_context *ctdb)
 
 		/* The child does not need to be realtime */
 		if (ctdb->do_setsched) {
-			ctdb_restore_scheduler();
+			reset_scheduler();
 		}
 		ctdb->can_send_controls = false;
 

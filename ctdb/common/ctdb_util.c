@@ -329,7 +329,7 @@ struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, st
 /*
   if possible, make this task real time
  */
-void ctdb_set_scheduler(void)
+void set_scheduler(void)
 {
 #ifdef _AIX_
 #if HAVE_THREAD_SETSCHED
@@ -366,9 +366,9 @@ void ctdb_set_scheduler(void)
 }
 
 /*
-  restore previous scheduler parameters
+  reset scheduler from real-time to normal scheduling
  */
-void ctdb_restore_scheduler(void)
+void reset_scheduler(void)
 {
 #ifdef _AIX_
 #if HAVE_THREAD_SETSCHED
