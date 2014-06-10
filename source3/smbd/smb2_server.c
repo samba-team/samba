@@ -938,6 +938,7 @@ DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size)
 
 static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	TALLOC_CTX *mem_ctx;
 	struct iovec *vector;
 	int count;
@@ -1035,7 +1036,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	/* setup the length of the NBT packet */
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
-	DLIST_ADD_END(req->sconn->smb2.requests, req, struct smbd_smb2_request *);
+	DLIST_ADD_END(xconn->smb2.requests, req, struct smbd_smb2_request *);
 
 	return NT_STATUS_OK;
 }
@@ -1613,6 +1614,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 {
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request *cur;
 	const uint8_t *inhdr;
 	uint32_t flags;
@@ -1630,10 +1632,10 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 	 * we don't need the request anymore
 	 * cancel requests never have a response
 	 */
-	DLIST_REMOVE(req->sconn->smb2.requests, req);
+	DLIST_REMOVE(xconn->smb2.requests, req);
 	TALLOC_FREE(req);
 
-	for (cur = sconn->smb2.requests; cur; cur = cur->next) {
+	for (cur = xconn->smb2.requests; cur; cur = cur->next) {
 		const uint8_t *outhdr;
 		uint64_t message_id;
 		uint64_t async_id;
@@ -2511,7 +2513,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	 * We're done with this request -
 	 * move it off the "being processed" queue.
 	 */
-	DLIST_REMOVE(req->sconn->smb2.requests, req);
+	DLIST_REMOVE(conn->smb2.requests, req);
 
 	req->queue_entry.mem_ctx = req;
 	req->queue_entry.vector = req->out.vector;

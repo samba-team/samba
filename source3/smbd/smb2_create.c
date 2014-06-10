@@ -1213,9 +1213,10 @@ bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 static struct smbd_smb2_request *find_open_smb2req(
 	struct smbd_server_connection *sconn, uint64_t mid)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request *smb2req;
 
-	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
+	for (smb2req = xconn->smb2.requests; smb2req; smb2req = smb2req->next) {
 		uint64_t message_id;
 		if (smb2req->subreq == NULL) {
 			/* This message has been processed. */

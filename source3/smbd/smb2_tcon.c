@@ -498,6 +498,7 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_tdis_state *state;
 	struct tevent_req *subreq;
 	struct smbd_smb2_request *preq;
+	struct smbXsrv_connection *xconn = smb2req->sconn->conn;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_tdis_state);
@@ -516,7 +517,7 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 	 */
 	smb2req->tcon->status = NT_STATUS_NETWORK_NAME_DELETED;
 
-	for (preq = smb2req->sconn->smb2.requests; preq != NULL; preq = preq->next) {
+	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
 		if (preq == smb2req) {
 			/* Can't cancel current request. */
 			continue;

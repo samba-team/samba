@@ -497,6 +497,8 @@ struct smbXsrv_connection {
 			uint32_t max_read;
 			uint32_t max_write;
 		} server;
+
+		struct smbd_smb2_request *requests;
 	} smb2;
 
 	uint64_t smbd_idle_profstamp;
@@ -841,7 +843,6 @@ struct smbd_server_connection {
 			struct tevent_timer *brl_timeout;
 			bool blocking_lock_unlock_state;
 		} locks;
-		struct smbd_smb2_request *requests;
 	} smb2;
 
 	/*

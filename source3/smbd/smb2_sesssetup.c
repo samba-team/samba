@@ -457,6 +457,7 @@ static int pp_self_ref_destructor(struct smbd_smb2_session_setup_state **pp_stat
 
 static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_setup_state *state)
 {
+	struct smbXsrv_connection *xconn;
 	struct smbd_smb2_request *preq;
 
 	/*
@@ -478,8 +479,9 @@ static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_set
 	 * Ensure that any outstanding requests don't also refer
 	 * to it.
 	 */
+	xconn = state->smb2req->sconn->conn;
 
-	for (preq = state->smb2req->sconn->smb2.requests; preq != NULL; preq = preq->next) {
+	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
 		if (preq == state->smb2req) {
 			continue;
 		}
@@ -875,6 +877,7 @@ static struct tevent_req *smbd_smb2_logoff_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_logout_state *state;
 	struct tevent_req *subreq;
 	struct smbd_smb2_request *preq;
+	struct smbXsrv_connection *xconn = smb2req->sconn->conn;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_logout_state);
@@ -893,7 +896,7 @@ static struct tevent_req *smbd_smb2_logoff_send(TALLOC_CTX *mem_ctx,
 	 */
 	smb2req->session->status = NT_STATUS_USER_SESSION_DELETED;
 
-	for (preq = smb2req->sconn->smb2.requests; preq != NULL; preq = preq->next) {
+	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
 		if (preq == smb2req) {
 			/* Can't cancel current request. */
 			continue;

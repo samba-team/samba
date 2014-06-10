@@ -468,13 +468,14 @@ struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *s
 
 static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request *smb2req;
 	struct timeval next_timeout = timeval_zero();
 	int max_brl_timeout = lp_parm_int(-1, "brl", "recalctime", 5);
 
 	TALLOC_FREE(sconn->smb2.locks.brl_timeout);
 
-	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
+	for (smb2req = xconn->smb2.requests; smb2req; smb2req = smb2req->next) {
 		struct blocking_lock_record *blr =
 			get_pending_smb2req_blr(smb2req);
 		if (!blr) {
@@ -774,9 +775,10 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 void process_blocking_lock_queue_smb2(
 	struct smbd_server_connection *sconn, struct timeval tv_curr)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request *smb2req, *nextreq;
 
-	for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
+	for (smb2req = xconn->smb2.requests; smb2req; smb2req = nextreq) {
 		const uint8_t *inhdr;
 
 		nextreq = smb2req->next;
@@ -808,9 +810,10 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			enum file_close_type close_type)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request *smb2req, *nextreq;
 
-	for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
+	for (smb2req = xconn->smb2.requests; smb2req; smb2req = nextreq) {
 		struct smbd_smb2_lock_state *state = NULL;
 		files_struct *fsp_curr = NULL;
 		struct blocking_lock_record *blr = NULL;
