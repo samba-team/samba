@@ -1527,7 +1527,10 @@ int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
 
 	ctdb_db = find_ctdb_db(ctdb, db_prio->db_id);
 	if (!ctdb_db) {
-		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_set_db_priority\n", db_prio->db_id));
+		if (!(ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE)) {
+			DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_set_db_priority\n",
+					 db_prio->db_id));
+		}
 		return 0;
 	}
 
