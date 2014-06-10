@@ -230,16 +230,14 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 
 	ctx->msg_callbacks = poll_funcs_init_tevent(ctx);
 	if (ctx->msg_callbacks == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		goto fail_nomem;
 	}
 
 	ctx->tevent_handle = poll_funcs_tevent_register(
 		ctx, ctx->msg_callbacks,
 		messaging_tevent_context(msg_ctx));
 	if (ctx->tevent_handle == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		goto fail_nomem;
 	}
 
 	ok = directory_create_or_exist_strict(socket_dir, sec_initial_uid(),
