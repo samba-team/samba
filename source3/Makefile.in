@@ -3223,7 +3223,7 @@ clean:: cleanlibs
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o */*/*/*/*.o \
 		../testsuite/*/*.o \
-		../nsswitch/*.o ../nsswitch/*/*.o ../nsswitch/*/*/*.o ../nsswitch/*.@SHLIBEXT@ \
+		../nsswitch/*.o ../nsswitch/*/*.o ../nsswitch/*/*/*.o ../nsswitch/*.@SHLIBEXT@ $(NSS_MODULES) \
 		../client/*.o \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) \
