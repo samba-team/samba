@@ -205,10 +205,18 @@ select_test_node_and_ips ()
 #######################################
 
 # Wait until either timeout expires or command succeeds.  The command
-# will be tried once per second.
+# will be tried once per second, unless timeout has format T/I, where
+# I is the recheck interval.
 wait_until ()
 {
     local timeout="$1" ; shift # "$@" is the command...
+
+    local interval=1
+    case "$timeout" in
+	*/*)
+	    interval="${timeout#*/}"
+	    timeout="${timeout%/*}"
+    esac
 
     local negate=false
     if [ "$1" = "!" ] ; then
@@ -227,9 +235,12 @@ wait_until ()
 	    echo "OK"
 	    return 0
 	fi
-	echo -n .
-	t=$(($t - 1))
-	sleep 1
+	local i
+	for i in $(seq 1 $interval) ; do
+	    echo -n .
+	done
+	t=$(($t - $interval))
+	sleep $interval
     done
 
     echo "*TIMEOUT*"
@@ -249,14 +260,26 @@ sleep_for ()
 
 _cluster_is_healthy ()
 {
-    $CTDB nodestatus all >/dev/null && \
-	node_has_status 0 recovered
+    $CTDB nodestatus all >/dev/null
+}
+
+_cluster_is_recovered ()
+{
+    node_has_status all recovered
+}
+
+_cluster_is_ready ()
+{
+    _cluster_is_healthy && _cluster_is_recovered
 }
 
 cluster_is_healthy ()
 {
     if onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
 	echo "Cluster is HEALTHY"
+	if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_recovered ; then
+	  echo "WARNING: cluster in recovery mode!"
+	fi
 	return 0
     else
 	echo "Cluster is UNHEALTHY"
@@ -272,13 +295,13 @@ cluster_is_healthy ()
     fi
 }
 
-wait_until_healthy ()
+wait_until_ready ()
 {
     local timeout="${1:-120}"
 
-    echo "Waiting for cluster to become healthy..."
+    echo "Waiting for cluster to become ready..."
 
-    wait_until $timeout onnode -q any $CTDB_TEST_WRAPPER _cluster_is_healthy
+    wait_until $timeout onnode -q any $CTDB_TEST_WRAPPER _cluster_is_ready
 }
 
 # This function is becoming nicely overloaded.  Soon it will collapse!  :-)
@@ -303,7 +326,7 @@ node_has_status ()
 	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
 	(monon)        mpat='^Monitoring mode:ACTIVE \(0\)$' ;;
 	(monoff)       mpat='^Monitoring mode:DISABLED \(1\)$' ;;
-	(recovered)    rpat='^Recovery mode:NORMAL \(0\)$' ;;
+	(recovered)    rpat='^Recovery mode:RECOVERY \(1\)$' ;;
 	*)
 	    echo "node_has_status: unknown status \"$status\""
 	    return 1
@@ -329,7 +352,7 @@ node_has_status ()
     elif [ -n "$mpat" ] ; then
 	$CTDB getmonmode -n "$pnn" | egrep -q "$mpat"
     elif [ -n "$rpat" ] ; then
-        $CTDB status -n "$pnn" | egrep -q "$rpat"
+        ! $CTDB status -n "$pnn" | egrep -q "$rpat"
     else
 	echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
 	return 1
@@ -479,8 +502,8 @@ restart_ctdb ()
 	    continue
 	}
 
-	wait_until_healthy || {
-	    echo "Cluster didn't become healthy.  Restarting..."
+	wait_until_ready || {
+	    echo "Cluster didn't become ready.  Restarting..."
 	    continue
 	}
 
@@ -492,7 +515,13 @@ restart_ctdb ()
 	# help the cluster to stabilise before a subsequent test.
 	echo "Forcing a recovery..."
 	onnode -q 0 $CTDB recover
-	sleep_for 1
+	sleep_for 2
+
+	if ! onnode -q any $CTDB_TEST_WRAPPER _cluster_is_recovered ; then
+	    echo "Cluster has gone into recovery again, waiting..."
+	    wait_until 30/2 onnode -q any $CTDB_TEST_WRAPPER _cluster_is_recovered
+	fi
+
 
 	# Cluster is still healthy.  Good, we're done!
 	if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then

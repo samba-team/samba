@@ -79,7 +79,7 @@ try_command_on_node $rn $CTDB_TEST_WRAPPER restart_ctdb_1
 echo "Setting NoIPTakeover on node ${rn}"
 try_command_on_node $rn $CTDB setvar NoIPTakeover 1
 
-wait_until_healthy
+wait_until_ready
 
 echo "Getting TickleUpdateInterval..."
 try_command_on_node $test_node $CTDB getvar TickleUpdateInterval
