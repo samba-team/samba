@@ -556,6 +556,15 @@ def dist():
 
     samba_dist.dist()
 
+def rpmonly(ctx):
+    cmd = 'rpmbuild -ta --clean --rmsource ctdb-%s.tar.gz' % VERSION
+    samba_utils.RUN_COMMAND(cmd)
+
+def rpm(ctx):
+    import Scripting
+    Scripting.commands.append('dist')
+    Scripting.commands.append('rpmonly')
+
 def ctags(ctx):
     "build 'tags' file using ctags"
     import Utils
