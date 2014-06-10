@@ -1459,7 +1459,7 @@ bld.SAMBA3_BINARY('samba-regedit',
                   source="""utils/regedit.c utils/regedit_samba3.c
                             utils/regedit_wrap.c utils/regedit_treeview.c
                             utils/regedit_valuelist.c utils/regedit_dialog.c
-                            utils/regedit_hexedit.c""",
+                            utils/regedit_hexedit.c utils/regedit_list.c""",
                   deps='ncurses menu panel form registry param popt_samba3 smbregistry',
                   enabled=bld.env.build_regedit)
 
