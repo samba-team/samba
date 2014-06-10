@@ -624,6 +624,7 @@ struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
 
 	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 
 	struct smbd_smb2_send_queue queue_entry;
 

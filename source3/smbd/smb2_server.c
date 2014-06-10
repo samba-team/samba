@@ -553,6 +553,7 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	req->sconn = sconn;
+	req->xconn = xconn;
 
 	talloc_steal(req, inbuf);
 
@@ -1152,18 +1153,18 @@ static bool dup_smb2_vec4(TALLOC_CTX *ctx,
 
 static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
 	struct smbd_smb2_request *newreq = NULL;
 	struct iovec *outvec = NULL;
 	int count = req->out.vector_count;
 	int i;
 
-	newreq = smbd_smb2_request_allocate(xconn);
+	newreq = smbd_smb2_request_allocate(req->xconn);
 	if (!newreq) {
 		return NULL;
 	}
 
 	newreq->sconn = req->sconn;
+	newreq->xconn = req->xconn;
 	newreq->session = req->session;
 	newreq->do_encryption = req->do_encryption;
 	newreq->do_signing = req->do_signing;
@@ -3000,6 +3001,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 		return NT_STATUS_NO_MEMORY;
 	}
 	state->req->sconn = sconn;
+	state->req->xconn = xconn;
 	state->min_recv_size = lp_min_receive_file_size();
 
 	TEVENT_FD_READABLE(xconn->transport.fde);
