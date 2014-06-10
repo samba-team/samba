@@ -840,13 +840,11 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 					continue;
 				}
 
-				if (!smbd_open_one_socket(parent,
+				(void)smbd_open_one_socket(parent,
 							  ev_ctx,
 							  msg_ctx,
 							  &ss,
-							  port)) {
-					return false;
-				}
+							  port);
 			}
 		}
 	}
