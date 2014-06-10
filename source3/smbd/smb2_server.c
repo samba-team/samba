@@ -3218,7 +3218,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 				     uint16_t fde_flags)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	struct smbd_smb2_request *req = NULL;
 	size_t min_recvfile_size = UINT32_MAX;
