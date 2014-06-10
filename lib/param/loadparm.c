@@ -1386,7 +1386,14 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 
 	if (service == NULL) {
 		data = &lp_ctx->globals->param_opt;
-		mem_ctx = lp_ctx->globals;
+		/**
+		 * s3 code cannot deal with parametric options stored on the globals ctx.
+		 */
+		if (lp_ctx->s3_fns != NULL) {
+			mem_ctx = NULL;
+		} else {
+			mem_ctx = lp_ctx->globals->ctx;
+		}
 	} else {
 		data = &service->param_opt;
 		mem_ctx = service;
@@ -1591,7 +1598,7 @@ bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 
 	parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
-	return set_variable(lp_ctx->globals, parmnum, parm_ptr,
+	return set_variable(lp_ctx->globals->ctx, parmnum, parm_ptr,
 			    pszParmName, pszParmValue, lp_ctx, true);
 }
 
