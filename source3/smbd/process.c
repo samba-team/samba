@@ -2441,15 +2441,15 @@ static bool fd_is_readable(int fd)
 }
 
 static void smbd_server_connection_write_handler(
-	struct smbd_server_connection *sconn)
+	struct smbXsrv_connection *xconn)
 {
 	/* TODO: make write nonblocking */
 }
 
 static void smbd_server_connection_read_handler(
-	struct smbd_server_connection *sconn, int fd)
+	struct smbXsrv_connection *xconn, int fd)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	uint8_t *inbuf = NULL;
 	size_t inbuf_len = 0;
 	size_t unread_bytes = 0;
@@ -2517,9 +2517,9 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 					   uint16_t flags,
 					   void *private_data)
 {
-	struct smbd_server_connection *conn = talloc_get_type(private_data,
-					      struct smbd_server_connection);
-	struct smbXsrv_connection *xconn = conn->conn;
+	struct smbXsrv_connection *xconn =
+		talloc_get_type_abort(private_data,
+		struct smbXsrv_connection);
 
 	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
@@ -2531,11 +2531,11 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 	}
 
 	if (flags & TEVENT_FD_WRITE) {
-		smbd_server_connection_write_handler(conn);
+		smbd_server_connection_write_handler(xconn);
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
-		smbd_server_connection_read_handler(conn, xconn->transport.sock);
+		smbd_server_connection_read_handler(xconn, xconn->transport.sock);
 		return;
 	}
 }
@@ -2545,9 +2545,9 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 				     uint16_t flags,
 				     void *private_data)
 {
-	struct smbd_server_connection *conn = talloc_get_type(private_data,
-					      struct smbd_server_connection);
-	struct smbXsrv_connection *xconn = conn->conn;
+	struct smbXsrv_connection *xconn =
+		talloc_get_type_abort(private_data,
+		struct smbXsrv_connection);
 
 	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
@@ -2559,12 +2559,12 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 	}
 
 	if (flags & TEVENT_FD_WRITE) {
-		smbd_server_connection_write_handler(conn);
+		smbd_server_connection_write_handler(xconn);
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
 		smbd_server_connection_read_handler(
-			conn, xconn->smb1.echo_handler.trusted_fd);
+			xconn, xconn->smb1.echo_handler.trusted_fd);
 		return;
 	}
 }
@@ -3310,12 +3310,12 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 	 * Without smb signing this is the same as the normal smbd
 	 * listener. This needs to change once signing comes in.
 	 */
-	xconn->smb1.echo_handler.trusted_fde = tevent_add_fd(sconn->ev_ctx,
-					sconn,
+	xconn->smb1.echo_handler.trusted_fde = tevent_add_fd(xconn->ev_ctx,
+					xconn,
 					xconn->smb1.echo_handler.trusted_fd,
 					TEVENT_FD_READ,
 					smbd_server_echo_handler,
-					sconn);
+					xconn);
 	if (xconn->smb1.echo_handler.trusted_fde == NULL) {
 		DEBUG(1, ("event_add_fd failed\n"));
 		goto fail;
@@ -3849,11 +3849,11 @@ void smbd_process(struct tevent_context *ev_ctx,
 	}
 
 	xconn->transport.fde = tevent_add_fd(ev_ctx,
-					     sconn,
+					     xconn,
 					     sock_fd,
 					     TEVENT_FD_READ,
 					     smbd_server_connection_handler,
-					     sconn);
+					     xconn);
 	if (!xconn->transport.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
