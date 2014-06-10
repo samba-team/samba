@@ -209,6 +209,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 {
 	struct messaging_context *ctx;
 	NTSTATUS status;
+	int ret;
 	static bool have_context = false;
 
 	if (have_context) {
@@ -225,11 +226,10 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	ctx->event_ctx = ev;
 	ctx->have_context = &have_context;
 
-	status = messaging_dgm_init(ctx, ctx, &ctx->local);
+	ret = messaging_dgm_init(ctx, ctx, &ctx->local);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("messaging_dgm_init failed: %s\n",
-			  nt_errstr(status)));
+	if (ret != 0) {
+		DEBUG(2, ("messaging_dgm_init failed: %s\n", strerror(ret)));
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
@@ -278,16 +278,16 @@ struct server_id messaging_server_id(const struct messaging_context *msg_ctx)
 NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
+	int ret;
 
 	TALLOC_FREE(msg_ctx->local);
 
 	msg_ctx->id = procid_self();
 
-	status = messaging_dgm_init(msg_ctx, msg_ctx, &msg_ctx->local);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("messaging_dgm_init failed: %s\n",
-			  nt_errstr(status)));
-		return status;
+	ret = messaging_dgm_init(msg_ctx, msg_ctx, &msg_ctx->local);
+	if (ret != 0) {
+		DEBUG(0, ("messaging_dgm_init failed: %s\n", strerror(errno)));
+		return map_nt_error_from_unix(ret);
 	}
 
 	TALLOC_FREE(msg_ctx->remote);

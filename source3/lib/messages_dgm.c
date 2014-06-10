@@ -165,9 +165,9 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 	return ret;
 }
 
-NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
-			    TALLOC_CTX *mem_ctx,
-			    struct messaging_backend **presult)
+int messaging_dgm_init(struct messaging_context *msg_ctx,
+		       TALLOC_CTX *mem_ctx,
+		       struct messaging_backend **presult)
 {
 	struct messaging_backend *result;
 	struct messaging_dgm_context *ctx;
@@ -182,8 +182,7 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 
 	cache_dir = lp_cache_directory();
 	if (cache_dir == NULL) {
-		NTSTATUS status = map_nt_error_from_unix(errno);
-		return status;
+		return errno;
 	}
 
 	result = talloc(mem_ctx, struct messaging_backend);
@@ -214,7 +213,7 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 				"%s/%u", socket_dir, (unsigned)pid.pid);
 	if (sockname_len >= sizeof(socket_address.sun_path)) {
 		TALLOC_FREE(result);
-		return NT_STATUS_NAME_TOO_LONG;
+		return ENAMETOOLONG;
 	}
 
 	sec_init();
@@ -225,7 +224,7 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 		DEBUG(1, ("%s: messaging_dgm_create_lockfile failed: %s\n",
 			  __func__, strerror(ret)));
 		TALLOC_FREE(result);
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	ctx->msg_callbacks = poll_funcs_init_tevent(ctx);
@@ -245,7 +244,7 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 	if (!ok) {
 		DEBUG(1, ("Could not create socket directory\n"));
 		TALLOC_FREE(result);
-		return NT_STATUS_ACCESS_DENIED;
+		return EACCES;
 	}
 	TALLOC_FREE(socket_dir);
 
@@ -258,16 +257,16 @@ NTSTATUS messaging_dgm_init(struct messaging_context *msg_ctx,
 	if (ret != 0) {
 		DEBUG(1, ("unix_msg_init failed: %s\n", strerror(ret)));
 		TALLOC_FREE(result);
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 	talloc_set_destructor(ctx, messaging_dgm_context_destructor);
 
 	*presult = result;
-	return NT_STATUS_OK;
+	return 0;
 
 fail_nomem:
 	TALLOC_FREE(result);
-	return NT_STATUS_NO_MEMORY;
+	return ENOMEM;
 }
 
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
