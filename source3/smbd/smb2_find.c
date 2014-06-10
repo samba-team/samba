@@ -252,11 +252,11 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
 		return tevent_req_post(req, ev);
 	}
-	if (strcmp(in_file_name, "\\") == 0) {
+	if (strchr_m(in_file_name, '\\') != NULL) {
 		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
 		return tevent_req_post(req, ev);
 	}
-	if (strcmp(in_file_name, "/") == 0) {
+	if (strchr_m(in_file_name, '/') != NULL) {
 		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
 		return tevent_req_post(req, ev);
 	}
