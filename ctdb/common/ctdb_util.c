@@ -406,7 +406,7 @@ unsigned ctdb_addr_to_port(ctdb_sock_addr *addr)
 
 /* we don't lock future pages here; it would increase the chance that
  * we'd fail to mmap later on. */
-void ctdb_lockdown_memory(bool valgrinding)
+void lockdown_memory(bool valgrinding)
 {
 #if defined(HAVE_MLOCKALL) && !defined(_AIX_)
 	/* Extra stack, please! */

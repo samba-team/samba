@@ -1151,7 +1151,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	outdata->dsize = sizeof(db->db_id);
 
 	/* Try to ensure it's locked in mem */
-	ctdb_lockdown_memory(ctdb->valgrinding);
+	lockdown_memory(ctdb->valgrinding);
 
 	/* tell all the other nodes about this database */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, tdb_flags,

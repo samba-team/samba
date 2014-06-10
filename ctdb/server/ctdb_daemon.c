@@ -1317,7 +1317,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 		exit(1);
 	}
 
-	ctdb_lockdown_memory(ctdb->valgrinding);
+	lockdown_memory(ctdb->valgrinding);
 
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
