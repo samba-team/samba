@@ -1185,7 +1185,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 
 	if (ctdb->do_setsched) {
 		/* try to set us up as realtime */
-		ctdb_set_scheduler(ctdb);
+		ctdb_set_scheduler();
 	}
 
 	/* ensure the socket is deleted on exit of the daemon */
