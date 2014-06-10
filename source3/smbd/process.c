@@ -591,6 +591,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 
 static bool init_smb_request(struct smb_request *req,
 			     struct smbd_server_connection *sconn,
+			     struct smbXsrv_connection *xconn,
 			     const uint8 *inbuf,
 			     size_t unread_bytes, bool encrypted,
 			     uint32_t seqnum)
@@ -624,7 +625,8 @@ static bool init_smb_request(struct smb_request *req,
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->sconn = sconn;
-	status = smb1srv_tcon_lookup(sconn->conn, req->tid, now, &tcon);
+	req->xconn = xconn;
+	status = smb1srv_tcon_lookup(xconn, req->tid, now, &tcon);
 	if (NT_STATUS_IS_OK(status)) {
 		req->conn = tcon->compat;
 	} else {
@@ -1641,6 +1643,7 @@ static void construct_reply(struct smbd_server_connection *sconn,
 			    uint32_t seqnum, bool encrypted,
 			    struct smb_perfcount_data *deferred_pcd)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	connection_struct *conn;
 	struct smb_request *req;
 
@@ -1648,7 +1651,7 @@ static void construct_reply(struct smbd_server_connection *sconn,
 		smb_panic("could not allocate smb_request");
 	}
 
-	if (!init_smb_request(req, sconn, (uint8 *)inbuf, unread_bytes,
+	if (!init_smb_request(req, sconn, xconn, (uint8 *)inbuf, unread_bytes,
 			      encrypted, seqnum)) {
 		exit_server_cleanly("Invalid SMB request");
 	}
@@ -2338,6 +2341,7 @@ struct smb1_parse_chain_state {
 	TALLOC_CTX *mem_ctx;
 	const uint8_t *buf;
 	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 	bool encrypted;
 	uint32_t seqnum;
 
@@ -2368,7 +2372,7 @@ static bool smb1_parse_chain_cb(uint8_t cmd,
 		return false;
 	}
 
-	ok = init_smb_request(req, state->sconn, state->buf, 0,
+	ok = init_smb_request(req, state->sconn, state->xconn, state->buf, 0,
 			      state->encrypted, state->seqnum);
 	if (!ok) {
 		return false;
@@ -2389,12 +2393,14 @@ bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
 		      bool encrypted, uint32_t seqnum,
 		      struct smb_request ***reqs, unsigned *num_reqs)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smb1_parse_chain_state state;
 	unsigned i;
 
 	state.mem_ctx = mem_ctx;
 	state.buf = buf;
 	state.sconn = sconn;
+	state.xconn = xconn;
 	state.encrypted = encrypted;
 	state.seqnum = seqnum;
 	state.reqs = NULL;
@@ -2953,6 +2959,7 @@ struct smbd_echo_state {
 	struct tevent_context *ev;
 	struct iovec *pending;
 	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 	int parent_pipe;
 
 	struct tevent_fd *parent_fde;
@@ -3034,7 +3041,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		return false;
 	}
 
-	if (!init_smb_request(&req, state->sconn, inbuf, 0, false,
+	if (!init_smb_request(&req, state->sconn, state->xconn, inbuf, 0, false,
 			      seqnum)) {
 		return false;
 	}
@@ -3095,6 +3102,7 @@ static void smbd_echo_got_packet(struct tevent_req *req);
 static void smbd_echo_loop(struct smbd_server_connection *sconn,
 			   int parent_pipe)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_echo_state *state;
 	struct tevent_req *read_req;
 
@@ -3104,6 +3112,7 @@ static void smbd_echo_loop(struct smbd_server_connection *sconn,
 		return;
 	}
 	state->sconn = sconn;
+	state->xconn = xconn;
 	state->parent_pipe = parent_pipe;
 	state->ev = s3_tevent_context_init(state);
 	if (state->ev == NULL) {

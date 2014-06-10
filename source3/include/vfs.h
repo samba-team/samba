@@ -403,6 +403,7 @@ struct smb_request {
 	bool encrypted;
 	connection_struct *conn;
 	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 	struct smb_perfcount_data pcd;
 
 	/*
