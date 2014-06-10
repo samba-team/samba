@@ -511,6 +511,7 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 					 uint8_t *inbuf, size_t size,
 					 struct smbd_smb2_request **_req)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request *req;
 	uint32_t protocol_version;
 	const uint8_t *inhdr = NULL;
@@ -547,7 +548,7 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	req = smbd_smb2_request_allocate(sconn);
+	req = smbd_smb2_request_allocate(xconn);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1151,12 +1152,13 @@ static bool dup_smb2_vec4(TALLOC_CTX *ctx,
 
 static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	struct smbd_smb2_request *newreq = NULL;
 	struct iovec *outvec = NULL;
 	int count = req->out.vector_count;
 	int i;
 
-	newreq = smbd_smb2_request_allocate(req->sconn);
+	newreq = smbd_smb2_request_allocate(xconn);
 	if (!newreq) {
 		return NULL;
 	}
@@ -2993,7 +2995,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 
 	/* ask for the next request */
 	ZERO_STRUCTP(state);
-	state->req = smbd_smb2_request_allocate(sconn);
+	state->req = smbd_smb2_request_allocate(xconn);
 	if (state->req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
