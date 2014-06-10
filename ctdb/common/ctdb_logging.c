@@ -103,7 +103,8 @@ void ctdb_log_ringbuffer_free(void)
 	log_ringbuf_size = 0;
 }
 
-void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr)
+TDB_DATA ctdb_log_ringbuffer_collect_log(TALLOC_CTX *mem_ctx,
+					 enum debug_level max_level)
 {
 	TDB_DATA data;
 	FILE *f;
@@ -118,14 +119,15 @@ void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_a
 	/* dump to a file, then send the file as a blob */
 	f = tmpfile();
 	if (f == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to open tmpfile - %s\n", strerror(errno)));
-		return;
+		DEBUG(DEBUG_ERR,(__location__ " Unable to open tmpfile - %s\n",
+				 strerror(errno)));
+		return tdb_null;
 	}
 
 	for (i=0; i<ringbuf_count; i++) {
 		tmp_entry = (first_entry + i) % log_ringbuf_size;
 
-		if (log_entries[tmp_entry].level > log_addr->level) {
+		if (log_entries[tmp_entry].level > max_level) {
 		 	continue;
 		}
 
@@ -143,23 +145,35 @@ void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_a
 	if (fsize < 0) {
 		fclose(f);
 		DEBUG(DEBUG_ERR, ("Cannot get file size for log entries\n"));
-		return;
+		return tdb_null;
 	}
 	rewind(f);
 	data.dptr = talloc_size(NULL, fsize);
 	if (data.dptr == NULL) {
 		fclose(f);
-		CTDB_NO_MEMORY_VOID(ctdb, data.dptr);
+		DEBUG(DEBUG_ERR, (__location__ " Memory allocation error\n"));
+		return tdb_null;
 	}
 	data.dsize = fread(data.dptr, 1, fsize, f);
 	fclose(f);
 
 	DEBUG(DEBUG_ERR,("Marshalling log entries into a blob of %d bytes\n", (int)data.dsize));
 
+	return data;
+}
+
+void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr)
+{
+	TDB_DATA data;
+
+	data = ctdb_log_ringbuffer_collect_log(ctdb, log_addr->level);
+
 	DEBUG(DEBUG_ERR,("Send log to %d:%d\n", (int)log_addr->pnn, (int)log_addr->srvid));
 	ctdb_client_send_message(ctdb, log_addr->pnn, log_addr->srvid, data);
 
-	talloc_free(data.dptr);
+	if (data.dptr) {
+		talloc_free(data.dptr);
+	}
 }
 
 int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr)
