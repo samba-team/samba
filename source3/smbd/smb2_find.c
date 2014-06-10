@@ -224,6 +224,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	uint32_t dirtype = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
 	bool dont_descend = false;
 	bool ask_sharemode = true;
+	bool wcard_has_wild;
 	struct tm tm;
 	char *p;
 
@@ -323,11 +324,41 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 		dptr_CloseDir(fsp);
 	}
 
+	wcard_has_wild = ms_has_wild(in_file_name);
+
+	/* Ensure we've canonicalized any search path if not a wildcard. */
+	if (!wcard_has_wild) {
+		struct smb_filename *smb_fname = NULL;
+		const char *fullpath;
+
+		if (ISDOT(fsp->fsp_name->base_name)) {
+			fullpath = in_file_name;
+		} else {
+			fullpath = talloc_asprintf(state,
+					"%s/%s",
+					fsp->fsp_name->base_name,
+					in_file_name);
+		}
+		if (tevent_req_nomem(fullpath, req)) {
+			return tevent_req_post(req, ev);
+		}
+		status = filename_convert(state,
+				conn,
+				false, /* Not a DFS path. */
+				fullpath,
+				UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP,
+				&wcard_has_wild,
+				&smb_fname);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+
+		in_file_name = smb_fname->original_lcomp;
+	}
+
 	if (fsp->dptr == NULL) {
-		bool wcard_has_wild;
-
-		wcard_has_wild = ms_has_wild(in_file_name);
-
 		status = dptr_create(conn,
 				     NULL, /* req */
 				     fsp,
