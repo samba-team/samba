@@ -25,6 +25,7 @@
 #include "regedit_treeview.h"
 #include "regedit_valuelist.h"
 #include "regedit_dialog.h"
+#include "regedit_list.h"
 #include <ncurses.h>
 #include <menu.h>
 #include <panel.h>
@@ -49,9 +50,6 @@
 #define PATH_MAX_Y	(COLS - 1)
 #define PATH_WIDTH	(COLS - 6)
 #define PATH_WIDTH_MAX	1024
-
-#define PAIR_YELLOW_CYAN 1
-#define PAIR_BLACK_CYAN 2
 
 struct regedit {
 	WINDOW *main_window;
@@ -351,17 +349,17 @@ static void handle_tree_input(struct regedit *regedit, int c)
 
 	switch (c) {
 	case KEY_DOWN:
-		menu_driver(regedit->keys->menu, REQ_DOWN_ITEM);
+		tree_view_driver(regedit->keys, ML_CURSOR_DOWN);
 		load_values(regedit);
 		break;
 	case KEY_UP:
-		menu_driver(regedit->keys->menu, REQ_UP_ITEM);
+		tree_view_driver(regedit->keys, ML_CURSOR_UP);
 		load_values(regedit);
 		break;
 	case '\n':
 	case KEY_ENTER:
 	case KEY_RIGHT:
-		node = item_userptr(current_item(regedit->keys->menu));
+		node = tree_view_get_current_node(regedit->keys);
 		if (node && tree_node_has_children(node)) {
 			tree_node_load_children(node);
 			print_path(regedit, node->child_head);
@@ -370,7 +368,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		}
 		break;
 	case KEY_LEFT:
-		node = item_userptr(current_item(regedit->keys->menu));
+		node = tree_view_get_current_node(regedit->keys);
 		if (node && node->parent) {
 			print_path(regedit, node->parent);
 			node = tree_node_first(node->parent);
@@ -380,19 +378,19 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		break;
 	case 'n':
 	case 'N':
-		node = item_userptr(current_item(regedit->keys->menu));
+		node = tree_view_get_current_node(regedit->keys);
 		add_reg_key(regedit, node, false);
 		break;
 	case 's':
 	case 'S':
-		node = item_userptr(current_item(regedit->keys->menu));
+		node = tree_view_get_current_node(regedit->keys);
 		add_reg_key(regedit, node, true);
 		break;
 	case 'd':
 	case 'D': {
 		int sel;
 
-		node = item_userptr(current_item(regedit->keys->menu));
+		node = tree_view_get_current_node(regedit->keys);
 		if (!node->parent) {
 			break;
 		}
@@ -451,7 +449,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 		vitem = item_userptr(current_item(regedit->vl->menu));
 		if (vitem) {
 			struct tree_node *node;
-			node = item_userptr(current_item(regedit->keys->menu));
+			node = tree_view_get_current_node(regedit->keys);
 			dialog_edit_value(regedit, node->key, vitem->type,
 					  vitem, binmode);
 			value_list_load(regedit->vl, node->key);
@@ -465,7 +463,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 		sel = dialog_select_type(regedit, &new_type);
 		if (sel == DIALOG_OK) {
 			struct tree_node *node;
-			node = item_userptr(current_item(regedit->keys->menu));
+			node = tree_view_get_current_node(regedit->keys);
 			dialog_edit_value(regedit, node->key, new_type, NULL,
 					  false);
 			value_list_load(regedit->vl, node->key);
@@ -483,8 +481,8 @@ static void handle_value_input(struct regedit *regedit, int c)
 					     "Really delete value \"%s\"?",
 					     vitem->value_name);
 			if (sel == DIALOG_OK) {
-				ITEM *it = current_item(regedit->keys->menu);
-				struct tree_node *node = item_userptr(it);
+				struct tree_node *node;
+				node = tree_view_get_current_node(regedit->keys);
 				reg_del_value(regedit, node->key,
 					      vitem->value_name);
 				value_list_load(regedit->vl, node->key);
@@ -590,6 +588,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 		assume_default_colors(COLOR_WHITE, COLOR_BLUE);
 		init_pair(PAIR_YELLOW_CYAN, COLOR_YELLOW, COLOR_CYAN);
 		init_pair(PAIR_BLACK_CYAN, COLOR_BLACK, COLOR_CYAN);
+		init_pair(PAIR_YELLOW_BLUE, COLOR_YELLOW, COLOR_BLUE);
 	}
 
 	regedit = talloc_zero(mem_ctx, struct regedit);
@@ -620,7 +619,6 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	print_heading(regedit);
 
 	tree_view_show(regedit->keys);
-	menu_driver(regedit->keys->menu, REQ_FIRST_ITEM);
 	load_values(regedit);
 	value_list_show(regedit->vl);
 

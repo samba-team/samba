@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include <ncurses.h>
-#include <menu.h>
 #include <panel.h>
 
 struct registry_key;
@@ -30,7 +29,6 @@ struct registry_key;
 struct tree_node {
 
 	char *name;
-	char *label;
 	struct registry_key *key;
 
 	struct tree_node *parent;
@@ -39,15 +37,15 @@ struct tree_node {
 	struct tree_node *next;
 };
 
+struct multilist;
+
 struct tree_view {
 
 	struct tree_node *root;
 	WINDOW *window;
 	WINDOW *sub;
 	PANEL *panel;
-	MENU *menu;
-	ITEM **current_items;
-	ITEM *empty[2];
+	struct multilist *list;
 };
 
 struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
@@ -74,5 +72,6 @@ void tree_node_insert_sorted(struct tree_node *list, struct tree_node *node);
 bool tree_view_is_node_visible(struct tree_view *view, struct tree_node *node);
 void tree_view_set_current_node(struct tree_view *view, struct tree_node *node);
 struct tree_node *tree_view_get_current_node(struct tree_view *view);
+void tree_view_driver(struct tree_view *view, int c);
 
 #endif

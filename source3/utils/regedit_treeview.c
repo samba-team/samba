@@ -18,6 +18,7 @@
  */
 
 #include "regedit_treeview.h"
+#include "regedit_list.h"
 #include "lib/registry/registry.h"
 
 #define HEADING_X 3
@@ -254,112 +255,47 @@ void tree_node_free_recursive(struct tree_node *list)
 	}
 }
 
-static void tree_view_free_current_items(ITEM **items)
-{
-	size_t i;
-	struct tree_node *node;
-	ITEM *item;
-
-	if (items == NULL) {
-		return;
-	}
-
-	for (i = 0; items[i] != NULL; ++i) {
-		item = items[i];
-		node = item_userptr(item);
-		if (node && node->label) {
-			talloc_free(node->label);
-			node->label = NULL;
-		}
-		free_item(item);
-	}
-
-	talloc_free(items);
-}
-
 void tree_view_clear(struct tree_view *view)
 {
-	unpost_menu(view->menu);
-	set_menu_items(view->menu, view->empty);
-	tree_view_free_current_items(view->current_items);
-	view->current_items = NULL;
+	multilist_set_data(view->list, NULL);
 }
 
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 {
-	ITEM **items;
-	struct tree_node *node;
-	size_t i, n_items;
+	WERROR rv;
 
-	if (list == NULL) {
-		list = view->root;
-	}
-	for (n_items = 0, node = list; node != NULL; node = node->next) {
-		n_items++;
+	rv = multilist_set_data(view->list, list);
+	if (W_ERROR_IS_OK(rv)) {
+		multilist_refresh(view->list);
 	}
 
-	items = talloc_zero_array(view, ITEM *, n_items + 1);
-	if (items == NULL) {
-		return WERR_NOMEM;
-	}
-
-	for (i = 0, node = list; node != NULL; ++i, node = node->next) {
-		char prefix = ' ';
-
-		/* Add a '+' marker to indicate that the item has
-		   descendants. */
-		if (tree_node_has_children(node)) {
-			prefix = '+';
-		}
-
-		SMB_ASSERT(node->label == NULL);
-		node->label = talloc_asprintf(node, "%c%s", prefix, node->name);
-		if (node->label == NULL) {
-			goto fail;
-		}
-
-		items[i] = new_item(node->label, node->name);
-		set_item_userptr(items[i], node);
-	}
-
-	unpost_menu(view->menu);
-	set_menu_items(view->menu, items);
-	tree_view_free_current_items(view->current_items);
-	view->current_items = items;
-
-	return WERR_OK;
-
-fail:
-	tree_view_free_current_items(items);
-
-	return WERR_NOMEM;
+	return rv;
 }
 
 /* is this node in the current level? */
 bool tree_view_is_node_visible(struct tree_view *view, struct tree_node *node)
 {
-	struct tree_node *first;
+	const struct tree_node *first;
 
-	first = item_userptr(view->current_items[0]);
+	first = multilist_get_data(view->list);
 
-	return first->parent == node->parent;
+	return first && first->parent == node->parent;
 }
 
 void tree_view_set_current_node(struct tree_view *view, struct tree_node *node)
 {
-	ITEM **it;
-
-	for (it = view->current_items; *it; ++it) {
-		if (item_userptr(*it) == node) {
-			set_current_item(view->menu, *it);
-			return;
-		}
-	}
+	multilist_set_current_row(view->list, node);
 }
 
 struct tree_node *tree_view_get_current_node(struct tree_view *view)
 {
-	return item_userptr(current_item(view->menu));
+	return discard_const_p(struct tree_node,
+			       multilist_get_current_row(view->list));
+}
+
+void tree_view_driver(struct tree_view *view, int c)
+{
+	multilist_driver(view->list, c);
 }
 
 void tree_view_set_selected(struct tree_view *view, bool select)
@@ -374,18 +310,14 @@ void tree_view_set_selected(struct tree_view *view, bool select)
 
 void tree_view_show(struct tree_view *view)
 {
-	post_menu(view->menu);
+	multilist_refresh(view->list);
+	touchwin(view->window);
+	wnoutrefresh(view->window);
+	wnoutrefresh(view->sub);
 }
 
 static int tree_view_free(struct tree_view *view)
 {
-	if (view->menu) {
-		unpost_menu(view->menu);
-		free_menu(view->menu);
-	}
-	if (view->empty[0]) {
-		free_item(view->empty[0]);
-	}
 	if (view->panel) {
 		del_panel(view->panel);
 	}
@@ -395,18 +327,69 @@ static int tree_view_free(struct tree_view *view)
 	if (view->window) {
 		delwin(view->window);
 	}
-	tree_view_free_current_items(view->current_items);
 	tree_node_free_recursive(view->root);
 
 	return 0;
 }
+
+static const char *tv_get_column_header(const void *data, unsigned col)
+{
+	SMB_ASSERT(col == 0);
+	return "Name";
+}
+
+static const void *tv_get_first_row(const void *data)
+{
+	return data;
+}
+
+static const void *tv_get_next_row(const void *data, const void *row)
+{
+	const struct tree_node *node = row;
+	SMB_ASSERT(node != NULL);
+	return node->next;
+}
+
+static const void *tv_get_prev_row(const void *data, const void *row)
+{
+	const struct tree_node *node = row;
+	SMB_ASSERT(node != NULL);
+	return node->previous;
+}
+
+static const char *tv_get_item_prefix(const void *row, unsigned col)
+{
+	struct tree_node *node = discard_const_p(struct tree_node, row);
+	SMB_ASSERT(col == 0);
+	SMB_ASSERT(node != NULL);
+	if (tree_node_has_children(node)) {
+		return "+";
+	}
+	return " ";
+}
+
+static const char *tv_get_item_label(const void *row, unsigned col)
+{
+	const struct tree_node *node = row;
+	SMB_ASSERT(col == 0);
+	SMB_ASSERT(node != NULL);
+	return node->name;
+}
+
+static struct multilist_accessors tv_accessors = {
+	.get_column_header = tv_get_column_header,
+	.get_first_row = tv_get_first_row,
+	.get_next_row = tv_get_next_row,
+	.get_prev_row = tv_get_prev_row,
+	.get_item_prefix = tv_get_item_prefix,
+	.get_item_label = tv_get_item_label
+};
 
 struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 				int nlines, int ncols, int begin_y,
 				int begin_x)
 {
 	struct tree_view *view;
-	static const char *dummy = "(empty)";
 
 	view = talloc_zero(ctx, struct tree_view);
 	if (view == NULL) {
@@ -415,10 +398,6 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 
 	talloc_set_destructor(view, tree_view_free);
 
-	view->empty[0] = new_item(dummy, dummy);
-	if (view->empty[0] == NULL) {
-		goto fail;
-	}
 	view->window = newwin(nlines, ncols, begin_y, begin_x);
 	if (view->window == NULL) {
 		goto fail;
@@ -437,16 +416,10 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 	}
 	view->root = root;
 
-	view->menu = new_menu(view->empty);
-	if (view->menu == NULL) {
+	view->list = multilist_new(view, view->sub, &tv_accessors, 1);
+	if (view->list == NULL) {
 		goto fail;
 	}
-	set_menu_format(view->menu, nlines, 1);
-	set_menu_win(view->menu, view->window);
-	set_menu_sub(view->menu, view->sub);
-	menu_opts_off(view->menu, O_SHOWDESC);
-	set_menu_mark(view->menu, "* ");
-
 	tree_view_update(view, root);
 
 	return view;
@@ -458,11 +431,10 @@ fail:
 }
 
 void tree_view_resize(struct tree_view *view, int nlines, int ncols,
-			     int begin_y, int begin_x)
+		      int begin_y, int begin_x)
 {
 	WINDOW *nwin, *nsub;
 
-	unpost_menu(view->menu);
 	nwin = newwin(nlines, ncols, begin_y, begin_x);
 	nsub = subwin(nwin, nlines - 2, ncols - 2, begin_y + 1, begin_x + 1);
 	replace_panel(view->panel, nwin);
@@ -472,10 +444,7 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 	view->sub = nsub;
 	box(view->window, 0, 0);
 	mvwprintw(view->window, 0, HEADING_X, "Key");
-	set_menu_format(view->menu, nlines, 1);
-	set_menu_win(view->menu, view->window);
-	set_menu_sub(view->menu, view->sub);
-	post_menu(view->menu);
+	multilist_set_window(view->list, view->sub);
 }
 
 static void print_path_recursive(WINDOW *label, struct tree_node *node,

@@ -72,4 +72,8 @@ struct regedit_search_opts {
 	unsigned int search_nocase:1;
 };
 
+#define PAIR_YELLOW_CYAN 1
+#define PAIR_BLACK_CYAN 2
+#define PAIR_YELLOW_BLUE 3
+
 #endif
