@@ -22,7 +22,6 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
-#include "system/shmem.h"
 #include "../include/ctdb_private.h"
 
 /*
@@ -404,32 +403,6 @@ unsigned ctdb_addr_to_port(ctdb_sock_addr *addr)
 	return 0;
 }
 
-/* we don't lock future pages here; it would increase the chance that
- * we'd fail to mmap later on. */
-void lockdown_memory(bool valgrinding)
-{
-#if defined(HAVE_MLOCKALL) && !defined(_AIX_)
-	/* Extra stack, please! */
-	char dummy[10000];
-	memset(dummy, 0, sizeof(dummy));
-
-	if (valgrinding) {
-		return;
-	}
-
-	/* Ignore when running in local daemons mode */
-	if (getuid() != 0) {
-		return;
-	}
-
-	/* Avoid compiler optimizing out dummy. */
-	mlock(dummy, sizeof(dummy));
-	if (mlockall(MCL_CURRENT) != 0) {
-		DEBUG(DEBUG_WARNING,("Failed to lockdown memory: %s'\n",
-				     strerror(errno)));
-	}
-#endif
-}
 
 const char *ctdb_eventscript_call_names[] = {
 	"init",

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/shmem.h"
 
 #include <libgen.h>
 
@@ -273,6 +274,33 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 	ret = parse_ip(s, NULL, port, saddr);
 
 	return ret;
+}
+
+/* we don't lock future pages here; it would increase the chance that
+ * we'd fail to mmap later on. */
+void lockdown_memory(bool valgrinding)
+{
+#if defined(HAVE_MLOCKALL) && !defined(_AIX_)
+	/* Extra stack, please! */
+	char dummy[10000];
+	memset(dummy, 0, sizeof(dummy));
+
+	if (valgrinding) {
+		return;
+	}
+
+	/* Ignore when running in local daemons mode */
+	if (getuid() != 0) {
+		return;
+	}
+
+	/* Avoid compiler optimizing out dummy. */
+	mlock(dummy, sizeof(dummy));
+	if (mlockall(MCL_CURRENT) != 0) {
+		DEBUG(DEBUG_WARNING,("Failed to lockdown memory: %s'\n",
+				     strerror(errno)));
+	}
+#endif
 }
 
 int mkdir_p(const char *dir, int mode)
