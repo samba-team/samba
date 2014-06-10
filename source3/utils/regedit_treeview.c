@@ -445,6 +445,7 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 	box(view->window, 0, 0);
 	mvwprintw(view->window, 0, HEADING_X, "Key");
 	multilist_set_window(view->list, view->sub);
+	tree_view_show(view);
 }
 
 static void print_path_recursive(WINDOW *label, struct tree_node *node,

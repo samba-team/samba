@@ -435,10 +435,10 @@ static void handle_value_input(struct regedit *regedit, int c)
 
 	switch (c) {
 	case KEY_DOWN:
-		menu_driver(regedit->vl->menu, REQ_DOWN_ITEM);
+		value_list_driver(regedit->vl, ML_CURSOR_DOWN);
 		break;
 	case KEY_UP:
-		menu_driver(regedit->vl->menu, REQ_UP_ITEM);
+		value_list_driver(regedit->vl, ML_CURSOR_UP);
 		break;
 	case 'b':
 	case 'B':
@@ -446,7 +446,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 		/* Falthrough... */
 	case '\n':
 	case KEY_ENTER:
-		vitem = item_userptr(current_item(regedit->vl->menu));
+		vitem = value_list_get_current_item(regedit->vl);
 		if (vitem) {
 			struct tree_node *node;
 			node = tree_view_get_current_node(regedit->keys);
@@ -472,7 +472,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 	}
 	case 'd':
 	case 'D':
-		vitem = item_userptr(current_item(regedit->vl->menu));
+		vitem = value_list_get_current_item(regedit->vl);
 		if (vitem) {
 			int sel;
 
