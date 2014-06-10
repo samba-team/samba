@@ -3546,7 +3546,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  bool interactive)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct smbXsrv_connection *conn;
+	struct smbXsrv_connection *xconn;
 	struct smbd_server_connection *sconn;
 	struct sockaddr_storage ss_srv;
 	void *sp_srv = (void *)&ss_srv;
@@ -3563,29 +3563,29 @@ void smbd_process(struct tevent_context *ev_ctx,
 	int ret;
 	int tmp;
 
-	conn = talloc_zero(ev_ctx, struct smbXsrv_connection);
-	if (conn == NULL) {
+	xconn = talloc_zero(ev_ctx, struct smbXsrv_connection);
+	if (xconn == NULL) {
 		DEBUG(0,("talloc_zero(struct smbXsrv_connection)\n"));
 		exit_server_cleanly("talloc_zero(struct smbXsrv_connection).\n");
 	}
 
-	conn->ev_ctx = ev_ctx;
-	conn->msg_ctx = msg_ctx;
-	conn->transport.sock = sock_fd;
-	smbd_echo_init(conn);
+	xconn->ev_ctx = ev_ctx;
+	xconn->msg_ctx = msg_ctx;
+	xconn->transport.sock = sock_fd;
+	smbd_echo_init(xconn);
 
-	sconn = talloc_zero(conn, struct smbd_server_connection);
+	sconn = talloc_zero(xconn, struct smbd_server_connection);
 	if (!sconn) {
 		exit_server("failed to create smbd_server_connection");
 	}
 
-	conn->sconn = sconn;
-	sconn->conn = conn;
+	xconn->sconn = sconn;
+	sconn->conn = xconn;
 
 	/*
 	 * TODO: remove this...:-)
 	 */
-	global_smbXsrv_connection = conn;
+	global_smbXsrv_connection = xconn;
 
 	sconn->ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
@@ -3753,7 +3753,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		DEBUG(0,("Changed root to %s\n", lp_root_directory(talloc_tos())));
 	}
 
-	if (!srv_init_signing(conn)) {
+	if (!srv_init_signing(xconn)) {
 		exit_server("Failed to init smb_signing");
 	}
 
@@ -3843,22 +3843,22 @@ void smbd_process(struct tevent_context *ev_ctx,
 	tmp = MAX(tmp, SMB_BUFFER_SIZE_MIN);
 	tmp = MIN(tmp, SMB_BUFFER_SIZE_MAX);
 
-	conn->smb1.negprot.max_recv = tmp;
+	xconn->smb1.negprot.max_recv = tmp;
 
-	conn->smb1.sessions.done_sesssetup = false;
-	conn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;
+	xconn->smb1.sessions.done_sesssetup = false;
+	xconn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;
 
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");
 	}
 
-	conn->transport.fde = tevent_add_fd(ev_ctx,
-					    sconn,
-					    sock_fd,
-					    TEVENT_FD_READ,
-					    smbd_server_connection_handler,
-					    sconn);
-	if (!conn->transport.fde) {
+	xconn->transport.fde = tevent_add_fd(ev_ctx,
+					     sconn,
+					     sock_fd,
+					     TEVENT_FD_READ,
+					     smbd_server_connection_handler,
+					     sconn);
+	if (!xconn->transport.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
 
@@ -3869,7 +3869,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	TALLOC_FREE(frame);
 
-	tevent_set_trace_callback(ev_ctx, smbd_tevent_trace_callback, conn);
+	tevent_set_trace_callback(ev_ctx, smbd_tevent_trace_callback, xconn);
 
 	while (True) {
 		frame = talloc_stackframe_pool(8192);
