@@ -126,10 +126,6 @@ bool reload_services(struct smbd_server_connection *sconn,
 	struct smbXsrv_connection *xconn = NULL;
 	bool ret;
 
-	if (sconn != NULL) {
-		xconn = sconn->conn;
-	}
-
 	if (lp_loaded()) {
 		char *fname = lp_next_configfile(talloc_tos());
 		if (file_exist(fname) &&
@@ -162,7 +158,10 @@ bool reload_services(struct smbd_server_connection *sconn,
 
 	load_interfaces();
 
-	if (xconn != NULL) {
+	if (sconn != NULL && sconn->client != NULL) {
+		xconn = sconn->client->connections;
+	}
+	for (;xconn != NULL; xconn = xconn->next) {
 		set_socket_options(xconn->transport.sock, "SO_KEEPALIVE");
 		set_socket_options(xconn->transport.sock, lp_socket_options());
 	}
