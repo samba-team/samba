@@ -213,6 +213,7 @@ fail:
 }
 
 static void msg_read_got_ctdb(struct tevent_req *subreq);
+static int msg_read_state_destructor(struct msg_read_state *s);
 
 struct tevent_req *msg_read_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
@@ -248,6 +249,8 @@ struct tevent_req *msg_read_send(TALLOC_CTX *mem_ctx,
 	}
 
 	channel->pending_req = req;
+	talloc_set_destructor(state, msg_read_state_destructor);
+
 	channel->ev = ev;
 
 	msg_tdb_event = messaging_tdb_event(state, channel->msg, ev);
@@ -268,6 +271,12 @@ struct tevent_req *msg_read_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static int msg_read_state_destructor(struct msg_read_state *s)
+{
+	s->channel->pending_req = NULL;
+	return 0;
+}
+
 static void msg_read_got_ctdb(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
@@ -277,6 +286,8 @@ static void msg_read_got_ctdb(struct tevent_req *subreq)
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	int ret;
+
+	state->channel->pending_req = NULL;
 
 	ret = ctdb_msg_read_recv(subreq, talloc_tos(),
 				 &blob.data, &blob.length);
@@ -316,6 +327,7 @@ static void msg_read_got_ctdb(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, msg_read_got_ctdb, req);
+	state->channel->pending_req = req;
 }
 
 int msg_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
