@@ -10,13 +10,13 @@ AC_SUBST(TDB_CFLAGS)
 
 if test x"$INCLUDED_TDB" != x"yes" ; then
     AC_CHECK_HEADERS(tdb.h)
-    AC_CHECK_LIB(tdb, tdb_transaction_write_lock_mark, [ TDB_LIBS="-ltdb" ])
-    if test x"$ac_cv_header_tdb_h" = x"no" -o x"$ac_cv_lib_tdb_tdb_transaction_write_lock_mark" = x"no" ; then
-        INCLUDED_TDB=yes
-        TDB_CFLAGS=""
-    else
-        INCLUDED_TDB=no
-    fi
+    AC_CHECK_LIB(tdb, tdb_transaction_write_lock_mark,
+       [ TDB_LIBS="-ltdb"
+         TDB_CFLAGS=""
+         INCLUDED_TDB=no ],
+       [ TDB_LIBS=""
+         TDB_CFLAGS=""
+         INCLUDED_TDB=yes])
 fi
 
 AC_MSG_CHECKING(whether to use included tdb)
