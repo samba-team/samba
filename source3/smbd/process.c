@@ -1655,7 +1655,7 @@ static void construct_reply(struct smbXsrv_connection *xconn,
 			    uint32_t seqnum, bool encrypted,
 			    struct smb_perfcount_data *deferred_pcd)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smb_request *req;
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
