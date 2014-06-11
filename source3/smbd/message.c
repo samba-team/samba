@@ -194,7 +194,7 @@ void reply_sends(struct smb_request *req)
 
 void reply_sendstrt(struct smb_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	const uint8_t *p;
 
 	START_PROFILE(SMBsendstrt);
@@ -242,7 +242,7 @@ void reply_sendstrt(struct smb_request *req)
 
 void reply_sendtxt(struct smb_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	int len;
 	const char *msg;
 	char *tmp;
@@ -297,8 +297,7 @@ void reply_sendtxt(struct smb_request *req)
 
 void reply_sendend(struct smb_request *req)
 {
-
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	START_PROFILE(SMBsendend);
 
 	if (! (*lp_message_command(talloc_tos()))) {
