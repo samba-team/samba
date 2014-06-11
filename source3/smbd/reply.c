@@ -693,8 +693,8 @@ void reply_tcon(struct smb_request *req)
 	const uint8_t *p;
 	const char *p2;
 	TALLOC_CTX *ctx = talloc_tos();
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 
 	START_PROFILE(SMBtcon);
@@ -771,8 +771,8 @@ void reply_tcon_and_X(struct smb_request *req)
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	bool session_key_updated = false;
 	uint16_t optional_support = 0;
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 
 	START_PROFILE(SMBtconX);
 
@@ -862,7 +862,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 
-	nt_status = smb1srv_session_lookup(req->sconn->conn,
+	nt_status = smb1srv_session_lookup(xconn,
 					   req->vuid, now, &session);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_USER_SESSION_DELETED)) {
 		reply_force_doserror(req, ERRSRV, ERRbaduid);
@@ -1555,8 +1555,8 @@ void reply_search(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	struct dptr_struct *dirptr = NULL;
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 
 	START_PROFILE(SMBsearch);
 
@@ -3476,8 +3476,7 @@ void reply_lockread(struct smb_request *req)
 	files_struct *fsp;
 	struct byte_range_lock *br_lck = NULL;
 	char *p = NULL;
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 
 	START_PROFILE(SMBlockread);
 
@@ -3586,8 +3585,7 @@ void reply_read(struct smb_request *req)
 	off_t startpos;
 	files_struct *fsp;
 	struct lock_struct lock;
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 
 	START_PROFILE(SMBread);
 
@@ -3701,7 +3699,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			    files_struct *fsp, off_t startpos,
 			    size_t smb_maxcnt)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	ssize_t nread = -1;
 	struct lock_struct lock;
 	int saved_errno = 0;
@@ -3901,9 +3899,9 @@ nosendfile_read:
 
 static size_t calc_max_read_pdu(const struct smb_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 
-	if (req->sconn->conn->protocol < PROTOCOL_NT1) {
+	if (xconn->protocol < PROTOCOL_NT1) {
 		return xconn->smb1.sessions.max_send;
 	}
 
@@ -3947,6 +3945,7 @@ static size_t calc_read_size(const struct smb_request *req,
 			     size_t upper_size,
 			     size_t lower_size)
 {
+	struct smbXsrv_connection *xconn = req->xconn;
 	size_t max_pdu = calc_max_read_pdu(req);
 	size_t total_size = 0;
 	size_t hdr_len = MIN_SMB_SIZE + VWV(12);
@@ -3962,7 +3961,7 @@ static size_t calc_read_size(const struct smb_request *req,
 		upper_size = 0;
 	}
 
-	if (req->sconn->conn->protocol < PROTOCOL_NT1) {
+	if (xconn->protocol < PROTOCOL_NT1) {
 		upper_size = 0;
 	}
 
@@ -4125,7 +4124,7 @@ static NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 void reply_writebraw(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	char *buf = NULL;
 	ssize_t nwritten=0;
 	ssize_t total_written=0;
@@ -4717,7 +4716,7 @@ bool is_valid_writeX_buffer(struct smbXsrv_connection *xconn,
 void reply_write_and_X(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	files_struct *fsp;
 	struct lock_struct lock;
 	off_t startpos;
