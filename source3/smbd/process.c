@@ -2405,7 +2405,7 @@ bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
 	unsigned i;
 
 	if (xconn != NULL) {
-		sconn = xconn->sconn;
+		sconn = xconn->client->sconn;
 	}
 
 	state.mem_ctx = mem_ctx;
