@@ -132,7 +132,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	uint64_t vuid = req->vuid;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = req->sconn;
 	uint16_t action = 0;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
@@ -595,7 +595,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	struct smbXsrv_session *session = NULL;
 	NTSTATUS nt_status;
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = req->sconn;
 	bool doencrypt = xconn->smb1.negprot.encrypted_passwords;
 	bool signing_allowed = false;
 	bool signing_mandatory = false;
