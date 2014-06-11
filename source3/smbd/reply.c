@@ -533,7 +533,7 @@ static void reply_called_name_not_present(char *outbuf)
 
 void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_size)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	/*
