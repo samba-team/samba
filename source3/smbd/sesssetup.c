@@ -131,8 +131,8 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	enum remote_arch_types ra_type = get_remote_arch();
 	uint64_t vuid = req->vuid;
 	NTSTATUS status = NT_STATUS_OK;
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	uint16_t action = 0;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
@@ -203,7 +203,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	}
 
 	if (vuid != 0) {
-		status = smb1srv_session_lookup(sconn->conn,
+		status = smb1srv_session_lookup(xconn,
 						vuid, now,
 						&session);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
@@ -226,7 +226,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	if (session == NULL) {
 		/* create a new session */
-		status = smbXsrv_session_create(sconn->conn,
+		status = smbXsrv_session_create(xconn,
 					        now, &session);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, nt_status_squash(status));
@@ -235,7 +235,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	}
 
 	if (!session->gensec) {
-		status = auth_generic_prepare(session, sconn->remote_address,
+		status = auth_generic_prepare(session, xconn->remote_address,
 					      &session->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
@@ -592,8 +592,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
 	NTSTATUS nt_status;
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	bool doencrypt = xconn->smb1.negprot.encrypted_passwords;
 	bool signing_allowed = false;
 	bool signing_mandatory = false;
@@ -942,7 +942,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
 
-	nt_status = smbXsrv_session_create(sconn->conn,
+	nt_status = smbXsrv_session_create(xconn,
 					   now, &session);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		data_blob_free(&nt_resp);
