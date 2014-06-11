@@ -358,8 +358,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 
 		TALLOC_FREE(to_free);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 
