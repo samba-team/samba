@@ -414,6 +414,8 @@ struct smbXsrv_connection {
 			uint32_t client_cap_low;
 			uint32_t client_cap_high;
 		} unix_info;
+
+		struct msg_state *msg_state;
 	} smb1;
 	struct {
 		struct {
@@ -433,8 +435,6 @@ struct smbXsrv_connection {
 			uint32_t max_write;
 		} server;
 	} smb2;
-
-	struct msg_state *msg_state;
 
 	/*
 	 * Link into libasys for asynchronous operations

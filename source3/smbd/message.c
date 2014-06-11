@@ -194,6 +194,7 @@ void reply_sends(struct smb_request *req)
 
 void reply_sendstrt(struct smb_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	const uint8_t *p;
 
 	START_PROFILE(SMBsendstrt);
@@ -204,11 +205,11 @@ void reply_sendstrt(struct smb_request *req)
 		return;
 	}
 
-	TALLOC_FREE(req->sconn->conn->msg_state);
+	TALLOC_FREE(xconn->smb1.msg_state);
 
-	req->sconn->conn->msg_state = talloc_zero(NULL, struct msg_state);
+	xconn->smb1.msg_state = talloc_zero(xconn, struct msg_state);
 
-	if (req->sconn->conn->msg_state == NULL) {
+	if (xconn->smb1.msg_state == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBsendstrt);
 		return;
@@ -216,17 +217,17 @@ void reply_sendstrt(struct smb_request *req)
 
 	p = req->buf+1;
 	p += srvstr_pull_req_talloc(
-		req->sconn->conn->msg_state, req,
-		&req->sconn->conn->msg_state->from, p,
+		xconn->smb1.msg_state, req,
+		&xconn->smb1.msg_state->from, p,
 		STR_ASCII|STR_TERMINATE) + 1;
 	p += srvstr_pull_req_talloc(
-		req->sconn->conn->msg_state, req,
-		&req->sconn->conn->msg_state->to, p,
+		xconn->smb1.msg_state, req,
+		&xconn->smb1.msg_state->to, p,
 		STR_ASCII|STR_TERMINATE) + 1;
 
 	DEBUG(3, ("SMBsendstrt (from %s to %s)\n",
-		  req->sconn->conn->msg_state->from,
-		  req->sconn->conn->msg_state->to));
+		  xconn->smb1.msg_state->from,
+		  xconn->smb1.msg_state->to));
 
 	reply_outbuf(req, 0, 0);
 
@@ -241,6 +242,7 @@ void reply_sendstrt(struct smb_request *req)
 
 void reply_sendtxt(struct smb_request *req)
 {
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	int len;
 	const char *msg;
 	char *tmp;
@@ -254,7 +256,7 @@ void reply_sendtxt(struct smb_request *req)
 		return;
 	}
 
-	if ((req->sconn->conn->msg_state == NULL) || (req->buflen < 3)) {
+	if ((xconn->smb1.msg_state == NULL) || (req->buflen < 3)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsendtxt);
 		return;
@@ -262,12 +264,12 @@ void reply_sendtxt(struct smb_request *req)
 
 	msg = (const char *)req->buf + 1;
 
-	old_len = talloc_get_size(req->sconn->conn->msg_state->msg);
+	old_len = talloc_get_size(xconn->smb1.msg_state->msg);
 
 	len = MIN(SVAL(msg, 0), smbreq_bufrem(req, msg+2));
 
-	tmp = talloc_realloc(req->sconn->conn->msg_state,
-			     req->sconn->conn->msg_state->msg,
+	tmp = talloc_realloc(xconn->smb1.msg_state,
+			     xconn->smb1.msg_state->msg,
 			     char, old_len + len);
 
 	if (tmp == NULL) {
@@ -276,9 +278,9 @@ void reply_sendtxt(struct smb_request *req)
 		return;
 	}
 
-	req->sconn->conn->msg_state->msg = tmp;
+	xconn->smb1.msg_state->msg = tmp;
 
-	memcpy(&req->sconn->conn->msg_state->msg[old_len], msg+2, len);
+	memcpy(&xconn->smb1.msg_state->msg[old_len], msg+2, len);
 
 	DEBUG( 3, ( "SMBsendtxt\n" ) );
 
@@ -295,6 +297,8 @@ void reply_sendtxt(struct smb_request *req)
 
 void reply_sendend(struct smb_request *req)
 {
+
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	START_PROFILE(SMBsendend);
 
 	if (! (*lp_message_command(talloc_tos()))) {
@@ -305,9 +309,9 @@ void reply_sendend(struct smb_request *req)
 
 	DEBUG(3,("SMBsendend\n"));
 
-	msg_deliver(req->sconn->conn->msg_state);
+	msg_deliver(xconn->smb1.msg_state);
 
-	TALLOC_FREE(req->sconn->conn->msg_state);
+	TALLOC_FREE(xconn->smb1.msg_state);
 
 	reply_outbuf(req, 0, 0);
 
