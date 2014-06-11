@@ -449,6 +449,7 @@ static tdb_off_t tdb_allocate_from_freelist(
 		tdb_len_t rec_len;
 	} bestfit;
 	float multiplier = 1.0;
+	bool merge_created_candidate;
 
 	/* over-allocate to reduce fragmentation */
 	length *= 1.25;
@@ -458,6 +459,7 @@ static tdb_off_t tdb_allocate_from_freelist(
 	length = TDB_ALIGN(length, TDB_ALIGNMENT);
 
  again:
+	merge_created_candidate = false;
 	last_ptr = FREELIST_TOP;
 
 	/* read in the freelist top */
@@ -474,8 +476,57 @@ static tdb_off_t tdb_allocate_from_freelist(
 	   issues when faced with a slowly increasing record size.
 	 */
 	while (rec_ptr) {
+		int ret;
+		tdb_off_t left_ptr;
+		struct tdb_record left_rec;
+
 		if (tdb_rec_free_read(tdb, rec_ptr, rec) == -1) {
 			return 0;
+		}
+
+		ret = check_merge_with_left_record(tdb, rec_ptr, rec,
+						   &left_ptr, &left_rec);
+		if (ret == -1) {
+			return 0;
+		}
+		if (ret == 1) {
+			/* merged */
+			rec_ptr = rec->next;
+			ret = tdb_ofs_write(tdb, last_ptr, &rec->next);
+			if (ret == -1) {
+				return 0;
+			}
+
+			/*
+			 * We have merged the current record into the left
+			 * neighbour. So our traverse of the freelist will
+			 * skip it and consider the next record in the chain.
+			 *
+			 * But the enlarged left neighbour may be a candidate.
+			 * If it is, we can not directly use it, though.
+			 * The only thing we can do and have to do here is to
+			 * update the current best fit size in the chain if the
+			 * current best fit is the left record. (By that we may
+			 * worsen the best fit we already had, bit this is not a
+			 * problem.)
+			 *
+			 * If the current best fit is not the left record,
+			 * all we can do is remember the fact that a merge
+			 * created a new candidate so that we can trigger
+			 * a second walk of the freelist if at the end of
+			 * the first walk we have not found any fit.
+			 * This way we can avoid expanding the database.
+			 */
+
+			if (bestfit.rec_ptr == left_ptr) {
+				bestfit.rec_len = left_rec.rec_len;
+			}
+
+			if (left_rec.rec_len > length) {
+				merge_created_candidate = true;
+			}
+
+			continue;
 		}
 
 		if (rec->rec_len >= length) {
@@ -515,6 +566,10 @@ static tdb_off_t tdb_allocate_from_freelist(
 		newrec_ptr = tdb_allocate_ofs(tdb, length, bestfit.rec_ptr,
 					      rec, bestfit.last_ptr);
 		return newrec_ptr;
+	}
+
+	if (merge_created_candidate) {
+		goto again;
 	}
 
 	/* we didn't find enough space. See if we can expand the
