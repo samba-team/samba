@@ -162,7 +162,8 @@ char *ctdb_sys_find_ifname(ctdb_sock_addr *addr)
 
 int mkdir_p(const char *dir, int mode)
 {
-	char * t;
+	char t[PATH_MAX];
+	ssize_t len;
 	int ret;
 
 	if (strcmp(dir, "/") == 0) {
@@ -173,18 +174,34 @@ int mkdir_p(const char *dir, int mode)
 		return 0;
 	}
 
-	t = talloc_strdup(NULL, dir);
-	if (t == NULL) {
-		return ENOMEM;
+	/* Try to create directory */
+	ret = mkdir(dir, mode);
+	/* Succeed if that worked or if it already existed */
+	if (ret == 0 || errno == EEXIST) {
+		return 0;
 	}
-	ret = mkdir_p(dirname(t), mode);
-	talloc_free(t);
+	/* Fail on anything else except ENOENT */
+	if (errno != ENOENT) {
+		return ret;
+	}
 
-	if (ret == 0) {
-		ret = mkdir(dir, mode);
-		if ((ret == -1) &&  (errno == EEXIST)) {
-			ret = 0;
-		}
+	/* Create ancestors */
+	len = strlen(dir);
+	if (len >= PATH_MAX) {
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+	strncpy(t, dir, len+1);
+
+	ret = mkdir_p(dirname(t), mode);
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* Create directory */
+	ret = mkdir(dir, mode);
+	if ((ret == -1) && (errno == EEXIST)) {
+		ret = 0;
 	}
 
 	return ret;
