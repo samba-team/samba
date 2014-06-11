@@ -2953,7 +2953,7 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 
 static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	size_t max_send_queue_len;
 	size_t cur_send_queue_len;
