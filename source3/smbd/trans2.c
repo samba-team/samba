@@ -3708,8 +3708,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				 char **ppdata, int total_data,
 				 unsigned int max_data_bytes)
 {
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	char *pdata = *ppdata;
 	char *params = *pparams;
 	uint16 info_level;
