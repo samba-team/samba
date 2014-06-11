@@ -241,6 +241,59 @@ static int check_merge_with_left_record(struct tdb_context *tdb,
 }
 
 /**
+ * Check whether the record left of a given freelist record is
+ * also a freelist record, and if so, merge the two records.
+ *
+ * Return code:
+ *  -1 upon error
+ *   0 if left was not a free record
+ *   1 if left was free and successfully merged.
+ *
+ * In this variant, the input record is specified just as the pointer
+ * and is read from the database if needed.
+ *
+ * next_ptr will contain the original record's next pointer after
+ * successful merging (which will be lost after merging), so that
+ * the caller can update the last pointer.
+ */
+static int check_merge_ptr_with_left_record(struct tdb_context *tdb,
+					    tdb_off_t rec_ptr,
+					    tdb_off_t *next_ptr)
+{
+	tdb_off_t left_ptr;
+	struct tdb_record rec, left_rec;
+	int ret;
+
+	ret = read_record_on_left(tdb, rec_ptr, &left_ptr, &left_rec);
+	if (ret != 0) {
+		return 0;
+	}
+
+	if (left_rec.magic != TDB_FREE_MAGIC) {
+		return 0;
+	}
+
+	/* It's free - expand to include it. */
+
+	ret = tdb->methods->tdb_read(tdb, rec_ptr, &rec,
+				     sizeof(rec), DOCONV());
+	if (ret != 0) {
+		return -1;
+	}
+
+	ret = merge_with_left_record(tdb, left_ptr, &left_rec, &rec);
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (next_ptr != NULL) {
+		*next_ptr = rec.next;
+	}
+
+	return 1;
+}
+
+/**
  * Add an element into the freelist.
  *
  * We merge the new record into the left record if it is also a
