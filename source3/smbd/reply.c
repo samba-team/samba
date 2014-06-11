@@ -4617,7 +4617,7 @@ strict_unlock:
 						(2*14) + /* word count (including bcc) */ \
 						1 /* pad byte */)
 
-bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
+bool is_valid_writeX_buffer(struct smbXsrv_connection *xconn,
 			    const uint8_t *inbuf)
 {
 	size_t numtowrite;
@@ -4646,7 +4646,7 @@ bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
 	}
 
 	fnum = SVAL(inbuf, smb_vwv2);
-	status = smb1srv_open_lookup(sconn->conn,
+	status = smb1srv_open_lookup(xconn,
 				     fnum,
 				     0, /* now */
 				     &op);

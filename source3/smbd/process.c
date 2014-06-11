@@ -370,6 +370,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 						    size_t *p_unread,
 						    size_t *len_ret)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	/* Size of a WRITEX call (+4 byte len). */
 	char writeX_header[4 + STANDARD_WRITE_AND_X_HEADER_SIZE];
 	ssize_t len = smb_len_large(lenbuf); /* Could be a UNIX large writeX. */
@@ -398,7 +399,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	 * valid writeX call.
 	 */
 
-	if (is_valid_writeX_buffer(sconn, (uint8_t *)writeX_header)) {
+	if (is_valid_writeX_buffer(xconn, (uint8_t *)writeX_header)) {
 		/*
 		 * If the data offset is beyond what
 		 * we've read, drain the extra bytes.

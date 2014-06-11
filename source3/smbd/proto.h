@@ -869,7 +869,7 @@ void error_to_writebrawerr(struct smb_request *req);
 void reply_writebraw(struct smb_request *req);
 void reply_writeunlock(struct smb_request *req);
 void reply_write(struct smb_request *req);
-bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
+bool is_valid_writeX_buffer(struct smbXsrv_connection *xconn,
 			    const uint8_t *inbuf);
 void reply_write_and_X(struct smb_request *req);
 void reply_lseek(struct smb_request *req);
