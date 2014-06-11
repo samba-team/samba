@@ -822,7 +822,7 @@ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
  **/
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
-	size_t src_len = strlen(src);
+	size_t src_len = 0;
 	char *tmpbuf = NULL;
 	size_t ret;
 
@@ -840,17 +840,21 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 		src = tmpbuf;
 	}
 
+	src_len = strlen(src);
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
 		src_len++;
 	}
 
 	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
-	if (ret == (size_t)-1 &&
-			(flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
-			&& dest_len > 0) {
-		((char *)dest)[0] = '\0';
-	}
+
 	SAFE_FREE(tmpbuf);
+	if (ret == (size_t)-1) {
+		if ((flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
+				&& dest_len > 0) {
+			((char *)dest)[0] = '\0';
+		}
+		return 0;
+	}
 	return ret;
 }
 

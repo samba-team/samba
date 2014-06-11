@@ -319,7 +319,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 				sizeof(param) - PTR_DIFF(p,param) - 1,
 				STR_TERMINATE|STR_UPPER);
 
-		if (len == (size_t)-1) {
+		if (len == 0) {
 			SAFE_FREE(last_entry);
 			return false;
 		}
@@ -331,7 +331,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 					sizeof(param) - PTR_DIFF(p,param) - 1,
 					STR_TERMINATE);
 
-			if (len == (size_t)-1) {
+			if (len == 0) {
 				SAFE_FREE(last_entry);
 				return false;
 			}
