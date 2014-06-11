@@ -94,10 +94,11 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	GetTimeOfDay(&fsp->open_time);
 
 	if (req) {
+		struct smbXsrv_connection *xconn = req->xconn;
 		struct smbXsrv_open *op = NULL;
 		NTTIME now = timeval_to_nttime(&fsp->open_time);
 
-		status = smbXsrv_open_create(sconn->conn,
+		status = smbXsrv_open_create(xconn,
 					     conn->session_info,
 					     now, &op);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -558,13 +559,13 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 		return req->chain_fsp;
 	}
 
-	if (req->sconn->conn == NULL) {
+	if (req->xconn == NULL) {
 		return NULL;
 	}
 
 	now = timeval_to_nttime(&req->request_time);
 
-	status = smb1srv_open_lookup(req->sconn->conn,
+	status = smb1srv_open_lookup(req->xconn,
 				     fid, now, &op);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -594,7 +595,7 @@ struct files_struct *file_fsp_get(struct smbd_smb2_request *smb2req,
 
 	now = timeval_to_nttime(&smb2req->request_time);
 
-	status = smb2srv_open_lookup(smb2req->sconn->conn,
+	status = smb2srv_open_lookup(smb2req->xconn,
 				     persistent_id, volatile_id,
 				     now, &op);
 	if (!NT_STATUS_IS_OK(status)) {
