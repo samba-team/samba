@@ -253,8 +253,7 @@ static int check_merge_with_left_record(struct tdb_context *tdb,
  */
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 {
-	tdb_off_t left;
-	struct tdb_record l;
+	int ret;
 
 	/* Allocation and tailer lock */
 	if (tdb_lock(tdb, -1, F_WRLCK) != 0)
@@ -293,25 +292,17 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 left:
 #endif
 
-	if (read_record_on_left(tdb, offset, &left, &l) != 0) {
-		goto update;
-	}
-
-	if (l.magic != TDB_FREE_MAGIC) {
-		goto update;
-	}
-
-	/* It's free - expand to include it. */
-	if (merge_with_left_record(tdb, left, &l, rec) != 0) {
+	ret = check_merge_with_left_record(tdb, offset, rec, NULL, NULL);
+	if (ret == -1) {
 		goto fail;
 	}
+	if (ret == 1) {
+		/* merged */
+		goto done;
+	}
 
-	tdb_unlock(tdb, -1, F_WRLCK);
-	return 0;
+	/* Nothing to merge, prepend to free list */
 
-update:
-
-	/* Now, prepend to free list */
 	rec->magic = TDB_FREE_MAGIC;
 
 	if (tdb_ofs_read(tdb, FREELIST_TOP, &rec->next) == -1 ||
@@ -321,6 +312,7 @@ update:
 		goto fail;
 	}
 
+done:
 	/* And we're done. */
 	tdb_unlock(tdb, -1, F_WRLCK);
 	return 0;
