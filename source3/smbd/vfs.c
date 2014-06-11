@@ -406,7 +406,7 @@ ssize_t vfs_write_data(struct smb_request *req,
 	ssize_t ret;
 
 	if (req && req->unread_bytes) {
-		int sockfd = req->sconn->conn->transport.sock;
+		int sockfd = req->xconn->transport.sock;
 		int old_flags;
 		SMB_ASSERT(req->unread_bytes == N);
 		/* VFS_RECVFILE must drain the socket
@@ -450,7 +450,7 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 	ssize_t ret;
 
 	if (req && req->unread_bytes) {
-		int sockfd = req->sconn->conn->transport.sock;
+		int sockfd = req->xconn->transport.sock;
 		SMB_ASSERT(req->unread_bytes == N);
 		/* VFS_RECVFILE must drain the socket
 		 * before returning. */
