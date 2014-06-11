@@ -509,7 +509,7 @@ static NTSTATUS smbd_smb2_request_create(struct smbXsrv_connection *xconn,
 					 const uint8_t *_inpdu, size_t size,
 					 struct smbd_smb2_request **_req)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smbd_smb2_request *req;
 	uint32_t protocol_version;
 	uint8_t *inpdu = NULL;
