@@ -48,7 +48,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 
 	cli = smbcli_state_init(NULL);
 	if (!cli) {
-		torture_comment(tctx, "Failed initialize smbcli_struct to connect with %s\n", host);
+		torture_result(tctx, TORTURE_FAIL, "Failed initialize smbcli_struct to connect with %s\n", host);
 		goto failed;
 	}
 
@@ -61,7 +61,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 				   lpcfg_socket_options(tctx->lp_ctx),
 				   &calling, &called);
 	if (!ok) {
-		torture_comment(tctx, "Failed to connect with %s\n", host);
+		torture_result(tctx, TORTURE_FAIL, "Failed to connect with %s\n", host);
 		goto failed;
 	}
 
@@ -69,7 +69,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 					       true, &cli->options);
 	cli->sock = NULL;
 	if (!cli->transport) {
-		torture_comment(tctx, "smbcli_transport_init failed\n");
+		torture_result(tctx, TORTURE_FAIL, "smbcli_transport_init failed\n");
 		goto failed;
 	}
 
@@ -184,14 +184,14 @@ static bool run_attrtest(struct torture_context *tctx,
 	smbcli_close(cli->tree, fnum);
 
 	if (NT_STATUS_IS_ERR(smbcli_getatr(cli->tree, fname, NULL, NULL, &t))) {
-		torture_comment(tctx, "getatr failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "getatr failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	}
 
 	torture_comment(tctx, "New file time is %s", ctime(&t));
 
 	if (abs(t - time(NULL)) > 60*60*24*10) {
-		torture_comment(tctx, "ERROR: SMBgetatr bug. time is %s",
+		torture_result(tctx, TORTURE_FAIL, "ERROR: SMBgetatr bug. time is %s",
 		       ctime(&t));
 		t = time(NULL);
 		correct = false;
@@ -248,19 +248,19 @@ static bool run_trans2test(struct torture_context *tctx,
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	if (NT_STATUS_IS_ERR(smbcli_qfileinfo(cli->tree, fnum, NULL, &size, &c_time, &a_time, &m_time,
 			   NULL, NULL))) {
-		torture_comment(tctx, "ERROR: qfileinfo failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qfileinfo failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	}
 
 	torture_comment(tctx, "Testing NAME_INFO\n");
 
 	if (NT_STATUS_IS_ERR(smbcli_qfilename(cli->tree, fnum, &pname))) {
-		torture_comment(tctx, "ERROR: qfilename failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qfilename failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	}
 
 	if (!pname || strcmp(pname, fname)) {
-		torture_comment(tctx, "qfilename gave different name? [%s] [%s]\n",
+		torture_result(tctx, TORTURE_FAIL, "qfilename gave different name? [%s] [%s]\n",
 		       fname, pname);
 		correct = false;
 	}
@@ -271,7 +271,7 @@ static bool run_trans2test(struct torture_context *tctx,
 	fnum = smbcli_open(cli->tree, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
-		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 		return false;
 	}
 	smbcli_close(cli->tree, fnum);
@@ -279,7 +279,7 @@ static bool run_trans2test(struct torture_context *tctx,
 	torture_comment(tctx, "Checking for sticky create times\n");
 
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo(cli->tree, fname, &c_time, &a_time, &m_time, &size, NULL))) {
-		torture_comment(tctx, "ERROR: qpathinfo failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qpathinfo failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	} else {
 		time_t t = time(NULL);
@@ -291,12 +291,12 @@ static bool run_trans2test(struct torture_context *tctx,
 		}
 		if ((abs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
 			torture_comment(tctx, "access time=%s", ctime(&a_time));
-			torture_comment(tctx, "This system appears to set a midnight access time\n");
+			torture_result(tctx, TORTURE_FAIL, "This system appears to set a midnight access time\n");
 			correct = false;
 		}
 
 		if (abs(m_time - t) > 60*60*24*7) {
-			torture_comment(tctx, "ERROR: totally incorrect times - maybe word reversed? mtime=%s", ctime(&m_time));
+			torture_result(tctx, TORTURE_FAIL, "ERROR: totally incorrect times - maybe word reversed? mtime=%s", ctime(&m_time));
 			correct = false;
 		}
 	}
@@ -307,12 +307,12 @@ static bool run_trans2test(struct torture_context *tctx,
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	smbcli_close(cli->tree, fnum);
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, fname, &c_time, &a_time, &m_time, &w_time, &size, NULL, NULL))) {
-		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qpathinfo2 failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	} else {
 		if (w_time < 60*60*24*2) {
 			torture_comment(tctx, "write time=%s", ctime(&w_time));
-			torture_comment(tctx, "This system appears to set a initial 0 write time\n");
+			torture_result(tctx, TORTURE_FAIL, "This system appears to set a initial 0 write time\n");
 			correct = false;
 		}
 	}
@@ -323,12 +323,12 @@ static bool run_trans2test(struct torture_context *tctx,
 	/* check if the server updates the directory modification time
            when creating a new file */
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, dname))) {
-		torture_comment(tctx, "ERROR: mkdir failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "ERROR: mkdir failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	}
 	sleep(3);
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, "\\trans2\\", &c_time, &a_time, &m_time, &w_time, &size, NULL, NULL))) {
-		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qpathinfo2 failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	}
 
@@ -337,11 +337,11 @@ static bool run_trans2test(struct torture_context *tctx,
 	smbcli_write(cli->tree, fnum,  0, &fnum, 0, sizeof(fnum));
 	smbcli_close(cli->tree, fnum);
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, "\\trans2\\", &c_time, &a_time, &m_time2, &w_time, &size, NULL, NULL))) {
-		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qpathinfo2 failed (%s)\n", smbcli_errstr(cli->tree));
 		correct = false;
 	} else {
 		if (m_time2 == m_time) {
-			torture_comment(tctx, "This system does not update directory modification times\n");
+			torture_result(tctx, TORTURE_FAIL, "This system does not update directory modification times\n");
 			correct = false;
 		}
 	}
@@ -383,7 +383,7 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 						i+1, nt_errstr(status));
 				break;
 			} else {
-				torture_comment(tctx, "Failed to fill pipe - %s \n",
+				torture_result(tctx, TORTURE_FAIL, "Failed to fill pipe - %s \n",
 						nt_errstr(status));
 				torture_close_connection(cli);
 				return false;
@@ -393,12 +393,12 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 
 	torture_comment(tctx, "Opening secondary connection\n");
 	if (!torture_open_connection(&cli2, tctx, 1)) {
-		torture_comment(tctx, "Failed to open secondary connection\n");
+		torture_result(tctx, TORTURE_FAIL, "Failed to open secondary connection\n");
 		correct = false;
 	}
 
 	if (!torture_close_connection(cli2)) {
-		torture_comment(tctx, "Failed to close secondary connection\n");
+		torture_result(tctx, TORTURE_FAIL, "Failed to close secondary connection\n");
 		correct = false;
 	}
 
@@ -430,7 +430,7 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 		return false;
 	}
 
@@ -439,13 +439,13 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 
 	memset(buf, 0, 4); /* init buf so valgrind won't complain */
 	if (smbcli_write(cli->tree, fnum1, 0, buf, 130, 4) != 4) {
-		torture_comment(tctx, "initial write failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "initial write failed (%s)\n", smbcli_errstr(cli->tree));
 		return false;
 	}
 
 	tree1 = cli->tree;	/* save old tree connection */
 	if (NT_STATUS_IS_ERR(smbcli_tconX(cli, share, "?????", password))) {
-		torture_comment(tctx, "%s refused 2nd tree connect (%s)\n", host,
+		torture_result(tctx, TORTURE_FAIL, "%s refused 2nd tree connect (%s)\n", host,
 		           smbcli_errstr(cli->tree));
 		talloc_free(cli);
 		return false;
@@ -459,7 +459,7 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 	cli->tree->tid = cnum2;
 
 	if (smbcli_write(cli->tree, fnum1, 0, buf, 130, 4) == 4) {
-		torture_comment(tctx, "* server allows write with wrong TID\n");
+		torture_result(tctx, TORTURE_FAIL, "* server allows write with wrong TID\n");
 		ret = false;
 	} else {
 		torture_comment(tctx, "server fails write with wrong TID : %s\n", smbcli_errstr(cli->tree));
@@ -470,7 +470,7 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 	cli->tree->tid = cnum3;
 
 	if (smbcli_write(cli->tree, fnum1, 0, buf, 130, 4) == 4) {
-		torture_comment(tctx, "* server allows write with invalid TID\n");
+		torture_result(tctx, TORTURE_FAIL, "* server allows write with invalid TID\n");
 		ret = false;
 	} else {
 		torture_comment(tctx, "server fails write with invalid TID : %s\n", smbcli_errstr(cli->tree));
@@ -481,7 +481,7 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 	cli->tree->tid = cnum1;
 
 	if (smbcli_write(cli->tree, fnum1, 0, buf, 130, 4) == 4) {
-		torture_comment(tctx, "* server allows write with invalid VUID\n");
+		torture_result(tctx, TORTURE_FAIL, "* server allows write with invalid VUID\n");
 		ret = false;
 	} else {
 		torture_comment(tctx, "server fails write with invalid VUID : %s\n", smbcli_errstr(cli->tree));
@@ -491,14 +491,14 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 	cli->tree->tid = cnum1;
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum1))) {
-		torture_comment(tctx, "close failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "close failed (%s)\n", smbcli_errstr(cli->tree));
 		return false;
 	}
 
 	cli->tree->tid = cnum2;
 
 	if (NT_STATUS_IS_ERR(smbcli_tdis(cli))) {
-		torture_comment(tctx, "secondary tdis failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "secondary tdis failed (%s)\n", smbcli_errstr(cli->tree));
 		return false;
 	}
 
@@ -596,14 +596,14 @@ static bool rw_torture2(struct torture_context *tctx,
 
 		if ((bytes_written = smbcli_write(c1->tree, fnum1, 0, buf, 0, buf_size)) != buf_size) {
 			torture_comment(tctx, "write failed (%s)\n", smbcli_errstr(c1->tree));
-			torture_comment(tctx, "wrote %d, expected %d\n", (int)bytes_written, (int)buf_size); 
+			torture_result(tctx, TORTURE_FAIL, "wrote %d, expected %d\n", (int)bytes_written, (int)buf_size); 
 			correct = false;
 			break;
 		}
 
 		if ((bytes_read = smbcli_read(c2->tree, fnum2, buf_rd, 0, buf_size)) != buf_size) {
 			torture_comment(tctx, "read failed (%s)\n", smbcli_errstr(c2->tree));
-			torture_comment(tctx, "read %d, expected %d\n", (int)bytes_read, (int)buf_size); 
+			torture_result(tctx, TORTURE_FAIL, "read %d, expected %d\n", (int)bytes_read, (int)buf_size); 
 			correct = false;
 			break;
 		}
@@ -684,7 +684,7 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 			if (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
 				double e = timeval_elapsed(&tv);
 				if (e < (0.5 * sec) || e > ((1.5 * sec) + 1)) {
-					torture_comment(tctx,"Timing incorrect %.2f violation 1 sec == %.2f\n",
+					torture_result(tctx, TORTURE_FAIL, "Timing incorrect %.2f violation 1 sec == %.2f\n",
 						e, sec);
 					return false;
 				}
@@ -714,7 +714,7 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 		NTSTATUS status = smbcli_nt_error(cli->tree);
 		if ((!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION))
 			&& (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))) {
-			torture_comment(tctx, "unlink of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+			torture_result(tctx, TORTURE_FAIL, "unlink of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 			correct = false;
 		}
 	}
@@ -796,7 +796,7 @@ static bool run_vuidtest(struct torture_context *tctx,
 		
         	if (!check_error(__location__, cli1, ERRDOS, ERRinvalidname, 
 				NT_STATUS_OBJECT_NAME_INVALID)) {
-			torture_comment(tctx, "Error code should be NT_STATUS_OBJECT_NAME_INVALID, was %s for file with %d char\n",
+			torture_result(tctx, TORTURE_FAIL, "Error code should be NT_STATUS_OBJECT_NAME_INVALID, was %s for file with %d char\n",
 					smbcli_errstr(cli1->tree), i);
 			failures++;
 		}
@@ -817,12 +817,12 @@ static bool run_vuidtest(struct torture_context *tctx,
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		return false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "close2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "close2 failed (%s)\n", smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
@@ -860,7 +860,7 @@ error_test1:
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_WRITE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
@@ -873,7 +873,7 @@ error_test1:
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "close2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "close2 failed (%s)\n", smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
@@ -885,7 +885,7 @@ error_test1:
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "(3) open (1) of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "(3) open (1) of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
@@ -894,12 +894,12 @@ error_test1:
 	memset(buf, '\0', 20);
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 0, 20) != 20) {
-		torture_comment(tctx, "write failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "write failed (%s)\n", smbcli_errstr(cli1->tree));
 		correct = false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "(3) close1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "(3) close1 failed (%s)\n", smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
@@ -1226,7 +1226,7 @@ error_test70:
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "(8) open (1) of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "(8) open (1) of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
@@ -1235,7 +1235,7 @@ error_test70:
 	memset(buf, '\0', 20);
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 0, 20) != 20) {
-		torture_comment(tctx, "(8) write failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "(8) write failed (%s)\n", smbcli_errstr(cli1->tree));
 		correct = false;
 	}
 
@@ -1264,7 +1264,7 @@ error_test70:
 
 	fnum2 = smbcli_open(cli1->tree, fname, O_RDWR|O_TRUNC, DENY_NONE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "(8) open (2) of %s with truncate failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "(8) open (2) of %s with truncate failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		return false;
 	}
 
@@ -1284,12 +1284,12 @@ error_test70:
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "(8) close1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "(8) close1 failed (%s)\n", smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum2))) {
-		torture_comment(tctx, "(8) close1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL, "(8) close1 failed (%s)\n", smbcli_errstr(cli1->tree));
 		return false;
 	}
 	
@@ -1427,29 +1427,29 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 	smbcli_rmdir(cli->tree, "\\chkpath.dir");
 
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\chkpath.dir"))) {
-		torture_comment(tctx, "mkdir1 failed : %s\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "mkdir1 failed : %s\n", smbcli_errstr(cli->tree));
 		return false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\chkpath.dir\\dir2"))) {
-		torture_comment(tctx, "mkdir2 failed : %s\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "mkdir2 failed : %s\n", smbcli_errstr(cli->tree));
 		return false;
 	}
 
 	fnum = smbcli_open(cli->tree, "\\chkpath.dir\\foo.txt", O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
-		torture_comment(tctx, "open1 failed (%s)\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "open1 failed (%s)\n", smbcli_errstr(cli->tree));
 		return false;
 	}
 	smbcli_close(cli->tree, fnum);
 
 	if (NT_STATUS_IS_ERR(smbcli_chkpath(cli->tree, "\\chkpath.dir"))) {
-		torture_comment(tctx, "chkpath1 failed: %s\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "chkpath1 failed: %s\n", smbcli_errstr(cli->tree));
 		ret = false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_chkpath(cli->tree, "\\chkpath.dir\\dir2"))) {
-		torture_comment(tctx, "chkpath2 failed: %s\n", smbcli_errstr(cli->tree));
+		torture_result(tctx, TORTURE_FAIL, "chkpath2 failed: %s\n", smbcli_errstr(cli->tree));
 		ret = false;
 	}
 
@@ -1457,7 +1457,7 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 		ret = check_error(__location__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_NOT_A_DIRECTORY);
 	} else {
-		torture_comment(tctx, "* chkpath on a file should fail\n");
+		torture_result(tctx, TORTURE_FAIL, "* chkpath on a file should fail\n");
 		ret = false;
 	}
 
@@ -1465,7 +1465,7 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 		ret = check_error(__location__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
-		torture_comment(tctx, "* chkpath on a non existent file should fail\n");
+		torture_result(tctx, TORTURE_FAIL, "* chkpath on a non existent file should fail\n");
 		ret = false;
 	}
 
@@ -1473,7 +1473,7 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 		ret = check_error(__location__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	} else {
-		torture_comment(tctx, "* chkpath on a non existent component should fail\n");
+		torture_result(tctx, TORTURE_FAIL, "* chkpath on a non existent component should fail\n");
 		ret = false;
 	}
 
@@ -1502,7 +1502,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	nt_status_support = lpcfg_nt_status_support(tctx->lp_ctx);
 
 	if (!lpcfg_set_cmdline(tctx->lp_ctx, "nt status support", "yes")) {
-		torture_comment(tctx, "Could not set 'nt status support = yes'\n");
+		torture_result(tctx, TORTURE_FAIL, "Could not set 'nt status support = yes'\n");
 		goto fail;
 	}
 
@@ -1511,7 +1511,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	}
 
 	if (!lpcfg_set_cmdline(tctx->lp_ctx, "nt status support", "no")) {
-		torture_comment(tctx, "Could not set 'nt status support = yes'\n");
+		torture_result(tctx, TORTURE_FAIL, "Could not set 'nt status support = yes'\n");
 		goto fail;
 	}
 
@@ -1521,7 +1521,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	if (!lpcfg_set_cmdline(tctx->lp_ctx, "nt status support",
 			    nt_status_support ? "yes":"no")) {
-		torture_comment(tctx, "Could not reset 'nt status support = yes'");
+		torture_result(tctx, TORTURE_FAIL, "Could not reset 'nt status support = yes'");
 		goto fail;
 	}
 
@@ -1529,7 +1529,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	smbcli_rmdir(cli_nt->tree, dname);
 
 	if (!NT_STATUS_IS_OK(smbcli_mkdir(cli_nt->tree, dname))) {
-		torture_comment(tctx, "smbcli_mkdir(%s) failed: %s\n", dname,
+		torture_result(tctx, TORTURE_FAIL, "smbcli_mkdir(%s) failed: %s\n", dname,
 		       smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
@@ -1549,14 +1549,14 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	status = smb_raw_open(cli_nt->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
+		torture_result(tctx, TORTURE_FAIL, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION));
 		goto fail;
 	}
 	status = smb_raw_open(cli_dos->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
-		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
+		torture_result(tctx, TORTURE_FAIL, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_DOS(ERRDOS, ERRfilexists)));
 		goto fail;
@@ -1564,14 +1564,14 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	status = smbcli_mkdir(cli_nt->tree, dname);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
+		torture_result(tctx, TORTURE_FAIL, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION));
 		goto fail;
 	}
 	status = smbcli_mkdir(cli_dos->tree, dname);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRnoaccess))) {
-		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
+		torture_result(tctx, TORTURE_FAIL, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_DOS(ERRDOS, ERRnoaccess)));
 		goto fail;
@@ -1596,7 +1596,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		status = smb_raw_mkdir(cli_dos->tree, &md);
 		if (!NT_STATUS_EQUAL(status,
 				     NT_STATUS_DOS(ERRDOS, ERRrename))) {
-			torture_comment(tctx, "(%s) incorrect status %s "
+			torture_result(tctx, TORTURE_FAIL, "(%s) incorrect status %s "
 					"should be ERRDOS:ERRrename\n",
 					__location__, nt_errstr(status));
 			goto fail;
@@ -1606,7 +1606,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	status = smb_raw_open(cli_nt->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
+		torture_result(tctx, TORTURE_FAIL, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION));
 		goto fail;
@@ -1614,7 +1614,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	status = smb_raw_open(cli_dos->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
-		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
+		torture_result(tctx, TORTURE_FAIL, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_DOS(ERRDOS, ERRfilexists)));
 		goto fail;
@@ -1626,28 +1626,28 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 		fnum = smbcli_open(cli_nt->tree, fname, O_RDWR | O_CREAT, 5);
 		if (fnum != -1) {
-			torture_comment(tctx, "Open(%s) with invalid deny mode succeeded -- "
+			torture_result(tctx, TORTURE_FAIL, "Open(%s) with invalid deny mode succeeded -- "
 			       "expected failure\n", fname);
 			smbcli_close(cli_nt->tree, fnum);
 			goto fail;
 		}
 		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_nt->tree),
 				     NT_STATUS_DOS(ERRDOS,ERRbadaccess))) {
-			torture_comment(tctx, "Expected DOS error ERRDOS/ERRbadaccess, "
+			torture_result(tctx, TORTURE_FAIL, "Expected DOS error ERRDOS/ERRbadaccess, "
 			       "got %s\n", smbcli_errstr(cli_nt->tree));
 			goto fail;
 		}
 
 		fnum = smbcli_open(cli_dos->tree, fname, O_RDWR | O_CREAT, 5);
 		if (fnum != -1) {
-			torture_comment(tctx, "Open(%s) with invalid deny mode succeeded -- "
+			torture_result(tctx, TORTURE_FAIL, "Open(%s) with invalid deny mode succeeded -- "
 			       "expected failure\n", fname);
 			smbcli_close(cli_nt->tree, fnum);
 			goto fail;
 		}
 		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_nt->tree),
 				     NT_STATUS_DOS(ERRDOS,ERRbadaccess))) {
-			torture_comment(tctx, "Expected DOS error ERRDOS:ERRbadaccess, "
+			torture_result(tctx, TORTURE_FAIL, "Expected DOS error ERRDOS:ERRbadaccess, "
 			       "got %s\n", smbcli_errstr(cli_nt->tree));
 			goto fail;
 		}
@@ -1687,7 +1687,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 		status = smb_raw_open(cli_nt->tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
-			torture_comment(tctx, "ntcreate as dir gave %s, "
+			torture_result(tctx, TORTURE_FAIL, "ntcreate as dir gave %s, "
 					"expected NT_STATUS_NOT_A_DIRECTORY\n",
 					nt_errstr(status));
 			result = false;
@@ -1700,7 +1700,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		status = smb_raw_open(cli_dos->tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS,
 							   ERRbaddirectory))) {
-			torture_comment(tctx, "ntcreate as dir gave %s, "
+			torture_result(tctx, TORTURE_FAIL, "ntcreate as dir gave %s, "
 					"expected NT_STATUS_NOT_A_DIRECTORY\n",
 					nt_errstr(status));
 			result = false;
@@ -1722,7 +1722,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 			   O_RDWR | O_CREAT | O_TRUNC,
 			   DENY_NONE);
 	if (fnum != -1) {
-		torture_comment(tctx, "Open(%s) succeeded -- expected failure\n",
+		torture_result(tctx, TORTURE_FAIL, "Open(%s) succeeded -- expected failure\n",
 		       os2_fname);
 		smbcli_close(cli_dos->tree, fnum);
 		goto fail;
@@ -1730,7 +1730,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_dos->tree),
 			     NT_STATUS_DOS(ERRDOS, ERRcannotopen))) {
-		torture_comment(tctx, "Expected DOS error ERRDOS/ERRcannotopen, got %s\n",
+		torture_result(tctx, TORTURE_FAIL, "Expected DOS error ERRDOS/ERRcannotopen, got %s\n",
 		       smbcli_errstr(cli_dos->tree));
 		goto fail;
 	}
@@ -1739,7 +1739,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 			   O_RDWR | O_CREAT | O_TRUNC,
 			   DENY_NONE);
 	if (fnum != -1) {
-		torture_comment(tctx, "Open(%s) succeeded -- expected failure\n",
+		torture_result(tctx, TORTURE_FAIL, "Open(%s) succeeded -- expected failure\n",
 		       os2_fname);
 		smbcli_close(cli_nt->tree, fnum);
 		goto fail;
@@ -1747,7 +1747,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_nt->tree),
 			     NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		torture_comment(tctx, "Expected error NT_STATUS_OBJECT_NAME_NOT_FOUND, "
+		torture_result(tctx, TORTURE_FAIL, "Expected error NT_STATUS_OBJECT_NAME_NOT_FOUND, "
 		       "got %s\n", smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
@@ -1799,7 +1799,7 @@ static bool run_birthtimetest(struct torture_context *tctx,
 				DENY_NONE);
 	if (NT_STATUS_IS_ERR(smbcli_qfileinfo(cli->tree, fnum, NULL, &size,
 				&c_time, &a_time, &m_time, NULL, NULL))) {
-		torture_comment(tctx, "ERROR: qfileinfo failed (%s)\n",
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qfileinfo failed (%s)\n",
 				smbcli_errstr(cli->tree));
 		correct = false;
 	}
@@ -1819,14 +1819,14 @@ static bool run_birthtimetest(struct torture_context *tctx,
 
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, fname, &c_time1,
 			&a_time, &m_time, &w_time, &size, NULL, NULL))) {
-		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n",
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qpathinfo2 failed (%s)\n",
 			smbcli_errstr(cli->tree));
 		correct = false;
 	} else {
 		fprintf(stdout, "c_time = %li, c_time1 = %li\n",
 			(long) c_time, (long) c_time1);
 		if (c_time1 != c_time) {
-			torture_comment(tctx, "This system updated file \
+			torture_result(tctx, TORTURE_FAIL, "This system updated file \
 					birth times! Not expected!\n");
 			correct = false;
 		}
@@ -1838,14 +1838,14 @@ static bool run_birthtimetest(struct torture_context *tctx,
 	/* check if the server does not update the directory birth time
           when creating a new file */
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, dname))) {
-		torture_comment(tctx, "ERROR: mkdir failed (%s)\n",
+		torture_result(tctx, TORTURE_FAIL, "ERROR: mkdir failed (%s)\n",
 				smbcli_errstr(cli->tree));
 		correct = false;
 	}
 	sleep(3);
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, "\\birthtime\\",
 			&c_time,&a_time,&m_time,&w_time, &size, NULL, NULL))){
-		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n",
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qpathinfo2 failed (%s)\n",
 				smbcli_errstr(cli->tree));
 		correct = false;
 	}
@@ -1863,14 +1863,14 @@ static bool run_birthtimetest(struct torture_context *tctx,
 
 	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, "\\birthtime\\",
 			&c_time1, &a_time, &m_time,&w_time,&size,NULL,NULL))){
-		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n",
+		torture_result(tctx, TORTURE_FAIL, "ERROR: qpathinfo2 failed (%s)\n",
 				smbcli_errstr(cli->tree));
 		correct = false;
 	} else {
 		fprintf(stdout, "c_time = %li, c_time1 = %li\n",
 			(long) c_time, (long) c_time1);
 		if (c_time1 != c_time) {
-			torture_comment(tctx, "This system  updated directory \
+			torture_result(tctx, TORTURE_FAIL, "This system  updated directory \
 					birth times! Not Expected!\n");
 			correct = false;
 		}
