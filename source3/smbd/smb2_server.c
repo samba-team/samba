@@ -1608,8 +1608,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 {
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_smb2_request *cur;
 	const uint8_t *inhdr;
 	uint32_t flags;
