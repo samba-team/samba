@@ -577,10 +577,9 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 	return NT_STATUS_OK;
 }
 
-static bool smb2_validate_sequence_number(struct smbd_server_connection *sconn,
+static bool smb2_validate_sequence_number(struct smbXsrv_connection *xconn,
 					  uint64_t message_id, uint64_t seq_id)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	struct bitmap *credits_bm = xconn->smb2.credits.bitmap;
 	unsigned int offset;
 	uint64_t seq_tmp;
@@ -711,7 +710,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 			   credit_charge,
 			   (unsigned long long)id));
 
-		ok = smb2_validate_sequence_number(sconn, message_id, id);
+		ok = smb2_validate_sequence_number(xconn, message_id, id);
 		if (!ok) {
 			return false;
 		}
