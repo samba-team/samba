@@ -2663,7 +2663,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    DATA_BLOB *info,
 				    const char *location)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	DATA_BLOB body;
 	DATA_BLOB _dyn;
 	uint8_t *outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
