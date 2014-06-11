@@ -1644,7 +1644,6 @@ static void construct_reply(struct smbd_server_connection *sconn,
 			    struct smb_perfcount_data *deferred_pcd)
 {
 	struct smbXsrv_connection *xconn = sconn->conn;
-	connection_struct *conn;
 	struct smb_request *req;
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
@@ -1667,27 +1666,19 @@ static void construct_reply(struct smbd_server_connection *sconn,
 		SMB_PERFCOUNT_SET_MSGLEN_IN(&req->pcd, size);
 	}
 
-	conn = switch_message(req->cmd, req);
+	req->conn = switch_message(req->cmd, req);
 
 	if (req->outbuf == NULL) {
+		/*
+		 * Request has suspended itself, will come
+		 * back here.
+		 */
 		return;
 	}
-
 	if (CVAL(req->outbuf,0) == 0) {
 		show_msg((char *)req->outbuf);
 	}
-
-	if (!srv_send_smb(req->sconn,
-			(char *)req->outbuf,
-			true, req->seqnum+1,
-			IS_CONN_ENCRYPTED(conn)||req->encrypted,
-			&req->pcd)) {
-		exit_server_cleanly("construct_reply: srv_send_smb failed.");
-	}
-
-	TALLOC_FREE(req);
-
-	return;
+	smb_request_done(req);
 }
 
 static void construct_reply_chain(struct smbd_server_connection *sconn,
