@@ -330,17 +330,23 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	if (!wcard_has_wild) {
 		struct smb_filename *smb_fname = NULL;
 		const char *fullpath;
+		char tmpbuf[PATH_MAX];
+		char *to_free = NULL;
 
 		if (ISDOT(fsp->fsp_name->base_name)) {
 			fullpath = in_file_name;
 		} else {
-			fullpath = talloc_asprintf(state,
-					"%s/%s",
-					fsp->fsp_name->base_name,
-					in_file_name);
-		}
-		if (tevent_req_nomem(fullpath, req)) {
-			return tevent_req_post(req, ev);
+			size_t len;
+			char *tmp;
+
+			len = full_path_tos(
+				fsp->fsp_name->base_name, in_file_name,
+				tmpbuf, sizeof(tmpbuf), &tmp, &to_free);
+			if (len == -1) {
+				tevent_req_oom(req);
+				return tevent_req_post(req, ev);
+			}
+			fullpath = tmp;
 		}
 		status = filename_convert(state,
 				conn,
@@ -349,6 +355,8 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 				UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP,
 				&wcard_has_wild,
 				&smb_fname);
+
+		TALLOC_FREE(to_free);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
