@@ -1341,7 +1341,7 @@ static void call_nt_transact_create(connection_struct *conn,
 void reply_ntcancel(struct smb_request *req)
 {
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	/*
 	 * Go through and cancel any pending change notifies.
