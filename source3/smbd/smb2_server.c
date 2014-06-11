@@ -2724,7 +2724,6 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 
 
 struct smbd_smb2_send_break_state {
-	struct smbd_server_connection *sconn;
 	struct smbd_smb2_send_queue queue_entry;
 	uint8_t nbt_hdr[NBT_HDR_SIZE];
 	uint8_t tf[SMB2_TF_HDR_SIZE];
@@ -2759,7 +2758,6 @@ static NTSTATUS smbd_smb2_send_break(struct smbd_server_connection *sconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_name_const(state, "struct smbd_smb2_send_break_state");
-	state->sconn = sconn;
 
 	if (do_encryption) {
 		nonce_high = session->nonce_high;
