@@ -298,3 +298,5 @@
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U check for sane mapping\(s3member:local\)
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G against s3member\(s3member:local\)
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G check for sane mapping\(s3member:local\)
+^samba.ntlm_auth.\(dc:local\).ntlm_auth against winbindd with failed require-membership-of
+^samba.ntlm_auth.\(dc:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
