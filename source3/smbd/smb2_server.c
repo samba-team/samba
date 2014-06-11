@@ -3003,7 +3003,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn
 void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 			     const uint8_t *inpdu, size_t size)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	NTSTATUS status;
 	struct smbd_smb2_request *req = NULL;
 
