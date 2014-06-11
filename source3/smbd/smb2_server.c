@@ -1469,7 +1469,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	 * of this fact sometime when refactoring. JRA.
 	 */
 
-	state = talloc_zero(req->sconn, struct smbd_smb2_request_pending_state);
+	state = talloc_zero(req->xconn, struct smbd_smb2_request_pending_state);
 	if (state == NULL) {
 		smbd_server_connection_terminate(req->sconn,
 						 nt_errstr(NT_STATUS_NO_MEMORY));
