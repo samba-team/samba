@@ -1870,7 +1870,7 @@ static void process_smb(struct smbXsrv_connection *xconn,
 		/*
 		 * NetBIOS session request, keepalive, etc.
 		 */
-		reply_special(sconn, (char *)inbuf, nread);
+		reply_special(xconn, (char *)inbuf, nread);
 		goto done;
 	}
 

@@ -532,9 +532,9 @@ static void reply_called_name_not_present(char *outbuf)
  Reply to a (netbios-level) special message. 
 ****************************************************************************/
 
-void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inbuf_size)
+void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_size)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	/*
@@ -627,7 +627,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 			if (sconn->remote_hostname == NULL) {
 				exit_server_cleanly("could not copy remote name");
 			}
-			sconn->conn->remote_hostname = sconn->remote_hostname;
+			xconn->remote_hostname = sconn->remote_hostname;
 		}
 
 		DEBUG(2,("netbios connect: local=%s remote=%s, name type = %x\n",

@@ -836,7 +836,7 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 	       files_struct *fsp);
 bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 			      files_struct *fsp);
-void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inbuf_len);
+void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_size);
 void reply_tcon(struct smb_request *req);
 void reply_tcon_and_X(struct smb_request *req);
 void reply_unknown_new(struct smb_request *req, uint8 type);
