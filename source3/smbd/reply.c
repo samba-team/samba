@@ -693,7 +693,7 @@ void reply_tcon(struct smb_request *req)
 	const char *p2;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = req->sconn;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 
 	START_PROFILE(SMBtcon);
@@ -771,7 +771,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	bool session_key_updated = false;
 	uint16_t optional_support = 0;
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBtconX);
 
@@ -1613,7 +1613,7 @@ void reply_search(struct smb_request *req)
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	struct dptr_struct *dirptr = NULL;
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBsearch);
 
