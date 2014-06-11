@@ -428,10 +428,10 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 	return true;
 }
 
-static bool netbios_session_retarget(struct smbd_server_connection *sconn,
+static bool netbios_session_retarget(struct smbXsrv_connection *xconn,
 				     const char *name, int name_type)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	char *trim_name;
 	char *trim_name_type;
 	const char *retarget_parm;
@@ -593,7 +593,7 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 		DEBUG(2,("netbios connect: name1=%s0x%x name2=%s0x%x\n",
 			 name1, name_type1, name2, name_type2));
 
-		if (netbios_session_retarget(sconn, name1, name_type1)) {
+		if (netbios_session_retarget(xconn, name1, name_type1)) {
 			exit_server_cleanly("retargeted client");
 		}
 
