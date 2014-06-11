@@ -1906,7 +1906,7 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	const struct smbd_smb2_dispatch_table *call = NULL;
 	const struct iovec *intf_v = SMBD_SMB2_IN_TF_IOV(req);
 	const uint8_t *inhdr;
