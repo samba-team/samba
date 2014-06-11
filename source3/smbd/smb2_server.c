@@ -652,10 +652,9 @@ static bool smb2_validate_sequence_number(struct smbXsrv_connection *xconn,
 	return true;
 }
 
-static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
-				const uint8_t *inhdr)
+static bool smb2_validate_message_id(struct smbXsrv_connection *xconn,
+				     const uint8_t *inhdr)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	uint64_t message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	uint16_t opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 	uint16_t credit_charge = 1;
@@ -754,7 +753,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (!smb2_validate_message_id(req->sconn, inhdr)) {
+		if (!smb2_validate_message_id(req->xconn, inhdr)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
