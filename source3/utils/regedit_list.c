@@ -406,6 +406,23 @@ WERROR multilist_set_data(struct multilist *list, const void *data)
 	return WERR_OK;
 }
 
+static void fix_start_row(struct multilist *list)
+{
+	int height;
+
+	/* adjust start_row so that the cursor appears on the screen */
+
+	height = list->window_height;
+	if (list->cb->get_column_header) {
+		height--;
+	}
+	if (list->cursor_row < list->start_row) {
+		list->start_row = list->cursor_row;
+	} else if (list->cursor_row >= list->start_row + height) {
+		list->start_row = list->cursor_row - height + 1;
+	}
+}
+
 WERROR multilist_set_window(struct multilist *list, WINDOW *window)
 {
 	int maxy, maxx;
@@ -421,10 +438,17 @@ WERROR multilist_set_window(struct multilist *list, WINDOW *window)
 	list->window = window;
 	list->window_width = maxx;
 	list->window_height = maxy;
+	list->start_row = 0;
 	if (rerender) {
-		return multilist_set_data(list, list->data);
+		const void *row = multilist_get_current_row(list);
+		WERROR rv = multilist_set_data(list, list->data);
+		if (W_ERROR_IS_OK(rv) && row) {
+			multilist_set_current_row(list, row);
+		}
+		return rv;
 	} else {
 		put_header(list);
+		fix_start_row(list);
 	}
 
 	return WERR_OK;
@@ -447,23 +471,6 @@ void multilist_refresh(struct multilist *list)
 	copywin(list->pad, list->window, list->start_row, 0,
 		window_start_row, 0, height - 1, list->window_width - 1,
 		false);
-}
-
-static void fix_start_row(struct multilist *list)
-{
-	int height;
-
-	/* adjust start_row so that the cursor appears on the screen */
-
-	height = list->window_height;
-	if (list->cb->get_column_header) {
-		height--;
-	}
-	if (list->cursor_row < list->start_row) {
-		list->start_row = list->cursor_row;
-	} else if (list->cursor_row >= list->start_row + height) {
-		list->start_row = list->cursor_row - height + 1;
-	}
 }
 
 void multilist_driver(struct multilist *list, int c)
