@@ -259,7 +259,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	DEBUG(3,("Selected protocol %s\n", remote_proto));
 
 	/* negprot_spnego() returns a the server guid in the first 16 bytes */
-	negprot_spnego_blob = negprot_spnego(req, req->sconn);
+	negprot_spnego_blob = negprot_spnego(req, xconn);
 	if (negprot_spnego_blob.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}

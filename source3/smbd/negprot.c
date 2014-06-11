@@ -160,9 +160,8 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
+DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	DATA_BLOB blob = data_blob_null;
 	DATA_BLOB blob_out = data_blob_null;
 	nstring dos_name;
@@ -175,7 +174,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 
 	/* See if we can get an SPNEGO blob */
 	status = auth_generic_prepare(talloc_tos(),
-				      sconn->remote_address,
+				      xconn->remote_address,
 				      &gensec_security);
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
@@ -254,7 +253,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	struct timespec ts;
 	ssize_t ret;
 	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	bool signing_desired = false;
 	bool signing_required = false;
 
@@ -334,7 +333,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	SSVAL(req->outbuf,smb_vwv0,choice);
 	SCVAL(req->outbuf,smb_vwv1,secword);
 
-	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_NT1);
+	smbXsrv_connection_init_tables(xconn, PROTOCOL_NT1);
 
 	SSVAL(req->outbuf,smb_vwv1+1, lp_max_mux()); /* maxmpx */
 	SSVAL(req->outbuf,smb_vwv2+1, 1); /* num vcs */
@@ -381,7 +380,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		}
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		DATA_BLOB spnego_blob = negprot_spnego(req, req->sconn);
+		DATA_BLOB spnego_blob = negprot_spnego(req, xconn);
 
 		if (spnego_blob.data == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);

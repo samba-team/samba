@@ -111,7 +111,7 @@ extern bool exit_firsttime;
 struct tstream_context;
 struct smbd_smb2_request;
 
-DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn);
+DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn);
 
 void smbd_lock_socket(struct smbd_server_connection *sconn);
 void smbd_unlock_socket(struct smbd_server_connection *sconn);
