@@ -2583,7 +2583,6 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 		talloc_get_type_abort(private_data,
 		struct smbd_release_ip_state);
 	struct smbXsrv_connection *xconn = state->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
 
 	if (!NT_STATUS_EQUAL(xconn->transport.status, NT_STATUS_ADDRESS_CLOSED)) {
 		/*
@@ -2592,7 +2591,7 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 		return;
 	}
 
-	smbd_server_connection_terminate(sconn, "CTDB_SRVID_RELEASE_IP");
+	smbd_server_connection_terminate(xconn, "CTDB_SRVID_RELEASE_IP");
 }
 
 /****************************************************************************

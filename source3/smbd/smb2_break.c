@@ -94,7 +94,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 	if (!NT_STATUS_IS_OK(status)) {
 		error = smbd_smb2_request_error(req, status);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(req->sconn,
+			smbd_server_connection_terminate(req->xconn,
 							 nt_errstr(error));
 			return;
 		}
@@ -110,7 +110,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(req->sconn,
+			smbd_server_connection_terminate(req->xconn,
 							 nt_errstr(error));
 			return;
 		}
@@ -129,7 +129,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 
 	error = smbd_smb2_request_done(req, outbody, NULL);
 	if (!NT_STATUS_IS_OK(error)) {
-		smbd_server_connection_terminate(req->sconn,
+		smbd_server_connection_terminate(req->xconn,
 						 nt_errstr(error));
 		return;
 	}
@@ -233,11 +233,12 @@ void send_break_message_smb2(files_struct *fsp, int level)
 				SMB2_OPLOCK_LEVEL_II :
 				SMB2_OPLOCK_LEVEL_NONE;
 	NTSTATUS status;
+	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
 	struct smbXsrv_session *session = NULL;
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
 
-	status = smb2srv_session_lookup(fsp->conn->sconn->conn,
+	status = smb2srv_session_lookup(xconn,
 					fsp->vuid,
 					now,
 					&session);
@@ -266,7 +267,8 @@ void send_break_message_smb2(files_struct *fsp, int level)
 					     fsp->op,
 					     smb2_oplock_level);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(fsp->conn->sconn,
-				 nt_errstr(status));
+		smbd_server_connection_terminate(xconn,
+						 nt_errstr(status));
+		return;
 	}
 }

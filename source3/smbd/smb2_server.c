@@ -763,7 +763,6 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 				      const struct iovec *in_vector,
 				      struct iovec *out_vector)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
 	const uint8_t *inhdr = (const uint8_t *)in_vector->iov_base;
 	uint8_t *outhdr = (uint8_t *)out_vector->iov_base;
 	uint16_t credit_charge = 1;
@@ -805,7 +804,7 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 	SMB_ASSERT(xconn->smb2.credits.max >= xconn->smb2.credits.granted);
 
 	if (xconn->smb2.credits.max < credit_charge) {
-		smbd_server_connection_terminate(sconn,
+		smbd_server_connection_terminate(xconn,
 			"client error: credit charge > max credits\n");
 		return;
 	}
@@ -1039,7 +1038,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
-void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
+void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location)
 {
@@ -1469,7 +1468,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	state = talloc_zero(req->xconn, struct smbd_smb2_request_pending_state);
 	if (state == NULL) {
-		smbd_server_connection_terminate(req->sconn,
+		smbd_server_connection_terminate(xconn,
 						 nt_errstr(NT_STATUS_NO_MEMORY));
 		return;
 	}
@@ -1573,7 +1572,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
-			smbd_server_connection_terminate(req->sconn,
+			smbd_server_connection_terminate(xconn,
 						nt_errstr(status));
 			return;
 		}
@@ -1586,7 +1585,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 					&state->vector[1+SMBD_SMB2_HDR_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
-			smbd_server_connection_terminate(req->sconn,
+			smbd_server_connection_terminate(xconn,
 						nt_errstr(status));
 			return;
 		}
@@ -1600,7 +1599,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	status = smbd_smb2_flush_send_queue(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(req->sconn,
+		smbd_server_connection_terminate(xconn,
 						 nt_errstr(status));
 		return;
 	}
@@ -2530,7 +2529,6 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 {
 	struct smbd_smb2_request *req = talloc_get_type_abort(private_data,
 					struct smbd_smb2_request);
-	struct smbd_server_connection *sconn = req->sconn;
 	struct smbXsrv_connection *xconn = req->xconn;
 	NTSTATUS status;
 
@@ -2544,13 +2542,13 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 
 	status = smbd_smb2_request_dispatch(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_next_incoming(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 }
@@ -3010,37 +3008,37 @@ void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 
 	status = smbd_initialize_smb2(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_create(xconn, inbuf, size, &req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_validate(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_dispatch(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_next_incoming(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 
@@ -3444,12 +3442,11 @@ static void smbd_smb2_connection_handler(struct tevent_context *ev,
 	struct smbXsrv_connection *xconn =
 		talloc_get_type_abort(private_data,
 		struct smbXsrv_connection);
-	struct smbd_server_connection *sconn = xconn->sconn;
 	NTSTATUS status;
 
 	status = smbd_smb2_io_handler(xconn, flags);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
 	}
 }

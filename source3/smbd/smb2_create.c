@@ -297,7 +297,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	if (!NT_STATUS_IS_OK(status)) {
 		error = smbd_smb2_request_error(smb2req, status);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(smb2req->sconn,
+			smbd_server_connection_terminate(smb2req->xconn,
 							 nt_errstr(error));
 			return;
 		}
@@ -308,7 +308,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	if (!NT_STATUS_IS_OK(status)) {
 		error = smbd_smb2_request_error(smb2req, status);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(smb2req->sconn,
+			smbd_server_connection_terminate(smb2req->xconn,
 							 nt_errstr(error));
 			return;
 		}
@@ -323,7 +323,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(smb2req->sconn,
+			smbd_server_connection_terminate(smb2req->xconn,
 							 nt_errstr(error));
 			return;
 		}
@@ -368,7 +368,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 
 	error = smbd_smb2_request_done(smb2req, outbody, &outdyn);
 	if (!NT_STATUS_IS_OK(error)) {
-		smbd_server_connection_terminate(smb2req->sconn,
+		smbd_server_connection_terminate(smb2req->xconn,
 						 nt_errstr(error));
 		return;
 	}
@@ -1318,7 +1318,6 @@ static void smbd_smb2_create_request_dispatch_immediate(struct tevent_context *c
 {
 	struct smbd_smb2_request *smb2req = talloc_get_type_abort(private_data,
 					struct smbd_smb2_request);
-	struct smbd_server_connection *sconn = smb2req->sconn;
 	uint64_t mid = get_mid_from_smb2req(smb2req);
 	NTSTATUS status;
 
@@ -1328,7 +1327,8 @@ static void smbd_smb2_create_request_dispatch_immediate(struct tevent_context *c
 
 	status = smbd_smb2_request_dispatch(smb2req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		smbd_server_connection_terminate(smb2req->xconn,
+						 nt_errstr(status));
 		return;
 	}
 }
@@ -1375,7 +1375,7 @@ bool schedule_deferred_open_message_smb2(
 
 	state->im = tevent_create_immediate(smb2req);
 	if (!state->im) {
-		smbd_server_connection_terminate(smb2req->sconn,
+		smbd_server_connection_terminate(smb2req->xconn,
 			nt_errstr(NT_STATUS_NO_MEMORY));
 		return false;
 	}

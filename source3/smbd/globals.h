@@ -213,11 +213,11 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq);
 
-void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
+void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location);
-#define smbd_server_connection_terminate(sconn, reason) \
-	smbd_server_connection_terminate_ex(sconn, reason, __location__)
+#define smbd_server_connection_terminate(xconn, reason) \
+	smbd_server_connection_terminate_ex(xconn, reason, __location__)
 
 const char *smb2_opcode_name(uint16_t opcode);
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);

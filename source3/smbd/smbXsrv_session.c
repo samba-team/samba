@@ -341,7 +341,7 @@ next:
 	subreq = messaging_read_send(table, conn->ev_ctx, conn->msg_ctx,
 				     MSG_SMBXSRV_SESSION_CLOSE);
 	if (subreq == NULL) {
-		smbd_server_connection_terminate(conn->sconn,
+		smbd_server_connection_terminate(conn,
 						 "msg_read_send() failed");
 		return;
 	}
