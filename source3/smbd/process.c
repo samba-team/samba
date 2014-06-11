@@ -1865,7 +1865,7 @@ static void process_smb(struct smbXsrv_connection *xconn,
 			uint32_t seqnum, bool encrypted,
 			struct smb_perfcount_data *deferred_pcd)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	int msg_type = CVAL(inbuf,0);
 
 	DO_PROFILE_INC(smb_count);
