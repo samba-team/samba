@@ -1278,7 +1278,6 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 }
 
 struct smbd_smb2_request_pending_state {
-        struct smbd_server_connection *sconn;
 	struct smbd_smb2_send_queue queue_entry;
         uint8_t buf[NBT_HDR_SIZE + SMB2_TF_HDR_SIZE + SMB2_HDR_BODY + 0x08 + 1];
         struct iovec vector[1 + SMBD_SMB2_NUM_IOV_PER_REQ];
@@ -1426,8 +1425,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	struct smbd_smb2_request *req =
 		talloc_get_type_abort(private_data,
 		struct smbd_smb2_request);
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_smb2_request_pending_state *state = NULL;
 	uint8_t *outhdr = NULL;
 	const uint8_t *inhdr = NULL;
@@ -1475,7 +1473,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 						 nt_errstr(NT_STATUS_NO_MEMORY));
 		return;
 	}
-	state->sconn = req->sconn;
 
 	tf = state->buf + NBT_HDR_SIZE;
 	tf_len = SMB2_TF_HDR_SIZE;
@@ -1603,7 +1600,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	status = smbd_smb2_flush_send_queue(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(sconn,
+		smbd_server_connection_terminate(req->sconn,
 						 nt_errstr(status));
 		return;
 	}
