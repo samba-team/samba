@@ -505,11 +505,11 @@ inval:
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
+static NTSTATUS smbd_smb2_request_create(struct smbXsrv_connection *xconn,
 					 uint8_t *inbuf, size_t size,
 					 struct smbd_smb2_request **_req)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	struct smbd_smb2_request *req;
 	uint32_t protocol_version;
 	const uint8_t *inhdr = NULL;
@@ -558,7 +558,7 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 	req->request_time = timeval_current();
 	now = timeval_to_nttime(&req->request_time);
 
-	status = smbd_smb2_inbuf_parse_compound(sconn->conn,
+	status = smbd_smb2_inbuf_parse_compound(xconn,
 						now,
 						inbuf + NBT_HDR_SIZE,
 						size - NBT_HDR_SIZE,
@@ -3019,7 +3019,7 @@ void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 		return;
 	}
 
-	status = smbd_smb2_request_create(sconn, inbuf, size, &req);
+	status = smbd_smb2_request_create(xconn, inbuf, size, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
