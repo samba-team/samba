@@ -860,7 +860,6 @@ void send_trans2_replies(connection_struct *conn,
 	int data_alignment_offset = 0;
 	bool overflow = False;
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
 	int max_send = xconn->smb1.sessions.max_send;
 
 	/* Modify the data_to_send and datasize and set the error if
@@ -888,7 +887,7 @@ void send_trans2_replies(connection_struct *conn,
 					__LINE__,__FILE__);
 		}
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(sconn,
+		if (!srv_send_smb(xconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),
@@ -1028,7 +1027,7 @@ void send_trans2_replies(connection_struct *conn,
 
 		/* Send the packet */
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(sconn,
+		if (!srv_send_smb(xconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),

@@ -394,12 +394,13 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 
 static void send_break_message_smb1(files_struct *fsp, int level)
 {
+	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
 	char break_msg[SMB1_BREAK_MESSAGE_LENGTH];
 
 	new_break_message_smb1(fsp, level, break_msg);
 
 	show_msg(break_msg);
-	if (!srv_send_smb(fsp->conn->sconn,
+	if (!srv_send_smb(xconn,
 			break_msg, false, 0,
 			IS_CONN_ENCRYPTED(fsp->conn),
 			NULL)) {

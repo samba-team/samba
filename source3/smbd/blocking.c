@@ -277,7 +277,7 @@ static void reply_lockingX_success(struct blocking_lock_record *blr)
 	 * that here and must set up the chain info manually.
 	 */
 
-	if (!srv_send_smb(req->sconn,
+	if (!srv_send_smb(req->xconn,
 			(char *)req->outbuf,
 			true, req->seqnum+1,
 			IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
@@ -318,7 +318,7 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
 	}
 
 	reply_nterror(blr->req, status);
-	if (!srv_send_smb(blr->req->sconn, (char *)blr->req->outbuf,
+	if (!srv_send_smb(blr->req->xconn, (char *)blr->req->outbuf,
 			  true, blr->req->seqnum+1,
 			  blr->req->encrypted, NULL)) {
 		exit_server_cleanly("generic_blocking_lock_error: srv_send_smb failed.");
@@ -407,7 +407,7 @@ static void blocking_lock_reply_error(struct blocking_lock_record *blr, NTSTATUS
 		 */
 		SCVAL(blr->req->outbuf,smb_com,SMBtrans2);
 
-		if (!srv_send_smb(blr->req->sconn,
+		if (!srv_send_smb(blr->req->xconn,
 				  (char *)blr->req->outbuf,
 				  true, blr->req->seqnum+1,
 				  IS_CONN_ENCRYPTED(blr->fsp->conn),

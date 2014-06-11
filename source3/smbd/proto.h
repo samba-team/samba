@@ -741,7 +741,7 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 
 void smbd_setup_sig_term_handler(struct smbd_server_connection *sconn);
 void smbd_setup_sig_hup_handler(struct smbd_server_connection *sconn);
-bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
+bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 		  bool no_signing, uint32_t seqnum,
 		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd);

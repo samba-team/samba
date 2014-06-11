@@ -211,12 +211,11 @@ void smbd_unlock_socket(struct smbXsrv_connection *xconn)
  Send an smb to a fd.
 ****************************************************************************/
 
-bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
+bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 		  bool do_signing, uint32_t seqnum,
 		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	size_t len = 0;
 	ssize_t ret;
 	char *buf_out = buffer;
@@ -1698,6 +1697,7 @@ static void construct_reply_chain(struct smbd_server_connection *sconn,
 				  bool encrypted,
 				  struct smb_perfcount_data *deferred_pcd)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smb_request **reqs = NULL;
 	struct smb_request *req;
 	unsigned num_reqs;
@@ -1709,7 +1709,7 @@ static void construct_reply_chain(struct smbd_server_connection *sconn,
 		char errbuf[smb_size];
 		error_packet(errbuf, 0, 0, NT_STATUS_INVALID_PARAMETER,
 			     __LINE__, __FILE__);
-		if (!srv_send_smb(sconn, errbuf, true, seqnum, encrypted,
+		if (!srv_send_smb(xconn, errbuf, true, seqnum, encrypted,
 				  NULL)) {
 			exit_server_cleanly("construct_reply_chain: "
 					    "srv_send_smb failed.");
@@ -1830,7 +1830,7 @@ void smb_request_done(struct smb_request *req)
 		first_req->outbuf, talloc_get_size(first_req->outbuf) - 4);
 
 shipit:
-	if (!srv_send_smb(first_req->sconn,
+	if (!srv_send_smb(first_req->xconn,
 			  (char *)first_req->outbuf,
 			  true, first_req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn)||first_req->encrypted,
@@ -1846,7 +1846,7 @@ error:
 	{
 		char errbuf[smb_size];
 		error_packet(errbuf, 0, 0, status, __LINE__, __FILE__);
-		if (!srv_send_smb(req->sconn, errbuf, true,
+		if (!srv_send_smb(req->xconn, errbuf, true,
 				  req->seqnum+1, req->encrypted,
 				  NULL)) {
 			exit_server_cleanly("construct_reply_chain: "
@@ -3083,7 +3083,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		memcpy(smb_buf(req.outbuf), req.buf, req.buflen);
 	}
 
-	ok = srv_send_smb(req.sconn,
+	ok = srv_send_smb(req.xconn,
 			  (char *)outbuf,
 			  true, seqnum+1,
 			  false, &req.pcd);
@@ -3727,7 +3727,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		DEBUG( 1, ("Connection denied from %s to %s\n",
 			   tsocket_address_string(remote_address, talloc_tos()),
 			   tsocket_address_string(local_address, talloc_tos())));
-		(void)srv_send_smb(sconn,(char *)buf, false,
+		(void)srv_send_smb(xconn,(char *)buf, false,
 				   0, false, NULL);
 		exit_server_cleanly("connection denied");
 	}

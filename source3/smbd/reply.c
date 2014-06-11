@@ -431,7 +431,6 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 static bool netbios_session_retarget(struct smbXsrv_connection *xconn,
 				     const char *name, int name_type)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
 	char *trim_name;
 	char *trim_name_type;
 	const char *retarget_parm;
@@ -509,7 +508,7 @@ static bool netbios_session_retarget(struct smbXsrv_connection *xconn,
 	*(uint32_t *)(outbuf+4) = in_addr->sin_addr.s_addr;
 	*(uint16_t *)(outbuf+8) = htons(retarget_port);
 
-	if (!srv_send_smb(sconn, (char *)outbuf, false, 0, false,
+	if (!srv_send_smb(xconn, (char *)outbuf, false, 0, false,
 			  NULL)) {
 		exit_server_cleanly("netbios_session_retarget: srv_send_smb "
 				    "failed.");
@@ -668,7 +667,7 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	srv_send_smb(sconn, outbuf, false, 0, false, NULL);
+	srv_send_smb(xconn, outbuf, false, 0, false, NULL);
 
 	if (CVAL(outbuf, 0) != 0x82) {
 		exit_server_cleanly("invalid netbios session");
@@ -4334,7 +4333,7 @@ void reply_writebraw(struct smb_request *req)
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
-	if (!srv_send_smb(req->sconn,
+	if (!srv_send_smb(req->xconn,
 			  buf,
 			  false, 0, /* no signing */
 			  IS_CONN_ENCRYPTED(conn),
@@ -5248,7 +5247,7 @@ static void do_smb1_close(struct tevent_req *req)
 	} else {
 		reply_nterror(smbreq, status);
 	}
-	if (!srv_send_smb(smbreq->sconn,
+	if (!srv_send_smb(smbreq->xconn,
 			(char *)smbreq->outbuf,
 			true,
 			smbreq->seqnum+1,
@@ -5569,7 +5568,7 @@ void reply_echo(struct smb_request *req)
 		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(req->sconn,
+		if (!srv_send_smb(req->xconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn)||req->encrypted,
