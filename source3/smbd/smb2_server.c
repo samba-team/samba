@@ -936,7 +936,7 @@ DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size)
 
 static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	TALLOC_CTX *mem_ctx;
 	struct iovec *vector;
 	int count;
