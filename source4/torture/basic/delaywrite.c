@@ -97,7 +97,7 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff < (TIMEDELAY_SECS * sec)) {
-				torture_comment(tctx, "Server updated write_time after %.2f seconds"
+				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
 						"(1 sec == %.2f)(wrong!)\n",
 						diff, sec);
 				ret = false;
@@ -213,7 +213,7 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff > (0.25 * sec)) {
-				torture_comment(tctx, "After SMBwrite truncate "
+				torture_result(tctx, TORTURE_FAIL, "After SMBwrite truncate "
 					"server updated write_time after %.2f seconds"
 					"(1 sec == %.2f)(wrong!)\n",
 					diff, sec);
@@ -398,7 +398,7 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff > (0.25 * sec)) {
-				torture_comment(tctx, "After SMBwrite truncate "
+				torture_result(tctx, TORTURE_FAIL, "After SMBwrite truncate "
 					"server updated write_time after %.2f seconds"
 					"(1 sec == %.2f)(wrong!)\n",
 					diff, sec);
@@ -456,7 +456,7 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 		if (finfo2.all_info.out.write_time != finfo3.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 
-			torture_comment(tctx, "server updated write_time after %.2f seconds"
+			torture_result(tctx, TORTURE_FAIL, "server updated write_time after %.2f seconds"
 					"(1 sec == %.2f)(correct)\n",
 					diff, sec);
 			break;
@@ -752,7 +752,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff > (0.25 * sec)) {
-				torture_comment(tctx, "After SET_ALLOCATION_INFO truncate "
+				torture_result(tctx, TORTURE_FAIL, "After SET_ALLOCATION_INFO truncate "
 					"server updated write_time after %.2f seconds"
 					"(1 sec == %.2f)(wrong!)\n",
 					diff, sec);
@@ -955,7 +955,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 1, 10);
 
 	if (written != 10) {
-		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
+		torture_result(tctx, TORTURE_FAIL, "write failed - wrote %d bytes (%s)\n",
 		       (int)written, __location__);
 		return false;
 	}
@@ -989,7 +989,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds"
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -1008,7 +1008,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		torture_comment(tctx, "Failed to open %s\n", fname);
+		torture_result(tctx, TORTURE_FAIL, "Failed to open %s\n", fname);
 		return false;
 	}
 	
@@ -1017,7 +1017,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 11, 10);
 
 	if (written != 10) {
-		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
+		torture_result(tctx, TORTURE_FAIL, "write failed - wrote %d bytes (%s)\n",
 		       (int)written, __location__);
 		return false;
 	}
@@ -1031,7 +1031,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	torture_comment(tctx, "write time %s\n", 
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		torture_comment(tctx, "Server updated write_time (wrong!)\n");
+		torture_result(tctx, TORTURE_FAIL, "Server updated write_time (wrong!)\n");
 		ret = false;
 	}
 
@@ -1044,7 +1044,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 21, 10);
 
 	if (written != 10) {
-		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
+		torture_result(tctx, TORTURE_FAIL, "write failed - wrote %d bytes (%s)\n",
 		       (int)written, __location__);
 		return false;
 	}
@@ -1061,7 +1061,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	torture_comment(tctx, "write time %s\n", 
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		torture_comment(tctx, "Server updated write_time (wrong!)\n");
+		torture_result(tctx, TORTURE_FAIL, "Server updated write_time (wrong!)\n");
 		ret = false;
 	}
 
@@ -1081,7 +1081,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -1126,7 +1126,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 31, 10);
 
 	if (written != 10) {
-		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
+		torture_result(tctx, TORTURE_FAIL, "write failed - wrote %d bytes (%s)\n",
 		       (int)written, __location__);
 		return false;
 	}
@@ -1143,7 +1143,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	torture_comment(tctx, "write time %s\n", 
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		torture_comment(tctx, "Server updated write_time (wrong!)\n");
+		torture_result(tctx, TORTURE_FAIL, "Server updated write_time (wrong!)\n");
 		ret = false;
 	}
 
@@ -1163,7 +1163,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff < (TIMEDELAY_SECS * sec)) {
-				torture_comment(tctx, "Server updated write_time after %.2f seconds"
+				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
 				ret = false;
@@ -1544,7 +1544,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff < (TIMEDELAY_SECS * sec)) {
-				torture_comment(tctx, "Server updated write_time after %.2f seconds "
+				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
 				ret = false;
@@ -1579,7 +1579,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 
 		if (finfo2.basic_info.out.write_time > finfo1.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -1706,7 +1706,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff < (TIMEDELAY_SECS * sec)) {
-				torture_comment(tctx, "Server updated write_time after %.2f seconds "
+				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
 				ret = false;
@@ -1765,7 +1765,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 
 		if (finfo2.basic_info.out.write_time > finfo1.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -1917,7 +1917,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff < (TIMEDELAY_SECS * sec)) {
-				torture_comment(tctx, "Server updated write_time after %.2f seconds "
+				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
 				ret = false;
@@ -1952,7 +1952,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 
 		if (finfo2.basic_info.out.write_time > finfo1.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2097,7 +2097,7 @@ static bool test_delayed_write_update3c(struct torture_context *tctx,
 
 		if (finfo2.basic_info.out.write_time > finfo1.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2162,7 +2162,7 @@ static bool test_delayed_write_update3c(struct torture_context *tctx,
 
 		if (finfo2.basic_info.out.write_time > finfo1.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2286,7 +2286,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff < (TIMEDELAY_SECS * sec)) {
-				torture_comment(tctx, "Server updated write_time after %.2f seconds "
+				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
 				ret = false;
@@ -2321,7 +2321,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 
 		if (finfo2.basic_info.out.write_time > finfo1.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2450,7 +2450,7 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 
 		if (finfo3.basic_info.out.write_time > finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2482,7 +2482,7 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 
 		if (finfo4.basic_info.out.write_time > finfo3.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2610,7 +2610,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 
 		if (finfo3.basic_info.out.write_time > finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2642,7 +2642,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 
 		if (finfo4.basic_info.out.write_time > finfo3.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2787,7 +2787,7 @@ again:
 
 		if (finfo3.basic_info.out.write_time > finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2819,7 +2819,7 @@ again:
 
 		if (finfo4.basic_info.out.write_time > finfo3.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2882,7 +2882,7 @@ again:
 
 		if (finfo5.basic_info.out.write_time > pinfo6.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
@@ -2909,7 +2909,7 @@ again:
 
 		if (finfo5.basic_info.out.write_time > pinfo6.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
+			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 					"(1sec == %.2f) (wrong!)\n",
 					diff, sec);
 			ret = false;
