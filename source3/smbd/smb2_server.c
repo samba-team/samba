@@ -2526,7 +2526,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *sconn);
+static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn);
 
 void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 					struct tevent_immediate *im,
@@ -2535,6 +2535,7 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 	struct smbd_smb2_request *req = talloc_get_type_abort(private_data,
 					struct smbd_smb2_request);
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	NTSTATUS status;
 
 	TALLOC_FREE(im);
@@ -2551,7 +2552,7 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 		return;
 	}
 
-	status = smbd_smb2_request_next_incoming(sconn);
+	status = smbd_smb2_request_next_incoming(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
@@ -2954,9 +2955,9 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 	return true;
 }
 
-static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *sconn)
+static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	size_t max_send_queue_len;
 	size_t cur_send_queue_len;
@@ -3043,7 +3044,7 @@ void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 		return;
 	}
 
-	status = smbd_smb2_request_next_incoming(sconn);
+	status = smbd_smb2_request_next_incoming(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
@@ -3433,7 +3434,7 @@ got_full:
 		check_log_size();
 	}
 
-	status = smbd_smb2_request_next_incoming(sconn);
+	status = smbd_smb2_request_next_incoming(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
