@@ -1807,7 +1807,7 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 						uint32_t data_length)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	uint16_t needed_charge;
 	uint16_t credit_charge = 1;
 	const uint8_t *inhdr;
