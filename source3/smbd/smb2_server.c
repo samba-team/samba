@@ -761,11 +761,11 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
-static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
-			const struct iovec *in_vector,
-			struct iovec *out_vector)
+static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
+				      const struct iovec *in_vector,
+				      struct iovec *out_vector)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	const uint8_t *inhdr = (const uint8_t *)in_vector->iov_base;
 	uint8_t *outhdr = (uint8_t *)out_vector->iov_base;
 	uint16_t credit_charge = 1;
@@ -911,7 +911,7 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 		struct iovec *outhdr_v = SMBD_SMB2_IDX_HDR_IOV(outreq,out,idx);
 		uint8_t *outhdr = (uint8_t *)outhdr_v->iov_base;
 
-		smb2_set_operation_credit(outreq->sconn, inhdr_v, outhdr_v);
+		smb2_set_operation_credit(outreq->xconn, inhdr_v, outhdr_v);
 
 		/* To match Windows, count up what we
 		   just granted. */
@@ -1552,7 +1552,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	/* Ensure we correctly go through crediting. Grant
 	   the credits now, and zero credits on the final
 	   response. */
-	smb2_set_operation_credit(req->sconn,
+	smb2_set_operation_credit(req->xconn,
 			SMBD_SMB2_IN_HDR_IOV(req),
 			&state->vector[1+SMBD_SMB2_HDR_IOV_OFS]);
 
