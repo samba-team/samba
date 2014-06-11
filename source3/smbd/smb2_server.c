@@ -3005,9 +3005,10 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 	return NT_STATUS_OK;
 }
 
-void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
+void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 			     uint8_t *inbuf, size_t size)
 {
+	struct smbd_server_connection *sconn = xconn->sconn;
 	NTSTATUS status;
 	struct smbd_smb2_request *req = NULL;
 

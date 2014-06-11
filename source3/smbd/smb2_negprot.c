@@ -59,7 +59,7 @@ static void reply_smb20xx(struct smb_request *req, uint16_t dialect)
 
 	req->outbuf = NULL;
 
-	smbd_smb2_first_negprot(req->sconn, smb2_inbuf, len);
+	smbd_smb2_first_negprot(req->xconn, smb2_inbuf, len);
 	return;
 }
 

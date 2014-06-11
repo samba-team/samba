@@ -224,7 +224,7 @@ bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
 void reply_smb2002(struct smb_request *req, uint16_t choice);
 void reply_smb20ff(struct smb_request *req, uint16_t choice);
-void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
+void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 			     uint8_t *inbuf, size_t size);
 
 DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size);

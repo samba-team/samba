@@ -1878,7 +1878,7 @@ static void process_smb(struct smbXsrv_connection *xconn,
 		/* At this point we're not really using smb2,
 		 * we make the decision here.. */
 		if (smbd_is_smb2_header(inbuf, nread)) {
-			smbd_smb2_first_negprot(sconn, inbuf, nread);
+			smbd_smb2_first_negprot(xconn, inbuf, nread);
 			return;
 		} else if (nread >= smb_size && valid_smb_header(sconn, inbuf)
 				&& CVAL(inbuf, smb_com) != 0x72) {
