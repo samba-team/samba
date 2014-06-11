@@ -670,10 +670,10 @@ done:
 	return ret;
 }
 
-/*
-   return the size of the freelist - used to decide if we should repack
-*/
-_PUBLIC_ int tdb_freelist_size(struct tdb_context *tdb)
+/**
+ * return the size of the freelist - no merging done
+ */
+static int tdb_freelist_size_no_merge(struct tdb_context *tdb)
 {
 	tdb_off_t ptr;
 	int count=0;
@@ -688,5 +688,30 @@ _PUBLIC_ int tdb_freelist_size(struct tdb_context *tdb)
 	}
 
 	tdb_unlock(tdb, -1, F_RDLCK);
+	return count;
+}
+
+/**
+ * return the size of the freelist - used to decide if we should repack
+ *
+ * As a side effect, adjacent records are merged unless the
+ * database is read-only, in order to reduce the fragmentation
+ * without repacking.
+ */
+_PUBLIC_ int tdb_freelist_size(struct tdb_context *tdb)
+{
+
+	int count = 0;
+
+	if (tdb->read_only) {
+		count = tdb_freelist_size_no_merge(tdb);
+	} else {
+		int ret;
+		ret = tdb_freelist_merge_adjacent(tdb, &count, NULL);
+		if (ret != 0) {
+			return -1;
+		}
+	}
+
 	return count;
 }
