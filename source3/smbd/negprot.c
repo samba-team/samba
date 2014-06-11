@@ -517,7 +517,7 @@ void reply_negprot(struct smb_request *req)
 	int i;
 	size_t converted_size;
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBnegprot);
 
