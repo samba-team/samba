@@ -3064,7 +3064,8 @@ static void samba_extended_info_version(struct smb_extended_info *extended_info)
 		  "%s", samba_version_string());
 }
 
-NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
+NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
+			 connection_struct *conn,
 			 TALLOC_CTX *mem_ctx,
 			 uint16_t info_level,
 			 uint16_t flags2,
@@ -3074,7 +3075,6 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 			 char **ppdata,
 			 int *ret_data_len)
 {
-	struct smbXsrv_connection *xconn = conn->sconn->conn;
 	char *pdata, *end_data;
 	int data_len = 0, len;
 	const char *vname = volume_label(talloc_tos(), SNUM(conn));
@@ -3677,7 +3677,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 
 	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-	status = smbd_do_qfsinfo(conn, req,
+	status = smbd_do_qfsinfo(req->xconn, conn, req,
 				 info_level,
 				 req->flags2,
 				 max_data_bytes,
