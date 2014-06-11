@@ -1450,7 +1450,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 	int flags;
 	uint64_t session_tag;
 	connection_struct *conn = NULL;
-	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
 	NTSTATUS status;
@@ -1493,7 +1493,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 	 * Note: for now we only check for NT_STATUS_NETWORK_SESSION_EXPIRED
 	 * here, the main check is still in change_to_user()
 	 */
-	status = smb1srv_session_lookup(sconn->conn,
+	status = smb1srv_session_lookup(xconn,
 					session_tag,
 					now,
 					&session);
@@ -1511,10 +1511,10 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 		}
 	}
 
-	if (session_tag != sconn->conn->last_session_id) {
+	if (session_tag != xconn->last_session_id) {
 		struct user_struct *vuser = NULL;
 
-		sconn->conn->last_session_id = session_tag;
+		xconn->last_session_id = session_tag;
 		if (session) {
 			vuser = session->compat;
 		}
@@ -1609,7 +1609,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 			return conn;
 		}
 
-		raddr = tsocket_address_inet_addr_string(sconn->remote_address,
+		raddr = tsocket_address_inet_addr_string(xconn->remote_address,
 							 talloc_tos());
 		if (raddr == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -1621,7 +1621,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 		 */
 
 		ok = allow_access(lp_hosts_deny(-1), lp_hosts_allow(-1),
-				  sconn->remote_hostname, raddr);
+				  xconn->remote_hostname, raddr);
 		TALLOC_FREE(raddr);
 
 		if (!ok) {
