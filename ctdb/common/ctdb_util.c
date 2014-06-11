@@ -470,23 +470,24 @@ static bool parse_ipv6(const char *s, const char *ifaces, unsigned port, ctdb_so
  */
 bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	char *s, *p;
+	char *p;
+	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
 	unsigned port;
 	char *endp = NULL;
+	ssize_t len;
 	bool ret;
 
-	s = talloc_strdup(tmp_ctx, addr);
-	if (s == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed strdup()\n"));
-		talloc_free(tmp_ctx);
+	len = strlen(addr);
+	if (len >= sizeof(s)) {
+		DEBUG(DEBUG_ERR, ("Address %s is unreasonably long\n", addr));
 		return false;
 	}
+
+	strncpy(s, addr, len+1);
 
 	p = rindex(s, ':');
 	if (p == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a port number\n", s));
-		talloc_free(tmp_ctx);
 		return false;
 	}
 
@@ -494,7 +495,6 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 	if (endp == NULL || *endp != 0) {
 		/* trailing garbage */
 		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the port in %s\n", s));
-		talloc_free(tmp_ctx);
 		return false;
 	}
 	*p = 0;
@@ -503,7 +503,6 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 	/* now is this a ipv4 or ipv6 address ?*/
 	ret = parse_ip(s, NULL, port, saddr);
 
-	talloc_free(tmp_ctx);
 	return ret;
 }
 
@@ -533,23 +532,25 @@ bool parse_ip(const char *addr, const char *ifaces, unsigned port, ctdb_sock_add
  */
 bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr, unsigned *mask)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	char *s, *p;
+	char *p;
+	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
 	char *endp = NULL;
+	ssize_t len;
 	bool ret;
 
 	ZERO_STRUCT(*addr);
-	s = talloc_strdup(tmp_ctx, str);
-	if (s == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed strdup()\n"));
-		talloc_free(tmp_ctx);
+
+	len = strlen(str);
+	if (len >= sizeof(s)) {
+		DEBUG(DEBUG_ERR, ("Address %s is unreasonably long\n", str));
 		return false;
 	}
+
+	strncpy(s, str, len+1);
 
 	p = rindex(s, '/');
 	if (p == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a mask\n", s));
-		talloc_free(tmp_ctx);
 		return false;
 	}
 
@@ -557,16 +558,13 @@ bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr, un
 	if (endp == NULL || *endp != 0) {
 		/* trailing garbage */
 		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the mask in %s\n", s));
-		talloc_free(tmp_ctx);
 		return false;
 	}
 	*p = 0;
 
-
 	/* now is this a ipv4 or ipv6 address ?*/
 	ret = parse_ip(s, ifaces, 0, addr);
 
-	talloc_free(tmp_ctx);
 	return ret;
 }
 
