@@ -2919,7 +2919,7 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 	file_id_persistent	= BVAL(body, 0x10);
 	file_id_volatile	= BVAL(body, 0x18);
 
-	status = smb2srv_open_lookup(state->req->sconn->conn,
+	status = smb2srv_open_lookup(state->req->xconn,
 				     file_id_persistent,
 				     file_id_volatile,
 				     0, /* now */
