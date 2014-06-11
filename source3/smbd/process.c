@@ -2575,7 +2575,7 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 }
 
 struct smbd_release_ip_state {
-	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 	struct tevent_immediate *im;
 	char addr[INET6_ADDRSTRLEN];
 };
@@ -2587,7 +2587,8 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 	struct smbd_release_ip_state *state =
 		talloc_get_type_abort(private_data,
 		struct smbd_release_ip_state);
-	struct smbXsrv_connection *xconn = state->sconn->conn;
+	struct smbXsrv_connection *xconn = state->xconn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 
 	if (!NT_STATUS_EQUAL(xconn->transport.status, NT_STATUS_ADDRESS_CLOSED)) {
 		/*
@@ -2596,7 +2597,7 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 		return;
 	}
 
-	smbd_server_connection_terminate(state->sconn, "CTDB_SRVID_RELEASE_IP");
+	smbd_server_connection_terminate(sconn, "CTDB_SRVID_RELEASE_IP");
 }
 
 /****************************************************************************
@@ -2607,7 +2608,7 @@ static bool release_ip(const char *ip, void *priv)
 	struct smbd_release_ip_state *state =
 		talloc_get_type_abort(priv,
 		struct smbd_release_ip_state);
-	struct smbXsrv_connection *xconn = state->sconn->conn;
+	struct smbXsrv_connection *xconn = state->xconn;
 	const char *addr = state->addr;
 	const char *p = addr;
 
@@ -2647,7 +2648,7 @@ static bool release_ip(const char *ip, void *priv)
 		 * as we might be called from within ctdbd_migrate(),
 		 * we need to defer our action to the next event loop
 		 */
-		tevent_schedule_immediate(state->im, state->sconn->ev_ctx,
+		tevent_schedule_immediate(state->im, xconn->ev_ctx,
 					  smbd_release_ip_immediate, state);
 
 		/*
@@ -2660,7 +2661,7 @@ static bool release_ip(const char *ip, void *priv)
 	return false;
 }
 
-static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
+static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 				  struct sockaddr_storage *srv,
 				  struct sockaddr_storage *clnt)
 {
@@ -2672,11 +2673,11 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state = talloc_zero(sconn, struct smbd_release_ip_state);
+	state = talloc_zero(xconn, struct smbd_release_ip_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->sconn = sconn;
+	state->xconn = xconn;
 	state->im = tevent_create_immediate(state);
 	if (state->im == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3832,7 +3833,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		 */
 		NTSTATUS status;
 
-		status = smbd_register_ips(sconn, &ss_srv, &ss_clnt);
+		status = smbd_register_ips(xconn, &ss_srv, &ss_clnt);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("ctdbd_register_ips failed: %s\n",
 				  nt_errstr(status)));
