@@ -47,6 +47,7 @@ struct pending_message_list {
 	struct pending_message_list *next, *prev;
 	struct timeval request_time; /* When was this first issued? */
 	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 	struct tevent_timer *te;
 	struct smb_perfcount_data pcd;
 	uint32_t seqnum;
@@ -659,7 +660,7 @@ static bool init_smb_request(struct smb_request *req,
 	return true;
 }
 
-static void process_smb(struct smbd_server_connection *conn,
+static void process_smb(struct smbXsrv_connection *xconn,
 			uint8_t *inbuf, size_t nread, size_t unread_bytes,
 			uint32_t seqnum, bool encrypted,
 			struct smb_perfcount_data *deferred_pcd);
@@ -672,6 +673,7 @@ static void smbd_deferred_open_timer(struct tevent_context *ev,
 	struct pending_message_list *msg = talloc_get_type(private_data,
 					   struct pending_message_list);
 	struct smbd_server_connection *sconn = msg->sconn;
+	struct smbXsrv_connection *xconn = msg->xconn;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	uint64_t mid = (uint64_t)SVAL(msg->buf.data,smb_mid);
 	uint8_t *inbuf;
@@ -692,7 +694,7 @@ static void smbd_deferred_open_timer(struct tevent_context *ev,
 	 * re-processed in error. */
 	msg->processed = true;
 
-	process_smb(sconn, inbuf,
+	process_smb(xconn, inbuf,
 		    msg->buf.length, 0,
 		    msg->seqnum, msg->encrypted, &msg->pcd);
 
@@ -723,6 +725,7 @@ static bool push_queued_message(struct smb_request *req,
 		return False;
 	}
 	msg->sconn = req->sconn;
+	msg->xconn = req->xconn;
 
 	msg->buf = data_blob_talloc(msg, req->inbuf, msg_len);
 	if(msg->buf.data == NULL) {
@@ -1848,11 +1851,12 @@ error:
 /****************************************************************************
  Process an smb from the client
 ****************************************************************************/
-static void process_smb(struct smbd_server_connection *sconn,
+static void process_smb(struct smbXsrv_connection *xconn,
 			uint8_t *inbuf, size_t nread, size_t unread_bytes,
 			uint32_t seqnum, bool encrypted,
 			struct smb_perfcount_data *deferred_pcd)
 {
+	struct smbd_server_connection *sconn = xconn->sconn;
 	int msg_type = CVAL(inbuf,0);
 
 	DO_PROFILE_INC(smb_count);
@@ -2504,7 +2508,7 @@ static void smbd_server_connection_read_handler(
 	}
 
 process:
-	process_smb(sconn, inbuf, inbuf_len, unread_bytes,
+	process_smb(xconn, inbuf, inbuf_len, unread_bytes,
 		    seqnum, encrypted, NULL);
 }
 
