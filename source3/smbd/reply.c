@@ -4628,7 +4628,7 @@ bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	if (is_encrypted_packet(sconn, inbuf)) {
+	if (is_encrypted_packet(inbuf)) {
 		/* Can't do this on encrypted
 		 * connections. */
 		return false;
