@@ -859,8 +859,8 @@ void send_trans2_replies(connection_struct *conn,
 	int alignment_offset = 1; /* JRA. This used to be 3. Set to 1 to make netmon parse ok. */
 	int data_alignment_offset = 0;
 	bool overflow = False;
-	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	int max_send = xconn->smb1.sessions.max_send;
 
 	/* Modify the data_to_send and datasize and set the error if
