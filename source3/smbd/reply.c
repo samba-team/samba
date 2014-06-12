@@ -3166,12 +3166,11 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 
 static void reply_readbraw_error(struct smbXsrv_connection *xconn)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
 	char header[4];
 
 	SIVAL(header,0,0);
 
-	smbd_lock_socket(sconn);
+	smbd_lock_socket(xconn);
 	if (write_data(xconn->transport.sock,header,4) != 4) {
 		int saved_errno = errno;
 		/*
@@ -3186,7 +3185,7 @@ static void reply_readbraw_error(struct smbXsrv_connection *xconn)
 
 		fail_readraw();
 	}
-	smbd_unlock_socket(sconn);
+	smbd_unlock_socket(xconn);
 }
 
 /****************************************************************************
@@ -4073,9 +4072,9 @@ void reply_read_and_X(struct smb_request *req)
 		/* NT_STATUS_RETRY - fall back to sync read. */
 	}
 
-	smbd_lock_socket(req->sconn);
+	smbd_lock_socket(req->xconn);
 	send_file_readX(conn, req, fsp,	startpos, smb_maxcnt);
-	smbd_unlock_socket(req->sconn);
+	smbd_unlock_socket(req->xconn);
 
  out:
 	END_PROFILE(SMBreadX);

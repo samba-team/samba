@@ -140,10 +140,8 @@ static bool smbd_lock_socket_internal(struct smbXsrv_connection *xconn)
 	return true;
 }
 
-void smbd_lock_socket(struct smbd_server_connection *sconn)
+void smbd_lock_socket(struct smbXsrv_connection *xconn)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
-
 	if (!smbd_lock_socket_internal(xconn)) {
 		exit_server_cleanly("failed to lock socket");
 	}
@@ -200,10 +198,8 @@ static bool smbd_unlock_socket_internal(struct smbXsrv_connection *xconn)
 	return true;
 }
 
-void smbd_unlock_socket(struct smbd_server_connection *sconn)
+void smbd_unlock_socket(struct smbXsrv_connection *xconn)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
-
 	if (!smbd_unlock_socket_internal(xconn)) {
 		exit_server_cleanly("failed to unlock socket");
 	}
@@ -232,7 +228,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		return true;
 	}
 
-	smbd_lock_socket(sconn);
+	smbd_lock_socket(xconn);
 
 	if (do_signing) {
 		/* Sign the outgoing packet if required. */
@@ -274,7 +270,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 out:
 	SMB_PERFCOUNT_END(pcd);
 
-	smbd_unlock_socket(sconn);
+	smbd_unlock_socket(xconn);
 	return (ret > 0);
 }
 
@@ -2477,11 +2473,11 @@ static void smbd_server_connection_read_handler(
 	from_client = (xconn->transport.sock == fd);
 
 	if (async_echo && from_client) {
-		smbd_lock_socket(sconn);
+		smbd_lock_socket(xconn);
 
 		if (!fd_is_readable(fd)) {
 			DEBUG(10,("the echo listener was faster\n"));
-			smbd_unlock_socket(sconn);
+			smbd_unlock_socket(xconn);
 			return;
 		}
 	}
@@ -2496,7 +2492,7 @@ static void smbd_server_connection_read_handler(
 				    !from_client /* trusted channel */);
 
 	if (async_echo && from_client) {
-		smbd_unlock_socket(sconn);
+		smbd_unlock_socket(xconn);
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
@@ -2726,9 +2722,9 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 		return false;
 	}
 
-	smbd_lock_socket(sconn);
+	smbd_lock_socket(xconn);
 	ret = send_keepalive(xconn->transport.sock);
-	smbd_unlock_socket(sconn);
+	smbd_unlock_socket(xconn);
 
 	if (!ret) {
 		int saved_errno = errno;

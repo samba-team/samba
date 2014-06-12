@@ -113,8 +113,8 @@ struct smbd_smb2_request;
 
 DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn);
 
-void smbd_lock_socket(struct smbd_server_connection *sconn);
-void smbd_unlock_socket(struct smbd_server_connection *sconn);
+void smbd_lock_socket(struct smbXsrv_connection *xconn);
+void smbd_unlock_socket(struct smbXsrv_connection *xconn);
 
 NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
