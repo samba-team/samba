@@ -650,7 +650,7 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 				  struct tevent_fd *fde,
 				  uint16_t flags, void *p);
 
-static bool vfswrap_init_asys_ctx(struct smbXsrv_connection *conn)
+static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 {
 	int ret;
 	int fd;
@@ -709,11 +709,11 @@ static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 	if (req == NULL) {
 		return NULL;
 	}
-	if (!vfswrap_init_asys_ctx(handle->conn->sconn->conn)) {
+	if (!vfswrap_init_asys_ctx(handle->conn->sconn)) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
-	state->asys_ctx = handle->conn->sconn->conn->asys_ctx;
+	state->asys_ctx = handle->conn->sconn->asys_ctx;
 	state->req = req;
 
 	ret = asys_pread(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
@@ -741,11 +741,11 @@ static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
 	if (req == NULL) {
 		return NULL;
 	}
-	if (!vfswrap_init_asys_ctx(handle->conn->sconn->conn)) {
+	if (!vfswrap_init_asys_ctx(handle->conn->sconn)) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
-	state->asys_ctx = handle->conn->sconn->conn->asys_ctx;
+	state->asys_ctx = handle->conn->sconn->asys_ctx;
 	state->req = req;
 
 	ret = asys_pwrite(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
@@ -771,11 +771,11 @@ static struct tevent_req *vfswrap_fsync_send(struct vfs_handle_struct *handle,
 	if (req == NULL) {
 		return NULL;
 	}
-	if (!vfswrap_init_asys_ctx(handle->conn->sconn->conn)) {
+	if (!vfswrap_init_asys_ctx(handle->conn->sconn)) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
-	state->asys_ctx = handle->conn->sconn->conn->asys_ctx;
+	state->asys_ctx = handle->conn->sconn->asys_ctx;
 	state->req = req;
 
 	ret = asys_fsync(state->asys_ctx, fsp->fh->fd, req);

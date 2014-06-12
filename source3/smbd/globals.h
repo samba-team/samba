@@ -436,12 +436,6 @@ struct smbXsrv_connection {
 		} server;
 	} smb2;
 
-	/*
-	 * Link into libasys for asynchronous operations
-	 */
-	struct asys_context *asys_ctx;
-	struct tevent_fd *asys_fde;
-
 	uint64_t smbd_idle_profstamp;
 
 	/*
@@ -849,6 +843,12 @@ struct smbd_server_connection {
 		uint32_t max_read;
 		uint32_t max_write;
 	} smb2;
+
+	/*
+	 * Link into libasys for asynchronous operations
+	 */
+	struct asys_context *asys_ctx;
+	struct tevent_fd *asys_fde;
 
 	struct smbXsrv_connection *conn;
 };
