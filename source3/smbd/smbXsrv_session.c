@@ -1090,7 +1090,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	session->table = table;
 	session->idle_time = now;
 	session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-	session->connection = conn;
+	session->client = conn->client;
 
 	status = smbXsrv_session_global_allocate(table->global.db_ctx,
 						 session,
@@ -1277,7 +1277,6 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	struct smbXsrv_session_table *table;
 	struct db_record *local_rec = NULL;
 	struct db_record *global_rec = NULL;
-	struct smbXsrv_connection *xconn;
 	struct smbd_server_connection *sconn = NULL;
 	NTSTATUS status;
 	NTSTATUS error = NT_STATUS_OK;
@@ -1289,9 +1288,8 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	table = session->table;
 	session->table = NULL;
 
-	xconn = session->connection;
-	sconn = xconn->client->sconn;
-	session->connection = NULL;
+	sconn = session->client->sconn;
+	session->client = NULL;
 	session->status = NT_STATUS_USER_SESSION_DELETED;
 
 	global_rec = session->global->db_rec;
@@ -1376,7 +1374,10 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 		file_close_user(sconn, session->compat->vuid);
 	}
 
-	if (xconn->protocol >= PROTOCOL_SMB2_02) {
+	if (session->tcon_table != NULL) {
+		/*
+		 * Note: We only have a tcon_table for SMB2.
+		 */
 		status = smb2srv_tcon_disconnect_all(session);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "

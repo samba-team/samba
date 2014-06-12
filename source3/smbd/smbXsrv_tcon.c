@@ -1143,7 +1143,7 @@ NTSTATUS smb2srv_tcon_create(struct smbXsrv_session *session,
 			     NTTIME now,
 			     struct smbXsrv_tcon **_tcon)
 {
-	struct server_id id = messaging_server_id(session->connection->msg_ctx);
+	struct server_id id = messaging_server_id(session->client->msg_ctx);
 
 	return smbXsrv_tcon_create(session->tcon_table,
 				   PROTOCOL_SMB2_02,

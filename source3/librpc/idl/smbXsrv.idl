@@ -163,7 +163,7 @@ interface smbXsrv
 	typedef struct {
 		[ignore] smbXsrv_session_table		*table;
 		[ignore] db_record 			*db_rec;
-		[ignore] smbXsrv_connection		*connection;
+		[ignore] smbXsrv_client			*client;
 		uint32					local_id;
 		[ref] smbXsrv_session_global0		*global;
 		NTSTATUS				status;
