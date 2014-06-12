@@ -277,7 +277,8 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 
 	mem_ctx = talloc_new(parent_ctx);
 	if (!mem_ctx) {
-		*error_string = "unable to allocate tmp_ctx for create_keytab";
+		*error_string = talloc_strdup(parent_ctx,
+			"unable to allocate tmp_ctx for create_keytab");
 		return ENOMEM;
 	}
 
@@ -304,6 +305,7 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 			      salt_princ, kvno, new_secret,
 			      context, enctypes, keytab, error_string);
 	if (ret) {
+		talloc_steal(parent_ctx, *error_string);
 		goto done;
 	}
 
@@ -311,6 +313,9 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 		ret = keytab_add_keys(mem_ctx, principals,
 				      salt_princ, kvno - 1, old_secret,
 				      context, enctypes, keytab, error_string);
+		if (ret) {
+			talloc_steal(parent_ctx, *error_string);
+		}
 	}
 
 done:
