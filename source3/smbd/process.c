@@ -1764,7 +1764,7 @@ void smb_request_done(struct smb_request *req)
 
 		next->vuid = SVAL(req->outbuf, smb_uid);
 		next->tid  = SVAL(req->outbuf, smb_tid);
-		status = smb1srv_tcon_lookup(req->sconn->conn, req->tid,
+		status = smb1srv_tcon_lookup(req->xconn, req->tid,
 					     now, &tcon);
 		if (NT_STATUS_IS_OK(status)) {
 			req->conn = tcon->compat;
