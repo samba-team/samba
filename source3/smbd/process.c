@@ -359,14 +359,13 @@ static NTSTATUS read_packet_remainder(int fd, char *buffer,
 
 static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 						    const char lenbuf[4],
-						    struct smbd_server_connection *sconn,
+						    struct smbXsrv_connection *xconn,
 						    int sock,
 						    char **buffer,
 						    unsigned int timeout,
 						    size_t *p_unread,
 						    size_t *len_ret)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	/* Size of a WRITEX call (+4 byte len). */
 	char writeX_header[4 + STANDARD_WRITE_AND_X_HEADER_SIZE];
 	ssize_t len = smb_len_large(lenbuf); /* Could be a UNIX large writeX. */
@@ -475,12 +474,11 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
-				       struct smbd_server_connection *sconn,
+				       struct smbXsrv_connection *xconn,
 				       int sock,
 				       char **buffer, unsigned int timeout,
 				       size_t *p_unread, size_t *plen)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	char lenbuf[4];
 	size_t len;
 	int min_recv_size = lp_min_receive_file_size();
@@ -501,7 +499,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	    xconn->smb1.echo_handler.trusted_fde == NULL) {
 
 		return receive_smb_raw_talloc_partial_read(
-			mem_ctx, lenbuf, sconn, sock, buffer, timeout,
+			mem_ctx, lenbuf, xconn, sock, buffer, timeout,
 			p_unread, plen);
 	}
 
@@ -533,7 +531,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
-				   struct smbd_server_connection *sconn,
+				   struct smbXsrv_connection *xconn,
 				   int sock,
 				   char **buffer, unsigned int timeout,
 				   size_t *p_unread, bool *p_encrypted,
@@ -541,13 +539,12 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 				   uint32_t *seqnum,
 				   bool trusted_channel)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	size_t len = 0;
 	NTSTATUS status;
 
 	*p_encrypted = false;
 
-	status = receive_smb_raw_talloc(mem_ctx, sconn, sock, buffer, timeout,
+	status = receive_smb_raw_talloc(mem_ctx, xconn, sock, buffer, timeout,
 					p_unread, &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)?5:1,
@@ -2464,7 +2461,6 @@ static void smbd_server_connection_write_handler(
 static void smbd_server_connection_read_handler(
 	struct smbXsrv_connection *xconn, int fd)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
 	uint8_t *inbuf = NULL;
 	size_t inbuf_len = 0;
 	size_t unread_bytes = 0;
@@ -2500,7 +2496,7 @@ static void smbd_server_connection_read_handler(
 	}
 
 	/* TODO: make this completely nonblocking */
-	status = receive_smb_talloc(mem_ctx, sconn, fd,
+	status = receive_smb_talloc(mem_ctx, xconn, fd,
 				    (char **)(void *)&inbuf,
 				    0, /* timeout */
 				    &unread_bytes,
@@ -2923,7 +2919,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	status = receive_smb_talloc(state, sconn,
+	status = receive_smb_talloc(state, xconn,
 				    xconn->transport.sock,
 				    &state->buf,
 				    0 /* timeout */,
