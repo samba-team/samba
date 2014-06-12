@@ -786,7 +786,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  struct messaging_context *msg_ctx,
 		  int sock_fd,
 		  bool interactive);
-bool fork_echo_handler(struct smbd_server_connection *sconn);
+bool fork_echo_handler(struct smbXsrv_connection *xconn);
 
 /* The following definitions come from smbd/quotas.c  */
 

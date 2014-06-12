@@ -2809,7 +2809,7 @@ static bool housekeeping_fn(const struct timeval *now, void *private_data)
 
 struct smbd_echo_read_state {
 	struct tevent_context *ev;
-	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 
 	char *buf;
 	size_t buflen;
@@ -2821,11 +2821,10 @@ static void smbd_echo_read_waited(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_echo_read_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct smbd_server_connection *sconn)
+	struct smbXsrv_connection *xconn)
 {
 	struct tevent_req *req, *subreq;
 	struct smbd_echo_read_state *state;
-	struct smbXsrv_connection *xconn = sconn->conn;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_echo_read_state);
@@ -2833,7 +2832,7 @@ static struct tevent_req *smbd_echo_read_send(
 		return NULL;
 	}
 	state->ev = ev;
-	state->sconn = sconn;
+	state->xconn = xconn;
 
 	subreq = wait_for_read_send(state, ev, xconn->transport.sock);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2877,8 +2876,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct smbd_echo_read_state *state = tevent_req_data(
 		req, struct smbd_echo_read_state);
-	struct smbd_server_connection *sconn = state->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = state->xconn;
 	bool ok;
 	NTSTATUS status;
 	size_t unread = 0;
@@ -3105,19 +3103,17 @@ static void smbd_echo_exit(struct tevent_context *ev,
 
 static void smbd_echo_got_packet(struct tevent_req *req);
 
-static void smbd_echo_loop(struct smbd_server_connection *sconn,
+static void smbd_echo_loop(struct smbXsrv_connection *xconn,
 			   int parent_pipe)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_echo_state *state;
 	struct tevent_req *read_req;
 
-	state = talloc_zero(sconn, struct smbd_echo_state);
+	state = talloc_zero(xconn, struct smbd_echo_state);
 	if (state == NULL) {
 		DEBUG(1, ("talloc failed\n"));
 		return;
 	}
-	state->sconn = sconn;
 	state->xconn = xconn;
 	state->parent_pipe = parent_pipe;
 	state->ev = s3_tevent_context_init(state);
@@ -3135,7 +3131,7 @@ static void smbd_echo_loop(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	read_req = smbd_echo_read_send(state, state->ev, sconn);
+	read_req = smbd_echo_read_send(state, state->ev, xconn);
 	if (read_req == NULL) {
 		DEBUG(1, ("smbd_echo_read_send failed\n"));
 		TALLOC_FREE(state);
@@ -3204,7 +3200,7 @@ static void smbd_echo_got_packet(struct tevent_req *req)
 		smbd_echo_activate_writer(state);
 	}
 
-	req = smbd_echo_read_send(state, state->ev, state->sconn);
+	req = smbd_echo_read_send(state, state->ev, state->xconn);
 	if (req == NULL) {
 		DEBUG(1, ("smbd_echo_read_send failed\n"));
 		exit(1);
@@ -3216,9 +3212,8 @@ static void smbd_echo_got_packet(struct tevent_req *req)
 /*
  * Handle SMBecho requests in a forked child process
  */
-bool fork_echo_handler(struct smbd_server_connection *sconn)
+bool fork_echo_handler(struct smbXsrv_connection *xconn)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	int listener_pipe[2];
 	int res;
 	pid_t child;
@@ -3299,15 +3294,15 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 		close(listener_pipe[0]);
 		set_blocking(listener_pipe[1], false);
 
-		status = reinit_after_fork(sconn->msg_ctx,
-					   sconn->ev_ctx,
+		status = reinit_after_fork(xconn->msg_ctx,
+					   xconn->ev_ctx,
 					   true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
 			exit(1);
 		}
-		smbd_echo_loop(sconn, listener_pipe[1]);
+		smbd_echo_loop(xconn, listener_pipe[1]);
 		exit(0);
 	}
 	close(listener_pipe[1]);
