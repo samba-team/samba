@@ -1420,6 +1420,25 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	return NT_STATUS_OK;
 }
 
+static DATA_BLOB smbd_smb2_signing_key(struct smbXsrv_session *session,
+				       struct smbXsrv_connection *xconn)
+{
+	struct smbXsrv_channel_global0 *c = NULL;
+	NTSTATUS status;
+	DATA_BLOB key = data_blob_null;
+
+	status = smbXsrv_session_find_channel(session, xconn, &c);
+	if (NT_STATUS_IS_OK(status)) {
+		key = c->signing_key;
+	}
+
+	if (key.length == 0) {
+		key = session->global->signing_key;
+	}
+
+	return key;
+}
+
 static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 					    struct tevent_timer *te,
 					    struct timeval current_time,
@@ -1582,7 +1601,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		}
 	} else if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
-		DATA_BLOB signing_key = x->global->channels[0].signing_key;
+		DATA_BLOB signing_key = smbd_smb2_signing_key(x, xconn);
 
 		status = smb2_signing_sign_pdu(signing_key,
 					xconn->protocol,
@@ -2036,7 +2055,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	if (req->do_encryption) {
 		signing_required = false;
 	} else if (signing_required || (flags & SMB2_HDR_FLAG_SIGNED)) {
-		DATA_BLOB signing_key;
+		DATA_BLOB signing_key = data_blob_null;
 
 		if (x == NULL) {
 			/*
@@ -2058,7 +2077,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			return smbd_smb2_request_error(req, status);
 		}
 
-		signing_key = x->global->channels[0].signing_key;
+		signing_key = smbd_smb2_signing_key(x, xconn);
 
 		/*
 		 * If we have a signing key, we should
@@ -2439,7 +2458,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 		if (req->do_signing && firsttf->iov_len == 0) {
 			struct smbXsrv_session *x = req->session;
-			DATA_BLOB signing_key = x->global->channels[0].signing_key;
+			DATA_BLOB signing_key = smbd_smb2_signing_key(x, xconn);
 
 			/*
 			 * we need to remember the signing key
@@ -2483,7 +2502,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		}
 	} else if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
-		DATA_BLOB signing_key = x->global->channels[0].signing_key;
+		DATA_BLOB signing_key = smbd_smb2_signing_key(x, xconn);
 
 		status = smb2_signing_sign_pdu(signing_key,
 					       xconn->protocol,
