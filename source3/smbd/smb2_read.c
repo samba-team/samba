@@ -217,7 +217,7 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 			 * Fake this up by doing read/write calls.
 			 */
 			set_use_sendfile(SNUM(fsp->conn), false);
-			nread = fake_sendfile(fsp, in_offset, in_length);
+			nread = fake_sendfile(xconn, fsp, in_offset, in_length);
 			if (nread == -1) {
 				saved_errno = errno;
 				DEBUG(0,("smb2_sendfile_send_data: fake_sendfile "
@@ -267,7 +267,7 @@ normal_read:
 			 smbXsrv_connection_dbg(xconn)));
 		exit_server_cleanly("smb2_sendfile_send_data: write_data failed");
 	}
-	nread = fake_sendfile(fsp, in_offset, in_length);
+	nread = fake_sendfile(xconn, fsp, in_offset, in_length);
 	if (nread == -1) {
 		saved_errno = errno;
 		DEBUG(0,("smb2_sendfile_send_data: fake_sendfile "

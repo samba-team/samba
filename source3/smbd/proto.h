@@ -856,7 +856,8 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, struct smb_filename *smb_fname,
 			  bool has_wild);
 void reply_unlink(struct smb_request *req);
-ssize_t fake_sendfile(files_struct *fsp, off_t startpos, size_t nread);
+ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
+		      off_t startpos, size_t nread);
 void sendfile_short_send(files_struct *fsp,
 				ssize_t nread,
 				size_t headersize,

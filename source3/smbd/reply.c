@@ -3026,9 +3026,9 @@ static void fail_readraw(void)
  Fake (read/write) sendfile. Returns -1 on read or write fail.
 ****************************************************************************/
 
-ssize_t fake_sendfile(files_struct *fsp, off_t startpos, size_t nread)
+ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
+		      off_t startpos, size_t nread)
 {
-	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
 	size_t bufsize;
 	size_t tosend = nread;
 	char *buf;
@@ -3239,7 +3239,7 @@ static void send_file_readbraw(connection_struct *conn,
 				set_use_sendfile(SNUM(conn), False);
 				DEBUG(0,("send_file_readbraw: sendfile not available. Faking..\n"));
 
-				if (fake_sendfile(fsp, startpos, nread) == -1) {
+				if (fake_sendfile(xconn, fsp, startpos, nread) == -1) {
 					DEBUG(0,("send_file_readbraw: "
 						 "fake_sendfile failed for "
 						 "file %s (%s).\n",
@@ -3774,7 +3774,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 				/* Ensure we don't do this again. */
 				set_use_sendfile(SNUM(conn), False);
 				DEBUG(0,("send_file_readX: sendfile not available. Faking..\n"));
-				nread = fake_sendfile(fsp, startpos,
+				nread = fake_sendfile(xconn, fsp, startpos,
 						      smb_maxcnt);
 				if (nread == -1) {
 					saved_errno = errno;
@@ -3851,7 +3851,7 @@ normal_read:
 			errno = saved_errno;
 			exit_server_cleanly("send_file_readX sendfile failed");
 		}
-		nread = fake_sendfile(fsp, startpos, smb_maxcnt);
+		nread = fake_sendfile(xconn, fsp, startpos, smb_maxcnt);
 		if (nread == -1) {
 			saved_errno = errno;
 			DEBUG(0,("send_file_readX: fake_sendfile failed for file "
