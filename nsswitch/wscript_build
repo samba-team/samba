@@ -76,7 +76,7 @@ elif (host_os.rfind('aix') > -1):
 	bld.SAMBA_LIBRARY('nss_winbind',
 			  source='winbind_nss_aix.c',
 			  deps='winbind-client', 
-			  realname='libnss_winbind.so')
+			  realname='WINBIND')
 
 if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
 	bld.SAMBA_LIBRARY('pamwinbind',
