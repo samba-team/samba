@@ -1103,7 +1103,7 @@ NTSTATUS smb1srv_open_table_init(struct smbXsrv_connection *conn)
 	 *
 	 * 0 and 0xFFFF are no valid ids.
 	 */
-	max_opens = conn->sconn->real_max_open_files;
+	max_opens = conn->client->sconn->real_max_open_files;
 	max_opens = MIN(max_opens, UINT16_MAX - 1);
 
 	return smbXsrv_open_table_init(conn, 1, UINT16_MAX - 1, max_opens);
@@ -1137,7 +1137,7 @@ NTSTATUS smb2srv_open_table_init(struct smbXsrv_connection *conn)
 	 * transport connection (as we still have a 1:1 mapping
 	 * between process and transport connection).
 	 */
-	max_opens = conn->sconn->real_max_open_files;
+	max_opens = conn->client->sconn->real_max_open_files;
 	max_opens = MIN(max_opens, UINT16_MAX - 1);
 
 	return smbXsrv_open_table_init(conn, 1, UINT32_MAX - 1, max_opens);
