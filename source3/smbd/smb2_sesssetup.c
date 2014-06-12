@@ -341,6 +341,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	session->global->auth_session_info_seqnum += 1;
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
+	session->global->auth_time = timeval_to_nttime(&smb2req->request_time);
 	session->global->expiration_time = gensec_expire_time(session->gensec);
 
 	if (!session_claim(session)) {
@@ -409,6 +410,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	session->global->auth_session_info_seqnum += 1;
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
+	session->global->auth_time = timeval_to_nttime(&smb2req->request_time);
 	session->global->expiration_time = gensec_expire_time(session->gensec);
 
 	status = smbXsrv_session_update(session);

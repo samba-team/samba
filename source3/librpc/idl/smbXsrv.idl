@@ -98,6 +98,7 @@ interface smbXsrv
 		 * auth_session is NULL until the
 		 * session is valid for the first time.
 		 */
+		NTTIME					auth_time;
 		uint32					auth_session_info_seqnum;
 		auth_session_info			*auth_session_info;
 		uint16					connection_dialect;

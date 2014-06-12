@@ -354,6 +354,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		session->global->auth_session_info_seqnum += 1;
 		session->global->channels[0].auth_session_info_seqnum =
 			session->global->auth_session_info_seqnum;
+		session->global->auth_time = now;
 		if (client_caps & CAP_DYNAMIC_REAUTH) {
 			session->global->expiration_time =
 				gensec_expire_time(session->gensec);
@@ -441,6 +442,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		session->global->auth_session_info_seqnum += 1;
 		session->global->channels[0].auth_session_info_seqnum =
 			session->global->auth_session_info_seqnum;
+		session->global->auth_time = now;
 		if (client_caps & CAP_DYNAMIC_REAUTH) {
 			session->global->expiration_time =
 				gensec_expire_time(session->gensec);
@@ -1052,6 +1054,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	session->global->auth_session_info_seqnum += 1;
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
+	session->global->auth_time = now;
 	session->global->expiration_time = GENSEC_EXPIRE_TIME_INFINITY;
 
 	nt_status = smbXsrv_session_update(session);
