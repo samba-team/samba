@@ -858,10 +858,11 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 void reply_unlink(struct smb_request *req);
 ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 		      off_t startpos, size_t nread);
-void sendfile_short_send(files_struct *fsp,
-				ssize_t nread,
-				size_t headersize,
-				size_t smb_maxcnt);
+ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
+			    files_struct *fsp,
+			    ssize_t nread,
+			    size_t headersize,
+			    size_t smb_maxcnt);
 void reply_readbraw(struct smb_request *req);
 void reply_lockread(struct smb_request *req);
 void reply_read(struct smb_request *req);

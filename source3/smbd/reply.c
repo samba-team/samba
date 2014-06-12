@@ -3088,22 +3088,21 @@ ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 
 /****************************************************************************
  Deal with the case of sendfile reading less bytes from the file than
- requested. Fill with zeros (all we can do).
+ requested. Fill with zeros (all we can do). Returns 0 on success
 ****************************************************************************/
 
-void sendfile_short_send(files_struct *fsp,
-				ssize_t nread,
-				size_t headersize,
-				size_t smb_maxcnt)
+ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
+			    files_struct *fsp,
+			    ssize_t nread,
+			    size_t headersize,
+			    size_t smb_maxcnt)
 {
-	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
-
 #define SHORT_SEND_BUFSIZE 1024
 	if (nread < headersize) {
 		DEBUG(0,("sendfile_short_send: sendfile failed to send "
 			"header for file %s (%s). Terminating\n",
 			fsp_str_dbg(fsp), strerror(errno)));
-		exit_server_cleanly("sendfile_short_send failed");
+		return -1;
 	}
 
 	nread -= headersize;
@@ -3111,8 +3110,10 @@ void sendfile_short_send(files_struct *fsp,
 	if (nread < smb_maxcnt) {
 		char *buf = SMB_CALLOC_ARRAY(char, SHORT_SEND_BUFSIZE);
 		if (!buf) {
-			exit_server_cleanly("sendfile_short_send: "
-				"malloc failed");
+			DEBUG(0,("sendfile_short_send: malloc failed "
+				"for file %s (%s). Terminating\n",
+				fsp_str_dbg(fsp), strerror(errno)));
+			return -1;
 		}
 
 		DEBUG(0,("sendfile_short_send: filling truncated file %s "
@@ -3149,13 +3150,14 @@ void sendfile_short_send(files_struct *fsp,
 					  smbXsrv_connection_dbg(xconn),
 					  strerror(saved_errno)));
 				errno = saved_errno;
-				exit_server_cleanly("sendfile_short_send: "
-						    "write_data failed");
+				return -1;
 			}
 			nread += to_write;
 		}
 		SAFE_FREE(buf);
 	}
+
+	return 0;
 }
 
 /****************************************************************************
@@ -3270,7 +3272,11 @@ static void send_file_readbraw(connection_struct *conn,
 
 		/* Deal with possible short send. */
 		if (sendfile_read != 4+nread) {
-			sendfile_short_send(fsp, sendfile_read, 4, nread);
+			ret = sendfile_short_send(xconn, fsp,
+						  sendfile_read, 4, nread);
+			if (ret == -1) {
+				fail_readraw();
+			}
 		}
 		return;
 	}
@@ -3817,7 +3823,17 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 		/* Deal with possible short send. */
 		if (nread != smb_maxcnt + sizeof(headerbuf)) {
-			sendfile_short_send(fsp, nread, sizeof(headerbuf), smb_maxcnt);
+			ssize_t ret;
+
+			ret = sendfile_short_send(xconn, fsp, nread,
+						  sizeof(headerbuf), smb_maxcnt);
+			if (ret == -1) {
+				const char *r;
+				r = "send_file_readX: sendfile_short_send failed";
+				DEBUG(0,("%s for file %s (%s).\n",
+					 r, fsp_str_dbg(fsp), strerror(errno)));
+				exit_server_cleanly(r);
+			}
 		}
 		/* No outbuf here means successful sendfile. */
 		SMB_PERFCOUNT_SET_MSGLEN_OUT(&req->pcd, nread);

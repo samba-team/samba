@@ -282,7 +282,18 @@ normal_read:
   out:
 
 	if (nread < in_length) {
-		sendfile_short_send(fsp, nread, hdr->length, in_length);
+		ret = sendfile_short_send(xconn, fsp, nread,
+					  hdr->length, in_length);
+		if (ret == -1) {
+			saved_errno = errno;
+			DEBUG(0,("smb2_sendfile_send_data: sendfile_short_send "
+				 "failed for file %s (%s) for client %s. "
+				 "Terminating\n",
+				 fsp_str_dbg(fsp), strerror(saved_errno),
+				 smbXsrv_connection_dbg(xconn)));
+			exit_server_cleanly("smb2_sendfile_send_data: "
+				"sendfile_short_send failed");
+		}
 	}
 
 	init_strict_lock_struct(fsp,
