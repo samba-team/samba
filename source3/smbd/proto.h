@@ -930,9 +930,9 @@ void reply_getattrE(struct smb_request *req);
 /* The following definitions come from smbd/seal.c  */
 
 bool is_encrypted_packet(const uint8_t *inbuf);
-void srv_free_enc_buffer(struct smbd_server_connection *sconn, char *buf);
-NTSTATUS srv_decrypt_buffer(struct smbd_server_connection *sconn, char *buf);
-NTSTATUS srv_encrypt_buffer(struct smbd_server_connection *sconn, char *buf,
+void srv_free_enc_buffer(struct smbXsrv_connection *xconn, char *buf);
+NTSTATUS srv_decrypt_buffer(struct smbXsrv_connection *xconn, char *buf);
+NTSTATUS srv_encrypt_buffer(struct smbXsrv_connection *xconn, char *buf,
 			    char **buf_out);
 NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 					unsigned char **ppdata,
@@ -940,7 +940,7 @@ NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 					unsigned char **pparam,
 					size_t *p_param_size);
 NTSTATUS srv_encryption_start(connection_struct *conn);
-void server_encryption_shutdown(struct smbd_server_connection *sconn);
+void server_encryption_shutdown(struct smbXsrv_connection *xconn);
 
 /* The following definitions come from smbd/sec_ctx.c  */
 

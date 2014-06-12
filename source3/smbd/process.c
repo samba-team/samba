@@ -240,7 +240,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 	}
 
 	if (do_encrypt) {
-		NTSTATUS status = srv_encrypt_buffer(sconn, buffer, &buf_out);
+		NTSTATUS status = srv_encrypt_buffer(xconn, buffer, &buf_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("send_smb: SMB encryption failed "
 				"on outgoing packet! Error %s\n",
@@ -265,12 +265,12 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 			 (int)ret, strerror(saved_errno)));
 		errno = saved_errno;
 
-		srv_free_enc_buffer(sconn, buf_out);
+		srv_free_enc_buffer(xconn, buf_out);
 		goto out;
 	}
 
 	SMB_PERFCOUNT_SET_MSGLEN_OUT(pcd, len);
-	srv_free_enc_buffer(sconn, buf_out);
+	srv_free_enc_buffer(xconn, buf_out);
 out:
 	SMB_PERFCOUNT_END(pcd);
 
@@ -565,7 +565,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_encrypted_packet((uint8_t *)*buffer)) {
-		status = srv_decrypt_buffer(sconn, *buffer);
+		status = srv_decrypt_buffer(xconn, *buffer);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "
 				"incoming packet! Error %s\n",

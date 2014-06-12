@@ -134,7 +134,7 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
  Free an encryption-allocated buffer.
 ******************************************************************************/
 
-void srv_free_enc_buffer(struct smbd_server_connection *sconn, char *buf)
+void srv_free_enc_buffer(struct smbXsrv_connection *xconn, char *buf)
 {
 	/* We know this is an smb buffer, and we
 	 * didn't malloc, only copy, for a keepalive,
@@ -153,7 +153,7 @@ void srv_free_enc_buffer(struct smbd_server_connection *sconn, char *buf)
  Decrypt an incoming buffer.
 ******************************************************************************/
 
-NTSTATUS srv_decrypt_buffer(struct smbd_server_connection *sconn, char *buf)
+NTSTATUS srv_decrypt_buffer(struct smbXsrv_connection *xconn, char *buf)
 {
 	/* Ignore non-session messages. */
 	if(CVAL(buf,0)) {
@@ -171,7 +171,7 @@ NTSTATUS srv_decrypt_buffer(struct smbd_server_connection *sconn, char *buf)
  Encrypt an outgoing buffer. Return the encrypted pointer in buf_out.
 ******************************************************************************/
 
-NTSTATUS srv_encrypt_buffer(struct smbd_server_connection *sconn, char *buf,
+NTSTATUS srv_encrypt_buffer(struct smbXsrv_connection *xconn, char *buf,
 			    char **buf_out)
 {
 	*buf_out = buf;
@@ -302,7 +302,7 @@ NTSTATUS srv_encryption_start(connection_struct *conn)
  Shutdown all server contexts.
 ******************************************************************************/
 
-void server_encryption_shutdown(struct smbd_server_connection *sconn)
+void server_encryption_shutdown(struct smbXsrv_connection *xconn)
 {
 	TALLOC_FREE(partial_srv_trans_enc_ctx);
 	TALLOC_FREE(srv_trans_enc_ctx);
