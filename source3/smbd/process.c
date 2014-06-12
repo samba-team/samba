@@ -1650,12 +1650,12 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
  Construct a reply to the incoming packet.
 ****************************************************************************/
 
-static void construct_reply(struct smbd_server_connection *sconn,
+static void construct_reply(struct smbXsrv_connection *xconn,
 			    char *inbuf, int size, size_t unread_bytes,
 			    uint32_t seqnum, bool encrypted,
 			    struct smb_perfcount_data *deferred_pcd)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	struct smb_request *req;
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
@@ -1693,12 +1693,11 @@ static void construct_reply(struct smbd_server_connection *sconn,
 	smb_request_done(req);
 }
 
-static void construct_reply_chain(struct smbd_server_connection *sconn,
+static void construct_reply_chain(struct smbXsrv_connection *xconn,
 				  char *inbuf, int size, uint32_t seqnum,
 				  bool encrypted,
 				  struct smb_perfcount_data *deferred_pcd)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smb_request **reqs = NULL;
 	struct smb_request *req;
 	unsigned num_reqs;
@@ -1922,10 +1921,10 @@ static void process_smb(struct smbXsrv_connection *xconn,
 	show_msg((char *)inbuf);
 
 	if ((unread_bytes == 0) && smb1_is_chain(inbuf)) {
-		construct_reply_chain(sconn, (char *)inbuf, nread,
+		construct_reply_chain(xconn, (char *)inbuf, nread,
 				      seqnum, encrypted, deferred_pcd);
 	} else {
-		construct_reply(sconn, (char *)inbuf, nread, unread_bytes,
+		construct_reply(xconn, (char *)inbuf, nread, unread_bytes,
 				seqnum,	encrypted, deferred_pcd);
 	}
 
