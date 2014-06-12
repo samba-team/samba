@@ -366,34 +366,32 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	req->sconn->using_smb2 = true;
 
 	if (dialect != SMB2_DIALECT_REVISION_2FF) {
-		struct smbXsrv_connection *conn = req->sconn->conn;
-
-		status = smbXsrv_connection_init_tables(conn, protocol);
+		status = smbXsrv_connection_init_tables(xconn, protocol);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
 
-		conn->smb2.client.capabilities = in_capabilities;
-		conn->smb2.client.security_mode = in_security_mode;
-		conn->smb2.client.guid = in_guid;
-		conn->smb2.client.num_dialects = dialect_count;
-		conn->smb2.client.dialects = talloc_array(conn,
-							  uint16_t,
-							  dialect_count);
-		if (conn->smb2.client.dialects == NULL) {
+		xconn->smb2.client.capabilities = in_capabilities;
+		xconn->smb2.client.security_mode = in_security_mode;
+		xconn->smb2.client.guid = in_guid;
+		xconn->smb2.client.num_dialects = dialect_count;
+		xconn->smb2.client.dialects = talloc_array(xconn,
+							   uint16_t,
+							   dialect_count);
+		if (xconn->smb2.client.dialects == NULL) {
 			return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 		}
 		for (c=0; c < dialect_count; c++) {
-			conn->smb2.client.dialects[c] = SVAL(indyn, c*2);
+			xconn->smb2.client.dialects[c] = SVAL(indyn, c*2);
 		}
 
-		conn->smb2.server.capabilities = capabilities;
-		conn->smb2.server.security_mode = security_mode;
-		conn->smb2.server.guid = out_guid;
-		conn->smb2.server.dialect = dialect;
-		conn->smb2.server.max_trans = max_trans;
-		conn->smb2.server.max_read  = max_read;
-		conn->smb2.server.max_write = max_write;
+		xconn->smb2.server.capabilities = capabilities;
+		xconn->smb2.server.security_mode = security_mode;
+		xconn->smb2.server.guid = out_guid;
+		xconn->smb2.server.dialect = dialect;
+		xconn->smb2.server.max_trans = max_trans;
+		xconn->smb2.server.max_read  = max_read;
+		xconn->smb2.server.max_write = max_write;
 	}
 
 	return smbd_smb2_request_done(req, outbody, &outdyn);
