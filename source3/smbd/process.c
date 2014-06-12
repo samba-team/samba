@@ -1704,7 +1704,7 @@ static void construct_reply_chain(struct smbd_server_connection *sconn,
 	unsigned num_reqs;
 	bool ok;
 
-	ok = smb1_parse_chain(talloc_tos(), (uint8_t *)inbuf, sconn, encrypted,
+	ok = smb1_parse_chain(talloc_tos(), (uint8_t *)inbuf, xconn, encrypted,
 			      seqnum, &reqs, &num_reqs);
 	if (!ok) {
 		char errbuf[smb_size];
@@ -2397,13 +2397,17 @@ static bool smb1_parse_chain_cb(uint8_t cmd,
 }
 
 bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
-		      struct smbd_server_connection *sconn,
+		      struct smbXsrv_connection *xconn,
 		      bool encrypted, uint32_t seqnum,
 		      struct smb_request ***reqs, unsigned *num_reqs)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = NULL;
 	struct smb1_parse_chain_state state;
 	unsigned i;
+
+	if (xconn != NULL) {
+		sconn = xconn->sconn;
+	}
 
 	state.mem_ctx = mem_ctx;
 	state.buf = buf;

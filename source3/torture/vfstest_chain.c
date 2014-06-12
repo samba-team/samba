@@ -329,12 +329,12 @@ NTSTATUS cmd_test_chain(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	ret &= (chain_length == 0);
 
 	ret &= smb1_parse_chain(talloc_tos(), chain1_data,
-				vfs->conn->sconn, false, 0,
+				NULL, false, 0,
 				&requests, &chain_length);
 	ret &= (chain_length == 3);
 
 	ret &= smb1_parse_chain(talloc_tos(), chain2_data,
-				vfs->conn->sconn, false, 0,
+				NULL, false, 0,
 				&requests, &chain_length);
 	ret &= (chain_length == 2);
 

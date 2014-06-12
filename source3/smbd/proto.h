@@ -778,7 +778,7 @@ bool smb1_walk_chain(const uint8_t *buf,
 		     void *private_data);
 unsigned smb1_chain_length(const uint8_t *buf);
 bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
-		      struct smbd_server_connection *sconn,
+		      struct smbXsrv_connection *xconn,
 		      bool encrypted, uint32_t seqnum,
 		      struct smb_request ***reqs, unsigned *num_reqs);
 bool req_is_in_chain(const struct smb_request *req);
