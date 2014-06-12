@@ -1523,10 +1523,10 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 		}
 	}
 
-	if (session_tag != xconn->last_session_id) {
+	if (session_tag != xconn->client->last_session_id) {
 		struct user_struct *vuser = NULL;
 
-		xconn->last_session_id = session_tag;
+		xconn->client->last_session_id = session_tag;
 		if (session) {
 			vuser = session->compat;
 		}

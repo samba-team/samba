@@ -1071,15 +1071,17 @@ static int smbXsrv_tcon_disconnect_all_callback(struct db_record *local_rec,
 
 NTSTATUS smb1srv_tcon_table_init(struct smbXsrv_connection *conn)
 {
+	struct smbXsrv_client *client = conn->client;
+
 	/*
 	 * Allow a range from 1..65534 with 65534 values.
 	 */
-	conn->tcon_table = talloc_zero(conn, struct smbXsrv_tcon_table);
-	if (conn->tcon_table == NULL) {
+	client->tcon_table = talloc_zero(client, struct smbXsrv_tcon_table);
+	if (client->tcon_table == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	return smbXsrv_tcon_table_init(conn, conn->tcon_table,
+	return smbXsrv_tcon_table_init(client, client->tcon_table,
 				       1, UINT16_MAX - 1,
 				       UINT16_MAX - 1);
 }
@@ -1090,7 +1092,7 @@ NTSTATUS smb1srv_tcon_create(struct smbXsrv_connection *conn,
 {
 	struct server_id id = messaging_server_id(conn->msg_ctx);
 
-	return smbXsrv_tcon_create(conn->tcon_table,
+	return smbXsrv_tcon_create(conn->client->tcon_table,
 				   conn->protocol,
 				   id, now, _tcon);
 }
@@ -1101,12 +1103,14 @@ NTSTATUS smb1srv_tcon_lookup(struct smbXsrv_connection *conn,
 {
 	uint32_t local_id = tree_id;
 
-	return smbXsrv_tcon_local_lookup(conn->tcon_table,
+	return smbXsrv_tcon_local_lookup(conn->client->tcon_table,
 					 local_id, now, tcon);
 }
 
 NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_connection *conn)
 {
+	struct smbXsrv_client *client = conn->client;
+
 	/*
 	 * We do not pass a vuid here,
 	 * which means the vuid is taken from
@@ -1121,7 +1125,7 @@ NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_connection *conn)
 	 * conn_close_all(), but we should think
 	 * about how to fix this in future.
 	 */
-	return smbXsrv_tcon_disconnect_all(conn->tcon_table, 0);
+	return smbXsrv_tcon_disconnect_all(client->tcon_table, 0);
 }
 
 NTSTATUS smb2srv_tcon_table_init(struct smbXsrv_session *session)

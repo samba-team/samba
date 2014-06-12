@@ -51,6 +51,10 @@ struct smbXsrv_session_table {
 	} global;
 };
 
+static NTSTATUS smb2srv_session_lookup_raw(struct smbXsrv_session_table *table,
+					   uint64_t session_id, NTTIME now,
+					   struct smbXsrv_session **session);
+
 static struct db_context *smbXsrv_session_global_db_ctx = NULL;
 
 NTSTATUS smbXsrv_session_global_init(void)
@@ -164,6 +168,7 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 					   uint32_t highest_id,
 					   uint32_t max_sessions)
 {
+	struct smbXsrv_client *client = conn->client;
 	struct smbXsrv_session_table *table;
 	NTSTATUS status;
 	struct tevent_req *subreq;
@@ -181,7 +186,7 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	table = talloc_zero(conn, struct smbXsrv_session_table);
+	table = talloc_zero(client, struct smbXsrv_session_table);
 	if (table == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -203,26 +208,26 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 
 	table->global.db_ctx = smbXsrv_session_global_db_ctx;
 
-	dbwrap_watch_db(table->global.db_ctx, conn->msg_ctx);
+	dbwrap_watch_db(table->global.db_ctx, client->msg_ctx);
 
-	subreq = messaging_read_send(table, conn->ev_ctx, conn->msg_ctx,
+	subreq = messaging_read_send(table, client->ev_ctx, client->msg_ctx,
 				     MSG_SMBXSRV_SESSION_CLOSE);
 	if (subreq == NULL) {
 		TALLOC_FREE(table);
 		return NT_STATUS_NO_MEMORY;
 	}
-	tevent_req_set_callback(subreq, smbXsrv_session_close_loop, conn);
+	tevent_req_set_callback(subreq, smbXsrv_session_close_loop, client);
 
-	conn->session_table = table;
+	client->session_table = table;
 	return NT_STATUS_OK;
 }
 
 static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 {
-	struct smbXsrv_connection *conn =
+	struct smbXsrv_client *client =
 		tevent_req_callback_data(subreq,
-		struct smbXsrv_connection);
-	struct smbXsrv_session_table *table = conn->session_table;
+		struct smbXsrv_client);
+	struct smbXsrv_session_table *table = client->session_table;
 	int ret;
 	struct messaging_rec *rec = NULL;
 	struct smbXsrv_session_closeB close_blob;
@@ -269,8 +274,9 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 		goto next;
 	}
 
-	status = smb2srv_session_lookup(conn, close_info0->old_session_wire_id,
-					now, &session);
+	status = smb2srv_session_lookup_raw(client->session_table,
+					    close_info0->old_session_wire_id,
+					    now, &session);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		DEBUG(4,("smbXsrv_session_close_loop: "
 			 "old_session_wire_id %llu not found\n",
@@ -338,14 +344,15 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 next:
 	TALLOC_FREE(rec);
 
-	subreq = messaging_read_send(table, conn->ev_ctx, conn->msg_ctx,
+	subreq = messaging_read_send(table, client->ev_ctx, client->msg_ctx,
 				     MSG_SMBXSRV_SESSION_CLOSE);
 	if (subreq == NULL) {
-		smbd_server_connection_terminate(conn,
-						 "msg_read_send() failed");
+		const char *r;
+		r = "messaging_read_send(MSG_SMBXSRV_SESSION_CLOSE) failed";
+		exit_server_cleanly(r);
 		return;
 	}
-	tevent_req_set_callback(subreq, smbXsrv_session_close_loop, conn);
+	tevent_req_set_callback(subreq, smbXsrv_session_close_loop, client);
 }
 
 struct smb1srv_session_local_allocate_state {
@@ -874,7 +881,7 @@ struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
 	struct smb2srv_session_close_previous_state *state;
 	uint32_t global_id = previous_session_id & UINT32_MAX;
 	uint64_t global_zeros = previous_session_id & 0xFFFFFFFF00000000LLU;
-	struct smbXsrv_session_table *table = conn->session_table;
+	struct smbXsrv_session_table *table = conn->client->session_table;
 	struct security_token *current_token = NULL;
 	uint8_t key_buf[SMBXSRV_SESSION_GLOBAL_TDB_KEY_SIZE];
 	TDB_DATA key;
@@ -1070,7 +1077,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 				NTTIME now,
 				struct smbXsrv_session **_session)
 {
-	struct smbXsrv_session_table *table = conn->session_table;
+	struct smbXsrv_session_table *table = conn->client->session_table;
 	struct db_record *local_rec = NULL;
 	struct smbXsrv_session *session = NULL;
 	void *ptr = NULL;
@@ -1406,7 +1413,7 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 
 NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn)
 {
-	struct smbXsrv_session_table *table = conn->session_table;
+	struct smbXsrv_session_table *table = conn->client->session_table;
 	struct smbXsrv_session_logoff_all_state state;
 	NTSTATUS status;
 	int count = 0;
@@ -1489,7 +1496,7 @@ NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
 				uint16_t vuid, NTTIME now,
 				struct smbXsrv_session **session)
 {
-	struct smbXsrv_session_table *table = conn->session_table;
+	struct smbXsrv_session_table *table = conn->client->session_table;
 	uint32_t local_id = vuid;
 
 	return smbXsrv_session_local_lookup(table, local_id, now, session);
@@ -1504,11 +1511,10 @@ NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn)
 					  UINT16_MAX - 1);
 }
 
-NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
-				uint64_t session_id, NTTIME now,
-				struct smbXsrv_session **session)
+static NTSTATUS smb2srv_session_lookup_raw(struct smbXsrv_session_table *table,
+					   uint64_t session_id, NTTIME now,
+					   struct smbXsrv_session **session)
 {
-	struct smbXsrv_session_table *table = conn->session_table;
 	uint32_t local_id = session_id & UINT32_MAX;
 	uint64_t local_zeros = session_id & 0xFFFFFFFF00000000LLU;
 
@@ -1517,6 +1523,14 @@ NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
 	}
 
 	return smbXsrv_session_local_lookup(table, local_id, now, session);
+}
+
+NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
+				uint64_t session_id, NTTIME now,
+				struct smbXsrv_session **session)
+{
+	struct smbXsrv_session_table *table = conn->client->session_table;
+	return smb2srv_session_lookup_raw(table, session_id, now, session);
 }
 
 struct smbXsrv_session_global_traverse_state {

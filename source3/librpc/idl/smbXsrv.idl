@@ -91,6 +91,22 @@ interface smbXsrv
 		[ignore] struct smbd_server_connection	*sconn;
 
 		/*
+		 * this session_table is used for SMB1 and SMB2,
+		 */
+		[ignore] struct smbXsrv_session_table	*session_table;
+		[ignore] hyper				last_session_id;
+		/*
+		 * this tcon_table is only used for SMB1.
+		 */
+		[ignore] struct smbXsrv_tcon_table	*tcon_table;
+		/*
+		 * this open_table is used for SMB1 and SMB2,
+		 * because we have a global sconn->real_max_open_files
+		 * limit.
+		 */
+		[ignore] struct smbXsrv_open_table	*open_table;
+
+		/*
 		 * For now this is only one connection!
 		 * With multi-channel support we'll get more than
 		 * one in future.

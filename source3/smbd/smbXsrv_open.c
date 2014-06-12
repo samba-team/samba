@@ -153,6 +153,7 @@ static NTSTATUS smbXsrv_open_table_init(struct smbXsrv_connection *conn,
 					uint32_t highest_id,
 					uint32_t max_opens)
 {
+	struct smbXsrv_client *client = conn->client;
 	struct smbXsrv_open_table *table;
 	NTSTATUS status;
 	uint64_t max_range;
@@ -169,7 +170,7 @@ static NTSTATUS smbXsrv_open_table_init(struct smbXsrv_connection *conn,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	table = talloc_zero(conn, struct smbXsrv_open_table);
+	table = talloc_zero(client, struct smbXsrv_open_table);
 	if (table == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -191,7 +192,7 @@ static NTSTATUS smbXsrv_open_table_init(struct smbXsrv_connection *conn,
 
 	table->global.db_ctx = smbXsrv_open_global_db_ctx;
 
-	conn->open_table = table;
+	client->open_table = table;
 	return NT_STATUS_OK;
 }
 
@@ -774,7 +775,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     NTTIME now,
 			     struct smbXsrv_open **_open)
 {
-	struct smbXsrv_open_table *table = conn->open_table;
+	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct db_record *local_rec = NULL;
 	struct smbXsrv_open *op = NULL;
 	void *ptr = NULL;
@@ -1113,7 +1114,7 @@ NTSTATUS smb1srv_open_lookup(struct smbXsrv_connection *conn,
 			     uint16_t fnum, NTTIME now,
 			     struct smbXsrv_open **_open)
 {
-	struct smbXsrv_open_table *table = conn->open_table;
+	struct smbXsrv_open_table *table = conn->client->open_table;
 	uint32_t local_id = fnum;
 	uint32_t global_id = 0;
 
@@ -1149,7 +1150,7 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 			     NTTIME now,
 			     struct smbXsrv_open **_open)
 {
-	struct smbXsrv_open_table *table = conn->open_table;
+	struct smbXsrv_open_table *table = conn->client->open_table;
 	uint32_t local_id = volatile_id & UINT32_MAX;
 	uint64_t local_zeros = volatile_id & 0xFFFFFFFF00000000LLU;
 	uint32_t global_id = persistent_id & UINT32_MAX;
@@ -1177,7 +1178,7 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       NTTIME now,
 			       struct smbXsrv_open **_open)
 {
-	struct smbXsrv_open_table *table = conn->open_table;
+	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct db_record *local_rec = NULL;
 	struct smbXsrv_open *op = NULL;
 	void *ptr = NULL;

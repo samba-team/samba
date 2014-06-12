@@ -505,22 +505,6 @@ struct smbXsrv_connection {
 
 		struct smbd_smb2_request *requests;
 	} smb2;
-
-	/*
-	 * this session_table is used for SMB1 and SMB2,
-	 */
-	struct smbXsrv_session_table *session_table;
-	uint64_t last_session_id;
-	/*
-	 * this tcon_table is only used for SMB1.
-	 */
-	struct smbXsrv_tcon_table *tcon_table;
-	/*
-	 * this open_table is used for SMB1 and SMB2,
-	 * because we have a global sconn->real_max_open_files
-	 * limit.
-	 */
-	struct smbXsrv_open_table *open_table;
 };
 
 const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn);
