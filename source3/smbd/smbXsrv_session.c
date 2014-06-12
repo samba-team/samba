@@ -1277,7 +1277,8 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	struct smbXsrv_session_table *table;
 	struct db_record *local_rec = NULL;
 	struct db_record *global_rec = NULL;
-	struct smbXsrv_connection *conn;
+	struct smbXsrv_connection *xconn;
+	struct smbd_server_connection *sconn = NULL;
 	NTSTATUS status;
 	NTSTATUS error = NT_STATUS_OK;
 
@@ -1288,7 +1289,8 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	table = session->table;
 	session->table = NULL;
 
-	conn = session->connection;
+	xconn = session->connection;
+	sconn = xconn->client->sconn;
 	session->connection = NULL;
 	session->status = NT_STATUS_USER_SESSION_DELETED;
 
@@ -1371,10 +1373,10 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	session->db_rec = NULL;
 
 	if (session->compat) {
-		file_close_user(conn->sconn, session->compat->vuid);
+		file_close_user(sconn, session->compat->vuid);
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_02) {
+	if (xconn->protocol >= PROTOCOL_SMB2_02) {
 		status = smb2srv_tcon_disconnect_all(session);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
@@ -1386,7 +1388,7 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	}
 
 	if (session->compat) {
-		invalidate_vuid(conn->sconn, session->compat->vuid);
+		invalidate_vuid(sconn, session->compat->vuid);
 		session->compat = NULL;
 	}
 
