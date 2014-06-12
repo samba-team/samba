@@ -501,6 +501,7 @@ static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_set
 
 static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq);
 static void smbd_smb2_session_setup_previous_done(struct tevent_req *subreq);
+static void smbd_smb2_session_setup_auth_return(struct tevent_req *req);
 
 /************************************************************************
  We have to tag the state->session pointer with memory talloc'ed
@@ -679,37 +680,7 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->session->global->auth_session_info != NULL) {
-		status = smbd_smb2_reauth_generic_return(state->session,
-							 state->smb2req,
-							 state->session_info,
-							 &state->out_session_flags,
-							 &state->out_session_id);
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-		/* we want to keep the session */
-		state->session = NULL;
-		TALLOC_FREE(state->pp_self_ref);
-		tevent_req_done(req);
-		return;
-	}
-
-	status = smbd_smb2_auth_generic_return(state->session,
-					       state->smb2req,
-					       state->in_security_mode,
-					       state->session_info,
-					       &state->out_session_flags,
-					       &state->out_session_id);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	/* we want to keep the session */
-	state->session = NULL;
-	TALLOC_FREE(state->pp_self_ref);
-	tevent_req_done(req);
-	return;
+	smbd_smb2_session_setup_auth_return(req);
 }
 
 static void smbd_smb2_session_setup_previous_done(struct tevent_req *subreq)
@@ -717,9 +688,6 @@ static void smbd_smb2_session_setup_previous_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct smbd_smb2_session_setup_state *state =
-		tevent_req_data(req,
-		struct smbd_smb2_session_setup_state);
 	NTSTATUS status;
 
 	status = smb2srv_session_close_previous_recv(subreq);
@@ -727,6 +695,16 @@ static void smbd_smb2_session_setup_previous_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	smbd_smb2_session_setup_auth_return(req);
+}
+
+static void smbd_smb2_session_setup_auth_return(struct tevent_req *req)
+{
+	struct smbd_smb2_session_setup_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_session_setup_state);
+	NTSTATUS status;
 
 	if (state->session->global->auth_session_info != NULL) {
 		status = smbd_smb2_reauth_generic_return(state->session,
