@@ -523,6 +523,10 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 				NTTIME now,
 				struct smbXsrv_session **_session);
 NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session);
+struct smbXsrv_channel_global0;
+NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
+				      const struct smbXsrv_connection *conn,
+				      struct smbXsrv_channel_global0 **_c);
 NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session);
 NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn);

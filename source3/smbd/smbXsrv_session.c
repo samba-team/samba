@@ -1280,6 +1280,24 @@ NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
+				      const struct smbXsrv_connection *conn,
+				      struct smbXsrv_channel_global0 **_c)
+{
+	uint32_t i;
+
+	for (i=0; i < session->global->num_channels; i++) {
+		struct smbXsrv_channel_global0 *c = &session->global->channels[i];
+
+		if (c->connection == conn) {
+			*_c = c;
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_USER_SESSION_DELETED;
+}
+
 NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 {
 	struct smbXsrv_session_table *table;
