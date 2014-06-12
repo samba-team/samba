@@ -1187,6 +1187,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	channels[0].signing_key = data_blob_null;
+	channels[0].connection = conn;
 
 	ptr = session;
 	val = make_tdb_data((uint8_t const *)&ptr, sizeof(ptr));

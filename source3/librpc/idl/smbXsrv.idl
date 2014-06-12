@@ -123,6 +123,7 @@ interface smbXsrv
 		[charset(UTF8),string] char		remote_name[];
 		[noprint] DATA_BLOB			signing_key;
 		uint32					auth_session_info_seqnum;
+		[ignore] smbXsrv_connection		*connection;
 	} smbXsrv_channel_global0;
 
 	typedef struct {
