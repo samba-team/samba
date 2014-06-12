@@ -820,7 +820,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			DATA_BLOB new_cookie = data_blob_null;
 			NTTIME now = timeval_to_nttime(&smb2req->request_time);
 
-			status = smb2srv_open_recreate(smb2req->sconn->conn,
+			status = smb2srv_open_recreate(smb2req->xconn,
 						smb1req->conn->session_info,
 						persistent_id, create_guid,
 						now, &op);

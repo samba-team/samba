@@ -78,7 +78,7 @@ void reply_smb2002(struct smb_request *req, uint16_t choice)
  */
 void reply_smb20ff(struct smb_request *req, uint16_t choice)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	xconn->smb2.allow_2ff = true;
 	reply_smb20xx(req, SMB2_DIALECT_REVISION_2FF);
 }
@@ -170,7 +170,7 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	const uint8_t *indyn = NULL;

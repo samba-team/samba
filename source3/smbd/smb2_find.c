@@ -207,7 +207,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 					      uint32_t in_output_buffer_length,
 					      const char *in_file_name)
 {
-	struct smbXsrv_connection *xconn = smb2req->sconn->conn;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
 	struct tevent_req *req;
 	struct smbd_smb2_find_state *state;
 	struct smb_request *smbreq;

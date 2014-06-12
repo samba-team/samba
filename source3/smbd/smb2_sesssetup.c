@@ -479,7 +479,7 @@ static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_set
 	 * Ensure that any outstanding requests don't also refer
 	 * to it.
 	 */
-	xconn = state->smb2req->sconn->conn;
+	xconn = state->smb2req->xconn;
 
 	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
 		if (preq == state->smb2req) {
@@ -549,7 +549,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	state->in_security_buffer = in_security_buffer;
 
 	if (in_flags & SMB2_SESSION_FLAG_BINDING) {
-		if (smb2req->sconn->conn->protocol < PROTOCOL_SMB2_22) {
+		if (smb2req->xconn->protocol < PROTOCOL_SMB2_22) {
 			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 			return tevent_req_post(req, ev);
 		}
@@ -565,13 +565,13 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 
 	if (state->in_session_id == 0) {
 		/* create a new session */
-		status = smbXsrv_session_create(state->smb2req->sconn->conn,
+		status = smbXsrv_session_create(state->smb2req->xconn,
 					        now, &state->session);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 	} else {
-		status = smb2srv_session_lookup(state->smb2req->sconn->conn,
+		status = smb2srv_session_lookup(state->smb2req->xconn,
 						state->in_session_id, now,
 						&state->session);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
@@ -877,7 +877,7 @@ static struct tevent_req *smbd_smb2_logoff_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_logout_state *state;
 	struct tevent_req *subreq;
 	struct smbd_smb2_request *preq;
-	struct smbXsrv_connection *xconn = smb2req->sconn->conn;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_logout_state);

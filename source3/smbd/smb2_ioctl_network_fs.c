@@ -506,7 +506,7 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 		break;
 	case FSCTL_VALIDATE_NEGOTIATE_INFO:
 		status = fsctl_validate_neg_info(state, ev,
-						 state->smbreq->sconn->conn,
+						 state->smbreq->xconn,
 						 &state->in_input,
 						 state->in_max_output,
 						 &state->out_output,

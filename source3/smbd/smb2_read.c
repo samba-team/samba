@@ -43,7 +43,7 @@ static NTSTATUS smbd_smb2_read_recv(struct tevent_req *req,
 static void smbd_smb2_request_read_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	uint32_t in_length;
@@ -186,7 +186,7 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 	uint64_t in_offset = state->in_offset;
 	files_struct *fsp = state->fsp;
 	const DATA_BLOB *hdr = state->smb2req->queue_entry.sendfile_header;
-	struct smbXsrv_connection *xconn = state->smb2req->sconn->conn;
+	struct smbXsrv_connection *xconn = state->smb2req->xconn;
 	ssize_t nread;
 	ssize_t ret;
 	int saved_errno;

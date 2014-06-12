@@ -44,7 +44,7 @@ static NTSTATUS smbd_smb2_getinfo_recv(struct tevent_req *req,
 static void smbd_smb2_request_getinfo_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req)
 {
-	struct smbXsrv_connection *xconn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->xconn;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	uint8_t in_info_type;

@@ -175,7 +175,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       uint32_t *out_maximal_access,
 				       uint32_t *out_tree_id)
 {
-	struct smbXsrv_connection *conn = req->sconn->conn;
+	struct smbXsrv_connection *conn = req->xconn;
 	const char *share = in_path;
 	char *service = NULL;
 	int snum = -1;
@@ -498,7 +498,7 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_tdis_state *state;
 	struct tevent_req *subreq;
 	struct smbd_smb2_request *preq;
-	struct smbXsrv_connection *xconn = smb2req->sconn->conn;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_tdis_state);
