@@ -2734,14 +2734,13 @@ struct smbd_smb2_send_break_state {
 	uint8_t body[1];
 };
 
-static NTSTATUS smbd_smb2_send_break(struct smbd_server_connection *sconn,
+static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 				     struct smbXsrv_session *session,
 				     struct smbXsrv_tcon *tcon,
 				     const uint8_t *body,
 				     size_t body_len)
 {
 	struct smbd_smb2_send_break_state *state;
-	struct smbXsrv_connection *xconn = sconn->conn;
 	bool do_encryption = session->global->encryption_required;
 	uint64_t nonce_high = 0;
 	uint64_t nonce_low = 0;
@@ -2755,7 +2754,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbd_server_connection *sconn,
 	statelen = offsetof(struct smbd_smb2_send_break_state, body) +
 		body_len;
 
-	state = talloc_zero_size(sconn, statelen);
+	state = talloc_zero_size(xconn, statelen);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2858,6 +2857,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 				     struct smbXsrv_open *op,
 				     uint8_t oplock_level)
 {
+	struct smbXsrv_connection *xconn = sconn->conn;
 	uint8_t body[0x18];
 
 	SSVAL(body, 0x00, sizeof(body));
@@ -2867,7 +2867,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	SBVAL(body, 0x08, op->global->open_persistent_id);
 	SBVAL(body, 0x10, op->global->open_volatile_id);
 
-	return smbd_smb2_send_break(sconn, session, tcon, body, sizeof(body));
+	return smbd_smb2_send_break(xconn, session, tcon, body, sizeof(body));
 }
 
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
