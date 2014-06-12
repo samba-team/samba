@@ -183,7 +183,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	bool guest = false;
 	uint8_t session_key[16];
 	struct smbXsrv_session *x = session;
-	struct smbXsrv_connection *conn = session->connection;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == SMB_SIGNING_REQUIRED) {
@@ -208,11 +208,11 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!(conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+	if (!(xconn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
 		if (x->global->encryption_required) {
 			DEBUG(1,("reject session with dialect[0x%04X] "
 				 "as encryption is required\n",
-				 conn->smb2.server.dialect));
+				 xconn->smb2.server.dialect));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -233,7 +233,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
+	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCMAC");
 		const DATA_BLOB context = data_blob_string_const_null("SmbSign");
 
@@ -243,7 +243,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 				    x->global->signing_key.data);
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
+	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
 		const DATA_BLOB context = data_blob_string_const_null("ServerIn ");
 
@@ -261,7 +261,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 				    x->global->decryption_key.data);
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
+	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
 		const DATA_BLOB context = data_blob_string_const_null("ServerOut");
 
@@ -289,7 +289,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
+	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		const DATA_BLOB label = data_blob_string_const_null("SMB2APP");
 		const DATA_BLOB context = data_blob_string_const_null("SmbRpc");
 
@@ -382,7 +382,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 {
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
-	struct smbXsrv_connection *conn = session->connection;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
 
 	data_blob_clear_free(&session_info->session_key);
 	session_info->session_key = data_blob_dup_talloc(session_info,
@@ -419,7 +419,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	conn_clear_vuid_caches(conn->sconn, session->compat->vuid);
+	conn_clear_vuid_caches(xconn->sconn, session->compat->vuid);
 
 	*out_session_id = session->global->session_wire_id;
 
@@ -596,7 +596,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 
 	if (state->session->gensec == NULL) {
 		status = auth_generic_prepare(state->session,
-					      state->session->connection->remote_address,
+					      state->smb2req->xconn->remote_address,
 					      &state->session->gensec);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
@@ -667,7 +667,7 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 	      state->in_previous_session_id))
 	{
 		subreq = smb2srv_session_close_previous_send(state, state->ev,
-						state->session->connection,
+						state->smb2req->xconn,
 						state->session_info,
 						state->in_previous_session_id,
 						state->session->global->session_wire_id);
