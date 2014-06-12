@@ -840,7 +840,6 @@ struct smbd_server_connection {
 	struct asys_context *asys_ctx;
 	struct tevent_fd *asys_fde;
 
-	struct smbXsrv_connection *conn;
 	struct smbXsrv_client *client;
 };
 

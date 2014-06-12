@@ -3625,11 +3625,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	xconn->transport.sock = sock_fd;
 	smbd_echo_init(xconn);
 
-	/*
-	 * TODO: remove this...:-)
-	 */
-	sconn->conn = xconn;
-
 	if (!interactive) {
 		smbd_setup_sig_term_handler(sconn);
 		smbd_setup_sig_hup_handler(sconn);
