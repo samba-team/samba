@@ -87,10 +87,8 @@ static bool smbd_echo_active(struct smbXsrv_connection *xconn)
 	return false;
 }
 
-static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
+static bool smbd_lock_socket_internal(struct smbXsrv_connection *xconn)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
-
 	if (!smbd_echo_active(xconn)) {
 		return true;
 	}
@@ -144,15 +142,15 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 
 void smbd_lock_socket(struct smbd_server_connection *sconn)
 {
-	if (!smbd_lock_socket_internal(sconn)) {
+	struct smbXsrv_connection *xconn = sconn->conn;
+
+	if (!smbd_lock_socket_internal(xconn)) {
 		exit_server_cleanly("failed to lock socket");
 	}
 }
 
-static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
+static bool smbd_unlock_socket_internal(struct smbXsrv_connection *xconn)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
-
 	if (!smbd_echo_active(xconn)) {
 		return true;
 	}
@@ -204,7 +202,9 @@ static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 
 void smbd_unlock_socket(struct smbd_server_connection *sconn)
 {
-	if (!smbd_unlock_socket_internal(sconn)) {
+	struct smbXsrv_connection *xconn = sconn->conn;
+
+	if (!smbd_unlock_socket_internal(xconn)) {
 		exit_server_cleanly("failed to unlock socket");
 	}
 }
@@ -2882,7 +2882,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = smbd_lock_socket_internal(sconn);
+	ok = smbd_lock_socket_internal(xconn);
 	if (!ok) {
 		tevent_req_nterror(req, map_nt_error_from_unix(errno));
 		DEBUG(0, ("%s: failed to lock socket\n", __location__));
@@ -2893,7 +2893,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		DEBUG(10,("echo_handler[%d] the parent smbd was faster\n",
 			  (int)getpid()));
 
-		ok = smbd_unlock_socket_internal(sconn);
+		ok = smbd_unlock_socket_internal(xconn);
 		if (!ok) {
 			tevent_req_nterror(req, map_nt_error_from_unix(errno));
 			DEBUG(1, ("%s: failed to unlock socket\n",
@@ -2927,7 +2927,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = smbd_unlock_socket_internal(sconn);
+	ok = smbd_unlock_socket_internal(xconn);
 	if (!ok) {
 		tevent_req_nterror(req, map_nt_error_from_unix(errno));
 		DEBUG(1, ("%s: failed to unlock socket\n", __location__));
