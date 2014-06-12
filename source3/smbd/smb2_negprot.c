@@ -300,14 +300,14 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			capabilities |= SMB2_CAP_LARGE_MTU;
 			req->sconn->smb2.supports_multicredit = true;
 
-			/* SMB >= 2.1 has 1 MB of allowed size */
-			max_limit = 0x100000; /* 1MB */
+			/* Windows 2012R2 allows up to 8 MB */
+			max_limit = 0x800000; /* 8MB */
 		}
 	}
 
 	/*
-	 * the defaults are 1MB, but we'll limit this to max_limit based on
-	 * the dialect (64kb for SMB2.0, 1MB for SMB2.1 with LargeMTU)
+	 * the defaults are 8MB, but we'll limit this to max_limit based on
+	 * the dialect (64kb for SMB 2.0, 8MB for SMB >= 2.1 with LargeMTU)
 	 *
 	 * user configured values exceeding the limits will be overwritten,
 	 * only smaller values will be accepted
