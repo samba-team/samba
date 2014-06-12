@@ -3611,7 +3611,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	/*
 	 * TODO: remove this...:-)
 	 */
-	xconn->sconn = sconn;
 	sconn->conn = xconn;
 
 	if (!interactive) {

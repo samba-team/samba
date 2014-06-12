@@ -337,7 +337,6 @@ struct smbXsrv_connection {
 
 	struct smbXsrv_client *client;
 
-	struct smbd_server_connection *sconn;
 
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
