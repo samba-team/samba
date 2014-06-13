@@ -393,28 +393,6 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 	return (ssize_t)total;
 }
 
-ssize_t vfs_pread_data(files_struct *fsp, char *buf,
-                size_t byte_count, off_t offset)
-{
-	size_t total=0;
-
-	while (total < byte_count)
-	{
-		ssize_t ret = SMB_VFS_PREAD(fsp, buf + total,
-					byte_count - total, offset + total);
-
-		if (ret == 0) return total;
-		if (ret == -1) {
-			if (errno == EINTR)
-				continue;
-			else
-				return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
-}
-
 /****************************************************************************
  Write data to a fd on the vfs.
 ****************************************************************************/
