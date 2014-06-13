@@ -29,6 +29,7 @@
 #include "../librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
+#include "../lib/tsocket/tsocket.h"
 
 #define COPYCHUNK_MAX_CHUNKS	256		/* 2k8r2 & win8 = 256 */
 #define COPYCHUNK_MAX_CHUNK_LEN	1048576		/* 2k8r2 & win8 = 1048576 */
@@ -379,6 +380,118 @@ static NTSTATUS fsctl_srv_copychunk_recv(struct tevent_req *req,
 	return status;
 }
 
+static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct smbXsrv_connection *xconn,
+					 DATA_BLOB *in_input,
+					 uint32_t in_max_output,
+					 DATA_BLOB *out_output)
+{
+	struct fsctl_net_iface_info *array = NULL;
+	struct fsctl_net_iface_info *first = NULL;
+	struct fsctl_net_iface_info *last = NULL;
+	size_t i;
+	size_t num_ifaces = iface_count();
+	enum ndr_err_code ndr_err;
+
+	if (in_input->length != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*out_output = data_blob_null;
+
+	array = talloc_zero_array(mem_ctx,
+				  struct fsctl_net_iface_info,
+				  num_ifaces);
+	if (array == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i < num_ifaces; i++) {
+		struct fsctl_net_iface_info *cur = &array[i];
+		const struct interface *iface = get_interface(i);
+		const struct sockaddr_storage *ifss = &iface->ip;
+		const void *ifptr = ifss;
+		const struct sockaddr *ifsa = (const struct sockaddr *)ifptr;
+		struct tsocket_address *a = NULL;
+		char *addr;
+		bool ok;
+		int ret;
+
+		ret = tsocket_address_bsd_from_sockaddr(array,
+					ifsa, sizeof(struct sockaddr_storage),
+					&a);
+		if (ret != 0) {
+			return map_nt_error_from_unix_common(errno);
+		}
+
+		ok = tsocket_address_is_inet(a, "ip");
+		if (!ok) {
+			continue;
+		}
+
+		addr = tsocket_address_inet_addr_string(a, array);
+		if (addr == NULL) {
+			TALLOC_FREE(array);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		cur->ifindex = iface->if_index;
+		if (cur->ifindex == 0) {
+			/*
+			 * Did not get interface index from kernel,
+			 * nor from the config. ==> Apply a common
+			 * default value for these cases.
+			 */
+			cur->ifindex = UINT32_MAX;
+		}
+		cur->capability = iface->capability;
+		cur->linkspeed = iface->linkspeed;
+		if (cur->linkspeed == 0) {
+			DBG_DEBUG("Link speed 0 on interface [%s] - skipping "
+				  "address [%s].\n", iface->name, addr);
+			continue;
+		}
+
+		ok = tsocket_address_is_inet(a, "ipv4");
+		if (ok) {
+			cur->sockaddr.family = FSCTL_NET_IFACE_AF_INET;
+			cur->sockaddr.saddr.saddr_in.ipv4 = addr;
+		}
+		ok = tsocket_address_is_inet(a, "ipv6");
+		if (ok) {
+			cur->sockaddr.family = FSCTL_NET_IFACE_AF_INET6;
+			cur->sockaddr.saddr.saddr_in6.ipv6 = addr;
+		}
+
+		if (first == NULL) {
+			first = cur;
+		}
+		if (last != NULL) {
+			last->next = cur;
+		}
+		last = cur;
+	}
+
+	if (first == NULL) {
+		TALLOC_FREE(array);
+		return NT_STATUS_OK;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(fsctl_net_iface_info, first);
+	}
+
+	ndr_err = ndr_push_struct_blob(out_output, mem_ctx, first,
+			(ndr_push_flags_fn_t)ndr_push_fsctl_net_iface_info);
+	TALLOC_FREE(array);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 				        struct tevent_context *ev,
 				        struct smbXsrv_connection *conn,
@@ -540,6 +653,17 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 					smb2_ioctl_network_fs_copychunk_done,
 					req);
 		return req;
+		break;
+	case FSCTL_QUERY_NETWORK_INTERFACE_INFO:
+		status = fsctl_network_iface_info(state, ev,
+						  state->smbreq->xconn,
+						  &state->in_input,
+						  state->in_max_output,
+						  &state->out_output);
+		if (!tevent_req_nterror(req, status)) {
+			tevent_req_done(req);
+		}
+		return tevent_req_post(req, ev);
 		break;
 	case FSCTL_VALIDATE_NEGOTIATE_INFO:
 		status = fsctl_validate_neg_info(state, ev,
