@@ -561,11 +561,11 @@ msg.msg_controllen = sizeof(control_un.control);
     conf.CHECK_CODE('''
 struct msghdr msg;
 int fd;
-msg.msg_acctrights = (caddr_t) &fd;
-msg.msg_acctrightslen = sizeof(fd);
+msg.msg_accrights = (caddr_t) &fd;
+msg.msg_accrightslen = sizeof(fd);
 ''',
-        'HAVE_STRUCT_MSGHDR_MSG_ACCTRIGHTS',
-        msg='Checking if we can use msg_acctrights for passing file descriptors',
+        'HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS',
+        msg='Checking if we can use msg_accrights for passing file descriptors',
         headers='sys/types.h stdlib.h stddef.h sys/socket.h sys/un.h')
 
     if Options.options.with_winbind:
@@ -1854,7 +1854,7 @@ main() {
     if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
         default_shared_modules.extend(TO_LIST('vfs_fileid'))
 
-    if (conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_ACCTRIGHTS')):
+    if (conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS')):
         default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
 
     if Options.options.with_pthreadpool:
