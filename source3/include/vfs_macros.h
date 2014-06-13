@@ -21,11 +21,12 @@
 #ifndef _VFS_MACROS_H
 #define _VFS_MACROS_H
 
-/*******************************************************************
- Don't access conn->vfs.ops.* directly!!!
- Use this macros!
- (Fixes should go also into the vfs_opaque_* and vfs_next_* macros!)
-********************************************************************/
+/*
+ * These macros SMB_VFS_<FOO> (and SMB_VFS_NEXT_<FOO>) are our
+ * interface for the VFS.
+ *
+ * Don't access conn->vfs_handles[->next]->fns->* directly!
+ */
 
 /* Disk operations */
 #define SMB_VFS_CONNECT(conn, service, user) \
