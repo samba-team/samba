@@ -177,7 +177,7 @@ int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs)
                 errno = ENOSYS;
                 return -1;
         }
-        DEBUG(10, ("gpfs_get_winattrs_path:open call %d\n", fd));
+        DEBUG(10, ("gpfs_get_winattrs:open call %d\n", fd));
         return gpfs_get_winattrs_fn(fd, attrs);
 }
 
