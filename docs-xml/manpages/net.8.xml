@@ -981,6 +981,8 @@ to run this against the PDC, from a Samba machine joined as a BDC. </para>
 
 <para>Export users, aliases and groups from remote server to 
 local server.  You need to run this against the PDC, from a Samba machine joined as a BDC. 
+This vampire command cannot be used against an Active Directory, only
+against an NT4 Domain Controller.
 </para>
 </refsect2>
 
