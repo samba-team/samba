@@ -54,21 +54,26 @@ static const char *vl_get_column_header(const void *data, unsigned col)
 
 static const void *vl_get_first_row(const void *data)
 {
-	const struct value_list *vl = data;
+	const struct value_list *vl;
 
-	if (vl && vl->nvalues) {
-		return &vl->values[0];
+	if (data) {
+		vl = talloc_get_type_abort(data, struct value_list);
+		if (vl->nvalues) {
+			return &vl->values[0];
+		}
 	}
+
 	return NULL;
 }
 
 static const void *vl_get_next_row(const void *data, const void *row)
 {
-	const struct value_list *vl = data;
+	const struct value_list *vl;
 	const struct value_item *value = row;
 
-	SMB_ASSERT(vl != NULL);
+	SMB_ASSERT(data != NULL);
 	SMB_ASSERT(value != NULL);
+	vl = talloc_get_type_abort(data, struct value_list);
 	if (value == &vl->values[vl->nvalues - 1]) {
 		return NULL;
 	}
@@ -78,11 +83,12 @@ static const void *vl_get_next_row(const void *data, const void *row)
 
 static const void *vl_get_prev_row(const void *data, const void *row)
 {
-	const struct value_list *vl = data;
+	const struct value_list *vl;
 	const struct value_item *value = row;
 
-	SMB_ASSERT(vl != NULL);
+	SMB_ASSERT(data != NULL);
 	SMB_ASSERT(value != NULL);
+	vl = talloc_get_type_abort(data, struct value_list);
 	if (value == &vl->values[0]) {
 		return NULL;
 	}
