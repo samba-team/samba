@@ -289,8 +289,8 @@ void tree_view_set_current_node(struct tree_view *view, struct tree_node *node)
 
 struct tree_node *tree_view_get_current_node(struct tree_view *view)
 {
-	return discard_const_p(struct tree_node,
-			       multilist_get_current_row(view->list));
+	const void *row = multilist_get_current_row(view->list);
+	return talloc_get_type_abort(row, struct tree_node);
 }
 
 void tree_view_driver(struct tree_view *view, int c)
@@ -340,28 +340,36 @@ static const char *tv_get_column_header(const void *data, unsigned col)
 
 static const void *tv_get_first_row(const void *data)
 {
-	return data;
+	if (data == NULL) {
+		return NULL;
+	}
+
+	return talloc_get_type_abort(data, struct tree_node);
 }
 
 static const void *tv_get_next_row(const void *data, const void *row)
 {
-	const struct tree_node *node = row;
-	SMB_ASSERT(node != NULL);
+	const struct tree_node *node;
+	SMB_ASSERT(row != NULL);
+	node = talloc_get_type_abort(row, struct tree_node);
 	return node->next;
 }
 
 static const void *tv_get_prev_row(const void *data, const void *row)
 {
-	const struct tree_node *node = row;
-	SMB_ASSERT(node != NULL);
+	const struct tree_node *node;
+	SMB_ASSERT(row != NULL);
+	node = talloc_get_type_abort(row, struct tree_node);
 	return node->previous;
 }
 
 static const char *tv_get_item_prefix(const void *row, unsigned col)
 {
-	struct tree_node *node = discard_const_p(struct tree_node, row);
+	struct tree_node *node;
+
 	SMB_ASSERT(col == 0);
-	SMB_ASSERT(node != NULL);
+	SMB_ASSERT(row != NULL);
+	node = talloc_get_type_abort(row, struct tree_node);
 	if (tree_node_has_children(node)) {
 		return "+";
 	}
@@ -370,9 +378,10 @@ static const char *tv_get_item_prefix(const void *row, unsigned col)
 
 static const char *tv_get_item_label(const void *row, unsigned col)
 {
-	const struct tree_node *node = row;
+	const struct tree_node *node;
 	SMB_ASSERT(col == 0);
-	SMB_ASSERT(node != NULL);
+	SMB_ASSERT(row != NULL);
+	node = talloc_get_type_abort(row, struct tree_node);
 	return node->name;
 }
 
