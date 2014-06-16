@@ -243,7 +243,7 @@ time_t srv_make_unix_date3(const void *date_ptr)
 struct timespec interpret_long_date(const char *p)
 {
 	NTTIME nt;
-	nt = IVAL(p,0) + ((uint64_t)IVAL(p,4) << 32);
+	nt = BVAL(p, 0);
 	if (nt == (uint64_t)-1) {
 		struct timespec ret;
 		ret.tv_sec = (time_t)-1;
