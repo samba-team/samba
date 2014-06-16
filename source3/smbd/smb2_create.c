@@ -904,6 +904,24 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 
+			/*
+			 * MS-SMB2: 2.2.13 SMB2 CREATE Request
+			 * ImpersonationLevel ... MUST contain one of the
+			 * following values. The server MUST validate this
+			 * field, but otherwise ignore it.
+			 *
+			 * NB. The source4/torture/smb2/durable_open.c test
+			 * shows this check is only done on real opens, not
+			 * on durable handle-reopens.
+			 */
+
+			if (in_impersonation_level >
+					SMB2_IMPERSONATION_DELEGATE) {
+				tevent_req_nterror(req,
+					NT_STATUS_BAD_IMPERSONATION_LEVEL);
+				return tevent_req_post(req, ev);
+			}
+
 			status = SMB_VFS_CREATE_FILE(smb1req->conn,
 						     smb1req,
 						     0, /* root_dir_fid */
