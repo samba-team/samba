@@ -2034,8 +2034,23 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		DATA_BLOB signing_key;
 
 		if (x == NULL) {
-			return smbd_smb2_request_error(
-				req, NT_STATUS_USER_SESSION_DELETED);
+			/*
+			 * MS-SMB2: 3.3.5.2.4 Verifying the Signature.
+			 * If the SMB2 header of the SMB2 NEGOTIATE
+			 * request has the SMB2_FLAGS_SIGNED bit set in the
+			 * Flags field, the server MUST fail the request
+			 * with STATUS_INVALID_PARAMETER.
+			 *
+			 * Microsoft test tool checks this.
+			 */
+
+			if ((opcode == SMB2_OP_NEGPROT) &&
+					(flags & SMB2_HDR_FLAG_SIGNED)) {
+				status = NT_STATUS_INVALID_PARAMETER;
+			} else {
+				status = NT_STATUS_USER_SESSION_DELETED;
+			}
+			return smbd_smb2_request_error(req, status);
 		}
 
 		signing_key = x->global->channels[0].signing_key;
