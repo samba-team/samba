@@ -84,24 +84,28 @@ create_ganesha_recdirs ()
 {
     [ -n "$CTDB_GANESHA_REC_SUBDIR" ] || CTDB_GANESHA_REC_SUBDIR=".ganesha"
 
-    MOUNTS=$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)
-    if [ -z "$MOUNTS" ]; then
+    _mounts=$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)
+    if [ -z "$_mounts" ]; then
       echo "startup $CTDB_CLUSTER_FILESYSTEM_TYPE not ready"
       exit 0
     fi
-    MNTPT=$(echo "$MOUNTS" | sort | awk 'NR == 1 {print $3}')
-    mkdir -p $MNTPT/$CTDB_GANESHA_REC_SUBDIR
-    if [ -e $GANRECDIR ]; then
-        if [ ! -L $GANRECDIR ] ; then
-            rm -rf $GANRECDIR
-            if ! ln -s $MNTPT/$CTDB_GANESHA_REC_SUBDIR  $GANRECDIR ; then
-                echo "ln failed"
-            fi
+    _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
+    _link_dst="${_mntpt}/${CTDB_GANESHA_REC_SUBDIR}"
+    mkdir -vp "$_link_dst"
+    if [ -e "$GANRECDIR" ]; then
+        if [ ! -L "$GANRECDIR" ] ; then
+            rm -vrf "$GANRECDIR"
+	else
+	    _t=$(readlink "$GANRECDIR")
+	    if [ "$_t" != "$_link_dst" ] ; then
+		rm -v "$GANRECDIR"
+	    fi
         fi
-    else
-        if ! ln -sf $MNTPT/$CTDB_GANESHA_REC_SUBDIR  $GANRECDIR ; then
-            echo "ln failed"
-        fi
+    fi
+    # This is not an "else".  It also re-creates the link if it was
+    # removed above!
+    if [ ! -e "$GANRECDIR" ]; then
+        ln -sv "$_link_dst" "$GANRECDIR"
     fi
 
     mkdir -p $GANRECDIR2
