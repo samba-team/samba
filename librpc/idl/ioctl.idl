@@ -99,3 +99,48 @@ interface compression
 		uint16 format;
 	} compression_state;
 }
+
+interface netinterface
+{
+	typedef [bitmap32bit] bitmap {
+		FSCTL_NET_IFACE_RSS_CAPABLE = 0x00000001,
+		FSCTL_NET_IFACE_RDMA_CAPABLE = 0x00000002
+	} fsctl_net_iface_capability;
+
+	typedef [enum16bit] enum {
+		FSCTL_NET_IFACE_AF_INET = 0x0002,
+		FSCTL_NET_IFACE_AF_INET6 = 0x0017
+	} fsctl_sockaddr_af;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		[value(0)] uint16 port;
+		[flag(NDR_BIG_ENDIAN)] ipv4address ipv4;
+		[value(0)] hyper reserved;
+	} fsctl_sockaddr_in;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		[value(0)] uint16 port;
+		[value(0)] uint32 flowinfo;
+		[flag(NDR_BIG_ENDIAN)] ipv6address ipv6;
+		[value(0)] uint32 scopeid;
+	} fsctl_sockaddr_in6;
+
+	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case (FSCTL_NET_IFACE_AF_INET)] fsctl_sockaddr_in saddr_in;
+		[case (FSCTL_NET_IFACE_AF_INET6)] fsctl_sockaddr_in6 saddr_in6;
+	} fsctl_sockaddr_union;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		fsctl_sockaddr_af family;
+		[subcontext(0),subcontext_size(126),switch_is(family)] fsctl_sockaddr_union saddr;
+	} fsctl_sockaddr_storage;
+
+	typedef [public,relative_base,noprint] struct {
+		[relative] fsctl_net_iface_info *next;
+		uint32 ifindex;
+		fsctl_net_iface_capability capability;
+		[value(0)] uint32 reserved;
+		hyper linkspeed;
+		fsctl_sockaddr_storage sockaddr;
+	} fsctl_net_iface_info;
+}

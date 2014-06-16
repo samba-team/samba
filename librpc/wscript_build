@@ -616,7 +616,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSSERVER',
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_IOCTL',
-    source='gen_ndr/ndr_ioctl.c',
+    source='gen_ndr/ndr_ioctl.c ndr/ndr_ioctl.c',
     public_deps='ndr'
     )
 
