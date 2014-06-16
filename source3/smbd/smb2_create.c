@@ -922,6 +922,22 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 
+			/*
+			 * We know we're going to do a local open, so now
+			 * we must be protocol strict. JRA.
+			 *
+			 * MS-SMB2: 3.3.5.9 - Receiving an SMB2 CREATE Request
+			 * If the file name length is greater than zero and the
+			 * first character is a path separator character, the
+			 * server MUST fail the request with
+			 * STATUS_INVALID_PARAMETER.
+			 */
+			if (in_name[0] == '\\' || in_name[0] == '/') {
+				tevent_req_nterror(req,
+					NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
 			status = SMB_VFS_CREATE_FILE(smb1req->conn,
 						     smb1req,
 						     0, /* root_dir_fid */
