@@ -372,7 +372,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				char *ntdomain,
 				char *username,
 				struct passwd *pw,
-				struct PAC_LOGON_INFO *logon_info,
+				const struct netr_SamInfo3 *info3,
 				bool mapped_to_guest, bool username_was_mapped,
 				DATA_BLOB *session_key,
 				struct auth_session_info **session_info);
