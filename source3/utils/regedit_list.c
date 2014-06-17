@@ -271,6 +271,7 @@ static WERROR put_data(struct multilist *list)
 	return WERR_OK;
 }
 
+#define MIN_WIDTH 3
 static struct multilist_column *find_widest_column(struct multilist *list)
 {
 	unsigned col;
@@ -285,6 +286,10 @@ static struct multilist_column *find_widest_column(struct multilist *list)
 		}
 	}
 
+	if (colp->width < MIN_WIDTH) {
+		return NULL;
+	}
+
 	return colp;
 }
 
@@ -295,6 +300,7 @@ static WERROR calc_column_widths(struct multilist *list)
 	size_t len;
 	const char *item;
 	size_t width, total_width, overflow;
+	struct multilist_column *colp;
 
 	/* calculate the maximum widths for each column */
 	for (col = 0; col < list->ncols; ++col) {
@@ -335,19 +341,12 @@ static WERROR calc_column_widths(struct multilist *list)
 	}
 
 	overflow = total_width - list->window_width;
-	/* the window is so narrow that no amount of trimming will
-	   help fit the data. just give up. */
-	if (overflow > width) {
-		return WERR_OK;
-	}
 
-	/* keep trimming from the widest column until the row fits */
-	while (overflow) {
-		struct multilist_column *colp = find_widest_column(list);
-		size_t max_trim = colp->width / 3;
-		size_t trim = MIN(overflow, max_trim);
-		colp->width -= trim;
-		overflow -= trim;
+	/* attempt to trim as much as possible to fit all the columns to
+	   the window */
+	while (overflow && (colp = find_widest_column(list))) {
+		colp->width--;
+		overflow--;
 	}
 
 	return WERR_OK;

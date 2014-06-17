@@ -183,7 +183,14 @@ void value_list_resize(struct value_list *vl, int nlines, int ncols,
 	WINDOW *nwin, *nsub;
 
 	nwin = newwin(nlines, ncols, begin_y, begin_x);
+	if (nwin == NULL) {
+		return;
+	}
 	nsub = subwin(nwin, nlines - 2, ncols - 2, begin_y + 1, begin_x + 1);
+	if (nsub == NULL) {
+		delwin(nwin);
+		return;
+	}
 	replace_panel(vl->panel, nwin);
 	delwin(vl->sub);
 	delwin(vl->window);

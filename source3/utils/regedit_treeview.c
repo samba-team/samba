@@ -445,7 +445,14 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 	WINDOW *nwin, *nsub;
 
 	nwin = newwin(nlines, ncols, begin_y, begin_x);
+	if (nwin == NULL) {
+		return;
+	}
 	nsub = subwin(nwin, nlines - 2, ncols - 2, begin_y + 1, begin_x + 1);
+	if (nsub == NULL) {
+		delwin(nwin);
+		return;
+	}
 	replace_panel(view->panel, nwin);
 	delwin(view->sub);
 	delwin(view->window);
