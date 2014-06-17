@@ -180,7 +180,6 @@
 ^samba3.smb2.create.gentest
 ^samba3.smb2.create.blob
 ^samba3.smb2.create.open
-^samba3.smb2.create.leading-slash
 ^samba3.smb2.notify.valid-req
 ^samba3.smb2.notify.dir
 ^samba3.smb2.notify.rec
