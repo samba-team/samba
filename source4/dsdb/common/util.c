@@ -650,27 +650,42 @@ uint32_t samdb_result_acct_flags(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ct
 	return acct_flags;
 }
 
-struct lsa_BinaryString samdb_result_parameters(TALLOC_CTX *mem_ctx,
-						struct ldb_message *msg,
-						const char *attr)
+NTSTATUS samdb_result_parameters(TALLOC_CTX *mem_ctx,
+				 struct ldb_message *msg,
+				 const char *attr,
+				 struct lsa_BinaryString *s)
 {
-	struct lsa_BinaryString s;
+	int i;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 
-	ZERO_STRUCT(s);
+	ZERO_STRUCTP(s);
 
 	if (!val) {
-		return s;
+		return NT_STATUS_OK;
 	}
 
-	s.array = talloc_array(mem_ctx, uint16_t, val->length/2);
-	if (!s.array) {
-		return s;
+	if ((val->length % 2) != 0) {
+		/*
+		 * If the on-disk data is not even in length, we know
+		 * it is corrupt, and can not be safely pushed.  We
+		 * would either truncate, send either a un-initilaised
+		 * byte or send a forced zero byte
+		 */
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	s.length = s.size = val->length;
-	memcpy(s.array, val->data, val->length);
 
-	return s;
+	s->array = talloc_array(mem_ctx, uint16_t, val->length/2);
+	if (!s->array) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	s->length = s->size = val->length;
+
+	/* The on-disk format is the 'network' format, being UTF16LE (sort of) */
+	for (i = 0; i < s->length / 2; i++) {
+		s->array[i] = SVAL(val->data, i * 2);
+	}
+
+	return NT_STATUS_OK;
 }
 
 /* Find an attribute, with a particular value */
@@ -978,10 +993,26 @@ int samdb_msg_add_logon_hours(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, 
 int samdb_msg_add_parameters(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			     const char *attr_name, struct lsa_BinaryString *parameters)
 {
+	int i;
 	struct ldb_val val;
+	if ((parameters->length % 2) != 0) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	val.data = talloc_array(mem_ctx, uint8_t, parameters->length);
+	if (val.data == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	val.length = parameters->length;
-	val.data = (uint8_t *)parameters->array;
-	return ldb_msg_add_value(msg, attr_name, &val, NULL);
+	for (i = 0; i < parameters->length / 2; i++) {
+		/*
+		 * The on-disk format needs to be in the 'network'
+		 * format, parmeters->array is a uint16_t array of
+		 * length parameters->length / 2
+		 */
+		SSVAL(val.data, i * 2, parameters->array[i]);
+	}
+	return ldb_msg_add_steal_value(msg, attr_name, &val);
 }
 
 /*
