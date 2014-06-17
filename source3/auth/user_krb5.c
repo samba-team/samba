@@ -186,7 +186,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				char *ntdomain,
 				char *username,
 				struct passwd *pw,
-				struct PAC_LOGON_INFO *logon_info,
+				const struct netr_SamInfo3 *info3,
 				bool mapped_to_guest, bool username_was_mapped,
 				DATA_BLOB *session_key,
 				struct auth_session_info **session_info)
@@ -202,14 +202,14 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 			return status;
 		}
 
-	} else if (logon_info) {
+	} else if (info3) {
 		/* pass the unmapped username here since map_username()
 		   will be called again in make_server_info_info3() */
 
 		status = make_server_info_info3(mem_ctx,
 						ntuser, ntdomain,
 						&server_info,
-						&logon_info->info3);
+						info3);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("make_server_info_info3 failed: %s!\n",
 				  nt_errstr(status)));
@@ -299,7 +299,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				char *ntdomain,
 				char *username,
 				struct passwd *pw,
-				struct PAC_LOGON_INFO *logon_info,
+				const struct netr_SamInfo3 *info3,
 				bool mapped_to_guest, bool username_was_mapped,
 				DATA_BLOB *session_key,
 				struct auth_session_info **session_info)
