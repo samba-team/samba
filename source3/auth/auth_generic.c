@@ -45,6 +45,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 {
 	TALLOC_CTX *tmp_ctx;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct netr_SamInfo3 *info3_copy = NULL;
 	bool is_mapped;
 	bool is_guest;
 	char *ntuser;
@@ -102,7 +103,13 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 	/* save the PAC data if we have it */
 	if (logon_info) {
-		netsamlogon_cache_store(ntuser, &logon_info->info3);
+		status = create_info3_from_pac_logon_info(tmp_ctx,
+					logon_info,
+					&info3_copy);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		netsamlogon_cache_store(ntuser, info3_copy);
 	}
 
 	/* setup the string used by %U */
@@ -113,7 +120,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
-					&logon_info->info3, is_guest, is_mapped, NULL /* No session key for now, caller will sort it out */,
+					info3_copy, is_guest, is_mapped, NULL /* No session key for now, caller will sort it out */,
 					session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
