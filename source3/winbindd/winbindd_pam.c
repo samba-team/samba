@@ -2450,6 +2450,7 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 	struct winbindd_request *req = state->request;
 	DATA_BLOB pac_blob;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct netr_SamInfo3 *info3_copy = NULL;
 	NTSTATUS result;
 
 	pac_blob = data_blob_const(req->extra_data.data, req->extra_len);
@@ -2463,7 +2464,13 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 
 	if (logon_info) {
 		/* Signature verification succeeded, trust the PAC */
-		netsamlogon_cache_store(NULL, &logon_info->info3);
+		result = create_info3_from_pac_logon_info(state->mem_ctx,
+							logon_info,
+							&info3_copy);
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
+		netsamlogon_cache_store(NULL, info3_copy);
 
 	} else {
 		/* Try without signature verification */
@@ -2475,9 +2482,22 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 				   nt_errstr(result)));
 			return result;
 		}
+		if (logon_info) {
+			/*
+			 * Don't strictly need to copy here,
+			 * but it makes it explicit we're
+			 * returning a copy talloc'ed off
+			 * the state->mem_ctx.
+			 */
+			info3_copy = copy_netr_SamInfo3(state->mem_ctx,
+					&logon_info->info3);
+			if (info3_copy == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 	}
 
-	*info3 = &logon_info->info3;
+	*info3 = info3_copy;
 
 	return NT_STATUS_OK;
 }
