@@ -20,6 +20,7 @@
 import ldb
 import samba
 import time
+from base64 import b64decode
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
@@ -64,6 +65,9 @@ class dbcheck(object):
         self.fix_replmetadata_zero_invocationid = False
         self.fix_deleted_deleted_objects = False
         self.fix_dn = False
+        self.fix_base64_userparameters = False
+        self.fix_utf8_userparameters = False
+        self.fix_doubled_userparameters = False
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -521,6 +525,58 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if self.do_modify(m, ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA],
                           "Failed to correct missing instanceType on %s by setting instanceType=%d" % (obj.dn, calculated_instancetype)):
             self.report("Corrected instancetype on %s by setting instanceType=%d" % (obj.dn, calculated_instancetype))
+
+    def err_short_userParameters(self, obj, attrname, value):
+        # This is a truncated userParameters due to a pre 4.1 replication bug
+        self.report("ERROR: incorrect userParameters value on object %s.  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
+
+    def err_base64_userParameters(self, obj, attrname, value):
+        '''handle a wrong userParameters'''
+        self.report("ERROR: wrongly formatted userParameters %s on %s, should not be base64-encoded" % (value, obj.dn))
+        if not self.confirm_all('Convert userParameters from base64 encoding on %s?' % (obj.dn), 'fix_base64_userparameters'):
+            self.report('Not changing userParameters from base64 encoding on %s' % (obj.dn))
+            return
+
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(b64decode(obj[attrname][0]), ldb.FLAG_MOD_REPLACE, 'userParameters')
+        if self.do_modify(m, [],
+                          "Failed to correct base64-encoded userParameters on %s by converting from base64" % (obj.dn)):
+            self.report("Corrected base64-encoded userParameters on %s by converting from base64" % (obj.dn))
+
+    def err_utf8_userParameters(self, obj, attrname, value):
+        '''handle a wrong userParameters'''
+        self.report("ERROR: wrongly formatted userParameters on %s, should not be psudo-UTF8 encoded" % (obj.dn))
+        if not self.confirm_all('Convert userParameters from UTF8 encoding on %s?' % (obj.dn), 'fix_utf8_userparameters'):
+            self.report('Not changing userParameters from UTF8 encoding on %s' % (obj.dn))
+            return
+
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(obj[attrname][0].decode('utf8').encode('utf-16-le'),
+                                        ldb.FLAG_MOD_REPLACE, 'userParameters')
+        if self.do_modify(m, [],
+                          "Failed to correct psudo-UTF8 encoded userParameters on %s by converting from UTF8" % (obj.dn)):
+            self.report("Corrected psudo-UTF8 encoded userParameters on %s by converting from UTF8" % (obj.dn))
+
+    def err_doubled_userParameters(self, obj, attrname, value):
+        '''handle a wrong userParameters'''
+        self.report("ERROR: wrongly formatted userParameters on %s, should not be double UTF16 encoded" % (obj.dn))
+        if not self.confirm_all('Convert userParameters from doubled UTF-16 encoding on %s?' % (obj.dn), 'fix_doubled_userparameters'):
+            self.report('Not changing userParameters from doubled UTF-16 encoding on %s' % (obj.dn))
+            return
+
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(obj[attrname][0].decode('utf-16-le').decode('utf-16-le').encode('utf-16-le'),
+                                        ldb.FLAG_MOD_REPLACE, 'userParameters')
+        if self.do_modify(m, [],
+                          "Failed to correct doubled-UTF16 encoded userParameters on %s by converting" % (obj.dn)):
+            self.report("Corrected doubled-UTF16 encoded userParameters on %s by converting" % (obj.dn))
+
+    def err_odd_userParameters(self, obj, attrname):
+        # This is a truncated userParameters due to a pre 4.1 replication bug
+        self.report("ERROR: incorrect userParameters value on object %s (odd length).  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
 
     def find_revealed_link(self, dn, attrname, guid):
         '''return a revealed link in an object'''
@@ -1163,6 +1219,40 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.err_normalise_mismatch_replace(dn, attrname, list(obj[attrname]))
                     error_count += 1
                 continue
+
+            if str(attrname).lower() == 'userparameters':
+                if len(obj[attrname][0]) == 1 and obj[attrname][0][0] == '\x20':
+                    error_count += 1
+                    self.err_short_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif obj[attrname][0][:16] == '\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00':
+                    # This is the correct, normal prefix
+                    continue
+
+                elif obj[attrname][0][:20] == 'IAAgACAAIAAgACAAIAAg':
+                    # this is the typical prefix from a windows migration
+                    error_count += 1
+                    self.err_base64_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif obj[attrname][0][1] != '\x00' and obj[attrname][0][3] != '\x00' and obj[attrname][0][5] != '\x00' and obj[attrname][0][7] != '\x00' and obj[attrname][0][9] != '\x00':
+                    # This is a prefix that is not in UTF-16 format for the space or munged dialback prefix
+                    error_count += 1
+                    self.err_utf8_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif len(obj[attrname][0]) % 2 != 0:
+                    # This is a value that isn't even in length
+                    error_count += 1
+                    self.err_odd_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif obj[attrname][0][1] == '\x00' and obj[attrname][0][2] == '\x00' and obj[attrname][0][3] == '\x00' and obj[attrname][0][4] != '\x00' and obj[attrname][0][5] == '\x00':
+                    # This is a prefix that would happen if a SAMR-written value was replicated from a Samba 4.1 server to a working server
+                    error_count += 1
+                    self.err_doubled_userParameters(obj, attrname, obj[attrname])
+                    continue
 
             # check for empty attributes
             for val in obj[attrname]:
