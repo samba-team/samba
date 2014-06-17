@@ -253,6 +253,83 @@ static NTSTATUS group_sids_to_info3(struct netr_SamInfo3 *info3,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Merge resource SIDs, if any, into the passed in info3 structure.
+ */
+
+static NTSTATUS merge_resource_sids(const struct PAC_LOGON_INFO *logon_info,
+				struct netr_SamInfo3 *info3)
+{
+	uint32_t i = 0;
+
+	if (!(logon_info->info3.base.user_flags & NETLOGON_RESOURCE_GROUPS)) {
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * If there are any resource groups (SID Compression) add
+	 * them to the extra sids portion of the info3 in the PAC.
+	 *
+	 * This makes the info3 look like it would if we got the info
+	 * from the DC rather than the PAC.
+	 */
+
+	/*
+	 * Construct a SID for each RID in the list and then append it
+	 * to the info3.
+	 */
+	for (i = 0; i < logon_info->res_groups.count; i++) {
+		NTSTATUS status;
+		struct dom_sid new_sid;
+		uint32_t attributes = logon_info->res_groups.rids[i].attributes;
+
+		sid_compose(&new_sid,
+			logon_info->res_group_dom_sid,
+			logon_info->res_groups.rids[i].rid);
+
+		DEBUG(10, ("Adding SID %s to extra SIDS\n",
+			sid_string_dbg(&new_sid)));
+
+		status = append_netr_SidAttr(info3, &info3->sids,
+					&info3->sidcount,
+					&new_sid,
+					attributes);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("failed to append SID %s to extra SIDS: %s\n",
+				sid_string_dbg(&new_sid),
+				nt_errstr(status)));
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * Create a copy of an info3 struct from the struct PAC_LOGON_INFO,
+ * then merge resource SIDs, if any, into it. If successful return
+ * the created info3 struct.
+ */
+
+NTSTATUS create_info3_from_pac_logon_info(TALLOC_CTX *mem_ctx,
+					const struct PAC_LOGON_INFO *logon_info,
+					struct netr_SamInfo3 **pp_info3)
+{
+	NTSTATUS status;
+	struct netr_SamInfo3 *info3 = copy_netr_SamInfo3(mem_ctx,
+					&logon_info->info3);
+	if (info3 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = merge_resource_sids(logon_info, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info3);
+		return status;
+	}
+	*pp_info3 = info3;
+	return NT_STATUS_OK;
+}
+
 #define RET_NOMEM(ptr) do { \
 	if (!ptr) { \
 		TALLOC_FREE(info3); \
