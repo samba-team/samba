@@ -64,8 +64,6 @@
 	info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
 	info->field = samdb_result_acct_flags(msg, attr);
-#define QUERY_PARAMETERS(msg, field, attr) \
-	info->field = samdb_result_parameters(mem_ctx, msg, attr);
 
 
 /* these are used to make the Set[User|Group]Info code easier to follow */
@@ -2700,6 +2698,8 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	const char * const *attrs = NULL;
 	union samr_UserInfo *info;
 
+	NTSTATUS status;
+
 	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
@@ -3048,7 +3048,11 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		break;
 
 	case 20:
-		QUERY_PARAMETERS(msg, info20.parameters,    "userParameters");
+		status = samdb_result_parameters(mem_ctx, msg, "userParameters", &info->info20.parameters);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(info);
+			return status;
+		}
 		break;
 
 	case 21:
@@ -3067,7 +3071,12 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_STRING(msg, info21.description,          "description");
 		QUERY_STRING(msg, info21.workstations,         "userWorkstations");
 		QUERY_STRING(msg, info21.comment,              "comment");
-		QUERY_PARAMETERS(msg, info21.parameters,       "userParameters");
+		status = samdb_result_parameters(mem_ctx, msg, "userParameters", &info->info21.parameters);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(info);
+			return status;
+		}
+
 		QUERY_RID   (msg, info21.rid,                  "objectSid");
 		QUERY_UINT  (msg, info21.primary_gid,          "primaryGroupID");
 		QUERY_AFLAGS(msg, info21.acct_flags,           "msDS-User-Account-Control-Computed");

@@ -259,9 +259,13 @@ static NTSTATUS pdb_samba_dsdb_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_workstations(sam, str, PDB_SET);
 	}
 
-	str = ldb_msg_find_attr_as_string(msg, "userParameters",
-					    NULL);
-	if (str != NULL) {
+	blob = ldb_msg_find_ldb_val(msg, "userParameters");
+	if (blob != NULL) {
+		str = base64_encode_data_blob(frame, *blob);
+		if (str == NULL) {
+			DEBUG(0, ("base64_encode_data_blob() failed\n"));
+			goto fail;
+		}
 		pdb_set_munged_dial(sam, str, PDB_SET);
 	}
 
@@ -555,8 +559,25 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 
 	/* This will need work, it is actually a UTF8 'string' with internal NULLs, to handle TS parameters */
 	if (need_update(sam, PDB_MUNGEDDIAL)) {
-		ret |= ldb_msg_add_string(msg, "userParameters",
-					  pdb_get_munged_dial(sam));
+		const char *base64_munged_dial = NULL;
+
+		base64_munged_dial = pdb_get_munged_dial(sam);
+		if (base64_munged_dial != NULL && strlen(base64_munged_dial) > 0) {
+			struct ldb_val blob;
+
+			blob = base64_decode_data_blob_talloc(msg,
+							base64_munged_dial);
+			if (blob.data == NULL) {
+				DEBUG(0, ("Failed to decode userParameters from "
+					  "munged dialback string[%s] for %s\n",
+					  base64_munged_dial,
+					  ldb_dn_get_linearized(msg->dn)));
+				talloc_free(frame);
+				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+			}
+			ret |= ldb_msg_add_steal_value(msg, "userParameters",
+						       &blob);
+		}
 	}
 
 	if (need_update(sam, PDB_COUNTRY_CODE)) {
