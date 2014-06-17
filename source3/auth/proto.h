@@ -242,7 +242,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				const char *sent_nt_username,
 				const char *domain,
 				struct auth_serversupplied_info **server_info,
-				struct netr_SamInfo3 *info3);
+				const struct netr_SamInfo3 *info3);
 struct wbcAuthUserInfo;
 NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const char *sent_nt_username,
@@ -304,7 +304,7 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			    const struct passwd *pwd,
 			    struct netr_SamInfo3 **pinfo3);
 struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
-					 struct netr_SamInfo3 *orig);
+					 const struct netr_SamInfo3 *orig);
 
 /* The following definitions come from auth/auth_wbc.c  */
 
