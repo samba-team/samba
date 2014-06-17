@@ -520,7 +520,7 @@ def test(ctx):
     Scripting.commands.append('testonly')
 
 def autotest(ctx):
-    cmd = 'tests/run_tests.sh -e -S -C'
+    cmd = 'LD_PRELOAD=bin/shared/libsocket-wrapper.so tests/run_tests.sh -e -S -C'
     samba_utils.RUN_COMMAND(cmd)
 
 def dist():
