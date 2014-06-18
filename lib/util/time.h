@@ -314,6 +314,6 @@ struct timespec timespec_min(const struct timespec *ts1,
 int timespec_compare(const struct timespec *ts1, const struct timespec *ts2);
 void round_timespec_to_sec(struct timespec *ts);
 void round_timespec_to_usec(struct timespec *ts);
-void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts);
+NTTIME unix_timespec_to_nt_time(struct timespec ts);
 
 #endif /* _SAMBA_TIME_H_ */

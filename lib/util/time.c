@@ -940,21 +940,18 @@ void round_timespec_to_usec(struct timespec *ts)
  Put a 8 byte filetime from a struct timespec. Uses GMT.
 ****************************************************************************/
 
-_PUBLIC_ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
+_PUBLIC_ NTTIME unix_timespec_to_nt_time(struct timespec ts)
 {
 	uint64_t d;
 
 	if (ts.tv_sec ==0 && ts.tv_nsec == 0) {
-		*nt = 0;
-		return;
+		return 0;
 	}
 	if (ts.tv_sec == TIME_T_MAX) {
-		*nt = 0x7fffffffffffffffLL;
-		return;
+		return 0x7fffffffffffffffLL;
 	}
 	if (ts.tv_sec == (time_t)-1) {
-		*nt = (uint64_t)-1;
-		return;
+		return (uint64_t)-1;
 	}
 
 	d = ts.tv_sec;
@@ -963,5 +960,5 @@ _PUBLIC_ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 	/* d is now in 100ns units. */
 	d += (ts.tv_nsec / 100);
 
-	*nt = d;
+	return d;
 }

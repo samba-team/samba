@@ -399,7 +399,7 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 	dosattrib.info.info3.valid_flags = XATTR_DOSINFO_ATTRIB|
 					XATTR_DOSINFO_CREATE_TIME;
 	dosattrib.info.info3.attrib = dosmode;
-	unix_timespec_to_nt_time(&dosattrib.info.info3.create_time,
+	dosattrib.info.info3.create_time = unix_timespec_to_nt_time(
 				smb_fname->st.st_ex_btime);
 
 	DEBUG(10,("set_ea_dos_attributes: set attribute 0x%x, btime = %s on file %s\n",

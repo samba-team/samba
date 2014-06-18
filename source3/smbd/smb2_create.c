@@ -974,7 +974,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (mxac) {
 			NTTIME last_write_time;
 
-			unix_timespec_to_nt_time(&last_write_time,
+			last_write_time = unix_timespec_to_nt_time(
 						 result->fsp_name->st.st_ex_mtime);
 			if (last_write_time != max_access_time) {
 				uint8_t p[8];
