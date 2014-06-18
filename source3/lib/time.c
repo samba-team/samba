@@ -250,7 +250,7 @@ struct timespec interpret_long_date(const char *p)
 		ret.tv_nsec = 0;
 		return ret;
 	}
-	return nt_time_to_unix_timespec(&nt);
+	return nt_time_to_unix_timespec(nt);
 }
 
 /*******************************************************************

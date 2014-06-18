@@ -134,7 +134,7 @@ struct timespec convert_time_t_to_timespec(time_t t)
 **/
 time_t nt_time_to_unix(NTTIME nt)
 {
-	return convert_timespec_to_time_t(nt_time_to_unix_timespec(&nt));
+	return convert_timespec_to_time_t(nt_time_to_unix_timespec(nt));
 }
 
 
@@ -784,18 +784,18 @@ _PUBLIC_ int get_time_zone(time_t t)
 	return tm_diff(&tm_utc,tm);
 }
 
-struct timespec nt_time_to_unix_timespec(const NTTIME *nt)
+struct timespec nt_time_to_unix_timespec(NTTIME nt)
 {
 	int64_t d;
 	struct timespec ret;
 
-	if (*nt == 0 || *nt == (int64_t)-1) {
+	if (nt == 0 || nt == (int64_t)-1) {
 		ret.tv_sec = 0;
 		ret.tv_nsec = 0;
 		return ret;
 	}
 
-	d = (int64_t)*nt;
+	d = (int64_t)nt;
 	/* d is now in 100ns units, since jan 1st 1601".
 	   Save off the ns fraction. */
 

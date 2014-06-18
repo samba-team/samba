@@ -319,7 +319,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 			if (!null_nttime(dosattrib.info.info1.create_time)) {
 				struct timespec create_time =
 					nt_time_to_unix_timespec(
-						&dosattrib.info.info1.create_time);
+						dosattrib.info.info1.create_time);
 
 				update_stat_ex_create_time(&smb_fname->st,
 							create_time);
@@ -341,7 +341,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 					!null_nttime(dosattrib.info.info3.create_time)) {
 				struct timespec create_time =
 					nt_time_to_unix_timespec(
-						&dosattrib.info.info3.create_time);
+						dosattrib.info.info3.create_time);
 
 				update_stat_ex_create_time(&smb_fname->st,
 							create_time);

@@ -822,9 +822,9 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 
 	ZERO_STRUCTP(sbuf);
 
-	sbuf->st_ex_atime = nt_time_to_unix_timespec(&cr.last_access_time);
-	sbuf->st_ex_mtime = nt_time_to_unix_timespec(&cr.last_write_time);
-	sbuf->st_ex_ctime = nt_time_to_unix_timespec(&cr.change_time);
+	sbuf->st_ex_atime = nt_time_to_unix_timespec(cr.last_access_time);
+	sbuf->st_ex_mtime = nt_time_to_unix_timespec(cr.last_write_time);
+	sbuf->st_ex_ctime = nt_time_to_unix_timespec(cr.change_time);
 	sbuf->st_ex_size = cr.end_of_file;
 	*attributes = cr.file_attributes;
 
