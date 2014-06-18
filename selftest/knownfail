@@ -143,6 +143,7 @@
 ^samba4.raw.acls.*.create_dir
 ^samba4.raw.acls.*.create_file
 ^samba4.smb2.create.*.acldir
+^samba4.smb2.create.*.impersonation
 ^samba4.smb2.acls.*.generic
 ^samba4.smb2.acls.*.inheritflags
 ^samba4.smb2.acls.*.owner

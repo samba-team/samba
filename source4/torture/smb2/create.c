@@ -1178,6 +1178,51 @@ static bool test_smb2_leading_slash(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+  test SMB2 open with an invalid impersonation level.
+  Should give NT_STATUS_BAD_IMPERSONATION_LEVEL error
+*/
+static bool test_smb2_impersonation_level(struct torture_context *tctx,
+				    struct smb2_tree *tree)
+{
+	union smb_open io;
+	const char *fname = DNAME "\\torture_invalid_impersonation_level.txt";
+	NTSTATUS status;
+	struct smb2_handle h;
+	bool ret = true;
+
+	torture_comment(tctx,
+		"Testing SMB2 open with an invalid impersonation level.\n");
+
+	smb2_util_unlink(tree, fname);
+	smb2_util_rmdir(tree, DNAME);
+
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.create_options = 0;
+	io.smb2.in.impersonation_level = 0x12345678;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = fname;
+	io.smb2.in.create_flags = 0;
+
+	status = smb2_create(tree, tree, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_BAD_IMPERSONATION_LEVEL);
+
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, DNAME);
+	return ret;
+}
 
 static bool test_create_acl_file(struct torture_context *tctx,
     struct smb2_tree *tree)
@@ -1486,6 +1531,7 @@ struct torture_suite *torture_smb2_create_init(void)
 	torture_suite_add_1smb2_test(suite, "multi", test_smb2_open_multi);
 	torture_suite_add_1smb2_test(suite, "delete", test_smb2_open_for_delete);
 	torture_suite_add_1smb2_test(suite, "leading-slash", test_smb2_leading_slash);
+	torture_suite_add_1smb2_test(suite, "impersonation", test_smb2_impersonation_level);
 	torture_suite_add_1smb2_test(suite, "aclfile", test_create_acl_file);
 	torture_suite_add_1smb2_test(suite, "acldir", test_create_acl_dir);
 	torture_suite_add_1smb2_test(suite, "nulldacl", test_create_null_dacl);
