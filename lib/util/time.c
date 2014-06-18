@@ -784,7 +784,7 @@ _PUBLIC_ int get_time_zone(time_t t)
 	return tm_diff(&tm_utc,tm);
 }
 
-struct timespec nt_time_to_unix_timespec(NTTIME *nt)
+struct timespec nt_time_to_unix_timespec(const NTTIME *nt)
 {
 	int64_t d;
 	struct timespec ret;

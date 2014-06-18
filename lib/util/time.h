@@ -298,7 +298,7 @@ bool nt_time_equal(NTTIME *t1, NTTIME *t2);
 
 void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *hour,int *minute,int *second);
 
-struct timespec nt_time_to_unix_timespec(NTTIME *nt);
+struct timespec nt_time_to_unix_timespec(const NTTIME *nt);
 
 time_t convert_timespec_to_time_t(struct timespec ts);
 
