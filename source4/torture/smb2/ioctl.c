@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 
 #define FNAME	"testfsctl.dat"
@@ -2413,6 +2414,49 @@ static bool test_ioctl_compress_perms(struct torture_context *torture,
 }
 
 /*
+   basic testing of the SMB2 FSCTL_QUERY_NETWORK_INTERFACE_INFO ioctl
+*/
+static bool test_ioctl_network_interface_info(struct torture_context *torture,
+				      struct smb2_tree *tree)
+{
+	union smb_ioctl ioctl;
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct fsctl_net_iface_info net_iface;
+	enum ndr_err_code ndr_ret;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(torture, "server doesn't support SMB2_CAP_MULTI_CHANNEL\n");
+	}
+
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	fh.data[0] = UINT64_MAX;
+	fh.data[1] = UINT64_MAX;
+	ioctl.smb2.in.file.handle = fh;
+	ioctl.smb2.in.function = FSCTL_QUERY_NETWORK_INTERFACE_INFO;
+	ioctl.smb2.in.max_response_size = 0x10000; /* Windows client sets this to 64KiB */
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_QUERY_NETWORK_INTERFACE_INFO");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx, &net_iface,
+			(ndr_pull_flags_fn_t)ndr_pull_fsctl_net_iface_info);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_fsctl_net_iface_info");
+
+	ndr_print_debug((ndr_print_fn_t)ndr_print_fsctl_net_iface_info
+			, "Network Interface Info", &net_iface);
+
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+/*
    basic testing of SMB2 ioctls
 */
 struct torture_suite *torture_smb2_ioctl_init(void)
@@ -2477,6 +2521,9 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_compress_set_file_attr);
 	torture_suite_add_1smb2_test(suite, "compress_perms",
 				     test_ioctl_compress_perms);
+	torture_suite_add_1smb2_test(suite, "network_interface_info",
+				     test_ioctl_network_interface_info);
+
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
