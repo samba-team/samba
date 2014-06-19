@@ -27,6 +27,7 @@
 #include "libsmb/proto.h"
 #include "auth/gensec/gensec.h"
 #include "auth_generic.h"
+#include "../librpc/ndr/libndr.h"
 
 extern fstring host, workgroup, share, password, username, myname;
 
@@ -856,8 +857,11 @@ bool run_smb2_multi_channel(int dummy)
 	const char *hello = "Hello, world\n";
 	uint8_t *result;
 	uint32_t nread;
+	struct GUID saved_guid = cli_state_client_guid;
 
 	printf("Starting SMB2-MULTI-CHANNEL\n");
+
+	cli_state_client_guid = GUID_random();
 
 	if (!torture_init_connection(&cli1)) {
 		return false;
@@ -870,6 +874,8 @@ bool run_smb2_multi_channel(int dummy)
 	if (!torture_init_connection(&cli3)) {
 		return false;
 	}
+
+	cli_state_client_guid = saved_guid;
 
 	status = smbXcli_negprot(cli1->conn, cli1->timeout,
 				 PROTOCOL_SMB2_22, PROTOCOL_LATEST);
