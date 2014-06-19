@@ -207,6 +207,7 @@ sub setup_s3dc($$)
 
 	$vars->{DC_SERVER} = $vars->{SERVER};
 	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
+	$vars->{DC_SERVER_IPV6} = $vars->{SERVER_IPV6};
 	$vars->{DC_NETBIOSNAME} = $vars->{NETBIOSNAME};
 	$vars->{DC_USERNAME} = $vars->{USERNAME};
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
@@ -250,6 +251,7 @@ sub setup_member($$$)
 
 	$ret->{DC_SERVER} = $s3dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $s3dcvars->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $s3dcvars->{SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $s3dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $s3dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $s3dcvars->{PASSWORD};
@@ -321,6 +323,7 @@ sub setup_admember($$$$)
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
@@ -400,6 +403,7 @@ sub setup_admember_rfc2307($$$$)
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
@@ -770,6 +774,7 @@ sub provision($$$$$$)
 	my $swiface = Samba::get_interface($server);
 	my %ret = ();
 	my $server_ip = "127.0.0.$swiface";
+	my $server_ipv6 = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
 	my $domain = "SAMBA-TEST";
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `PATH=/usr/ucb:$ENV{PATH} whoami`);
@@ -872,7 +877,7 @@ sub provision($$$$$$)
 	close(MSDFS_TARGET);
 	chmod 0666, $msdfs_target;
 	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/msdfs-src1";
-	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
+	symlink "msdfs:$server_ipv6\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
 
 	my $conffile="$libdir/server.conf";
 
@@ -925,7 +930,7 @@ sub provision($$$$$$)
 	print CONF "
 [global]
 	netbios name = $server
-	interfaces = $server_ip/8
+	interfaces = $server_ip/8 $server_ipv6/64
 	bind interfaces only = yes
 	panic action = $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	smbd:suicide mode = yes
@@ -1176,7 +1181,8 @@ domadmins:X:$gid_domadmins:
 	print "DONE\n";
 
 	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
-	print DNS_UPDATE_LIST "A $server. $server_ip";
+	print DNS_UPDATE_LIST "A $server. $server_ip\n";
+	print DNS_UPDATE_LIST "AAAA $server. $server_ipv6\n";
 	close(DNS_UPDATE_LIST);
 
         if (system("$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$dns_host_file -s $conffile --update-list=$prefix/dns_update_list --no-substiutions --no-credentials") != 0) {
@@ -1184,6 +1190,7 @@ domadmins:X:$gid_domadmins:
         }
 
 	$ret{SERVER_IP} = $server_ip;
+	$ret{SERVER_IPV6} = $server_ipv6;
 	$ret{NMBD_TEST_LOG} = "$prefix/nmbd_test.log";
 	$ret{NMBD_TEST_LOG_POS} = 0;
 	$ret{WINBINDD_TEST_LOG} = "$prefix/winbindd_test.log";
