@@ -536,7 +536,8 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
 
 	$ctx->{ipv4} = "127.0.0.$swiface";
-	$ctx->{interfaces} = "$ctx->{ipv4}/8";
+	$ctx->{ipv6} = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
+	$ctx->{interfaces} = "$ctx->{ipv4}/8 $ctx->{ipv6}/64";
 
 	push(@{$ctx->{directories}}, $ctx->{privatedir});
 	push(@{$ctx->{directories}}, $ctx->{etcdir});
@@ -702,8 +703,8 @@ $ctx->{unix_name}:x:$ctx->{unix_gid}:
 
 	my $hostname = lc($ctx->{hostname});
 	open(HOSTS, ">>$ctx->{nsswrap_hosts}");
-	print HOSTS "$ctx->{ipv4} ${hostname}.samba.example.com ${hostname}
-";
+	print HOSTS "$ctx->{ipv4} ${hostname}.samba.example.com ${hostname}\n";
+	print HOSTS "$ctx->{ipv6} ${hostname}.samba.example.com ${hostname}\n";
 	close(HOSTS);
 
 	my $configuration = "--configfile=$ctx->{smb_conf}";
@@ -725,6 +726,7 @@ $ctx->{unix_name}:x:$ctx->{unix_gid}:
 		PIDDIR => $ctx->{piddir},
 		SERVER => $ctx->{hostname},
 		SERVER_IP => $ctx->{ipv4},
+		SERVER_IPV6 => $ctx->{ipv6},
 		NETBIOSNAME => $ctx->{netbiosname},
 		DOMAIN => $ctx->{domain},
 		USERNAME => $ctx->{username},
@@ -973,12 +975,14 @@ rpc_server:tcpip = no
 
 	$ret->{MEMBER_SERVER} = $ret->{SERVER};
 	$ret->{MEMBER_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{MEMBER_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{MEMBER_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{MEMBER_USERNAME} = $ret->{USERNAME};
 	$ret->{MEMBER_PASSWORD} = $ret->{PASSWORD};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1068,12 +1072,14 @@ sub provision_rpc_proxy($$$)
 
 	$ret->{RPC_PROXY_SERVER} = $ret->{SERVER};
 	$ret->{RPC_PROXY_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{RPC_PROXY_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{RPC_PROXY_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{RPC_PROXY_USERNAME} = $ret->{USERNAME};
 	$ret->{RPC_PROXY_PASSWORD} = $ret->{PASSWORD};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1144,10 +1150,12 @@ sub provision_promoted_dc($$$)
 
 	$ret->{PROMOTED_DC_SERVER} = $ret->{SERVER};
 	$ret->{PROMOTED_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{PROMOTED_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{PROMOTED_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1205,10 +1213,12 @@ sub provision_vampire_dc($$$)
 
 	$ret->{VAMPIRE_DC_SERVER} = $ret->{SERVER};
 	$ret->{VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{VAMPIRE_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1270,10 +1280,12 @@ sub provision_subdom_dc($$$)
 
 	$ret->{SUBDOM_DC_SERVER} = $ret->{SERVER};
 	$ret->{SUBDOM_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{SUBDOM_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{SUBDOM_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1305,6 +1317,7 @@ sub provision_dc($$)
 	$ret->{NETBIOSALIAS} = "localdc1-a";
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
@@ -1355,6 +1368,7 @@ sub provision_fl2003dc($$)
 
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
@@ -1477,10 +1491,12 @@ sub provision_rodc($$$)
 
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
 	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{RODC_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{RODC_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1597,6 +1613,7 @@ sub provision_plugin_s4_dc($$)
 
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
@@ -1639,6 +1656,7 @@ sub provision_chgdcpass($$)
 	    
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
