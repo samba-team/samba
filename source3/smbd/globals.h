@@ -222,6 +222,9 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 const char *smb2_opcode_name(uint16_t opcode);
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
+NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
+			     struct smbXsrv_connection **_xconn);
+
 void reply_smb2002(struct smb_request *req, uint16_t choice);
 void reply_smb20ff(struct smb_request *req, uint16_t choice);
 void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,

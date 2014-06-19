@@ -3556,6 +3556,208 @@ const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn)
 	return ret;
 }
 
+NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
+			     struct smbXsrv_connection **_xconn)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smbXsrv_connection *xconn;
+	struct sockaddr_storage ss_srv;
+	void *sp_srv = (void *)&ss_srv;
+	struct sockaddr *sa_srv = (struct sockaddr *)sp_srv;
+	struct sockaddr_storage ss_clnt;
+	void *sp_clnt = (void *)&ss_clnt;
+	struct sockaddr *sa_clnt = (struct sockaddr *)sp_clnt;
+	socklen_t sa_socklen;
+	struct tsocket_address *local_address = NULL;
+	struct tsocket_address *remote_address = NULL;
+	const char *remaddr = NULL;
+	char *p;
+	const char *rhost = NULL;
+	int ret;
+	int tmp;
+
+	*_xconn = NULL;
+
+	xconn = talloc_zero(client, struct smbXsrv_connection);
+	if (xconn == NULL) {
+		DEBUG(0,("talloc_zero(struct smbXsrv_connection)\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(frame, xconn);
+
+	xconn->ev_ctx = client->ev_ctx;
+	xconn->msg_ctx = client->msg_ctx;
+	xconn->transport.sock = sock_fd;
+	smbd_echo_init(xconn);
+	xconn->protocol = PROTOCOL_NONE;
+
+	/* Ensure child is set to blocking mode */
+	set_blocking(sock_fd,True);
+
+	set_socket_options(sock_fd, "SO_KEEPALIVE");
+	set_socket_options(sock_fd, lp_socket_options());
+
+	sa_socklen = sizeof(ss_clnt);
+	ret = getpeername(sock_fd, sa_clnt, &sa_socklen);
+	if (ret != 0) {
+		int saved_errno = errno;
+		int level = (errno == ENOTCONN)?2:0;
+		DEBUG(level,("getpeername() failed - %s\n",
+		      strerror(saved_errno)));
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+	ret = tsocket_address_bsd_from_sockaddr(xconn,
+						sa_clnt, sa_socklen,
+						&remote_address);
+	if (ret != 0) {
+		int saved_errno = errno;
+		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
+			__location__, strerror(saved_errno)));
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+
+	sa_socklen = sizeof(ss_srv);
+	ret = getsockname(sock_fd, sa_srv, &sa_socklen);
+	if (ret != 0) {
+		int saved_errno = errno;
+		int level = (errno == ENOTCONN)?2:0;
+		DEBUG(level,("getsockname() failed - %s\n",
+		      strerror(saved_errno)));
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+	ret = tsocket_address_bsd_from_sockaddr(xconn,
+						sa_srv, sa_socklen,
+						&local_address);
+	if (ret != 0) {
+		int saved_errno = errno;
+		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
+			__location__, strerror(saved_errno)));
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+
+	if (tsocket_address_is_inet(remote_address, "ip")) {
+		remaddr = tsocket_address_inet_addr_string(remote_address,
+							   talloc_tos());
+		if (remaddr == NULL) {
+			DEBUG(0,("%s: tsocket_address_inet_addr_string remote failed - %s\n",
+				 __location__, strerror(errno)));
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		remaddr = "0.0.0.0";
+	}
+
+	/*
+	 * Before the first packet, check the global hosts allow/ hosts deny
+	 * parameters before doing any parsing of packets passed to us by the
+	 * client. This prevents attacks on our parsing code from hosts not in
+	 * the hosts allow list.
+	 */
+
+	ret = get_remote_hostname(remote_address,
+				  &p, talloc_tos());
+	if (ret < 0) {
+		int saved_errno = errno;
+		DEBUG(0,("%s: get_remote_hostname failed - %s\n",
+			__location__, strerror(saved_errno)));
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+	rhost = p;
+	if (strequal(rhost, "UNKNOWN")) {
+		rhost = remaddr;
+	}
+
+	xconn->local_address = local_address;
+	xconn->remote_address = remote_address;
+	xconn->remote_hostname = talloc_strdup(xconn, rhost);
+	if (xconn->remote_hostname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!srv_init_signing(xconn)) {
+		DEBUG(0, ("Failed to init smb_signing\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (!allow_access(lp_hosts_deny(-1), lp_hosts_allow(-1),
+			  xconn->remote_hostname,
+			  remaddr)) {
+		DEBUG( 1, ("Connection denied from %s to %s\n",
+			   tsocket_address_string(remote_address, talloc_tos()),
+			   tsocket_address_string(local_address, talloc_tos())));
+
+		/*
+		 * We return a valid xconn
+		 * so that the caller can return an error message
+		 * to the client
+		 */
+		client->connections = xconn;
+		xconn->client = client;
+		talloc_steal(client, xconn);
+
+		*_xconn = xconn;
+		TALLOC_FREE(frame);
+		return NT_STATUS_NETWORK_ACCESS_DENIED;
+	}
+
+	DEBUG(10, ("Connection allowed from %s to %s\n",
+		   tsocket_address_string(remote_address, talloc_tos()),
+		   tsocket_address_string(local_address, talloc_tos())));
+
+	if (lp_clustering()) {
+		/*
+		 * We need to tell ctdb about our client's TCP
+		 * connection, so that for failover ctdbd can send
+		 * tickle acks, triggering a reconnection by the
+		 * client.
+		 */
+		NTSTATUS status;
+
+		status = smbd_register_ips(xconn, &ss_srv, &ss_clnt);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("ctdbd_register_ips failed: %s\n",
+				  nt_errstr(status)));
+		}
+	}
+
+	tmp = lp_max_xmit();
+	tmp = MAX(tmp, SMB_BUFFER_SIZE_MIN);
+	tmp = MIN(tmp, SMB_BUFFER_SIZE_MAX);
+
+	xconn->smb1.negprot.max_recv = tmp;
+
+	xconn->smb1.sessions.done_sesssetup = false;
+	xconn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;
+
+	xconn->transport.fde = tevent_add_fd(client->ev_ctx,
+					     xconn,
+					     sock_fd,
+					     TEVENT_FD_READ,
+					     smbd_server_connection_handler,
+					     xconn);
+	if (!xconn->transport.fde) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* for now we only have one connection */
+	DLIST_ADD_END(client->connections, xconn, NULL);
+	xconn->client = client;
+	talloc_steal(client, xconn);
+
+	*_xconn = xconn;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -3568,23 +3770,13 @@ void smbd_process(struct tevent_context *ev_ctx,
 	struct smbd_tevent_trace_state trace_state = {
 		.frame = talloc_stackframe(),
 	};
-	struct smbXsrv_client *client;
-	struct smbXsrv_connection *xconn;
-	struct smbd_server_connection *sconn;
-	struct sockaddr_storage ss_srv;
-	void *sp_srv = (void *)&ss_srv;
-	struct sockaddr *sa_srv = (struct sockaddr *)sp_srv;
-	struct sockaddr_storage ss_clnt;
-	void *sp_clnt = (void *)&ss_clnt;
-	struct sockaddr *sa_clnt = (struct sockaddr *)sp_clnt;
-	socklen_t sa_socklen;
-	struct tsocket_address *local_address = NULL;
-	struct tsocket_address *remote_address = NULL;
+	struct smbXsrv_client *client = NULL;
+	struct smbd_server_connection *sconn = NULL;
+	struct smbXsrv_connection *xconn = NULL;
 	const char *locaddr = NULL;
 	const char *remaddr = NULL;
-	char *rhost;
 	int ret;
-	int tmp;
+	NTSTATUS status;
 
 	client = talloc_zero(ev_ctx, struct smbXsrv_client);
 	if (client == NULL) {
@@ -3611,19 +3803,16 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
 
-	xconn = talloc_zero(client, struct smbXsrv_connection);
-	if (xconn == NULL) {
-		DEBUG(0,("talloc_zero(struct smbXsrv_connection)\n"));
-		exit_server_cleanly("talloc_zero(struct smbXsrv_connection).\n");
+	if (lp_server_max_protocol() >= PROTOCOL_SMB2_02) {
+		/*
+		 * We're not making the decision here,
+		 * we're just allowing the client
+		 * to decide between SMB1 and SMB2
+		 * with the first negprot
+		 * packet.
+		 */
+		sconn->using_smb2 = true;
 	}
-	/* for now we only have one connection */
-	DLIST_ADD_END(client->connections, xconn, NULL);
-	xconn->client = client;
-
-	xconn->ev_ctx = ev_ctx;
-	xconn->msg_ctx = msg_ctx;
-	xconn->transport.sock = sock_fd;
-	smbd_echo_init(xconn);
 
 	if (!interactive) {
 		smbd_setup_sig_term_handler(sconn);
@@ -3638,72 +3827,50 @@ void smbd_process(struct tevent_context *ev_ctx,
 		}
 	}
 
-	if (lp_server_max_protocol() >= PROTOCOL_SMB2_02) {
+	status = smbd_add_connection(client, sock_fd, &xconn);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		/*
-		 * We're not making the decision here,
-		 * we're just allowing the client
-		 * to decide between SMB1 and SMB2
-		 * with the first negprot
-		 * packet.
+		 * send a negative session response "not listening on calling
+		 * name"
 		 */
-		sconn->using_smb2 = true;
+		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+		(void)srv_send_smb(xconn,(char *)buf, false,
+				   0, false, NULL);
+		exit_server_cleanly("connection denied");
+	} else if (!NT_STATUS_IS_OK(status)) {
+		exit_server_cleanly(nt_errstr(status));
 	}
 
-	/* Ensure child is set to blocking mode */
-	set_blocking(sock_fd,True);
-
-	set_socket_options(sock_fd, "SO_KEEPALIVE");
-	set_socket_options(sock_fd, lp_socket_options());
-
-	sa_socklen = sizeof(ss_clnt);
-	ret = getpeername(sock_fd, sa_clnt, &sa_socklen);
-	if (ret != 0) {
-		int level = (errno == ENOTCONN)?2:0;
-		DEBUG(level,("getpeername() failed - %s\n", strerror(errno)));
-		exit_server_cleanly("getpeername() failed.\n");
+	sconn->local_address =
+		tsocket_address_copy(xconn->local_address, sconn);
+	if (sconn->local_address == NULL) {
+		exit_server_cleanly("tsocket_address_copy() failed");
 	}
-	ret = tsocket_address_bsd_from_sockaddr(sconn,
-						sa_clnt, sa_socklen,
-						&remote_address);
-	if (ret != 0) {
-		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
-			__location__, strerror(errno)));
-		exit_server_cleanly("tsocket_address_bsd_from_sockaddr remote failed.\n");
+	sconn->remote_address =
+		tsocket_address_copy(xconn->remote_address, sconn);
+	if (sconn->remote_address == NULL) {
+		exit_server_cleanly("tsocket_address_copy() failed");
+	}
+	sconn->remote_hostname =
+		talloc_strdup(sconn, xconn->remote_hostname);
+	if (sconn->remote_hostname == NULL) {
+		exit_server_cleanly("tsocket_strdup() failed");
 	}
 
-	sa_socklen = sizeof(ss_srv);
-	ret = getsockname(sock_fd, sa_srv, &sa_socklen);
-	if (ret != 0) {
-		int level = (errno == ENOTCONN)?2:0;
-		DEBUG(level,("getsockname() failed - %s\n", strerror(errno)));
-		exit_server_cleanly("getsockname() failed.\n");
-	}
-	ret = tsocket_address_bsd_from_sockaddr(sconn,
-						sa_srv, sa_socklen,
-						&local_address);
-	if (ret != 0) {
-		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
-			__location__, strerror(errno)));
-		exit_server_cleanly("tsocket_address_bsd_from_sockaddr remote failed.\n");
-	}
-
-	sconn->local_address = local_address;
-	sconn->remote_address = remote_address;
-
-	if (tsocket_address_is_inet(local_address, "ip")) {
+	if (tsocket_address_is_inet(sconn->local_address, "ip")) {
 		locaddr = tsocket_address_inet_addr_string(
 				sconn->local_address,
 				talloc_tos());
 		if (locaddr == NULL) {
-			DEBUG(0,("%s: tsocket_address_inet_addr_string local failed - %s\n",
+			DEBUG(0,("%s: tsocket_address_inet_addr_string remote failed - %s\n",
 				 __location__, strerror(errno)));
-			exit_server_cleanly("tsocket_address_inet_addr_string local failed.\n");
+			exit_server_cleanly("tsocket_address_inet_addr_string remote failed.\n");
 		}
 	} else {
 		locaddr = "0.0.0.0";
 	}
 
-	if (tsocket_address_is_inet(remote_address, "ip")) {
+	if (tsocket_address_is_inet(sconn->remote_address, "ip")) {
 		remaddr = tsocket_address_inet_addr_string(
 				sconn->remote_address,
 				talloc_tos());
@@ -3720,50 +3887,9 @@ void smbd_process(struct tevent_context *ev_ctx,
 	   in smbstatus for port 445 connects */
 	set_remote_machine_name(remaddr, false);
 	reload_services(sconn, conn_snum_used, true);
-
-	/*
-	 * Before the first packet, check the global hosts allow/ hosts deny
-	 * parameters before doing any parsing of packets passed to us by the
-	 * client. This prevents attacks on our parsing code from hosts not in
-	 * the hosts allow list.
-	 */
-
-	ret = get_remote_hostname(remote_address,
-				  &rhost,
-				  talloc_tos());
-	if (ret < 0) {
-		DEBUG(0,("%s: get_remote_hostname failed - %s\n",
-			__location__, strerror(errno)));
-		exit_server_cleanly("get_remote_hostname failed.\n");
-	}
-	if (strequal(rhost, "UNKNOWN")) {
-		rhost = talloc_strdup(talloc_tos(), remaddr);
-	}
-	sconn->remote_hostname = talloc_move(sconn, &rhost);
-
 	sub_set_socket_ids(remaddr,
 			   sconn->remote_hostname,
 			   locaddr);
-
-	if (!allow_access(lp_hosts_deny(-1), lp_hosts_allow(-1),
-			  sconn->remote_hostname,
-			  remaddr)) {
-		/*
-		 * send a negative session response "not listening on calling
-		 * name"
-		 */
-		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-		DEBUG( 1, ("Connection denied from %s to %s\n",
-			   tsocket_address_string(remote_address, talloc_tos()),
-			   tsocket_address_string(local_address, talloc_tos())));
-		(void)srv_send_smb(xconn,(char *)buf, false,
-				   0, false, NULL);
-		exit_server_cleanly("connection denied");
-	}
-
-	DEBUG(10, ("Connection allowed from %s to %s\n",
-		   tsocket_address_string(remote_address, talloc_tos()),
-		   tsocket_address_string(local_address, talloc_tos())));
 
 	if (lp_preload_modules()) {
 		smb_load_modules(lp_preload_modules());
@@ -3786,10 +3912,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 			exit_server("Failed to chroot()");
 		}
 		DEBUG(0,("Changed root to %s\n", lp_root_directory(talloc_tos())));
-	}
-
-	if (!srv_init_signing(xconn)) {
-		exit_server("Failed to init smb_signing");
 	}
 
 	if (!file_init(sconn)) {
@@ -3858,49 +3980,9 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	if (lp_clustering()) {
-		/*
-		 * We need to tell ctdb about our client's TCP
-		 * connection, so that for failover ctdbd can send
-		 * tickle acks, triggering a reconnection by the
-		 * client.
-		 */
-		NTSTATUS status;
-
-		status = smbd_register_ips(xconn, &ss_srv, &ss_clnt);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("ctdbd_register_ips failed: %s\n",
-				  nt_errstr(status)));
-		}
-	}
-
-	tmp = lp_max_xmit();
-	tmp = MAX(tmp, SMB_BUFFER_SIZE_MIN);
-	tmp = MIN(tmp, SMB_BUFFER_SIZE_MAX);
-
-	xconn->smb1.negprot.max_recv = tmp;
-
-	xconn->smb1.sessions.done_sesssetup = false;
-	xconn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;
-
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");
 	}
-
-	xconn->transport.fde = tevent_add_fd(ev_ctx,
-					     xconn,
-					     sock_fd,
-					     TEVENT_FD_READ,
-					     smbd_server_connection_handler,
-					     xconn);
-	if (!xconn->transport.fde) {
-		exit_server("failed to create smbd_server_connection fde");
-	}
-
-	xconn->local_address = sconn->local_address;
-	xconn->remote_address = sconn->remote_address;
-	xconn->remote_hostname = sconn->remote_hostname;
-	xconn->protocol = PROTOCOL_NONE;
 
 	TALLOC_FREE(trace_state.frame);
 
