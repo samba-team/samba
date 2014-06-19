@@ -89,6 +89,7 @@ The environments are currently available include
      * REALM: Realm name
      * SERVER: DC host name 
      * SERVER_IP: DC IPv4 address
+     * SERVER_IPV6: DC IPv6 address
      * NETBIOSNAME: DC NetBIOS name
      * NETIOSALIAS: DC NetBIOS alias
 
