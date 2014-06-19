@@ -131,6 +131,8 @@ NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char 
  Set the signing state (used from the command line).
 ****************************************************************************/
 
+struct GUID cli_state_client_guid;
+
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
 				   const char *remote_name,
@@ -144,7 +146,13 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	bool use_level_II_oplocks = false;
 	uint32_t smb1_capabilities = 0;
 	uint32_t smb2_capabilities = 0;
-	struct GUID client_guid = GUID_random();
+	struct GUID client_guid;
+
+	if (!GUID_all_zero(&cli_state_client_guid)) {
+		client_guid = cli_state_client_guid;
+	} else {
+		client_guid = GUID_random();
+	}
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
