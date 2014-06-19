@@ -9596,6 +9596,7 @@ static struct {
 	{ "CLEANUP2", run_cleanup2 },
 	{ "CLEANUP3", run_cleanup3 },
 	{ "CLEANUP4", run_cleanup4 },
+	{ "OPLOCK-CANCEL", run_oplock_cancel },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},

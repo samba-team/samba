@@ -116,5 +116,6 @@ bool run_bench_pthreadpool(int dummy);
 bool run_messaging_read1(int dummy);
 bool run_messaging_read2(int dummy);
 bool run_messaging_read3(int dummy);
+bool run_oplock_cancel(int dummy);
 
 #endif /* __TORTURE_H__ */
