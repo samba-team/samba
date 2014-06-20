@@ -723,6 +723,29 @@ static bool test_fsrvp_enum_created(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_fsrvp_seq_timeout(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	int i;
+	struct fssagent_share_mapping_1 *sc_map;
+	char *share_unc = talloc_asprintf(tctx, "\\\\%s\\%s",
+					  dcerpc_server_name(p), FSHARE);
+
+	for (i = TEST_FSRVP_TOUT_NONE; i <= TEST_FSRVP_TOUT_COMMIT; i++) {
+		torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc,
+							  i, &sc_map),
+			       "sc create");
+
+		/* only need to delete if create process didn't timeout */
+		if (i == TEST_FSRVP_TOUT_NONE) {
+			torture_assert(tctx, test_fsrvp_sc_delete(tctx, p, sc_map),
+				       "sc del");
+		}
+	}
+
+	return true;
+}
+
 static bool fsrvp_rpc_setup(struct torture_context *tctx, void **data)
 {
 	NTSTATUS status;
@@ -759,6 +782,8 @@ struct torture_suite *torture_rpc_fsrvp(TALLOC_CTX *mem_ctx)
 	/* override torture_rpc_setup() to set DCERPC_NDR_REF_ALLOC */
 	tcase->tcase.setup = fsrvp_rpc_setup;
 
+	torture_rpc_tcase_add_test(tcase, "seq_timeout",
+				   test_fsrvp_seq_timeout);
 	torture_rpc_tcase_add_test(tcase, "enum_created",
 				   test_fsrvp_enum_created);
 	torture_rpc_tcase_add_test(tcase, "sc_share_io",
