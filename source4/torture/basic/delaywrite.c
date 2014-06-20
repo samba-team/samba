@@ -79,7 +79,7 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	}
 
 	start = timeval_current();
-	end = timeval_add(&start, (120*sec), 0);
+	end = timeval_add(&start, (120 * sec), 0);
 	while (!timeval_expired(&end)) {
 		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
@@ -185,7 +185,7 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 	}
 
 	start = timeval_current();
-	end = timeval_add(&start, (120*sec), 0);
+	end = timeval_add(&start, (120 * sec), 0);
 	while (!timeval_expired(&end)) {
 		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
