@@ -1792,33 +1792,33 @@ NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 	return status;
 }
 
-struct cli_ntcreate_state {
+struct cli_ntcreate1_state {
 	uint16_t vwv[24];
 	uint16_t fnum;
 	struct smb_create_returns cr;
 };
 
-static void cli_ntcreate_done(struct tevent_req *subreq);
+static void cli_ntcreate1_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     struct cli_state *cli,
-				     const char *fname,
-				     uint32_t CreatFlags,
-				     uint32_t DesiredAccess,
-				     uint32_t FileAttributes,
-				     uint32_t ShareAccess,
-				     uint32_t CreateDisposition,
-				     uint32_t CreateOptions,
-				     uint8_t SecurityFlags)
+static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct cli_state *cli,
+					     const char *fname,
+					     uint32_t CreatFlags,
+					     uint32_t DesiredAccess,
+					     uint32_t FileAttributes,
+					     uint32_t ShareAccess,
+					     uint32_t CreateDisposition,
+					     uint32_t CreateOptions,
+					     uint8_t SecurityFlags)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_ntcreate_state *state;
+	struct cli_ntcreate1_state *state;
 	uint16_t *vwv;
 	uint8_t *bytes;
 	size_t converted_len;
 
-	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate_state);
+	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate1_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -1865,16 +1865,16 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_ntcreate_done, req);
+	tevent_req_set_callback(subreq, cli_ntcreate1_done, req);
 	return req;
 }
 
-static void cli_ntcreate_done(struct tevent_req *subreq)
+static void cli_ntcreate1_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_ntcreate_state *state = tevent_req_data(
-		req, struct cli_ntcreate_state);
+	struct cli_ntcreate1_state *state = tevent_req_data(
+		req, struct cli_ntcreate1_state);
 	uint8_t wct;
 	uint16_t *vwv;
 	uint32_t num_bytes;
@@ -1901,12 +1901,12 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
-		uint16_t *pfnum,
-		struct smb_create_returns *cr)
+static NTSTATUS cli_ntcreate1_recv(struct tevent_req *req,
+				   uint16_t *pfnum,
+				   struct smb_create_returns *cr)
 {
-	struct cli_ntcreate_state *state = tevent_req_data(
-		req, struct cli_ntcreate_state);
+	struct cli_ntcreate1_state *state = tevent_req_data(
+		req, struct cli_ntcreate1_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1919,31 +1919,31 @@ NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-struct cli_create_state {
+struct cli_ntcreate_state {
 	NTSTATUS (*recv)(struct tevent_req *req, uint16_t *fnum,
 			 struct smb_create_returns *cr);
 	struct smb_create_returns cr;
 	uint16_t fnum;
 };
 
-static void cli_create_done(struct tevent_req *subreq);
+static void cli_ntcreate_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_create_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   struct cli_state *cli,
-				   const char *fname,
-				   uint32_t create_flags,
-				   uint32_t desired_access,
-				   uint32_t file_attributes,
-				   uint32_t share_access,
-				   uint32_t create_disposition,
-				   uint32_t create_options,
-				   uint8_t security_flags)
+struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct cli_state *cli,
+				     const char *fname,
+				     uint32_t create_flags,
+				     uint32_t desired_access,
+				     uint32_t file_attributes,
+				     uint32_t share_access,
+				     uint32_t create_disposition,
+				     uint32_t create_options,
+				     uint8_t security_flags)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_create_state *state;
+	struct cli_ntcreate_state *state;
 
-	req = tevent_req_create(mem_ctx, &state, struct cli_create_state);
+	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -1955,8 +1955,8 @@ struct tevent_req *cli_create_send(TALLOC_CTX *mem_ctx,
 			file_attributes, share_access, create_disposition,
 			create_options);
 	} else {
-		state->recv = cli_ntcreate_recv;
-		subreq = cli_ntcreate_send(
+		state->recv = cli_ntcreate1_recv;
+		subreq = cli_ntcreate1_send(
 			state, ev, cli, fname, create_flags, desired_access,
 			file_attributes, share_access, create_disposition,
 			create_options, security_flags);
@@ -1964,16 +1964,16 @@ struct tevent_req *cli_create_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_create_done, req);
+	tevent_req_set_callback(subreq, cli_ntcreate_done, req);
 	return req;
 }
 
-static void cli_create_done(struct tevent_req *subreq)
+static void cli_ntcreate_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_create_state *state = tevent_req_data(
-		req, struct cli_create_state);
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
 	NTSTATUS status;
 
 	status = state->recv(subreq, &state->fnum, &state->cr);
@@ -1984,11 +1984,11 @@ static void cli_create_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_create_recv(struct tevent_req *req, uint16_t *fnum,
-			 struct smb_create_returns *cr)
+NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *fnum,
+			   struct smb_create_returns *cr)
 {
-	struct cli_create_state *state = tevent_req_data(
-		req, struct cli_create_state);
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
