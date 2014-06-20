@@ -2015,12 +2015,10 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint16_t *pfid,
 		      struct smb_create_returns *cr)
 {
-	TALLOC_CTX *frame = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
-
-	frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -2032,7 +2030,6 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
@@ -2041,12 +2038,10 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 				CreateDisposition, CreateOptions,
 				SecurityFlags);
 	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
