@@ -1580,11 +1580,6 @@ static void defer_open(struct share_mode_lock *lck,
 
 	*open_rec = *state;
 
-	if (!push_deferred_open_message_smb(req, request_time, timeout,
-					    state->id, open_rec)) {
-		TALLOC_FREE(lck);
-		exit_server("push_deferred_open_message_smb failed");
-	}
 	if (lck) {
 		struct defer_open_state *watch_state;
 		struct tevent_req *watch_req;
@@ -1613,6 +1608,12 @@ static void defer_open(struct share_mode_lock *lck,
 			watch_req, req->sconn->ev_ctx,
 			timeval_sum(&request_time, &timeout));
 		SMB_ASSERT(ret);
+	}
+
+	if (!push_deferred_open_message_smb(req, request_time, timeout,
+					    state->id, open_rec)) {
+		TALLOC_FREE(lck);
+		exit_server("push_deferred_open_message_smb failed");
 	}
 }
 
