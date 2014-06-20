@@ -2716,6 +2716,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		/* release the recmaster lock */
 		if (em->pnn != ctdb->pnn &&
 		    ctdb->recovery_lock_fd != -1) {
+			DEBUG(DEBUG_NOTICE, ("Release the recovery lock\n"));
 			close(ctdb->recovery_lock_fd);
 			ctdb->recovery_lock_fd = -1;
 			unban_all_nodes(ctdb);
