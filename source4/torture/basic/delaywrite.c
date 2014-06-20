@@ -212,11 +212,11 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		       nt_time_string(tctx, finfo2.all_info.out.write_time));
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff > (0.25 * sec)) {
+			if (diff > (0.25 * (used_delay / (double)1000000))) {
 				torture_result(tctx, TORTURE_FAIL, "After SMBwrite truncate "
 					"server updated write_time after %.2f seconds"
-					"(1 sec == %.2f)(wrong!)\n",
-					diff, sec);
+					"(write time update dealy == %.2f)(wrong!)\n",
+					       diff, used_delay / (double)1000000);
 				ret = false;
 				break;
 			}
@@ -224,7 +224,7 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 			torture_comment(tctx, "After SMBwrite truncate "
 					"server updated write_time after %.2f seconds"
 					"(1 sec == %.2f)(correct)\n",
-					diff, sec);
+					diff, used_delay / (double)1000000);
 			break;
 		}
 		fflush(stdout);
@@ -397,19 +397,19 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 		       nt_time_string(tctx, finfo2.all_info.out.write_time));
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff > (0.25 * sec)) {
+			if (diff > (0.25 * (used_delay / (double)1000000))) {
 				torture_result(tctx, TORTURE_FAIL, "After SMBwrite truncate "
 					"server updated write_time after %.2f seconds"
-					"(1 sec == %.2f)(wrong!)\n",
-					diff, sec);
+					"(write time update delay == %.2f)(wrong!)\n",
+					diff, used_delay / (double)1000000);
 				ret = false;
 				break;
 			}
 
 			torture_comment(tctx, "After SMBwrite truncate "
 					"server updated write_time after %.2f seconds"
-					"(1 sec == %.2f)(correct)\n",
-					diff, sec);
+					"(write time update delay == %.2f)(correct)\n",
+					diff, used_delay / (double)1000000);
 			break;
 		}
 		fflush(stdout);
@@ -572,20 +572,20 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 		       nt_time_string(tctx, finfo2.all_info.out.write_time));
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff > (0.25 * sec)) {
+			if (diff > (0.25 * (used_delay / (double)1000000))) {
 				torture_result(tctx, TORTURE_FAIL, 
 					"After SET_END_OF_FILE truncate "
 					"server updated write_time after %.2f seconds"
-					"(1 sec == %.2f)(wrong!)",
-					diff, sec);
+					"(write time update delay == %.2f)(wrong!)",
+					diff, used_delay / (double)1000000);
 				ret = false;
 				break;
 			}
 
 			torture_comment(tctx, "After SET_END_OF_FILE truncate "
 					"server updated write_time after %.2f seconds"
-					"(1 sec == %.2f)(correct)\n",
-					diff, sec);
+					"(write time update delay == %.2f)(correct)\n",
+					diff, used_delay / (double)1000000);
 			break;
 		}
 		fflush(stdout);
@@ -751,19 +751,19 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 		       nt_time_string(tctx, finfo2.all_info.out.write_time));
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff > (0.25 * sec)) {
+			if (diff > (0.25 * (used_delay / (double)1000000))) {
 				torture_result(tctx, TORTURE_FAIL, "After SET_ALLOCATION_INFO truncate "
 					"server updated write_time after %.2f seconds"
-					"(1 sec == %.2f)(wrong!)\n",
-					diff, sec);
+					"(write time update delay == %.2f)(wrong!)\n",
+					diff, used_delay / (double)1000000);
 				ret = false;
 				break;
 			}
 
 			torture_comment(tctx, "After SET_ALLOCATION_INFO truncate "
 					"server updated write_time after %.2f seconds"
-					"(1 sec == %.2f)(correct)\n",
-					diff, sec);
+					"(write time update delay == %.2f)(correct)\n",
+					diff, used_delay / (double)1000000);
 			break;
 		}
 		fflush(stdout);
