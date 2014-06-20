@@ -59,8 +59,7 @@ tasks = {
                      ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
                      # build and install ctdb:
-                     ("ctdb-autogen", "cd ./ctdb && ./autogen.sh", "text/plain"),
-                     ("ctdb-configure", "cd ./ctdb && CFLAGS=-I${PREFIX_DIR}/include LDFLAGS=-L${PREFIX_DIR}/lib ./configure ${PREFIX} --enable-socket-wrapper --with-included-tdb=no", "text/plain"),
+                     ("ctdb-configure", "cd ./ctdb && PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure ${PREFIX} --bundled-libraries=!tdb", "text/plain"),
                      ("ctdb-make", "cd ./ctdb && make all", "text/plain"),
                      ("ctdb-install", "cd ./ctdb && make install", "text/plain"),
                      ("ctdb-header-ls", "ls ${PREFIX_DIR}/include/ctdb.h", "text/plain"),
