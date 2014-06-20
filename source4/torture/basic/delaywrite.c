@@ -92,7 +92,7 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < used_delay) {
+			if (diff < (used_delay / (double)1000000)) {
 				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
 						"(expected > %.2f) (wrong!)\n",
 						diff, used_delay / (double)1000000);
@@ -1157,7 +1157,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < used_delay) {
+			if (diff < (used_delay / (double)1000000)) {
 				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
 						"(expected > %.2f) (wrong!)\n",
 						diff, used_delay / (double)1000000);
@@ -1538,7 +1538,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (used_delay)) {
+			if (diff < (used_delay / (double)1000000)) {
 				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 						"(write time update delay == %.2f) (wrong!)\n",
 						diff, used_delay / (double)1000000);
@@ -1700,7 +1700,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (used_delay)) {
+			if (diff < (used_delay / (double)1000000)) {
 				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
@@ -1911,7 +1911,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < used_delay) {
+			if (diff < (used_delay / (double)1000000)) {
 				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
 						"(expected > %.2f) (wrong!)\n",
 						diff, used_delay / (double)1000000);
@@ -2280,7 +2280,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < used_delay) {
+			if (diff < (used_delay / (double)1000000)) {
 				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
 						"(expected > %.2f) (wrong!)\n",
 						diff, used_delay / (double)1000000);
