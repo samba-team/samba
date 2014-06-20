@@ -12,7 +12,7 @@ import os, sys
 # find the buildtools directory
 srcdir = '.'
 while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
-    srcdir = '../' + srcdir
+    srcdir = srcdir + '/..'
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import sys
