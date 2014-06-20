@@ -46,7 +46,9 @@ enum debug_level {
 #define _PURE_
 #endif /* _PURE_ */
 
+#ifndef ZERO_STRUCT
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+#endif /* ZERO_STRUCT */
 
 #ifndef discard_const
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
