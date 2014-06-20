@@ -47,7 +47,7 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -138,7 +138,7 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -327,7 +327,7 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -507,7 +507,7 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -680,7 +680,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -860,7 +860,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -1218,7 +1218,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	int fnum2;
 	bool ret = true;
 	ssize_t written;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -1490,7 +1490,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -1642,7 +1642,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 	int i;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -1853,7 +1853,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -2017,7 +2017,7 @@ static bool test_delayed_write_update3c(struct torture_context *tctx,
 	int i;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -2225,7 +2225,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -2382,7 +2382,7 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -2542,7 +2542,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -2707,7 +2707,7 @@ static bool test_delayed_write_update6(struct torture_context *tctx,
 	ssize_t written;
 	struct timeval start;
 	struct timeval end;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
@@ -3071,7 +3071,7 @@ static bool test_directory_update8(struct torture_context *tctx, struct smbcli_s
 	int fnum1 = -1;
 	int fnum2 = -1;
 	bool ret = true;
-	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
