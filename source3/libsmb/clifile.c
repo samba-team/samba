@@ -1919,6 +1919,90 @@ NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+struct cli_create_state {
+	NTSTATUS (*recv)(struct tevent_req *req, uint16_t *fnum,
+			 struct smb_create_returns *cr);
+	struct smb_create_returns cr;
+	uint16_t fnum;
+};
+
+static void cli_create_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_create_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct cli_state *cli,
+				   const char *fname,
+				   uint32_t create_flags,
+				   uint32_t desired_access,
+				   uint32_t file_attributes,
+				   uint32_t share_access,
+				   uint32_t create_disposition,
+				   uint32_t create_options,
+				   uint8_t security_flags)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_create_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_create_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		state->recv = cli_smb2_create_fnum_recv;
+		subreq = cli_smb2_create_fnum_send(
+			state, ev, cli, fname, create_flags, desired_access,
+			file_attributes, share_access, create_disposition,
+			create_options);
+	} else {
+		state->recv = cli_ntcreate_recv;
+		subreq = cli_ntcreate_send(
+			state, ev, cli, fname, create_flags, desired_access,
+			file_attributes, share_access, create_disposition,
+			create_options, security_flags);
+	}
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_create_done, req);
+	return req;
+}
+
+static void cli_create_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_create_state *state = tevent_req_data(
+		req, struct cli_create_state);
+	NTSTATUS status;
+
+	status = state->recv(subreq, &state->fnum, &state->cr);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_create_recv(struct tevent_req *req, uint16_t *fnum,
+			 struct smb_create_returns *cr)
+{
+	struct cli_create_state *state = tevent_req_data(
+		req, struct cli_create_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (fnum != NULL) {
+		*fnum = state->fnum;
+	}
+	if (cr != NULL) {
+		*cr = state->cr;
+	}
+	return NT_STATUS_OK;
+}
+
 NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      const char *fname,
 		      uint32_t CreatFlags,
