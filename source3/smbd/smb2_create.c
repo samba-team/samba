@@ -1272,7 +1272,14 @@ bool schedule_deferred_open_message_smb2(
 		DEBUG(10,("schedule_deferred_open_message_smb2: "
 			"can't find mid %llu\n",
 			(unsigned long long)mid ));
-		return false;
+
+		/*
+		 * Bug 10593: We have to ignore this as an error because the
+		 * request might have been cancelled. The real fix is to
+		 * discard the defer_open dbwrap_watcher at cancel
+		 * time. Working on that.... :-)
+		 */
+		return true;
 	}
 	if (!smb2req->subreq) {
 		return false;
