@@ -551,6 +551,16 @@ static bool test_fsrvp_enum_snaps(struct torture_context *tctx,
 
 	*_count = IVAL(io.out.out.data, 0);
 
+	/* with max_response_size=16, no labels should be sent */
+	torture_assert_int_equal(tctx, IVAL(io.out.out.data, 4), 0,
+				 "enum snaps labels");
+
+	/* TODO with 0 snaps, needed_data_count should be 0? */
+	if (*_count != 0) {
+		torture_assert(tctx, IVAL(io.out.out.data, 8) != 0,
+			       "enum snaps needed non-zero");
+	}
+
 	return true;
 }
 
