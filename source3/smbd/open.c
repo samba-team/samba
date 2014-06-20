@@ -1585,7 +1585,7 @@ static void defer_open(struct share_mode_lock *lck,
 		struct tevent_req *watch_req;
 		bool ret;
 
-		watch_state = talloc(req->sconn, struct defer_open_state);
+		watch_state = talloc(open_rec, struct defer_open_state);
 		if (watch_state == NULL) {
 			exit_server("talloc failed");
 		}
