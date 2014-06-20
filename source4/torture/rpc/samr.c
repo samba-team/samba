@@ -250,28 +250,13 @@ static bool test_SetUserInfo(struct dcerpc_binding_handle *b, struct torture_con
 		}
 
 #define STRING_EQUAL(s1, s2, field) \
-		if ((s1 && !s2) || (s2 && !s1) || strcmp(s1, s2)) { \
-			torture_result(tctx, TORTURE_FAIL, "Failed to set %s to '%s' (%s)\n", \
-			       #field, s2, __location__); \
-			ret = false; \
-			break; \
-		}
+	torture_assert_str_equal(tctx, s1, s2, "Failed to set " #field)
 
 #define MEM_EQUAL(s1, s2, length, field) \
-		if ((s1 && !s2) || (s2 && !s1) || memcmp(s1, s2, length)) { \
-			torture_result(tctx, TORTURE_FAIL, "Failed to set %s to '%s' (%s)\n", \
-			       #field, (const char *)s2, __location__); \
-			ret = false; \
-			break; \
-		}
+	torture_assert_mem_equal(tctx, s1, s2, length, "Failed to set " #field)
 
 #define INT_EQUAL(i1, i2, field) \
-		if (i1 != i2) { \
-			torture_result(tctx, TORTURE_FAIL, "Failed to set %s to 0x%llx - got 0x%llx (%s)\n", \
-			       #field, (unsigned long long)i2, (unsigned long long)i1, __location__); \
-			ret = false; \
-			break; \
-		}
+	torture_assert_int_equal(tctx, i1, i2, "Failed to set " #field)
 
 #define TEST_USERINFO_STRING(lvl1, field1, lvl2, field2, value, fpval) do { \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
