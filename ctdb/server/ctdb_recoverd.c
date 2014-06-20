@@ -1168,7 +1168,7 @@ static void ctdb_election_timeout(struct event_context *ev, struct timed_event *
 	rec->election_timeout = NULL;
 	fast_start = false;
 
-	DEBUG(DEBUG_WARNING,(__location__ " Election timed out\n"));
+	DEBUG(DEBUG_WARNING,("Election period ended\n"));
 }
 
 
