@@ -1950,6 +1950,11 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		state->recv = cli_smb2_create_fnum_recv;
+
+		if (cli->use_oplocks) {
+			create_flags |= REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK;
+		}
+
 		subreq = cli_smb2_create_fnum_send(
 			state, ev, cli, fname, create_flags, desired_access,
 			file_attributes, share_access, create_disposition,
