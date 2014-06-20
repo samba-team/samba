@@ -25,6 +25,18 @@ struct smbXcli_session;
 struct cli_state;
 struct file_info;
 
+struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct cli_state *cli,
+					     const char *fname,
+					     uint32_t create_flags,
+					     uint32_t desired_access,
+					     uint32_t file_attributes,
+					     uint32_t share_access,
+					     uint32_t create_disposition,
+					     uint32_t create_options);
+NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
+				   struct smb_create_returns *cr);
 NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 			const char *fname,
 			uint32_t create_flags,
