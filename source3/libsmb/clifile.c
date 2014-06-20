@@ -2020,19 +2020,6 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_create_fnum(cli,
-					fname,
-					CreatFlags,
-					DesiredAccess,
-					FileAttributes,
-					ShareAccess,
-					CreateDisposition,
-					CreateOptions,
-					pfid,
-					cr);
-	}
-
 	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
