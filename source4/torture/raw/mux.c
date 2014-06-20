@@ -95,8 +95,8 @@ static bool test_mux_open(struct torture_context *tctx, struct smbcli_state *cli
 
 	d = timeval_elapsed(&tv);
 	if (d > 0.25) {
-		printf("bad timeout after cancel - %.2f should be <0.25\n", d);
-		ret = false;
+		torture_comment(tctx, "bad timeout after cancel - %.2f should be <0.25\n", d);
+		torture_assert(tctx, d <= 0.25, "bad timeout after cancel");
 	}
 
 	printf("close the 2nd sync open\n");
@@ -108,8 +108,8 @@ static bool test_mux_open(struct torture_context *tctx, struct smbcli_state *cli
 
 	d = timeval_elapsed(&tv);
 	if (d > 0.25) {
-		printf("bad timeout for async conflict - %.2f should be <0.25\n", d);
-		ret = false;
+		torture_comment(tctx, "bad timeout for async conflict - %.2f should be <0.25\n", d);
+		torture_assert(tctx, d <= 0.25, "bad timeout for async conflict");
 	} else {
 		printf("async open delay %.2f\n", d);
 	}
@@ -144,18 +144,17 @@ static bool test_mux_write(struct torture_context *tctx, struct smbcli_state *cl
 
 	fnum = smbcli_open(cli->tree, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("open failed in mux_write - %s\n", smbcli_errstr(cli->tree));
-		ret = false;
-		goto done;
+		torture_comment(tctx, "open failed in mux_write - %s\n", smbcli_errstr(cli->tree));
+		torture_assert(tctx, fnum != -1, "open failed in mux_write");
 	}
 
 	cli->session->pid = 1;
 
+	status = smbcli_lock(cli->tree, fnum, 0, 4, 0, WRITE_LOCK);
+
 	/* lock a range */
-	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 0, 4, 0, WRITE_LOCK))) {
-		printf("lock failed in mux_write - %s\n", smbcli_errstr(cli->tree));
-		ret = false;
-		goto done;
+	if (NT_STATUS_IS_ERR(status)) {
+		torture_assert_ntstatus_ok(tctx, status, "lock failed in mux_write");
 	}
 
 	cli->session->pid = 2;
@@ -180,7 +179,6 @@ static bool test_mux_write(struct torture_context *tctx, struct smbcli_state *cl
 
 	smbcli_close(cli->tree, fnum);
 
-done:
 	return ret;
 }
 
@@ -202,9 +200,8 @@ static bool test_mux_lock(struct torture_context *tctx, struct smbcli_state *cli
 
 	fnum = smbcli_open(cli->tree, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("open failed in mux_write - %s\n", smbcli_errstr(cli->tree));
-		ret = false;
-		goto done;
+		torture_comment(tctx, "open failed in mux_lock - %s\n", smbcli_errstr(cli->tree));
+		torture_assert(tctx, fnum != -1, "open failed in mux_lock");
 	}
 
 	printf("establishing a lock\n");
@@ -244,11 +241,8 @@ static bool test_mux_lock(struct torture_context *tctx, struct smbcli_state *cli
 	status = smbcli_request_simple_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "recv the async reply");
 
-	printf("async lock took %.2f msec\n", timeval_elapsed(&t) * 1000);
-	if (timeval_elapsed(&t) > 0.1) {
-		printf("failed to trigger early lock retry\n");
-		return false;		
-	}
+	torture_comment(tctx, "async lock took %.2f msec\n", timeval_elapsed(&t) * 1000);
+	torture_assert(tctx, timeval_elapsed(&t) <= 0.1, "failed to trigger early lock retry\n");
 
 	printf("reopening with an exit\n");
 	smb_raw_exit(cli->session);
@@ -315,16 +309,12 @@ static bool test_mux_lock(struct torture_context *tctx, struct smbcli_state *cli
 	smb_raw_exit(cli->session);
 	smb_raw_exit(cli->session);
 
-	printf("recv the async reply\n");
+	torture_comment(tctx, "recv the async reply\n");
 	status = smbcli_request_simple_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_RANGE_NOT_LOCKED, "recv the async reply");
-	printf("async lock exit took %.2f msec\n", timeval_elapsed(&t) * 1000);
-	if (timeval_elapsed(&t) > 0.1) {
-		printf("failed to trigger early lock failure\n");
-		return false;		
-	}
+	torture_comment(tctx, "async lock exit took %.2f msec\n", timeval_elapsed(&t) * 1000);
+	torture_assert(tctx, timeval_elapsed(&t) <= 0.1, "failed to trigger early lock failure\n");
 
-done:
 	return ret;
 }
 
