@@ -31,9 +31,11 @@ struct smb2cli_create_state {
 	uint64_t fid_volatile;
 	struct smb_create_returns cr;
 	struct smb2_create_blobs blobs;
+	struct tevent_req *subreq;
 };
 
 static void smb2cli_create_done(struct tevent_req *subreq);
+static bool smb2cli_create_cancel(struct tevent_req *req);
 
 struct tevent_req *smb2cli_create_send(
 	TALLOC_CTX *mem_ctx,
@@ -159,7 +161,18 @@ struct tevent_req *smb2cli_create_send(
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, smb2cli_create_done, req);
+
+	state->subreq = subreq;
+	tevent_req_set_cancel_fn(req, smb2cli_create_cancel);
+
 	return req;
+}
+
+static bool smb2cli_create_cancel(struct tevent_req *req)
+{
+	struct smb2cli_create_state *state = tevent_req_data(req,
+		struct smb2cli_create_state);
+	return tevent_req_cancel(state->subreq);
 }
 
 static void smb2cli_create_done(struct tevent_req *subreq)
