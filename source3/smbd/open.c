@@ -1564,14 +1564,24 @@ static void defer_open(struct share_mode_lock *lck,
 		       struct smb_request *req,
 		       struct deferred_open_record *state)
 {
+	struct deferred_open_record *open_rec;
+
 	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred "
 		  "open entry for mid %llu\n",
 		  (unsigned int)request_time.tv_sec,
 		  (unsigned int)request_time.tv_usec,
 		  (unsigned long long)req->mid));
 
+	open_rec = talloc(NULL, struct deferred_open_record);
+	if (open_rec == NULL) {
+		TALLOC_FREE(lck);
+		exit_server("talloc failed");
+	}
+
+	*open_rec = *state;
+
 	if (!push_deferred_open_message_smb(req, request_time, timeout,
-				       state->id, (char *)state, sizeof(*state))) {
+					    state->id, open_rec)) {
 		TALLOC_FREE(lck);
 		exit_server("push_deferred_open_message_smb failed");
 	}
@@ -1930,11 +1940,9 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
  Return true if this is a state pointer to an asynchronous create.
 ****************************************************************************/
 
-bool is_deferred_open_async(const void *ptr)
+bool is_deferred_open_async(const struct deferred_open_record *rec)
 {
-	const struct deferred_open_record *state = (const struct deferred_open_record *)ptr;
-
-	return state->async_open;
+	return rec->async_open;
 }
 
 static bool clear_ads(uint32_t create_disposition)
@@ -2143,10 +2151,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if (req) {
-		void *ptr;
+		struct deferred_open_record *open_rec;
 		if (get_deferred_open_message_state(req,
 				&request_time,
-				&ptr)) {
+				&open_rec)) {
 			/* Remember the absolute time of the original
 			   request with this mid. We'll use it later to
 			   see if this has timed out. */
@@ -2154,7 +2162,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* If it was an async create retry, the file
 			   didn't exist. */
 
-			if (is_deferred_open_async(ptr)) {
+			if (is_deferred_open_async(open_rec)) {
 				SET_STAT_INVALID(smb_fname->st);
 				file_existed = false;
 			}

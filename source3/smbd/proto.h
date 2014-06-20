@@ -620,7 +620,8 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 				    const char *fname,
 				    SMB_STRUCT_STAT *psbuf);
 bool is_stat_open(uint32 access_mask);
-bool is_deferred_open_async(const void *ptr);
+struct deferred_open_record;
+bool is_deferred_open_async(const struct deferred_open_record *rec);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 			  struct smb_filename *smb_dname);
 void msg_file_was_renamed(struct messaging_context *msg,
@@ -764,13 +765,12 @@ bool schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 bool open_was_deferred(struct smbd_server_connection *sconn, uint64_t mid);
 bool get_deferred_open_message_state(struct smb_request *smbreq,
 				struct timeval *p_request_time,
-				void **pp_state);
+				struct deferred_open_record **open_rec);
 bool push_deferred_open_message_smb(struct smb_request *req,
-				struct timeval request_time,
-				struct timeval timeout,
-				struct file_id id,
-				char *private_data,
-				size_t priv_len);
+			       struct timeval request_time,
+			       struct timeval timeout,
+			       struct file_id id,
+			       struct deferred_open_record *open_rec);
 NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid);
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 void smb_request_done(struct smb_request *req);

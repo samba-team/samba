@@ -382,7 +382,7 @@ struct smbd_smb2_create_state {
 	struct tevent_immediate *im;
 	struct timeval request_time;
 	struct file_id id;
-	DATA_BLOB private_data;
+	struct deferred_open_record *open_rec;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
 	struct timespec out_creation_ts;
@@ -1177,7 +1177,7 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 
 bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval *p_request_time,
-			void **pp_state)
+			struct deferred_open_record **open_rec)
 {
 	struct smbd_smb2_create_state *state = NULL;
 	struct tevent_req *req = NULL;
@@ -1199,8 +1199,8 @@ bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 	if (p_request_time) {
 		*p_request_time = state->request_time;
 	}
-	if (pp_state) {
-		*pp_state = (void *)state->private_data.data;
+	if (open_rec != NULL) {
+		*open_rec = state->open_rec;
 	}
 	return true;
 }
@@ -1409,7 +1409,7 @@ static bool smbd_smb2_create_cancel(struct tevent_req *req)
 	smb2req = state->smb2req;
 	mid = get_mid_from_smb2req(smb2req);
 
-	if (is_deferred_open_async(state->private_data.data)) {
+	if (is_deferred_open_async(state->open_rec)) {
 		/* Can't cancel an async create. */
 		return false;
 	}
@@ -1425,8 +1425,7 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
                                 struct timeval request_time,
                                 struct timeval timeout,
 				struct file_id id,
-                                char *private_data,
-                                size_t priv_len)
+				struct deferred_open_record *open_rec)
 {
 	struct tevent_req *req = NULL;
 	struct smbd_smb2_create_state *state = NULL;
@@ -1445,11 +1444,7 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 	}
 	state->id = id;
 	state->request_time = request_time;
-	state->private_data = data_blob_talloc(state, private_data,
-						priv_len);
-	if (!state->private_data.data) {
-		return false;
-	}
+	state->open_rec = talloc_move(state, &open_rec);
 
 	/* Re-schedule us to retry on timer expiry. */
 	end_time = timeval_sum(&request_time, &timeout);

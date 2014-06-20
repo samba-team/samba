@@ -52,7 +52,7 @@ struct pending_message_list {
 	bool encrypted;
 	bool processed;
 	DATA_BLOB buf;
-	DATA_BLOB private_data;
+	struct deferred_open_record *open_rec;
 };
 
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
@@ -635,7 +635,7 @@ static void smbd_deferred_open_timer(struct tevent_context *ev,
 static bool push_queued_message(struct smb_request *req,
 				struct timeval request_time,
 				struct timeval end_time,
-				char *private_data, size_t private_len)
+				struct deferred_open_record *open_rec)
 {
 	int msg_len = smb_len(req->inbuf) + 4;
 	struct pending_message_list *msg;
@@ -661,14 +661,8 @@ static bool push_queued_message(struct smb_request *req,
 	msg->processed = false;
 	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &msg->pcd);
 
-	if (private_data) {
-		msg->private_data = data_blob_talloc(msg, private_data,
-						     private_len);
-		if (msg->private_data.data == NULL) {
-			DEBUG(0,("push_message: malloc fail (3)\n"));
-			TALLOC_FREE(msg);
-			return False;
-		}
+	if (open_rec) {
+		msg->open_rec = talloc_move(msg, &open_rec);
 	}
 
 #if 0
@@ -828,14 +822,14 @@ static struct pending_message_list *get_deferred_open_message_smb(
 
 bool get_deferred_open_message_state(struct smb_request *smbreq,
 				struct timeval *p_request_time,
-				void **pp_state)
+				struct deferred_open_record **open_rec)
 {
 	struct pending_message_list *pml;
 
 	if (smbreq->sconn->using_smb2) {
 		return get_deferred_open_message_state_smb2(smbreq->smb2req,
 					p_request_time,
-					pp_state);
+					open_rec);
 	}
 
 	pml = get_deferred_open_message_smb(smbreq->sconn, smbreq->mid);
@@ -845,8 +839,8 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 	if (p_request_time) {
 		*p_request_time = pml->request_time;
 	}
-	if (pp_state) {
-		*pp_state = (void *)pml->private_data.data;
+	if (open_rec != NULL) {
+		*open_rec = pml->open_rec;
 	}
 	return true;
 }
@@ -860,7 +854,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 			       struct timeval request_time,
 			       struct timeval timeout,
 			       struct file_id id,
-			       char *private_data, size_t priv_len)
+			       struct deferred_open_record *open_rec)
 {
 	struct timeval end_time;
 
@@ -869,8 +863,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 						request_time,
 						timeout,
 						id,
-						private_data,
-						priv_len);
+						open_rec);
 	}
 
 	if (req->unread_bytes) {
@@ -890,8 +883,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 		(unsigned int)end_time.tv_sec,
 		(unsigned int)end_time.tv_usec));
 
-	return push_queued_message(req, request_time, end_time,
-				   private_data, priv_len);
+	return push_queued_message(req, request_time, end_time, open_rec);
 }
 
 static void smbd_sig_term_handler(struct tevent_context *ev,

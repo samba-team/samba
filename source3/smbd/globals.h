@@ -287,6 +287,8 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 				struct tevent_immediate *im,
 				void *private_data);
 
+struct deferred_open_record;
+
 /* SMB1 -> SMB2 glue. */
 void send_break_message_smb2(files_struct *fsp, int level);
 struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *smb2req);
@@ -310,7 +312,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level);
 bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval *p_request_time,
-			void **pp_state);
+			struct deferred_open_record **open_rec);
 bool open_was_deferred_smb2(struct smbd_server_connection *sconn,
 			    uint64_t mid);
 void remove_deferred_open_message_smb2(
@@ -318,11 +320,10 @@ void remove_deferred_open_message_smb2(
 bool schedule_deferred_open_message_smb2(
 	struct smbd_server_connection *sconn, uint64_t mid);
 bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
-			struct timeval request_time,
-			struct timeval timeout,
-			struct file_id id,
-			char *private_data,
-			size_t priv_len);
+                                struct timeval request_time,
+                                struct timeval timeout,
+				struct file_id id,
+				struct deferred_open_record *open_rec);
 
 struct smbXsrv_connection {
 	struct smbd_server_connection *sconn;
