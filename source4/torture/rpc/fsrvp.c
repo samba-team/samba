@@ -130,9 +130,21 @@ static bool test_fsrvp_set_ctx(struct torture_context *tctx,
 	return true;
 }
 
+enum test_fsrvp_inject {
+	TEST_FSRVP_TOUT_NONE = 0,
+	TEST_FSRVP_TOUT_SET_CTX,
+	TEST_FSRVP_TOUT_START_SET,
+	TEST_FSRVP_TOUT_ADD_TO_SET,
+	TEST_FSRVP_TOUT_PREPARE,
+	TEST_FSRVP_TOUT_COMMIT,
+
+	TEST_FSRVP_STOP_B4_EXPOSE,
+};
+
 static bool test_fsrvp_sc_create(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 const char *share,
+				 enum test_fsrvp_inject inject,
 				 struct fssagent_share_mapping_1 **sc_map)
 {
 	struct fss_IsPathSupported r_pathsupport_get;
@@ -149,7 +161,8 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	NTSTATUS status;
 	time_t start_time;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
-	struct fssagent_share_mapping_1 *map;
+	struct fssagent_share_mapping_1 *map = NULL;
+	int sleep_time;
 
 	/*
 	 * PrepareShadowCopySet & CommitShadowCopySet often exceed the default
@@ -181,15 +194,36 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r_context_set.out.result, 0,
 				 "failed SetContext response");
 
+	if (inject == TEST_FSRVP_TOUT_SET_CTX) {
+		sleep_time = lpcfg_parm_int(tctx->lp_ctx, NULL, "fss",
+					    "sequence timeout", 180);
+		torture_comment(tctx, "sleeping for %d\n", sleep_time);
+		smb_msleep((sleep_time * 1000) + 500);
+	}
+
 	ZERO_STRUCT(r_scset_start);
 	r_scset_start.in.ClientShadowCopySetId = GUID_random();
 	status = dcerpc_fss_StartShadowCopySet_r(b, tmp_ctx, &r_scset_start);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "StartShadowCopySet failed");
+	if (inject == TEST_FSRVP_TOUT_SET_CTX) {
+		/* expect error due to message sequence timeout after set_ctx */
+		torture_assert_int_equal(tctx, r_scset_start.out.result,
+					 FSRVP_E_BAD_STATE,
+					 "StartShadowCopySet timeout response");
+		goto done;
+	}
 	torture_assert_int_equal(tctx, r_scset_start.out.result, 0,
 				 "failed StartShadowCopySet response");
 	torture_comment(tctx, "%s: shadow-copy set created\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId));
+
+	if (inject == TEST_FSRVP_TOUT_START_SET) {
+		sleep_time = lpcfg_parm_int(tctx->lp_ctx, NULL, "fss",
+					    "sequence timeout", 180);
+		torture_comment(tctx, "sleeping for %d\n", sleep_time);
+		smb_msleep((sleep_time * 1000) + 500);
+	}
 
 	ZERO_STRUCT(r_scset_add1);
 	r_scset_add1.in.ClientShadowCopyId = GUID_random();
@@ -198,6 +232,12 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	status = dcerpc_fss_AddToShadowCopySet_r(b, tmp_ctx, &r_scset_add1);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "AddToShadowCopySet failed");
+	if (inject == TEST_FSRVP_TOUT_START_SET) {
+		torture_assert_int_equal(tctx, r_scset_add1.out.result,
+					 HRES_ERROR_V(HRES_E_INVALIDARG),
+					 "AddToShadowCopySet timeout response");
+		goto done;
+	}
 	torture_assert_int_equal(tctx, r_scset_add1.out.result, 0,
 				 "failed AddToShadowCopySet response");
 	torture_comment(tctx, "%s(%s): %s added to shadow-copy set\n",
@@ -217,6 +257,13 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 				 FSRVP_E_OBJECT_ALREADY_EXISTS,
 				 "failed AddToShadowCopySet response");
 
+	if (inject == TEST_FSRVP_TOUT_ADD_TO_SET) {
+		sleep_time = lpcfg_parm_int(tctx->lp_ctx, NULL, "fss",
+					    "sequence timeout", 1800);
+		torture_comment(tctx, "sleeping for %d\n", sleep_time);
+		smb_msleep((sleep_time * 1000) + 500);
+	}
+
 	start_time = time_mono(NULL);
 	ZERO_STRUCT(r_scset_prep);
 	r_scset_prep.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
@@ -225,11 +272,24 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	status = dcerpc_fss_PrepareShadowCopySet_r(b, tmp_ctx, &r_scset_prep);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "PrepareShadowCopySet failed");
+	if (inject == TEST_FSRVP_TOUT_ADD_TO_SET) {
+		torture_assert_int_equal(tctx, r_scset_prep.out.result,
+					 HRES_ERROR_V(HRES_E_INVALIDARG),
+					 "PrepareShadowCopySet tout response");
+		goto done;
+	}
 	torture_assert_int_equal(tctx, r_scset_prep.out.result, 0,
 				 "failed PrepareShadowCopySet response");
 	torture_comment(tctx, "%s: prepare completed in %llu secs\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
 			(unsigned long long)(time_mono(NULL) - start_time));
+
+	if (inject == TEST_FSRVP_TOUT_PREPARE) {
+		sleep_time = lpcfg_parm_int(tctx->lp_ctx, NULL, "fss",
+					    "sequence timeout", 1800);
+		torture_comment(tctx, "sleeping for %d\n", sleep_time);
+		smb_msleep((sleep_time * 1000) + 500);
+	}
 
 	start_time = time_mono(NULL);
 	ZERO_STRUCT(r_scset_commit);
@@ -238,11 +298,30 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	status = dcerpc_fss_CommitShadowCopySet_r(b, tmp_ctx, &r_scset_commit);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "CommitShadowCopySet failed");
+	if (inject == TEST_FSRVP_TOUT_PREPARE) {
+		torture_assert_int_equal(tctx, r_scset_commit.out.result,
+					 HRES_ERROR_V(HRES_E_INVALIDARG),
+					 "CommitShadowCopySet tout response");
+		goto done;
+	}
 	torture_assert_int_equal(tctx, r_scset_commit.out.result, 0,
 				 "failed CommitShadowCopySet response");
 	torture_comment(tctx, "%s: commit completed in %llu secs\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
 			(unsigned long long)(time_mono(NULL) - start_time));
+
+	if (inject == TEST_FSRVP_TOUT_COMMIT) {
+		sleep_time = lpcfg_parm_int(tctx->lp_ctx, NULL, "fss",
+					    "sequence timeout", 180);
+		torture_comment(tctx, "sleeping for %d\n", sleep_time);
+		smb_msleep((sleep_time * 1000) + 500);
+	} else if (inject == TEST_FSRVP_STOP_B4_EXPOSE) {
+		/* return partial snapshot information */
+		map = talloc_zero(tctx, struct fssagent_share_mapping_1);
+		map->ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
+		map->ShadowCopyId = *r_scset_add1.out.pShadowCopyId;
+		goto done;
+	}
 
 	start_time = time_mono(NULL);
 	ZERO_STRUCT(r_scset_expose);
@@ -251,6 +330,12 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	status = dcerpc_fss_ExposeShadowCopySet_r(b, tmp_ctx, &r_scset_expose);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "ExposeShadowCopySet failed");
+	if (inject == TEST_FSRVP_TOUT_COMMIT) {
+		torture_assert_int_equal(tctx, r_scset_expose.out.result,
+					 HRES_ERROR_V(HRES_E_INVALIDARG),
+					 "ExposeShadowCopySet tout response");
+		goto done;
+	}
 	torture_assert_int_equal(tctx, r_scset_expose.out.result, 0,
 				 "failed ExposeShadowCopySet response");
 	torture_comment(tctx, "%s: expose completed in %llu secs\n",
@@ -289,6 +374,7 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 					   &map->ShadowCopyId),
 		       "sc GUID missmatch in GetShareMapping");
 
+done:
 	talloc_free(tmp_ctx);
 	*sc_map = map;
 
@@ -323,7 +409,7 @@ static bool test_fsrvp_sc_create_simple(struct torture_context *tctx,
 	char *share_unc = talloc_asprintf(tctx, "\\\\%s\\%s",
 					  dcerpc_server_name(p), FSHARE);
 
-	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
+	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, TEST_FSRVP_TOUT_NONE, &sc_map),
 		       "sc create");
 
 	torture_assert(tctx, test_fsrvp_sc_delete(tctx, p, sc_map), "sc del");
@@ -405,7 +491,7 @@ static bool test_fsrvp_bad_id(struct torture_context *tctx,
 	char *share_unc = talloc_asprintf(tmp_ctx, "\\\\%s\\%s\\",
 					  dcerpc_server_name(p), FSHARE);
 
-	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
+	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, TEST_FSRVP_TOUT_NONE, &sc_map),
 		       "sc create");
 
 	ZERO_STRUCT(r_sharemap_del);
@@ -477,7 +563,7 @@ static bool test_fsrvp_sc_share_io(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "src write");
 
 
-	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
+	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, TEST_FSRVP_TOUT_NONE, &sc_map),
 		       "sc create");
 
 	status = smb2_util_write(tree_base, base_fh, "post-snap", 0,
@@ -607,7 +693,7 @@ static bool test_fsrvp_enum_created(struct torture_context *tctx,
 		       "count");
 	torture_assert_int_equal(tctx, count, 0, "num snaps");
 
-	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
+	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, TEST_FSRVP_TOUT_NONE, &sc_map),
 		       "sc create");
 	talloc_free(sc_map);
 
@@ -622,7 +708,7 @@ static bool test_fsrvp_enum_created(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, count, 1, "num snaps");
 
 	smb_msleep(1100);	/* @GMT tokens have a 1 second resolution */
-	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, &sc_map),
+	torture_assert(tctx, test_fsrvp_sc_create(tctx, p, share_unc, TEST_FSRVP_TOUT_NONE, &sc_map),
 		       "sc create");
 	talloc_free(sc_map);
 
