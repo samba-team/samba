@@ -1,5 +1,7 @@
 
 CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
+	--builtin-libraries=replace,popt \
+	--bundled-libraries=!talloc,!tevent,!tdb \
 	--prefix=/usr \
 	--sysconfdir=/etc \
 	--mandir=/usr/man \
