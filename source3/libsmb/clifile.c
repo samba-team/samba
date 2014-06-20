@@ -1937,9 +1937,11 @@ struct cli_ntcreate_state {
 			 struct smb_create_returns *cr);
 	struct smb_create_returns cr;
 	uint16_t fnum;
+	struct tevent_req *subreq;
 };
 
 static void cli_ntcreate_done(struct tevent_req *subreq);
+static bool cli_ntcreate_cancel(struct tevent_req *req);
 
 struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -1983,6 +1985,10 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_ntcreate_done, req);
+
+	state->subreq = subreq;
+	tevent_req_set_cancel_fn(req, cli_ntcreate_cancel);
+
 	return req;
 }
 
@@ -2000,6 +2006,13 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_done(req);
+}
+
+static bool cli_ntcreate_cancel(struct tevent_req *req)
+{
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
+	return tevent_req_cancel(state->subreq);
 }
 
 NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *fnum,
