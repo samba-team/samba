@@ -127,11 +127,11 @@ def dist(appname='', version=''):
             add_tarfile(tar, fname, abspath, srcsubdir)
 
 
-    def list_directory_files(abspath):
+    def list_directory_files(path):
         curdir = os.getcwd()
         os.chdir(srcdir)
         out_files = []
-        for root, dirs, files in os.walk(abspath):
+        for root, dirs, files in os.walk(path):
             for f in files:
                 out_files.append(os.path.join(root, f))
         os.chdir(curdir)
