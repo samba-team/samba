@@ -36,9 +36,15 @@ enum debug_level {
 #define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) < DEBUG_DEBUG) { log_ringbuffer x; } if ((lvl) <= LogLevel) { do_debug x; }} while (0)
 #define DEBUGADD(lvl, x) do { if ((lvl) <= LogLevel) { this_log_level = (lvl); do_debug_add x; }} while (0)
 
+#ifndef _PUBLIC_
 #define _PUBLIC_
+#endif /* _PUBLIC_ */
+#ifndef _NORETURN_
 #define _NORETURN_
+#endif /* _NORETURN_ */
+#ifndef _PURE_
 #define _PURE_
+#endif /* _PURE_ */
 
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
