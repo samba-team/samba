@@ -30,17 +30,19 @@
  * This test suite requires a snapshotable share named FSHARE (see #def below).
  */
 #include "includes.h"
-#include "librpc/gen_ndr/security.h"
 #include "lib/param/param.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/util/hresult.h"
+#include "libcli/security/dom_sid.h"
+#include "libcli/security/security_descriptor.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "torture/rpc/torture_rpc.h"
-#include "librpc/gen_ndr/ndr_fsrvp.h"
+#include "librpc/gen_ndr/ndr_security.c"
+#include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_fsrvp_c.h"
 
 #define FSHARE	"fsrvp_share"
@@ -746,6 +748,194 @@ static bool test_fsrvp_seq_timeout(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_fsrvp_share_sd(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *srvsvc_p;
+	struct srvsvc_NetShareGetInfo q;
+	struct srvsvc_NetShareSetInfo s;
+	struct srvsvc_NetShareInfo502 *info502;
+	struct fssagent_share_mapping_1 *sc_map;
+	struct fss_ExposeShadowCopySet r_scset_expose;
+	struct fss_GetShareMapping r_sharemap_get;
+	struct security_descriptor *sd_old;
+	struct security_descriptor *sd_base;
+	struct security_descriptor *sd_snap;
+	struct security_ace *ace;
+	int i;
+	int aces_found;
+	char *share_unc = talloc_asprintf(tctx, "\\\\%s\\%s",
+					  dcerpc_server_name(p), FSHARE);
+	ZERO_STRUCT(q);
+	q.in.server_unc = dcerpc_server_name(p);
+	q.in.share_name = FSHARE;
+	q.in.level = 502;
+
+	status = torture_rpc_connection(tctx, &srvsvc_p, &ndr_table_srvsvc);
+	torture_assert_ntstatus_ok(tctx, status, "srvsvc rpc conn failed");
+
+	/* ensure srvsvc out pointers are allocated during unmarshalling */
+	srvsvc_p->conn->flags |= DCERPC_NDR_REF_ALLOC;
+
+	/* obtain the existing DACL for the base share */
+	status = dcerpc_srvsvc_NetShareGetInfo_r(srvsvc_p->binding_handle,
+						 tctx, &q);
+	torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
+	torture_assert_werr_ok(tctx, q.out.result, "NetShareGetInfo failed");
+
+	info502 = q.out.info->info502;
+
+	/* back up the existing share SD, so it can be restored on completion */
+	sd_old = info502->sd_buf.sd;
+	sd_base = security_descriptor_copy(tctx, info502->sd_buf.sd);
+	torture_assert(tctx, sd_base != NULL, "sd dup");
+	torture_assert(tctx, sd_base->dacl != NULL, "no existing share DACL");
+
+	/* the Builtin_X_Operators placeholder ACEs need to be unique */
+	for (i = 0; i < sd_base->dacl->num_aces; i++) {
+		ace = &sd_base->dacl->aces[i];
+		if (dom_sid_equal(&ace->trustee,
+				  &global_sid_Builtin_Backup_Operators)
+		 || dom_sid_equal(&ace->trustee,
+				  &global_sid_Builtin_Print_Operators)) {
+			torture_skip(tctx, "placeholder ACE already exists\n");
+		}
+	}
+
+	/* add Backup_Operators placeholder ACE and set base share DACL */
+	ace = talloc_zero(tctx, struct security_ace);
+	ace->type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace->access_mask = SEC_STD_SYNCHRONIZE;
+	ace->trustee = global_sid_Builtin_Backup_Operators;
+
+	status = security_descriptor_dacl_add(sd_base, ace);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "failed to add placeholder ACE to DACL");
+
+	info502->sd_buf.sd = sd_base;
+	info502->sd_buf.sd_size = ndr_size_security_descriptor(sd_base, 0);
+
+	ZERO_STRUCT(s);
+	s.in.server_unc = dcerpc_server_name(p);
+	s.in.share_name = FSHARE;
+	s.in.level = 502;
+	s.in.info = q.out.info;
+
+	status = dcerpc_srvsvc_NetShareSetInfo_r(srvsvc_p->binding_handle,
+						 tctx, &s);
+	torture_assert_ntstatus_ok(tctx, status, "NetShareSetInfo failed");
+	torture_assert_werr_ok(tctx, s.out.result, "NetShareSetInfo failed");
+
+	/* create a snapshot, but don't expose yet */
+	torture_assert(tctx,
+		       test_fsrvp_sc_create(tctx, p, share_unc,
+					    TEST_FSRVP_STOP_B4_EXPOSE, &sc_map),
+		       "sc create");
+
+	/*
+	 * Add another unique placeholder ACE.
+	 * By changing the share DACL between snapshot creation and exposure we
+	 * can determine at which point the server clones the base share DACL.
+	 */
+	ace = talloc_zero(tctx, struct security_ace);
+	ace->type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace->access_mask = SEC_STD_SYNCHRONIZE;
+	ace->trustee = global_sid_Builtin_Print_Operators;
+
+	status = security_descriptor_dacl_add(sd_base, ace);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "failed to add placeholder ACE to DACL");
+
+	info502->sd_buf.sd = sd_base;
+	info502->sd_buf.sd_size = ndr_size_security_descriptor(sd_base, 0);
+
+	ZERO_STRUCT(s);
+	s.in.server_unc = dcerpc_server_name(p);
+	s.in.share_name = FSHARE;
+	s.in.level = 502;
+	s.in.info = q.out.info;
+
+	status = dcerpc_srvsvc_NetShareSetInfo_r(srvsvc_p->binding_handle,
+						 tctx, &s);
+	torture_assert_ntstatus_ok(tctx, status, "NetShareSetInfo failed");
+	torture_assert_werr_ok(tctx, s.out.result, "NetShareSetInfo failed");
+
+	/* expose the snapshot share and get the new share details */
+	ZERO_STRUCT(r_scset_expose);
+	r_scset_expose.in.ShadowCopySetId = sc_map->ShadowCopySetId;
+	r_scset_expose.in.TimeOutInMilliseconds = (120 * 1000);	/* win8 */
+	status = dcerpc_fss_ExposeShadowCopySet_r(p->binding_handle, tctx,
+						  &r_scset_expose);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "ExposeShadowCopySet failed");
+	torture_assert_int_equal(tctx, r_scset_expose.out.result, 0,
+				 "failed ExposeShadowCopySet response");
+
+	ZERO_STRUCT(r_sharemap_get);
+	r_sharemap_get.in.ShadowCopyId = sc_map->ShadowCopyId;
+	r_sharemap_get.in.ShadowCopySetId = sc_map->ShadowCopySetId;
+	r_sharemap_get.in.ShareName = share_unc;
+	r_sharemap_get.in.Level = 1;
+	status = dcerpc_fss_GetShareMapping_r(p->binding_handle, tctx,
+					      &r_sharemap_get);
+	torture_assert_ntstatus_ok(tctx, status, "GetShareMapping failed");
+	torture_assert_int_equal(tctx, r_sharemap_get.out.result, 0,
+				 "failed GetShareMapping response");
+	talloc_free(sc_map);
+	sc_map = r_sharemap_get.out.ShareMapping->ShareMapping1;
+
+	/* restore the original base share ACL */
+	info502->sd_buf.sd = sd_old;
+	info502->sd_buf.sd_size = ndr_size_security_descriptor(sd_old, 0);
+	status = dcerpc_srvsvc_NetShareSetInfo_r(srvsvc_p->binding_handle,
+						 tctx, &s);
+	torture_assert_ntstatus_ok(tctx, status, "NetShareSetInfo failed");
+	torture_assert_werr_ok(tctx, s.out.result, "NetShareSetInfo failed");
+
+	/* check for placeholder ACEs in the snapshot share DACL */
+	ZERO_STRUCT(q);
+	q.in.server_unc = dcerpc_server_name(p);
+	q.in.share_name = sc_map->ShadowCopyShareName;
+	q.in.level = 502;
+	status = dcerpc_srvsvc_NetShareGetInfo_r(srvsvc_p->binding_handle,
+						 tctx, &q);
+	torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
+	torture_assert_werr_ok(tctx, q.out.result, "NetShareGetInfo failed");
+	info502 = q.out.info->info502;
+
+	sd_snap = info502->sd_buf.sd;
+	torture_assert(tctx, sd_snap != NULL, "sd");
+	torture_assert(tctx, sd_snap->dacl != NULL, "no snap share DACL");
+
+	aces_found = 0;
+	for (i = 0; i < sd_snap->dacl->num_aces; i++) {
+		ace = &sd_snap->dacl->aces[i];
+		if (dom_sid_equal(&ace->trustee,
+				  &global_sid_Builtin_Backup_Operators)) {
+			torture_comment(tctx,
+				"found share ACE added before snapshot\n");
+			aces_found++;
+		} else if (dom_sid_equal(&ace->trustee,
+					 &global_sid_Builtin_Print_Operators)) {
+			torture_comment(tctx,
+				"found share ACE added after snapshot\n");
+			aces_found++;
+		}
+	}
+	/*
+	 * Expect snapshot share to match the base share DACL at the time of
+	 * exposure, not at the time of snapshot creation. This is in line with
+	 * Windows Server 2012 behaviour.
+	 */
+	torture_assert_int_equal(tctx, aces_found, 2,
+				"placeholder ACE missing from snap share DACL");
+
+	torture_assert(tctx, test_fsrvp_sc_delete(tctx, p, sc_map), "sc del");
+
+	return true;
+}
+
 static bool fsrvp_rpc_setup(struct torture_context *tctx, void **data)
 {
 	NTSTATUS status;
@@ -782,6 +972,8 @@ struct torture_suite *torture_rpc_fsrvp(TALLOC_CTX *mem_ctx)
 	/* override torture_rpc_setup() to set DCERPC_NDR_REF_ALLOC */
 	tcase->tcase.setup = fsrvp_rpc_setup;
 
+	torture_rpc_tcase_add_test(tcase, "share_sd",
+				   test_fsrvp_share_sd);
 	torture_rpc_tcase_add_test(tcase, "seq_timeout",
 				   test_fsrvp_seq_timeout);
 	torture_rpc_tcase_add_test(tcase, "enum_created",
