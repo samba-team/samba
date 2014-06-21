@@ -4046,24 +4046,24 @@ static int nwrap_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 
 	type = sa->sa_family;
 	switch (type) {
-		case AF_INET:
-			if (salen < sizeof(struct sockaddr_in))
-				return EAI_FAMILY;
-			addr = &((struct sockaddr_in *)sa)->sin_addr;
-			addrlen = sizeof(((struct sockaddr_in *)sa)->sin_addr);
-			port = ntohs(((struct sockaddr_in *)sa)->sin_port);
-			break;
-#ifdef HAVE_IPV6
-		case AF_INET6:
-			if (salen < sizeof(struct sockaddr_in6))
-				return EAI_FAMILY;
-			addr = &((struct sockaddr_in6 *)sa)->sin6_addr;
-			addrlen = sizeof(((struct sockaddr_in6 *)sa)->sin6_addr);
-			port = ntohs(((struct sockaddr_in6 *)sa)->sin6_port);
-			break;
-#endif
-		default:
+	case AF_INET:
+		if (salen < sizeof(struct sockaddr_in))
 			return EAI_FAMILY;
+		addr = &((struct sockaddr_in *)sa)->sin_addr;
+		addrlen = sizeof(((struct sockaddr_in *)sa)->sin_addr);
+		port = ntohs(((struct sockaddr_in *)sa)->sin_port);
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		if (salen < sizeof(struct sockaddr_in6))
+			return EAI_FAMILY;
+		addr = &((struct sockaddr_in6 *)sa)->sin6_addr;
+		addrlen = sizeof(((struct sockaddr_in6 *)sa)->sin6_addr);
+		port = ntohs(((struct sockaddr_in6 *)sa)->sin6_port);
+		break;
+#endif
+	default:
+		return EAI_FAMILY;
 	}
 
 	if (host != NULL) {
