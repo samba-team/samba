@@ -260,6 +260,9 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 					size_t expected_body_size);
 
+enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
+		                                     const int dialect_count,
+						     uint16_t *dialect);
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req);
