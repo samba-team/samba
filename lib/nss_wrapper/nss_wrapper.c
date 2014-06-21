@@ -4049,17 +4049,17 @@ static int nwrap_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 	case AF_INET:
 		if (salen < sizeof(struct sockaddr_in))
 			return EAI_FAMILY;
-		addr = &((struct sockaddr_in *)sa)->sin_addr;
-		addrlen = sizeof(((struct sockaddr_in *)sa)->sin_addr);
-		port = ntohs(((struct sockaddr_in *)sa)->sin_port);
+		addr = &((const struct sockaddr_in *)sa)->sin_addr;
+		addrlen = sizeof(((const struct sockaddr_in *)sa)->sin_addr);
+		port = ntohs(((const struct sockaddr_in *)sa)->sin_port);
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
 		if (salen < sizeof(struct sockaddr_in6))
 			return EAI_FAMILY;
-		addr = &((struct sockaddr_in6 *)sa)->sin6_addr;
-		addrlen = sizeof(((struct sockaddr_in6 *)sa)->sin6_addr);
-		port = ntohs(((struct sockaddr_in6 *)sa)->sin6_port);
+		addr = &((const struct sockaddr_in6 *)sa)->sin6_addr;
+		addrlen = sizeof(((const struct sockaddr_in6 *)sa)->sin6_addr);
+		port = ntohs(((const struct sockaddr_in6 *)sa)->sin6_port);
 		break;
 #endif
 	default:
