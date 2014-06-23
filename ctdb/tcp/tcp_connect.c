@@ -293,7 +293,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 						struct ctdb_tcp);
         ctdb_sock_addr sock;
 	int lock_fd, i;
-	const char *lock_path = VARDIR "/run/ctdb/.socket_lock";
+	const char *lock_path = CTDB_RUNDIR "/.socket_lock";
 	struct flock lock;
 	int one = 1;
 	int sock_size;
