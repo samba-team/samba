@@ -82,6 +82,14 @@ bld.SAMBA3_MODULE('vfs_netatalk',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_netatalk'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_netatalk'))
 
+bld.SAMBA3_MODULE('vfs_fruit',
+                 subsystem='vfs',
+                 source='vfs_fruit.c',
+                 deps='samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_fruit'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_fruit'))
+
 bld.SAMBA3_MODULE('vfs_default_quota',
                  subsystem='vfs',
                  source='vfs_default_quota.c',
