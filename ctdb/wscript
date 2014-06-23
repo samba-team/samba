@@ -130,14 +130,16 @@ def configure(conf):
         conf.env.CTDB_SOCKPATH = os.path.join(conf.env.CTDB_RUNDIR,
                                               'ctdbd.socket')
 
-    conf.ADD_CFLAGS('''-DBINDIR=\"%s\" -DETCDIR=\"%s\"
-                       -DLOGDIR=\"%s\" -DSOCKPATH=\"%s\"
+    conf.ADD_CFLAGS('''-DBINDIR=\"%s\"
+                       -DLOGDIR=\"%s\"
+                       -DSOCKPATH=\"%s\"
+                       -DCTDB_ETCDIR=\"%s\"
                        -DCTDB_VARDIR=\"%s\"
                        -DCTDB_RUNDIR=\"%s\"''' % (
                     conf.env.CTDB_BINDIR,
-                    conf.env.CTDB_ETCDIR,
                     conf.env.CTDB_LOGDIR,
                     conf.env.CTDB_SOCKPATH,
+                    conf.env.CTDB_ETCDIR,
                     conf.env.CTDB_VARDIR,
                     conf.env.CTDB_RUNDIR))
 

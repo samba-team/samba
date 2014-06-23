@@ -240,7 +240,7 @@ int main(int argc, const char *argv[])
 	ctdb->pnn = -1;
 
 	/* Default value for CTDB_BASE - don't override */
-	setenv("CTDB_BASE", ETCDIR "/ctdb", 0);
+	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
 
 	/* tell ctdb what nodes are available */
 	if (options.nlist != NULL) {

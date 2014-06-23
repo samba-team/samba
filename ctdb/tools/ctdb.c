@@ -6536,7 +6536,7 @@ int main(int argc, const char *argv[])
 	control = extra_argv[0];
 
 	/* Default value for CTDB_BASE - don't override */
-	setenv("CTDB_BASE", ETCDIR "/ctdb", 0);
+	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
 
 	ev = event_context_init(NULL);
 	if (!ev) {

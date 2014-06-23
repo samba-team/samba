@@ -440,7 +440,7 @@ static void debug_hung_script_done(struct tevent_context *ev, struct tevent_fd *
 static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct debug_hung_script_state *state)
 {
 	pid_t pid;
-	const char * debug_hung_script = ETCDIR "/ctdb/debug-hung-script.sh";
+	const char * debug_hung_script = CTDB_ETCDIR "/debug-hung-script.sh";
 	int fd[2];
 	struct tevent_timer *ttimer;
 	struct tevent_fd *tfd;
