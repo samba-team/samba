@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_fruit.8">
+
+<refmeta>
+	<refentrytitle>vfs_fruit</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.1</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_fruit</refname>
+	<refpurpose>Enhanced OS X and Netatalk interoperability</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = fruit</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>The <command>vfs_fruit</command> module provides
+	enhanced compatibility with Apple SMB clients and
+	interoperability with a Netatalk 3 AFP fileserver.</para>
+
+	<para>The module should be stacked with
+	<command>vfs_catia</command> if enabling character conversion and
+	must be stacked with <command>vfs_streams_xattr</command>, see the
+	example section for the correct config.</para>
+
+	<para>The module enables alternate data streams (ADS) support
+	for a share, intercepts the OS X special streams "AFP_AfpInfo"
+	and "AFP_Resource" and handles them in a special way. All
+	other named streams are deferred to
+	<command>vfs_streams_xattr</command> which must be loaded
+	together with <command>vfs_fruit</command>.</para>
+
+	<para>Having shares with ADS support enabled for OS X client
+	is worthwhile because it resembles the behaviour of Apple's
+	own SMB server implementation and it avoids certain severe
+	performance degradations caused by Samba's case sensitivity
+	semantics.</para>
+
+	<para>The OS X metadata and resource fork stream can be stored
+	in a way compatible with Netatalk 3 by setting
+	<command>fruit:resource = file</command> and
+	<command>fruit:metadata = netatalk</command>.</para>
+
+	<para>OS X maps NTFS illegal characters to the Unicode private
+	range in SMB requests. By setting <command>fruit:encoding =
+	native</command>, all mapped characters are converted to
+	native ASCII characters.</para>
+
+	<para>Finally, share access modes are optionally checked
+	against Netatalk AFP sharing modes by setting
+	<command>fruit:locking = netatalk</command>.</para>
+
+	<para>This module is not stackable other then described in
+	this manpage.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+	  <varlistentry>
+	    <term>fruit:resource = [ file | xattr | stream ]</term>
+	    <listitem>
+	      <para>Controls where the OS X resource fork is stored:</para>
+
+	      <itemizedlist>
+		<listitem><para><command>file (default)</command> - use a ._
+		AppleDouble file compatible with OS X and
+		Netatalk</para></listitem>
+
+		<listitem><para><command>xattr</command> - use a
+		xattr, requires a filesystem with large xattr support
+		and a file IO API compatible with xattrs, this boils
+		down to Solaris and derived platforms and
+		ZFS</para></listitem>
+
+		<listitem><para><command>stream</command> - pass the
+		stream on to the next module in the VFS
+		stack</para></listitem>
+	      </itemizedlist>
+
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>fruit:metadata = [ stream | netatalk ]</term>
+	    <listitem>
+	      <para>Controls where the OS X metadata stream is stored:</para>
+
+	      <itemizedlist>
+		<listitem><para><command>netatalk (default)</command> - use
+		Netatalk compatible xattr</para></listitem>
+
+		<listitem><para><command>stream</command> - pass the
+		stream on to the next module in the VFS
+		stack</para></listitem>
+	      </itemizedlist>
+
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>fruit:locking = [ netatalk | none ]</term>
+	    <listitem>
+	      <para></para>
+	      <itemizedlist>
+		<listitem><para><command>none (default)</command> - no
+		cross protocol locking</para></listitem>
+
+		<listitem><para><command>netatalk</command> - use
+		cross protocol locking with Netatalk</para></listitem>
+
+	      </itemizedlist>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>fruit:encoding = [ native | private ]</term>
+	    <listitem>
+
+	      <para>Controls how the set of illegal NTFS ASCII
+	      character, commonly used by OS X clients, are stored in
+	      the filesystem:</para>
+
+	      <itemizedlist>
+
+		<listitem><para><command>private (default)</command> -
+		store characters as encoded by the OS X client: mapped
+		to the Unicode private range</para></listitem>
+
+		<listitem><para><command>native</command> - store
+		characters with their native ASCII
+		value</para></listitem>
+
+	      </itemizedlist>
+	    </listitem>
+	  </varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+<programlisting>
+        <smbconfsection name="[share]"/>
+	<smbconfoption name="vfs objects">catia fruit streams_xattr</smbconfoption>
+	<smbconfoption name="fruit:resource">file</smbconfoption>
+	<smbconfoption name="fruit:metadata">netatalk</smbconfoption>
+	<smbconfoption name="fruit:locking">netatalk</smbconfoption>
+	<smbconfoption name="fruit:encoding">native</smbconfoption>
+</programlisting>
+
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>

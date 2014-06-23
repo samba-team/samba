@@ -60,6 +60,7 @@ manpages='''
          manpages/vfs_extd_audit.8
          manpages/vfs_fake_perms.8
          manpages/vfs_fileid.8
+         manpages/vfs_fruit.8
          manpages/vfs_full_audit.8
          manpages/vfs_gpfs.8
          manpages/vfs_linux_xfs_sgid.8
