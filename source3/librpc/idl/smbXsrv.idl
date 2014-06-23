@@ -79,9 +79,38 @@ interface smbXsrv
 
 	/* client */
 
+	typedef struct {
+		[ignore] db_record 			*db_rec;
+		server_id				server_id;
+		[charset(UTF8),string] char		local_address[];
+		[charset(UTF8),string] char		remote_address[];
+		[charset(UTF8),string] char		remote_name[];
+		NTTIME					initial_connect_time;
+		GUID					client_guid;
+		boolean8				stored;
+	} smbXsrv_client_global0;
+
+	typedef union {
+		[case(0)] smbXsrv_client_global0	*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_client_globalU;
+
 	typedef [public] struct {
+		smbXsrv_version_values			version;
+		uint32					seqnum;
+		[switch_is(version)] smbXsrv_client_globalU info;
+	} smbXsrv_client_globalB;
+
+	void smbXsrv_client_global_decode(
+		[in] smbXsrv_client_globalB blob
+		);
+
+	typedef [public] struct {
+		[ignore] smbXsrv_client_table		*table;
 		[ignore] struct tevent_context		*ev_ctx;
 		[ignore] struct messaging_context	*msg_ctx;
+
+		[ref] smbXsrv_client_global0		*global;
 
 		/*
 		 * There's just one 'sconn' per client.
@@ -114,6 +143,21 @@ interface smbXsrv
 		[ignore] struct smbXsrv_connection	*connections;
 		boolean8		server_multi_channel_enabled;
 	} smbXsrv_client;
+
+	typedef union {
+		[case(0)] smbXsrv_client		*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_clientU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		[value(0)] uint32			reserved;
+		[switch_is(version)] smbXsrv_clientU	info;
+	} smbXsrv_clientB;
+
+	void smbXsrv_client_decode(
+		[in] smbXsrv_clientB blob
+		);
 
 	/* sessions */
 
