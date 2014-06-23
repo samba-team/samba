@@ -240,8 +240,15 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 {
 	struct unix_dgram_ctx *ctx = (struct unix_dgram_ctx *)private_data;
 	ssize_t received;
+	int flags = 0;
 	struct msghdr msg;
 	struct iovec iov;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	char buf[CMSG_SPACE(sizeof(int)*INT8_MAX)] = { 0, };
+	struct cmsghdr *cmsg;
+#endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
+	int *fds = NULL;
+	size_t i, num_fds = 0;
 
 	iov = (struct iovec) {
 		.iov_base = (void *)ctx->recv_buf,
@@ -252,12 +259,16 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 		.msg_iov = &iov,
 		.msg_iovlen = 1,
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-		.msg_control = NULL,
-		.msg_controllen = 0,
+		.msg_control = buf,
+		.msg_controllen = sizeof(buf),
 #endif
 	};
 
-	received = recvmsg(fd, &msg, 0);
+#ifdef MSG_CMSG_CLOEXEC
+	flags |= MSG_CMSG_CLOEXEC;
+#endif
+
+	received = recvmsg(fd, &msg, flags);
 	if (received == -1) {
 		if ((errno == EAGAIN) ||
 		    (errno == EWOULDBLOCK) ||
@@ -273,6 +284,44 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 		/* More than we expected, not for us */
 		return;
 	}
+
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	for(cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+	    cmsg = CMSG_NXTHDR(&msg, cmsg))
+	{
+		void *data = CMSG_DATA(cmsg);
+
+		if (cmsg->cmsg_type != SCM_RIGHTS) {
+			continue;
+		}
+		if (cmsg->cmsg_level != SOL_SOCKET) {
+			continue;
+		}
+
+		fds = (int *)data;
+		num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof (int);
+		break;
+	}
+#endif
+
+	for (i = 0; i < num_fds; i++) {
+		int err;
+
+		err = prepare_socket_cloexec(fds[i]);
+		if (err != 0) {
+			goto cleanup_fds;
+		}
+	}
+
+	/* for now we don't support fd passing */
+	goto cleanup_fds;
+
+	ctx->recv_callback(ctx, ctx->recv_buf, received, ctx->private_data);
+	return;
+
+cleanup_fds:
+	close_fd_array(fds, num_fds);
+
 	ctx->recv_callback(ctx, ctx->recv_buf, received, ctx->private_data);
 }
 
