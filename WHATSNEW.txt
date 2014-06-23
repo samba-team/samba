@@ -1,4 +1,61 @@
                    ==============================
+                   Release Notes for Samba 3.6.24
+                           June 23, 2014
+                   ==============================
+
+
+This is a security release in order to address
+CVE-2014-0244 (Denial of service - CPU loop) and
+CVE-2014-3493 (Denial of service - Server crash/memory corruption).
+
+o  CVE-2014-0244:
+   All current released versions of Samba are vulnerable to a denial of
+   service on the nmbd NetBIOS name services daemon. A malformed packet
+   can cause the nmbd server to loop the CPU and prevent any further
+   NetBIOS name service.
+
+   This flaw is not exploitable beyond causing the code to loop expending
+   CPU resources.
+
+o  CVE-2014-3493:
+   All current released versions of Samba are affected by a denial of service
+   crash involving overwriting memory on an authenticated connection to the
+   smbd file server.
+
+
+Changes since 3.6.22:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10633: CVE-2014-0244: Fix nmbd denial of service.
+    * BUG 10654: CVE-2014-3493: Fix segmentation fault in
+      smbd_marshall_dir_entry()'s SMB_FIND_FILE_UNIX handler.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.6 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.6.23
                            March 11, 2014
                    ==============================
@@ -49,8 +106,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.6.22
