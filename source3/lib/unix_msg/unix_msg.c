@@ -62,6 +62,7 @@ struct unix_dgram_ctx {
 
 	void (*recv_callback)(struct unix_dgram_ctx *ctx,
 			      uint8_t *msg, size_t msg_len,
+			      int *fds, size_t num_fds,
 			      void *private_data);
 	void *private_data;
 
@@ -153,6 +154,7 @@ static int unix_dgram_init(const struct sockaddr_un *addr, size_t max_msg,
 			   const struct poll_funcs *ev_funcs,
 			   void (*recv_callback)(struct unix_dgram_ctx *ctx,
 						 uint8_t *msg, size_t msg_len,
+						 int *fds, size_t num_fds,
 						 void *private_data),
 			   void *private_data,
 			   struct unix_dgram_ctx **result)
@@ -313,16 +315,15 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 		}
 	}
 
-	/* for now we don't support fd passing */
-	goto cleanup_fds;
-
-	ctx->recv_callback(ctx, ctx->recv_buf, received, ctx->private_data);
+	ctx->recv_callback(ctx, ctx->recv_buf, received,
+			   fds, num_fds, ctx->private_data);
 	return;
 
 cleanup_fds:
 	close_fd_array(fds, num_fds);
 
-	ctx->recv_callback(ctx, ctx->recv_buf, received, ctx->private_data);
+	ctx->recv_callback(ctx, ctx->recv_buf, received,
+			   NULL, 0, ctx->private_data);
 }
 
 static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
@@ -660,8 +661,9 @@ struct unix_msg_ctx {
 	struct unix_msg *msgs;
 };
 
-static void unix_msg_recv(struct unix_dgram_ctx *ctx,
-			  uint8_t *msg, size_t msg_len,
+static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
+			  uint8_t *buf, size_t buflen,
+			  int *fds, size_t num_fds,
 			  void *private_data);
 
 int unix_msg_init(const struct sockaddr_un *addr,
@@ -800,6 +802,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 
 static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 			  uint8_t *buf, size_t buflen,
+			  int *fds, size_t num_fds,
 			  void *private_data)
 {
 	struct unix_msg_ctx *ctx = (struct unix_msg_ctx *)private_data;
@@ -807,6 +810,9 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	struct unix_msg *msg;
 	size_t space;
 	uint64_t cookie;
+
+	/* for now we ignore passed file descriptors */
+	close_fd_array(fds, num_fds);
 
 	if (buflen < sizeof(cookie)) {
 		return;
