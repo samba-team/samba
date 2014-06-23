@@ -32,7 +32,8 @@ distcheck:
 	WAFLOCK=.tmplock $(WAF) distcheck
 
 rpm:
-	$(WAF) rpm
+	touch .tmplock
+	WAFLOCK=.tmplock $(WAF) rpm
 
 clean:
 	$(WAF) clean
