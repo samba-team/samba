@@ -468,7 +468,6 @@ def build(bld):
         'events.d',
         'eventscripts',
         'onnode',
-        'scripts',
         'simple',
         'takeover',
         'tool'
@@ -480,12 +479,26 @@ def build(bld):
             bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR, 'tests/%s' % fmode[0],
                               destname=fmode[0], chmod=fmode[1])
 
+    # Install tests/scripts directory without test_wrap
+    test_scripts = [
+        'common.sh',
+        'integration.bash',
+        'unit.sh'
+    ]
+
+    for t in test_scripts:
+        bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR,
+                          os.path.join('tests/scripts', t),
+                          destname=os.path.join('scripts', t))
+
     sed_expr = 's@^TEST_SCRIPTS_DIR=.*@&\\nexport TEST_BIN_DIR=\"%s\"@' % (
                bld.env.CTDB_TEST_LIBDIR)
     bld.SAMBA_GENERATOR('ctdb-test-wrap',
                         source='tests/scripts/test_wrap',
                         target='test_wrap',
                         rule='sed -e "%s" ${SRC} > ${TGT}' % sed_expr)
+    bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR+"/scripts", 'test_wrap',
+                      destname='test_wrap', chmod=0755)
 
     sed_expr1 = 's@^test_dir=.*@test_dir=%s\\nexport TEST_BIN_DIR=\"%s\"@' % (
                 bld.env.CTDB_TEST_DATADIR, bld.env.CTDB_TEST_LIBDIR)
