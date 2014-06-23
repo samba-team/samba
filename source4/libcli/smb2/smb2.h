@@ -116,6 +116,7 @@ struct smb2_session {
 	struct smb2_transport *transport;
 	struct gensec_security *gensec;
 	struct smbXcli_session *smbXcli;
+	bool needs_bind;
 };
 
 
