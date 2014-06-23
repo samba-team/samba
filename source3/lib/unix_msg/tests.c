@@ -11,6 +11,7 @@ struct cb_state {
 
 static void recv_cb(struct unix_msg_ctx *ctx,
 		    uint8_t *msg, size_t msg_len,
+		    int *fds, size_t num_fds,
 		    void *private_data);
 
 static void expect_messages(struct tevent_context *ev, struct cb_state *state,
@@ -225,6 +226,7 @@ int main(void)
 
 static void recv_cb(struct unix_msg_ctx *ctx,
 		    uint8_t *msg, size_t msg_len,
+		    int *fds, size_t num_fds,
 		    void *private_data)
 {
 	struct cb_state *state = (struct cb_state *)private_data;

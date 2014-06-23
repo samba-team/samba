@@ -81,6 +81,7 @@ int unix_msg_init(const struct sockaddr_un *addr,
 		  size_t fragment_size, uint64_t cookie,
 		  void (*recv_callback)(struct unix_msg_ctx *ctx,
 					uint8_t *msg, size_t msg_len,
+					int *fds, size_t num_fds,
 					void *private_data),
 		  void *private_data,
 		  struct unix_msg_ctx **result);

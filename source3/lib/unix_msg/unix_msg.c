@@ -802,6 +802,7 @@ struct unix_msg_ctx {
 
 	void (*recv_callback)(struct unix_msg_ctx *ctx,
 			      uint8_t *msg, size_t msg_len,
+			      int *fds, size_t num_fds,
 			      void *private_data);
 	void *private_data;
 
@@ -818,6 +819,7 @@ int unix_msg_init(const struct sockaddr_un *addr,
 		  size_t fragment_len, uint64_t cookie,
 		  void (*recv_callback)(struct unix_msg_ctx *ctx,
 					uint8_t *msg, size_t msg_len,
+					int *fds, size_t num_fds,
 					void *private_data),
 		  void *private_data,
 		  struct unix_msg_ctx **result)
@@ -960,10 +962,8 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	size_t space;
 	uint64_t cookie;
 
-	/* for now we ignore passed file descriptors */
-	close_fd_array(fds, num_fds);
-
 	if (buflen < sizeof(cookie)) {
+		close_fd_array(fds, num_fds);
 		return;
 	}
 	memcpy(&cookie, buf, sizeof(cookie));
@@ -972,11 +972,12 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	buflen -= sizeof(cookie);
 
 	if (cookie == 0) {
-		ctx->recv_callback(ctx,	buf, buflen, ctx->private_data);
+		ctx->recv_callback(ctx,	buf, buflen, fds, num_fds, ctx->private_data);
 		return;
 	}
 
 	if (buflen < sizeof(hdr)) {
+		close_fd_array(fds, num_fds);
 		return;
 	}
 	memcpy(&hdr, buf, sizeof(hdr));
@@ -1000,6 +1001,7 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	if (msg == NULL) {
 		msg = malloc(offsetof(struct unix_msg, buf) + hdr.msglen);
 		if (msg == NULL) {
+			close_fd_array(fds, num_fds);
 			return;
 		}
 		*msg = (struct unix_msg) {
@@ -1013,6 +1015,7 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 
 	space = msg->msglen - msg->received;
 	if (buflen > space) {
+		close_fd_array(fds, num_fds);
 		return;
 	}
 
@@ -1020,11 +1023,12 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	msg->received += buflen;
 
 	if (msg->received < msg->msglen) {
+		close_fd_array(fds, num_fds);
 		return;
 	}
 
 	DLIST_REMOVE(ctx->msgs, msg);
-	ctx->recv_callback(ctx, msg->buf, msg->msglen, ctx->private_data);
+	ctx->recv_callback(ctx, msg->buf, msg->msglen, fds, num_fds, ctx->private_data);
 	free(msg);
 }
 
