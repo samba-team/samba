@@ -523,8 +523,10 @@ def autotest(ctx):
     cmd = 'LD_PRELOAD=bin/shared/libsocket-wrapper.so tests/run_tests.sh -e -S -C'
     samba_utils.RUN_COMMAND(cmd)
 
-def dist():
+def show_version(ctx):
+    print VERSION
 
+def dist():
     samba_dist.DIST_FILES('VERSION:VERSION', extend=True)
 
     t = 'include/ctdb_version.h'

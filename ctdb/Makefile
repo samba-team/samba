@@ -23,6 +23,10 @@ autotest:
 quicktest:
 	$(WAF) test --quick $(TEST_OPTIONS)
 
+show_version:
+	@touch .tmplock
+	@WAFLOCK=.tmplock $(WAF) show_version
+
 dist:
 	touch .tmplock
 	WAFLOCK=.tmplock $(WAF) dist
