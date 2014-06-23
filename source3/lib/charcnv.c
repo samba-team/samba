@@ -46,9 +46,9 @@ void gfree_charcnv(void)
  **/
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
-	size_t src_len = strlen(src);
+	size_t src_len = 0;
 	char *tmpbuf = NULL;
-	size_t size;
+	size_t size = 0;
 	bool ret;
 
 	/* No longer allow a length of -1. */
@@ -62,24 +62,32 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 			smb_panic("malloc fail");
 		}
 		if (!strupper_m(tmpbuf)) {
+			if ((flags & (STR_TERMINATE|STR_TERMINATE_ASCII)) &&
+					dest &&
+					dest_len > 0) {
+				*(char *)dest = 0;
+			}
 			SAFE_FREE(tmpbuf);
-			return (size_t)-1;
+			return 0;
 		}
 		src = tmpbuf;
 	}
 
+	src_len = strlen(src);
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
 		src_len++;
 	}
 
 	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, &size);
-	if (ret == false &&
-			(flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
-			&& dest_len > 0) {
-		((char *)dest)[0] = '\0';
-	}
 	SAFE_FREE(tmpbuf);
-	return ret ? size : (size_t)-1;
+	if (ret == false) {
+		if ((flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) &&
+				dest_len > 0) {
+			((char *)dest)[0] = '\0';
+		}
+		return 0;
+	}
+	return size;
 }
 
 /********************************************************************
