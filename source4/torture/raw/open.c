@@ -2034,6 +2034,78 @@ static bool test_ntcreatexdir(struct torture_context *tctx,
 	return true;
 }
 
+/*
+  test opening with truncate on an already open file
+  returns share violation and doesn't truncate the file.
+  Regression test for bug #10671.
+*/
+static bool test_open_for_truncate(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_open io;
+	union smb_fileinfo finfo;
+	const char *fname = BASEDIR "\\torture_open_for_truncate.txt";
+	NTSTATUS status;
+	int fnum = -1;
+	ssize_t val = 0;
+	char c = '\0';
+	bool ret = true;
+
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
+		"Failed to setup up test directory: " BASEDIR);
+
+	torture_comment(tctx, "Testing open truncate disposition.\n");
+
+	/* reasonable default parameters */
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* Write a byte at offset 1k-1. */
+	val =smbcli_write(cli->tree, fnum, 0, &c, 1023, 1);
+	torture_assert_int_equal(tctx, val, 1, "write failed\n");
+
+	/* Now try and open for read/write with truncate - should fail. */
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_WRITE|SEC_RIGHTS_FILE_READ;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+			NTCREATEX_SHARE_ACCESS_WRITE |
+			NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	/* Ensure file size is still 1k */
+	finfo.generic.level = RAW_FILEINFO_GETATTRE;
+	finfo.generic.in.file.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(finfo.getattre.out.size, 1024);
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+
 /* basic testing of all RAW_OPEN_* calls
 */
 struct torture_suite *torture_raw_open(TALLOC_CTX *mem_ctx)
@@ -2057,6 +2129,7 @@ struct torture_suite *torture_raw_open(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "open-for-delete", test_open_for_delete);
 	torture_suite_add_1smb_test(suite, "opendisp-dir", test_ntcreatex_opendisp_dir);
 	torture_suite_add_1smb_test(suite, "ntcreatedir", test_ntcreatexdir);
+	torture_suite_add_1smb_test(suite, "open-for-truncate", test_open_for_truncate);
 
 	return suite;
 }
