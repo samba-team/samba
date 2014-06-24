@@ -126,6 +126,7 @@ interface messaging
 
 		/* smbXsrv messages */
 		MSG_SMBXSRV_SESSION_CLOSE	= 0x0600,
+		MSG_SMBXSRV_CONNECTION_PASS	= 0x0601,
 
 		/* source4 and NTVFS smb server messages */
 		MSG_BRL_RETRY                   = 0x0700,
