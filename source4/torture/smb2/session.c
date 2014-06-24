@@ -1071,6 +1071,137 @@ done:
 	return ret;
 }
 
+bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = cmdline_credentials;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	union smb_fileinfo qfinfo;
+	bool ret = false;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smb2_transport *transport2 = NULL;
+	struct smb2_session *session1_1 = tree1->session;
+	struct smb2_session *session1_2 = NULL;
+	struct smb2_session *session2_1 = NULL;
+	struct smb2_session *session2_2 = NULL;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(caps & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx, "server doesn't support SMB2_CAP_MULTI_CHANNEL\n");
+	}
+
+	/* Add some random component to the file name. */
+	snprintf(fname, 256, "session_bind1_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2,
+			      tctx->ev,
+			      &transport1->options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	session2_2 = tree2->session;
+	transport2 = tree2->session->transport;
+
+	/*
+	 * Now bind the 2nd transport connection to the 1st session
+	 */
+	session1_2 = smb2_session_channel(transport2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2,
+					  session1_1);
+	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session1_2,
+					   cmdline_credentials,
+					   0 /* previous_session_id */);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* use the 1st connection, 1st session */
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h1;
+	tree1->session = session1_1;
+	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* use the 2nd connection, 1st session */
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h1;
+	tree1->session = session1_2;
+	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	tree1->session = session1_1;
+	smb2_util_close(tree1, *h1);
+	h1 = NULL;
+
+	/*
+	 * Now bind the 1st transport connection to the 2nd session
+	 */
+	session2_1 = smb2_session_channel(transport1,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree1,
+					  session2_2);
+	torture_assert(tctx, session2_1 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_1,
+					   cmdline_credentials,
+					   0 /* previous_session_id */);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	tree2->session = session2_1;
+	status = smb2_util_unlink(tree2, fname);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret = true;
+done:
+	talloc_free(tree2);
+	tree1->session = session1_1;
+
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+
+	smb2_util_unlink(tree1, fname);
+
+	talloc_free(tree1);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_session_init(void)
 {
 	struct torture_suite *suite =
@@ -1085,6 +1216,7 @@ struct torture_suite *torture_smb2_session_init(void)
 	torture_suite_add_1smb2_test(suite, "reauth5", test_session_reauth5);
 	torture_suite_add_1smb2_test(suite, "reauth6", test_session_reauth6);
 	torture_suite_add_simple_test(suite, "expire1", test_session_expire1);
+	torture_suite_add_1smb2_test(suite, "bind1", test_session_bind1);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
