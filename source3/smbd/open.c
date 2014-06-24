@@ -840,8 +840,11 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 		}
 
-		/* Actually do the open */
-		status = fd_open_atomic(conn, fsp, local_flags,
+		/*
+		 * Actually do the open - if O_TRUNC is needed handle it
+		 * below under the share mode lock.
+		 */
+		status = fd_open_atomic(conn, fsp, local_flags & ~O_TRUNC,
 				unx_mode, p_file_created);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
@@ -2674,6 +2677,21 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			status = NT_STATUS_ACCESS_DENIED;
 		}
 		return status;
+	}
+
+	/* Should we atomically (to the client at least) truncate ? */
+	if (!new_file_created) {
+		if (flags2 & O_TRUNC) {
+			if (!S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
+				int ret = vfs_set_filelen(fsp, 0);
+				if (ret != 0) {
+					status = map_nt_error_from_unix(errno);
+					TALLOC_FREE(lck);
+					fd_close(fsp);
+					return status;
+				}
+			}
+		}
 	}
 
 	grant_fsp_oplock_type(fsp, lck, oplock_request);
