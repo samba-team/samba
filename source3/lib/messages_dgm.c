@@ -44,6 +44,8 @@ struct messaging_dgm_context {
 
 	void (*recv_cb)(const uint8_t *msg,
 			size_t msg_len,
+			const int *fds,
+			size_t num_fds,
 			void *private_data);
 	void *recv_cb_private_data;
 
@@ -179,6 +181,8 @@ int messaging_dgm_init(struct tevent_context *ev,
 		       uid_t dir_owner,
 		       void (*recv_cb)(const uint8_t *msg,
 				       size_t msg_len,
+				       const int *fds,
+				       size_t num_fds,
 				       void *private_data),
 		       void *recv_cb_private_data)
 {
@@ -330,15 +334,9 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 {
 	struct messaging_dgm_context *dgm_ctx = talloc_get_type_abort(
 		private_data, struct messaging_dgm_context);
-	size_t i;
 
-	/* for now we ignore passed file descriptors */
-	for (i = 0; i < num_fds; i++) {
-		close(fds[i]);
-		fds[i] = -1;
-	}
-
-	dgm_ctx->recv_cb(msg, msg_len, dgm_ctx->recv_cb_private_data);
+	dgm_ctx->recv_cb(msg, msg_len, fds, num_fds,
+			 dgm_ctx->recv_cb_private_data);
 }
 
 int messaging_dgm_cleanup(pid_t pid)

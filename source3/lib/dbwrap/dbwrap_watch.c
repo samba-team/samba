@@ -299,6 +299,9 @@ static bool dbwrap_record_watch_filter(struct messaging_rec *rec,
 	if (rec->msg_type != MSG_DBWRAP_MODIFIED) {
 		return false;
 	}
+	if (rec->num_fds != 0) {
+		return false;
+	}
 	if (rec->buf.length != state->w_key.dsize) {
 		return false;
 	}

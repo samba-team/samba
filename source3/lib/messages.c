@@ -204,6 +204,7 @@ bool message_send_all(struct messaging_context *msg_ctx,
 }
 
 static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
+			      const int *fds, size_t num_fds,
 			      void *private_data)
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
@@ -211,10 +212,27 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 	const struct messaging_hdr *hdr;
 	struct server_id_buf idbuf;
 	struct messaging_rec rec;
+	int64_t fds64[MIN(num_fds, INT8_MAX)];
+	size_t i;
 
 	if (msg_len < sizeof(*hdr)) {
+		for (i=0; i < num_fds; i++) {
+			close(fds[i]);
+		}
 		DEBUG(1, ("message too short: %u\n", (unsigned)msg_len));
 		return;
+	}
+
+	if (num_fds > INT8_MAX) {
+		for (i=0; i < num_fds; i++) {
+			close(fds[i]);
+		}
+		DEBUG(1, ("too many fds: %u\n", (unsigned)num_fds));
+		return;
+	}
+
+	for (i=0; i < num_fds; i++) {
+		fds64[i] = fds[i];
 	}
 
 	/*
@@ -222,8 +240,10 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 	 */
 	hdr = (const struct messaging_hdr *)msg;
 
-	DEBUG(10, ("%s: Received message 0x%x len %u from %s\n", __func__,
-		   (unsigned)hdr->msg_type, (unsigned)(msg_len - sizeof(*hdr)),
+	DEBUG(10, ("%s: Received message 0x%x len %u (num_fds:%u) from %s\n",
+		   __func__, (unsigned)hdr->msg_type,
+		   (unsigned)(msg_len - sizeof(*hdr)),
+		   (unsigned)num_fds,
 		   server_id_str_buf(hdr->src, &idbuf)));
 
 	rec = (struct messaging_rec) {
@@ -232,7 +252,9 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 		.src = hdr->src,
 		.dest = hdr->dst,
 		.buf.data = discard_const_p(uint8, msg) + sizeof(*hdr),
-		.buf.length = msg_len - sizeof(*hdr)
+		.buf.length = msg_len - sizeof(*hdr),
+		.num_fds = num_fds,
+		.fds = fds64,
 	};
 
 	messaging_dispatch_rec(msg_ctx, &rec);
@@ -501,9 +523,10 @@ static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 					       struct messaging_rec *rec)
 {
 	struct messaging_rec *result;
+	size_t fds_size = sizeof(int64_t) * rec->num_fds;
 
-	result = talloc_pooled_object(mem_ctx, struct messaging_rec,
-				      1, rec->buf.length);
+	result = talloc_pooled_object(mem_ctx, struct messaging_rec, 2,
+				      rec->buf.length + fds_size);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -513,6 +536,13 @@ static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 
 	result->buf.data = talloc_memdup(result, rec->buf.data,
 					 rec->buf.length);
+
+	result->fds = NULL;
+	if (result->num_fds > 0) {
+		result->fds = talloc_array(result, int64_t, result->num_fds);
+		memcpy(result->fds, rec->fds, fds_size);
+	}
+
 	return result;
 }
 
@@ -692,6 +722,10 @@ static bool messaging_read_filter(struct messaging_rec *rec,
 	struct messaging_read_state *state = talloc_get_type_abort(
 		private_data, struct messaging_read_state);
 
+	if (rec->num_fds != 0) {
+		return false;
+	}
+
 	return rec->msg_type == state->msg_type;
 }
 
@@ -825,12 +859,23 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 {
 	struct messaging_callback *cb, *next;
 	unsigned i;
+	size_t j;
 
 	for (cb = msg_ctx->callbacks; cb != NULL; cb = next) {
 		next = cb->next;
 		if (cb->msg_type != rec->msg_type) {
 			continue;
 		}
+
+		/*
+		 * the old style callbacks don't support fd passing
+		 */
+		for (j=0; j < rec->num_fds; j++) {
+			int fd = rec->fds[j];
+			close(fd);
+		}
+		rec->num_fds = 0;
+		rec->fds = NULL;
 
 		if (server_id_same_process(&rec->src, &rec->dest)) {
 			/*
@@ -859,6 +904,12 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 	}
 
 	if (!messaging_append_new_waiters(msg_ctx)) {
+		for (j=0; j < rec->num_fds; j++) {
+			int fd = rec->fds[j];
+			close(fd);
+		}
+		rec->num_fds = 0;
+		rec->fds = NULL;
 		return;
 	}
 
@@ -889,10 +940,26 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			req, struct messaging_filtered_read_state);
 		if (state->filter(rec, state->private_data)) {
 			messaging_filtered_read_done(req, rec);
+
+			/*
+			 * Only the first one gets the fd-array
+			 */
+			rec->num_fds = 0;
+			rec->fds = NULL;
 		}
 
 		i += 1;
 	}
+
+	/*
+	 * If the fd-array isn't used, just close it.
+	 */
+	for (j=0; j < rec->num_fds; j++) {
+		int fd = rec->fds[j];
+		close(fd);
+	}
+	rec->num_fds = 0;
+	rec->fds = NULL;
 }
 
 static int mess_parent_dgm_cleanup(void *private_data);

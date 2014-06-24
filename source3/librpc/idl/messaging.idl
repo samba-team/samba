@@ -130,5 +130,7 @@ interface messaging
 		server_id dest;
 		server_id src;
 		DATA_BLOB buf;
+		uint8 num_fds;
+		dlong fds[num_fds];
 	} messaging_rec;
 }
