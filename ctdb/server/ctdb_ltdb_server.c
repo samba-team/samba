@@ -1065,6 +1065,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	struct ctdb_client *client = NULL;
+	bool with_jenkinshash;
 
 	if (ctdb->tunable.allow_client_db_attach == 0) {
 		DEBUG(DEBUG_ERR, ("DB Attach to database %s denied by tunable "
@@ -1134,7 +1135,10 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return 0;
 	}
 
-	if (ctdb_local_attach(ctdb, db_name, persistent, NULL, (tdb_flags&TDB_INCOMPATIBLE_HASH)?true:false) != 0) {
+	with_jenkinshash = (tdb_flags & TDB_INCOMPATIBLE_HASH) ? true : false;
+
+	if (ctdb_local_attach(ctdb, db_name, persistent, NULL,
+			      with_jenkinshash) != 0) {
 		return -1;
 	}
 
