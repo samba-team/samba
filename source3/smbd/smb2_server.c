@@ -506,24 +506,25 @@ inval:
 }
 
 static NTSTATUS smbd_smb2_request_create(struct smbXsrv_connection *xconn,
-					 uint8_t *inbuf, size_t size,
+					 const uint8_t *_inpdu, size_t size,
 					 struct smbd_smb2_request **_req)
 {
 	struct smbd_server_connection *sconn = xconn->sconn;
 	struct smbd_smb2_request *req;
 	uint32_t protocol_version;
+	uint8_t *inpdu = NULL;
 	const uint8_t *inhdr = NULL;
 	uint16_t cmd;
 	uint32_t next_command_ofs;
 	NTSTATUS status;
 	NTTIME now;
 
-	if (size < (4 + SMB2_HDR_BODY + 2)) {
+	if (size < (SMB2_HDR_BODY + 2)) {
 		DEBUG(0,("Invalid SMB2 packet length count %ld\n", (long)size));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	inhdr = inbuf + 4;
+	inhdr = _inpdu;
 
 	protocol_version = IVAL(inhdr, SMB2_HDR_PROTOCOL_ID);
 	if (protocol_version != SMB2_MAGIC) {
@@ -553,15 +554,18 @@ static NTSTATUS smbd_smb2_request_create(struct smbXsrv_connection *xconn,
 	req->sconn = sconn;
 	req->xconn = xconn;
 
-	talloc_steal(req, inbuf);
+	inpdu = talloc_memdup(req, _inpdu, size);
+	if (inpdu == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	req->request_time = timeval_current();
 	now = timeval_to_nttime(&req->request_time);
 
 	status = smbd_smb2_inbuf_parse_compound(xconn,
 						now,
-						inbuf + NBT_HDR_SIZE,
-						size - NBT_HDR_SIZE,
+						inpdu,
+						size,
 						req, &req->in.vector,
 						&req->in.vector_count);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2997,7 +3001,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn
 }
 
 void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
-			     uint8_t *inbuf, size_t size)
+			     const uint8_t *inpdu, size_t size)
 {
 	struct smbd_server_connection *sconn = xconn->sconn;
 	NTSTATUS status;
@@ -3012,7 +3016,7 @@ void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 		return;
 	}
 
-	status = smbd_smb2_request_create(xconn, inbuf, size, &req);
+	status = smbd_smb2_request_create(xconn, inpdu, size, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;

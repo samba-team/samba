@@ -33,19 +33,19 @@ extern fstring remote_proto;
  */
 static void reply_smb20xx(struct smb_request *req, uint16_t dialect)
 {
-	uint8_t *smb2_inbuf;
+	uint8_t *smb2_inpdu;
 	uint8_t *smb2_hdr;
 	uint8_t *smb2_body;
 	uint8_t *smb2_dyn;
-	size_t len = 4 + SMB2_HDR_BODY + 0x24 + 2;
+	size_t len = SMB2_HDR_BODY + 0x24 + 2;
 
-	smb2_inbuf = talloc_zero_array(talloc_tos(), uint8_t, len);
-	if (smb2_inbuf == NULL) {
+	smb2_inpdu = talloc_zero_array(talloc_tos(), uint8_t, len);
+	if (smb2_inpdu == NULL) {
 		DEBUG(0, ("Could not push spnego blob\n"));
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
-	smb2_hdr = smb2_inbuf + 4;
+	smb2_hdr = smb2_inpdu;
 	smb2_body = smb2_hdr + SMB2_HDR_BODY;
 	smb2_dyn = smb2_body + 0x24;
 
@@ -59,7 +59,7 @@ static void reply_smb20xx(struct smb_request *req, uint16_t dialect)
 
 	req->outbuf = NULL;
 
-	smbd_smb2_first_negprot(req->xconn, smb2_inbuf, len);
+	smbd_smb2_first_negprot(req->xconn, smb2_inpdu, len);
 	return;
 }
 
