@@ -2096,6 +2096,19 @@ static bool test_open_for_truncate(struct torture_context *tctx, struct smbcli_s
 	CHECK_VAL(finfo.getattre.out.size, 1024);
 
 	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* Ensure truncate actually works */
+	finfo.generic.level = RAW_FILEINFO_GETATTRE;
+	finfo.generic.in.file.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(finfo.getattre.out.size, 0);
+
+	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 
 done:
