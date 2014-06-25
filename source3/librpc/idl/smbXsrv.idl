@@ -177,6 +177,20 @@ interface smbXsrv
 	 * smbXsrv_session for version 1
 	 * and could implement transparent mapping.
 	 */
+
+	typedef struct {
+		[ignore] smbXsrv_session_auth0		*prev;
+		smbXsrv_session_auth0			*next;
+		[ignore] smbXsrv_session		*session;
+		[ignore] smbXsrv_connection		*connection;
+		[ignore] gensec_security		*gensec;
+		[ignore] smbXsrv_preauth		*preauth;
+		uint8					in_flags;
+		uint8					in_security_mode;
+		NTTIME					creation_time;
+		NTTIME					idle_time;
+	} smbXsrv_session_auth0;
+
 	typedef struct {
 		[ignore] smbXsrv_session_table		*table;
 		[ignore] db_record 			*db_rec;
@@ -193,6 +207,7 @@ interface smbXsrv
 		[ignore] user_struct			*compat;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
 		[ignore] smbXsrv_preauth		*preauth;
+		smbXsrv_session_auth0			*pending_auth;
 		boolean8				encryption_desired;
 	} smbXsrv_session;
 
