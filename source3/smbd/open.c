@@ -2650,17 +2650,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	/* Should we atomically (to the client at least) truncate ? */
-	if (!new_file_created) {
-		if (flags2 & O_TRUNC) {
-			if (!S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
-				int ret = vfs_set_filelen(fsp, 0);
-				if (ret != 0) {
-					status = map_nt_error_from_unix(errno);
-					TALLOC_FREE(lck);
-					fd_close(fsp);
-					return status;
-				}
-			}
+	if ((!new_file_created) &&
+	    (flags2 & O_TRUNC) &&
+	    (!S_ISFIFO(fsp->fsp_name->st.st_ex_mode))) {
+		int ret;
+
+		ret = vfs_set_filelen(fsp, 0);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(lck);
+			fd_close(fsp);
+			return status;
 		}
 	}
 
