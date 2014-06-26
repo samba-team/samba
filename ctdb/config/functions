@@ -681,7 +681,8 @@ startstop_nfs() {
 	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
 		PLATFORM="sles"
 	}
-	[ -x $CTDB_ETCDIR/init.d/nfslock ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfslock -o \
+	    -r /usr/lib/systemd/system/nfs-lock.service ] && {
 		PLATFORM="rhel"
 	}
 
@@ -761,7 +762,8 @@ startstop_nfslock() {
 	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
 		PLATFORM="sles"
 	}
-	[ -x $CTDB_ETCDIR/init.d/nfslock ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfslock -o \
+	    -r /usr/lib/systemd/system/nfs-lock.service ] && {
 		PLATFORM="rhel"
 	}
 
