@@ -664,19 +664,6 @@ static void remove_pending_lock(struct smbd_smb2_lock_state *state,
 				blr);
 		TALLOC_FREE(br_lck);
 	}
-
-	/* Remove the locks we already got. */
-
-	for(i = blr->lock_num - 1; i >= 0; i--) {
-		struct smbd_lock_element *e = &state->locks[i];
-
-		do_unlock(blr->fsp->conn->sconn->msg_ctx,
-			blr->fsp,
-			e->smblctx,
-			e->count,
-			e->offset,
-			WINDOWS_LOCK);
-	}
 }
 
 /****************************************************************
