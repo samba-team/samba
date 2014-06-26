@@ -39,7 +39,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 # Required minimum library versions when building with system libraries
 %define libtalloc_version 2.0.8
 %define libtdb_version 1.2.11
-%define libtevent_version 0.9.18
+%define libtevent_version 0.9.16
 
 %if ! %with_included_talloc
 BuildRequires: libtalloc-devel >= %{libtalloc_version}
