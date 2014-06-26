@@ -707,10 +707,10 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 	}
 	if ((timeout < time(NULL)) || (val.dsize == 0)) {
 		res = tdb_delete(cache, key);
-		if ((res != 0) && (tdb_error(cache) == TDB_ERR_NOEXIST)) {
-			res = 0;
-		} else {
+		if (res == 0) {
 			state->written = true;
+		} else if (tdb_error(cache) == TDB_ERR_NOEXIST) {
+			res = 0;
 		}
 	} else {
 		res = tdb_store(cache, key, val, 0);
