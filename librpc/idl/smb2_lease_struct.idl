@@ -18,8 +18,8 @@ interface smb2_lease_struct
 
 	typedef [public,bitmap32bit] bitmap {
 		SMB2_LEASE_READ = 0x01,
-		SMB2_LEASE_WRITE = 0x02,
-		SMB2_LEASE_HANDLE = 0x04
+		SMB2_LEASE_HANDLE = 0x02,
+		SMB2_LEASE_WRITE = 0x04
 	} smb2_lease_state;
 
 	typedef [public] struct {
