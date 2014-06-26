@@ -724,6 +724,7 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 			fsp_fnum_dbg(fsp),
 			(int)state->lock_count));
 
+		remove_pending_lock(state, blr);
 		tevent_req_done(smb2req->subreq);
 		return;
 	}
