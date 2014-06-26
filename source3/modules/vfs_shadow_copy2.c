@@ -264,7 +264,12 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		goto no_snapshot;
 	}
 	if (q[0] == '\0') {
-		/* the name consists of only the GMT token */
+		/*
+		 * The name consists of only the GMT token or the GMT
+		 * token is at the end of the path. XP seems to send
+		 * @GMT- at the end under certain circumstances even
+		 * with a path prefix.
+		 */
 		if (pstripped != NULL) {
 			stripped = talloc_strndup(mem_ctx, name, p - name);
 			if (stripped == NULL) {
@@ -277,12 +282,8 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	}
 	if (q[0] != '/') {
 		/*
-		 * The GMT token is either at the end of the path
-		 * or it is not a complete path component, i.e. the
-		 * path component continues after the gmt-token.
-		 *
-		 * TODO: Is this correct? Or would the GMT tag as the
-		 * last component be a valid input?
+		 * It is not a complete path component, i.e. the path
+		 * component continues after the gmt-token.
 		 */
 		DEBUG(10, ("q[0] = %d\n", (int)q[0]));
 		goto no_snapshot;
