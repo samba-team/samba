@@ -361,10 +361,17 @@ static void handle_tree_input(struct regedit *regedit, int c)
 	case KEY_RIGHT:
 		node = tree_view_get_current_node(regedit->keys);
 		if (node && tree_node_has_children(node)) {
-			tree_node_load_children(node);
-			print_path(regedit, node->child_head);
-			tree_view_update(regedit->keys, node->child_head);
-			value_list_load(regedit->vl, node->child_head->key);
+			WERROR rv;
+
+			rv = tree_node_load_children(node);
+			if (W_ERROR_IS_OK(rv)) {
+				print_path(regedit, node->child_head);
+				tree_view_update(regedit->keys, node->child_head);
+				value_list_load(regedit->vl, node->child_head->key);
+			} else {
+				dialog_notice(regedit, DIA_ALERT, "Loading Subkeys",
+					      "Failed to load subkeys.");
+			}
 		}
 		break;
 	case KEY_LEFT:
