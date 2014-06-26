@@ -677,6 +677,8 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct blocking_lock_record *blr = NULL;
 	struct smbd_smb2_lock_state *state = NULL;
+	struct byte_range_lock *br_lck = NULL;
+	struct smbd_lock_element *e = NULL;
 	files_struct *fsp = NULL;
 
 	if (!smb2req->subreq) {
@@ -690,34 +692,30 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 	blr = state->blr;
 	fsp = blr->fsp;
 
-	/* Try and finish off getting all the outstanding locks. */
+	/* We can only have one blocked lock in SMB2. */
+	SMB_ASSERT(state->lock_count == 1);
+	SMB_ASSERT(blr->lock_num == 0);
 
-	for (; blr->lock_num < state->lock_count; blr->lock_num++) {
-		struct byte_range_lock *br_lck = NULL;
-		struct smbd_lock_element *e = &state->locks[blr->lock_num];
+	/* Try and get the outstanding lock. */
+	e = &state->locks[blr->lock_num];
 
-		br_lck = do_lock(fsp->conn->sconn->msg_ctx,
-				fsp,
-				e->smblctx,
-				e->count,
-				e->offset,
-				e->brltype,
-				WINDOWS_LOCK,
-				true,
-				&status,
-				&blr->blocking_smblctx,
-				blr);
+	br_lck = do_lock(fsp->conn->sconn->msg_ctx,
+			fsp,
+			e->smblctx,
+			e->count,
+			e->offset,
+			e->brltype,
+			WINDOWS_LOCK,
+			true,
+			&status,
+			&blr->blocking_smblctx,
+			blr);
 
-		TALLOC_FREE(br_lck);
+	TALLOC_FREE(br_lck);
 
-		if (NT_STATUS_IS_ERR(status)) {
-			break;
-		}
-	}
-
-	if(blr->lock_num == state->lock_count) {
+	if (NT_STATUS_IS_OK(status)) {
 		/*
-		 * Success - we got all the locks.
+		 * Success - we got the lock.
 		 */
 
 		DEBUG(3,("reprocess_blocked_smb2_lock SUCCESS file = %s, "
@@ -742,7 +740,7 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
         }
 
 	/*
-	 * We couldn't get the locks for this record on the list.
+	 * We couldn't get the lock for this record.
 	 * If the time has expired, return a lock error.
 	 */
 
@@ -754,18 +752,15 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 	}
 
 	/*
-	 * Still can't get all the locks - keep waiting.
+	 * Still can't get the lock - keep waiting.
 	 */
 
-	DEBUG(10,("reprocess_blocked_smb2_lock: only got %d locks of %d needed "
+	DEBUG(10,("reprocess_blocked_smb2_lock: failed to get lock "
 		"for file %s, %s. Still waiting....\n",
-		(int)blr->lock_num,
-		(int)state->lock_count,
 		fsp_str_dbg(fsp),
 		fsp_fnum_dbg(fsp)));
 
         return;
-
 }
 
 /****************************************************************
