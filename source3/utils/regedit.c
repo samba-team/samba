@@ -235,6 +235,10 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 			list = tree_node_first(node);
 			tree_view_clear(regedit->keys);
 			tree_view_update(regedit->keys, list);
+			if (!subkey) {
+				node = new_node;
+			}
+			tree_view_set_current_node(regedit->keys, node);
 		} else {
 			msg = get_friendly_werror_msg(rv);
 			dialog_notice(regedit, DIA_ALERT, "New Key",
