@@ -216,6 +216,15 @@ NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
 	return NT_STATUS_OK;
 }
 
+static void smb_parent_send_to_children(struct messaging_context *ctx,
+					void* data,
+					uint32_t msg_type,
+					struct server_id srv_id,
+					DATA_BLOB* msg_data)
+{
+	messaging_send_to_children(ctx, msg_type, msg_data);
+}
+
 /*
  * Parent smbd process sets its own debug level first and then
  * sends a message to all the smbd children to adjust their debug
@@ -359,26 +368,6 @@ static void smbd_parent_notify_proxy_done(struct tevent_req *req)
 	ret = notify_cluster_proxy_recv(req);
 	TALLOC_FREE(req);
 	DEBUG(1, ("notify proxy job ended with %s\n", strerror(ret)));
-}
-
-static void smb_parent_force_tdis(struct messaging_context *ctx,
-				  void* data,
-				  uint32_t msg_type,
-				  struct server_id srv_id,
-				  DATA_BLOB* msg_data)
-{
-	messaging_send_to_children(ctx, msg_type, msg_data);
-}
-
-static void smb_parent_kill_client_by_ip(struct messaging_context *ctx,
-					 void *data,
-					 uint32_t msg_type,
-					 struct server_id srv_id,
-					 DATA_BLOB* msg_data)
-{
-	if (am_parent) {
-		messaging_send_to_children(ctx, msg_type, msg_data);
-	}
 }
 
 static void add_child_pid(struct smbd_parent_context *parent,
@@ -910,9 +899,9 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_BRL_VALIDATE,
 			   brl_revalidate);
 	messaging_register(msg_ctx, NULL, MSG_SMB_FORCE_TDIS,
-			   smb_parent_force_tdis);
+			   smb_parent_send_to_children);
 	messaging_register(msg_ctx, NULL, MSG_SMB_KILL_CLIENT_IP,
-			   smb_parent_kill_client_by_ip);
+			   smb_parent_send_to_children);
 	messaging_register(msg_ctx, NULL, MSG_SMB_TELL_NUM_CHILDREN,
 			   smb_tell_num_children);
 
