@@ -9,7 +9,8 @@ loadconfig ctdb
 
 # Testing hook
 if [ -n "$CTDB_DEBUG_HUNG_SCRIPT_LOGFILE" ] ; then
-    exec >>"$CTDB_DEBUG_HUNG_SCRIPT_LOGFILE" 2>&1
+    tmp="${CTDB_DEBUG_HUNG_SCRIPT_LOGFILE}.part"
+    exec >>"$tmp" 2>&1
 fi
 
 (
@@ -47,5 +48,9 @@ fi
     fi
 
     echo "===== End of hung script debug for PID=\"$1\", event=\"$2\" ====="
+
+    if [ -n "$CTDB_DEBUG_HUNG_SCRIPT_LOGFILE" ] ; then
+	mv "$tmp" "$CTDB_DEBUG_HUNG_SCRIPT_LOGFILE"
+    fi
 
 ) 9>"${CTDB_VARDIR}/debug-hung-script.lock"

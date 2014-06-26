@@ -66,6 +66,10 @@ try_command_on_node $test_node chmod +x "$rc_local_f"
 
 wait_for_monitor_event $test_node
 
+echo "Waiting for debugging output to appear..."
+# Use test -s because the file is created above using mktemp
+wait_until 60 onnode $test_node test -s "$debug_output"
+
 echo "Checking output of hung script debugging..."
 try_command_on_node -v $test_node cat "$debug_output"
 
