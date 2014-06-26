@@ -380,8 +380,9 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		node = tree_view_get_current_node(regedit->keys);
 		if (node && node->parent) {
 			print_path(regedit, node->parent);
-			node = tree_node_first(node->parent);
-			tree_view_update(regedit->keys, node);
+			node = node->parent;
+			tree_view_update(regedit->keys, tree_node_first(node));
+			tree_view_set_current_node(regedit->keys, node);
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
