@@ -179,7 +179,7 @@ WERROR tree_node_load_children(struct tree_node *node)
 	struct registry_key *key;
 	const char *key_name, *klass;
 	NTTIME modified;
-	uint32_t i, nsubkeys;
+	uint32_t i, nsubkeys, count;
 	WERROR rv;
 	struct tree_node *prev, **array;
 
@@ -196,7 +196,7 @@ WERROR tree_node_load_children(struct tree_node *node)
 		return WERR_NOMEM;
 	}
 
-	for (i = 0; i < nsubkeys; ++i) {
+	for (count = 0, i = 0; i < nsubkeys; ++i) {
 		rv = reg_key_get_subkey_by_index(node, node->key, i,
 						 &key_name, &klass,
 						 &modified);
@@ -206,25 +206,28 @@ WERROR tree_node_load_children(struct tree_node *node)
 
 		rv = reg_open_key(node, node->key, key_name, &key);
 		if (!W_ERROR_IS_OK(rv)) {
-			goto finish;
+			continue;
 		}
 
-		array[i] = tree_node_new(node, node, key_name, key);
-		if (array[i] == NULL) {
+		array[count] = tree_node_new(node, node, key_name, key);
+		if (array[count] == NULL) {
 			rv = WERR_NOMEM;
 			goto finish;
 		}
+		++count;
 	}
 
-	TYPESAFE_QSORT(array, nsubkeys, node_cmp);
+	if (count) {
+		TYPESAFE_QSORT(array, count, node_cmp);
 
-	for (i = 1, prev = array[0]; i < nsubkeys; ++i) {
-		tree_node_append(prev, array[i]);
-		prev = array[i];
+		for (i = 1, prev = array[0]; i < count; ++i) {
+			tree_node_append(prev, array[i]);
+			prev = array[i];
+		}
+		node->child_head = array[0];
+
+		rv = WERR_OK;
 	}
-	node->child_head = array[0];
-
-	rv = WERR_OK;
 
 finish:
 	if (!W_ERROR_IS_OK(rv)) {
