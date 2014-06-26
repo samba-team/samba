@@ -236,8 +236,9 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 			tree_view_clear(regedit->keys);
 			tree_view_update(regedit->keys, list);
 		} else {
+			msg = get_friendly_werror_msg(rv);
 			dialog_notice(regedit, DIA_ALERT, "New Key",
-				      "Failed to create key.");
+				      "Failed to create key: %s", msg);
 		}
 		talloc_free(discard_const(name));
 	}
@@ -369,8 +370,9 @@ static void handle_tree_input(struct regedit *regedit, int c)
 				tree_view_update(regedit->keys, node->child_head);
 				value_list_load(regedit->vl, node->child_head->key);
 			} else {
+				const char *msg = get_friendly_werror_msg(rv);
 				dialog_notice(regedit, DIA_ALERT, "Loading Subkeys",
-					      "Failed to load subkeys.");
+					      "Failed to load subkeys: %s", msg);
 			}
 		}
 		break;
@@ -423,8 +425,9 @@ static void handle_tree_input(struct regedit *regedit, int c)
 				tree_view_update(regedit->keys, node);
 				value_list_load(regedit->vl, node->key);
 			} else {
+				const char *msg = get_friendly_werror_msg(rv);
 				dialog_notice(regedit, DIA_ALERT, "Delete Key",
-					      "Failed to delete key.");
+					      "Failed to delete key: %s", msg);
 			}
 		}
 		break;
