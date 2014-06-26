@@ -614,7 +614,6 @@ fail:
 
 struct stabilize_state {
 	bool written;
-	bool error;
 };
 static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 			void *priv);
@@ -660,11 +659,10 @@ bool gencache_stabilize(void)
 		return false;
 	}
 
-	state.error = false;
 	state.written = false;
 
 	res = tdb_traverse(cache_notrans, stabilize_fn, &state);
-	if ((res < 0) || state.error) {
+	if (res < 0) {
 		tdb_transaction_cancel(cache_notrans);
 		tdb_transaction_cancel(cache);
 		return false;
@@ -733,14 +731,12 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 	if (res != 0) {
 		DEBUG(10, ("Transfer to gencache.tdb failed: %s\n",
 			   tdb_errorstr_compat(cache)));
-		state->error = true;
 		return -1;
 	}
 
 	if (tdb_delete(cache_notrans, key) != 0) {
 		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
 			   "%s\n", tdb_errorstr_compat(cache_notrans)));
-		state->error = true;
 		return -1;
 	}
 	return 0;
