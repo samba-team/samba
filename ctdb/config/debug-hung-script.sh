@@ -13,6 +13,9 @@ if [ -n "$CTDB_DEBUG_HUNG_SCRIPT_LOGFILE" ] ; then
 fi
 
 (
+    # No use running several of these in parallel if, say, "releaseip"
+    # event hangs for multiple IPs.  In that case the output would be
+    # interleaved in the log and would just be confusing.
     flock --wait 2 9 || exit 1
 
     echo "===== Start of hung script debug for PID=\"$1\", event=\"$2\" ====="
@@ -38,15 +41,10 @@ fi
 	fi
     done
 
-    if [ "$2" = "init" ] ; then
-	exit 0
+    if [ "$2" != "init" ] ; then
+	echo "---- ctdb scriptstatus ${2}: ----"
+	ctdb scriptstatus "$2"
     fi
-
-    echo "---- ctdb scriptstatus ${2}: ----"
-    # No use running several of these in parallel if, say, "releaseip"
-    # event hangs for multiple IPs.  In that case the output would be
-    # interleaved in the log and would just be confusing.
-    ctdb scriptstatus "$2"
 
     echo "===== End of hung script debug for PID=\"$1\", event=\"$2\" ====="
 
