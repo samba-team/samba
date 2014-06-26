@@ -961,8 +961,6 @@ void delete_and_reload_printers(struct tevent_context *ev,
 bool reload_services(struct smbd_server_connection *sconn,
 		     bool (*snumused) (struct smbd_server_connection *, int),
 		     bool test);
-NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
-				    uint32_t msg_type, DATA_BLOB* data);
 
 /* The following definitions come from smbd/server_exit.c  */
 

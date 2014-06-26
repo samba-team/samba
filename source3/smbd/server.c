@@ -194,8 +194,8 @@ static void msg_inject_fault(struct messaging_context *msg,
 }
 #endif /* DEVELOPER */
 
-NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
-				    uint32_t msg_type, DATA_BLOB* data)
+static NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
+					   uint32_t msg_type, DATA_BLOB* data)
 {
 	NTSTATUS status;
 	struct smbd_parent_context *parent = am_parent;
