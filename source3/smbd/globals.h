@@ -115,6 +115,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn);
 
 void smbd_lock_socket(struct smbd_server_connection *sconn);
 void smbd_unlock_socket(struct smbd_server_connection *sconn);
+void smbd_echo_init(struct smbd_server_connection *sconn);
 
 NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
@@ -696,10 +697,19 @@ struct smbd_server_connection {
 		struct tevent_fd *fde;
 
 		struct {
+
 			/*
-			 * fd for the fcntl lock mutexing access to our sock
+			 * fd for the fcntl lock and process shared
+			 * robust mutex to coordinate access to the
+			 * client socket. When the system supports
+			 * process shared robust mutexes, those are
+			 * used. If not, then the fcntl lock will be
+			 * used.
 			 */
 			int socket_lock_fd;
+#ifdef HAVE_ROBUST_MUTEXES
+			pthread_mutex_t *socket_mutex;
+#endif
 
 			/*
 			 * fd for the trusted pipe from

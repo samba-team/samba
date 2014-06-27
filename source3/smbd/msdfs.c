@@ -247,8 +247,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	sconn->ev_ctx = ev;
 	sconn->msg_ctx = msg;
 	sconn->sock = -1;
-	sconn->smb1.echo_handler.trusted_fd = -1;
-	sconn->smb1.echo_handler.socket_lock_fd = -1;
+	smbd_echo_init(sconn);
 
 	conn = conn_new(sconn);
 	if (conn == NULL) {

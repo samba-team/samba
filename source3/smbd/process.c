@@ -40,6 +40,7 @@
 #include "../libcli/security/security_token.h"
 #include "lib/id_cache.h"
 #include "serverid.h"
+#include "system/threads.h"
 
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
@@ -61,11 +62,33 @@ static struct pending_message_list *get_deferred_open_message_smb(
 	struct smbd_server_connection *sconn, uint64_t mid);
 static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf);
 
+void smbd_echo_init(struct smbd_server_connection *sconn)
+{
+	sconn->smb1.echo_handler.trusted_fd = -1;
+	sconn->smb1.echo_handler.socket_lock_fd = -1;
+#ifdef HAVE_ROBUST_MUTEXES
+	sconn->smb1.echo_handler.socket_mutex = NULL;
+#endif
+}
+
+static bool smbd_echo_active(struct smbd_server_connection *sconn)
+{
+	if (sconn->smb1.echo_handler.socket_lock_fd != -1) {
+		return true;
+	}
+
+#ifdef HAVE_ROBUST_MUTEXES
+	if (sconn->smb1.echo_handler.socket_mutex != NULL) {
+		return true;
+	}
+#endif
+
+	return false;
+}
+
 static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 {
-	bool ok;
-
-	if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
+	if (!smbd_echo_active(sconn)) {
 		return true;
 	}
 
@@ -77,15 +100,38 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 
 	DEBUG(10,("pid[%d] wait for socket lock\n", (int)getpid()));
 
-	do {
-		ok = fcntl_lock(
-			sconn->smb1.echo_handler.socket_lock_fd,
-			F_SETLKW, 0, 0, F_WRLCK);
-	} while (!ok && (errno == EINTR));
+#ifdef HAVE_ROBUST_MUTEXES
+	if (sconn->smb1.echo_handler.socket_mutex != NULL) {
+		int ret = EINTR;
 
-	if (!ok) {
-		DEBUG(1, ("fcntl_lock failed: %s\n", strerror(errno)));
-		return false;
+		while (ret == EINTR) {
+			ret = pthread_mutex_lock(
+				sconn->smb1.echo_handler.socket_mutex);
+			if (ret == 0) {
+				break;
+			}
+		}
+		if (ret != 0) {
+			DEBUG(1, ("pthread_mutex_lock failed: %s\n",
+				  strerror(ret)));
+			return false;
+		}
+	}
+#endif
+
+	if (sconn->smb1.echo_handler.socket_lock_fd != -1) {
+		bool ok;
+
+		do {
+			ok = fcntl_lock(
+				sconn->smb1.echo_handler.socket_lock_fd,
+				F_SETLKW, 0, 0, F_WRLCK);
+		} while (!ok && (errno == EINTR));
+
+		if (!ok) {
+			DEBUG(1, ("fcntl_lock failed: %s\n", strerror(errno)));
+			return false;
+		}
 	}
 
 	DEBUG(10,("pid[%d] got socket lock\n", (int)getpid()));
@@ -102,9 +148,7 @@ void smbd_lock_socket(struct smbd_server_connection *sconn)
 
 static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 {
-	bool ok;
-
-	if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
+	if (!smbd_echo_active(sconn)) {
 		return true;
 	}
 
@@ -114,15 +158,38 @@ static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 		return true;
 	}
 
-	do {
-		ok = fcntl_lock(
-			sconn->smb1.echo_handler.socket_lock_fd,
-			F_SETLKW, 0, 0, F_UNLCK);
-	} while (!ok && (errno == EINTR));
+#ifdef HAVE_ROBUST_MUTEXES
+	if (sconn->smb1.echo_handler.socket_mutex != NULL) {
+		int ret = EINTR;
 
-	if (!ok) {
-		DEBUG(1, ("fcntl_lock failed: %s\n", strerror(errno)));
-		return false;
+		while (ret == EINTR) {
+			ret = pthread_mutex_unlock(
+				sconn->smb1.echo_handler.socket_mutex);
+			if (ret == 0) {
+				break;
+			}
+		}
+		if (ret != 0) {
+			DEBUG(1, ("pthread_mutex_unlock failed: %s\n",
+				  strerror(ret)));
+			return false;
+		}
+	}
+#endif
+
+	if (sconn->smb1.echo_handler.socket_lock_fd != -1) {
+		bool ok;
+
+		do {
+			ok = fcntl_lock(
+				sconn->smb1.echo_handler.socket_lock_fd,
+				F_SETLKW, 0, 0, F_UNLCK);
+		} while (!ok && (errno == EINTR));
+
+		if (!ok) {
+			DEBUG(1, ("fcntl_lock failed: %s\n", strerror(errno)));
+			return false;
+		}
 	}
 
 	DEBUG(10,("pid[%d] unlocked socket\n", (int)getpid()));
@@ -3135,16 +3202,74 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 	int listener_pipe[2];
 	int res;
 	pid_t child;
+	bool use_mutex = false;
 
 	res = pipe(listener_pipe);
 	if (res == -1) {
 		DEBUG(1, ("pipe() failed: %s\n", strerror(errno)));
 		return false;
 	}
-	sconn->smb1.echo_handler.socket_lock_fd = create_unlink_tmp(lp_lock_directory());
-	if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
-		DEBUG(1, ("Could not create lock fd: %s\n", strerror(errno)));
-		goto fail;
+
+#ifdef HAVE_ROBUST_MUTEXES
+	use_mutex = tdb_runtime_check_for_robust_mutexes();
+
+	if (use_mutex) {
+		pthread_mutexattr_t a;
+
+		sconn->smb1.echo_handler.socket_mutex =
+			anonymous_shared_allocate(sizeof(pthread_mutex_t));
+		if (sconn->smb1.echo_handler.socket_mutex == NULL) {
+			DEBUG(1, ("Could not create mutex shared memory: %s\n",
+				  strerror(errno)));
+			goto fail;
+		}
+
+		res = pthread_mutexattr_init(&a);
+		if (res != 0) {
+			DEBUG(1, ("pthread_mutexattr_init failed: %s\n",
+				  strerror(res)));
+			goto fail;
+		}
+		res = pthread_mutexattr_settype(&a, PTHREAD_MUTEX_ERRORCHECK);
+		if (res != 0) {
+			DEBUG(1, ("pthread_mutexattr_settype failed: %s\n",
+				  strerror(res)));
+			pthread_mutexattr_destroy(&a);
+			goto fail;
+		}
+		res = pthread_mutexattr_setpshared(&a, PTHREAD_PROCESS_SHARED);
+		if (res != 0) {
+			DEBUG(1, ("pthread_mutexattr_setpshared failed: %s\n",
+				  strerror(res)));
+			pthread_mutexattr_destroy(&a);
+			goto fail;
+		}
+		res = pthread_mutexattr_setrobust(&a, PTHREAD_MUTEX_ROBUST);
+		if (res != 0) {
+			DEBUG(1, ("pthread_mutexattr_setrobust failed: "
+				  "%s\n", strerror(res)));
+			pthread_mutexattr_destroy(&a);
+			goto fail;
+		}
+		res = pthread_mutex_init(sconn->smb1.echo_handler.socket_mutex,
+					 &a);
+		pthread_mutexattr_destroy(&a);
+		if (res != 0) {
+			DEBUG(1, ("pthread_mutex_init failed: %s\n",
+				  strerror(res)));
+			goto fail;
+		}
+	}
+#endif
+
+	if (!use_mutex) {
+		sconn->smb1.echo_handler.socket_lock_fd =
+			create_unlink_tmp(lp_lock_directory());
+		if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
+			DEBUG(1, ("Could not create lock fd: %s\n",
+				  strerror(errno)));
+			goto fail;
+		}
 	}
 
 	child = fork();
@@ -3195,12 +3320,18 @@ fail:
 	if (listener_pipe[1] != -1) {
 		close(listener_pipe[1]);
 	}
-	sconn->smb1.echo_handler.trusted_fd = -1;
 	if (sconn->smb1.echo_handler.socket_lock_fd != -1) {
 		close(sconn->smb1.echo_handler.socket_lock_fd);
 	}
-	sconn->smb1.echo_handler.trusted_fd = -1;
-	sconn->smb1.echo_handler.socket_lock_fd = -1;
+
+#ifdef HAVE_ROBUST_MUTEXES
+	if (sconn->smb1.echo_handler.socket_mutex != NULL) {
+		pthread_mutex_destroy(sconn->smb1.echo_handler.socket_mutex);
+		anonymous_shared_free(sconn->smb1.echo_handler.socket_mutex);
+	}
+#endif
+	smbd_echo_init(sconn);
+
 	return false;
 }
 
@@ -3417,8 +3548,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
 	sconn->sock = sock_fd;
-	sconn->smb1.echo_handler.trusted_fd = -1;
-	sconn->smb1.echo_handler.socket_lock_fd = -1;
+	smbd_echo_init(sconn);
 
 	if (!interactive) {
 		smbd_setup_sig_term_handler(sconn);
