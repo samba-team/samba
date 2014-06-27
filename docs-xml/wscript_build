@@ -75,6 +75,7 @@ manpages='''
          manpages/vfs_shadow_copy.8
          manpages/vfs_shadow_copy2.8
          manpages/vfs_smb_traffic_analyzer.8
+	 manpages/vfs_snapper.8
          manpages/vfs_streams_depot.8
          manpages/vfs_streams_xattr.8
          manpages/vfs_syncops.8

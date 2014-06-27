@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_snapper.8">
+
+<refmeta>
+	<refentrytitle>vfs_snapper</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.2</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_snapper</refname>
+	<refpurpose>
+		Expose snapshots managed by snapper as shadow-copies
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = snapper</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>
+		The <command>vfs_snapper</command> VFS module exposes snapshots
+		managed by snapper for use by Samba. This provides the ability
+		for remote SMB clients to access shadow-copies via Windows
+		Explorer using the "previous versions" dialog.
+	</para>
+
+	<para>
+		This module is stackable.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>
+		The underlying share path must have a corresponding snapper
+		configuration file. The snapshot directory tree must allow
+		access for relavent users.
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">snapper</smbconfoption>
+	</programlisting>
+</refsect1>
+
+<refsect1>
+	<title>PERMISSIONS</title>
+	<para>
+		Snapper stores snapshots under a .snapshots subdirectory. This
+		directory must permit traversal for any users wishing to access
+		snapshots via the Windows Explorer previous versions dialog.
+		By default, traversal is forbidden for all non-root users.
+		Additionally, users must be granted permission to list snapshots
+		managed by snapper, via snapper's ALLOW_USERS or ALLOW_GROUPS
+		options. Snapper can grant these users and groups .snapshots
+		traversal access automatically via the SYNC_ACL option.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>
+		This man page is correct for version 4.2.0 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
