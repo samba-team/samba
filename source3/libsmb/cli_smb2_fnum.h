@@ -48,6 +48,11 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 			uint16_t *pfid,
 			struct smb_create_returns *cr);
 
+struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct cli_state *cli,
+					    uint16_t fnum);
+NTSTATUS cli_smb2_close_fnum_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_close_fnum(struct cli_state *cli, uint16_t fnum);
 NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dirname);
 NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dirname);

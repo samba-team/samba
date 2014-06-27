@@ -318,45 +318,109 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 
 /***************************************************************
  Small wrapper that allows SMB2 close to use a uint16_t fnum.
- Synchronous only.
 ***************************************************************/
+
+struct cli_smb2_close_fnum_state {
+	struct cli_state *cli;
+	uint16_t fnum;
+	struct smb2_hnd *ph;
+};
+
+static void cli_smb2_close_fnum_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct cli_state *cli,
+					    uint16_t fnum)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_smb2_close_fnum_state *state;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_smb2_close_fnum_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+	state->fnum = fnum;
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &state->ph);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = smb2cli_close_send(state, ev, cli->conn, cli->timeout,
+				    cli->smb2.session, cli->smb2.tcon,
+				    0, state->ph->fid_persistent,
+				    state->ph->fid_volatile);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_close_fnum_done, req);
+	return req;
+}
+
+static void cli_smb2_close_fnum_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_close_fnum_state *state = tevent_req_data(
+		req, struct cli_smb2_close_fnum_state);
+	NTSTATUS status;
+
+	status = smb2cli_close_recv(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/* Delete the fnum -> handle mapping. */
+	status = delete_smb2_handle_mapping(state->cli, &state->ph,
+					    state->fnum);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb2_close_fnum_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
 
 NTSTATUS cli_smb2_close_fnum(struct cli_state *cli, uint16_t fnum)
 {
-	struct smb2_hnd *ph = NULL;
-	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		return NT_STATUS_INVALID_PARAMETER;
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	req = cli_smb2_close_fnum_send(frame, ev, cli, fnum);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	status = smb2cli_close(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
-				0,
-				ph->fid_persistent,
-				ph->fid_volatile);
-
-	/* Delete the fnum -> handle mapping. */
-	if (NT_STATUS_IS_OK(status)) {
-		status = delete_smb2_handle_mapping(cli, &ph, fnum);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
 	}
-
+	status = cli_smb2_close_fnum_recv(req);
+ fail:
+	TALLOC_FREE(frame);
 	return status;
 }
 
