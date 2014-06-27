@@ -388,6 +388,48 @@ bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tr
 	return ret;
 }
 
+/**
+ * SMB2 connect with share from soption
+ **/
+bool torture_smb2_con_sopt(struct torture_context *tctx,
+			   const char *soption,
+			   struct smb2_tree **tree)
+{
+	bool ret;
+	struct smbcli_options options;
+	NTSTATUS status;
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, soption, NULL);
+	struct cli_credentials *credentials = cmdline_credentials;
+
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+	if (share == NULL) {
+		printf("No share for option %s\n", soption);
+		return false;
+	}
+
+	status = smb2_connect_ext(tctx,
+				  host,
+				  lpcfg_smb_ports(tctx->lp_ctx),
+				  share,
+				  lpcfg_resolve_context(tctx->lp_ctx),
+				  credentials,
+				  0,
+				  tree,
+				  tctx->ev,
+				  &options,
+				  lpcfg_socket_options(tctx->lp_ctx),
+				  lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+				  );
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
+		       host, share, nt_errstr(status));
+		return false;
+	}
+	return true;
+}
+
 
 /*
   create and return a handle to a test file
