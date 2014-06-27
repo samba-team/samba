@@ -1784,6 +1784,12 @@ main() {
         conf.SET_TARGET_TYPE('gfapi', 'EMPTY')
         conf.undefine('HAVE_GLUSTERFS')
 
+    if conf.check_cfg(package='dbus-1', args='--cflags --libs',
+                      msg='Checking for dbus', uselib_store="DBUS-1"):
+        if (conf.CHECK_HEADERS('dbus/dbus.h', lib='dbus-1')
+                                      and conf.CHECK_LIB('dbus-1', shlib=True)):
+            conf.DEFINE('HAVE_DBUS', '1')
+
     conf.env.build_regedit = False
     if not Options.options.with_regedit == False:
         conf.PROCESS_SEPARATE_RULE('system_ncurses')
@@ -1886,6 +1892,9 @@ main() {
 
     if conf.CONFIG_SET('HAVE_GLUSTERFS'):
         default_shared_modules.extend(TO_LIST('vfs_glusterfs'))
+
+    if conf.CONFIG_SET('HAVE_DBUS'):
+	default_shared_modules.extend(TO_LIST('vfs_snapper'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')

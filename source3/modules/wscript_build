@@ -489,3 +489,11 @@ bld.SAMBA3_MODULE('vfs_worm',
                   init_function='',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_worm'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_worm'))
+
+bld.SAMBA3_MODULE('vfs_snapper',
+                 subsystem='vfs',
+                 source='vfs_snapper.c',
+                 deps='samba-util dbus-1',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_snapper'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_snapper'))
