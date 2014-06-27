@@ -234,7 +234,7 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = smb2cli_create_recv(subreq, &h.fid_persistent,
-				     &h.fid_volatile, &state->cr);
+				     &h.fid_volatile, &state->cr, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

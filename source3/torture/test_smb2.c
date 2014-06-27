@@ -84,7 +84,7 @@ bool run_smb2_basic(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create returned %s\n", nt_errstr(status));
 		return false;
@@ -147,7 +147,7 @@ bool run_smb2_basic(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create returned %s\n", nt_errstr(status));
 		return false;
@@ -347,7 +347,7 @@ bool run_smb2_session_reconnect(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create on cli1 %s\n", nt_errstr(status));
 		return false;
@@ -584,7 +584,7 @@ bool run_smb2_session_reconnect(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
 		printf("smb2cli_create on cli2 %s\n", nt_errstr(status));
@@ -645,7 +645,7 @@ bool run_smb2_session_reconnect(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
 	{
@@ -673,7 +673,7 @@ bool run_smb2_session_reconnect(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create on cli2 %s\n", nt_errstr(status));
 		return false;
@@ -769,7 +769,7 @@ bool run_smb2_tcon_dependence(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create on cli %s\n", nt_errstr(status));
 		return false;
@@ -1181,7 +1181,7 @@ bool run_smb2_multi_channel(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create on cli2 %s\n", nt_errstr(status));
 		return false;
@@ -1344,7 +1344,7 @@ bool run_smb2_multi_channel(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
 		return false;
@@ -1362,7 +1362,7 @@ bool run_smb2_multi_channel(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
 		return false;
@@ -1380,7 +1380,7 @@ bool run_smb2_multi_channel(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
 		return false;
@@ -1512,7 +1512,7 @@ bool run_smb2_session_reauth(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
 		return false;
@@ -1532,7 +1532,7 @@ bool run_smb2_session_reauth(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&dir_persistent,
 			&dir_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create returned %s\n", nt_errstr(status));
 		return false;
@@ -1718,7 +1718,7 @@ bool run_smb2_session_reauth(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
 		return false;
@@ -1738,7 +1738,7 @@ bool run_smb2_session_reauth(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&dir_persistent,
 			&dir_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("smb2cli_create returned %s\n", nt_errstr(status));
 		return false;
@@ -1894,7 +1894,7 @@ bool run_smb2_session_reauth(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile,
-			NULL);
+			NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
 		return false;
