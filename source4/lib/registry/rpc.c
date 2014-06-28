@@ -285,6 +285,56 @@ static WERROR rpc_get_value_by_name(TALLOC_CTX *mem_ctx,
 	return r.out.result;
 }
 
+static WERROR rpc_set_value(struct registry_key *key, const char *value_name,
+			    uint32_t type, const DATA_BLOB data)
+{
+	struct rpc_key *mykeydata = talloc_get_type(key, struct rpc_key);
+	struct winreg_SetValue r;
+	struct winreg_String name;
+	NTSTATUS status;
+
+	name.name = value_name;
+
+	ZERO_STRUCT(r);
+	r.in.handle = &mykeydata->pol;
+	r.in.name = name;
+	r.in.type = (enum winreg_Type)type;
+	r.in.data = data.data;
+	r.in.size = data.length;
+
+	status = dcerpc_winreg_SetValue_r(mykeydata->binding_handle, key, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("SetValue failed - %s\n", nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+
+	return r.out.result;
+}
+
+static WERROR rpc_del_value(TALLOC_CTX *mem_ctx, struct registry_key *key,
+			    const char *value_name)
+{
+	struct rpc_key *mykeydata = talloc_get_type(key, struct rpc_key);
+	struct winreg_DeleteValue r;
+	struct winreg_String name;
+	NTSTATUS status;
+
+	name.name = value_name;
+
+	ZERO_STRUCT(r);
+	r.in.handle = &mykeydata->pol;
+	r.in.value = name;
+
+	status = dcerpc_winreg_DeleteValue_r(mykeydata->binding_handle,
+					     mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("DeleteValue failed - %s\n", nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+
+	return r.out.result;
+}
+
 static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 				      const struct registry_key *parent,
 				      uint32_t n,
@@ -470,6 +520,8 @@ static struct registry_operations reg_backend_rpc = {
 	.enum_key = rpc_get_subkey_by_index,
 	.enum_value = rpc_get_value_by_index,
 	.get_value = rpc_get_value_by_name,
+	.set_value = rpc_set_value,
+	.delete_value = rpc_del_value,
 	.create_key = rpc_add_key,
 	.delete_key = rpc_del_key,
 	.get_key_info = rpc_get_info,
