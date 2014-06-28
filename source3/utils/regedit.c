@@ -472,6 +472,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 			node = tree_view_get_current_node(regedit->keys);
 			dialog_edit_value(regedit, node->key, vitem->type,
 					  vitem, binmode);
+			tree_node_reopen_key(node);
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
@@ -486,6 +487,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 			node = tree_view_get_current_node(regedit->keys);
 			dialog_edit_value(regedit, node->key, new_type, NULL,
 					  false);
+			tree_node_reopen_key(node);
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
@@ -505,6 +507,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 				node = tree_view_get_current_node(regedit->keys);
 				reg_del_value(regedit, node->key,
 					      vitem->value_name);
+				tree_node_reopen_key(node);
 				value_list_load(regedit->vl, node->key);
 			}
 		}
