@@ -388,9 +388,18 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_CreateKey r;
 	struct rpc_key *parentkd = talloc_get_type(parent, struct rpc_key);
-	struct rpc_key *rpck = talloc(mem_ctx, struct rpc_key);
+	struct rpc_key *rpck = talloc_zero(mem_ctx, struct rpc_key);
 	
 	NTSTATUS status;
+
+	if (rpck == NULL) {
+		return WERR_NOMEM;
+	}
+
+	rpck->key.context = parentkd->key.context;
+	rpck->binding_handle = parentkd->binding_handle;
+	rpck->num_values = -1;
+	rpck->num_subkeys = -1;
 
 	ZERO_STRUCT(r);
 	r.in.handle = &parentkd->pol;
