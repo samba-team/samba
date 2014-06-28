@@ -106,9 +106,11 @@ static int copy_reg(const char *source, const char *dest)
 	 */
 
 #if defined(HAVE_FCHMOD)
-	if (fchmod (ofd, source_stats.st_ex_mode & 07777))
+	if ((fchmod (ofd, source_stats.st_ex_mode & 07777) == -1) &&
+			(errno != EPERM))
 #else
-	if (chmod (dest, source_stats.st_ex_mode & 07777))
+	if ((chmod (dest, source_stats.st_ex_mode & 07777) == -1) &&
+			(errno != EPERM))
 #endif
 		goto err;
 
