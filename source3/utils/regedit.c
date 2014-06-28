@@ -230,6 +230,10 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 							 name, new_key);
 				SMB_ASSERT(new_node);
 				tree_node_insert_sorted(list, new_node);
+			} else {
+				/* Reopen the parent key to make sure the
+				   new subkey will be noticed. */
+				tree_node_reopen_key(parent);
 			}
 
 			list = tree_node_first(node);
@@ -419,6 +423,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 
 			rv = reg_key_del(node, parent->key, node->name);
 			if (W_ERROR_IS_OK(rv)) {
+				tree_node_reopen_key(parent);
 				tree_view_clear(regedit->keys);
 				pop = tree_node_pop(&node);
 				tree_node_free_recursive(pop);

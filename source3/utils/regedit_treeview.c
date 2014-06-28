@@ -141,6 +141,15 @@ static uint32_t get_num_subkeys(struct tree_node *node)
 	return 0;
 }
 
+WERROR tree_node_reopen_key(struct tree_node *node)
+{
+	SMB_ASSERT(node->parent != NULL);
+	SMB_ASSERT(node->name != NULL);
+	TALLOC_FREE(node->key);
+	return reg_open_key(node->parent, node->parent->key, node->name,
+			    &node->key);
+}
+
 bool tree_node_has_children(struct tree_node *node)
 {
 	if (node->child_head) {

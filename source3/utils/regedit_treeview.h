@@ -66,6 +66,7 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 void tree_view_show(struct tree_view *view);
 void tree_view_clear(struct tree_view *view);
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list);
+WERROR tree_node_reopen_key(struct tree_node *node);
 bool tree_node_has_children(struct tree_node *node);
 WERROR tree_node_load_children(struct tree_node *node);
 void tree_node_insert_sorted(struct tree_node *list, struct tree_node *node);
