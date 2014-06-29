@@ -1715,7 +1715,6 @@ static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
 				  bool keep_disconnected)
 {
 	unsigned int i;
-	unsigned int num_valid_entries = 0;
 	struct lock_struct *locks = *pplocks;
 	unsigned int num_entries = *pnum_entries;
 	TALLOC_CTX *frame;
@@ -1756,54 +1755,29 @@ static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	for (i = 0; i < num_entries; i++) {
+	i = 0;
+
+	while (i < num_entries) {
 		if (exists[i]) {
-			num_valid_entries++;
+			i++;
 			continue;
 		}
 
 		if (keep_disconnected &&
 		    server_id_is_disconnected(&ids[i]))
 		{
-			num_valid_entries++;
+			i++;
 			continue;
 		}
 
-		/* This process no longer exists - mark this
-		   entry as invalid by zeroing it. */
-		ZERO_STRUCTP(&locks[i]);
+		/* This process no longer exists */
+
+		brl_delete_lock_struct(locks, num_entries, i);
+		num_entries -= 1;
 	}
 	TALLOC_FREE(frame);
 
-	if (num_valid_entries != num_entries) {
-		struct lock_struct *new_lock_data = NULL;
-
-		if (num_valid_entries) {
-			new_lock_data = talloc_array(
-				mem_ctx, struct lock_struct,
-				num_valid_entries);
-			if (!new_lock_data) {
-				DEBUG(3, ("malloc fail\n"));
-				return False;
-			}
-
-			num_valid_entries = 0;
-			for (i = 0; i < num_entries; i++) {
-				struct lock_struct *lock_data = &locks[i];
-				if (lock_data->context.smblctx &&
-						lock_data->context.tid) {
-					/* Valid (nonzero) entry - copy it. */
-					memcpy(&new_lock_data[num_valid_entries],
-						lock_data, sizeof(struct lock_struct));
-					num_valid_entries++;
-				}
-			}
-		}
-
-		TALLOC_FREE(*pplocks);
-		*pplocks = new_lock_data;
-		*pnum_entries = num_valid_entries;
-	}
+	*pnum_entries = num_entries;
 
 	return True;
 }
