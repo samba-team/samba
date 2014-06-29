@@ -999,6 +999,17 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	return ret;
 }
 
+static void brl_delete_lock_struct(struct lock_struct *locks,
+				   unsigned num_locks,
+				   unsigned del_idx)
+{
+	if (del_idx >= num_locks) {
+		return;
+	}
+	memmove(&locks[del_idx], &locks[del_idx+1],
+		sizeof(*locks) * (num_locks - del_idx - 1));
+}
+
 /****************************************************************************
  Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
@@ -1066,12 +1077,7 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
   unlock_continue:
 #endif
 
-	/* Actually delete the lock. */
-	if (i < br_lck->num_locks - 1) {
-		memmove(&locks[i], &locks[i+1],
-			sizeof(*locks)*((br_lck->num_locks-1) - i));
-	}
-
+	brl_delete_lock_struct(locks, br_lck->num_locks, i);
 	br_lck->num_locks -= 1;
 	br_lck->modified = True;
 
