@@ -74,9 +74,9 @@ bool run_cleanup1(int dummy)
 
 bool run_cleanup2(int dummy)
 {
-	struct cli_state *cli1, *cli2;
+	struct cli_state *cli1, *cli2, *cli3;
 	const char *fname = "\\cleanup2";
-	uint16_t fnum1, fnum2;
+	uint16_t fnum1, fnum2, fnum3;
 	NTSTATUS status;
 	char buf;
 
@@ -95,6 +95,30 @@ bool run_cleanup2(int dummy)
 		return false;
 	}
 	status = cli_lock32(cli1, fnum1, 0, 1, 0, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lock failed (%s)\n", nt_errstr(status));
+		return false;
+	}
+
+	if (!torture_open_connection(&cli3, 1)) {
+		return false;
+	}
+	status = cli_ntcreate(
+		cli3, fname, 0, FILE_GENERIC_READ|FILE_GENERIC_WRITE,
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OVERWRITE_IF, 0, 0, &fnum3, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
+		return false;
+	}
+	status = cli_lock32(cli3, fnum3, 1, 1, 0, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lock failed (%s)\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_lock32(cli1, fnum1, 2, 1, 0, WRITE_LOCK);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("lock failed (%s)\n", nt_errstr(status));
 		return false;
