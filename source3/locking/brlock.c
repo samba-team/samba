@@ -1710,8 +1710,7 @@ bool brl_reconnect_disconnected(struct files_struct *fsp)
 /****************************************************************************
  Ensure this set of lock entries is valid.
 ****************************************************************************/
-static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
-				  unsigned int *pnum_entries, struct lock_struct **pplocks,
+static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct **pplocks,
 				  bool keep_disconnected)
 {
 	unsigned int i;
@@ -1824,7 +1823,7 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 
 	/* Ensure the lock db is clean of entries from invalid processes. */
 
-	if (!validate_lock_entries(talloc_tos(), &num_locks, &locks, true)) {
+	if (!validate_lock_entries(&num_locks, &locks, true)) {
 		TALLOC_FREE(locks);
 		return -1; /* Terminate traversal */
 	}
@@ -2025,7 +2024,7 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 		 * So we need to clean the disconnected brl entry.
 		 */
 
-		if (!validate_lock_entries(br_lck, &br_lck->num_locks,
+		if (!validate_lock_entries(&br_lck->num_locks,
 					   &br_lck->lock_data, false)) {
 			TALLOC_FREE(br_lck);
 			return NULL;
