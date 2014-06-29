@@ -1711,45 +1711,46 @@ static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
 	unsigned int i;
 	unsigned int num_valid_entries = 0;
 	struct lock_struct *locks = *pplocks;
+	unsigned int num_entries = *pnum_entries;
 	TALLOC_CTX *frame;
 	struct server_id *ids;
 	bool *exists;
 
-	if (*pnum_entries == 0) {
+	if (num_entries == 0) {
 		return true;
 	}
 
 	frame = talloc_stackframe();
 
-	ids = talloc_array(frame, struct server_id, *pnum_entries);
+	ids = talloc_array(frame, struct server_id, num_entries);
 	if (ids == NULL) {
 		DEBUG(0, ("validate_lock_entries: "
 			  "talloc_array(struct server_id, %u) failed\n",
-			  *pnum_entries));
+			  num_entries));
 		talloc_free(frame);
 		return false;
 	}
 
-	exists = talloc_array(frame, bool, *pnum_entries);
+	exists = talloc_array(frame, bool, num_entries);
 	if (exists == NULL) {
 		DEBUG(0, ("validate_lock_entries: "
 			  "talloc_array(bool, %u) failed\n",
-			  *pnum_entries));
+			  num_entries));
 		talloc_free(frame);
 		return false;
 	}
 
-	for (i = 0; i < *pnum_entries; i++) {
+	for (i = 0; i < num_entries; i++) {
 		ids[i] = locks[i].context.pid;
 	}
 
-	if (!serverids_exist(ids, *pnum_entries, exists)) {
+	if (!serverids_exist(ids, num_entries, exists)) {
 		DEBUG(3, ("validate_lock_entries: serverids_exists failed\n"));
 		talloc_free(frame);
 		return false;
 	}
 
-	for (i = 0; i < *pnum_entries; i++) {
+	for (i = 0; i < num_entries; i++) {
 		if (exists[i]) {
 			num_valid_entries++;
 			continue;
@@ -1768,7 +1769,7 @@ static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
 	}
 	TALLOC_FREE(frame);
 
-	if (num_valid_entries != *pnum_entries) {
+	if (num_valid_entries != num_entries) {
 		struct lock_struct *new_lock_data = NULL;
 
 		if (num_valid_entries) {
@@ -1781,7 +1782,7 @@ static bool validate_lock_entries(TALLOC_CTX *mem_ctx,
 			}
 
 			num_valid_entries = 0;
-			for (i = 0; i < *pnum_entries; i++) {
+			for (i = 0; i < num_entries; i++) {
 				struct lock_struct *lock_data = &locks[i];
 				if (lock_data->context.smblctx &&
 						lock_data->context.tid) {
