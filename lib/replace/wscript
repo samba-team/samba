@@ -44,7 +44,10 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/resource.h sys/security.h sys/shm.h sys/statfs.h sys/statvfs.h sys/termio.h')
     conf.CHECK_HEADERS('sys/vfs.h sys/xattr.h termio.h termios.h sys/file.h')
     conf.CHECK_HEADERS('sys/ucontext.h sys/wait.h sys/stat.h')
-    conf.CHECK_HEADERS('malloc.h')
+
+    if not conf.CHECK_DECLS('malloc', headers='stdlib.h'):
+        conf.CHECK_HEADERS('malloc.h')
+
     conf.CHECK_HEADERS('grp.h')
     conf.CHECK_HEADERS('sys/select.h setjmp.h utime.h sys/syslog.h syslog.h')
     conf.CHECK_HEADERS('stdarg.h vararg.h sys/mount.h mntent.h')
@@ -247,6 +250,10 @@ def configure(conf):
     conf.CHECK_FUNCS('link readlink symlink realpath snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memalign posix_memalign')
+
+    if conf.CONFIG_SET('HAVE_MEMALIGN'):
+        conf.CHECK_DECLS('memalign', headers='malloc.h')
+
     conf.CHECK_FUNCS('prctl dirname basename')
 
     # libbsd on some platforms provides strlcpy and strlcat
