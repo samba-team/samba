@@ -836,9 +836,11 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	if (jenkinshash) {
 		tdb_flags |= TDB_INCOMPATIBLE_HASH;
 	}
-	if (mutexes) {
+#ifdef TDB_MUTEX_LOCKING
+	if (mutexes && tdb_runtime_check_for_robust_mutexes()) {
 		tdb_flags |= TDB_MUTEX_LOCKING;
 	}
+#endif
 
 again:
 	ctdb_db->ltdb = tdb_wrap_open(ctdb_db, ctdb_db->db_path,
@@ -1121,7 +1123,11 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	   only allow a subset of those on the database in ctdb. Note
 	   that tdb_flags is passed in via the (otherwise unused)
 	   srvid to the attach control */
+#ifdef TDB_MUTEX_LOCKING
 	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH|TDB_MUTEX_LOCKING);
+#else
+	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH);
+#endif
 
 	/* see if we already have this name */
 	db = ctdb_db_handle(ctdb, db_name);
@@ -1139,7 +1145,11 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	}
 
 	with_jenkinshash = (tdb_flags & TDB_INCOMPATIBLE_HASH) ? true : false;
+#ifdef TDB_MUTEX_LOCKING
 	with_mutexes = (tdb_flags & TDB_MUTEX_LOCKING) ? true : false;
+#else
+	with_mutexes = false;
+#endif
 
 	if (ctdb_local_attach(ctdb, db_name, persistent, NULL,
 			      with_jenkinshash, with_mutexes) != 0) {
