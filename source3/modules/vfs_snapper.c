@@ -31,6 +31,7 @@
 #include <libgen.h>
 #include "includes.h"
 #include "include/ntioctl.h"
+#include "include/smb.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "lib/util/tevent_ntstatus.h"
@@ -947,8 +948,6 @@ err_out:
 	errno = map_errno_from_nt_status(status);
 	return -1;
 }
-
-#define GMT_FORMAT "@GMT-%Y.%m.%d-%H.%M.%S"
 
 static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 				       struct vfs_handle_struct *handle,
