@@ -661,7 +661,6 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 static void remove_pending_lock(struct smbd_smb2_lock_state *state,
 			struct blocking_lock_record *blr)
 {
-	int i;
 	struct byte_range_lock *br_lck = brl_get_locks(
 				state, blr->fsp);
 
