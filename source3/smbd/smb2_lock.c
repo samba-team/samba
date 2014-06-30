@@ -283,8 +283,8 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		default:
 			if (isunlock) {
 				/*
-				 * is the first element was a UNLOCK
-				 * we need to deferr the error response
+				 * If the first element was a UNLOCK
+				 * we need to defer the error response
 				 * to the backend, because we need to process
 				 * all unlock elements before
 				 */
@@ -552,7 +552,7 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 }
 
 /****************************************************************
- Get an SMB2 lock reqeust to go async. lock_timeout should
+ Get an SMB2 lock request to go async. lock_timeout should
  always be -1 here.
 *****************************************************************/
 
