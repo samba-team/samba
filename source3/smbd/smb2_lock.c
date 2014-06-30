@@ -235,6 +235,24 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (!isunlock && (in_lock_count > 1)) {
+
+		/*
+		 * 3.3.5.14.2 says we SHOULD fail with INVALID_PARAMETER if we
+		 * have more than one lock and one of those is blocking.
+		 */
+
+		for (i=0; i<in_lock_count; i++) {
+			uint32_t flags = in_locks[i].flags;
+
+			if ((flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY) == 0) {
+				tevent_req_nterror(
+					req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+		}
+	}
+
 	for (i=0; i<in_lock_count; i++) {
 		bool invalid = false;
 
@@ -244,11 +262,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			if (isunlock) {
 				invalid = true;
 				break;
-			}
-			if (i > 0) {
-				tevent_req_nterror(req,
-						   NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
 			}
 			break;
 
