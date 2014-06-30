@@ -1109,7 +1109,8 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 
 static void ctdb_remove_pidfile(void)
 {
-	if (ctdbd_pidfile != NULL && !ctdb_is_child_process()) {
+	/* Only the main ctdbd's PID matches the SID */
+	if (ctdbd_pidfile != NULL && getsid(0) == getpid()) {
 		if (unlink(ctdbd_pidfile) == 0) {
 			DEBUG(DEBUG_NOTICE, ("Removed PID file %s\n",
 					     ctdbd_pidfile));

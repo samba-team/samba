@@ -23,11 +23,8 @@
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 
-static bool is_child = false;
-
 void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...)
 {
-	is_child = true;
 	if (child_name_fmt != NULL) {
 		va_list ap;
 		char *t;
@@ -38,11 +35,6 @@ void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...)
 		talloc_free(t);
 		va_end(ap);
 	}
-}
-
-bool ctdb_is_child_process(void)
-{
-	return is_child;
 }
 
 void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid)
