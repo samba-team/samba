@@ -26,7 +26,7 @@
 #define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
 #define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* don't check unix account status */
 #define USER_INFO_INTERACTIVE_LOGON         0x08 /* Interactive logon */
-#define USER_INFO_LOCAL_SAM_ONLY            0x10 /* Only authenticate against the local SAM */
+#define USER_INFO_LOCAL_SAM_ONLY            0x10 /* Only authenticate against the local SAM, do not map missing passwords to NO_SUCH_USER */
 #define USER_INFO_INFO3_AND_NO_AUTHZ        0x20 /* Only fill in server_info->info3 and do not do any authorization steps */
 
 enum auth_password_state {

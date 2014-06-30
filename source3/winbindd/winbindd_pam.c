@@ -1501,7 +1501,13 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 		result = winbindd_dual_auth_passdb(
 			mem_ctx, 0, name_domain, name_user,
 			&chal_blob, &lm_resp, &nt_resp, info3);
-		goto done;
+
+		/* 
+		 * We need to try the remote NETLOGON server if this is NOT_IMPLEMENTED 
+		 */
+		if (!NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
+			goto done;
+		}
 	}
 
 	/* check authentication loop */
@@ -1888,7 +1894,13 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			logon_parameters,
 			name_domain, name_user,
 			&chal_blob, &lm_response, &nt_response, info3);
-		goto process_result;
+
+		/* 
+		 * We need to try the remote NETLOGON server if this is NOT_IMPLEMENTED 
+		 */
+		if (!NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
+			goto process_result;
+		}
 	}
 
 	result = winbind_samlogon_retry_loop(domain,

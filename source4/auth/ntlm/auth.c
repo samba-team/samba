@@ -375,9 +375,13 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-		/* don't expose the NT_STATUS_NOT_IMPLEMENTED
-		   internals */
-		status = NT_STATUS_NO_SUCH_USER;
+		if (!(state->user_info->flags & USER_INFO_LOCAL_SAM_ONLY)) {
+			/* don't expose the NT_STATUS_NOT_IMPLEMENTED
+			 * internals, except when the caller is only probing
+			 * one method, as they may do the fallback 
+			 */
+			status = NT_STATUS_NO_SUCH_USER;
+		}
 	}
 
 	if (tevent_req_nterror(req, status)) {

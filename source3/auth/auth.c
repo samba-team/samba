@@ -232,6 +232,13 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ) {
 			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
 			TALLOC_FREE(tmp_ctx);
+			if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY) {
+				/* we don't expose the NT_STATUS_NOT_IMPLEMENTED
+				 * internals, except when the caller is only probing
+				 * one method, as they may do the fallback 
+				 */
+				nt_status = result;
+			}
 			continue;
 		}
 
