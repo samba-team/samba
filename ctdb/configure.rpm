@@ -2,6 +2,7 @@
 CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
 	--builtin-libraries=replace,popt \
 	--bundled-libraries=!talloc,!tevent,!tdb \
+	--minimum-library-version=talloc:2.0.8,tdb:1.2.11,tevent:0.9.16 \
 	--prefix=/usr \
 	--sysconfdir=/etc \
 	--mandir=/usr/man \
