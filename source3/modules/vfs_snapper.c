@@ -326,17 +326,6 @@ static NTSTATUS snapper_conf_unpack(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static void snapper_conf_array_free(int32_t num_confs,
-				    struct snapper_conf *confs)
-{
-	int i;
-
-	for (i = 0; i < num_confs; i++) {
-		talloc_free(confs[i].attrs);
-	}
-	talloc_free(confs);
-}
-
 static struct snapper_conf *snapper_conf_array_base_find(int32_t num_confs,
 						struct snapper_conf *confs,
 							 const char *base)
@@ -393,7 +382,7 @@ static NTSTATUS snapper_conf_array_unpack(TALLOC_CTX *mem_ctx,
 		if (confs == NULL)
 			abort();
 
-		status = snapper_conf_unpack(mem_ctx, &array_iter,
+		status = snapper_conf_unpack(confs, &array_iter,
 					     &confs[num_confs - 1]);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(confs);
@@ -558,17 +547,6 @@ static NTSTATUS snapper_snap_struct_unpack(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static void snapper_snap_array_free(int32_t num_snaps,
-				    struct snapper_snap *snaps)
-{
-	int i;
-
-	for (i = 0; i < num_snaps; i++) {
-		talloc_free(snaps[i].user_data);
-	}
-	talloc_free(snaps);
-}
-
 static void snapper_snap_array_print(int32_t num_snaps,
 				     struct snapper_snap *snaps)
 {
@@ -620,7 +598,7 @@ static NTSTATUS snapper_snap_array_unpack(TALLOC_CTX *mem_ctx,
 		if (snaps == NULL)
 			abort();
 
-		status = snapper_snap_struct_unpack(mem_ctx, &array_iter,
+		status = snapper_snap_struct_unpack(snaps, &array_iter,
 						    &snaps[num_snaps - 1]);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(snaps);
@@ -803,7 +781,7 @@ static NTSTATUS snapper_get_conf_call(TALLOC_CTX *mem_ctx,
 		goto err_conf_name_free;
 	}
 
-	snapper_conf_array_free(num_confs, confs);
+	talloc_free(confs);
 	dbus_message_unref(rsp_msg);
 	dbus_message_unref(req_msg);
 
@@ -815,7 +793,7 @@ static NTSTATUS snapper_get_conf_call(TALLOC_CTX *mem_ctx,
 err_conf_name_free:
 	talloc_free(conf_name);
 err_array_free:
-	snapper_conf_array_free(num_confs, confs);
+	talloc_free(confs);
 err_rsp_free:
 	dbus_message_unref(rsp_msg);
 err_req_free:
@@ -1069,7 +1047,7 @@ static NTSTATUS snapper_get_snap_at_time_call(TALLOC_CTX *mem_ctx,
 
 	*snap_path_out = snap_path;
 err_snap_array_free:
-	snapper_snap_array_free(num_snaps, snaps);
+	talloc_free(snaps);
 err_rsp_free:
 	dbus_message_unref(rsp_msg);
 err_req_free:
