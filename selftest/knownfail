@@ -273,7 +273,6 @@
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-gid
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-uid
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-gid
-^samba.blackbox.wbinfo\(plugin_s4_dc:local\).wbinfo --getdcname against plugin_s4_dc\(plugin_s4_dc:local\)
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
