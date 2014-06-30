@@ -2603,7 +2603,6 @@ struct tevent_req *netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_send(TAL
 	struct tevent_req *req;
 	struct netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_state *state;
 	struct tevent_req *subreq;
-	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_state);
