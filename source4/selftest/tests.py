@@ -398,7 +398,7 @@ for env in ["s3dc", "member", "plugin_s4_dc", "dc", "s3member", "s4member"]:
              "--domain-groups",
              "--name-to-sid=$DC_USERNAME",
              "--name-to-sid=$DOMAIN/$DC_USERNAME",
-             "--user-info=$DC_USERNAME",
+             "--user-info=$DOMAIN/$DC_USERNAME",
              "--user-groups=$DOMAIN/$DC_USERNAME",
              "--authenticate=$DOMAIN/$DC_USERNAME%$DC_PASSWORD",
              "--allocate-uid",

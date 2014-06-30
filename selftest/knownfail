@@ -276,8 +276,6 @@
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
-^samba.wbinfo_simple.\(member:local\).--user-info
-^samba.wbinfo_simple.\(s3member:local\).--user-info
 ^samba4.winbind.struct.getpwent\(plugin_s4_dc:local\)
 #
 # These just happen to fail for some reason (probably because they run against the s4 winbind)
