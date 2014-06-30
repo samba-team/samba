@@ -274,6 +274,12 @@ static bool test_valid_request(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	lck.in.lock_count	= 2;
+	el[0].flags = SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	el[1].flags = SMB2_LOCK_FLAG_SHARED;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	lck.in.lock_count	= 2;
 	el[0].flags		= 0;
 	el[1].flags		= 0;
 	status = smb2_lock(tree, &lck);

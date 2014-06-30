@@ -115,6 +115,7 @@
 ^samba4.smb2.oplock.doc
 ^samba4.smb2.compound.related3
 ^samba4.smb2.compound.compound-break
+^samba4.smb2.lock.valid-request
 ^samba4.*base.delaywrite.*update of write time and SMBwrite truncate\(.*\)$
 ^samba4.*base.delaywrite.*update of write time and SMBwrite truncate expand\(.*\)$
 ^samba4.*base.delaywrite.*delayed update of write time 3a\(.*\)$
