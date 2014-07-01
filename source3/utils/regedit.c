@@ -86,53 +86,6 @@ static void print_path(struct regedit *regedit, struct tree_node *node)
 	show_path(regedit);
 }
 
-/* load all available hives */
-static struct tree_node *load_hives(struct regedit *regedit)
-{
-	const char *hives[] = {
-		"HKEY_CLASSES_ROOT",
-		"HKEY_CURRENT_USER",
-		"HKEY_LOCAL_MACHINE",
-		"HKEY_PERFORMANCE_DATA",
-		"HKEY_USERS",
-		"HKEY_CURRENT_CONFIG",
-		"HKEY_DYN_DATA",
-		"HKEY_PERFORMANCE_TEXT",
-		"HKEY_PERFORMANCE_NLSTEXT",
-		NULL
-	};
-	struct tree_node *root, *prev, *node;
-	struct registry_key *key;
-	WERROR rv;
-	size_t i;
-
-	root = NULL;
-	prev = NULL;
-
-	for (i = 0; hives[i] != NULL; ++i) {
-		rv = reg_get_predefined_key_by_name(regedit->registry_context,
-						    hives[i], &key);
-		if (!W_ERROR_IS_OK(rv)) {
-			continue;
-		}
-
-		node = tree_node_new(regedit, NULL, hives[i], key);
-		if (node == NULL) {
-			return NULL;
-		}
-
-		if (root == NULL) {
-			root = node;
-		}
-		if (prev) {
-			tree_node_append(prev, node);
-		}
-		prev = node;
-	}
-
-	return root;
-}
-
 static void print_help(struct regedit *regedit)
 {
 	const char *khelp = "[n] New Key [s] New Subkey [d] Del Key "
@@ -196,7 +149,7 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 	const char *name;
 	const char *msg;
 
-	if (!subkey && !node->parent) {
+	if (!subkey && tree_node_is_top_level(node)) {
 		return;
 	}
 
@@ -387,7 +340,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		break;
 	case KEY_LEFT:
 		node = tree_view_get_current_node(regedit->keys);
-		if (node && node->parent) {
+		if (node && !tree_node_is_top_level(node)) {
 			print_path(regedit, node->parent);
 			node = node->parent;
 			tree_view_update(regedit->keys, tree_node_first(node));
@@ -410,7 +363,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		int sel;
 
 		node = tree_view_get_current_node(regedit->keys);
-		if (!node->parent) {
+		if (tree_node_is_top_level(node)) {
 			break;
 		}
 		sel = dialog_notice(regedit, DIA_CONFIRM,
@@ -537,8 +490,11 @@ static void handle_main_input(struct regedit *regedit, int c)
 
 		node = tree_view_get_current_node(regedit->keys);
 		path = tree_node_get_path(regedit, node);
+		SMB_ASSERT(path != NULL);
 
-		root = load_hives(regedit);
+		root = tree_node_new_root(regedit, regedit->registry_context);
+		SMB_ASSERT(root != NULL);
+
 		tree_view_set_root(regedit->keys, root);
 		tree_view_set_path(regedit->keys, path);
 		node = tree_view_get_current_node(regedit->keys);
@@ -647,7 +603,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	wprintw(regedit->path_label, "/");
 	show_path(regedit_main);
 
-	root = load_hives(regedit);
+	root = tree_node_new_root(regedit, ctx);
 	SMB_ASSERT(root != NULL);
 
 	regedit->keys = tree_view_new(regedit, root, KEY_HEIGHT, KEY_WIDTH,

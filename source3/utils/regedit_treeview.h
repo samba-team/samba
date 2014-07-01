@@ -48,8 +48,14 @@ struct tree_view {
 	struct multilist *list;
 };
 
+struct registry_context;
+
 struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
 				const char *name, struct registry_key *key);
+struct tree_node *tree_node_new_root(TALLOC_CTX *ctx,
+				     struct registry_context *regctx);
+#define tree_node_is_root(node) ((node)->key == NULL)
+#define tree_node_is_top_level(node) tree_node_is_root((node)->parent)
 void tree_node_append(struct tree_node *left, struct tree_node *right);
 struct tree_node *tree_node_pop(struct tree_node **plist);
 struct tree_node *tree_node_first(struct tree_node *list);
