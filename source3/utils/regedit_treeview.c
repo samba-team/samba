@@ -23,6 +23,12 @@
 
 #define HEADING_X 3
 
+static int tree_node_free(struct tree_node *node)
+{
+	DEBUG(9, ("tree_node_free('%s', %p)\n", node->name, node));
+	return 0;
+}
+
 struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
 				const char *name, struct registry_key *key)
 {
@@ -32,6 +38,8 @@ struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
 	if (!node) {
 		return NULL;
 	}
+	talloc_set_destructor(node, tree_node_free);
+	DEBUG(9, ("tree_node_new('%s', %p)\n", name, node));
 
 	node->name = talloc_strdup(node, name);
 	if (!node->name) {
@@ -39,7 +47,9 @@ struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
 		return NULL;
 	}
 
-	node->key = talloc_steal(node, key);
+	if (key) {
+		node->key = talloc_steal(node, key);
+	}
 
 	if (parent) {
 		/* Check if this node is the first descendant of parent. */
@@ -50,6 +60,52 @@ struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
 	}
 
 	return node;
+}
+
+/* prepare a root node with all available hives as children */
+struct tree_node *tree_node_new_root(TALLOC_CTX *ctx,
+				     struct registry_context *regctx)
+{
+	const char *hives[] = {
+		"HKEY_CLASSES_ROOT",
+		"HKEY_CURRENT_USER",
+		"HKEY_LOCAL_MACHINE",
+		"HKEY_PERFORMANCE_DATA",
+		"HKEY_USERS",
+		"HKEY_CURRENT_CONFIG",
+		"HKEY_DYN_DATA",
+		"HKEY_PERFORMANCE_TEXT",
+		"HKEY_PERFORMANCE_NLSTEXT",
+		NULL
+	};
+	struct tree_node *root, *prev, *node;
+	struct registry_key *key;
+	WERROR rv;
+	size_t i;
+
+	root = tree_node_new(ctx, NULL, "ROOT", NULL);
+	if (root == NULL) {
+		return NULL;
+	}
+	prev = NULL;
+
+	for (i = 0; hives[i] != NULL; ++i) {
+		rv = reg_get_predefined_key_by_name(regctx, hives[i], &key);
+		if (!W_ERROR_IS_OK(rv)) {
+			continue;
+		}
+
+		node = tree_node_new(root, root, hives[i], key);
+		if (node == NULL) {
+			return NULL;
+		}
+		if (prev) {
+			tree_node_append(prev, node);
+		}
+		prev = node;
+	}
+
+	return root;
 }
 
 void tree_node_append(struct tree_node *left, struct tree_node *right)
@@ -250,23 +306,6 @@ finish:
 	return rv;
 }
 
-void tree_node_free_recursive(struct tree_node *list)
-{
-	struct tree_node *node;
-
-	if (list == NULL) {
-		return;
-	}
-
-	while ((node = tree_node_pop(&list)) != NULL) {
-		if (node->child_head) {
-			tree_node_free_recursive(node->child_head);
-		}
-		node->child_head = NULL;
-		talloc_free(node);
-	}
-}
-
 void tree_view_clear(struct tree_view *view)
 {
 	multilist_set_data(view->list, NULL);
@@ -277,7 +316,7 @@ WERROR tree_view_set_root(struct tree_view *view, struct tree_node *root)
 	multilist_set_data(view->list, NULL);
 	talloc_free(view->root);
 	view->root = root;
-	return tree_view_update(view, root);
+	return tree_view_update(view, root->child_head);
 }
 
 WERROR tree_view_set_path(struct tree_view *view, const char **path)
@@ -285,7 +324,7 @@ WERROR tree_view_set_path(struct tree_view *view, const char **path)
 	struct tree_node *top, *node;
 	WERROR rv;
 
-	top = view->root;
+	top = view->root->child_head;
 	while (*path) {
 		for (node = top; node != NULL; node = node->next) {
 			if (strcmp(*path, node->name) == 0) {
@@ -377,7 +416,6 @@ static int tree_view_free(struct tree_view *view)
 	if (view->window) {
 		delwin(view->window);
 	}
-	tree_node_free_recursive(view->root);
 
 	return 0;
 }
@@ -479,7 +517,7 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 	if (view->list == NULL) {
 		goto fail;
 	}
-	tree_view_update(view, root);
+	tree_view_update(view, root->child_head);
 
 	return view;
 
@@ -520,7 +558,7 @@ const char **tree_node_get_path(TALLOC_CTX *ctx, struct tree_node *node)
 	size_t nitems, index;
 	struct tree_node *p;
 
-	for (nitems = 0, p = node; p != NULL; p = p->parent) {
+	for (nitems = 0, p = node; !tree_node_is_root(p); p = p->parent) {
 		++nitems;
 	}
 
@@ -529,7 +567,9 @@ const char **tree_node_get_path(TALLOC_CTX *ctx, struct tree_node *node)
 		return NULL;
 	}
 
-	for (index = nitems - 1, p = node; p != NULL; p = p->parent, --index) {
+	for (index = nitems - 1, p = node;
+	     !tree_node_is_root(p);
+	     p = p->parent, --index) {
 		array[index] = talloc_strdup(array, p->name);
 		if (array[index] == NULL) {
 			talloc_free(discard_const(array));
@@ -553,7 +593,7 @@ size_t tree_node_print_path(WINDOW *label, struct tree_node *node)
 	werase(label);
 	wprintw(label, "/");
 
-	if (node->parent == NULL)
+	if (tree_node_is_top_level(node))
 		return 0;
 
 	frame = talloc_stackframe();
