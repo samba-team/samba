@@ -229,7 +229,7 @@ static bool brl_pending_overlap(const struct lock_struct *lock, const struct loc
 {
 	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
 		return True;
-	if ((lock->start >= pend_lock->start) && (lock->start <= pend_lock->start + pend_lock->size))
+	if ((lock->start >= pend_lock->start) && (lock->start < pend_lock->start + pend_lock->size))
 		return True;
 	return False;
 }
