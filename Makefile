@@ -26,6 +26,9 @@ subunit-test:
 testenv:
 	$(WAF) test --testenv $(TEST_OPTIONS)
 
+gdbtestenv:
+	$(WAF) test --testenv --gdbtest $(TEST_OPTIONS)
+
 quicktest:
 	$(WAF) test --quick $(TEST_OPTIONS)
 
