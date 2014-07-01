@@ -55,8 +55,8 @@ struct tree_node *tree_node_pop(struct tree_node **plist);
 struct tree_node *tree_node_first(struct tree_node *list);
 struct tree_node *tree_node_last(struct tree_node *list);
 void tree_node_append_last(struct tree_node *list, struct tree_node *node);
-void tree_node_free_recursive(struct tree_node *list);
 size_t tree_node_print_path(WINDOW *label, struct tree_node *node);
+const char **tree_node_get_path(TALLOC_CTX *ctx, struct tree_node *node);
 struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 				int nlines, int ncols,
 				int begin_y, int begin_x);
@@ -65,6 +65,8 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 			     int begin_y, int begin_x);
 void tree_view_show(struct tree_view *view);
 void tree_view_clear(struct tree_view *view);
+WERROR tree_view_set_root(struct tree_view *view, struct tree_node *root);
+WERROR tree_view_set_path(struct tree_view *view, const char **path);
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list);
 WERROR tree_node_reopen_key(struct tree_node *node);
 bool tree_node_has_children(struct tree_node *node);
