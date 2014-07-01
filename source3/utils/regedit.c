@@ -567,6 +567,12 @@ int regedit_getch(void)
 	return c;
 }
 
+static void regedit_panic_handler(const char *msg)
+{
+	endwin();
+	smb_panic_s3(msg);
+}
+
 static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 {
 	struct regedit *regedit;
@@ -578,6 +584,8 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 
 	cbreak();
 	noecho();
+
+	fault_configure(regedit_panic_handler);
 
 	colors = has_colors();
 	if (colors) {
