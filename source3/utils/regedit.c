@@ -52,6 +52,7 @@
 #define PATH_WIDTH_MAX	1024
 
 struct regedit {
+	struct registry_context *registry_context;
 	WINDOW *main_window;
 	WINDOW *path_label;
 	size_t path_len;
@@ -86,8 +87,7 @@ static void print_path(struct regedit *regedit, struct tree_node *node)
 }
 
 /* load all available hives */
-static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
-				    struct registry_context *ctx)
+static struct tree_node *load_hives(struct regedit *regedit)
 {
 	const char *hives[] = {
 		"HKEY_CLASSES_ROOT",
@@ -110,12 +110,13 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 	prev = NULL;
 
 	for (i = 0; hives[i] != NULL; ++i) {
-		rv = reg_get_predefined_key_by_name(ctx, hives[i], &key);
+		rv = reg_get_predefined_key_by_name(regedit->registry_context,
+						    hives[i], &key);
 		if (!W_ERROR_IS_OK(rv)) {
 			continue;
 		}
 
-		node = tree_node_new(mem_ctx, NULL, hives[i], key);
+		node = tree_node_new(regedit, NULL, hives[i], key);
 		if (node == NULL) {
 			return NULL;
 		}
@@ -426,7 +427,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 				tree_node_reopen_key(parent);
 				tree_view_clear(regedit->keys);
 				pop = tree_node_pop(&node);
-				tree_node_free_recursive(pop);
+				talloc_free(pop);
 				node = parent->child_head;
 				if (node == NULL) {
 					node = tree_node_first(parent);
@@ -530,6 +531,24 @@ static bool find_substring_nocase(const char *haystack, const char *needle)
 static void handle_main_input(struct regedit *regedit, int c)
 {
 	switch (c) {
+	case 18: { /* CTRL-R */
+		struct tree_node *root, *node;
+		const char **path;
+
+		node = tree_view_get_current_node(regedit->keys);
+		path = tree_node_get_path(regedit, node);
+
+		root = load_hives(regedit);
+		tree_view_set_root(regedit->keys, root);
+		tree_view_set_path(regedit->keys, path);
+		node = tree_view_get_current_node(regedit->keys);
+		value_list_load(regedit->vl, node->key);
+		tree_view_show(regedit->keys);
+		value_list_show(regedit->vl);
+		print_path(regedit, node);
+		talloc_free(discard_const(path));
+		break;
+	}
 	case 'f':
 	case 'F':
 	case '/': {
@@ -618,6 +637,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	SMB_ASSERT(regedit != NULL);
 	regedit_main = regedit;
 
+	regedit->registry_context = ctx;
 	regedit->main_window = stdscr;
 	keypad(regedit->main_window, TRUE);
 
@@ -627,7 +647,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	wprintw(regedit->path_label, "/");
 	show_path(regedit_main);
 
-	root = load_hives(regedit, ctx);
+	root = load_hives(regedit);
 	SMB_ASSERT(root != NULL);
 
 	regedit->keys = tree_view_new(regedit, root, KEY_HEIGHT, KEY_WIDTH,

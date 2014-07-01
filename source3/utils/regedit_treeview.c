@@ -272,6 +272,44 @@ void tree_view_clear(struct tree_view *view)
 	multilist_set_data(view->list, NULL);
 }
 
+WERROR tree_view_set_root(struct tree_view *view, struct tree_node *root)
+{
+	multilist_set_data(view->list, NULL);
+	talloc_free(view->root);
+	view->root = root;
+	return tree_view_update(view, root);
+}
+
+WERROR tree_view_set_path(struct tree_view *view, const char **path)
+{
+	struct tree_node *top, *node;
+	WERROR rv;
+
+	top = view->root;
+	while (*path) {
+		for (node = top; node != NULL; node = node->next) {
+			if (strcmp(*path, node->name) == 0) {
+				if (path[1] && tree_node_has_children(node)) {
+					rv = tree_node_load_children(node);
+					if (!W_ERROR_IS_OK(rv)) {
+						return rv;
+					}
+					SMB_ASSERT(node->child_head);
+					top = node->child_head;
+					break;
+				} else {
+					tree_view_update(view, top);
+					tree_view_set_current_node(view, node);
+					return WERR_OK;
+				}
+			}
+		}
+		++path;
+	}
+
+	return WERR_OK;
+}
+
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 {
 	WERROR rv;
@@ -476,20 +514,38 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 	tree_view_show(view);
 }
 
-static void print_path_recursive(WINDOW *label, struct tree_node *node,
-				 size_t *len)
+const char **tree_node_get_path(TALLOC_CTX *ctx, struct tree_node *node)
 {
-	if (node->parent)
-		print_path_recursive(label, node->parent, len);
+	const char **array;
+	size_t nitems, index;
+	struct tree_node *p;
 
-	wprintw(label, "%s/", node->name);
-	*len += 1 + strlen(node->name);
+	for (nitems = 0, p = node; p != NULL; p = p->parent) {
+		++nitems;
+	}
+
+	array = talloc_zero_array(ctx, const char *, nitems + 1);
+	if (array == NULL) {
+		return NULL;
+	}
+
+	for (index = nitems - 1, p = node; p != NULL; p = p->parent, --index) {
+		array[index] = talloc_strdup(array, p->name);
+		if (array[index] == NULL) {
+			talloc_free(discard_const(array));
+			return NULL;
+		}
+	}
+
+	return array;
 }
 
 /* print the path of node to label */
 size_t tree_node_print_path(WINDOW *label, struct tree_node *node)
 {
 	size_t len = 1;
+	const char **path;
+	TALLOC_CTX *frame;
 
 	if (node == NULL)
 		return 0;
@@ -497,8 +553,19 @@ size_t tree_node_print_path(WINDOW *label, struct tree_node *node)
 	werase(label);
 	wprintw(label, "/");
 
-	if (node->parent)
-		print_path_recursive(label, node->parent, &len);
+	if (node->parent == NULL)
+		return 0;
+
+	frame = talloc_stackframe();
+	path = tree_node_get_path(frame, node->parent);
+
+	while (*path) {
+		len += strlen(*path) + 1;
+		wprintw(label, "%s/", *path);
+		++path;
+	}
+
+	talloc_free(frame);
 
 	return len;
 }
