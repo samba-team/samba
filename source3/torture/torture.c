@@ -710,7 +710,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 		{
 			status = cli_openx(c, lockfname, O_RDONLY, 
 					 DENY_NONE, &fnum);
-			if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_IS_OK(status)) {
 				break;
 			}
 			smb_msleep(10);
