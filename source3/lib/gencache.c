@@ -618,6 +618,9 @@ struct stabilize_state {
 static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 			void *priv);
 
+static int wipe_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
+		   void *priv);
+
 /**
  * Stabilize gencache
  *
@@ -650,10 +653,11 @@ bool gencache_stabilize(void)
 			   "%s\n", tdb_errorstr_compat(cache)));
 		return false;
 	}
-	res = tdb_transaction_start(cache_notrans);
+
+	res = tdb_lockall(cache_notrans);
 	if (res != 0) {
 		tdb_transaction_cancel(cache);
-		DEBUG(10, ("Could not start transaction on "
+		DEBUG(10, ("Could not get allrecord lock on "
 			   "gencache_notrans.tdb: %s\n",
 			   tdb_errorstr_compat(cache_notrans)));
 		return false;
@@ -663,13 +667,13 @@ bool gencache_stabilize(void)
 
 	res = tdb_traverse(cache_notrans, stabilize_fn, &state);
 	if (res < 0) {
-		tdb_transaction_cancel(cache_notrans);
+		tdb_unlockall(cache_notrans);
 		tdb_transaction_cancel(cache);
 		return false;
 	}
 
 	if (!state.written) {
-		tdb_transaction_cancel(cache_notrans);
+		tdb_unlockall(cache_notrans);
 		tdb_transaction_cancel(cache);
 		return true;
 	}
@@ -678,13 +682,21 @@ bool gencache_stabilize(void)
 	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
 			   "%s\n", tdb_errorstr_compat(cache)));
-		tdb_transaction_cancel(cache_notrans);
+		tdb_unlockall(cache_notrans);
 		return false;
 	}
 
-	res = tdb_transaction_commit(cache_notrans);
+	res = tdb_traverse(cache_notrans, wipe_fn, NULL);
 	if (res != 0) {
-		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
+		DEBUG(10, ("tdb_traverse with wipe_fn on gencache_notrans.tdb "
+			  "failed: %s\n", tdb_errorstr_compat(cache_notrans)));
+		tdb_unlockall(cache_notrans);
+		return false;
+	}
+
+	res = tdb_unlockall(cache_notrans);
+	if (res != 0) {
+		DEBUG(10, ("tdb_unlockall on gencache.tdb failed: "
 			   "%s\n", tdb_errorstr_compat(cache)));
 		return false;
 	}
@@ -734,13 +746,37 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 		return -1;
 	}
 
-	if (tdb_delete(cache_notrans, key) != 0) {
+	return 0;
+}
+
+static int wipe_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
+		   void *priv)
+{
+	int res;
+	bool ok;
+	time_t timeout;
+
+	res = tdb_data_cmp(key, last_stabilize_key());
+	if (res == 0) {
+		return 0;
+	}
+
+	ok = gencache_pull_timeout((char *)val.dptr, &timeout, NULL);
+	if (!ok) {
+		DEBUG(10, ("Ignoring invalid entry\n"));
+		return 0;
+	}
+
+	res = tdb_delete(tdb, key);
+	if (res != 0) {
 		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
 			   "%s\n", tdb_errorstr_compat(cache_notrans)));
 		return -1;
 	}
+
 	return 0;
 }
+
 
 /**
  * Get existing entry from the cache file.
