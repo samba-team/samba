@@ -637,7 +637,9 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 	status = libnet_join_set_machine_spn(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
-			"failed to set machine spn: %s",
+			"Failed to set machine spn: %s\n"
+			"Do you have sufficient permissions to create machine "
+			"accounts?",
 			ads_errstr(status));
 		return status;
 	}
