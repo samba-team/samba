@@ -25,10 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
-/****************************************************************************
- Determine if this is a secondary element of a chained SMB.
-  **************************************************************************/
-
 static void received_unlock_msg(struct messaging_context *msg,
 				void *private_data,
 				uint32_t msg_type,
