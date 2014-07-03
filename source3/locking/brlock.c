@@ -1509,12 +1509,7 @@ bool brl_lock_cancel_default(struct byte_range_lock *br_lck,
 		return False;
 	}
 
-	if (i < br_lck->num_locks - 1) {
-		/* Found this particular pending lock - delete it */
-		memmove(&locks[i], &locks[i+1],
-			sizeof(*locks)*((br_lck->num_locks-1) - i));
-	}
-
+	brl_delete_lock_struct(locks, br_lck->num_locks, i);
 	br_lck->num_locks -= 1;
 	br_lck->modified = True;
 	return True;
