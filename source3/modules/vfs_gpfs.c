@@ -1652,9 +1652,7 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (VALID_STAT(*sbuf)) {
-		attrs.winAttrs = sbuf->vfs_private;
-	} else {
+	{
 		int ret;
 		ret = get_gpfs_winattrs(path, &attrs);
 
