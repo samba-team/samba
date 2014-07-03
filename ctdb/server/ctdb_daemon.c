@@ -1162,7 +1162,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 	tdb_reopen_all(false);
 
 	if (do_fork) {
-		setsid();
+		if (setsid() == -1) {
+			ctdb_die(ctdb, "Failed to setsid()\n");
+		}
 		close(0);
 		if (open("/dev/null", O_RDONLY) != 0) {
 			DEBUG(DEBUG_ALERT,(__location__ " Failed to setup stdin on /dev/null\n"));
