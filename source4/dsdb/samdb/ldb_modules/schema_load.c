@@ -213,7 +213,8 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 			schema->metadata_usn = schema_seq_num;
 		} else {
 			/* From an old provision it can happen that the tdb didn't exists yet */
-			DEBUG(0, ("Error while searching for the schema usn in the metadata\n"));
+			DEBUG(0, ("Error while searching for the schema usn in the metadata ignoring: %d:%s:%s\n",
+			      ret, ldb_strerror(ret), ldb_errstring(ldb)));
 			schema->metadata_usn = 0;
 		}
 		schema->last_refresh = ts;
