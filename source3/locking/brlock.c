@@ -1440,11 +1440,10 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
 				     struct byte_range_lock *br_lck,
-				     struct lock_struct *plock,
-				     struct blocking_lock_record *blr)
+				     struct lock_struct *plock)
 {
 	VFS_FIND(brl_cancel_windows);
-	return handle->fns->brl_cancel_windows_fn(handle, br_lck, plock, blr);
+	return handle->fns->brl_cancel_windows_fn(handle, br_lck, plock);
 }
 
 /****************************************************************************
@@ -1472,7 +1471,7 @@ bool brl_lock_cancel(struct byte_range_lock *br_lck,
 
 	if (lock_flav == WINDOWS_LOCK) {
 		ret = SMB_VFS_BRL_CANCEL_WINDOWS(br_lck->fsp->conn, br_lck,
-		    &lock, blr);
+						 &lock);
 	} else {
 		ret = brl_lock_cancel_default(br_lck, &lock);
 	}

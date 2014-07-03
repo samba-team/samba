@@ -665,8 +665,7 @@ struct vfs_fn_pointers {
 
 	bool (*brl_cancel_windows_fn)(struct vfs_handle_struct *handle,
 				      struct byte_range_lock *br_lck,
-				      struct lock_struct *plock,
-				      struct blocking_lock_record *blr);
+				      struct lock_struct *plock);
 
 	bool (*strict_lock_fn)(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
@@ -1083,8 +1082,7 @@ bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
 				     const struct lock_struct *plock);
 bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
 				     struct byte_range_lock *br_lck,
-				     struct lock_struct *plock,
-				     struct blocking_lock_record *blr);
+				     struct lock_struct *plock);
 bool smb_vfs_call_strict_lock(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp,
 			      struct lock_struct *plock);

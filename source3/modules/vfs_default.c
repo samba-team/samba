@@ -2225,8 +2225,7 @@ static bool vfswrap_brl_unlock_windows(struct vfs_handle_struct *handle,
 
 static bool vfswrap_brl_cancel_windows(struct vfs_handle_struct *handle,
 				       struct byte_range_lock *br_lck,
-				       struct lock_struct *plock,
-				       struct blocking_lock_record *blr)
+				       struct lock_struct *plock)
 {
 	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
 

@@ -1588,15 +1588,14 @@ static bool smb_time_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 
 static bool smb_time_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 					      struct byte_range_lock *br_lck,
-					      struct lock_struct *plock,
-					      struct blocking_lock_record *blr)
+					      struct lock_struct *plock)
 {
 	bool result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr);
+	result = SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

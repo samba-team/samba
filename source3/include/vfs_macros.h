@@ -374,10 +374,10 @@
 #define SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, msg_ctx, br_lck, plock) \
 	smb_vfs_call_brl_unlock_windows((handle)->next, (msg_ctx), (br_lck), (plock))
 
-#define SMB_VFS_BRL_CANCEL_WINDOWS(conn, br_lck, plock, blr) \
-	smb_vfs_call_brl_cancel_windows((conn)->vfs_handles, (br_lck), (plock), (blr))
-#define SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr) \
-	smb_vfs_call_brl_cancel_windows((handle)->next, (br_lck), (plock), (blr))
+#define SMB_VFS_BRL_CANCEL_WINDOWS(conn, br_lck, plock) \
+	smb_vfs_call_brl_cancel_windows((conn)->vfs_handles, (br_lck), (plock))
+#define SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock) \
+	smb_vfs_call_brl_cancel_windows((handle)->next, (br_lck), (plock))
 
 #define SMB_VFS_STRICT_LOCK(conn, fsp, plock) \
 	smb_vfs_call_strict_lock((conn)->vfs_handles, (fsp), (plock))

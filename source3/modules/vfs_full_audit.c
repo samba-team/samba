@@ -1685,12 +1685,11 @@ static bool smb_full_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 
 static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 				              struct byte_range_lock *br_lck,
-					      struct lock_struct *plock,
-					      struct blocking_lock_record *blr)
+					      struct lock_struct *plock)
 {
 	bool result;
 
-	result = SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr);
+	result = SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock);
 
 	do_log(SMB_VFS_OP_BRL_CANCEL_WINDOWS, (result == 0), handle,
 	       "%s:%llu-%llu:%d", fsp_str_do_log(brl_fsp(br_lck)),

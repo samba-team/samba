@@ -710,10 +710,9 @@ static bool skel_brl_unlock_windows(struct vfs_handle_struct *handle,
 
 static bool skel_brl_cancel_windows(struct vfs_handle_struct *handle,
 				    struct byte_range_lock *br_lck,
-				    struct lock_struct *plock,
-				    struct blocking_lock_record *blr)
+				    struct lock_struct *plock)
 {
-	return SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr);
+	return SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock);
 }
 
 static bool skel_strict_lock(struct vfs_handle_struct *handle,
