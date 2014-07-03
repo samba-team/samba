@@ -206,19 +206,19 @@ static int iprint_get_server_version(http_t *http, char* serviceUri)
 
 static int iprint_cache_add_printer(http_t *http,
 				   int reqId,
-				   char *url,
+				   const char *url,
 				   struct pcap_cache **pcache)
 {
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
 	ipp_attribute_t	*attr;			/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
-	char		*name,			/* printer-name attribute */
-			*info,			/* printer-info attribute */
-			smb_enabled,		/* smb-enabled attribute */
+	const char	*name,			/* printer-name attribute */
+			*info;			/* printer-info attribute */
+	char		smb_enabled,		/* smb-enabled attribute */
 			secure;			/* security-enabled attrib. */
 
-	char		*httpPath;	/* path portion of the printer-uri */
+	const char	*httpPath;	/* path portion of the printer-uri */
 
 	static const char *pattrs[] =	/* Requested printer attributes */
 			{
@@ -440,7 +440,7 @@ bool iprint_cache_reload(struct pcap_cache **_pcache)
 			{
 				for (i = 0; i<ippGetCount(attr); i++)
 				{
-					char *url = ippGetString(attr, i, NULL);
+					const char *url = ippGetString(attr, i, NULL);
 					if (!url || !strlen(url))
 						continue;
 					iprint_cache_add_printer(http, i+2, url,
