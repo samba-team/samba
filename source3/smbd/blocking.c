@@ -459,8 +459,6 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 	files_struct *fsp = blr->fsp;
 	uint16 num_ulocks = SVAL(blr->req->vwv+6, 0);
 	uint16 num_locks = SVAL(blr->req->vwv+7, 0);
-	uint64_t count = (uint64_t)0, offset = (uint64_t)0;
-	uint64_t smblctx;
 	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	uint8_t *data;
 	NTSTATUS status = NT_STATUS_OK;
@@ -478,9 +476,14 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 		struct byte_range_lock *br_lck = NULL;
 		bool err;
 
-		smblctx = get_lock_pid( data, blr->lock_num, large_file_format);
-		count = get_lock_count( data, blr->lock_num, large_file_format);
-		offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
+		/*
+		 * Ensure the blr record gets updated with
+		 * any lock we might end up blocked on.
+		 */
+
+		blr->smblctx = get_lock_pid( data, blr->lock_num, large_file_format);
+		blr->count = get_lock_count( data, blr->lock_num, large_file_format);
+		blr->offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
 
 		/*
 		 * We know err cannot be set as if it was the lock
@@ -489,9 +492,9 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 		errno = 0;
 		br_lck = do_lock(fsp->conn->sconn->msg_ctx,
 				fsp,
-				smblctx,
-				count,
-				offset,
+				blr->smblctx,
+				blr->count,
+				blr->offset,
 				((locktype & LOCKING_ANDX_SHARED_LOCK) ?
 					READ_LOCK : WRITE_LOCK),
 				WINDOWS_LOCK,
@@ -499,6 +502,34 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 				&status,
 				&blr->blocking_smblctx,
 				blr);
+
+		if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
+			/*
+			 * If we didn't timeout, but still need to wait,
+			 * re-add the pending lock entry whilst holding
+			 * the brlock db lock.
+			 */
+			NTSTATUS status1 =
+				brl_lock(blr->fsp->conn->sconn->msg_ctx,
+					br_lck,
+					blr->smblctx,
+					messaging_server_id(
+						blr->fsp->conn->sconn->msg_ctx),
+					blr->offset,
+					blr->count,
+					blr->lock_type == READ_LOCK ?
+						PENDING_READ_LOCK :
+						PENDING_WRITE_LOCK,
+						blr->lock_flav,
+					true, /* Blocking lock. */
+					NULL,
+					blr);
+
+			if (!NT_STATUS_IS_OK(status1)) {
+				DEBUG(0,("failed to add PENDING_LOCK "
+					"record.\n"));
+			}
+		}
 
 		TALLOC_FREE(br_lck);
 
@@ -573,6 +604,33 @@ static bool process_trans2(struct blocking_lock_record *blr)
 						&status,
 						&blr->blocking_smblctx,
 						blr);
+	if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
+		/*
+		 * If we didn't timeout, but still need to wait,
+		 * re-add the pending lock entry whilst holding
+		 * the brlock db lock.
+		 */
+		NTSTATUS status1 =
+			brl_lock(blr->fsp->conn->sconn->msg_ctx,
+				br_lck,
+				blr->smblctx,
+				messaging_server_id(
+					blr->fsp->conn->sconn->msg_ctx),
+				blr->offset,
+				blr->count,
+				blr->lock_type == READ_LOCK ?
+					PENDING_READ_LOCK :
+					PENDING_WRITE_LOCK,
+				blr->lock_flav,
+				true, /* Blocking lock. */
+				NULL,
+				blr);
+
+		if (!NT_STATUS_IS_OK(status1)) {
+			DEBUG(0,("failed to add PENDING_LOCK record.\n"));
+		}
+	}
+
 	TALLOC_FREE(br_lck);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -805,16 +863,13 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 				SVAL(blr->req->inbuf,smb_flg),
 				false);
 
-		if(!blocking_lock_record_process(blr)) {
-			DEBUG(10, ("still waiting for lock. BLR = %p\n", blr));
-			continue;
-		}
+		/*
+		 * Remove the pending lock we're waiting on.
+		 * If we need to keep waiting blocking_lock_record_process()
+		 * will re-add it.
+		 */
 
 		br_lck = brl_get_locks(talloc_tos(), blr->fsp);
-
-		DEBUG(10, ("BLR_process returned true: cancelling and "
-		    "removing lock. BLR = %p\n", blr));
-
 		if (br_lck) {
 			brl_lock_cancel(br_lck,
 				blr->smblctx,
@@ -823,8 +878,16 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 				blr->count,
 				blr->lock_flav,
 				blr);
-			TALLOC_FREE(br_lck);
 		}
+		TALLOC_FREE(br_lck);
+
+		if(!blocking_lock_record_process(blr)) {
+			DEBUG(10, ("still waiting for lock. BLR = %p\n", blr));
+			continue;
+		}
+
+		DEBUG(10, ("BLR_process returned true: removing BLR = %p\n",
+			blr));
 
 		DLIST_REMOVE(sconn->smb1.locks.blocking_lock_queue, blr);
 		TALLOC_FREE(blr);
