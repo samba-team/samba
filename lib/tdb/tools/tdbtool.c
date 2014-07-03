@@ -714,13 +714,13 @@ static int do_command(void)
 			tdb_printfreelist(tdb);
 			return 0;
 		case CMD_FREELIST_SIZE: {
-			int count;
+			int size;
 
-			count = tdb_freelist_size(tdb);
-			if (count < 0) {
+			size = tdb_freelist_size(tdb);
+			if (size < 0) {
 				printf("Error getting freelist size.\n");
 			} else {
-				printf("freelist size: %d\n", count);
+				printf("freelist size: %d\n", size);
 			}
 
 			return 0;
