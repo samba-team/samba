@@ -7773,8 +7773,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 						e->smblctx,
 						e->count,
 						e->offset,
-						WINDOWS_LOCK,
-						blr);
+						WINDOWS_LOCK);
 		} else {
 			bool blocking_lock = timeout ? true : false;
 			bool defer_lock = false;

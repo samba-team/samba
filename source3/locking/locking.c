@@ -352,8 +352,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			uint64 smblctx,
 			uint64_t count,
 			uint64_t offset,
-			enum brl_flavour lock_flav,
-			struct blocking_lock_record *blr)
+			enum brl_flavour lock_flav)
 {
 	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
