@@ -4283,8 +4283,6 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	ctdb->ctdbd_pid = getpid();
-
 	ctdb->recoverd_pid = ctdb_fork_no_free_ringbuffer(ctdb);
 	if (ctdb->recoverd_pid == -1) {
 		return -1;
