@@ -500,8 +500,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 		return True;
 	}
 
-	if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
-	    !NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
+	if (!ERROR_WAS_LOCK_DENIED(status)) {
 		/*
 		 * We have other than a "can't get lock"
 		 * error. Free any locks we had and return an error.
