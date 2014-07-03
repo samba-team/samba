@@ -227,8 +227,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
 			blr->lock_flav,
 			True,
-			NULL,
-			blr);
+			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
@@ -518,8 +517,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 						PENDING_WRITE_LOCK,
 						blr->lock_flav,
 					true, /* Blocking lock. */
-					NULL,
-					blr);
+					NULL);
 
 			if (!NT_STATUS_IS_OK(status1)) {
 				DEBUG(0,("failed to add PENDING_LOCK "

@@ -617,8 +617,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
 			blr->lock_flav,
 			true,
-			NULL,
-			blr);
+			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request_smb2: "

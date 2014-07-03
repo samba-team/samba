@@ -953,8 +953,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
 		bool blocking_lock,
-		uint64_t *psmblctx,
-		struct blocking_lock_record *blr)
+		uint64_t *psmblctx)
 {
 	NTSTATUS ret;
 	struct lock_struct lock;
