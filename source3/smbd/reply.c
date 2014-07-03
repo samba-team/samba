@@ -7713,9 +7713,6 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 		timeout = 0;
 	}
 
-	/* Data now points at the beginning of the list
-	   of smb_lkrng structs */
-
 	for(i = 0; i < (int)num_locks; i++) {
 		struct smbd_lock_element *e = &locks[i];
 
@@ -7899,8 +7896,6 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 {
 	int i;
 
-	/* Data now points at the beginning of the list
-	   of smb_unlkrng structs */
 	for(i = 0; i < (int)num_ulocks; i++) {
 		struct smbd_lock_element *e = &ulocks[i];
 		NTSTATUS status;
