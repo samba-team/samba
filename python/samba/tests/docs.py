@@ -146,9 +146,17 @@ class SmbDotConfTests(TestCase):
         finally:
             f.close()
 
+        self.blankconf = os.path.join(self.tempdir, "emptytestsmb.conf")
+        f = open(self.blankconf, 'w')
+        try:
+            f.write("")
+        finally:
+            f.close()
+
     def tearDown(self):
         super(SmbDotConfTests, self).tearDown()
         os.unlink(self.smbconf)
+        os.unlink(self.blankconf)
 
     def test_unknown(self):
         topdir = os.path.abspath(samba.source_tree_topdir())
@@ -187,12 +195,14 @@ class SmbDotConfTests(TestCase):
                           'client plaintext auth',
                           'registry shares',
                           'smb ports'])
+        self._test_empty(['bin/testparm'])
 
     def test_default_s4(self):
         self._test_default(['bin/samba-tool', 'testparm'])
         self._set_defaults(['bin/samba-tool', 'testparm'])
         self._set_arbitrary(['bin/samba-tool', 'testparm'],
             exceptions = ['smb ports'])
+        self._test_empty(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
         topdir = os.path.abspath(samba.source_tree_topdir())
@@ -266,7 +276,8 @@ class SmbDotConfTests(TestCase):
     def _set_arbitrary(self, program, exceptions=None):
         arbitrary = {'string': 'string', 'boolean': 'yes', 'integer': '5',
                      'enum':'', 'boolean-auto': '', 'char': 'a', 'list': 'a, b, c'}
-
+        opposite_arbitrary = {'string': 'string2', 'boolean': 'no', 'integer': '6',
+                              'enum':'', 'boolean-auto': '', 'char': 'b', 'list': 'd, e, f'}
         topdir = os.path.abspath(samba.source_tree_topdir())
         try:
             defaults = set(get_documented_tuples(topdir, False))
@@ -323,6 +334,64 @@ class SmbDotConfTests(TestCase):
                 doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
                 failset.add("%s\n      Got: %s" % (doc_triple, p[0].upper().strip()))
 
+            opposite_value = opposite_arbitrary.get(param_type)
+            tempconf = os.path.join(self.tempdir, "tempsmb.conf")
+            g = open(tempconf, 'w')
+            try:
+                towrite = section + "\n"
+                towrite += param + " = " + opposite_value
+                g.write(towrite)
+            finally:
+                g.close()
+
+            p = subprocess.Popen(program + ["-s", tempconf, "--suppress-prompt",
+                    "--option", "%s = %s" % (param, value_to_use)],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+
+            os.unlink(tempconf)
+
+            # testparm doesn't display a value if they are equivalent
+            if (value_to_use.lower() != opposite_value.lower()):
+                for line in p[0].splitlines():
+                    if not line.strip().startswith(param):
+                        continue
+
+                    value_found = line.split("=")[1].upper().strip()
+                    if value_found != value_to_use.upper():
+                        # currently no way to distinguish command lists
+                        if param_type == 'list':
+                            if ", ".join(value_found.split()) == value_to_use.upper():
+                                continue
+
+                        # currently no way to identify octal
+                        if param_type == 'integer':
+                            try:
+                                if int(value_to_use, 8) == int(value_found, 8):
+                                    continue
+                            except:
+                                pass
+
+                        doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
+                        failset.add("%s\n      Got: %s" % (doc_triple, value_found))
+
+
         if len(failset) > 0:
             self.fail(self._format_message(failset,
                 "Parameters that were unexpectedly not set:"))
+
+    def _test_empty(self, program):
+        topdir = os.path.abspath(samba.source_tree_topdir())
+
+        p = subprocess.Popen(program + ["-s", self.blankconf, "--suppress-prompt"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+        output = ""
+
+        for line in p[0].splitlines():
+            if line.strip().startswith('#'):
+                continue
+            if line.strip().startswith("idmap config *"):
+                continue
+            output += line.strip().lower() + '\n'
+
+        if output.strip() != '[global]' and output.strip() != '[globals]':
+            self.fail("Testparm returned unexpected output on an empty smb.conf.")
