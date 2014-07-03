@@ -48,7 +48,6 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
 	  username */
 	*homedir = talloc_strdup( ctx, lp_template_homedir() );
 	*shell   = talloc_strdup( ctx, lp_template_shell() );
-	*gecos   = NULL;
 
 	if ( !*homedir || !*shell ) {
 		return NT_STATUS_NO_MEMORY;
