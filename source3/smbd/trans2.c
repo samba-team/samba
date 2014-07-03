@@ -5167,10 +5167,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			smblctx = (uint64_t)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
-			offset = (((uint64_t) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
-					((uint64_t) IVAL(pdata,POSIX_LOCK_START_OFFSET));
-			count = (((uint64_t) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
-					((uint64_t) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
+			offset = BVAL(pdata,POSIX_LOCK_START_OFFSET);
+			count = BVAL(pdata,POSIX_LOCK_LEN_OFFSET);
 #else /* HAVE_LONGLONG */
 			offset = (uint64_t)IVAL(pdata,POSIX_LOCK_START_OFFSET);
 			count = (uint64_t)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
@@ -5191,10 +5189,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				SSVAL(pdata, POSIX_LOCK_FLAGS_OFFSET, 0);
 				SIVAL(pdata, POSIX_LOCK_PID_OFFSET, (uint32_t)smblctx);
 #if defined(HAVE_LONGLONG)
-				SIVAL(pdata, POSIX_LOCK_START_OFFSET, (uint32)(offset & 0xFFFFFFFF));
-				SIVAL(pdata, POSIX_LOCK_START_OFFSET + 4, (uint32)((offset >> 32) & 0xFFFFFFFF));
-				SIVAL(pdata, POSIX_LOCK_LEN_OFFSET, (uint32)(count & 0xFFFFFFFF));
-				SIVAL(pdata, POSIX_LOCK_LEN_OFFSET + 4, (uint32)((count >> 32) & 0xFFFFFFFF));
+				SBVAL(pdata, POSIX_LOCK_START_OFFSET, offset);
+				SBVAL(pdata, POSIX_LOCK_LEN_OFFSET, count);
 #else /* HAVE_LONGLONG */
 				SIVAL(pdata, POSIX_LOCK_START_OFFSET, offset);
 				SIVAL(pdata, POSIX_LOCK_LEN_OFFSET, count);
