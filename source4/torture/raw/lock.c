@@ -2317,7 +2317,7 @@ static bool test_multilock(struct torture_context *tctx,
 	 * context as blocking locks with infinite timeout.
 	 */
 
-	io.lockx.in.timeout = -1;
+	io.lockx.in.timeout = 20000;
 	lock[0].pid = cli->session->pid+1;
 	lock[1].pid = cli->session->pid+1;
 	req = smb_raw_lock_send(cli->tree, &io);
