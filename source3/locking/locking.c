@@ -243,8 +243,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
 			NTSTATUS *perr,
-			uint64_t *psmblctx,
-			struct blocking_lock_record *blr)
+			uint64_t *psmblctx)
 {
 	struct byte_range_lock *br_lck = NULL;
 

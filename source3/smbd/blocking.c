@@ -495,8 +495,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 				WINDOWS_LOCK,
 				True,
 				&status,
-				&blr->blocking_smblctx,
-				blr);
+				&blr->blocking_smblctx);
 
 		if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
 			/*
@@ -596,8 +595,7 @@ static bool process_trans2(struct blocking_lock_record *blr)
 						blr->lock_flav,
 						True,
 						&status,
-						&blr->blocking_smblctx,
-						blr);
+						&blr->blocking_smblctx);
 	if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
 		/*
 		 * If we didn't timeout, but still need to wait,
@@ -617,8 +615,7 @@ static bool process_trans2(struct blocking_lock_record *blr)
 					PENDING_WRITE_LOCK,
 				blr->lock_flav,
 				true, /* Blocking lock. */
-				NULL,
-				blr);
+				NULL);
 
 		if (!NT_STATUS_IS_OK(status1)) {
 			DEBUG(0,("failed to add PENDING_LOCK record.\n"));

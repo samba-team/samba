@@ -130,8 +130,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
 			NTSTATUS *perr,
-			uint64_t *psmblctx,
-			struct blocking_lock_record *blr);
+			uint64_t *psmblctx);
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint64_t smblctx,

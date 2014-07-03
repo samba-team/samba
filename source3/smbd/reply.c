@@ -3510,7 +3510,6 @@ void reply_lockread(struct smb_request *req)
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
 			&status,
-			NULL,
 			NULL);
 	TALLOC_FREE(br_lck);
 
@@ -5299,7 +5298,6 @@ void reply_lock(struct smb_request *req)
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
 			&status,
-			NULL,
 			NULL);
 
 	TALLOC_FREE(br_lck);
@@ -7792,8 +7790,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 					WINDOWS_LOCK,
 					blocking_lock,
 					&status,
-					&block_smblctx,
-					NULL);
+					&block_smblctx);
 
 			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 				/* Windows internal resolution for blocking locks seems

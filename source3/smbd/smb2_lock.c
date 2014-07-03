@@ -712,8 +712,7 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 			WINDOWS_LOCK,
 			true,
 			&status,
-			&blr->blocking_smblctx,
-			blr);
+			&blr->blocking_smblctx);
 
 	TALLOC_FREE(br_lck);
 
