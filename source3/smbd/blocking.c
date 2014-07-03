@@ -725,8 +725,7 @@ void smbd_cancel_pending_lock_requests_by_fid(files_struct *fsp,
 				messaging_server_id(sconn->msg_ctx),
 				blr->offset,
 				blr->count,
-				blr->lock_flav,
-				blr);
+				blr->lock_flav);
 
 		/* We're closing the file fsp here, so ensure
 		 * we don't have a dangling pointer. */
@@ -768,8 +767,7 @@ void remove_pending_lock_requests_by_mid_smb1(
 					messaging_server_id(sconn->msg_ctx),
 					blr->offset,
 					blr->count,
-					blr->lock_flav,
-					blr);
+					blr->lock_flav);
 			TALLOC_FREE(br_lck);
 		}
 
@@ -867,8 +865,7 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 				messaging_server_id(sconn->msg_ctx),
 				blr->offset,
 				blr->count,
-				blr->lock_flav,
-				blr);
+				blr->lock_flav);
 		}
 		TALLOC_FREE(br_lck);
 

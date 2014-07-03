@@ -381,8 +381,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			messaging_server_id(fsp->conn->sconn->msg_ctx),
 			offset,
 			count,
-			lock_flav,
-			blr);
+			lock_flav);
 
 	TALLOC_FREE(br_lck);
 

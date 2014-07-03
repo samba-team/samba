@@ -664,8 +664,7 @@ static void remove_pending_lock(struct smbd_smb2_lock_state *state,
 				messaging_server_id(blr->fsp->conn->sconn->msg_ctx),
 				blr->offset,
 				blr->count,
-				blr->lock_flav,
-				blr);
+				blr->lock_flav);
 		TALLOC_FREE(br_lck);
 	}
 }
@@ -860,8 +859,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 				messaging_server_id(sconn->msg_ctx),
 				blr->offset,
 				blr->count,
-				blr->lock_flav,
-				blr);
+				blr->lock_flav);
 
 		/* Finally end the request. */
 		if (close_type == SHUTDOWN_CLOSE) {
