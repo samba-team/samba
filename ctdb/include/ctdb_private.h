@@ -38,11 +38,6 @@ struct srvid_request_data {
 };
 
 /*
- * pid of the ctdbd daemon
- */
-extern pid_t ctdbd_pid;
-
-/*
   a tcp connection description
   also used by tcp_add and tcp_remove controls
  */

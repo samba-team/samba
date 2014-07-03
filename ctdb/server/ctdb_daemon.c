@@ -60,7 +60,7 @@ static void ctdb_time_tick(struct event_context *ev, struct timed_event *te,
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 
-	if (getpid() != ctdbd_pid) {
+	if (getpid() != ctdb->ctdbd_pid) {
 		return;
 	}
 
@@ -1070,8 +1070,10 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 {
 	struct timeval diff;
 	struct timeval now;
+	struct ctdb_context *ctdb =
+		talloc_get_type(private_data, struct ctdb_context);
 
-	if (getpid() != ctdbd_pid) {
+	if (getpid() != ctdb->ctdbd_pid) {
 		return;
 	}
 
@@ -1174,10 +1176,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 	}
 	ignore_signal(SIGPIPE);
 
-	ctdbd_pid = getpid();
-	ctdb->ctdbd_pid = ctdbd_pid;
+	ctdb->ctdbd_pid = getpid();
 	DEBUG(DEBUG_ERR, ("Starting CTDBD (Version %s) as PID: %u\n",
-			  CTDB_VERSION_STRING, ctdbd_pid));
+			  CTDB_VERSION_STRING, ctdb->ctdbd_pid));
 	ctdb_create_pidfile(ctdb->ctdbd_pid);
 
 	/* Make sure we log something when the daemon terminates.
@@ -1200,7 +1201,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 
 	ctdb->ev = event_context_init(NULL);
 	tevent_loop_allow_nesting(ctdb->ev);
-	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, NULL);
+	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, ctdb);
 	ret = ctdb_init_tevent_logging(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ALERT,("Failed to initialize TEVENT logging\n"));
