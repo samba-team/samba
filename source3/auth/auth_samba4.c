@@ -188,7 +188,7 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
  * token is generated and used in the SMB and LDAP servers, for NTLM
  * and for Kerberos.
  */
-static NTSTATUS prepare_gensec(struct auth_context *auth_context,
+static NTSTATUS prepare_gensec(const struct auth_context *auth_context,
 			       TALLOC_CTX *mem_ctx,
 			       struct gensec_security **gensec_context)
 {
