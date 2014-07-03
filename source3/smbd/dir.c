@@ -1126,7 +1126,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	while (true) {
 		long cur_offset;
 		long prev_offset;
-		SMB_STRUCT_STAT sbuf;
+		SMB_STRUCT_STAT sbuf = { 0 };
 		char *dname = NULL;
 		bool isdots;
 		char *fname = NULL;
