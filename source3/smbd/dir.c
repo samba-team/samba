@@ -754,10 +754,10 @@ static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-char *dptr_ReadDirName(TALLOC_CTX *ctx,
-			struct dptr_struct *dptr,
-			long *poffset,
-			SMB_STRUCT_STAT *pst)
+static char *dptr_ReadDirName(TALLOC_CTX *ctx,
+			      struct dptr_struct *dptr,
+			      long *poffset,
+			      SMB_STRUCT_STAT *pst)
 {
 	struct smb_filename smb_fname_base;
 	char *name = NULL;
