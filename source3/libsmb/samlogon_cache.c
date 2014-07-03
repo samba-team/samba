@@ -149,6 +149,20 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 
 	/* Prepare data */
 
+	if (info3->base.full_name.string == NULL) {
+		struct netr_SamInfo3 *cached_info3;
+		const char *full_name = NULL;
+
+		cached_info3 = netsamlogon_cache_get(tmp_ctx, &user_sid);
+		if (cached_info3 != NULL) {
+			full_name = cached_info3->base.full_name.string;
+		}
+
+		if (full_name != NULL) {
+			info3->base.full_name.string = talloc_strdup(info3, full_name);
+		}
+	}
+
 	/* only Samba fills in the username, not sure why NT doesn't */
 	/* so we fill it in since winbindd_getpwnam() makes use of it */
 
