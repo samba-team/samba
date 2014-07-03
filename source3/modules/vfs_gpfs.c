@@ -1476,6 +1476,7 @@ static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
 		sbuf->st_ex_calculated_birthtime = false;
 		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+		sbuf->vfs_private = attrs.winAttrs;
 	}
 	return 0;
 }
