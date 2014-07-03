@@ -7697,8 +7697,6 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
 			 uint8_t type,
 			 int32_t timeout,
-			 uint16_t num_ulocks,
-			 struct smbd_lock_element *ulocks,
 			 uint16_t num_locks,
 			 struct smbd_lock_element *locks,
 			 bool *async)
@@ -7708,38 +7706,6 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 	NTSTATUS status = NT_STATUS_OK;
 
 	*async = false;
-
-	/* Data now points at the beginning of the list
-	   of smb_unlkrng structs */
-	for(i = 0; i < (int)num_ulocks; i++) {
-		struct smbd_lock_element *e = &ulocks[i];
-
-		DEBUG(10,("smbd_do_locking: unlock start=%.0f, len=%.0f for "
-			  "pid %u, file %s\n",
-			  (double)e->offset,
-			  (double)e->count,
-			  (unsigned int)e->smblctx,
-			  fsp_str_dbg(fsp)));
-
-		if (e->brltype != UNLOCK_LOCK) {
-			/* this can only happen with SMB2 */
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		status = do_unlock(req->sconn->msg_ctx,
-				fsp,
-				e->smblctx,
-				e->count,
-				e->offset,
-				WINDOWS_LOCK);
-
-		DEBUG(10, ("smbd_do_locking: unlock returned %s\n",
-		    nt_errstr(status)));
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
 
 	/* Setup the timeout in seconds. */
 
@@ -7920,8 +7886,54 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 		return status;
 	}
 
-	DEBUG(3, ("smbd_do_locking: %s type=%d num_locks=%d num_ulocks=%d\n",
-		  fsp_fnum_dbg(fsp), (unsigned int)type, num_locks, num_ulocks));
+	DEBUG(3, ("smbd_do_locking: %s type=%d num_locks=%d\n",
+		  fsp_fnum_dbg(fsp), (unsigned int)type, num_locks));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smbd_do_unlocking(struct smb_request *req,
+			   files_struct *fsp,
+			   uint16_t num_ulocks,
+			   struct smbd_lock_element *ulocks)
+{
+	int i;
+
+	/* Data now points at the beginning of the list
+	   of smb_unlkrng structs */
+	for(i = 0; i < (int)num_ulocks; i++) {
+		struct smbd_lock_element *e = &ulocks[i];
+		NTSTATUS status;
+
+		DEBUG(10,("%s: unlock start=%.0f, len=%.0f for "
+			  "pid %u, file %s\n", __func__,
+			  (double)e->offset,
+			  (double)e->count,
+			  (unsigned int)e->smblctx,
+			  fsp_str_dbg(fsp)));
+
+		if (e->brltype != UNLOCK_LOCK) {
+			/* this can only happen with SMB2 */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		status = do_unlock(req->sconn->msg_ctx,
+				fsp,
+				e->smblctx,
+				e->count,
+				e->offset,
+				WINDOWS_LOCK);
+
+		DEBUG(10, ("%s: unlock returned %s\n", __func__,
+			   nt_errstr(status)));
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	DEBUG(3, ("%s: %s num_ulocks=%d\n", __func__, fsp_fnum_dbg(fsp),
+		  num_ulocks));
 
 	return NT_STATUS_OK;
 }
@@ -8125,9 +8137,15 @@ void reply_lockingX(struct smb_request *req)
 		}
 	}
 
+	status = smbd_do_unlocking(req, fsp, num_ulocks, ulocks);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBlockingX);
+		reply_nterror(req, status);
+		return;
+	}
+
 	status = smbd_do_locking(req, fsp,
 				 locktype, lock_timeout,
-				 num_ulocks, ulocks,
 				 num_locks, locks,
 				 &async);
 	if (!NT_STATUS_IS_OK(status)) {

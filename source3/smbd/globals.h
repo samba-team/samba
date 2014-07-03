@@ -120,11 +120,13 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
 			 uint8_t type,
 			 int32_t timeout,
-			 uint16_t num_ulocks,
-			 struct smbd_lock_element *ulocks,
 			 uint16_t num_locks,
 			 struct smbd_lock_element *locks,
 			 bool *async);
+NTSTATUS smbd_do_unlocking(struct smb_request *req,
+			   files_struct *fsp,
+			   uint16_t num_ulocks,
+			   struct smbd_lock_element *ulocks);
 
 NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       TALLOC_CTX *mem_ctx,
