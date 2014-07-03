@@ -161,7 +161,6 @@ int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
 
 int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
 {
-
 	if (gpfs_get_winattrs_path_fn == NULL) {
                 errno = ENOSYS;
                 return -1;
@@ -172,7 +171,6 @@ int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
 
 int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs)
 {
-
 	if (gpfs_get_winattrs_fn == NULL) {
                 errno = ENOSYS;
                 return -1;
