@@ -2292,7 +2292,7 @@ static bool test_multilock(struct torture_context *tctx,
 		       fname, smbcli_errstr(cli->tree)));
 
 	/*
-	 * Lock regions 100->109, 110->119 as
+	 * Lock regions 100->109, 120->129 as
 	 * two separate write locks in one request.
 	 */
 	io.lockx.level = RAW_LOCK_LOCKX;
