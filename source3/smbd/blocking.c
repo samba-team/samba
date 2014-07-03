@@ -430,6 +430,25 @@ static void blocking_lock_reply_error(struct blocking_lock_record *blr, NTSTATUS
 }
 
 /****************************************************************************
+ Utility function that returns true if a lock timed out.
+*****************************************************************************/
+
+static bool lock_timed_out(const struct blocking_lock_record *blr)
+{
+	struct timeval tv_curr;
+
+	if (timeval_is_zero(&blr->expire_time)) {
+		return false; /* Never times out. */
+	}
+
+	tv_curr = timeval_current();
+	if (timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
+		return true;
+	}
+	return false;
+}
+
+/****************************************************************************
  Attempt to finish off getting all pending blocking locks for a lockingX call.
  Returns True if we want to be removed from the list.
 *****************************************************************************/
@@ -734,11 +753,10 @@ static void received_unlock_msg(struct messaging_context *msg,
 
 void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 {
-	struct timeval tv_curr = timeval_current();
 	struct blocking_lock_record *blr, *next = NULL;
 
 	if (sconn->using_smb2) {
-		process_blocking_lock_queue_smb2(sconn, tv_curr);
+		process_blocking_lock_queue_smb2(sconn, timeval_current());
 		return;
 	}
 
@@ -794,7 +812,7 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 		 * If the time has expired, return a lock error.
 		 */
 
-		if (!timeval_is_zero(&blr->expire_time) && timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
+		if (lock_timed_out(blr)) {
 			struct byte_range_lock *br_lck = brl_get_locks(
 				talloc_tos(), blr->fsp);
 
