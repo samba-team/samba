@@ -1543,8 +1543,7 @@ static const char *smb_time_audit_connectpath(vfs_handle_struct *handle,
 static NTSTATUS smb_time_audit_brl_lock_windows(struct vfs_handle_struct *handle,
 						struct byte_range_lock *br_lck,
 						struct lock_struct *plock,
-						bool blocking_lock,
-						struct blocking_lock_record *blr)
+						bool blocking_lock)
 {
 	NTSTATUS result;
 	struct timespec ts1,ts2;
@@ -1552,7 +1551,7 @@ static NTSTATUS smb_time_audit_brl_lock_windows(struct vfs_handle_struct *handle
 
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock,
-					       blocking_lock, blr);
+					       blocking_lock);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

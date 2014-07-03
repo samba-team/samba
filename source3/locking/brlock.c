@@ -933,12 +933,11 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
 				       struct byte_range_lock *br_lck,
 				       struct lock_struct *plock,
-				       bool blocking_lock,
-				       struct blocking_lock_record *blr)
+				       bool blocking_lock)
 {
 	VFS_FIND(brl_lock_windows);
 	return handle->fns->brl_lock_windows_fn(handle, br_lck, plock,
-						blocking_lock, blr);
+						blocking_lock);
 }
 
 /****************************************************************************
@@ -982,7 +981,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 
 	if (lock_flav == WINDOWS_LOCK) {
 		ret = SMB_VFS_BRL_LOCK_WINDOWS(br_lck->fsp->conn, br_lck,
-		    &lock, blocking_lock, blr);
+					       &lock, blocking_lock);
 	} else {
 		ret = brl_lock_posix(msg_ctx, br_lck, &lock);
 	}

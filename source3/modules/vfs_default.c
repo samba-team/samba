@@ -2205,8 +2205,7 @@ static const char *vfswrap_connectpath(struct vfs_handle_struct *handle,
 static NTSTATUS vfswrap_brl_lock_windows(struct vfs_handle_struct *handle,
 					 struct byte_range_lock *br_lck,
 					 struct lock_struct *plock,
-					 bool blocking_lock,
-					 struct blocking_lock_record *blr)
+					 bool blocking_lock)
 {
 	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
 

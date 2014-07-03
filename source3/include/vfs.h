@@ -656,8 +656,7 @@ struct vfs_fn_pointers {
 	NTSTATUS (*brl_lock_windows_fn)(struct vfs_handle_struct *handle,
 					struct byte_range_lock *br_lck,
 					struct lock_struct *plock,
-					bool blocking_lock,
-					struct blocking_lock_record *blr);
+					bool blocking_lock);
 
 	bool (*brl_unlock_windows_fn)(struct vfs_handle_struct *handle,
 				      struct messaging_context *msg_ctx,
@@ -1077,8 +1076,7 @@ const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
 				       struct byte_range_lock *br_lck,
 				       struct lock_struct *plock,
-				       bool blocking_lock,
-				       struct blocking_lock_record *blr);
+				       bool blocking_lock);
 bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
 				     struct messaging_context *msg_ctx,
 				     struct byte_range_lock *br_lck,
