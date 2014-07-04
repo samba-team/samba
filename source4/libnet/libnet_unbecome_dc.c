@@ -644,8 +644,31 @@ static void unbecomeDC_drsuapi_bind_recv(struct tevent_req *subreq)
 			s->drsuapi.remote_info28.repl_epoch		= info48->repl_epoch;
 			break;
 		}
-		case 28:
+		case 28: {
 			s->drsuapi.remote_info28 = s->drsuapi.bind_r.out.bind_info->info.info28;
+			break;
+		}
+		case 32: {
+			struct drsuapi_DsBindInfo32 *info32;
+			info32 = &s->drsuapi.bind_r.out.bind_info->info.info32;
+			s->drsuapi.remote_info28.supported_extensions	= info32->supported_extensions;
+			s->drsuapi.remote_info28.site_guid		= info32->site_guid;
+			s->drsuapi.remote_info28.pid			= info32->pid;
+			s->drsuapi.remote_info28.repl_epoch		= info32->repl_epoch;
+			break;
+		}
+		case 52: {
+			struct drsuapi_DsBindInfo52 *info52;
+			info52 = &s->drsuapi.bind_r.out.bind_info->info.info52;
+			s->drsuapi.remote_info28.supported_extensions	= info52->supported_extensions;
+			s->drsuapi.remote_info28.site_guid		= info52->site_guid;
+			s->drsuapi.remote_info28.pid			= info52->pid;
+			s->drsuapi.remote_info28.repl_epoch		= info52->repl_epoch;
+			break;
+		}
+		default:
+			DEBUG(1, ("Warning: invalid info length in bind info: %d\n",
+				s->drsuapi.bind_r.out.bind_info->length));
 			break;
 		}
 	}
