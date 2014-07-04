@@ -1417,6 +1417,59 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_lease_v2_epoch1(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h;
+	const char *fname = "lease.dat";
+	bool ret = true;
+	NTSTATUS status;
+
+	smb2_util_unlink(tree, fname);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	ZERO_STRUCT(break_info);
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &ls, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0);
+	ls.lease_epoch = 0x4711;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE_V2(&io, "RHW", true, LEASE1, 0, 0);
+	CHECK_VAL(io.out.lease_response_v2.lease_epoch, ls.lease_epoch + 1);
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+
+	ls.lease_state = smb2_util_lease_state("RH");
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE_V2(&io, "RH", true, LEASE1, 0, 0);
+	CHECK_VAL(io.out.lease_response_v2.lease_epoch, ls.lease_epoch + 1);
+	smb2_util_close(tree, h);
+
+done:
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_lease_init(void)
 {
 	struct torture_suite *suite =
@@ -1436,6 +1489,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 	torture_suite_add_1smb2_test(suite, "v2_request_parent",
 				     test_lease_v2_request_parent);
 	torture_suite_add_1smb2_test(suite, "v2_request", test_lease_v2_request);
+	torture_suite_add_1smb2_test(suite, "v2_epoch1", test_lease_v2_epoch1);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
