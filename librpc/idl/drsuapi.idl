@@ -129,6 +129,14 @@ interface drsuapi
 		uint32 repl_epoch;
 	} drsuapi_DsBindInfo28;
 
+	typedef [public] struct {
+		drsuapi_SupportedExtensions supported_extensions;
+		GUID site_guid;
+		uint32 pid;
+		uint32 repl_epoch;
+		drsuapi_SupportedExtensionsExt supported_extensions_ext;
+	} drsuapi_DsBindInfo32;
+
 	/* this is used by w2k8 */
 	typedef [public] struct {
 		drsuapi_SupportedExtensions supported_extensions;
@@ -139,6 +147,17 @@ interface drsuapi
 		GUID config_dn_guid;
 	} drsuapi_DsBindInfo48;
 
+	/* this is used by w2k12 R2 [MS-DRSR] Section 5.39 */
+	typedef [public] struct {
+		drsuapi_SupportedExtensions supported_extensions;
+		GUID site_guid;
+		uint32 pid;
+		uint32 repl_epoch;
+		drsuapi_SupportedExtensionsExt supported_extensions_ext;
+		GUID config_dn_guid;
+		drsuapi_SupportedExtensionsExt supported_capabilities_ext;
+	} drsuapi_DsBindInfo52;
+
 	typedef [public] struct {
 		[flag(NDR_REMAINING)] DATA_BLOB info;
 	} drsuapi_DsBindInfoFallBack;
@@ -146,7 +165,9 @@ interface drsuapi
 	typedef [nopull, nopush, noprint] [nodiscriminant] union {
 		[case(24)][subcontext(0), subcontext_size(24)] drsuapi_DsBindInfo24 info24;
 		[case(28)][subcontext(0), subcontext_size(28)] drsuapi_DsBindInfo28 info28;
+		[case(32)][subcontext(0), subcontext_size(32)] drsuapi_DsBindInfo32 info32;
 		[case(48)][subcontext(0), subcontext_size(48)] drsuapi_DsBindInfo48 info48;
+		[case(52)][subcontext(0), subcontext_size(52)] drsuapi_DsBindInfo52 info52;
 		/*
 		 * The size for the defaut case is a bit arbitrary it in fact the value
 		 * of the switch but we can't reference it.

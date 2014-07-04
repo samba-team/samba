@@ -204,9 +204,28 @@ static bool _test_DsBind(struct torture_context *tctx,
 			b->peer_bind_info28.repl_epoch		= info48->repl_epoch;
 			break;
 		}
-		case 28:
+		case 28: {
 			b->peer_bind_info28 = b->req.out.bind_info->info.info28;
 			break;
+		}
+		case 32: {
+			struct drsuapi_DsBindInfo32 *info32;
+			info32 = &b->req.out.bind_info->info.info32;
+			b->peer_bind_info28.supported_extensions= info32->supported_extensions;
+			b->peer_bind_info28.site_guid		= info32->site_guid;
+			b->peer_bind_info28.pid			= info32->pid;
+			b->peer_bind_info28.repl_epoch		= info32->repl_epoch;
+			break;
+		}
+		case 52: {
+			struct drsuapi_DsBindInfo52 *info52;
+			info52 = &b->req.out.bind_info->info.info52;
+			b->peer_bind_info28.supported_extensions= info52->supported_extensions;
+			b->peer_bind_info28.site_guid		= info52->site_guid;
+			b->peer_bind_info28.pid			= info52->pid;
+			b->peer_bind_info28.repl_epoch		= info52->repl_epoch;
+			break;
+		}
 		default:
 			printf("DsBind - warning: unknown BindInfo length: %u\n",
 			       b->req.out.bind_info->length);

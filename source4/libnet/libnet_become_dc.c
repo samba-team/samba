@@ -1712,8 +1712,31 @@ static WERROR becomeDC_drsuapi_bind_recv(struct libnet_BecomeDC_state *s,
 			drsuapi->remote_info28.repl_epoch		= info48->repl_epoch;
 			break;
 		}
-		case 28:
+		case 28: {
 			drsuapi->remote_info28 = drsuapi->bind_r.out.bind_info->info.info28;
+			break;
+		}
+		case 32: {
+			struct drsuapi_DsBindInfo32 *info32;
+			info32 = &drsuapi->bind_r.out.bind_info->info.info32;
+			drsuapi->remote_info28.supported_extensions	= info32->supported_extensions;
+			drsuapi->remote_info28.site_guid		= info32->site_guid;
+			drsuapi->remote_info28.pid			= info32->pid;
+			drsuapi->remote_info28.repl_epoch		= info32->repl_epoch;
+			break;
+		}
+		case 52: {
+			struct drsuapi_DsBindInfo52 *info52;
+			info52 = &drsuapi->bind_r.out.bind_info->info.info52;
+			drsuapi->remote_info28.supported_extensions	= info52->supported_extensions;
+			drsuapi->remote_info28.site_guid		= info52->site_guid;
+			drsuapi->remote_info28.pid			= info52->pid;
+			drsuapi->remote_info28.repl_epoch		= info52->repl_epoch;
+			break;
+		}
+		default:
+			DEBUG(1, ("Warning: invalid info length in bind info: %d\n",
+					drsuapi->bind_r.out.bind_info->length));
 			break;
 		}
 	}

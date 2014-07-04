@@ -186,8 +186,33 @@ static void dreplsrv_out_drsuapi_bind_done(struct tevent_req *subreq)
 			info28->repl_epoch		= info48->repl_epoch;
 			break;
 		}
-		case 28:
+		case 28: {
 			*info28 = state->bind_r.out.bind_info->info.info28;
+			break;
+		}
+		case 32: {
+			struct drsuapi_DsBindInfo32 *info32;
+			info32 = &state->bind_r.out.bind_info->info.info32;
+
+			info28->supported_extensions	= info32->supported_extensions;
+			info28->site_guid		= info32->site_guid;
+			info28->pid			= info32->pid;
+			info28->repl_epoch		= info32->repl_epoch;
+			break;
+		}
+		case 52: {
+			struct drsuapi_DsBindInfo52 *info52;
+			info52 = &state->bind_r.out.bind_info->info.info52;
+
+			info28->supported_extensions	= info52->supported_extensions;
+			info28->site_guid		= info52->site_guid;
+			info28->pid			= info52->pid;
+			info28->repl_epoch		= info52->repl_epoch;
+			break;
+		}
+		default:
+			DEBUG(1, ("Warning: invalid info length in bind info: %d\n",
+				state->bind_r.out.bind_info->length));
 			break;
 		}
 	}

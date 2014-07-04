@@ -195,9 +195,19 @@ static NTSTATUS libnet_dssync_bind(TALLOC_CTX *mem_ctx,
 		ctx->remote_info28.repl_epoch		= 0;
 		break;
 	}
-	case 28:
+	case 28: {
 		ctx->remote_info28 = bind_info.info.info28;
 		break;
+	}
+	case 32: {
+		struct drsuapi_DsBindInfo32 *info32;
+		info32 = &bind_info.info.info32;
+		ctx->remote_info28.site_guid		= info32->site_guid;
+		ctx->remote_info28.supported_extensions	= info32->supported_extensions;
+		ctx->remote_info28.pid			= info32->pid;
+		ctx->remote_info28.repl_epoch		= info32->repl_epoch;
+		break;
+	}
 	case 48: {
 		struct drsuapi_DsBindInfo48 *info48;
 		info48 = &bind_info.info.info48;
@@ -205,6 +215,15 @@ static NTSTATUS libnet_dssync_bind(TALLOC_CTX *mem_ctx,
 		ctx->remote_info28.supported_extensions	= info48->supported_extensions;
 		ctx->remote_info28.pid			= info48->pid;
 		ctx->remote_info28.repl_epoch		= info48->repl_epoch;
+		break;
+	}
+	case 52: {
+		struct drsuapi_DsBindInfo52 *info52;
+		info52 = &bind_info.info.info52;
+		ctx->remote_info28.site_guid		= info52->site_guid;
+		ctx->remote_info28.supported_extensions	= info52->supported_extensions;
+		ctx->remote_info28.pid			= info52->pid;
+		ctx->remote_info28.repl_epoch		= info52->repl_epoch;
 		break;
 	}
 	default:
