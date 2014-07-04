@@ -261,6 +261,29 @@ if [ -z "$1" ] ; then
     fi
 fi
 
+do_cleanup ()
+{
+    if $TEST_CLEANUP ; then
+	echo "Removing TEST_VAR_DIR=$TEST_VAR_DIR"
+	rm -rf "$TEST_VAR_DIR"
+    else
+	echo "Not cleaning up TEST_VAR_DIR=$TEST_VAR_DIR"
+    fi
+}
+
+cleanup_handler ()
+{
+    if $TEST_CLEANUP ; then
+	if [ -n "$TEST_LOCAL_DAEMONS" -a "$f" = "simple" ] ; then
+	    echo "***** shutting down daemons *****"
+	    find_and_run_one_test simple/99_daemons_shutdown.sh "$tests_dir"
+	fi
+    fi
+    do_cleanup
+}
+
+trap cleanup_handler SIGINT SIGTERM
+
 for f ; do
     find_and_run_one_test "$f"
 
@@ -295,12 +318,7 @@ rm -f "$sf"
 
 echo
 
-if $TEST_CLEANUP ; then
-    echo "Removing TEST_VAR_DIR=$TEST_VAR_DIR"
-    rm -rf "$TEST_VAR_DIR"
-else
-    echo "Not cleaning up TEST_VAR_DIR=$TEST_VAR_DIR"
-fi
+do_cleanup
 
 if $no_header || $exit_on_fail ; then
     exit $status
