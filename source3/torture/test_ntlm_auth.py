@@ -97,6 +97,8 @@ def parseCommandLine():
 				help="Helper mode for the ntlm_auth server. [default: squid-2.5-server]")
 	parser.add_option("--server-use-winbindd", dest="server_use_winbindd",\
 				help="Use winbindd to check the password (rather than default username/pw)", action="store_true")
+	parser.add_option("--require-membership-of", dest="sid",\
+				help="Require that the user is a member of this group to authenticate.")
 
 
 	parser.add_option("-s", "--configfile", dest="config_file",\
@@ -180,6 +182,11 @@ def main():
 			server_args.append("--username=%s" % opts.server_username)
 			server_args.append("--password=%s" % opts.server_password)
 			server_args.append("--domain=%s" % opts.server_domain)
+			if opts.sid:
+				raise Exception("Server must be using winbindd for require-membership-of.")
+		else:
+			if opts.sid:
+				server_args.append("--require-membership-of=%s" % opts.sid)
 
 		server_args.append("--configfile=%s" % opts.config_file)
 
