@@ -195,15 +195,6 @@ static bool _test_DsBind(struct torture_context *tctx,
 			b->peer_bind_info28.repl_epoch		= 0;
 			break;
 		}
-		case 48: {
-			struct drsuapi_DsBindInfo48 *info48;
-			info48 = &b->req.out.bind_info->info.info48;
-			b->peer_bind_info28.supported_extensions= info48->supported_extensions;
-			b->peer_bind_info28.site_guid		= info48->site_guid;
-			b->peer_bind_info28.pid			= info48->pid;
-			b->peer_bind_info28.repl_epoch		= info48->repl_epoch;
-			break;
-		}
 		case 28: {
 			b->peer_bind_info28 = b->req.out.bind_info->info.info28;
 			break;
@@ -215,6 +206,15 @@ static bool _test_DsBind(struct torture_context *tctx,
 			b->peer_bind_info28.site_guid		= info32->site_guid;
 			b->peer_bind_info28.pid			= info32->pid;
 			b->peer_bind_info28.repl_epoch		= info32->repl_epoch;
+			break;
+		}
+		case 48: {
+			struct drsuapi_DsBindInfo48 *info48;
+			info48 = &b->req.out.bind_info->info.info48;
+			b->peer_bind_info28.supported_extensions= info48->supported_extensions;
+			b->peer_bind_info28.site_guid		= info48->site_guid;
+			b->peer_bind_info28.pid			= info48->pid;
+			b->peer_bind_info28.repl_epoch		= info48->repl_epoch;
 			break;
 		}
 		case 52: {

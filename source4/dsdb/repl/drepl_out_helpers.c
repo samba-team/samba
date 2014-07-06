@@ -176,16 +176,6 @@ static void dreplsrv_out_drsuapi_bind_done(struct tevent_req *subreq)
 			info28->repl_epoch		= 0;
 			break;
 		}
-		case 48: {
-			struct drsuapi_DsBindInfo48 *info48;
-			info48 = &state->bind_r.out.bind_info->info.info48;
-
-			info28->supported_extensions	= info48->supported_extensions;
-			info28->site_guid		= info48->site_guid;
-			info28->pid			= info48->pid;
-			info28->repl_epoch		= info48->repl_epoch;
-			break;
-		}
 		case 28: {
 			*info28 = state->bind_r.out.bind_info->info.info28;
 			break;
@@ -198,6 +188,16 @@ static void dreplsrv_out_drsuapi_bind_done(struct tevent_req *subreq)
 			info28->site_guid		= info32->site_guid;
 			info28->pid			= info32->pid;
 			info28->repl_epoch		= info32->repl_epoch;
+			break;
+		}
+		case 48: {
+			struct drsuapi_DsBindInfo48 *info48;
+			info48 = &state->bind_r.out.bind_info->info.info48;
+
+			info28->supported_extensions	= info48->supported_extensions;
+			info28->site_guid		= info48->site_guid;
+			info28->pid			= info48->pid;
+			info28->repl_epoch		= info48->repl_epoch;
 			break;
 		}
 		case 52: {

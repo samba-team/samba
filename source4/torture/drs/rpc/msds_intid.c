@@ -244,10 +244,6 @@ static bool _test_DsaBind(struct torture_context *tctx,
 		bi->srv_info48.repl_epoch		= info28->repl_epoch;
 		break;
 	}
-	case 48: {
-		bi->srv_info48 = r.out.bind_info->info.info48;
-		break;
-	}
 	case 32: {
 		struct drsuapi_DsBindInfo32 *info32;
 		info32 = &r.out.bind_info->info.info32;
@@ -255,6 +251,10 @@ static bool _test_DsaBind(struct torture_context *tctx,
 		bi->srv_info48.site_guid		= info32->site_guid;
 		bi->srv_info48.pid			= info32->pid;
 		bi->srv_info48.repl_epoch		= info32->repl_epoch;
+		break;
+	}
+	case 48: {
+		bi->srv_info48 = r.out.bind_info->info.info48;
 		break;
 	}
 	case 52: {
