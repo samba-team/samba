@@ -2723,7 +2723,8 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 struct smbd_smb2_send_oplock_break_state {
 	struct smbd_server_connection *sconn;
 	struct smbd_smb2_send_queue queue_entry;
-	uint8_t buf[NBT_HDR_SIZE + SMB2_TF_HDR_SIZE + SMB2_HDR_BODY + 0x18];
+	uint8_t nbt_hdr[NBT_HDR_SIZE];
+	uint8_t buf[SMB2_TF_HDR_SIZE + SMB2_HDR_BODY + 0x18];
 	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
 };
 
@@ -2757,7 +2758,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	}
 	state->sconn = sconn;
 
-	tf = state->buf + NBT_HDR_SIZE;
+	tf = state->buf;
 	tf_len = SMB2_TF_HDR_SIZE;
 	hdr = tf + tf_len;
 	body = hdr + SMB2_HDR_BODY;
@@ -2803,8 +2804,10 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	SBVAL(body, 0x08, op->global->open_persistent_id);
 	SBVAL(body, 0x10, op->global->open_volatile_id);
 
-	state->vector[0].iov_base = (void *)state->buf;
-	state->vector[0].iov_len = NBT_HDR_SIZE;
+	state->vector[0] = (struct iovec) {
+		.iov_base = state->nbt_hdr,
+		.iov_len  = sizeof(state->nbt_hdr)
+	};
 
 	if (do_encryption) {
 		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_base   = tf;
