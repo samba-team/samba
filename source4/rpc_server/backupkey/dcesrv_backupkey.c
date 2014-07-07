@@ -1161,7 +1161,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	return WERR_OK;
 }
 
-static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR bkrp_do_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
 {
 	struct GUID guid;
@@ -1306,7 +1306,7 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID, strlen(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID)) == 0) {
 			DEBUG(debuglevel, ("Client %s requested certificate for client wrapped secret\n", addr));
-			error = bkrp_do_retreive_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
+			error = bkrp_do_retrieve_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
 		}
 
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
