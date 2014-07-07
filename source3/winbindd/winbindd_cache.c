@@ -2314,6 +2314,40 @@ NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 	return status;
 }
 
+
+/**
+* @brief Query a fullname from the username cache (for further gecos processing)
+*
+* @param domain		A pointer to the winbindd_domain struct.
+* @param mem_ctx	The talloc context.
+* @param user_sid	The user sid.
+* @param full_name	A pointer to the full_name string.
+*
+* @return NTSTATUS code
+*/
+NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const struct dom_sid *user_sid,
+				    const char **full_name)
+{
+	NTSTATUS status;
+	struct wbint_userinfo info;
+
+	status = wcache_query_user(domain, mem_ctx, user_sid, &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (info.full_name != NULL) {
+		*full_name = talloc_strdup(mem_ctx, info.full_name);
+		if (*full_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain,
 			   TALLOC_CTX *mem_ctx,
