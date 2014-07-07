@@ -849,77 +849,58 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 
 	ret = hx509_request_get_name(*hctx, *req, &subject);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		return WERR_INTERNAL_ERROR;
+		goto fail_subject;
 	}
 	ret = hx509_request_get_SubjectPublicKeyInfo(*hctx, *req, &spki);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		return WERR_INTERNAL_ERROR;
+		goto fail_spki;
 	}
 
 	ret = hx509_ca_tbs_init(*hctx, &tbs);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		return WERR_INTERNAL_ERROR;
+		goto fail_tbs;
 	}
 
 	ret = hx509_ca_tbs_set_spki(*hctx, tbs, &spki);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_subject(*hctx, tbs, subject);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_ca(*hctx, tbs, 1);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_notAfter_lifetime(*hctx, tbs, lifetime);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_unique(*hctx, tbs, &uniqueid, &uniqueid);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_sign_self(*hctx, tbs, *private_key, cert);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	hx509_name_free(&subject);
 	free_SubjectPublicKeyInfo(&spki);
 	hx509_ca_tbs_free(&tbs);
 
 	return WERR_OK;
+
+fail:
+	hx509_ca_tbs_free(&tbs);
+fail_tbs:
+	free_SubjectPublicKeyInfo(&spki);
+fail_spki:
+	hx509_name_free(&subject);
+fail_subject:
+	talloc_free(uniqueid.data);
+	talloc_free(serialnumber.data);
+	return WERR_INTERNAL_ERROR;
 }
 
 static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *req,
