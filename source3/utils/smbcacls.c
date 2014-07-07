@@ -1408,8 +1408,6 @@ int main(int argc, char *argv[])
 
 	setlinebuf(stdout);
 
-	lp_load_global(get_dyn_CONFIGFILE());
-	load_interfaces();
 
 	auth_info = user_auth_info_init(frame);
 	if (auth_info == NULL) {
@@ -1479,6 +1477,9 @@ int main(int argc, char *argv[])
 		poptPrintUsage(pc, stderr, 0);
 		return -1;
 	}
+
+	lp_load_global(get_dyn_CONFIGFILE());
+	load_interfaces();
 
 	filename = talloc_strdup(frame, poptGetArg(pc));
 	if (!filename) {
