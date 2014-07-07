@@ -1308,6 +1308,18 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 			DEBUG(debuglevel, ("Client %s requested certificate for client wrapped secret\n", addr));
 			error = bkrp_do_retreive_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
 		}
+
+		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
+			BACKUPKEY_RESTORE_GUID_WIN2K, strlen(BACKUPKEY_RESTORE_GUID_WIN2K)) == 0) {
+			DEBUG(debuglevel, ("Client %s requested to decrypt a server side wrapped secret, not implemented yet\n", addr));
+			return WERR_NOT_SUPPORTED; /* is this appropriate? */
+		}
+
+		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
+			BACKUPKEY_BACKUP_GUID, strlen(BACKUPKEY_BACKUP_GUID)) == 0) {
+			DEBUG(debuglevel, ("Client %s requested a server wrapped secret, not implemented yet\n", addr));
+			return WERR_NOT_SUPPORTED; /* is this appropriate? */
+		}
 	}
 	/*else: I am a RODC so I don't handle backup key protocol */
 
