@@ -1184,8 +1184,7 @@ static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_cal
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			/* Ok we can be in this case if there was no certs */
 			struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-			char *dn = talloc_asprintf(mem_ctx, "CN=%s.%s",
-							lpcfg_netbios_name(lp_ctx),
+			char *dn = talloc_asprintf(mem_ctx, "CN=%s",
 							lpcfg_realm(lp_ctx));
 
 			WERROR werr =  generate_bkrp_cert(mem_ctx, dce_call, ldb_ctx, dn);
