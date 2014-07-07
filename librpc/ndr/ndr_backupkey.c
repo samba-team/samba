@@ -71,6 +71,11 @@ _PUBLIC_ void ndr_print_bkrp_BackupKey(struct ndr_print *ndr, const char *name, 
 		ndr->depth--;
 
 		level = backupkeyguid_to_uint(r->in.guidActionAgent);
+		ndr_err = ndr_print_set_switch_value(ndr, &inblob, level);
+		if (unlikely(!NDR_ERR_CODE_IS_SUCCESS(ndr_err))) {	\
+			DEBUG(0,("ERROR: ndr_print_bkrp_BackupKey ndr_print_set_switch_value failed: %d\n", ndr_err));
+			return;
+		}
 		blob.data = r->in.data_in;
 		blob.length = r->in.data_in_len;
 		ndr_err = ndr_pull_union_blob(&blob, ndr, &inblob, level,
