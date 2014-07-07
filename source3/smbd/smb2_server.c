@@ -2740,8 +2740,6 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	struct smbXsrv_connection *conn = sconn->conn;
 	uint8_t *body;
 	size_t body_len;
-	uint8_t *dyn;
-	size_t dyn_len;
 	bool do_encryption = session->global->encryption_required;
 	uint64_t nonce_high = 0;
 	uint64_t nonce_low = 0;
@@ -2759,8 +2757,6 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 
 	body = state->buf;
 	body_len = 0x18;
-	dyn = body + body_len;
-	dyn_len = 0;
 
 	if (do_encryption) {
 		nonce_high = session->nonce_high;
@@ -2825,8 +2821,9 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_base = body;
 	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_len  = body_len;
 
-	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_base  = dyn;
-	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_len   = dyn_len;
+	/*
+	 * state->vector[1+SMBD_SMB2_DYN_IOV_OFS] is NULL by talloc_zero above
+	 */
 
 	smb2_setup_nbt_length(state->vector, 1 + SMBD_SMB2_NUM_IOV_PER_REQ);
 
