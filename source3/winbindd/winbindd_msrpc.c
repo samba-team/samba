@@ -439,6 +439,14 @@ static NTSTATUS msrpc_query_user(struct winbindd_domain *domain,
 		user_info->full_name = talloc_strdup(user_info,
 						     user->base.full_name.string);
 
+		if (user_info->full_name == NULL) {
+			/* this might fail so we dont check the return code */
+			wcache_query_user_fullname(domain,
+						   mem_ctx,
+						   user_sid,
+						   &user_info->full_name);
+		}
+
 		status = NT_STATUS_OK;
 		goto done;
 	}

@@ -1804,6 +1804,26 @@ process_result:
 		sid_compose(&user_sid, info3->base.domain_sid,
 			    info3->base.rid);
 
+		if (info3->base.full_name.string == NULL) {
+			struct netr_SamInfo3 *cached_info3;
+
+			cached_info3 = netsamlogon_cache_get(state->mem_ctx,
+							     &user_sid);
+			if (cached_info3 != NULL &&
+			    cached_info3->base.full_name.string != NULL) {
+				info3->base.full_name.string =
+					talloc_strdup(info3,
+						      cached_info3->base.full_name.string);
+			} else {
+
+				/* this might fail so we dont check the return code */
+				wcache_query_user_fullname(domain,
+						info3,
+						&user_sid,
+						&info3->base.full_name.string);
+			}
+		}
+
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
 					   &user_sid);
 		netsamlogon_cache_store(name_user, info3);
@@ -1945,6 +1965,27 @@ process_result:
 
 		sid_compose(&user_sid, (*info3)->base.domain_sid,
 			    (*info3)->base.rid);
+
+		if ((*info3)->base.full_name.string == NULL) {
+			struct netr_SamInfo3 *cached_info3;
+
+			cached_info3 = netsamlogon_cache_get(mem_ctx,
+							     &user_sid);
+			if (cached_info3 != NULL &&
+			    cached_info3->base.full_name.string != NULL) {
+				(*info3)->base.full_name.string =
+					talloc_strdup(*info3,
+						      cached_info3->base.full_name.string);
+			} else {
+
+				/* this might fail so we dont check the return code */
+				wcache_query_user_fullname(domain,
+						*info3,
+						&user_sid,
+						&(*info3)->base.full_name.string);
+			}
+		}
+
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
 					   &user_sid);
 		netsamlogon_cache_store(name_user, *info3);
