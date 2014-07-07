@@ -2474,7 +2474,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	bool is_urgent = false, rodc = false;
 	unsigned int functional_level;
-	const DATA_BLOB *guid_blob;
+	const struct ldb_message_element *guid_el = NULL;
 	struct ldb_control *sd_propagation_control;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
@@ -2503,8 +2503,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_modify\n");
 
-	guid_blob = ldb_msg_find_ldb_val(req->op.mod.message, "objectGUID");
-	if ( guid_blob != NULL ) {
+	guid_el = ldb_msg_find_element(req->op.mod.message, "objectGUID");
+	if (guid_el != NULL) {
 		ldb_set_errstring(ldb,
 				  "replmd_modify: it's not allowed to change the objectGUID!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
