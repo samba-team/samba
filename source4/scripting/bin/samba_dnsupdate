@@ -203,25 +203,6 @@ def check_dns_name(d):
         return False
 
     resolver = dns.resolver.Resolver()
-    if d.type == "NS":
-        # we need to lookup the nameserver for the parent domain,
-        # and use that to check the NS record
-        parent_domain = '.'.join(normalised_name.split('.')[1:])
-        try:
-            ans = resolver.query(parent_domain, 'NS')
-        except dns.exception.DNSException:
-            if opts.verbose:
-                print "Failed to find parent NS for %s" % d
-            return False
-        nameservers = set()
-        for i in range(len(ans)):
-            try:
-                ns = resolver.query(str(ans[i]), 'A')
-            except dns.exception.DNSException:
-                continue
-            for j in range(len(ns)):
-                nameservers.add(str(ns[j]))
-        d.nameservers = list(nameservers)
 
     try:
         if getattr(d, 'nameservers', None):
