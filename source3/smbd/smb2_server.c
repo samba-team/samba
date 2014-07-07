@@ -2726,8 +2726,8 @@ struct smbd_smb2_send_oplock_break_state {
 	uint8_t nbt_hdr[NBT_HDR_SIZE];
 	uint8_t tf[SMB2_TF_HDR_SIZE];
 	uint8_t hdr[SMB2_HDR_BODY];
-	uint8_t buf[0x18];
 	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
+	uint8_t body[0x18];
 };
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
@@ -2755,8 +2755,8 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	}
 	state->sconn = sconn;
 
-	body = state->buf;
-	body_len = 0x18;
+	body = state->body;
+	body_len = sizeof(state->body);
 
 	if (do_encryption) {
 		nonce_high = session->nonce_high;
