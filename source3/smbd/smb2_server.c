@@ -294,7 +294,7 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 	return req;
 }
 
-static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
+static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 					       NTTIME now,
 					       uint8_t *buf,
 					       size_t buflen,
@@ -351,19 +351,19 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 			NTSTATUS status;
 			size_t enc_len;
 
-			if (conn->protocol < PROTOCOL_SMB2_24) {
+			if (xconn->protocol < PROTOCOL_SMB2_24) {
 				DEBUG(10, ("Got SMB2_TRANSFORM header, "
 					   "but dialect[0x%04X] is used\n",
-					   conn->smb2.server.dialect));
+					   xconn->smb2.server.dialect));
 				goto inval;
 			}
 
-			if (!(conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+			if (!(xconn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
 				DEBUG(10, ("Got SMB2_TRANSFORM header, "
 					   "but not negotiated "
 					   "client[0x%08X] server[0x%08X]\n",
-					   conn->smb2.client.capabilities,
-					   conn->smb2.server.capabilities));
+					   xconn->smb2.client.capabilities,
+					   xconn->smb2.server.capabilities));
 				goto inval;
 			}
 
@@ -387,7 +387,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 				goto inval;
 			}
 
-			status = smb2srv_session_lookup(conn, uid, now, &s);
+			status = smb2srv_session_lookup(xconn, uid, now, &s);
 			if (s == NULL) {
 				DEBUG(1, ("invalid session[%llu] in "
 					  "SMB2_TRANSFORM header\n",
@@ -402,7 +402,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 			tf_iov[1].iov_len = enc_len;
 
 			status = smb2_signing_decrypt_pdu(s->global->decryption_key,
-							  conn->protocol,
+							  xconn->protocol,
 							  tf_iov, 2);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(iov_alloc);
@@ -1205,7 +1205,7 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request *req)
 {
 	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *conn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	int first_idx = 1;
 	struct iovec *firsttf = NULL;
 	struct iovec *outhdr_v = NULL;
@@ -1252,7 +1252,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
 		status = smb2_signing_encrypt_pdu(req->first_key,
-					conn->protocol,
+					xconn->protocol,
 					firsttf,
 					nreq->out.vector_count - first_idx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1260,7 +1260,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 		}
 	} else if (req->last_key.length > 0) {
 		status = smb2_signing_sign_pdu(req->last_key,
-					       conn->protocol,
+					       xconn->protocol,
 					       outhdr_v,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1271,8 +1271,8 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	nreq->queue_entry.mem_ctx = nreq;
 	nreq->queue_entry.vector = nreq->out.vector;
 	nreq->queue_entry.count = nreq->out.vector_count;
-	DLIST_ADD_END(conn->smb2.send_queue, &nreq->queue_entry, NULL);
-	conn->smb2.send_queue_len++;
+	DLIST_ADD_END(xconn->smb2.send_queue, &nreq->queue_entry, NULL);
+	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1915,7 +1915,7 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
-	struct smbXsrv_connection *conn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	const struct smbd_smb2_dispatch_table *call = NULL;
 	const struct iovec *intf_v = SMBD_SMB2_IN_TF_IOV(req);
 	const uint8_t *inhdr;
@@ -1941,7 +1941,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		smb2_opcode_name(opcode),
 		(unsigned long long)mid));
 
-	if (conn->protocol >= PROTOCOL_SMB2_02) {
+	if (xconn->protocol >= PROTOCOL_SMB2_02) {
 		/*
 		 * once the protocol is negotiated
 		 * SMB2_OP_NEGPROT is not allowed anymore
@@ -2075,7 +2075,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 
 		status = smb2_signing_check_pdu(signing_key,
-						conn->protocol,
+						xconn->protocol,
 						SMBD_SMB2_IN_HDR_IOV(req),
 						SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2341,7 +2341,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
 	struct smbd_server_connection *sconn = req->sconn;
-	struct smbXsrv_connection *conn = req->sconn->conn;
+	struct smbXsrv_connection *xconn = req->sconn->conn;
 	int first_idx = 1;
 	struct iovec *firsttf = SMBD_SMB2_IDX_TF_IOV(req,out,first_idx);
 	struct iovec *outhdr = SMBD_SMB2_OUT_HDR_IOV(req);
@@ -2417,7 +2417,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		 * with the last signing key we remembered.
 		 */
 		status = smb2_signing_sign_pdu(req->last_key,
-					       conn->protocol,
+					       xconn->protocol,
 					       lasthdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2482,7 +2482,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
 		status = smb2_signing_encrypt_pdu(req->first_key,
-					conn->protocol,
+					xconn->protocol,
 					firsttf,
 					req->out.vector_count - first_idx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2493,7 +2493,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 
 		status = smb2_signing_sign_pdu(signing_key,
-					       conn->protocol,
+					       xconn->protocol,
 					       outhdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2516,13 +2516,13 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	 * We're done with this request -
 	 * move it off the "being processed" queue.
 	 */
-	DLIST_REMOVE(conn->smb2.requests, req);
+	DLIST_REMOVE(xconn->smb2.requests, req);
 
 	req->queue_entry.mem_ctx = req;
 	req->queue_entry.vector = req->out.vector;
 	req->queue_entry.count = req->out.vector_count;
-	DLIST_ADD_END(conn->smb2.send_queue, &req->queue_entry, NULL);
-	conn->smb2.send_queue_len++;
+	DLIST_ADD_END(xconn->smb2.send_queue, &req->queue_entry, NULL);
+	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2749,7 +2749,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbd_server_connection *sconn,
 				     size_t body_len)
 {
 	struct smbd_smb2_send_break_state *state;
-	struct smbXsrv_connection *conn = sconn->conn;
+	struct smbXsrv_connection *xconn = sconn->conn;
 	bool do_encryption = session->global->encryption_required;
 	uint64_t nonce_high = 0;
 	uint64_t nonce_low = 0;
@@ -2839,7 +2839,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbd_server_connection *sconn,
 		DATA_BLOB encryption_key = session->global->encryption_key;
 
 		status = smb2_signing_encrypt_pdu(encryption_key,
-					conn->protocol,
+					xconn->protocol,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2850,8 +2850,8 @@ static NTSTATUS smbd_smb2_send_break(struct smbd_server_connection *sconn,
 	state->queue_entry.mem_ctx = state;
 	state->queue_entry.vector = state->vector;
 	state->queue_entry.count = ARRAY_SIZE(state->vector);
-	DLIST_ADD_END(conn->smb2.send_queue, &state->queue_entry, NULL);
-	conn->smb2.send_queue_len++;
+	DLIST_ADD_END(xconn->smb2.send_queue, &state->queue_entry, NULL);
+	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
