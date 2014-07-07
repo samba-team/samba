@@ -315,6 +315,7 @@ struct extended_dn_filter_ctx {
 	struct ldb_module *module;
 	struct ldb_request *req;
 	struct dsdb_schema *schema;
+	uint32_t dsdb_flags;
 };
 
 /*
@@ -411,10 +412,7 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
-	dsdb_flags = DSDB_FLAG_NEXT_MODULE |
-		DSDB_FLAG_AS_SYSTEM |
-		DSDB_SEARCH_SHOW_RECYCLED |
-		DSDB_SEARCH_SHOW_EXTENDED_DN;
+	dsdb_flags = filter_ctx->dsdb_flags | DSDB_FLAG_NEXT_MODULE;
 
 	if (guid_val) {
 		expression = talloc_asprintf(filter_ctx, "objectGUID=%s", ldb_binary_encode(filter_ctx, *guid_val));
@@ -475,7 +473,9 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
   fix the parse tree to change any extended DN components to their
   caconical form
  */
-static int extended_dn_fix_filter(struct ldb_module *module, struct ldb_request *req)
+static int extended_dn_fix_filter(struct ldb_module *module,
+				  struct ldb_request *req,
+				  uint32_t default_dsdb_flags)
 {
 	struct extended_dn_filter_ctx *filter_ctx;
 	int ret;
@@ -493,6 +493,7 @@ static int extended_dn_fix_filter(struct ldb_module *module, struct ldb_request 
 	filter_ctx->module    = module;
 	filter_ctx->req       = req;
 	filter_ctx->schema    = dsdb_get_schema(ldb_module_get_ctx(module), filter_ctx);
+	filter_ctx->dsdb_flags= default_dsdb_flags;
 
 	ret = ldb_parse_tree_walk(req->op.search.tree, extended_dn_filter_callback, filter_ctx);
 	if (ret != LDB_SUCCESS) {
@@ -541,10 +542,20 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	static const char *no_attr[] = {
 		NULL
 	};
-	bool all_partitions = false;
+	uint32_t dsdb_flags = DSDB_FLAG_AS_SYSTEM | DSDB_SEARCH_SHOW_EXTENDED_DN;
+
+	if (ldb_request_get_control(req, LDB_CONTROL_SHOW_DELETED_OID)) {
+		dsdb_flags |= DSDB_SEARCH_SHOW_DELETED;
+	}
+	if (ldb_request_get_control(req, LDB_CONTROL_SHOW_RECYCLED_OID)) {
+		dsdb_flags |= DSDB_SEARCH_SHOW_RECYCLED;
+	}
+	if (ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		dsdb_flags |= DSDB_SEARCH_SHOW_RECYCLED;
+	}
 
 	if (req->operation == LDB_SEARCH) {
-		ret = extended_dn_fix_filter(module, req);
+		ret = extended_dn_fix_filter(module, req, dsdb_flags);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -556,7 +567,6 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	} else {
 		/* It looks like we need to map the DN */
 		const struct ldb_val *sid_val, *guid_val, *wkguid_val;
-		uint32_t dsdb_flags = 0;
 
 		if (!ldb_dn_match_allowed(dn, req)) {
 			return ldb_error(ldb_module_get_ctx(module),
@@ -573,7 +583,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		  ForeignSecurityPrinciples due to provision errors
 		 */
 		if (guid_val) {
-			all_partitions = true;
+			dsdb_flags |= DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
 			base_dn = NULL;
 			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)",
 							 ldb_binary_encode(req, *guid_val));
@@ -584,7 +594,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			base_dn_attrs = no_attr;
 
 		} else if (sid_val) {
-			all_partitions = true;
+			dsdb_flags |= DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
 			base_dn = NULL;
 			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)",
 							 ldb_binary_encode(req, *sid_val));
@@ -659,13 +669,6 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		LDB_REQ_SET_LOCATION(down_req);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb_module_get_ctx(module));
-		}
-
-		dsdb_flags = DSDB_FLAG_AS_SYSTEM |
-			DSDB_SEARCH_SHOW_RECYCLED |
-			DSDB_SEARCH_SHOW_EXTENDED_DN;
-		if (all_partitions) {
-			dsdb_flags |= DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
 		}
 
 		ret = dsdb_request_add_controls(down_req, dsdb_flags);
