@@ -759,6 +759,7 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 	uint8_t *p0, *p;
 	size_t len;
 	int bits = 2048;
+	int RSA_returned_bits;
 
 	*_rsa = NULL;
 
@@ -776,11 +777,15 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 		return WERR_INTERNAL_ERROR;
 	}
 
-	ret = RSA_generate_key_ex(rsa, bits, pub_expo, NULL);
-	if(ret != 1) {
-		RSA_free(rsa);
-		BN_free(pub_expo);
-		return WERR_INTERNAL_ERROR;
+	while (RSA_returned_bits != bits) {
+		ret = RSA_generate_key_ex(rsa, bits, pub_expo, NULL);
+		if(ret != 1) {
+			RSA_free(rsa);
+			BN_free(pub_expo);
+			return WERR_INTERNAL_ERROR;
+		}
+		RSA_returned_bits = BN_num_bits(rsa->n);
+		DEBUG(6, ("RSA_generate_key_ex returned %d Bits\n", RSA_returned_bits));
 	}
 	BN_free(pub_expo);
 
