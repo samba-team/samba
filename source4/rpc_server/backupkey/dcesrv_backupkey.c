@@ -836,6 +836,9 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 	int ret;
 
 	uniqueid.data = talloc_memdup(ctx, guidblob->data, guidblob->length);
+	if (uniqueid.data == NULL) {
+		return WERR_NOMEM;
+	}
 	/* uniqueid is a bit string in which each byte represent 1 bit (1 or 0)
 	 * so as 1 byte is 8 bits we need to provision 8 times more space as in the
 	 * blob
