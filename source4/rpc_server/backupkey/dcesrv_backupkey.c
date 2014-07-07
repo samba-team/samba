@@ -833,7 +833,8 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 	hx509_name subject = NULL;
 	hx509_ca_tbs tbs;
 	struct heim_bit_string uniqueid;
-	int ret;
+	struct heim_integer serialnumber;
+	int ret, i;
 
 	uniqueid.data = talloc_memdup(ctx, guidblob->data, guidblob->length);
 	if (uniqueid.data == NULL) {
@@ -844,6 +845,22 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 	 * blob
 	 */
 	uniqueid.length = 8 * guidblob->length;
+
+	serialnumber.data = talloc_array(ctx, uint8_t,
+					    guidblob->length);
+	if (serialnumber.data == NULL) {
+		talloc_free(uniqueid.data);
+		return WERR_NOMEM;
+	}
+
+	/* Native AD generates certificates with serialnumber in reversed notation */
+	for (i = 0; i < guidblob->length; i++) {
+		uint8_t *reversed = (uint8_t *)serialnumber.data;
+		uint8_t *uncrypt = guidblob->data;
+		reversed[i] = uncrypt[guidblob->length - 1 - i];
+	}
+	serialnumber.length = guidblob->length;
+	serialnumber.negative = 0;
 
 	memset(&spki, 0, sizeof(spki));
 
@@ -878,6 +895,10 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 		goto fail;
 	}
 	ret = hx509_ca_tbs_set_unique(*hctx, tbs, &uniqueid, &uniqueid);
+	if (ret !=0) {
+		goto fail;
+	}
+	ret = hx509_ca_tbs_set_serialnumber(*hctx, tbs, &serialnumber);
 	if (ret !=0) {
 		goto fail;
 	}
