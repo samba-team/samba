@@ -580,6 +580,7 @@ static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
 
 	val = dbwrap_record_get_value(db_rec);
 	if (val.dsize == 0) {
+		DEBUG(10, ("%s: empty value\n", __func__));
 		TALLOC_FREE(frame);
 		*is_free = true;
 		if (was_free) {
@@ -740,6 +741,7 @@ static NTSTATUS smbXsrv_open_global_lookup(struct smbXsrv_open_table *table,
 					  mem_ctx,
 					  _global);
 	if (is_free) {
+		DEBUG(10, ("%s: is_free=true\n", __func__));
 		talloc_free(global_rec);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -1186,15 +1188,18 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 	struct security_token *current_token = NULL;
 
 	if (session_info == NULL) {
+		DEBUG(10, ("session_info=NULL\n"));
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	current_token = session_info->security_token;
 
 	if (current_token == NULL) {
+		DEBUG(10, ("current_token=NULL\n"));
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (global_zeros != 0) {
+		DEBUG(10, ("global_zeros!=0\n"));
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -1207,6 +1212,8 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 	status = smbXsrv_open_global_lookup(table, global_id, op, &op->global);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(op);
+		DEBUG(10, ("smbXsrv_open_global_lookup returned %s\n",
+			   nt_errstr(status)));
 		return status;
 	}
 
