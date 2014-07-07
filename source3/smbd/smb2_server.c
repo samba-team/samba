@@ -2725,7 +2725,8 @@ struct smbd_smb2_send_oplock_break_state {
 	struct smbd_smb2_send_queue queue_entry;
 	uint8_t nbt_hdr[NBT_HDR_SIZE];
 	uint8_t tf[SMB2_TF_HDR_SIZE];
-	uint8_t buf[SMB2_HDR_BODY + 0x18];
+	uint8_t hdr[SMB2_HDR_BODY];
+	uint8_t buf[0x18];
 	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
 };
 
@@ -2737,7 +2738,6 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 {
 	struct smbd_smb2_send_oplock_break_state *state;
 	struct smbXsrv_connection *conn = sconn->conn;
-	uint8_t *hdr;
 	uint8_t *body;
 	size_t body_len;
 	uint8_t *dyn;
@@ -2757,8 +2757,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	}
 	state->sconn = sconn;
 
-	hdr = state->buf;
-	body = hdr + SMB2_HDR_BODY;
+	body = state->buf;
 	body_len = 0x18;
 	dyn = body + body_len;
 	dyn_len = 0;
@@ -2779,19 +2778,19 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	SBVAL(state->tf, SMB2_TF_NONCE+8, nonce_high);
 	SBVAL(state->tf, SMB2_TF_SESSION_ID, session->global->session_wire_id);
 
-	SIVAL(hdr, 0,				SMB2_MAGIC);
-	SSVAL(hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-	SSVAL(hdr, SMB2_HDR_EPOCH,		0);
-	SIVAL(hdr, SMB2_HDR_STATUS,		0);
-	SSVAL(hdr, SMB2_HDR_OPCODE,		SMB2_OP_BREAK);
-	SSVAL(hdr, SMB2_HDR_CREDIT,		0);
-	SIVAL(hdr, SMB2_HDR_FLAGS,		SMB2_HDR_FLAG_REDIRECT);
-	SIVAL(hdr, SMB2_HDR_NEXT_COMMAND,	0);
-	SBVAL(hdr, SMB2_HDR_MESSAGE_ID,		UINT64_MAX);
-	SIVAL(hdr, SMB2_HDR_PID,		0);
-	SIVAL(hdr, SMB2_HDR_TID,		0);
-	SBVAL(hdr, SMB2_HDR_SESSION_ID,		0);
-	memset(hdr+SMB2_HDR_SIGNATURE, 0, 16);
+	SIVAL(state->hdr, 0,				SMB2_MAGIC);
+	SSVAL(state->hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
+	SSVAL(state->hdr, SMB2_HDR_EPOCH,		0);
+	SIVAL(state->hdr, SMB2_HDR_STATUS,		0);
+	SSVAL(state->hdr, SMB2_HDR_OPCODE,		SMB2_OP_BREAK);
+	SSVAL(state->hdr, SMB2_HDR_CREDIT,		0);
+	SIVAL(state->hdr, SMB2_HDR_FLAGS,		SMB2_HDR_FLAG_REDIRECT);
+	SIVAL(state->hdr, SMB2_HDR_NEXT_COMMAND,	0);
+	SBVAL(state->hdr, SMB2_HDR_MESSAGE_ID,		UINT64_MAX);
+	SIVAL(state->hdr, SMB2_HDR_PID,		0);
+	SIVAL(state->hdr, SMB2_HDR_TID,		0);
+	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,		0);
+	memset(state->hdr+SMB2_HDR_SIGNATURE, 0, 16);
 
 	SSVAL(body, 0x00, body_len);
 
@@ -2818,8 +2817,10 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 		};
 	}
 
-	state->vector[1+SMBD_SMB2_HDR_IOV_OFS].iov_base  = hdr;
-	state->vector[1+SMBD_SMB2_HDR_IOV_OFS].iov_len   = SMB2_HDR_BODY;
+	state->vector[1+SMBD_SMB2_HDR_IOV_OFS] = (struct iovec) {
+		.iov_base = state->hdr,
+		.iov_len  = sizeof(state->hdr)
+	};
 
 	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_base = body;
 	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_len  = body_len;
