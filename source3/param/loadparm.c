@@ -2421,7 +2421,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	}
 
 	lp_ctx->sDefault = &sDefault;
-	lp_ctx->services = ServicePtrs;
+	lp_ctx->services = NULL; /* We do not want to access this directly */
 	lp_ctx->bInGlobalSection = bInGlobalSection;
 	lp_ctx->flags = flags_list;
 
