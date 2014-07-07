@@ -2724,7 +2724,8 @@ struct smbd_smb2_send_oplock_break_state {
 	struct smbd_server_connection *sconn;
 	struct smbd_smb2_send_queue queue_entry;
 	uint8_t nbt_hdr[NBT_HDR_SIZE];
-	uint8_t buf[SMB2_TF_HDR_SIZE + SMB2_HDR_BODY + 0x18];
+	uint8_t tf[SMB2_TF_HDR_SIZE];
+	uint8_t buf[SMB2_HDR_BODY + 0x18];
 	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
 };
 
@@ -2736,8 +2737,6 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 {
 	struct smbd_smb2_send_oplock_break_state *state;
 	struct smbXsrv_connection *conn = sconn->conn;
-	uint8_t *tf;
-	size_t tf_len;
 	uint8_t *hdr;
 	uint8_t *body;
 	size_t body_len;
@@ -2758,9 +2757,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	}
 	state->sconn = sconn;
 
-	tf = state->buf;
-	tf_len = SMB2_TF_HDR_SIZE;
-	hdr = tf + tf_len;
+	hdr = state->buf;
 	body = hdr + SMB2_HDR_BODY;
 	body_len = 0x18;
 	dyn = body + body_len;
@@ -2777,10 +2774,10 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 		}
 	}
 
-	SIVAL(tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
-	SBVAL(tf, SMB2_TF_NONCE+0, nonce_low);
-	SBVAL(tf, SMB2_TF_NONCE+8, nonce_high);
-	SBVAL(tf, SMB2_TF_SESSION_ID, session->global->session_wire_id);
+	SIVAL(state->tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
+	SBVAL(state->tf, SMB2_TF_NONCE+0, nonce_low);
+	SBVAL(state->tf, SMB2_TF_NONCE+8, nonce_high);
+	SBVAL(state->tf, SMB2_TF_SESSION_ID, session->global->session_wire_id);
 
 	SIVAL(hdr, 0,				SMB2_MAGIC);
 	SSVAL(hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
@@ -2810,11 +2807,15 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	};
 
 	if (do_encryption) {
-		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_base   = tf;
-		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_len    = tf_len;
+		state->vector[1+SMBD_SMB2_TF_IOV_OFS] = (struct iovec) {
+			.iov_base = state->tf,
+			.iov_len  = sizeof(state->tf)
+		};
 	} else {
-		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_base   = NULL;
-		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_len    = 0;
+		state->vector[1+SMBD_SMB2_TF_IOV_OFS] = (struct iovec) {
+			.iov_base = NULL,
+			.iov_len  = 0
+		};
 	}
 
 	state->vector[1+SMBD_SMB2_HDR_IOV_OFS].iov_base  = hdr;
