@@ -47,6 +47,9 @@ interface backupkey
 		uint8 key[256];
 	} bkrp_dc_serverwrap_key;
 
+	[public] typedef struct {
+	} bkrp_empty;
+
 	[public,gensize] typedef struct {
 		uint32 version;
 		uint32 encrypted_secret_len;
@@ -103,7 +106,7 @@ interface backupkey
 
 	[public] typedef [nodiscriminant] union {
 		[case(BACKUPKEY_RESTORE_GUID_INTEGER)] bkrp_client_side_wrapped restore_req;
-		[case(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID_INTEGER)] bkrp_client_side_wrapped cert_req;
+		[case(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID_INTEGER)] bkrp_empty empty;
 	} bkrp_data_in_blob;
 
 	/******************/
