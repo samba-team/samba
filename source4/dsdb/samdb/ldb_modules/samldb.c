@@ -2341,6 +2341,15 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	el = ldb_msg_find_element(req->op.add.message, "userParameters");
+	if (el != NULL && ldb_req_is_untrusted(req)) {
+		const char *reason = "samldb_add: "
+			"setting userParameters is not supported over LDAP, "
+			"see https://bugzilla.samba.org/show_bug.cgi?id=8077";
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "%s", reason);
+		return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, reason);
+	}
+
 	ac = samldb_ctx_init(module, req);
 	if (ac == NULL) {
 		return ldb_operr(ldb);
@@ -2478,6 +2487,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 					     DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
+	}
+
+	el = ldb_msg_find_element(req->op.mod.message, "userParameters");
+	if (el != NULL && ldb_req_is_untrusted(req)) {
+		const char *reason = "samldb: "
+			"setting userParameters is not supported over LDAP, "
+			"see https://bugzilla.samba.org/show_bug.cgi?id=8077";
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "%s", reason);
+		return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, reason);
 	}
 
 	ac = samldb_ctx_init(module, req);
