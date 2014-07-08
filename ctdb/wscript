@@ -17,9 +17,9 @@ import samba_utils, samba_version
 
 env = samba_utils.LOAD_ENVIRONMENT()
 if os.path.isfile('./VERSION'):
-    vdir='.'
+    vdir = '.'
 elif os.path.isfile('../VERSION'):
-    vdir='..'
+    vdir = '..'
 else:
     Logs.error("VERSION file not found")
 
@@ -32,6 +32,7 @@ samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tevent:lib/tevent lib/tdb:lib/tdb lib/popt:lib/popt
                         lib/socket_wrapper:lib/socket_wrapper
                         buildtools:buildtools''')
+
 
 def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('ctdb')
@@ -51,8 +52,9 @@ def set_options(opt):
                    help=("Path to log directory"),
                    action="store", dest='ctdb_logdir', default=None)
     opt.add_option('--with-socketpath',
-                  help=("path to CTDB daemon socket"),
-                  action="store_true", dest='ctdb_sockpath', default=False)
+                   help=("path to CTDB daemon socket"),
+                   action="store_true", dest='ctdb_sockpath', default=False)
+
 
 def configure(conf):
 
@@ -149,6 +151,7 @@ def configure(conf):
 
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
     conf.SAMBA_CONFIG_H()
+
 
 def build(bld):
     bld.RECURSE('lib/replace')
@@ -357,9 +360,9 @@ def build(bld):
             arg['file_list'].append([fl, mode])
 
     def SUBDIR_MODE(path, trim_path=None):
-         pd = {'trim_path': trim_path, 'file_list': []}
-         os.path.walk(path, SUBDIR_MODE_callback, pd)
-         return pd['file_list']
+        pd = {'trim_path': trim_path, 'file_list': []}
+        os.path.walk(path, SUBDIR_MODE_callback, pd)
+        return pd['file_list']
 
     etc_subdirs = [
         'events.d',
@@ -426,14 +429,14 @@ def build(bld):
     ]
 
     for t in ctdb_tests:
-         target = 'bin/' + t
-         src = 'tests/src/' + t + '.c'
+        target = 'bin/' + t
+        src = 'tests/src/' + t + '.c'
 
-         bld.SAMBA_BINARY(target,
-                          source=src,
-                          deps='''ctdb-client ctdb-common ctdb-common-util
-                                  ctdb-system ctdb-util ctdb-util-misc''',
-                          install_path='${CTDB_TEST_LIBDIR}')
+        bld.SAMBA_BINARY(target,
+                         source=src,
+                         deps='''ctdb-client ctdb-common ctdb-common-util
+                                 ctdb-system ctdb-util ctdb-util-misc''',
+                         install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('bin/ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
@@ -533,10 +536,12 @@ def testonly(ctx):
         print('tests exited with exit status %d' % ret)
         sys.exit(ret)
 
+
 def test(ctx):
     import Scripting
     Scripting.commands.append('build')
     Scripting.commands.append('testonly')
+
 
 def autotest(ctx):
     cmd = 'LD_PRELOAD=bin/shared/libsocket-wrapper.so tests/run_tests.sh -e -S -C'
@@ -545,8 +550,10 @@ def autotest(ctx):
         print('autotest exited with exit status %d' % ret)
         sys.exit(ret)
 
+
 def show_version(ctx):
     print VERSION
+
 
 def dist():
     samba_dist.DIST_FILES('VERSION:VERSION', extend=True)
@@ -592,6 +599,7 @@ def dist():
 
     samba_dist.dist()
 
+
 def rpmonly(ctx):
     cmd = 'rpmbuild -ta --clean --rmsource ctdb-%s.tar.gz' % VERSION
     ret = samba_utils.RUN_COMMAND(cmd)
@@ -599,10 +607,12 @@ def rpmonly(ctx):
         print('rpmbuild exited with exit status %d' % ret)
         sys.exit(ret)
 
+
 def rpm(ctx):
     import Scripting
     Scripting.commands.append('dist')
     Scripting.commands.append('rpmonly')
+
 
 def ctags(ctx):
     "build 'tags' file using ctags"
