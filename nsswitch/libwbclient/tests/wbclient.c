@@ -704,7 +704,7 @@ struct torture_suite *torture_wbclient(void)
 
 	torture_suite_add_simple_test(suite, "wbcPing", test_wbc_ping);
 	torture_suite_add_simple_test(suite, "wbcPingDc", test_wbc_pingdc);
-	torture_suite_add_simple_test(suite, "wbcPingDc2", test_wbc_pingdc);
+	torture_suite_add_simple_test(suite, "wbcPingDc2", test_wbc_pingdc2);
 	torture_suite_add_simple_test(suite, "wbcLibraryDetails", test_wbc_library_details);
 	torture_suite_add_simple_test(suite, "wbcInterfaceDetails", test_wbc_interface_details);
 	torture_suite_add_simple_test(suite, "wbcSidTypeString", test_wbc_sidtypestring);
