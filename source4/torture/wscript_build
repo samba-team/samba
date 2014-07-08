@@ -150,7 +150,17 @@ bld.SAMBA_MODULE('TORTURE_NTP',
 	internal_module=True
 	)
 
-TORTURE_MODULES = 'TORTURE_BASIC TORTURE_RAW torture_rpc TORTURE_RAP TORTURE_AUTH TORTURE_NBENCH TORTURE_UNIX TORTURE_LDAP TORTURE_NBT TORTURE_NET TORTURE_NTP torture_registry'
+bld.SAMBA_MODULE('TORTURE_VFS',
+	source='vfs/vfs.c',
+	allow_warnings=True,
+	subsystem='smbtorture',
+	deps='LIBCLI_SMB POPT_CREDENTIALS TORTURE_UTIL smbclient-raw TORTURE_RAW',
+	internal_module=True,
+	autoproto='vfs/proto.h',
+	init_function='torture_vfs_init'
+	)
+
+TORTURE_MODULES = 'TORTURE_BASIC TORTURE_RAW torture_rpc TORTURE_RAP TORTURE_AUTH TORTURE_NBENCH TORTURE_UNIX TORTURE_LDAP TORTURE_NBT TORTURE_NET TORTURE_NTP torture_registry TORTURE_VFS'
 
 bld.SAMBA_SUBSYSTEM('torturemain',
                     source='smbtorture.c torture.c shell.c',
