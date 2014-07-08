@@ -931,11 +931,11 @@ static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *re
 	SubjectPublicKeyInfo key;
 
 	hx509_name name;
-	WERROR w_err;
+	WERROR werr;
 
-	w_err = create_heimdal_rsa_key(ctx, hctx, signer, rsa);
-	if (!W_ERROR_IS_OK(w_err)) {
-		return w_err;
+	werr = create_heimdal_rsa_key(ctx, hctx, signer, rsa);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	hx509_request_init(*hctx, req);
@@ -983,7 +983,7 @@ static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *re
 static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_call, struct ldb_context *ldb_ctx, const char *dn)
 {
 	heim_octet_string data;
-	WERROR w_err;
+	WERROR werr;
 	RSA *rsa;
 	hx509_context hctx;
 	hx509_private_key pk;
@@ -1003,10 +1003,10 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 
 	DEBUG(6, ("Trying to generate a certificate\n"));
 	hx509_context_init(&hctx);
-	w_err = create_req(ctx, &hctx, &req, &pk, &rsa, dn);
-	if (!W_ERROR_IS_OK(w_err)) {
+	werr = create_req(ctx, &hctx, &req, &pk, &rsa, dn);
+	if (!W_ERROR_IS_OK(werr)) {
 		hx509_context_free(&hctx);
-		return w_err;
+		return werr;
 	}
 
 	status = GUID_to_ndr_blob(&guid, ctx, &blob);
@@ -1017,8 +1017,8 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 		return WERR_INVALID_DATA;
 	}
 
-	w_err = self_sign_cert(ctx, &hctx, &req, nb_seconds_validity, &pk, &cert, &blob);
-	if (!W_ERROR_IS_OK(w_err)) {
+	werr = self_sign_cert(ctx, &hctx, &req, nb_seconds_validity, &pk, &cert, &blob);
+	if (!W_ERROR_IS_OK(werr)) {
 		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
 		return WERR_INVALID_DATA;
