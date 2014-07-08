@@ -65,9 +65,9 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 			if (p->ref_count)
 				continue;
 			if (p->tdb) {
-				if (tdb_close(print_db_head->tdb)) {
+				if (tdb_close(p->tdb)) {
 					DEBUG(0,("get_print_db: Failed to close tdb for printer %s\n",
-								print_db_head->printer_name ));
+								p->printer_name ));
 					return NULL;
 				}
 			}
