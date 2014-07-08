@@ -274,7 +274,7 @@ WERROR tree_node_load_children(struct tree_node *node)
 			continue;
 		}
 
-		array[count] = tree_node_new(node, node, key_name, key);
+		array[count] = tree_node_new(array, node, key_name, key);
 		if (array[count] == NULL) {
 			rv = WERR_NOMEM;
 			goto finish;
@@ -286,21 +286,16 @@ WERROR tree_node_load_children(struct tree_node *node)
 		TYPESAFE_QSORT(array, count, node_cmp);
 
 		for (i = 1, prev = array[0]; i < count; ++i) {
+			talloc_steal(node, array[i]);
 			tree_node_append(prev, array[i]);
 			prev = array[i];
 		}
-		node->child_head = array[0];
+		node->child_head = talloc_steal(node, array[0]);
 
 		rv = WERR_OK;
 	}
 
 finish:
-	if (!W_ERROR_IS_OK(rv)) {
-		for (i = 0; i < nsubkeys; ++i) {
-			talloc_free(array[i]);
-		}
-		node->child_head = NULL;
-	}
 	talloc_free(array);
 
 	return rv;
