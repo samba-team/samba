@@ -151,7 +151,7 @@ bld.SAMBA_MODULE('TORTURE_NTP',
 	)
 
 bld.SAMBA_MODULE('TORTURE_VFS',
-	source='vfs/vfs.c',
+	source='vfs/vfs.c vfs/fruit.c',
 	allow_warnings=True,
 	subsystem='smbtorture',
 	deps='LIBCLI_SMB POPT_CREDENTIALS TORTURE_UTIL smbclient-raw TORTURE_RAW',
