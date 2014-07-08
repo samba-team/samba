@@ -999,7 +999,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	char *secret_name;
 	struct bkrp_exported_RSA_key_pair keypair;
 	enum ndr_err_code ndr_err;
-	uint32_t nb_days_validity = 3600 * 24 * 365;
+	uint32_t nb_seconds_validity = 3600 * 24 * 365;
 
 	DEBUG(6, ("Trying to generate a certificate\n"));
 	hx509_context_init(&hctx);
@@ -1017,7 +1017,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 		return WERR_INVALID_DATA;
 	}
 
-	w_err = self_sign_cert(ctx, &hctx, &req, nb_days_validity, &pk, &cert, &blob);
+	w_err = self_sign_cert(ctx, &hctx, &req, nb_seconds_validity, &pk, &cert, &blob);
 	if (!W_ERROR_IS_OK(w_err)) {
 		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
