@@ -608,7 +608,7 @@ def ctags(ctx):
     "build 'tags' file using ctags"
     import Utils
     source_root = os.path.dirname(Utils.g_module.root_path)
-    cmd = 'ctags $(find %s/.. -name "*.[ch]" | grep -v "*_proto\.h")' % source_root
+    cmd = 'ctags $(find %s -name "*.[ch]")' % source_root
     print("Running: %s" % cmd)
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:

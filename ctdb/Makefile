@@ -67,7 +67,8 @@ etags:
 	$(WAF) etags
 
 ctags:
-	$(WAF) ctags
+	touch .tmplock
+	WAFLOCK=.tmplock $(WAF) ctags
 
 pydoctor:
 	$(WAF) pydoctor
