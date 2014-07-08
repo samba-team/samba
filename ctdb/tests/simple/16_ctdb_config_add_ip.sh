@@ -64,9 +64,12 @@ echo "Selected node ${test_node} with IPs: $test_node_ips"
 
 # Try to find a free IP adddress.  This is inefficient but should
 # succeed quickly.
-try_command_on_node $test_node "ip addr show"
-all_test_node_ips=$(echo "$out" | sed -rn -e 's@^[[:space:]]+inet[[:space:]]+([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+/[[:digit:]]+).*[[:space:]]([^[:space:]]+)+$@\1:\2@p')
-
+if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+    try_command_on_node $test_node "ip addr show"
+    all_test_node_ips=$(echo "$out" | sed -rn -e 's@^[[:space:]]+inet[[:space:]]+([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+/[[:digit:]]+).*[[:space:]]([^[:space:]]+)+$@\1:\2@p')
+else
+    all_test_node_ips=""
+fi
 add_ip=""
 
 # Use an IP already on one of the nodes, remove the last octet and
