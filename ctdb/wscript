@@ -552,14 +552,22 @@ def dist():
     samba_dist.DIST_FILES('VERSION:VERSION', extend=True)
 
     t = 'include/ctdb_version.h'
-    out = os.system('packaging/mkversion.sh %s %s' % (t, VERSION))
+    cmd = 'packaging/mkversion.sh %s %s' % (t, VERSION)
+    ret = samba_utils.RUN_COMMAND(cmd)
+    if ret != 0:
+        print('Command "%s" failed with exit status %d' % (cmd, ret))
+        sys.exit(ret)
     samba_dist.DIST_FILES('ctdb/%s:%s' % (t, t), extend=True)
 
     t = 'ctdb.spec'
     sed_expr1 = 's/@VERSION@/%s/g' % VERSION
     sed_expr2 = 's/@RELEASE@/%s/g' % '1'
-    os.system('sed -e "%s" -e "%s" packaging/RPM/ctdb.spec.in > %s' %
-              (sed_expr1, sed_expr2, t))
+    cmd = 'sed -e "%s" -e "%s" packaging/RPM/ctdb.spec.in > %s' % (
+        sed_expr1, sed_expr2, t)
+    ret = samba_utils.RUN_COMMAND(cmd)
+    if ret != 0:
+        print('Command "%s" failed with exit status %d' % (cmd, ret))
+        sys.exit(ret)
     samba_dist.DIST_FILES('ctdb/%s:%s' % (t, t), extend=True)
 
     manpages = [
@@ -572,7 +580,11 @@ def dist():
         'ltdbtool.1'
     ]
 
-    os.system('make -C doc')
+    cmd = 'make -C doc'
+    ret = samba_utils.RUN_COMMAND(cmd)
+    if ret != 0:
+        print('Command "%s" failed with exit status %d' % (cmd, ret))
+        sys.exit(ret)
     for t in manpages:
         samba_dist.DIST_FILES('ctdb/doc/%s:doc/%s' % (t, t), extend=True)
         samba_dist.DIST_FILES('ctdb/doc/%s.html:doc/%s.html' % (t, t),
@@ -598,4 +610,7 @@ def ctags(ctx):
     source_root = os.path.dirname(Utils.g_module.root_path)
     cmd = 'ctags $(find %s/.. -name "*.[ch]" | grep -v "*_proto\.h")' % source_root
     print("Running: %s" % cmd)
-    os.system(cmd)
+    ret = samba_utils.RUN_COMMAND(cmd)
+    if ret != 0:
+        print('ctags failed with exit status %d' % ret)
+        sys.exit(ret)
