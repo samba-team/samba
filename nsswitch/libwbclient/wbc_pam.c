@@ -1227,11 +1227,9 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 	for (i=0; i<params->num_blobs; i++) {
 		if (strcasecmp(params->blobs[i].name, "initial_blob") == 0) {
 			initial_blob = &params->blobs[i];
-			break;
 		}
 		if (strcasecmp(params->blobs[i].name, "challenge_blob") == 0) {
 			challenge_blob = &params->blobs[i];
-			break;
 		}
 	}
 
