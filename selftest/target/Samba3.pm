@@ -1169,6 +1169,14 @@ sub provision($$$$$$)
 
 [print\$]
 	copy = tmp
+
+[vfs_fruit]
+	path = $shrdir
+	vfs objects = catia fruit streams_xattr
+	fruit:ressource = file
+	fruit:metadata = netatalk
+	fruit:locking = netatalk
+	fruit:encoding = native
 	";
 	close(CONF);
 

@@ -879,6 +879,14 @@ sub provision($$$$$$$$$)
 	copy = simple
 	ntvfs handler = cifsposix
 
+[vfs_fruit]
+	path = $ctx->{share}
+	vfs objects = catia fruit streams_xattr
+	fruit:ressource = file
+	fruit:metadata = netatalk
+	fruit:locking = netatalk
+	fruit:encoding = native
+
 $extra_smbconf_shares
 ";
 

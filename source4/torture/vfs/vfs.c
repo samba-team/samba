@@ -106,6 +106,8 @@ NTSTATUS torture_vfs_init(void)
 
 	suite->description = talloc_strdup(suite, "VFS modules tests");
 
+	torture_suite_add_suite(suite, torture_vfs_fruit());
+
 	torture_register_suite(suite);
 
 	return NT_STATUS_OK;

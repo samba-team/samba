@@ -289,7 +289,9 @@ nbt = ["nbt.dgram" ]
 
 libsmbclient = ["libsmbclient"]
 
-tests= base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap
+vfs = ["vfs.fruit"]
+
+tests= base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap + vfs
 
 for t in tests:
     if t == "base.delaywrite":
@@ -360,6 +362,9 @@ for t in tests:
 # test the dirsort module.
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmpsort -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+    elif t == "vfs.fruit":
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:share1=vfs_fruit --option=torture:share2=tmp --option=torture:localdir=$SELFTEST_PREFIX/s3dc/share')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:share1=vfs_fruit --option=torture:share2=tmp --option=torture:localdir=$SELFTEST_PREFIX/plugin_s4_dc/share')
     else:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
