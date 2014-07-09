@@ -58,7 +58,6 @@ static bool lp_load_for_s4_ctx(const char *filename)
 
 static struct loadparm_s3_helpers s3_fns =
 {
-	.get_parm_struct = lp_get_parameter,
 	.get_parm_ptr = lp_parm_ptr,
 	.get_service = lp_service_for_s4_ctx,
 	.get_servicebynum = lp_servicebynum_for_s4_ctx,

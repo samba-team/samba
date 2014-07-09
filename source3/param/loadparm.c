@@ -2647,22 +2647,6 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 	return result;
 }
 
-/***************************************************************************
- Return info about the requested parameter (given as a string).
- Return NULL when the string is not a valid parameter name.
-***************************************************************************/
-
-struct parm_struct *lp_get_parameter(const char *param_name)
-{
-	int num = lpcfg_map_parameter(param_name);
-
-	if (num < 0) {
-		return NULL;
-	}
-
-	return &parm_table[num];
-}
-
 #if 0
 /***************************************************************************
  Display the contents of a single copy structure.

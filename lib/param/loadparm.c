@@ -730,15 +730,13 @@ int lpcfg_map_parameter(const char *pszParmName)
 */
 struct parm_struct *lpcfg_parm_struct(struct loadparm_context *lp_ctx, const char *name)
 {
-	int parmnum;
+	int num = lpcfg_map_parameter(name);
 
-	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->get_parm_struct(name);
+	if (num < 0) {
+		return NULL;
 	}
 
-	parmnum = lpcfg_map_parameter(name);
-	if (parmnum == -1) return NULL;
-	return &parm_table[parmnum];
+	return &parm_table[num];
 }
 
 /**
