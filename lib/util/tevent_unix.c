@@ -61,3 +61,13 @@ int tevent_req_simple_recv_unix(struct tevent_req *req)
 	tevent_req_received(req);
 	return err;
 }
+
+bool tevent_req_poll_unix(struct tevent_req *req, struct tevent_context *ev,
+			  int *err)
+{
+	bool ret = tevent_req_poll(req, ev);
+	if (!ret) {
+		*err = errno;
+	}
+	return ret;
+}
