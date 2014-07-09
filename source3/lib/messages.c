@@ -90,6 +90,7 @@ static void ping_message(struct messaging_context *msg_ctx,
 			 struct server_id src,
 			 DATA_BLOB *data)
 {
+	struct server_id_buf idbuf;
 	const char *msg = "none";
 	char *free_me = NULL;
 
@@ -98,8 +99,8 @@ static void ping_message(struct messaging_context *msg_ctx,
 					 data->length);
 		msg = free_me;
 	}
-	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
-		 procid_str_static(&src), msg));
+	DEBUG(1, ("INFO: Received PING message from PID %s [%s]\n",
+		  server_id_str_buf(src, &idbuf), msg));
 	TALLOC_FREE(free_me);
 	messaging_send(msg_ctx, src, MSG_PONG, data);
 }
@@ -143,13 +144,15 @@ static int traverse_fn(struct db_record *rec, const struct server_id *id,
 				    (const uint8_t *)msg_all->buf, msg_all->len);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		struct server_id_buf idbuf;
 
 		/*
 		 * If the pid was not found delete the entry from
 		 * serverid.tdb
 		 */
 
-		DEBUG(2, ("pid %s doesn't exist\n", procid_str_static(id)));
+		DEBUG(2, ("pid %s doesn't exist\n",
+			  server_id_str_buf(*id, &idbuf)));
 
 		dbwrap_record_delete(rec);
 	}
