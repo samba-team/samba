@@ -428,20 +428,17 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 	if (messaging_is_self_send(msg_ctx, &server)) {
 		struct messaging_rec rec;
 		uint8_t *buf;
-		DATA_BLOB data;
 
 		buf = iov_buf(talloc_tos(), iov, iovlen);
 		if (buf == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		data = data_blob_const(buf, talloc_get_size(buf));
-
 		rec.msg_version = MESSAGE_VERSION;
 		rec.msg_type = msg_type & MSG_TYPE_MASK;
 		rec.dest = server;
 		rec.src = msg_ctx->id;
-		rec.buf = data;
+		rec.buf = data_blob_const(buf, talloc_get_size(buf));
 		messaging_dispatch_rec(msg_ctx, &rec);
 		TALLOC_FREE(buf);
 		return NT_STATUS_OK;
