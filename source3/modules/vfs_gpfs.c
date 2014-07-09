@@ -1819,6 +1819,11 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (VALID_STAT(*sbuf) && (sbuf->vfs_private & ~0x0FFFF) != 0) {
+		DEBUG(0, ("vfs_gpfs_is_offline: valid stat but "
+			  "uninitialized winAttrs (0x%08x)?\n",
+			  (uint32_t)sbuf->vfs_private));
+	}
 	{
 		int ret;
 		ret = get_gpfs_winattrs(path, &attrs);
