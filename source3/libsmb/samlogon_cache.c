@@ -125,7 +125,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	bool result = false;
 	struct dom_sid	user_sid;
 	time_t t = time(NULL);
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	struct netsamlogoncache_entry r;
@@ -149,11 +149,6 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 
 	/* Prepare data */
 
-	if (!(mem_ctx = talloc( NULL, int))) {
-		DEBUG(0,("netsamlogon_cache_store: talloc() failed!\n"));
-		return false;
-	}
-
 	/* only Samba fills in the username, not sure why NT doesn't */
 	/* so we fill it in since winbindd_getpwnam() makes use of it */
 
@@ -168,11 +163,11 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &r,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, &r,
 				       (ndr_push_flags_fn_t)ndr_push_netsamlogoncache_entry);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("netsamlogon_cache_store: failed to push entry to cache\n"));
-		TALLOC_FREE(mem_ctx);
+		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
 
@@ -183,7 +178,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 		result = true;
 	}
 
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(tmp_ctx);
 
 	return result;
 }
