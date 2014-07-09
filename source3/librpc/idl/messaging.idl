@@ -131,9 +131,4 @@ interface messaging
 		server_id src;
 		DATA_BLOB buf;
 	} messaging_rec;
-
-	typedef [public] struct {
-		uint32 num_messages;
-		messaging_rec messages[num_messages];
-	} messaging_array;
 }
