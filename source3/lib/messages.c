@@ -91,17 +91,11 @@ static void ping_message(struct messaging_context *msg_ctx,
 			 DATA_BLOB *data)
 {
 	struct server_id_buf idbuf;
-	const char *msg = "none";
-	char *free_me = NULL;
 
-	if (data->data != NULL) {
-		free_me = talloc_strndup(talloc_tos(), (char *)data->data,
-					 data->length);
-		msg = free_me;
-	}
-	DEBUG(1, ("INFO: Received PING message from PID %s [%s]\n",
-		  server_id_str_buf(src, &idbuf), msg));
-	TALLOC_FREE(free_me);
+	DEBUG(1, ("INFO: Received PING message from PID %s [%.*s]\n",
+		  server_id_str_buf(src, &idbuf), (int)data->length,
+		  data->data ? (char *)data->data : ""));
+
 	messaging_send(msg_ctx, src, MSG_PONG, data);
 }
 
