@@ -71,5 +71,5 @@ void load_printers(struct tevent_context *ev,
 
 	/* load all printcap printers */
 	if (lp_load_printers() && lp_servicenumber(PRINTERS_NAME) >= 0)
-		pcap_printer_fn(lp_add_one_printer, NULL);
+		pcap_printer_read_fn(lp_add_one_printer, NULL);
 }
