@@ -229,11 +229,11 @@ void pcap_printer_fn_specific(const struct pcap_cache *pc,
 	return;
 }
 
-void pcap_printer_fn(void (*fn)(const char *, const char *, const char *, void *), void *pdata)
+void pcap_printer_read_fn(void (*fn)(const char *, const char *, const char *, void *), void *pdata)
 {
 	NTSTATUS status;
 
-	status = printer_list_run_fn(fn, pdata);
+	status = printer_list_read_run_fn(fn, pdata);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Failed to run fn for all printers!\n"));
 	}

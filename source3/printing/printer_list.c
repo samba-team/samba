@@ -283,7 +283,8 @@ done:
 typedef int (printer_list_trv_fn_t)(struct db_record *, void *);
 
 static NTSTATUS printer_list_traverse(printer_list_trv_fn_t *fn,
-						void *private_data)
+				      void *private_data,
+				      bool read_only)
 {
 	struct db_context *db;
 	NTSTATUS status;
@@ -293,7 +294,11 @@ static NTSTATUS printer_list_traverse(printer_list_trv_fn_t *fn,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = dbwrap_traverse(db, fn, private_data, NULL);
+	if (read_only) {
+		status = dbwrap_traverse_read(db, fn, private_data, NULL);
+	} else {
+		status = dbwrap_traverse(db, fn, private_data, NULL);
+	}
 
 	return status;
 }
@@ -363,7 +368,7 @@ NTSTATUS printer_list_clean_old(void)
 
 	state.status = NT_STATUS_OK;
 
-	status = printer_list_traverse(printer_list_clean_fn, &state);
+	status = printer_list_traverse(printer_list_clean_fn, &state, false);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL) &&
 	    !NT_STATUS_IS_OK(state.status)) {
 		status = state.status;
@@ -416,8 +421,8 @@ static int printer_list_exec_fn(struct db_record *rec, void *private_data)
 	return 0;
 }
 
-NTSTATUS printer_list_run_fn(void (*fn)(const char *, const char *, const char *, void *),
-			     void *private_data)
+NTSTATUS printer_list_read_run_fn(void (*fn)(const char *, const char *, const char *, void *),
+				  void *private_data)
 {
 	struct printer_list_exec_state state;
 	NTSTATUS status;
@@ -426,7 +431,7 @@ NTSTATUS printer_list_run_fn(void (*fn)(const char *, const char *, const char *
 	state.private_data = private_data;
 	state.status = NT_STATUS_OK;
 
-	status = printer_list_traverse(printer_list_exec_fn, &state);
+	status = printer_list_traverse(printer_list_exec_fn, &state, true);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL) &&
 	    !NT_STATUS_IS_OK(state.status)) {
 		status = state.status;

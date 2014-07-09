@@ -100,6 +100,6 @@ NTSTATUS printer_list_mark_reload(void);
  */
 NTSTATUS printer_list_clean_old(void);
 
-NTSTATUS printer_list_run_fn(void (*fn)(const char *, const char *, const char *, void *),
-			     void *private_data);
+NTSTATUS printer_list_read_run_fn(void (*fn)(const char *, const char *, const char *, void *),
+				  void *private_data);
 #endif /* _PRINTER_LIST_H_ */
