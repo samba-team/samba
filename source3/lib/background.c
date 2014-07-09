@@ -181,7 +181,18 @@ static void background_job_waited(struct tevent_req *subreq)
 		if (written == -1) {
 			_exit(1);
 		}
-		TALLOC_FREE(state->msg);
+
+		/*
+		 * No TALLOC_FREE here, messaging_parent_dgm_cleanup_init for
+		 * example calls background_job_send with "messaging_context"
+		 * as talloc parent. Thus "state" will be freed with the
+		 * following talloc_free will have removed "state" when it
+		 * returns. TALLOC_FREE will then write a NULL into free'ed
+		 * memory. talloc_free() is required although we immediately
+		 * exit, the messaging_context's destructor will want to clean
+		 * up.
+		 */
+		talloc_free(state->msg);
 		_exit(0);
 	}
 
