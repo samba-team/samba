@@ -74,9 +74,6 @@
 
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 {
-	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->get_default_loadparm_service();
-	}
 	return lp_ctx->sDefault;
 }
 

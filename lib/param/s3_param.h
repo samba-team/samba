@@ -5,7 +5,6 @@ struct loadparm_s3_helpers
 {
 	void * (*get_parm_ptr)(struct loadparm_service *service, struct parm_struct *parm);
 	struct loadparm_service * (*get_service)(const char *service_name);
-	struct loadparm_service * (*get_default_loadparm_service)(void);
 	struct loadparm_service * (*get_servicebynum)(int snum);
 	int (*getservicebyname)(const char *, struct loadparm_service *);
 	int (*get_numservices)(void);
