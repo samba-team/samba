@@ -1224,6 +1224,8 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 			challenge_blob = &params->blobs[i];
 			continue;
 		}
+		status = WBC_ERR_INVALID_PARAM;
+		goto fail;
 	}
 
 	if (params->domain_name != NULL) {
