@@ -323,7 +323,7 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 
 	session = smb2_session_init(transport,
 				    lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				    mem_ctx, true);
+				    mem_ctx);
 
 	if (session == NULL) {
 		return false;

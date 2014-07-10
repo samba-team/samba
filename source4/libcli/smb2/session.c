@@ -36,7 +36,7 @@
  */
 struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 				       struct gensec_settings *settings,
-				       TALLOC_CTX *parent_ctx, bool primary)
+				       TALLOC_CTX *parent_ctx)
 {
 	struct smb2_session *session;
 	NTSTATUS status;
@@ -45,11 +45,7 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 	if (!session) {
 		return NULL;
 	}
-	if (primary) {
-		session->transport = talloc_steal(session, transport);
-	} else {
-		session->transport = talloc_reference(session, transport);
-	}
+	session->transport = talloc_steal(session, transport);
 
 	session->smbXcli = smbXcli_session_create(session, transport->conn);
 	if (session->smbXcli == NULL) {

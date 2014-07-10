@@ -172,7 +172,7 @@ static void smb2_connect_negprot_done(struct tevent_req *subreq)
 	/* This is a hack... */
 	smb2cli_conn_set_max_credits(transport->conn, 30);
 
-	state->session = smb2_session_init(transport, state->gensec_settings, state, true);
+	state->session = smb2_session_init(transport, state->gensec_settings, state);
 	if (tevent_req_nomem(state->session, req)) {
 		return;
 	}
