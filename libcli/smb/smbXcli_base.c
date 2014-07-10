@@ -4769,6 +4769,17 @@ void smb2cli_session_increment_channel_sequence(struct smbXcli_session *session)
 	session->smb2->channel_sequence += 1;
 }
 
+uint16_t smb2cli_session_reset_channel_sequence(struct smbXcli_session *session,
+						uint16_t channel_sequence)
+{
+	uint16_t prev_cs;
+
+	prev_cs = session->smb2->channel_sequence;
+	session->smb2->channel_sequence = channel_sequence;
+
+	return prev_cs;
+}
+
 NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 					 const DATA_BLOB _session_key,
 					 const struct iovec *recv_iov)
