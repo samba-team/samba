@@ -307,7 +307,7 @@ static int delete_marshall_traverse(void *param, void *data)
 	recs->records = talloc_realloc_size(recs, recs->records, old_size + rec->length);
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
-		return 0;
+		return -1;
 	}
 	recs->records->count++;
 	memcpy(old_size+(uint8_t *)(recs->records), rec, rec->length);
@@ -1024,6 +1024,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Error traversing the "
 		      "delete list for second marshalling.\n"));
+		goto done;
 	}
 
 	indata.dsize = talloc_get_size(recs->records);
