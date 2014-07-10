@@ -88,9 +88,14 @@ static bool getdns_hosts_fileent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, cha
 
 		if (next_token_talloc(ctx, &ptr, &name_type, NULL))
 			++count;
+		if (count == 0) {
+			continue;
+		}
 		if (next_token_talloc(ctx, &ptr, &name, NULL))
 			++count;
-		if (name_type && strcasecmp(name_type, "A") == 0) {
+		if ((strcasecmp(name_type, "A") == 0) ||
+		    (strcasecmp(name_type, "AAAA") == 0))
+		{
 			if (next_token_talloc(ctx, &ptr, &ip, NULL))
 				++count;
 		} else if (name_type && strcasecmp(name_type, "SRV") == 0) {
@@ -105,9 +110,11 @@ static bool getdns_hosts_fileent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, cha
 		if (count <= 0)
 			continue;
 
-		if (strcasecmp(name_type, "A") == 0) {
+		if ((strcasecmp(name_type, "A") == 0) ||
+		    (strcasecmp(name_type, "AAAA") == 0))
+		{
 			if (count != 3) {
-				DEBUG(0,("getdns_hosts_fileent: Ill formed hosts A record [%s]\n",
+				DEBUG(0,("getdns_hosts_fileent: Ill formed hosts A[AAA] record [%s]\n",
 					 line));
 				continue;
 			}
@@ -215,7 +222,7 @@ static NTSTATUS resolve_dns_hosts_file_as_dns_rr_recurse(const char *dns_hosts_f
 
 	DEBUG(3,("resolve_dns_hosts: (%d) "
 		 "Attempting %s dns_hosts lookup for name %s\n",
-		 level, srv_lookup ? "SRV" : "A", name));
+		 level, srv_lookup ? "SRV" : "A[AAA]", name));
 
 	fp = startdns_hosts_file(dns_hosts_file);
 
@@ -278,7 +285,9 @@ static NTSTATUS resolve_dns_hosts_file_as_dns_rr_recurse(const char *dns_hosts_f
 									  mem_ctx, return_rr, return_count);
 			talloc_free(ip_list_ctx);
 			return status;
-		} else if (strcasecmp(name_type, "A") == 0) {
+		} else if ((strcasecmp(name_type, "A") == 0) ||
+			   (strcasecmp(name_type, "AAAA") == 0))
+		{
 			if (*return_count == 0) {
 				/* We are happy to keep looking for other possible A record matches */
 				rr = talloc_zero(ip_list_ctx,
@@ -405,11 +414,11 @@ NTSTATUS resolve_dns_hosts_file_as_dns_rr(const char *dns_hosts_file,
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("resolve_dns_hosts (dns_rr): "
 			 "Found %d %s result records for for name %s\n",
-			 *return_count, srv_lookup ? "SRV" : "A", name));
+			 *return_count, srv_lookup ? "SRV" : "A[AAA]", name));
 	} else {
 		DEBUG(3,("resolve_dns_hosts (dns_rr): "
 			 "failed to obtain %s result records for for name %s: %s\n",
-			 srv_lookup ? "SRV" : "A", name, nt_errstr(status)));
+			 srv_lookup ? "SRV" : "A[AAA]", name, nt_errstr(status)));
 	}
 	return status;
 }
