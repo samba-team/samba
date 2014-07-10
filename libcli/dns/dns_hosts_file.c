@@ -106,6 +106,9 @@ static bool getdns_hosts_fileent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, cha
 		} else if (name_type && strcasecmp(name_type, "CNAME") == 0) {
 			if (next_token_talloc(ctx, &ptr, &next_name, NULL))
 				++count;
+		} else if (name_type && strcasecmp(name_type, "NS") == 0) {
+			if (next_token_talloc(ctx, &ptr, &next_name, NULL))
+				++count;
 		}
 		if (count <= 0)
 			continue;
@@ -155,6 +158,15 @@ static bool getdns_hosts_fileent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, cha
 			if (!*pp_next_name) {
 				return false;
 			}
+		} else if (strcasecmp(name_type, "NS") == 0) {
+			if (count != 3) {
+				DEBUG(0,("getdns_hosts_fileent: Ill formed hosts NS record [%s]\n",
+					 line));
+				continue;
+			}
+			DEBUG(4, ("getdns_hosts_fileent: NS entry: %s %s %s\n",
+				  name_type, name, next_name));
+			continue;
 		} else {
 			DEBUG(0,("getdns_hosts_fileent: unknown type %s\n", name_type));
 			continue;
