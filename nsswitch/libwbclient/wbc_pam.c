@@ -1207,6 +1207,25 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 		goto fail;
 	}
 
+	for (i=0; i<params->num_blobs; i++) {
+		if (strcasecmp(params->blobs[i].name, "initial_blob") == 0) {
+			if (initial_blob != NULL) {
+				status = WBC_ERR_INVALID_PARAM;
+				goto fail;
+			}
+			initial_blob = &params->blobs[i];
+			continue;
+		}
+		if (strcasecmp(params->blobs[i].name, "challenge_blob") == 0) {
+			if (challenge_blob != NULL) {
+				status = WBC_ERR_INVALID_PARAM;
+				goto fail;
+			}
+			challenge_blob = &params->blobs[i];
+			continue;
+		}
+	}
+
 	if (params->domain_name != NULL) {
 		status = wbcRequestResponse(WINBINDD_INFO, NULL, &response);
 		if (!WBC_ERROR_IS_OK(status)) {
@@ -1223,15 +1242,6 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 			sizeof(request.data.ccache_ntlm_auth.user)-1);
 	}
 	request.data.ccache_ntlm_auth.uid = getuid();
-
-	for (i=0; i<params->num_blobs; i++) {
-		if (strcasecmp(params->blobs[i].name, "initial_blob") == 0) {
-			initial_blob = &params->blobs[i];
-		}
-		if (strcasecmp(params->blobs[i].name, "challenge_blob") == 0) {
-			challenge_blob = &params->blobs[i];
-		}
-	}
 
 	request.data.ccache_ntlm_auth.initial_blob_len = 0;
 	request.data.ccache_ntlm_auth.challenge_blob_len = 0;
