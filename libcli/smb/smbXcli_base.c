@@ -140,6 +140,7 @@ struct smb2cli_session {
 	uint64_t nonce_high;
 	uint64_t nonce_low;
 	uint16_t channel_sequence;
+	bool replay_active;
 };
 
 struct smbXcli_session {
@@ -2632,6 +2633,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	uint64_t uid = 0;
 	bool use_channel_sequence = false;
 	uint16_t channel_sequence = 0;
+	bool use_replay_flag = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbXcli_req_state);
@@ -2650,11 +2652,19 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 		use_channel_sequence = true;
 	}
 
+	if (smbXcli_conn_protocol(conn) >= PROTOCOL_SMB3_00) {
+		use_replay_flag = true;
+	}
+
 	if (session) {
 		uid = session->smb2->session_id;
 
 		if (use_channel_sequence) {
 			channel_sequence = session->smb2->channel_sequence;
+		}
+
+		if (use_replay_flag && session->smb2->replay_active) {
+			additional_flags |= SMB2_HDR_FLAG_REPLAY_OPERATION;
 		}
 
 		state->smb2.should_sign = session->smb2->should_sign;
@@ -4778,6 +4788,16 @@ uint16_t smb2cli_session_reset_channel_sequence(struct smbXcli_session *session,
 	session->smb2->channel_sequence = channel_sequence;
 
 	return prev_cs;
+}
+
+void smb2cli_session_start_replay(struct smbXcli_session *session)
+{
+	session->smb2->replay_active = true;
+}
+
+void smb2cli_session_stop_replay(struct smbXcli_session *session)
+{
+	session->smb2->replay_active = false;
 }
 
 NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
