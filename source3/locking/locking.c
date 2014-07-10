@@ -103,6 +103,7 @@ void init_strict_lock_struct(files_struct *fsp,
 
 bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 {
+	struct byte_range_lock *br_lck;
 	int strict_locking = lp_strict_locking(fsp->conn->params);
 	bool ret = False;
 
@@ -115,43 +116,32 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 	}
 
 	if (strict_locking == Auto) {
-		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (plock->lock_type == READ_LOCK || plock->lock_type == WRITE_LOCK)) {
-			DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp_str_dbg(fsp)));
-			ret = True;
-		} else if ((fsp->oplock_type == LEVEL_II_OPLOCK) &&
-			   (plock->lock_type == READ_LOCK)) {
-			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp_str_dbg(fsp)));
-			ret = True;
-		} else {
-			struct byte_range_lock *br_lck;
-
-			br_lck = brl_get_locks_readonly(fsp);
-			if (!br_lck) {
-				return True;
-			}
-			ret = brl_locktest(br_lck,
-					plock->context.smblctx,
-					plock->context.pid,
-					plock->start,
-					plock->size,
-					plock->lock_type,
-					plock->lock_flav);
+		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) &&
+		     (plock->lock_type == READ_LOCK ||
+		      plock->lock_type == WRITE_LOCK)) {
+			DEBUG(10, ("is_locked: optimisation - exclusive oplock "
+				   "on file %s\n", fsp_str_dbg(fsp)));
+			return true;
 		}
-	} else {
-		struct byte_range_lock *br_lck;
-
-		br_lck = brl_get_locks_readonly(fsp);
-		if (!br_lck) {
-			return True;
+		if ((fsp->oplock_type == LEVEL_II_OPLOCK) &&
+		    (plock->lock_type == READ_LOCK)) {
+			DEBUG(10, ("is_locked: optimisation - level II oplock "
+				   "on file %s\n", fsp_str_dbg(fsp)));
+			return true;
 		}
-		ret = brl_locktest(br_lck,
-				plock->context.smblctx,
-				plock->context.pid,
-				plock->start,
-				plock->size,
-				plock->lock_type,
-				plock->lock_flav);
 	}
+
+	br_lck = brl_get_locks_readonly(fsp);
+	if (!br_lck) {
+		return true;
+	}
+	ret = brl_locktest(br_lck,
+			   plock->context.smblctx,
+			   plock->context.pid,
+			   plock->start,
+			   plock->size,
+			   plock->lock_type,
+			   plock->lock_flav);
 
 	DEBUG(10, ("strict_lock_default: flavour = %s brl start=%ju "
 		   "len=%ju %s for fnum %ju file %s\n",
