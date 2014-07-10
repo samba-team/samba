@@ -192,6 +192,104 @@ char metadata_xattr[] = {
 };
 
 /**
+ * talloc and intialize an AfpInfo
+ **/
+static AfpInfo *torture_afpinfo_new(TALLOC_CTX *mem_ctx)
+{
+	AfpInfo *info;
+
+	info = talloc_zero(mem_ctx, AfpInfo);
+	if (info == NULL) {
+		return NULL;
+	}
+
+	info->afpi_Signature = AFP_Signature;
+	info->afpi_Version = AFP_Version;
+	info->afpi_BackupTime = AFP_BackupTime;
+
+	return info;
+}
+
+/**
+ * Pack AfpInfo into a talloced buffer
+ **/
+static char *torture_afpinfo_pack(TALLOC_CTX *mem_ctx,
+				  AfpInfo *info)
+{
+	char *buf;
+
+	buf = talloc_array(mem_ctx, char, AFP_INFO_SIZE);
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	RSIVAL(buf, 0, info->afpi_Signature);
+	RSIVAL(buf, 4, info->afpi_Version);
+	RSIVAL(buf, 12, info->afpi_BackupTime);
+	memcpy(buf + 16, info->afpi_FinderInfo, sizeof(info->afpi_FinderInfo));
+
+	return buf;
+}
+
+/**
+ * Unpack AfpInfo
+ **/
+#if 0
+static void torture_afpinfo_unpack(AfpInfo *info, char *data)
+{
+	info->afpi_Signature = RIVAL(data, 0);
+	info->afpi_Version = RIVAL(data, 4);
+	info->afpi_BackupTime = RIVAL(data, 12);
+	memcpy(info->afpi_FinderInfo, (const char *)data + 16,
+	       sizeof(info->afpi_FinderInfo));
+}
+#endif
+
+static bool torture_write_afpinfo(struct smb2_tree *tree,
+				  struct torture_context *tctx,
+				  TALLOC_CTX *mem_ctx,
+				  const char *fname,
+				  AfpInfo *info)
+{
+	struct smb2_handle handle;
+	struct smb2_create io;
+	NTSTATUS status;
+	const char *full_name;
+	char *infobuf;
+	bool ret = true;
+
+	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, AFPINFO_STREAM);
+	if (full_name == NULL) {
+	    torture_comment(tctx, "talloc_asprintf error\n");
+	    return false;
+	}
+	ZERO_STRUCT(io);
+	io.in.desired_access = SEC_FILE_WRITE_DATA;
+	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.create_options = 0;
+	io.in.fname = full_name;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	handle = io.out.file.handle;
+
+	infobuf = torture_afpinfo_pack(mem_ctx, info);
+	if (infobuf == NULL) {
+		return false;
+	}
+
+	status = smb2_util_write(tree, handle, infobuf, 0, AFP_INFO_SIZE);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, handle);
+
+done:
+	return ret;
+}
+
+/**
  * Read 'count' bytes at 'offset' from stream 'fname:sname' and
  * compare against buffer 'value'
  **/
@@ -377,6 +475,45 @@ done:
 	return ret;
 }
 
+static bool test_write_atalk_metadata(struct torture_context *tctx,
+				      struct smb2_tree *tree1,
+				      struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\torture_write_metadata";
+	const char *type_creator = "SMB,OLE!";
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	AfpInfo *info;
+
+	smb2_util_unlink(tree1, fname);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, testdirh);
+
+	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	if (ret == false) {
+		goto done;
+	}
+
+	info = torture_afpinfo_new(mem_ctx);
+	if (info == NULL) {
+		goto done;
+	}
+
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree1, tctx, mem_ctx, fname, info);
+	ret &= check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			    0, 60, 16, 8, type_creator);
+
+done:
+	smb2_deltree(tree1, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit
  * streams_xattr".  Note: To run this test, use
@@ -392,6 +529,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	suite->description = talloc_strdup(suite, "vfs_fruit tests");
 
 	torture_suite_add_2ns_smb2_test(suite, "read metadata", test_read_atalk_metadata);
+	torture_suite_add_2ns_smb2_test(suite, "write metadata", test_write_atalk_metadata);
 
 	return suite;
 }
