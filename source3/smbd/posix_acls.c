@@ -1166,9 +1166,6 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 			uint32 security_info_sent, const struct
 			security_descriptor *psd)
 {
-	struct dom_sid owner_sid;
-	struct dom_sid grp_sid;
-
 	*puser = (uid_t)-1;
 	*pgrp = (gid_t)-1;
 
@@ -1181,9 +1178,6 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 	 * Validate the owner and group SID's.
 	 */
 
-	memset(&owner_sid, '\0', sizeof(owner_sid));
-	memset(&grp_sid, '\0', sizeof(grp_sid));
-
 	DEBUG(5,("unpack_nt_owners: validating owner_sids.\n"));
 
 	/*
@@ -1192,8 +1186,7 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 	 */
 
 	if (security_info_sent & SECINFO_OWNER) {
-		sid_copy(&owner_sid, psd->owner_sid);
-		if (!sid_to_uid(&owner_sid, puser)) {
+		if (!sid_to_uid(psd->owner_sid, puser)) {
 			if (lp_force_unknown_acl_user(SNUM(conn))) {
 				/* this allows take ownership to work
 				 * reasonably */
@@ -1201,7 +1194,7 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " owner sid for %s\n",
-					 sid_string_dbg(&owner_sid)));
+					 sid_string_dbg(psd->owner_sid)));
 				return NT_STATUS_INVALID_OWNER;
 			}
 		}
@@ -1215,8 +1208,7 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 	 */
 
 	if (security_info_sent & SECINFO_GROUP) {
-		sid_copy(&grp_sid, psd->group_sid);
-		if (!sid_to_gid( &grp_sid, pgrp)) {
+		if (!sid_to_gid(psd->group_sid, pgrp)) {
 			if (lp_force_unknown_acl_user(SNUM(conn))) {
 				/* this allows take group ownership to work
 				 * reasonably */
