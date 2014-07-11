@@ -227,29 +227,37 @@ static bool brl_conflict1(const struct lock_struct *lck1,
  This is never used in the POSIX lock case.
 ****************************************************************************/
 
-static bool brl_conflict_other(const struct lock_struct *lock, const struct lock_struct *rw_probe)
+static bool brl_conflict_other(const struct lock_struct *lock,
+			       const struct lock_struct *rw_probe)
 {
-	if (IS_PENDING_LOCK(lock->lock_type) || IS_PENDING_LOCK(rw_probe->lock_type))
+	if (IS_PENDING_LOCK(lock->lock_type) ||
+	    IS_PENDING_LOCK(rw_probe->lock_type)) {
 		return False;
+	}
 
-	if (lock->lock_type == READ_LOCK && rw_probe->lock_type == READ_LOCK)
+	if (lock->lock_type == READ_LOCK && rw_probe->lock_type == READ_LOCK) {
 		return False;
+	}
 
 	/* POSIX flavour locks never conflict here - this is only called
 	   in the read/write path. */
 
-	if (lock->lock_flav == POSIX_LOCK && rw_probe->lock_flav == POSIX_LOCK)
+	if (lock->lock_flav == POSIX_LOCK &&
+	    rw_probe->lock_flav == POSIX_LOCK) {
 		return False;
+	}
 
 	/*
 	 * Incoming WRITE locks conflict with existing READ locks even
 	 * if the context is the same. JRA. See LOCKTEST7 in smbtorture.
 	 */
 
-	if (!(rw_probe->lock_type == WRITE_LOCK && lock->lock_type == READ_LOCK)) {
+	if (!(rw_probe->lock_type == WRITE_LOCK &&
+	      lock->lock_type == READ_LOCK)) {
 		if (brl_same_context(&lock->context, &rw_probe->context) &&
-					lock->fnum == rw_probe->fnum)
+		    lock->fnum == rw_probe->fnum) {
 			return False;
+		}
 	}
 
 	return brl_overlap(lock, rw_probe);
