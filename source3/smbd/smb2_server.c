@@ -3115,6 +3115,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 		struct smbd_smb2_send_queue *e = xconn->smb2.send_queue;
 
 		if (e->sendfile_header != NULL) {
+			NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
 			size_t size = 0;
 			size_t i = 0;
 			uint8_t *buf;
@@ -3142,6 +3143,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 
 			e->sendfile_header->data = buf;
 			e->sendfile_header->length = size;
+			e->sendfile_status = &status;
 			e->count = 0;
 
 			xconn->smb2.send_queue_len--;
@@ -3151,6 +3153,10 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 			 * the destructor.
 			 */
 			talloc_free(e->mem_ctx);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			continue;
 		}
 

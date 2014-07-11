@@ -186,6 +186,7 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 	uint64_t in_offset = state->in_offset;
 	files_struct *fsp = state->fsp;
 	const DATA_BLOB *hdr = state->smb2req->queue_entry.sendfile_header;
+	NTSTATUS *pstatus = state->smb2req->queue_entry.sendfile_status;
 	struct smbXsrv_connection *xconn = state->smb2req->xconn;
 	ssize_t nread;
 	ssize_t ret;
@@ -225,8 +226,8 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 					 "Terminating\n",
 					 fsp_str_dbg(fsp), strerror(saved_errno),
 					 smbXsrv_connection_dbg(xconn)));
-				exit_server_cleanly("smb2_sendfile_send_data: "
-					"fake_sendfile failed");
+				*pstatus = map_nt_error_from_unix_common(saved_errno);
+				return 0;
 			}
 			goto out;
 		}
@@ -235,7 +236,8 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 			 "%s (%s) for client %s. Terminating\n",
 			 fsp_str_dbg(fsp), strerror(saved_errno),
 			 smbXsrv_connection_dbg(xconn)));
-		exit_server_cleanly("smb2_sendfile_send_data: sendfile failed");
+		*pstatus = map_nt_error_from_unix_common(saved_errno);
+		return 0;
 	} else if (nread == 0) {
 		/*
 		 * Some sendfile implementations return 0 to indicate
@@ -265,7 +267,8 @@ normal_read:
 			 "%s (%s) for client %s. Terminating\n",
 			 fsp_str_dbg(fsp), strerror(saved_errno),
 			 smbXsrv_connection_dbg(xconn)));
-		exit_server_cleanly("smb2_sendfile_send_data: write_data failed");
+		*pstatus = map_nt_error_from_unix_common(saved_errno);
+		return 0;
 	}
 	nread = fake_sendfile(xconn, fsp, in_offset, in_length);
 	if (nread == -1) {
@@ -275,8 +278,8 @@ normal_read:
 			 "Terminating\n",
 			 fsp_str_dbg(fsp), strerror(saved_errno),
 			 smbXsrv_connection_dbg(xconn)));
-		exit_server_cleanly("smb2_sendfile_send_data: "
-			"fake_sendfile failed");
+		*pstatus = map_nt_error_from_unix_common(saved_errno);
+		return 0;
 	}
 
   out:
@@ -292,8 +295,8 @@ normal_read:
 				 __func__,
 				 fsp_str_dbg(fsp), strerror(saved_errno),
 				 smbXsrv_connection_dbg(xconn)));
-			exit_server_cleanly("smb2_sendfile_send_data: "
-				"sendfile_short_send failed");
+			*pstatus = map_nt_error_from_unix_common(saved_errno);
+			return 0;
 		}
 	}
 
@@ -305,6 +308,8 @@ normal_read:
 				&lock);
 
 	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lock);
+
+	*pstatus = NT_STATUS_OK;
 	return 0;
 }
 
