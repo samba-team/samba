@@ -484,6 +484,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
+	delete_and_reload_printers(server_event_context(), p->msg_ctx);
 	load_usershare_shares(NULL, connections_snum_used);
 	load_registry_shares();
 	num_services = lp_numservices();
