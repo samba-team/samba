@@ -574,6 +574,10 @@ struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 	int num_to_alloc = lp_ctx->iNumServices + 1;
 	struct parmlist_entry *data, *pdata;
 
+	if (lp_ctx->s3_fns != NULL) {
+		smb_panic("Add a service should not be called on an s3 loadparm ctx");
+	}
+
 	if (pservice == NULL) {
 		pservice = lp_ctx->sDefault;
 	}
@@ -2296,6 +2300,11 @@ void lpcfg_killunused(struct loadparm_context *lp_ctx,
 		   bool (*snumused) (struct smbsrv_connection *, int))
 {
 	int i;
+
+	if (lp_ctx->s3_fns != NULL) {
+		smb_panic("Cannot be used from an s3 loadparm ctx");
+	}
+
 	for (i = 0; i < lp_ctx->iNumServices; i++) {
 		if (lp_ctx->services[i] == NULL)
 			continue;
