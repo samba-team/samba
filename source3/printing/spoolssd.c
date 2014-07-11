@@ -132,27 +132,6 @@ static void smb_conf_updated(struct messaging_context *msg,
 	update_conf(ev_ctx, msg);
 }
 
-static void update_pcap(struct tevent_context *ev_ctx,
-			struct messaging_context *msg_ctx)
-{
-	change_to_root_user();
-	delete_and_reload_printers(ev_ctx, msg_ctx);
-}
-
-static void pcap_updated(struct messaging_context *msg,
-			 void *private_data,
-			 uint32_t msg_type,
-			 struct server_id server_id,
-			 DATA_BLOB *data)
-{
-	struct tevent_context *ev_ctx;
-
-	ev_ctx = talloc_get_type_abort(private_data, struct tevent_context);
-
-	DEBUG(10, ("Got message that pcap updated. Reloading.\n"));
-	update_pcap(ev_ctx, msg);
-}
-
 static void spoolss_sig_term_handler(struct tevent_context *ev,
 				     struct tevent_signal *se,
 				     int signum,
@@ -318,8 +297,6 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
-	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
-			   pcap_updated);
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_PARENT_EVENT, parent_ping);
 
@@ -739,15 +716,14 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 	messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
 			   print_queue_forward);
-	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
-			   pcap_updated);
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_CHILD_EVENT, child_ping);
 
-	/* As soon as messaging is up check if pcap has been loaded already.
-	 * If so then we probably missed a message and should load_printers()
-	 * ourselves. If pcap has not been loaded yet, then ignore, we will get
-	 * a message as soon as the bq process completes the reload. */
+	/*
+	 * As soon as messaging is up check if pcap has been loaded already.
+	 * If pcap has not been loaded yet, then ignore, as we will reload on
+	 * client enumeration anyway.
+	 */
 	if (pcap_cache_loaded()) {
 		load_printers(ev_ctx, msg_ctx);
 	}

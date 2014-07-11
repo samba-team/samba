@@ -2091,6 +2091,7 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
+	delete_and_reload_printers(sconn->ev_ctx, sconn->msg_ctx);
 	load_registry_shares();
 	count = load_usershare_shares(NULL, connections_snum_used);
 	unbecome_root();
