@@ -1345,35 +1345,20 @@ bool brl_unlock(struct messaging_context *msg_ctx,
  Returns True if the region required is currently unlocked, False if locked.
 ****************************************************************************/
 
-bool brl_locktest(struct byte_range_lock *br_lck,
-		uint64_t smblctx,
-		struct server_id pid,
-		br_off start,
-		br_off size,
-		enum brl_type lock_type,
-		enum brl_flavour lock_flav)
+bool brl_locktest(const struct byte_range_lock *br_lck,
+		  const struct lock_struct *rw_probe)
 {
 	bool ret = True;
 	unsigned int i;
-	struct lock_struct lock;
 	const struct lock_struct *locks = br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
-
-	lock.context.smblctx = smblctx;
-	lock.context.pid = pid;
-	lock.context.tid = br_lck->fsp->conn->cnum;
-	lock.start = start;
-	lock.size = size;
-	lock.fnum = fsp->fnum;
-	lock.lock_type = lock_type;
-	lock.lock_flav = lock_flav;
 
 	/* Make sure existing locks don't conflict */
 	for (i=0; i < br_lck->num_locks; i++) {
 		/*
 		 * Our own locks don't conflict.
 		 */
-		if (brl_conflict_other(&locks[i], &lock)) {
+		if (brl_conflict_other(&locks[i], rw_probe)) {
 			return False;
 		}
 	}
@@ -1384,7 +1369,16 @@ bool brl_locktest(struct byte_range_lock *br_lck,
 	 * This only conflicts with Windows locks, not POSIX locks.
 	 */
 
-	if(lp_posix_locking(fsp->conn->params) && (lock_flav == WINDOWS_LOCK)) {
+	if(lp_posix_locking(fsp->conn->params) &&
+	   (rw_probe->lock_flav == WINDOWS_LOCK)) {
+		/*
+		 * Make copies -- is_posix_locked might modify the values
+		 */
+
+		br_off start = rw_probe->start;
+		br_off size = rw_probe->size;
+		enum brl_type lock_type = rw_probe->lock_type;
+
 		ret = is_posix_locked(fsp, &start, &size, &lock_type, WINDOWS_LOCK);
 
 		DEBUG(10, ("brl_locktest: posix start=%ju len=%ju %s for %s "

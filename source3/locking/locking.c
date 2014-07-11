@@ -135,13 +135,7 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 	if (!br_lck) {
 		return true;
 	}
-	ret = brl_locktest(br_lck,
-			   plock->context.smblctx,
-			   plock->context.pid,
-			   plock->start,
-			   plock->size,
-			   plock->lock_type,
-			   plock->lock_flav);
+	ret = brl_locktest(br_lck, plock);
 
 	DEBUG(10, ("strict_lock_default: flavour = %s brl start=%ju "
 		   "len=%ju %s for fnum %ju file %s\n",
