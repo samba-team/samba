@@ -364,6 +364,65 @@ static bool check_stream(struct smb2_tree *tree,
 	return true;
 }
 
+/**
+ * Read 'count' bytes at 'offset' from stream 'fname:sname' and
+ * compare against buffer 'value'
+ **/
+static bool write_stream(struct smb2_tree *tree,
+			 const char *location,
+			 struct torture_context *tctx,
+			 TALLOC_CTX *mem_ctx,
+			 const char *fname,
+			 const char *sname,
+			 off_t offset,
+			 size_t size,
+			 const char *value)
+{
+	struct smb2_handle handle;
+	struct smb2_create create;
+	NTSTATUS status;
+	const char *full_name;
+
+	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, sname);
+	if (full_name == NULL) {
+	    torture_comment(tctx, "talloc_asprintf error\n");
+	    return false;
+	}
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_WRITE_DATA;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.fname = full_name;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (value == NULL) {
+			return true;
+		} else {
+			torture_comment(tctx, "Unable to open stream %s\n",
+			    full_name);
+			sleep(10000000);
+			return false;
+		}
+	}
+
+	handle = create.out.file.handle;
+	if (value == NULL) {
+		return true;
+	}
+
+	status = smb2_util_write(tree, handle, value, offset, size);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "(%s) Failed to write %lu bytes to "
+		    "stream '%s'\n", location, (long)size, full_name);
+		return false;
+	}
+
+	smb2_util_close(tree, handle);
+	return true;
+}
+
 static bool torture_setup_local_xattr(struct torture_context *tctx,
 				      const char *path_option,
 				      const char *name,
@@ -514,6 +573,56 @@ done:
 	return ret;
 }
 
+static bool test_write_atalk_rfork_io(struct torture_context *tctx,
+				      struct smb2_tree *tree1,
+				      struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\torture_write_rfork_io";
+	const char *rfork_content = "1234567890";
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+
+	smb2_util_unlink(tree1, fname);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, testdirh);
+
+	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	if (ret == false) {
+		goto done;
+	}
+
+	torture_comment(tctx, "(%s) writing to resource fork\n",
+	    __location__);
+
+	ret &= write_stream(tree1, __location__, tctx, mem_ctx,
+			    fname, AFPRESOURCE_STREAM,
+			    10, 10, rfork_content);
+
+	ret &= check_stream(tree1, __location__, tctx, mem_ctx,
+			    fname, AFPRESOURCE_STREAM,
+			    0, 20, 10, 10, rfork_content);
+
+	torture_comment(tctx, "(%s) writing to resource fork at large offset\n",
+	    __location__);
+
+	ret &= write_stream(tree1, __location__, tctx, mem_ctx,
+			    fname, AFPRESOURCE_STREAM,
+			    (off_t)1<<32, 10, rfork_content);
+
+	ret &= check_stream(tree1, __location__, tctx, mem_ctx,
+			    fname, AFPRESOURCE_STREAM,
+			    (off_t)1<<32, 10, 0, 10, rfork_content);
+
+done:
+	smb2_deltree(tree1, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit
  * streams_xattr".  Note: To run this test, use
@@ -530,6 +639,7 @@ struct torture_suite *torture_vfs_fruit(void)
 
 	torture_suite_add_2ns_smb2_test(suite, "read metadata", test_read_atalk_metadata);
 	torture_suite_add_2ns_smb2_test(suite, "write metadata", test_write_atalk_metadata);
+	torture_suite_add_2ns_smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
 
 	return suite;
 }
