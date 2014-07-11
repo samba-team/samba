@@ -4312,7 +4312,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 					   uint32_t *count_p)
 {
 	int snum;
-	int n_services = lp_numservices();
+	int n_services;
 	union spoolss_PrinterInfo *info = NULL;
 	uint32_t count = 0;
 	WERROR result = WERR_OK;
@@ -4324,6 +4324,15 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
+	/*
+	 * printer shares are only updated on client enumeration. The background
+	 * printer process updates printer_list.tdb at regular intervals.
+	 */
+	become_root();
+	delete_and_reload_printers(server_event_context(), msg_ctx);
+	unbecome_root();
+
+	n_services = lp_numservices();
 	*count_p = 0;
 	*info_p = NULL;
 
