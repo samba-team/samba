@@ -227,18 +227,18 @@ static bool brl_conflict1(const struct lock_struct *lck1,
  This is never used in the POSIX lock case.
 ****************************************************************************/
 
-static bool brl_conflict_other(const struct lock_struct *lck1, const struct lock_struct *lck2)
+static bool brl_conflict_other(const struct lock_struct *lock, const struct lock_struct *lck2)
 {
-	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
+	if (IS_PENDING_LOCK(lock->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
-	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK)
+	if (lock->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK)
 		return False;
 
 	/* POSIX flavour locks never conflict here - this is only called
 	   in the read/write path. */
 
-	if (lck1->lock_flav == POSIX_LOCK && lck2->lock_flav == POSIX_LOCK)
+	if (lock->lock_flav == POSIX_LOCK && lck2->lock_flav == POSIX_LOCK)
 		return False;
 
 	/*
@@ -246,13 +246,13 @@ static bool brl_conflict_other(const struct lock_struct *lck1, const struct lock
 	 * if the context is the same. JRA. See LOCKTEST7 in smbtorture.
 	 */
 
-	if (!(lck2->lock_type == WRITE_LOCK && lck1->lock_type == READ_LOCK)) {
-		if (brl_same_context(&lck1->context, &lck2->context) &&
-					lck1->fnum == lck2->fnum)
+	if (!(lck2->lock_type == WRITE_LOCK && lock->lock_type == READ_LOCK)) {
+		if (brl_same_context(&lock->context, &lck2->context) &&
+					lock->fnum == lck2->fnum)
 			return False;
 	}
 
-	return brl_overlap(lck1, lck2);
+	return brl_overlap(lock, lck2);
 }
 
 /****************************************************************************
