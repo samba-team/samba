@@ -125,8 +125,10 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	 */
 
 	if (u_offset & ~((uint64_t)max_positive_lock_offset)) {
-		DEBUG(10,("posix_lock_in_range: (offset = %.0f) offset > %.0f and we cannot handle this. Ignoring lock.\n",
-				(double)u_offset, (double)((uint64_t)max_positive_lock_offset) ));
+		DEBUG(10, ("posix_lock_in_range: (offset = %ju) offset > %ju "
+			   "and we cannot handle this. Ignoring lock.\n",
+			   (uintmax_t)u_offset,
+			   (uintmax_t)max_positive_lock_offset));
 		return False;
 	}
 
@@ -151,8 +153,10 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	 */
 
 	if (count == 0) {
-		DEBUG(10,("posix_lock_in_range: Count = 0. Ignoring lock u_offset = %.0f, u_count = %.0f\n",
-				(double)u_offset, (double)u_count ));
+		DEBUG(10, ("posix_lock_in_range: Count = 0. Ignoring lock "
+			   "u_offset = %ju, u_count = %ju\n",
+			   (uintmax_t)u_offset,
+			   (uintmax_t)u_count));
 		return False;
 	}
 
@@ -160,8 +164,9 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	 * The mapping was successful.
 	 */
 
-	DEBUG(10,("posix_lock_in_range: offset_out = %.0f, count_out = %.0f\n",
-			(double)offset, (double)count ));
+	DEBUG(10, ("posix_lock_in_range: offset_out = %ju, "
+		   "count_out = %ju\n",
+		   (uintmax_t)offset, (uintmax_t)count));
 
 	*offset_out = offset;
 	*count_out = count;
@@ -193,10 +198,12 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, off_t offset, off_t coun
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
-		DEBUG(0,("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
-					(double)offset,(double)count));
-		DEBUGADD(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUGADD(0,("on 32 bit NFS mounted file systems.\n"));
+		DEBUG(0, ("posix_fcntl_lock: WARNING: lock request at offset "
+			  "%ju, length %ju returned\n",
+			  (uintmax_t)offset, (uintmax_t)count));
+		DEBUGADD(0, ("an %s error. This can happen when using 64 bit "
+			     "lock offsets\n", strerror(errno)));
+		DEBUGADD(0, ("on 32 bit NFS mounted file systems.\n"));
 
 		/*
 		 * If the offset is > 0x7FFFFFFF then this will cause problems on
@@ -240,17 +247,20 @@ static bool posix_fcntl_getlock(files_struct *fsp, off_t *poffset, off_t *pcount
 	pid_t pid;
 	bool ret;
 
-	DEBUG(8,("posix_fcntl_getlock %d %.0f %.0f %d\n",
-		fsp->fh->fd,(double)*poffset,(double)*pcount,*ptype));
+	DEBUG(8, ("posix_fcntl_getlock %d %ju %ju %d\n",
+		  fsp->fh->fd, (uintmax_t)*poffset, (uintmax_t)*pcount,
+		  *ptype));
 
 	ret = SMB_VFS_GETLOCK(fsp, poffset, pcount, ptype, &pid);
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
-		DEBUG(0,("posix_fcntl_getlock: WARNING: lock request at offset %.0f, length %.0f returned\n",
-					(double)*poffset,(double)*pcount));
-		DEBUGADD(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUGADD(0,("on 32 bit NFS mounted file systems.\n"));
+		DEBUG(0, ("posix_fcntl_getlock: WARNING: lock request at "
+			  "offset %ju, length %ju returned\n",
+			  (uintmax_t)*poffset, (uintmax_t)*pcount));
+		DEBUGADD(0, ("an %s error. This can happen when using 64 bit "
+			     "lock offsets\n", strerror(errno)));
+		DEBUGADD(0, ("on 32 bit NFS mounted file systems.\n"));
 
 		/*
 		 * If the offset is > 0x7FFFFFFF then this will cause problems on
@@ -290,9 +300,9 @@ bool is_posix_locked(files_struct *fsp,
 	off_t count;
 	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
 
-	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, "
-		  "type = %s\n", fsp_str_dbg(fsp), (double)*pu_offset,
-		  (double)*pu_count,  posix_lock_type_name(*plock_type)));
+	DEBUG(10, ("is_posix_locked: File %s, offset = %ju, count = %ju, "
+		   "type = %s\n", fsp_str_dbg(fsp), (uintmax_t)*pu_offset,
+		   (uintmax_t)*pu_count,  posix_lock_type_name(*plock_type)));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -687,8 +697,8 @@ static struct lock_list *posix_lock_list(TALLOC_CTX *ctx,
 	 * Quit if the list is deleted.
 	 */
 
-	DEBUG(10,("posix_lock_list: curr: start=%.0f,size=%.0f\n",
-		(double)lhead->start, (double)lhead->size ));
+	DEBUG(10, ("posix_lock_list: curr: start=%ju,size=%ju\n",
+		   (uintmax_t)lhead->start, (uintmax_t)lhead->size ));
 
 	for (i=0; i<num_locks && lhead; i++) {
 		const struct lock_struct *lock = &plocks[i];
@@ -712,9 +722,12 @@ static struct lock_list *posix_lock_list(TALLOC_CTX *ctx,
 
 		for (l_curr = lhead; l_curr;) {
 
-			DEBUG(10,("posix_lock_list: lock: fnum=%llu: start=%.0f,size=%.0f:type=%s",
-				(unsigned long long)lock->fnum,
-				(double)lock->start, (double)lock->size, posix_lock_type_name(lock->lock_type) ));
+			DEBUG(10, ("posix_lock_list: lock: fnum=%ju: "
+				   "start=%ju,size=%ju:type=%s",
+				   (uintmax_t)lock->fnum,
+				   (uintmax_t)lock->start,
+				   (uintmax_t)lock->size,
+				   posix_lock_type_name(lock->lock_type) ));
 
 			if ( (l_curr->start >= (lock->start + lock->size)) ||
 				 (lock->start >= (l_curr->start + l_curr->size))) {
@@ -788,8 +801,10 @@ BECOMES....
 				l_curr->size = (l_curr->start + l_curr->size) - (lock->start + lock->size);
 				l_curr->start = lock->start + lock->size;
 
-				DEBUG(10,(" truncate high case: start=%.0f,size=%.0f\n",
-								(double)l_curr->start, (double)l_curr->size ));
+				DEBUG(10, (" truncate high case: start=%ju,"
+					   "size=%ju\n",
+					   (uintmax_t)l_curr->start,
+					   (uintmax_t)l_curr->size ));
 
 				l_curr = l_curr->next;
 
@@ -816,8 +831,10 @@ BECOMES....
 
 				l_curr->size = lock->start - l_curr->start;
 
-				DEBUG(10,(" truncate low case: start=%.0f,size=%.0f\n",
-								(double)l_curr->start, (double)l_curr->size ));
+				DEBUG(10, (" truncate low case: start=%ju,"
+					   "size=%ju\n",
+					   (uintmax_t)l_curr->start,
+					   (uintmax_t)l_curr->size ));
 
 				l_curr = l_curr->next;
 		
@@ -855,9 +872,13 @@ BECOMES.....
 				/* Truncate the l_curr. */
 				l_curr->size = lock->start - l_curr->start;
 
-				DEBUG(10,(" split case: curr: start=%.0f,size=%.0f \
-new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
-								(double)l_new->start, (double)l_new->size ));
+				DEBUG(10, (" split case: curr: start=%ju,"
+					   "size=%ju new: start=%ju,"
+					   "size=%ju\n",
+					   (uintmax_t)l_curr->start,
+					   (uintmax_t)l_curr->size,
+					   (uintmax_t)l_new->start,
+					   (uintmax_t)l_new->size ));
 
 				/*
 				 * Add into the dlink list after the l_curr point - NOT at lhead. 
@@ -875,8 +896,14 @@ new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
 				 */
 				char *msg = NULL;
 
-				if (asprintf(&msg, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
-lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size ) != -1) {
+				if (asprintf(&msg, "logic flaw in cases: "
+					     "l_curr: start = %ju, "
+					     "size = %ju : lock: "
+					     "start = %ju, size = %ju",
+					     (uintmax_t)l_curr->start,
+					     (uintmax_t)l_curr->size,
+					     (uintmax_t)lock->start,
+					     (uintmax_t)lock->size ) != -1) {
 					smb_panic(msg);
 				} else {
 					smb_panic("posix_lock_list");
@@ -911,10 +938,10 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 	struct lock_list *llist = NULL;
 	struct lock_list *ll = NULL;
 
-	DEBUG(5,("set_posix_lock_windows_flavour: File %s, offset = %.0f, "
-		 "count = %.0f, type = %s\n", fsp_str_dbg(fsp),
-		 (double)u_offset, (double)u_count,
-		 posix_lock_type_name(lock_type)));
+	DEBUG(5, ("set_posix_lock_windows_flavour: File %s, offset = %ju, "
+		  "count = %ju, type = %s\n", fsp_str_dbg(fsp),
+		  (uintmax_t)u_offset, (uintmax_t)u_count,
+		  posix_lock_type_name(lock_type)));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -991,13 +1018,19 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 		offset = ll->start;
 		count = ll->size;
 
-		DEBUG(5,("set_posix_lock_windows_flavour: Real lock: Type = %s: offset = %.0f, count = %.0f\n",
-			posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
+		DEBUG(5, ("set_posix_lock_windows_flavour: Real lock: "
+			  "Type = %s: offset = %ju, count = %ju\n",
+			  posix_lock_type_name(posix_lock_type),
+			  (uintmax_t)offset, (uintmax_t)count ));
 
 		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,posix_lock_type)) {
 			*errno_ret = errno;
-			DEBUG(5,("set_posix_lock_windows_flavour: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
-				posix_lock_type_name(posix_lock_type), (double)offset, (double)count, strerror(errno) ));
+			DEBUG(5, ("set_posix_lock_windows_flavour: Lock "
+				  "fail !: Type = %s: offset = %ju, "
+				  "count = %ju. Errno = %s\n",
+				  posix_lock_type_name(posix_lock_type),
+				  (uintmax_t)offset, (uintmax_t)count,
+				  strerror(errno) ));
 			ret = False;
 			break;
 		}
@@ -1013,8 +1046,11 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 			offset = ll->start;
 			count = ll->size;
 
-			DEBUG(5,("set_posix_lock_windows_flavour: Backing out locks: Type = %s: offset = %.0f, count = %.0f\n",
-				posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
+			DEBUG(5, ("set_posix_lock_windows_flavour: Backing "
+				  "out locks: Type = %s: offset = %ju, "
+				  "count = %ju\n",
+				  posix_lock_type_name(posix_lock_type),
+				  (uintmax_t)offset, (uintmax_t)count ));
 
 			posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK);
 		}
@@ -1047,9 +1083,9 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 	struct lock_list *ulist = NULL;
 	struct lock_list *ul = NULL;
 
-	DEBUG(5,("release_posix_lock_windows_flavour: File %s, offset = %.0f, "
-		 "count = %.0f\n", fsp_str_dbg(fsp),
-		 (double)u_offset, (double)u_count));
+	DEBUG(5, ("release_posix_lock_windows_flavour: File %s, offset = %ju, "
+		  "count = %ju\n", fsp_str_dbg(fsp),
+		  (uintmax_t)u_offset, (uintmax_t)u_count));
 
 	/* Remember the number of Windows locks we have on this dev/ino pair. */
 	decrement_windows_lock_ref_count(fsp);
@@ -1112,8 +1148,9 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 	if (deleted_lock_type == WRITE_LOCK &&
 			(!ulist || ulist->next != NULL || ulist->start != offset || ulist->size != count)) {
 
-		DEBUG(5,("release_posix_lock_windows_flavour: downgrading lock to READ: offset = %.0f, count = %.0f\n",
-			(double)offset, (double)count ));
+		DEBUG(5, ("release_posix_lock_windows_flavour: downgrading "
+			  "lock to READ: offset = %ju, count = %ju\n",
+			  (uintmax_t)offset, (uintmax_t)count ));
 
 		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_RDLCK)) {
 			DEBUG(0,("release_posix_lock_windows_flavour: downgrade of lock failed with error %s !\n", strerror(errno) ));
@@ -1130,8 +1167,9 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		offset = ulist->start;
 		count = ulist->size;
 
-		DEBUG(5,("release_posix_lock_windows_flavour: Real unlock: offset = %.0f, count = %.0f\n",
-			(double)offset, (double)count ));
+		DEBUG(5, ("release_posix_lock_windows_flavour: Real unlock: "
+			  "offset = %ju, count = %ju\n",
+			  (uintmax_t)offset, (uintmax_t)count ));
 
 		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK)) {
 			ret = False;
@@ -1212,9 +1250,9 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 	struct lock_list *ulist = NULL;
 	struct lock_list *ul = NULL;
 
-	DEBUG(5,("release_posix_lock_posix_flavour: File %s, offset = %.0f, "
-		 "count = %.0f\n", fsp_str_dbg(fsp),
-		 (double)u_offset, (double)u_count));
+	DEBUG(5, ("release_posix_lock_posix_flavour: File %s, offset = %ju, "
+		  "count = %ju\n", fsp_str_dbg(fsp),
+		  (uintmax_t)u_offset, (uintmax_t)u_count));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -1267,8 +1305,9 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 		offset = ulist->start;
 		count = ulist->size;
 
-		DEBUG(5,("release_posix_lock_posix_flavour: Real unlock: offset = %.0f, count = %.0f\n",
-			(double)offset, (double)count ));
+		DEBUG(5, ("release_posix_lock_posix_flavour: Real unlock: "
+			  "offset = %ju, count = %ju\n",
+			  (uintmax_t)offset, (uintmax_t)count ));
 
 		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK)) {
 			ret = False;

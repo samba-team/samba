@@ -153,12 +153,12 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 				plock->lock_flav);
 	}
 
-	DEBUG(10,("strict_lock_default: flavour = %s brl start=%.0f "
-			"len=%.0f %s for fnum %llu file %s\n",
-			lock_flav_name(plock->lock_flav),
-			(double)plock->start, (double)plock->size,
-			ret ? "unlocked" : "locked",
-			(unsigned long long)plock->fnum, fsp_str_dbg(fsp)));
+	DEBUG(10, ("strict_lock_default: flavour = %s brl start=%ju "
+		   "len=%ju %s for fnum %ju file %s\n",
+		   lock_flav_name(plock->lock_flav),
+		   (uintmax_t)plock->start, (uintmax_t)plock->size,
+		   ret ? "unlocked" : "locked",
+		   (uintmax_t)plock->fnum, fsp_str_dbg(fsp)));
 
 	return ret;
 }
@@ -316,9 +316,9 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for %s file %s\n",
-		  (double)offset, (double)count, fsp_fnum_dbg(fsp),
-		  fsp_str_dbg(fsp)));
+	DEBUG(10, ("do_unlock: unlock start=%ju len=%ju requested for %s file "
+		   "%s\n", (uintmax_t)offset, (uintmax_t)count,
+		   fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
@@ -366,9 +366,9 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
-	DEBUG(10,("do_lock_cancel: cancel start=%.0f len=%.0f requested for %s file %s\n",
-		  (double)offset, (double)count, fsp_fnum_dbg(fsp),
-		  fsp_str_dbg(fsp)));
+	DEBUG(10, ("do_lock_cancel: cancel start=%ju len=%ju requested for "
+		   "%s file %s\n", (uintmax_t)offset, (uintmax_t)count,
+		   fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {

@@ -64,12 +64,12 @@ static void print_lock_struct(unsigned int i, const struct lock_struct *pls)
 			(unsigned int)pls->context.tid,
 			server_id_str(talloc_tos(), &pls->context.pid) ));
 
-	DEBUG(10,("start = %.0f, size = %.0f, fnum = %llu, %s %s\n",
-		(double)pls->start,
-		(double)pls->size,
-		(unsigned long long)pls->fnum,
-		lock_type_name(pls->lock_type),
-		lock_flav_name(pls->lock_flav) ));
+	DEBUG(10, ("start = %ju, size = %ju, fnum = %ju, %s %s\n",
+		   (uintmax_t)pls->start,
+		   (uintmax_t)pls->size,
+		   (uintmax_t)pls->fnum,
+		   lock_type_name(pls->lock_type),
+		   lock_flav_name(pls->lock_flav)));
 }
 
 unsigned int brl_num_locks(const struct byte_range_lock *brl)
@@ -1357,9 +1357,10 @@ bool brl_locktest(struct byte_range_lock *br_lck,
 	if(lp_posix_locking(fsp->conn->params) && (lock_flav == WINDOWS_LOCK)) {
 		ret = is_posix_locked(fsp, &start, &size, &lock_type, WINDOWS_LOCK);
 
-		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for %s file %s\n",
-			(double)start, (double)size, ret ? "locked" : "unlocked",
-			fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
+		DEBUG(10, ("brl_locktest: posix start=%ju len=%ju %s for %s "
+			   "file %s\n", (uintmax_t)start, (uintmax_t)size,
+			   ret ? "locked" : "unlocked",
+			   fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
 
 		/* We need to return the inverse of is_posix_locked. */
 		ret = !ret;
@@ -1423,9 +1424,10 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 	if(lp_posix_locking(fsp->conn->params)) {
 		bool ret = is_posix_locked(fsp, pstart, psize, plock_type, POSIX_LOCK);
 
-		DEBUG(10,("brl_lockquery: posix start=%.0f len=%.0f %s for %s file %s\n",
-			(double)*pstart, (double)*psize, ret ? "locked" : "unlocked",
-			fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
+		DEBUG(10, ("brl_lockquery: posix start=%ju len=%ju %s for %s "
+			   "file %s\n", (uintmax_t)*pstart,
+			   (uintmax_t)*psize, ret ? "locked" : "unlocked",
+			   fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
 
 		if (ret) {
 			/* Hmmm. No clue what to set smblctx to - use -1. */
