@@ -964,19 +964,16 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	}
 #endif
 
-#ifdef DEVELOPER
-	/* Quieten valgrind on test. */
-	ZERO_STRUCT(lock);
-#endif
-
-	lock.context.smblctx = smblctx;
-	lock.context.pid = pid;
-	lock.context.tid = br_lck->fsp->conn->cnum;
-	lock.start = start;
-	lock.size = size;
-	lock.fnum = br_lck->fsp->fnum;
-	lock.lock_type = lock_type;
-	lock.lock_flav = lock_flav;
+	lock = (struct lock_struct) {
+		.context.smblctx = smblctx,
+		.context.pid = pid,
+		.context.tid = br_lck->fsp->conn->cnum,
+		.start = start,
+		.size = size,
+		.fnum = br_lck->fsp->fnum,
+		.lock_type = lock_type,
+		.lock_flav = lock_flav
+	};
 
 	if (lock_flav == WINDOWS_LOCK) {
 		ret = SMB_VFS_BRL_LOCK_WINDOWS(br_lck->fsp->conn, br_lck,
