@@ -239,28 +239,53 @@ static bool brl_conflict_other(const struct lock_struct *lock,
 		return False;
 	}
 
-	/* POSIX flavour locks never conflict here - this is only called
-	   in the read/write path. */
-
 	if (lock->lock_flav == POSIX_LOCK &&
 	    rw_probe->lock_flav == POSIX_LOCK) {
+		/*
+		 * POSIX flavour locks never conflict here - this is only called
+		 * in the read/write path.
+		 */
 		return False;
 	}
 
-	/*
-	 * Incoming WRITE locks conflict with existing READ locks even
-	 * if the context is the same. JRA. See LOCKTEST7 in smbtorture.
-	 */
-
-	if (!(rw_probe->lock_type == WRITE_LOCK &&
-	      lock->lock_type == READ_LOCK)) {
-		if (brl_same_context(&lock->context, &rw_probe->context) &&
-		    lock->fnum == rw_probe->fnum) {
-			return False;
-		}
+	if (!brl_overlap(lock, rw_probe)) {
+		/*
+		 * I/O can only conflict when overlapping a lock, thus let it
+		 * pass
+		 */
+		return false;
 	}
 
-	return brl_overlap(lock, rw_probe);
+	if (!brl_same_context(&lock->context, &rw_probe->context)) {
+		/*
+		 * Different process, conflict
+		 */
+		return true;
+	}
+
+	if (lock->fnum != rw_probe->fnum) {
+		/*
+		 * Different file handle, conflict
+		 */
+		return true;
+	}
+
+	if ((lock->lock_type == READ_LOCK) &&
+	    (rw_probe->lock_type == WRITE_LOCK)) {
+		/*
+		 * Incoming WRITE locks conflict with existing READ locks even
+		 * if the context is the same. JRA. See LOCKTEST7 in
+		 * smbtorture.
+		 */
+		return true;
+	}
+
+	/*
+	 * I/O request compatible with existing lock, let it pass without
+	 * conflict
+	 */
+
+	return false;
 }
 
 /****************************************************************************
