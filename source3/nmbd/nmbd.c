@@ -798,7 +798,8 @@ static bool open_sockets(bool isdaemon, int port)
 	{"hosts", 'H', POPT_ARG_STRING, &p_lmhosts, 0, "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, 0, "Listen on the specified port" },
 	POPT_COMMON_SAMBA
-	{ NULL }
+	POPT_COMMON_DYNCONFIG
+	POPT_TABLEEND
 	};
 	TALLOC_CTX *frame;
 	NTSTATUS status;
