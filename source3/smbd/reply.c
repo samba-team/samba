@@ -7906,7 +7906,7 @@ void reply_lockingX(struct smb_request *req)
 	/* Check if this is an oplock break on a file
 	   we have granted an oplock on.
 	*/
-	if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE)) {
+	if (locktype & LOCKING_ANDX_OPLOCK_RELEASE) {
 		/* Client can insist on breaking to none. */
 		bool break_to_none = (oplocklevel == 0);
 		bool result;
