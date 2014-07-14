@@ -7965,10 +7965,11 @@ void reply_lockingX(struct smb_request *req)
 		if (num_locks == 0 && num_ulocks == 0) {
 			/* Sanity check - ensure a pure oplock break is not a
 			   chained request. */
-			if(CVAL(req->vwv+0, 0) != 0xff)
+			if (CVAL(req->vwv+0, 0) != 0xff) {
 				DEBUG(0,("reply_lockingX: Error : pure oplock "
 					 "break is a chained %d request !\n",
 					 (unsigned int)CVAL(req->vwv+0, 0)));
+			}
 			END_PROFILE(SMBlockingX);
 			return;
 		}
