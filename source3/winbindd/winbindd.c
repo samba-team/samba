@@ -1364,6 +1364,7 @@ int main(int argc, char **argv, char **envp)
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "no-caching", 'n', POPT_ARG_NONE, NULL, 'n', "Disable caching" },
 		POPT_COMMON_SAMBA
+		POPT_COMMON_DYNCONFIG
 		POPT_TABLEEND
 	};
 	poptContext pc;
