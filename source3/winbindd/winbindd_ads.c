@@ -329,7 +329,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		info->acct_name = ads_pull_username(ads, mem_ctx, msg);
-		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+		info->full_name = ads_pull_string(ads, mem_ctx, msg, "displayName");
+		if (info->full_name == NULL) {
+			info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+		}
 		info->homedir = NULL;
 		info->shell = NULL;
 		info->primary_gid = (gid_t)-1;
@@ -594,7 +597,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	struct netr_SamInfo3 *user = NULL;
 	gid_t gid = -1;
 	int ret;
-	char *ads_name;
+	char *full_name;
 
 	DEBUG(3,("ads: query_user\n"));
 
@@ -706,7 +709,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	 * nss_get_info_cached call. nss_get_info_cached might destroy
 	 * the ads struct, potentially invalidating the ldap message.
 	 */
-	ads_name = ads_pull_string(ads, mem_ctx, msg, "name");
+	full_name = ads_pull_string(ads, mem_ctx, msg, "displayName");
+	if (full_name == NULL) {
+		full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+	}
 
 	ads_msgfree(ads, msg);
 	msg = NULL;
@@ -722,9 +728,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	}
 
 	if (info->full_name == NULL) {
-		info->full_name = ads_name;
+		info->full_name = full_name;
 	} else {
-		TALLOC_FREE(ads_name);
+		TALLOC_FREE(full_name);
 	}
 
 	status = NT_STATUS_OK;
