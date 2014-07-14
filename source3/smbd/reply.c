@@ -7885,7 +7885,7 @@ void reply_lockingX(struct smb_request *req)
 	num_ulocks = SVAL(req->vwv+6, 0);
 	num_locks = SVAL(req->vwv+7, 0);
 	lock_timeout = IVAL(req->vwv+4, 0);
-	large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
+	large_file_format = ((locktype & LOCKING_ANDX_LARGE_FILES) != 0);
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBlockingX);
