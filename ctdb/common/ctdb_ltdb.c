@@ -83,7 +83,6 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 
 	rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
 	if (rec.dsize < sizeof(*header)) {
-		TDB_DATA d2;
 		/* return an initial header */
 		if (rec.dptr) free(rec.dptr);
 		if (ctdb->vnn_map == NULL) {
@@ -93,12 +92,11 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 			return -1;
 		}
 		ltdb_initial_header(ctdb_db, key, header);
-		ZERO_STRUCT(d2);
 		if (data) {
-			*data = d2;
+			*data = tdb_null;
 		}
 		if (ctdb_db->persistent || header->dmaster == ctdb_db->ctdb->pnn) {
-			if (ctdb_ltdb_store(ctdb_db, key, header, d2) != 0) {
+			if (ctdb_ltdb_store(ctdb_db, key, header, tdb_null) != 0) {
 				DEBUG(DEBUG_NOTICE,
 				      (__location__ "failed to store initial header\n"));
 			}
