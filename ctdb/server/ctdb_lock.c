@@ -657,59 +657,6 @@ static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ct
 
 
 /*
- * Find the lock context of a given type
- */
-static struct lock_context *find_lock_context(struct lock_context *lock_list,
-					      struct ctdb_db_context *ctdb_db,
-					      TDB_DATA key,
-					      uint32_t priority,
-					      enum lock_type type,
-					      uint32_t key_hash)
-{
-	struct lock_context *lock_ctx;
-
-	/* Search active locks */
-	for (lock_ctx=lock_list; lock_ctx; lock_ctx=lock_ctx->next) {
-		if (lock_ctx->type != type) {
-			continue;
-		}
-
-		switch (lock_ctx->type) {
-		case LOCK_RECORD:
-			if (ctdb_db == lock_ctx->ctdb_db &&
-			    key_hash == lock_ctx->key_hash) {
-				goto done;
-			}
-			break;
-
-		case LOCK_DB:
-			if (ctdb_db == lock_ctx->ctdb_db) {
-				goto done;
-			}
-			break;
-
-		case LOCK_ALLDB_PRIO:
-			if (priority == lock_ctx->priority) {
-				goto done;
-			}
-			break;
-
-		case LOCK_ALLDB:
-			goto done;
-			break;
-		}
-	}
-
-	/* Did not find the lock context we are searching for */
-	lock_ctx = NULL;
-
-done:
-	return lock_ctx;
-
-}
-
-
-/*
  * Schedule a new lock child process
  * Set up callback handler and timeout handler
  */
