@@ -7595,11 +7595,9 @@ uint64_t get_lock_count(const uint8_t *data, int data_offset,
 ****************************************************************************/
 
 uint64_t get_lock_offset(const uint8_t *data, int data_offset,
-			 bool large_file_format, bool *err)
+			 bool large_file_format)
 {
 	uint64_t offset = 0;
-
-	*err = False;
 
 	if(!large_file_format) {
 		offset = (uint64_t)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
@@ -7868,7 +7866,6 @@ void reply_lockingX(struct smb_request *req)
 	int i;
 	const uint8_t *data;
 	bool large_file_format;
-	bool err;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct smbd_lock_element *ulocks;
 	struct smbd_lock_element *locks;
@@ -8003,17 +8000,8 @@ void reply_lockingX(struct smb_request *req)
 	for(i = 0; i < (int)num_ulocks; i++) {
 		ulocks[i].smblctx = get_lock_pid(data, i, large_file_format);
 		ulocks[i].count = get_lock_count(data, i, large_file_format);
-		ulocks[i].offset = get_lock_offset(data, i, large_file_format, &err);
+		ulocks[i].offset = get_lock_offset(data, i, large_file_format);
 		ulocks[i].brltype = UNLOCK_LOCK;
-
-		/*
-		 * There is no error code marked "stupid client bug".... :-).
-		 */
-		if(err) {
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			END_PROFILE(SMBlockingX);
-			return;
-		}
 	}
 
 	/* Now do any requested locks */
@@ -8025,7 +8013,7 @@ void reply_lockingX(struct smb_request *req)
 	for(i = 0; i < (int)num_locks; i++) {
 		locks[i].smblctx = get_lock_pid(data, i, large_file_format);
 		locks[i].count = get_lock_count(data, i, large_file_format);
-		locks[i].offset = get_lock_offset(data, i, large_file_format, &err);
+		locks[i].offset = get_lock_offset(data, i, large_file_format);
 
 		if (locktype & LOCKING_ANDX_SHARED_LOCK) {
 			if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
@@ -8039,15 +8027,6 @@ void reply_lockingX(struct smb_request *req)
 			} else {
 				locks[i].brltype = WRITE_LOCK;
 			}
-		}
-
-		/*
-		 * There is no error code marked "stupid client bug".... :-).
-		 */
-		if(err) {
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			END_PROFILE(SMBlockingX);
-			return;
 		}
 	}
 

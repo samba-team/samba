@@ -914,7 +914,7 @@ uint64_t get_lock_pid(const uint8_t *data, int data_offset,
 uint64_t get_lock_count(const uint8_t *data, int data_offset,
 			bool large_file_format);
 uint64_t get_lock_offset(const uint8_t *data, int data_offset,
-			 bool large_file_format, bool *err);
+			 bool large_file_format);
 void reply_lockingX(struct smb_request *req);
 void reply_readbmpx(struct smb_request *req);
 void reply_readbs(struct smb_request *req);

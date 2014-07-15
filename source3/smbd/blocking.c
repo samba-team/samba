@@ -357,11 +357,10 @@ static void undo_locks_obtained(struct blocking_lock_record *blr)
 	 */
 
 	for(i = blr->lock_num - 1; i >= 0; i--) {
-		bool err;
 
 		smblctx = get_lock_pid( data, i, large_file_format);
 		count = get_lock_count( data, i, large_file_format);
-		offset = get_lock_offset( data, i, large_file_format, &err);
+		offset = get_lock_offset( data, i, large_file_format);
 
 		/*
 		 * We know err cannot be set as if it was the lock
@@ -469,7 +468,6 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 
 	for(; blr->lock_num < num_locks; blr->lock_num++) {
 		struct byte_range_lock *br_lck = NULL;
-		bool err;
 
 		/*
 		 * Ensure the blr record gets updated with
@@ -478,7 +476,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 
 		blr->smblctx = get_lock_pid( data, blr->lock_num, large_file_format);
 		blr->count = get_lock_count( data, blr->lock_num, large_file_format);
-		blr->offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
+		blr->offset = get_lock_offset( data, blr->lock_num, large_file_format);
 
 		/*
 		 * We know err cannot be set as if it was the lock
