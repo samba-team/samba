@@ -83,7 +83,7 @@ static const struct {
 	{ "NoIPHostOnAllDisabled",    0,  offsetof(struct ctdb_tunable, no_ip_host_on_all_disabled), false },
 	{ "Samba3AvoidDeadlocks", 0, offsetof(struct ctdb_tunable, samba3_hack), false },
 	{ "TDBMutexEnabled", 0, offsetof(struct ctdb_tunable, mutex_enabled), false },
-	{ "LockProcessesPerDB", 100, offsetof(struct ctdb_tunable, lock_processes_per_db), false },
+	{ "LockProcessesPerDB", 200, offsetof(struct ctdb_tunable, lock_processes_per_db), false },
 };
 
 /*
