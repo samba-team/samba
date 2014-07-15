@@ -308,7 +308,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			 * this is an invalid UNLOCK element
 			 * and the backend needs to test for
 			 * brltype != UNLOCK_LOCK and return
-			 * NT_STATUS_INVALID_PARAMER
+			 * NT_STATUS_INVALID_PARAMETER
 			 */
 			locks[i].brltype = READ_LOCK;
 		} else {
