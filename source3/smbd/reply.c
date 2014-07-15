@@ -7580,6 +7580,9 @@ uint64_t get_lock_count(const uint8_t *data, int data_offset,
 	if(!large_file_format) {
 		count = (uint64_t)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
 	} else {
+		/*
+		 * No BVAL, this is reversed!
+		 */
 		count = (((uint64_t) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
 			((uint64_t) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
 	}
@@ -7601,6 +7604,9 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 	if(!large_file_format) {
 		offset = (uint64_t)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
 	} else {
+		/*
+		 * No BVAL, this is reversed!
+		 */
 		offset = (((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
 				((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
 	}
