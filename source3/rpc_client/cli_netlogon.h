@@ -45,12 +45,14 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 				     const struct samr_Password *previous_nt_hash);
 NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds,
 					struct dcerpc_binding_handle *binding_handle,
+					TALLOC_CTX *mem_ctx,
 					uint32_t logon_parameters,
 					const char *domain,
 					const char *username,
 					const char *password,
 					const char *workstation,
-					enum netr_LogonInfoClass logon_type);
+					enum netr_LogonInfoClass logon_type,
+					struct netr_SamInfo3 **info3);
 NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 				       struct dcerpc_binding_handle *binding_handle,
 				       TALLOC_CTX *mem_ctx,

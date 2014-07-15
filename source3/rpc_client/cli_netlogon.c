@@ -193,16 +193,65 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
+					uint16_t validation_level,
+					union netr_Validation *validation,
+					struct netr_SamInfo3 **info3_p)
+{
+	struct netr_SamInfo3 *info3;
+	NTSTATUS status;
+
+	if (validation == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (validation_level) {
+	case 3:
+		if (validation->sam3 == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		info3 = talloc_move(mem_ctx, &validation->sam3);
+		break;
+	case 6:
+		if (validation->sam6 == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
+		if (info3 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = copy_netr_SamBaseInfo(info3, &validation->sam6->base, &info3->base);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(info3);
+			return status;
+		}
+
+		info3->sidcount = validation->sam6->sidcount;
+		info3->sids = talloc_move(info3, &validation->sam6->sids);
+		break;
+	default:
+		return NT_STATUS_BAD_VALIDATION_CLASS;
+	}
+
+	*info3_p = info3;
+
+	return NT_STATUS_OK;
+}
+
 /* Logon domain user */
 
 NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds,
 					struct dcerpc_binding_handle *binding_handle,
+					TALLOC_CTX *mem_ctx,
 					uint32_t logon_parameters,
 					const char *domain,
 					const char *username,
 					const char *password,
 					const char *workstation,
-					enum netr_LogonInfoClass logon_type)
+					enum netr_LogonInfoClass logon_type,
+					struct netr_SamInfo3 **info3)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -320,57 +369,19 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 						  &validation,
 						  &authoritative,
 						  &flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = map_validation_to_info3(mem_ctx,
+					 validation_level, validation,
+					 info3);
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
-					uint16_t validation_level,
-					union netr_Validation *validation,
-					struct netr_SamInfo3 **info3_p)
-{
-	struct netr_SamInfo3 *info3;
-	NTSTATUS status;
-
-	if (validation == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	switch (validation_level) {
-	case 3:
-		if (validation->sam3 == NULL) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		info3 = talloc_move(mem_ctx, &validation->sam3);
-		break;
-	case 6:
-		if (validation->sam6 == NULL) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
-		if (info3 == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		status = copy_netr_SamBaseInfo(info3, &validation->sam6->base, &info3->base);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(info3);
-			return status;
-		}
-
-		info3->sidcount = validation->sam6->sidcount;
-		info3->sids = talloc_move(info3, &validation->sam6->sids);
-		break;
-	default:
-		return NT_STATUS_BAD_VALIDATION_CLASS;
-	}
-
-	*info3_p = info3;
 
 	return NT_STATUS_OK;
 }

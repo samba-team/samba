@@ -778,6 +778,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	const char *username, *password;
 	uint32 logon_param = 0;
 	const char *workstation = NULL;
+	struct netr_SamInfo3 *info3 = NULL;
 
 	/* Check arguments */
 
@@ -803,12 +804,14 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 	result = rpccli_netlogon_password_logon(rpcclient_netlogon_creds,
 						cli->binding_handle,
+						mem_ctx,
 						logon_param,
 						lp_workgroup(),
 						username,
 						password,
 						workstation,
-						logon_type);
+						logon_type,
+						&info3);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
