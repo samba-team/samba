@@ -1292,11 +1292,13 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    uint32_t logon_parameters,
 					    const char *server,
 					    const char *username,
+					    const char *password,
 					    const char *domainname,
 					    const char *workstation,
 					    const uint8_t chal[8],
 					    DATA_BLOB lm_response,
 					    DATA_BLOB nt_response,
+					    bool interactive,
 					    struct netr_SamInfo3 **info3)
 {
 	int attempts = 0;
@@ -1356,19 +1358,32 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		}
 		netr_attempts = 0;
 
-		result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds,
-						netlogon_pipe->binding_handle,
-						mem_ctx,
-						logon_parameters,
-						username,
-						domainname,
-						workstation,
-						chal,
-						lm_response,
-						nt_response,
-						&authoritative,
-						&flags,
-						info3);
+		if (interactive && username != NULL && password != NULL) {
+			result = rpccli_netlogon_password_logon(domain->conn.netlogon_creds,
+								netlogon_pipe->binding_handle,
+								mem_ctx,
+								logon_parameters,
+								domainname,
+								username,
+								password,
+								workstation,
+								NetlogonInteractiveInformation,
+								info3);
+		} else {
+			result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds,
+							netlogon_pipe->binding_handle,
+							mem_ctx,
+							logon_parameters,
+							username,
+							domainname,
+							workstation,
+							chal,
+							lm_response,
+							nt_response,
+							&authoritative,
+							&flags,
+							info3);
+		}
 
 		/*
 		 * we increment this after the "feature negotiation"
@@ -1517,11 +1532,13 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 					     0,
 					     domain->dcname,
 					     name_user,
+					     pass,
 					     name_domain,
 					     lp_netbios_name(),
 					     chal,
 					     lm_resp,
 					     nt_resp,
+					     true, /* interactive */
 					     &my_info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1908,12 +1925,14 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     logon_parameters,
 					     domain->dcname,
 					     name_user,
+					     NULL, /* password */
 					     name_domain,
 					     /* Bug #3248 - found by Stefan Burkei. */
 					     workstation, /* We carefully set this above so use it... */
 					     chal,
 					     lm_response,
 					     nt_response,
+					     false, /* interactive */
 					     info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
