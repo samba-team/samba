@@ -146,9 +146,7 @@ static struct name_record *wins_record_to_name_record(TDB_DATA key, TDB_DATA dat
 	namerec->data.death_time = (time_t)death_time;
 	namerec->data.refresh_time = (time_t)refresh_time;
 	namerec->data.id = id_low;
-#if defined(HAVE_LONGLONG)
 	namerec->data.id |= ((uint64_t)id_high << 32);
-#endif
 	namerec->data.wins_ip.s_addr = saddr;
 	namerec->data.wins_flags = wins_flags,
 	namerec->data.num_ips = num_ips;
@@ -170,11 +168,7 @@ static TDB_DATA name_record_to_wins_record(const struct name_record *namerec)
 	size_t len = 0;
 	int i;
 	uint32 id_low = (namerec->data.id & 0xFFFFFFFF);
-#if defined(HAVE_LONGLONG)
 	uint32 id_high = (namerec->data.id >> 32) & 0xFFFFFFFF;
-#else
-	uint32 id_high = 0;
-#endif
 
 	ZERO_STRUCT(data);
 

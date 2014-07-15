@@ -109,9 +109,6 @@ def configure(conf):
     conf.CHECK_DECLS('fdatasync', reverse=True)
     conf.CHECK_DECLS('readahead', reverse=True, headers='fcntl.h')
 
-    if conf.CONFIG_SET('HAVE_LONG_LONG'):
-        conf.DEFINE('HAVE_LONGLONG', 1)
-
     if conf.CHECK_CODE('''
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>

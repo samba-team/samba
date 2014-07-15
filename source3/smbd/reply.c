@@ -7580,66 +7580,12 @@ uint64_t get_lock_count(const uint8_t *data, int data_offset,
 	if(!large_file_format) {
 		count = (uint64_t)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
 	} else {
-
-#if defined(HAVE_LONGLONG)
 		count = (((uint64_t) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
 			((uint64_t) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
-#else /* HAVE_LONGLONG */
-
-		/*
-		 * NT4.x seems to be broken in that it sends large file (64 bit)
-		 * lockingX calls even if the CAP_LARGE_FILES was *not*
-		 * negotiated. For boxes without large unsigned ints truncate the
-		 * lock count by dropping the top 32 bits.
-		 */
-
-		if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0) {
-			DEBUG(3,("get_lock_count: truncating lock count (high)0x%x (low)0x%x to just low count.\n",
-				(unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)),
-				(unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) ));
-				SIVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset),0);
-		}
-
-		count = (uint64_t)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
-#endif /* HAVE_LONGLONG */
 	}
 
 	return count;
 }
-
-#if !defined(HAVE_LONGLONG)
-/****************************************************************************
- Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
-****************************************************************************/
-
-static uint32 map_lock_offset(uint32 high, uint32 low)
-{
-	unsigned int i;
-	uint32 mask = 0;
-	uint32 highcopy = high;
-
-	/*
-	 * Try and find out how many significant bits there are in high.
-	 */
-
-	for(i = 0; highcopy; i++)
-		highcopy >>= 1;
-
-	/*
-	 * We use 31 bits not 32 here as POSIX
-	 * lock offsets may not be negative.
-	 */
-
-	mask = (~0) << (31 - i);
-
-	if(low & mask)
-		return 0; /* Fail. */
-
-	high <<= (31 - i);
-
-	return (high|low);
-}
-#endif /* !defined(HAVE_LONGLONG) */
 
 /****************************************************************************
  Get a lock offset, dealing with large offset requests.
@@ -7655,37 +7601,8 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 	if(!large_file_format) {
 		offset = (uint64_t)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
 	} else {
-
-#if defined(HAVE_LONGLONG)
 		offset = (((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
 				((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
-#else /* HAVE_LONGLONG */
-
-		/*
-		 * NT4.x seems to be broken in that it sends large file (64 bit)
-		 * lockingX calls even if the CAP_LARGE_FILES was *not*
-		 * negotiated. For boxes without large unsigned ints mangle the
-		 * lock offset by mapping the top 32 bits onto the lower 32.
-		 */
-
-		if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0) {
-			uint32 low = IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
-			uint32 high = IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset));
-			uint32 new_low = 0;
-
-			if((new_low = map_lock_offset(high, low)) == 0) {
-				*err = True;
-				return (uint64_t)-1;
-			}
-
-			DEBUG(3,("get_lock_offset: truncating lock offset (high)0x%x (low)0x%x to offset 0x%x.\n",
-				(unsigned int)high, (unsigned int)low, (unsigned int)new_low ));
-			SIVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset),0);
-			SIVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset),new_low);
-		}
-
-		offset = (uint64_t)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
-#endif /* HAVE_LONGLONG */
 	}
 
 	return offset;

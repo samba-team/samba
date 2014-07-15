@@ -5166,13 +5166,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			}
 
 			smblctx = (uint64_t)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
-#if defined(HAVE_LONGLONG)
 			offset = BVAL(pdata,POSIX_LOCK_START_OFFSET);
 			count = BVAL(pdata,POSIX_LOCK_LEN_OFFSET);
-#else /* HAVE_LONGLONG */
-			offset = (uint64_t)IVAL(pdata,POSIX_LOCK_START_OFFSET);
-			count = (uint64_t)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
-#endif /* HAVE_LONGLONG */
 
 			status = query_lock(fsp,
 					&smblctx,
@@ -5188,13 +5183,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET, lock_type);
 				SSVAL(pdata, POSIX_LOCK_FLAGS_OFFSET, 0);
 				SIVAL(pdata, POSIX_LOCK_PID_OFFSET, (uint32_t)smblctx);
-#if defined(HAVE_LONGLONG)
 				SBVAL(pdata, POSIX_LOCK_START_OFFSET, offset);
 				SBVAL(pdata, POSIX_LOCK_LEN_OFFSET, count);
-#else /* HAVE_LONGLONG */
-				SIVAL(pdata, POSIX_LOCK_START_OFFSET, offset);
-				SIVAL(pdata, POSIX_LOCK_LEN_OFFSET, count);
-#endif /* HAVE_LONGLONG */
 
 			} else if (NT_STATUS_IS_OK(status)) {
 				/* For success we just return a copy of what we sent
@@ -6657,15 +6647,10 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	}
 
 	smblctx = (uint64_t)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
-#if defined(HAVE_LONGLONG)
 	offset = (((uint64_t) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
 			((uint64_t) IVAL(pdata,POSIX_LOCK_START_OFFSET));
 	count = (((uint64_t) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
 			((uint64_t) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
-#else /* HAVE_LONGLONG */
-	offset = (uint64_t)IVAL(pdata,POSIX_LOCK_START_OFFSET);
-	count = (uint64_t)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
-#endif /* HAVE_LONGLONG */
 
 	DEBUG(10,("smb_set_posix_lock: file %s, lock_type = %u,"
 			"smblctx = %llu, count = %.0f, offset = %.0f\n",
