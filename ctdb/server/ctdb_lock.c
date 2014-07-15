@@ -444,10 +444,8 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	}
 
 	/* Update statistics */
-	CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
 	CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_calls);
 	if (lock_ctx->ctdb_db) {
-		CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
 		CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_calls);
 	}
 
@@ -798,9 +796,11 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	/* Move the context from pending to current */
 	DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
 	DLIST_ADD_END(ctdb->lock_current, lock_ctx, NULL);
+	CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
 	CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
 	if (lock_ctx->ctdb_db) {
 		lock_ctx->ctdb_db->lock_num_current++;
+		CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
 		CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
 	}
 }
