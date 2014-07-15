@@ -858,7 +858,14 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	lock_ctx->request = request;
 	lock_ctx->child = -1;
 
-	DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
+	/* Non-record locks are required by recovery and should be scheduled
+	 * immediately, so keep them at the head of the pending queue.
+	 */
+	if (lock_ctx->type == LOCK_RECORD) {
+		DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
+	} else {
+		DLIST_ADD(ctdb->lock_pending, lock_ctx);
+	}
 	CTDB_INCREMENT_STAT(ctdb, locks.num_pending);
 	if (ctdb_db) {
 		CTDB_INCREMENT_DB_STAT(ctdb_db, locks.num_pending);
