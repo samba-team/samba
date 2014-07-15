@@ -798,9 +798,9 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	/* Move the context from pending to current */
 	DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
 	DLIST_ADD_END(ctdb->lock_current, lock_ctx, NULL);
+	CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
 	if (lock_ctx->ctdb_db) {
 		lock_ctx->ctdb_db->lock_num_current++;
-		CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
 		CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
 	}
 }
