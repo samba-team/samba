@@ -279,13 +279,13 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 			lock_ctx->ctdb_db->lock_num_current--;
 		}
 		CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_current);
-		if (lock_ctx->type == LOCK_RECORD || lock_ctx->type == LOCK_DB) {
+		if (lock_ctx->ctdb_db) {
 			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
 		}
 	} else {
 		DLIST_REMOVE(lock_ctx->ctdb->lock_pending, lock_ctx);
 		CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
-		if (lock_ctx->type == LOCK_RECORD || lock_ctx->type == LOCK_DB) {
+		if (lock_ctx->ctdb_db) {
 			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
 		}
 	}
@@ -491,7 +491,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
 
-	if (lock_ctx->type == LOCK_RECORD || lock_ctx->type == LOCK_DB) {
+	if (lock_ctx->ctdb_db) {
 		DEBUG(DEBUG_WARNING,
 		      ("Unable to get %s lock on database %s for %.0lf seconds\n",
 		       (lock_ctx->type == LOCK_RECORD ? "RECORD" : "DB"),
