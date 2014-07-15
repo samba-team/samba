@@ -43,9 +43,6 @@
  *  auto_mark              - whether to mark/unmark DBs in before/after callback
  */
 
-/* FIXME: Add a tunable max_lock_processes_per_db */
-#define MAX_LOCK_PROCESSES_PER_DB		(100)
-
 enum lock_type {
 	LOCK_RECORD,
 	LOCK_DB,
@@ -700,7 +697,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 			talloc_free(lock_ctx);
 		} else {
 			if (lock_ctx->ctdb_db == NULL ||
-			    lock_ctx->ctdb_db->lock_num_current < MAX_LOCK_PROCESSES_PER_DB) {
+			    lock_ctx->ctdb_db->lock_num_current < ctdb->tunable.lock_processes_per_db) {
 				/* Found a lock context with lock requests */
 				break;
 			}

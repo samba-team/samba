@@ -127,6 +127,7 @@ struct ctdb_tunable {
 	uint32_t no_ip_host_on_all_disabled;
 	uint32_t samba3_hack;
 	uint32_t mutex_enabled;
+	uint32_t lock_processes_per_db;
 };
 
 /*
