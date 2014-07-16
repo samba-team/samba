@@ -483,8 +483,13 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 		const char *lDAPDisplayName = talloc_strndup(tmp_ctx, (char *)in->data, in->length);
 		sclass = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
 		if (sclass) {
-			struct ldb_dn *dn = ldb_dn_new(mem_ctx, ldb,  
+			struct ldb_dn *dn = ldb_dn_new(tmp_ctx, ldb,
 						       sclass->defaultObjectCategory);
+			if (dn == NULL) {
+				talloc_free(tmp_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
 			*out = data_blob_string_const(ldb_dn_alloc_casefold(mem_ctx, dn));
 			talloc_free(tmp_ctx);
 
