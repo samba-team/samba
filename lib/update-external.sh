@@ -25,4 +25,9 @@ git clone git://github.com/jcrocholl/pep8 "$WORKDIR/pep8"
 rm -rf "$WORKDIR/pep8/.git"
 rsync -avz --delete "$WORKDIR/pep8/" "$TARGETDIR/pep8/"
 
+echo "Updating zlib..."
+git clone git://github.com/madler/zlib "$WORKDIR/zlib"
+rm -rf "$WORKDIR/zlib/.git"
+rsync --exclude=wscript -avz --delete "$WORKDIR/zlib/" "$TARGETDIR/zlib/"
+
 rm -rf "$WORKDIR"
