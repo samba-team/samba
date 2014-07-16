@@ -836,6 +836,10 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;			
 		}
 
+		if (our_domain->alt_name == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		if (asprintf(machine_krb5_principal, "%s$@%s",
 			     account_name, our_domain->alt_name) == -1)
 		{
@@ -1202,7 +1206,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	/* For active directory servers, try to get the ldap server name.
 	   None of these failures should be considered critical for now */
 
-	if (lp_security() == SEC_ADS) {
+	if ((lp_security() == SEC_ADS) && (domain->alt_name != NULL)) {
 		ADS_STRUCT *ads;
 		ADS_STATUS ads_status;
 		char addr[INET6_ADDRSTRLEN];
@@ -1328,7 +1332,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		return True;
 	}
 
-	if (sec == SEC_ADS) {
+	if ((sec == SEC_ADS) && (domain->alt_name != NULL)) {
 		char *sitename = NULL;
 
 		/* We need to make sure we know the local site before

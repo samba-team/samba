@@ -183,6 +183,7 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 	}
 
 	if (IS_DC) {
+		SMB_ASSERT(wb_dom->alt_name != NULL);
 		realm = SMB_STRDUP(wb_dom->alt_name);
 	} else {
 		struct winbindd_domain *our_domain = wb_dom;
@@ -239,7 +240,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	}
 
 	if ( IS_DC ) {
-
+		SMB_ASSERT(domain->alt_name != NULL);
 		realm = SMB_STRDUP(domain->alt_name);
 	}
 	else {
