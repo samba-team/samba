@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "winbind_client.h"
 #include "libwbclient/wbclient.h"
-#include "lib/popt/popt.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/afs/afs_settoken.h"
