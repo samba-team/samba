@@ -151,6 +151,8 @@ struct tevent_req *messaging_read_send(TALLOC_CTX *mem_ctx,
 int messaging_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			struct messaging_rec **presult);
 
+int messaging_cleanup(struct messaging_context *msg_ctx, pid_t pid);
+
 bool messaging_parent_dgm_cleanup_init(struct messaging_context *msg);
 
 #include "librpc/gen_ndr/ndr_messaging.h"

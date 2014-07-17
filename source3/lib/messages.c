@@ -928,6 +928,19 @@ static void mess_parent_dgm_cleanup_done(struct tevent_req *req)
 	tevent_req_set_callback(req, mess_parent_dgm_cleanup_done, msg);
 }
 
+int messaging_cleanup(struct messaging_context *msg_ctx, pid_t pid)
+{
+	int ret;
+
+	if (pid == 0) {
+		ret = messaging_dgm_wipe(msg_ctx);
+	} else {
+		ret = messaging_dgm_cleanup(msg_ctx, pid);
+	}
+
+	return ret;
+}
+
 struct messaging_backend *messaging_local_backend(
 	struct messaging_context *msg_ctx)
 {
