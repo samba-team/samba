@@ -1634,6 +1634,7 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 	char *path = NULL;
 	NTSTATUS status;
 	struct gpfs_config_data *config;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
@@ -1649,15 +1650,12 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	{
-		int ret;
-		ret = get_gpfs_winattrs(path, &attrs);
-
-		if (ret == -1) {
-			TALLOC_FREE(path);
-			return false;
-		}
+	ret = get_gpfs_winattrs(path, &attrs);
+	if (ret == -1) {
+		TALLOC_FREE(path);
+		return false;
 	}
+
 	if ((attrs.winAttrs & GPFS_WINATTR_OFFLINE) != 0) {
 		DEBUG(10, ("%s is offline\n", path));
 		TALLOC_FREE(path);
