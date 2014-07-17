@@ -63,7 +63,7 @@ static int memcache_destructor(struct memcache *cache) {
 
 	for (e = cache->mru; e != NULL; e = next) {
 		next = e->next;
-		SAFE_FREE(e);
+		TALLOC_FREE(e);
 	}
 	return 0;
 }
@@ -206,7 +206,7 @@ static void memcache_delete_element(struct memcache *cache,
 
 	cache->size -= memcache_element_size(e->keylength, e->valuelength);
 
-	SAFE_FREE(e);
+	TALLOC_FREE(e);
 }
 
 static void memcache_trim(struct memcache *cache)
@@ -285,13 +285,12 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 
 	element_size = memcache_element_size(key.length, value.length);
 
-
-	e = (struct memcache_element *)SMB_MALLOC(element_size);
-
+	e = talloc_size(cache, element_size);
 	if (e == NULL) {
-		DEBUG(0, ("malloc failed\n"));
+		DEBUG(0, ("talloc failed\n"));
 		return;
 	}
+	talloc_set_type(e, struct memcache_element);
 
 	e->n = n;
 	e->keylength = key.length;
