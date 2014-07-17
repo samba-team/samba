@@ -248,7 +248,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	sec_init();
 
 	ret = messaging_dgm_init(ctx, ctx->event_ctx, ctx->id,
-				 lp_cache_directory(),
+				 lp_cache_directory(), sec_initial_uid(),
 				 messaging_recv_cb, ctx, &ctx->local);
 
 	if (ret != 0) {
@@ -308,7 +308,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	msg_ctx->id = procid_self();
 
 	ret = messaging_dgm_init(msg_ctx, msg_ctx->event_ctx, msg_ctx->id,
-				 lp_cache_directory(),
+				 lp_cache_directory(), sec_initial_uid(),
 				 messaging_recv_cb, msg_ctx,
 				 &msg_ctx->local);
 	if (ret != 0) {

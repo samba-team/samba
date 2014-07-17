@@ -57,7 +57,8 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c);
 
 static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
-					 const char *cache_dir, pid_t pid,
+					 const char *cache_dir,
+					 uid_t dir_owner, pid_t pid,
 					 int *plockfile_fd, uint64_t unique)
 {
 	fstring buf;
@@ -74,7 +75,7 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 		return ENOMEM;
 	}
 
-	ok = directory_create_or_exist_strict(dir, sec_initial_uid(), 0755);
+	ok = directory_create_or_exist_strict(dir, dir_owner, 0755);
 	if (!ok) {
 		ret = errno;
 		DEBUG(1, ("%s: Could not create lock directory: %s\n",
@@ -171,6 +172,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
 		       struct server_id pid,
 		       const char *cache_dir,
+		       uid_t dir_owner,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
 				       struct server_id dst,
@@ -214,7 +216,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		return ENAMETOOLONG;
 	}
 
-	ret = messaging_dgm_lockfile_create(ctx, cache_dir, pid.pid,
+	ret = messaging_dgm_lockfile_create(ctx, cache_dir, dir_owner, pid.pid,
 					    &ctx->lockfile_fd, pid.unique_id);
 	if (ret != 0) {
 		DEBUG(1, ("%s: messaging_dgm_create_lockfile failed: %s\n",
@@ -234,8 +236,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		goto fail_nomem;
 	}
 
-	ok = directory_create_or_exist_strict(socket_dir, sec_initial_uid(),
-					      0700);
+	ok = directory_create_or_exist_strict(socket_dir, dir_owner, 0700);
 	if (!ok) {
 		DEBUG(1, ("Could not create socket directory\n"));
 		TALLOC_FREE(ctx);
