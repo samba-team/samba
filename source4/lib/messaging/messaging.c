@@ -960,18 +960,13 @@ struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 	int count, i;
 	struct server_id *ret;
 
-	if (tdb_lock_bystring(t->tdb, name) != 0) {
-		return NULL;
-	}
 	rec = tdb_fetch_bystring(t->tdb, name);
 	if (rec.dptr == NULL) {
-		tdb_unlock_bystring(t->tdb, name);
 		return NULL;
 	}
 	count = rec.dsize / sizeof(struct server_id);
 	ret = talloc_array(mem_ctx, struct server_id, count+1);
 	if (ret == NULL) {
-		tdb_unlock_bystring(t->tdb, name);
 		return NULL;
 	}
 	for (i=0;i<count;i++) {
@@ -979,7 +974,6 @@ struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 	}
 	server_id_set_disconnected(&ret[i]);
 	free(rec.dptr);
-	tdb_unlock_bystring(t->tdb, name);
 
 	return ret;
 }
