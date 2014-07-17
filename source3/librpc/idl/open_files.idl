@@ -76,7 +76,6 @@ interface open_files
 		hyper		st_ex_blocks;
 		uint32		st_ex_flags;
 		uint32		st_ex_mask;
-		hyper		vfs_private;
 	} vfs_default_durable_stat;
 
 	typedef [public] struct {

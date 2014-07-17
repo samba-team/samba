@@ -322,14 +322,6 @@ struct stat_ex {
 
 	uint32_t	st_ex_flags;
 	uint32_t	st_ex_mask;
-
-	/*
-	 * Add space for VFS internal extensions. The initial user of this
-	 * would be the onefs modules, passing the snapid from the stat calls
-	 * to the file_id_create call. Maybe we'll have to expand this later,
-	 * but the core of Samba should never look at this field.
-	 */
-	uint64_t vfs_private;
 };
 
 typedef struct stat_ex SMB_STRUCT_STAT;
