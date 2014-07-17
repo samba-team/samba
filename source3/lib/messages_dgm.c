@@ -173,6 +173,7 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 
 int messaging_dgm_init(struct messaging_context *msg_ctx,
 		       TALLOC_CTX *mem_ctx,
+		       struct tevent_context *ev,
 		       struct messaging_backend **presult,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
@@ -249,8 +250,7 @@ int messaging_dgm_init(struct messaging_context *msg_ctx,
 	}
 
 	ctx->tevent_handle = poll_funcs_tevent_register(
-		ctx, ctx->msg_callbacks,
-		messaging_tevent_context(msg_ctx));
+		ctx, ctx->msg_callbacks, ev);
 	if (ctx->tevent_handle == NULL) {
 		goto fail_nomem;
 	}
