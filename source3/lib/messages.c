@@ -245,6 +245,8 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	ctx->event_ctx = ev;
 	ctx->have_context = &have_context;
 
+	sec_init();
+
 	ret = messaging_dgm_init(ctx, ctx->event_ctx, ctx->id,
 				 messaging_recv_cb, ctx, &ctx->local);
 

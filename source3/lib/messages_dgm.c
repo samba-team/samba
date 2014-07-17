@@ -219,8 +219,6 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		return ENAMETOOLONG;
 	}
 
-	sec_init();
-
 	ret = messaging_dgm_lockfile_create(ctx, cache_dir, pid.pid,
 					    &ctx->lockfile_fd, pid.unique_id);
 	if (ret != 0) {
