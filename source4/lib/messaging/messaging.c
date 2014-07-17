@@ -924,28 +924,20 @@ static struct tdb_wrap *irpc_namedb_open(TALLOC_CTX *mem_ctx, const char *base_p
 */
 NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 {
-	struct tdb_wrap *t = msg_ctx->names_db;
-	TDB_DATA rec;
-	int count;
+	struct tdb_context *t = msg_ctx->names_db->tdb;
+	struct server_id pid = msg_ctx->server_id;
+	TDB_DATA key, data;
+	int ret;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (tdb_lock_bystring(t->tdb, name) != 0) {
-		return NT_STATUS_LOCK_NOT_GRANTED;
+	key = string_term_tdb_data(name);
+	data = (TDB_DATA) { .dptr = (uint8_t *)&pid, .dsize = sizeof(pid) };
+
+	ret = tdb_append(t, key, data);
+	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(t);
+		return map_nt_error_from_tdb(err);
 	}
-	rec = tdb_fetch_bystring(t->tdb, name);
-	count = rec.dsize / sizeof(struct server_id);
-	rec.dptr = (unsigned char *)realloc_p(rec.dptr, struct server_id, count+1);
-	rec.dsize += sizeof(struct server_id);
-	if (rec.dptr == NULL) {
-		tdb_unlock_bystring(t->tdb, name);
-		return NT_STATUS_NO_MEMORY;
-	}
-	((struct server_id *)rec.dptr)[count] = msg_ctx->server_id;
-	if (tdb_store_bystring(t->tdb, name, rec, 0) != 0) {
-		status = NT_STATUS_INTERNAL_ERROR;
-	}
-	free(rec.dptr);
-	tdb_unlock_bystring(t->tdb, name);
 
 	msg_ctx->names = str_list_add(msg_ctx->names, name);
 	talloc_steal(msg_ctx, msg_ctx->names);
