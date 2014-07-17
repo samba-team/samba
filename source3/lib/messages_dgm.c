@@ -43,7 +43,6 @@ struct messaging_dgm_context {
 };
 
 struct messaging_dgm_hdr {
-	uint32_t msg_version;
 	int msg_type;
 	struct server_id dst;
 	struct server_id src;
@@ -300,7 +299,6 @@ int messaging_dgm_send(struct messaging_dgm_context *ctx,
 		return ENAMETOOLONG;
 	}
 
-	hdr.msg_version = MESSAGE_VERSION;
 	hdr.msg_type = msg_type & MSG_TYPE_MASK;
 	hdr.dst = pid;
 	hdr.src = src;
