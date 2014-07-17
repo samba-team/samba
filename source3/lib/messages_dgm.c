@@ -50,10 +50,6 @@ struct messaging_dgm_hdr {
 	struct server_id src;
 };
 
-static int messaging_dgm_send(struct server_id src,
-			      struct server_id pid, int msg_type,
-			      const struct iovec *iov, int iovlen,
-			      struct messaging_backend *backend);
 static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			       uint8_t *msg, size_t msg_len,
 			       void *private_data);
@@ -174,16 +170,15 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
 		       struct server_id pid,
-		       struct messaging_backend **presult,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
 				       struct server_id dst,
 				       const uint8_t *msg,
 				       size_t msg_len,
 				       void *private_data),
-		       void *recv_cb_private_data)
+		       void *recv_cb_private_data,
+		       struct messaging_dgm_context **pctx)
 {
-	struct messaging_backend *result;
 	struct messaging_dgm_context *ctx;
 	int ret;
 	bool ok;
@@ -198,19 +193,11 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		return errno;
 	}
 
-	result = talloc(mem_ctx, struct messaging_backend);
-	if (result == NULL) {
-		goto fail_nomem;
-	}
-	ctx = talloc_zero(result, struct messaging_dgm_context);
+	ctx = talloc_zero(mem_ctx, struct messaging_dgm_context);
 	if (ctx == NULL) {
 		goto fail_nomem;
 	}
-
-	result->private_data = ctx;
-	result->send_fn = messaging_dgm_send;
 	ctx->pid = pid;
-
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = recv_cb_private_data;
 
@@ -228,7 +215,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 				sizeof(socket_address.sun_path),
 				"%s/%u", socket_dir, (unsigned)pid.pid);
 	if (sockname_len >= sizeof(socket_address.sun_path)) {
-		TALLOC_FREE(result);
+		TALLOC_FREE(ctx);
 		return ENAMETOOLONG;
 	}
 
@@ -239,7 +226,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		DEBUG(1, ("%s: messaging_dgm_create_lockfile failed: %s\n",
 			  __func__, strerror(ret)));
-		TALLOC_FREE(result);
+		TALLOC_FREE(ctx);
 		return ret;
 	}
 
@@ -258,7 +245,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 					      0700);
 	if (!ok) {
 		DEBUG(1, ("Could not create socket directory\n"));
-		TALLOC_FREE(result);
+		TALLOC_FREE(ctx);
 		return EACCES;
 	}
 	TALLOC_FREE(socket_dir);
@@ -271,16 +258,16 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 			    messaging_dgm_recv, ctx, &ctx->dgm_ctx);
 	if (ret != 0) {
 		DEBUG(1, ("unix_msg_init failed: %s\n", strerror(ret)));
-		TALLOC_FREE(result);
+		TALLOC_FREE(ctx);
 		return ret;
 	}
 	talloc_set_destructor(ctx, messaging_dgm_context_destructor);
 
-	*presult = result;
+	*pctx = ctx;
 	return 0;
 
 fail_nomem:
-	TALLOC_FREE(result);
+	TALLOC_FREE(ctx);
 	return ENOMEM;
 }
 
@@ -301,13 +288,10 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	return 0;
 }
 
-static int messaging_dgm_send(struct server_id src,
-			      struct server_id pid, int msg_type,
-			      const struct iovec *iov, int iovlen,
-			      struct messaging_backend *backend)
+int messaging_dgm_send(struct messaging_dgm_context *ctx,
+		       struct server_id src, struct server_id pid,
+		       int msg_type, const struct iovec *iov, int iovlen)
 {
-	struct messaging_dgm_context *ctx = talloc_get_type_abort(
-		backend->private_data, struct messaging_dgm_context);
 	struct messaging_dgm_hdr hdr;
 	struct iovec iov2[iovlen + 1];
 	struct server_id_buf idbuf;
@@ -371,11 +355,8 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			 dgm_ctx->recv_cb_private_data);
 }
 
-int messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
+int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
 {
-	struct messaging_backend *be = messaging_local_backend(msg_ctx);
-	struct messaging_dgm_context *ctx = talloc_get_type_abort(
-		be->private_data, struct messaging_dgm_context);
 	char *lockfile_name, *socket_name;
 	int fd, ret;
 	struct flock lck = {};
@@ -424,11 +405,8 @@ int messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 	return 0;
 }
 
-int messaging_dgm_wipe(struct messaging_context *msg_ctx)
+int messaging_dgm_wipe(struct messaging_dgm_context *ctx)
 {
-	struct messaging_backend *be = messaging_local_backend(msg_ctx);
-	struct messaging_dgm_context *ctx = talloc_get_type_abort(
-		be->private_data, struct messaging_dgm_context);
 	char *msgdir_name;
 	DIR *msgdir;
 	struct dirent *dp;
@@ -472,7 +450,7 @@ int messaging_dgm_wipe(struct messaging_context *msg_ctx)
 			continue;
 		}
 
-		ret = messaging_dgm_cleanup(msg_ctx, pid);
+		ret = messaging_dgm_cleanup(ctx, pid);
 		DEBUG(10, ("messaging_dgm_cleanup(%lu) returned %s\n",
 			   pid, ret ? strerror(ret) : "ok"));
 	}
@@ -482,11 +460,8 @@ int messaging_dgm_wipe(struct messaging_context *msg_ctx)
 }
 
 void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
-					    struct messaging_context *msg_ctx,
+					    struct messaging_dgm_context *ctx,
 					    struct tevent_context *ev)
 {
-	struct messaging_backend *be = messaging_local_backend(msg_ctx);
-	struct messaging_dgm_context *ctx = talloc_get_type_abort(
-		be->private_data, struct messaging_dgm_context);
 	return poll_funcs_tevent_register(mem_ctx, ctx->msg_callbacks, ev);
 }

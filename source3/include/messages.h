@@ -73,21 +73,25 @@ struct messaging_backend {
 	void *private_data;
 };
 
+struct messaging_dgm_context;
 int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
 		       struct server_id pid,
-		       struct messaging_backend **presult,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
 				       struct server_id dst,
 				       const uint8_t *msg,
 				       size_t msg_len,
 				       void *private_data),
-		       void *recv_cb_private_data);
-int messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid);
-int messaging_dgm_wipe(struct messaging_context *msg_ctx);
+		       void *recv_cb_private_data,
+		       struct messaging_dgm_context **pctx);
+int messaging_dgm_send(struct messaging_dgm_context *ctx,
+		       struct server_id src, struct server_id pid,
+		       int msg_type, const struct iovec *iov, int iovlen);
+int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid);
+int messaging_dgm_wipe(struct messaging_dgm_context *ctx);
 void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
-					    struct messaging_context *msg_ctx,
+					    struct messaging_dgm_context *ctx,
 					    struct tevent_context *ev);
 
 NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
@@ -104,8 +108,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
 struct tevent_context *messaging_tevent_context(
-	struct messaging_context *msg_ctx);
-struct messaging_backend *messaging_local_backend(
 	struct messaging_context *msg_ctx);
 
 /*
