@@ -940,6 +940,9 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 	}
 
 	msg_ctx->names = str_list_add(msg_ctx->names, name);
+	if (msg_ctx->names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	talloc_steal(msg_ctx, msg_ctx->names);
 
 	return status;
