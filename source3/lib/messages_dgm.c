@@ -29,7 +29,6 @@
 #include "librpc/gen_ndr/messaging.h"
 
 struct messaging_dgm_context {
-	struct messaging_context *msg_ctx;
 	struct server_id pid;
 	struct poll_funcs *msg_callbacks;
 	void *tevent_handle;
@@ -172,8 +171,7 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 	return ret;
 }
 
-int messaging_dgm_init(struct messaging_context *msg_ctx,
-		       TALLOC_CTX *mem_ctx,
+int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
 		       struct server_id pid,
 		       struct messaging_backend **presult,
@@ -211,7 +209,6 @@ int messaging_dgm_init(struct messaging_context *msg_ctx,
 
 	result->private_data = ctx;
 	result->send_fn = messaging_dgm_send;
-	ctx->msg_ctx = msg_ctx;
 	ctx->pid = pid;
 
 	ctx->recv_cb = recv_cb;
