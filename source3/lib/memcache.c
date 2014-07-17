@@ -26,7 +26,7 @@ struct memcache_element {
 	struct rb_node rb_node;
 	struct memcache_element *prev, *next;
 	size_t keylength, valuelength;
-	uint8 n;		/* This is really an enum, but save memory */
+	uint8_t n;		/* This is really an enum, but save memory */
 	char data[1];		/* placeholder for offsetof */
 };
 
@@ -96,7 +96,7 @@ static struct memcache_element *memcache_node2elem(struct rb_node *node)
 static void memcache_element_parse(struct memcache_element *e,
 				   DATA_BLOB *key, DATA_BLOB *value)
 {
-	key->data = ((uint8 *)e) + offsetof(struct memcache_element, data);
+	key->data = ((uint8_t *)e) + offsetof(struct memcache_element, data);
 	key->length = e->keylength;
 	value->data = key->data + e->keylength;
 	value->length = e->valuelength;
