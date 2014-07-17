@@ -113,11 +113,10 @@ static void irpc_handler(struct imessaging_context *, void *,
 static void ping_message(struct imessaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
-	char *task_id = server_id_str(NULL, &src);
+	struct server_id_buf idbuf;
 	DEBUG(1,("INFO: Received PING message from server %s [%.*s]\n",
-		 task_id, (int)data->length,
+		 server_id_str_buf(src, &idbuf), (int)data->length,
 		 data->data?(const char *)data->data:""));
-	talloc_free(task_id);
 	imessaging_send(msg, src, MSG_PONG, data);
 }
 
