@@ -928,7 +928,6 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 	struct server_id pid = msg_ctx->server_id;
 	TDB_DATA key, data;
 	int ret;
-	NTSTATUS status = NT_STATUS_OK;
 
 	msg_ctx->names = str_list_add(msg_ctx->names, name);
 	if (msg_ctx->names == NULL) {
@@ -946,7 +945,7 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 		return map_nt_error_from_tdb(err);
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
