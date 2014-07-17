@@ -27,6 +27,7 @@
 #include "auth/auth_sam_reply.h"
 #include "dsdb/samdb/samdb.h"
 #include "../lib/util/util_ldb.h"
+#include "../lib/util/memcache.h"
 #include "../libcli/auth/schannel.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
@@ -39,6 +40,8 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/socket/netif.h"
 
+static struct memcache *global_challenge_table;
+
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
 	struct netr_Credential server_challenge;
@@ -49,8 +52,26 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 {
 	struct netlogon_server_pipe_state *pipe_state =
 		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
+	DATA_BLOB key, val;
 
 	ZERO_STRUCTP(r->out.return_credentials);
+
+	if (global_challenge_table == NULL) {
+		/*
+		 * We maintain a global challenge table
+		 * with a fixed size (8k)
+		 *
+		 * This is required for the strange clients
+		 * which use different connections for
+		 * netr_ServerReqChallenge() and netr_ServerAuthenticate3()
+		 *
+		 */
+		global_challenge_table = memcache_init(talloc_autofree_context(),
+						       8192);
+		if (global_challenge_table == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	/* destroyed on pipe shutdown */
 
@@ -71,6 +92,11 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 
 	dce_call->context->private_data = pipe_state;
 
+	key = data_blob_string_const(r->in.computer_name);
+	val = data_blob_const(pipe_state, sizeof(*pipe_state));
+
+	memcache_add(global_challenge_table, SINGLETON_CACHE, key, val);
+
 	return NT_STATUS_OK;
 }
 
@@ -79,6 +105,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 {
 	struct netlogon_server_pipe_state *pipe_state =
 		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
+	DATA_BLOB challenge_key;
+	bool challenge_valid = false;
+	struct netlogon_server_pipe_state challenge;
 	struct netlogon_creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
 	struct samr_Password *mach_pwd;
@@ -99,6 +128,57 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
+
+	challenge_key = data_blob_string_const(r->in.computer_name);
+	if (pipe_state != NULL) {
+		dce_call->context->private_data = NULL;
+
+		/*
+		 * If we had a challenge remembered on the connection
+		 * consider this for usage. This can't be cleanup
+		 * by other clients.
+		 *
+		 * This is the default code path for typical clients
+		 * which call netr_ServerReqChallenge() and
+		 * netr_ServerAuthenticate3() on the same dcerpc connection.
+		 */
+		challenge = *pipe_state;
+		TALLOC_FREE(pipe_state);
+		challenge_valid = true;
+	} else {
+		DATA_BLOB val;
+		bool ok;
+
+		/*
+		 * Fallback and try to get the challenge from
+		 * the global cache.
+		 *
+		 * If too many clients are using this code path,
+		 * they may destroy their cache entries as the
+		 * global_challenge_table memcache has a fixed size.
+		 *
+		 * Note: this handles global_challenge_table == NULL fine
+		 */
+		ok = memcache_lookup(global_challenge_table, SINGLETON_CACHE,
+				     challenge_key, &val);
+		if (ok && val.length == sizeof(challenge)) {
+			memcpy(&challenge, val.data, sizeof(challenge));
+			challenge_valid = true;
+		} else {
+			ZERO_STRUCT(challenge);
+		}
+	}
+
+	/*
+	 * At this point we can cleanup the cache entry,
+	 * if we fail the client needs to call netr_ServerReqChallenge
+	 * again.
+	 *
+	 * Note: this handles global_challenge_table == NULL
+	 * and also a non existing record just fine.
+	 */
+	memcache_delete(global_challenge_table,
+			SINGLETON_CACHE, challenge_key);
 
 	server_flags = NETLOGON_NEG_ACCOUNT_LOCKOUT |
 		       NETLOGON_NEG_PERSISTENT_SAMREPL |
@@ -273,8 +353,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!pipe_state) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+	if (!challenge_valid) {
+		DEBUG(1, ("No challenge requested by client [%s/%s], "
+			  "cannot authenticate\n",
+			  r->in.computer_name,
+			  r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -282,8 +365,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 					   r->in.account_name,
 					   r->in.computer_name,
 					   r->in.secure_channel_type,
-					   &pipe_state->client_challenge,
-					   &pipe_state->server_challenge,
+					   &challenge.client_challenge,
+					   &challenge.server_challenge,
 					   mach_pwd,
 					   r->in.credentials,
 					   r->out.return_credentials,
