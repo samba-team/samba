@@ -930,20 +930,21 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 	int ret;
 	NTSTATUS status = NT_STATUS_OK;
 
+	msg_ctx->names = str_list_add(msg_ctx->names, name);
+	if (msg_ctx->names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(msg_ctx, msg_ctx->names);
+
 	key = string_term_tdb_data(name);
 	data = (TDB_DATA) { .dptr = (uint8_t *)&pid, .dsize = sizeof(pid) };
 
 	ret = tdb_append(t, key, data);
 	if (ret != 0) {
 		enum TDB_ERROR err = tdb_error(t);
+		str_list_remove(msg_ctx->names, name);
 		return map_nt_error_from_tdb(err);
 	}
-
-	msg_ctx->names = str_list_add(msg_ctx->names, name);
-	if (msg_ctx->names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_steal(msg_ctx, msg_ctx->names);
 
 	return status;
 }
