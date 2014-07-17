@@ -725,9 +725,38 @@ sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
     os.chmod(installed_location, 0755)
     return 0
 
+def copy_and_fix_perl_path(task):
+    pattern='use lib "$RealBin/lib";'
+
+    replacement = ""
+    if not task.env["PERL_LIB_INSTALL_DIR"] in task.env["PERL_INC"]:
+         replacement = 'use lib "%s";' % task.env["PERL_LIB_INSTALL_DIR"]
+
+    if task.env["PERL"][0] == "/":
+        replacement_shebang = "#!%s\n" % task.env["PERL"]
+    else:
+        replacement_shebang = "#!/usr/bin/env %s\n" % task.env["PERL"]
+
+    installed_location=task.outputs[0].bldpath(task.env)
+    source_file = open(task.inputs[0].srcpath(task.env))
+    installed_file = open(installed_location, 'w')
+    lineno = 0
+    for line in source_file:
+        newline = line
+        if lineno == 0 and task.env["PERL_SPECIFIED"] == True and line[:2] == "#!":
+            newline = replacement_shebang
+        elif pattern in line:
+            newline = line.replace(pattern, replacement)
+        installed_file.write(newline)
+        lineno = lineno + 1
+    installed_file.close()
+    os.chmod(installed_location, 0755)
+    return 0
+
 
 def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
-                 python_fixup=False, destname=None, base_name=None):
+                 python_fixup=False, perl_fixup=False,
+                 destname=None, base_name=None):
     '''install a file'''
     destdir = bld.EXPAND_VARIABLES(destdir)
     if not destname:
@@ -744,18 +773,28 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
                             source=file,
                             target=inst_file)
         file = inst_file
+    if perl_fixup:
+        # fix the path perl will use to find Samba modules
+        inst_file = file + '.inst'
+        bld.SAMBA_GENERATOR('perl_%s' % destname,
+                            rule=copy_and_fix_perl_path,
+                            dep_vars=["PERL","PERL_SPECIFIED","PERL_LIB_INSTALL_DIR"],
+                            source=file,
+                            target=inst_file)
+        file = inst_file
     if base_name:
         file = os.path.join(base_name, file)
     bld.install_as(dest, file, chmod=chmod)
 
 
 def INSTALL_FILES(bld, destdir, files, chmod=MODE_644, flat=False,
-                  python_fixup=False, destname=None, base_name=None):
+                  python_fixup=False, perl_fixup=False,
+                  destname=None, base_name=None):
     '''install a set of files'''
     for f in TO_LIST(files):
         install_file(bld, destdir, f, chmod=chmod, flat=flat,
-                     python_fixup=python_fixup, destname=destname,
-                     base_name=base_name)
+                     python_fixup=python_fixup, perl_fixup=perl_fixup,
+                     destname=destname, base_name=base_name)
 Build.BuildContext.INSTALL_FILES = INSTALL_FILES
 
 
