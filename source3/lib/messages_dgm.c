@@ -26,7 +26,6 @@
 #include "lib/param/param.h"
 #include "poll_funcs/poll_funcs_tevent.h"
 #include "unix_msg/unix_msg.h"
-#include "librpc/gen_ndr/messaging.h"
 
 struct messaging_dgm_context {
 	struct server_id pid;
@@ -45,7 +44,7 @@ struct messaging_dgm_context {
 
 struct messaging_dgm_hdr {
 	uint32_t msg_version;
-	enum messaging_type msg_type;
+	int msg_type;
 	struct server_id dst;
 	struct server_id src;
 };
