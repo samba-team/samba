@@ -30,6 +30,7 @@
 
 struct messaging_dgm_context {
 	struct messaging_context *msg_ctx;
+	struct server_id pid;
 	struct poll_funcs *msg_callbacks;
 	void *tevent_handle;
 	struct unix_msg_ctx *dgm_ctx;
@@ -174,6 +175,7 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 int messaging_dgm_init(struct messaging_context *msg_ctx,
 		       TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
+		       struct server_id pid,
 		       struct messaging_backend **presult,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
@@ -185,7 +187,6 @@ int messaging_dgm_init(struct messaging_context *msg_ctx,
 {
 	struct messaging_backend *result;
 	struct messaging_dgm_context *ctx;
-	struct server_id pid = messaging_server_id(msg_ctx);
 	int ret;
 	bool ok;
 	const char *cache_dir;
@@ -211,6 +212,7 @@ int messaging_dgm_init(struct messaging_context *msg_ctx,
 	result->private_data = ctx;
 	result->send_fn = messaging_dgm_send;
 	ctx->msg_ctx = msg_ctx;
+	ctx->pid = pid;
 
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = recv_cb_private_data;
@@ -287,7 +289,7 @@ fail_nomem:
 
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 {
-	struct server_id pid = messaging_server_id(c->msg_ctx);
+	struct server_id pid = c->pid;
 
 	/*
 	 * First delete the socket to avoid races. The lockfile is the

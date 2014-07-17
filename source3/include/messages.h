@@ -76,6 +76,7 @@ struct messaging_backend {
 int messaging_dgm_init(struct messaging_context *msg_ctx,
 		       TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
+		       struct server_id pid,
 		       struct messaging_backend **presult,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
