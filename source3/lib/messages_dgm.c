@@ -22,7 +22,7 @@
 #include "lib/util/debug.h"
 #include "lib/unix_msg/unix_msg.h"
 #include "system/filesys.h"
-#include "messages.h"
+#include "lib/messages_dgm.h"
 #include "lib/param/param.h"
 #include "poll_funcs/poll_funcs_tevent.h"
 #include "unix_msg/unix_msg.h"
