@@ -77,6 +77,7 @@ struct messaging_dgm_context;
 int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
 		       struct server_id pid,
+		       const char *cache_dir,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
 				       struct server_id dst,

@@ -170,6 +170,7 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		       struct tevent_context *ev,
 		       struct server_id pid,
+		       const char *cache_dir,
 		       void (*recv_cb)(int msg_type,
 				       struct server_id src,
 				       struct server_id dst,
@@ -182,16 +183,10 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	struct messaging_dgm_context *ctx;
 	int ret;
 	bool ok;
-	const char *cache_dir;
 	char *socket_dir;
 	struct sockaddr_un socket_address;
 	size_t sockname_len;
 	uint64_t cookie;
-
-	cache_dir = lp_cache_directory();
-	if (cache_dir == NULL) {
-		return errno;
-	}
 
 	ctx = talloc_zero(mem_ctx, struct messaging_dgm_context);
 	if (ctx == NULL) {
