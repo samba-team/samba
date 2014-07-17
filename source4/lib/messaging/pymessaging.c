@@ -235,10 +235,12 @@ static PyObject *py_irpc_servers_byname(PyObject *self, PyObject *args, PyObject
 {
 	imessaging_Object *iface = (imessaging_Object *)self;
 	char *server_name;
+	unsigned i, num_ids;
 	struct server_id *ids;
 	PyObject *pylist;
-	int i;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	NTSTATUS status;
+
 	if (!mem_ctx) {
 		PyErr_NoMemory();
 		return NULL;
@@ -249,25 +251,21 @@ static PyObject *py_irpc_servers_byname(PyObject *self, PyObject *args, PyObject
 		return NULL;
 	}
 
-	ids = irpc_servers_byname(iface->msg_ctx, mem_ctx, server_name);
-
-	if (ids == NULL) {
+	status = irpc_servers_byname(iface->msg_ctx, mem_ctx, server_name,
+				     &num_ids, &ids);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mem_ctx);
 		PyErr_SetString(PyExc_KeyError, "No such name");
 		return NULL;
 	}
 
-	for (i = 0; !server_id_is_disconnected(&ids[i]); i++) {
-		/* Do nothing */
-	}
-
-	pylist = PyList_New(i);
+	pylist = PyList_New(num_ids);
 	if (pylist == NULL) {
 		TALLOC_FREE(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	for (i = 0; !server_id_is_disconnected(&ids[i]); i++) {
+	for (i = 0; i < num_ids; i++) {
 		PyObject *py_server_id;
 		struct server_id *p_server_id = talloc(NULL, struct server_id);
 		if (!p_server_id) {

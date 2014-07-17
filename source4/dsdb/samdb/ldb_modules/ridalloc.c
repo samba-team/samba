@@ -67,7 +67,8 @@
 static int ridalloc_poke_rid_manager(struct ldb_module *module)
 {
 	struct imessaging_context *msg;
-	struct server_id *server;
+	unsigned num_servers;
+	struct server_id *servers;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct loadparm_context *lp_ctx =
 		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
@@ -85,8 +86,9 @@ static int ridalloc_poke_rid_manager(struct ldb_module *module)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	server = irpc_servers_byname(msg, msg, "dreplsrv");
-	if (!server) {
+	status = irpc_servers_byname(msg, msg, "dreplsrv",
+				     &num_servers, &servers);
+	if (!NT_STATUS_IS_OK(status)) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				"Failed to send MSG_DREPL_ALLOCATE_RID, "
 				"unable to locate dreplsrv");
@@ -95,13 +97,13 @@ static int ridalloc_poke_rid_manager(struct ldb_module *module)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	status = imessaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
+	status = imessaging_send(msg, servers[0], MSG_DREPL_ALLOCATE_RID, NULL);
 
 	/* Only error out if an error happened, not on STATUS_MORE_ENTRIES, ie a delayed message */
 	if (NT_STATUS_IS_ERR(status)) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				"Failed to send MSG_DREPL_ALLOCATE_RID to dreplsrv at %s: %s",
-				server_id_str(tmp_ctx, server), nt_errstr(status));
+				server_id_str(tmp_ctx, servers), nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}

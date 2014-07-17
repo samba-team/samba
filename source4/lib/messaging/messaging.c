@@ -951,32 +951,38 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 /*
   return a list of server ids for a server name
 */
-struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
-				      TALLOC_CTX *mem_ctx,
-				      const char *name)
+NTSTATUS irpc_servers_byname(struct imessaging_context *msg_ctx,
+			     TALLOC_CTX *mem_ctx, const char *name,
+			     unsigned *num_servers,
+			     struct server_id **servers)
 {
 	struct tdb_wrap *t = msg_ctx->names_db;
 	TDB_DATA rec;
-	int count, i;
+	unsigned count;
 	struct server_id *ret;
 
 	rec = tdb_fetch_bystring(t->tdb, name);
 	if (rec.dptr == NULL) {
-		return NULL;
+		enum TDB_ERROR err = tdb_error(t->tdb);
+		return map_nt_error_from_tdb(err);
 	}
+
 	count = rec.dsize / sizeof(struct server_id);
-	ret = talloc_array(mem_ctx, struct server_id, count+1);
+	if (count == 0) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	ret = talloc_array(mem_ctx, struct server_id, count);
 	if (ret == NULL) {
 		free(rec.dptr);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
-	for (i=0;i<count;i++) {
-		ret[i] = ((struct server_id *)rec.dptr)[i];
-	}
-	server_id_set_disconnected(&ret[i]);
+	memcpy(ret, rec.dptr, count * sizeof(struct server_id));
 	free(rec.dptr);
 
-	return ret;
+	*num_servers = count;
+	*servers = ret;
+	return NT_STATUS_OK;
 }
 
 static int all_servers_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
@@ -1380,17 +1386,16 @@ struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
 							  const struct ndr_interface_table *table)
 {
 	struct dcerpc_binding_handle *h;
+	unsigned num_sids;
 	struct server_id *sids;
 	struct server_id sid;
+	NTSTATUS status;
 
 	/* find the server task */
-	sids = irpc_servers_byname(msg_ctx, mem_ctx, dest_task);
-	if (sids == NULL) {
-		errno = EADDRNOTAVAIL;
-		return NULL;
-	}
-	if (server_id_is_disconnected(&sids[0])) {
-		talloc_free(sids);
+
+	status = irpc_servers_byname(msg_ctx, mem_ctx, dest_task,
+				     &num_sids, &sids);
+	if (!NT_STATUS_IS_OK(status)) {
 		errno = EADDRNOTAVAIL;
 		return NULL;
 	}
