@@ -967,6 +967,7 @@ struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 	count = rec.dsize / sizeof(struct server_id);
 	ret = talloc_array(mem_ctx, struct server_id, count+1);
 	if (ret == NULL) {
+		free(rec.dptr);
 		return NULL;
 	}
 	for (i=0;i<count;i++) {
