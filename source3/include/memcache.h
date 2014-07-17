@@ -20,8 +20,6 @@
 #ifndef __MEMCACHE_H__
 #define __MEMCACHE_H__
 
-#include "includes.h"
-
 struct memcache;
 
 /*
