@@ -318,9 +318,7 @@ int messaging_dgm_send(struct messaging_dgm_context *ctx,
 	iov2[0].iov_len = sizeof(hdr);
 	memcpy(iov2+1, iov, iovlen*sizeof(struct iovec));
 
-	become_root();
 	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov2, iovlen + 1);
-	unbecome_root();
 
 	return ret;
 }

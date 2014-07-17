@@ -471,8 +471,11 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
+	become_root();
 	ret = messaging_dgm_send(msg_ctx->local, msg_ctx->id, server, msg_type,
 				 iov, iovlen);
+	unbecome_root();
+
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);
 	}
