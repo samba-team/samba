@@ -27,7 +27,7 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "transfer_file.h"
 #include "ntioctl.h"
 #include "lib/util/tevent_unix.h"

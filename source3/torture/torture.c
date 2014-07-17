@@ -26,7 +26,7 @@
 #include "tldap.h"
 #include "tldap_util.h"
 #include "../librpc/gen_ndr/svcctl.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "nsswitch/winbind_client.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"

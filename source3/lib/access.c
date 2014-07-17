@@ -11,7 +11,7 @@
 */
 
 #include "includes.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "lib/socket/interfaces.h"
 
 #define NAME_INDEX 0

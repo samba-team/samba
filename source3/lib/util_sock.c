@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "../lib/async_req/async_sock.h"
 #include "../lib/util/select.h"
 #include "lib/socket/interfaces.h"

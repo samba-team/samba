@@ -28,7 +28,7 @@
 #include "system/passwd.h"
 #include "auth.h"
 #include "secrets.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"

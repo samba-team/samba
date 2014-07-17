@@ -66,7 +66,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "mangle.h"
 
 #if 1

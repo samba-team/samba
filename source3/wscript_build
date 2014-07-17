@@ -765,7 +765,7 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     deps='talloc samba3-util')
 
 bld.SAMBA3_LIBRARY('samba3-util',
-                   source='''lib/util_sec.c lib/util_str.c lib/adt_tree.c lib/util_malloc.c lib/memcache.c lib/namearray.c lib/file_id.c''',
+                   source='''lib/util_sec.c lib/util_str.c lib/adt_tree.c lib/util_malloc.c lib/namearray.c lib/file_id.c''',
                    deps='samba-util charset',
                    private_library=True)
 

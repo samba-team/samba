@@ -25,7 +25,7 @@
 #include "system/filesys.h"
 #include "system/glob.h"
 #include "util_tdb.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
