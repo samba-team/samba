@@ -18,6 +18,7 @@ from samba_autoproto import *
 from samba_python import *
 from samba_deps import *
 from samba_bundled import *
+from samba_third_party import *
 import samba_install
 import samba_conftests
 import samba_abi

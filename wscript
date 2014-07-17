@@ -120,6 +120,15 @@ def configure(conf):
         raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 
     conf.RECURSE('dynconfig')
+
+    if conf.CHECK_FOR_THIRD_PARTY():
+        conf.RECURSE('third_party/iniparser/src')
+    else:
+        if not conf.CHECK_INIPARSER():
+            raise Utils.WafError('iniparser development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
+        else:
+            conf.define('USING_SYSTEM_INIPARSER', 1)
+
     conf.RECURSE('lib/ldb')
 
     if Options.options.with_system_mitkrb5:
@@ -146,7 +155,6 @@ def configure(conf):
     conf.RECURSE('lib/socket_wrapper')
     conf.RECURSE('lib/uid_wrapper')
     conf.RECURSE('lib/popt')
-    conf.RECURSE('lib/iniparser/src')
     conf.RECURSE('lib/subunit/c')
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('lib/crypto')

@@ -5,7 +5,7 @@ import Options
 def configure(conf):
     conf.CHECK_HEADERS('float.h')
 
-    if conf.CHECK_BUNDLED_SYSTEM('iniparser', checkfunctions='iniparser_load', headers='iniparser.h'):
+    if conf.CHECK_INIPARSER():
         conf.define('USING_SYSTEM_INIPARSER', 1)
 
 def build(bld):
