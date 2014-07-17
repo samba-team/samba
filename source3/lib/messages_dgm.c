@@ -35,6 +35,12 @@ struct messaging_dgm_context {
 	struct unix_msg_ctx *dgm_ctx;
 	char *cache_dir;
 	int lockfile_fd;
+
+	void (*recv_cb)(int msg_type,
+			struct server_id src, struct server_id dst,
+			const uint8_t *msg, size_t msg_len,
+			void *private_data);
+	void *recv_cb_private_data;
 };
 
 struct messaging_dgm_hdr {
@@ -167,7 +173,14 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 
 int messaging_dgm_init(struct messaging_context *msg_ctx,
 		       TALLOC_CTX *mem_ctx,
-		       struct messaging_backend **presult)
+		       struct messaging_backend **presult,
+		       void (*recv_cb)(int msg_type,
+				       struct server_id src,
+				       struct server_id dst,
+				       const uint8_t *msg,
+				       size_t msg_len,
+				       void *private_data),
+		       void *recv_cb_private_data)
 {
 	struct messaging_backend *result;
 	struct messaging_dgm_context *ctx;
@@ -197,6 +210,9 @@ int messaging_dgm_init(struct messaging_context *msg_ctx,
 	result->private_data = ctx;
 	result->send_fn = messaging_dgm_send;
 	ctx->msg_ctx = msg_ctx;
+
+	ctx->recv_cb = recv_cb;
+	ctx->recv_cb_private_data = recv_cb_private_data;
 
 	ctx->cache_dir = talloc_strdup(ctx, cache_dir);
 	if (ctx->cache_dir == NULL) {
@@ -335,7 +351,6 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 	struct messaging_dgm_context *dgm_ctx = talloc_get_type_abort(
 		private_data, struct messaging_dgm_context);
 	struct messaging_dgm_hdr *hdr;
-	struct messaging_rec rec;
 	struct server_id_buf idbuf;
 
 	if (msg_len < sizeof(*hdr)) {
@@ -348,18 +363,13 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 	 */
 	hdr = (struct messaging_dgm_hdr *)msg;
 
-	rec.msg_version = hdr->msg_version;
-	rec.msg_type = hdr->msg_type;
-	rec.dest = hdr->dst;
-	rec.src = hdr->src;
-	rec.buf.data = msg + sizeof(*hdr);
-	rec.buf.length = msg_len - sizeof(*hdr);
-
 	DEBUG(10, ("%s: Received message 0x%x len %u from %s\n", __func__,
-		   (unsigned)hdr->msg_type, (unsigned)rec.buf.length,
-		   server_id_str_buf(rec.src, &idbuf)));
+		   (unsigned)hdr->msg_type, (unsigned)(msg_len - sizeof(*hdr)),
+		   server_id_str_buf(hdr->src, &idbuf)));
 
-	messaging_dispatch_rec(dgm_ctx->msg_ctx, &rec);
+	dgm_ctx->recv_cb(hdr->msg_type, hdr->src, hdr->dst,
+			 msg + sizeof(*hdr), msg_len - sizeof(*hdr),
+			 dgm_ctx->recv_cb_private_data);
 }
 
 int messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)

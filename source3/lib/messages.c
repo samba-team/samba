@@ -201,6 +201,27 @@ bool message_send_all(struct messaging_context *msg_ctx,
 	return true;
 }
 
+static void messaging_recv_cb(int msg_type,
+			      struct server_id src, struct server_id dst,
+			      const uint8_t *msg, size_t msg_len,
+			      void *private_data)
+{
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
+	struct messaging_rec rec;
+
+	rec = (struct messaging_rec) {
+		.msg_version = MESSAGE_VERSION,
+		.msg_type = msg_type,
+		.src = src,
+		.dest = dst,
+		.buf.data = discard_const_p(uint8, msg),
+		.buf.length = msg_len
+	};
+
+	messaging_dispatch_rec(msg_ctx, &rec);
+}
+
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct tevent_context *ev)
 {
@@ -223,7 +244,8 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	ctx->event_ctx = ev;
 	ctx->have_context = &have_context;
 
-	ret = messaging_dgm_init(ctx, ctx, &ctx->local);
+	ret = messaging_dgm_init(ctx, ctx, &ctx->local,
+				 messaging_recv_cb, ctx);
 
 	if (ret != 0) {
 		DEBUG(2, ("messaging_dgm_init failed: %s\n", strerror(ret)));
@@ -281,7 +303,8 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 
 	msg_ctx->id = procid_self();
 
-	ret = messaging_dgm_init(msg_ctx, msg_ctx, &msg_ctx->local);
+	ret = messaging_dgm_init(msg_ctx, msg_ctx, &msg_ctx->local,
+				 messaging_recv_cb, msg_ctx);
 	if (ret != 0) {
 		DEBUG(0, ("messaging_dgm_init failed: %s\n", strerror(errno)));
 		return map_nt_error_from_unix(ret);
