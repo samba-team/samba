@@ -299,7 +299,7 @@ int messaging_dgm_send(struct messaging_dgm_context *ctx,
 		return ENAMETOOLONG;
 	}
 
-	hdr.msg_type = msg_type & MSG_TYPE_MASK;
+	hdr.msg_type = msg_type;
 	hdr.dst = pid;
 	hdr.src = src;
 
