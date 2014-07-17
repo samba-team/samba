@@ -29,7 +29,7 @@
 #include "registry/reg_init_full.h"
 #include "libcli/auth/schannel.h"
 #include "secrets.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "ctdbd_conn.h"
 #include "printing/queue_process.h"
 #include "rpc_server/rpc_service_setup.h"

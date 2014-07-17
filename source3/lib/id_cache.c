@@ -28,7 +28,7 @@
 #include "includes.h"
 #include "messages.h"
 #include "lib/id_cache.h"
-#include "include/memcache.h"
+#include "../lib/util/memcache.h"
 #include "idmap_cache.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../libcli/security/dom_sid.h"

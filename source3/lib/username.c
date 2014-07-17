@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "../lib/util/util_pw.h"
 
 /* internal functions */

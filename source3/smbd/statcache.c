@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "smbd/smbd.h"
 #include "messages.h"
 #include "smbprofile.h"

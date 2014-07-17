@@ -29,7 +29,7 @@
 #include "../librpc/gen_ndr/drsblobs.h"
 #include "../librpc/gen_ndr/ndr_drsblobs.h"
 #include "../librpc/gen_ndr/idmap.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "nsswitch/winbind_client.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"

@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "memcache.h"
+#include "../lib/util/memcache.h"
 #include "messages.h"
 #include "tdb_compat.h"
 
