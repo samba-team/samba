@@ -106,6 +106,7 @@
 ^samba4.rpc.netlogon.*.GetTrustPasswords
 ^samba4.rpc.netlogon.*.DatabaseRedo
 ^samba4.rpc.netlogon.*.ServerGetTrustInfo
+^samba4.rpc.netlogon.*.invalidAuthenticate2
 ^samba4.rpc.samr.passwords.badpwdcount # Not provided by Samba 4 yet
 ^samba4.rpc.samr.passwords.lockout
 ^samba4.base.charset.*.Testing partial surrogate
