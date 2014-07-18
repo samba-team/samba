@@ -642,22 +642,35 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 		break;
 	}
 	case REG_MULTI_SZ: {
-		const char **p, **a;
+		int rows, cols, max;
+		size_t padding, length, index;
+		const char **array, **arrayp;
 		char *buf = NULL;
 
-		if (!pull_reg_multi_sz(edit, &vitem->data, &a)) {
+		dynamic_field_info(edit->field[FLD_DATA], &rows, &cols, &max);
+		if (!pull_reg_multi_sz(edit, &vitem->data, &array)) {
 			return WERR_NOMEM;
 		}
-		for (p = a; *p != NULL; ++p) {
-			if (buf == NULL) {
-				buf = talloc_asprintf(edit, "%s\n", *p);
-			} else {
-				buf = talloc_asprintf_append(buf, "%s\n", *p);
-			}
+
+		/* try to fit each string on it's own line. each line
+		   needs to be padded with whitespace manually, since
+		   ncurses fields do not have newlines. */
+		for (index = 0, arrayp = array; *arrayp != NULL; ++arrayp) {
+			length = MIN(strlen(*arrayp), cols);
+			padding = cols - length;
+			buf = talloc_realloc(edit, buf, char,
+					     talloc_array_length(buf) +
+					     length + padding + 1);
 			if (buf == NULL) {
 				return WERR_NOMEM;
 			}
+			memcpy(&buf[index], *arrayp, length);
+			index += length;
+			memset(&buf[index], ' ', padding);
+			index += padding;
+			buf[index] = '\0';
 		}
+
 		set_field_buffer(edit->field[FLD_DATA], 0, buf);
 		talloc_free(buf);
 	}
