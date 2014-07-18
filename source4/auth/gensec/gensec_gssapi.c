@@ -425,7 +425,9 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	OM_uint32 maj_stat, min_stat;
 	OM_uint32 min_stat2;
-	gss_buffer_desc input_token, output_token;
+	gss_buffer_desc input_token = { 0, NULL };
+	gss_buffer_desc output_token = { 0, NULL };
+
 	gss_OID gss_oid_p = NULL;
 	OM_uint32 time_req = 0;
 	OM_uint32 time_rec = 0;
