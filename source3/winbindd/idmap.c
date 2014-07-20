@@ -219,7 +219,11 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	result->read_only = lp_parm_bool(-1, config_option, "read only", false);
 	range = lp_parm_const_string(-1, config_option, "range", NULL);
+
+	talloc_free(config_option);
+
 	if (range == NULL) {
 		if (check_range) {
 			DEBUG(1, ("idmap range not specified for domain %s\n",
@@ -235,10 +239,6 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 	}
-
-	result->read_only = lp_parm_bool(-1, config_option, "read only", false);
-
-	talloc_free(config_option);
 
 	if (result->low_id > result->high_id) {
 		DEBUG(1, ("Error: invalid idmap range detected: %lu - %lu\n",
