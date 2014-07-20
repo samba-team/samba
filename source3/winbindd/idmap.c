@@ -238,9 +238,7 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 		if (check_range) {
 			goto fail;
 		}
-	}
-
-	if (result->low_id > result->high_id) {
+	} else if (result->low_id > result->high_id) {
 		DEBUG(1, ("Error: invalid idmap range detected: %lu - %lu\n",
 			  (unsigned long)result->low_id,
 			  (unsigned long)result->high_id));
