@@ -186,6 +186,29 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
+	 * Check whether the requested backend module exists and
+	 * load the methods.
+	 */
+
+	result->methods = get_methods(modulename);
+	if (result->methods == NULL) {
+		DEBUG(3, ("idmap backend %s not found\n", modulename));
+
+		status = smb_probe_module("idmap", modulename);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not probe idmap module %s\n",
+				  modulename));
+			goto fail;
+		}
+
+		result->methods = get_methods(modulename);
+	}
+	if (result->methods == NULL) {
+		DEBUG(1, ("idmap backend %s not found\n", modulename));
+		goto fail;
+	}
+
+	/*
 	 * load ranges and read only information from the config
 	 */
 
@@ -224,24 +247,6 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 		if (check_range) {
 			goto fail;
 		}
-	}
-
-	result->methods = get_methods(modulename);
-	if (result->methods == NULL) {
-		DEBUG(3, ("idmap backend %s not found\n", modulename));
-
-		status = smb_probe_module("idmap", modulename);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Could not probe idmap module %s\n",
-				  modulename));
-			goto fail;
-		}
-
-		result->methods = get_methods(modulename);
-	}
-	if (result->methods == NULL) {
-		DEBUG(1, ("idmap backend %s not found\n", modulename));
-		goto fail;
 	}
 
 	status = result->methods->init(result);
