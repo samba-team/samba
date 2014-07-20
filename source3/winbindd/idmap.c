@@ -197,9 +197,9 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 
 	range = lp_parm_const_string(-1, config_option, "range", NULL);
 	if (range == NULL) {
-		DEBUG(1, ("idmap range not specified for domain %s\n",
-			  result->name));
 		if (check_range) {
+			DEBUG(1, ("idmap range not specified for domain %s\n",
+				  result->name));
 			goto fail;
 		}
 	} else if (sscanf(range, "%u - %u", &result->low_id,
