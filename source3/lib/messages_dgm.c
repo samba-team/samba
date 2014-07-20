@@ -40,6 +40,8 @@ struct messaging_dgm_context {
 			const uint8_t *msg, size_t msg_len,
 			void *private_data);
 	void *recv_cb_private_data;
+
+	bool *have_dgm_context;
 };
 
 struct messaging_dgm_hdr {
@@ -187,6 +189,11 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	struct sockaddr_un socket_address;
 	size_t sockname_len;
 	uint64_t cookie;
+	static bool have_dgm_context = false;
+
+	if (have_dgm_context) {
+		return EEXIST;
+	}
 
 	ctx = talloc_zero(mem_ctx, struct messaging_dgm_context);
 	if (ctx == NULL) {
@@ -255,6 +262,8 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(ctx, messaging_dgm_context_destructor);
 
+	ctx->have_dgm_context = &have_dgm_context;
+
 	*pctx = ctx;
 	return 0;
 
@@ -277,6 +286,11 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 		(void)messaging_dgm_lockfile_remove(c, c->cache_dir, pid.pid);
 	}
 	close(c->lockfile_fd);
+
+	if (c->have_dgm_context != NULL) {
+		*c->have_dgm_context = false;
+	}
+
 	return 0;
 }
 
