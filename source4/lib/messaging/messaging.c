@@ -136,15 +136,10 @@ static NTSTATUS irpc_uptime(struct irpc_message *msg,
 */
 static char *imessaging_path(struct imessaging_context *msg, struct server_id server_id)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(msg);
-	const char *id = server_id_str(tmp_ctx, &server_id);
-	char *s;
-	if (id == NULL) {
-		return NULL;
-	}
-	s = talloc_asprintf(msg, "%s/msg.%s", msg->base_path, id);
-	talloc_steal(s, tmp_ctx);
-	return s;
+	struct server_id_buf buf;
+
+	return talloc_asprintf(msg, "%s/msg.%s", msg->base_path,
+			       server_id_str_buf(server_id, &buf));
 }
 
 /*
