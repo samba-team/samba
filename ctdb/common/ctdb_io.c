@@ -44,6 +44,7 @@ struct ctdb_queue_pkt {
 	uint8_t *data;
 	uint32_t length;
 	uint32_t full_length;
+	uint8_t buf[];
 };
 
 struct ctdb_queue {
@@ -324,11 +325,13 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 		if (length2 == 0) return 0;
 	}
 
-	pkt = talloc(queue, struct ctdb_queue_pkt);
+	pkt = talloc_size(
+		queue, offsetof(struct ctdb_queue_pkt, buf) + length2);
 	CTDB_NO_MEMORY(queue->ctdb, pkt);
+	talloc_set_name_const(pkt, "struct ctdb_queue_pkt");
 
-	pkt->data = talloc_memdup(pkt, data, length2);
-	CTDB_NO_MEMORY(queue->ctdb, pkt->data);
+	pkt->data = pkt->buf;
+	memcpy(pkt->data, data, length2);
 
 	pkt->length = length2;
 	pkt->full_length = full_length;
