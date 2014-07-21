@@ -875,8 +875,6 @@ sub provision($$$$$$)
 	my $nmbdsockdir="$prefix_abs/nmbd";
 	unlink($nmbdsockdir);
 
-	my $fs_specific_conf = $self->get_fs_specific_conf($shrdir);
-
 	## 
 	## create the test directory layout
 	##
@@ -889,6 +887,8 @@ sub provision($$$$$$)
 	    system("rm -rf $prefix_abs/*");
 	}
 	mkdir($_, 0777) foreach(@dirs);
+
+	my $fs_specific_conf = $self->get_fs_specific_conf($shrdir);
 
 	##
 	## lockdir and piddir must be 0755
