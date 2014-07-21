@@ -324,15 +324,17 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 		timeout = -1;
 	}
 
-	ret = poll_one_fd(fd, POLLIN, timeout, &revents);
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
-	}
-	if (ret == 0) {
-		return NT_STATUS_IO_TIMEOUT;
-	}
-	if (ret != 1) {
-		return NT_STATUS_UNEXPECTED_IO_ERROR;
+	if (timeout != -1) {
+		ret = poll_one_fd(fd, POLLIN, timeout, &revents);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		if (ret == 0) {
+			return NT_STATUS_IO_TIMEOUT;
+		}
+		if (ret != 1) {
+			return NT_STATUS_UNEXPECTED_IO_ERROR;
+		}
 	}
 
 	status = read_data(fd, (char *)&msglen, sizeof(msglen));
