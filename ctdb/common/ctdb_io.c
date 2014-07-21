@@ -286,6 +286,7 @@ static void queue_io_handler(struct event_context *ev, struct fd_event *fde,
 */
 int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 {
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 	struct ctdb_queue_pkt *pkt;
 	uint32_t length2, full_length;
 
@@ -345,7 +346,6 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	queue->out_queue_length++;
 
 	if (queue->ctdb->tunable.verbose_memory_names != 0) {
-		struct ctdb_req_header *hdr = (struct ctdb_req_header *)pkt->data;
 		switch (hdr->operation) {
 		case CTDB_REQ_CONTROL: {
 			struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
