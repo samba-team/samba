@@ -42,9 +42,19 @@ int sys_poll_intr(struct pollfd *fds, int num_fds, int timeout)
 		if (errno != EINTR) {
 			break;
 		}
+		/* Infinite timeout, no need to adjust. */
+		if (timeout < 0) {
+			continue;
+		}
 		clock_gettime_mono(&now);
-		elapsed = nsec_time_diff(&now, &start);
-		timeout = (orig_timeout - elapsed) / 1000000;
+		elapsed = nsec_time_diff(&now, &start) / 1000000;
+		timeout = orig_timeout - elapsed;
+		/* Unlikely, but might happen eg. when getting traced.
+		 * Make sure we're not hanging in this case.
+		 */
+		if (timeout < 0) {
+			timeout = 0;
+		}
 	};
 	return ret;
 }
