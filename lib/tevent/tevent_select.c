@@ -35,9 +35,6 @@ struct select_event_context {
 
 	/* the maximum file descriptor number in fd_events */
 	int maxfd;
-
-	/* information for exiting from the event loop */
-	int exit_code;
 };
 
 /*
@@ -198,7 +195,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		   fatal error. */
 		tevent_debug(select_ev->ev, TEVENT_DEBUG_FATAL,
 			     "ERROR: EBADF on select_event_loop_once\n");
-		select_ev->exit_code = EBADF;
+		errno = select_errno;
 		return -1;
 	}
 
