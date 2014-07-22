@@ -969,6 +969,11 @@ NTSTATUS irpc_servers_byname(struct imessaging_context *msg_ctx,
 
 	count = rec.dsize / sizeof(struct server_id);
 	if (count == 0) {
+		/*
+		 * In a corrupted db we could end up with a record of size
+		 * less than a struct server_id. Don't leak in this case.
+		 */
+		free(rec.dptr);
 		return NT_STATUS_NOT_FOUND;
 	}
 
