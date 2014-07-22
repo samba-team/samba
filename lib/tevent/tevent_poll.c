@@ -58,9 +58,6 @@ struct poll_event_context {
 	 * Signal fd to wake the poll() thread
 	 */
 	int signal_fd;
-
-	/* information for exiting from the event loop */
-	int exit_code;
 };
 
 static int poll_event_context_destructor(struct poll_event_context *poll_ev)
