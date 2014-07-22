@@ -179,6 +179,39 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
 }
 
 
+static uint32_t ctdb_marshall_record_size(TDB_DATA key,
+					  struct ctdb_ltdb_header *header,
+					  TDB_DATA data)
+{
+	return offsetof(struct ctdb_rec_data, data) + key.dsize +
+	       data.dsize + (header ? sizeof(*header) : 0);
+}
+
+static void ctdb_marshall_record_copy(struct ctdb_rec_data *rec,
+				      uint32_t reqid,
+				      TDB_DATA key,
+				      struct ctdb_ltdb_header *header,
+				      TDB_DATA data,
+				      uint32_t length)
+{
+	uint32_t offset;
+
+	rec->length = length;
+	rec->reqid = reqid;
+	rec->keylen = key.dsize;
+	memcpy(&rec->data[0], key.dptr, key.dsize);
+	offset = key.dsize;
+
+	if (header) {
+		rec->datalen = data.dsize + sizeof(*header);
+		memcpy(&rec->data[offset], header, sizeof(*header));
+		offset += sizeof(*header);
+	} else {
+		rec->datalen = data.dsize;
+	}
+	memcpy(&rec->data[offset], data.dptr, data.dsize);
+}
+
 /*
   form a ctdb_rec_data record from a key/data pair
   
@@ -193,24 +226,14 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
 	size_t length;
 	struct ctdb_rec_data *d;
 
-	length = offsetof(struct ctdb_rec_data, data) + key.dsize + 
-		data.dsize + (header?sizeof(*header):0);
+	length = ctdb_marshall_record_size(key, header, data);
+
 	d = (struct ctdb_rec_data *)talloc_size(mem_ctx, length);
 	if (d == NULL) {
 		return NULL;
 	}
-	d->length = length;
-	d->reqid = reqid;
-	d->keylen = key.dsize;
-	memcpy(&d->data[0], key.dptr, key.dsize);
-	if (header) {
-		d->datalen = data.dsize + sizeof(*header);
-		memcpy(&d->data[key.dsize], header, sizeof(*header));
-		memcpy(&d->data[key.dsize+sizeof(*header)], data.dptr, data.dsize);
-	} else {
-		d->datalen = data.dsize;
-		memcpy(&d->data[key.dsize], data.dptr, data.dsize);
-	}
+
+	ctdb_marshall_record_copy(d, reqid, key, header, data, length);
 	return d;
 }
 
