@@ -482,6 +482,12 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 	if ((im->event_ctx != NULL) || (handler == NULL)) {
 		abort();
 	}
+	if (im->destroyed) {
+		abort();
+	}
+	if (im->busy) {
+		abort();
+	}
 
 	*im = (struct tevent_immediate) {
 		.event_ctx		= ev,

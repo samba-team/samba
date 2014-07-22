@@ -203,6 +203,8 @@ struct tevent_timer {
 struct tevent_immediate {
 	struct tevent_immediate *prev, *next;
 	struct tevent_context *event_ctx;
+	bool busy;
+	bool destroyed;
 	tevent_immediate_handler_t handler;
 	/* this is private for the specific handler */
 	void *private_data;
@@ -367,6 +369,8 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 				      void *private_data,
 				      const char *handler_name,
 				      const char *location);
+int tevent_common_invoke_immediate_handler(struct tevent_immediate *im,
+					   bool *removed);
 bool tevent_common_loop_immediate(struct tevent_context *ev);
 void tevent_common_threaded_activate_immediate(struct tevent_context *ev);
 
