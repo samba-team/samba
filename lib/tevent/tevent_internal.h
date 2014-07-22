@@ -187,6 +187,8 @@ struct tevent_fd {
 struct tevent_timer {
 	struct tevent_timer *prev, *next;
 	struct tevent_context *event_ctx;
+	bool busy;
+	bool destroyed;
 	struct timeval next_event;
 	tevent_timer_handler_t handler;
 	/* this is private for the specific handler */
@@ -355,6 +357,9 @@ struct tevent_timer *tevent_common_add_timer_v2(struct tevent_context *ev,
 					        const char *handler_name,
 					        const char *location);
 struct timeval tevent_common_loop_timer_delay(struct tevent_context *);
+int tevent_common_invoke_timer_handler(struct tevent_timer *te,
+				       struct timeval current_time,
+				       bool *removed);
 
 void tevent_common_schedule_immediate(struct tevent_immediate *im,
 				      struct tevent_context *ev,
