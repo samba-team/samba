@@ -59,10 +59,11 @@
 #include "printing/pcap.h"
 
 /* handle standard printcap - moved from pcap_printer_fn() */
-bool std_pcap_cache_reload(const char *pcap_name)
+bool std_pcap_cache_reload(const char *pcap_name, struct pcap_cache **_pcache)
 {
 	XFILE *pcap_file;
 	char *pcap_line;
+	struct pcap_cache *pcache = NULL;
 
 	if ((pcap_file = x_fopen(pcap_name, O_RDONLY, 0)) == NULL) {
 		DEBUG(0, ("Unable to open printcap file %s for read!\n", pcap_name));
@@ -117,12 +118,15 @@ bool std_pcap_cache_reload(const char *pcap_name)
 			}
 		}
 
-		if (*name && !pcap_cache_add(name, comment, NULL)) {
+		if ((*name != '\0')
+		 && !pcap_cache_add_specific(&pcache, name, comment, NULL)) {
 			x_fclose(pcap_file);
+			pcap_cache_destroy_specific(&pcache);
 			return false;
 		}
 	}
 
 	x_fclose(pcap_file);
+	*_pcache = pcache;
 	return true;
 }

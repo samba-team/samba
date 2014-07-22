@@ -29,12 +29,13 @@
 #include "printing/pcap.h"
 
 #ifdef AIX
-bool aix_cache_reload(void)
+bool aix_cache_reload(struct pcap_cache **_pcache)
 {
 	int iEtat;
 	XFILE *pfile;
 	char *line = NULL, *p;
 	char *name = NULL;
+	struct pcap_cache *pcache = NULL;
 	TALLOC_CTX *ctx = talloc_init("aix_cache_reload");
 
 	if (!ctx) {
@@ -52,6 +53,8 @@ bool aix_cache_reload(void)
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
 	for (;(line = fgets_slash(NULL, 1024, pfile)); free(line)) {
+		bool ok;
+
 		if (*line == '*' || *line == 0)
 			continue;
 
@@ -67,6 +70,7 @@ bool aix_cache_reload(void)
 				if (strcmp(p, "bsh") != 0) {
 					name = talloc_strdup(ctx, p);
 					if (!name) {
+						pcap_cache_destroy_specific(&pcache);
 						SAFE_FREE(line);
 						x_fclose(pfile);
 						TALLOC_FREE(ctx);
@@ -86,7 +90,10 @@ bool aix_cache_reload(void)
 				/* name is found without stanza device  */
 				/* probably a good printer ???		*/
 				iEtat = 0;
-				if (!pcap_cache_add(name, NULL, NULL)) {
+				ok = pcap_cache_add_specific(&pcache,
+							     name, NULL, NULL);
+				if (!ok) {
+					pcap_cache_destroy_specific(&pcache);
 					SAFE_FREE(line);
 					x_fclose(pfile);
 					TALLOC_FREE(ctx);
@@ -101,7 +108,10 @@ bool aix_cache_reload(void)
 			} else if (strstr_m(line, "device")) {
 				/* it's a good virtual printer */
 				iEtat = 0;
-				if (!pcap_cache_add(name, NULL, NULL)) {
+				ok = pcap_cache_add_specific(&pcache,
+							     name, NULL, NULL);
+				if (!ok) {
+					pcap_cache_destroy_specific(&pcache);
 					SAFE_FREE(line);
 					x_fclose(pfile);
 					TALLOC_FREE(ctx);
@@ -113,6 +123,7 @@ bool aix_cache_reload(void)
 		}
 	}
 
+	*_pcache = pcache;
 	x_fclose(pfile);
 	TALLOC_FREE(ctx);
 	return true;
