@@ -30,6 +30,12 @@
 
 int tevent_common_fd_destructor(struct tevent_fd *fde)
 {
+	if (fde->destroyed) {
+		tevent_common_check_double_free(fde, "tevent_fd double free");
+		goto done;
+	}
+	fde->destroyed = true;
+
 	if (fde->event_ctx) {
 		DLIST_REMOVE(fde->event_ctx->fd_events, fde);
 	}
@@ -37,6 +43,13 @@ int tevent_common_fd_destructor(struct tevent_fd *fde)
 	if (fde->close_fn) {
 		fde->close_fn(fde->event_ctx, fde, fde->fd, fde->private_data);
 		fde->fd = -1;
+		fde->close_fn = NULL;
+	}
+
+	fde->event_ctx = NULL;
+done:
+	if (fde->busy) {
+		return -1;
 	}
 
 	return 0;
@@ -91,4 +104,30 @@ void tevent_common_fd_set_close_fn(struct tevent_fd *fde,
 				   tevent_fd_close_fn_t close_fn)
 {
 	fde->close_fn = close_fn;
+}
+
+int tevent_common_invoke_fd_handler(struct tevent_fd *fde, uint16_t flags,
+				    bool *removed)
+{
+	if (removed != NULL) {
+		*removed = false;
+	}
+
+	if (fde->event_ctx == NULL) {
+		return 0;
+	}
+
+	fde->busy = true;
+	fde->handler(fde->event_ctx, fde, flags, fde->private_data);
+	fde->busy = false;
+
+	if (fde->destroyed) {
+		talloc_set_destructor(fde, NULL);
+		TALLOC_FREE(fde);
+		if (removed != NULL) {
+			*removed = true;
+		}
+	}
+
+	return 0;
 }

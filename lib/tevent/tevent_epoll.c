@@ -725,8 +725,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		 */
 		flags &= fde->flags;
 		if (flags) {
-			fde->handler(epoll_ev->ev, fde, flags, fde->private_data);
-			break;
+			return tevent_common_invoke_fd_handler(fde, flags, NULL);
 		}
 	}
 

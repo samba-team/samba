@@ -170,6 +170,8 @@ struct tevent_req {
 struct tevent_fd {
 	struct tevent_fd *prev, *next;
 	struct tevent_context *event_ctx;
+	bool busy;
+	bool destroyed;
 	int fd;
 	uint16_t flags; /* see TEVENT_FD_* flags */
 	tevent_fd_handler_t handler;
@@ -343,6 +345,8 @@ void tevent_common_fd_set_close_fn(struct tevent_fd *fde,
 				   tevent_fd_close_fn_t close_fn);
 uint16_t tevent_common_fd_get_flags(struct tevent_fd *fde);
 void tevent_common_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
+int tevent_common_invoke_fd_handler(struct tevent_fd *fde, uint16_t flags,
+				    bool *removed);
 
 struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev,
 					     TALLOC_CTX *mem_ctx,

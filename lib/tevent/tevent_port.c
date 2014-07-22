@@ -600,8 +600,7 @@ static int port_event_loop(struct port_event_context *port_ev, struct timeval *t
 		 */
 		flags &= fde->flags;
 		if (flags) {
-			fde->handler(ev, fde, flags, fde->private_data);
-			break;
+			return tevent_common_invoke_fd_handler(fde, flags, NULL);
 		}
 	}
 
