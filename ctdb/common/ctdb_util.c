@@ -185,8 +185,8 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
   note that header may be NULL. If not NULL then it is included in the data portion
   of the record
  */
-struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
-					   TDB_DATA key, 
+struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
+					   TDB_DATA key,
 					   struct ctdb_ltdb_header *header,
 					   TDB_DATA data)
 {
@@ -216,7 +216,7 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
 
 
 /* helper function for marshalling multiple records */
-struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx, 
+struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_marshall_buffer *m,
 					       uint64_t db_id,
 					       uint32_t reqid,
