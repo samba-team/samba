@@ -246,6 +246,8 @@ struct tevent_debug_ops {
 void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 		  const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 
+void tevent_abort(struct tevent_context *ev, const char *reason);
+
 struct tevent_context {
 	/* the specific events implementation */
 	const struct tevent_ops *ops;
