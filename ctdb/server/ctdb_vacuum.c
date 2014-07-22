@@ -304,7 +304,7 @@ static int delete_marshall_traverse(void *param, void *data)
 	}
 
 	old_size = talloc_get_size(recs->records);
-	recs->records = talloc_realloc_size(NULL, recs->records, old_size + rec->length);
+	recs->records = talloc_realloc_size(recs, recs->records, old_size + rec->length);
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
 		return 0;
