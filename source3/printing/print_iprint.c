@@ -206,7 +206,8 @@ static int iprint_get_server_version(http_t *http, char* serviceUri)
 
 static int iprint_cache_add_printer(http_t *http,
 				   int reqId,
-				   char* url)
+				   char *url,
+				   struct pcap_cache **pcache)
 {
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
@@ -342,7 +343,7 @@ static int iprint_cache_add_printer(http_t *http,
 		*/
 
 		if (name != NULL && !secure && smb_enabled) 
-			pcap_cache_add(name, info, NULL);
+			pcap_cache_add_specific(pcache, name, info, NULL);
 	}
 
  out:
@@ -351,7 +352,7 @@ static int iprint_cache_add_printer(http_t *http,
 	return(0);
 }
 
-bool iprint_cache_reload(void)
+bool iprint_cache_reload(struct pcap_cache **_pcache)
 {
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
@@ -359,7 +360,8 @@ bool iprint_cache_reload(void)
 	ipp_attribute_t	*attr;			/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
 	int		i;
-	bool ret = False;
+	bool ret = false;
+	struct pcap_cache *pcache = NULL;
 
 	DEBUG(5, ("reloading iprint printcap cache\n"));
 
@@ -441,14 +443,16 @@ bool iprint_cache_reload(void)
 					char *url = ippGetString(attr, i, NULL);
 					if (!url || !strlen(url))
 						continue;
-					iprint_cache_add_printer(http, i+2, url);
+					iprint_cache_add_printer(http, i+2, url,
+								 &pcache);
 				}
 			}
 			attr = ippNextAttribute(response);
 		}
 	}
 
-	ret = True;
+	ret = true;
+	*_pcache = pcache;
 
  out:
 	if (response)
