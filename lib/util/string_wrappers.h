@@ -51,7 +51,7 @@ do { \
 #define unstrcpy(d,s) \
 do { \
 	const char *_unstrcpy_src = (const char *)(s); \
-	strlcpy((d),_unstrcpy_src ? _unstrcpy_src : "",sizeof(fstring)); \
+	strlcpy((d),_unstrcpy_src ? _unstrcpy_src : "",sizeof(unstring)); \
 } while (0)
 
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
