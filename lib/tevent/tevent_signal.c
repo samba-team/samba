@@ -184,6 +184,12 @@ static int tevent_common_signal_list_destructor(struct tevent_common_signal_list
 */
 static int tevent_signal_destructor(struct tevent_signal *se)
 {
+	if (se->destroyed) {
+		tevent_common_check_double_free(se, "tevent_signal double free");
+		goto done;
+	}
+	se->destroyed = true;
+
 	TALLOC_FREE(se->additional_data);
 
 	if (se->event_ctx != NULL) {
@@ -203,6 +209,12 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 			}
 		}
 #endif
+	}
+
+	se->event_ctx = NULL;
+done:
+	if (se->busy) {
+		return -1;
 	}
 
 	return 0;
@@ -322,13 +334,42 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	return se;
 }
 
-struct tevent_se_exists {
-	struct tevent_se_exists **myself;
-};
-
-static int tevent_se_exists_destructor(struct tevent_se_exists *s)
+int tevent_common_invoke_signal_handler(struct tevent_signal *se,
+					int signum, int count, void *siginfo,
+					bool *removed)
 {
-	*s->myself = NULL;
+	bool remove = false;
+
+	if (removed != NULL) {
+		*removed = false;
+	}
+
+	if (se->event_ctx == NULL) {
+		return 0;
+	}
+
+	se->busy = true;
+	se->handler(se->event_ctx, se, signum, count, siginfo, se->private_data);
+	se->busy = false;
+
+#ifdef SA_RESETHAND
+	if (se->sa_flags & SA_RESETHAND) {
+		remove = true;
+	}
+#endif
+
+	if (se->destroyed) {
+		talloc_set_destructor(se, NULL);
+		remove = true;
+	}
+
+	if (remove) {
+		TALLOC_FREE(se);
+		if (removed != NULL) {
+			*removed = true;
+		}
+	}
+
 	return 0;
 }
 
@@ -348,6 +389,7 @@ int tevent_common_check_signal(struct tevent_context *ev)
 		struct tevent_common_signal_list *sl, *next;
 		struct tevent_sigcounter counter = sig_state->signal_count[i];
 		uint32_t count = tevent_sig_count(counter);
+		int ret;
 #ifdef SA_SIGINFO
 		/* Ensure we null out any stored siginfo_t entries
 		 * after processing for debugging purposes. */
@@ -359,24 +401,8 @@ int tevent_common_check_signal(struct tevent_context *ev)
 		}
 		for (sl=sig_state->sig_handlers[i];sl;sl=next) {
 			struct tevent_signal *se = sl->se;
-			struct tevent_se_exists *exists;
 
 			next = sl->next;
-
-			/*
-			 * We have to be careful to not touch "se"
-			 * after it was deleted in its handler. Thus
-			 * we allocate a child whose destructor will
-			 * tell by nulling out itself that its parent
-			 * is gone.
-			 */
-			exists = talloc(se, struct tevent_se_exists);
-			if (exists == NULL) {
-				continue;
-			}
-			exists->myself = &exists;
-			talloc_set_destructor(
-				exists, tevent_se_exists_destructor);
 
 #ifdef SA_SIGINFO
 			if (se->sa_flags & SA_SIGINFO) {
@@ -391,29 +417,28 @@ int tevent_common_check_signal(struct tevent_context *ev)
 					 * signals in the ringbuffer. */
 					uint32_t ofs = (counter.seen + j)
 						% TEVENT_SA_INFO_QUEUE_COUNT;
-					se->handler(ev, se, i, 1,
-						    (void*)&sig_state->sig_info[i][ofs],
-						    se->private_data);
-					if (!exists) {
+					bool removed = false;
+
+					ret = tevent_common_invoke_signal_handler(
+						se, i, 1,
+						(void*)&sig_state->sig_info[i][ofs],
+						&removed);
+					if (ret != 0) {
+						tevent_abort(ev, "tevent_common_invoke_signal_handler() failed");
+					}
+					if (removed) {
 						break;
 					}
 				}
-#ifdef SA_RESETHAND
-				if (exists && (se->sa_flags & SA_RESETHAND)) {
-					talloc_free(se);
-				}
-#endif
-				talloc_free(exists);
 				continue;
 			}
 #endif
-			se->handler(ev, se, i, count, NULL, se->private_data);
-#ifdef SA_RESETHAND
-			if (exists && (se->sa_flags & SA_RESETHAND)) {
-				talloc_free(se);
+
+			ret = tevent_common_invoke_signal_handler(se, i, count,
+								  NULL, NULL);
+			if (ret != 0) {
+				tevent_abort(ev, "tevent_common_invoke_signal_handler() failed");
 			}
-#endif
-			talloc_free(exists);
 		}
 
 #ifdef SA_SIGINFO

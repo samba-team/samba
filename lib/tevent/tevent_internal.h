@@ -216,6 +216,8 @@ struct tevent_immediate {
 struct tevent_signal {
 	struct tevent_signal *prev, *next;
 	struct tevent_context *event_ctx;
+	bool busy;
+	bool destroyed;
 	int signum;
 	int sa_flags;
 	tevent_signal_handler_t handler;
@@ -378,6 +380,9 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 					       const char *location);
 int tevent_common_check_signal(struct tevent_context *ev);
 void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se);
+int tevent_common_invoke_signal_handler(struct tevent_signal *se,
+					int signum, int count, void *siginfo,
+					bool *removed);
 
 bool tevent_standard_init(void);
 bool tevent_poll_init(void);
