@@ -157,6 +157,7 @@ done:
 	if (te->busy) {
 		return -1;
 	}
+	te->wrapper = NULL;
 
 	return 0;
 }
@@ -319,6 +320,8 @@ int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 				       struct timeval current_time,
 				       bool *removed)
 {
+	struct tevent_context *handler_ev = te->event_ctx;
+
 	if (removed != NULL) {
 		*removed = false;
 	}
@@ -349,13 +352,40 @@ int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 	 * otherwise we pass the current time
 	 */
 	te->busy = true;
-	te->handler(te->event_ctx, te, current_time, te->private_data);
+	if (te->wrapper != NULL) {
+		handler_ev = te->wrapper->wrap_ev;
+
+		tevent_wrapper_push_use_internal(handler_ev, te->wrapper);
+		te->wrapper->ops->before_timer_handler(
+					te->wrapper->wrap_ev,
+					te->wrapper->private_state,
+					te->wrapper->main_ev,
+					te,
+					te->next_event,
+					current_time,
+					te->handler_name,
+					te->location);
+	}
+	te->handler(handler_ev, te, current_time, te->private_data);
+	if (te->wrapper != NULL) {
+		te->wrapper->ops->after_timer_handler(
+					te->wrapper->wrap_ev,
+					te->wrapper->private_state,
+					te->wrapper->main_ev,
+					te,
+					te->next_event,
+					current_time,
+					te->handler_name,
+					te->location);
+		tevent_wrapper_pop_use_internal(handler_ev, te->wrapper);
+	}
 	te->busy = false;
 
 	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
 		     "Ending timer event %p \"%s\"\n",
 		     te, te->handler_name);
 
+	te->wrapper = NULL;
 	te->event_ctx = NULL;
 	talloc_set_destructor(te, NULL);
 	TALLOC_FREE(te);

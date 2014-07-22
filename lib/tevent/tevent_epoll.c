@@ -323,8 +323,10 @@ static int epoll_add_multiplex_fd(struct epoll_event_context *epoll_ev,
 			     "add_fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     add_fde, mpx_fde, add_fde->fd);
 		DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
+		mpx_fde->wrapper = NULL;
 		mpx_fde->event_ctx = NULL;
 		DLIST_REMOVE(epoll_ev->ev->fd_events, add_fde);
+		add_fde->wrapper = NULL;
 		add_fde->event_ctx = NULL;
 		return 0;
 	} else if (ret != 0) {
@@ -387,9 +389,11 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     fde, mpx_fde, fde->fd);
 		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
+		fde->wrapper = NULL;
 		fde->event_ctx = NULL;
 		if (mpx_fde != NULL) {
 			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
+			mpx_fde->wrapper = NULL;
 			mpx_fde->event_ctx = NULL;
 		}
 		return;
@@ -462,9 +466,11 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     fde, mpx_fde, fde->fd);
 		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
+		fde->wrapper = NULL;
 		fde->event_ctx = NULL;
 		if (mpx_fde != NULL) {
 			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
+			mpx_fde->wrapper = NULL;
 			mpx_fde->event_ctx = NULL;
 		}
 		return;
@@ -511,9 +517,11 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     fde, mpx_fde, fde->fd);
 		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
+		fde->wrapper = NULL;
 		fde->event_ctx = NULL;
 		if (mpx_fde != NULL) {
 			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
+			mpx_fde->wrapper = NULL;
 			mpx_fde->event_ctx = NULL;
 		}
 		return;

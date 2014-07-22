@@ -41,6 +41,13 @@ int tevent_set_debug(struct tevent_context *ev,
 				   va_list ap) PRINTF_ATTRIBUTE(3,0),
 		     void *context)
 {
+	if (ev->wrapper.glue != NULL) {
+		ev = tevent_wrapper_main_ev(ev);
+		tevent_abort(ev, "tevent_set_debug() on wrapper");
+		errno = EINVAL;
+		return -1;
+	}
+
 	ev->debug_ops.debug = debug;
 	ev->debug_ops.context = context;
 	return 0;
@@ -86,6 +93,9 @@ void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 	if (!ev) {
 		return;
 	}
+	if (ev->wrapper.glue != NULL) {
+		ev = tevent_wrapper_main_ev(ev);
+	}
 	if (ev->debug_ops.debug == NULL) {
 		return;
 	}
@@ -98,6 +108,12 @@ void tevent_set_trace_callback(struct tevent_context *ev,
 			       tevent_trace_callback_t cb,
 			       void *private_data)
 {
+	if (ev->wrapper.glue != NULL) {
+		ev = tevent_wrapper_main_ev(ev);
+		tevent_abort(ev, "tevent_set_trace_callback() on wrapper");
+		return;
+	}
+
 	ev->tracing.callback = cb;
 	ev->tracing.private_data = private_data;
 }

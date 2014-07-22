@@ -51,6 +51,7 @@ done:
 	if (fde->busy) {
 		return -1;
 	}
+	fde->wrapper = NULL;
 
 	return 0;
 }
@@ -109,6 +110,8 @@ void tevent_common_fd_set_close_fn(struct tevent_fd *fde,
 int tevent_common_invoke_fd_handler(struct tevent_fd *fde, uint16_t flags,
 				    bool *removed)
 {
+	struct tevent_context *handler_ev = fde->event_ctx;
+
 	if (removed != NULL) {
 		*removed = false;
 	}
@@ -118,7 +121,31 @@ int tevent_common_invoke_fd_handler(struct tevent_fd *fde, uint16_t flags,
 	}
 
 	fde->busy = true;
-	fde->handler(fde->event_ctx, fde, flags, fde->private_data);
+	if (fde->wrapper != NULL) {
+		handler_ev = fde->wrapper->wrap_ev;
+
+		tevent_wrapper_push_use_internal(handler_ev, fde->wrapper);
+		fde->wrapper->ops->before_fd_handler(
+					fde->wrapper->wrap_ev,
+					fde->wrapper->private_state,
+					fde->wrapper->main_ev,
+					fde,
+					flags,
+					fde->handler_name,
+					fde->location);
+	}
+	fde->handler(handler_ev, fde, flags, fde->private_data);
+	if (fde->wrapper != NULL) {
+		fde->wrapper->ops->after_fd_handler(
+					fde->wrapper->wrap_ev,
+					fde->wrapper->private_state,
+					fde->wrapper->main_ev,
+					fde,
+					flags,
+					fde->handler_name,
+					fde->location);
+		tevent_wrapper_pop_use_internal(handler_ev, fde->wrapper);
+	}
 	fde->busy = false;
 
 	if (fde->destroyed) {

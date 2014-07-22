@@ -535,6 +535,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 			poll_ev->fdes[idx] = NULL;
 			poll_ev->deleted = true;
 			DLIST_REMOVE(ev->fd_events, fde);
+			fde->wrapper = NULL;
 			fde->event_ctx = NULL;
 			continue;
 		}
@@ -586,6 +587,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 			poll_ev->deleted = true;
 			if (fde != NULL) {
 				DLIST_REMOVE(ev->fd_events, fde);
+				fde->wrapper = NULL;
 				fde->event_ctx = NULL;
 			}
 		}

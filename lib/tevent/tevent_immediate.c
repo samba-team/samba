@@ -100,6 +100,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 {
 	const char *create_location = im->create_location;
 	bool busy = im->busy;
+	struct tevent_wrapper_glue *glue = im->wrapper;
 
 	tevent_common_immediate_cancel(im);
 
@@ -109,6 +110,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 
 	*im = (struct tevent_immediate) {
 		.event_ctx		= ev,
+		.wrapper		= glue,
 		.handler		= handler,
 		.private_data		= private_data,
 		.handler_name		= handler_name,
@@ -128,6 +130,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 int tevent_common_invoke_immediate_handler(struct tevent_immediate *im,
 					   bool *removed)
 {
+	struct tevent_context *handler_ev = im->event_ctx;
 	struct tevent_context *ev = im->event_ctx;
 	struct tevent_immediate cur = *im;
 
@@ -147,7 +150,29 @@ int tevent_common_invoke_immediate_handler(struct tevent_immediate *im,
 	im->busy = true;
 	im->handler_name = NULL;
 	tevent_common_immediate_cancel(im);
-	cur.handler(ev, im, cur.private_data);
+	if (cur.wrapper != NULL) {
+		handler_ev = cur.wrapper->wrap_ev;
+
+		tevent_wrapper_push_use_internal(handler_ev, cur.wrapper);
+		cur.wrapper->ops->before_immediate_handler(
+					cur.wrapper->wrap_ev,
+					cur.wrapper->private_state,
+					cur.wrapper->main_ev,
+					im,
+					cur.handler_name,
+					cur.schedule_location);
+	}
+	cur.handler(handler_ev, im, cur.private_data);
+	if (cur.wrapper != NULL) {
+		cur.wrapper->ops->after_immediate_handler(
+					cur.wrapper->wrap_ev,
+					cur.wrapper->private_state,
+					cur.wrapper->main_ev,
+					im,
+					cur.handler_name,
+					cur.schedule_location);
+		tevent_wrapper_pop_use_internal(handler_ev, cur.wrapper);
+	}
 	im->busy = false;
 
 	if (im->destroyed) {

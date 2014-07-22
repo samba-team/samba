@@ -429,6 +429,12 @@ int _tevent_loop_wait(struct tevent_context *ev, const char *location);
  *
  * @param[in] fde       File descriptor event on which to set the destructor
  * @param[in] close_fn  Destructor to execute when fde is freed
+ *
+ * @note That the close_fn() on tevent_fd is *NOT* wrapped on contexts
+ * created by tevent_context_wrapper_create()!
+ *
+ * @see tevent_fd_set_close_fn
+ * @see tevent_context_wrapper_create
  */
 void tevent_fd_set_close_fn(struct tevent_fd *fde,
 			    tevent_fd_close_fn_t close_fn);
@@ -439,6 +445,8 @@ void tevent_fd_set_close_fn(struct tevent_fd *fde,
  * This function calls close(fd) internally.
  *
  * @param[in] fde  File descriptor event to auto-close
+ *
+ * @see tevent_fd_set_close_fn
  */
 void tevent_fd_set_auto_close(struct tevent_fd *fde);
 
@@ -1964,6 +1972,258 @@ struct tevent_ops {
 };
 
 bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
+
+/* @} */
+
+/**
+ * @defgroup tevent_wrapper_ops The tevent wrapper operation functions
+ * @ingroup tevent
+ *
+ * The following structure and registration functions are exclusively
+ * needed for people writing wrapper functions for event handlers
+ * e.g. wrappers can be used for debugging/profiling or impersonation.
+ *
+ * There is nothing useful for normal tevent user in here.
+ *
+ * @note That the close_fn() on tevent_fd is *NOT* wrapped!
+ *
+ * @see tevent_context_wrapper_create
+ * @see tevent_fd_set_auto_close
+ * @{
+ */
+
+struct tevent_wrapper_ops {
+	const char *name;
+
+	bool (*before_use)(struct tevent_context *wrap_ev,
+			   void *private_state,
+			   struct tevent_context *main_ev,
+			   const char *location);
+	void (*after_use)(struct tevent_context *wrap_ev,
+			  void *private_state,
+			  struct tevent_context *main_ev,
+			  const char *location);
+
+	void (*before_fd_handler)(struct tevent_context *wrap_ev,
+				  void *private_state,
+				  struct tevent_context *main_ev,
+				  struct tevent_fd *fde,
+				  uint16_t flags,
+				  const char *handler_name,
+				  const char *location);
+	void (*after_fd_handler)(struct tevent_context *wrap_ev,
+				 void *private_state,
+				 struct tevent_context *main_ev,
+				 struct tevent_fd *fde,
+				 uint16_t flags,
+				 const char *handler_name,
+				 const char *location);
+
+	void (*before_timer_handler)(struct tevent_context *wrap_ev,
+				     void *private_state,
+				     struct tevent_context *main_ev,
+				     struct tevent_timer *te,
+				     struct timeval requested_time,
+				     struct timeval trigger_time,
+				     const char *handler_name,
+				     const char *location);
+	void (*after_timer_handler)(struct tevent_context *wrap_ev,
+				    void *private_state,
+				    struct tevent_context *main_ev,
+				    struct tevent_timer *te,
+				    struct timeval requested_time,
+				    struct timeval trigger_time,
+				    const char *handler_name,
+				    const char *location);
+
+	void (*before_immediate_handler)(struct tevent_context *wrap_ev,
+					 void *private_state,
+					 struct tevent_context *main_ev,
+					 struct tevent_immediate *im,
+					 const char *handler_name,
+					 const char *location);
+	void (*after_immediate_handler)(struct tevent_context *wrap_ev,
+					void *private_state,
+					struct tevent_context *main_ev,
+					struct tevent_immediate *im,
+					const char *handler_name,
+					const char *location);
+
+	void (*before_signal_handler)(struct tevent_context *wrap_ev,
+				      void *private_state,
+				      struct tevent_context *main_ev,
+				      struct tevent_signal *se,
+				      int signum,
+				      int count,
+				      void *siginfo,
+				      const char *handler_name,
+				      const char *location);
+	void (*after_signal_handler)(struct tevent_context *wrap_ev,
+				     void *private_state,
+				     struct tevent_context *main_ev,
+				     struct tevent_signal *se,
+				     int signum,
+				     int count,
+				     void *siginfo,
+				     const char *handler_name,
+				     const char *location);
+};
+
+#ifdef DOXYGEN
+/**
+ * @brief Create a wrapper tevent_context.
+ *
+ * @param[in]  main_ev        The main event context to work on.
+ *
+ * @param[in]  mem_ctx        The talloc memory context to use.
+ *
+ * @param[in]  ops            The tevent_wrapper_ops function table.
+ *
+ * @param[out] private_state  The private state use by the wrapper functions.
+ *
+ * @param[in]  private_type   The talloc type of the private_state.
+ *
+ * @return                    The wrapper event context, NULL on error.
+ *
+ * @note Available as of tevent 0.9.37
+ */
+struct tevent_context *tevent_context_wrapper_create(struct tevent_context *main_ev,
+						TALLOC_CTX *mem_ctx,
+						const struct tevent_wrapper_ops *ops,
+						void **private_state,
+						const char *private_type);
+#else
+struct tevent_context *_tevent_context_wrapper_create(struct tevent_context *main_ev,
+						TALLOC_CTX *mem_ctx,
+						const struct tevent_wrapper_ops *ops,
+						void *pstate,
+						size_t psize,
+						const char *type,
+						const char *location);
+#define tevent_context_wrapper_create(main_ev, mem_ctx, ops, state, type) \
+	_tevent_context_wrapper_create(main_ev, mem_ctx, ops, \
+				       state, sizeof(type), #type, __location__)
+#endif
+
+/**
+ * @brief Check if the event context is a wrapper event context.
+ *
+ * @param[in]  ev       The event context to work on.
+ *
+ * @return              Is a wrapper (true), otherwise (false).
+ *
+ * @see tevent_context_wrapper_create()
+ *
+ * @note Available as of tevent 0.9.37
+ */
+bool tevent_context_is_wrapper(struct tevent_context *ev);
+
+#ifdef DOXYGEN
+/**
+ * @brief Prepare the environment of a (wrapper) event context.
+ *
+ * A caller might call this before passing a wrapper event context
+ * to a tevent_req based *_send() function.
+ *
+ * The wrapper event context might do something like impersonation.
+ *
+ * tevent_context_push_use() must always be used in combination
+ * with tevent_context_pop_use().
+ *
+ * There is a global stack of currently active/busy wrapper event contexts.
+ * Each wrapper can only appear once on that global stack!
+ * The stack size is limited to 32 elements, which should be enough
+ * for all useful scenarios.
+ *
+ * In addition to an explicit tevent_context_push_use() also
+ * the invocation of an immediate, timer or fd handler implicitly
+ * pushes the wrapper on the stack.
+ *
+ * Therefore there are some strict constraints for the usage of
+ * tevent_context_push_use():
+ * - It must not be called from within an event handler
+ *   that already acts on the wrapper.
+ * - tevent_context_pop_use() must be called before
+ *   leaving the code block that called tevent_context_push_use().
+ * - The caller is responsible ensure the correct stack ordering
+ * - Any violation of these constraints results in calling
+ *   the abort handler of the given tevent context.
+ *
+ * Calling tevent_context_push_use() on a raw event context
+ * still consumes an element on the stack, but it's otherwise
+ * a no-op.
+ *
+ * If tevent_context_push_use() returns false, it means
+ * that the wrapper's before_use() hook returned this failure,
+ * in that case you must not call tevent_context_pop_use() as
+ * the wrapper is not pushed onto the stack.
+ *
+ * @param[in]  ev       The event context to work on.
+ *
+ * @return              Success (true) or failure (false).
+ *
+ * @note This is only needed if wrapper event contexts are in use.
+ *
+ * @see tevent_context_pop_use
+ *
+ * @note Available as of tevent 0.9.37
+ */
+bool tevent_context_push_use(struct tevent_context *ev);
+#else
+bool _tevent_context_push_use(struct tevent_context *ev,
+				const char *location);
+#define tevent_context_push_use(ev) \
+	_tevent_context_push_use(ev, __location__)
+#endif
+
+#ifdef DOXYGEN
+/**
+ * @brief Release the environment of a (wrapper) event context.
+ *
+ * The wrapper event context might undo something like impersonation.
+ *
+ * This must be called after a succesful tevent_context_push_use().
+ * Any ordering violation results in calling
+ * the abort handler of the given tevent context.
+ *
+ * This basically calls the wrapper's after_use() hook.
+ *
+ * @param[in]  ev       The event context to work on.
+ *
+ * @note This is only needed if wrapper event contexts are in use.
+ *
+ * @see tevent_context_push_use
+ *
+ * @note Available as of tevent 0.9.37
+ */
+void tevent_context_pop_use(struct tevent_context *ev);
+#else
+void _tevent_context_pop_use(struct tevent_context *ev,
+			       const char *location);
+#define tevent_context_pop_use(ev) \
+	_tevent_context_pop_use(ev, __location__)
+#endif
+
+/**
+ * @brief Check is the two context pointers belong to the same low level loop
+ *
+ * With the introduction of wrapper contexts it's not trivial
+ * to check if two context pointers belong to the same low level
+ * event loop. Some code may need to know this in order
+ * to make some caching decisions.
+ *
+ * @param[in]  ev1       The first event context.
+ * @param[in]  ev2       The second event context.
+ *
+ * @return true if both contexts belong to the same (still existing) context
+ * loop, false otherwise.
+ *
+ * @see tevent_context_wrapper_create
+ *
+ * @note Available as of tevent 0.9.37
+ */
+bool tevent_context_same_loop(struct tevent_context *ev1,
+			      struct tevent_context *ev2);
 
 /* @} */
 

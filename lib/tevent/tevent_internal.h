@@ -170,6 +170,7 @@ struct tevent_req {
 struct tevent_fd {
 	struct tevent_fd *prev, *next;
 	struct tevent_context *event_ctx;
+	struct tevent_wrapper_glue *wrapper;
 	bool busy;
 	bool destroyed;
 	int fd;
@@ -189,6 +190,7 @@ struct tevent_fd {
 struct tevent_timer {
 	struct tevent_timer *prev, *next;
 	struct tevent_context *event_ctx;
+	struct tevent_wrapper_glue *wrapper;
 	bool busy;
 	bool destroyed;
 	struct timeval next_event;
@@ -205,6 +207,7 @@ struct tevent_timer {
 struct tevent_immediate {
 	struct tevent_immediate *prev, *next;
 	struct tevent_context *event_ctx;
+	struct tevent_wrapper_glue *wrapper;
 	bool busy;
 	bool destroyed;
 	tevent_immediate_handler_t handler;
@@ -222,6 +225,7 @@ struct tevent_immediate {
 struct tevent_signal {
 	struct tevent_signal *prev, *next;
 	struct tevent_context *event_ctx;
+	struct tevent_wrapper_glue *wrapper;
 	bool busy;
 	bool destroyed;
 	int signum;
@@ -314,6 +318,18 @@ struct tevent_context {
 		void *private_data;
 	} tracing;
 
+	struct {
+		/*
+		 * This is used on the main event context
+		 */
+		struct tevent_wrapper_glue *list;
+
+		/*
+		 * This is used on the wrapper event context
+		 */
+		struct tevent_wrapper_glue *glue;
+	} wrapper;
+
 	/*
 	 * an optimization pointer into timer_events
 	 * used by used by common code via
@@ -396,6 +412,25 @@ void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se);
 int tevent_common_invoke_signal_handler(struct tevent_signal *se,
 					int signum, int count, void *siginfo,
 					bool *removed);
+
+struct tevent_context *tevent_wrapper_main_ev(struct tevent_context *ev);
+
+struct tevent_wrapper_ops;
+
+struct tevent_wrapper_glue {
+	struct tevent_wrapper_glue *prev, *next;
+	struct tevent_context *wrap_ev;
+	struct tevent_context *main_ev;
+	bool busy;
+	bool destroyed;
+	const struct tevent_wrapper_ops *ops;
+	void *private_state;
+};
+
+void tevent_wrapper_push_use_internal(struct tevent_context *ev,
+				      struct tevent_wrapper_glue *wrapper);
+void tevent_wrapper_pop_use_internal(const struct tevent_context *__ev_ptr,
+				     struct tevent_wrapper_glue *wrapper);
 
 bool tevent_standard_init(void);
 bool tevent_poll_init(void);

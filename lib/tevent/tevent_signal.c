@@ -216,6 +216,7 @@ done:
 	if (se->busy) {
 		return -1;
 	}
+	se->wrapper = NULL;
 
 	return 0;
 }
@@ -338,6 +339,7 @@ int tevent_common_invoke_signal_handler(struct tevent_signal *se,
 					int signum, int count, void *siginfo,
 					bool *removed)
 {
+	struct tevent_context *handler_ev = se->event_ctx;
 	bool remove = false;
 
 	if (removed != NULL) {
@@ -349,7 +351,35 @@ int tevent_common_invoke_signal_handler(struct tevent_signal *se,
 	}
 
 	se->busy = true;
-	se->handler(se->event_ctx, se, signum, count, siginfo, se->private_data);
+	if (se->wrapper != NULL) {
+		handler_ev = se->wrapper->wrap_ev;
+
+		tevent_wrapper_push_use_internal(handler_ev, se->wrapper);
+		se->wrapper->ops->before_signal_handler(
+						se->wrapper->wrap_ev,
+						se->wrapper->private_state,
+						se->wrapper->main_ev,
+						se,
+						signum,
+						count,
+						siginfo,
+						se->handler_name,
+						se->location);
+	}
+	se->handler(handler_ev, se, signum, count, siginfo, se->private_data);
+	if (se->wrapper != NULL) {
+		se->wrapper->ops->after_signal_handler(
+						se->wrapper->wrap_ev,
+						se->wrapper->private_state,
+						se->wrapper->main_ev,
+						se,
+						signum,
+						count,
+						siginfo,
+						se->handler_name,
+						se->location);
+		tevent_wrapper_pop_use_internal(handler_ev, se->wrapper);
+	}
 	se->busy = false;
 
 #ifdef SA_RESETHAND

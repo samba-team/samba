@@ -298,10 +298,17 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 	struct tevent_timer *te, *tn;
 	struct tevent_immediate *ie, *in;
 	struct tevent_signal *se, *sn;
-
+	struct tevent_wrapper_glue *gl, *gn;
 #ifdef HAVE_PTHREAD
 	int ret;
+#endif
 
+	if (ev->wrapper.glue != NULL) {
+		tevent_abort(ev,
+			"tevent_common_context_destructor() active on wrapper");
+	}
+
+#ifdef HAVE_PTHREAD
 	ret = pthread_mutex_lock(&tevent_contexts_mutex);
 	if (ret != 0) {
 		abort();
@@ -345,10 +352,18 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 	}
 #endif
 
+	for (gl = ev->wrapper.list; gl; gl = gn) {
+		gn = gl->next;
+
+		gl->main_ev = NULL;
+		DLIST_REMOVE(ev->wrapper.list, gl);
+	}
+
 	tevent_common_wakeup_fini(ev);
 
 	for (fd = ev->fd_events; fd; fd = fn) {
 		fn = fd->next;
+		fd->wrapper = NULL;
 		fd->event_ctx = NULL;
 		DLIST_REMOVE(ev->fd_events, fd);
 	}
@@ -356,12 +371,14 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 	ev->last_zero_timer = NULL;
 	for (te = ev->timer_events; te; te = tn) {
 		tn = te->next;
+		te->wrapper = NULL;
 		te->event_ctx = NULL;
 		DLIST_REMOVE(ev->timer_events, te);
 	}
 
 	for (ie = ev->immediate_events; ie; ie = in) {
 		in = ie->next;
+		ie->wrapper = NULL;
 		ie->event_ctx = NULL;
 		ie->cancel_fn = NULL;
 		DLIST_REMOVE(ev->immediate_events, ie);
@@ -369,6 +386,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 
 	for (se = ev->signal_events; se; se = sn) {
 		sn = se->next;
+		se->wrapper = NULL;
 		se->event_ctx = NULL;
 		DLIST_REMOVE(ev->signal_events, se);
 		/*
@@ -675,6 +693,16 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 
 void tevent_loop_allow_nesting(struct tevent_context *ev)
 {
+	if (ev->wrapper.glue != NULL) {
+		tevent_abort(ev, "tevent_loop_allow_nesting() on wrapper");
+		return;
+	}
+
+	if (ev->wrapper.list != NULL) {
+		tevent_abort(ev, "tevent_loop_allow_nesting() with wrapper");
+		return;
+	}
+
 	ev->nesting.allowed = true;
 }
 
