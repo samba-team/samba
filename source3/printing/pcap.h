@@ -49,7 +49,7 @@ bool pcap_printername_ok(const char *printername);
 
 /* The following definitions come from printing/print_aix.c  */
 
-bool aix_cache_reload(void);
+bool aix_cache_reload(struct pcap_cache **_pcache);
 
 /* The following definitions come from printing/print_cups.c  */
 
@@ -60,13 +60,13 @@ bool cups_cache_reload(struct tevent_context *ev,
 
 /* The following definitions come from printing/print_iprint.c  */
 
-bool iprint_cache_reload(void);
+bool iprint_cache_reload(struct pcap_cache **_pcache);
 
 /* The following definitions come from printing/print_svid.c  */
 
-bool sysv_cache_reload(void);
+bool sysv_cache_reload(struct pcap_cache **_pcache);
 
 /* The following definitions come from printing/print_standard.c  */
-bool std_pcap_cache_reload(const char *pcap_name);
+bool std_pcap_cache_reload(const char *pcap_name, struct pcap_cache **_pcache);
 
 #endif /* _PRINTING_PCAP_H_ */

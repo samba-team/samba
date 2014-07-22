@@ -83,7 +83,7 @@ void pcap_cache_destroy_specific(struct pcap_cache **pp_cache)
 	*pp_cache = NULL;
 }
 
-bool pcap_cache_add(const char *name, const char *comment, const char *location)
+static bool pcap_cache_add(const char *name, const char *comment, const char *location)
 {
 	NTSTATUS status;
 	time_t t = time_mono(NULL);
@@ -132,20 +132,14 @@ void pcap_cache_reload(struct tevent_context *ev,
 {
 	const char *pcap_name = lp_printcapname();
 	bool pcap_reloaded = False;
-	NTSTATUS status;
 	bool post_cache_fill_fn_handled = false;
+	struct pcap_cache *pcache = NULL;
 
 	DEBUG(3, ("reloading printcap cache\n"));
 
 	/* only go looking if no printcap name supplied */
 	if (pcap_name == NULL || *pcap_name == 0) {
 		DEBUG(0, ("No printcap file name configured!\n"));
-		return;
-	}
-
-	status = printer_list_mark_reload();
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to mark printer list for reload!\n"));
 		return;
 	}
 
@@ -164,26 +158,26 @@ void pcap_cache_reload(struct tevent_context *ev,
 
 #ifdef HAVE_IPRINT
 	if (strequal(pcap_name, "iprint")) {
-		pcap_reloaded = iprint_cache_reload();
+		pcap_reloaded = iprint_cache_reload(&pcache);
 		goto done;
 	}
 #endif
 
 #if defined(SYSV) || defined(HPUX)
 	if (strequal(pcap_name, "lpstat")) {
-		pcap_reloaded = sysv_cache_reload();
+		pcap_reloaded = sysv_cache_reload(&pcache);
 		goto done;
 	}
 #endif
 
 #ifdef AIX
 	if (strstr_m(pcap_name, "/qconfig") != NULL) {
-		pcap_reloaded = aix_cache_reload();
+		pcap_reloaded = aix_cache_reload(&pcache);
 		goto done;
 	}
 #endif
 
-	pcap_reloaded = std_pcap_cache_reload(pcap_name);
+	pcap_reloaded = std_pcap_cache_reload(pcap_name, &pcache);
 
 done:
 	DEBUG(3, ("reload status: %s\n", (pcap_reloaded) ? "ok" : "error"));
@@ -192,14 +186,16 @@ done:
 		/* cleanup old entries only if the operation was successful,
 		 * otherwise keep around the old entries until we can
 		 * successfully reload */
-		status = printer_list_clean_old();
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to cleanup printer list!\n"));
+
+		if (!pcap_cache_replace(pcache)) {
+			DEBUG(0, ("Failed to replace printer list!\n"));
 		}
+
 		if (post_cache_fill_fn != NULL) {
 			post_cache_fill_fn(ev, msg_ctx);
 		}
 	}
+	pcap_cache_destroy_specific(&pcache);
 
 	return;
 }
