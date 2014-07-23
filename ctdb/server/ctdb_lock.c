@@ -33,7 +33,7 @@
  * 2. Once the locks are obtained, signal parent process via fd.
  * 3. Invoke registered callback routine with locking status.
  * 4. If the child process cannot get locks within certain time,
- *    diagnose using /proc/locks and log warning message
+ *    execute an external script to debug.
  *
  * ctdb_lock_record()      - get a lock on a record
  * ctdb_lock_db()          - get a lock on a DB
