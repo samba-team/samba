@@ -350,7 +350,7 @@ static struct idmap_domain *idmap_passdb_domain(TALLOC_CTX *mem_ctx)
 		return passdb_idmap_domain;
 	}
 
-	passdb_idmap_domain = idmap_init_domain(NULL, get_global_sam_name(),
+	passdb_idmap_domain = idmap_init_domain(mem_ctx, get_global_sam_name(),
 						"passdb", false);
 	if (passdb_idmap_domain == NULL) {
 		DEBUG(1, ("Could not init passdb idmap domain\n"));
