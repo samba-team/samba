@@ -31,6 +31,7 @@ struct rpc_service_defaults {
 	const char *def_mode;
 } rpc_service_defaults[] = {
 	{ "epmapper", "disabled" },
+	{ "mdssvc", "disabled" },
 	/* { "spoolss", "embedded" }, */
 	/* { "lsarpc", "embedded" }, */
 	/* { "samr", "embedded" }, */

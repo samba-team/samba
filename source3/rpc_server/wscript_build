@@ -128,6 +128,13 @@ bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
                     ../../librpc/gen_ndr/srv_wkssvc.c''',
                     deps='LIBNET')
 
+bld.SAMBA3_SUBSYSTEM('RPC_MDSSVC',
+                    source='''mdssvc/mdssvc.c
+                    mdssvc/srv_mdssvc_nt.c
+                    ../../librpc/gen_ndr/srv_mdssvc.c''',
+                    deps='samba-util ' + bld.env['libtracker'],
+                    enabled=bld.env.with_spotlight)
+
 # RPC_SERVICE
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
                     source='rpc_ep_register.c ../librpc/rpc/dcerpc_ep.c',
@@ -155,6 +162,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     RPC_SERVER
                     RPC_EPMAPPER
 		    RPC_FSS_AGENT
+                    RPC_MDSSVC
                     ''')
 
 # RPC_DAEMONS

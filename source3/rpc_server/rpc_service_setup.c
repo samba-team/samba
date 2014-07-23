@@ -38,6 +38,7 @@
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
+#include "../librpc/gen_ndr/srv_mdssvc.h"
 
 #include "printing/nt_printing_migrate_internal.h"
 #include "rpc_server/eventlog/srv_eventlog_reg.h"
@@ -443,6 +444,27 @@ static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 	return rpc_setup_embedded(ev_ctx, msg_ctx, t, NULL);
 }
 
+#ifdef WITH_SPOTLIGHT
+static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
+			     struct messaging_context *msg_ctx)
+{
+	const struct ndr_interface_table *t = &ndr_table_mdssvc;
+	const char *pipe_name = "mdssvc";
+	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
+
+	status = rpc_mdssvc_init(NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
+}
+#endif
+
 bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx)
 {
@@ -525,6 +547,13 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 	if (!ok) {
 		goto done;
 	}
+
+#ifdef WITH_SPOTLIGHT
+	ok = rpc_setup_mdssvc(ev_ctx, msg_ctx);
+	if (!ok) {
+		goto done;
+	}
+#endif
 
 done:
 	talloc_free(tmp_ctx);
