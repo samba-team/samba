@@ -594,7 +594,7 @@ static int save_reload(int snum)
                 return 0;
         }
 	iNumNonAutoPrintServices = lp_numservices();
-	if (pcap_cache_loaded()) {
+	if (pcap_cache_loaded(NULL)) {
 		struct tevent_context *ev_ctx;
 		struct messaging_context *msg_ctx;
 
@@ -1595,7 +1595,7 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	reopen_logs();
 	load_interfaces();
 	iNumNonAutoPrintServices = lp_numservices();
-	if (pcap_cache_loaded()) {
+	if (pcap_cache_loaded(NULL)) {
 		struct tevent_context *ev_ctx;
 		struct messaging_context *msg_ctx;
 
