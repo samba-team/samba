@@ -898,6 +898,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Error traversing the "
 		      "delete list for first marshalling.\n"));
+		goto done;
 	}
 
 	indata = ctdb_marshall_finish(recs->records);
