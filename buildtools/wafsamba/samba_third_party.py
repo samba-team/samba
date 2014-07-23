@@ -13,3 +13,23 @@ Build.BuildContext.CHECK_FOR_THIRD_PARTY = CHECK_FOR_THIRD_PARTY
 @conf
 def CHECK_INIPARSER(conf):
     return conf.CHECK_BUNDLED_SYSTEM('iniparser', checkfunctions='iniparser_load', headers='iniparser.h')
+
+Build.BuildContext.CHECK_INIPARSER = CHECK_INIPARSER
+
+@conf
+def CHECK_ZLIB(conf):
+    version_check='''
+    #if (ZLIB_VERNUM >= 0x1230)
+    #else
+    #error "ZLIB_VERNUM < 0x1230"
+    #endif
+    z_stream *z;
+    inflateInit2(z, -15);
+    '''
+    return conf.CHECK_BUNDLED_SYSTEM('z', minversion='1.2.3', pkg='zlib',
+                                     checkfunctions='zlibVersion',
+                                     headers='zlib.h',
+                                     checkcode=version_check,
+                                     implied_deps='replace')
+
+Build.BuildContext.CHECK_ZLIB = CHECK_ZLIB
