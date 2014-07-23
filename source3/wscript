@@ -62,6 +62,7 @@ def set_options(opt):
                   help=("enable support for VxFS (default=no)"),
                   action="store_true", dest='enable_vxfs', default=False)
 
+    opt.SAMBA3_ADD_OPTION('spotlight', with_name="enable", without_name="disable", default=False)
 
 def configure(conf):
     from samba_utils import TO_LIST
@@ -1552,7 +1553,24 @@ main() {
         else:
             conf.fatal('AFS headers not available, but --with-fake-kaserver was specified')
 
+    conf.env['libtracker']=''
+    conf.env.with_spotlight = False
+    if Options.options.with_spotlight:
+        versions = ['1.0', '0.16', '0.14']
+        for version in versions:
+            testlib = 'tracker-sparql-' + version
+            if conf.check_cfg(package=testlib,
+                              args='--cflags --libs',
+                              mandatory=False):
+                conf.SET_TARGET_TYPE(testlib, 'SYSLIB')
+                conf.env['libtracker'] = testlib
+                conf.env.with_spotlight = True
+                conf.DEFINE('WITH_SPOTLIGHT', '1')
+                break
 
+        if not conf.env.with_spotlight:
+            conf.fatal("Spotlight support requested but tracker-sparql library missing")
+        Logs.info("building with Spotlight support")
 
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc
