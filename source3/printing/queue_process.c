@@ -390,7 +390,7 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 			       bool force)
 {
 	if (background_lpq_updater_pid != -1) {
-		if (pcap_cache_loaded()) {
+		if (pcap_cache_loaded(NULL)) {
 			load_printers(ev_ctx, msg_ctx);
 		}
 		if (force) {

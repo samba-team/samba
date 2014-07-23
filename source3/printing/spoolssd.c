@@ -304,7 +304,7 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 	 * If so then we probably missed a message and should load_printers()
 	 * ourselves. If pcap has not been loaded yet, then ignore, we will get
 	 * a message as soon as the bq process completes the reload. */
-	if (pcap_cache_loaded()) {
+	if (pcap_cache_loaded(NULL)) {
 		load_printers(ev_ctx, msg_ctx);
 	}
 
@@ -724,7 +724,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	 * If pcap has not been loaded yet, then ignore, as we will reload on
 	 * client enumeration anyway.
 	 */
-	if (pcap_cache_loaded()) {
+	if (pcap_cache_loaded(NULL)) {
 		load_printers(ev_ctx, msg_ctx);
 	}
 
