@@ -75,7 +75,7 @@ bool test_session_reconnect1(struct torture_context *tctx, struct smb2_tree *tre
 	union smb_fileinfo qfinfo;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reconnect_%s.dat",
+	snprintf(fname, sizeof(fname), "session_reconnect_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -158,7 +158,7 @@ bool test_session_reconnect2(struct torture_context *tctx, struct smb2_tree *tre
 	union smb_fileinfo qfinfo;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reconnect_%s.dat",
+	snprintf(fname, sizeof(fname), "session_reconnect_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -216,7 +216,7 @@ bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 	union smb_fileinfo qfinfo;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reauth1_%s.dat",
+	snprintf(fname, sizeof(fname), "session_reauth1_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -285,7 +285,7 @@ bool test_session_reauth2(struct torture_context *tctx, struct smb2_tree *tree)
 	struct cli_credentials *anon_creds = NULL;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reauth2_%s.dat",
+	snprintf(fname, sizeof(fname), "session_reauth2_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -369,7 +369,7 @@ bool test_session_reauth3(struct torture_context *tctx, struct smb2_tree *tree)
 				| SECINFO_UNPROTECTED_DACL;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reauth3_%s.dat",
+	snprintf(fname, sizeof(fname), "session_reauth3_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -473,7 +473,7 @@ bool test_session_reauth4(struct torture_context *tctx, struct smb2_tree *tree)
 	struct dom_sid *extra_sid;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reauth4_%s.dat",
+	snprintf(fname, sizeof(fname), "session_reauth4_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -600,9 +600,9 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	struct dom_sid *extra_sid;
 
 	/* Add some random component to the file name. */
-	snprintf(dname, 256, "session_reauth5_%s.d",
+	snprintf(dname, sizeof(dname), "session_reauth5_%s.d",
 		 generate_random_str(tctx, 8));
-	snprintf(fname, 256, "%s\\file.dat", dname);
+	snprintf(fname, sizeof(fname), "%s\\file.dat", dname);
 
 	ok = smb2_util_setup_dir(tctx, tree, dname);
 	CHECK_VAL(ok, true);
@@ -647,7 +647,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	/* try to rename the file: fails */
 
-	snprintf(fname2, 256, "%s\\file2.dat", dname);
+	snprintf(fname2, sizeof(fname2), "%s\\file2.dat", dname);
 
 	smb2_util_unlink(tree, fname2);
 
@@ -886,7 +886,7 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 	encrypted = smb2cli_tcon_is_encryption_on(tree->smbXcli);
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reauth1_%s.dat",
+	snprintf(fname, sizeof(fname), "session_reauth1_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -1004,7 +1004,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 					"smb2_connect failed");
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_expire1_%s.dat",
+	snprintf(fname, sizeof(fname), "session_expire1_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
@@ -1099,7 +1099,7 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 	}
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_bind1_%s.dat",
+	snprintf(fname, sizeof(fname), "session_bind1_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree1, fname);
