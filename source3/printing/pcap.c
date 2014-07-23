@@ -83,13 +83,19 @@ void pcap_cache_destroy_specific(struct pcap_cache **pp_cache)
 	*pp_cache = NULL;
 }
 
-bool pcap_cache_loaded(void)
+bool pcap_cache_loaded(time_t *_last_change)
 {
 	NTSTATUS status;
 	time_t last;
 
 	status = printer_list_get_last_refresh(&last);
-	return NT_STATUS_IS_OK(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	if (_last_change != NULL) {
+		*_last_change = last;
+	}
+	return true;
 }
 
 bool pcap_cache_replace(const struct pcap_cache *pcache)
