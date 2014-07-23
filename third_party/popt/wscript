@@ -5,7 +5,7 @@ import Options
 def configure(conf):
     conf.CHECK_HEADERS('float.h')
 
-    if conf.CHECK_BUNDLED_SYSTEM('popt', checkfunctions='poptGetContext', headers='popt.h'):
+    if conf.CHECK_POPT():
         conf.define('USING_SYSTEM_POPT', 1)
 
 def build(bld):

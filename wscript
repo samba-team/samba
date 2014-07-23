@@ -124,6 +124,7 @@ def configure(conf):
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party/iniparser/src')
         conf.RECURSE('third_party/zlib')
+        conf.RECURSE('third_party/popt')
     else:
         if not conf.CHECK_INIPARSER():
             raise Utils.WafError('iniparser development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
@@ -133,7 +134,12 @@ def configure(conf):
         if not conf.CHECK_ZLIB():
             raise Utils.WafError('zlib development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:
-            conf.define('USING_SYSTEM_ZLIB',1);
+            conf.define('USING_SYSTEM_ZLIB',1)
+
+        if not conf.CHECK_POPT():
+            raise Utils.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
+        else:
+            conf.define('USING_SYSTEM_POPT', 1)
 
     conf.RECURSE('lib/ldb')
 
@@ -159,7 +165,6 @@ def configure(conf):
     conf.RECURSE('nsswitch')
     conf.RECURSE('lib/socket_wrapper')
     conf.RECURSE('lib/uid_wrapper')
-    conf.RECURSE('lib/popt')
     conf.RECURSE('lib/subunit/c')
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('lib/crypto')

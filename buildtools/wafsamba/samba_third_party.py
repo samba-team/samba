@@ -33,3 +33,9 @@ def CHECK_ZLIB(conf):
                                      implied_deps='replace')
 
 Build.BuildContext.CHECK_ZLIB = CHECK_ZLIB
+
+@conf
+def CHECK_POPT(conf):
+    return conf.CHECK_BUNDLED_SYSTEM('popt', checkfunctions='poptGetContext', headers='popt.h')
+
+Build.BuildContext.CHECK_POPT = CHECK_POPT

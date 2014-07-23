@@ -3,7 +3,7 @@
 
 bld.SAMBA_SUBSYSTEM('TORTURE_UTIL',
 	source='util_smb.c',
-	public_deps='torture POPT_CREDENTIALS',
+	public_deps='torture popt POPT_CREDENTIALS',
 	deps='smbclient-raw'
 	)
 
@@ -12,7 +12,7 @@ bld.SAMBA_MODULE('TORTURE_BASIC',
 	source='basic/base.c basic/misc.c basic/scanner.c basic/utable.c basic/charset.c basic/mangle_test.c basic/denytest.c basic/aliases.c basic/locking.c basic/secleak.c basic/rename.c basic/dir.c basic/delete.c basic/unlink.c basic/disconnect.c basic/delaywrite.c basic/attr.c basic/properties.c',
 	allow_warnings=True,
 	subsystem='smbtorture',
-	deps='LIBCLI_SMB POPT_CREDENTIALS TORTURE_UTIL smbclient-raw TORTURE_RAW',
+	deps='LIBCLI_SMB popt POPT_CREDENTIALS TORTURE_UTIL smbclient-raw TORTURE_RAW',
 	internal_module=True,
 	autoproto='basic/proto.h',
 	init_function='torture_base_init'
@@ -25,7 +25,7 @@ bld.SAMBA_MODULE('TORTURE_RAW',
 	autoproto='raw/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_raw_init',
-	deps='LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE POPT_CREDENTIALS TORTURE_UTIL',
+	deps='LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE popt POPT_CREDENTIALS TORTURE_UTIL',
 	internal_module=True
 	)
 
@@ -55,7 +55,7 @@ bld.SAMBA_MODULE('torture_rpc',
 	autoproto='rpc/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_rpc_init',
-	deps='ndr-table RPC_NDR_UNIXINFO dcerpc-samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL RPC_NDR_NETLOGON dcerpc-atsvc RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER samba-net LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP service process_model RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_DFS RPC_NDR_FSRVP '+heimdal_specific['rpc'][1],
+	deps='ndr-table RPC_NDR_UNIXINFO dcerpc-samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL RPC_NDR_NETLOGON dcerpc-atsvc RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER samba-net LIBCLI_AUTH popt POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP service process_model RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_DFS RPC_NDR_FSRVP '+heimdal_specific['rpc'][1],
 	internal_module=True
 	)
 
@@ -85,7 +85,7 @@ bld.SAMBA_MODULE('TORTURE_AUTH',
 	source='auth/ntlmssp.c auth/pac.c auth/smbencrypt.c',
 	autoproto='auth/proto.h',
 	subsystem='smbtorture',
-	deps='LIBCLI_SMB gensec auth4 authkrb5 POPT_CREDENTIALS smbpasswdparser torture com_err gensec_ntlmssp',
+	deps='LIBCLI_SMB gensec auth4 authkrb5 popt POPT_CREDENTIALS smbpasswdparser torture com_err gensec_ntlmssp',
 	internal_module=True
 	)
 
@@ -114,7 +114,7 @@ bld.SAMBA_MODULE('TORTURE_UNIX',
 bld.SAMBA_MODULE('TORTURE_LDAP',
 	source='ldap/common.c ldap/basic.c ldap/schema.c ldap/uptodatevector.c ldap/cldap.c ldap/netlogon.c ldap/cldapbench.c ldap/ldap_sort.c ldap/nested_search.c',
 	subsystem='smbtorture',
-	deps='cli-ldap cli_cldap samdb POPT_CREDENTIALS torture ldbsamba',
+	deps='cli-ldap cli_cldap samdb popt POPT_CREDENTIALS torture ldbsamba',
 	internal_module=True,
 	autoproto='ldap/proto.h',
 	init_function='torture_ldap_init'
@@ -136,7 +136,7 @@ bld.SAMBA_MODULE('TORTURE_NET',
 	autoproto='libnet/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_net_init',
-	deps='samba-net POPT_CREDENTIALS torture_rpc PROVISION',
+	deps='samba-net popt POPT_CREDENTIALS torture_rpc PROVISION',
 	internal_module=True
 	)
 
@@ -146,7 +146,7 @@ bld.SAMBA_MODULE('TORTURE_NTP',
 	autoproto='ntp/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_ntp_init',
-	deps='POPT_CREDENTIALS torture_rpc',
+	deps='popt POPT_CREDENTIALS torture_rpc',
 	internal_module=True
 	)
 

@@ -16,7 +16,8 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 import wafsamba, samba_dist, Options
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
-                        lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent lib/popt:lib/popt
+                        lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent
+			third_party/popt:third_party/popt
                         buildtools:buildtools''')
 
 
@@ -31,7 +32,15 @@ def set_options(opt):
 def configure(conf):
     conf.RECURSE('lib/tdb')
     conf.RECURSE('lib/tevent')
-    conf.RECURSE('lib/popt')
+
+    if conf.CHECK_FOR_THIRD_PARTY():
+        conf.RECURSE('third_party/popt')
+    else:
+        if not conf.CHECK_POPT():
+            raise Utils.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
+        else:
+            conf.define('USING_SYSTEM_POPT', 1)
+
     conf.RECURSE('lib/replace')
     conf.find_program('python', var='PYTHON')
     conf.find_program('xsltproc', var='XSLTPROC')
@@ -75,7 +84,10 @@ def configure(conf):
 
 def build(bld):
     bld.RECURSE('lib/tevent')
-    bld.RECURSE('lib/popt')
+
+    if os.path.exists('third_party'):
+        bld.RECURSE('third_party/popt')
+
     bld.RECURSE('lib/replace')
     bld.RECURSE('lib/tdb')
 

@@ -35,7 +35,7 @@ for lib in ['talloc', 'tevent', 'tdb', 'ldb', 'popt' ]:
         cflags += bld.env.CPPPATH_ST % p + ' '
 
 if not bld.env.USING_SYSTEM_POPT:
-    cflags += bld.env.CPPPATH_ST % '../lib/popt'
+    cflags += bld.env.CPPPATH_ST % '../third_party/popt'
 
 if bld.env.DEVELOPER_MODE:
     bld.SAMBA_BINARY('test_headers',
