@@ -31,6 +31,13 @@
 #include "messages.h"
 #include "lib/param/loadparm.h"
 
+/*
+ * The persistent pcap cache is populated by the background print process. Per
+ * client smbds should only reload their printer share inventories if this
+ * information has changed. Use reload_last_pcap_time to detect this.
+ */
+static time_t reload_last_pcap_time = 0;
+
 static bool snum_is_shared_printer(int snum)
 {
 	return (lp_browseable(snum) && lp_snum_ok(snum) && lp_printable(snum));
@@ -61,6 +68,20 @@ void delete_and_reload_printers(struct tevent_context *ev,
 	const char *pname;
 	const char *sname;
 	NTSTATUS status;
+	bool ok;
+	time_t pcap_last_update;
+
+	ok = pcap_cache_loaded(&pcap_last_update);
+	if (!ok) {
+		DEBUG(1, ("pcap cache not loaded\n"));
+		return;
+	}
+
+	if (reload_last_pcap_time == pcap_last_update) {
+		DEBUG(5, ("skipping printer reload, already up to date.\n"));
+		return;
+	}
+	reload_last_pcap_time = pcap_last_update;
 
 	/* Get pcap printers updated */
 	load_printers(ev, msg_ctx);
