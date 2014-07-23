@@ -330,6 +330,11 @@ bld.SAMBA_SUBSYSTEM('NDR_CLUSAPI',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_MDSSVC',
+    source='gen_ndr/ndr_mdssvc.c',
+    public_deps='ndr'
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
     source='gen_ndr/ndr_dcerpc.c ndr/ndr_dcerpc.c',
     public_deps='ndr',
@@ -665,12 +670,17 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_CLUSAPI',
     public_deps='dcerpc-binding NDR_CLUSAPI'
     )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_MDSSVC',
+    source='gen_ndr/ndr_mdssvc_c.c',
+    public_deps='dcerpc-binding NDR_MDSSVC'
+    )
+
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
     source=[],
     deps='''NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT
     NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM
-    NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_OPEN_FILES NDR_SMBXSRV''',
+    NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV''',
     private_library=True,
     grouping_library=True
     )
