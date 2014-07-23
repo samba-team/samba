@@ -286,9 +286,10 @@ normal_read:
 					  hdr->length, in_length);
 		if (ret == -1) {
 			saved_errno = errno;
-			DEBUG(0,("smb2_sendfile_send_data: sendfile_short_send "
+			DEBUG(0,("%s: sendfile_short_send "
 				 "failed for file %s (%s) for client %s. "
 				 "Terminating\n",
+				 __func__,
 				 fsp_str_dbg(fsp), strerror(saved_errno),
 				 smbXsrv_connection_dbg(xconn)));
 			exit_server_cleanly("smb2_sendfile_send_data: "
