@@ -51,6 +51,7 @@ static void wb_irpc_forward_callback(struct tevent_req *subreq)
 		DEBUG(0,("RPC callback failed for %s - %s\n",
 			 opname, nt_errstr(status)));
 		irpc_send_reply(st->msg, status);
+		return;
 	}
 
 	irpc_send_reply(st->msg, status);
