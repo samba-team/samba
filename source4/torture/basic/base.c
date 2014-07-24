@@ -649,7 +649,6 @@ test the timing of deferred open requests
 static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli, int dummy)
 {
 	const char *fname = "\\defer_open_test.dat";
-	int retries=4;
 	int i = 0;
 	bool correct = true;
 	int nsec;
@@ -659,11 +658,6 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 	nsec = torture_setting_int(tctx, "sharedelay", 1000000);
 	msec = nsec / 1000;
 	sec = ((double)nsec) / ((double) 1000000);
-
-	if (retries <= 0) {
-		torture_comment(tctx, "failed to connect\n");
-		return false;
-	}
 
 	torture_comment(tctx, "Testing deferred open requests.\n");
 
