@@ -659,7 +659,8 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 	msec = nsec / 1000;
 	sec = ((double)nsec) / ((double) 1000000);
 
-	torture_comment(tctx, "Testing deferred open requests.\n");
+	torture_comment(tctx, "pid %u: Testing deferred open requests.\n",
+			(unsigned)getpid());
 
 	while (i < 4) {
 		int fnum = -1;
@@ -690,7 +691,7 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 			return false;
 		}
 
-		torture_comment(tctx, "pid %u open %d\n", (unsigned)getpid(), i);
+		torture_comment(tctx, "pid %u: open %d\n", (unsigned)getpid(), i);
 
 		smb_msleep(10 * msec);
 		i++;
@@ -713,7 +714,8 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 		}
 	}
 
-	torture_comment(tctx, "deferred test finished\n");
+	torture_comment(tctx, "pid %u: deferred test finished\n",
+			(unsigned)getpid());
 	return correct;
 }
 
