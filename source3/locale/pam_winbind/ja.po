@@ -6,9 +6,10 @@ msgstr ""
 "Project-Id-Version: pam_winbind\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2010-03-06 01:55+0800\n"
-"PO-Revision-Date: 2009-02-04 15:11\n"
-"Last-Translator: Novell Language <language@novell.com>\n"
-"Language-Team: Novell Language <language@novell.com>\n"
+"PO-Revision-Date: 2010-03-06 02:55+0900\n"
+"Last-Translator: victory <victory.deb@gmail.com>\n"
+"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -19,15 +20,15 @@ msgstr "成功しました"
 
 #: ../../../nsswitch/pam_winbind.c:585
 msgid "No primary Domain Controler available"
-msgstr "プライマリドメインコントローラが利用できません"
+msgstr "プライマリドメインコントローラーが利用できません"
 
 #: ../../../nsswitch/pam_winbind.c:587
 msgid "No domain controllers found"
-msgstr "ドメインコントローラが見つかりません"
+msgstr "ドメインコントローラーが見つかりません"
 
 #: ../../../nsswitch/pam_winbind.c:589 ../../libsmb/nterr.c:566
 msgid "No logon servers"
-msgstr "ログオンサーバがありません"
+msgstr "ログオンサーバーがありません"
 
 #: ../../../nsswitch/pam_winbind.c:591
 msgid "Password too short"
@@ -35,7 +36,7 @@ msgstr "パスワードが短すぎます"
 
 #: ../../../nsswitch/pam_winbind.c:593
 msgid "The password of this user is too recent to change"
-msgstr "このユーザに対するパスワードは変更するには新しすぎます"
+msgstr "このユーザーに対するパスワードは変更するには新しすぎます"
 
 #: ../../../nsswitch/pam_winbind.c:595
 msgid "Password is already in password history"
@@ -78,17 +79,15 @@ msgid "Access is denied"
 msgstr "アクセスが拒否されました"
 
 #: ../../../nsswitch/pam_winbind.c:818
-#, fuzzy
 msgid "Do you want to change your password now?"
-msgstr "パスワードを今すぐ変更する必要があります"
+msgstr "パスワードを今すぐ変更しますか?"
 
 #: ../../../nsswitch/pam_winbind.c:902
-#, fuzzy
 msgid "Your password expires today.\n"
-msgstr "お使いのパスワードは本日期限切れになります\n"
+msgstr "お使いのパスワードは本日期限切れになります。\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
-#, fuzzy, c-format
+#, c-format
 msgid "Your password will expire in %d %s.\n"
 msgstr "お使いのパスワードは、あと %d %s で有効期限が切れます。\n"
 
@@ -104,6 +103,8 @@ msgstr "日"
 #, c-format
 msgid "Cannot convert group %s to sid, please contact your administrator to see if group %s is valid."
 msgstr ""
+"グループ %s を sid に変換できません。管理者と連絡を取ってグループ %s が合って"
+"いるか確認してください。"
 
 #: ../../../nsswitch/pam_winbind.c:1387
 msgid "Grace login. Please change your password as soon you're online again"
@@ -111,13 +112,15 @@ msgstr "猶予ログイン中です。次回ログオン時にすぐにパスワ
 
 #: ../../../nsswitch/pam_winbind.c:1397
 msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
-msgstr "ドメインコントローラにアクセスできないため、記憶済みの認証を使用しました。ネットワーク資源が利用できないかもしれません"
+msgstr "ドメインコントローラーにアクセスできないため、記憶済みの認証を使用しました。ネットワーク資源が利用できないかもしれません"
 
 #: ../../../nsswitch/pam_winbind.c:1422
 msgid ""
 "Failed to establish your Kerberos Ticket cache due time differences\n"
 "with the domain controller.  Please verify the system time.\n"
 msgstr ""
+"ドメインコントローラーと期限が合っていないため Kerberos Ticket の\n"
+"キャッシュの構成に失敗しました。システム時刻を確認してください。\n"
 
 #: ../../../nsswitch/pam_winbind.c:1490
 msgid "Your password "
@@ -144,7 +147,7 @@ msgstr "別のパスワードを入力してください。両方のテキスト
 #: ../../../nsswitch/pam_winbind.c:1553
 #, c-format
 msgid "Creating directory: %s failed: %s"
-msgstr ""
+msgstr "ディレクトリ %s の作成に失敗しました: %s"
 
 #: ../../../nsswitch/pam_winbind.c:2018
 msgid "Password does not meet complexity requirements"
@@ -155,7 +158,7 @@ msgstr "パスワードは複雑さの要件を満たしていません"
 #.
 #: ../../../nsswitch/pam_winbind.c:2489 ../../../nsswitch/pam_winbind.c:3035
 msgid "Username: "
-msgstr ""
+msgstr "ユーザー名: "
 
 #: ../../../nsswitch/pam_winbind.c:2665
 msgid "Password: "
@@ -184,375 +187,368 @@ msgstr "新しい NT パスワードの再入力: "
 #.
 #: ../../../nsswitch/pam_winbind.h:128
 msgid "Sorry, passwords do not match"
-msgstr ""
+msgstr "申し訳ありませんがパスワードが一致しません"
 
 #: ../../libsmb/nterr.c:559
 msgid "Undetermined error"
-msgstr ""
+msgstr "不明瞭なエラー"
 
 #: ../../libsmb/nterr.c:560
-#, fuzzy
 msgid "Access denied"
 msgstr "アクセスが拒否されました"
 
 #: ../../libsmb/nterr.c:561
 msgid "Account locked out"
-msgstr ""
+msgstr "アカウントロックアウト"
 
 #: ../../libsmb/nterr.c:562
-#, fuzzy
 msgid "Must change password"
-msgstr "パスワードを今すぐ変更する必要があります"
+msgstr "パスワードを変更する必要があります"
 
 #: ../../libsmb/nterr.c:563
-#, fuzzy
 msgid "Password is too short"
 msgstr "パスワードが短すぎます"
 
 #: ../../libsmb/nterr.c:564
-#, fuzzy
 msgid "Password is too recent"
-msgstr "パスワードが短すぎます"
+msgstr "パスワードがごく最近利用されています"
 
 #: ../../libsmb/nterr.c:565
-#, fuzzy
 msgid "Password history conflict"
-msgstr "パスワードが短すぎます"
+msgstr "パスワード履歴と競合しています"
 
 #: ../../libsmb/nterr.c:567
 msgid "Improperly formed account name"
-msgstr ""
+msgstr "アカウント名の形式が誤っています"
 
 #: ../../libsmb/nterr.c:568
 msgid "User exists"
-msgstr ""
+msgstr "ユーザーが存在します"
 
 #: ../../libsmb/nterr.c:569
 msgid "No such user"
-msgstr ""
+msgstr "ユーザーが存在しません"
 
 #: ../../libsmb/nterr.c:570
 msgid "Group exists"
-msgstr ""
+msgstr "グループが存在します"
 
 #: ../../libsmb/nterr.c:571
 msgid "No such group"
-msgstr ""
+msgstr "グループが存在しません"
 
 #: ../../libsmb/nterr.c:572
 msgid "Member not in group"
-msgstr ""
+msgstr "グループのメンバーではありません"
 
 #: ../../libsmb/nterr.c:573
-#, fuzzy
 msgid "Wrong Password"
-msgstr "パスワード:"
+msgstr "パスワードが誤っています"
 
 #: ../../libsmb/nterr.c:574
-#, fuzzy
 msgid "Ill formed password"
-msgstr "お使いのパスワードは "
+msgstr "パスワードの形式が不正です"
 
 #: ../../libsmb/nterr.c:575
-#, fuzzy
 msgid "Password restriction"
-msgstr "パスワードが短すぎます"
+msgstr "パスワード制限"
 
 #: ../../libsmb/nterr.c:576
 msgid "Logon failure"
-msgstr ""
+msgstr "ログオン失敗"
 
 #: ../../libsmb/nterr.c:577
 msgid "Account restriction"
-msgstr ""
+msgstr "アカウント制限"
 
 #: ../../libsmb/nterr.c:578
 msgid "Invalid logon hours"
-msgstr ""
+msgstr "ログオン時間が不正です"
 
 #: ../../libsmb/nterr.c:579
-#, fuzzy
 msgid "Invalid workstation"
-msgstr "信頼アカウントが正しくありません"
+msgstr "ワークステーションが不正です"
 
 #: ../../libsmb/nterr.c:580
-#, fuzzy
 msgid "Password expired"
 msgstr "お使いのパスワードの期限が切れました"
 
 #: ../../libsmb/nterr.c:581
 msgid "Account disabled"
-msgstr ""
+msgstr "アカウントが無効になっています"
 
 #: ../../libsmb/nterr.c:582
 msgid "Memory allocation error"
-msgstr ""
+msgstr "メモリ割り当てエラー"
 
 #: ../../libsmb/nterr.c:583
-#, fuzzy
 msgid "No domain controllers located"
-msgstr "ドメインコントローラが見つかりません"
+msgstr "ドメインコントローラーが見つかりません"
 
 #: ../../libsmb/nterr.c:584
 msgid "Named pipe not available"
-msgstr ""
+msgstr "名前付きパイプは利用できません"
 
 #: ../../libsmb/nterr.c:585
 msgid "Not implemented"
-msgstr ""
+msgstr "実装されていません"
 
 #: ../../libsmb/nterr.c:586
 msgid "Invalid information class"
-msgstr ""
+msgstr "情報クラスが不正です"
 
 #: ../../libsmb/nterr.c:587
 msgid "Information length mismatch"
-msgstr ""
+msgstr "情報の長さが合いません"
 
 #: ../../libsmb/nterr.c:588
 msgid "Access violation"
-msgstr ""
+msgstr "アクセス違反"
 
 #: ../../libsmb/nterr.c:589
 msgid "Invalid handle"
-msgstr ""
+msgstr "処理が不正です"
 
 #: ../../libsmb/nterr.c:590
 msgid "Invalid parameter"
-msgstr ""
+msgstr "パラメーターが不正です"
 
 #: ../../libsmb/nterr.c:591
 msgid "No memory"
-msgstr ""
+msgstr "メモリがありません"
 
 #: ../../libsmb/nterr.c:592
 msgid "Buffer too small"
-msgstr ""
+msgstr "バッファーが小さすぎます"
 
 #: ../../libsmb/nterr.c:593
 msgid "Revision mismatch"
-msgstr ""
+msgstr "リビジョンが一致しません"
 
 #: ../../libsmb/nterr.c:594
-#, fuzzy
 msgid "No such logon session"
-msgstr "ログオンサーバがありません"
+msgstr "ログオンセッションがありません"
 
 #: ../../libsmb/nterr.c:595
 msgid "No such privilege"
-msgstr ""
+msgstr "権限がありません"
 
 #: ../../libsmb/nterr.c:596
 msgid "Procedure not found"
-msgstr ""
+msgstr "手順が見つかりませ"
 
 #: ../../libsmb/nterr.c:597
 msgid "Server disabled"
-msgstr ""
+msgstr "サーバーは無効にされています"
 
 #: ../../libsmb/nterr.c:598
 msgid "Invalid pipe state"
-msgstr ""
+msgstr "パイプの状態が不正です"
 
 #: ../../libsmb/nterr.c:599
 msgid "Named pipe busy"
-msgstr ""
+msgstr "名前付きパイプが使用中です"
 
 #: ../../libsmb/nterr.c:600
 msgid "Illegal function"
-msgstr ""
+msgstr "関数が不正です"
 
 #: ../../libsmb/nterr.c:601
 msgid "Named pipe disconnected"
-msgstr ""
+msgstr "名前付きパイプを切断しました"
 
 #: ../../libsmb/nterr.c:602
 msgid "Named pipe closing"
-msgstr ""
+msgstr "名前付きパイプを閉じています"
 
 #: ../../libsmb/nterr.c:603
 msgid "Remote host not listening"
-msgstr ""
+msgstr "リモートホストが待ち受けしていません"
 
 #: ../../libsmb/nterr.c:604
 msgid "Duplicate name on network"
-msgstr ""
+msgstr "ネットワーク上で名前が重複しています"
 
 #: ../../libsmb/nterr.c:605
 msgid "Print queue is full"
-msgstr ""
+msgstr "印刷キューがいっぱいです"
 
 #: ../../libsmb/nterr.c:606
-#, fuzzy
 msgid "No print spool space available"
-msgstr "プライマリドメインコントローラが利用できません"
+msgstr "利用可能な印刷スプールスペースがありません"
 
 #: ../../libsmb/nterr.c:607
 msgid "The network name cannot be found"
-msgstr ""
+msgstr "ネットワーク名を見つけられませんでした"
 
 #: ../../libsmb/nterr.c:608
 msgid "The connection was refused"
-msgstr ""
+msgstr "接続が拒否されました"
 
 #: ../../libsmb/nterr.c:609
 msgid "Too many names"
-msgstr ""
+msgstr "名前が多すぎます"
 
 #: ../../libsmb/nterr.c:610
 msgid "Too many sessions"
-msgstr ""
+msgstr "セッションが多すぎます"
 
 #: ../../libsmb/nterr.c:611
 msgid "Invalid server state"
-msgstr ""
+msgstr "サーバーの状態が不正です"
 
 #: ../../libsmb/nterr.c:612
 msgid "Invalid domain state"
-msgstr ""
+msgstr "ドメインの状態が不正です"
 
 #: ../../libsmb/nterr.c:613
 msgid "Invalid domain role"
-msgstr ""
+msgstr "ドメインロールが不正です"
 
 #: ../../libsmb/nterr.c:614
 msgid "No such domain"
-msgstr ""
+msgstr "ドメインがありません"
 
 #: ../../libsmb/nterr.c:615
 msgid "Domain exists"
-msgstr ""
+msgstr "ドメインが存在します"
 
+# Translator's NOTE: 何の限度か不明
 #: ../../libsmb/nterr.c:616
 msgid "Domain limit exceeded"
-msgstr ""
+msgstr "ドメインの限度を超えています"
 
 #: ../../libsmb/nterr.c:617
 msgid "Bad logon session state"
-msgstr ""
+msgstr "ログオンセッションの状態が不正です"
 
 #: ../../libsmb/nterr.c:618
 msgid "Logon session collision"
-msgstr ""
+msgstr "ログオンセッション衝突"
 
 #: ../../libsmb/nterr.c:619
 msgid "Invalid logon type"
-msgstr ""
+msgstr "ログオンの種類が不正です"
 
 #: ../../libsmb/nterr.c:620
 msgid "Cancelled"
-msgstr ""
+msgstr "取り消しました"
 
 #: ../../libsmb/nterr.c:621
 msgid "Invalid computer name"
-msgstr ""
+msgstr "コンピューター名が不正です"
 
 #: ../../libsmb/nterr.c:622
 msgid "Logon server conflict"
-msgstr ""
+msgstr "ログオンサーバーが競合しています"
 
 #: ../../libsmb/nterr.c:623
 msgid "Time difference at domain controller"
-msgstr ""
+msgstr "ドメインコントローラーに時差があります"
 
 #: ../../libsmb/nterr.c:624
 msgid "Pipe broken"
-msgstr ""
+msgstr "パイプが壊れています"
 
 #: ../../libsmb/nterr.c:625
 msgid "Registry corrupt"
-msgstr ""
+msgstr "レジストリが破損しています"
 
+# Translator's NOTE: is 'secret' MS term?
 #: ../../libsmb/nterr.c:626
 msgid "Too many secrets"
-msgstr ""
+msgstr "秘密が多すぎます"
 
 #: ../../libsmb/nterr.c:627
 msgid "Too many SIDs"
-msgstr ""
+msgstr "SID が多すぎます"
 
 #: ../../libsmb/nterr.c:628
 msgid "Lanmanager cross encryption required"
-msgstr ""
+msgstr "LanManager のクロス暗号化が必要です"
 
 #: ../../libsmb/nterr.c:629
 msgid "Log file full"
-msgstr ""
+msgstr "ログファイルがいっぱいです"
 
+# Translator's NOTE: is 'Trust' MS term?
+# Translator's NOTE: is 'secret' MS term?
 #: ../../libsmb/nterr.c:630
 msgid "No trusted LSA secret"
-msgstr ""
+msgstr "信頼している LSA シークレットがありません"
 
+# Translator's NOTE: is 'Trust' MS term?
 #: ../../libsmb/nterr.c:631
-#, fuzzy
 msgid "No trusted SAM account"
-msgstr "信頼アカウントが正しくありません"
+msgstr "信頼している SAM アカウントがありません"
 
+# Translator's NOTE: is 'Trust' MS term?
 #: ../../libsmb/nterr.c:632
 msgid "Trusted domain failure"
-msgstr ""
+msgstr "信頼しているドメインに故障が発生しました"
 
+# Translator's NOTE: is 'Trust' MS term?
 #: ../../libsmb/nterr.c:633
 msgid "Trust relationship failure"
-msgstr ""
+msgstr "関係の信頼に失敗しました"
 
+# Translator's NOTE: is 'Trust' MS term?
 #: ../../libsmb/nterr.c:634
 msgid "Trust failure"
-msgstr ""
+msgstr "信頼に失敗しました"
 
 #: ../../libsmb/nterr.c:635
 msgid "Netlogon service not started"
-msgstr ""
+msgstr "Netlogon サービスが起動していません"
 
 #: ../../libsmb/nterr.c:636
 msgid "Account expired"
-msgstr ""
+msgstr "アカウントの有効期限が切れました"
 
 #: ../../libsmb/nterr.c:637
 msgid "Network credential conflict"
-msgstr ""
+msgstr "ネットワークの資格情報が競合しています"
 
 #: ../../libsmb/nterr.c:638
 msgid "Remote session limit"
-msgstr ""
+msgstr "リモートセッション数の上限です"
 
 #: ../../libsmb/nterr.c:639
 msgid "No logon interdomain trust account"
-msgstr ""
+msgstr "ログオンドメイン間信頼アカウントがありません"
 
 #: ../../libsmb/nterr.c:640
 msgid "No logon workstation trust account"
-msgstr ""
+msgstr "ログオンワークステーションの信頼アカウントがありません"
 
 #: ../../libsmb/nterr.c:641
-#, fuzzy
 msgid "No logon server trust account"
-msgstr "ログオンサーバがありません"
+msgstr "ログオンサーバー信頼アカウントがありません"
 
 #: ../../libsmb/nterr.c:642
 msgid "Domain trust inconsistent"
-msgstr ""
+msgstr "ドメインの信頼に不整合があります"
 
 #: ../../libsmb/nterr.c:643
 msgid "No user session key available"
-msgstr ""
+msgstr "利用できるユーザーセッションキーがありません"
 
 #: ../../libsmb/nterr.c:644
 msgid "User session deleted"
-msgstr ""
+msgstr "ユーザーセッションを削除しました"
 
 #: ../../libsmb/nterr.c:645
 msgid "Insufficient server resources"
-msgstr ""
+msgstr "サーバーリソースが不足しています"
 
 #: ../../libsmb/nterr.c:646
 msgid "Insufficient logon information"
-msgstr ""
+msgstr "ログオン情報が不足しています"
 
 #: ../../libsmb/nterr.c:648
 msgid "License quota exceeded"
-msgstr ""
+msgstr "ライセンス数の制限を超えました"
 
 #: ../../libsmb/nterr.c:649
 msgid "No more files"
-msgstr ""
+msgstr "もうファイルがありません"
