@@ -2672,7 +2672,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "ldap connection timeout", "2");
 
-	lpcfg_do_global_parameter(lp_ctx, "winbind expand groups", "1");
+	lpcfg_do_global_parameter(lp_ctx, "winbind expand groups", "0");
 
 	lpcfg_do_global_parameter(lp_ctx, "stat cache", "yes");
 

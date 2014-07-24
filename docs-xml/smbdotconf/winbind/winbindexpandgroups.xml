@@ -17,8 +17,13 @@
 	 result in system slowdown as the main parent winbindd daemon
 	 must perform the group unrolling and will be unable to answer
 	 incoming NSS or authentication requests during this time.</para>
-  
+
+	<para>The default value was changed from 1 to 0 with Samba 4.2.
+	Some broken applications calculate the group memberships of
+	users by traversing groups, such applications will require
+	"winbind expand groups = 1". But the new default makes winbindd more reliable
+	as it doesn't require SAMR access to domain controllers of trusted domains.</para>
 </description>
 
-<value type="default">1</value>
+<value type="default">0</value>
 </samba:parameter>

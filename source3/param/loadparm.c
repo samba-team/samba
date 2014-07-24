@@ -802,7 +802,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.winbind_use_default_domain = false;
 	Globals.winbind_trusted_domains_only = false;
 	Globals.winbind_nested_groups = true;
-	Globals.winbind_expand_groups = 1;
+	Globals.winbind_expand_groups = 0;
 	Globals.winbind_nss_info = (const char **)str_list_make_v3(NULL, "template", NULL);
 	Globals.winbind_refresh_tickets = false;
 	Globals.winbind_offline_logon = false;
