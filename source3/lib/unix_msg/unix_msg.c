@@ -640,7 +640,7 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 	ssize_t msglen;
 	size_t sent;
 	int ret = 0;
-	struct iovec *iov_copy;
+	struct iovec iov_copy[iovlen+2];
 	struct unix_msg_hdr hdr;
 	struct iovec src_iov;
 
@@ -654,17 +654,16 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 	}
 
 	if (msglen <= (ctx->fragment_len - sizeof(uint64_t))) {
-		struct iovec tmp_iov[iovlen+1];
 		uint64_t cookie = 0;
 
-		tmp_iov[0].iov_base = &cookie;
-		tmp_iov[0].iov_len = sizeof(cookie);
+		iov_copy[0].iov_base = &cookie;
+		iov_copy[0].iov_len = sizeof(cookie);
 		if (iovlen > 0) {
-			memcpy(&tmp_iov[1], iov,
+			memcpy(&iov_copy[1], iov,
 			       sizeof(struct iovec) * iovlen);
 		}
 
-		return unix_dgram_send(ctx->dgram, dst, tmp_iov, iovlen+1);
+		return unix_dgram_send(ctx->dgram, dst, iov_copy, iovlen+1);
 	}
 
 	hdr = (struct unix_msg_hdr) {
@@ -673,10 +672,6 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		.sock = unix_dgram_sock(ctx->dgram)
 	};
 
-	iov_copy = malloc(sizeof(struct iovec) * (iovlen + 2));
-	if (iov_copy == NULL) {
-		return ENOMEM;
-	}
 	iov_copy[0].iov_base = &ctx->cookie;
 	iov_copy[0].iov_len = sizeof(ctx->cookie);
 	iov_copy[1].iov_base = &hdr;
@@ -729,8 +724,6 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 			break;
 		}
 	}
-
-	free(iov_copy);
 
 	ctx->cookie += 1;
 	if (ctx->cookie == 0) {
