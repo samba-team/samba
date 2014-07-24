@@ -686,10 +686,11 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 			}
 		} while (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION));
 
-		if (fnum == -1) {
-			torture_comment(tctx,"Failed to open %s, error=%s\n", fname, smbcli_errstr(cli->tree));
-			return false;
-		}
+		torture_assert(tctx, fnum != -1,
+			       talloc_asprintf(tctx,
+					"pid %u: Failed to open %s, error=%s\n",
+					(unsigned)getpid(), fname,
+					smbcli_errstr(cli->tree)));
 
 		torture_comment(tctx, "pid %u: open %d\n", (unsigned)getpid(), i);
 
