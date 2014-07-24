@@ -274,7 +274,11 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 {
 	if (lock_ctx->child > 0) {
 		ctdb_kill(lock_ctx->ctdb, lock_ctx->child, SIGKILL);
-		DLIST_REMOVE(lock_ctx->ctdb->lock_current, lock_ctx);
+		if (lock_ctx->type == LOCK_RECORD) {
+			DLIST_REMOVE(lock_ctx->ctdb_db->lock_current, lock_ctx);
+		} else {
+			DLIST_REMOVE(lock_ctx->ctdb->lock_current, lock_ctx);
+		}
 		if (lock_ctx->ctdb_db) {
 			lock_ctx->ctdb_db->lock_num_current--;
 		}
@@ -283,7 +287,11 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
 		}
 	} else {
-		DLIST_REMOVE(lock_ctx->ctdb->lock_pending, lock_ctx);
+		if (lock_ctx->type == LOCK_RECORD) {
+			DLIST_REMOVE(lock_ctx->ctdb_db->lock_pending, lock_ctx);
+		} else {
+			DLIST_REMOVE(lock_ctx->ctdb->lock_pending, lock_ctx);
+		}
 		CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
 		if (lock_ctx->ctdb_db) {
 			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
@@ -649,6 +657,65 @@ static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ct
 	return args;
 }
 
+/*
+ * Find a lock request that can be scheduled
+ */
+struct lock_context *ctdb_find_lock_context(struct ctdb_context *ctdb)
+{
+	struct lock_context *lock_ctx, *next_ctx;
+	struct ctdb_db_context *ctdb_db;
+
+	/* First check if there are database lock requests */
+	lock_ctx = ctdb->lock_pending;
+	while (lock_ctx != NULL) {
+		next_ctx = lock_ctx->next;
+		if (! lock_ctx->request) {
+			DEBUG(DEBUG_INFO, ("Removing lock context without lock request\n"));
+			DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
+			CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
+			if (lock_ctx->ctdb_db) {
+				CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
+			}
+			talloc_free(lock_ctx);
+		} else {
+			/* Found a lock context with lock requests */
+			break;
+		}
+		lock_ctx = next_ctx;
+	}
+
+	if (lock_ctx) {
+		return lock_ctx;
+	}
+
+	/* Next check database queues */
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		if (ctdb_db->lock_num_current == ctdb->tunable.lock_processes_per_db) {
+			continue;
+		}
+		lock_ctx = ctdb_db->lock_pending;
+		while (lock_ctx != NULL) {
+			next_ctx = lock_ctx->next;
+			if (! lock_ctx->request) {
+				DEBUG(DEBUG_INFO, ("Removing lock context without lock request\n"));
+				DLIST_REMOVE(ctdb_db->lock_pending, lock_ctx);
+				CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
+				CTDB_DECREMENT_DB_STAT(ctdb_db, locks.num_pending);
+				talloc_free(lock_ctx);
+			} else {
+				break;
+			}
+
+			lock_ctx = next_ctx;
+		}
+
+		if (lock_ctx) {
+			return lock_ctx;
+		}
+	}
+
+	return NULL;
+}
 
 /*
  * Schedule a new lock child process
@@ -656,7 +723,7 @@ static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ct
  */
 static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 {
-	struct lock_context *lock_ctx, *next_ctx;
+	struct lock_context *lock_ctx;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 	const char *helper = BINDIR "/ctdb_lock_helper";
@@ -675,32 +742,8 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		CTDB_NO_MEMORY_VOID(ctdb, prog);
 	}
 
-	if (ctdb->lock_pending == NULL) {
-		return;
-	}
-
 	/* Find a lock context with requests */
-	lock_ctx = ctdb->lock_pending;
-	while (lock_ctx != NULL) {
-		next_ctx = lock_ctx->next;
-		if (! lock_ctx->request) {
-			DEBUG(DEBUG_INFO, ("Removing lock context without lock request\n"));
-			DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
-			CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
-			if (lock_ctx->ctdb_db) {
-				CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
-			}
-			talloc_free(lock_ctx);
-		} else {
-			if (lock_ctx->ctdb_db == NULL ||
-			    lock_ctx->ctdb_db->lock_num_current < ctdb->tunable.lock_processes_per_db) {
-				/* Found a lock context with lock requests */
-				break;
-			}
-		}
-		lock_ctx = next_ctx;
-	}
-
+	lock_ctx = ctdb_find_lock_context(ctdb);
 	if (lock_ctx == NULL) {
 		return;
 	}
@@ -794,8 +837,13 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	tevent_fd_set_auto_close(lock_ctx->tfd);
 
 	/* Move the context from pending to current */
-	DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
-	DLIST_ADD_END(ctdb->lock_current, lock_ctx, NULL);
+	if (lock_ctx->type == LOCK_RECORD) {
+		DLIST_REMOVE(lock_ctx->ctdb_db->lock_pending, lock_ctx);
+		DLIST_ADD_END(lock_ctx->ctdb_db->lock_current, lock_ctx, NULL);
+	} else {
+		DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
+		DLIST_ADD_END(ctdb->lock_current, lock_ctx, NULL);
+	}
 	CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
 	CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
 	if (lock_ctx->ctdb_db) {
@@ -862,9 +910,9 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	 * immediately, so keep them at the head of the pending queue.
 	 */
 	if (lock_ctx->type == LOCK_RECORD) {
-		DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
+		DLIST_ADD_END(ctdb_db->lock_pending, lock_ctx, NULL);
 	} else {
-		DLIST_ADD(ctdb->lock_pending, lock_ctx);
+		DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
 	}
 	CTDB_INCREMENT_STAT(ctdb, locks.num_pending);
 	if (ctdb_db) {

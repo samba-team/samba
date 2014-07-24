@@ -597,6 +597,8 @@ struct ctdb_db_context {
 
 	struct ctdb_db_statistics statistics;
 
+	struct lock_context *lock_current;
+	struct lock_context *lock_pending;
 	int lock_num_current;
 };
 
