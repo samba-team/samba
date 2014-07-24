@@ -2754,7 +2754,14 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tev
 	NTSTATUS result;
 	bool ok;
 
-	status = dcerpc_netr_DsrUpdateReadOnlyServerDnsRecords_recv(subreq, state,
+	/*
+	 * We use state->dns_names as the memory context, as this is
+	 * the only in/out variable and it has been overwritten by the
+	 * out parameter from the server.
+	 *
+	 * We need to preserve the return value until the caller can use it.
+	 */
+	status = dcerpc_netr_DsrUpdateReadOnlyServerDnsRecords_recv(subreq, state->dns_names,
 								    &result);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
