@@ -19,6 +19,6 @@ Inconsistent test configuration - master node is slave-only
 There is no NATGW master node
 EOF
 
-for i in "ipreallocated" "monitor" ; do
+for i in "ipreallocated" ; do
     simple_test_event "$i"
 done

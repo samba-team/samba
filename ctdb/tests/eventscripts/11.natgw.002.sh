@@ -18,7 +18,7 @@ required_result 1 <<EOF
 error: CTDB_NATGW_NODES=${CTDB_NATGW_NODES} unreadable
 EOF
 
-for i in "startup" "ipreallocated" "monitor" ; do
+for i in "startup" "ipreallocated" ; do
     simple_test_event "$i"
 done
 

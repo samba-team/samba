@@ -163,12 +163,6 @@ case "$1" in
 	natgw_clear
 	;;
 
-    monitor)
-	natgw_check_config
-	natgw_set_capability
-	natgw_ensure_master "$1"
-	;;
-
     *)
 	ctdb_standard_event_handler "@"
 	;;

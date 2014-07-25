@@ -16,6 +16,6 @@ CTDB_NATGW_PUBLIC_IP=""
 
 required_result 1 "Invalid configuration: CTDB_NATGW_PUBLIC_IP not set"
 
-for i in "startup" "ipreallocated" "monitor" ; do
+for i in "startup" "ipreallocated" ; do
     simple_test_event "$i"
 done
