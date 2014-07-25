@@ -1290,7 +1290,7 @@ sub wait_for_start($$$$$)
 	    print "delaying for nbt name registration\n";
 	    sleep(10);
 	    # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
-	    my $nmblookup = Samba::bindir_path($self, "nmblookup3");
+	    my $nmblookup = Samba::bindir_path($self, "nmblookup");
 	    system("$nmblookup $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
 	    system("$nmblookup $envvars->{CONFIGURATION} __SAMBA__");
 	    system("$nmblookup $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
