@@ -1286,16 +1286,31 @@ sub wait_for_start($$$$$)
 	my $ret;
 
 	if ($nmbd eq "yes") {
-	    # give time for nbt server to register its names
-	    print "delaying for nbt name registration\n";
-	    sleep(10);
-	    # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
-	    my $nmblookup = Samba::bindir_path($self, "nmblookup");
-	    system("$nmblookup $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
-	    system("$nmblookup $envvars->{CONFIGURATION} __SAMBA__");
-	    system("$nmblookup $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
-	    system("$nmblookup $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
-	    system("$nmblookup $envvars->{CONFIGURATION} $envvars->{SERVER}");
+		my $count = 0;
+
+		# give time for nbt server to register its names
+		print "checking for nmbd\n";
+
+		# This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init
+		my $nmblookup = Samba::bindir_path($self, "nmblookup");
+
+		do {
+			$ret = system("$nmblookup $envvars->{CONFIGURATION} $envvars->{SERVER}");
+			if ($ret != 0) {
+				sleep(1);
+			} else {
+				system("$nmblookup $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
+				system("$nmblookup $envvars->{CONFIGURATION} __SAMBA__");
+				system("$nmblookup $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
+				system("$nmblookup $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
+			}
+			$count++;
+		} while ($ret != 0 && $count < 10);
+		if ($count == 10) {
+			print "NMBD not reachable after 10 retries\n";
+			teardown_env($self, $envvars);
+			return 0;
+		}
 	}
 
 	if ($winbindd eq "yes") {
