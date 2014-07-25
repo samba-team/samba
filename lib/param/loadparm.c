@@ -2509,6 +2509,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "winbind reconnect delay", "30");
 
+	lpcfg_do_global_parameter(lp_ctx, "winbind request timeout", "60");
+
 	lpcfg_do_global_parameter(lp_ctx, "nt acl support", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "acl check permissions", "yes");
