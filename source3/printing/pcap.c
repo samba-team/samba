@@ -83,15 +83,6 @@ void pcap_cache_destroy_specific(struct pcap_cache **pp_cache)
 	*pp_cache = NULL;
 }
 
-static bool pcap_cache_add(const char *name, const char *comment, const char *location)
-{
-	NTSTATUS status;
-	time_t t = time_mono(NULL);
-
-	status = printer_list_set_printer(talloc_tos(), name, comment, location, t);
-	return NT_STATUS_IS_OK(status);
-}
-
 bool pcap_cache_loaded(void)
 {
 	NTSTATUS status;
@@ -105,6 +96,7 @@ bool pcap_cache_replace(const struct pcap_cache *pcache)
 {
 	const struct pcap_cache *p;
 	NTSTATUS status;
+	time_t t = time_mono(NULL);
 
 	status = printer_list_mark_reload();
 	if (!NT_STATUS_IS_OK(status)) {
@@ -113,7 +105,11 @@ bool pcap_cache_replace(const struct pcap_cache *pcache)
 	}
 
 	for (p = pcache; p; p = p->next) {
-		pcap_cache_add(p->name, p->comment, p->location);
+		status = printer_list_set_printer(talloc_tos(), p->name,
+						  p->comment, p->location, t);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 	}
 
 	status = printer_list_clean_old();
