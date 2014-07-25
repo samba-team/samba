@@ -2296,8 +2296,6 @@ bool lp_file_list_changed(void)
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	while (f) {
-		time_t mod_time;
-
 		if (strequal(f->name, INCLUDE_REGISTRY_NAME)) {
 			struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
 
@@ -2311,7 +2309,9 @@ bool lp_file_list_changed(void)
 				return true;
 			}
 		} else {
+			time_t mod_time;
 			char *n2 = NULL;
+
 			n2 = talloc_sub_basic(talloc_tos(),
 					      get_current_username(),
 					      current_user_info.domain,
