@@ -65,7 +65,7 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 	char *dir;
 	char *lockfile_name;
 	int lockfile_fd;
-	struct flock lck = {};
+	struct flock lck;
 	int unique_len, ret;
 	ssize_t written;
 	bool ok;
@@ -101,10 +101,10 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 		goto fail_free;
 	}
 
-	lck.l_type = F_WRLCK;
-	lck.l_whence = SEEK_SET;
-	lck.l_start = 0;
-	lck.l_len = 0;
+	lck = (struct flock) {
+		.l_type = F_WRLCK,
+		.l_whence = SEEK_SET
+	};
 
 	ret = fcntl(lockfile_fd, F_SETLK, &lck);
 	if (ret == -1) {
