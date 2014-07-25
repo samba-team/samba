@@ -969,6 +969,41 @@ static bool remove_idle_client(void)
 	return False;
 }
 
+/*
+ * Terminate all clients whose requests have taken longer than
+ * "winbind request timeout" seconds to process, or have been
+ * idle for more than "winbind request timeout" seconds.
+ */
+
+static void remove_timed_out_clients(void)
+{
+	struct winbindd_cli_state *state, *next = NULL;
+	time_t curr_time = time(NULL);
+	int timeout_val = lp_winbind_request_timeout();
+
+	for (state = winbindd_client_list(); state; state = next) {
+		time_t expiry_time;
+
+		next = state->next;
+		expiry_time = state->last_access + timeout_val;
+
+		if (curr_time > expiry_time) {
+			if (client_is_idle(state)) {
+				DEBUG(5,("Idle client timed out, "
+					"shutting down sock %d, pid %u\n",
+					state->sock,
+					(unsigned int)state->pid));
+			} else {
+				DEBUG(5,("Client request timed out, "
+					"shutting down sock %d, pid %u\n",
+					state->sock,
+					(unsigned int)state->pid));
+			}
+			remove_client(state);
+		}
+	}
+}
+
 struct winbindd_listen_state {
 	bool privileged;
 	int fd;
@@ -994,6 +1029,7 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 			break;
 		}
 	}
+	remove_timed_out_clients();
 	new_connection(s->fd, s->privileged);
 }
 
