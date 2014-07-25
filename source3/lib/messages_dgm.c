@@ -28,7 +28,7 @@
 #include "unix_msg/unix_msg.h"
 
 struct messaging_dgm_context {
-	struct server_id pid;
+	pid_t pid;
 	struct poll_funcs *msg_callbacks;
 	void *tevent_handle;
 	struct unix_msg_ctx *dgm_ctx;
@@ -199,7 +199,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	if (ctx == NULL) {
 		goto fail_nomem;
 	}
-	ctx->pid = pid;
+	ctx->pid = pid.pid;
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = recv_cb_private_data;
 
@@ -274,16 +274,14 @@ fail_nomem:
 
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 {
-	struct server_id pid = c->pid;
-
 	/*
 	 * First delete the socket to avoid races. The lockfile is the
 	 * indicator that we're still around.
 	 */
 	unix_msg_free(c->dgm_ctx);
 
-	if (getpid() == pid.pid) {
-		(void)messaging_dgm_lockfile_remove(c, c->cache_dir, pid.pid);
+	if (getpid() == c->pid) {
+		(void)messaging_dgm_lockfile_remove(c, c->cache_dir, c->pid);
 	}
 	close(c->lockfile_fd);
 
