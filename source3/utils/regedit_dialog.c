@@ -55,31 +55,19 @@ static char *string_trim(TALLOC_CTX *ctx, const char *buf)
 
 static int dialog_free(struct dialog *dia)
 {
-	if (dia->window) {
-		delwin(dia->window);
-	}
-	if (dia->sub_window) {
-		delwin(dia->sub_window);
-	}
-	if (dia->panel) {
-		del_panel(dia->panel);
-	}
-	if (dia->choices) {
-		unpost_menu(dia->choices);
-		free_menu(dia->choices);
-	}
-	if (dia->choice_items) {
-		ITEM **it;
-		for (it = dia->choice_items; *it != NULL; ++it) {
-			free_item(*it);
-		}
-	}
+	dialog_destroy(dia);
 
 	return 0;
 }
 
-struct dialog *dialog_new(TALLOC_CTX *ctx, const char *title, int nlines,
-			  int ncols, int y, int x)
+static bool default_validator(struct dialog *dia, struct dialog_section *sect,
+			      void *arg)
+{
+	return true;
+}
+
+struct dialog *dialog_new(TALLOC_CTX *ctx, short color, const char *title,
+			  int y, int x)
 {
 	struct dialog *dia;
 
@@ -90,24 +78,14 @@ struct dialog *dialog_new(TALLOC_CTX *ctx, const char *title, int nlines,
 
 	talloc_set_destructor(dia, dialog_free);
 
-	dia->window = newwin(nlines, ncols, y, x);
-	if (dia->window == NULL) {
+	dia->title = talloc_strdup(dia, title);
+	if (dia->title == NULL) {
 		goto fail;
 	}
-
-	box(dia->window, 0, 0);
-	mvwaddstr(dia->window, 0, 1, title);
-
-	/* body of the dialog within the box outline */
-	dia->sub_window = derwin(dia->window, nlines - 2, ncols - 2, 1, 1);
-	if (dia->sub_window == NULL) {
-		goto fail;
-	}
-
-	dia->panel = new_panel(dia->window);
-	if (dia->panel == NULL) {
-		goto fail;
-	}
+	dia->x = x;
+	dia->y = y;
+	dia->color = color;
+	dia->submit = default_validator;
 
 	return dia;
 
@@ -118,8 +96,13 @@ fail:
 
 }
 
-static void center_dialog_above_window(int *nlines, int *ncols,
-				       int *y, int *x)
+void dialog_set_submit_cb(struct dialog *dia, dialog_submit_cb cb, void *arg)
+{
+	dia->submit = cb;
+	dia->submit_arg = arg;
+}
+
+static void center_above_window(int *nlines, int *ncols, int *y, int *x)
 {
 	int centery, centerx;
 
@@ -143,19 +126,333 @@ static void center_dialog_above_window(int *nlines, int *ncols,
 	}
 }
 
+void dialog_section_destroy(struct dialog_section *section)
+{
+	if (section->ops->destroy) {
+		section->ops->destroy(section);
+	}
+	if (section->window) {
+		delwin(section->window);
+		section->window = NULL;
+	}
+}
+
+void dialog_section_init(struct dialog_section *section,
+			 const struct dialog_section_ops *ops,
+			 int nlines, int ncols)
+{
+	section->ops = ops;
+	section->nlines = nlines;
+	section->ncols = ncols;
+}
+
+const char *dialog_section_get_name(struct dialog_section *section)
+{
+	return section->name;
+}
+
+void dialog_section_set_name(struct dialog_section *section, const char *name)
+{
+	TALLOC_FREE(section->name);
+	section->name = talloc_strdup(section, name);
+}
+
+void dialog_section_set_justify(struct dialog_section *section,
+				enum section_justify justify)
+{
+	section->justify = justify;
+}
+
+/* append a section to the dialog's circular list */
+void dialog_append_section(struct dialog *dia,
+		           struct dialog_section *section)
+{
+	SMB_ASSERT(section != NULL);
+
+	if (!dia->head_section) {
+		dia->head_section = section;
+	}
+	if (dia->tail_section) {
+		dia->tail_section->next = section;
+	}
+	section->prev = dia->tail_section;
+	section->next = dia->head_section;
+	dia->head_section->prev = section;
+	dia->tail_section = section;
+}
+
+struct dialog_section *dialog_find_section(struct dialog *dia, const char *name)
+{
+	struct dialog_section *section = dia->head_section;
+
+	do {
+		if (section->name && strequal(section->name, name)) {
+			return section;
+		}
+		section = section->next;
+	} while (section != dia->head_section);
+
+	return NULL;
+}
+
+static void section_on_input(struct dialog *dia, int c)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section->ops->on_input) {
+		return;
+	}
+	section->ops->on_input(dia, section, c);
+}
+
+static bool section_on_tab(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section || !section->ops->on_tab) {
+		return false;
+	}
+	return section->ops->on_tab(dia, section);
+}
+
+static bool section_on_btab(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section || !section->ops->on_btab) {
+		return false;
+	}
+	return section->ops->on_btab(dia, section);
+}
+
+static bool section_on_up(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section || !section->ops->on_up) {
+		return false;
+	}
+	return section->ops->on_up(dia, section);
+}
+
+static bool section_on_down(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section || !section->ops->on_down) {
+		return false;
+	}
+	return section->ops->on_down(dia, section);
+}
+
+static bool section_on_left(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section || !section->ops->on_left) {
+		return false;
+	}
+	return section->ops->on_left(dia, section);
+}
+
+static bool section_on_right(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section || !section->ops->on_right) {
+		return false;
+	}
+	return section->ops->on_right(dia, section);
+}
+
+static enum dialog_action section_on_enter(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section || !section->ops->on_enter) {
+		return DIALOG_OK;
+	}
+	return section->ops->on_enter(dia, section);
+}
+
+static bool section_on_focus(struct dialog *dia, bool forward)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (!section->ops->on_focus) {
+		return false;
+	}
+	return section->ops->on_focus(dia, section, forward);
+}
+
+static void section_on_leave_focus(struct dialog *dia)
+{
+	struct dialog_section *section = dia->current_section;
+
+	if (section->ops->on_leave_focus) {
+		section->ops->on_leave_focus(dia, section);
+	}
+}
+
+static void section_set_next_focus(struct dialog *dia)
+{
+	section_on_leave_focus(dia);
+
+	do {
+		dia->current_section = dia->current_section->next;
+	} while (!section_on_focus(dia, true));
+}
+
+static void section_set_previous_focus(struct dialog *dia)
+{
+	section_on_leave_focus(dia);
+
+	do {
+		dia->current_section = dia->current_section->prev;
+	} while (!section_on_focus(dia, false));
+}
+
+WERROR dialog_create(struct dialog *dia)
+{
+	WERROR rv = WERR_OK;
+	int row, col;
+	int nlines, ncols;
+	struct dialog_section *section;
+
+	nlines = 0;
+	ncols = 0;
+	SMB_ASSERT(dia->head_section != NULL);
+
+	/* calculate total size based on sections */
+	section = dia->head_section;
+	do {
+		nlines += section->nlines;
+		ncols = MAX(ncols, section->ncols);
+		section = section->next;
+	} while (section != dia->head_section);
+
+	/* fill in widths for sections that expand */
+	section = dia->head_section;
+	do {
+		if (section->ncols < 0) {
+			section->ncols = ncols;
+		}
+		section = section->next;
+	} while (section != dia->head_section);
+
+	/* create window for dialog */
+	nlines += 4;
+	ncols += 6;
+	dia->centered = false;
+	if (dia->y < 0 || dia->x < 0) {
+		dia->centered = true;
+		center_above_window(&nlines, &ncols, &dia->y, &dia->x);
+	}
+	dia->window = newwin(nlines, ncols, dia->y, dia->x);
+	if (dia->window == NULL) {
+		rv = WERR_NOMEM;
+		goto fail;
+	}
+	dia->panel = new_panel(dia->window);
+	if (dia->panel == NULL) {
+		rv = WERR_NOMEM;
+		goto fail;
+	}
+
+	/* setup color and border */
+	wbkgdset(dia->window, ' ' | COLOR_PAIR(dia->color));
+	wclear(dia->window);
+	mvwhline(dia->window, 1, 2, 0, ncols - 4);
+	mvwhline(dia->window, nlines - 2, 2, 0, ncols - 4);
+	mvwvline(dia->window, 2, 1, 0, nlines - 4);
+	mvwvline(dia->window, 2, ncols - 2, 0, nlines - 4);
+	mvwaddch(dia->window, 1, 1, ACS_ULCORNER);
+	mvwaddch(dia->window, 1, ncols - 2, ACS_URCORNER);
+	mvwaddch(dia->window, nlines - 2, 1, ACS_LLCORNER);
+	mvwaddch(dia->window, nlines - 2, ncols - 2, ACS_LRCORNER);
+	col = ncols / 2 - MIN(strlen(dia->title) + 2, ncols) / 2;
+	mvwprintw(dia->window, 1, col, " %s ", dia->title);
+
+	/* create subwindows for each section */
+	row = 2;
+	section = dia->head_section;
+	do {
+		col = 3;
+
+		switch (section->justify) {
+		case SECTION_JUSTIFY_LEFT:
+			break;
+		case SECTION_JUSTIFY_CENTER:
+			col += (ncols - 6)/ 2 - section->ncols / 2;
+			break;
+		case SECTION_JUSTIFY_RIGHT:
+			break;
+		}
+
+		section->window = derwin(dia->window, section->nlines,
+					 section->ncols, row, col);
+		if (section->window == NULL) {
+			rv = WERR_NOMEM;
+			goto fail;
+		}
+		SMB_ASSERT(section->ops->create != NULL);
+		rv = section->ops->create(dia, section);
+		row += section->nlines;
+		section = section->next;
+	} while (section != dia->head_section && W_ERROR_IS_OK(rv));
+
+	dia->current_section = dia->head_section;
+	section_set_next_focus(dia);
+
+fail:
+	return rv;
+}
+
+void dialog_show(struct dialog *dia)
+{
+	struct dialog_section *section;
+
+	touchwin(dia->window);
+	wnoutrefresh(dia->window);
+	section = dia->head_section;
+	do {
+		wnoutrefresh(section->window);
+		section = section->next;
+	} while (section != dia->head_section);
+}
+
+void dialog_destroy(struct dialog *dia)
+{
+	struct dialog_section *section;
+
+	section = dia->head_section;
+	do {
+		dialog_section_destroy(section);
+		section = section->next;
+	} while (section != dia->head_section);
+
+	if (dia->panel) {
+		del_panel(dia->panel);
+		dia->panel = NULL;
+	}
+	if (dia->window) {
+		delwin(dia->window);
+		dia->window = NULL;
+	}
+}
+
 static int dialog_getch(struct dialog *dia)
 {
 	int c;
 
 	c = regedit_getch();
-
 	if (c == KEY_RESIZE) {
 		int nlines, ncols, y, x;
 
 		getmaxyx(dia->window, nlines, ncols);
 		getbegyx(dia->window, y, x);
 		if (dia->centered) {
-			center_dialog_above_window(&nlines, &ncols, &y, &x);
+			center_above_window(&nlines, &ncols, &y, &x);
 		} else {
 			if (nlines + y > LINES) {
 				if (nlines > LINES) {
@@ -173,461 +470,1265 @@ static int dialog_getch(struct dialog *dia)
 			}
 		}
 		move_panel(dia->panel, y, x);
-		doupdate();
 	}
 
 	return c;
 }
 
-struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title,
-				 int nlines, int ncols)
+bool dialog_handle_input(struct dialog *dia, WERROR *err,
+			 enum dialog_action *action)
 {
-	struct dialog *dia;
-	int y, x;
+	int c;
 
-	center_dialog_above_window(&nlines, &ncols, &y, &x);
+	*err = WERR_OK;
 
-	dia = dialog_new(ctx, title, nlines, ncols, y, x);
-	if (dia) {
-		dia->centered = true;
+	c = dialog_getch(dia);
+
+	switch (c) {
+	case '\t':
+		if (!section_on_tab(dia)) {
+			section_set_next_focus(dia);
+		}
+		break;
+	case KEY_BTAB:
+		if (!section_on_btab(dia)) {
+			section_set_previous_focus(dia);
+		}
+		break;
+	case KEY_UP:
+		if (!section_on_up(dia)) {
+			section_set_previous_focus(dia);
+		}
+		break;
+	case KEY_DOWN:
+		if (!section_on_down(dia)) {
+			section_set_next_focus(dia);
+		}
+		break;
+	case KEY_LEFT:
+		if (!section_on_left(dia)) {
+			section_set_previous_focus(dia);
+		}
+		break;
+	case KEY_RIGHT:
+		if (!section_on_right(dia)) {
+			section_set_next_focus(dia);
+		}
+		break;
+	case '\n':
+	case KEY_ENTER:
+		*action = section_on_enter(dia);
+		switch (*action) {
+		case DIALOG_IGNORE:
+			break;
+		case DIALOG_CANCEL:
+			return false;
+		case DIALOG_OK:
+			return !dia->submit(dia, dia->current_section,
+					    dia->submit_arg);
+		}
+		break;
+	case 27: /* ESC */
+		return false;
+	default:
+		section_on_input(dia, c);
+		break;
 	}
 
-	return dia;
+	return true;
 }
 
-struct dialog *dialog_choice_new(TALLOC_CTX *ctx, const char *title,
-				 const char **choices, int nlines,
-				 int ncols, int y, int x)
+void dialog_modal_loop(struct dialog *dia, WERROR *err,
+		       enum dialog_action *action)
 {
-	size_t nchoices, i;
-	struct dialog *dia;
+	do {
+		update_panels();
+		doupdate();
+	} while (dialog_handle_input(dia, err, action));
+}
 
-	dia = dialog_new(ctx, title, nlines, ncols, y, x);
-	if (dia == NULL) {
+/* text label */
+struct dialog_section_label {
+	struct dialog_section section;
+	char **text;
+};
+
+static WERROR label_create(struct dialog *dia, struct dialog_section *section)
+{
+	int row;
+	struct dialog_section_label *label =
+		talloc_get_type_abort(section, struct dialog_section_label);
+
+	for (row = 0; row < section->nlines; ++row) {
+		mvwaddstr(section->window, row, 0, label->text[row]);
+	}
+
+	return WERR_OK;
+}
+
+struct dialog_section_ops label_ops = {
+	.create = label_create,
+};
+
+static int label_free(struct dialog_section_label *label)
+{
+	dialog_section_destroy(&label->section);
+	return 0;
+}
+
+struct dialog_section *dialog_section_label_new_va(TALLOC_CTX *ctx,
+						   const char *msg, va_list ap)
+{
+	struct dialog_section_label *label;
+	char *tmp, *ptmp, *line, *saveptr;
+	int nlines, ncols;
+
+	label = talloc_zero(ctx, struct dialog_section_label);
+	if (label == NULL) {
 		return NULL;
 	}
-
-	dia->menu_window = derwin(dia->sub_window, 1, ncols - 3,
-				  nlines - 3, 0);
-	if (dia->menu_window == NULL) {
+	talloc_set_destructor(label, label_free);
+	tmp = talloc_vasprintf(label, msg, ap);
+	if (tmp == NULL) {
 		goto fail;
 	}
 
-	for (nchoices = 0; choices[nchoices] != NULL; ++nchoices)
-		;
-	dia->choice_items = talloc_zero_array(dia, ITEM *, nchoices + 1);
-	if (dia->choice_items == NULL) {
-		goto fail;
-	}
-	for (i = 0; i < nchoices; ++i) {
-		char *desc = talloc_strdup(dia, choices[i]);
-		if (desc == NULL) {
+	for (nlines = 0, ncols = 0, ptmp = tmp;
+	     (line = strtok_r(ptmp, "\n", &saveptr)) != NULL;
+	     ++nlines) {
+		ptmp = NULL;
+		label->text = talloc_realloc(label, label->text,
+					     char *, nlines + 1);
+		if (label->text == NULL) {
 			goto fail;
 		}
-		dia->choice_items[i] = new_item(desc, desc);
-		if (dia->choice_items[i] == NULL) {
+		ncols = MAX(ncols, strlen(line));
+		label->text[nlines] = talloc_strdup(label->text, line);
+		if (label->text[nlines] == NULL) {
 			goto fail;
 		}
-		/* store choice index */
-		set_item_userptr(dia->choice_items[i], (void*)(uintptr_t)i);
 	}
+	talloc_free(tmp);
+	dialog_section_init(&label->section, &label_ops, nlines, ncols);
 
-	dia->choices = new_menu(dia->choice_items);
-	if (dia->choices == NULL) {
-		goto fail;
-	}
-
-	set_menu_format(dia->choices, 1, ncols);
-	set_menu_win(dia->choices, dia->sub_window);
-	set_menu_sub(dia->choices, dia->menu_window);
-	menu_opts_off(dia->choices, O_SHOWDESC);
-	set_menu_mark(dia->choices, "* ");
-	post_menu(dia->choices);
-	wmove(dia->sub_window, 0, 0);
-
-	return dia;
+	return &label->section;
 
 fail:
-	talloc_free(dia);
-
+	talloc_free(label);
 	return NULL;
 }
 
-struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
-					const char **choices, int nlines,
-					int ncols)
+struct dialog_section *dialog_section_label_new(TALLOC_CTX *ctx,
+						const char *msg, ...)
+{
+	va_list ap;
+	struct dialog_section *rv;
+
+	va_start(ap, msg);
+	rv = dialog_section_label_new_va(ctx, msg, ap);
+	va_end(ap);
+
+	return rv;
+}
+
+/* horizontal separator */
+struct dialog_section_hsep {
+	struct dialog_section section;
+	int sep;
+};
+
+static WERROR hsep_create(struct dialog *dia, struct dialog_section *section)
 {
 	int y, x;
-	struct dialog *dia;
-	center_dialog_above_window(&nlines, &ncols, &y, &x);
+	struct dialog_section_hsep *hsep =
+		talloc_get_type_abort(section, struct dialog_section_hsep);
 
-	dia = dialog_choice_new(ctx, title, choices, nlines, ncols, y, x);
-	if (dia) {
-		dia->centered = true;
+	whline(section->window, hsep->sep, section->ncols);
+
+	if (hsep->sep == 0 || hsep->sep == ACS_HLINE) {
+		/* change the border characters around this section to
+		   tee chars */
+		getparyx(section->window, y, x);
+		mvwaddch(dia->window, y, x - 1, ACS_HLINE);
+		mvwaddch(dia->window, y, x - 2, ACS_LTEE);
+		mvwaddch(dia->window, y, x + section->ncols, ACS_HLINE);
+		mvwaddch(dia->window, y, x + section->ncols + 1, ACS_RTEE);
 	}
 
-	return dia;
+	return WERR_OK;
 }
 
-static bool current_item_is_first(MENU *menu)
-{
-	const ITEM *it = current_item(menu);
+struct dialog_section_ops hsep_ops = {
+	.create = hsep_create
+};
 
-	return item_index(it) == 0;
+static int hsep_free(struct dialog_section_hsep *hsep)
+{
+	dialog_section_destroy(&hsep->section);
+	return 0;
 }
 
-static bool current_item_is_last(MENU *menu)
+struct dialog_section *dialog_section_hsep_new(TALLOC_CTX *ctx, int sep)
 {
-	const ITEM *it = current_item(menu);
+	struct dialog_section_hsep *hsep;
 
-	return item_index(it) == item_count(menu) - 1;
-}
-
-static int handle_menu_input(MENU *menu, int c)
-{
-	ITEM *item;
-
-	switch (c) {
-	case KEY_BTAB:
-		if (current_item_is_first(menu)) {
-			menu_driver(menu, REQ_LAST_ITEM);
-		} else {
-			menu_driver(menu, REQ_LEFT_ITEM);
-		}
-		break;
-	case KEY_LEFT:
-		menu_driver(menu, REQ_LEFT_ITEM);
-		break;
-	case '\t':
-		if (current_item_is_last(menu)) {
-			menu_driver(menu, REQ_FIRST_ITEM);
-			break;
-		} else {
-			menu_driver(menu, REQ_RIGHT_ITEM);
-		}
-	case KEY_RIGHT:
-		menu_driver(menu, REQ_RIGHT_ITEM);
-		break;
-	case KEY_ENTER:
-	case '\n':
-		item = current_item(menu);
-		return (int)(uintptr_t)item_userptr(item);
+	hsep = talloc_zero(ctx, struct dialog_section_hsep);
+	if (hsep) {
+		talloc_set_destructor(hsep, hsep_free);
+		dialog_section_init(&hsep->section, &hsep_ops, 1, -1);
+		hsep->sep = sep;
 	}
 
-	return -1;
+	return &hsep->section;
 }
 
-static void handle_form_input(FORM *frm, int c)
+/* text input field */
+struct dialog_section_text_field {
+	struct dialog_section section;
+	unsigned opts;
+	FIELD *field[2];
+	FORM *form;
+};
+
+static WERROR text_field_create(struct dialog *dia,
+				struct dialog_section *section)
 {
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	text_field->field[0] = new_field(section->nlines, section->ncols,
+				         0, 0, 0, 0);
+	if (text_field->field[0] == NULL) {
+		return WERR_NOMEM;
+	}
+	set_field_back(text_field->field[0], A_REVERSE);
+	set_field_opts(text_field->field[0], text_field->opts);
+
+	text_field->form = new_form(text_field->field);
+	if (text_field->form == NULL) {
+		return WERR_NOMEM;
+	}
+
+	set_form_win(text_field->form, dia->window);
+	set_form_sub(text_field->form, section->window);
+	set_current_field(text_field->form, text_field->field[0]);
+	post_form(text_field->form);
+
+	return WERR_OK;
+}
+
+static void text_field_destroy(struct dialog_section *section)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	if (text_field->form) {
+		unpost_form(text_field->form);
+		free_form(text_field->form);
+		text_field->form = NULL;
+	}
+	if (text_field->field[0]) {
+		free_field(text_field->field[0]);
+		text_field->field[0] = NULL;
+	}
+}
+
+static void text_field_on_input(struct dialog *dia,
+				struct dialog_section *section,
+				int c)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
 	switch (c) {
-	case '\n':
-		form_driver(frm, REQ_NEW_LINE);
-		break;
-	case KEY_UP:
-		form_driver(frm, REQ_UP_CHAR);
-		break;
-	case KEY_DOWN:
-		form_driver(frm, REQ_DOWN_CHAR);
-		break;
-	case '\b':
 	case KEY_BACKSPACE:
-		form_driver(frm, REQ_DEL_PREV);
-		break;
-	case KEY_LEFT:
-		form_driver(frm, REQ_LEFT_CHAR);
-		break;
-	case KEY_RIGHT:
-		form_driver(frm, REQ_RIGHT_CHAR);
+		form_driver(text_field->form, REQ_DEL_PREV);
 		break;
 	default:
-		form_driver(frm, c);
+		form_driver(text_field->form, c);
 		break;
 	}
 }
 
-static int modal_loop(struct dialog *dia)
+static bool text_field_on_up(struct dialog *dia,
+			     struct dialog_section *section)
 {
-	int c;
-	int selection = -1;
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
 
-	update_panels();
-	doupdate();
-
-	while (selection == -1) {
-		c = dialog_getch(dia);
-		selection = handle_menu_input(dia->choices, c);
-		update_panels();
-		doupdate();
+	if (section->nlines > 1) {
+		form_driver(text_field->form, REQ_UP_CHAR);
+		return true;
 	}
-
-	talloc_free(dia);
-
-	return selection;
+	return false;
 }
 
-static struct dialog *dialog_msg_new(TALLOC_CTX *ctx, const char *title,
-				     const char **choices, int nlines,
-				     const char *msg, va_list ap)
+static bool text_field_on_down(struct dialog *dia,
+			       struct dialog_section *section)
 {
-	struct dialog *dia;
-	char *str;
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	if (section->nlines > 1) {
+		form_driver(text_field->form, REQ_DOWN_CHAR);
+		return true;
+	}
+	return false;
+}
+
+static bool text_field_on_left(struct dialog *dia,
+			       struct dialog_section *section)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	form_driver(text_field->form, REQ_LEFT_CHAR);
+
+	return true;
+}
+
+static bool text_field_on_right(struct dialog *dia,
+			        struct dialog_section *section)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	form_driver(text_field->form, REQ_RIGHT_CHAR);
+
+	return true;
+}
+
+static enum dialog_action text_field_on_enter(struct dialog *dia,
+					      struct dialog_section *section)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	if (section->nlines > 1) {
+		form_driver(text_field->form, REQ_NEW_LINE);
+		return DIALOG_IGNORE;
+	}
+
+	return DIALOG_OK;
+}
+
+static bool text_field_on_focus(struct dialog *dia,
+				struct dialog_section *section, bool forward)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	pos_form_cursor(text_field->form);
+
+	return true;
+}
+
+struct dialog_section_ops text_field_ops = {
+	.create = text_field_create,
+	.destroy = text_field_destroy,
+	.on_input = text_field_on_input,
+	.on_up = text_field_on_up,
+	.on_down = text_field_on_down,
+	.on_left = text_field_on_left,
+	.on_right = text_field_on_right,
+	.on_enter = text_field_on_enter,
+	.on_focus = text_field_on_focus
+};
+
+static int text_field_free(struct dialog_section_text_field *text_field)
+{
+	dialog_section_destroy(&text_field->section);
+	return 0;
+}
+
+struct dialog_section *dialog_section_text_field_new(TALLOC_CTX *ctx,
+						     int height, int width)
+{
+	struct dialog_section_text_field *text_field;
+
+	text_field = talloc_zero(ctx, struct dialog_section_text_field);
+	if (text_field == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(text_field, text_field_free);
+	dialog_section_init(&text_field->section, &text_field_ops,
+			    height, width);
+	text_field->opts = O_ACTIVE | O_PUBLIC | O_EDIT | O_VISIBLE | O_NULLOK;
+
+	return &text_field->section;
+}
+
+const char *dialog_section_text_field_get(TALLOC_CTX *ctx,
+					  struct dialog_section *section)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	form_driver(text_field->form, REQ_VALIDATION);
+
+	return string_trim(ctx, field_buffer(text_field->field[0], 0));
+}
+
+void dialog_section_text_field_set(struct dialog_section *section,
+				   const char *s)
+{
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	set_field_buffer(text_field->field[0], 0, s);
+}
+
+const char **dialog_section_text_field_get_lines(TALLOC_CTX *ctx,
+						 struct dialog_section *section)
+{
+	int rows, cols, max;
+	const char **arr;
+	size_t i;
+	const char *buf;
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	form_driver(text_field->form, REQ_VALIDATION);
+	buf = field_buffer(text_field->field[0], 0);
+
+	dynamic_field_info(text_field->field[0], &rows, &cols, &max);
+
+	arr = talloc_zero_array(ctx, const char *, rows + 1);
+	if (arr == NULL) {
+		return NULL;
+	}
+	for (i = 0; *buf; ++i, buf += cols) {
+		SMB_ASSERT(i < rows);
+		arr[i] = string_trim_n(arr, buf, cols);
+	}
+
+	return arr;
+}
+
+WERROR dialog_section_text_field_set_lines(TALLOC_CTX *ctx,
+					   struct dialog_section *section,
+					   const char **array)
+{
+	int rows, cols, max;
+	size_t padding, length, index;
+	const char **arrayp;
+	char *buf = NULL;
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	dynamic_field_info(text_field->field[0], &rows, &cols, &max);
+	/* try to fit each string on it's own line. each line
+	   needs to be padded with whitespace manually, since
+	   ncurses fields do not have newlines. */
+	for (index = 0, arrayp = array; *arrayp != NULL; ++arrayp) {
+		length = MIN(strlen(*arrayp), cols);
+		padding = cols - length;
+		buf = talloc_realloc(ctx, buf, char,
+				     talloc_array_length(buf) +
+				     length + padding + 1);
+		if (buf == NULL) {
+			return WERR_NOMEM;
+		}
+		memcpy(&buf[index], *arrayp, length);
+		index += length;
+		memset(&buf[index], ' ', padding);
+		index += padding;
+		buf[index] = '\0';
+	}
+
+	set_field_buffer(text_field->field[0], 0, buf);
+	talloc_free(buf);
+
+	return WERR_OK;
+}
+
+bool dialog_section_text_field_get_int(struct dialog_section *section,
+				       long long *out)
+{
+	bool rv;
+	const char *buf;
+	char *endp;
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	form_driver(text_field->form, REQ_VALIDATION);
+
+	buf = string_trim(section, field_buffer(text_field->field[0], 0));
+	if (buf == NULL) {
+		return false;
+	}
+	*out = strtoll(buf, &endp, 0);
+	rv = true;
+	if (endp == buf || endp == NULL || endp[0] != '\0') {
+		rv = false;
+	}
+
+	return rv;
+}
+
+
+bool dialog_section_text_field_get_uint(struct dialog_section *section,
+				        unsigned long long *out)
+{
+	bool rv;
+	const char *buf;
+	char *endp;
+	struct dialog_section_text_field *text_field =
+		talloc_get_type_abort(section, struct dialog_section_text_field);
+
+	form_driver(text_field->form, REQ_VALIDATION);
+
+	buf = string_trim(section, field_buffer(text_field->field[0], 0));
+	if (buf == NULL) {
+		return false;
+	}
+	*out = strtoull(buf, &endp, 0);
+	rv = true;
+	if (endp == buf || endp == NULL || endp[0] != '\0') {
+		rv = false;
+	}
+
+	return rv;
+}
+
+/* hex editor field */
+struct dialog_section_hexedit {
+	struct dialog_section section;
+	struct hexedit *buf;
+};
+
+#define HEXEDIT_MIN_SIZE 16
+static WERROR hexedit_create(struct dialog *dia,
+				struct dialog_section *section)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	hexedit->buf = hexedit_new(dia, section->window, section->nlines,
+				   0, 0, NULL, HEXEDIT_MIN_SIZE);
+	if (hexedit->buf == NULL) {
+		return WERR_NOMEM;
+	}
+
+	hexedit_refresh(hexedit->buf);
+
+	return WERR_OK;
+}
+
+static void hexedit_destroy(struct dialog_section *section)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	if (hexedit->buf) {
+		TALLOC_FREE(hexedit->buf);
+	}
+}
+
+static void hexedit_on_input(struct dialog *dia,
+				struct dialog_section *section,
+				int c)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	switch (c) {
+	case KEY_BACKSPACE:
+		// FIXME hexedit_driver(hexedit->buf, c);
+		break;
+	default:
+		hexedit_driver(hexedit->buf, c);
+		break;
+	}
+}
+
+static bool hexedit_on_up(struct dialog *dia,
+			     struct dialog_section *section)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	hexedit_driver(hexedit->buf, HE_CURSOR_UP);
+
+	return true;
+}
+
+static bool hexedit_on_down(struct dialog *dia,
+			       struct dialog_section *section)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	hexedit_driver(hexedit->buf, HE_CURSOR_DOWN);
+
+	return true;
+}
+
+static bool hexedit_on_left(struct dialog *dia,
+			       struct dialog_section *section)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	hexedit_driver(hexedit->buf, HE_CURSOR_LEFT);
+
+	return true;
+}
+
+static bool hexedit_on_right(struct dialog *dia,
+			        struct dialog_section *section)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	hexedit_driver(hexedit->buf, HE_CURSOR_RIGHT);
+
+	return true;
+}
+
+static enum dialog_action hexedit_on_enter(struct dialog *dia,
+					      struct dialog_section *section)
+{
+	return DIALOG_IGNORE;
+}
+
+static bool hexedit_on_focus(struct dialog *dia,
+				struct dialog_section *section, bool forward)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	hexedit_set_cursor(hexedit->buf);
+
+	return true;
+}
+
+struct dialog_section_ops hexedit_ops = {
+	.create = hexedit_create,
+	.destroy = hexedit_destroy,
+	.on_input = hexedit_on_input,
+	.on_up = hexedit_on_up,
+	.on_down = hexedit_on_down,
+	.on_left = hexedit_on_left,
+	.on_right = hexedit_on_right,
+	.on_enter = hexedit_on_enter,
+	.on_focus = hexedit_on_focus
+};
+
+static int hexedit_free(struct dialog_section_hexedit *hexedit)
+{
+	dialog_section_destroy(&hexedit->section);
+	return 0;
+}
+
+struct dialog_section *dialog_section_hexedit_new(TALLOC_CTX *ctx, int height)
+{
+	struct dialog_section_hexedit *hexedit;
+
+	hexedit = talloc_zero(ctx, struct dialog_section_hexedit);
+	if (hexedit == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(hexedit, hexedit_free);
+	dialog_section_init(&hexedit->section, &hexedit_ops,
+			    height, LINE_WIDTH);
+
+	return &hexedit->section;
+}
+
+WERROR dialog_section_hexedit_set_buf(struct dialog_section *section,
+				      const void *data, size_t size)
+{
+	WERROR rv;
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	SMB_ASSERT(hexedit->buf != NULL);
+
+	rv = hexedit_set_buf(hexedit->buf, data, size);
+	if (W_ERROR_IS_OK(rv)) {
+		hexedit_refresh(hexedit->buf);
+		hexedit_set_cursor(hexedit->buf);
+	}
+
+	return rv;
+}
+
+void dialog_section_hexedit_get_buf(struct dialog_section *section,
+				    const void **data, size_t *size)
+{
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	SMB_ASSERT(hexedit->buf != NULL);
+	*data = hexedit_get_buf(hexedit->buf);
+	*size = hexedit_get_buf_len(hexedit->buf);
+}
+
+/* button box */
+struct dialog_section_buttons {
+	struct dialog_section section;
+	struct button_spec *spec;
+	int current_button;
+};
+
+static void buttons_unhighlight(struct dialog_section_buttons *buttons)
+{
+	short pair;
+	attr_t attr;
+
+	/*
+	 *  Some GCC versions will complain if the macro version of
+	 *  wattr_get is used. So we should enforce the use of the
+	 *  function instead. See:
+	 *  http://lists.gnu.org/archive/html/bug-ncurses/2013-12/msg00017.html
+	 */
+	(wattr_get)(buttons->section.window, &attr, &pair, NULL);
+	mvwchgat(buttons->section.window, 0, 0, -1, A_NORMAL, pair, NULL);
+	wnoutrefresh(buttons->section.window);
+}
+
+static void buttons_highlight(struct dialog_section_buttons *buttons)
+{
+	struct button_spec *button = &buttons->spec[buttons->current_button];
+	short pair;
+	attr_t attr;
+
+	/*
+	 *  Some GCC versions will complain if the macro version of
+	 *  wattr_get is used. So we should enforce the use of the
+	 *  function instead. See:
+	 *  http://lists.gnu.org/archive/html/bug-ncurses/2013-12/msg00017.html
+	 */
+	(wattr_get)(buttons->section.window, &attr, &pair, NULL);
+	mvwchgat(buttons->section.window, 0, 0, -1, A_NORMAL, pair, NULL);
+	mvwchgat(buttons->section.window, 0, button->col,
+		 strlen(button->label), A_REVERSE, pair, NULL);
+	wmove(buttons->section.window, 0, button->col + 2);
+	wcursyncup(buttons->section.window);
+	wnoutrefresh(buttons->section.window);
+}
+
+static bool buttons_highlight_next(struct dialog_section_buttons *buttons)
+{
+	if (buttons->current_button < talloc_array_length(buttons->spec) - 1) {
+		buttons->current_button++;
+		buttons_highlight(buttons);
+		return true;
+	}
+	return false;
+}
+
+static bool buttons_highlight_previous(struct dialog_section_buttons *buttons)
+{
+	if (buttons->current_button > 0) {
+		buttons->current_button--;
+		buttons_highlight(buttons);
+		return true;
+	}
+	return false;
+}
+
+static WERROR buttons_create(struct dialog *dia,
+				struct dialog_section *section)
+{
+	size_t i, nbuttons;
+	struct dialog_section_buttons *buttons =
+		talloc_get_type_abort(section, struct dialog_section_buttons);
+
+	nbuttons = talloc_array_length(buttons->spec);
+	for (i = 0; i < nbuttons; ++i) {
+		struct button_spec *button = &buttons->spec[i];
+		mvwaddstr(section->window, 0, button->col, button->label);
+	}
+
+	buttons->current_button = 0;
+
+	return WERR_OK;
+}
+
+static bool buttons_on_btab(struct dialog *dia, struct dialog_section *section)
+{
+	struct dialog_section_buttons *buttons =
+		talloc_get_type_abort(section, struct dialog_section_buttons);
+
+	return buttons_highlight_previous(buttons);
+}
+
+static bool buttons_on_tab(struct dialog *dia, struct dialog_section *section)
+{
+	struct dialog_section_buttons *buttons =
+		talloc_get_type_abort(section, struct dialog_section_buttons);
+
+	return buttons_highlight_next(buttons);
+}
+
+static enum dialog_action buttons_on_enter(struct dialog *dia,
+					   struct dialog_section *section)
+{
+	struct dialog_section_buttons *buttons =
+		talloc_get_type_abort(section, struct dialog_section_buttons);
+	struct button_spec *spec = &buttons->spec[buttons->current_button];
+
+	if (spec->on_enter) {
+		return spec->on_enter(dia, section);
+	}
+
+	return spec->action;
+}
+
+static bool buttons_on_focus(struct dialog *dia,
+				struct dialog_section *section,
+				bool forward)
+{
+	struct dialog_section_buttons *buttons =
+		talloc_get_type_abort(section, struct dialog_section_buttons);
+
+	if (forward) {
+		buttons->current_button = 0;
+	} else {
+		buttons->current_button = talloc_array_length(buttons->spec) - 1;
+	}
+	buttons_highlight(buttons);
+
+	return true;
+}
+
+static void buttons_on_leave_focus(struct dialog *dia,
+				struct dialog_section *section)
+{
+	struct dialog_section_buttons *buttons =
+		talloc_get_type_abort(section, struct dialog_section_buttons);
+	buttons_unhighlight(buttons);
+}
+
+struct dialog_section_ops buttons_ops = {
+	.create = buttons_create,
+	.on_tab = buttons_on_tab,
+	.on_btab = buttons_on_btab,
+	.on_up = buttons_on_btab,
+	.on_down = buttons_on_tab,
+	.on_left = buttons_on_btab,
+	.on_right = buttons_on_tab,
+	.on_enter = buttons_on_enter,
+	.on_focus = buttons_on_focus,
+	.on_leave_focus = buttons_on_leave_focus
+};
+
+static int buttons_free(struct dialog_section_buttons *buttons)
+{
+	dialog_section_destroy(&buttons->section);
+	return 0;
+}
+
+struct dialog_section *dialog_section_buttons_new(TALLOC_CTX *ctx,
+						  const struct button_spec *spec)
+{
+	struct dialog_section_buttons *buttons;
+	size_t i, nbuttons;
 	int width;
-#define MIN_WIDTH 20
 
-	str = talloc_vasprintf(ctx, msg, ap);
-	if (str == NULL) {
+	buttons = talloc_zero(ctx, struct dialog_section_buttons);
+	if (buttons == NULL) {
 		return NULL;
 	}
+	talloc_set_destructor(buttons, buttons_free);
 
-	width = strlen(str) + 2;
-	if (width < MIN_WIDTH) {
-		width = MIN_WIDTH;
+	for (nbuttons = 0; spec[nbuttons].label; ++nbuttons) {
 	}
-	dia = dialog_choice_center_new(ctx, title, choices, nlines, width);
-	if (dia == NULL) {
-		return NULL;
+	buttons->spec = talloc_zero_array(buttons, struct button_spec, nbuttons);
+	if (buttons->spec == NULL) {
+		goto fail;
 	}
 
-	waddstr(dia->sub_window, str);
-	talloc_free(str);
+	for (width = 0, i = 0; i < nbuttons; ++i) {
+		buttons->spec[i] = spec[i];
+		buttons->spec[i].label = talloc_asprintf(buttons->spec,
+							 "[ %s ]",
+						         spec[i].label);
+		if (!buttons->spec[i].label) {
+			goto fail;
+		}
 
-	return dia;
+		buttons->spec[i].col = width;
+		width += strlen(buttons->spec[i].label);
+		if (i != nbuttons - 1) {
+			++width;
+		}
+	}
+
+	dialog_section_init(&buttons->section, &buttons_ops, 1, width);
+
+	return &buttons->section;
+
+fail:
+	talloc_free(buttons);
+	return NULL;
 }
 
-int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
+/* options */
+struct dialog_section_options {
+	struct dialog_section section;
+	struct option_spec *spec;
+	int current_option;
+	bool single_select;
+};
+
+static void options_unhighlight(struct dialog_section_options *options)
+{
+	short pair;
+	attr_t attr;
+	size_t row;
+
+	/*
+	 *  Some GCC versions will complain if the macro version of
+	 *  wattr_get is used. So we should enforce the use of the
+	 *  function instead. See:
+	 *  http://lists.gnu.org/archive/html/bug-ncurses/2013-12/msg00017.html
+	 */
+	(wattr_get)(options->section.window, &attr, &pair, NULL);
+	for (row = 0; row < options->section.nlines; ++row) {
+		mvwchgat(options->section.window, row, 0, -1, A_NORMAL, pair, NULL);
+	}
+	wnoutrefresh(options->section.window);
+}
+
+static void options_highlight(struct dialog_section_options *options)
+{
+	struct option_spec *option = &options->spec[options->current_option];
+	short pair;
+	attr_t attr;
+	size_t row;
+
+	/*
+	 *  Some GCC versions will complain if the macro version of
+	 *  wattr_get is used. So we should enforce the use of the
+	 *  function instead. See:
+	 *  http://lists.gnu.org/archive/html/bug-ncurses/2013-12/msg00017.html
+	 */
+	(wattr_get)(options->section.window, &attr, &pair, NULL);
+	for (row = 0; row < options->section.nlines; ++row) {
+		mvwchgat(options->section.window, row, 0, -1, A_NORMAL, pair, NULL);
+	}
+	mvwchgat(options->section.window, option->row, option->col,
+		 strlen(option->label), A_REVERSE, pair, NULL);
+	wmove(options->section.window, option->row, option->col + 4);
+	wcursyncup(options->section.window);
+	wnoutrefresh(options->section.window);
+}
+
+static void options_render_state(struct dialog_section_options *options)
+{
+	size_t i, noptions;
+
+	noptions = talloc_array_length(options->spec);
+	for (i = 0; i < noptions; ++i) {
+		struct option_spec *option = &options->spec[i];
+		char c = ' ';
+		if (*option->state)
+			c = 'x';
+		mvwaddch(options->section.window,
+			 option->row, option->col + 1, c);
+		wnoutrefresh(options->section.window);
+	}
+}
+
+static bool options_highlight_next(struct dialog_section_options *options)
+{
+	if (options->current_option < talloc_array_length(options->spec) - 1) {
+		options->current_option++;
+		options_highlight(options);
+		return true;
+	}
+	return false;
+}
+
+static bool options_highlight_previous(struct dialog_section_options *options)
+{
+	if (options->current_option > 0) {
+		options->current_option--;
+		options_highlight(options);
+		return true;
+	}
+	return false;
+}
+
+static WERROR options_create(struct dialog *dia,
+				struct dialog_section *section)
+{
+	size_t i, noptions;
+	struct dialog_section_options *options =
+		talloc_get_type_abort(section, struct dialog_section_options);
+
+	noptions = talloc_array_length(options->spec);
+	for (i = 0; i < noptions; ++i) {
+		struct option_spec *option = &options->spec[i];
+		mvwaddstr(section->window, option->row, option->col,
+			  option->label);
+	}
+
+	options->current_option = 0;
+	options_render_state(options);
+
+	return WERR_OK;
+}
+
+static bool options_on_btab(struct dialog *dia, struct dialog_section *section)
+{
+	struct dialog_section_options *options =
+		talloc_get_type_abort(section, struct dialog_section_options);
+
+	return options_highlight_previous(options);
+}
+
+static bool options_on_tab(struct dialog *dia, struct dialog_section *section)
+{
+	struct dialog_section_options *options =
+		talloc_get_type_abort(section, struct dialog_section_options);
+
+	return options_highlight_next(options);
+}
+
+static void options_on_input(struct dialog *dia, struct dialog_section *section, int c)
+{
+	struct dialog_section_options *options =
+		talloc_get_type_abort(section, struct dialog_section_options);
+
+	if (c == ' ') {
+		struct option_spec *option = &options->spec[options->current_option];
+		if (options->single_select) {
+			size_t i, noptions;
+			noptions = talloc_array_length(options->spec);
+			for (i = 0; i < noptions; ++i) {
+				*(options->spec[i].state) = false;
+			}
+		}
+		*option->state = !*option->state;
+		options_unhighlight(options);
+		options_render_state(options);
+		options_highlight(options);
+	}
+}
+
+static enum dialog_action options_on_enter(struct dialog *dia, struct dialog_section *section)
+{
+	options_on_input(dia, section, ' ');
+	return DIALOG_OK;
+}
+
+static bool options_on_focus(struct dialog *dia,
+				struct dialog_section *section,
+				bool forward)
+{
+	struct dialog_section_options *options =
+		talloc_get_type_abort(section, struct dialog_section_options);
+
+	if (forward) {
+		options->current_option = 0;
+	} else {
+		options->current_option = talloc_array_length(options->spec) - 1;
+	}
+	options_highlight(options);
+
+	return true;
+}
+
+static void options_on_leave_focus(struct dialog *dia,
+				struct dialog_section *section)
+{
+	struct dialog_section_options *options =
+		talloc_get_type_abort(section, struct dialog_section_options);
+	options_unhighlight(options);
+}
+
+struct dialog_section_ops options_ops = {
+	.create = options_create,
+	.on_tab = options_on_tab,
+	.on_btab = options_on_btab,
+	.on_up = options_on_btab,
+	.on_down = options_on_tab,
+	.on_left = options_on_btab,
+	.on_right = options_on_tab,
+	.on_input = options_on_input,
+	.on_enter = options_on_enter,
+	.on_focus = options_on_focus,
+	.on_leave_focus = options_on_leave_focus
+};
+
+static int options_free(struct dialog_section_options *options)
+{
+	dialog_section_destroy(&options->section);
+	return 0;
+}
+
+struct dialog_section *dialog_section_options_new(TALLOC_CTX *ctx,
+						  const struct option_spec *spec,
+						  int maxcol, bool single_select)
+{
+	struct dialog_section_options *options;
+	size_t i, noptions;
+	int width, maxwidth, maxrows;
+
+	options = talloc_zero(ctx, struct dialog_section_options);
+	if (options == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(options, options_free);
+
+	for (noptions = 0; spec[noptions].label; ++noptions) {
+	}
+	options->spec = talloc_zero_array(options, struct option_spec, noptions);
+	if (options->spec == NULL) {
+		goto fail;
+	}
+
+	maxrows = noptions / maxcol;
+	if (noptions % maxcol) {
+		++maxrows;
+	}
+
+	for (width = 0, maxwidth = 0, i = 0; i < noptions; ++i) {
+		options->spec[i] = spec[i];
+		options->spec[i].label = talloc_asprintf(options->spec,
+							 "[ ] %s",
+						         spec[i].label);
+		if (!options->spec[i].label) {
+			goto fail;
+		}
+
+		options->spec[i].col = maxwidth;
+		options->spec[i].row = i % maxrows;
+		width = MAX(strlen(options->spec[i].label), width);
+		if (options->spec[i].row == maxrows - 1 || i == noptions - 1) {
+			maxwidth += width + 1;
+			width = 0;
+		}
+	}
+
+	dialog_section_init(&options->section, &options_ops, maxrows, maxwidth - 1);
+	options->single_select = single_select;
+
+	return &options->section;
+
+fail:
+	talloc_free(options);
+	return NULL;
+}
+
+
+int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
 		 const char *msg, ...)
 {
 	va_list ap;
+	WERROR err;
+	enum dialog_action action;
 	struct dialog *dia;
-	const char *choices[] = {
-		"Ok",
-		"Cancel",
-		NULL
+	struct dialog_section *section;
+	struct button_spec spec[] = {
+		{.label = "OK", .action = DIALOG_OK},
+		{.label = "Cancel", .action = DIALOG_CANCEL},
+		{ 0 }
 	};
-	FIELD *field[2] = {0};
-	FORM *input;
-	WINDOW *input_win;
-	int y, x;
-	int rv = -1;
-	bool input_section = true;
 
+	dia = dialog_new(ctx, PAIR_BLACK_CYAN, title, -1, -1);
 	va_start(ap, msg);
-	dia = dialog_msg_new(ctx, title, choices, 7, msg, ap);
+	section = dialog_section_label_new_va(dia, msg, ap);
 	va_end(ap);
-	if (dia == NULL) {
-		return -1;
-	}
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, ' ');
+	dialog_append_section(dia, section);
+	section = dialog_section_text_field_new(dia, 1, -1);
+	dialog_section_set_name(section, "input");
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, 0);
+	dialog_append_section(dia, section);
+	section = dialog_section_buttons_new(dia, spec);
+	dialog_section_set_justify(section, SECTION_JUSTIFY_CENTER);
+	dialog_append_section(dia, section);
 
-	getmaxyx(dia->sub_window, y, x);
-	input_win = derwin(dia->sub_window, 1, x - 2, 2, 1);
-	if (input_win == NULL) {
-		goto finish;
-	}
-	field[0] = new_field(1, x - 2, 0, 0, 0, 0);
-	if (field[0] == NULL) {
-		goto finish;
-	}
+	dialog_create(dia);
+	dialog_show(dia);
+	dialog_modal_loop(dia, &err, &action);
 
-	field_opts_off(field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
-	set_field_back(field[0], A_REVERSE);
-
-	input = new_form(field);
-	form_opts_off(input, O_NL_OVERLOAD | O_BS_OVERLOAD);
-	set_form_win(input, dia->sub_window);
-	set_form_sub(input, input_win);
-	set_current_field(input, field[0]);
-	post_form(input);
 	*output = NULL;
-
-	update_panels();
-	doupdate();
-
-	while (rv == -1) {
-		int c = dialog_getch(dia);
-
-		if (c == '\t' || c == KEY_BTAB) {
-			if (input_section) {
-				int valid = form_driver(input, REQ_VALIDATION);
-				if (valid == E_OK) {
-					input_section = false;
-					if (c == '\t') {
-						menu_driver(dia->choices,
-							    REQ_FIRST_ITEM);
-					} else {
-						menu_driver(dia->choices,
-							    REQ_LAST_ITEM);
-					}
-					pos_menu_cursor(dia->choices);
-				}
-			} else {
-				if ((c == '\t' &&
-				     current_item_is_last(dia->choices)) ||
-				    (c == KEY_BTAB &&
-				     current_item_is_first(dia->choices))) {
-					input_section = true;
-					set_current_field(input, field[0]);
-					pos_form_cursor(input);
-				} else {
-					handle_menu_input(dia->choices, c);
-				}
-			}
-		} else if (input_section) {
-			handle_form_input(input, c);
-		} else {
-			rv = handle_menu_input(dia->choices, c);
-			if (rv == DIALOG_OK) {
-				const char *buf = field_buffer(field[0], 0);
-				*output = string_trim(ctx, buf);
-			}
-		}
-		update_panels();
-		doupdate();
+	if (action == DIALOG_OK) {
+		section = dialog_find_section(dia, "input");
+		*output = dialog_section_text_field_get(ctx, section);
 	}
 
-finish:
-	if (input) {
-		unpost_form(input);
-		free_form(input);
-	}
-	if (field[0]) {
-		free_field(field[0]);
-	}
-	if (input_win) {
-		delwin(input_win);
-	}
 	talloc_free(dia);
 
-	return rv;
+	return action;
 }
 
 int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
 		  const char *title, const char *msg, ...)
 {
 	va_list ap;
+	WERROR err;
+	enum dialog_action action;
 	struct dialog *dia;
-	const char *choices[] = {
-		"Ok",
-		"Cancel",
-		NULL
-	};
+	struct dialog_section *section;
+	struct button_spec spec[3];
 
-	if (type == DIA_ALERT) {
-		choices[1] = NULL;
+	memset(&spec, '\0', sizeof(spec));
+	spec[0].label = "OK";
+	spec[0].action = DIALOG_OK;
+	if (type == DIA_CONFIRM) {
+		spec[1].label = "Cancel";
+		spec[1].action = DIALOG_CANCEL;
 	}
 
+	dia = dialog_new(ctx, PAIR_BLACK_CYAN, title, -1, -1);
 	va_start(ap, msg);
-	dia = dialog_msg_new(ctx, title, choices, 5, msg, ap);
+	section = dialog_section_label_new_va(dia, msg, ap);
 	va_end(ap);
-	if (dia == NULL) {
-		return -1;
-	}
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, 0);
+	dialog_append_section(dia, section);
+	section = dialog_section_buttons_new(dia, spec);
+	dialog_section_set_justify(section, SECTION_JUSTIFY_CENTER);
+	dialog_append_section(dia, section);
 
-	return modal_loop(dia);
+	dialog_create(dia);
+	dialog_show(dia);
+	dialog_modal_loop(dia, &err, &action);
+	talloc_free(dia);
+
+	return action;
 }
 
-#define EDIT_WIDTH		50
-#define EDIT_INTERNAL_WIDTH	(EDIT_WIDTH - 2)
-#define EDIT_INPUT_WIDTH	(EDIT_INTERNAL_WIDTH - 2)
 
-#define EDIT_NAME_LABEL_Y	0
-#define EDIT_NAME_LABEL_X	0
-#define EDIT_NAME_LABEL_WIDTH	EDIT_INTERNAL_WIDTH
-#define EDIT_NAME_LABEL_HEIGHT	1
-#define EDIT_NAME_INPUT_Y	1
-#define EDIT_NAME_INPUT_X	1
-#define EDIT_NAME_INPUT_WIDTH	EDIT_INPUT_WIDTH
-#define EDIT_NAME_INPUT_HEIGHT	1
-
-#define EDIT_DATA_LABEL_Y	3
-#define EDIT_DATA_LABEL_X	0
-#define EDIT_DATA_LABEL_WIDTH	EDIT_INTERNAL_WIDTH
-#define EDIT_DATA_LABEL_HEIGHT	1
-#define EDIT_DATA_INPUT_Y	4
-#define EDIT_DATA_INPUT_X	1
-#define EDIT_DATA_INPUT_WIDTH	EDIT_INPUT_WIDTH
-#define EDIT_DATA_HEIGHT_ONELINE	1
-#define EDIT_DATA_HEIGHT_MULTILINE	5
-#define EDIT_DATA_HEIGHT_BUF		10
-
-#define EDIT_FORM_WIN_Y			0
-#define EDIT_FORM_WIN_X			0
-#define EDIT_FORM_WIN_HEIGHT_ONELINE	\
-	(EDIT_NAME_LABEL_HEIGHT + EDIT_NAME_INPUT_HEIGHT + 1 + \
-	 EDIT_DATA_LABEL_HEIGHT + EDIT_DATA_HEIGHT_ONELINE)
-
-#define EDIT_FORM_WIN_HEIGHT_MULTILINE	\
-	(EDIT_NAME_LABEL_HEIGHT + EDIT_NAME_INPUT_HEIGHT + 1 + \
-	 EDIT_DATA_LABEL_HEIGHT + EDIT_DATA_HEIGHT_MULTILINE)
-
-#define EDIT_FORM_WIN_HEIGHT_BUF	\
-	(EDIT_NAME_LABEL_HEIGHT + EDIT_NAME_INPUT_HEIGHT + 1 + \
-	 EDIT_DATA_LABEL_HEIGHT)
-
-#define EDIT_FORM_WIN_WIDTH		EDIT_INTERNAL_WIDTH
-
-#define EDIT_PAD		5
-#define EDIT_HEIGHT_ONELINE	(EDIT_FORM_WIN_HEIGHT_ONELINE + EDIT_PAD)
-
-#define EDIT_HEIGHT_MULTILINE	(EDIT_FORM_WIN_HEIGHT_MULTILINE + EDIT_PAD)
-
-#define EDIT_HEIGHT_BUF		\
-	(EDIT_FORM_WIN_HEIGHT_BUF + EDIT_DATA_HEIGHT_BUF + EDIT_PAD)
-
-#define MAX_FIELDS 5
-#define FLD_NAME 1
-#define FLD_DATA 3
-
-#define DIALOG_RESIZE 2
-
-enum input_section {
-	IN_NAME,
-	IN_DATA,
-	IN_MENU
-};
-
-struct edit_dialog {
-	struct dialog *dia;
-	WINDOW *input_win;
-	FORM *input;
-	FIELD *field[MAX_FIELDS];
-	struct hexedit *buf;
-	enum input_section section;
-	bool closing;
+struct edit_req {
+	uint32_t type;
 	uint32_t mode;
+	struct registry_key *key;
+	const struct value_item *vitem;
 };
 
-static int edit_dialog_free(struct edit_dialog *edit)
-{
-	FIELD **f;
-
-	if (edit->input) {
-		unpost_form(edit->input);
-		free_form(edit->input);
-	}
-	for (f = edit->field; *f; ++f) {
-		free_field(*f);
-	}
-	delwin(edit->input_win);
-
-	return 0;
-}
-
-static WERROR fill_value_buffer(struct edit_dialog *edit,
-			        const struct value_item *vitem)
+static WERROR fill_value_buffer(struct dialog *dia, struct edit_req *edit)
 {
 	char *tmp;
+	struct dialog_section *data;
 
-	switch (vitem->type) {
+	if (edit->vitem == NULL) {
+		return WERR_OK;
+	}
+
+	data = dialog_find_section(dia, "data");
+	SMB_ASSERT(data != NULL);
+
+	switch (edit->mode) {
 	case REG_DWORD: {
 		uint32_t v = 0;
-		if (vitem->data.length >= 4) {
-			v = IVAL(vitem->data.data, 0);
+		if (edit->vitem->data.length >= 4) {
+			v = IVAL(edit->vitem->data.data, 0);
 		}
-		tmp = talloc_asprintf(edit, "0x%x", v);
+		tmp = talloc_asprintf(dia, "%u", (unsigned)v);
 		if (tmp == NULL) {
 			return WERR_NOMEM;
 		}
-		set_field_buffer(edit->field[FLD_DATA], 0, tmp);
+		dialog_section_text_field_set(data, tmp);
 		talloc_free(tmp);
 		break;
 	}
@@ -635,48 +1736,25 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 	case REG_EXPAND_SZ: {
 		const char *s;
 
-		if (!pull_reg_sz(edit, &vitem->data, &s)) {
+		if (!pull_reg_sz(dia, &edit->vitem->data, &s)) {
 			return WERR_NOMEM;
 		}
-		set_field_buffer(edit->field[FLD_DATA], 0, s);
+		dialog_section_text_field_set(data, s);
 		break;
 	}
 	case REG_MULTI_SZ: {
-		int rows, cols, max;
-		size_t padding, length, index;
-		const char **array, **arrayp;
-		char *buf = NULL;
+		const char **array;
 
-		dynamic_field_info(edit->field[FLD_DATA], &rows, &cols, &max);
-		if (!pull_reg_multi_sz(edit, &vitem->data, &array)) {
+		if (!pull_reg_multi_sz(dia, &edit->vitem->data, &array)) {
 			return WERR_NOMEM;
 		}
-
-		/* try to fit each string on it's own line. each line
-		   needs to be padded with whitespace manually, since
-		   ncurses fields do not have newlines. */
-		for (index = 0, arrayp = array; *arrayp != NULL; ++arrayp) {
-			length = MIN(strlen(*arrayp), cols);
-			padding = cols - length;
-			buf = talloc_realloc(edit, buf, char,
-					     talloc_array_length(buf) +
-					     length + padding + 1);
-			if (buf == NULL) {
-				return WERR_NOMEM;
-			}
-			memcpy(&buf[index], *arrayp, length);
-			index += length;
-			memset(&buf[index], ' ', padding);
-			index += padding;
-			buf[index] = '\0';
-		}
-
-		set_field_buffer(edit->field[FLD_DATA], 0, buf);
-		talloc_free(buf);
+		return dialog_section_text_field_set_lines(dia, data, array);
 	}
 	case REG_BINARY:
-		/* initialized upon dialog creation */
-		break;
+	default:
+		return dialog_section_hexedit_set_buf(data,
+						      edit->vitem->data.data,
+						      edit->vitem->data.length);
 	}
 
 	return WERR_OK;
@@ -694,531 +1772,253 @@ static bool value_exists(TALLOC_CTX *ctx, const struct registry_key *key,
 	return W_ERROR_IS_OK(rv);
 }
 
-static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
-			uint32_t type, bool new_value)
+static bool edit_on_submit(struct dialog *dia, struct dialog_section *section,
+			   void *arg)
 {
+	struct edit_req *edit = arg;
 	WERROR rv;
 	DATA_BLOB blob;
-	char *name = string_trim(edit, field_buffer(edit->field[FLD_NAME], 0));
+	const char *name;
+	struct dialog_section *name_section, *data;
 
-	if (!new_value && !edit->buf && !field_status(edit->field[FLD_DATA])) {
-		return WERR_OK;
+	name_section = dialog_find_section(dia, "name");
+	if (name_section) {
+		name = dialog_section_text_field_get(dia, name_section);
+		if (*name == '\0') {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "Value name must not be blank.");
+			return false;
+		}
+		if (value_exists(dia, edit->key, name)) {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "Value named \"%s\" already exists.",
+				      name);
+			return false;
+		}
+	} else {
+		SMB_ASSERT(edit->vitem);
+		name = edit->vitem->value_name;
 	}
-	if (new_value && value_exists(edit, key, name)) {
-		return WERR_FILE_EXISTS;
-	}
+	SMB_ASSERT(name);
 
+	data = dialog_find_section(dia, "data");
+	SMB_ASSERT(data != NULL);
+
+	rv = WERR_OK;
 	switch (edit->mode) {
 	case REG_DWORD: {
+		unsigned long long v;
 		uint32_t val;
-		int base = 10;
-		const char *buf = field_buffer(edit->field[FLD_DATA], 0);
 
-		if (buf[0] == '0' && tolower(buf[1]) == 'x') {
-			base = 16;
+		if (!dialog_section_text_field_get_uint(data, &v)) {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "REG_DWORD value must be an integer.");
+			return false;
 		}
-
-		val = strtoul(buf, NULL, base);
-		blob = data_blob_talloc(edit, NULL, sizeof(val));
+		if (v > UINT32_MAX) {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "REG_DWORD value must less than %lu.",
+				      (unsigned long)UINT32_MAX);
+			return false;
+		}
+		val = (uint32_t)v;
+		blob = data_blob_talloc(dia, NULL, sizeof(val));
 		SIVAL(blob.data, 0, val);
-		rv = WERR_OK;
 		break;
 	}
 	case REG_SZ:
 	case REG_EXPAND_SZ: {
-		const char *buf = field_buffer(edit->field[FLD_DATA], 0);
-		char *str = string_trim(edit, buf);
+		const char *buf;
 
-		if (!str || !push_reg_sz(edit, &blob, str)) {
+		buf = dialog_section_text_field_get(dia, data);
+		if (!buf || !push_reg_sz(dia, &blob, buf)) {
 			rv = WERR_NOMEM;
 		}
 		break;
 	}
 	case REG_MULTI_SZ: {
-		int rows, cols, max;
-		const char **arr;
-		size_t i;
-		const char *buf = field_buffer(edit->field[FLD_DATA], 0);
+		const char **lines;
 
-		dynamic_field_info(edit->field[FLD_DATA], &rows, &cols, &max);
-
-		arr = talloc_zero_array(edit, const char *, rows + 1);
-		if (arr == NULL) {
-			return WERR_NOMEM;
-		}
-		for (i = 0; *buf; ++i, buf += cols) {
-			SMB_ASSERT(i < rows);
-			arr[i] = string_trim_n(edit, buf, cols);
-		}
-		if (!push_reg_multi_sz(edit, &blob, arr)) {
+		lines = dialog_section_text_field_get_lines(dia, data);
+		if (!lines || !push_reg_multi_sz(dia, &blob, lines)) {
 			rv = WERR_NOMEM;
 		}
 		break;
 	}
-	case REG_BINARY:
-		blob = data_blob_talloc(edit, NULL, edit->buf->len);
-		memcpy(blob.data, edit->buf->data, edit->buf->len);
+	case REG_BINARY: {
+		const void *buf;
+		size_t len;
+
+		dialog_section_hexedit_get_buf(data, &buf, &len);
+		blob = data_blob_talloc(dia, buf, len);
 		break;
 	}
-
-	rv = reg_val_set(key, name, type, blob);
-
-	return rv;
-}
-
-static void section_down(struct edit_dialog *edit)
-{
-	switch (edit->section) {
-	case IN_NAME:
-		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
-			edit->section = IN_DATA;
-			if (edit->buf) {
-				hexedit_set_cursor(edit->buf);
-			} else {
-				set_current_field(edit->input,
-						  edit->field[FLD_DATA]);
-				pos_form_cursor(edit->input);
-			}
-		}
-		break;
-	case IN_DATA:
-		if (edit->buf ||
-		    form_driver(edit->input, REQ_VALIDATION) == E_OK) {
-			edit->section = IN_MENU;
-			menu_driver(edit->dia->choices, REQ_FIRST_ITEM);
-			pos_menu_cursor(edit->dia->choices);
-		}
-		break;
-	case IN_MENU:
-		if (current_item_is_last(edit->dia->choices)) {
-			edit->section = IN_NAME;
-			set_current_field(edit->input, edit->field[FLD_NAME]);
-			pos_form_cursor(edit->input);
-		} else {
-			menu_driver(edit->dia->choices, REQ_RIGHT_ITEM);
-		}
-		break;
-	}
-}
-
-static void section_up(struct edit_dialog *edit)
-{
-	switch (edit->section) {
-	case IN_NAME:
-		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
-			edit->section = IN_MENU;
-			menu_driver(edit->dia->choices, REQ_LAST_ITEM);
-			pos_menu_cursor(edit->dia->choices);
-		}
-		break;
-	case IN_DATA:
-		if (edit->buf ||
-		    form_driver(edit->input, REQ_VALIDATION) == E_OK) {
-			edit->section = IN_NAME;
-			set_current_field(edit->input, edit->field[FLD_NAME]);
-			pos_form_cursor(edit->input);
-		}
-		break;
-	case IN_MENU:
-		if (current_item_is_first(edit->dia->choices)) {
-			edit->section = IN_DATA;
-			if (edit->buf) {
-				hexedit_set_cursor(edit->buf);
-			} else {
-				set_current_field(edit->input,
-						  edit->field[FLD_DATA]);
-				pos_form_cursor(edit->input);
-			}
-		} else {
-			menu_driver(edit->dia->choices, REQ_LEFT_ITEM);
-		}
-		break;
-	}
-}
-
-static void handle_hexedit_input(struct hexedit *buf, int c)
-{
-	switch (c) {
-	case KEY_UP:
-		hexedit_driver(buf, HE_CURSOR_UP);
-		break;
-	case KEY_DOWN:
-		hexedit_driver(buf, HE_CURSOR_DOWN);
-		break;
-	case KEY_LEFT:
-		hexedit_driver(buf, HE_CURSOR_LEFT);
-		break;
-	case KEY_RIGHT:
-		hexedit_driver(buf, HE_CURSOR_RIGHT);
-		break;
-	default:
-		hexedit_driver(buf, c);
-		break;
 	}
 
-	hexedit_set_cursor(buf);
-}
-
-static WERROR edit_init_dialog(struct edit_dialog *edit, uint32_t type)
-{
-	char *title;
-	int diaheight = -1;
-	int winheight = -1;
-	const char *choices[] = {
-		"Ok",
-		"Cancel",
-		"Resize",
-		NULL
-	};
-
-	switch (edit->mode) {
-	case REG_MULTI_SZ:
-		diaheight = EDIT_HEIGHT_MULTILINE;
-		winheight = EDIT_FORM_WIN_HEIGHT_MULTILINE;
-		choices[2] = NULL;
-		break;
-	case REG_BINARY:
-		diaheight = EDIT_HEIGHT_BUF;
-		winheight = EDIT_FORM_WIN_HEIGHT_BUF;
-		break;
-	default:
-		diaheight = EDIT_HEIGHT_ONELINE;
-		winheight = EDIT_FORM_WIN_HEIGHT_ONELINE;
-		choices[2] = NULL;
-		break;
+	if (W_ERROR_IS_OK(rv)) {
+		rv = reg_val_set(edit->key, name, edit->type, blob);
 	}
 
-	title = talloc_asprintf(edit, "Edit %s value", str_regtype(type));
-	if (title == NULL) {
-		return WERR_NOMEM;
-	}
-	edit->dia = dialog_choice_center_new(edit, title, choices, diaheight,
-					     EDIT_WIDTH);
-	talloc_free(title);
-	if (edit->dia == NULL) {
-		return WERR_NOMEM;
-	}
-	edit->input_win = derwin(edit->dia->sub_window, winheight,
-				 EDIT_FORM_WIN_WIDTH,
-				 EDIT_FORM_WIN_Y, EDIT_FORM_WIN_X);
-	if (edit->input_win == NULL) {
-		return WERR_NOMEM;
+	if (!W_ERROR_IS_OK(rv)) {
+		const char *msg = get_friendly_werror_msg(rv);
+		dialog_notice(dia, DIA_ALERT, "Error",
+			      "Error saving value:\n%s", msg);
+
+		return false;
 	}
 
-	return WERR_OK;
-}
+	return true;
 
-static WERROR edit_init_form(struct edit_dialog *edit,
-			     const struct value_item *vitem)
-{
-
-	edit->field[0] = new_field(EDIT_NAME_LABEL_HEIGHT,
-				   EDIT_NAME_LABEL_WIDTH,
-				   EDIT_NAME_LABEL_Y,
-				   EDIT_NAME_LABEL_X, 0, 0);
-	if (edit->field[0] == NULL) {
-		return WERR_NOMEM;
-	}
-	set_field_buffer(edit->field[0], 0, "Name");
-	field_opts_off(edit->field[0], O_EDIT);
-
-	edit->field[FLD_NAME] = new_field(EDIT_NAME_INPUT_HEIGHT,
-					  EDIT_NAME_INPUT_WIDTH,
-					  EDIT_NAME_INPUT_Y,
-					  EDIT_NAME_INPUT_X, 0, 0);
-	if (edit->field[FLD_NAME] == NULL) {
-		return WERR_NOMEM;
-	}
-
-	edit->field[2] = new_field(EDIT_DATA_LABEL_HEIGHT,
-				   EDIT_DATA_LABEL_WIDTH,
-				   EDIT_DATA_LABEL_Y,
-				   EDIT_DATA_LABEL_X, 0, 0);
-	if (edit->field[2] == NULL) {
-		return WERR_NOMEM;
-	}
-	set_field_buffer(edit->field[2], 0, "Data");
-	field_opts_off(edit->field[2], O_EDIT);
-
-	if (edit->mode == REG_BINARY) {
-		size_t len = 8;
-		const void *buf = NULL;
-
-		if (vitem) {
-			len = vitem->data.length;
-			buf = vitem->data.data;
-		}
-		edit->buf = hexedit_new(edit, edit->dia->sub_window,
-					EDIT_DATA_HEIGHT_BUF,
-					EDIT_DATA_INPUT_Y,
-					EDIT_DATA_INPUT_X,
-					buf, len);
-		if (edit->buf == NULL) {
-			return WERR_NOMEM;
-		}
-		hexedit_refresh(edit->buf);
-		hexedit_set_cursor(edit->buf);
-	} else {
-		int val_rows = EDIT_DATA_HEIGHT_ONELINE;
-
-		if (edit->mode == REG_MULTI_SZ) {
-			val_rows = EDIT_DATA_HEIGHT_MULTILINE;
-		}
-		edit->field[FLD_DATA] = new_field(val_rows,
-						  EDIT_DATA_INPUT_WIDTH,
-						  EDIT_DATA_INPUT_Y,
-						  EDIT_DATA_INPUT_X, 0, 0);
-		if (edit->field[FLD_DATA] == NULL) {
-			return WERR_NOMEM;
-		}
-	}
-
-	set_field_back(edit->field[FLD_NAME], A_REVERSE);
-	field_opts_off(edit->field[FLD_NAME], O_BLANK | O_AUTOSKIP | O_STATIC);
-	if (edit->field[FLD_DATA]) {
-		set_field_back(edit->field[FLD_DATA], A_REVERSE);
-		field_opts_off(edit->field[FLD_DATA],
-			       O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
-		if (edit->mode == REG_DWORD) {
-			set_field_type(edit->field[FLD_DATA], TYPE_REGEXP,
-				       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
-		}
-	}
-
-	if (vitem) {
-		set_field_buffer(edit->field[FLD_NAME], 0, vitem->value_name);
-		field_opts_off(edit->field[FLD_NAME], O_EDIT);
-		fill_value_buffer(edit, vitem);
-	}
-
-	edit->input = new_form(edit->field);
-	if (edit->input == NULL) {
-		return WERR_NOMEM;
-	}
-	form_opts_off(edit->input, O_NL_OVERLOAD | O_BS_OVERLOAD);
-
-	set_form_win(edit->input, edit->dia->sub_window);
-	set_form_sub(edit->input, edit->input_win);
-	set_current_field(edit->input, edit->field[FLD_NAME]);
-	post_form(edit->input);
-
-	return WERR_OK;
-}
-
-static WERROR handle_editor_input(struct edit_dialog *edit,
-				  struct registry_key *key,
-				  uint32_t type,
-				  const struct value_item *vitem, int c)
-{
-	WERROR rv = WERR_OK;
-	int selection;
-
-	if (edit->section == IN_NAME) {
-		handle_form_input(edit->input, c);
-	} else if (edit->section == IN_DATA) {
-		if (edit->buf) {
-			handle_hexedit_input(edit->buf, c);
-		} else {
-			handle_form_input(edit->input, c);
-		}
-	} else {
-		selection = handle_menu_input(edit->dia->choices, c);
-		if (selection == DIALOG_OK) {
-			rv = set_value(edit, key, type, vitem == NULL);
-			if (W_ERROR_EQUAL(rv, WERR_FILE_EXISTS)) {
-				dialog_notice(edit, DIA_ALERT,
-					      "Value exists",
-					      "Value name already exists.");
-				selection = -1;
-			} else {
-				edit->closing = true;
-			}
-		} else if (selection == DIALOG_RESIZE) {
-			char *n;
-			size_t newlen = 0;
-
-			dialog_input(edit, &n, "Resize buffer",
-				     "Enter new size");
-			if (n) {
-				newlen = strtoul(n, NULL, 10);
-				edit->section = IN_DATA;
-				hexedit_resize_buffer(edit->buf, newlen);
-				hexedit_refresh(edit->buf);
-				hexedit_set_cursor(edit->buf);
-				talloc_free(n);
-			}
-		} else if (selection == DIALOG_CANCEL) {
-			edit->closing = true;
-		}
-	}
-
-	return rv;
 }
 
 WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 			 uint32_t type, const struct value_item *vitem,
 			 bool force_binary)
 {
-	struct edit_dialog *edit;
-	WERROR rv = WERR_NOMEM;
+	WERROR err;
+	enum dialog_action action;
+	struct dialog *dia;
+	struct dialog_section *section;
+	struct edit_req edit;
+	struct button_spec spec[] = {
+		{.label = "OK", .action = DIALOG_OK},
+		{.label = "Cancel", .action = DIALOG_CANCEL},
+		{ 0 }
+	};
 
-	edit = talloc_zero(ctx, struct edit_dialog);
-	if (edit == NULL) {
-		return rv;
-	}
-	talloc_set_destructor(edit, edit_dialog_free);
-
-	edit->mode = type;
+	edit.key = key;
+	edit.vitem = vitem;
+	edit.type = type;
+	edit.mode = type;
 	if (force_binary || (vitem && vitem->unprintable)) {
-		edit->mode = REG_BINARY;
+		edit.mode = REG_BINARY;
 	}
 
-	rv = edit_init_dialog(edit, type);
-	if (!W_ERROR_IS_OK(rv)) {
-		goto finish;
+	dia = dialog_new(ctx, PAIR_BLACK_CYAN, "Edit Value", -1, -1);
+	dialog_set_submit_cb(dia, edit_on_submit, &edit);
+
+	section = dialog_section_label_new(dia, "Type");
+	dialog_append_section(dia, section);
+	section = dialog_section_label_new(dia, "%s",
+					   str_regtype(type));
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, ' ');
+	dialog_append_section(dia, section);
+
+	section = dialog_section_label_new(dia, "Name");
+	dialog_append_section(dia, section);
+	if (vitem) {
+		section = dialog_section_label_new(dia, "%s",
+						   vitem->value_name);
+	} else {
+		section = dialog_section_text_field_new(dia, 1, 50);
+		dialog_section_set_name(section, "name");
 	}
-	rv = edit_init_form(edit, vitem);
-	if (!W_ERROR_IS_OK(rv)) {
-		goto finish;
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, ' ');
+	dialog_append_section(dia, section);
+
+	section = dialog_section_label_new(dia, "Data");
+	dialog_append_section(dia, section);
+
+	switch (edit.mode) {
+	case REG_DWORD:
+	case REG_SZ:
+	case REG_EXPAND_SZ:
+		section = dialog_section_text_field_new(dia, 1, 50);
+		break;
+	case REG_MULTI_SZ:
+		section = dialog_section_text_field_new(dia, 10, 50);
+		break;
+	case REG_BINARY:
+	default:
+		section = dialog_section_hexedit_new(dia, 10);
+		break;
 	}
 
-	update_panels();
-	doupdate();
+	dialog_section_set_name(section, "data");
+	dialog_append_section(dia, section);
 
-	edit->section = IN_NAME;
-	edit->closing = false;
+	section = dialog_section_hsep_new(dia, 0);
+	dialog_append_section(dia, section);
+	section = dialog_section_buttons_new(dia, spec);
+	dialog_section_set_justify(section, SECTION_JUSTIFY_CENTER);
+	dialog_append_section(dia, section);
 
-	do {
-		int c = dialog_getch(edit->dia);
+	dialog_create(dia);
 
-		if (c == '\t') {
-			section_down(edit);
-		} else if (c == KEY_BTAB) {
-			section_up(edit);
-		} else {
-			rv = handle_editor_input(edit, key, type, vitem, c);
-		}
+	err = fill_value_buffer(dia, &edit);
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
+	}
 
-		update_panels();
-		doupdate();
-	} while (!edit->closing);
+	dialog_show(dia);
+	dialog_modal_loop(dia, &err, &action);
 
-finish:
-	talloc_free(edit);
+	talloc_free(dia);
 
-	return rv;
+	return WERR_OK;
 }
 
 int dialog_select_type(TALLOC_CTX *ctx, int *type)
 {
+	WERROR err;
+	enum dialog_action action;
 	struct dialog *dia;
-	const char *choices[] = {
-		"OK",
-		"Cancel",
-		NULL
-	};
+	struct dialog_section *section;
 	const char *reg_types[] = {
+		"REG_BINARY",
 		"REG_DWORD",
-		"REG_SZ",
 		"REG_EXPAND_SZ",
 		"REG_MULTI_SZ",
-		"REG_BINARY",
+		"REG_SZ"
 	};
-#define NTYPES (sizeof(reg_types) / sizeof(const char*))
-	ITEM **item;
-	MENU *list;
-	WINDOW *type_win;
-	int sel = -1;
-	size_t i;
+	#define NTYPES ARRAY_SIZE(reg_types)
+	struct button_spec spec[] = {
+		{.label = "OK", .action = DIALOG_OK},
+		{.label = "Cancel", .action = DIALOG_CANCEL},
+		{ 0 }
+	};
+	bool flags[NTYPES] = { true };
+	struct option_spec opsec[NTYPES + 1];
+	unsigned i;
 
-	dia = dialog_choice_center_new(ctx, "New Value", choices, 10, 20);
-	if (dia == NULL) {
-		return -1;
-	}
-
-	mvwprintw(dia->sub_window, 0, 0, "Choose type:");
-	type_win = derwin(dia->sub_window, 6, 18, 1, 0);
-	if (type_win == NULL) {
-		goto finish;
-	}
-
-	item = talloc_zero_array(dia, ITEM *, NTYPES + 1);
-	if (item == NULL) {
-		goto finish;
-	}
-
+	memset(&opsec, '\0', sizeof(opsec));
 	for (i = 0; i < NTYPES; ++i) {
-		int t = regtype_by_string(reg_types[i]);
-
-		item[i] = new_item(reg_types[i], reg_types[i]);
-		if (item[i] == NULL) {
-			goto finish;
-		}
-		set_item_userptr(item[i], (void*)(uintptr_t)t);
+		opsec[i].label = reg_types[i];
+		opsec[i].state = &flags[i];
 	}
 
-	list = new_menu(item);
-	if (list == NULL) {
-		goto finish;
-	}
+	dia = dialog_new(ctx, PAIR_BLACK_CYAN, "New Value", -1, -1);
 
-	set_menu_format(list, 7, 1);
-	set_menu_win(list, dia->sub_window);
-	set_menu_sub(list, type_win);
-	menu_opts_off(list, O_SHOWDESC);
-	set_menu_mark(list, "* ");
-	post_menu(list);
+	section = dialog_section_label_new(dia, "Select type for new value:");
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, ' ');
+	dialog_append_section(dia, section);
+	section = dialog_section_options_new(dia, opsec, 2, true);
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, 0);
+	dialog_append_section(dia, section);
+	section = dialog_section_buttons_new(dia, spec);
+	dialog_section_set_justify(section, SECTION_JUSTIFY_CENTER);
+	dialog_append_section(dia, section);
 
-	update_panels();
-	doupdate();
+	dialog_create(dia);
+	dialog_show(dia);
 
-	while (sel == -1) {
-		ITEM *it;
-		int c = dialog_getch(dia);
-
-		switch (c) {
-		case KEY_UP:
-			menu_driver(list, REQ_UP_ITEM);
-			break;
-		case KEY_DOWN:
-			menu_driver(list, REQ_DOWN_ITEM);
-			break;
-		case KEY_LEFT:
-			menu_driver(dia->choices, REQ_LEFT_ITEM);
-			break;
-		case KEY_RIGHT:
-			menu_driver(dia->choices, REQ_RIGHT_ITEM);
-			break;
-		case '\n':
-		case KEY_ENTER:
-			it = current_item(list);
-			*type = (int)(uintptr_t)item_userptr(it);
-			it = current_item(dia->choices);
-			sel = (int)(uintptr_t)item_userptr(it);
-			break;
-		}
-
-		update_panels();
-		doupdate();
-	}
-
-finish:
-	if (list) {
-		unpost_menu(list);
-		free_menu(list);
-	}
-	if (item) {
-		ITEM **it;
-		for (it = item; *it; ++it) {
-			free_item(*it);
+	dialog_modal_loop(dia, &err, &action);
+	if (action == DIALOG_OK) {
+		for (i = 0; i < NTYPES; ++i) {
+			if (flags[i]) {
+				*type = regtype_by_string(reg_types[i]);
+				break;
+			}
 		}
 	}
-	if (type_win) {
-		delwin(type_win);
-	}
+
 	talloc_free(dia);
 
-	return sel;
+	return action;
 }
 
 int dialog_search_input(TALLOC_CTX *ctx, struct regedit_search_opts *opts)
