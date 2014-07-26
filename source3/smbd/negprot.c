@@ -262,7 +262,8 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	if ( (req->flags2 & FLAGS2_EXTENDED_SECURITY) &&
 		((req->flags2 & FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED) == 0) )
 	{
-		if (get_remote_arch() != RA_SAMBA) {
+		if ((get_remote_arch() != RA_SAMBA) &&
+				(get_remote_arch() != RA_CIFSFS)) {
 			set_remote_arch( RA_VISTA );
 		}
 	}
