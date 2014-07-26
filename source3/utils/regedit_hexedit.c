@@ -20,6 +20,33 @@
 #include "includes.h"
 #include "regedit_hexedit.h"
 
+/*
+ offset    hex1         hex2         ascii
+ 00000000  FF FF FF FF  FF FF FF FF  ........
+*/
+
+#define HEX_COL1 10
+#define HEX_COL1_END 21
+#define HEX_COL2 23
+#define HEX_COL2_END 34
+#define ASCII_COL 36
+#define ASCII_COL_END LINE_WIDTH
+#define BYTES_PER_LINE 8
+
+struct hexedit {
+	size_t offset;
+	size_t len;
+	size_t alloc_size;
+	int cursor_y;
+	int cursor_x;
+	size_t cursor_offset;
+	size_t cursor_line_offset;
+	int nibble;
+	uint8_t *data;
+	WINDOW *win;
+	WINDOW *status_line;
+};
+
 static int max_rows(WINDOW *win)
 {
 	int maxy, maxx;
@@ -44,6 +71,7 @@ static int hexedit_free(struct hexedit *buf)
 struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
 			    int y, int x, const void *data, size_t sz)
 {
+	WERROR rv;
 	struct hexedit *buf;
 
 	buf = talloc_zero(ctx, struct hexedit);
@@ -53,22 +81,10 @@ struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
 
 	talloc_set_destructor(buf, hexedit_free);
 
-	buf->data = talloc_zero_array(buf, uint8_t, sz);
-	if (buf->data == NULL) {
-		goto fail;
-	}
-
-	if (data) {
-		memcpy(buf->data, data, sz);
-	}
-
-	buf->len = sz;
-	buf->alloc_size = sz;
 	buf->win = derwin(parent, nlines, LINE_WIDTH, y, x);
 	if (buf->win == NULL) {
 		goto fail;
 	}
-	buf->cursor_x = HEX_COL1;
 
 	buf->status_line = derwin(buf->win, 1, LINE_WIDTH, max_rows(buf->win),
 				  0);
@@ -77,12 +93,51 @@ struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
 	}
 	wattron(buf->status_line, A_REVERSE | A_STANDOUT);
 
+	rv = hexedit_set_buf(buf, data, sz);
+	if (!W_ERROR_IS_OK(rv)) {
+		goto fail;
+	}
+
 	return buf;
 
 fail:
 	talloc_free(buf);
 
 	return NULL;
+}
+
+WERROR hexedit_set_buf(struct hexedit *buf, const void *data, size_t sz)
+{
+	TALLOC_FREE(buf->data);
+
+	buf->data = talloc_zero_array(buf, uint8_t, sz);
+	if (buf->data == NULL) {
+		return WERR_NOMEM;
+	}
+
+	if (data != NULL) {
+		memcpy(buf->data, data, sz);
+	}
+
+	buf->len = sz;
+	buf->alloc_size = sz;
+	buf->cursor_x = HEX_COL1;
+	buf->cursor_y = 0;
+	buf->cursor_offset = 0;
+	buf->cursor_line_offset = 0;
+	buf->nibble = 0;
+
+	return WERR_OK;
+}
+
+const void *hexedit_get_buf(struct hexedit *buf)
+{
+	return buf->data;
+}
+
+size_t hexedit_get_buf_len(struct hexedit *buf)
+{
+	return buf->len;
 }
 
 static size_t bytes_per_screen(WINDOW *win)
@@ -103,6 +158,7 @@ void hexedit_set_cursor(struct hexedit *buf)
 	wcursyncup(buf->win);
 	wsyncup(buf->win);
 	untouchwin(buf->win);
+	wnoutrefresh(buf->status_line);
 }
 
 void hexedit_refresh(struct hexedit *buf)
@@ -417,6 +473,8 @@ void hexedit_driver(struct hexedit *buf, int c)
 		do_edit(buf, c & 0xff);
 		break;
 	}
+
+	hexedit_set_cursor(buf);
 }
 
 WERROR hexedit_resize_buffer(struct hexedit *buf, size_t newsz)
