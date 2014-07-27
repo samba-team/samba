@@ -191,7 +191,6 @@ _PUBLIC_ bool directory_exist(const char *dname)
  * or was successfully created.
  */
 _PUBLIC_ bool directory_create_or_exist(const char *dname,
-					uid_t uid,
 					mode_t dir_perms)
 {
 	int ret;
@@ -254,7 +253,7 @@ _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 	bool ok;
 	int rc;
 
-	ok = directory_create_or_exist(dname, uid, dir_perms);
+	ok = directory_create_or_exist(dname, dir_perms);
 	if (!ok) {
 		return false;
 	}

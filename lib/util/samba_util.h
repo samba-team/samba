@@ -649,8 +649,7 @@ _PUBLIC_ bool file_check_permissions(const char *fname,
  * @retval true if the directory already existed and has the right permissions 
  * or was successfully created.
  */
-_PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid, 
-			       mode_t dir_perms);
+_PUBLIC_ bool directory_create_or_exist(const char *dname, mode_t dir_perms);
 
 _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 					       uid_t uid,

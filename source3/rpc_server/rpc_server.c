@@ -106,7 +106,7 @@ int create_named_pipe_socket(const char *pipe_name)
 	 * lp_ncalrpc_dir()/np should have 0700, we need to
 	 * create lp_ncalrpc_dir() first.
 	 */
-	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
+	if (!directory_create_or_exist(lp_ncalrpc_dir(), 0755)) {
 		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
 			  lp_ncalrpc_dir(), strerror(errno)));
 		goto out;
@@ -773,7 +773,7 @@ int create_dcerpc_ncalrpc_socket(const char *name)
 		name = "DEFAULT";
 	}
 
-	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
+	if (!directory_create_or_exist(lp_ncalrpc_dir(), 0755)) {
 		DEBUG(0, ("Failed to create ncalrpc directory %s - %s\n",
 			  lp_ncalrpc_dir(), strerror(errno)));
 		return -1;

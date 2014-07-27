@@ -203,7 +203,7 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 		return false;
 	}
 
-	ok = directory_create_or_exist(cache_path("printing"), geteuid(), 0755);
+	ok = directory_create_or_exist(cache_path("printing"), 0755);
 	if (!ok) {
 		return false;
 	}

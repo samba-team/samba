@@ -973,12 +973,12 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 #endif
 
-	ok = directory_create_or_exist(lp_lock_directory(), geteuid(), 0755);
+	ok = directory_create_or_exist(lp_lock_directory(), 0755);
 	if (!ok) {
 		exit_daemon("Failed to create directory for lock files, check 'lock directory'", errno);
 	}
 
-	ok = directory_create_or_exist(lp_pid_directory(), geteuid(), 0755);
+	ok = directory_create_or_exist(lp_pid_directory(), 0755);
 	if (!ok) {
 		exit_daemon("Failed to create directory for pid files, check 'pid directory'", errno);
 	}

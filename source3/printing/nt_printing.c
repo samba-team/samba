@@ -95,7 +95,7 @@ static bool print_driver_directories_init(void)
 		return false;
 	}
 
-	ok = directory_create_or_exist(driver_path, sec_initial_uid(), 0755);
+	ok = directory_create_or_exist(driver_path, 0755);
 	if (!ok) {
 		DEBUG(1, ("Failed to create printer driver directory %s\n",
 			  driver_path));
@@ -115,9 +115,7 @@ static bool print_driver_directories_init(void)
 			return false;
 		}
 
-		ok = directory_create_or_exist(arch_path,
-					       sec_initial_uid(),
-					       0755);
+		ok = directory_create_or_exist(arch_path, 0755);
 		if (!ok) {
 			DEBUG(1, ("Failed to create printer driver "
 				  "architecture directory %s\n",

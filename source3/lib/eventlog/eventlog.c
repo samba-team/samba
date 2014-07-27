@@ -373,7 +373,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 	/* make sure that the eventlog dir exists */
 
 	eventlogdir = state_path( "eventlog" );
-	ok = directory_create_or_exist(eventlogdir, geteuid(), 0755);
+	ok = directory_create_or_exist(eventlogdir, 0755);
 	if (!ok) {
 		return NULL;
 	}

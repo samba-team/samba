@@ -67,7 +67,7 @@ static char *get_default_corepath(const char *logbase, const char *progname)
 		goto err_out;
 	}
 
-	if (!directory_create_or_exist(tmp_corepath, uid, mode)) {
+	if (!directory_create_or_exist(tmp_corepath, mode)) {
 		DEBUG(0, ("Failed to create %s for user %d with mode 0%o\n",
 			  tmp_corepath, (int)uid, (int)mode));
 		goto err_out;

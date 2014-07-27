@@ -1519,14 +1519,14 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	ok = directory_create_or_exist(lp_lock_directory(), geteuid(), 0755);
+	ok = directory_create_or_exist(lp_lock_directory(), 0755);
 	if (!ok) {
 		DEBUG(0, ("Failed to create directory %s for lock files - %s\n",
 			  lp_lock_directory(), strerror(errno)));
 		exit(1);
 	}
 
-	ok = directory_create_or_exist(lp_pid_directory(), geteuid(), 0755);
+	ok = directory_create_or_exist(lp_pid_directory(), 0755);
 	if (!ok) {
 		DEBUG(0, ("Failed to create directory %s for pid files - %s\n",
 			  lp_pid_directory(), strerror(errno)));

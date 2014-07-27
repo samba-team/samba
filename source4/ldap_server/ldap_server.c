@@ -1007,7 +1007,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	 * Make sure the directory for the privileged ldapi socket exists, and
 	 * is of the correct permissions
 	 */
-	if (!directory_create_or_exist(priv_dir, geteuid(), 0750)) {
+	if (!directory_create_or_exist(priv_dir, 0750)) {
 		task_server_terminate(task, "Cannot create ldap "
 				      "privileged ldapi directory", true);
 		return;

@@ -91,7 +91,7 @@ static char *lpcfg_common_path(TALLOC_CTX* mem_ctx,
 	}
 	trim_string(dname,"","/");
 
-	ok = directory_create_or_exist(dname, geteuid(), 0755);
+	ok = directory_create_or_exist(dname, 0755);
 	if (!ok) {
 		DEBUG(1, ("Unable to create directory %s for file %s. "
 			  "Error was %s\n", dname, name, strerror(errno)));
@@ -231,7 +231,7 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ok = directory_create_or_exist(dname, geteuid(), 0755);
+	ok = directory_create_or_exist(dname, 0755);
 	if (!ok) {
 		return NULL;
 	}
