@@ -59,7 +59,6 @@
 #define MSG_SRVID_SAMBA 0x0000000100000000LL
 
 #include "librpc/gen_ndr/server_id.h"
-#include "lib/messages_dgm.h"
 
 #define MSG_BROADCAST_PID_STR	"0:0"
 
