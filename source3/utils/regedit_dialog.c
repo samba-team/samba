@@ -1871,11 +1871,11 @@ static bool edit_on_submit(struct dialog *dia, struct dialog_section *section,
 
 }
 
-WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
-			 uint32_t type, const struct value_item *vitem,
-			 bool force_binary)
+int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
+		      uint32_t type, const struct value_item *vitem,
+		      bool force_binary, WERROR *err,
+		      const char **name)
 {
-	WERROR err;
 	enum dialog_action action;
 	struct dialog *dia;
 	struct dialog_section *section;
@@ -1947,17 +1947,25 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 
 	dialog_create(dia);
 
-	err = fill_value_buffer(dia, &edit);
-	if (!W_ERROR_IS_OK(err)) {
-		return err;
+	*err = fill_value_buffer(dia, &edit);
+	if (!W_ERROR_IS_OK(*err)) {
+		return DIALOG_CANCEL;
 	}
 
 	dialog_show(dia);
-	dialog_modal_loop(dia, &err, &action);
+	dialog_modal_loop(dia, err, &action);
+
+	if (action == DIALOG_OK && name) {
+		if (vitem) {
+			*name = talloc_strdup(ctx, vitem->value_name);
+		} else if ((section = dialog_find_section(dia, "name"))) {
+			*name = dialog_section_text_field_get(ctx, section);
+		}
+	}
 
 	talloc_free(dia);
 
-	return WERR_OK;
+	return action;
 }
 
 int dialog_select_type(TALLOC_CTX *ctx, int *type)

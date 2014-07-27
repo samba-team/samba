@@ -392,6 +392,28 @@ struct value_item *value_list_get_current_item(struct value_list *vl)
 			       multilist_get_current_row(vl->list));
 }
 
+void value_list_set_current_item_by_name(struct value_list *vl,
+					 const char *name)
+{
+	size_t i;
+	struct value_item *item = NULL;
+
+	for (i = 0; i < vl->nvalues; ++i) {
+		if (strequal(vl->values[i].value_name, name)) {
+			item = &vl->values[i];
+			break;
+		}
+	}
+
+	multilist_set_current_row(vl->list, item);
+}
+
+void value_list_set_current_item(struct value_list *vl,
+				 const struct value_item *item)
+{
+	multilist_set_current_row(vl->list, item);
+}
+
 void value_list_driver(struct value_list *vl, int c)
 {
 	multilist_driver(vl->list, c);

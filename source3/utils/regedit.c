@@ -406,6 +406,8 @@ static void handle_value_input(struct regedit *regedit, int c)
 {
 	struct value_item *vitem;
 	bool binmode = false;
+	WERROR err;
+	int sel;
 
 	switch (c) {
 	case KEY_DOWN:
@@ -423,26 +425,45 @@ static void handle_value_input(struct regedit *regedit, int c)
 		vitem = value_list_get_current_item(regedit->vl);
 		if (vitem) {
 			struct tree_node *node;
+			const char *name = NULL;
 			node = tree_view_get_current_node(regedit->keys);
-			dialog_edit_value(regedit, node->key, vitem->type,
-					  vitem, binmode);
-			tree_node_reopen_key(node);
-			value_list_load(regedit->vl, node->key);
+			sel = dialog_edit_value(regedit, node->key, vitem->type,
+					        vitem, binmode, &err, &name);
+			if (!W_ERROR_IS_OK(err)) {
+				const char *msg = get_friendly_werror_msg(err);
+				dialog_notice(regedit, DIA_ALERT, "Error",
+					      "Error editing value:\n%s", msg);
+			} else if (sel == DIALOG_OK) {
+				tree_node_reopen_key(node);
+				value_list_load(regedit->vl, node->key);
+				value_list_set_current_item_by_name(regedit->vl,
+								    name);
+				talloc_free(discard_const(name));
+			}
 		}
 		break;
 	case 'n':
 	case 'N': {
 		int new_type;
-		int sel;
 
 		sel = dialog_select_type(regedit, &new_type);
 		if (sel == DIALOG_OK) {
 			struct tree_node *node;
+			const char *name = NULL;
 			node = tree_view_get_current_node(regedit->keys);
-			dialog_edit_value(regedit, node->key, new_type, NULL,
-					  false);
-			tree_node_reopen_key(node);
-			value_list_load(regedit->vl, node->key);
+			sel = dialog_edit_value(regedit, node->key, new_type,
+						NULL, false, &err, &name);
+			if (!W_ERROR_IS_OK(err)) {
+				const char *msg = get_friendly_werror_msg(err);
+				dialog_notice(regedit, DIA_ALERT, "Error",
+					      "Error creating value:\n%s", msg);
+			} else if (sel == DIALOG_OK) {
+				tree_node_reopen_key(node);
+				value_list_load(regedit->vl, node->key);
+				value_list_set_current_item_by_name(regedit->vl,
+								    name);
+				talloc_free(discard_const(name));
+			}
 		}
 		break;
 	}
@@ -450,8 +471,6 @@ static void handle_value_input(struct regedit *regedit, int c)
 	case 'D':
 		vitem = value_list_get_current_item(regedit->vl);
 		if (vitem) {
-			int sel;
-
 			sel = dialog_notice(regedit, DIA_CONFIRM,
 					    "Delete Value",
 					     "Really delete value \"%s\"?",

@@ -52,6 +52,10 @@ WERROR value_list_load(struct value_list *vl, struct registry_key *key);
 void value_list_resize(struct value_list *vl, int nlines, int ncols,
 		       int begin_y, int begin_x);
 struct value_item *value_list_get_current_item(struct value_list *vl);
+void value_list_set_current_item(struct value_list *vl,
+				 const struct value_item *item);
+void value_list_set_current_item_by_name(struct value_list *vl,
+					 const char *name);
 void value_list_driver(struct value_list *vl, int c);
 
 #endif
