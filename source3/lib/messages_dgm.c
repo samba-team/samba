@@ -35,19 +35,12 @@ struct messaging_dgm_context {
 	char *cache_dir;
 	int lockfile_fd;
 
-	void (*recv_cb)(int msg_type,
-			struct server_id src, struct server_id dst,
-			const uint8_t *msg, size_t msg_len,
+	void (*recv_cb)(const uint8_t *msg,
+			size_t msg_len,
 			void *private_data);
 	void *recv_cb_private_data;
 
 	bool *have_dgm_context;
-};
-
-struct messaging_dgm_hdr {
-	int msg_type;
-	struct server_id dst;
-	struct server_id src;
 };
 
 static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
@@ -173,10 +166,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		       struct server_id pid,
 		       const char *cache_dir,
 		       uid_t dir_owner,
-		       void (*recv_cb)(int msg_type,
-				       struct server_id src,
-				       struct server_id dst,
-				       const uint8_t *msg,
+		       void (*recv_cb)(const uint8_t *msg,
 				       size_t msg_len,
 				       void *private_data),
 		       void *recv_cb_private_data,
@@ -292,13 +282,9 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	return 0;
 }
 
-int messaging_dgm_send(struct messaging_dgm_context *ctx,
-		       struct server_id src, struct server_id pid,
-		       int msg_type, const struct iovec *iov, int iovlen)
+int messaging_dgm_send(struct messaging_dgm_context *ctx, pid_t pid,
+		       const struct iovec *iov, int iovlen)
 {
-	struct messaging_dgm_hdr hdr;
-	struct iovec iov2[iovlen + 1];
-	struct server_id_buf idbuf;
 	struct sockaddr_un dst;
 	ssize_t dst_pathlen;
 	int ret;
@@ -306,24 +292,14 @@ int messaging_dgm_send(struct messaging_dgm_context *ctx,
 	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
 
 	dst_pathlen = snprintf(dst.sun_path, sizeof(dst.sun_path),
-			       "%s/msg/%u", ctx->cache_dir, (unsigned)pid.pid);
+			       "%s/msg/%u", ctx->cache_dir, (unsigned)pid);
 	if (dst_pathlen >= sizeof(dst.sun_path)) {
 		return ENAMETOOLONG;
 	}
 
-	hdr.msg_type = msg_type;
-	hdr.dst = pid;
-	hdr.src = src;
+	DEBUG(10, ("%s: Sending message to %u\n", __func__, (unsigned)pid));
 
-	DEBUG(10, ("%s: Sending message 0x%x to %s\n", __func__,
-		   (unsigned)hdr.msg_type,
-		   server_id_str_buf(pid, &idbuf)));
-
-	iov2[0].iov_base = &hdr;
-	iov2[0].iov_len = sizeof(hdr);
-	memcpy(iov2+1, iov, iovlen*sizeof(struct iovec));
-
-	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov2, iovlen + 1);
+	ret = unix_msg_send(ctx->dgm_ctx, &dst, iov, iovlen);
 
 	return ret;
 }
@@ -334,26 +310,8 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 {
 	struct messaging_dgm_context *dgm_ctx = talloc_get_type_abort(
 		private_data, struct messaging_dgm_context);
-	struct messaging_dgm_hdr *hdr;
-	struct server_id_buf idbuf;
 
-	if (msg_len < sizeof(*hdr)) {
-		DEBUG(1, ("message too short: %u\n", (unsigned)msg_len));
-		return;
-	}
-
-	/*
-	 * unix_msg guarantees alignment, so we can cast here
-	 */
-	hdr = (struct messaging_dgm_hdr *)msg;
-
-	DEBUG(10, ("%s: Received message 0x%x len %u from %s\n", __func__,
-		   (unsigned)hdr->msg_type, (unsigned)(msg_len - sizeof(*hdr)),
-		   server_id_str_buf(hdr->src, &idbuf)));
-
-	dgm_ctx->recv_cb(hdr->msg_type, hdr->src, hdr->dst,
-			 msg + sizeof(*hdr), msg_len - sizeof(*hdr),
-			 dgm_ctx->recv_cb_private_data);
+	dgm_ctx->recv_cb(msg, msg_len, dgm_ctx->recv_cb_private_data);
 }
 
 int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
