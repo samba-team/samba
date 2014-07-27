@@ -213,9 +213,10 @@ int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
 struct registry_key;
 struct value_item;
 
-WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
-			 uint32_t type, const struct value_item *vitem,
-			 bool force_binary);
+int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
+		      uint32_t type, const struct value_item *vitem,
+		      bool force_binary, WERROR *err,
+		      const char **name);
 
 int dialog_select_type(TALLOC_CTX *ctx, int *type);
 
