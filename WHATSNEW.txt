@@ -1,4 +1,81 @@
                    ==============================
+                   Release Notes for Samba 4.0.20
+                           July 30, 2014
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.0 release series.
+
+
+Changes since 4.0.19:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3124: s3: smb2: Fix 'xcopy /d' with samba shares.
+    * BUG 10653: Samba won't start on a machine configured with only IPv4.
+    * BUG 10673: s3: SMB2: Fix leak of blocking lock records in the database.
+    * BUG 10684: SMB1 blocking locks can fail notification on unlock, causing
+      client timeout.
+    * BUG 10685: s3: smbd: Locking, fix off-by one calculation in
+      brl_pending_overlap().
+    * BUG 10692: wbcCredentialCache fails if challenge_blob is not first.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10627: rid_array used before status checked - segmentation fault due
+      to null pointer dereference.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10612: printing: Fix purge of all print jobs.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 3263: net/doc: Make clear that net vampire is for NT4 domains only.
+    * BUG 10657: autobuild: Delete $NSS_MODULES in "make clean".
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10663: msg_channel: Fix a 100% CPU loop.
+    * BUG 10680: smbstatus: Fix an uninitialized variable.
+    * BUG 10687: 'RW2' smbtorture test fails when -N <numprocs> is set to 2 due
+      to the invalid status check in the second client.
+    * BUG 10699: smbd: Avoid double-free in get_print_db_byname.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10469: ldb-samba: fix a memory leak in
+      ldif_canonicalise_objectCategory().
+    * BUG 10692: wbcCredentialCache fails if challenge_blob is not first.
+    * BUG 10696: Backport autobuild/selftest fixes from master.
+    * BUG 10706: s3:smb2_read: let smb2_sendfile_send_data() behave like
+      send_file_readX().
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.19
                            June 23, 2014
                    ==============================
@@ -52,8 +129,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.0.18
