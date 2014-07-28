@@ -187,7 +187,7 @@ _PUBLIC_ bool directory_exist(const char *dname)
 /**
  * Try to create the specified directory if it didn't exist.
  *
- * @retval true if the directory already existed and has the right permissions 
+ * @retval true if the directory already existed
  * or was successfully created.
  */
 _PUBLIC_ bool directory_create_or_exist(const char *dname,
