@@ -106,8 +106,6 @@ natgw_set_slave ()
 
 natgw_ensure_master ()
 {
-    _event="$1"
-
     set -- $(ctdb natgwlist)
     natgwmaster="${1:--1}" # Default is -1 if natgwlist fails
     natgwip="$2"
@@ -144,7 +142,7 @@ case "$1" in
 	mypnn=$(ctdb pnn | cut -d: -f2)
 
 	natgw_set_capability
-	natgw_ensure_master "$1"
+	natgw_ensure_master
 
 	natgw_clear
 
