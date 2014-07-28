@@ -34,12 +34,6 @@ bool serverid_register(const struct server_id id, uint32_t msg_flags);
 bool serverid_deregister(const struct server_id id);
 
 /*
- * (De)register additional message flags
- */
-bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
-				 uint32_t msg_flags);
-
-/*
  * Check existence of a server id
  */
 bool serverid_exists(const struct server_id *id);
