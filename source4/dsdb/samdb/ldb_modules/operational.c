@@ -131,7 +131,7 @@ static int construct_token_groups(struct ldb_module *module,
 				  struct ldb_message *msg, enum ldb_scope scope,
 				  struct ldb_request *parent)
 {
-	struct ldb_context *ldb = ldb_module_get_ctx(module);;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	unsigned int i;
 	int ret;

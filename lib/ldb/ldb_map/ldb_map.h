@@ -63,9 +63,10 @@ struct ldb_map_attribute {
 		LDB_MAP_KEEP,   /* Keep as is. Same name locally and remotely. */
 		LDB_MAP_RENAME, /* Simply rename the attribute. Name changes, data is the same */
 		LDB_MAP_CONVERT, /* Rename + convert data */
-		LDB_MAP_GENERATE /* Use generate function for generating new name/data.
+		LDB_MAP_GENERATE, /* Use generate function for generating new name/data.
 						Used for generating attributes based on 
 						multiple remote attributes. */
+		LDB_MAP_RENDROP /* Rename the attribute. Strip from Add requests. */
 	} type;
 	
 	/* if set, will be called for search expressions that contain this attribute */

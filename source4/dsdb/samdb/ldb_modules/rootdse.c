@@ -36,13 +36,16 @@
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "lib/tsocket/tsocket.h"
 #include "cldap_server/cldap_server.h"
+#include "lib/events/events.h"
 
-struct private_data {
+struct rootdse_private_data {
 	unsigned int num_controls;
 	char **controls;
 	unsigned int num_partitions;
 	struct ldb_dn **partitions;
 	bool block_anonymous;
+	struct tevent_context *saved_ev;
+	struct tevent_context *private_ev;
 };
 
 struct rootdse_context {
@@ -227,7 +230,7 @@ static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *d
 static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *msg)
 {
 	struct ldb_context *ldb;
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(ac->module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(ac->module), struct rootdse_private_data);
 	const char * const *attrs = ac->req->op.search.attrs;
 	char **server_sasl;
 	const struct dsdb_schema *schema;
@@ -654,7 +657,7 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request *req)
 {
 	unsigned int i, j;
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	bool is_untrusted;
 
 	if (!req->controls) {
@@ -717,7 +720,7 @@ static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request
 static int rootdse_filter_operations(struct ldb_module *module, struct ldb_request *req)
 {
 	struct auth_session_info *session_info;
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	bool is_untrusted = ldb_req_is_untrusted(req);
 	bool is_anonymous = true;
 	if (is_untrusted == false) {
@@ -855,7 +858,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 static int rootdse_register_control(struct ldb_module *module, struct ldb_request *req)
 {
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	char **list;
 
 	list = talloc_realloc(priv, priv->controls, char *, priv->num_controls + 1);
@@ -876,7 +879,7 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 
 static int rootdse_register_partition(struct ldb_module *module, struct ldb_request *req)
 {
-	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	struct ldb_dn **list;
 
 	list = talloc_realloc(priv, priv->partitions, struct ldb_dn *, priv->num_partitions + 1);
@@ -916,14 +919,14 @@ static int rootdse_init(struct ldb_module *module)
 	int ret;
 	struct ldb_context *ldb;
 	struct ldb_result *res;
-	struct private_data *data;
+	struct rootdse_private_data *data;
 	const char *attrs[] = { "msDS-Behavior-Version", NULL };
 	const char *ds_attrs[] = { "dsServiceName", NULL };
 	TALLOC_CTX *mem_ctx;
 
 	ldb = ldb_module_get_ctx(module);
 
-	data = talloc_zero(module, struct private_data);
+	data = talloc_zero(module, struct rootdse_private_data);
 	if (data == NULL) {
 		return ldb_oom(ldb);
 	}
@@ -1356,6 +1359,67 @@ static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_NAMING_VIOLATION;
 }
 
+static int rootdse_start_trans(struct ldb_module *module)
+{
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct rootdse_private_data *data = talloc_get_type_abort(ldb_module_get_private(module),
+								  struct rootdse_private_data);
+	ret = ldb_next_start_trans(module);
+	if (ret == LDB_SUCCESS) {
+		if (data->private_ev != NULL) {
+			return ldb_operr(ldb);
+		}
+		data->private_ev = s4_event_context_init(data);
+		if (data->private_ev == NULL) {
+			return ldb_operr(ldb);
+		}
+		data->saved_ev = ldb_get_event_context(ldb);
+		ldb_set_event_context(ldb, data->private_ev);
+	}
+	return ret;
+}
+
+static int rootdse_end_trans(struct ldb_module *module)
+{
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct rootdse_private_data *data = talloc_get_type_abort(ldb_module_get_private(module),
+								  struct rootdse_private_data);
+	ret = ldb_next_end_trans(module);
+	if (data->saved_ev == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	if (data->private_ev != ldb_get_event_context(ldb)) {
+		return ldb_operr(ldb);
+	}
+	ldb_set_event_context(ldb, data->saved_ev);
+	data->saved_ev = NULL;
+	TALLOC_FREE(data->private_ev);
+	return ret;
+}
+
+static int rootdse_del_trans(struct ldb_module *module)
+{
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct rootdse_private_data *data = talloc_get_type_abort(ldb_module_get_private(module),
+								  struct rootdse_private_data);
+	ret = ldb_next_del_trans(module);
+	if (data->saved_ev == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	if (data->private_ev != ldb_get_event_context(ldb)) {
+		return ldb_operr(ldb);
+	}
+	ldb_set_event_context(ldb, data->saved_ev);
+	data->saved_ev = NULL;
+	TALLOC_FREE(data->private_ev);
+	return ret;
+}
+
 struct fsmo_transfer_state {
 	struct ldb_context *ldb;
 	struct ldb_request *req;
@@ -1373,6 +1437,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 	int ret;
 	struct ldb_request *req = fsmo->req;
 	struct ldb_context *ldb = fsmo->ldb;
+	struct ldb_module *module = fsmo->module;
 
 	status = dcerpc_drepl_takeFSMORole_recv(treq, fsmo, &werr);
 	talloc_free(fsmo);
@@ -1382,7 +1447,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 		 * Now that it is failed, start the transaction up
 		 * again so the wrappers can close it without additional error
 		 */
-		ldb_next_start_trans(fsmo->module);
+		rootdse_start_trans(module);
 		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
 		return;
 	}
@@ -1392,7 +1457,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 		 * Now that it is failed, start the transaction up
 		 * again so the wrappers can close it without additional error
 		 */
-		ldb_next_start_trans(fsmo->module);
+		rootdse_start_trans(module);
 		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
 		return;
 	}
@@ -1401,7 +1466,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 	 * Now that it is done, start the transaction up again so the
 	 * wrappers can close it without error
 	 */
-	ret = ldb_next_start_trans(fsmo->module);
+	ret = rootdse_start_trans(module);
 	ldb_module_done(req, NULL, NULL, ret);
 }
 
@@ -1442,7 +1507,7 @@ static int rootdse_become_master(struct ldb_module *module,
 	 * this gives the least supprise to this supprising action (as
 	 * we will never record anything done to this point
 	 */
-	ldb_next_del_trans(module);
+	rootdse_del_trans(module);
 
 	msg = imessaging_client_init(tmp_ctx, lp_ctx,
 				    ldb_get_event_context(ldb));
@@ -1611,15 +1676,18 @@ static int rootdse_extended(struct ldb_module *module, struct ldb_request *req)
 }
 
 static const struct ldb_module_ops ldb_rootdse_module_ops = {
-	.name		= "rootdse",
-	.init_context   = rootdse_init,
-	.search         = rootdse_search,
-	.request	= rootdse_request,
-	.add		= rootdse_add,
-	.modify         = rootdse_modify,
-	.rename         = rootdse_rename,
-	.extended       = rootdse_extended,
-	.del		= rootdse_delete
+	.name		   = "rootdse",
+	.init_context      = rootdse_init,
+	.search            = rootdse_search,
+	.request	   = rootdse_request,
+	.add		   = rootdse_add,
+	.modify            = rootdse_modify,
+	.rename            = rootdse_rename,
+	.extended          = rootdse_extended,
+	.del		   = rootdse_delete,
+	.start_transaction = rootdse_start_trans,
+	.end_transaction   = rootdse_end_trans,
+	.del_transaction   = rootdse_del_trans
 };
 
 int ldb_rootdse_module_init(const char *version)

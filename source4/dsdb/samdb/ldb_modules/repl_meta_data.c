@@ -67,6 +67,7 @@ struct replmd_private {
 		uint64_t mod_usn;
 		uint64_t mod_usn_urgent;
 	} *ncs;
+	struct ldb_dn *schema_dn;
 };
 
 struct la_entry {
@@ -239,6 +240,8 @@ static int replmd_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ldb_module_set_private(module, replmd_private);
+
+	replmd_private->schema_dn = ldb_get_schema_basedn(ldb);
 
 	return ldb_next_init(module);
 }
@@ -660,7 +663,15 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 						   const struct replPropertyMetaData1 *m2,
 						   const uint32_t *rdn_attid)
 {
-	if (m1->attid == m2->attid) {
+	/*
+	 * This assignment seems inoccous, but it is critical for the
+	 * system, as we need to do the comparisons as a unsigned
+	 * quantity, not signed (enums are signed integers)
+	 */
+	uint32_t attid_1 = m1->attid;
+	uint32_t attid_2 = m2->attid;
+
+	if (attid_1 == attid_2) {
 		return 0;
 	}
 
@@ -669,7 +680,7 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 	 * so we need to return a value greater than zero
 	 * which means m1 is greater than m2
 	 */
-	if (m1->attid == *rdn_attid) {
+	if (attid_1 == *rdn_attid) {
 		return 1;
 	}
 
@@ -678,38 +689,78 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 	 * so we need to return a value less than zero
 	 * which means m2 is greater than m1
 	 */
-	if (m2->attid == *rdn_attid) {
+	if (attid_2 == *rdn_attid) {
 		return -1;
 	}
 
-	return m1->attid > m2->attid ? 1 : -1;
+	/*
+	 * See above regarding this being an unsigned comparison.
+	 * Otherwise when the high bit is set on non-standard
+	 * attributes, they would end up first, before objectClass
+	 * (0).
+	 */
+	return attid_1 > attid_2 ? 1 : -1;
 }
 
-static int replmd_replPropertyMetaDataCtr1_sort(struct replPropertyMetaDataCtr1 *ctr1,
-						const struct dsdb_schema *schema,
-						struct ldb_dn *dn)
+static int replmd_replPropertyMetaDataCtr1_verify(struct ldb_context *ldb,
+						  struct replPropertyMetaDataCtr1 *ctr1,
+						  const struct dsdb_attribute *rdn_sa,
+						  struct ldb_dn *dn)
+{
+	if (ctr1->count == 0) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "No elements found in replPropertyMetaData for %s!\n",
+			      ldb_dn_get_linearized(dn));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+	if (ctr1->array[ctr1->count - 1].attid != rdn_sa->attributeID_id) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "No rDN found in replPropertyMetaData for %s!\n",
+			      ldb_dn_get_linearized(dn));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* the objectClass attribute is value 0x00000000, so must be first */
+	if (ctr1->array[0].attid != DRSUAPI_ATTID_objectClass) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "No objectClass found in replPropertyMetaData for %s!\n",
+			      ldb_dn_get_linearized(dn));
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int replmd_replPropertyMetaDataCtr1_sort_and_verify(struct ldb_context *ldb,
+							   struct replPropertyMetaDataCtr1 *ctr1,
+							   const struct dsdb_schema *schema,
+							   struct ldb_dn *dn)
 {
 	const char *rdn_name;
 	const struct dsdb_attribute *rdn_sa;
 
 	rdn_name = ldb_dn_get_rdn_name(dn);
 	if (!rdn_name) {
-		DEBUG(0,(__location__ ": No rDN for %s?\n", ldb_dn_get_linearized(dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      __location__ ": No rDN for %s?\n",
+			      ldb_dn_get_linearized(dn));
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	rdn_sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
 	if (rdn_sa == NULL) {
-		DEBUG(0,(__location__ ": No sa found for rDN %s for %s\n", rdn_name, ldb_dn_get_linearized(dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      __location__ ": No sa found for rDN %s for %s\n",
+			      rdn_name, ldb_dn_get_linearized(dn));
+		return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
 	}
 
 	DEBUG(6,("Sorting rpmd with attid exception %u rDN=%s DN=%s\n",
 		 rdn_sa->attributeID_id, rdn_name, ldb_dn_get_linearized(dn)));
 
-	LDB_TYPESAFE_QSORT(ctr1->array, ctr1->count, &rdn_sa->attributeID_id, replmd_replPropertyMetaData1_attid_sort);
-
-	return LDB_SUCCESS;
+	LDB_TYPESAFE_QSORT(ctr1->array, ctr1->count, &rdn_sa->attributeID_id,
+			   replmd_replPropertyMetaData1_attid_sort);
+	return replmd_replPropertyMetaDataCtr1_verify(ldb, ctr1, rdn_sa, dn);
 }
 
 static int replmd_ldb_message_element_attid_sort(const struct ldb_message_element *e1,
@@ -840,6 +891,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	bool remove_current_guid = false;
 	bool is_urgent = false;
 	struct ldb_message_element *objectclass_el;
+	struct replmd_private *replmd_private =
+		talloc_get_type_abort(ldb_module_get_private(module), struct replmd_private);
 
         /* check if there's a show relax control (used by provision to say 'I know what I'm doing') */
         control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
@@ -1025,8 +1078,9 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	/*
 	 * sort meta data array, and move the rdn attribute entry to the end
 	 */
-	ret = replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, ac->schema, msg->dn);
+	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, ac->schema, msg->dn);
 	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "%s: error during direct ADD: %s", __func__, ldb_errstring(ldb));
 		talloc_free(ac);
 		return ret;
 	}
@@ -1080,7 +1134,17 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	 */
 	replmd_ldb_message_sort(msg, ac->schema);
 
+	/*
+	 * Assert that we do have an objectClass
+	 */
 	objectclass_el = ldb_msg_find_element(msg, "objectClass");
+	if (objectclass_el == NULL) {
+		ldb_asprintf_errstring(ldb, __location__
+				       ": objectClass missing on %s\n",
+				       ldb_dn_get_linearized(msg->dn));
+		talloc_free(ac);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
 	is_urgent = replmd_check_urgent_objectclass(objectclass_el,
 							REPL_URGENT_ON_CREATE);
 
@@ -1120,7 +1184,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	if (control) {
 		control->critical = 0;
 	}
-	if (ldb_dn_compare_base(ac->schema->base_dn, req->op.add.message->dn) != 0) {
+	if (ldb_dn_compare_base(replmd_private->schema_dn, req->op.add.message->dn) != 0) {
 
 		/* Update the usn in the SAMLDB_MSDS_INTID_OPAQUE opaque */
 		msds_intid_struct = (struct samldb_msds_intid_persistant *) ldb_get_opaque(ldb, SAMLDB_MSDS_INTID_OPAQUE);
@@ -1398,12 +1462,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return ret;
 		}
 
-		objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
-		if (is_urgent && replmd_check_urgent_objectclass(objectclass_el,
-								situation)) {
-			*is_urgent = true;
-		}
-
 		db_seq = ldb_msg_find_attr_as_uint64(res->msgs[0], "uSNChanged", 0);
 		if (*seq_num <= db_seq) {
 			DEBUG(0,(__location__ ": changereplmetada control provided but max(local_usn)"\
@@ -1426,12 +1484,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 					    DSDB_SEARCH_REVEAL_INTERNALS, req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
-		}
-
-		objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
-		if (is_urgent && replmd_check_urgent_objectclass(objectclass_el,
-								situation)) {
-			*is_urgent = true;
 		}
 
 		omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
@@ -1464,12 +1516,33 @@ static int replmd_update_rpmd(struct ldb_module *module,
 				return ret;
 			}
 
-			if (is_urgent && !*is_urgent && (situation == REPL_URGENT_ON_UPDATE)) {
+			if (!*is_urgent && (situation == REPL_URGENT_ON_UPDATE)) {
 				*is_urgent = replmd_check_urgent_attribute(&msg->elements[i]);
 			}
 
 		}
 	}
+
+	/*
+	 * Assert that we have an objectClass attribute - this is major
+	 * corruption if we don't have this!
+	 */
+	objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
+	if (objectclass_el != NULL) {
+		/*
+		 * Now check if this objectClass means we need to do urgent replication
+		 */
+		if (!*is_urgent && replmd_check_urgent_objectclass(objectclass_el,
+								   situation)) {
+			*is_urgent = true;
+		}
+	} else if (!ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		ldb_asprintf_errstring(ldb, __location__
+				       ": objectClass missing on %s\n",
+				       ldb_dn_get_linearized(msg->dn));
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
+
 	/*
 	 * replmd_update_rpmd_element has done an update if the
 	 * seq_num is set
@@ -1504,8 +1577,9 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = replmd_replPropertyMetaDataCtr1_sort(&omd.ctr.ctr1, schema, msg->dn);
+		ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &omd.ctr.ctr1, schema, msg->dn);
 		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "%s: %s", __func__, ldb_errstring(ldb));
 			return ret;
 		}
 
@@ -2400,8 +2474,10 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	bool is_urgent = false, rodc = false;
 	unsigned int functional_level;
-	const DATA_BLOB *guid_blob;
+	const struct ldb_message_element *guid_el = NULL;
 	struct ldb_control *sd_propagation_control;
+	struct replmd_private *replmd_private =
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -2427,8 +2503,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_modify\n");
 
-	guid_blob = ldb_msg_find_ldb_val(req->op.mod.message, "objectGUID");
-	if ( guid_blob != NULL ) {
+	guid_el = ldb_msg_find_element(req->op.mod.message, "objectGUID");
+	if (guid_el != NULL) {
 		ldb_set_errstring(ldb,
 				  "replmd_modify: it's not allowed to change the objectGUID!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -2540,7 +2616,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	if (!ldb_dn_compare_base(ac->schema->base_dn, msg->dn)) {
+	if (!ldb_dn_compare_base(replmd_private->schema_dn, msg->dn)) {
 		/* Update the usn in the SAMLDB_MSDS_INTID_OPAQUE opaque */
 		msds_intid_struct = (struct samldb_msds_intid_persistant *) ldb_get_opaque(ldb, SAMLDB_MSDS_INTID_OPAQUE);
 		if (msds_intid_struct) {
@@ -2922,6 +2998,20 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		return ldb_next_request(module, req);
 	}
 
+	/*
+	 * We have to allow dbcheck to remove an object that
+	 * is beyond repair, and to do so totally.  This could
+	 * mean we we can get a partial object from the other
+	 * DC, causing havoc, so dbcheck suggests
+	 * re-replication first.  dbcheck sets both DBCHECK
+	 * and RELAX in this situation.
+	 */
+	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)
+	    && ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		/* really, really remove it */
+		return ldb_next_request(module, req);
+	}
+
 	tmp_ctx = talloc_new(ldb);
 	if (!tmp_ctx) {
 		ldb_oom(ldb);
@@ -2965,17 +3055,25 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	}
 
 	if (next_deletion_state == OBJECT_REMOVED) {
-		struct auth_session_info *session_info =
-				(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-		if (security_session_user_level(session_info, NULL) != SECURITY_SYSTEM) {
-			ldb_asprintf_errstring(ldb, "Refusing to delete deleted object %s",
-					ldb_dn_get_linearized(old_msg->dn));
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+		/*
+		 * We have to prevent objects being deleted, even if
+		 * the administrator really wants them gone, as
+		 * without the tombstone, we can get a partial object
+		 * from the other DC, causing havoc.
+		 *
+		 * The only other valid case is when the 180 day
+		 * timeout has expired, when relax is specified.
+		 */
+		if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)) {
+			/* it is already deleted - really remove it this time */
+			talloc_free(tmp_ctx);
+			return ldb_next_request(module, req);
 		}
 
-		/* it is already deleted - really remove it this time */
-		talloc_free(tmp_ctx);
-		return ldb_next_request(module, req);
+		ldb_asprintf_errstring(ldb, "Refusing to delete tombstone object %s.  "
+				       "This check is to prevent corruption of the replicated state.",
+				       ldb_dn_get_linearized(old_msg->dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	rdn_name = ldb_dn_get_rdn_name(old_dn);
@@ -3214,8 +3312,13 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				*/
 				continue;
 			}
-			if (!sa->linkID && ldb_attr_in_list(preserved_attrs, el->name)) {
-				continue;
+			if (!sa->linkID) {
+				if (ldb_attr_in_list(preserved_attrs, el->name)) {
+					continue;
+				}
+				if (sa->searchFlags & SEARCH_FLAG_PRESERVEONDELETE) {
+					continue;
+				}
 			}
 			ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, &el);
 			if (ret != LDB_SUCCESS) {
@@ -3826,6 +3929,8 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	unsigned int i;
 	int ret;
 	bool remote_isDeleted = false;
+	const struct dsdb_attribute *rdn_sa;
+	const char *rdn_name;
 
 	ldb = ldb_module_get_ctx(ar->module);
 	msg = ar->objs->objects[ar->index_current].msg;
@@ -3861,6 +3966,13 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		struct ldb_message_element *el = &msg->elements[i];
 
 		if (el->num_values == 0) {
+			if (ldb_attr_cmp(msg->elements[i].name, "objectClass") == 0) {
+				ldb_asprintf_errstring(ldb, __location__
+						       ": empty objectClass sent on %s, aborting replication\n",
+						       ldb_dn_get_linearized(msg->dn));
+				return replmd_replicated_request_error(ar, LDB_ERR_OBJECT_CLASS_VIOLATION);
+			}
+
 			DEBUG(4,(__location__ ": Removing attribute %s with num_values==0\n",
 				 el->name));
 			memmove(el, el+1, sizeof(*el)*(msg->num_elements - (i+1)));
@@ -3870,12 +3982,38 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		}
 	}
 
+	if (DEBUGLVL(4)) {
+		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_ADD, msg);
+		DEBUG(4, ("DRS replication add message:\n%s\n", s));
+		talloc_free(s);
+	}
+
 	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
 						     "isDeleted", false);
 
 	/*
 	 * the meta data array is already sorted by the caller
 	 */
+
+	rdn_name = ldb_dn_get_rdn_name(msg->dn);
+	if (rdn_name == NULL) {
+		ldb_asprintf_errstring(ldb, __location__ ": No rDN for %s?\n", ldb_dn_get_linearized(msg->dn));
+		return replmd_replicated_request_error(ar, LDB_ERR_INVALID_DN_SYNTAX);
+	}
+
+	rdn_sa = dsdb_attribute_by_lDAPDisplayName(ar->schema, rdn_name);
+	if (rdn_sa == NULL) {
+		ldb_asprintf_errstring(ldb, ": No schema attribute found for rDN %s for %s\n",
+				       rdn_name, ldb_dn_get_linearized(msg->dn));
+		return replmd_replicated_request_error(ar, LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE);
+	}
+
+	ret = replmd_replPropertyMetaDataCtr1_verify(ldb, &md->ctr.ctr1, rdn_sa, msg->dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "%s: error during DRS repl ADD: %s", __func__, ldb_errstring(ldb));
+		return replmd_replicated_request_error(ar, ret);
+	}
+
 	for (i=0; i < md->ctr.ctr1.count; i++) {
 		md->ctr.ctr1.array[i].local_usn = ar->seq_num;
 	}
@@ -3902,12 +4040,6 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	}
 
 	ar->isDeleted = remote_isDeleted;
-
-	if (DEBUGLVL(4)) {
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_ADD, msg);
-		DEBUG(4, ("DRS replication add message:\n%s\n", s));
-		talloc_free(s);
-	}
 
 	ret = ldb_build_add_req(&change_req,
 				ldb,
@@ -4300,11 +4432,19 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 			}
 
 			if (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING) {
-				/* if we compare equal then do an
-				   update. This is used when a client
-				   asks for a FULL_SYNC, and can be
-				   used to recover a corrupt
-				   replica */
+				/*
+				 * if we compare equal then do an
+				 * update. This is used when a client
+				 * asks for a FULL_SYNC, and can be
+				 * used to recover a corrupt
+				 * replica.
+				 *
+				 * This call is a bit tricky, what we
+				 * are doing it turning the 'is_newer'
+				 * call into a 'not is older' by
+				 * swapping i and j, and negating the
+				 * outcome.
+				*/
 				cmp = !replmd_replPropertyMetaData1_is_newer(&rmd->ctr.ctr1.array[i],
 									     &nmd.ctr.ctr1.array[j]);
 			} else {
@@ -4385,8 +4525,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	 *
 	 * sort the new meta data array
 	 */
-	ret = replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, ar->schema, msg->dn);
+	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, ar->schema, msg->dn);
 	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "%s: error during DRS repl merge: %s", __func__, ldb_errstring(ldb));
 		return ret;
 	}
 
@@ -4460,6 +4601,14 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	/* we want to replace the old values */
 	for (i=0; i < msg->num_elements; i++) {
 		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+		if (ldb_attr_cmp(msg->elements[i].name, "objectClass") == 0) {
+			if (msg->elements[i].num_values == 0) {
+				ldb_asprintf_errstring(ldb, __location__
+						       ": objectClass removed on %s, aborting replication\n",
+						       ldb_dn_get_linearized(msg->dn));
+				return replmd_replicated_request_error(ar, LDB_ERR_OBJECT_CLASS_VIOLATION);
+			}
+		}
 	}
 
 	if (DEBUGLVL(4)) {
@@ -5277,8 +5426,8 @@ linked_attributes[0]:
 
 	attrs[0] = attr->lDAPDisplayName;
 	attrs[1] = "isDeleted";
-	attrs[1] = "isRecycled";
-	attrs[2] = NULL;
+	attrs[2] = "isRecycled";
+	attrs[3] = NULL;
 
 	/* get the existing message from the db for the object with
 	   this GUID, returning attribute being modified. We will then

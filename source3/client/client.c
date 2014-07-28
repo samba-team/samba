@@ -579,7 +579,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 		status = cli_ntcreate(cli_state, afname, 0,
 				      CREATE_ACCESS_READ, 0,
 				      FILE_SHARE_READ|FILE_SHARE_WRITE,
-				      FILE_OPEN, 0x0, 0x0, &fnum);
+				      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
 				   afname, nt_errstr(status)));
@@ -1778,7 +1778,7 @@ static int do_allinfo(const char *name)
 			      SEC_STD_SYNCHRONIZE, 0,
 			      FILE_SHARE_READ|FILE_SHARE_WRITE
 			      |FILE_SHARE_DELETE,
-			      FILE_OPEN, 0x0, 0x0, &fnum);
+			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Ignore failure, it does not hurt if we can't list
@@ -2502,12 +2502,12 @@ static int cmd_open(void)
 	status = cli_ntcreate(targetcli, targetname, 0,
 			FILE_READ_DATA|FILE_WRITE_DATA, 0,
 			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
-			0x0, 0x0, &fnum);
+			0x0, 0x0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		status = cli_ntcreate(targetcli, targetname, 0,
 				FILE_READ_DATA, 0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
-				0x0, 0x0, &fnum);
+				0x0, 0x0, &fnum, NULL);
 		if (NT_STATUS_IS_OK(status)) {
 			d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
 		} else {
@@ -3949,7 +3949,7 @@ static int cmd_notify(void)
 	status = cli_ntcreate(
 		cli, name, 0, FILE_READ_DATA, 0,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OPEN, 0, 0, &fnum);
+		FILE_OPEN, 0, 0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not open file: %s\n", nt_errstr(status));
 		goto fail;

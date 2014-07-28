@@ -178,7 +178,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 
 	ret = smb_krb5_init_context(gensec_gssapi_state,
-				    NULL,
 				    gensec_security->settings->lp_ctx,
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {

@@ -74,6 +74,7 @@ struct dsdb_syntax {
 			       const struct dsdb_attribute *attr,
 			       const struct ldb_message_element *in);
 	bool auto_normalise;
+	bool userParameters; /* Indicates the syntax userParameters should be forced to */
 };
 
 struct dsdb_attribute {
@@ -201,8 +202,6 @@ struct dsdb_schema_info {
 
 
 struct dsdb_schema {
-	struct ldb_dn *base_dn;
-
 	struct dsdb_schema_prefixmap *prefixmap;
 
 	/* 
@@ -250,8 +249,6 @@ struct dsdb_schema {
 	} fsmo;
 
 	/* Was this schema loaded from ldb (if so, then we will reload it when we detect a change in ldb) */
-	struct ldb_module *loaded_from_module;
-	struct dsdb_schema *(*refresh_fn)(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema);
 	bool refresh_in_progress;
 	time_t ts_last_change;
 	time_t last_refresh;
@@ -282,6 +279,11 @@ enum dsdb_schema_convert_target {
 	TARGET_AD_SCHEMA_SUBENTRY
 };
 
+struct ldb_module;
+
+typedef struct dsdb_schema *(*dsdb_schema_refresh_fn)(struct ldb_module *module,
+						      struct tevent_context *ev,
+						      struct dsdb_schema *schema, bool is_global_schema);
 #include "dsdb/schema/proto.h"
 
 #endif /* _DSDB_SCHEMA_H */

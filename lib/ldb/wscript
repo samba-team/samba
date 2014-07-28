@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'ldb'
-VERSION = '1.1.16'
+VERSION = '1.1.17'
 
 blddir = 'bin'
 
@@ -10,7 +10,7 @@ import sys, os
 # find the buildtools directory
 srcdir = '.'
 while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
-    srcdir = '../' + srcdir
+    srcdir = srcdir + '/..'
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist, Options
@@ -257,10 +257,10 @@ def build(bld):
         bld.SAMBA_BINARY('ldbdump', 'tools/ldbdump.c', deps='ldb-cmdline ldb',
                          install=False)
 
-    bld.SAMBA_LIBRARY('ldb-cmdline',
-                      source='tools/ldbutil.c tools/cmdline.c',
-                      deps='ldb dl popt',
-                      private_library=True)
+        bld.SAMBA_LIBRARY('ldb-cmdline',
+                          source='tools/ldbutil.c tools/cmdline.c',
+                          deps='ldb dl popt',
+                          private_library=True)
 
 
 def test(ctx):

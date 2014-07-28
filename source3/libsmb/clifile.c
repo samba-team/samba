@@ -1795,6 +1795,7 @@ NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 struct cli_ntcreate_state {
 	uint16_t vwv[24];
 	uint16_t fnum;
+	struct smb_create_returns cr;
 };
 
 static void cli_ntcreate_done(struct tevent_req *subreq);
@@ -1880,17 +1881,29 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, NULL, 3, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, NULL, 34, &wct, &vwv,
 			      &num_bytes, &bytes);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	state->cr.oplock_level = CVAL(vwv+2, 0);
 	state->fnum = SVAL(vwv+2, 1);
+	state->cr.create_action = IVAL(vwv+3, 1);
+	state->cr.creation_time = BVAL(vwv+5, 1);
+	state->cr.last_access_time = BVAL(vwv+9, 1);
+	state->cr.last_write_time = BVAL(vwv+13, 1);
+	state->cr.change_time   = BVAL(vwv+17, 1);
+	state->cr.file_attributes = IVAL(vwv+21, 1);
+	state->cr.allocation_size = BVAL(vwv+23, 1);
+	state->cr.end_of_file   = BVAL(vwv+27, 1);
+
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum)
+NTSTATUS cli_ntcreate_recv(struct tevent_req *req,
+		uint16_t *pfnum,
+		struct smb_create_returns *cr)
 {
 	struct cli_ntcreate_state *state = tevent_req_data(
 		req, struct cli_ntcreate_state);
@@ -1900,6 +1913,9 @@ NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum)
 		return status;
 	}
 	*pfnum = state->fnum;
+	if (cr != NULL) {
+		*cr = state->cr;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -1912,7 +1928,8 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint32_t CreateDisposition,
 		      uint32_t CreateOptions,
 		      uint8_t SecurityFlags,
-		      uint16_t *pfid)
+		      uint16_t *pfid,
+		      struct smb_create_returns *cr)
 {
 	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev;
@@ -1929,7 +1946,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 					CreateDisposition,
 					CreateOptions,
 					pfid,
-					NULL);
+					cr);
 	}
 
 	frame = talloc_stackframe();
@@ -1962,7 +1979,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_ntcreate_recv(req, pfid);
+	status = cli_ntcreate_recv(req, pfid, cr);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -1970,6 +1987,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 
 struct cli_nttrans_create_state {
 	uint16_t fnum;
+	struct smb_create_returns cr;
 };
 
 static void cli_nttrans_create_done(struct tevent_req *subreq);
@@ -2082,12 +2100,24 @@ static void cli_nttrans_create_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	state->cr.oplock_level = CVAL(param, 0);
 	state->fnum = SVAL(param, 2);
+	state->cr.create_action = IVAL(param, 4);
+	state->cr.creation_time = BVAL(param, 12);
+	state->cr.last_access_time = BVAL(param, 20);
+	state->cr.last_write_time = BVAL(param, 28);
+	state->cr.change_time   = BVAL(param, 36);
+	state->cr.file_attributes = IVAL(param, 44);
+	state->cr.allocation_size = BVAL(param, 48);
+	state->cr.end_of_file   = BVAL(param, 56);
+
 	TALLOC_FREE(param);
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_nttrans_create_recv(struct tevent_req *req, uint16_t *fnum)
+NTSTATUS cli_nttrans_create_recv(struct tevent_req *req,
+			uint16_t *fnum,
+			struct smb_create_returns *cr)
 {
 	struct cli_nttrans_create_state *state = tevent_req_data(
 		req, struct cli_nttrans_create_state);
@@ -2097,6 +2127,9 @@ NTSTATUS cli_nttrans_create_recv(struct tevent_req *req, uint16_t *fnum)
 		return status;
 	}
 	*fnum = state->fnum;
+	if (cr != NULL) {
+		*cr = state->cr;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -2112,7 +2145,8 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
 			    struct security_descriptor *secdesc,
 			    struct ea_struct *eas,
 			    int num_eas,
-			    uint16_t *pfid)
+			    uint16_t *pfid,
+			    struct smb_create_returns *cr)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -2141,7 +2175,7 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_nttrans_create_recv(req, pfid);
+	status = cli_nttrans_create_recv(req, pfid, cr);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -2353,6 +2387,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 	unsigned int openfn = 0;
 	unsigned int dos_deny = 0;
 	uint32_t access_mask, share_mode, create_disposition, create_options;
+	struct smb_create_returns cr;
 
 	/* Do the initial mapping into OpenX parameters. */
 	if (flags & O_CREAT) {
@@ -2433,7 +2468,8 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 				create_disposition,
 				create_options,
 				0,
-				pfnum);
+				pfnum,
+				&cr);
 
 	/* Try and cope will all varients of "we don't do this call"
 	   and fall back to openX. */
@@ -2448,6 +2484,25 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 			NT_STATUS_EQUAL(status,NT_STATUS_CTL_FILE_NOT_SUPPORTED) ||
 			NT_STATUS_EQUAL(status,NT_STATUS_UNSUCCESSFUL)) {
 		goto try_openx;
+	}
+
+	if (NT_STATUS_IS_OK(status) &&
+	    (create_options & FILE_NON_DIRECTORY_FILE) &&
+	    (cr.file_attributes & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		/*
+		 * Some (broken) servers return a valid handle
+		 * for directories even if FILE_NON_DIRECTORY_FILE
+		 * is set. Just close the handle and set the
+		 * error explicitly to NT_STATUS_FILE_IS_A_DIRECTORY.
+		 */
+		status = cli_close(cli, *pfnum);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		status = NT_STATUS_FILE_IS_A_DIRECTORY;
+		/* Set this so libsmbclient can retrieve it. */
+		cli->raw_status = status;
 	}
 
 	return status;

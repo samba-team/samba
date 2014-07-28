@@ -77,7 +77,7 @@ static void notify_online_opened_dir(struct tevent_req *subreq)
 		req, struct notify_online_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->dnum);
+	status = cli_ntcreate_recv(subreq, &state->dnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -131,7 +131,7 @@ static void notify_online_opened_file(struct tevent_req *subreq)
 		req, struct notify_online_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->fnum);
+	status = cli_ntcreate_recv(subreq, &state->fnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

@@ -1,3 +1,150 @@
+                   ==============================
+                   Release Notes for Samba 4.1.10
+                           July 28, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.9:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10693: Backport ldb-1.1.17 + changes from master.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10587: s3: libsmbclient: Work around bugs in SLES cifsd and Apple smbx
+      SMB1 servers.
+    * BUG 10653: Samba won't start on a machine configured with only IPv4.
+    * BUG 10671: s3: smbd: Prevent file truncation on an open that fails with
+      share mode violation.
+    * BUG 10673: s3: SMB2: Fix leak of blocking lock records in the database.
+    * BUG 10684: SMB1 blocking locks can fail notification on unlock, causing
+      client timeout.
+    * BUG 10685: s3: smbd: Locking, fix off-by one calculation in
+      brl_pending_overlap().
+    * BUG 10692: wbcCredentialCache fails if challenge_blob is not first.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 10693: lib/ldb: Fix compiler warnings.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8077: dbcheck: Add check and test for various invalid userParameters
+      values.
+    * BUG 8449: Simple use case results in "no talloc stackframe around, leaking
+      memory" error.)
+    * BUG 10130: dsdb: Always store and return the userParameters as a array of
+      LE 16-bit values.
+    * BUG 10582: dsdb: Rename private_data to rootdse_private_data in rootdse.
+    * BUG 10627: rid_array used before status checked - segmentation fault due
+      to null pointer dereference.
+    * BUG 10693: ldb: make the successful ldb_transaction_start() message
+      clearer.
+    * BUG 10694: dsdb: Return NO_SUCH_OBJECT if a basedn is a deleted object.
+    * BUG 10700: Backport access check related fixes from master.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 10674: samba-tool: Add --site parameter to provision command.
+
+
+o   Howard Chu <hyc@symas.com>
+    * BUG 10693: Fix SEGV from improperly formed SUBSTRING/PRESENCE filter.
+
+
+o   Jeroen Dekkers <jeroen@dekkers.ch>
+    * BUG 10693: ldb: Do not build libldb-cmdline when using system ldb.
+
+
+o   Nadezhda Ivanova <nivanova@symas.com>
+    * BUG 10693: s4-openldap: Remove use of talloc_reference in
+      ldb_map_outbound.c
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 3263: net/doc: Make clear that net vampire is for NT4 domains only.
+
+
+o   Abhidnya Joshi <achirmul@in.ibm.com>
+    * BUG s3: Fix missing braces in nfs4_acls.c.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10593: Fix "PANIC: assert failed at ../source3/smbd/open.c(1582): ret".
+    * BUG 10663: msg_channel: Fix a 100% CPU loop.
+    * BUG 10671: s3: smbd: Prevent file truncation on an open that fails with
+      share mode violation.
+    * BUG 10680: smbstatus: Fix an uninitialized variable.
+    * BUG 10687: 'RW2' smbtorture test fails when -N <numprocs> is set to 2 due
+      to the invalid status check in the second client.
+    * BUG 10693: ldb: Fix 1138330 Dereference null return value, fix CIDs
+      241329, 240798, 1034791, 1034792 1034910, 1034910).
+    * BUG 10699: smbd: Avoid double-free in get_print_db_byname.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8077: s4:dsdb/samldb: Don't allow 'userParameters' to be modified over
+      LDAP for now.
+    * BUG 9763: s4:dsdb/repl_meta_data: Make sure objectGUID can't be deleted.
+    * BUG 10469: ldb-samba: fix a memory leak in
+      ldif_canonicalise_objectCategory().
+    * BUG 10294: s4:repl_meta_data: fix array assignment in
+      replmd_process_linked_attribute().
+    * BUG 10536: dbchecker: Verify and fix broken dn values.
+    * BUG 10692: wbcCredentialCache fails if challenge_blob is not first.
+    * BUG 10693: ldb:pyldb: Add some more helper functions for LdbDn.
+    * BUG 10694: s4:dsdb/extended_dn_in: Don't force DSDB_SEARCH_SHOW_RECYCLED.
+    * BUG 10696: Backport autobuild/selftest fixes from master.
+    * BUG 10706: s3:smb2_read: let smb2_sendfile_send_data() behave like
+      send_file_readX().
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 10693: pyldb: Decrement ref counters on py_results and quiet warnings.
+    * BUG 10698: Backport drs-crackname fixes from master.
+
+
+o   Pavel Reichl <pavel.reichl@redhat.com>
+    * BUG 10693: ldb: Use of NULL pointer bugfix.
+
+
+o   Garming Sam <garming@catalyst.net.nz>
+    * BUG 10703: Backport provision fixes from master.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10693: ldb: Add a env variable to disable RTLD_DEEPBIND.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
                    =============================
                    Release Notes for Samba 4.1.9
                            June 23, 2014
@@ -52,8 +199,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.1.8

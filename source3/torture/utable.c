@@ -164,7 +164,7 @@ bool torture_casetable(int dummy)
 					  GENERIC_ALL_ACCESS, 
 					  FILE_ATTRIBUTE_NORMAL,
 					  FILE_SHARE_NONE,
-					  FILE_OPEN_IF, 0, 0, &fnum))) {
+					  FILE_OPEN_IF, 0, 0, &fnum, NULL))) {
 			printf("Failed to create file with char %04x\n", c);
 			continue;
 		}

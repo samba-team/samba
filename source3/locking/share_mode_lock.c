@@ -495,6 +495,7 @@ static int traverse_fn(struct db_record *rec, void *_state)
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 	for (i=0; i<d->num_share_modes; i++) {
+		d->share_modes[i].stale = false; /* [skip] in idl */
 		state->fn(&d->share_modes[i],
 			  d->servicepath, d->base_name,
 			  state->private_data);

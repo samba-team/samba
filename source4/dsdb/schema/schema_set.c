@@ -443,6 +443,26 @@ failed:
  * Attach the schema to an opaque pointer on the ldb,
  * so ldb modules can find it
  */
+int dsdb_set_schema_refresh_function(struct ldb_context *ldb,
+				     dsdb_schema_refresh_fn refresh_fn,
+				     struct ldb_module *module)
+{
+	int ret = ldb_set_opaque(ldb, "dsdb_schema_refresh_fn", refresh_fn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_set_opaque(ldb, "dsdb_schema_refresh_fn_private_data", module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return LDB_SUCCESS;
+}
+
+/**
+ * Attach the schema to an opaque pointer on the ldb,
+ * so ldb modules can find it
+ */
 int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
 	struct dsdb_schema *old_schema;
@@ -466,6 +486,8 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 		talloc_unlink(ldb, old_schema);
 		talloc_steal(ldb, schema);
 	}
+
+	talloc_steal(ldb, schema);
 
 	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", NULL);
 	if (ret != LDB_SUCCESS) {
@@ -518,6 +540,16 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 		return ret;
 	}
 
+	ret = ldb_set_opaque(ldb, "dsdb_refresh_fn", NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_set_opaque(ldb, "dsdb_refresh_fn_private_data", NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = dsdb_schema_set_indices_and_attributes(ldb, schema, write_indices_and_attributes);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -533,12 +565,13 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 {
 	int ret;
 	void *use_global_schema = (void *)1;
-	if (!global_schema) {
-		return LDB_SUCCESS;
-	}
 	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", use_global_schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
+	}
+
+	if (global_schema == NULL) {
+		return LDB_SUCCESS;
 	}
 
 	/* Set the new attributes based on the new schema */
@@ -567,11 +600,13 @@ bool dsdb_uses_global_schema(struct ldb_context *ldb)
 struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *reference_ctx)
 {
 	const void *p;
-	struct dsdb_schema *schema_out;
-	struct dsdb_schema *schema_in;
+	struct dsdb_schema *schema_out = NULL;
+	struct dsdb_schema *schema_in = NULL;
+	dsdb_schema_refresh_fn refresh_fn;
+	struct ldb_module *loaded_from_module;
 	bool use_global_schema;
 	TALLOC_CTX *tmp_ctx = talloc_new(reference_ctx);
-	if (!tmp_ctx) {
+	if (tmp_ctx == NULL) {
 		return NULL;
 	}
 
@@ -581,29 +616,38 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 		schema_in = global_schema;
 	} else {
 		p = ldb_get_opaque(ldb, "dsdb_schema");
-
-		schema_in = talloc_get_type(p, struct dsdb_schema);
-		if (!schema_in) {
-			talloc_free(tmp_ctx);
-			return NULL;
+		if (p != NULL) {
+			schema_in = talloc_get_type_abort(p, struct dsdb_schema);
 		}
 	}
 
-	if (schema_in->refresh_fn && !schema_in->refresh_in_progress) {
-		if (!talloc_reference(tmp_ctx, schema_in)) {
-			/*
-			 * ensure that the schema_in->refresh_in_progress
-			 * remains valid for the right amount of time
-			 */
-			talloc_free(tmp_ctx);
-			return NULL;
+	refresh_fn = ldb_get_opaque(ldb, "dsdb_schema_refresh_fn");
+	if (refresh_fn) {
+		loaded_from_module = ldb_get_opaque(ldb, "dsdb_schema_refresh_fn_private_data");
+
+		SMB_ASSERT(loaded_from_module && (ldb_module_get_ctx(loaded_from_module) == ldb));
+	}
+
+	if (refresh_fn) {
+		/* We need to guard against recurisve calls here */
+		if (ldb_set_opaque(ldb, "dsdb_schema_refresh_fn", NULL) != LDB_SUCCESS) {
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+				      "dsdb_get_schema: clearing dsdb_schema_refresh_fn failed");
+		} else {
+			schema_out = refresh_fn(loaded_from_module,
+						ldb_get_event_context(ldb),
+						schema_in,
+						use_global_schema);
 		}
-		schema_in->refresh_in_progress = true;
-		/* This may change schema, if it needs to reload it from disk */
-		schema_out = schema_in->refresh_fn(schema_in->loaded_from_module,
-						   schema_in,
-						   use_global_schema);
-		schema_in->refresh_in_progress = false;
+		if (ldb_set_opaque(ldb, "dsdb_schema_refresh_fn", refresh_fn) != LDB_SUCCESS) {
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+				      "dsdb_get_schema: re-setting dsdb_schema_refresh_fn failed");
+		}
+		if (!schema_out) {
+			schema_out = schema_in;
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+				      "dsdb_get_schema: refresh_fn() failed");
+		}
 	} else {
 		schema_out = schema_in;
 	}
@@ -761,10 +805,6 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 
 	schema = dsdb_new_schema(mem_ctx);
 	if (!schema) {
-		goto nomem;
-	}
-	schema->base_dn = ldb_dn_new(schema, ldb, dn);
-	if (!schema->base_dn) {
 		goto nomem;
 	}
 	schema->fsmo.we_are_master = true;

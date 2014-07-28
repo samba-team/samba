@@ -103,6 +103,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     const char *user;
     char *pass_old;
     char *pass_new;
+    TALLOC_CTX *frame = talloc_stackframe();
 
     /* Samba initialization. */
     load_case_tables_library();
@@ -119,6 +120,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (on( SMB_DEBUG, ctrl )) {
             _log_err(pamh, LOG_DEBUG, "password: could not identify user");
         }
+	TALLOC_FREE(frame);
         return retval;
     }
     if (on( SMB_DEBUG, ctrl )) {
@@ -127,6 +129,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     if (geteuid() != 0) {
 	_log_err(pamh, LOG_DEBUG, "Cannot access samba password database, not running as root.");
+	TALLOC_FREE(frame);
 	return PAM_AUTHINFO_UNAVAIL;
     }
 
@@ -137,19 +140,22 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     if (!initialize_password_db(False, NULL)) {
       _log_err(pamh, LOG_ALERT, "Cannot access samba password database" );
         CatchSignal(SIGPIPE, oldsig_handler);
+	TALLOC_FREE(frame);
         return PAM_AUTHINFO_UNAVAIL;
     }
 
     /* obtain user record */
     if ( !(sampass = samu_new( NULL )) ) {
         CatchSignal(SIGPIPE, oldsig_handler);
+	TALLOC_FREE(frame);
         return nt_status_to_pam(NT_STATUS_NO_MEMORY);
     }
 
     if (!pdb_getsampwnam(sampass,user)) {
         _log_err(pamh, LOG_ALERT, "Failed to find entry for user %s.", user);
         CatchSignal(SIGPIPE, oldsig_handler);
-        return PAM_USER_UNKNOWN;
+	TALLOC_FREE(frame);
+	return PAM_USER_UNKNOWN;
     }
     if (on( SMB_DEBUG, ctrl )) {
         _log_err(pamh, LOG_DEBUG, "Located account for %s", user);
@@ -167,6 +173,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
             TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, oldsig_handler);
+	    TALLOC_FREE(frame);
             return PAM_SUCCESS;
         }
 
@@ -179,6 +186,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 			_log_err(pamh, LOG_CRIT, "password: out of memory");
 			TALLOC_FREE(sampass);
 			CatchSignal(SIGPIPE, oldsig_handler);
+			TALLOC_FREE(frame);
 			return PAM_BUF_ERR;
 		}
 
@@ -192,6 +200,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
                          "password - (old) token not obtained");
                 TALLOC_FREE(sampass);
                 CatchSignal(SIGPIPE, oldsig_handler);
+		TALLOC_FREE(frame);
                 return retval;
             }
 
@@ -207,6 +216,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         pass_old = NULL;
         TALLOC_FREE(sampass);
         CatchSignal(SIGPIPE, oldsig_handler);
+	TALLOC_FREE(frame);
         return retval;
 
     } else if (flags & PAM_UPDATE_AUTHTOK) {
@@ -237,6 +247,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             _log_err(pamh, LOG_NOTICE, "password: user not authenticated");
             TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, oldsig_handler);
+	    TALLOC_FREE(frame);
             return retval;
         }
 
@@ -265,6 +276,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             pass_old = NULL;                               /* tidy up */
             TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, oldsig_handler);
+	    TALLOC_FREE(frame);
             return retval;
         }
 
@@ -285,6 +297,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             pass_new = pass_old = NULL;               /* tidy up */
             TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, oldsig_handler);
+	    TALLOC_FREE(frame);
             return retval;
         }
 
@@ -334,6 +347,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     TALLOC_FREE(sampass);
     CatchSignal(SIGPIPE, oldsig_handler);
+    TALLOC_FREE(frame);
     return retval;
 }
 

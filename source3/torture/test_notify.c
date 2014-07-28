@@ -82,7 +82,7 @@ static void wait_for_one_notify_opened(struct tevent_req *subreq)
 		req, struct wait_for_one_notify_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->dnum);
+	status = cli_ntcreate_recv(subreq, &state->dnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -334,7 +334,7 @@ static void notify_bench3_mkdir1_done(struct tevent_req *subreq)
 		req, struct notify_bench3_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->dnum);
+	status = cli_ntcreate_recv(subreq, &state->dnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -471,7 +471,7 @@ static void notify_bench3_mksubdir_done(struct tevent_req *subreq)
 		req, struct notify_bench3_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->subdir_dnum);
+	status = cli_ntcreate_recv(subreq, &state->subdir_dnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

@@ -987,9 +987,10 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 				  (unsigned int)newGID));
 			if (smbacl4_GetFileOwner(fsp->conn,
 						 fsp->fsp_name->base_name,
-						 &sbuf))
+						 &sbuf)){
 				TALLOC_FREE(frame);
 				return map_nt_error_from_unix(errno);
+			}
 
 			/* If we successfully chowned, we know we must
 			 * be able to set the acl, so do it as root.

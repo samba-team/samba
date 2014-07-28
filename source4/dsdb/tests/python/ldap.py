@@ -667,7 +667,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_single_valued_attributes(self):
         """Test single-valued attributes"""
-        print "Test single-valued attributes"""
+        print "Test single-valued attributes"
 
         try:
             self.ldb.add({
@@ -767,7 +767,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_empty_messages(self):
         """Test empty messages"""
-        print "Test empty messages"""
+        print "Test empty messages"
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -788,7 +788,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_empty_attributes(self):
         """Test empty attributes"""
-        print "Test empty attributes"""
+        print "Test empty attributes"
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -900,6 +900,17 @@ class BasicTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+        #only write is allowed with NC_HEAD for originating updates
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "instanceType": "3" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+
     def test_distinguished_name(self):
         """Tests the 'distinguishedName' attribute"""
         print "Tests the 'distinguishedName' attribute"
@@ -952,7 +963,7 @@ class BasicTests(samba.tests.TestCase):
             ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -976,7 +987,7 @@ class BasicTests(samba.tests.TestCase):
             ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
@@ -2649,7 +2660,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
         delete_force(self.ldb, user_dn)
         try:
-            sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
+            sddl = "O:DUG:DUD:AI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, security.dom_sid('S-1-5-21'))
             desc_base64 = base64.b64encode( ndr_pack(desc) )
             self.ldb.add_ldif("""
@@ -2659,6 +2670,10 @@ sAMAccountName: """ + user_name + """
 nTSecurityDescriptor:: """ + desc_base64)
             res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
             self.assertTrue("nTSecurityDescriptor" in res[0])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            self.assertTrue("O:S-1-5-21-513G:S-1-5-21-513D:AI(A;;RPWP;;;AU)" in desc_sddl)
         finally:
             delete_force(self.ldb, user_dn)
 

@@ -20,6 +20,7 @@
 import ldb
 import samba
 import time
+from base64 import b64decode
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
@@ -63,6 +64,10 @@ class dbcheck(object):
         self.fix_instancetype = False
         self.fix_replmetadata_zero_invocationid = False
         self.fix_deleted_deleted_objects = False
+        self.fix_dn = False
+        self.fix_base64_userparameters = False
+        self.fix_utf8_userparameters = False
+        self.fix_doubled_userparameters = False
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -73,6 +78,7 @@ class dbcheck(object):
         self.ntds_dsa = ldb.Dn(samdb, samdb.get_dsServiceName())
         self.class_schemaIDGUID = {}
         self.wellknown_sds = get_wellknown_sds(self.samdb)
+        self.fix_all_missing_objectclass = False
 
         self.name_map = {}
         try:
@@ -174,6 +180,18 @@ class dbcheck(object):
             return False
         return c
 
+    def do_delete(self, dn, controls, msg):
+        '''delete dn with optional verbose output'''
+        if self.verbose:
+            self.report("delete DN %s" % dn)
+        try:
+            controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
+            self.samdb.delete(dn, controls=controls)
+        except Exception, err:
+            self.report("%s : %s" % (msg, err))
+            return False
+        return True
+
     def do_modify(self, m, controls, msg, validate=True):
         '''perform a modify with optional verbose output'''
         if self.verbose:
@@ -271,6 +289,16 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def is_deleted_objects_dn(self, dsdb_dn):
         '''see if a dsdb_Dn is the special Deleted Objects DN'''
         return dsdb_dn.prefix == "B:32:%s:" % dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER
+
+    def err_missing_objectclass(self, dn):
+        """handle object without objectclass"""
+        self.report("ERROR: missing objectclass in object %s.  If you have another working DC, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (dn, self.samdb.get_nc_root(dn)))
+        if not self.confirm_all("If you cannot re-sync from another DC, do you wish to delete object '%s'?" % dn, 'fix_all_missing_objectclass'):
+            self.report("Not deleting object with missing objectclass '%s'" % dn)
+            return
+        if self.do_delete(dn, ["relax:0"],
+                          "Failed to remove DN %s" % dn):
+            self.report("Removed DN %s" % dn)
 
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
         """handle a DN pointing to a deleted object"""
@@ -463,6 +491,26 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         else:
             self.samdb.transaction_cancel()
 
+    def err_wrong_dn(self, obj, new_dn, rdn_attr, rdn_val, name_val):
+        '''handle a wrong dn'''
+
+        new_rdn = ldb.Dn(self.samdb, str(new_dn))
+        new_rdn.remove_base_components(len(new_rdn) - 1)
+        new_parent = new_dn.parent()
+
+        attributes = ""
+        if rdn_val != name_val:
+            attributes += "%s=%r " % (rdn_attr, rdn_val)
+        attributes += "name=%r" % (name_val)
+
+        self.report("ERROR: wrong dn[%s] %s new_dn[%s]" % (obj.dn, attributes, new_dn))
+        if not self.confirm_all("Rename %s to %s?" % (obj.dn, new_dn), 'fix_dn'):
+            self.report("Not renaming %s to %s" % (obj.dn, new_dn))
+            return
+
+        if self.do_rename(obj.dn, new_rdn, new_parent, ["show_recycled:1", "relax:0"],
+                          "Failed to rename object %s into %s" % (obj.dn, new_dn)):
+            self.report("Renamed %s into %s" % (obj.dn, new_dn))
 
     def err_wrong_instancetype(self, obj, calculated_instancetype):
         '''handle a wrong instanceType'''
@@ -477,6 +525,58 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if self.do_modify(m, ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA],
                           "Failed to correct missing instanceType on %s by setting instanceType=%d" % (obj.dn, calculated_instancetype)):
             self.report("Corrected instancetype on %s by setting instanceType=%d" % (obj.dn, calculated_instancetype))
+
+    def err_short_userParameters(self, obj, attrname, value):
+        # This is a truncated userParameters due to a pre 4.1 replication bug
+        self.report("ERROR: incorrect userParameters value on object %s.  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
+
+    def err_base64_userParameters(self, obj, attrname, value):
+        '''handle a wrong userParameters'''
+        self.report("ERROR: wrongly formatted userParameters %s on %s, should not be base64-encoded" % (value, obj.dn))
+        if not self.confirm_all('Convert userParameters from base64 encoding on %s?' % (obj.dn), 'fix_base64_userparameters'):
+            self.report('Not changing userParameters from base64 encoding on %s' % (obj.dn))
+            return
+
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(b64decode(obj[attrname][0]), ldb.FLAG_MOD_REPLACE, 'userParameters')
+        if self.do_modify(m, [],
+                          "Failed to correct base64-encoded userParameters on %s by converting from base64" % (obj.dn)):
+            self.report("Corrected base64-encoded userParameters on %s by converting from base64" % (obj.dn))
+
+    def err_utf8_userParameters(self, obj, attrname, value):
+        '''handle a wrong userParameters'''
+        self.report("ERROR: wrongly formatted userParameters on %s, should not be psudo-UTF8 encoded" % (obj.dn))
+        if not self.confirm_all('Convert userParameters from UTF8 encoding on %s?' % (obj.dn), 'fix_utf8_userparameters'):
+            self.report('Not changing userParameters from UTF8 encoding on %s' % (obj.dn))
+            return
+
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(obj[attrname][0].decode('utf8').encode('utf-16-le'),
+                                        ldb.FLAG_MOD_REPLACE, 'userParameters')
+        if self.do_modify(m, [],
+                          "Failed to correct psudo-UTF8 encoded userParameters on %s by converting from UTF8" % (obj.dn)):
+            self.report("Corrected psudo-UTF8 encoded userParameters on %s by converting from UTF8" % (obj.dn))
+
+    def err_doubled_userParameters(self, obj, attrname, value):
+        '''handle a wrong userParameters'''
+        self.report("ERROR: wrongly formatted userParameters on %s, should not be double UTF16 encoded" % (obj.dn))
+        if not self.confirm_all('Convert userParameters from doubled UTF-16 encoding on %s?' % (obj.dn), 'fix_doubled_userparameters'):
+            self.report('Not changing userParameters from doubled UTF-16 encoding on %s' % (obj.dn))
+            return
+
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(obj[attrname][0].decode('utf-16-le').decode('utf-16-le').encode('utf-16-le'),
+                                        ldb.FLAG_MOD_REPLACE, 'userParameters')
+        if self.do_modify(m, [],
+                          "Failed to correct doubled-UTF16 encoded userParameters on %s by converting" % (obj.dn)):
+            self.report("Corrected doubled-UTF16 encoded userParameters on %s by converting" % (obj.dn))
+
+    def err_odd_userParameters(self, obj, attrname):
+        # This is a truncated userParameters due to a pre 4.1 replication bug
+        self.report("ERROR: incorrect userParameters value on object %s (odd length).  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
 
     def find_revealed_link(self, dn, attrname, guid):
         '''return a revealed link in an object'''
@@ -985,6 +1085,16 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
+        if "dn" in map(str.lower, attrs):
+            attrs.append("name")
+        if "distinguishedname" in map(str.lower, attrs):
+            attrs.append("name")
+        if str(dn.get_rdn_name()).lower() in map(str.lower, attrs):
+            attrs.append("name")
+        if 'name' in map(str.lower, attrs):
+            attrs.append(dn.get_rdn_name())
+            attrs.append("isDeleted")
+            attrs.append("systemFlags")
         if '*' in attrs:
             attrs.append("replPropertyMetaData")
 
@@ -1018,10 +1128,51 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         list_attrs_from_md = []
         list_attrs_seen = []
         got_repl_property_meta_data = False
+        got_objectclass = False
+
+        nc_dn = self.samdb.get_nc_root(obj.dn)
+        try:
+            deleted_objects_dn = self.samdb.get_wellknown_dn(nc_dn,
+                                                 samba.dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+        except KeyError, e:
+            deleted_objects_dn = ldb.Dn(self.samdb, "CN=Deleted Objects,%s" % nc_dn)
+
+        object_rdn_attr = None
+        object_rdn_val = None
+        name_val = None
+        isDeleted = False
+        systemFlags = 0
 
         for attrname in obj:
             if attrname == 'dn':
                 continue
+
+            if str(attrname).lower() == 'objectclass':
+                got_objectclass = True
+
+            if str(attrname).lower() == "name":
+                if len(obj[attrname]) != 1:
+                    error_count += 1
+                    self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
+                                (len(obj[attrname]), attrname, str(obj.dn)))
+                else:
+                    name_val = obj[attrname][0]
+
+            if str(attrname).lower() == str(obj.dn.get_rdn_name()).lower():
+                object_rdn_attr = attrname
+                if len(obj[attrname]) != 1:
+                    error_count += 1
+                    self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
+                                (len(obj[attrname]), attrname, str(obj.dn)))
+                else:
+                    object_rdn_val = obj[attrname][0]
+
+            if str(attrname).lower() == 'isdeleted':
+                if obj[attrname][0] != "FALSE":
+                    isDeleted = True
+
+            if str(attrname).lower() == 'systemflags':
+                systemFlags = int(obj[attrname][0])
 
             if str(attrname).lower() == 'replpropertymetadata':
                 if self.has_replmetadata_zero_invocationid(dn, obj[attrname]):
@@ -1069,6 +1220,40 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                 continue
 
+            if str(attrname).lower() == 'userparameters':
+                if len(obj[attrname][0]) == 1 and obj[attrname][0][0] == '\x20':
+                    error_count += 1
+                    self.err_short_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif obj[attrname][0][:16] == '\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00':
+                    # This is the correct, normal prefix
+                    continue
+
+                elif obj[attrname][0][:20] == 'IAAgACAAIAAgACAAIAAg':
+                    # this is the typical prefix from a windows migration
+                    error_count += 1
+                    self.err_base64_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif obj[attrname][0][1] != '\x00' and obj[attrname][0][3] != '\x00' and obj[attrname][0][5] != '\x00' and obj[attrname][0][7] != '\x00' and obj[attrname][0][9] != '\x00':
+                    # This is a prefix that is not in UTF-16 format for the space or munged dialback prefix
+                    error_count += 1
+                    self.err_utf8_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif len(obj[attrname][0]) % 2 != 0:
+                    # This is a value that isn't even in length
+                    error_count += 1
+                    self.err_odd_userParameters(obj, attrname, obj[attrname])
+                    continue
+
+                elif obj[attrname][0][1] == '\x00' and obj[attrname][0][2] == '\x00' and obj[attrname][0][3] == '\x00' and obj[attrname][0][4] != '\x00' and obj[attrname][0][5] == '\x00':
+                    # This is a prefix that would happen if a SAMR-written value was replicated from a Samba 4.1 server to a working server
+                    error_count += 1
+                    self.err_doubled_userParameters(obj, attrname, obj[attrname])
+                    continue
+
             # check for empty attributes
             for val in obj[attrname]:
                 if val == '':
@@ -1110,10 +1295,41 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                     self.err_wrong_instancetype(obj, calculated_instancetype)
 
+        if not got_objectclass and ("*" in attrs or "objectclass" in map(str.lower, attrs)):
+            error_count += 1
+            self.err_missing_objectclass(dn)
+
+        if ("*" in attrs or "name" in map(str.lower, attrs)):
+            if name_val is None:
+                error_count += 1
+                self.report("ERROR: Not fixing missing 'name' on '%s'" % (str(obj.dn)))
+            if object_rdn_attr is None:
+                error_count += 1
+                self.report("ERROR: Not fixing missing '%s' on '%s'" % (obj.dn.get_rdn_name(), str(obj.dn)))
+
+        if name_val is not None:
+            parent_dn = None
+            if isDeleted:
+                if not (systemFlags & samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE):
+                    parent_dn = deleted_objects_dn
+            if parent_dn is None:
+                parent_dn = obj.dn.parent()
+            expected_dn = ldb.Dn(self.samdb, "RDN=RDN,%s" % (parent_dn))
+            expected_dn.set_component(0, obj.dn.get_rdn_name(), name_val)
+
+            if obj.dn == deleted_objects_dn:
+                expected_dn = obj.dn
+
+            if expected_dn != obj.dn:
+                error_count += 1
+                self.err_wrong_dn(obj, expected_dn, object_rdn_attr, object_rdn_val, name_val)
+            elif obj.dn.get_rdn_value() != object_rdn_val:
+                error_count += 1
+                self.report("ERROR: Not fixing %s=%r on '%s'" % (object_rdn_attr, object_rdn_val, str(obj.dn)))
+
         show_dn = True
         if got_repl_property_meta_data:
-            rdn = (str(dn).split(","))[0]
-            if rdn == "CN=Deleted Objects":
+            if obj.dn == deleted_objects_dn:
                 isDeletedAttId = 131120
                 # It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
 
@@ -1142,7 +1358,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.fix_metadata(dn, att)
 
         if self.is_fsmo_role(dn):
-            if "fSMORoleOwner" not in obj:
+            if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in map(str.lower, attrs)):
                 self.err_no_fsmoRoleOwner(obj)
                 error_count += 1
 

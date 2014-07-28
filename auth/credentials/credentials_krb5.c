@@ -48,7 +48,7 @@ _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = smb_krb5_init_context(cred, NULL, lp_ctx,
+	ret = smb_krb5_init_context(cred, lp_ctx,
 				    &cred->smb_krb5_context);
 	if (ret) {
 		cred->smb_krb5_context = NULL;

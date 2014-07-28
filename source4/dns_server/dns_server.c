@@ -693,6 +693,7 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	} else {
+		int num_binds = 0;
 		char **wcard;
 		wcard = iface_list_wildcard(tmp_ctx);
 		if (wcard == NULL) {
@@ -702,7 +703,13 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
 		for (i = 0; wcard[i] != NULL; i++) {
 			status = dns_add_socket(dns, model_ops, "dns", wcard[i],
 						DNS_SERVICE_PORT);
-			NT_STATUS_NOT_OK_RETURN(status);
+			if (NT_STATUS_IS_OK(status)) {
+				num_binds++;
+			}
+		}
+		if (num_binds == 0) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INVALID_PARAMETER_MIX;
 		}
 	}
 

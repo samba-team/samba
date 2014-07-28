@@ -24,7 +24,7 @@ import subunit.iso8601
 import testtools
 from testtools import content, content_type
 
-VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error', 'uxsuccess']
+VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error', 'uxsuccess', 'testsuite-uxsuccess']
 
 class TestsuiteEnabledTestResult(testtools.testresult.TestResult):
 
@@ -158,6 +158,9 @@ def parse_results(msg_ops, statistics, fh):
                 exitcode = 1
             elif result == "testsuite-xfail":
                 msg_ops.end_testsuite(testname, "xfail", reason)
+            elif result == "testsuite-uxsuccess":
+                msg_ops.end_testsuite(testname, "uxsuccess", reason)
+                exitcode = 1
             elif result == "testsuite-error":
                 msg_ops.end_testsuite(testname, "error", reason)
                 exitcode = 1
@@ -301,8 +304,14 @@ class FilterOps(testtools.testresult.TestResult):
 
     def addUnexpectedSuccess(self, test, details=None):
         test = self._add_prefix(test)
+        self.uxsuccess_added+=1
+        self.total_uxsuccess+=1
         self._ops.addUnexpectedSuccess(test, details)
+        if self.output:
+            self._ops.output_msg(self.output)
         self.output = None
+        if self.fail_immediately:
+            raise ImmediateFail()
 
     def addFailure(self, test, details=None):
         test = self._add_prefix(test)
@@ -362,11 +371,17 @@ class FilterOps(testtools.testresult.TestResult):
 
         if self.xfail_added > 0:
             xfail = True
-        if self.fail_added > 0 or self.error_added > 0:
+        if self.fail_added > 0 or self.error_added > 0 or self.uxsuccess_added > 0:
             xfail = False
 
         if xfail and result in ("fail", "failure"):
             result = "xfail"
+
+        if self.uxsuccess_added > 0 and result != "uxsuccess":
+            result = "uxsuccess"
+            if reason is None:
+                reason = "Subunit/Filter Reason"
+            reason += "\n uxsuccess[%d]" % self.uxsuccess_added
 
         if self.fail_added > 0 and result != "failure":
             result = "failure"
@@ -381,6 +396,12 @@ class FilterOps(testtools.testresult.TestResult):
             reason += "\n errors[%d]" % self.error_added
 
         self._ops.end_testsuite(name, result, reason)
+        if result not in ("success", "xfail"):
+            if self.output:
+                self._ops.output_msg(self.output)
+            if self.fail_immediately:
+                raise ImmediateFail()
+        self.output = None
 
     def __init__(self, out, prefix=None, suffix=None, expected_failures=None,
                  strip_ok_output=False, fail_immediately=False,

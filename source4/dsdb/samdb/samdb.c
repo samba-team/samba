@@ -54,7 +54,6 @@ struct ldb_context *samdb_connect_url(TALLOC_CTX *mem_ctx,
 				  unsigned int flags, const char *url)
 {
 	struct ldb_context *ldb;
-	struct dsdb_schema *schema;
 	int ret;
 
 	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, NULL, flags);
@@ -72,12 +71,6 @@ struct ldb_context *samdb_connect_url(TALLOC_CTX *mem_ctx,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ldb);
 		return NULL;
-	}
-
-	schema = dsdb_get_schema(ldb, NULL);
-	/* make the resulting schema global */
-	if (schema) {
-		dsdb_make_schema_global(ldb, schema);
 	}
 
 	if (!ldb_wrap_add(url, ev_ctx, lp_ctx, session_info, NULL, flags, ldb)) {

@@ -71,7 +71,7 @@ bool run_nttrans_create(int dummy)
 		READ_CONTROL_ACCESS,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE| FILE_SHARE_DELETE,
-		FILE_CREATE, 0, 0, sd, NULL, 0, &fnum);
+		FILE_CREATE, 0, 0, sd, NULL, 0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "cli_nttrans_create returned %s\n",
 			  nt_errstr(status));
@@ -84,7 +84,7 @@ bool run_nttrans_create(int dummy)
 			       FILE_ATTRIBUTE_NORMAL,
 			       FILE_SHARE_READ|FILE_SHARE_WRITE|
 			       FILE_SHARE_DELETE,
-			       FILE_OPEN, 0, 0, &fnum2);
+			       FILE_OPEN, 0, 0, &fnum2, NULL);
 
 	status = cli_nt_delete_on_close(cli, fnum, true);
 	if (!NT_STATUS_IS_OK(status)) {

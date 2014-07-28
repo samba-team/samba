@@ -436,14 +436,10 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
 	}
 
-	/* TODO: remove this, as it is file server specific */
-	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
-	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
-	}
-	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
-	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
-		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
+	/* SEC_PRIV_TAKE_OWNERSHIP grants SEC_STD_WRITE_OWNER */
+	if ((bits_remaining & (SEC_STD_WRITE_OWNER)) &&
+	    security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
+		bits_remaining &= ~(SEC_STD_WRITE_OWNER);
 	}
 
 	/* a NULL dacl allows access */

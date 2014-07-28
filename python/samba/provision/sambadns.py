@@ -986,7 +986,7 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
 
 
 def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
-        dns_backend, os_level, site, dnspass=None, hostip=None, hostip6=None,
+        dns_backend, os_level, dnspass=None, hostip=None, hostip6=None,
         targetdir=None):
     """Provision DNS information (assuming GC role)
 
@@ -999,7 +999,6 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
     :param logger: Logger object
     :param dns_backend: Type of DNS backend
     :param os_level: Functional level (treated as os level)
-    :param site: Site to create hostnames in
     :param dnspass: Password for bind's DNS account
     :param hostip: IPv4 address
     :param hostip6: IPv6 address
@@ -1040,6 +1039,8 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
 
     dnsdomain = names.dnsdomain.lower()
     dnsforest = dnsdomain
+
+    site = names.sitename
 
     hostname = names.netbiosname.lower()
 

@@ -94,10 +94,10 @@ displayName: Backup Operators
 dn: cn=Replicator,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
-gidNumber: 552
+gidNumber: 1052
 cn: Replicator
 description: Netbios Domain Supports file replication in a sambaDomainName
-sambaSID: S-1-5-21-4231626423-2410014848-2360679739-552
+sambaSID: S-1-5-21-4231626423-2410014848-2360679739-1052
 sambaGroupType: 2
 displayName: Replicator
 

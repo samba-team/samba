@@ -112,6 +112,10 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	 * having to provide their own private one explicitly */
 	if (ev_ctx == NULL) {
 		ev_ctx = tevent_context_init(ldb);
+		if (ev_ctx == NULL) {
+			talloc_free(ldb);
+			return NULL;
+		}
 		tevent_set_debug(ev_ctx, ldb_tevent_debug, ldb);
 		tevent_loop_allow_nesting(ev_ctx);
 	}
@@ -253,11 +257,12 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 		return ret;
 	}
 
-	if (ldb_load_modules(ldb, options) != LDB_SUCCESS) {
+	ret = ldb_load_modules(ldb, options);
+	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "Unable to load modules for %s: %s",
 			  url, ldb_errstring(ldb));
-		return LDB_ERR_OTHER;
+		return ret;
 	}
 
 	/* set the default base dn */
@@ -366,10 +371,14 @@ int ldb_transaction_start(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
-	}
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s", 
-			  ldb_errstring(module->ldb));				
+		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s",
+				  ldb_errstring(module->ldb));
+		}
+	} else {
+		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction success");
+		}
 	}
 	return status;
 }
@@ -572,8 +581,8 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	struct tevent_context *ev;
 	int ret;
 
-	if (!handle) {
-		return ldb_error(handle->ldb, LDB_ERR_UNAVAILABLE, NULL);
+	if (handle == NULL) {
+		return LDB_ERR_UNAVAILABLE;
 	}
 
 	if (handle->state == LDB_ASYNC_DONE) {

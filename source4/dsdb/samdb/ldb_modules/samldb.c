@@ -509,7 +509,8 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 			continue;
 		}
 
-		ret = dsdb_module_load_partition_usn(ac->module, schema->base_dn, &current_usn, NULL, NULL);
+		ret = dsdb_module_load_partition_usn(ac->module, schema_dn,
+						     &current_usn, NULL, NULL);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 				      __location__": Searching for schema USN failed: %s\n",
@@ -2002,7 +2003,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 
 	/* Create a temporary message for fetching the "sAMAccountName" */
 	if (el2 != NULL) {
-		char *tempstr, *tempstr2;
+		char *tempstr, *tempstr2 = NULL;
 		const char *acct_attrs[] = { "sAMAccountName", NULL };
 
 		msg = ldb_msg_new(ac->msg);
@@ -2267,6 +2268,15 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	el = ldb_msg_find_element(req->op.add.message, "userParameters");
+	if (el != NULL && ldb_req_is_untrusted(req)) {
+		const char *reason = "samldb_add: "
+			"setting userParameters is not supported over LDAP, "
+			"see https://bugzilla.samba.org/show_bug.cgi?id=8077";
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "%s", reason);
+		return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, reason);
+	}
+
 	ac = samldb_ctx_init(module, req);
 	if (ac == NULL) {
 		return ldb_operr(ldb);
@@ -2404,6 +2414,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 					     DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
+	}
+
+	el = ldb_msg_find_element(req->op.mod.message, "userParameters");
+	if (el != NULL && ldb_req_is_untrusted(req)) {
+		const char *reason = "samldb: "
+			"setting userParameters is not supported over LDAP, "
+			"see https://bugzilla.samba.org/show_bug.cgi?id=8077";
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "%s", reason);
+		return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, reason);
 	}
 
 	ac = samldb_ctx_init(module, req);
@@ -2551,6 +2570,11 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	if (rid == 0) {
 		/* Special object (security principal?) */
 		return LDB_SUCCESS;
+	}
+	/* do not allow deletion of well-known sids */
+	if (rid < DSDB_SAMDB_MINIMUM_ALLOWED_RID &&
+	    (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) == NULL)) {
+		return LDB_ERR_OTHER;
 	}
 
 	/* Deny delete requests from groups which are primary ones */
@@ -2757,7 +2781,6 @@ static int check_rename_constraints(struct ldb_message *msg,
 static int samldb_rename_search_base_callback(struct ldb_request *req,
 					       struct ldb_reply *ares)
 {
-	struct ldb_request *rename_req;
 	struct samldb_ctx *ac;
 	int ret;
 

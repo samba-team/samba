@@ -244,6 +244,7 @@ struct dsdb_extended_sec_desc_propagation_op {
 };
 
 #define DSDB_ACL_CHECKS_DIRSYNC_FLAG 0x1
+#define DSDB_SAMDB_MINIMUM_ALLOWED_RID   1000
 
 #define DSDB_METADATA_SCHEMA_SEQ_NUM	"SCHEMA_SEQ_NUM"
 #endif /* __SAMDB_H__ */

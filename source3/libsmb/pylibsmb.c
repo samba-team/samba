@@ -609,7 +609,7 @@ static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 	if (!py_tevent_req_wait_exc(self->ev, req)) {
 		return NULL;
 	}
-	status = cli_ntcreate_recv(req, &fnum);
+	status = cli_ntcreate_recv(req, &fnum, NULL);
 	TALLOC_FREE(req);
 
 	if (!NT_STATUS_IS_OK(status)) {

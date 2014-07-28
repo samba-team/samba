@@ -223,12 +223,18 @@ int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *reque
 
 	case LDB_ADD:
 		msg = ldb_msg_copy_shallow(request, request->op.add.message);
+		if (msg == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		msg->dn = ldb_dn_rebase_remote(msg, data, msg->dn);
 		request->op.add.message = msg;
 		break;
 
 	case LDB_MODIFY:
 		msg = ldb_msg_copy_shallow(request, request->op.mod.message);
+		if (msg == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		msg->dn = ldb_dn_rebase_remote(msg, data, msg->dn);
 		request->op.mod.message = msg;
 		break;
@@ -326,6 +332,7 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
 			break;
 
 		case LDB_MAP_RENAME:
+		case LDB_MAP_RENDROP:
 		case LDB_MAP_CONVERT:
 			if (ldb_attr_cmp(map->u.rename.remote_name, name) == 0) {
 				return map;
@@ -333,7 +340,7 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
 			break;
 
 		case LDB_MAP_GENERATE:
-			for (j = 0; map->u.generate.remote_names && map->u.generate.remote_names[j]; j++) {
+			for (j = 0; map->u.generate.remote_names[j]; j++) {
 				if (ldb_attr_cmp(map->u.generate.remote_names[j], name) == 0) {
 					return map;
 				}
@@ -377,6 +384,7 @@ const char *map_attr_map_local(void *mem_ctx, const struct ldb_map_attribute *ma
 		return talloc_strdup(mem_ctx, attr);
 
 	case LDB_MAP_RENAME:
+	case LDB_MAP_RENDROP:
 	case LDB_MAP_CONVERT:
 		return talloc_strdup(mem_ctx, map->u.rename.remote_name);
 
@@ -518,6 +526,7 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 			/* fall through */
 		case LDB_MAP_KEEP:
 		case LDB_MAP_RENAME:
+		case LDB_MAP_RENDROP:
 			name = map_attr_map_local(newdn, map, ldb_dn_get_component_name(dn, i));
 			if (name == NULL) goto failed;
 
@@ -593,6 +602,7 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 			/* fall through */
 		case LDB_MAP_KEEP:
 		case LDB_MAP_RENAME:
+		case LDB_MAP_RENDROP:
 			name = map_attr_map_remote(newdn, map, ldb_dn_get_component_name(dn, i));
 			if (name == NULL) goto failed;
 
@@ -869,9 +879,9 @@ static int map_objectclass_convert_operator(struct ldb_module *module, void *mem
  * ============================== */
 
 /* Build a request to search a record by its DN. */
-struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_map_callback_t callback)
+struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, struct ldb_parse_tree *tree, void *context, ldb_map_callback_t callback)
 {
-	const struct ldb_parse_tree *search_tree;
+	struct ldb_parse_tree *search_tree;
 	struct ldb_context *ldb;
 	struct ldb_request *req;
 	int ret;

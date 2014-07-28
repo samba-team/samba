@@ -61,14 +61,6 @@ my $prefix = "./st";
 my @includes = ();
 my @excludes = ();
 
-sub pipe_handler {
-	my $sig = shift @_;
-	print STDERR "Exiting early because of SIGPIPE.\n";
-	exit(1);
-}
-
-$SIG{PIPE} = \&pipe_handler;
-
 sub find_in_list($$)
 {
 	my ($list, $fullname) = @_;
@@ -726,11 +718,23 @@ my @exported_envvars = (
         "GID_RFC2307TEST"
 );
 
-$SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub { 
+sub sighandler($)
+{
 	my $signame = shift;
+
+	$SIG{INT} = $SIG{QUIT} = $SIG{TERM} = 'DEFAULT';
+	$SIG{PIPE} = 'IGNORE';
+
+	open(STDOUT, ">&STDERR") or die "can't dup STDOUT to STDERR: $!";
+
+	print "$0: PID[$$]: Got SIG${signame} teardown environments.\n";
 	teardown_env($_) foreach(keys %running_envs);
-	die("Received signal $signame");
+	system("pstree -p $$");
+	print "$0: PID[$$]: Exiting...\n";
+	exit(1);
 };
+
+$SIG{INT} = $SIG{QUIT} = $SIG{TERM} = $SIG{PIPE} = \&sighandler;
 
 sub setup_env($$)
 {
@@ -827,6 +831,7 @@ sub teardown_env($)
 {
 	my ($envname) = @_;
 	return if ($envname eq "none");
+	print STDERR "teardown_env($envname)\n";
 	my $env = get_running_env($envname);
 	$env->{target}->teardown_env($env);
 	delete $running_envs{$envname};

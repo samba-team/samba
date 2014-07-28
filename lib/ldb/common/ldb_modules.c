@@ -554,8 +554,33 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		return ret;
 	}
 	if (!ldb_errstring(module->ldb)) {
+		const char *op;
+		switch (request->operation) {
+		case LDB_SEARCH:
+			op = "LDB_SEARCH";
+			break;
+		case LDB_ADD:
+			op = "LDB_ADD";
+			break;
+		case LDB_MODIFY:
+			op = "LDB_MODIFY";
+			break;
+		case LDB_DELETE:
+			op = "LDB_DELETE";
+			break;
+		case LDB_RENAME:
+			op = "LDB_RENAME";
+			break;
+		case LDB_EXTENDED:
+			op = "LDB_EXTENDED";
+			break;
+		default:
+			op = "request";
+			break;
+		}
+
 		/* Set a default error string, to place the blame somewhere */
-		ldb_asprintf_errstring(module->ldb, "error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
+		ldb_asprintf_errstring(module->ldb, "error in module %s: %s during %s (%d)", module->ops->name, ldb_strerror(ret), op, ret);
 	}
 
 	if (!(request->handle->flags & LDB_HANDLE_FLAG_DONE_CALLED)) {
@@ -876,6 +901,7 @@ static int ldb_modules_load_path(const char *path, const char *version)
 	} *loaded;
 	struct loaded *le;
 	int dlopen_flags;
+	bool deepbind_enabled = (getenv("LDB_MODULES_DISABLE_DEEPBIND") == NULL);
 
 	ret = stat(path, &st);
 	if (ret != 0) {
@@ -909,13 +935,25 @@ static int ldb_modules_load_path(const char *path, const char *version)
 
 	dlopen_flags = RTLD_NOW;
 #ifdef RTLD_DEEPBIND
-	/* use deepbind if possible, to avoid issues with different
-	   system library varients, for example ldb modules may be linked
-	   against Heimdal while the application may use MIT kerberos
-
-	   See the dlopen manpage for details
+	/*
+	 * use deepbind if possible, to avoid issues with different
+	 * system library varients, for example ldb modules may be linked
+	 * against Heimdal while the application may use MIT kerberos.
+	 *
+	 * See the dlopen manpage for details.
+	 *
+	 * One typical user is the bind_dlz module of Samba,
+	 * but symbol versioniong might be enough...
+	 *
+	 * We need a way to disable this in order to allow the
+	 * ldb_*ldap modules to work with a preloaded socket wrapper.
+	 *
+	 * So in future we may remove this completely
+	 * or at least invert the default behavior.
 	*/
-	dlopen_flags |= RTLD_DEEPBIND;
+	if (deepbind_enabled) {
+		dlopen_flags |= RTLD_DEEPBIND;
+	}
 #endif
 
 	handle = dlopen(path, dlopen_flags);

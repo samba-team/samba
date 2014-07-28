@@ -70,7 +70,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 					bool referral)
 {
 	struct ldb_context *ldb;
-	uint64_t val;
+	uint64_t val = 0;
 	enum ndr_err_code ndr_err;
 	uint32_t n;
 	int i;
@@ -336,10 +336,13 @@ skip:
 	 * if not we remove the attribute.
 	 */
 	for (i = msg->num_elements - 1; i >= 0; i--) {
+		const char *ldapattrname;
+
 		el = &(msg->elements[i]);
+		ldapattrname = el->name;
+
 		attr = dsdb_attribute_by_lDAPDisplayName(dsc->schema,
 				el->name);
-		const char *ldapattrname = el->name;
 		keep = false;
 
 		if (attr->linkID & 1) {

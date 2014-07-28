@@ -501,7 +501,7 @@ static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply 
 	struct ldb_val *sd_val = NULL;
 	struct ldb_message_element *sd_el;
 	DATA_BLOB *show_sd;
-	int ret;
+	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct descriptor_context);
 
