@@ -19,7 +19,7 @@
 
 from samba.dcerpc import dnsp, dnsserver
 from samba.tests import RpcInterfaceTestCase, env_get_var_value
-from samba.netcmd.dns import ARecord
+from samba.netcmd.dns import ARecord, NSRecord
 
 class DnsserverTests(RpcInterfaceTestCase):
 
@@ -239,3 +239,42 @@ class DnsserverTests(RpcInterfaceTestCase):
                                         select_flags,
                                         None,
                                         None)
+
+    def test_updaterecords2_soa(self):
+        client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+        record_type = dnsp.DNS_TYPE_NS
+        select_flags = (dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA |
+                        dnsserver.DNS_RPC_VIEW_NO_CHILDREN)
+
+        nameserver = 'ns.example.local'
+        rec = NSRecord(nameserver)
+
+        # Add record
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        self.conn.DnssrvUpdateRecord2(client_version,
+                                        0,
+                                        self.server,
+                                        self.zone,
+                                        '.',
+                                        add_rec_buf,
+                                        None)
+
+        buflen, result = self.conn.DnssrvEnumRecords2(client_version,
+                                                        0,
+                                                        self.server,
+                                                        self.zone,
+                                                        '@',
+                                                        None,
+                                                        record_type,
+                                                        select_flags,
+                                                        None,
+                                                        None)
+        self.assertEquals(1, result.count)
+        self.assertEquals(2, result.rec[0].wRecordCount)
+        match = False
+        for i in range(2):
+            self.assertEquals(dnsp.DNS_TYPE_NS, result.rec[0].records[i].wType)
+            if result.rec[0].records[i].data.str.rstrip('.') == nameserver:
+                match = True
+        self.assertEquals(match, True)
