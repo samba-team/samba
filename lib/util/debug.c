@@ -99,10 +99,6 @@ static struct {
 
 /* -------------------------------------------------------------------------- **
  * External variables.
- *
- *  debugf        - Debug file name.
- *  DEBUGLEVEL    - System-wide debug message limit.  Messages with message-
- *                  levels higher than DEBUGLEVEL will not be processed.
  */
 
 /*
