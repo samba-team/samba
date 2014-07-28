@@ -31,10 +31,6 @@ class DnsserverTests(RpcInterfaceTestCase):
                                         self.get_loadparm(),
                                         self.get_credentials())
 
-    def test_operation2(self):
-        pass
-
-
     def test_query2(self):
         typeid, result = self.conn.DnssrvQuery2(dnsserver.DNS_CLIENT_VERSION_W2K,
                                                 0,
