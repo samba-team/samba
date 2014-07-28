@@ -43,7 +43,7 @@ struct unix_dgram_msg {
 	ssize_t sent;
 	int sys_errno;
 	size_t buflen;
-	uint8_t buf[1];
+	uint8_t buf[];
 };
 
 struct unix_dgram_send_queue {
@@ -51,7 +51,7 @@ struct unix_dgram_send_queue {
 	struct unix_dgram_ctx *ctx;
 	int sock;
 	struct unix_dgram_msg *msgs;
-	char path[1];
+	char path[];
 };
 
 struct unix_dgram_ctx {
@@ -72,7 +72,7 @@ struct unix_dgram_ctx {
 	struct poll_watch *pool_read_watch;
 
 	uint8_t *recv_buf;
-	char path[1];
+	char path[];
 };
 
 static ssize_t iov_buflen(const struct iovec *iov, int iovlen);
