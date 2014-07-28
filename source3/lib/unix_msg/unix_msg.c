@@ -163,20 +163,19 @@ static int unix_dgram_init(const struct sockaddr_un *addr, size_t max_msg,
 		ctx->path[0] = '\0';
 	}
 
+	*ctx = (struct unix_dgram_ctx) {
+		.max_msg = max_msg,
+		.ev_funcs = ev_funcs,
+		.recv_callback = recv_callback,
+		.private_data = private_data,
+		.created_pid = (pid_t)-1
+	};
+
 	ctx->recv_buf = malloc(max_msg);
 	if (ctx->recv_buf == NULL) {
 		free(ctx);
 		return ENOMEM;
 	}
-	ctx->max_msg = max_msg;
-	ctx->ev_funcs = ev_funcs;
-	ctx->recv_callback = recv_callback;
-	ctx->private_data = private_data;
-	ctx->sock_read_watch = NULL;
-	ctx->send_pool = NULL;
-	ctx->pool_read_watch = NULL;
-	ctx->send_queues = NULL;
-	ctx->created_pid = (pid_t)-1;
 
 	ctx->sock = socket(AF_UNIX, SOCK_DGRAM, 0);
 	if (ctx->sock == -1) {
@@ -486,15 +485,12 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 	 * Try a cheap nonblocking send
 	 */
 
-	msg.msg_name = discard_const_p(struct sockaddr_un, dst);
-	msg.msg_namelen = sizeof(*dst);
-	msg.msg_iov = discard_const_p(struct iovec, iov);
-	msg.msg_iovlen = iovlen;
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	msg.msg_control = NULL;
-	msg.msg_controllen = 0;
-#endif
-	msg.msg_flags = 0;
+	msg = (struct msghdr) {
+		.msg_name = discard_const_p(struct sockaddr_un, dst),
+		.msg_namelen = sizeof(*dst),
+		.msg_iov = discard_const_p(struct iovec, iov),
+		.msg_iovlen = iovlen
+	};
 
 	ret = sendmsg(ctx->sock, &msg, 0);
 	if (ret >= 0) {
@@ -620,18 +616,19 @@ int unix_msg_init(const struct sockaddr_un *addr,
 		return ENOMEM;
 	}
 
+	*ctx = (struct unix_msg_ctx) {
+		.fragment_len = fragment_len,
+		.cookie = cookie,
+		.recv_callback = recv_callback,
+		.private_data = private_data
+	};
+
 	ret = unix_dgram_init(addr, fragment_len, ev_funcs,
 			      unix_msg_recv, ctx, &ctx->dgram);
 	if (ret != 0) {
 		free(ctx);
 		return ret;
 	}
-
-	ctx->fragment_len = fragment_len;
-	ctx->cookie = cookie;
-	ctx->recv_callback = recv_callback;
-	ctx->private_data = private_data;
-	ctx->msgs = NULL;
 
 	*result = ctx;
 	return 0;
@@ -670,9 +667,11 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		return unix_dgram_send(ctx->dgram, dst, tmp_iov, iovlen+1);
 	}
 
-	hdr.msglen = msglen;
-	hdr.pid = getpid();
-	hdr.sock = unix_dgram_sock(ctx->dgram);
+	hdr = (struct unix_msg_hdr) {
+		.msglen = msglen,
+		.pid = getpid(),
+		.sock = unix_dgram_sock(ctx->dgram)
+	};
 
 	iov_copy = malloc(sizeof(struct iovec) * (iovlen + 2));
 	if (iov_copy == NULL) {
@@ -790,11 +789,12 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 		if (msg == NULL) {
 			return;
 		}
-		msg->msglen = hdr.msglen;
-		msg->received = 0;
-		msg->sender_pid = hdr.pid;
-		msg->sender_sock = hdr.sock;
-		msg->cookie = cookie;
+		*msg = (struct unix_msg) {
+			.msglen = hdr.msglen,
+			.sender_pid = hdr.pid,
+			.sender_sock = hdr.sock,
+			.cookie = cookie
+		};
 		DLIST_ADD(ctx->msgs, msg);
 	}
 
