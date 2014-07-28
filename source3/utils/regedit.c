@@ -187,7 +187,8 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 			} else {
 				/* Reopen the parent key to make sure the
 				   new subkey will be noticed. */
-				tree_node_reopen_key(parent);
+				tree_node_reopen_key(regedit->registry_context,
+						     parent);
 			}
 
 			list = tree_node_first(node);
@@ -377,7 +378,8 @@ static void handle_tree_input(struct regedit *regedit, int c)
 
 			rv = reg_key_del(node, parent->key, node->name);
 			if (W_ERROR_IS_OK(rv)) {
-				tree_node_reopen_key(parent);
+				tree_node_reopen_key(regedit->registry_context,
+						     parent);
 				tree_view_clear(regedit->keys);
 				pop = tree_node_pop(&node);
 				talloc_free(pop);
@@ -434,7 +436,8 @@ static void handle_value_input(struct regedit *regedit, int c)
 				dialog_notice(regedit, DIA_ALERT, "Error",
 					      "Error editing value:\n%s", msg);
 			} else if (sel == DIALOG_OK) {
-				tree_node_reopen_key(node);
+				tree_node_reopen_key(regedit->registry_context,
+						     node);
 				value_list_load(regedit->vl, node->key);
 				value_list_set_current_item_by_name(regedit->vl,
 								    name);
@@ -458,7 +461,8 @@ static void handle_value_input(struct regedit *regedit, int c)
 				dialog_notice(regedit, DIA_ALERT, "Error",
 					      "Error creating value:\n%s", msg);
 			} else if (sel == DIALOG_OK) {
-				tree_node_reopen_key(node);
+				tree_node_reopen_key(regedit->registry_context,
+						     node);
 				value_list_load(regedit->vl, node->key);
 				value_list_set_current_item_by_name(regedit->vl,
 								    name);
@@ -480,7 +484,8 @@ static void handle_value_input(struct regedit *regedit, int c)
 				node = tree_view_get_current_node(regedit->keys);
 				reg_del_value(regedit, node->key,
 					      vitem->value_name);
-				tree_node_reopen_key(node);
+				tree_node_reopen_key(regedit->registry_context,
+						     node);
 				value_list_load(regedit->vl, node->key);
 			}
 		}
