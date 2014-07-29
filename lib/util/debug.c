@@ -789,7 +789,6 @@ static int Debug1( const char *format_str, ... )
 		if (state.fd > 0)
 			(void)vdprintf( state.fd, format_str, ap );
 		va_end( ap );
-		errno = old_errno;
 		goto done;
 	}
 
@@ -802,7 +801,6 @@ static int Debug1( const char *format_str, ... )
 			int fd = open( state.debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
 			(void)umask( oldumask );
 			if(fd == -1) {
-				errno = old_errno;
 				goto done;
 			}
 			state.fd = fd;
