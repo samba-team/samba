@@ -119,6 +119,18 @@ time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset);
 **/
 time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset);
 
+struct timeval_buf { char buf[128]; };
+
+/**
+ Put a date and time into dst->buf, return it dst->buf
+ (optionally with microseconds)
+
+ format is %Y/%m/%d %H:%M:%S if strftime is available
+**/
+
+char *timeval_str_buf(const struct timeval *tp, bool hires,
+		      struct timeval_buf *dst);
+
 /**
  Return a date and time as a string (optionally with microseconds)
 
