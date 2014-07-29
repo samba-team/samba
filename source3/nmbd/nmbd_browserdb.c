@@ -122,12 +122,10 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
  
 	DLIST_ADD_END(lmb_browserlist, browc, struct browse_cache_record *);
 
-	if( DEBUGLVL( 3 ) ) {
-		Debug1( "nmbd_browserdb:create_browser_in_lmb_cache()\n" );
-		Debug1( "  Added lmb cache entry for workgroup %s ", browc->work_group );
-		Debug1( "name %s IP %s ", browc->lmb_name, inet_ntoa(ip) );
-		Debug1( "ttl %d\n", (int)browc->death_time );
-	}
+	DEBUG(3, ("nmbd_browserdb:create_browser_in_lmb_cache()\n"));
+	DEBUGADD(3, ("  Added lmb cache entry for workgroup %s name %s IP %s "
+		     "ttl %d\n", browc->work_group, browc->lmb_name,
+		     inet_ntoa(ip), (int)browc->death_time));
   
 	return( browc );
 }
@@ -172,10 +170,9 @@ void expire_lmb_browsers( time_t t )
 		nextbrowc = browc->next;
 
 		if( browc->death_time < t ) {
-			if( DEBUGLVL( 3 ) ) {
-				Debug1( "nmbd_browserdb:expire_lmb_browsers()\n" );
-				Debug1( "  Removing timed out lmb entry %s\n", browc->lmb_name );
-			}
+			DEBUG(3, ("nmbd_browserdb:expire_lmb_browsers()\n"));
+			DEBUGADD(3, ("  Removing timed out lmb entry %s\n",
+				     browc->lmb_name));
 			remove_lmb_browser_entry( browc );
 		}
 	}
