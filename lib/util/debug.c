@@ -142,7 +142,7 @@ int     *DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
 
 static int     debug_count    = 0;
 static int     current_msg_level   = 0;
-static char *format_bufr = NULL;
+static char format_bufr[FORMAT_BUFR_SIZE];
 static size_t     format_pos     = 0;
 static bool    log_overflow   = false;
 
@@ -199,8 +199,6 @@ void gfree_debugsyms(void)
 		TALLOC_FREE( DEBUGLEVEL_CLASS );
 		DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
 	}
-
-	TALLOC_FREE(format_bufr);
 
 	debug_num_classes = 0;
 
@@ -460,10 +458,6 @@ static void debug_init(void)
 
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
-	}
-	format_bufr = talloc_array(NULL, char, FORMAT_BUFR_SIZE);
-	if (!format_bufr) {
-		smb_panic("debug_init: unable to create buffer");
 	}
 }
 
@@ -906,9 +900,7 @@ static void format_debug_text( const char *msg )
 	size_t i;
 	bool timestamp = (state.logtype == DEBUG_FILE && (state.settings.timestamp_logs));
 
-	if (!format_bufr) {
-		debug_init();
-	}
+	debug_init();
 
 	for( i = 0; msg[i]; i++ ) {
 		/* Indent two spaces at each new line. */
