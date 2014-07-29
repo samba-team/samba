@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "lib/util/time_basic.h"
 
 /**
  * @file
@@ -43,18 +44,6 @@
 _PUBLIC_ time_t get_time_t_max(void)
 {
 	return TIME_T_MAX;
-}
-
-/**
-a gettimeofday wrapper
-**/
-_PUBLIC_ void GetTimeOfDay(struct timeval *tval)
-{
-#ifdef HAVE_GETTIMEOFDAY_TZ
-	gettimeofday(tval,NULL);
-#else
-	gettimeofday(tval);
-#endif
 }
 
 /**
@@ -339,46 +328,6 @@ _PUBLIC_ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 		t += zone_offset;
 	}
 	return t;
-}
-
-
-char *timeval_str_buf(const struct timeval *tp, bool hires,
-		      struct timeval_buf *dst)
-{
-	time_t t;
-	struct tm *tm;
-	size_t len;
-
-	t = (time_t)tp->tv_sec;
-	tm = localtime(&t);
-
-	if (tm == NULL) {
-		if (hires) {
-			snprintf(dst->buf, sizeof(dst->buf),
-				 "%ld.%06ld seconds since the Epoch",
-				 (long)tp->tv_sec, (long)tp->tv_usec);
-		} else {
-			snprintf(dst->buf, sizeof(dst->buf),
-				 "%ld seconds since the Epoch", (long)t);
-		}
-		return dst->buf;
-	}
-
-#ifdef HAVE_STRFTIME
-	len = strftime(dst->buf, sizeof(dst->buf), "%Y/%m/%d %H:%M:%S", tm);
-#else
-	{
-		const char *asct = asctime(tm);
-		len = strlcpy(dst->buf, sizeof(dst->buf),
-			      asct ? asct : "unknown");
-	}
-#endif
-	if (hires && (len < sizeof(dst->buf))) {
-		snprintf(dst->buf + len, sizeof(dst->buf) - len,
-			 ".%06ld", (long)tp->tv_usec);
-	}
-
-	return dst->buf;
 }
 
 /****************************************************************************

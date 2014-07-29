@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/syslog.h"
-#include "lib/util/time.h"
+#include "lib/util/time_basic.h"
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY

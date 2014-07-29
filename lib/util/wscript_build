@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+bld.SAMBA_SUBSYSTEM('time-basic',
+                    source='time_basic.c',
+                    deps='replace',
+                    local_include=False)
+
 bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c xfile.c data_blob.c
                     util_file.c time.c rbtree.c rfc1738.c select.c getpass.c
@@ -9,7 +14,7 @@ bld.SAMBA_LIBRARY('samba-util',
                     util_str.c util_str_common.c substitute.c ms_fnmatch.c
                     server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
                     tevent_debug.c util_process.c memcache.c''',
-                  deps='DYNCONFIG',
+                  deps='DYNCONFIG time-basic',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd-daemon',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
