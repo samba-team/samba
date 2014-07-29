@@ -1003,15 +1003,20 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		return true;
 	}
 
-	header_str[0] = '\0';
+	GetTimeOfDay(&tv);
+	timeval_str_buf(&tv, state.settings.debug_hires_timestamp, &tvbuf);
+
+	snprintf(header_str, sizeof(header_str), "[%s, %2d",
+		 tvbuf.buf, level);
 
 	if (unlikely(DEBUGLEVEL_CLASS[ cls ] >= 10)) {
 		verbose = true;
 	}
 
 	if (verbose || state.settings.debug_pid) {
-		snprintf(header_str, sizeof(header_str), ", pid=%u",
-			 (unsigned int)getpid());
+		size_t hs_len = strlen(header_str);
+		snprintf(header_str + hs_len, sizeof(header_str) - hs_len,
+			 ", pid=%u", (unsigned int)getpid());
 	}
 
 	if (verbose || state.settings.debug_uid) {
@@ -1031,18 +1036,12 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 			 classname_table[cls]);
 	}
 
-	GetTimeOfDay(&tv);
-	timeval_str_buf(&tv, state.settings.debug_hires_timestamp, &tvbuf);
-
 	/* Print it all out at once to prevent split syslog output. */
 	if( state.settings.debug_prefix_timestamp ) {
-		(void)Debug1("[%s, %2d%s] ",
-			     tvbuf.buf,
-			     level, header_str);
+		(void)Debug1("%s] ", header_str);
 	} else {
-		(void)Debug1("[%s, %2d%s] %s(%s)\n",
-			     tvbuf.buf,
-			     level, header_str, location, func );
+		(void)Debug1("%s] %s(%s)\n",
+			     header_str, location, func );
 	}
 
 	errno = old_errno;
