@@ -34,8 +34,8 @@ enum {
 #define LINE_WIDTH 44
 struct hexedit;
 
-struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
-			    int y, int x, const void *data, size_t sz);
+struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, const void *data,
+			    size_t sz);
 WERROR hexedit_set_buf(struct hexedit *buf, const void *data, size_t sz);
 const void *hexedit_get_buf(struct hexedit *buf);
 size_t hexedit_get_buf_len(struct hexedit *buf);

@@ -1037,8 +1037,8 @@ static WERROR hexedit_create(struct dialog *dia,
 	struct dialog_section_hexedit *hexedit =
 		talloc_get_type_abort(section, struct dialog_section_hexedit);
 
-	hexedit->buf = hexedit_new(dia, section->window, section->nlines,
-				   0, 0, NULL, HEXEDIT_MIN_SIZE);
+	hexedit->buf = hexedit_new(dia, section->window, NULL,
+				   HEXEDIT_MIN_SIZE);
 	if (hexedit->buf == NULL) {
 		return WERR_NOMEM;
 	}
