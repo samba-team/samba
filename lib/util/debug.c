@@ -617,7 +617,7 @@ bool reopen_logs_internal(void)
 			   at the logfile.  There really isn't much
 			   that can be done on such a fundamental
 			   failure... */
-			close_low_fds(false, false, true);
+			close_low_fd(2);
 		}
 	}
 
