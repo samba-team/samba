@@ -365,16 +365,17 @@ static bool debug_parse_params(char **params)
 	for (ndx = DBGC_ALL; ndx < debug_num_classes; ndx++) {
 		DEBUGLEVEL_CLASS[ndx] = DEBUGLEVEL_CLASS[DBGC_ALL];
 	}
-		
+
 	/* Fill in new debug class levels */
 	for (; i < debug_num_classes && params[i]; i++) {
 		char *saveptr;
 		if ((class_name = strtok_r(params[i],":", &saveptr)) &&
-			(class_level = strtok_r(NULL, "\0", &saveptr)) &&
-            ((ndx = debug_lookup_classname(class_name)) != -1)) {
-				DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
+		    (class_level = strtok_r(NULL, "\0", &saveptr)) &&
+		    ((ndx = debug_lookup_classname(class_name)) != -1)) {
+			DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
 		} else {
-			DEBUG(0,("debug_parse_params: unrecognized debug class name or format [%s]\n", params[i]));
+			DEBUG(0,("debug_parse_params: unrecognized debug "
+				 "class name or format [%s]\n", params[i]));
 			return false;
 		}
 	}
