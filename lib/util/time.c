@@ -387,46 +387,25 @@ char *timeval_str_buf(const struct timeval *tp, bool hires,
 
 char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
 {
-	time_t t;
-	struct tm *tm;
+	struct timeval_buf tmp;
+	char *result;
 
-	t = (time_t)tp->tv_sec;
-	tm = localtime(&t);
-	if (!tm) {
-		if (hires) {
-			return talloc_asprintf(ctx,
-					       "%ld.%06ld seconds since the Epoch",
-					       (long)tp->tv_sec,
-					       (long)tp->tv_usec);
-		} else {
-			return talloc_asprintf(ctx,
-					       "%ld seconds since the Epoch",
-					       (long)t);
-		}
-	} else {
-#ifdef HAVE_STRFTIME
-		char TimeBuf[60];
-		if (hires) {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
-			return talloc_asprintf(ctx,
-					       "%s.%06ld", TimeBuf,
-					       (long)tp->tv_usec);
-		} else {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
-			return talloc_strdup(ctx, TimeBuf);
-		}
-#else
-		if (hires) {
-			const char *asct = asctime(tm);
-			return talloc_asprintf(ctx, "%s.%06ld",
-					asct ? asct : "unknown",
-					(long)tp->tv_usec);
-		} else {
-			const char *asct = asctime(tm);
-			return talloc_asprintf(ctx, asct ? asct : "unknown");
-		}
-#endif
+	result = talloc_strdup(ctx, timeval_str_buf(tp, hires, &tmp));
+	if (result == NULL) {
+		return NULL;
 	}
+
+	/*
+	 * beautify the talloc_report output
+	 *
+	 * This is not just cosmetics. A C compiler might in theory make the
+	 * talloc_strdup call above a tail call with the tail call
+	 * optimization. This would render "tmp" invalid while talloc_strdup
+	 * tries to duplicate it. The talloc_set_name_const call below puts
+	 * the talloc_strdup call into non-tail position.
+	 */
+	talloc_set_name_const(result, result);
+	return result;
 }
 
 char *current_timestring(TALLOC_CTX *ctx, bool hires)
