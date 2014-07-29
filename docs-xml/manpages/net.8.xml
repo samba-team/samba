@@ -166,7 +166,8 @@ YOU HAVE BEEN WARNED.
 <title>TIME</title>
 
 <para>Without any options, the <command>NET TIME</command> command 
-displays the time on the remote server.
+displays the time on the remote server. The remote server must be
+specified with the -S option.
 </para>
 
 </refsect3>
@@ -174,21 +175,27 @@ displays the time on the remote server.
 <refsect3>
 <title>TIME SYSTEM</title>
 
-<para>Displays the time on the remote server in a format ready for <command>/bin/date</command>.</para>
+<para>Displays the time on the remote server in a format ready for <command>/bin/date</command>.
+The remote server must be specified with the -S option.
+</para>
 
 </refsect3>
 
 <refsect3>
 <title>TIME SET</title>
 <para>Tries to set the date and time of the local server to that on 
-the remote server using <command>/bin/date</command>. </para>
+the remote server using <command>/bin/date</command>.
+The remote server must be specified with the -S option.
+</para>
 
 </refsect3>
 
 <refsect3>
 <title>TIME ZONE</title>
 
-<para>Displays the timezone in hours from GMT on the remote computer.</para>
+<para>Displays the timezone in hours from GMT on the remote server.
+The remote server must be specified with the -S option.
+</para>
 
 </refsect3>
 </refsect2>
