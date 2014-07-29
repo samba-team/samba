@@ -4034,6 +4034,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "winbind request timeout",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(winbind_request_timeout),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "winbind max clients",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
