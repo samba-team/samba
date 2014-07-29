@@ -413,20 +413,20 @@ static bool debug_parse_params(char **params)
 bool debug_parse_levels(const char *params_str)
 {
 	char **params;
+	bool ok;
 
 	/* Just in case */
 	debug_init();
 
 	params = str_list_make(NULL, params_str, NULL);
 
-	if (debug_parse_params(params)) {
+	ok = debug_parse_params(params);
+	if (ok) {
 		debug_dump_status(5);
-		TALLOC_FREE(params);
-		return true;
-	} else {
-		TALLOC_FREE(params);
-		return false;
 	}
+
+	TALLOC_FREE(params);
+	return ok;
 }
 
 /* setup for logging of talloc warnings */
