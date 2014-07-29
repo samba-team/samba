@@ -761,36 +761,30 @@ void check_log_size( void )
  This is called by dbghdr() and format_debug_text().
 ************************************************************************/
 
-static int Debug1( const char *format_str, ... )
+static int Debug1(const char *msg)
 {
-	va_list ap;
 	int old_errno = errno;
 
 	debug_count++;
 
 	if (state.logtype == DEBUG_CALLBACK) {
-		char *msg;
-		int ret;
-		va_start( ap, format_str );
-		ret = vasprintf( &msg, format_str, ap );
-		if (ret != -1) {
-			if (msg[ret - 1] == '\n') {
-				msg[ret - 1] = '\0';
-			}
-			state.callback(state.callback_private, current_msg_level, msg);
-			free(msg);
+		size_t msg_len = strlen(msg);
+		char msg_copy[msg_len];
+
+		if ((msg_len > 0) && (msg[msg_len-1] == '\n')) {
+			memcpy(msg_copy, msg, msg_len-1);
+			msg_copy[msg_len-1] = '\0';
+			msg = msg_copy;
 		}
-		va_end( ap );
 
+		state.callback(state.callback_private, current_msg_level, msg);
 		goto done;
-
 	}
 
 	if ( state.logtype != DEBUG_FILE ) {
-		va_start( ap, format_str );
-		if (state.fd > 0)
-			(void)vdprintf( state.fd, format_str, ap );
-		va_end( ap );
+		if (state.fd > 0) {
+			write(state.fd, msg, strlen(msg));
+		}
 		goto done;
 	}
 
@@ -822,8 +816,6 @@ static int Debug1( const char *format_str, ... )
 			LOG_INFO,    /* 3 */
 		};
 		int     priority;
-		char *msgbuf = NULL;
-		int ret;
 
 		if( current_msg_level >= ARRAY_SIZE(priority_map) || current_msg_level < 0)
 			priority = LOG_DEBUG;
@@ -836,14 +828,7 @@ static int Debug1( const char *format_str, ... )
 		 */
 		priority |= SYSLOG_FACILITY;
 
-		va_start(ap, format_str);
-		ret = vasprintf(&msgbuf, format_str, ap);
-		va_end(ap);
-
-		if (ret != -1) {
-			syslog(priority, "%s", msgbuf);
-		}
-		SAFE_FREE(msgbuf);
+		syslog(priority, "%s", msg);
 	}
 #endif
 
@@ -853,10 +838,9 @@ static int Debug1( const char *format_str, ... )
 	if( !state.settings.syslog_only)
 #endif
 	{
-		va_start( ap, format_str );
-		if (state.fd > 0)
-			(void)vdprintf( state.fd, format_str, ap );
-		va_end( ap );
+		if (state.fd > 0) {
+			write(state.fd, msg, strlen(msg));
+		}
 	}
 
  done:
@@ -875,7 +859,7 @@ static int Debug1( const char *format_str, ... )
 static void bufr_print( void )
 {
 	format_bufr[format_pos] = '\0';
-	(void)Debug1( "%s", format_bufr );
+	(void)Debug1(format_bufr);
 	format_pos = 0;
 }
 
@@ -1045,7 +1029,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 			 "%s(%s)\n", location, func);
 	}
 
-	(void)Debug1("%s", header_str);
+	(void)Debug1(header_str);
 
 	errno = old_errno;
 	return( true );
