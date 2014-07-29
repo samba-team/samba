@@ -526,7 +526,8 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
 			gss_release_buffer(&min_stat2, &output_token);
 			
-			if (gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG) {
+			if (gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG &&
+			    gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
 				DEBUG(5, ("gensec_gssapi: credentials were delegated\n"));
 			} else {
 				DEBUG(5, ("gensec_gssapi: NO credentials were delegated\n"));
@@ -1404,9 +1405,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return nt_status;
 	}
 
-	if (!(gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG)) {
-		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
-	} else {
+	if (gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG &&
+	    gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
 		krb5_error_code ret;
 		const char *error_string;
 
@@ -1436,7 +1436,10 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 
 		/* It has been taken from this place... */
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
+	} else {
+		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
 	}
+
 	*_session_info = talloc_steal(mem_ctx, session_info);
 	talloc_free(tmp_ctx);
 
