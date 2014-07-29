@@ -627,7 +627,7 @@ bool reopen_logs_internal(void)
 		if (dup2(state.fd, 2) == -1) {
 			/* Close stderr too, if dup2 can't point it -
 			   at the logfile.  There really isn't much
-			   that can be done on such a fundemental
+			   that can be done on such a fundamental
 			   failure... */
 			close_low_fds(false, false, true);
 		}
