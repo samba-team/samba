@@ -963,7 +963,6 @@ bool lpcfg_service_ok(struct loadparm_service *service)
 		service->bAvailable = false;
 	}
 
-	/* If a service is flagged unavailable, log the fact at level 0. */
 	if (!service->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
 			  service->szService));
