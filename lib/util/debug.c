@@ -336,6 +336,33 @@ static void debug_dump_status(int level)
 	}
 }
 
+static bool debug_parse_param(char *param)
+{
+	char *class_name;
+	char *class_level;
+	char *saveptr;
+	int ndx;
+
+	class_name = strtok_r(param, ":", &saveptr);
+	if (class_name == NULL) {
+		return false;
+	}
+
+	class_level = strtok_r(NULL, "\0", &saveptr);
+	if (class_level == NULL) {
+		return false;
+	}
+
+	ndx = debug_lookup_classname(class_name);
+	if (ndx == -1) {
+		return false;
+	}
+
+	DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
+
+	return true;
+}
+
 /****************************************************************************
  parse the debug levels from smbcontrol. Example debug level parameter:
  printdrivers:7
@@ -366,14 +393,10 @@ static bool debug_parse_params(char **params)
 
 	/* Fill in new debug class levels */
 	for (; i < debug_num_classes && params[i]; i++) {
-		char *class_name;
-		char *class_level;
-		char *saveptr;
-		if ((class_name = strtok_r(params[i],":", &saveptr)) &&
-		    (class_level = strtok_r(NULL, "\0", &saveptr)) &&
-		    ((ndx = debug_lookup_classname(class_name)) != -1)) {
-			DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
-		} else {
+		bool ok;
+
+		ok = debug_parse_param(params[i]);
+		if (!ok) {
 			DEBUG(0,("debug_parse_params: unrecognized debug "
 				 "class name or format [%s]\n", params[i]));
 			return false;
