@@ -35,6 +35,7 @@ typedef bool (*dialog_submit_cb)(struct dialog *, struct dialog_section *,
 struct dialog {
 	char *title;
 	WINDOW *window;
+	WINDOW *pad;
 	PANEL *panel;
 	int x;
 	int y;

@@ -343,6 +343,11 @@ WERROR dialog_create(struct dialog *dia)
 	/* create window for dialog */
 	nlines += 4;
 	ncols += 6;
+	dia->pad = newpad(nlines, ncols);
+	if (dia->pad == NULL) {
+		rv = WERR_NOMEM;
+		goto fail;
+	}
 	dia->centered = false;
 	if (dia->y < 0 || dia->x < 0) {
 		dia->centered = true;
@@ -360,18 +365,19 @@ WERROR dialog_create(struct dialog *dia)
 	}
 
 	/* setup color and border */
-	wbkgdset(dia->window, ' ' | COLOR_PAIR(dia->color));
-	wclear(dia->window);
-	mvwhline(dia->window, 1, 2, 0, ncols - 4);
-	mvwhline(dia->window, nlines - 2, 2, 0, ncols - 4);
-	mvwvline(dia->window, 2, 1, 0, nlines - 4);
-	mvwvline(dia->window, 2, ncols - 2, 0, nlines - 4);
-	mvwaddch(dia->window, 1, 1, ACS_ULCORNER);
-	mvwaddch(dia->window, 1, ncols - 2, ACS_URCORNER);
-	mvwaddch(dia->window, nlines - 2, 1, ACS_LLCORNER);
-	mvwaddch(dia->window, nlines - 2, ncols - 2, ACS_LRCORNER);
+	getmaxyx(dia->pad, nlines, ncols);
+	wbkgdset(dia->pad, ' ' | COLOR_PAIR(dia->color));
+	wclear(dia->pad);
+	mvwhline(dia->pad, 1, 2, 0, ncols - 4);
+	mvwhline(dia->pad, nlines - 2, 2, 0, ncols - 4);
+	mvwvline(dia->pad, 2, 1, 0, nlines - 4);
+	mvwvline(dia->pad, 2, ncols - 2, 0, nlines - 4);
+	mvwaddch(dia->pad, 1, 1, ACS_ULCORNER);
+	mvwaddch(dia->pad, 1, ncols - 2, ACS_URCORNER);
+	mvwaddch(dia->pad, nlines - 2, 1, ACS_LLCORNER);
+	mvwaddch(dia->pad, nlines - 2, ncols - 2, ACS_LRCORNER);
 	col = ncols / 2 - MIN(strlen(dia->title) + 2, ncols) / 2;
-	mvwprintw(dia->window, 1, col, " %s ", dia->title);
+	mvwprintw(dia->pad, 1, col, " %s ", dia->title);
 
 	/* create subwindows for each section */
 	row = 2;
@@ -389,7 +395,7 @@ WERROR dialog_create(struct dialog *dia)
 			break;
 		}
 
-		section->window = derwin(dia->window, section->nlines,
+		section->window = subpad(dia->pad, section->nlines,
 					 section->ncols, row, col);
 		if (section->window == NULL) {
 			rv = WERR_NOMEM;
@@ -410,15 +416,30 @@ fail:
 
 void dialog_show(struct dialog *dia)
 {
-	struct dialog_section *section;
+	int nlines, ncols;
+	int pad_y, pad_x;
+	int y, x;
+	int rv;
 
+	touchwin(dia->pad);
+	getmaxyx(dia->window, nlines, ncols);
+	getmaxyx(dia->pad, pad_y, pad_x);
+	y = 0;
+	if (pad_y > nlines) {
+		y = (pad_y - nlines) / 2;
+	}
+	x = 0;
+	if (pad_x > ncols) {
+		x = (pad_x - ncols) / 2;
+	}
+	rv = copywin(dia->pad, dia->window, y, x, 0, 0,
+		     nlines - 1, ncols - 1, false);
+	SMB_ASSERT(rv == OK);
+
+	getyx(dia->pad, pad_y, pad_x);
+	wmove(dia->window, pad_y - y, pad_x - x);
 	touchwin(dia->window);
 	wnoutrefresh(dia->window);
-	section = dia->head_section;
-	do {
-		wnoutrefresh(section->window);
-		section = section->next;
-	} while (section != dia->head_section);
 }
 
 void dialog_destroy(struct dialog *dia)
@@ -448,9 +469,16 @@ static int dialog_getch(struct dialog *dia)
 	c = regedit_getch();
 	if (c == KEY_RESIZE) {
 		int nlines, ncols, y, x;
+		int pad_nlines, pad_ncols;
+		int win_nlines, win_ncols;
 
-		getmaxyx(dia->window, nlines, ncols);
+		getmaxyx(dia->window, win_nlines, win_ncols);
+		getmaxyx(dia->pad, pad_nlines, pad_ncols);
 		getbegyx(dia->window, y, x);
+
+		nlines = pad_nlines;
+		ncols = pad_ncols;
+
 		if (dia->centered) {
 			center_above_window(&nlines, &ncols, &y, &x);
 		} else {
@@ -468,6 +496,10 @@ static int dialog_getch(struct dialog *dia)
 					x = COLS - ncols;
 				}
 			}
+		}
+		if (nlines != win_nlines || ncols != win_ncols) {
+			wresize(dia->window, nlines, ncols);
+			replace_panel(dia->panel, dia->window);
 		}
 		move_panel(dia->panel, y, x);
 	}
@@ -542,6 +574,7 @@ void dialog_modal_loop(struct dialog *dia, WERROR *err,
 		       enum dialog_action *action)
 {
 	do {
+		dialog_show(dia);
 		update_panels();
 		doupdate();
 	} while (dialog_handle_input(dia, err, action));
@@ -649,10 +682,10 @@ static WERROR hsep_create(struct dialog *dia, struct dialog_section *section)
 		/* change the border characters around this section to
 		   tee chars */
 		getparyx(section->window, y, x);
-		mvwaddch(dia->window, y, x - 1, ACS_HLINE);
-		mvwaddch(dia->window, y, x - 2, ACS_LTEE);
-		mvwaddch(dia->window, y, x + section->ncols, ACS_HLINE);
-		mvwaddch(dia->window, y, x + section->ncols + 1, ACS_RTEE);
+		mvwaddch(dia->pad, y, x - 1, ACS_HLINE);
+		mvwaddch(dia->pad, y, x - 2, ACS_LTEE);
+		mvwaddch(dia->pad, y, x + section->ncols, ACS_HLINE);
+		mvwaddch(dia->pad, y, x + section->ncols + 1, ACS_RTEE);
 	}
 
 	return WERR_OK;
