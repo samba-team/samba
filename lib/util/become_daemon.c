@@ -77,42 +77,28 @@ _PUBLIC_ int close_low_fd(int fd)
 
 _PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 {
-#ifndef VALGRIND
-	int fd;
-	int i;
 
-	if (stdin_too)
-		close(0);
-	if (stdout_too)
-		close(1);
-
-	if (stderr_too)
-		close(2);
-
-	/* try and use up these file descriptors, so silly
-		library routines writing to stdout etc won't cause havoc */
-	for (i=0;i<3;i++) {
-		if (i == 0 && !stdin_too)
-			continue;
-		if (i == 1 && !stdout_too)
-			continue;
-		if (i == 2 && !stderr_too)
-			continue;
-
-		fd = open("/dev/null",O_RDWR,0);
-		if (fd < 0)
-			fd = open("/dev/null",O_WRONLY,0);
-		if (fd < 0) {
-			DEBUG(0,("Can't open /dev/null\n"));
-			return;
-		}
-		if (fd != i) {
-			DEBUG(0,("Didn't get file descriptor %d\n",i));
-			close(fd);
-			return;
+	if (stdin_too) {
+		int ret = close_low_fd(0);
+		if (ret != 0) {
+			DEBUG(0, ("%s: close_low_fd(0) failed: %s\n",
+				  __func__, strerror(ret)));
 		}
 	}
-#endif
+	if (stdout_too) {
+		int ret = close_low_fd(1);
+		if (ret != 0) {
+			DEBUG(0, ("%s: close_low_fd(1) failed: %s\n",
+				  __func__, strerror(ret)));
+		}
+	}
+	if (stderr_too) {
+		int ret = close_low_fd(2);
+		if (ret != 0) {
+			DEBUG(0, ("%s: close_low_fd(2) failed: %s\n",
+				  __func__, strerror(ret)));
+		}
+	}
 }
 
 /****************************************************************************
