@@ -84,10 +84,10 @@ static const char *systime(time_t t)
 int net_time_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(_(
-"net time\n\tdisplays time on a server\n\n"
-"net time system\n\tdisplays time on a server in a format ready for /bin/date\n\n"
-"net time set\n\truns /bin/date with the time from the server\n\n"
-"net time zone\n\tdisplays the timezone in hours from GMT on the remote computer\n\n"
+"net time\n\tdisplays time on a server (-S server)\n\n"
+"net time system\n\tdisplays time on a server (-S server) in a format ready for /bin/date\n\n"
+"net time set\n\truns /bin/date with the time from the server (-S server)\n\n"
+"net time zone\n\tdisplays the timezone in hours from GMT on the remote server (-S server)\n\n"
 "\n"));
 	net_common_flags_usage(c, argc, argv);
 	return -1;
@@ -98,6 +98,16 @@ static int net_time_set(struct net_context *c, int argc, const char **argv)
 {
 	struct timeval tv;
 	int result;
+
+	if (c->display_usage || c->opt_host == NULL) {
+		d_printf(  "%s\n"
+			   "net time set\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Set local time to that of remote time "
+				"server (-S server) "));
+		return 0;
+	}
 
 	tv.tv_sec = nettime(c, NULL);
 	tv.tv_usec=0;
@@ -118,13 +128,13 @@ static int net_time_system(struct net_context *c, int argc, const char **argv)
 {
 	time_t t;
 
-	if (c->display_usage) {
+	if (c->display_usage || c->opt_host == NULL) {
 		d_printf(  "%s\n"
 			   "net time system\n"
 			   "    %s\n",
 			 _("Usage:"),
-			 _("Output remote time server time in a format "
-			   "ready for /bin/date"));
+			 _("Output remote time server (-S server) "
+				"time in a format ready for /bin/date"));
 		return 0;
 	}
 
@@ -144,13 +154,13 @@ static int net_time_zone(struct net_context *c, int argc, const char **argv)
 	char zsign;
 	time_t t;
 
-	if (c->display_usage) {
+	if (c->display_usage || c->opt_host == NULL) {
 		d_printf(  "%s\n"
 			   "net time zone\n"
 			   "   %s\n",
 			 _("Usage:"),
-			 _("Display the remote time server's offset to "
-			   "UTC"));
+			 _("Display the remote time server's (-S server) "
+				"offset to UTC"));
 		return 0;
 	}
 
