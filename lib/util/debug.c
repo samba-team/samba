@@ -969,6 +969,8 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 {
 	/* Ensure we don't lose any real errno value. */
 	int old_errno = errno;
+	bool verbose = false;
+	char header_str[200];
 
 	if( format_pos ) {
 		/* This is a fudge.  If there is stuff sitting in the format_bufr, then
@@ -994,53 +996,53 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	/* Print the header if timestamps are turned on.  If parameters are
 	 * not yet loaded, then default to timestamps on.
 	 */
-	if( state.settings.timestamp_logs || state.settings.debug_prefix_timestamp) {
-		bool verbose = false;
-		char header_str[200];
+	if (!(state.settings.timestamp_logs ||
+	      state.settings.debug_prefix_timestamp)) {
+		return true;
+	}
 
-		header_str[0] = '\0';
+	header_str[0] = '\0';
 
-		if (unlikely(DEBUGLEVEL_CLASS[ cls ] >= 10)) {
-			verbose = true;
-		}
+	if (unlikely(DEBUGLEVEL_CLASS[ cls ] >= 10)) {
+		verbose = true;
+	}
 
-		if (verbose || state.settings.debug_pid)
-			slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)getpid());
+	if (verbose || state.settings.debug_pid)
+		slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)getpid());
 
-		if (verbose || state.settings.debug_uid) {
-			size_t hs_len = strlen(header_str);
-			slprintf(header_str + hs_len,
-			sizeof(header_str) - 1 - hs_len,
-				", effective(%u, %u), real(%u, %u)",
-				(unsigned int)geteuid(), (unsigned int)getegid(),
-				(unsigned int)getuid(), (unsigned int)getgid());
-		}
+	if (verbose || state.settings.debug_uid) {
+		size_t hs_len = strlen(header_str);
+		slprintf(header_str + hs_len,
+			 sizeof(header_str) - 1 - hs_len,
+			 ", effective(%u, %u), real(%u, %u)",
+			 (unsigned int)geteuid(), (unsigned int)getegid(),
+			 (unsigned int)getuid(), (unsigned int)getgid());
+	}
 
-		if ((verbose || state.settings.debug_class)
-		    && (cls != DBGC_ALL)) {
-			size_t hs_len = strlen(header_str);
-			slprintf(header_str + hs_len,
-				 sizeof(header_str) -1 - hs_len,
-				 ", class=%s",
-				 classname_table[cls]);
-		}
+	if ((verbose || state.settings.debug_class)
+	    && (cls != DBGC_ALL)) {
+		size_t hs_len = strlen(header_str);
+		slprintf(header_str + hs_len,
+			 sizeof(header_str) -1 - hs_len,
+			 ", class=%s",
+			 classname_table[cls]);
+	}
 
-		/* Print it all out at once to prevent split syslog output. */
-		if( state.settings.debug_prefix_timestamp ) {
-			char *time_str = current_timestring(NULL,
-							    state.settings.debug_hires_timestamp);
-			(void)Debug1( "[%s, %2d%s] ",
-				      time_str,
-				      level, header_str);
-			talloc_free(time_str);
-		} else {
-			char *time_str = current_timestring(NULL,
-							    state.settings.debug_hires_timestamp);
-			(void)Debug1( "[%s, %2d%s] %s(%s)\n",
-				      time_str,
-				      level, header_str, location, func );
-			talloc_free(time_str);
-		}
+	/* Print it all out at once to prevent split syslog output. */
+	if( state.settings.debug_prefix_timestamp ) {
+		char *time_str = current_timestring(NULL,
+						    state.settings.debug_hires_timestamp);
+		(void)Debug1( "[%s, %2d%s] ",
+			      time_str,
+			      level, header_str);
+		talloc_free(time_str);
+	} else {
+		char *time_str = current_timestring(NULL,
+						    state.settings.debug_hires_timestamp);
+		(void)Debug1( "[%s, %2d%s] %s(%s)\n",
+			      time_str,
+			      level, header_str, location, func );
+		talloc_free(time_str);
 	}
 
 	errno = old_errno;
