@@ -498,7 +498,7 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 
 	if (state.logtype == DEBUG_FILE) {
 #ifdef WITH_SYSLOG
-		const char *p = strrchr_m( prog_name,'/' );
+		const char *p = strrchr(prog_name, '/');
 		if (p)
 			prog_name = p + 1;
 #ifdef LOG_DAEMON
