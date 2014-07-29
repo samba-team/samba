@@ -44,32 +44,19 @@ struct hexedit {
 	int nibble;
 	uint8_t *data;
 	WINDOW *win;
-	WINDOW *status_line;
 };
 
 static int max_rows(WINDOW *win)
 {
-	int maxy, maxx;
+	int maxy;
 
-	getmaxyx(win, maxy, maxx);
+	maxy = getmaxy(win);
 
 	return maxy - 1;
 }
 
-static int hexedit_free(struct hexedit *buf)
-{
-	if (buf->status_line) {
-		delwin(buf->status_line);
-	}
-	if (buf->win) {
-		delwin(buf->win);
-	}
-
-	return 0;
-}
-
-struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
-			    int y, int x, const void *data, size_t sz)
+struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, const void *data,
+			    size_t sz)
 {
 	WERROR rv;
 	struct hexedit *buf;
@@ -79,19 +66,7 @@ struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
 		return NULL;
 	}
 
-	talloc_set_destructor(buf, hexedit_free);
-
-	buf->win = derwin(parent, nlines, LINE_WIDTH, y, x);
-	if (buf->win == NULL) {
-		goto fail;
-	}
-
-	buf->status_line = derwin(buf->win, 1, LINE_WIDTH, max_rows(buf->win),
-				  0);
-	if (buf->status_line == NULL) {
-		goto fail;
-	}
-	wattron(buf->status_line, A_REVERSE | A_STANDOUT);
+	buf->win = parent;
 
 	rv = hexedit_set_buf(buf, data, sz);
 	if (!W_ERROR_IS_OK(rv)) {
@@ -147,18 +122,20 @@ static size_t bytes_per_screen(WINDOW *win)
 
 void hexedit_set_cursor(struct hexedit *buf)
 {
-	werase(buf->status_line);
+	wmove(buf->win, max_rows(buf->win), 0);
+	wattron(buf->win, A_REVERSE | A_STANDOUT);
+	wclrtoeol(buf->win);
 	if (buf->len) {
-		wprintw(buf->status_line, "Len:%lu Off:%lu Val:0x%X", buf->len,
+		wprintw(buf->win, "Len:%lu Off:%lu Val:0x%X", buf->len,
 			buf->cursor_offset, buf->data[buf->cursor_offset]);
 	} else {
-		wprintw(buf->status_line, "Len:%lu (empty)", buf->len);
+		wprintw(buf->win, "Len:%lu (empty)", buf->len);
 	}
+	wattroff(buf->win, A_REVERSE | A_STANDOUT);
 	wmove(buf->win, buf->cursor_y, buf->cursor_x);
 	wcursyncup(buf->win);
 	wsyncup(buf->win);
 	untouchwin(buf->win);
-	wnoutrefresh(buf->status_line);
 }
 
 void hexedit_refresh(struct hexedit *buf)
