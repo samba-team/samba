@@ -784,7 +784,9 @@ static int Debug1( const char *format_str, ... )
 
 		goto done;
 
-	} else if ( state.logtype != DEBUG_FILE ) {
+	}
+
+	if ( state.logtype != DEBUG_FILE ) {
 		va_start( ap, format_str );
 		if (state.fd > 0)
 			(void)vdprintf( state.fd, format_str, ap );
