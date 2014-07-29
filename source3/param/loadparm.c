@@ -978,6 +978,7 @@ static void init_globals(bool reinit_globals)
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.winbind_reconnect_delay = 30;	/* 30 seconds */
+	Globals.winbind_request_timeout = 60;   /* 60 seconds */
 	Globals.winbind_max_clients = 200;
 	Globals.bWinbindEnumUsers = false;
 	Globals.bWinbindEnumGroups = false;

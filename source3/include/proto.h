@@ -1357,6 +1357,7 @@ int lp_smb_encrypt(int );
 char lp_magicchar(const struct share_params *p );
 int lp_winbind_cache_time(void);
 int lp_winbind_reconnect_delay(void);
+int lp_winbind_request_timeout(void);
 int lp_winbind_max_clients(void);
 const char **lp_winbind_nss_info(void);
 int lp_algorithmic_rid_base(void);
