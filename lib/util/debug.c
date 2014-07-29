@@ -767,7 +767,7 @@ void check_log_size( void )
  This is called by dbghdr() and format_debug_text().
 ************************************************************************/
 
- int Debug1( const char *format_str, ... )
+static int Debug1( const char *format_str, ... )
 {
 	va_list ap;
 	int old_errno = errno;

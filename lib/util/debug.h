@@ -36,7 +36,6 @@
 #define MAX_DEBUG_LEVEL 1000
 #endif
 
-int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 bool dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 bool dbghdrclass( int level, int cls, const char *location, const char *func);
 bool dbghdr( int level, const char *location, const char *func);
