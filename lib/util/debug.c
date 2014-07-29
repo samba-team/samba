@@ -392,7 +392,7 @@ static bool debug_parse_params(char **params)
 	}
 
 	/* Fill in new debug class levels */
-	for (; i < debug_num_classes && params[i]; i++) {
+	for (; params[i]; i++) {
 		bool ok;
 
 		ok = debug_parse_param(params[i]);
