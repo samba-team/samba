@@ -380,6 +380,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 		unsigned int i;
 		bool matched = false;
 		krb5_keytab_entry entry;
+
 		ret = krb5_kt_next_entry(context, keytab, &entry, &cursor);
 		if (ret) {
 			break;
@@ -397,6 +398,8 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 			/* Free the entry,
 			 * it wasn't the one we were looking for anyway */
 			krb5_kt_free_entry(context, &entry);
+			/* Make sure we do not double free */
+			ZERO_STRUCT(entry);
 			continue;
 		}
 
@@ -414,11 +417,15 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 
 			ret = krb5_kt_remove_entry(context, keytab, &entry);
 			krb5_kt_free_entry(context, &entry);
+			/* Make sure we do not double free */
+			ZERO_STRUCT(entry);
 
 			/* Deleted: Restart from the top */
 			ret2 = krb5_kt_start_seq_get(context, keytab, &cursor);
 			if (ret2) {
 				krb5_kt_free_entry(context, &entry);
+				/* Make sure we do not double free */
+				ZERO_STRUCT(entry);
 				DEBUG(1, ("failed to restart enumeration of keytab: %s\n",
 					  smb_get_krb5_error_message(context,
 								ret, mem_ctx)));
@@ -437,6 +444,8 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 
 		/* Free the entry, we don't need it any more */
 		krb5_kt_free_entry(context, &entry);
+		/* Make sure we do not double free */
+		ZERO_STRUCT(entry);
 	}
 	krb5_kt_end_seq_get(context, keytab, &cursor);
 
