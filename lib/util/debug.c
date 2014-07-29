@@ -1036,13 +1036,16 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 			 classname_table[cls]);
 	}
 
-	/* Print it all out at once to prevent split syslog output. */
-	if( state.settings.debug_prefix_timestamp ) {
-		(void)Debug1("%s] ", header_str);
-	} else {
-		(void)Debug1("%s] %s(%s)\n",
-			     header_str, location, func );
+	strlcat(header_str, "] ", sizeof(header_str));
+
+	if (!state.settings.debug_prefix_timestamp) {
+		size_t hs_len = strlen(header_str);
+		snprintf(header_str + hs_len,
+			 sizeof(header_str) - hs_len,
+			 "%s(%s)\n", location, func);
 	}
+
+	(void)Debug1("%s", header_str);
 
 	errno = old_errno;
 	return( true );
