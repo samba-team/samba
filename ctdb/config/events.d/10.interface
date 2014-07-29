@@ -110,11 +110,6 @@ monitor_interfaces()
 		mark_up $iface
 		;;
 	    *)
-		# Ignore virtio_net devices, assume they're always up
-		_driver_path="/sys/class/net/$iface/device/driver"
-		_driver=$(basename $(readlink "$_driver_path") 2>/dev/null)
-		[ "$_driver" = "virtio_net" ] && continue
-
 		ethtool $iface | grep -q 'Link detected: yes' || {
 		    # On some systems, this is not successful when a
 		    # cable is plugged but the interface has not been
