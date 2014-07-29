@@ -971,6 +971,8 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	int old_errno = errno;
 	bool verbose = false;
 	char header_str[200];
+	struct timeval tv;
+	struct timeval_buf tvbuf;
 
 	if( format_pos ) {
 		/* This is a fudge.  If there is stuff sitting in the format_bufr, then
@@ -1028,21 +1030,18 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 			 classname_table[cls]);
 	}
 
+	GetTimeOfDay(&tv);
+	timeval_str_buf(&tv, state.settings.debug_hires_timestamp, &tvbuf);
+
 	/* Print it all out at once to prevent split syslog output. */
 	if( state.settings.debug_prefix_timestamp ) {
-		char *time_str = current_timestring(NULL,
-						    state.settings.debug_hires_timestamp);
-		(void)Debug1( "[%s, %2d%s] ",
-			      time_str,
-			      level, header_str);
-		talloc_free(time_str);
+		(void)Debug1("[%s, %2d%s] ",
+			     tvbuf.buf,
+			     level, header_str);
 	} else {
-		char *time_str = current_timestring(NULL,
-						    state.settings.debug_hires_timestamp);
-		(void)Debug1( "[%s, %2d%s] %s(%s)\n",
-			      time_str,
-			      level, header_str, location, func );
-		talloc_free(time_str);
+		(void)Debug1("[%s, %2d%s] %s(%s)\n",
+			     tvbuf.buf,
+			     level, header_str, location, func );
 	}
 
 	errno = old_errno;
