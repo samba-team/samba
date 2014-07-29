@@ -86,7 +86,7 @@ def handle_signal(sig, frame):
     sys.stderr.write("Exiting early because of signal %s.\n" % sig)
     sys.exit(1)
 
-for sig in (signal.SIGINT, signal.SIGQUIT, signal.SIGTERm, signal.SIGPIPE):
+for sig in (signal.SIGINT, signal.SIGQUIT, signal.SIGTERM, signal.SIGPIPE):
     signal.signal(sig, handle_signal)
 
 def skip(name):
