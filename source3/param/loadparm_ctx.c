@@ -69,7 +69,6 @@ static struct loadparm_s3_helpers s3_fns =
 	.store_cmdline = store_lp_set_cmdline,
 	.dump = lp_dump,
 	.lp_string = lp_string,
-	.lp_string_set = lp_string_set,
 	.lp_include = lp_include,
 	.init_printer_values = init_printer_values,
 	.init_ldap_debugging = init_ldap_debugging,
