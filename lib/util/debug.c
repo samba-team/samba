@@ -362,49 +362,6 @@ static bool debug_parse_param(char *param)
 }
 
 /****************************************************************************
- parse the debug levels from smbcontrol. Example debug level parameter:
- printdrivers:7
-****************************************************************************/
-
-static bool debug_parse_params(char **params)
-{
-	int   i, ndx;
-
-	if (!params)
-		return false;
-
-	/* Allow DBGC_ALL to be specified w/o requiring its class name e.g."10"
-	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL
-	 */
-	if (isdigit((int)params[0][0])) {
-		DEBUGLEVEL_CLASS[DBGC_ALL] = atoi(params[0]);
-		i = 1; /* start processing at the next params */
-	} else {
-		DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
-		i = 0; /* DBGC_ALL not specified OR class name was included */
-	}
-
-	/* Array is debug_num_classes long */
-	for (ndx = DBGC_ALL; ndx < debug_num_classes; ndx++) {
-		DEBUGLEVEL_CLASS[ndx] = DEBUGLEVEL_CLASS[DBGC_ALL];
-	}
-
-	/* Fill in new debug class levels */
-	for (; params[i]; i++) {
-		bool ok;
-
-		ok = debug_parse_param(params[i]);
-		if (!ok) {
-			DEBUG(0,("debug_parse_params: unrecognized debug "
-				 "class name or format [%s]\n", params[i]));
-			return false;
-		}
-	}
-
-	return true;
-}
-
-/****************************************************************************
  Parse the debug levels from smb.conf. Example debug level string:
   3 tdb:5 printdrivers:7
  Note: the 1st param has no "name:" preceeding it.
@@ -412,21 +369,52 @@ static bool debug_parse_params(char **params)
 
 bool debug_parse_levels(const char *params_str)
 {
-	char **params;
-	bool ok;
+	size_t str_len = strlen(params_str);
+	char str[str_len+1];
+	char *tok, *saveptr;
+	int i;
 
 	/* Just in case */
 	debug_init();
 
-	params = str_list_make(NULL, params_str, NULL);
+	memcpy(str, params_str, str_len+1);
 
-	ok = debug_parse_params(params);
-	if (ok) {
-		debug_dump_status(5);
+	tok = strtok_r(str, LIST_SEP, &saveptr);
+	if (tok == NULL) {
+		return true;
 	}
 
-	TALLOC_FREE(params);
-	return ok;
+	/* Allow DBGC_ALL to be specified w/o requiring its class name e.g."10"
+	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL
+	 */
+	if (isdigit(tok[0])) {
+		DEBUGLEVEL_CLASS[DBGC_ALL] = atoi(tok);
+		tok = strtok_r(NULL, LIST_SEP, &saveptr);
+	} else {
+		DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	}
+
+	/* Array is debug_num_classes long */
+	for (i = DBGC_ALL+1; i < debug_num_classes; i++) {
+		DEBUGLEVEL_CLASS[i] = DEBUGLEVEL_CLASS[DBGC_ALL];
+	}
+
+	while (tok != NULL) {
+		bool ok;
+
+		ok = debug_parse_param(tok);
+		if (!ok) {
+			DEBUG(0,("debug_parse_params: unrecognized debug "
+				 "class name or format [%s]\n", tok));
+			return false;
+		}
+
+		tok = strtok_r(NULL, LIST_SEP, &saveptr);
+	}
+
+	debug_dump_status(5);
+
+	return true;
 }
 
 /* setup for logging of talloc warnings */
