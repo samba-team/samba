@@ -494,7 +494,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		return;
 	}
 
-	/* enusre the address looks good */
+	/* ensure the address looks good */
 	address[ret] = 0;
 
 	addrs = str_list_make(state, address, ",");
