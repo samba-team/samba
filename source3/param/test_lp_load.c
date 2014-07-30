@@ -62,7 +62,6 @@ int main(int argc, const char **argv)
 	for (i=0; i < count; i++) {
 		printf("call lp_load() #%d: ", i+1);
 		if (!lp_load_with_registry_shares(config_file,
-						  False, /* global only */
 						  True,  /* save defaults */
 						  False, /*add_ipc */
 						  True)) /*init globals */
