@@ -3838,6 +3838,20 @@ bool lp_load_global(const char *file_name)
 }
 
 /**
+ * The typical lp_load wrapper with shares, loads global and
+ * shares, including IPC, but does not force immediate
+ * loading of all shares from registry.
+ */
+bool lp_load_with_shares(const char *file_name)
+{
+	return lp_load(file_name,
+		       false,  /* global_only */
+		       false,  /* save_defaults */
+		       true,   /* add_ipc */
+		       true);  /* initialize_globals */
+}
+
+/**
  * lp_load wrapper, especially for clients
  */
 bool lp_load_client(const char *file_name)
