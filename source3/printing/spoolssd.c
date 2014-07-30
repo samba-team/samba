@@ -107,7 +107,7 @@ static void update_conf(struct tevent_context *ev,
 			struct messaging_context *msg)
 {
 	change_to_root_user();
-	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	lp_load_global(get_dyn_CONFIGFILE());
 	load_printers(ev, msg);
 
 	spoolss_reopen_logs(spoolss_child_id);
