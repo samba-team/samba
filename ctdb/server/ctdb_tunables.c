@@ -64,7 +64,6 @@ static const struct {
 	{ "VacuumLimit",       5000,  offsetof(struct ctdb_tunable, vacuum_limit), false },
 	{ "VacuumFastPathCount", 60, offsetof(struct ctdb_tunable, vacuum_fast_path_count), false },
 	{ "MaxQueueDropMsg",  1000000, offsetof(struct ctdb_tunable, max_queue_depth_drop_msg), false },
-	{ "UseStatusEvents",     0,  offsetof(struct ctdb_tunable, use_status_events_for_monitoring), false },
 	{ "AllowUnhealthyDBRead", 0,  offsetof(struct ctdb_tunable, allow_unhealthy_db_read), false },
 	{ "StatHistoryInterval",  1,  offsetof(struct ctdb_tunable, stat_history_interval), false },
 	{ "DeferredAttachTO",  120,  offsetof(struct ctdb_tunable, deferred_attach_timeout), false },
