@@ -196,7 +196,9 @@ static void queue_io_read(struct ctdb_queue *queue)
 	}
 
 	if (num_ready > 0) {
-		nread = read(queue->fd, queue->buffer.data + queue->buffer.length, num_ready);
+		nread = sys_read(queue->fd,
+				 queue->buffer.data + queue->buffer.length,
+				 num_ready);
 		if (nread <= 0) {
 			DEBUG(DEBUG_ERR, ("read error nread=%d\n", (int)nread));
 			goto failed;
@@ -230,9 +232,9 @@ static void queue_io_write(struct ctdb_queue *queue)
 		struct ctdb_queue_pkt *pkt = queue->out_queue;
 		ssize_t n;
 		if (queue->ctdb->flags & CTDB_FLAG_TORTURE) {
-			n = write(queue->fd, pkt->data, 1);
+			n = sys_write(queue->fd, pkt->data, 1);
 		} else {
-			n = write(queue->fd, pkt->data, pkt->length);
+			n = sys_write(queue->fd, pkt->data, pkt->length);
 		}
 
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -308,7 +310,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	   queue overhead. This relies on non-blocking sockets */
 	if (queue->out_queue == NULL && queue->fd != -1 &&
 	    !(queue->ctdb->flags & CTDB_FLAG_TORTURE)) {
-		ssize_t n = write(queue->fd, data, length2);
+		ssize_t n = sys_write(queue->fd, data, length2);
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 			talloc_free(queue->fde);
 			queue->fde = NULL;

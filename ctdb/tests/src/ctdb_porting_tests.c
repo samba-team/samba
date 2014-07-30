@@ -141,7 +141,7 @@ static int socket_client_connect(void)
 
 static int socket_client_write(int client)
 {
-	if (write(client, "\0", 1) == -1) {
+	if (sys_write(client, "\0", 1) == -1) {
 		DEBUG(DEBUG_CRIT,("Unable to write to client socket: %s\n", strerror(errno)));
 		return -1;
 	}

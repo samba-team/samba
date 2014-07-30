@@ -26,7 +26,7 @@ static char *progname = NULL;
 
 static void send_result(int fd, char result)
 {
-	write(fd, &result, 1);
+	sys_write(fd, &result, 1);
 	if (result == 1) {
 		exit(1);
 	}

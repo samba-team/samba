@@ -443,7 +443,7 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	}
 
 	/* Read the status from the child process */
-	if (read(lock_ctx->fd[0], &c, 1) != 1) {
+	if (sys_read(lock_ctx->fd[0], &c, 1) != 1) {
 		locked = false;
 	} else {
 		locked = (c == 0 ? true : false);

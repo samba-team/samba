@@ -364,7 +364,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 		return;
 	}
 
-	r = read(state->fd[0], &current->status, sizeof(current->status));
+	r = sys_read(state->fd[0], &current->status, sizeof(current->status));
 	if (r < 0) {
 		current->status = -errno;
 	} else if (r != sizeof(current->status)) {

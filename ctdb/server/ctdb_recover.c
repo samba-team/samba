@@ -534,7 +534,7 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 	   the file   which at this time SHOULD be locked by the recovery
 	   daemon on the recmaster
 	*/		
-	ret = read(state->fd[0], &c, 1);
+	ret = sys_read(state->fd[0], &c, 1);
 	if (ret != 1 || c != 0) {
 		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "managed to lock reclock file from inside daemon");
 		talloc_free(state);
@@ -679,11 +679,11 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 			cc = 1;
 		}
 
-		write(state->fd[1], &cc, 1);
+		sys_write(state->fd[1], &cc, 1);
 		/* make sure we die when our parent dies */
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
-			write(state->fd[1], &cc, 1);
+			sys_write(state->fd[1], &cc, 1);
 		}
 		_exit(0);
 	}

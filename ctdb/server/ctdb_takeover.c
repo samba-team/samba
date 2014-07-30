@@ -4471,7 +4471,7 @@ static void ctdb_reloadips_child_handler(struct event_context *ev, struct fd_eve
 	char res;
 	int ret;
 
-	ret = read(h->fd[0], &res, 1);
+	ret = sys_read(h->fd[0], &res, 1);
 	if (ret < 1 || res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Reloadips child process returned error\n"));
 		res = 1;
@@ -4708,7 +4708,7 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 			}
 		}
 
-		write(h->fd[1], &res, 1);
+		sys_write(h->fd[1], &res, 1);
 		/* make sure we die when our parent dies */
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);

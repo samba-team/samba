@@ -191,7 +191,7 @@ static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
 
 	talloc_set_destructor(h, NULL);
 
-	ret = read(h->fd[0], &c, 1);
+	ret = sys_read(h->fd[0], &c, 1);
 	if (ret < 1) {
 		DEBUG(DEBUG_ERR, (__location__ " Read returned %d. Childwrite failed\n", ret));
 		c = 1;
@@ -258,7 +258,7 @@ static struct childwrite_handle *ctdb_childwrite(
 			c = 1;
 		}
 
-		write(result->fd[1], &c, 1);
+		sys_write(result->fd[1], &c, 1);
 
 		/* make sure we die when our parent dies */
 		while (ctdb_kill(ctdb_db->ctdb, parent, 0) == 0 || errno != ESRCH) {

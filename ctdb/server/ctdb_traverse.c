@@ -62,7 +62,7 @@ static void ctdb_traverse_child_handler(struct tevent_context *ev, struct tevent
 	ssize_t n;
 
 	/* Read the number of records sent by traverse child */
-	n = read(h->fd[0], &res, sizeof(res));
+	n = sys_read(h->fd[0], &res, sizeof(res));
 	if (n < 0 || n != sizeof(res)) {
 		/* Traverse child failed */
 		DEBUG(DEBUG_ERR, ("Local traverse failed db:%s reqid:%d\n",
@@ -213,7 +213,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		d = ctdb_marshall_record(h, h->reqid, tdb_null, NULL, tdb_null);
 		if (d == NULL) {
 			res = 0;
-			write(h->fd[1], &res, sizeof(int));
+			sys_write(h->fd[1], &res, sizeof(int));
 			_exit(0);
 		}
 
@@ -243,7 +243,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 			}
 		}
 
-		write(h->fd[1], &res, sizeof(res));
+		sys_write(h->fd[1], &res, sizeof(res));
 
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);

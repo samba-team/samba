@@ -1411,7 +1411,7 @@ static void vacuum_child_handler(struct event_context *ev, struct fd_event *fde,
 	DEBUG(DEBUG_INFO,("Vacuuming child process %d finished for db %s\n", child_ctx->child_pid, child_ctx->vacuum_handle->ctdb_db->db_name));
 	child_ctx->child_pid = -1;
 
-	ret = read(child_ctx->fd[0], &c, 1);
+	ret = sys_read(child_ctx->fd[0], &c, 1);
 	if (ret != 1 || c != 0) {
 		child_ctx->status = VACUUM_ERROR;
 		DEBUG(DEBUG_ERR, ("A vacuum child process failed with an error for database %s. ret=%d c=%d\n", child_ctx->vacuum_handle->ctdb_db->db_name, ret, c));
@@ -1503,7 +1503,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		}
 		cc = ctdb_vacuum_and_repack_db(ctdb_db, full_vacuum_run);
 
-		write(child_ctx->fd[1], &cc, 1);
+		sys_write(child_ctx->fd[1], &cc, 1);
 		_exit(0);
 	}
 

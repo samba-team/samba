@@ -129,7 +129,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		set_close_on_exec(state->fd[0]);
 
 		close(startup_fd[1]);
-		n = read(startup_fd[0], &dummy, sizeof(dummy));
+		n = sys_read(startup_fd[0], &dummy, sizeof(dummy));
 		close(startup_fd[0]);
 		if (n < sizeof(dummy)) {
 			return -1;
@@ -182,7 +182,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 
 	/* Tell parent that we're up */
 	ret = 0;
-	write(startup_fd[1], &ret, sizeof(ret));
+	sys_write(startup_fd[1], &ret, sizeof(ret));
 	close(startup_fd[1]);
 
 	event_loop_wait(ctdb->ev);
@@ -304,7 +304,7 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 	if (ret == -1) {
 		const char *errstr = "vasprintf failed\n";
 
-		write(log_state->fd, errstr, strlen(errstr));
+		sys_write(log_state->fd, errstr, strlen(errstr));
 		return;
 	}
 
@@ -319,11 +319,11 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 	free(s);
 	if (ret == -1) {
 		const char *errstr = "asprintf failed\n";
-		write(log_state->fd, errstr, strlen(errstr));
+		sys_write(log_state->fd, errstr, strlen(errstr));
 		return;
 	}
 	if (s2) {
-		write(log_state->fd, s2, strlen(s2));
+		sys_write(log_state->fd, s2, strlen(s2));
 		free(s2);
 	}
 }
@@ -337,12 +337,12 @@ static void ctdb_logfile_log_add(const char *format, va_list ap)
 	if (ret == -1) {
 		const char *errstr = "vasprintf failed\n";
 
-		write(log_state->fd, errstr, strlen(errstr));
+		sys_write(log_state->fd, errstr, strlen(errstr));
 		return;
 	}
 
 	if (s) {
-		write(log_state->fd, s, strlen(s));
+		sys_write(log_state->fd, s, strlen(s));
 		free(s);
 	}
 }
@@ -424,7 +424,7 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	n = read(log->pfd, &log->buf[log->buf_used],
+	n = sys_read(log->pfd, &log->buf[log->buf_used],
 		 sizeof(log->buf) - log->buf_used);
 	if (n > 0) {
 		log->buf_used += n;

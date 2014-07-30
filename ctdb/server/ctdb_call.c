@@ -1457,7 +1457,7 @@ static void revokechild_handler(struct event_context *ev, struct fd_event *fde,
 	int ret;
 	char c;
 
-	ret = read(rc->fd[0], &c, 1);
+	ret = sys_read(rc->fd[0], &c, 1);
 	if (ret != 1) {
 		DEBUG(DEBUG_ERR,("Failed to read status from revokechild. errno:%d\n", errno));
 		rc->status = -1;
@@ -1675,7 +1675,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 		c = ctdb_revoke_all_delegations(ctdb, ctdb_db, tdata, key, header, data);
 
 child_finished:
-		write(rc->fd[1], &c, 1);
+		sys_write(rc->fd[1], &c, 1);
 		/* make sure we die when our parent dies */
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);

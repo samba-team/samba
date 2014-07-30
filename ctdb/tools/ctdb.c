@@ -3983,10 +3983,10 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 			talloc_free(tmp_ctx);
 			return -1;
 		}
-		write(fd, data.dptr, data.dsize);
+		sys_write(fd, data.dptr, data.dsize);
 		close(fd);
 	} else {
-		write(1, data.dptr, data.dsize);
+		sys_write(1, data.dptr, data.dsize);
 	}
 
 	/* abort the transaction */
@@ -4047,16 +4047,16 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 			return -1;
 		}
 		if (options.verbose){
-			write(fd, data.dptr, data.dsize);
+			sys_write(fd, data.dptr, data.dsize);
 		} else {
-			write(fd, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+			sys_write(fd, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
 		}
 		close(fd);
 	} else {
 		if (options.verbose){
-			write(1, data.dptr, data.dsize);
+			sys_write(1, data.dptr, data.dsize);
 		} else {
-			write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+			sys_write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
 		}
 	}
 
@@ -4193,7 +4193,7 @@ static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv
 			talloc_free(tmp_ctx);
 			return -1;
 		}
-		ret = read(fd, data.dptr, data.dsize);
+		ret = sys_read(fd, data.dptr, data.dsize);
 		if (ret != data.dsize) {
 			DEBUG(DEBUG_ERR,("Failed to read %d bytes of record data\n", (int)data.dsize));
 			close(fd);
@@ -5638,12 +5638,12 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		goto done;
 	}
 	strncpy(discard_const(dbhdr.name), argv[0], MAX_DB_NAME-1);
-	ret = write(fh, &dbhdr, sizeof(dbhdr));
+	ret = sys_write(fh, &dbhdr, sizeof(dbhdr));
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR,("write failed: %s\n", strerror(errno)));
 		goto done;
 	}
-	ret = write(fh, bd->records, bd->len);
+	ret = sys_write(fh, bd->records, bd->len);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR,("write failed: %s\n", strerror(errno)));
 		goto done;
@@ -5699,7 +5699,7 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		return -1;
 	}
 
-	read(fh, &dbhdr, sizeof(dbhdr));
+	sys_read(fh, &dbhdr, sizeof(dbhdr));
 	if (dbhdr.version != DB_VERSION) {
 		DEBUG(DEBUG_ERR,("Invalid version of database dump. File is version %lu but expected version was %u\n", dbhdr.version, DB_VERSION));
 		close(fh);
@@ -5720,7 +5720,7 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		talloc_free(tmp_ctx);
 		return -1;
 	}		
-	read(fh, outdata.dptr, outdata.dsize);
+	sys_read(fh, outdata.dptr, outdata.dsize);
 	close(fh);
 
 	tm = localtime(&dbhdr.timestamp);
@@ -5895,7 +5895,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 		return -1;
 	}
 
-	read(fh, &dbhdr, sizeof(dbhdr));
+	sys_read(fh, &dbhdr, sizeof(dbhdr));
 	if (dbhdr.version != DB_VERSION) {
 		DEBUG(DEBUG_ERR,("Invalid version of database dump. File is version %lu but expected version was %u\n", dbhdr.version, DB_VERSION));
 		close(fh);
@@ -5911,7 +5911,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	read(fh, outdata.dptr, outdata.dsize);
+	sys_read(fh, outdata.dptr, outdata.dsize);
 	close(fh);
 	m = (struct ctdb_marshall_buffer *)outdata.dptr;
 
@@ -6122,7 +6122,7 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	write(1, data.dptr, data.dsize);
+	sys_write(1, data.dptr, data.dsize);
 	talloc_free(tmp_ctx);
 	return 0;
 }
@@ -6133,7 +6133,7 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
-	write(1, data.dptr, data.dsize);
+	sys_write(1, data.dptr, data.dsize);
 	exit(0);
 }
 

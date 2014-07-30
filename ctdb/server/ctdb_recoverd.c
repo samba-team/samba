@@ -3383,7 +3383,7 @@ static void reclock_child_handler(struct event_context *ev, struct fd_event *fde
 	talloc_free(state->te);
 	state->te = NULL;
 
-	ret = read(state->fd[0], &c, 1);
+	ret = sys_read(state->fd[0], &c, 1);
 	if (ret != 1 || c != RECLOCK_OK) {
 		DEBUG(DEBUG_ERR,(__location__ " reclock child process returned error %d\n", c));
 		state->status = RECLOCK_FAILED;
@@ -3445,7 +3445,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 			cc = RECLOCK_FAILED;
 		}
 
-		write(state->fd[1], &cc, 1);
+		sys_write(state->fd[1], &cc, 1);
 		/* make sure we die when our parent dies */
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);

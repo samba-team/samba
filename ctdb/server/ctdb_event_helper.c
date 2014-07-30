@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		if (output == ENOENT || output == ENOEXEC) {
 			output = -output;
 		}
-		write(write_fd, &output, sizeof(output));
+		sys_write(write_fd, &output, sizeof(output));
 		exit(output);
 	}
 
