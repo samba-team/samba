@@ -955,6 +955,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	int old_errno = errno;
 	bool verbose = false;
 	char header_str[200];
+	size_t hs_len;
 	struct timeval tv;
 	struct timeval_buf tvbuf;
 
@@ -990,45 +991,64 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	GetTimeOfDay(&tv);
 	timeval_str_buf(&tv, state.settings.debug_hires_timestamp, &tvbuf);
 
-	snprintf(header_str, sizeof(header_str), "[%s, %2d",
-		 tvbuf.buf, level);
+	hs_len = snprintf(header_str, sizeof(header_str), "[%s, %2d",
+			  tvbuf.buf, level);
+	if (hs_len >= sizeof(header_str)) {
+		goto full;
+	}
 
 	if (unlikely(DEBUGLEVEL_CLASS[ cls ] >= 10)) {
 		verbose = true;
 	}
 
 	if (verbose || state.settings.debug_pid) {
-		size_t hs_len = strlen(header_str);
-		snprintf(header_str + hs_len, sizeof(header_str) - hs_len,
-			 ", pid=%u", (unsigned int)getpid());
+		hs_len += snprintf(
+			header_str + hs_len, sizeof(header_str) - hs_len,
+			", pid=%u", (unsigned int)getpid());
+		if (hs_len >= sizeof(header_str)) {
+			goto full;
+		}
 	}
 
 	if (verbose || state.settings.debug_uid) {
-		size_t hs_len = strlen(header_str);
-		snprintf(header_str + hs_len, sizeof(header_str) - hs_len,
-			 ", effective(%u, %u), real(%u, %u)",
-			 (unsigned int)geteuid(), (unsigned int)getegid(),
-			 (unsigned int)getuid(), (unsigned int)getgid());
+		hs_len += snprintf(
+			header_str + hs_len, sizeof(header_str) - hs_len,
+			", effective(%u, %u), real(%u, %u)",
+			(unsigned int)geteuid(), (unsigned int)getegid(),
+			(unsigned int)getuid(), (unsigned int)getgid());
+		if (hs_len >= sizeof(header_str)) {
+			goto full;
+		}
 	}
 
 	if ((verbose || state.settings.debug_class)
 	    && (cls != DBGC_ALL)) {
-		size_t hs_len = strlen(header_str);
-		snprintf(header_str + hs_len,
-			 sizeof(header_str) - hs_len,
-			 ", class=%s",
-			 classname_table[cls]);
+		hs_len += snprintf(
+			header_str + hs_len, sizeof(header_str) - hs_len,
+			", class=%s", classname_table[cls]);
+		if (hs_len >= sizeof(header_str)) {
+			goto full;
+		}
 	}
 
-	strlcat(header_str, "] ", sizeof(header_str));
+	/*
+	 * No +=, see man man strlcat
+	 */
+	hs_len = strlcat(header_str, "] ", sizeof(header_str));
+	if (hs_len >= sizeof(header_str)) {
+		goto full;
+	}
 
 	if (!state.settings.debug_prefix_timestamp) {
-		size_t hs_len = strlen(header_str);
-		snprintf(header_str + hs_len,
-			 sizeof(header_str) - hs_len,
-			 "%s(%s)\n", location, func);
+		hs_len += snprintf(
+			header_str + hs_len, sizeof(header_str) - hs_len,
+			"%s(%s)\n", location, func);
+		if (hs_len >= sizeof(header_str)) {
+			goto full;
+		}
 	}
 
+full:
 	(void)Debug1(header_str);
 
 	errno = old_errno;
