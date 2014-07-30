@@ -1069,7 +1069,6 @@ bool lp_load_global_no_reinit(const char *file_name);
 bool lp_load_client_no_reinit(const char *file_name);
 bool lp_load_with_registry_shares(const char *pszFname,
 				  bool save_defaults,
-				  bool add_ipc,
 				  bool initialize_globals);
 int lp_numservices(void);
 void lp_dump(FILE *f, bool show_defaults, int maxtoprint);

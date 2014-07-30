@@ -3887,13 +3887,12 @@ bool lp_load_client_no_reinit(const char *file_name)
 
 bool lp_load_with_registry_shares(const char *pszFname,
 				  bool save_defaults,
-				  bool add_ipc,
 				  bool initialize_globals)
 {
 	return lp_load_ex(pszFname,
 			  false, /* global_only */
 			  save_defaults,
-			  add_ipc,
+			  false, /* add_ipc */
 			  initialize_globals,
 			  true,  /* allow_include_registry */
 			  true); /* load_all_shares*/
