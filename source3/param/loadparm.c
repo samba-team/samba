@@ -3868,13 +3868,11 @@ bool lp_load_client(const char *file_name)
  */
 bool lp_load_global_no_reinit(const char *file_name)
 {
-	return lp_load_ex(file_name,
-			  true,   /* global_only */
-			  false,  /* save_defaults */
-			  false,  /* add_ipc */
-			  false,  /* initialize_globals */
-			  true,   /* allow_include_registry */
-			  false); /* load_all_shares*/
+	return lp_load(file_name,
+		       true,   /* global_only */
+		       false,  /* save_defaults */
+		       false,  /* add_ipc */
+		       false); /* initialize_globals */
 }
 
 /**
