@@ -73,7 +73,7 @@ void ctdb_die(struct ctdb_context *ctdb, const char *msg)
  */
 void ctdb_external_trace(void)
 {
-
+	int ret;
 	const char * t = getenv("CTDB_EXTERNAL_TRACE");
 	char * cmd;
 
@@ -83,7 +83,11 @@ void ctdb_external_trace(void)
 
 	cmd = talloc_asprintf(NULL, "%s %lu", t, (unsigned long) getpid());
 	DEBUG(DEBUG_WARNING,("begin external trace: %s\n", cmd));
-	system(cmd);
+	ret = system(cmd);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,
+		      ("external trace command \"%s\" failed\n", cmd));
+	}
 	DEBUG(DEBUG_WARNING,("end external trace: %s\n", cmd));
 	talloc_free(cmd);
 }
