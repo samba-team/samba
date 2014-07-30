@@ -1637,12 +1637,9 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	struct dnsp_DnssrvRpcRecord *rec;
 	struct ldb_dn *dn;
 	isc_result_t result;
-	struct ldb_result *res;
-	const char *attrs[] = { "dnsRecord", NULL };
-	int ret, i;
-	struct ldb_message_element *el;
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
 	uint16_t num_recs = 0;
+	uint16_t i;
 	WERROR werr;
 
 	if (state->transaction_token != (void*)version) {
@@ -1669,28 +1666,11 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	/* get the existing records */
-	ret = ldb_search(state->samdb, rec, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsNode");
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+	werr = dns_common_lookup(state->samdb, rec, dn,
+				 &recs, &num_recs, NULL);
+	if (!W_ERROR_IS_OK(werr)) {
 		talloc_free(rec);
 		return ISC_R_NOTFOUND;
-	}
-
-	/* there are existing records. We need to see if any match
-	 */
-	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
-	if (el == NULL || el->num_values == 0) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: no dnsRecord attribute for %s",
-			   ldb_dn_get_linearized(dn));
-		talloc_free(rec);
-		return ISC_R_FAILURE;
-	}
-
-	werr = dns_common_extract(el, rec, &recs, &num_recs);
-	if (!W_ERROR_IS_OK(werr)) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
-			   ldb_dn_get_linearized(dn), win_errstr(werr));
-		talloc_free(rec);
-		return ISC_R_FAILURE;
 	}
 
 	for (i=0; i < num_recs; i++) {
@@ -1740,10 +1720,6 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_dn *dn;
 	isc_result_t result;
-	struct ldb_result *res;
-	const char *attrs[] = { "dnsRecord", NULL };
-	int ret;
-	struct ldb_message_element *el;
 	enum dns_record_type dns_type;
 	bool found = false;
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
@@ -1771,26 +1747,11 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 	}
 
 	/* get the existing records */
-	ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsNode");
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		talloc_free(tmp_ctx);
-		return ISC_R_NOTFOUND;
-	}
-
-	/* there are existing records. We need to see if any match the type
-	 */
-	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
-	if (el == NULL || el->num_values == 0) {
-		talloc_free(tmp_ctx);
-		return ISC_R_NOTFOUND;
-	}
-
-	werr = dns_common_extract(el, tmp_ctx, &recs, &num_recs);
+	werr = dns_common_lookup(state->samdb, tmp_ctx, dn,
+				 &recs, &num_recs, NULL);
 	if (!W_ERROR_IS_OK(werr)) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
-			   ldb_dn_get_linearized(dn), win_errstr(werr));
 		talloc_free(tmp_ctx);
-		return ISC_R_FAILURE;
+		return ISC_R_NOTFOUND;
 	}
 
 	for (ri=0; ri < num_recs; ri++) {
