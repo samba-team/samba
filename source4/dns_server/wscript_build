@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
+bld.SAMBA_LIBRARY('dnsserver_common',
+        source='dnsserver_common.c',
+        deps='samba-util errors ldbsamba clidns',
+        private_library=True,
+        )
+
 bld.SAMBA_MODULE('service_dns',
         source='dns_server.c dns_query.c dns_update.c dns_utils.c dns_crypto.c',
         subsystem='service',
         init_function='server_service_dns_init',
-        deps='samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET ldbsamba clidns gensec auth samba_server_gensec',
+        deps='samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET ldbsamba clidns gensec auth samba_server_gensec dnsserver_common',
         local_include=False,
         internal_module=False,
         enabled=bld.AD_DC_BUILD_IS_ENABLED()

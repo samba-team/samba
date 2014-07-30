@@ -33,39 +33,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
 
-uint8_t werr_to_dns_err(WERROR werr)
-{
-	if (W_ERROR_EQUAL(WERR_OK, werr)) {
-		return DNS_RCODE_OK;
-	} else if (W_ERROR_EQUAL(DNS_ERR(FORMAT_ERROR), werr)) {
-		return DNS_RCODE_FORMERR;
-	} else if (W_ERROR_EQUAL(DNS_ERR(SERVER_FAILURE), werr)) {
-		return DNS_RCODE_SERVFAIL;
-	} else if (W_ERROR_EQUAL(DNS_ERR(NAME_ERROR), werr)) {
-		return DNS_RCODE_NXDOMAIN;
-	} else if (W_ERROR_EQUAL(WERR_DNS_ERROR_NAME_DOES_NOT_EXIST, werr)) {
-		return DNS_RCODE_NXDOMAIN;
-	} else if (W_ERROR_EQUAL(DNS_ERR(NOT_IMPLEMENTED), werr)) {
-		return DNS_RCODE_NOTIMP;
-	} else if (W_ERROR_EQUAL(DNS_ERR(REFUSED), werr)) {
-		return DNS_RCODE_REFUSED;
-	} else if (W_ERROR_EQUAL(DNS_ERR(YXDOMAIN), werr)) {
-		return DNS_RCODE_YXDOMAIN;
-	} else if (W_ERROR_EQUAL(DNS_ERR(YXRRSET), werr)) {
-		return DNS_RCODE_YXRRSET;
-	} else if (W_ERROR_EQUAL(DNS_ERR(NXRRSET), werr)) {
-		return DNS_RCODE_NXRRSET;
-	} else if (W_ERROR_EQUAL(DNS_ERR(NOTAUTH), werr)) {
-		return DNS_RCODE_NOTAUTH;
-	} else if (W_ERROR_EQUAL(DNS_ERR(NOTZONE), werr)) {
-		return DNS_RCODE_NOTZONE;
-	} else if (W_ERROR_EQUAL(DNS_ERR(BADKEY), werr)) {
-		return DNS_RCODE_BADKEY;
-	}
-	DEBUG(5, ("No mapping exists for %s\n", win_errstr(werr)));
-	return DNS_RCODE_SERVFAIL;
-}
-
 bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
 {
 	size_t zl = strlen(zone);
