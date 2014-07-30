@@ -980,6 +980,8 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 				continue;
 			}
 		}
+
+		talloc_free(el_ctx);
 	}
 
 	talloc_free(tmp_ctx);
