@@ -25,4 +25,17 @@
 uint8_t werr_to_dns_err(WERROR werr);
 #define DNS_ERR(err_str) WERR_DNS_ERROR_RCODE_##err_str
 
+struct ldb_message_element;
+
+WERROR dns_common_extract(const struct ldb_message_element *el,
+			  TALLOC_CTX *mem_ctx,
+			  struct dnsp_DnssrvRpcRecord **records,
+			  uint16_t *num_records);
+
+WERROR dns_common_lookup(struct ldb_context *samdb,
+			 TALLOC_CTX *mem_ctx,
+			 struct ldb_dn *dn,
+			 struct dnsp_DnssrvRpcRecord **records,
+			 uint16_t *num_records);
+
 #endif /* __DNSSERVER_COMMON_H__ */

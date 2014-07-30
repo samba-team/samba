@@ -66,3 +66,81 @@ uint8_t werr_to_dns_err(WERROR werr)
 	DEBUG(5, ("No mapping exists for %s\n", win_errstr(werr)));
 	return DNS_RCODE_SERVFAIL;
 }
+
+WERROR dns_common_extract(const struct ldb_message_element *el,
+			  TALLOC_CTX *mem_ctx,
+			  struct dnsp_DnssrvRpcRecord **records,
+			  uint16_t *num_records)
+{
+	uint16_t ri;
+	struct dnsp_DnssrvRpcRecord *recs;
+
+	*records = NULL;
+	*num_records = 0;
+
+	recs = talloc_zero_array(mem_ctx, struct dnsp_DnssrvRpcRecord,
+				 el->num_values);
+	if (recs == NULL) {
+		return WERR_NOMEM;
+	}
+	for (ri = 0; ri < el->num_values; ri++) {
+		struct ldb_val *v = &el->values[ri];
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_pull_struct_blob(v, recs, &recs[ri],
+				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			TALLOC_FREE(recs);
+			DEBUG(0, ("Failed to grab dnsp_DnssrvRpcRecord\n"));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+	}
+	*records = recs;
+	*num_records = el->num_values;
+	return WERR_OK;
+}
+
+WERROR dns_common_lookup(struct ldb_context *samdb,
+			 TALLOC_CTX *mem_ctx,
+			 struct ldb_dn *dn,
+			 struct dnsp_DnssrvRpcRecord **records,
+			 uint16_t *num_records)
+{
+	static const char * const attrs[] = {
+		"dnsRecord",
+		NULL
+	};
+	int ret;
+	WERROR werr;
+	struct ldb_message *msg = NULL;
+	struct ldb_message_element *el;
+
+	*records = NULL;
+	*num_records = 0;
+
+	ret = dsdb_search_one(samdb, mem_ctx, &msg, dn,
+			      LDB_SCOPE_BASE, attrs, 0,
+			      "(objectClass=dnsNode)");
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+	}
+	if (ret != LDB_SUCCESS) {
+		/* TODO: we need to check if there's a glue record we need to
+		 * create a referral to */
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	if (el == NULL) {
+		TALLOC_FREE(msg);
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	werr = dns_common_extract(el, mem_ctx, records, num_records);
+	TALLOC_FREE(msg);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	return WERR_OK;
+}
