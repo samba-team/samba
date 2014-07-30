@@ -1300,32 +1300,15 @@ static isc_result_t b9_add_record(struct dlz_bind9_data *state, const char *name
 				  struct ldb_dn *dn,
 				  struct dnsp_DnssrvRpcRecord *rec)
 {
-	struct ldb_message *msg;
-	enum ndr_err_code ndr_err;
-	struct ldb_val v;
-	int ret;
+	WERROR werr;
 
-	msg = ldb_msg_new(rec);
-	if (msg == NULL) {
-		return ISC_R_NOMEMORY;
-	}
-	msg->dn = dn;
-	ret = ldb_msg_add_string(msg, "objectClass", "dnsNode");
-	if (ret != LDB_SUCCESS) {
-		return ISC_R_FAILURE;
-	}
-
-	ndr_err = ndr_push_struct_blob(&v, rec, rec, (ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ISC_R_FAILURE;
-	}
-	ret = ldb_msg_add_value(msg, "dnsRecord", &v, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ISC_R_FAILURE;
-	}
-
-	ret = ldb_add(state->samdb, msg);
-	if (ret != LDB_SUCCESS) {
+	werr = dns_common_replace(state->samdb, rec, dn,
+				  true,/* needs_add */
+				  state->soa_serial,
+				  rec, 1);
+	if (!W_ERROR_IS_OK(werr)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to add %s - %s",
+			   ldb_dn_get_linearized(dn), win_errstr(werr));
 		return ISC_R_FAILURE;
 	}
 
@@ -1465,7 +1448,6 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	struct ldb_message_element *el;
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
 	uint16_t num_recs = 0;
-	enum ndr_err_code ndr_err;
 	NTTIME t;
 	WERROR werr;
 
@@ -1484,7 +1466,6 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	t /= 3600;         /* convert to hours */
 
 	rec->rank        = DNS_RANK_ZONE;
-	rec->dwSerial    = state->soa_serial;
 	rec->dwTimeStamp = (uint32_t)t;
 
 	if (!b9_parse(state, rdatastr, rec)) {
@@ -1543,25 +1524,26 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 			break;
 		}
 	}
-	if (i == el->num_values) {
-		/* adding a new value */
-		el->values = talloc_realloc(el, el->values, struct ldb_val, el->num_values+1);
-		if (el->values == NULL) {
-			talloc_free(rec);
-			return ISC_R_NOMEMORY;
-		}
-		el->num_values++;
-	}
-
-	ndr_err = ndr_push_struct_blob(&el->values[i], rec, rec,
-				       (ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to push dnsRecord for %s",
-			   ldb_dn_get_linearized(dn));
+	if (i == UINT16_MAX) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to already %u dnsRecord values for %s",
+			   i, ldb_dn_get_linearized(dn));
 		talloc_free(rec);
 		return ISC_R_FAILURE;
 	}
 
+	if (i == num_recs) {
+		/* adding a new value */
+		recs = talloc_realloc(rec, recs,
+				      struct dnsp_DnssrvRpcRecord,
+				      num_recs + 1);
+		if (recs == NULL) {
+			talloc_free(rec);
+			return ISC_R_NOMEMORY;
+		}
+		num_recs++;
+	}
+
+	recs[i] = *rec;
 
 	if (!b9_set_session_info(state, name)) {
 		talloc_free(rec);
@@ -1569,12 +1551,14 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	/* modify the record */
-	el->flags = LDB_FLAG_MOD_REPLACE;
-	ret = ldb_modify(state->samdb, res->msgs[0]);
+	werr = dns_common_replace(state->samdb, rec, dn,
+				  false,/* needs_add */
+				  state->soa_serial,
+				  recs, num_recs);
 	b9_reset_session_info(state);
-	if (ret != LDB_SUCCESS) {
+	if (!W_ERROR_IS_OK(werr)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
-			   ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
+			   ldb_dn_get_linearized(dn), win_errstr(werr));
 		talloc_free(rec);
 		return ISC_R_FAILURE;
 	}
@@ -1652,35 +1636,31 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 
 	for (i=0; i < num_recs; i++) {
 		if (b9_record_match(state, rec, &recs[i])) {
+			recs[i] = (struct dnsp_DnssrvRpcRecord) {
+				.wType = DNS_TYPE_TOMBSTONE,
+			};
 			break;
 		}
 	}
-	if (i == el->num_values) {
+	if (i == num_recs) {
 		talloc_free(rec);
 		return ISC_R_NOTFOUND;
 	}
-
-	if (i < el->num_values-1) {
-		memmove(&el->values[i], &el->values[i+1], sizeof(el->values[0])*((el->num_values-1)-i));
-	}
-	el->num_values--;
 
 	if (!b9_set_session_info(state, name)) {
 		talloc_free(rec);
 		return ISC_R_FAILURE;
 	}
 
-	if (el->num_values == 0) {
-		el->flags = LDB_FLAG_MOD_DELETE;
-	} else {
-		el->flags = LDB_FLAG_MOD_REPLACE;
-	}
-	ret = ldb_modify(state->samdb, res->msgs[0]);
-
+	/* modify the record */
+	werr = dns_common_replace(state->samdb, rec, dn,
+				  false,/* needs_add */
+				  state->soa_serial,
+				  recs, num_recs);
 	b9_reset_session_info(state);
-	if (ret != LDB_SUCCESS) {
+	if (!W_ERROR_IS_OK(werr)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
-			   ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
+			   ldb_dn_get_linearized(dn), win_errstr(werr));
 		talloc_free(rec);
 		return ISC_R_FAILURE;
 	}
@@ -1705,7 +1685,6 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 	const char *attrs[] = { "dnsRecord", NULL };
 	int ret;
 	struct ldb_message_element *el;
-	int vi = 0;
 	enum dns_record_type dns_type;
 	bool found = false;
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
@@ -1757,17 +1736,13 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 
 	for (ri=0; ri < num_recs; ri++) {
 		if (dns_type != recs[ri].wType) {
-			vi += 1;
 			continue;
 		}
 
 		found = true;
-
-		if (vi < el->num_values-1) {
-			memmove(&el->values[vi], &el->values[vi+1],
-				sizeof(el->values[0])*((el->num_values-1)-vi));
-		}
-		el->num_values--;
+		recs[ri] = (struct dnsp_DnssrvRpcRecord) {
+			.wType = DNS_TYPE_TOMBSTONE,
+		};
 	}
 
 	if (!found) {
@@ -1780,17 +1755,15 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 		return ISC_R_FAILURE;
 	}
 
-	if (el->num_values == 0) {
-		el->flags = LDB_FLAG_MOD_DELETE;
-	} else {
-		el->flags = LDB_FLAG_MOD_REPLACE;
-	}
-	ret = ldb_modify(state->samdb, res->msgs[0]);
-
+	/* modify the record */
+	werr = dns_common_replace(state->samdb, tmp_ctx, dn,
+				  false,/* needs_add */
+				  state->soa_serial,
+				  recs, num_recs);
 	b9_reset_session_info(state);
-	if (ret != LDB_SUCCESS) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to delete type %s in %s - %s",
-			   type, ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
+	if (!W_ERROR_IS_OK(werr)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
+			   ldb_dn_get_linearized(dn), win_errstr(werr));
 		talloc_free(tmp_ctx);
 		return ISC_R_FAILURE;
 	}
