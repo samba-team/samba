@@ -312,7 +312,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		if ((conn->share_access & FILE_WRITE_DATA) == 0) {
 			if ((conn->share_access & FILE_READ_DATA) == 0) {
 				/* No access, read or write. */
-				DEBUG(0,("create_conn_struct: connection to %s "
+				DEBUG(3,("create_conn_struct: connection to %s "
 					 "denied due to security "
 					 "descriptor.\n",
 					 servicename));
