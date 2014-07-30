@@ -1607,4 +1607,7 @@ struct lock_request *ctdb_lock_alldb(struct ctdb_context *ctdb,
 int mkdir_p(const char *dir, int mode);
 void mkdir_p_or_die(const char *dir, int mode);
 
+ssize_t sys_read(int fd, void *buf, size_t count);
+ssize_t sys_write(int fd, const void *buf, size_t count);
+
 #endif
