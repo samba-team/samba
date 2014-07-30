@@ -37,7 +37,7 @@
 #include "messaging/messaging.h"
 #include "lib/cmdline/popt_common.h"
 #include "dlz_minimal.h"
-
+#include "dns_server/dnsserver_common.h"
 
 struct b9_options {
 	const char *url;
@@ -801,11 +801,10 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 				     const char **types)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
-	const char *attrs[] = { "dnsRecord", NULL };
-	int ret = LDB_SUCCESS, i;
-	struct ldb_result *res;
-	struct ldb_message_element *el;
 	struct ldb_dn *dn;
+	WERROR werr = WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+	struct dnsp_DnssrvRpcRecord *records = NULL;
+	uint16_t num_records = 0, i;
 
 	for (i=0; zone_prefixes[i]; i++) {
 		dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->samdb));
@@ -819,38 +818,21 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 			return ISC_R_NOMEMORY;
 		}
 
-		ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
-				 attrs, "objectClass=dnsNode");
-		if (ret == LDB_SUCCESS) {
+		werr = dns_common_lookup(state->samdb, tmp_ctx, dn,
+					 &records, &num_records, NULL);
+		if (W_ERROR_IS_OK(werr)) {
 			break;
 		}
 	}
-	if (ret != LDB_SUCCESS || res->count == 0) {
+	if (!W_ERROR_IS_OK(werr)) {
 		talloc_free(tmp_ctx);
 		return ISC_R_NOTFOUND;
 	}
 
-	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
-	if (el == NULL || el->num_values == 0) {
-		talloc_free(tmp_ctx);
-		return ISC_R_NOTFOUND;
-	}
-
-	for (i=0; i<el->num_values; i++) {
-		struct dnsp_DnssrvRpcRecord rec;
-		enum ndr_err_code ndr_err;
+	for (i=0; i < num_records; i++) {
 		isc_result_t result;
 
-		ndr_err = ndr_pull_struct_blob(&el->values[i], tmp_ctx, &rec,
-					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
-				   ldb_dn_get_linearized(dn));
-			talloc_free(tmp_ctx);
-			return ISC_R_FAILURE;
-		}
-
-		result = b9_putrr(state, lookup, &rec, types);
+		result = b9_putrr(state, lookup, &records[i], types);
 		if (result != ISC_R_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return result;
@@ -1059,39 +1041,25 @@ _PUBLIC_ void dlz_closeversion(const char *zone, isc_boolean_t commit,
  */
 static bool b9_has_soa(struct dlz_bind9_data *state, struct ldb_dn *dn, const char *zone)
 {
-	const char *attrs[] = { "dnsRecord", NULL };
-	struct ldb_result *res;
-	struct ldb_message_element *el;
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
-	int ret, i;
+	WERROR werr;
+	struct dnsp_DnssrvRpcRecord *records = NULL;
+	uint16_t num_records = 0, i;
 
 	if (!ldb_dn_add_child_fmt(dn, "DC=@,DC=%s", zone)) {
 		talloc_free(tmp_ctx);
 		return false;
 	}
 
-	ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
-			 attrs, "objectClass=dnsNode");
-	if (ret != LDB_SUCCESS) {
+	werr = dns_common_lookup(state->samdb, tmp_ctx, dn,
+				 &records, &num_records, NULL);
+	if (!W_ERROR_IS_OK(werr)) {
 		talloc_free(tmp_ctx);
 		return false;
 	}
 
-	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
-	if (el == NULL) {
-		talloc_free(tmp_ctx);
-		return false;
-	}
-	for (i=0; i<el->num_values; i++) {
-		struct dnsp_DnssrvRpcRecord rec;
-		enum ndr_err_code ndr_err;
-
-		ndr_err = ndr_pull_struct_blob(&el->values[i], tmp_ctx, &rec,
-					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			continue;
-		}
-		if (rec.wType == DNS_TYPE_SOA) {
+	for (i=0; i < num_records; i++) {
+		if (records[i].wType == DNS_TYPE_SOA) {
 			talloc_free(tmp_ctx);
 			return true;
 		}
