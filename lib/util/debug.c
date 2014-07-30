@@ -215,7 +215,7 @@ char *debug_list_class_names_and_levels(void)
 	unsigned int i;
 	/* prepare strings */
 	for (i = 0; i < debug_num_classes; i++) {
-		buf = talloc_asprintf_append(buf, 
+		buf = talloc_asprintf_append(buf,
 					     "%s:%d%s",
 					     classname_table[i],
 					     DEBUGLEVEL_CLASS[i],
@@ -715,12 +715,12 @@ void check_log_size( void )
 		if (state.fd > 2 && (fstat(state.fd, &st) == 0
 				     && st.st_size > maxlog)) {
 			char *name = NULL;
-			
+
 			if (asprintf(&name, "%s.old", state.debugf ) < 0) {
 				return;
 			}
 			(void)rename(state.debugf, name);
-			
+
 			if (!reopen_logs_internal()) {
 				/* We failed to reopen a log - continue using the old name. */
 				(void)rename(name, state.debugf);
