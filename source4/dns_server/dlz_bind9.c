@@ -911,6 +911,9 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 		TALLOC_CTX *el_ctx = talloc_new(tmp_ctx);
 		const char *rdn, *name;
 		const struct ldb_val *v;
+		WERROR werr;
+		struct dnsp_DnssrvRpcRecord *recs = NULL;
+		uint16_t num_recs = 0;
 
 		el = ldb_msg_find_element(res->msgs[i], "dnsRecord");
 		if (el == NULL || el->num_values == 0) {
@@ -944,20 +947,18 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 			return ISC_R_NOMEMORY;
 		}
 
-		for (j=0; j<el->num_values; j++) {
-			struct dnsp_DnssrvRpcRecord rec;
-			enum ndr_err_code ndr_err;
+		werr = dns_common_extract(el, el_ctx, &recs, &num_recs);
+		if (!W_ERROR_IS_OK(werr)) {
+			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
+				   ldb_dn_get_linearized(dn), win_errstr(werr));
+			talloc_free(el_ctx);
+			continue;
+		}
+
+		for (j=0; j < num_recs; j++) {
 			isc_result_t result;
 
-			ndr_err = ndr_pull_struct_blob(&el->values[j], el_ctx, &rec,
-						       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
-					   ldb_dn_get_linearized(dn));
-				continue;
-			}
-
-			result = b9_putnamedrr(state, allnodes, name, &rec);
+			result = b9_putnamedrr(state, allnodes, name, &recs[j]);
 			if (result != ISC_R_SUCCESS) {
 				continue;
 			}
@@ -1462,8 +1463,11 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	const char *attrs[] = { "dnsRecord", NULL };
 	int ret, i;
 	struct ldb_message_element *el;
+	struct dnsp_DnssrvRpcRecord *recs = NULL;
+	uint16_t num_recs = 0;
 	enum ndr_err_code ndr_err;
 	NTTIME t;
+	WERROR werr;
 
 	if (state->transaction_token != (void*)version) {
 		state->log(ISC_LOG_INFO, "samba_dlz: bad transaction version");
@@ -1523,22 +1527,19 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		}
 	}
 
+	werr = dns_common_extract(el, rec, &recs, &num_recs);
+	if (!W_ERROR_IS_OK(werr)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
+			   ldb_dn_get_linearized(dn), win_errstr(werr));
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
 	/* there are existing records. We need to see if this will
 	 * replace a record or add to it
 	 */
-	for (i=0; i<el->num_values; i++) {
-		struct dnsp_DnssrvRpcRecord rec2;
-
-		ndr_err = ndr_pull_struct_blob(&el->values[i], rec, &rec2,
-					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
-				   ldb_dn_get_linearized(dn));
-			talloc_free(rec);
-			return ISC_R_FAILURE;
-		}
-
-		if (b9_record_match(state, rec, &rec2)) {
+	for (i=0; i < num_recs; i++) {
+		if (b9_record_match(state, rec, &recs[i])) {
 			break;
 		}
 	}
@@ -1597,7 +1598,9 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	const char *attrs[] = { "dnsRecord", NULL };
 	int ret, i;
 	struct ldb_message_element *el;
-	enum ndr_err_code ndr_err;
+	struct dnsp_DnssrvRpcRecord *recs = NULL;
+	uint16_t num_recs = 0;
+	WERROR werr;
 
 	if (state->transaction_token != (void*)version) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: bad transaction version");
@@ -1639,19 +1642,16 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 		return ISC_R_FAILURE;
 	}
 
-	for (i=0; i<el->num_values; i++) {
-		struct dnsp_DnssrvRpcRecord rec2;
+	werr = dns_common_extract(el, rec, &recs, &num_recs);
+	if (!W_ERROR_IS_OK(werr)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
+			   ldb_dn_get_linearized(dn), win_errstr(werr));
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
 
-		ndr_err = ndr_pull_struct_blob(&el->values[i], rec, &rec2,
-					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
-				   ldb_dn_get_linearized(dn));
-			talloc_free(rec);
-			return ISC_R_FAILURE;
-		}
-
-		if (b9_record_match(state, rec, &rec2)) {
+	for (i=0; i < num_recs; i++) {
+		if (b9_record_match(state, rec, &recs[i])) {
 			break;
 		}
 	}
@@ -1703,11 +1703,15 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 	isc_result_t result;
 	struct ldb_result *res;
 	const char *attrs[] = { "dnsRecord", NULL };
-	int ret, i;
+	int ret;
 	struct ldb_message_element *el;
-	enum ndr_err_code ndr_err;
+	int vi = 0;
 	enum dns_record_type dns_type;
 	bool found = false;
+	struct dnsp_DnssrvRpcRecord *recs = NULL;
+	uint16_t num_recs = 0;
+	uint16_t ri = 0;
+	WERROR werr;
 
 	if (state->transaction_token != (void*)version) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: bad transaction version");
@@ -1743,27 +1747,27 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 		return ISC_R_NOTFOUND;
 	}
 
-	for (i=0; i<el->num_values; i++) {
-		struct dnsp_DnssrvRpcRecord rec2;
+	werr = dns_common_extract(el, tmp_ctx, &recs, &num_recs);
+	if (!W_ERROR_IS_OK(werr)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
+			   ldb_dn_get_linearized(dn), win_errstr(werr));
+		talloc_free(tmp_ctx);
+		return ISC_R_FAILURE;
+	}
 
-		ndr_err = ndr_pull_struct_blob(&el->values[i], tmp_ctx, &rec2,
-					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
-				   ldb_dn_get_linearized(dn));
-			talloc_free(tmp_ctx);
-			return ISC_R_FAILURE;
+	for (ri=0; ri < num_recs; ri++) {
+		if (dns_type != recs[ri].wType) {
+			vi += 1;
+			continue;
 		}
 
-		if (dns_type == rec2.wType) {
-			if (i < el->num_values-1) {
-				memmove(&el->values[i], &el->values[i+1],
-					sizeof(el->values[0])*((el->num_values-1)-i));
-			}
-			el->num_values--;
-			i--;
-			found = true;
+		found = true;
+
+		if (vi < el->num_values-1) {
+			memmove(&el->values[vi], &el->values[vi+1],
+				sizeof(el->values[0])*((el->num_values-1)-vi));
 		}
+		el->num_values--;
 	}
 
 	if (!found) {
