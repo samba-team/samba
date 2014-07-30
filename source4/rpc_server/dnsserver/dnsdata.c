@@ -806,7 +806,7 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 				}
 			}
 			if (select_flag & DNS_RPC_VIEW_GLUE_DATA) {
-				if (dnsp_rec.rank == DNS_RANK_NS_GLUE) {
+				if (dnsp_rec.rank == DNS_RANK_GLUE) {
 					found = true;
 				}
 			}
