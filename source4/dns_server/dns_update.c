@@ -312,8 +312,6 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 	r->wType = rrec->rr_type;
 	r->dwTtlSeconds = rrec->ttl;
 	r->rank = DNS_RANK_ZONE;
-	/* TODO: Autogenerate this somehow */
-	r->dwSerial = 110;
 
 	/* If we get QCLASS_ANY, we're done here */
 	if (rrec->rr_class == DNS_QCLASS_ANY) {

@@ -144,3 +144,81 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 
 	return WERR_OK;
 }
+
+WERROR dns_common_replace(struct ldb_context *samdb,
+			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn *dn,
+			  bool needs_add,
+			  uint32_t serial,
+			  struct dnsp_DnssrvRpcRecord *records,
+			  uint16_t rec_count)
+{
+	struct ldb_message_element *el;
+	uint16_t i;
+	int ret;
+	struct ldb_message *msg = NULL;
+
+	msg = ldb_msg_new(mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(msg);
+
+	msg->dn = dn;
+
+	ret = ldb_msg_add_empty(msg, "dnsRecord", LDB_FLAG_MOD_REPLACE, &el);
+	if (ret != LDB_SUCCESS) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	el->values = talloc_zero_array(el, struct ldb_val, rec_count);
+	if (rec_count > 0) {
+		W_ERROR_HAVE_NO_MEMORY(el->values);
+	}
+
+	for (i = 0; i < rec_count; i++) {
+		static const struct dnsp_DnssrvRpcRecord zero;
+		struct ldb_val *v = &el->values[el->num_values];
+		enum ndr_err_code ndr_err;
+
+		if (memcmp(&records[i], &zero, sizeof(zero)) == 0) {
+			continue;
+		}
+
+		records[i].dwSerial = serial;
+		ndr_err = ndr_push_struct_blob(v, el->values, &records[i],
+				(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("Failed to push dnsp_DnssrvRpcRecord\n"));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+		el->num_values++;
+	}
+
+	if (needs_add) {
+		if (el->num_values == 0) {
+			return WERR_OK;
+		}
+
+		ret = ldb_msg_add_string(msg, "objectClass", "dnsNode");
+		if (ret != LDB_SUCCESS) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		ret = ldb_add(samdb, msg);
+		if (ret != LDB_SUCCESS) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		return WERR_OK;
+	}
+
+	if (el->num_values == 0) {
+		el->flags = LDB_FLAG_MOD_DELETE;
+	}
+
+	ret = ldb_modify(samdb, msg);
+	if (ret != LDB_SUCCESS) {
+		NTSTATUS nt = dsdb_ldb_err_to_ntstatus(ret);
+		return ntstatus_to_werror(nt);
+	}
+
+	return WERR_OK;
+}
