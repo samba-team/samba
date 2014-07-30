@@ -2807,12 +2807,12 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	}
 
 ipreallocated:
-	/* 
+	/*
 	 * Tell all nodes to run eventscripts to process the
 	 * "ipreallocated" event.  This can do a lot of things,
 	 * including restarting services to reconfigure them if public
 	 * IPs have moved.  Once upon a time this event only used to
-	 * update natwg.
+	 * update natgw.
 	 */
 	retry_data = talloc_zero_array(tmp_ctx, bool, nodemap->num);
 	CTDB_NO_MEMORY_FATAL(ctdb, retry_data);
