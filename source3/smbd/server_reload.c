@@ -143,11 +143,7 @@ bool reload_services(struct smbd_server_connection *sconn,
 
 	lp_killunused(sconn, snumused);
 
-	ret = lp_load(get_dyn_CONFIGFILE(),
-		      false, /* global only */
-		      false, /* save defaults */
-		      true,  /* add_ipc */
-		      true); /* initialize globals */
+	ret = lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	/* perhaps the config filename is now set */
 	if (!test) {
