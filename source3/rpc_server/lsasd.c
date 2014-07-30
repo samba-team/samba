@@ -116,7 +116,7 @@ static void lsasd_smb_conf_updated(struct messaging_context *msg,
 	ev_ctx = talloc_get_type_abort(private_data, struct tevent_context);
 
 	change_to_root_user();
-	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	lsasd_reopen_logs(lsasd_child_id);
 	if (lsasd_child_id == 0) {
@@ -166,7 +166,7 @@ static void lsasd_sig_hup_handler(struct tevent_context *ev,
 {
 
 	change_to_root_user();
-	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	lsasd_reopen_logs(lsasd_child_id);
 	pfh_daemon_config(DAEMON_NAME,
