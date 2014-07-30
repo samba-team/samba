@@ -954,7 +954,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	/* Ensure we don't lose any real errno value. */
 	int old_errno = errno;
 	bool verbose = false;
-	char header_str[200];
+	char header_str[300];
 	size_t hs_len;
 	struct timeval tv;
 	struct timeval_buf tvbuf;
