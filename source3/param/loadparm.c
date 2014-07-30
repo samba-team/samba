@@ -3830,13 +3830,11 @@ bool lp_load_initial_only(const char *pszFname)
  */
 bool lp_load_global(const char *file_name)
 {
-	return lp_load_ex(file_name,
-			  true,   /* global_only */
-			  false,  /* save_defaults */
-			  false,  /* add_ipc */
-			  true,   /* initialize_globals */
-			  true,   /* allow_include_registry */
-			  false); /* load_all_shares*/
+	return lp_load(file_name,
+		       true,   /* global_only */
+		       false,  /* save_defaults */
+		       false,  /* add_ipc */
+		       true);  /* initialize_globals */
 }
 
 /**
