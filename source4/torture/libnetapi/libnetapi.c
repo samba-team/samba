@@ -33,7 +33,7 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 	struct libnetapi_ctx *ctx;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!lp_load(lpcfg_configfile(tctx->lp_ctx), true, false, false, true)) {
+	if (!lp_load_global(lpcfg_configfile(tctx->lp_ctx))) {
 		fprintf(stderr, "error loading %s\n", lpcfg_configfile(tctx->lp_ctx));
 		talloc_free(frame);
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
