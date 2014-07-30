@@ -250,38 +250,4 @@ typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg)
  */
 void debug_set_callback(void *private_ptr, debug_callback_fn fn);
 
-/**
-  log suspicious usage - print comments and backtrace
-*/	
-_PUBLIC_ void log_suspicious_usage(const char *from, const char *info);
-
-/**
-  print suspicious usage - print comments and backtrace
-*/	
-_PUBLIC_ void print_suspicious_usage(const char* from, const char* info);
-_PUBLIC_ uint32_t get_task_id(void);
-_PUBLIC_ void log_task_id(void);
-
-/* the debug operations structure - contains function pointers to
-   various debug implementations of each operation */
-struct debug_ops {
-	/* function to log (using DEBUG) suspicious usage of data structure */
-	void (*log_suspicious_usage)(const char* from, const char* info);
-
-	/* function to log (using printf) suspicious usage of data structure.
-	 * To be used in circumstances when using DEBUG would cause loop. */
-	void (*print_suspicious_usage)(const char* from, const char* info);
-
-	/* function to return process/thread id */
-	uint32_t (*get_task_id)(void);
-
-	/* function to log process/thread id */
-	void (*log_task_id)(int fd);
-};
-
-/**
-  register a set of debug handlers. 
-*/
-_PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
-
 #endif
