@@ -431,6 +431,7 @@ static int uwrap_new_id(pthread_t tid, bool do_alloc)
 
 		id->groups = malloc(sizeof(gid_t) * 1);
 		if (id->groups == NULL) {
+			SAFE_FREE(id);
 			errno = ENOMEM;
 			return -1;
 		}
