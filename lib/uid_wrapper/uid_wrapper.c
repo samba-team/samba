@@ -49,6 +49,13 @@
 #define DESTRUCTOR_ATTRIBUTE
 #endif /* HAVE_DESTRUCTOR_ATTRIBUTE */
 
+/* GCC have printf type attribute check. */
+#ifdef HAVE_FUNCTION_ATTRIBUTE_FORMAT
+#define PRINTF_ATTRIBUTE(a,b) __attribute__ ((__format__ (__printf__, a, b)))
+#else
+#define PRINTF_ATTRIBUTE(a,b)
+#endif /* HAVE_FUNCTION_ATTRIBUTE_FORMAT */
+
 #ifdef NDEBUG
 #define UWRAP_DEBUG(...)
 #else

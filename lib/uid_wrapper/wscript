@@ -38,6 +38,18 @@ def configure(conf):
             addmain=False,
             msg='Checking for library destructor support')
 
+        # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
+        conf.CHECK_CODE('''
+            void log_fn(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_FUNCTION_ATTRIBUTE_FORMAT',
+            addmain=False,
+            msg='Checking for printf format validation support')
+
         # Create full path to uid_wrapper
         srcdir = os.path.realpath(conf.srcdir)
         libuid_wrapper_so_path = srcdir + '/bin/default/lib/uid_wrapper/libuid-wrapper.so'
