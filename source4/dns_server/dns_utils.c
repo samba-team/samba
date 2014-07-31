@@ -154,7 +154,8 @@ WERROR dns_lookup_records(struct dns_server *dns,
 			  struct dnsp_DnssrvRpcRecord **records,
 			  uint16_t *rec_count)
 {
-	return dns_common_lookup(dns->samdb, mem_ctx, dn, records, rec_count);
+	return dns_common_lookup(dns->samdb, mem_ctx, dn,
+				 records, rec_count, NULL);
 }
 
 WERROR dns_replace_records(struct dns_server *dns,
