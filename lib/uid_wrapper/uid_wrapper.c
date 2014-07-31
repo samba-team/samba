@@ -490,12 +490,14 @@ static int uwrap_new_id(pthread_t tid, bool do_alloc)
 	if (do_alloc) {
 		id = malloc(sizeof(struct uwrap_thread));
 		if (id == NULL) {
+			UWRAP_LOG(UWRAP_LOG_ERROR, "Unable to allocate memory");
 			errno = ENOMEM;
 			return -1;
 		}
 
 		id->groups = malloc(sizeof(gid_t) * 1);
 		if (id->groups == NULL) {
+			UWRAP_LOG(UWRAP_LOG_ERROR, "Unable to allocate memory");
 			SAFE_FREE(id);
 			errno = ENOMEM;
 			return -1;
