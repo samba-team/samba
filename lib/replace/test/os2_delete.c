@@ -22,7 +22,7 @@
 
 static int test_readdir_os2_delete_ret;
 
-#define FAILED(d) (printf("failure: readdir [\nFailed for %s - %d = %s\n]\n", d, errno, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
+#define FAILED(d) (printf("failure: readdir [\nFailed for %s - %d = %s\n]\n", d, errno, strerror(errno)), test_readdir_os2_delete_ret = 1)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
