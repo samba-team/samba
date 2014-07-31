@@ -82,6 +82,9 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 			/*
 			 */
 			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
+				return DNS_ERR(NAME_ERROR);
+			}
 			W_ERROR_NOT_OK_RETURN(werror);
 
 			if (acount == 0) {
@@ -91,6 +94,9 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 			/*
 			 */
 			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
+				return DNS_ERR(NXRRSET);
+			}
 			if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
 				return DNS_ERR(NXRRSET);
 			}
@@ -131,10 +137,11 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 			/*
 			 */
 			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
+				werror = WERR_OK;
+			}
 			if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
 				werror = WERR_OK;
-				ans = NULL;
-				acount = 0;
 			}
 
 			for (i = 0; i < acount; i++) {
@@ -163,6 +170,9 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 	*final_result = false;
 
 	werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+	if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
+		return DNS_ERR(NXRRSET);
+	}
 	if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
 		return DNS_ERR(NXRRSET);
 	}
@@ -421,10 +431,11 @@ static WERROR handle_one_update(struct dns_server *dns,
 	W_ERROR_NOT_OK_RETURN(werror);
 
 	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rcount);
-	if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
-		recs = NULL;
-		rcount = 0;
+	if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
 		needs_add = true;
+		werror = WERR_OK;
+	}
+	if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
 		werror = WERR_OK;
 	}
 	W_ERROR_NOT_OK_RETURN(werror);

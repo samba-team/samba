@@ -194,8 +194,14 @@ WERROR dns_lookup_records(struct dns_server *dns,
 	struct ldb_message *msg = NULL;
 	struct dnsp_DnssrvRpcRecord *recs;
 
+	*records = NULL;
+	*rec_count = 0;
+
 	ret = dsdb_search_one(dns->samdb, mem_ctx, &msg, dn,
 			      LDB_SCOPE_BASE, attrs, 0, "%s", "(objectClass=dnsNode)");
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+	}
 	if (ret != LDB_SUCCESS) {
 		/* TODO: we need to check if there's a glue record we need to
 		 * create a referral to */
@@ -204,8 +210,6 @@ WERROR dns_lookup_records(struct dns_server *dns,
 
 	el = ldb_msg_find_element(msg, attrs[0]);
 	if (el == NULL) {
-		*records = NULL;
-		*rec_count = 0;
 		return DNS_ERR(NAME_ERROR);
 	}
 
@@ -278,13 +282,8 @@ WERROR dns_replace_records(struct dns_server *dns,
 		if (needs_add) {
 			return WERR_OK;
 		}
-		/* No entries left, delete the dnsNode object */
-		ret = ldb_delete(dns->samdb, msg->dn);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Deleting record failed; %d\n", ret));
-			return DNS_ERR(SERVER_FAILURE);
-		}
-		return WERR_OK;
+		/* TODO: Delete object? */
+		el->flags = LDB_FLAG_MOD_DELETE;
 	}
 
 	if (needs_add) {
