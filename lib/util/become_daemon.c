@@ -27,53 +27,11 @@
 #if HAVE_SYSTEMD
 #include <systemd/sd-daemon.h>
 #endif
+#include "lib/util/close_low_fd.h"
 
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
-
-_PUBLIC_ int close_low_fd(int fd)
-{
-#ifndef VALGRIND
-	int ret, dev_null;
-
-	dev_null = open("/dev/null", O_RDWR, 0);
-
-	if ((dev_null == -1) && (errno = ENFILE)) {
-		/*
-		 * Try to free up an fd
-		 */
-		ret = close(fd);
-		if (ret != 0) {
-			return errno;
-		}
-	}
-
-	dev_null = open("/dev/null", O_RDWR, 0);
-	if (dev_null == -1) {
-		dev_null = open("/dev/null", O_WRONLY, 0);
-	}
-	if (dev_null == -1) {
-		return errno;
-	}
-
-	if (dev_null == fd) {
-		/*
-		 * This can happen in the ENFILE case above
-		 */
-		return 0;
-	}
-
-	ret = dup2(dev_null, fd);
-	if (ret == -1) {
-		int err = errno;
-		close(dev_null);
-		return err;
-	}
-	close(dev_null);
-#endif
-	return 0;
-}
 
 _PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 {

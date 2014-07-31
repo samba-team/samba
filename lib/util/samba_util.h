@@ -836,13 +836,6 @@ _PUBLIC_ void *idr_find(struct idr_context *idp, int id);
 */
 _PUBLIC_ int idr_remove(struct idr_context *idp, int id);
 
-/* The following definitions come from lib/util/become_daemon.c  */
-
-/**
- Close a fd and open dev/null in its place
-**/
-_PUBLIC_ int close_low_fd(int fd);
-
 /**
  Close the low 3 fd's and open dev/null in their place
 **/

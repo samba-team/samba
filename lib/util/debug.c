@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "system/syslog.h"
 #include "lib/util/time_basic.h"
+#include "lib/util/close_low_fd.h"
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
