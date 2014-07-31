@@ -56,12 +56,6 @@
 #define PRINTF_ATTRIBUTE(a,b)
 #endif /* HAVE_FUNCTION_ATTRIBUTE_FORMAT */
 
-#ifdef NDEBUG
-#define UWRAP_DEBUG(...)
-#else
-#define UWRAP_DEBUG(...) fprintf(stderr, __VA_ARGS__)
-#endif
-
 #define UWRAP_DLIST_ADD(list,item) do { \
 	if (!(list)) { \
 		(item)->prev	= NULL; \
@@ -96,6 +90,70 @@
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
 #endif
+
+/*****************
+ * LOGGING
+ *****************/
+
+enum uwrap_dbglvl_e {
+	UWRAP_LOG_ERROR = 0,
+	UWRAP_LOG_WARN,
+	UWRAP_LOG_DEBUG,
+	UWRAP_LOG_TRACE
+};
+
+#ifdef NDEBUG
+# define UWRAP_LOG(...)
+#else /* NDEBUG */
+static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
+# define UWRAP_LOG(dbglvl, ...) uwrap_log((dbglvl), __VA_ARGS__)
+
+static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *format, ...)
+{
+	char buffer[1024];
+	va_list va;
+	const char *d;
+	unsigned int lvl = 0;
+
+	d = getenv("UID_WRAPPER_DEBUGLEVEL");
+	if (d != NULL) {
+		lvl = atoi(d);
+	}
+
+	va_start(va, format);
+	vsnprintf(buffer, sizeof(buffer), format, va);
+	va_end(va);
+
+	if (lvl >= dbglvl) {
+		switch (dbglvl) {
+			case UWRAP_LOG_ERROR:
+				fprintf(stderr,
+					"UWRAP_ERROR(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+			case UWRAP_LOG_WARN:
+				fprintf(stderr,
+					"UWRAP_WARN(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+			case UWRAP_LOG_DEBUG:
+				fprintf(stderr,
+					"UWRAP_DEBUG(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+			case UWRAP_LOG_TRACE:
+				fprintf(stderr,
+					"UWRAP_TRACE(%d): %s\n",
+					(int)getpid(), buffer);
+				break;
+		}
+	}
+}
+#endif /* NDEBUG */
+
+/*****************
+ * LIBC
+ *****************/
 
 #define LIBC_NAME "libc.so"
 
@@ -1117,8 +1175,9 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			}
 			break;
 		default:
-			UWRAP_DEBUG("UID_WRAPPER calling non-wrapped syscall "
-				    "%lu\n", sysno);
+			UWRAP_LOG(UWRAP_LOG_DEBUG,
+				  "UID_WRAPPER calling non-wrapped syscall %lu\n",
+				  sysno);
 
 			rc = libc_vsyscall(sysno, vp);
 			break;
