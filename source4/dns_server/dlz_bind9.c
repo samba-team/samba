@@ -1292,29 +1292,6 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	return ISC_TRUE;
 }
 
-
-/*
-  add a new record
- */
-static isc_result_t b9_add_record(struct dlz_bind9_data *state, const char *name,
-				  struct ldb_dn *dn,
-				  struct dnsp_DnssrvRpcRecord *rec)
-{
-	WERROR werr;
-
-	werr = dns_common_replace(state->samdb, rec, dn,
-				  true,/* needs_add */
-				  state->soa_serial,
-				  rec, 1);
-	if (!W_ERROR_IS_OK(werr)) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to add %s - %s",
-			   ldb_dn_get_linearized(dn), win_errstr(werr));
-		return ISC_R_FAILURE;
-	}
-
-	return ISC_R_SUCCESS;
-}
-
 /*
   see if two DNS names are the same
  */
@@ -1442,12 +1419,12 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	struct dnsp_DnssrvRpcRecord *rec;
 	struct ldb_dn *dn;
 	isc_result_t result;
-	struct ldb_result *res;
-	const char *attrs[] = { "dnsRecord", NULL };
-	int ret, i;
-	struct ldb_message_element *el;
+	bool tombstoned = false;
+	bool needs_add = false;
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
 	uint16_t num_recs = 0;
+	uint16_t first = 0;
+	uint16_t i;
 	NTTIME t;
 	WERROR werr;
 
@@ -1482,33 +1459,12 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	/* get any existing records */
-	ret = ldb_search(state->samdb, rec, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsNode");
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		if (!b9_set_session_info(state, name)) {
-			talloc_free(rec);
-			return ISC_R_FAILURE;
-		}
-		result = b9_add_record(state, name, dn, rec);
-		b9_reset_session_info(state);
-		talloc_free(rec);
-		if (result == ISC_R_SUCCESS) {
-			state->log(ISC_LOG_INFO, "samba_dlz: added %s %s", name, rdatastr);
-		}
-		return result;
+	werr = dns_common_lookup(state->samdb, rec, dn,
+				 &recs, &num_recs, &tombstoned);
+	if (W_ERROR_EQUAL(werr, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
+		needs_add = true;
+		werr = WERR_OK;
 	}
-
-	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
-	if (el == NULL) {
-		ret = ldb_msg_add_empty(res->msgs[0], "dnsRecord", LDB_FLAG_MOD_ADD, &el);
-		if (ret != LDB_SUCCESS) {
-			state->log(ISC_LOG_ERROR, "samba_dlz: failed to add dnsRecord for %s",
-				   ldb_dn_get_linearized(dn));
-			talloc_free(rec);
-			return ISC_R_FAILURE;
-		}
-	}
-
-	werr = dns_common_extract(el, rec, &recs, &num_recs);
 	if (!W_ERROR_IS_OK(werr)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
 			   ldb_dn_get_linearized(dn), win_errstr(werr));
@@ -1516,10 +1472,18 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		return ISC_R_FAILURE;
 	}
 
+	if (tombstoned) {
+		/*
+		 * we need to keep the existing tombstone record
+		 * and ignore it
+		 */
+		first = num_recs;
+	}
+
 	/* there are existing records. We need to see if this will
 	 * replace a record or add to it
 	 */
-	for (i=0; i < num_recs; i++) {
+	for (i=first; i < num_recs; i++) {
 		if (b9_record_match(state, rec, &recs[i])) {
 			break;
 		}
@@ -1552,12 +1516,13 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 
 	/* modify the record */
 	werr = dns_common_replace(state->samdb, rec, dn,
-				  false,/* needs_add */
+				  needs_add,
 				  state->soa_serial,
 				  recs, num_recs);
 	b9_reset_session_info(state);
 	if (!W_ERROR_IS_OK(werr)) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to %s %s - %s",
+			   needs_add ? "add" : "modify",
 			   ldb_dn_get_linearized(dn), win_errstr(werr));
 		talloc_free(rec);
 		return ISC_R_FAILURE;
