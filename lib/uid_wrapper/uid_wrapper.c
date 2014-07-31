@@ -1162,6 +1162,7 @@ void uwrap_destructor(void)
 {
 	struct uwrap_thread *u = uwrap.ids;
 
+	pthread_mutex_lock(&uwrap_id_mutex);
 	while (u != NULL) {
 		UWRAP_DLIST_REMOVE(uwrap.ids, u);
 
@@ -1170,6 +1171,7 @@ void uwrap_destructor(void)
 
 		u = uwrap.ids;
 	}
+	pthread_mutex_unlock(&uwrap_id_mutex);
 
 	if (uwrap.libc.handle != NULL) {
 		dlclose(uwrap.libc.handle);
