@@ -3825,6 +3825,84 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 	return ret;
 }
 
+static void get_capabilities_callback(struct ctdb_context *ctdb,
+				      uint32_t node_pnn, int32_t res,
+				      TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_node_capabilities *caps =
+		talloc_get_type(callback_data,
+				struct ctdb_node_capabilities);
+
+	if ( (outdata.dsize != sizeof(uint32_t)) || (outdata.dptr == NULL) ) {
+		DEBUG(DEBUG_ERR, (__location__ " Invalid length/pointer for getcap callback : %u %p\n",  (unsigned)outdata.dsize, outdata.dptr));
+		return;
+	}
+
+	if (node_pnn >= talloc_array_length(caps)) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " unexpected PNN %u\n", node_pnn));
+		return;
+	}
+
+	caps[node_pnn].retrieved = true;
+	caps[node_pnn].capabilities = *((uint32_t *)outdata.dptr);
+}
+
+struct ctdb_node_capabilities *
+ctdb_get_capabilities(struct ctdb_context *ctdb,
+		      TALLOC_CTX *mem_ctx,
+		      struct timeval timeout,
+		      struct ctdb_node_map *nodemap)
+{
+	uint32_t *nodes;
+	uint32_t i, res;
+	struct ctdb_node_capabilities *ret;
+
+	nodes = list_of_connected_nodes(ctdb, nodemap, mem_ctx, true);
+
+	ret = talloc_array(mem_ctx, struct ctdb_node_capabilities,
+			   nodemap->num);
+	CTDB_NO_MEMORY_NULL(ctdb, ret);
+	/* Prepopulate the expected PNNs */
+	for (i = 0; i < talloc_array_length(ret); i++) {
+		ret[i].retrieved = false;
+	}
+
+	res = ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
+					nodes, 0, timeout,
+					false, tdb_null,
+					get_capabilities_callback, NULL,
+					ret);
+	if (res != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " Failed to read node capabilities.\n"));
+		TALLOC_FREE(ret);
+	}
+
+	return ret;
+}
+
+uint32_t *
+ctdb_get_node_capabilities(struct ctdb_node_capabilities *caps,
+			   uint32_t pnn)
+{
+	if (pnn < talloc_array_length(caps) && caps[pnn].retrieved) {
+		return &caps[pnn].capabilities;
+	}
+
+	return NULL;
+}
+
+bool ctdb_node_has_capabilities(struct ctdb_node_capabilities *caps,
+				uint32_t pnn,
+				uint32_t capabilities_required)
+{
+	uint32_t *capp = ctdb_get_node_capabilities(caps, pnn);
+	return (capp != NULL) &&
+		((*capp & capabilities_required) == capabilities_required);
+}
+
+
 struct server_id {
 	uint64_t pid;
 	uint32_t task_id;

@@ -506,6 +506,28 @@ int ctdb_ctrl_setreclock(struct ctdb_context *ctdb,
 	struct timeval timeout, uint32_t destnode,
 	const char *reclock);
 
+struct ctdb_node_capabilities {
+	bool retrieved;
+	uint32_t capabilities;
+};
+
+/* Retrieve capabilities for all connected nodes.  The length of the
+ * returned array can be calculated using talloc_array_length(). */
+struct ctdb_node_capabilities *
+ctdb_get_capabilities(struct ctdb_context *ctdb,
+		      TALLOC_CTX *mem_ctx,
+		      struct timeval timeout,
+		      struct ctdb_node_map *nodemap);
+
+/* Get capabilities for specified node, NULL if not found */
+uint32_t *
+ctdb_get_node_capabilities(struct ctdb_node_capabilities *caps,
+			   uint32_t pnn);
+
+/* True if the given node has all of the required capabilities */
+bool ctdb_node_has_capabilities(struct ctdb_node_capabilities *caps,
+				uint32_t pnn,
+				uint32_t capabilities_required);
 
 uint32_t *list_of_nodes(struct ctdb_context *ctdb,
 			struct ctdb_node_map *node_map,
