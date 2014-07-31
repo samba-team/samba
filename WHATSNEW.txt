@@ -1,4 +1,53 @@
                    ==============================
+                   Release Notes for Samba 4.0.21
+                           August 1, 2014
+                   ==============================
+
+
+This is a security release in order to address
+CVE-2014-3560 (Remote code execution in nmbd).
+
+o  CVE-2014-3560:
+   Samba 4.0.0 to 4.1.10 are affected by a remote code execution attack on
+   unauthenticated nmbd NetBIOS name services.
+
+   A malicious browser can send packets that may overwrite the heap of
+   the target nmbd NetBIOS name services daemon. It may be possible to
+   use this to generate a remote code execution vulnerability as the
+   superuser (root).
+
+
+Changes since 4.1.20:
+---------------------
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10735: CVE-2014-3560: Fix unstrcpy macro length.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.20
                            July 30, 2014
                    ==============================
@@ -72,8 +121,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.0.19
