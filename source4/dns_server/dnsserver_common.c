@@ -190,6 +190,22 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 	return WERR_OK;
 }
 
+static int rec_cmp(const struct dnsp_DnssrvRpcRecord *r1,
+		   const struct dnsp_DnssrvRpcRecord *r2)
+{
+	if (r1->wType != r2->wType) {
+		/*
+		 * The records are sorted with higher types first
+		 */
+		return r2->wType - r1->wType;
+	}
+
+	/*
+	 * Then we need to sort from the oldest to newest timestamp
+	 */
+	return r1->dwTimeStamp - r2->dwTimeStamp;
+}
+
 WERROR dns_common_replace(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,
@@ -202,6 +218,8 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	uint16_t i;
 	int ret;
 	struct ldb_message *msg = NULL;
+	bool was_tombstoned = false;
+	bool become_tombstoned = false;
 
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
@@ -213,17 +231,30 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 		return DNS_ERR(SERVER_FAILURE);
 	}
 
-	el->values = talloc_zero_array(el, struct ldb_val, rec_count);
+	/*
+	 * we have at least one value,
+	 * which might be used for the tombstone marker
+	 */
+	el->values = talloc_zero_array(el, struct ldb_val, MAX(1, rec_count));
 	if (rec_count > 0) {
 		W_ERROR_HAVE_NO_MEMORY(el->values);
+
+		/*
+		 * We store a sorted list with the high wType values first
+		 * that's what windows does. It also simplifies the
+		 * filtering of DNS_TYPE_TOMBSTONE records
+		 */
+		TYPESAFE_QSORT(records, rec_count, rec_cmp);
 	}
 
 	for (i = 0; i < rec_count; i++) {
-		static const struct dnsp_DnssrvRpcRecord zero;
 		struct ldb_val *v = &el->values[el->num_values];
 		enum ndr_err_code ndr_err;
 
-		if (memcmp(&records[i], &zero, sizeof(zero)) == 0) {
+		if (records[i].wType == DNS_TYPE_TOMBSTONE) {
+			if (records[i].data.timestamp != 0) {
+				was_tombstoned = true;
+			}
 			continue;
 		}
 
@@ -256,7 +287,49 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	}
 
 	if (el->num_values == 0) {
-		el->flags = LDB_FLAG_MOD_DELETE;
+		struct dnsp_DnssrvRpcRecord tbs;
+		struct ldb_val *v = &el->values[el->num_values];
+		enum ndr_err_code ndr_err;
+		struct timeval tv;
+
+		if (was_tombstoned) {
+			/*
+			 * This is already a tombstoned object.
+			 * Just leave it instead of updating the time stamp.
+			 */
+			return WERR_OK;
+		}
+
+		tv = timeval_current();
+		tbs = (struct dnsp_DnssrvRpcRecord) {
+			.wType = DNS_TYPE_TOMBSTONE,
+			.dwSerial = serial,
+			.data.timestamp = timeval_to_nttime(&tv),
+		};
+
+		ndr_err = ndr_push_struct_blob(v, el->values, &tbs,
+				(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("Failed to push dnsp_DnssrvRpcRecord\n"));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+		el->num_values++;
+
+		become_tombstoned = true;
+	}
+
+	if (was_tombstoned || become_tombstoned) {
+		ret = ldb_msg_add_empty(msg, "dNSTombstoned",
+					LDB_FLAG_MOD_REPLACE, NULL);
+		if (ret != LDB_SUCCESS) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		ret = ldb_msg_add_fmt(msg, "dNSTombstoned", "%s",
+				      become_tombstoned ? "TRUE" : "FALSE");
+		if (ret != LDB_SUCCESS) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
 	}
 
 	ret = ldb_modify(samdb, msg);
