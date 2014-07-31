@@ -956,7 +956,11 @@ static int uwrap_setgroups_thread(size_t size, const gid_t *list)
 
 	pthread_mutex_lock(&uwrap_id_mutex);
 
-	if (size > 0) {
+	if (size == 0) {
+		free(id->groups);
+		id->groups = NULL;
+		id->ngroups = 0;
+	} else if (size > 0) {
 		gid_t *tmp;
 
 		tmp = realloc(id->groups, sizeof(gid_t) * size);
@@ -984,7 +988,13 @@ static int uwrap_setgroups(size_t size, const gid_t *list)
 
 	pthread_mutex_lock(&uwrap_id_mutex);
 
-	if (size > 0) {
+	if (size == 0) {
+		for (id = uwrap.ids; id; id = id->next) {
+			free(id->groups);
+			id->groups = NULL;
+			id->ngroups = 0;
+		}
+	} else if (size > 0) {
 		for (id = uwrap.ids; id; id = id->next) {
 			gid_t *tmp;
 
