@@ -578,6 +578,8 @@ static void uwrap_init(void)
 		return;
 	}
 
+	UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize uid_wrapper");
+
 	/*
 	 * If we hold a lock and the application forks, then the child
 	 * is not able to unlock the mutex and we are in a deadlock.
@@ -611,9 +613,15 @@ static void uwrap_init(void)
 		}
 
 		uwrap.enabled = true;
+
+		UWRAP_LOG(UWRAP_LOG_DEBUG,
+			  "Enabled uid_wrapper as %s",
+			  uwrap.myuid == 0 ? "root" : "user");
 	}
 
 	pthread_mutex_unlock(&uwrap_id_mutex);
+
+	UWRAP_LOG(UWRAP_LOG_DEBUG, "Succeccfully initialized uid_wrapper");
 }
 
 bool uid_wrapper_enabled(void)
