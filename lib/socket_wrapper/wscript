@@ -38,6 +38,18 @@ def configure(conf):
             addmain=False,
             msg='Checking for library destructor support')
 
+        # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
+        conf.CHECK_CODE('''
+            void log_fn(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_FUNCTION_ATTRIBUTE_FORMAT',
+            addmain=False,
+            msg='Checking for printf format validation support')
+
         conf.CHECK_HEADERS('sys/signalfd.h')
         conf.CHECK_HEADERS('sys/eventfd.h')
         conf.CHECK_HEADERS('sys/timerfd.h')
