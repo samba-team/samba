@@ -521,7 +521,9 @@ static WERROR handle_one_update(struct dns_server *dns,
 					continue;
 				}
 
-				ZERO_STRUCT(recs[i]);
+				recs[i] = (struct dnsp_DnssrvRpcRecord) {
+					.wType = DNS_TYPE_TOMBSTONE,
+				};
 			}
 
 			werror = dns_replace_records(dns, mem_ctx, dn,
@@ -570,12 +572,16 @@ static WERROR handle_one_update(struct dns_server *dns,
 						continue;
 					}
 
-					ZERO_STRUCT(recs[i]);
+					recs[i] = (struct dnsp_DnssrvRpcRecord) {
+						.wType = DNS_TYPE_TOMBSTONE,
+					};
 				}
 
 			} else {
 				for (i = 0; i < rcount; i++) {
-					ZERO_STRUCT(recs[i]);
+					recs[i] = (struct dnsp_DnssrvRpcRecord) {
+						.wType = DNS_TYPE_TOMBSTONE,
+					};
 				}
 			}
 
@@ -591,7 +597,9 @@ static WERROR handle_one_update(struct dns_server *dns,
 		}
 		for (i = 0; i < rcount; i++) {
 			if (recs[i].wType == update->rr_type) {
-				ZERO_STRUCT(recs[i]);
+				recs[i] = (struct dnsp_DnssrvRpcRecord) {
+					.wType = DNS_TYPE_TOMBSTONE,
+				};
 			}
 		}
 
@@ -635,7 +643,9 @@ static WERROR handle_one_update(struct dns_server *dns,
 
 		for (i = 0; i < rcount; i++) {
 			if (dns_records_match(del_rec, &recs[i])) {
-				ZERO_STRUCT(recs[i]);
+				recs[i] = (struct dnsp_DnssrvRpcRecord) {
+					.wType = DNS_TYPE_TOMBSTONE,
+				};
 			}
 		}
 
