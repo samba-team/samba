@@ -132,6 +132,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_MDSSVC',
                     source='''mdssvc/mdssvc.c
                     mdssvc/dalloc.c
                     mdssvc/marshalling.c
+                    mdssvc/sparql_mapping.c
                     mdssvc/srv_mdssvc_nt.c
                     ../../librpc/gen_ndr/srv_mdssvc.c''',
                     deps='samba-util ' + bld.env['libtracker'],
