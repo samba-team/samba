@@ -161,7 +161,7 @@ WERROR dns_replace_records(struct dns_server *dns,
 			   TALLOC_CTX *mem_ctx,
 			   struct ldb_dn *dn,
 			   bool needs_add,
-			   const struct dnsp_DnssrvRpcRecord *records,
+			   struct dnsp_DnssrvRpcRecord *records,
 			   uint16_t rec_count)
 {
 	struct ldb_message_element *el;
