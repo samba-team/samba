@@ -537,18 +537,15 @@ static void handle_main_input(struct regedit *regedit, int c)
 		struct regedit_search_opts *opts;
 
 		opts = &regedit->active_search;
-		if (opts->query) {
-			talloc_free(discard_const(opts->query));
-		}
 		rv = dialog_search_input(regedit, opts);
 		if (rv == DIALOG_OK) {
 			SMB_ASSERT(opts->query != NULL);
-			opts->match = find_substring;
+			opts->match = find_substring_nocase;
 			opts->node = regedit->keys->root;
-			if (opts->search_nocase) {
-				opts->match = find_substring_nocase;
+			if (opts->search_case) {
+				opts->match = find_substring;
 			}
-			if (opts->search_relative) {
+			if (!opts->search_recursive) {
 				opts->node =
 				     tree_view_get_current_node(regedit->keys);
 			}
