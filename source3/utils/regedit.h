@@ -65,11 +65,10 @@ struct regedit_search_opts {
 	const char *query;
 	regedit_search_match_fn_t match;
 	struct tree_node *node;
-	unsigned int search_key:1;
-	unsigned int search_value:1;
-	unsigned int search_recursive:1;
-	unsigned int search_relative:1;
-	unsigned int search_nocase:1;
+	bool search_key;
+	bool search_value;
+	bool search_recursive;
+	bool search_case;
 };
 
 #define PAIR_YELLOW_CYAN 1

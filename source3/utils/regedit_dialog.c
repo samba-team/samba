@@ -2062,16 +2062,88 @@ int dialog_select_type(TALLOC_CTX *ctx, int *type)
 	return action;
 }
 
+struct search_req {
+	TALLOC_CTX *ctx;
+	struct regedit_search_opts *opts;
+};
+
+static bool search_on_submit(struct dialog *dia, struct dialog_section *section,
+			     void *arg)
+{
+	struct search_req *search = arg;
+	struct dialog_section *query;
+
+	query = dialog_find_section(dia, "query");
+	SMB_ASSERT(query != NULL);
+
+	if (!search->opts->search_key && !search->opts->search_value) {
+		dialog_notice(dia, DIA_ALERT, "Error",
+			      "Must search a key and/or a value");
+		return false;
+	}
+
+	talloc_free(discard_const(search->opts->query));
+	search->opts->query = dialog_section_text_field_get(search->ctx, query);
+	SMB_ASSERT(search->opts->query != NULL);
+	if (search->opts->query[0] == '\0') {
+		dialog_notice(dia, DIA_ALERT, "Error",
+			      "Query must not be blank.");
+		return false;
+	}
+
+	return true;
+}
+
 int dialog_search_input(TALLOC_CTX *ctx, struct regedit_search_opts *opts)
 {
-	int rv;
-	// TODO
+	WERROR err;
+	enum dialog_action action;
+	struct dialog *dia;
+	struct dialog_section *section, *query;
+	struct search_req search;
+	struct button_spec spec[] = {
+		{.label = "Search", .action = DIALOG_OK},
+		{.label = "Cancel", .action = DIALOG_CANCEL},
+		{ 0 }
+	};
+	struct option_spec search_opts[] = {
+		{.label = "Search Keys", .state = &opts->search_key},
+		{.label = "Search Values", .state = &opts->search_value},
+		{.label = "Recursive", .state = &opts->search_recursive},
+		{.label = "Case Sensitive", .state = &opts->search_case},
+		{ 0 }
+	};
 
-	opts->search_key = 1;
-	opts->search_recursive = 1;
-	opts->search_nocase = 1;
+	if (!opts->search_key && !opts->search_value) {
+		opts->search_key = true;
+	}
 
-	rv = dialog_input(ctx, &opts->query, "Search", "Query");
+	search.ctx = ctx;
+	search.opts = opts;
+	dia = dialog_new(ctx, PAIR_BLACK_CYAN, "Search", -1, -1);
+	dialog_set_submit_cb(dia, search_on_submit, &search);
+	section = dialog_section_label_new(dia, "Query");
+	dialog_append_section(dia, section);
+	query = dialog_section_text_field_new(dia, 1, -1);
+	dialog_section_set_name(query, "query");
+	dialog_append_section(dia, query);
+	section = dialog_section_hsep_new(dia, 0);
+	dialog_append_section(dia, section);
+	section = dialog_section_options_new(dia, search_opts, 2, false);
+	dialog_append_section(dia, section);
+	section = dialog_section_hsep_new(dia, 0);
+	dialog_append_section(dia, section);
+	section = dialog_section_buttons_new(dia, spec);
+	dialog_section_set_justify(section, SECTION_JUSTIFY_CENTER);
+	dialog_append_section(dia, section);
 
-	return rv;
+	dialog_create(dia);
+	if (opts->query) {
+		dialog_section_text_field_set(query, opts->query);
+	}
+
+	dialog_modal_loop(dia, &err, &action);
+	talloc_free(dia);
+
+	return action;
 }
