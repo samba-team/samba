@@ -104,10 +104,12 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			 TALLOC_CTX *mem_ctx,
 			 struct ldb_dn *dn,
 			 struct dnsp_DnssrvRpcRecord **records,
-			 uint16_t *num_records)
+			 uint16_t *num_records,
+			 bool *tombstoned)
 {
 	static const char * const attrs[] = {
 		"dnsRecord",
+		"dNSTombstoned",
 		NULL
 	};
 	int ret;
@@ -118,9 +120,16 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 	*records = NULL;
 	*num_records = 0;
 
-	ret = dsdb_search_one(samdb, mem_ctx, &msg, dn,
-			      LDB_SCOPE_BASE, attrs, 0,
-			      "(objectClass=dnsNode)");
+	if (tombstoned != NULL) {
+		*tombstoned = false;
+		ret = dsdb_search_one(samdb, mem_ctx, &msg, dn,
+			LDB_SCOPE_BASE, attrs, 0,
+			"(objectClass=dnsNode)");
+	} else {
+		ret = dsdb_search_one(samdb, mem_ctx, &msg, dn,
+			LDB_SCOPE_BASE, attrs, 0,
+			"(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))");
+	}
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
 	}
@@ -130,9 +139,45 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 		return DNS_ERR(NAME_ERROR);
 	}
 
+	if (tombstoned != NULL) {
+		*tombstoned = ldb_msg_find_attr_as_bool(msg,
+					"dNSTombstoned", false);
+	}
+
 	el = ldb_msg_find_element(msg, "dnsRecord");
 	if (el == NULL) {
 		TALLOC_FREE(msg);
+		if (tombstoned != NULL) {
+			struct dnsp_DnssrvRpcRecord *recs;
+			/*
+			 * records produced by older Samba releases
+			 * keep dnsNode objects without dnsRecord and
+			 * without setting dNSTombstoned=TRUE.
+			 *
+			 * We just pretend they're tombstones.
+			 */
+			recs = talloc_array(mem_ctx,
+					    struct dnsp_DnssrvRpcRecord,
+					    1);
+			if (recs == NULL) {
+				return WERR_NOMEM;
+			}
+			recs[0] = (struct dnsp_DnssrvRpcRecord) {
+				.wType = DNS_TYPE_TOMBSTONE,
+				/*
+				 * A value of timestamp != 0
+				 * indicated that the object was already
+				 * a tombstone, this will be used
+				 * in dns_common_replace()
+				 */
+				.data.timestamp = 1,
+			};
+
+			*tombstoned = true;
+			*records = recs;
+			*num_records = 1;
+			return WERR_OK;
+		}
 		return DNS_ERR(NAME_ERROR);
 	}
 
