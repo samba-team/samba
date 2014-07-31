@@ -194,10 +194,6 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 	void *handle = NULL;
 	int i;
 
-#ifdef HAVE_APPLE
-	return RTLD_NEXT;
-#endif
-
 #ifdef RTLD_DEEPBIND
 	flags |= RTLD_DEEPBIND;
 #endif
@@ -223,10 +219,14 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 	}
 
 	if (handle == NULL) {
+#ifdef RTLD_NEXT
+		handle = uwrap.libc.handle = RTLD_NEXT;
+#else
 		fprintf(stderr,
 			"Failed to dlopen library: %s\n",
 			dlerror());
 		exit(-1);
+#endif
 	}
 
 	return handle;
