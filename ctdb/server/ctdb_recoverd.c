@@ -242,6 +242,7 @@ struct ctdb_recoverd {
 	struct ctdb_op_state *recovery;
 	struct ctdb_control_get_ifaces *ifaces;
 	uint32_t *force_rebalance_nodes;
+	struct ctdb_node_capabilities *caps;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -406,43 +407,42 @@ static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_
 	return 0;
 }
 
-static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
-{
-	if ( (outdata.dsize != sizeof(uint32_t)) || (outdata.dptr == NULL) ) {
-		DEBUG(DEBUG_ERR, (__location__ " Invalid length/pointer for getcap callback : %u %p\n",  (unsigned)outdata.dsize, outdata.dptr));
-		return;
-	}
-	if (node_pnn < ctdb->num_nodes) {
-		ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
-	}
-
-	if (node_pnn == ctdb->pnn) {
-		ctdb->capabilities = ctdb->nodes[node_pnn]->capabilities;
-	}
-}
-
 /*
   update the node capabilities for all connected nodes
  */
-static int update_capabilities(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+static int update_capabilities(struct ctdb_recoverd *rec,
+			       struct ctdb_node_map *nodemap)
 {
-	uint32_t *nodes;
+	uint32_t *capp;
 	TALLOC_CTX *tmp_ctx;
+	struct ctdb_node_capabilities *caps;
+	struct ctdb_context *ctdb = rec->ctdb;
 
-	tmp_ctx = talloc_new(ctdb);
+	tmp_ctx = talloc_new(rec);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
-	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
-					nodes, 0,
-					CONTROL_TIMEOUT(),
-					false, tdb_null,
-					async_getcap_callback, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to read node capabilities.\n"));
+	caps = ctdb_get_capabilities(ctdb, tmp_ctx,
+				     CONTROL_TIMEOUT(), nodemap);
+
+	if (caps == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " Failed to get node capabilities\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+
+	capp = ctdb_get_node_capabilities(caps, ctdb_get_pnn(ctdb));
+	if (capp == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " Capabilities don't include current node.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	ctdb->capabilities = *capp;
+
+	TALLOC_FREE(rec->caps);
+	rec->caps = talloc_steal(rec, caps);
 
 	talloc_free(tmp_ctx);
 	return 0;
@@ -2082,7 +2082,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	
 
 	/* update the capabilities for all nodes */
-	ret = update_capabilities(ctdb, nodemap);
+	ret = update_capabilities(rec, nodemap);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
 		goto fail;
@@ -2101,7 +2101,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (!(ctdb->nodes[i]->capabilities & CTDB_CAP_LMASTER)) {
+		if (!ctdb_node_has_capabilities(rec->caps,
+						ctdb->nodes[i]->pnn,
+						CTDB_CAP_LMASTER)) {
 			/* this node can not be an lmaster */
 			DEBUG(DEBUG_DEBUG, ("Node %d cant be a LMASTER, skipping it\n", i));
 			continue;
@@ -3565,7 +3567,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* update the capabilities for all nodes */
-	ret = update_capabilities(ctdb, nodemap);
+	ret = update_capabilities(rec, nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
 		return;
@@ -3576,9 +3578,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	 * but we have, then force an election and try to become the new
 	 * recmaster.
 	 */
-	if ((rec->ctdb->nodes[rec->recmaster]->capabilities & CTDB_CAP_RECMASTER) == 0 &&
+	if (!ctdb_node_has_capabilities(rec->caps,
+					rec->recmaster,
+					CTDB_CAP_RECMASTER) &&
 	    (rec->ctdb->capabilities & CTDB_CAP_RECMASTER) &&
-	     !(nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE)) {
+	    !(nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE)) {
 		DEBUG(DEBUG_ERR, (__location__ " Current recmaster node %u does not have CAP_RECMASTER,"
 				  " but we (node %u) have - force an election\n",
 				  rec->recmaster, pnn));
@@ -3593,7 +3597,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	for (i=0; i<nodemap->num; i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
 			rec->num_active++;
-			if (rec->ctdb->nodes[i]->capabilities & CTDB_CAP_LMASTER) {
+			if (ctdb_node_has_capabilities(rec->caps,
+						       ctdb->nodes[i]->pnn,
+						       CTDB_CAP_LMASTER)) {
 				rec->num_lmasters++;
 			}
 		}
