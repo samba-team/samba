@@ -222,11 +222,6 @@ struct ctdb_node {
 	uint32_t rx_cnt;
 	uint32_t tx_cnt;
 
-	/* used to track node capabilities, is only valid/tracked inside the
-	   recovery daemon.
-	*/
-	uint32_t capabilities;
-
 	/* a list of controls pending to this node, so we can time them out quickly
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;

@@ -20,6 +20,8 @@
 /* Useful for functions that don't get struct ctdb_context passed */
 static struct ctdb_context *ctdb_global;
 
+static struct ctdb_node_capabilities *global_caps = NULL;
+
 /* Read a nodemap from stdin.  Each line looks like:
  *  <PNN> <FLAGS> [RECMASTER] [CURRENT] [CAPABILITIES]
  * EOF or a blank line terminates input.
@@ -130,7 +132,13 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 		ctdb->nodes[ctdb->num_nodes]->pnn = pnn;
 		parse_ip(ip, NULL, 0, &ctdb->nodes[ctdb->num_nodes]->address);
 		ctdb->nodes[ctdb->num_nodes]->flags = flags;
-		ctdb->nodes[ctdb->num_nodes]->capabilities = capabilities;
+
+		global_caps = talloc_realloc(ctdb, global_caps,
+					     struct ctdb_node_capabilities,
+					     ctdb->num_nodes+1);
+		global_caps[ctdb->num_nodes].capabilities = capabilities;
+		global_caps[ctdb->num_nodes].retrieved = true;
+
 		ctdb->num_nodes++;
 	}
 }
@@ -725,6 +733,8 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   uint32_t *capabilities)
 {
+	uint32_t *capp;
+
 	assert_nodes_set(ctdb);
 
 	if (ctdb->nodes[destnode]->flags & NODE_FLAGS_FAKE_TIMEOUT) {
@@ -748,7 +758,12 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*capabilities = ctdb->nodes[destnode]->capabilities;
+	capp = ctdb_get_node_capabilities(global_caps, destnode);
+	if (capp == NULL) {
+		DEBUG(DEBUG_ERR, ("__LOCATION__ invalid PNN\n"));
+		return -1;
+	}
+	*capabilities = *capp;
 	return 0;
 }
 
