@@ -1,0 +1,14 @@
+Introduction:
+=============
+This directory contains source code for the metadata search service
+aka Spotlight.
+
+Bison and flex:
+===============
+Not yet integrated into the waf buildsystem, run these by hand:
+
+$ bison -d -o sparql_parser.c sparql_parser.y
+$ flex -o sparql_lexer.c sparql_lexer.l
+
+or use the bundled Makefile.
+

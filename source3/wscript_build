@@ -1496,6 +1496,16 @@ bld.SAMBA3_BINARY('samba-regedit',
                   deps='ncurses menu panel form registry param popt_samba3 smbregistry',
                   enabled=bld.env.build_regedit)
 
+bld.SAMBA3_BINARY('spotlight2sparql',
+                 source='''
+                 rpc_server/mdssvc/sparql_parser_test.c
+                 rpc_server/mdssvc/sparql_parser.c
+                 rpc_server/mdssvc/sparql_lexer.c
+                 rpc_server/mdssvc/sparql_mapping.c''',
+                 deps='samba3-util talloc ' + bld.env['libtracker'],
+                 enabled=bld.env.with_spotlight,
+                 install=False)
+
 ########################## INCLUDES #################################
 
 bld.RECURSE('auth')

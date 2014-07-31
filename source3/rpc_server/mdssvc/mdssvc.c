@@ -27,6 +27,7 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "libcli/security/dom_sid.h"
 #include "mdssvc.h"
+#include "sparql_parser.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -1250,16 +1251,28 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 
 	DLIST_ADD(mds_ctx->query_list, slq);
 
-	/*
-	 * TODO: call the SPARQL translator here...
-	 */
-	goto error;
+	ok = map_spotlight_to_sparql_query(slq);
+	if (!ok) {
+		/*
+		 * Two cases:
+		 *
+		 * 1) the query string is "false", the parser returns
+		 * an error for that. We're supposed to return -1
+		 * here.
+		 *
+		 * 2) the parsing really failed, in that case we're
+		 * probably supposed to return -1 too, this needs
+		 * verification though
+		 */
+		SLQ_DEBUG(10, slq, "map failed");
+		goto error;
+	}
 
-	DEBUG(10, ("SPARQL query: \"%s\"\n", sparql_query));
+	DEBUG(10, ("SPARQL query: \"%s\"\n", slq->sparql_query));
 
 	g_main_context_push_thread_default(mds_ctx->gcontext);
 	tracker_sparql_connection_query_async(mds_ctx->tracker_con,
-					      sparql_query,
+					      slq->sparql_query,
 					      slq->gcancellable,
 					      tracker_query_cb,
 					      slq);

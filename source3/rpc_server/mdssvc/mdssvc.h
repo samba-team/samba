@@ -70,6 +70,7 @@ struct sl_query {
 	uint64_t         ctx2;           /* client context 2 */
 	sl_array_t      *reqinfo;        /* array with requested metadata */
 	const char      *query_string;   /* the Spotlight query string */
+	const char      *sparql_query;   /* the SPARQL query string */
 	uint64_t        *cnids;          /* restrict query to these CNIDs */
 	size_t           cnids_num;      /* Size of slq_cnids array */
 	const char      *path_scope;	 /* path to directory to search */
