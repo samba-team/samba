@@ -808,6 +808,14 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 	},
 	{
+		.label		= "spotlight",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(spotlight),
+		.special	= NULL,
+		.enum_list	= NULL,
+	},
+	{
 		.label		= "write ok",
 		.type		= P_BOOLREV,
 		.p_class	= P_LOCAL,

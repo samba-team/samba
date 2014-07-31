@@ -185,6 +185,7 @@ static struct loadparm_service sDefault =
 	.access_based_share_enum = false,
 	.bAvailable = true,
 	.read_only = true,
+	.spotlight = false,
 	.guest_only = false,
 	.administrative_share = false,
 	.guest_ok = false,
