@@ -60,6 +60,7 @@ void tree_node_append(struct tree_node *left, struct tree_node *right);
 struct tree_node *tree_node_pop(struct tree_node **plist);
 struct tree_node *tree_node_first(struct tree_node *list);
 struct tree_node *tree_node_last(struct tree_node *list);
+bool tree_node_next(struct tree_node **node, bool depth, WERROR *err);
 void tree_node_append_last(struct tree_node *list, struct tree_node *node);
 size_t tree_node_print_path(WINDOW *label, struct tree_node *node);
 const char **tree_node_get_path(TALLOC_CTX *ctx, struct tree_node *node);

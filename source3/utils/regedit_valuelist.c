@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "includes.h"
+#include "regedit.h"
 #include "regedit_valuelist.h"
 #include "regedit_list.h"
 #include "lib/registry/registry.h"
@@ -335,7 +337,8 @@ static int vitem_cmp(struct value_item *a, struct value_item *b)
 	return strcmp(a->value_name, b->value_name);
 }
 
-WERROR value_list_load(struct value_list *vl, struct registry_key *key)
+/* load only the value names into memory to enable searching */
+WERROR value_list_load_quick(struct value_list *vl, struct registry_key *key)
 {
 	uint32_t nvalues;
 	uint32_t idx;
@@ -366,24 +369,100 @@ WERROR value_list_load(struct value_list *vl, struct registry_key *key)
 			talloc_free(new_items);
 			return rv;
 		}
+	}
 
-		rv = append_data_summary(new_items, vitem);
+	TYPESAFE_QSORT(new_items, nvalues, vitem_cmp);
+	vl->nvalues = nvalues;
+	vl->values = new_items;
+
+	return rv;
+}
+
+/* sync up the UI with the list */
+WERROR value_list_sync(struct value_list *vl)
+{
+	uint32_t idx;
+	WERROR rv;
+
+	for (idx = 0; idx < vl->nvalues; ++idx) {
+		rv = append_data_summary(vl->values, &vl->values[idx]);
 		if (!W_ERROR_IS_OK(rv)) {
-			talloc_free(new_items);
 			return rv;
 		}
 	}
 
-	TYPESAFE_QSORT(new_items, nvalues, vitem_cmp);
-
-	vl->nvalues = nvalues;
-	vl->values = new_items;
 	rv = multilist_set_data(vl->list, vl);
 	if (W_ERROR_IS_OK(rv)) {
 		multilist_refresh(vl->list);
 	}
 
 	return rv;
+}
+
+WERROR value_list_load(struct value_list *vl, struct registry_key *key)
+{
+	WERROR rv;
+
+	rv = value_list_load_quick(vl, key);
+	if (!W_ERROR_IS_OK(rv)) {
+		return rv;
+	}
+
+	rv = value_list_sync(vl);
+
+	return rv;
+}
+
+struct value_item *value_list_find_next_item(struct value_list *vl,
+					     struct value_item *vitem,
+					     const char *s,
+					     regedit_search_match_fn_t match)
+{
+	struct value_item *end;
+
+	if (!vl->values) {
+		return NULL;
+	}
+
+	if (vitem) {
+		++vitem;
+	} else {
+		vitem = &vl->values[0];
+	}
+
+	for (end = &vl->values[vl->nvalues]; vitem < end; ++vitem) {
+		if (match(vitem->value_name, s)) {
+			return vitem;
+		}
+	}
+
+	return NULL;
+}
+
+struct value_item *value_list_find_prev_item(struct value_list *vl,
+					     struct value_item *vitem,
+					     const char *s,
+					     regedit_search_match_fn_t match)
+{
+	struct value_item *end;
+
+	if (!vl->values) {
+		return NULL;
+	}
+
+	if (vitem) {
+		--vitem;
+	} else {
+		vitem = &vl->values[vl->nvalues - 1];
+	}
+
+	for (end = &vl->values[-1]; vitem > end; --vitem) {
+		if (match(vitem->value_name, s)) {
+			return vitem;
+		}
+	}
+
+	return NULL;
 }
 
 struct value_item *value_list_get_current_item(struct value_list *vl)
@@ -396,16 +475,13 @@ void value_list_set_current_item_by_name(struct value_list *vl,
 					 const char *name)
 {
 	size_t i;
-	struct value_item *item = NULL;
 
 	for (i = 0; i < vl->nvalues; ++i) {
 		if (strequal(vl->values[i].value_name, name)) {
-			item = &vl->values[i];
-			break;
+			multilist_set_current_row(vl->list, &vl->values[i]);
+			return;
 		}
 	}
-
-	multilist_set_current_row(vl->list, item);
 }
 
 void value_list_set_current_item(struct value_list *vl,

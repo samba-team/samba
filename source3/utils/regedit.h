@@ -64,7 +64,6 @@ typedef bool (*regedit_search_match_fn_t)(const char *, const char *);
 struct regedit_search_opts {
 	const char *query;
 	regedit_search_match_fn_t match;
-	struct tree_node *node;
 	bool search_key;
 	bool search_value;
 	bool search_recursive;
