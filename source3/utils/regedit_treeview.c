@@ -312,6 +312,53 @@ finish:
 	return rv;
 }
 
+static WERROR next_depth_first(struct tree_node **node)
+{
+	WERROR rv = WERR_OK;
+
+	SMB_ASSERT(node != NULL && *node != NULL);
+
+	if (tree_node_has_children(*node)) {
+		/* 1. If the node has children, go to the first one. */
+		rv = tree_node_load_children(*node);
+		if (W_ERROR_IS_OK(rv)) {
+			SMB_ASSERT((*node)->child_head != NULL);
+			*node = (*node)->child_head;
+		}
+	} else if ((*node)->next) {
+		/* 2. If there's a node directly after this one, go there */
+		*node = (*node)->next;
+	} else {
+		/* 3. Otherwise, go up the hierarchy to find the next one */
+		do {
+			*node = (*node)->parent;
+			if (*node && (*node)->next) {
+				*node = (*node)->next;
+				break;
+			}
+		} while (*node);
+	}
+
+	return rv;
+}
+
+bool tree_node_next(struct tree_node **node, bool depth, WERROR *err)
+{
+	*err = WERR_OK;
+
+	if (*node == NULL) {
+		return false;
+	}
+
+	if (depth) {
+		*err = next_depth_first(node);
+	} else {
+		*node = (*node)->next;
+	}
+
+	return *node != NULL && W_ERROR_IS_OK(*err);
+}
+
 void tree_view_clear(struct tree_view *view)
 {
 	multilist_set_data(view->list, NULL);

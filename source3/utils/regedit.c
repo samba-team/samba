@@ -208,57 +208,19 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 	}
 }
 
-static WERROR next_depth_first(struct tree_node **node)
-{
-	WERROR rv = WERR_OK;
-
-	SMB_ASSERT(node != NULL && *node != NULL);
-
-	if (tree_node_has_children(*node)) {
-		/* 1. If the node has children, go to the first one. */
-		rv = tree_node_load_children(*node);
-		if (W_ERROR_IS_OK(rv)) {
-			SMB_ASSERT((*node)->child_head != NULL);
-			*node = (*node)->child_head;
-		}
-	} else if ((*node)->next) {
-		/* 2. If there's a node directly after this one, go there */
-		*node = (*node)->next;
-	} else {
-		/* 3. Otherwise, go up the hierarchy to find the next one */
-		do {
-			*node = (*node)->parent;
-			if (*node && (*node)->next) {
-				*node = (*node)->next;
-				break;
-			}
-		} while (*node);
-	}
-
-	return rv;
-}
-
-static WERROR regedit_search_next(struct regedit *regedit)
-{
-	WERROR rv;
-	struct regedit_search_opts *opts = &regedit->active_search;
-
-	if (opts->search_recursive) {
-		rv = next_depth_first(&opts->node);
-		if (!W_ERROR_IS_OK(rv)) {
-			return rv;
-		}
-	} else {
-		opts->node = opts->node->next;
-	}
-
-	return WERR_OK;
-}
-
-static WERROR regedit_search(struct regedit *regedit)
+enum search_flags {
+	SEARCH_NEXT = (1<<0),
+	SEARCH_PREV = (1<<1),
+	SEARCH_REPEAT = (1<<2)
+};
+static WERROR regedit_search(struct regedit *regedit, struct tree_node *node,
+			     struct value_item *vitem, unsigned flags)
 {
 	struct regedit_search_opts *opts;
 	struct tree_node *found;
+	struct value_item *found_value;
+	bool search_key, need_sync;
+	char *save_value_name;
 	WERROR rv;
 
 	opts = &regedit->active_search;
@@ -269,25 +231,73 @@ static WERROR regedit_search(struct regedit *regedit)
 
 	SMB_ASSERT(opts->search_key || opts->search_value);
 
-	for (found = NULL; opts->node && !found; ) {
-		if (opts->search_key &&
-		    opts->match(opts->node->name, opts->query)) {
-			found = opts->node;
-		}
-		if (opts->search_value) {
-			/* TODO
-			rv = regedit_search_value(regedit);
-			if (W_ERROR_IS_OK(rv)) {
-				found = opts->node;
-			} else if (!W_ERROR_EQUAL(rv, WERR_NO_MORE_ITEMS)) {
-				return rv;
+	rv = WERR_OK;
+	found = NULL;
+	found_value = NULL;
+	save_value_name = NULL;
+	search_key = opts->search_key;
+	need_sync = false;
+
+	if (opts->search_value) {
+		struct value_item *it;
+
+		it = value_list_get_current_item(regedit->vl);
+		if (it) {
+			save_value_name = talloc_strdup(regedit,
+							it->value_name);
+			if (save_value_name == NULL) {
+				return WERR_NOMEM;
 			}
-			*/
 		}
-		rv = regedit_search_next(regedit);
-		if (!W_ERROR_IS_OK(rv)) {
+
+		if (vitem) {
+			search_key = false;
+		}
+	}
+
+	if (!vitem && (flags & SEARCH_REPEAT)) {
+		if (opts->search_value) {
+			search_key = false;
+		} else if (!tree_node_next(&node, opts->search_recursive, &rv)) {
+			beep();
 			return rv;
 		}
+	}
+
+	do {
+		if (search_key) {
+			SMB_ASSERT(opts->search_key == true);
+			if (opts->match(node->name, opts->query)) {
+				found = node;
+			} else if (opts->search_value) {
+				search_key = false;
+			}
+		}
+		if (!search_key) {
+			SMB_ASSERT(opts->search_value == true);
+			if (!vitem) {
+				rv = value_list_load_quick(regedit->vl,
+							   node->key);
+				if (!W_ERROR_IS_OK(rv)) {
+					goto out;
+				}
+				need_sync = true;
+			}
+			found_value = value_list_find_next_item(regedit->vl,
+								vitem,
+								opts->query,
+								opts->match);
+			if (found_value) {
+				found = node;
+			} else {
+				vitem = NULL;
+				search_key = opts->search_key;
+			}
+		}
+	} while (!found && tree_node_next(&node, opts->search_recursive, &rv));
+
+	if (!W_ERROR_IS_OK(rv)) {
+		goto out;
 	}
 
 	if (found) {
@@ -298,14 +308,51 @@ static WERROR regedit_search(struct regedit *regedit)
 			print_path(regedit, found);
 		}
 		tree_view_set_current_node(regedit->keys, found);
-		load_values(regedit);
+		if (found_value) {
+			if (need_sync) {
+				value_list_sync(regedit->vl);
+			}
+			value_list_set_current_item(regedit->vl, found_value);
+			regedit->tree_input = false;
+		} else {
+			load_values(regedit);
+			regedit->tree_input = true;
+		}
 		tree_view_show(regedit->keys);
 		value_list_show(regedit->vl);
+		print_heading(regedit);
 	} else {
+		if (need_sync) {
+			load_values(regedit);
+			value_list_set_current_item_by_name(regedit->vl,
+							    save_value_name);
+		}
 		beep();
 	}
 
-	return WERR_OK;
+out:
+	talloc_free(save_value_name);
+
+	return rv;
+}
+
+static void regedit_search_repeat(struct regedit *regedit, unsigned flags)
+{
+	struct tree_node *node;
+	struct value_item *vitem;
+	struct regedit_search_opts *opts;
+
+	opts = &regedit->active_search;
+	if (opts->query == NULL) {
+		return;
+	}
+
+	node = tree_view_get_current_node(regedit->keys);
+	vitem = NULL;
+	if (opts->search_value && !regedit->tree_input) {
+		vitem = value_list_get_current_item(regedit->vl);
+	}
+	regedit_search(regedit, node, vitem, flags | SEARCH_REPEAT);
 }
 
 static void handle_tree_input(struct regedit *regedit, int c)
@@ -535,27 +582,28 @@ static void handle_main_input(struct regedit *regedit, int c)
 	case '/': {
 		int rv;
 		struct regedit_search_opts *opts;
+		struct tree_node *node;
 
 		opts = &regedit->active_search;
 		rv = dialog_search_input(regedit, opts);
 		if (rv == DIALOG_OK) {
 			SMB_ASSERT(opts->query != NULL);
 			opts->match = find_substring_nocase;
-			opts->node = regedit->keys->root;
+			node = regedit->keys->root;
 			if (opts->search_case) {
 				opts->match = find_substring;
 			}
 			if (!opts->search_recursive) {
-				opts->node =
-				     tree_view_get_current_node(regedit->keys);
+				node = tree_view_get_current_node(regedit->keys);
+				node = tree_node_first(node);
 			}
-			regedit_search(regedit);
+			regedit_search(regedit, node, NULL, SEARCH_NEXT);
 		}
 		break;
 	}
 	case 'x':
 	case 'X':
-		regedit_search(regedit);
+		regedit_search_repeat(regedit, SEARCH_NEXT);
 		break;
 	case '\t':
 		regedit->tree_input = !regedit->tree_input;
