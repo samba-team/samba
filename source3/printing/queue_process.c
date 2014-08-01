@@ -33,9 +33,101 @@
 #include "rpc_server/rpc_config.h"
 #include "printing/load.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
+#include "auth.h"
+#include "nt_printing.h"
 
 extern pid_t start_spoolssd(struct tevent_context *ev_ctx,
 			    struct messaging_context *msg_ctx);
+
+/**
+ * @brief Purge stale printers and reload from pre-populated pcap cache.
+ *
+ * This function should normally only be called as a callback on a successful
+ * pcap_cache_reload().
+ *
+ * This function can cause DELETION of printers and drivers from our registry,
+ * so calling it on a failed pcap reload may REMOVE permanently all printers
+ * and drivers.
+ *
+ * @param[in] ev        The event context.
+ *
+ * @param[in] msg_ctx   The messaging context.
+ */
+static void delete_and_reload_printers_full(struct tevent_context *ev,
+					    struct messaging_context *msg_ctx)
+{
+	struct auth_session_info *session_info = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	int n_services;
+	int pnum;
+	int snum;
+	const char *pname;
+	const char *sname;
+	NTSTATUS status;
+
+	n_services = lp_numservices();
+	pnum = lp_servicenumber(PRINTERS_NAME);
+
+	status = make_session_info_system(talloc_tos(), &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("reload_printers: "
+			  "Could not create system session_info\n"));
+		/* can't remove stale printers before we
+		 * are fully initilized */
+		return;
+	}
+
+	/*
+	 * Add default config for printers added to smb.conf file and remove
+	 * stale printers
+	 */
+	for (snum = 0; snum < n_services; snum++) {
+		/* avoid removing PRINTERS_NAME */
+		if (snum == pnum) {
+			continue;
+		}
+
+		/* skip no-printer services */
+		if (!snum_is_shared_printer(snum)) {
+			continue;
+		}
+
+		sname = lp_const_servicename(snum);
+		pname = lp_printername(session_info, snum);
+
+		/* check printer, but avoid removing non-autoloaded printers */
+		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {
+			DEBUG(3, ("removing stale printer %s\n", pname));
+
+			if (is_printer_published(session_info, session_info,
+						 msg_ctx,
+						 NULL,
+						 lp_servicename(session_info,
+								snum),
+						 &pinfo2)) {
+				nt_printer_publish(session_info,
+						   session_info,
+						   msg_ctx,
+						   pinfo2,
+						   DSPRINT_UNPUBLISH);
+				TALLOC_FREE(pinfo2);
+			}
+			nt_printer_remove(session_info, session_info, msg_ctx,
+					  pname);
+		} else {
+			DEBUG(8, ("Adding default registry entry for printer "
+				  "[%s], if it doesn't exist.\n", sname));
+			nt_printer_add(session_info, session_info, msg_ctx,
+				       sname);
+		}
+	}
+
+	/* finally, purge old snums */
+	delete_and_reload_printers(ev, msg_ctx);
+
+	TALLOC_FREE(session_info);
+}
+
 
 /****************************************************************************
  Notify smbds of new printcap data
@@ -50,7 +142,7 @@ static void reload_pcap_change_notify(struct tevent_context *ev,
 	 * This will block the process for some time (~1 sec per printer), but
 	 * it doesn't block smbd's servering clients.
 	 */
-	delete_and_reload_printers(ev, msg_ctx);
+	delete_and_reload_printers_full(ev, msg_ctx);
 
 	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
 }
@@ -372,7 +464,8 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 		ret = printing_subsystem_queue_tasks(ev_ctx, msg_ctx);
 
 		/* Publish nt printers, this requires a working winreg pipe */
-		pcap_cache_reload(ev_ctx, msg_ctx, &delete_and_reload_printers);
+		pcap_cache_reload(ev_ctx, msg_ctx,
+				  &delete_and_reload_printers_full);
 
 		return ret;
 	}
@@ -401,5 +494,6 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	pcap_cache_reload(ev_ctx, msg_ctx, &delete_and_reload_printers);
+	pcap_cache_reload(ev_ctx, msg_ctx,
+			  &delete_and_reload_printers_full);
 }
