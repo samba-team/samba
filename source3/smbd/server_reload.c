@@ -44,14 +44,10 @@ bool snum_is_shared_printer(int snum)
 }
 
 /**
- * @brief Purge stale printers and reload from pre-populated pcap cache.
+ * @brief Purge stale printer shares and reload from pre-populated pcap cache.
  *
  * This function should normally only be called as a callback on a successful
- * pcap_cache_reload() or after a MSG_PRINTER_CAP message is received.
- *
- * This function can cause DELETION of printers and drivers from our registry,
- * so calling it on a failed pcap reload may REMOVE permanently all printers
- * and drivers.
+ * pcap_cache_reload(), or on client enumeration.
  *
  * @param[in] ev        The event context.
  *
@@ -60,25 +56,24 @@ bool snum_is_shared_printer(int snum)
 void delete_and_reload_printers(struct tevent_context *ev,
 				struct messaging_context *msg_ctx)
 {
-	struct auth_session_info *session_info = NULL;
-	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int n_services;
 	int pnum;
 	int snum;
 	const char *pname;
-	const char *sname;
-	NTSTATUS status;
 	bool ok;
 	time_t pcap_last_update;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	ok = pcap_cache_loaded(&pcap_last_update);
 	if (!ok) {
 		DEBUG(1, ("pcap cache not loaded\n"));
+		talloc_free(frame);
 		return;
 	}
 
 	if (reload_last_pcap_time == pcap_last_update) {
 		DEBUG(5, ("skipping printer reload, already up to date.\n"));
+		talloc_free(frame);
 		return;
 	}
 	reload_last_pcap_time = pcap_last_update;
@@ -90,15 +85,6 @@ void delete_and_reload_printers(struct tevent_context *ev,
 	pnum = lp_servicenumber(PRINTERS_NAME);
 
 	DEBUG(10, ("reloading printer services from pcap cache\n"));
-
-	status = make_session_info_system(talloc_tos(), &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("reload_printers: "
-			  "Could not create system session_info\n"));
-		/* can't remove stale printers before we
-		 * are fully initilized */
-		return;
-	}
 
 	/*
 	 * Add default config for printers added to smb.conf file and remove
@@ -115,41 +101,18 @@ void delete_and_reload_printers(struct tevent_context *ev,
 			continue;
 		}
 
-		sname = lp_const_servicename(snum);
-		pname = lp_printername(session_info, snum);
+		pname = lp_printername(frame, snum);
 
 		/* check printer, but avoid removing non-autoloaded printers */
 		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {
-			DEBUG(3, ("removing stale printer %s\n", pname));
-
-			if (is_printer_published(session_info, session_info,
-						 msg_ctx,
-						 NULL,
-						 lp_servicename(session_info,
-								snum),
-						 &pinfo2)) {
-				nt_printer_publish(session_info,
-						   session_info,
-						   msg_ctx,
-						   pinfo2,
-						   DSPRINT_UNPUBLISH);
-				TALLOC_FREE(pinfo2);
-			}
-			nt_printer_remove(session_info, session_info, msg_ctx,
-					  pname);
 			lp_killservice(snum);
-		} else {
-			DEBUG(8, ("Adding default registry entry for printer "
-				  "[%s], if it doesn't exist.\n", sname));
-			nt_printer_add(session_info, session_info, msg_ctx,
-				       sname);
 		}
 	}
 
 	/* Make sure deleted printers are gone */
 	load_printers(ev, msg_ctx);
 
-	TALLOC_FREE(session_info);
+	talloc_free(frame);
 }
 
 /****************************************************************************
