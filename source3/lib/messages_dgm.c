@@ -47,6 +47,14 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			       uint8_t *msg, size_t msg_len,
 			       void *private_data);
 
+static char *messaging_dgm_lockfile_name(TALLOC_CTX *mem_ctx,
+					 const char *cache_dir,
+					 pid_t pid)
+{
+	return talloc_asprintf(mem_ctx, "%s/lck/%u", cache_dir,
+			       (unsigned)pid);
+}
+
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c);
 
 static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
@@ -69,19 +77,17 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 	}
 
 	ok = directory_create_or_exist_strict(dir, dir_owner, 0755);
+	TALLOC_FREE(dir);
 	if (!ok) {
 		ret = errno;
 		DEBUG(1, ("%s: Could not create lock directory: %s\n",
 			  __func__, strerror(ret)));
-		TALLOC_FREE(dir);
 		return ret;
 	}
 
-	lockfile_name = talloc_asprintf(tmp_ctx, "%s/%u", dir,
-					(unsigned)pid);
-	TALLOC_FREE(dir);
+	lockfile_name = messaging_dgm_lockfile_name(tmp_ctx, cache_dir,
+						    (unsigned)pid);
 	if (lockfile_name == NULL) {
-		DEBUG(1, ("%s: talloc_asprintf failed\n", __func__));
 		return ENOMEM;
 	}
 
@@ -144,8 +150,8 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 	char *lockfile_name;
 	int ret;
 
-	lockfile_name = talloc_asprintf(
-		tmp_ctx, "%s/lck/%u", cache_dir, (unsigned)pid);
+	lockfile_name = messaging_dgm_lockfile_name(
+		tmp_ctx, cache_dir, pid);
 	if (lockfile_name == NULL) {
 		return ENOMEM;
 	}
@@ -320,8 +326,8 @@ int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
 	int fd, ret;
 	struct flock lck = {};
 
-	lockfile_name = talloc_asprintf(talloc_tos(), "%s/lck/%u",
-					ctx->cache_dir, (unsigned)pid);
+	lockfile_name = messaging_dgm_lockfile_name(
+		talloc_tos(), ctx->cache_dir, pid);
 	if (lockfile_name == NULL) {
 		return ENOMEM;
 	}
