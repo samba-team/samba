@@ -161,7 +161,6 @@ bool smb_krb5_principal_compare_any_realm(krb5_context context,
 					  krb5_const_principal princ1,
 					  krb5_const_principal princ2);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *expire_time);
-krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
 krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr,
 						  const char *netbios_name);
 krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr);
