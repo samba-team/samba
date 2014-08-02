@@ -106,7 +106,7 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 		goto fail_close;
 	}
 
-	unique_len = snprintf(buf, sizeof(buf), "%"PRIu64, unique);
+	unique_len = snprintf(buf, sizeof(buf), "%ju\n", (uintmax_t)unique);
 
 	/* shorten a potentially preexisting file */
 
