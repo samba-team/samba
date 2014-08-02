@@ -32,15 +32,6 @@
 #define KRB5_KPASSWD_VERS_SETPW			0xff80
 #define KRB5_KPASSWD_VERS_SETPW_ALT		2
 
-#define KRB5_KPASSWD_SUCCESS			0
-#define KRB5_KPASSWD_MALFORMED			1
-#define KRB5_KPASSWD_HARDERROR			2
-#define KRB5_KPASSWD_AUTHERROR			3
-#define KRB5_KPASSWD_SOFTERROR			4
-#define KRB5_KPASSWD_ACCESSDENIED		5
-#define KRB5_KPASSWD_BAD_VERSION		6
-#define KRB5_KPASSWD_INITIAL_FLAG_NEEDED	7
-
 /* Those are defined by kerberos-set-passwd-02.txt and are probably 
  * not supported by M$ implementation */
 #define KRB5_KPASSWD_POLICY_REJECT		8
