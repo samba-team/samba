@@ -56,7 +56,17 @@ _PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 
 		if (c1 == INVALID_CODEPOINT ||
 		    c2 == INVALID_CODEPOINT) {
-			/* what else can we do?? */
+			/*
+			 * Fall back to byte
+			 * comparison. We must
+			 * step back by the codepoint
+			 * length we just incremented
+			 * - otherwise we are not
+			 * checking the bytes that
+			 * failed the conversion.
+			 */
+			s1 -= size1;
+			s2 -= size2;
 			return strcasecmp(s1, s2);
 		}
 
