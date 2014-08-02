@@ -116,8 +116,33 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 
 		if (c1 == INVALID_CODEPOINT ||
 		    c2 == INVALID_CODEPOINT) {
-			/* what else can we do?? */
-			return strcasecmp(s1, s2);
+			/*
+			 * Fall back to byte
+			 * comparison. We must
+			 * step back by the codepoint
+			 * length we just incremented
+			 * by - otherwise we are not
+			 * checking the bytes that
+			 * failed the conversion.
+			 */
+			s1 -= size1;
+			s2 -= size2;
+			/*
+			 * n was specified in characters,
+			 * now we must convert it to bytes.
+			 * As bytes are the smallest
+			 * character unit, the following
+			 * increment and strncasecmp is always
+			 * safe.
+			 *
+			 * The source string was already known
+			 * to be n characters long, so we are
+			 * guaranteed to be able to look at the
+			 * (n remaining + size1) bytes from the
+			 * new (s1 - size1) position).
+			 */
+			n += size1;
+			return strncasecmp(s1, s2, n);
 		}
 
 		if (toupper_m(c1) != toupper_m(c2)) {
