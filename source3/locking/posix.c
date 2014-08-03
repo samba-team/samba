@@ -114,7 +114,7 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	 * any Win32 locks of length zero. JRA.
 	 */
 
-	if (count == (off_t)0) {
+	if (count == 0) {
 		DEBUG(10,("posix_lock_in_range: count = 0, ignoring.\n"));
 		return False;
 	}
