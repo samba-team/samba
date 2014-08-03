@@ -686,7 +686,6 @@ struct lock_list {
 static struct lock_list *posix_lock_list(TALLOC_CTX *ctx,
 						struct lock_list *lhead,
 						const struct lock_context *lock_ctx, /* Lock context lhead belongs to. */
-						files_struct *fsp,
 						const struct lock_struct *plocks,
 						int num_locks)
 {
@@ -1004,7 +1003,6 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 	llist = posix_lock_list(l_ctx,
 				llist,
 				lock_ctx, /* Lock context llist belongs to. */
-				fsp,
 				plocks,
 				num_locks);
 
@@ -1133,7 +1131,6 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 	ulist = posix_lock_list(ul_ctx,
 				ulist,
 				lock_ctx, /* Lock context ulist belongs to. */
-				fsp,
 				plocks,
 				num_locks);
 
@@ -1293,7 +1290,6 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 	ulist = posix_lock_list(ul_ctx,
 				ulist,
 				lock_ctx, /* Lock context ulist belongs to. */
-				fsp,
 				plocks,
 				num_locks);
 
