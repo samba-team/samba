@@ -222,6 +222,11 @@ static WERROR regedit_search(struct regedit *regedit, struct tree_node *node,
 	bool search_key, need_sync;
 	char *save_value_name;
 	WERROR rv;
+	bool (*iterate)(struct tree_node **, bool, WERROR *);
+	struct value_item *(*find_item)(struct value_list *,
+				        struct value_item *,
+				        const char *,
+				        regedit_search_match_fn_t);
 
 	opts = &regedit->active_search;
 
@@ -237,6 +242,13 @@ static WERROR regedit_search(struct regedit *regedit, struct tree_node *node,
 	save_value_name = NULL;
 	search_key = opts->search_key;
 	need_sync = false;
+	iterate = tree_node_next;
+	find_item = value_list_find_next_item;
+
+	if (flags & SEARCH_PREV) {
+		iterate = tree_node_prev;
+		find_item = value_list_find_prev_item;
+	}
 
 	if (opts->search_value) {
 		struct value_item *it;
@@ -258,7 +270,7 @@ static WERROR regedit_search(struct regedit *regedit, struct tree_node *node,
 	if (!vitem && (flags & SEARCH_REPEAT)) {
 		if (opts->search_value) {
 			search_key = false;
-		} else if (!tree_node_next(&node, opts->search_recursive, &rv)) {
+		} else if (!iterate(&node, opts->search_recursive, &rv)) {
 			beep();
 			return rv;
 		}
@@ -283,10 +295,8 @@ static WERROR regedit_search(struct regedit *regedit, struct tree_node *node,
 				}
 				need_sync = true;
 			}
-			found_value = value_list_find_next_item(regedit->vl,
-								vitem,
-								opts->query,
-								opts->match);
+			found_value = find_item(regedit->vl, vitem, opts->query,
+						opts->match);
 			if (found_value) {
 				found = node;
 			} else {
@@ -294,7 +304,7 @@ static WERROR regedit_search(struct regedit *regedit, struct tree_node *node,
 				search_key = opts->search_key;
 			}
 		}
-	} while (!found && tree_node_next(&node, opts->search_recursive, &rv));
+	} while (!found && iterate(&node, opts->search_recursive, &rv));
 
 	if (!W_ERROR_IS_OK(rv)) {
 		goto out;
@@ -589,7 +599,7 @@ static void handle_main_input(struct regedit *regedit, int c)
 		if (rv == DIALOG_OK) {
 			SMB_ASSERT(opts->query != NULL);
 			opts->match = find_substring_nocase;
-			node = regedit->keys->root;
+			node = regedit->keys->root->child_head;
 			if (opts->search_case) {
 				opts->match = find_substring;
 			}
@@ -602,8 +612,10 @@ static void handle_main_input(struct regedit *regedit, int c)
 		break;
 	}
 	case 'x':
-	case 'X':
 		regedit_search_repeat(regedit, SEARCH_NEXT);
+		break;
+	case 'X':
+		regedit_search_repeat(regedit, SEARCH_PREV);
 		break;
 	case '\t':
 		regedit->tree_input = !regedit->tree_input;
