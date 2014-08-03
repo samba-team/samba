@@ -342,6 +342,30 @@ static WERROR next_depth_first(struct tree_node **node)
 	return rv;
 }
 
+static WERROR prev_depth_first(struct tree_node **node)
+{
+	WERROR rv = WERR_OK;
+
+	SMB_ASSERT(node != NULL && *node != NULL);
+
+	if ((*node)->previous) {
+		*node = (*node)->previous;
+		while (tree_node_has_children(*node)) {
+			rv = tree_node_load_children(*node);
+			if (W_ERROR_IS_OK(rv)) {
+				SMB_ASSERT((*node)->child_head != NULL);
+				*node = tree_node_last((*node)->child_head);
+			}
+		}
+	} else if (!tree_node_is_top_level(*node)) {
+		*node = (*node)->parent;
+	} else {
+		*node = NULL;
+	}
+
+	return rv;
+}
+
 bool tree_node_next(struct tree_node **node, bool depth, WERROR *err)
 {
 	*err = WERR_OK;
@@ -354,6 +378,23 @@ bool tree_node_next(struct tree_node **node, bool depth, WERROR *err)
 		*err = next_depth_first(node);
 	} else {
 		*node = (*node)->next;
+	}
+
+	return *node != NULL && W_ERROR_IS_OK(*err);
+}
+
+bool tree_node_prev(struct tree_node **node, bool depth, WERROR *err)
+{
+	*err = WERR_OK;
+
+	if (*node == NULL) {
+		return false;
+	}
+
+	if (depth) {
+		*err = prev_depth_first(node);
+	} else {
+		*node = (*node)->previous;
 	}
 
 	return *node != NULL && W_ERROR_IS_OK(*err);
