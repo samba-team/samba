@@ -664,51 +664,50 @@ struct lock_context *ctdb_find_lock_context(struct ctdb_context *ctdb)
 	struct ctdb_db_context *ctdb_db;
 
 	/* First check if there are database lock requests */
-	lock_ctx = ctdb->lock_pending;
-	while (lock_ctx != NULL) {
-		next_ctx = lock_ctx->next;
-		if (! lock_ctx->request) {
-			DEBUG(DEBUG_INFO, ("Removing lock context without lock request\n"));
-			DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
-			CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
-			if (lock_ctx->ctdb_db) {
-				CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
-			}
-			talloc_free(lock_ctx);
-		} else {
-			/* Found a lock context with lock requests */
-			break;
-		}
-		lock_ctx = next_ctx;
-	}
 
-	if (lock_ctx) {
-		return lock_ctx;
+	for (lock_ctx = ctdb->lock_pending; lock_ctx != NULL;
+	     lock_ctx = next_ctx) {
+
+		if (lock_ctx->request != NULL) {
+			/* Found a lock context with a request */
+			return lock_ctx;
+		}
+
+		next_ctx = lock_ctx->next;
+
+		DEBUG(DEBUG_INFO, ("Removing lock context without lock "
+				   "request\n"));
+		DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
+		CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
+		if (lock_ctx->ctdb_db) {
+			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db,
+					       locks.num_pending);
+		}
+		talloc_free(lock_ctx);
 	}
 
 	/* Next check database queues */
 	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (ctdb_db->lock_num_current == ctdb->tunable.lock_processes_per_db) {
+		if (ctdb_db->lock_num_current ==
+		    ctdb->tunable.lock_processes_per_db) {
 			continue;
 		}
-		lock_ctx = ctdb_db->lock_pending;
-		while (lock_ctx != NULL) {
+
+		for (lock_ctx = ctdb_db->lock_pending; lock_ctx != NULL;
+		     lock_ctx = next_ctx) {
+
 			next_ctx = lock_ctx->next;
-			if (! lock_ctx->request) {
-				DEBUG(DEBUG_INFO, ("Removing lock context without lock request\n"));
-				DLIST_REMOVE(ctdb_db->lock_pending, lock_ctx);
-				CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
-				CTDB_DECREMENT_DB_STAT(ctdb_db, locks.num_pending);
-				talloc_free(lock_ctx);
-			} else {
-				break;
+
+			if (lock_ctx->request != NULL) {
+				return lock_ctx;
 			}
 
-			lock_ctx = next_ctx;
-		}
-
-		if (lock_ctx) {
-			return lock_ctx;
+			DEBUG(DEBUG_INFO, ("Removing lock context without "
+					   "lock request\n"));
+			DLIST_REMOVE(ctdb_db->lock_pending, lock_ctx);
+			CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
+			CTDB_DECREMENT_DB_STAT(ctdb_db, locks.num_pending);
+			talloc_free(lock_ctx);
 		}
 	}
 
