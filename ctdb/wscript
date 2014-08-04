@@ -306,10 +306,12 @@ def build(bld):
                         target='utils/smnotify/smnotify.h',
                         rule='rpcgen -h ${SRC} > ${TGT}')
 
+    xdr_buf_hack = 'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
+
     bld.SAMBA_GENERATOR('ctdb-smnotify-x',
                         source='utils/smnotify/smnotify.x',
                         target='utils/smnotify/gen_xdr.c',
-                        rule='rpcgen -c ${SRC} > ${TGT}')
+                        rule='rpcgen -c ${SRC} | ' + xdr_buf_hack + ' > ${TGT}')
 
     bld.SAMBA_GENERATOR('ctdb-smnotify-c',
                         source='utils/smnotify/smnotify.x',
