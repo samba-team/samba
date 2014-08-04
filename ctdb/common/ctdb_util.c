@@ -327,7 +327,7 @@ struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, st
 		if (r->datalen < sizeof(*header)) {
 			return NULL;
 		}
-		*header = *(struct ctdb_ltdb_header *)&r->data[r->keylen];
+		memcpy(header, &r->data[r->keylen], sizeof(*header));
 	}
 
 	return r;

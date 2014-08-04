@@ -437,7 +437,8 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	len = offsetof(struct ctdb_req_dmaster, data) + key.dsize + data.dsize
 			+ sizeof(uint32_t);
 	if (len <= c->hdr.length) {
-		record_flags = *(uint32_t *)&c->data[c->keylen + c->datalen];
+		memcpy(&record_flags, &c->data[c->keylen + c->datalen],
+		       sizeof(record_flags));
 	}
 
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
@@ -1114,7 +1115,8 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	len = offsetof(struct ctdb_reply_dmaster, data) + key.dsize + data.dsize
 		+ sizeof(uint32_t);
 	if (len <= c->hdr.length) {
-		record_flags = *(uint32_t *)&c->data[c->keylen + c->datalen];
+		memcpy(&record_flags, &c->data[c->keylen + c->datalen],
+		       sizeof(record_flags));
 	}
 
 	ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr,
