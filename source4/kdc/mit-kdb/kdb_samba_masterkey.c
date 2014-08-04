@@ -51,7 +51,7 @@ krb5_error_code kdb_samba_fetch_master_key_list(krb5_context context,
 	 * NOTE: samba does not support master keys
 	 *       so just return a dummy key
 	 */
-	mkey = malloc(sizeof(krb5_keylist_node));
+	mkey = calloc(1, sizeof(krb5_keylist_node));
 	if (mkey == NULL) {
 		return ENOMEM;
 	}

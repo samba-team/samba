@@ -109,7 +109,7 @@ static krb5_error_code ks_get_master_key_principal(krb5_context context,
 
 	/* Return a dummy key */
 	kentry->n_key_data = 1;
-	kentry->key_data = malloc(sizeof(krb5_key_data));
+	kentry->key_data = calloc(1, sizeof(krb5_key_data));
 	if (code != 0) {
 		ks_free_krb5_db_entry(context, kentry);
 		return code;
