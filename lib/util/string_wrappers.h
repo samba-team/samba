@@ -43,11 +43,6 @@ do { \
 	const char *_fstrcat_src = (const char *)(s); \
 	strlcat((d),_fstrcat_src ? _fstrcat_src : "",sizeof(fstring)); \
 } while (0)
-#define nstrcpy(d,s) \
-do { \
-	const char *_nstrcpy_src = (const char *)(s); \
-	strlcpy((d),_nstrcpy_src ? _nstrcpy_src : "",sizeof(fstring)); \
-} while (0)
 #define unstrcpy(d,s) \
 do { \
 	const char *_unstrcpy_src = (const char *)(s); \
