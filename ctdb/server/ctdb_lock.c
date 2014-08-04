@@ -432,9 +432,7 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 
 	/* cancel the timeout event */
-	if (lock_ctx->ttimer) {
-		TALLOC_FREE(lock_ctx->ttimer);
-	}
+	TALLOC_FREE(lock_ctx->ttimer);
 
 	t = timeval_elapsed(&lock_ctx->start_time);
 	id = lock_bucket_id(t);
