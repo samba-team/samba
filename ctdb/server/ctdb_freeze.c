@@ -139,25 +139,28 @@ void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 		return;
 	}
 
+	if (ctdb->freeze_handles[priority] != NULL) {
+		/* already trying to freeze */
+		return;
+	}
+
 	DEBUG(DEBUG_ERR, ("Freeze priority %u\n", priority));
 
 	/* Stop any vacuuming going on: we don't want to wait. */
 	ctdb_stop_vacuuming(ctdb);
 
-	/* if there isn't a freeze lock child then create one */
-	if (ctdb->freeze_handles[priority] == NULL) {
-		h = talloc_zero(ctdb, struct ctdb_freeze_handle);
-		CTDB_NO_MEMORY_FATAL(ctdb, h);
-		h->ctdb = ctdb;
-		h->priority = priority;
-		talloc_set_destructor(h, ctdb_freeze_handle_destructor);
+	/* create freeze lock child */
+	h = talloc_zero(ctdb, struct ctdb_freeze_handle);
+	CTDB_NO_MEMORY_FATAL(ctdb, h);
+	h->ctdb = ctdb;
+	h->priority = priority;
+	talloc_set_destructor(h, ctdb_freeze_handle_destructor);
 
-		h->lreq = ctdb_lock_alldb_prio(h, ctdb, priority, false,
-					       ctdb_freeze_lock_handler, h);
-		CTDB_NO_MEMORY_FATAL(ctdb, h->lreq);
-		ctdb->freeze_handles[priority] = h;
-		ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
-	}
+	h->lreq = ctdb_lock_alldb_prio(h, ctdb, priority, false,
+				       ctdb_freeze_lock_handler, h);
+	CTDB_NO_MEMORY_FATAL(ctdb, h->lreq);
+	ctdb->freeze_handles[priority] = h;
+	ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
 }
 
 /*
