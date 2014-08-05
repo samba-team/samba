@@ -585,6 +585,11 @@ struct ctdb_db_context {
 	int lock_num_current;
 
 	struct ctdb_call_state *pending_calls;
+
+	enum ctdb_freeze_mode freeze_mode;
+	struct ctdb_db_freeze_handle *freeze_handle;
+	bool freeze_transaction_started;
+	uint32_t freeze_transaction_id;
 };
 
 
@@ -994,9 +999,15 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
 				TDB_DATA *outdata, int32_t status, const char *errormsg);
 
+int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,
+			       struct ctdb_req_control *c,
+			       uint32_t db_id, bool *async_reply);
+int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id);
+
 int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
 int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
 			  bool check_recmode);
+bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db);
 bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority);
 bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
 

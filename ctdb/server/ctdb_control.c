@@ -683,6 +683,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_DB_DETACH:
 		return ctdb_control_db_detach(ctdb, indata, client_id);
 
+	case CTDB_CONTROL_DB_FREEZE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_freeze(ctdb, c, *(uint32_t *)indata.dptr,
+					      async_reply);
+
+	case CTDB_CONTROL_DB_THAW:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_thaw(ctdb, *(uint32_t *)indata.dptr);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

@@ -101,6 +101,179 @@ static int db_transaction_commit_handler(struct ctdb_db_context *ctdb_db,
 }
 
 
+/* a list of control requests waiting for db freeze */
+struct ctdb_db_freeze_waiter {
+	struct ctdb_db_freeze_waiter *next, *prev;
+	struct ctdb_context *ctdb;
+	void *private_data;
+	int32_t status;
+};
+
+/* a handle to a db freeze lock child process */
+struct ctdb_db_freeze_handle {
+	struct ctdb_db_context *ctdb_db;
+	struct lock_request *lreq;
+	struct ctdb_db_freeze_waiter *waiters;
+};
+
+/**
+ * Called when freeing database freeze handle
+ */
+static int ctdb_db_freeze_handle_destructor(struct ctdb_db_freeze_handle *h)
+{
+	struct ctdb_db_context *ctdb_db = h->ctdb_db;
+
+	DEBUG(DEBUG_ERR, ("Release freeze handle for db %s\n",
+			  ctdb_db->db_name));
+
+	/* Cancel any pending transactions */
+	if (ctdb_db->freeze_transaction_started) {
+		db_transaction_cancel_handler(ctdb_db, NULL);
+		ctdb_db->freeze_transaction_started = false;
+	}
+	ctdb_db->freeze_mode = CTDB_FREEZE_NONE;
+	ctdb_db->freeze_handle = NULL;
+
+	talloc_free(h->lreq);
+	return 0;
+}
+
+/**
+ * Called when a database is frozen
+ */
+static void ctdb_db_freeze_handler(void *private_data, bool locked)
+{
+	struct ctdb_db_freeze_handle *h = talloc_get_type_abort(
+		private_data, struct ctdb_db_freeze_handle);
+	struct ctdb_db_freeze_waiter *w;
+
+	if (h->ctdb_db->freeze_mode == CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_ERR, ("Freeze db child died - unfreezing\n"));
+		h->ctdb_db->freeze_mode = CTDB_FREEZE_NONE;
+		talloc_free(h);
+		return;
+	}
+
+	if (!locked) {
+		DEBUG(DEBUG_ERR, ("Failed to get db lock for %s\n",
+				  h->ctdb_db->db_name));
+		h->ctdb_db->freeze_mode = CTDB_FREEZE_NONE;
+		talloc_free(h);
+		return;
+	}
+
+	h->ctdb_db->freeze_mode = CTDB_FREEZE_FROZEN;
+
+	/* notify the waiters */
+	while ((w = h->waiters) != NULL) {
+		w->status = 0;
+		DLIST_REMOVE(h->waiters, w);
+		talloc_free(w);
+	}
+}
+
+/**
+ * Start freeze process for a database
+ */
+static void ctdb_start_db_freeze(struct ctdb_db_context *ctdb_db)
+{
+	struct ctdb_db_freeze_handle *h;
+
+	if (ctdb_db->freeze_mode == CTDB_FREEZE_FROZEN) {
+		return;
+	}
+
+	if (ctdb_db->freeze_handle != NULL) {
+		return;
+	}
+
+	DEBUG(DEBUG_ERR, ("Freeze db: %s\n", ctdb_db->db_name));
+
+	ctdb_stop_vacuuming(ctdb_db->ctdb);
+
+	h = talloc_zero(ctdb_db, struct ctdb_db_freeze_handle);
+	CTDB_NO_MEMORY_FATAL(ctdb_db->ctdb, h);
+
+	h->ctdb_db = ctdb_db;
+	h->lreq = ctdb_lock_db(h, ctdb_db, false, ctdb_db_freeze_handler, h);
+	CTDB_NO_MEMORY_FATAL(ctdb_db->ctdb, h->lreq);
+	talloc_set_destructor(h, ctdb_db_freeze_handle_destructor);
+
+	ctdb_db->freeze_handle = h;
+	ctdb_db->freeze_mode = CTDB_FREEZE_PENDING;
+}
+
+/**
+ * Reply to a waiter for db freeze
+ */
+static int ctdb_db_freeze_waiter_destructor(struct ctdb_db_freeze_waiter *w)
+{
+	/* 'c' pointer is talloc_memdup(), so cannot use talloc_get_type */
+	struct ctdb_req_control *c =
+		(struct ctdb_req_control *)w->private_data;
+
+	ctdb_request_control_reply(w->ctdb, c, NULL, w->status, NULL);
+	return 0;
+}
+
+/**
+ * freeze a database
+ */
+int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,
+			       struct ctdb_req_control *c,
+			       uint32_t db_id,
+			       bool *async_reply)
+{
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_db_freeze_waiter *w;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR, ("Freeze db for unknown dbid 0x%08x\n", db_id));
+		return -1;
+	}
+
+	if (ctdb_db->freeze_mode == CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_ERR, ("Freeze db: %s frozen\n", ctdb_db->db_name));
+		return 0;
+	}
+
+	ctdb_start_db_freeze(ctdb_db);
+
+	/* add ourselves to the list of waiters */
+	w = talloc(ctdb_db->freeze_handle, struct ctdb_db_freeze_waiter);
+	CTDB_NO_MEMORY(ctdb, w);
+	w->ctdb = ctdb;
+	w->private_data = talloc_steal(w, c);
+	w->status = -1;
+	talloc_set_destructor(w, ctdb_db_freeze_waiter_destructor);
+	DLIST_ADD(ctdb_db->freeze_handle->waiters, w);
+
+	*async_reply = true;
+	return 0;
+}
+
+/**
+ * Thaw a database
+ */
+int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR, ("Thaw db for unknown dbid 0x%08x\n", db_id));
+		return -1;
+	}
+
+	DEBUG(DEBUG_ERR, ("Thaw db: %s\n", ctdb_db->db_name));
+
+	TALLOC_FREE(ctdb_db->freeze_handle);
+	ctdb_call_resend_db(ctdb_db);
+	return 0;
+}
+
+
 /*
   a list of control requests waiting for a freeze lock child to get
   the database locks
@@ -485,6 +658,15 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 	return 0;
+}
+
+bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db)
+{
+	if (ctdb_db->freeze_mode != CTDB_FREEZE_FROZEN) {
+		return false;
+	}
+
+	return true;
 }
 
 bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority)
