@@ -251,16 +251,6 @@ static void thaw_priority(struct ctdb_context *ctdb, uint32_t priority)
 	}
 	ctdb->freeze_transaction_started = false;
 
-#if 0
-	/* this hack can be used to get a copy of the databases at the end of a recovery */
-	system("mkdir -p /var/ctdb.saved; /usr/bin/rsync --delete -a /var/ctdb/ /var/ctdb.saved/$$ 2>&1 > /dev/null");
-#endif
-
-#if 0
-	/* and this one for local testing */
-	system("mkdir -p test.db.saved; /usr/bin/rsync --delete -a test.db/ test.db.saved/$$ 2>&1 > /dev/null");
-#endif
-
 	if (ctdb->freeze_handles[priority] != NULL) {
 		talloc_free(ctdb->freeze_handles[priority]);
 		ctdb->freeze_handles[priority] = NULL;
