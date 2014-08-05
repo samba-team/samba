@@ -1724,6 +1724,16 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	/*
+	 * The printcap printer share inventory is updated on client
+	 * enumeration. For clients that do not perform enumeration prior to
+	 * access, such as cupssmbadd, we reinitialise the printer share
+	 * inventory on open as well.
+	 */
+	become_root();
+	delete_and_reload_printers(server_event_context(), p->msg_ctx);
+	unbecome_root();
+
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
 
@@ -4301,7 +4311,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * printer shares are only updated on client enumeration. The background
+	 * printer shares are updated on client enumeration. The background
 	 * printer process updates printer_list.tdb at regular intervals.
 	 */
 	become_root();
