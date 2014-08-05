@@ -26,6 +26,26 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "../common/rb_tree.h"
 
+
+/**
+ * Cancel a transaction on database
+ */
+static int db_transaction_cancel_handler(struct ctdb_db_context *ctdb_db,
+					 void *private_data)
+{
+	int ret;
+
+	tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+	ret = tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to cancel transaction for db %s\n",
+				  ctdb_db->db_name));
+	}
+	tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+	return 0;
+}
+
+
 /*
   a list of control requests waiting for a freeze lock child to get
   the database locks
@@ -48,27 +68,17 @@ struct ctdb_freeze_handle {
 
 /*
   destroy a freeze handle
- */	
+ */
 static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 {
 	struct ctdb_context *ctdb = h->ctdb;
-	struct ctdb_db_context *ctdb_db;
 
 	DEBUG(DEBUG_ERR,("Release freeze handler for prio %u\n", h->priority));
 
 	/* cancel any pending transactions */
 	if (ctdb->freeze_transaction_started) {
-		for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-			if (ctdb_db->priority != h->priority) {
-				continue;
-			}
-			tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
-					 ctdb_db->db_name));
-			}
-			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-		}
+		ctdb_db_prio_iterator(ctdb, h->priority,
+				      db_transaction_cancel_handler, NULL);
 		ctdb->freeze_transaction_started = false;
 	}
 
@@ -238,18 +248,10 @@ static void thaw_priority(struct ctdb_context *ctdb, uint32_t priority)
 
 	/* cancel any pending transactions */
 	if (ctdb->freeze_transaction_started) {
-		struct ctdb_db_context *ctdb_db;
-
-		for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-			tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
-					 ctdb_db->db_name));
-			}
-			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-		}
+		ctdb_db_prio_iterator(ctdb, priority,
+				      db_transaction_cancel_handler, NULL);
+		ctdb->freeze_transaction_started = false;
 	}
-	ctdb->freeze_transaction_started = false;
 
 	if (ctdb->freeze_handles[priority] != NULL) {
 		talloc_free(ctdb->freeze_handles[priority]);
