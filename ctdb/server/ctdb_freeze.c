@@ -341,21 +341,9 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
  */
 int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb)
 {
-	struct ctdb_db_context *ctdb_db;
-
 	DEBUG(DEBUG_ERR,(__location__ " recovery transaction cancelled called\n"));
 
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-
-		if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",  ctdb_db->db_name));
-			/* not a fatal error */
-		}
-
-		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-	}
-
+	ctdb_db_iterator(ctdb, db_transaction_cancel_handler, NULL);
 	ctdb->freeze_transaction_started = false;
 
 	return 0;
@@ -425,14 +413,7 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 
 fail:
 	/* cancel any pending transactions */
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-		if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
-				 ctdb_db->db_name));
-		}
-		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-	}
+	ctdb_db_iterator(ctdb, db_transaction_cancel_handler, NULL);
 	ctdb->freeze_transaction_started = false;
 
 	return -1;
