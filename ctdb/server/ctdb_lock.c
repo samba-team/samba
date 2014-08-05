@@ -113,11 +113,8 @@ static bool later_db(struct ctdb_context *ctdb, const char *name)
 	return false;
 }
 
-typedef int (*db_handler_t)(struct ctdb_db_context *ctdb_db,
-			    void *private_data);
-
-static int ctdb_db_prio_iterator(struct ctdb_context *ctdb, uint32_t priority,
-				 db_handler_t handler, void *private_data)
+int ctdb_db_prio_iterator(struct ctdb_context *ctdb, uint32_t priority,
+			  ctdb_db_handler_t handler, void *private_data)
 {
 	struct ctdb_db_context *ctdb_db;
 	int ret;

@@ -1459,6 +1459,12 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 /* from server/ctdb_lock.c */
 struct lock_request;
 
+typedef int (*ctdb_db_handler_t)(struct ctdb_db_context *ctdb_db,
+				 void *private_data);
+
+int ctdb_db_prio_iterator(struct ctdb_context *ctdb, uint32_t priority,
+			  ctdb_db_handler_t handler, void *private_data);
+
 int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority);
 int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority);
 
