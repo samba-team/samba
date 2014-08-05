@@ -1301,7 +1301,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 */
 static int ctdb_call_destructor(struct ctdb_call_state *state)
 {
-	DLIST_REMOVE(state->ctdb_db->ctdb->pending_calls, state);
+	DLIST_REMOVE(state->ctdb_db->pending_calls, state);
 	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
 	return 0;
 }
@@ -1334,12 +1334,22 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 /*
   resend all pending calls on recovery
  */
-void ctdb_call_resend_all(struct ctdb_context *ctdb)
+void ctdb_call_resend_db(struct ctdb_db_context *ctdb_db)
 {
 	struct ctdb_call_state *state, *next;
-	for (state=ctdb->pending_calls;state;state=next) {
+
+	for (state = ctdb_db->pending_calls; state; state = next) {
 		next = state->next;
 		ctdb_call_resend(state);
+	}
+}
+
+void ctdb_call_resend_all(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		ctdb_call_resend_db(ctdb_db);
 	}
 }
 
@@ -1445,7 +1455,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->state  = CTDB_CALL_WAIT;
 	state->generation = ctdb->vnn_map->generation;
 
-	DLIST_ADD(ctdb->pending_calls, state);
+	DLIST_ADD(ctdb_db->pending_calls, state);
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 

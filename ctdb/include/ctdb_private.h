@@ -489,7 +489,6 @@ struct ctdb_context {
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
 	uint32_t recovery_master;
-	struct ctdb_call_state *pending_calls;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_checkpublicip;
 	struct trbt_tree *server_ids; 
@@ -584,6 +583,8 @@ struct ctdb_db_context {
 	struct lock_context *lock_current;
 	struct lock_context *lock_pending;
 	int lock_num_current;
+
+	struct ctdb_call_state *pending_calls;
 };
 
 
@@ -1016,6 +1017,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control
 
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
+void ctdb_call_resend_db(struct ctdb_db_context *ctdb);
 void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
