@@ -21,9 +21,9 @@ bld.SAMBA_MODULE('service_kdc',
                       samba_server_gensec
                       PAC_GLUE
                       KDC-GLUE
+                      KPASSWD_GLUE
                  ''',
                  internal_module=False)
-
 
 bld.SAMBA_LIBRARY('HDB_SAMBA4',
                   source='hdb-samba4.c hdb-samba4-plugin.c',
@@ -78,6 +78,11 @@ bld.SAMBA_LIBRARY('db-glue',
 	private_library=True,
         includes=kdc_include,
 	)
+
+bld.SAMBA_SUBSYSTEM('KPASSWD_GLUE',
+        source='kpasswd_glue.c',
+        includes=kdc_include,
+        deps='ldb com_err')
 
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
                     source='mit_samba.c',
