@@ -38,7 +38,7 @@
  */
 static time_t reload_last_pcap_time = 0;
 
-static bool snum_is_shared_printer(int snum)
+bool snum_is_shared_printer(int snum)
 {
 	return (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum));
 }
