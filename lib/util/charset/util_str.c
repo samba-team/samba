@@ -47,27 +47,16 @@ _PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 		c1 = next_codepoint_handle(iconv_handle, s1, &size1);
 		c2 = next_codepoint_handle(iconv_handle, s2, &size2);
 
+		if (c1 == INVALID_CODEPOINT ||
+		    c2 == INVALID_CODEPOINT) {
+			return strcasecmp(s1, s2);
+		}
+
 		s1 += size1;
 		s2 += size2;
 
 		if (c1 == c2) {
 			continue;
-		}
-
-		if (c1 == INVALID_CODEPOINT ||
-		    c2 == INVALID_CODEPOINT) {
-			/*
-			 * Fall back to byte
-			 * comparison. We must
-			 * step back by the codepoint
-			 * length we just incremented
-			 * - otherwise we are not
-			 * checking the bytes that
-			 * failed the conversion.
-			 */
-			s1 -= size1;
-			s2 -= size2;
-			return strcasecmp(s1, s2);
 		}
 
 		if (toupper_m(c1) != toupper_m(c2)) {
@@ -107,26 +96,8 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 		c1 = next_codepoint_handle(iconv_handle, s1, &size1);
 		c2 = next_codepoint_handle(iconv_handle, s2, &size2);
 
-		s1 += size1;
-		s2 += size2;
-
-		if (c1 == c2) {
-			continue;
-		}
-
 		if (c1 == INVALID_CODEPOINT ||
 		    c2 == INVALID_CODEPOINT) {
-			/*
-			 * Fall back to byte
-			 * comparison. We must
-			 * step back by the codepoint
-			 * length we just incremented
-			 * by - otherwise we are not
-			 * checking the bytes that
-			 * failed the conversion.
-			 */
-			s1 -= size1;
-			s2 -= size2;
 			/*
 			 * n was specified in characters,
 			 * now we must convert it to bytes.
@@ -139,10 +110,17 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			 * to be n characters long, so we are
 			 * guaranteed to be able to look at the
 			 * (n remaining + size1) bytes from the
-			 * new (s1 - size1) position).
+			 * s1 position).
 			 */
 			n += size1;
 			return strncasecmp(s1, s2, n);
+		}
+
+		s1 += size1;
+		s2 += size2;
+
+		if (c1 == c2) {
+			continue;
 		}
 
 		if (toupper_m(c1) != toupper_m(c2)) {
