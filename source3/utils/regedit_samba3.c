@@ -107,7 +107,7 @@ static WERROR samba3_get_value_by_index(TALLOC_CTX *mem_ctx,
 	mykeydata = talloc_get_type(parent, struct samba3_key);
 
 	return reg_enumvalue_wrap(mem_ctx, &mykeydata->s3key, n,
-				  value_name, type, data);
+				  discard_const(value_name), type, data);
 }
 
 static WERROR samba3_get_value_by_name(TALLOC_CTX *mem_ctx,
@@ -138,7 +138,7 @@ static WERROR samba3_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 	*keyclass = NULL;
 
 	return reg_enumkey_wrap(mem_ctx, &mykeydata->s3key, n,
-				name, last_changed_time);
+				discard_const(name), last_changed_time);
 }
 
 static WERROR samba3_add_key(TALLOC_CTX *mem_ctx,

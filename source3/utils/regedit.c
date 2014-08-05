@@ -197,7 +197,7 @@ static void load_values(struct regedit *regedit)
 static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 			bool subkey)
 {
-	char *name;
+	const char *name;
 	const char *msg;
 
 	if (!subkey && !node->parent) {
@@ -244,7 +244,7 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 			dialog_notice(regedit, DIA_ALERT, "New Key",
 				      "Failed to create key.");
 		}
-		talloc_free(name);
+		talloc_free(discard_const(name));
 	}
 }
 
