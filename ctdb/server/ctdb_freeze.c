@@ -45,6 +45,34 @@ static int db_transaction_cancel_handler(struct ctdb_db_context *ctdb_db,
 	return 0;
 }
 
+/**
+ * Start a transaction on database
+ */
+static int db_transaction_start_handler(struct ctdb_db_context *ctdb_db,
+					void *private_data)
+{
+	bool freeze_transaction_started = *(bool *)private_data;
+	int ret;
+
+	tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+	if (freeze_transaction_started) {
+		ret = tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,
+			      ("Failed to cancel transaction for db %s\n",
+			       ctdb_db->db_name));
+		}
+	}
+	ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
+	tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to start transaction for db %s\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+	return 0;
+}
+
 
 /*
   a list of control requests waiting for a freeze lock child to get
@@ -296,8 +324,7 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
  */
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 {
-	struct ctdb_db_context *ctdb_db;
-	int i;
+	int i, ret;
 
 	for (i=1;i<=NUM_DB_PRIORITIES; i++) {
 		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
@@ -306,28 +333,10 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 		}
 	}
 
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		int ret;
-
-		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-
-		if (ctdb->freeze_transaction_started) {
-			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
-					 ctdb_db->db_name));
-				/* not a fatal error */
-			}
-		}
-
-		ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
-
-		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to start transaction for db '%s'\n",
-				 ctdb_db->db_name));
-			return -1;
-		}
+	ret = ctdb_db_iterator(ctdb, db_transaction_start_handler,
+			       &ctdb->freeze_transaction_started);
+	if (ret != 0) {
+		return -1;
 	}
 
 	ctdb->freeze_transaction_started = true;
