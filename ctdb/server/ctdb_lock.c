@@ -116,8 +116,8 @@ static bool later_db(struct ctdb_context *ctdb, const char *name)
 typedef int (*db_handler_t)(struct ctdb_db_context *ctdb_db,
 			    void *private_data);
 
-static int ctdb_db_iterator(struct ctdb_context *ctdb, uint32_t priority,
-			    db_handler_t handler, void *private_data)
+static int ctdb_db_prio_iterator(struct ctdb_context *ctdb, uint32_t priority,
+				 db_handler_t handler, void *private_data)
 {
 	struct ctdb_db_context *ctdb_db;
 	int ret;
@@ -193,7 +193,7 @@ int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 		return -1;
 	}
 
-	return ctdb_db_iterator(ctdb, priority, db_lock_mark_handler, NULL);
+	return ctdb_db_prio_iterator(ctdb, priority, db_lock_mark_handler, NULL);
 }
 
 static int ctdb_lockall_mark(struct ctdb_context *ctdb)
@@ -201,7 +201,11 @@ static int ctdb_lockall_mark(struct ctdb_context *ctdb)
 	uint32_t priority;
 
 	for (priority=1; priority<=NUM_DB_PRIORITIES; priority++) {
-		if (ctdb_db_iterator(ctdb, priority, db_lock_mark_handler, NULL) != 0) {
+		int ret;
+
+		ret = ctdb_db_prio_iterator(ctdb, priority,
+					    db_lock_mark_handler, NULL);
+		if (ret != 0) {
 			return -1;
 		}
 	}
@@ -249,7 +253,8 @@ int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority)
 		return -1;
 	}
 
-	return ctdb_db_iterator(ctdb, priority, db_lock_unmark_handler, NULL);
+	return ctdb_db_prio_iterator(ctdb, priority, db_lock_unmark_handler,
+				     NULL);
 }
 
 static int ctdb_lockall_unmark(struct ctdb_context *ctdb)
@@ -257,7 +262,11 @@ static int ctdb_lockall_unmark(struct ctdb_context *ctdb)
 	uint32_t priority;
 
 	for (priority=NUM_DB_PRIORITIES; priority>0; priority--) {
-		if (ctdb_db_iterator(ctdb, priority, db_lock_unmark_handler, NULL) != 0) {
+		int ret;
+
+		ret = ctdb_db_prio_iterator(ctdb, priority,
+					    db_lock_unmark_handler, NULL);
+		if (ret != 0) {
 			return -1;
 		}
 	}
@@ -614,13 +623,15 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 
 	case LOCK_ALLDB_PRIO:
 		nargs = 3;
-		ctdb_db_iterator(ctdb, lock_ctx->priority, db_count_handler, &nargs);
+		ctdb_db_prio_iterator(ctdb, lock_ctx->priority,
+				      db_count_handler, &nargs);
 		break;
 
 	case LOCK_ALLDB:
 		nargs = 3;
 		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
-			ctdb_db_iterator(ctdb, priority, db_count_handler, &nargs);
+			ctdb_db_prio_iterator(ctdb, priority,
+					      db_count_handler, &nargs);
 		}
 		break;
 	}
@@ -660,7 +671,8 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 		args[2] = talloc_strdup(args, "DB");
 		list.names = args;
 		list.n = 3;
-		ctdb_db_iterator(ctdb, lock_ctx->priority, db_name_handler, &list);
+		ctdb_db_prio_iterator(ctdb, lock_ctx->priority,
+				      db_name_handler, &list);
 		break;
 
 	case LOCK_ALLDB:
@@ -668,7 +680,8 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 		list.names = args;
 		list.n = 3;
 		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
-			ctdb_db_iterator(ctdb, priority, db_name_handler, &list);
+			ctdb_db_prio_iterator(ctdb, priority,
+					      db_name_handler, &list);
 		}
 		break;
 	}
