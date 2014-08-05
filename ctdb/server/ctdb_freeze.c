@@ -73,6 +73,33 @@ static int db_transaction_start_handler(struct ctdb_db_context *ctdb_db,
 	return 0;
 }
 
+/**
+ * Commit a transaction on database
+ */
+static int db_transaction_commit_handler(struct ctdb_db_context *ctdb_db,
+					 void *private_data)
+{
+	int healthy_nodes = *(int *)private_data;
+	int ret;
+
+	tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+	ret = tdb_transaction_commit(ctdb_db->ltdb->tdb);
+	tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to commit transaction for db %s\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+
+	ret = ctdb_update_persistent_health(ctdb_db->ctdb, ctdb_db, NULL,
+					    healthy_nodes);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to update persistent health for db %s\n",
+				  ctdb_db->db_name));
+	}
+	return ret;
+}
+
 
 /*
   a list of control requests waiting for a freeze lock child to get
@@ -363,9 +390,9 @@ int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb)
  */
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 {
-	struct ctdb_db_context *ctdb_db;
 	int i;
 	int healthy_nodes = 0;
+	int ret;
 
 	for (i=1;i<=NUM_DB_PRIORITIES; i++) {
 		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
@@ -394,25 +421,11 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 	}
 	DEBUG(DEBUG_INFO,(__location__ " healthy_nodes[%d]\n", healthy_nodes));
 
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		int ret;
-
-		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-		ret = tdb_transaction_commit(ctdb_db->ltdb->tdb);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction for db '%s'. Cancel all transactions and resetting transaction_started to false.\n",
-				 ctdb_db->db_name));
-			goto fail;
-		}
-		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
-
-		ret = ctdb_update_persistent_health(ctdb, ctdb_db, NULL, healthy_nodes);
-		if (ret != 0) {
-			DEBUG(DEBUG_CRIT,(__location__ " Failed to update persistent health for db '%s'. "
-					 "Cancel all remaining transactions and resetting transaction_started to false.\n",
-					 ctdb_db->db_name));
-			goto fail;
-		}
+	ret = ctdb_db_iterator(ctdb, db_transaction_commit_handler,
+			       &healthy_nodes);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Cancel all transactions\n"));
+		goto fail;
 	}
 
 	ctdb->freeze_transaction_started = false;
