@@ -114,7 +114,6 @@ static bool later_db(struct ctdb_context *ctdb, const char *name)
 }
 
 typedef int (*db_handler_t)(struct ctdb_db_context *ctdb_db,
-			    uint32_t priority,
 			    void *private_data);
 
 static int ctdb_db_iterator(struct ctdb_context *ctdb, uint32_t priority,
@@ -130,7 +129,7 @@ static int ctdb_db_iterator(struct ctdb_context *ctdb, uint32_t priority,
 		if (later_db(ctdb, ctdb_db->db_name)) {
 			continue;
 		}
-		ret = handler(ctdb_db, priority, private_data);
+		ret = handler(ctdb_db, private_data);
 		if (ret != 0) {
 			return -1;
 		}
@@ -145,7 +144,7 @@ static int ctdb_db_iterator(struct ctdb_context *ctdb, uint32_t priority,
 		if (!later_db(ctdb, ctdb_db->db_name)) {
 			continue;
 		}
-		ret = handler(ctdb_db, priority, private_data);
+		ret = handler(ctdb_db, private_data);
 		if (ret != 0) {
 			return -1;
 		}
@@ -158,13 +157,12 @@ static int ctdb_db_iterator(struct ctdb_context *ctdb, uint32_t priority,
 /*
  * lock all databases - mark only
  */
-static int db_lock_mark_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
+static int db_lock_mark_handler(struct ctdb_db_context *ctdb_db,
 				void *private_data)
 {
 	int tdb_transaction_write_lock_mark(struct tdb_context *);
 
-	DEBUG(DEBUG_INFO, ("marking locked database %s, priority:%u\n",
-			   ctdb_db->db_name, priority));
+	DEBUG(DEBUG_INFO, ("marking locked database %s\n", ctdb_db->db_name));
 
 	if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
 		DEBUG(DEBUG_ERR, ("Failed to mark (transaction lock) database %s\n",
@@ -215,13 +213,12 @@ static int ctdb_lockall_mark(struct ctdb_context *ctdb)
 /*
  * lock all databases - unmark only
  */
-static int db_lock_unmark_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
+static int db_lock_unmark_handler(struct ctdb_db_context *ctdb_db,
 				  void *private_data)
 {
 	int tdb_transaction_write_lock_unmark(struct tdb_context *);
 
-	DEBUG(DEBUG_INFO, ("unmarking locked database %s, priority:%u\n",
-			   ctdb_db->db_name, priority));
+	DEBUG(DEBUG_INFO, ("unmarking locked database %s\n", ctdb_db->db_name));
 
 	if (tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb) != 0) {
 		DEBUG(DEBUG_ERR, ("Failed to unmark (transaction lock) database %s\n",
@@ -558,8 +555,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 }
 
 
-static int db_count_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
-			    void *private_data)
+static int db_count_handler(struct ctdb_db_context *ctdb_db, void *private_data)
 {
 	int *count = (int *)private_data;
 
@@ -585,8 +581,7 @@ struct db_namelist {
 	int n;
 };
 
-static int db_name_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
-			   void *private_data)
+static int db_name_handler(struct ctdb_db_context *ctdb_db, void *private_data)
 {
 	struct db_namelist *list = (struct db_namelist *)private_data;
 
