@@ -121,6 +121,55 @@ static krb5_error_code ks_is_tgs_principal(struct mit_samba_context *ctx,
 	return eq;
 }
 
+int mit_samba_generate_salt(krb5_data *salt)
+{
+	if (salt == NULL) {
+		return EINVAL;
+	}
+
+	salt->length = 16;
+	salt->data = malloc(salt->length);
+	if (salt->data == NULL) {
+		return ENOMEM;
+	}
+
+	generate_random_buffer((uint8_t *)salt->data, salt->length);
+
+	return 0;
+}
+
+int mit_samba_generate_random_password(krb5_data *pwd)
+{
+	TALLOC_CTX *tmp_ctx;
+	char *password;
+
+	if (pwd == NULL) {
+		return EINVAL;
+	}
+	pwd->length = 24;
+
+	tmp_ctx = talloc_named(NULL,
+			       0,
+			       "mit_samba_create_principal_password context");
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	password = generate_random_password(tmp_ctx, pwd->length, pwd->length);
+	if (password == NULL) {
+		talloc_free(tmp_ctx);
+		return ENOMEM;
+	}
+
+	pwd->data = strdup(password);
+	talloc_free(tmp_ctx);
+	if (pwd->data == NULL) {
+		return ENOMEM;
+	}
+
+	return 0;
+}
+
 int mit_samba_get_principal(struct mit_samba_context *ctx,
 			    krb5_const_principal principal,
 			    unsigned int kflags,
