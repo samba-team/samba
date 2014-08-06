@@ -55,6 +55,18 @@ bool ks_data_eq_string(krb5_data d, const char *s);
 
 krb5_data ks_make_data(void *data, unsigned int len);
 
+krb5_boolean ks_is_kadmin(krb5_context context,
+			  krb5_const_principal princ);
+
+krb5_boolean ks_is_kadmin_history(krb5_context context,
+				  krb5_const_principal princ);
+
+krb5_boolean ks_is_kadmin_changepw(krb5_context context,
+				   krb5_const_principal princ);
+
+krb5_boolean ks_is_kadmin_admin(krb5_context context,
+				krb5_const_principal princ);
+
 /* from kdb_samba_principals.c */
 
 krb5_error_code kdb_samba_db_get_principal(krb5_context context,
