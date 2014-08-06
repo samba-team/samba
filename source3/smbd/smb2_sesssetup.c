@@ -383,7 +383,6 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 {
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
-	struct smbXsrv_connection *xconn = smb2req->xconn;
 
 	data_blob_clear_free(&session_info->session_key);
 	session_info->session_key = data_blob_dup_talloc(session_info,
@@ -421,7 +420,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	conn_clear_vuid_caches(xconn->sconn, session->compat->vuid);
+	conn_clear_vuid_caches(smb2req->sconn, session->compat->vuid);
 
 	*out_session_id = session->global->session_wire_id;
 
