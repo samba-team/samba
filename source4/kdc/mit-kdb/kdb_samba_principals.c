@@ -30,6 +30,9 @@
 #include "kdc/mit_samba.h"
 #include "kdb_samba.h"
 
+#define ADMIN_LIFETIME 60*60*3 /* 3 hours */
+#define CHANGEPW_LIFETIME 60*5 /* 5 minutes */
+
 static krb5_error_code ks_get_principal(krb5_context context,
 				        krb5_const_principal principal,
 				        unsigned int kflags,
@@ -230,6 +233,22 @@ static krb5_error_code ks_create_principal(krb5_context context,
 	return 0;
 }
 
+static krb5_error_code ks_get_admin_principal(krb5_context context,
+					      krb5_const_principal princ,
+					      krb5_db_entry **kentry_ptr)
+{
+	krb5_error_code code = EINVAL;
+
+	code = ks_create_principal(context,
+				   princ,
+				   KRB5_KDB_DISALLOW_TGT_BASED,
+				   ADMIN_LIFETIME,
+				   NULL,
+				   kentry_ptr);
+
+	return code;
+}
+
 krb5_error_code kdb_samba_db_get_principal(krb5_context context,
 					   krb5_const_principal princ,
 					   unsigned int kflags,
@@ -247,9 +266,13 @@ krb5_error_code kdb_samba_db_get_principal(krb5_context context,
 		return ks_get_master_key_principal(context, princ, kentry);
 	}
 
-	/* FIXME: temporarily fake up kadmin history to let kadmin.local work */
-	if (ks_is_kadmin_history(context, princ)) {
-		return ks_get_dummy_principal(context, princ, kentry);
+	/*
+	 * Fake a kadmin/admin and kadmin/history principal so that kadmindd can
+	 * start
+	 */
+	if (ks_is_kadmin_admin(context, princ) ||
+	    ks_is_kadmin_history(context, princ)) {
+		return ks_get_admin_principal(context, princ, kentry);
 	}
 
 	code = ks_get_principal(context, princ, kflags, kentry);
