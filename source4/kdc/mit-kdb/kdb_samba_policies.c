@@ -90,6 +90,10 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 		return KRB5_KDB_DBNOTINITED;
 	}
 
+	if (ks_is_kadmin(context, kdcreq->client)) {
+		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+	}
+
 	if (krb5_princ_size(context, kdcreq->server) == 2 &&
 	    ks_is_kadmin_changepw(context, kdcreq->server)) {
 		code = krb5_get_default_realm(context, &realm);
