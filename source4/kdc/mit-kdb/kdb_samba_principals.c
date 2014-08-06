@@ -299,8 +299,9 @@ krb5_error_code kdb_samba_db_put_principal(krb5_context context,
 {
 
 	/* NOTE: deferred, samba does not allow the KDC to store
-	 * principals for now */
-	return KRB5_KDB_DB_INUSE;
+	 * principals for now. We should not return KRB5_KDB_DB_INUSE as this
+	 * would result in confusing error messages after password changes. */
+	return 0;
 }
 
 krb5_error_code kdb_samba_db_delete_principal(krb5_context context,
