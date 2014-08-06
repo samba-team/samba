@@ -127,12 +127,107 @@ static krb5_error_code ks_get_master_key_principal(krb5_context context,
 	return 0;
 }
 
-static krb5_boolean ks_is_kadmin_history(krb5_context context,
-					 krb5_const_principal princ)
+static krb5_error_code ks_create_principal(krb5_context context,
+					   krb5_const_principal princ,
+					   int attributes,
+					   int max_life,
+					   const char *password,
+					   krb5_db_entry **kentry_ptr)
 {
-	return krb5_princ_size(context, princ) == 2 &&
-	       ks_data_eq_string(princ->data[0], "kadmin") &&
-	       ks_data_eq_string(princ->data[1], "history");
+	krb5_error_code code;
+	krb5_key_data *key_data;
+	krb5_timestamp now;
+	krb5_db_entry *kentry;
+	krb5_keyblock key;
+	krb5_data salt;
+	krb5_data pwd;
+	int enctype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+	int sts = KRB5_KDB_SALTTYPE_SPECIAL;
+
+	if (princ == NULL) {
+		return KRB5_KDB_NOENTRY;
+	}
+
+	*kentry_ptr = NULL;
+
+	kentry = calloc(1, sizeof(krb5_db_entry));
+	if (kentry == NULL) {
+		return ENOMEM;
+	}
+
+	ZERO_STRUCTP(kentry);
+
+	kentry->magic = KRB5_KDB_MAGIC_NUMBER;
+	kentry->len = KRB5_KDB_V1_BASE_LENGTH;
+
+	if (attributes > 0) {
+		kentry->attributes = attributes;
+	}
+
+	if (max_life > 0) {
+		kentry->max_life = max_life;
+	}
+
+	code = krb5_copy_principal(context, princ, &kentry->princ);
+	if (code != 0) {
+		ks_free_krb5_db_entry(context, kentry);
+		return code;
+	}
+
+	now = time(NULL);
+
+	code = krb5_dbe_update_mod_princ_data(context, kentry, now, kentry->princ);
+	if (code != 0) {
+		ks_free_krb5_db_entry(context, kentry);
+		return code;
+	}
+
+	code = mit_samba_generate_salt(&salt);
+	if (code != 0) {
+		ks_free_krb5_db_entry(context, kentry);
+		return code;
+	}
+
+	if (password != NULL) {
+		pwd.data = strdup(password);
+		pwd.length = strlen(password);
+	} else {
+		/* create a random password */
+		code = mit_samba_generate_random_password(&pwd);
+		if (code != 0) {
+			ks_free_krb5_db_entry(context, kentry);
+			return code;
+		}
+	}
+
+	code = krb5_c_string_to_key(context, enctype, &pwd, &salt, &key);
+	SAFE_FREE(pwd.data);
+	if (code != 0) {
+		ks_free_krb5_db_entry(context, kentry);
+		return code;
+	}
+
+	kentry->n_key_data = 1;
+	kentry->key_data = calloc(1, sizeof(krb5_key_data));
+	if (code != 0) {
+		ks_free_krb5_db_entry(context, kentry);
+		return code;
+	}
+
+	key_data = &kentry->key_data[0];
+
+	key_data->key_data_ver          = KRB5_KDB_V1_KEY_DATA_ARRAY;
+	key_data->key_data_kvno         = 1;
+	key_data->key_data_type[0]      = key.enctype;
+	key_data->key_data_length[0]    = key.length;
+	key_data->key_data_contents[0]  = key.contents;
+	key_data->key_data_type[1]      = sts;
+	key_data->key_data_length[1]    = salt.length;
+	key_data->key_data_contents[1]  = (krb5_octet*)salt.data;
+
+	*kentry_ptr = kentry;
+
+	return 0;
 }
 
 krb5_error_code kdb_samba_db_get_principal(krb5_context context,
