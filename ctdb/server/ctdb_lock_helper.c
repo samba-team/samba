@@ -42,6 +42,22 @@ static void usage(void)
 		progname);
 }
 
+static uint8_t *hex_decode_talloc(TALLOC_CTX *mem_ctx,
+				  const char *hex_in, size_t *len)
+{
+	int i, num;
+	uint8_t *buffer;
+
+	*len = strlen(hex_in) / 2;
+	buffer = talloc_array(mem_ctx, unsigned char, *len);
+
+	for (i=0; i<*len; i++) {
+		sscanf(&hex_in[i*2], "%02X", &num);
+		buffer[i] = (uint8_t)num;
+	}
+
+	return buffer;
+}
 
 static int lock_record(const char *dbpath, const char *dbkey)
 {
