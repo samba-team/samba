@@ -853,6 +853,7 @@ sub provision($$$$$$$$$)
 	posix:writetimeupdatedelay = 50000
 
 [cifs]
+	path = $ctx->{share}/_ignore_cifs_
 	read only = no
 	ntvfs handler = cifs
 	cifs:server = $ctx->{netbiosname}
@@ -999,6 +1000,7 @@ sub provision_rpc_proxy($$$)
 	dcerpc_remote:interfaces = rpcecho
 
 [cifs_to_dc]
+	path = /tmp/_ignore_cifs_to_dc_/_none_
 	read only = no
 	ntvfs handler = cifs
 	cifs:server = $dcvars->{SERVER}
