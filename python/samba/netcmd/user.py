@@ -62,7 +62,7 @@ sudo samba-tool user add User2 passw2rd --given-name=Jane --surname=Doe --must-c
 Example2 shows how to create a new user in the domain against the local server.   sudo is used so a user may run the command as root.  In this example, after User2 is created, he/she will be forced to change their password when they logon.
 
 Example3:
-samba-tool user add User3 passw3rd --userou=OrgUnit
+samba-tool user add User3 passw3rd --userou='OU=OrgUnit'
 
 Example3 shows how to create a new user in the OrgUnit organizational unit.
 
@@ -87,7 +87,7 @@ Example4 shows how to create a new user with Unix UID, GID and login-shell set f
                 help="Force use of username as user's CN",
                 action="store_true"),
         Option("--userou",
-                help="Alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created",
+                help="DN of alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created. E. g. 'OU=<OU name>'",
                 type=str),
         Option("--surname", help="User's surname", type=str),
         Option("--given-name", help="User's given name", type=str),
