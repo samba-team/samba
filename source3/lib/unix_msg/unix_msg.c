@@ -416,11 +416,19 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 
 static void unix_dgram_send_job(void *private_data)
 {
-	struct unix_dgram_msg *msg = private_data;
+	struct unix_dgram_msg *dmsg = private_data;
+	struct iovec iov = {
+		.iov_base = (void *)dmsg->buf,
+		.iov_len = dmsg->buflen,
+	};
+	struct msghdr msg = {
+		.msg_iov = &iov,
+		.msg_iovlen = 1,
+	};
 
 	do {
-		msg->sent = send(msg->sock, msg->buf, msg->buflen, 0);
-	} while ((msg->sent == -1) && (errno == EINTR));
+		dmsg->sent = sendmsg(dmsg->sock, &msg, 0);
+	} while ((dmsg->sent == -1) && (errno == EINTR));
 }
 
 static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
