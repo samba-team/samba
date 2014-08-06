@@ -3818,7 +3818,7 @@ bool lp_load_initial_only(const char *pszFname)
 {
 	return lp_load_ex(pszFname,
 			  true,   /* global only */
-			  false,  /* save_defaults */
+			  true,   /* save_defaults */
 			  false,  /* add_ipc */
 			  true,   /* initialize_globals */
 			  false,  /* allow_include_registry */
