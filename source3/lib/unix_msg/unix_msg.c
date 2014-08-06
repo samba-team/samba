@@ -135,6 +135,20 @@ static int prepare_socket(int sock)
 	return prepare_socket_cloexec(sock);
 }
 
+static void close_fd_array(int *fds, size_t num_fds)
+{
+	size_t i;
+
+	for (i = 0; i < num_fds; i++) {
+		if (fds[i] == -1) {
+			continue;
+		}
+
+		close(fds[i]);
+		fds[i] = -1;
+	}
+}
+
 static int unix_dgram_init(const struct sockaddr_un *addr, size_t max_msg,
 			   const struct poll_funcs *ev_funcs,
 			   void (*recv_callback)(struct unix_dgram_ctx *ctx,
