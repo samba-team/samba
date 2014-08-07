@@ -1223,7 +1223,7 @@ static void buttons_unhighlight(struct dialog_section_buttons *buttons)
 
 static void buttons_highlight(struct dialog_section_buttons *buttons)
 {
-	struct button_spec *button = &buttons->spec[buttons->current_button];
+	struct button_spec *spec = &buttons->spec[buttons->current_button];
 	short pair;
 	attr_t attr;
 
@@ -1235,9 +1235,9 @@ static void buttons_highlight(struct dialog_section_buttons *buttons)
 	 */
 	(wattr_get)(buttons->section.window, &attr, &pair, NULL);
 	mvwchgat(buttons->section.window, 0, 0, -1, A_NORMAL, pair, NULL);
-	mvwchgat(buttons->section.window, 0, button->col,
-		 strlen(button->label), A_REVERSE, pair, NULL);
-	wmove(buttons->section.window, 0, button->col + 2);
+	mvwchgat(buttons->section.window, 0, spec->col,
+		 strlen(spec->label), A_REVERSE, pair, NULL);
+	wmove(buttons->section.window, 0, spec->col + 2);
 	wcursyncup(buttons->section.window);
 	wnoutrefresh(buttons->section.window);
 }
@@ -1271,8 +1271,8 @@ static WERROR buttons_create(struct dialog *dia,
 
 	nbuttons = talloc_array_length(buttons->spec);
 	for (i = 0; i < nbuttons; ++i) {
-		struct button_spec *button = &buttons->spec[i];
-		mvwaddstr(section->window, 0, button->col, button->label);
+		struct button_spec *spec = &buttons->spec[i];
+		mvwaddstr(section->window, 0, spec->col, spec->label);
 	}
 
 	buttons->current_button = 0;
@@ -1428,7 +1428,7 @@ static void options_unhighlight(struct dialog_section_options *options)
 
 static void options_highlight(struct dialog_section_options *options)
 {
-	struct option_spec *option = &options->spec[options->current_option];
+	struct option_spec *spec = &options->spec[options->current_option];
 	short pair;
 	attr_t attr;
 	size_t row;
@@ -1443,9 +1443,9 @@ static void options_highlight(struct dialog_section_options *options)
 	for (row = 0; row < options->section.nlines; ++row) {
 		mvwchgat(options->section.window, row, 0, -1, A_NORMAL, pair, NULL);
 	}
-	mvwchgat(options->section.window, option->row, option->col,
-		 strlen(option->label), A_REVERSE, pair, NULL);
-	wmove(options->section.window, option->row, option->col + 4);
+	mvwchgat(options->section.window, spec->row, spec->col,
+		 strlen(spec->label), A_REVERSE, pair, NULL);
+	wmove(options->section.window, spec->row, spec->col + 4);
 	wcursyncup(options->section.window);
 	wnoutrefresh(options->section.window);
 }
@@ -1456,12 +1456,12 @@ static void options_render_state(struct dialog_section_options *options)
 
 	noptions = talloc_array_length(options->spec);
 	for (i = 0; i < noptions; ++i) {
-		struct option_spec *option = &options->spec[i];
+		struct option_spec *spec = &options->spec[i];
 		char c = ' ';
-		if (*option->state)
+		if (*spec->state)
 			c = 'x';
 		mvwaddch(options->section.window,
-			 option->row, option->col + 1, c);
+			 spec->row, spec->col + 1, c);
 		wnoutrefresh(options->section.window);
 	}
 }
@@ -1487,7 +1487,7 @@ static bool options_highlight_previous(struct dialog_section_options *options)
 }
 
 static WERROR options_create(struct dialog *dia,
-				struct dialog_section *section)
+			     struct dialog_section *section)
 {
 	size_t i, noptions;
 	struct dialog_section_options *options =
@@ -1495,9 +1495,9 @@ static WERROR options_create(struct dialog *dia,
 
 	noptions = talloc_array_length(options->spec);
 	for (i = 0; i < noptions; ++i) {
-		struct option_spec *option = &options->spec[i];
-		mvwaddstr(section->window, option->row, option->col,
-			  option->label);
+		struct option_spec *spec = &options->spec[i];
+		mvwaddstr(section->window, spec->row, spec->col,
+			  spec->label);
 	}
 
 	options->current_option = 0;
@@ -1528,7 +1528,7 @@ static void options_on_input(struct dialog *dia, struct dialog_section *section,
 		talloc_get_type_abort(section, struct dialog_section_options);
 
 	if (c == ' ') {
-		struct option_spec *option = &options->spec[options->current_option];
+		struct option_spec *spec = &options->spec[options->current_option];
 		if (options->single_select) {
 			size_t i, noptions;
 			noptions = talloc_array_length(options->spec);
@@ -1536,7 +1536,7 @@ static void options_on_input(struct dialog *dia, struct dialog_section *section,
 				*(options->spec[i].state) = false;
 			}
 		}
-		*option->state = !*option->state;
+		*spec->state = !*spec->state;
 		options_unhighlight(options);
 		options_render_state(options);
 		options_highlight(options);
