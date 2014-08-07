@@ -155,6 +155,8 @@ _PUBLIC_ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *
 		parms->readx.out.remaining       = SVAL(req->in.vwv, VWV(2));
 		parms->readx.out.compaction_mode = SVAL(req->in.vwv, VWV(3));
 		parms->readx.out.nread = SVAL(req->in.vwv, VWV(5));
+		parms->readx.out.flags2 = req->flags2;
+		parms->readx.out.data_offset = SVAL(req->in.vwv, VWV(6));
 
 		/* handle oversize replies for non-chained readx replies with
 		   CAP_LARGE_READX. The snia spec has must to answer for. */

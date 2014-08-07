@@ -1809,6 +1809,8 @@ union smb_read {
 			uint16_t remaining;
 			uint16_t compaction_mode;
 			uint32_t nread;
+			uint16_t flags2;
+			uint16_t data_offset;
 		} out;
 	} readx, generic;
 
