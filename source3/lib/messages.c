@@ -466,11 +466,14 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		rec.msg_version = MESSAGE_VERSION;
-		rec.msg_type = msg_type & MSG_TYPE_MASK;
-		rec.dest = server;
-		rec.src = msg_ctx->id;
-		rec.buf = data_blob_const(buf, talloc_get_size(buf));
+		rec = (struct messaging_rec) {
+			.msg_version = MESSAGE_VERSION,
+			.msg_type = msg_type & MSG_TYPE_MASK,
+			.dest = server,
+			.src = msg_ctx->id,
+			.buf = data_blob_const(buf, talloc_get_size(buf)),
+		};
+
 		messaging_dispatch_rec(msg_ctx, &rec);
 		TALLOC_FREE(buf);
 		return NT_STATUS_OK;

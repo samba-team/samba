@@ -95,7 +95,6 @@ static int messaging_ctdb_send(struct server_id src,
 {
 	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
 		backend->private_data, struct messaging_ctdbd_context);
-
 	struct messaging_rec msg;
 	uint8_t *buf;
 	NTSTATUS status;
@@ -105,12 +104,13 @@ static int messaging_ctdb_send(struct server_id src,
 		return ENOMEM;
 	}
 
-
-	msg.msg_version	= MESSAGE_VERSION;
-	msg.msg_type	= msg_type;
-	msg.dest	= pid;
-	msg.src		= src;
-	msg.buf		= data_blob_const(buf, talloc_get_size(buf));
+	msg = (struct messaging_rec) {
+		.msg_version	= MESSAGE_VERSION,
+		.msg_type	= msg_type,
+		.dest		= pid,
+		.src		= src,
+		.buf		= data_blob_const(buf, talloc_get_size(buf)),
+	};
 
 	status = ctdbd_messaging_send(ctx->conn, pid.vnn, pid.pid, &msg);
 
