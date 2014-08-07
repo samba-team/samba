@@ -47,6 +47,13 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_READX_ALIGN(io) do {			      \
+	if ((io.readx.out.flags2 & FLAGS2_UNICODE_STRINGS) && \
+	    (io.readx.out.data_offset % 2 != 0)) { \
+		ret = false; \
+		torture_fail_goto(tctx, done, "data not 16 bit aligned\n"); \
+	}} while (0)
+
 #define BASEDIR "\\testread"
 
 
@@ -399,6 +406,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.nread, 0);
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_READX_ALIGN(io);
 
 	printf("Trying zero file read\n");
 	io.readx.in.mincnt = 0;
@@ -408,6 +416,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.nread, 0);
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_READX_ALIGN(io);
 
 	printf("Trying bad fnum\n");
 	io.readx.in.file.fnum = fnum+1;
@@ -429,6 +438,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.nread, strlen(test_data));
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_READX_ALIGN(io);
 	if (memcmp(buf, test_data, strlen(test_data)) != 0) {
 		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data, buf);
@@ -444,6 +454,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.nread, strlen(test_data)-1);
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_READX_ALIGN(io);
 	if (memcmp(buf, test_data+1, strlen(test_data)-1) != 0) {
 		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data+1, buf);
@@ -460,6 +471,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 		CHECK_VALUE(io.readx.out.nread, 0);
 		CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 		CHECK_VALUE(io.readx.out.compaction_mode, 0);
+		CHECK_READX_ALIGN(io);
 	}
 
 	printf("Trying mincnt past EOF\n");
@@ -472,6 +484,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	CHECK_VALUE(io.readx.out.nread, strlen(test_data));
+	CHECK_READX_ALIGN(io);
 	if (memcmp(buf, test_data, strlen(test_data)) != 0) {
 		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data, buf);
@@ -493,6 +506,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+	CHECK_READX_ALIGN(io);
 
 	printf("Trying page + 1 sized read (check alignment)\n");
 	io.readx.in.offset = 0;
@@ -504,6 +518,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+	CHECK_READX_ALIGN(io);
 
 	printf("Trying large read (UINT16_MAX)\n");
 	io.readx.in.offset = 0;
@@ -515,6 +530,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+	CHECK_READX_ALIGN(io);
 
 	printf("Trying extra large read\n");
 	io.readx.in.offset = 0;
@@ -531,6 +547,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 		CHECK_VALUE(io.readx.out.nread, 0x10000);
 	}
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+	CHECK_READX_ALIGN(io);
 
 	printf("Trying mincnt > maxcnt\n");
 	memset(buf, 0, maxsize);
@@ -543,6 +560,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+	CHECK_READX_ALIGN(io);
 
 	printf("Trying mincnt < maxcnt\n");
 	memset(buf, 0, maxsize);
@@ -555,6 +573,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+	CHECK_READX_ALIGN(io);
 
 	if (cli->transport->negotiate.capabilities & CAP_LARGE_READX) {
 		printf("Trying large readx\n");
@@ -564,11 +583,13 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 		status = smb_raw_read(cli->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_VALUE(io.readx.out.nread, 0xFFFF);
+		CHECK_READX_ALIGN(io);
 
 		io.readx.in.maxcnt = 0x10000;
 		status = smb_raw_read(cli->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_VALUE(io.readx.out.nread, 0x10000);
+		CHECK_READX_ALIGN(io);
 
 		io.readx.in.maxcnt = 0x10001;
 		status = smb_raw_read(cli->tree, &io);
@@ -610,6 +631,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readx.out.nread, 0);
+	CHECK_READX_ALIGN(io);
 
 	if (NT_STATUS_IS_ERR(smbcli_lock64(cli->tree, fnum, io.readx.in.offset, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
@@ -620,6 +642,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readx.out.nread, 0);
+	CHECK_READX_ALIGN(io);
 
 done:
 	smbcli_close(cli->tree, fnum);
