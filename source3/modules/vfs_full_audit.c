@@ -385,14 +385,8 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 	return result;
 }
 
-static bool log_success(vfs_handle_struct *handle, vfs_op_type op)
+static bool log_success(struct vfs_full_audit_private_data *pd, vfs_op_type op)
 {
-	struct vfs_full_audit_private_data *pd = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, pd,
-		struct vfs_full_audit_private_data,
-		return True);
-
 	if (pd->success_ops == NULL) {
 		return True;
 	}
@@ -400,14 +394,8 @@ static bool log_success(vfs_handle_struct *handle, vfs_op_type op)
 	return bitmap_query(pd->success_ops, op);
 }
 
-static bool log_failure(vfs_handle_struct *handle, vfs_op_type op)
+static bool log_failure(struct vfs_full_audit_private_data *pd, vfs_op_type op)
 {
-	struct vfs_full_audit_private_data *pd = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, pd,
-		struct vfs_full_audit_private_data,
-		return True);
-
 	if (pd->failure_ops == NULL)
 		return True;
 
@@ -498,16 +486,21 @@ static TALLOC_CTX *do_log_ctx(void)
 static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		   const char *format, ...)
 {
+	struct vfs_full_audit_private_data *pd;
 	fstring err_msg;
 	char *audit_pre = NULL;
 	va_list ap;
 	char *op_msg = NULL;
 	int priority;
 
-	if (success && (!log_success(handle, op)))
+	SMB_VFS_HANDLE_GET_DATA(handle, pd,
+				struct vfs_full_audit_private_data,
+				return;);
+
+	if (success && (!log_success(pd, op)))
 		goto out;
 
-	if (!success && (!log_failure(handle, op)))
+	if (!success && (!log_failure(pd, op)))
 		goto out;
 
 	if (success)
