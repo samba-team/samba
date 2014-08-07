@@ -67,6 +67,8 @@
 #include "lib/param/loadparm.h"
 #include "lib/util/bitmap.h"
 #include "lib/util/tevent_unix.h"
+#include "libcli/security/sddl.h"
+#include "passdb/machine_sid.h"
 
 static int vfs_full_audit_debug_level = DBGC_VFS;
 
@@ -75,6 +77,7 @@ struct vfs_full_audit_private_data {
 	struct bitmap *failure_ops;
 	int syslog_facility;
 	int syslog_priority;
+	bool log_secdesc;
 	bool do_syslog;
 };
 
@@ -600,6 +603,9 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 	}
 
 	pd->syslog_priority = audit_syslog_priority(handle);
+
+	pd->log_secdesc = lp_parm_bool(SNUM(handle->conn),
+				       "full_audit", "log_secdesc", false);
 
 	pd->do_syslog = lp_parm_bool(SNUM(handle->conn),
 				     "full_audit", "syslog", true);
@@ -1863,12 +1869,24 @@ static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_stru
 			      uint32 security_info_sent,
 			      const struct security_descriptor *psd)
 {
+	struct vfs_full_audit_private_data *pd;
 	NTSTATUS result;
+	char *sd = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, pd,
+				struct vfs_full_audit_private_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (pd->log_secdesc) {
+		sd = sddl_encode(talloc_tos(), psd, get_global_sam_sid());
+	}
 
 	result = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 
-	do_log(SMB_VFS_OP_FSET_NT_ACL, NT_STATUS_IS_OK(result), handle, "%s",
-	       fsp_str_do_log(fsp));
+	do_log(SMB_VFS_OP_FSET_NT_ACL, NT_STATUS_IS_OK(result), handle,
+	       "%s [%s]", fsp_str_do_log(fsp), sd ? sd : "");
+
+	TALLOC_FREE(sd);
 
 	return result;
 }

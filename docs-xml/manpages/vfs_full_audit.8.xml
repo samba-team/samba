@@ -211,6 +211,15 @@
                 </listitem>
                 </varlistentry>
 
+                <varlistentry>
+                <term>full_audit:log_secdesc = true/false</term>
+                <listitem>
+                <para>Log an sddl form of the security descriptor coming in
+                when a client sets an acl. Defaults to false.
+                </para>
+                </listitem>
+                </varlistentry>
+
 	</variablelist>
 </refsect1>
 
