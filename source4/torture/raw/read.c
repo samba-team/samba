@@ -31,12 +31,9 @@
 	} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%ld - should be %ld\n", \
-		       __location__, #v, (long)v, (long)correct); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+		torture_assert_int_equal_goto(tctx, (v), (correct), ret, done, \
+					      "Incorrect value"); \
+	} while (0)
 
 #define CHECK_BUFFER(buf, seed, len) do { \
 	if (!check_buffer(tctx, buf, seed, len, __LINE__)) {	\
