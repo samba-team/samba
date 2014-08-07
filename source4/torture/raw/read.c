@@ -42,9 +42,9 @@
 	}} while (0)
 
 #define CHECK_BUFFER(buf, seed, len) do { \
-	if (!check_buffer(buf, seed, len, __LINE__)) { \
+	if (!check_buffer(tctx, buf, seed, len, __LINE__)) {	\
 		ret = false; \
-		goto done; \
+		torture_fail_goto(tctx, done, "buffer check failed\n"); \
 	}} while (0)
 
 #define CHECK_READX_ALIGN(io) do {			      \
@@ -70,15 +70,17 @@ static void setup_buffer(uint8_t *buf, unsigned int seed, int len)
 /*
   check a random buffer based on a seed
 */
-static bool check_buffer(uint8_t *buf, unsigned int seed, int len, int line)
+static bool check_buffer(struct torture_context *tctx, uint8_t *buf,
+			 unsigned int seed, int len, int line)
 {
 	int i;
 	srandom(seed);
 	for (i=0;i<len;i++) {
 		uint8_t v = random();
 		if (buf[i] != v) {
-			printf("Buffer incorrect at line %d! ofs=%d v1=0x%x v2=0x%x\n", 
-			       line, i, buf[i], v);
+			torture_warning(tctx, "Buffer incorrect at line %d! "
+					"ofs=%d v1=0x%x v2=0x%x\n", line, i,
+					buf[i], v);
 			return false;
 		}
 	}
