@@ -796,6 +796,8 @@ int main(int argc, const char **argv)
 
 	rv = reg_open_samba3(frame, &ctx);
 	if (!W_ERROR_IS_OK(rv)) {
+		fprintf(stderr, "Unable to open registry: %s\n",
+			win_errstr(rv));
 		TALLOC_FREE(frame);
 
 		return 1;
