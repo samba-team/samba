@@ -11,7 +11,7 @@ bld.SAMBA_MODULE('gensec_krb5',
 	init_function='gensec_krb5_init',
 	deps='samba-credentials authkrb5 com_err gensec_util',
 	internal_module=False,
-        enabled=bld.AD_DC_BUILD_IS_ENABLED()
+        enabled=bld.AD_DC_BUILD_IS_ENABLED() and bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
 
 
