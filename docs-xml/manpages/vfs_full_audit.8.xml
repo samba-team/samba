@@ -202,6 +202,15 @@
                 </listitem>
                 </varlistentry>
 
+                <varlistentry>
+                <term>full_audit:syslog = true/false</term>
+                <listitem>
+                <para>Log messages to syslog (default) or as a debug level 1
+                message.
+                </para>
+                </listitem>
+                </varlistentry>
+
 	</variablelist>
 </refsect1>
 

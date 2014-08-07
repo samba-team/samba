@@ -75,6 +75,7 @@ struct vfs_full_audit_private_data {
 	struct bitmap *failure_ops;
 	int syslog_facility;
 	int syslog_priority;
+	bool do_syslog;
 };
 
 #undef DBGC_CLASS
@@ -493,7 +494,6 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 	char *audit_pre = NULL;
 	va_list ap;
 	char *op_msg = NULL;
-	int priority;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, pd,
 				struct vfs_full_audit_private_data,
@@ -518,17 +518,25 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		goto out;
 	}
 
-	/*
-	 * Specify the facility to interoperate with other syslog callers
-	 * (smbd for example).
-	 */
-	priority = pd->syslog_priority | pd->syslog_facility;
-
 	audit_pre = audit_prefix(talloc_tos(), handle->conn);
-	syslog(priority, "%s|%s|%s|%s\n",
-		audit_pre ? audit_pre : "",
-		audit_opname(op), err_msg, op_msg);
 
+	if (pd->do_syslog) {
+		int priority;
+
+		/*
+		 * Specify the facility to interoperate with other syslog
+		 * callers (smbd for example).
+		 */
+		priority = pd->syslog_priority | pd->syslog_facility;
+
+		syslog(priority, "%s|%s|%s|%s\n",
+		       audit_pre ? audit_pre : "",
+		       audit_opname(op), err_msg, op_msg);
+	} else {
+		DEBUG(1, ("%s|%s|%s|%s\n",
+			  audit_pre ? audit_pre : "",
+			  audit_opname(op), err_msg, op_msg));
+	}
  out:
 	TALLOC_FREE(audit_pre);
 	TALLOC_FREE(op_msg);
@@ -593,8 +601,13 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 
 	pd->syslog_priority = audit_syslog_priority(handle);
 
+	pd->do_syslog = lp_parm_bool(SNUM(handle->conn),
+				     "full_audit", "syslog", true);
+
 #ifdef WITH_SYSLOG
-	openlog("smbd_audit", 0, pd->syslog_facility);
+	if (pd->do_syslog) {
+		openlog("smbd_audit", 0, pd->syslog_facility);
+	}
 #endif
 
 	pd->success_ops = init_bitmap(
