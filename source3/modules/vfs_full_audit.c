@@ -74,6 +74,7 @@ struct vfs_full_audit_private_data {
 	struct bitmap *success_ops;
 	struct bitmap *failure_ops;
 	int syslog_facility;
+	int syslog_priority;
 };
 
 #undef DBGC_CLASS
@@ -521,7 +522,7 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 	 * Specify the facility to interoperate with other syslog callers
 	 * (smbd for example).
 	 */
-	priority = audit_syslog_priority(handle) | pd->syslog_facility;
+	priority = pd->syslog_priority | pd->syslog_facility;
 
 	audit_pre = audit_prefix(talloc_tos(), handle->conn);
 	syslog(priority, "%s|%s|%s|%s\n",
@@ -589,6 +590,8 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		return -1;
 	}
+
+	pd->syslog_priority = audit_syslog_priority(handle);
 
 #ifdef WITH_SYSLOG
 	openlog("smbd_audit", 0, pd->syslog_facility);
