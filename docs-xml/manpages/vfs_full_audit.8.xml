@@ -220,6 +220,26 @@
                 </listitem>
                 </varlistentry>
 
+		<varlistentry>
+		<term>full_audit:syslog = BOOL</term>
+		<listitem>
+		<para>If set to true, then send the audit messages to
+		syslog. If set to false, the normal Samba log will be
+		used with a debug level of 1. The default is true.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>full_audit:log_secdesc = BOOL</term>
+		<listitem>
+		<para>Log security descriptor changes. If set to true,
+		also log security descriptor changes requested by
+		clients. The default is false.
+		</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
