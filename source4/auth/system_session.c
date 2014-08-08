@@ -175,6 +175,7 @@ static NTSTATUS auth_domain_admin_user_info_dc(TALLOC_CTX *mem_ctx,
 					      const char *netbios_name,
 					      const char *domain_name,
 					      struct dom_sid *domain_sid,
+					      struct dom_sid *forest_sid,
 					      struct auth_user_info_dc **_user_info_dc)
 {
 	struct auth_user_info_dc *user_info_dc;
@@ -196,11 +197,11 @@ static NTSTATUS auth_domain_admin_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	user_info_dc->sids[3] = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[3], DOMAIN_RID_ADMINS);
-	user_info_dc->sids[4] = *domain_sid;
+	user_info_dc->sids[4] = *forest_sid;
 	sid_append_rid(&user_info_dc->sids[4], DOMAIN_RID_ENTERPRISE_ADMINS);
 	user_info_dc->sids[5] = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[5], DOMAIN_RID_POLICY_ADMINS);
-	user_info_dc->sids[6] = *domain_sid;
+	user_info_dc->sids[6] = *forest_sid;
 	sid_append_rid(&user_info_dc->sids[6], DOMAIN_RID_SCHEMA_ADMINS);
 
 	/* What should the session key be?*/
@@ -262,6 +263,7 @@ static NTSTATUS auth_domain_admin_user_info_dc(TALLOC_CTX *mem_ctx,
 static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 					       struct loadparm_context *lp_ctx,
 					       struct dom_sid *domain_sid,
+					       struct dom_sid *forest_sid,
 					       struct auth_session_info **session_info)
 {
 	NTSTATUS nt_status;
@@ -271,8 +273,9 @@ static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	nt_status = auth_domain_admin_user_info_dc(mem_ctx, lpcfg_netbios_name(lp_ctx),
-						  lpcfg_workgroup(lp_ctx), domain_sid,
-						  &user_info_dc);
+						   lpcfg_workgroup(lp_ctx), domain_sid,
+						   forest_sid,
+						   &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
@@ -289,13 +292,17 @@ static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 	return nt_status;
 }
 
-_PUBLIC_ struct auth_session_info *admin_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, struct dom_sid *domain_sid)
+_PUBLIC_ struct auth_session_info *admin_session(TALLOC_CTX *mem_ctx,
+						 struct loadparm_context *lp_ctx,
+						 struct dom_sid *domain_sid,
+						 struct dom_sid *forest_sid)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
 	nt_status = auth_domain_admin_session_info(mem_ctx,
 						   lp_ctx,
 						   domain_sid,
+						   forest_sid,
 						   &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;

@@ -81,12 +81,14 @@ static PyObject *py_admin_session(PyObject *module, PyObject *args)
 {
 	PyObject *py_lp_ctx;
 	PyObject *py_sid;
+	PyObject *py_forest_sid = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	struct auth_session_info *session;
 	struct dom_sid *domain_sid = NULL;
+	struct dom_sid *forest_sid = NULL;
 	TALLOC_CTX *mem_ctx;
 
-	if (!PyArg_ParseTuple(args, "OO", &py_lp_ctx, &py_sid))
+	if (!PyArg_ParseTuple(args, "OO|O", &py_lp_ctx, &py_sid, &py_forest_sid))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -103,12 +105,25 @@ static PyObject *py_admin_session(PyObject *module, PyObject *args)
 
 	domain_sid = dom_sid_parse_talloc(mem_ctx, PyString_AsString(py_sid));
 	if (domain_sid == NULL) {
-		PyErr_Format(PyExc_RuntimeError, "Unable to parse sid %s", 
+		PyErr_Format(PyExc_RuntimeError, "Unable to parse domain sid %s",
 					 PyString_AsString(py_sid));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	session = admin_session(NULL, lp_ctx, domain_sid);
+
+	if (py_forest_sid) {
+		forest_sid = dom_sid_parse_talloc(mem_ctx, PyString_AsString(py_forest_sid));
+		if (forest_sid == NULL) {
+			PyErr_Format(PyExc_RuntimeError, "Unable to parse forest sid %s",
+				     PyString_AsString(py_forest_sid));
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+	} else {
+		forest_sid = domain_sid;
+	}
+
+	session = admin_session(NULL, lp_ctx, domain_sid, forest_sid);
 	talloc_free(mem_ctx);
 
 	return PyAuthSession_FromSession(session);

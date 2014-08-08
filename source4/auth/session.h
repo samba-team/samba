@@ -73,7 +73,8 @@ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 
 struct auth_session_info *admin_session(TALLOC_CTX *mem_ctx,
 					struct loadparm_context *lp_ctx,
-					struct dom_sid *domain_sid);
+					struct dom_sid *domain_sid,
+					struct dom_sid *forest_sid);
 
 
 #endif /* _SAMBA_AUTH_SESSION_H */

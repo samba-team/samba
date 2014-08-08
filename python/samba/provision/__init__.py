@@ -1276,7 +1276,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         logger.info("Adding DomainDN: %s" % names.domaindn)
 
         # impersonate domain admin
-        admin_session_info = admin_session(lp, str(names.domainsid))
+        admin_session_info = admin_session(lp, str(names.domainsid), str(names.forestsid))
         samdb.set_session_info(admin_session_info)
         if names.domainguid is not None:
             domainguid_line = "objectGUID: %s\n-" % names.domainguid
