@@ -1491,7 +1491,7 @@ NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 	if (!pwd) {
 		pwd = Get_Pwnam_alloc(mem_ctx, username);
 		if (!pwd) {
-			DEBUG(0, ("Failed to find a Unix account for %s",
+			DEBUG(0, ("Failed to find a Unix account for %s\n",
 				  username));
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_SUCH_USER;
