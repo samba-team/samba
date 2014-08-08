@@ -134,7 +134,6 @@ int main(int argc, const char *argv[])
 		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
 		  &options.max_persistent_check_errors, 0,
 		  "max allowed persistent check errors (default 0)", NULL },
-		{ "log-ringbuf-size", 0, POPT_ARG_INT, &log_ringbuf_size, 0, "Number of log messages we can store in the memory ringbuffer", NULL },
 		{ "sloppy-start", 0, POPT_ARG_NONE, &fast_start, 0, "Do not perform full recovery on start", NULL },
 		POPT_TABLEEND
 	};

@@ -137,25 +137,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--log-ringbuf-size=<parameter>NUM</parameter></term>
-	<listitem>
-	  <para>
-	    Set the size of the log ringbuffer to NUM entries.
-	  </para>
-	  <para>
-	    CTDB uses an in-memory ringbuffer containing NUM most
-	    recent log entries for all log levels (except DEBUG).  The
-	    ringbugger can be useful for extracting detailed logs even
-	    if some entries are not logged to the regular logs.
-	  </para>
-	  <para>
-	    Use the <command>ctdb getlog</command> command to retrieve
-	    log entries from the ringbuffer.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--lvs</term>
 	<listitem>
 	  <para>

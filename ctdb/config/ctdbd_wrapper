@@ -129,7 +129,6 @@ build_ctdb_options ()
     maybe_set "--no-lmaster"             "$CTDB_CAPABILITY_LMASTER"   "no"
     maybe_set "--lvs --single-public-ip" "$CTDB_LVS_PUBLIC_IP"
     maybe_set "--script-log-level"       "$CTDB_SCRIPT_LOG_LEVEL"
-    maybe_set "--log-ringbuf-size"       "$CTDB_LOG_RINGBUF_SIZE"
     maybe_set "--syslog"                 "$CTDB_SYSLOG"               "yes"
     maybe_set "--max-persistent-check-errors" "$CTDB_MAX_PERSISTENT_CHECK_ERRORS"
 }

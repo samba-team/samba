@@ -619,11 +619,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_deregister_notify(ctdb, client_id, indata);
 
 	case CTDB_CONTROL_GET_LOG:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_get_log_addr));
-		return ctdb_control_get_log(ctdb, indata);
+		return control_not_implemented("GET_LOG", NULL);
 
 	case CTDB_CONTROL_CLEAR_LOG:
-		return ctdb_control_clear_log(ctdb);
+		return control_not_implemented("CLEAR_LOG", NULL);
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint64_t));

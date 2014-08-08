@@ -22,7 +22,6 @@
 
 extern void (*do_debug_v)(const char *, va_list ap);
 extern void (*do_debug_add_v)(const char *, va_list ap);
-void log_ringbuffer(const char *format, ...);
 void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 void do_debug_add(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
 void dump_data(int level, const uint8_t *buf1, size_t len);

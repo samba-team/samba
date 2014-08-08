@@ -1096,7 +1096,6 @@ void reset_scheduler(void);
 struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
 void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid);
 pid_t ctdb_fork(struct ctdb_context *ctdb);
-pid_t ctdb_fork_no_free_ringbuffer(struct ctdb_context *ctdb);
 void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...);
 bool ctdb_is_child_process(void);
 int ctdb_kill(struct ctdb_context *ctdb, pid_t pid, int signum);
@@ -1458,17 +1457,6 @@ struct ctdb_get_log_addr {
 	uint64_t srvid;
 	int32_t level;
 };
-
-extern int log_ringbuf_size;
-
-enum debug_level;
-TDB_DATA ctdb_log_ringbuffer_collect_log(TALLOC_CTX *mem_ctx,
-					 enum debug_level max_level);
-void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr);
-void ctdb_clear_log(struct ctdb_context *ctdb);
-int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr);
-int32_t ctdb_control_clear_log(struct ctdb_context *ctdb);
-void ctdb_log_ringbuffer_free(void);
 
 struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 					       struct ctdb_context *ctdb,

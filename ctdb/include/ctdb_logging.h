@@ -36,7 +36,7 @@ enum debug_level {
 };
 
 #define DEBUGLVL(lvl) ((lvl) <= LogLevel)
-#define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) < DEBUG_DEBUG) { log_ringbuffer x; } if ((lvl) <= LogLevel) { do_debug x; }} while (0)
+#define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) <= LogLevel) { do_debug x; }} while (0)
 #define DEBUGADD(lvl, x) do { if ((lvl) <= LogLevel) { this_log_level = (lvl); do_debug_add x; }} while (0)
 
 #endif /* _CTDB_LOGGING_H_ */
