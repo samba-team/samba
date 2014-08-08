@@ -187,7 +187,7 @@ start()
     fi
 
     case "$CTDB_LOGGING" in
-	syslog:udp)
+	syslog:udp|syslog:udp-rfc5424)
 	    logger -t ctdbd "CTDB is being run with ${CTDB_LOGGING}.  If nothing is logged then check your syslogd configuration"
 	    ;;
 	syslog|syslog:*) : ;;

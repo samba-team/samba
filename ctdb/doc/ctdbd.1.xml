@@ -193,6 +193,17 @@
 		      </para>
 		    </listitem>
 		  </varlistentry>
+		  <varlistentry>
+		    <term>udp-rfc5424</term>
+		    <listitem>
+		      <para>
+			As with "udp" but messages are sent in RFC5424
+			format.  This method will log the correct
+			hostname but is not as widely implemented in
+			syslog daemons.
+		      </para>
+		    </listitem>
+		  </varlistentry>
 		</variablelist>
 	      </listitem>
 	    </varlistentry>

@@ -23,6 +23,8 @@
 #include "system/syslog.h"
 #include "lib/util/debug.h"
 #include "lib/util/blocking.h"
+#include "lib/util/time_basic.h"
+#include "lib/util/samba_util.h" /* get_myname */
 #include "ctdb_logging.h"
 
 /* Linux and FreeBSD define this appropriately - try good old /dev/log
@@ -37,6 +39,9 @@
 struct ctdb_syslog_sock_state {
 	int fd;
 	const char *app_name;
+	const char *hostname;
+	int (*format)(int dbglevel, struct ctdb_syslog_sock_state *state,
+		      const char *str, char *buf, int bsize);
 };
 
 /**********************************************************************/
@@ -94,6 +99,38 @@ static int format_rfc3164(int dbglevel, struct ctdb_syslog_sock_state *state,
 	return len;
 }
 
+/* Format messages as per RFC5424
+ *
+ * <165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1
+ *         myproc 8710 - - %% It's time to make the do-nuts.
+ */
+static int format_rfc5424(int dbglevel, struct ctdb_syslog_sock_state *state,
+			  const char *str, char *buf, int bsize)
+{
+	int pri;
+	struct timeval tv;
+	struct timeval_buf tvbuf;
+	int len, s;
+
+	/* Header */
+	pri = CTDB_SYSLOG_FACILITY | ctdb_debug_to_syslog_level(dbglevel);
+	GetTimeOfDay(&tv);
+	len = snprintf(buf, bsize,
+		       "<%d>1 %s %s %s %u - - ",
+		       pri, timeval_str_buf(&tv, true, true, &tvbuf),
+		       state->hostname, state->app_name, getpid());
+	/* A truncated header is not useful... */
+	if (len >= bsize) {
+		return -1;
+	}
+
+	/* Message */
+	s = snprintf(&buf[len], bsize - len, "%s %s", debug_extra, str);
+	len = MIN(len + s, bsize - 1);
+
+	return len;
+}
+
 /**********************************************************************/
 
 /* Non-blocking logging */
@@ -109,7 +146,7 @@ static void ctdb_log_to_syslog_sock(void *private_ptr,
 	char buf[1024];
 	int n;
 
-	n = format_rfc3164(dbglevel, state, str, buf, sizeof(buf));
+	n = state->format(dbglevel, state, str, buf, sizeof(buf));
 	if (n == -1) {
 		fprintf(stderr, "Failed to format syslog message %s\n", str);
 		return;
@@ -177,13 +214,17 @@ static int ctdb_log_setup_syslog_un(TALLOC_CTX *mem_ctx,
 	}
 	set_blocking(state->fd, false);
 
+	state->hostname = NULL; /* Make this explicit */
+	state->format = format_rfc3164;
+
 	debug_set_callback(state, ctdb_log_to_syslog_sock);
 
 	return 0;
 }
 
 static int ctdb_log_setup_syslog_udp(TALLOC_CTX *mem_ctx,
-				     const char *app_name)
+				     const char *app_name,
+				     bool rfc5424)
 {
 	struct ctdb_syslog_sock_state *state;
 	struct sockaddr_in dest;
@@ -210,6 +251,17 @@ static int ctdb_log_setup_syslog_udp(TALLOC_CTX *mem_ctx,
 		int save_errno = errno;
 		talloc_free(state);
 		return save_errno;
+	}
+
+	state->hostname = get_myname(state);
+	if (state->hostname == NULL) {
+		/* Use a fallback instead of failing initialisation */
+		state->hostname = "localhost";
+	}
+	if (rfc5424) {
+		state->format = format_rfc5424;
+	} else {
+		state->format = format_rfc3164;
 	}
 
 	debug_set_callback(state, ctdb_log_to_syslog_sock);
@@ -244,7 +296,11 @@ static int ctdb_log_setup_syslog(TALLOC_CTX *mem_ctx,
 			return 0;
 		}
 		if (strcmp(method, "udp") == 0) {
-			ctdb_log_setup_syslog_udp(mem_ctx, app_name);
+			ctdb_log_setup_syslog_udp(mem_ctx, app_name, false);
+			return 0;
+		}
+		if (strcmp(method, "udp-rfc5424") == 0) {
+			ctdb_log_setup_syslog_udp(mem_ctx, app_name, true);
 			return 0;
 		}
 
