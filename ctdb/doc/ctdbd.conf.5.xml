@@ -231,16 +231,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_LOG_RINGBUF_SIZE=<parameter>NUM</parameter></term>
-	<listitem>
-	  <para>
-	    Default is 0.  Corresponds to
-	    <option>--log-ringbuf-size</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_LVS_PUBLIC_IP=<parameter>IPADDR</parameter></term>
 	<listitem>
 	  <para>
