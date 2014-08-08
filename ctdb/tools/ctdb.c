@@ -4845,11 +4845,17 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 		DEBUG(DEBUG_ERR, ("Unable to get debuglevel response from node %u\n", options.pnn));
 		return ret;
 	} else {
+		const char *desc = get_debug_by_level(level);
+		if (desc == NULL) {
+			/* This should never happen */
+			desc = "Unknown";
+		}
 		if (options.machinereadable){
 			printf(":Name:Level:\n");
-			printf(":%s:%d:\n",get_debug_by_level(level),level);
+			printf(":%s:%d:\n", desc, level);
 		} else {
-			printf("Node %u is at debug level %s (%d)\n", options.pnn, get_debug_by_level(level), level);
+			printf("Node %u is at debug level %s (%d)\n",
+			       options.pnn, desc, level);
 		}
 	}
 	return 0;
@@ -4999,34 +5005,18 @@ static int control_setrecmasterrole(struct ctdb_context *ctdb, int argc, const c
  */
 static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
+	int ret;
 	int32_t level;
 
 	if (argc == 0) {
 		printf("You must specify the debug level. Valid levels are:\n");
-		for (i=0; debug_levels[i].description != NULL; i++) {
-			printf("%s (%d)\n", debug_levels[i].description, debug_levels[i].level);
-		}
-
+		print_debug_levels(stdout);
 		return 0;
 	}
 
-	if (isalpha(argv[0][0]) || argv[0][0] == '-') { 
-		level = get_debug_by_desc(argv[0]);
-	} else {
-		level = strtol(argv[0], NULL, 0);
-	}
-
-	for (i=0; debug_levels[i].description != NULL; i++) {
-		if (level == debug_levels[i].level) {
-			break;
-		}
-	}
-	if (debug_levels[i].description == NULL) {
+	if (!parse_debug(argv[0], &level)) {
 		printf("Invalid debug level, must be one of\n");
-		for (i=0; debug_levels[i].description != NULL; i++) {
-			printf("%s (%d)\n", debug_levels[i].description, debug_levels[i].level);
-		}
+		print_debug_levels(stdout);
 		return -1;
 	}
 

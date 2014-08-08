@@ -20,6 +20,10 @@
 #ifndef _CTDB_LOGGING_H_
 #define _CTDB_LOGGING_H_
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+
 extern const char *debug_extra;
 
 enum debug_level {
@@ -33,5 +37,9 @@ enum debug_level {
 /* These are used in many places, so define them here to avoid churn */
 #define DEBUG_ALERT DEBUG_ERR
 #define	DEBUG_CRIT  DEBUG_ERR
+
+const char *get_debug_by_level(int32_t level);
+bool parse_debug(const char *str, int32_t *level);
+void print_debug_levels(FILE *stream);
 
 #endif /* _CTDB_LOGGING_H_ */

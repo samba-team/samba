@@ -96,10 +96,8 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	}
 
 	/* Set the debug level */
-	if (isalpha(ctdb_cmdline.debuglevel[0]) || ctdb_cmdline.debuglevel[0] == '-') { 
-		DEBUGLEVEL = get_debug_by_desc(ctdb_cmdline.debuglevel);
-	} else {
-		DEBUGLEVEL = strtol(ctdb_cmdline.debuglevel, NULL, 0);
+	if (!parse_debug(ctdb_cmdline.debuglevel, &DEBUGLEVEL)) {
+		DEBUGLEVEL = DEBUG_ERR;
 	}
 
 	/* set up the tree to store server ids */
@@ -147,10 +145,8 @@ struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev,
 	}
 
 	/* Set the debug level */
-	if (isalpha(ctdb_cmdline.debuglevel[0]) || ctdb_cmdline.debuglevel[0] == '-') { 
-		DEBUGLEVEL = get_debug_by_desc(ctdb_cmdline.debuglevel);
-	} else {
-		DEBUGLEVEL = strtol(ctdb_cmdline.debuglevel, NULL, 0);
+	if (!parse_debug(ctdb_cmdline.debuglevel, &DEBUGLEVEL)) {
+		DEBUGLEVEL = DEBUG_ERR;
 	}
 
 	ret = ctdb_socket_connect(ctdb);

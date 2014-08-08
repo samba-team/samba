@@ -17,15 +17,18 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "tdb.h"
-#include "system/time.h"
-#include "../include/ctdb_private.h"
-#include "../include/ctdb_client.h"
+#include <ctype.h>
+#include "replace.h"
+#include "ctdb_logging.h"
 
 const char *debug_extra = "";
 
-struct debug_levels debug_levels[] = {
+struct debug_levels {
+	int32_t	level;
+	const char *description;
+};
+
+static struct debug_levels debug_levels[] = {
 	{DEBUG_ERR,	"ERR"},
 	{DEBUG_WARNING,	"WARNING"},
 	{DEBUG_NOTICE,	"NOTICE"},
@@ -43,18 +46,40 @@ const char *get_debug_by_level(int32_t level)
 			return debug_levels[i].description;
 		}
 	}
-	return "Unknown";
+	return NULL;
 }
 
-int32_t get_debug_by_desc(const char *desc)
+static bool get_debug_by_desc(const char *desc, int32_t *level)
 {
 	int i;
 
 	for (i=0; debug_levels[i].description != NULL; i++) {
 		if (!strcasecmp(debug_levels[i].description, desc)) {
-			return debug_levels[i].level;
+			*level = debug_levels[i].level;
+			return true;
 		}
 	}
 
-	return DEBUG_ERR;
+	return false;
+}
+
+bool parse_debug(const char *str, int32_t *level)
+{
+	if (isalpha(str[0])) {
+		return get_debug_by_desc(str, level);
+	} else {
+		*level = strtol(str, NULL, 0);
+		return get_debug_by_level(*level) != NULL;
+	}
+}
+
+void print_debug_levels(FILE *stream)
+{
+	int i;
+
+	for (i=0; debug_levels[i].description != NULL; i++) {
+		fprintf(stream,
+			"%s (%d)\n",
+			debug_levels[i].description, debug_levels[i].level);
+	}
 }

@@ -564,15 +564,6 @@ int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 		    struct ctdb_scripts_wire **script_status);
 
 
-struct debug_levels {
-	int32_t	level;
-	const char *description;
-};
-extern struct debug_levels debug_levels[];
-
-const char *get_debug_by_level(int32_t level);
-int32_t get_debug_by_desc(const char *desc);
-
 int ctdb_ctrl_stop_node(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 int ctdb_ctrl_continue_node(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
