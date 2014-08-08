@@ -164,6 +164,9 @@ class ProvisionNames(object):
         self.hostname = None
         self.sitename = None
         self.smbconf = None
+        self.domainsid = None
+        self.forestsid = None
+        self.domainguid = None
         self.name_map = {}
 
 
@@ -262,6 +265,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                 "objectSid","msDS-Behavior-Version" ])
     names.domainguid = str(ndr_unpack(misc.GUID, res6[0]["objectGUID"][0]))
     names.domainsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
+    names.forestsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
     if res6[0].get("msDS-Behavior-Version") is None or \
         int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
         names.domainlevel = DS_DOMAIN_FUNCTION_2000
@@ -1219,7 +1223,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     return samdb
 
 
-def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
+def fill_samdb(samdb, lp, names, logger, policyguid,
         policyguid_dc, fill, adminpass, krbtgtpass, machinepass, dns_backend,
         dnspass, invocationid, ntdsguid, serverrole, am_rodc=False,
         dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None):
@@ -1266,23 +1270,23 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
         samdb.set_opaque_integer("domainControllerFunctionality",
             domainControllerFunctionality)
 
-        samdb.set_domain_sid(str(domainsid))
+        samdb.set_domain_sid(str(names.domainsid))
         samdb.set_invocation_id(invocationid)
 
         logger.info("Adding DomainDN: %s" % names.domaindn)
 
         # impersonate domain admin
-        admin_session_info = admin_session(lp, str(domainsid))
+        admin_session_info = admin_session(lp, str(names.domainsid))
         samdb.set_session_info(admin_session_info)
-        if domainguid is not None:
-            domainguid_line = "objectGUID: %s\n-" % domainguid
+        if names.domainguid is not None:
+            domainguid_line = "objectGUID: %s\n-" % names.domainguid
         else:
             domainguid_line = ""
 
-        descr = b64encode(get_domain_descriptor(domainsid))
+        descr = b64encode(get_domain_descriptor(names.domainsid))
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
                 "DOMAINDN": names.domaindn,
-                "DOMAINSID": str(domainsid),
+                "DOMAINSID": str(names.domainsid),
                 "DESCRIPTOR": descr,
                 "DOMAINGUID": domainguid_line
                 })
@@ -1301,7 +1305,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
         # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
         if fill == FILL_FULL:
             logger.info("Adding configuration container")
-            descr = b64encode(get_config_descriptor(domainsid))
+            descr = b64encode(get_config_descriptor(names.domainsid))
             setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
                     "CONFIGDN": names.configdn,
                     "DESCRIPTOR": descr,
@@ -1335,12 +1339,12 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
         if fill == FILL_FULL:
             logger.info("Setting up sam.ldb configuration data")
 
-            partitions_descr = b64encode(get_config_partitions_descriptor(domainsid))
-            sites_descr = b64encode(get_config_sites_descriptor(domainsid))
-            ntdsquotas_descr = b64encode(get_config_ntds_quotas_descriptor(domainsid))
-            protected1_descr = b64encode(get_config_delete_protected1_descriptor(domainsid))
-            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(domainsid))
-            protected2_descr = b64encode(get_config_delete_protected2_descriptor(domainsid))
+            partitions_descr = b64encode(get_config_partitions_descriptor(names.domainsid))
+            sites_descr = b64encode(get_config_sites_descriptor(names.domainsid))
+            ntdsquotas_descr = b64encode(get_config_ntds_quotas_descriptor(names.domainsid))
+            protected1_descr = b64encode(get_config_delete_protected1_descriptor(names.domainsid))
+            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid))
+            protected2_descr = b64encode(get_config_delete_protected2_descriptor(names.domainsid))
 
             setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
                     "CONFIGDN": names.configdn,
@@ -1379,7 +1383,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                 })
 
         logger.info("Adding users container")
-        users_desc = b64encode(get_domain_users_descriptor(domainsid))
+        users_desc = b64encode(get_domain_users_descriptor(names.domainsid))
         setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
                 "DOMAINDN": names.domaindn,
                 "USERS_DESCRIPTOR": users_desc
@@ -1388,7 +1392,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
         setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
                 "DOMAINDN": names.domaindn})
         logger.info("Adding computers container")
-        computers_desc = b64encode(get_domain_computers_descriptor(domainsid))
+        computers_desc = b64encode(get_domain_computers_descriptor(names.domainsid))
         setup_add_ldif(samdb, setup_path("provision_computers_add.ldif"), {
                 "DOMAINDN": names.domaindn,
                 "COMPUTERS_DESCRIPTOR": computers_desc
@@ -1398,11 +1402,11 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
             setup_path("provision_computers_modify.ldif"), {
                 "DOMAINDN": names.domaindn})
         logger.info("Setting up sam.ldb data")
-        infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(domainsid))
-        lostandfound_desc = b64encode(get_domain_delete_protected2_descriptor(domainsid))
-        system_desc = b64encode(get_domain_delete_protected1_descriptor(domainsid))
-        builtin_desc = b64encode(get_domain_builtin_descriptor(domainsid))
-        controllers_desc = b64encode(get_domain_controllers_descriptor(domainsid))
+        infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(names.domainsid))
+        lostandfound_desc = b64encode(get_domain_delete_protected2_descriptor(names.domainsid))
+        system_desc = b64encode(get_domain_delete_protected1_descriptor(names.domainsid))
+        builtin_desc = b64encode(get_domain_builtin_descriptor(names.domainsid))
+        controllers_desc = b64encode(get_domain_controllers_descriptor(names.domainsid))
         setup_add_ldif(samdb, setup_path("provision.ldif"), {
             "CREATTIME": str(samba.unix2nttime(int(time.time()))),
             "DOMAINDN": names.domaindn,
@@ -1427,7 +1431,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                     "SCHEMADN": names.schemadn})
 
             logger.info("Setting up well known security principals")
-            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(domainsid))
+            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid))
             setup_add_ldif(samdb, setup_path("provision_well_known_sec_princ.ldif"), {
                 "CONFIGDN": names.configdn,
                 "WELLKNOWNPRINCIPALS_DESCRIPTOR": protected1wd_descr,
@@ -1441,7 +1445,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
             logger.info("Setting up sam.ldb users and groups")
             setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
                 "DOMAINDN": names.domaindn,
-                "DOMAINSID": str(domainsid),
+                "DOMAINSID": str(names.domainsid),
                 "ADMINPASS_B64": b64encode(adminpass.encode('utf-16-le')),
                 "KRBTGTPASS_B64": b64encode(krbtgtpass.encode('utf-16-le'))
                 })
@@ -1452,7 +1456,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                 dns_backend=dns_backend,
                 dnspass=dnspass,
                 machinepass=machinepass,
-                domainsid=domainsid,
+                domainsid=names.domainsid,
                 next_rid=next_rid,
                 dc_rid=dc_rid,
                 policyguid=policyguid,
@@ -1747,7 +1751,7 @@ def interface_ips_v6(lp):
 
 
 def provision_fill(samdb, secrets_ldb, logger, names, paths,
-                   domainsid, schema=None,
+                   schema=None,
                    targetdir=None, samdb_fill=FILL_FULL,
                    hostip=None, hostip6=None,
                    next_rid=1000, dc_rid=None, adminpass=None, krbtgtpass=None,
@@ -1778,7 +1782,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         dnspass = samba.generate_random_password(128, 255)
 
     samdb = fill_samdb(samdb, lp, names, logger=logger,
-                   domainsid=domainsid, schema=schema, domainguid=domainguid,
+                   schema=schema,
                    policyguid=policyguid, policyguid_dc=policyguid_dc,
                    fill=samdb_fill, adminpass=adminpass, krbtgtpass=krbtgtpass,
                    invocationid=invocationid, machinepass=machinepass,
@@ -1795,14 +1799,14 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                            policyguid_dc)
         if not skip_sysvolacl:
             setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid,
-                         paths.root_gid, domainsid, names.dnsdomain,
+                         paths.root_gid, names.domainsid, names.dnsdomain,
                          names.domaindn, lp, use_ntvfs)
         else:
             logger.info("Setting acl on sysvol skipped")
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
                 realm=names.realm, dnsdomain=names.dnsdomain,
-                netbiosname=names.netbiosname, domainsid=domainsid,
+                netbiosname=names.netbiosname, domainsid=names.domainsid,
                 machinepass=machinepass, secure_channel_type=SEC_CHAN_BDC)
 
         # Now set up the right msDS-SupportedEncryptionTypes into the DB
@@ -1823,7 +1827,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                 # It might be that this attribute does not exist in this schema
                 raise
 
-        setup_ad_dns(samdb, secrets_ldb, domainsid, names, paths, lp, logger,
+        setup_ad_dns(samdb, secrets_ldb, names, paths, lp, logger,
                      hostip=hostip, hostip6=hostip6, dns_backend=dns_backend,
                      dnspass=dnspass, os_level=dom_for_fun_level,
                      targetdir=targetdir, fill_level=samdb_fill)
@@ -2049,6 +2053,9 @@ def provision(logger, session_info, smbconf=None,
 
     names.hostip = hostip
     names.hostip6 = hostip6
+    names.domainguid = domainguid
+    names.domainsid = domainsid
+    names.forestsid = domainsid
 
     if serverrole is None:
         serverrole = lp.get("server role")
@@ -2152,9 +2159,9 @@ def provision(logger, session_info, smbconf=None,
         if samdb_fill == FILL_FULL:
             provision_fill(samdb, secrets_ldb, logger, names, paths,
                     schema=schema, targetdir=targetdir, samdb_fill=samdb_fill,
-                    hostip=hostip, hostip6=hostip6, domainsid=domainsid,
+                    hostip=hostip, hostip6=hostip6,
                     next_rid=next_rid, dc_rid=dc_rid, adminpass=adminpass,
-                    krbtgtpass=krbtgtpass, domainguid=domainguid,
+                    krbtgtpass=krbtgtpass,
                     policyguid=policyguid, policyguid_dc=policyguid_dc,
                     invocationid=invocationid, machinepass=machinepass,
                     ntdsguid=ntdsguid, dns_backend=dns_backend,

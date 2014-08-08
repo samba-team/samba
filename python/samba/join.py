@@ -729,6 +729,9 @@ class dc_join(object):
         ctx.paths       = presult.paths
         ctx.names       = presult.names
 
+        # Fix up the forestsid, it may be different if we are joining as a subdomain
+        ctx.names.forestsid = ctx.forestsid
+
     def join_provision_own_domain(ctx):
         """Provision the local SAM."""
 
@@ -750,19 +753,18 @@ class dc_join(object):
             raise DCJoinException("Can't find naming context on partition DN %s in %s" % (ctx.partition_dn, ctx.samdb.url))
 
         try:
-            domguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
+            ctx.names.domainguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
         except KeyError:
             raise DCJoinException("Can't find GUID in naming master on partition DN %s" % res[0]['ncName'][0])
 
-        ctx.logger.info("Got domain GUID %s" % domguid)
+        ctx.logger.info("Got domain GUID %s" % ctx.names.domainguid)
 
         ctx.logger.info("Calling own domain provision")
 
         secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
 
         presult = provision_fill(ctx.local_samdb, secrets_ldb,
-                                 ctx.logger, ctx.names, ctx.paths, domainsid=security.dom_sid(ctx.domsid),
-                                 domainguid=domguid,
+                                 ctx.logger, ctx.names, ctx.paths,
                                  dom_for_fun_level=DS_DOMAIN_FUNCTION_2003,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="active directory domain controller",
@@ -927,7 +929,7 @@ class dc_join(object):
                             key_version_number=ctx.key_version_number)
 
         if ctx.dns_backend.startswith("BIND9_"):
-            setup_bind9_dns(ctx.local_samdb, secrets_ldb, security.dom_sid(ctx.domsid),
+            setup_bind9_dns(ctx.local_samdb, secrets_ldb,
                             ctx.names, ctx.paths, ctx.lp, ctx.logger,
                             dns_backend=ctx.dns_backend,
                             dnspass=ctx.dnspass, os_level=ctx.behavior_version,
@@ -1206,6 +1208,7 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
         logger.info("DNS name of new naming master is %s" % ctx.server)
 
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
+    ctx.forestsid = ctx.domsid
     ctx.domsid = str(security.random_sid())
     ctx.acct_dn = None
     ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)

@@ -1033,14 +1033,13 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
                                  domainguid, ntdsguid)
 
 
-def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
+def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
         dns_backend, os_level, dnspass=None, hostip=None, hostip6=None,
         targetdir=None, fill_level=FILL_FULL):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
     :param secretsdb: LDB object connected to secrets.ldb file
-    :param domainsid: Domain SID (as dom_sid object)
     :param names: Names shortcut
     :param paths: Paths shortcut
     :param lp: Loadparm object
@@ -1097,12 +1096,12 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
 
     # Create CN=System
     logger.info("Creating CN=MicrosoftDNS,CN=System,%s" % domaindn)
-    create_dns_legacy(samdb, domainsid, domaindn, dnsadmins_sid)
+    create_dns_legacy(samdb, names.domainsid, domaindn, dnsadmins_sid)
 
     if os_level == DS_DOMAIN_FUNCTION_2000:
         # Populating legacy dns
         logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
-        fill_dns_data_legacy(samdb, domainsid, domaindn, dnsdomain, site,
+        fill_dns_data_legacy(samdb, names.domainsid, domaindn, dnsdomain, site,
                              hostname, hostip, hostip6, dnsadmins_sid)
 
     elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
@@ -1110,30 +1109,29 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
 
         # Create DNS partitions
         logger.info("Creating DomainDnsZones and ForestDnsZones partitions")
-        create_dns_partitions(samdb, domainsid, names, domaindn, forestdn,
+        create_dns_partitions(samdb, names.domainsid, names, domaindn, forestdn,
                               dnsadmins_sid, fill_level)
 
         # Populating dns partitions
         logger.info("Populating DomainDnsZones and ForestDnsZones partitions")
-        fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
+        fill_dns_data_partitions(samdb, names.domainsid, site, domaindn, forestdn,
                                  dnsdomain, dnsforest, hostname, hostip, hostip6,
                                  domainguid, names.ntdsguid, dnsadmins_sid,
                                  fill_level=fill_level)
 
     if dns_backend.startswith("BIND9_"):
-        setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
+        setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
                         dns_backend, os_level, site=site, dnspass=dnspass, hostip=hostip,
                         hostip6=hostip6, targetdir=targetdir)
 
 
-def setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
+def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
         dns_backend, os_level, site=None, dnspass=None, hostip=None,
         hostip6=None, targetdir=None, key_version_number=None):
     """Provision DNS information (assuming BIND9 backend in DC role)
 
     :param samdb: LDB object connected to sam.ldb file
     :param secretsdb: LDB object connected to secrets.ldb file
-    :param domainsid: Domain SID (as dom_sid object)
     :param names: Names shortcut
     :param paths: Paths shortcut
     :param lp: Loadparm object
@@ -1174,7 +1172,7 @@ def setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
                          ntdsguid=names.ntdsguid)
 
     if dns_backend == "BIND9_DLZ" and os_level >= DS_DOMAIN_FUNCTION_2003:
-        create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid)
+        create_samdb_copy(samdb, logger, paths, names, names.domainsid, domainguid)
 
     create_named_conf(paths, realm=names.realm,
                       dnsdomain=names.dnsdomain, dns_backend=dns_backend,
