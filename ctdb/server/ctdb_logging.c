@@ -365,8 +365,9 @@ static void write_to_log(struct ctdb_log_state *log,
 /*
   called when log data comes in from a child process
  */
-static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde, 
-			     uint16_t flags, void *private)
+static void ctdb_child_log_handler(struct event_context *ev,
+				   struct fd_event *fde,
+				   uint16_t flags, void *private)
 {
 	struct ctdb_log_state *log = talloc_get_type(private, struct ctdb_log_state);
 	char *p;
@@ -484,7 +485,7 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 	set_close_on_exec(log->pfd);
 	talloc_set_destructor(log, log_context_destructor);
 	fde = tevent_add_fd(ctdb->ev, log, log->pfd, EVENT_FD_READ,
-			    ctdb_log_handler, log);
+			    ctdb_child_log_handler, log);
 	tevent_fd_set_auto_close(fde);
 
 	return log;
@@ -541,7 +542,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	close(old_stderr);
 
 	fde = event_add_fd(ctdb->ev, ctdb->log, p[0],
-			   EVENT_FD_READ, ctdb_log_handler, ctdb->log);
+			   EVENT_FD_READ, ctdb_child_log_handler, ctdb->log);
 	tevent_fd_set_auto_close(fde);
 
 	ctdb->log->pfd = p[0];
