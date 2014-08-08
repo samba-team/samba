@@ -335,7 +335,10 @@ def build(bld):
                                              ctdb_traverse.c eventscript.c
                                              ctdb_takeover.c ctdb_serverids.c
                                              ctdb_persistent.c ctdb_keepalive.c
-                                             ctdb_logging.c ctdb_uptime.c
+                                             ctdb_logging.c
+                                             ctdb_logging_syslog.c
+                                             ctdb_logging_file.c
+                                             ctdb_uptime.c
                                              ctdb_vacuum.c ctdb_banning.c
                                              ctdb_statistics.c
                                              ctdb_update_record.c

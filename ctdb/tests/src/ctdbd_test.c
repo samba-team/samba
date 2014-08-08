@@ -61,6 +61,8 @@ bool fast_start;
 #include "server/ctdb_persistent.c"
 #include "server/ctdb_keepalive.c"
 #include "server/ctdb_logging.c"
+#include "server/ctdb_logging_syslog.c"
+#include "server/ctdb_logging_file.c"
 #include "server/ctdb_uptime.c"
 #include "server/ctdb_vacuum.c"
 #include "server/ctdb_banning.c"

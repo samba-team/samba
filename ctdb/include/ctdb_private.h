@@ -1449,14 +1449,6 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
 
 int start_syslog_daemon(struct ctdb_context *ctdb);
-
-/* Where to send the log messages back to */
-struct ctdb_get_log_addr {
-	uint32_t pnn;
-	uint64_t srvid;
-	int32_t level;
-};
-
 struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 					       struct ctdb_context *ctdb,
 					       const char *log_prefix,

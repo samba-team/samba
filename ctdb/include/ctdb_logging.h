@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <talloc.h>
 
 extern const char *debug_extra;
 
@@ -41,5 +42,8 @@ enum debug_level {
 const char *get_debug_by_level(int32_t level);
 bool parse_debug(const char *str, int32_t *level);
 void print_debug_levels(FILE *stream);
+
+int ctdb_log_setup_syslog(void);
+int ctdb_log_setup_file(TALLOC_CTX *mem_ctx, const char *f);
 
 #endif /* _CTDB_LOGGING_H_ */
