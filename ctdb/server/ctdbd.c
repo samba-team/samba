@@ -318,5 +318,5 @@ int main(int argc, const char *argv[])
 	}
 
 	/* start the protocol running (as a child) */
-	return ctdb_start_daemon(ctdb, interactive?false:true, options.use_syslog);
+	return ctdb_start_daemon(ctdb, interactive?false:true);
 }

@@ -1142,7 +1142,7 @@ static void ctdb_create_pidfile(pid_t pid)
 /*
   start the protocol going as a daemon
 */
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 {
 	int res, ret = -1;
 	struct fd_event *fde;
@@ -1215,12 +1215,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 	}
 
 	ctdb_set_child_logging(ctdb);
-	if (use_syslog) {
-		if (start_syslog_daemon(ctdb)) {
-			DEBUG(DEBUG_CRIT, ("Failed to start syslog daemon\n"));
-			exit(10);
-		}
-	}
 
 	/* initialize statistics collection */
 	ctdb_statistics_init(ctdb);

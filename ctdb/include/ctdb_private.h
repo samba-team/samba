@@ -514,7 +514,6 @@ struct ctdb_context {
 	const char *default_public_interface;
 	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
-	pid_t syslogd_pid;
 	enum ctdb_runstate runstate;
 	struct ctdb_monitor_state *monitor;
 	int start_as_disabled;
@@ -775,8 +774,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 					     TDB_DATA *data);
 
 
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork,
-		      bool use_syslog);
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
+
 struct ctdb_call_state *ctdbd_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 int ctdbd_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
 
@@ -1448,7 +1447,6 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
 
-int start_syslog_daemon(struct ctdb_context *ctdb);
 struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 					       struct ctdb_context *ctdb,
 					       const char *log_prefix,
