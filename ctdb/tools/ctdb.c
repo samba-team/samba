@@ -885,13 +885,11 @@ static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
   discover the pnn by loading the nodes file and try to bind to all
   addresses one at a time until the ip address is found.
  */
-static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
+static int find_node_xpnn(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct pnn_node *pnn_nodes;
 	struct pnn_node *pnn_node;
-
-	assert_single_node_only();
 
 	pnn_nodes = read_nodes_file(mem_ctx);
 	if (pnn_nodes == NULL) {
@@ -902,15 +900,29 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
 		if (ctdb_sys_have_ip(&pnn_node->addr)) {
-			printf("PNN:%d\n", pnn_node->pnn);
 			talloc_free(mem_ctx);
-			return 0;
+			return pnn_node->pnn;
 		}
 	}
 
 	printf("Failed to detect which PNN this node is\n");
 	talloc_free(mem_ctx);
 	return -1;
+}
+
+static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t pnn;
+
+	assert_single_node_only();
+
+	pnn = find_node_xpnn();
+	if (pnn == -1) {
+		return -1;
+	}
+
+	printf("PNN:%d\n", pnn);
+	return 0;
 }
 
 /* Helpers for ctdb status
