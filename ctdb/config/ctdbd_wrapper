@@ -187,6 +187,9 @@ start()
     fi
 
     case "$CTDB_LOGGING" in
+	syslog:udp)
+	    logger -t ctdbd "CTDB is being run with ${CTDB_LOGGING}.  If nothing is logged then check your syslogd configuration"
+	    ;;
 	syslog|syslog:*) : ;;
 	file:*)
 	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGGING#file:}"

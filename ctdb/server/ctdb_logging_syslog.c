@@ -72,11 +72,14 @@ static int ctdb_debug_to_syslog_level(int dbglevel)
 
 /* It appears that some syslog daemon implementations do not allow a
  * hostname when messages are sent via a Unix domain socket, so omit
- * it.  A timestamp could be sent but rsyslogd on Linux limits the
- * timestamp logged to the precision that was received on /dev/log.
- * It seems sane to send degenerate RFC3164 messages without a header
- * at all, so that the daemon will generate high resolution timestamps
- * if configured. */
+ * it.  Similarly, syslogd on FreeBSD does not understand the hostname
+ * part of the header, even when logging via UDP.  Note that most
+ * implementations will log messages against "localhost" when logging
+ * via UDP.  A timestamp could be sent but rsyslogd on Linux limits
+ * the timestamp logged to the precision that was received on
+ * /dev/log.  It seems sane to send degenerate RFC3164 messages
+ * without a header at all, so that the daemon will generate high
+ * resolution timestamps if configured. */
 static int format_rfc3164(int dbglevel, struct ctdb_syslog_sock_state *state,
 			  const char *str, char *buf, int bsize)
 {
@@ -127,6 +130,23 @@ ctdb_syslog_sock_state_destructor(struct ctdb_syslog_sock_state *state)
 	return 0;
 }
 
+static struct ctdb_syslog_sock_state *
+ctdb_log_setup_syslog_common(TALLOC_CTX *mem_ctx,
+			     const char *app_name)
+{
+	struct ctdb_syslog_sock_state *state;
+
+	state = talloc_zero(mem_ctx, struct ctdb_syslog_sock_state);
+	if (state == NULL) {
+		return NULL;
+	}
+	state->fd = -1;
+	state->app_name = app_name;
+	talloc_set_destructor(state, ctdb_syslog_sock_state_destructor);
+
+	return state;
+}
+
 static int ctdb_log_setup_syslog_un(TALLOC_CTX *mem_ctx,
 				    const char *app_name)
 {
@@ -134,7 +154,7 @@ static int ctdb_log_setup_syslog_un(TALLOC_CTX *mem_ctx,
 	struct sockaddr_un dest;
 	int ret;
 
-	state = talloc_zero(mem_ctx, struct ctdb_syslog_sock_state);
+	state = ctdb_log_setup_syslog_common(mem_ctx, app_name);
 	if (state == NULL) {
 		return ENOMEM;
 	}
@@ -157,9 +177,41 @@ static int ctdb_log_setup_syslog_un(TALLOC_CTX *mem_ctx,
 	}
 	set_blocking(state->fd, false);
 
-	state->app_name = app_name;
+	debug_set_callback(state, ctdb_log_to_syslog_sock);
 
-	talloc_set_destructor(state, ctdb_syslog_sock_state_destructor);
+	return 0;
+}
+
+static int ctdb_log_setup_syslog_udp(TALLOC_CTX *mem_ctx,
+				     const char *app_name)
+{
+	struct ctdb_syslog_sock_state *state;
+	struct sockaddr_in dest;
+	int ret;
+
+	state = ctdb_log_setup_syslog_common(mem_ctx, app_name);
+	if (state == NULL) {
+		return ENOMEM;
+	}
+
+	state->fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (state->fd == -1) {
+		int save_errno = errno;
+		talloc_free(state);
+		return save_errno;
+	}
+
+	dest.sin_family = AF_INET;
+	dest.sin_port   = htons(514);
+	dest.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	ret = connect(state->fd,
+		      (struct sockaddr *)&dest, sizeof(dest));
+	if (ret == -1) {
+		int save_errno = errno;
+		talloc_free(state);
+		return save_errno;
+	}
+
 	debug_set_callback(state, ctdb_log_to_syslog_sock);
 
 	return 0;
@@ -189,6 +241,10 @@ static int ctdb_log_setup_syslog(TALLOC_CTX *mem_ctx,
 		method = &logging[0] + l + 1;
 		if (strcmp(method, "nonblocking") == 0) {
 			ctdb_log_setup_syslog_un(mem_ctx, app_name);
+			return 0;
+		}
+		if (strcmp(method, "udp") == 0) {
+			ctdb_log_setup_syslog_udp(mem_ctx, app_name);
 			return 0;
 		}
 

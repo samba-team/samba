@@ -268,6 +268,21 @@
 		      </para>
 		    </listitem>
 		  </varlistentry>
+		  <varlistentry>
+		    <term>udp</term>
+		    <listitem>
+		      <para>
+			CTDB will log to syslog via UDP to
+			localhost:514.  The syslog daemon must be
+			configured to listen on (at least)
+			localhost:514.  Most implementations will log
+			the messages against hostname "localhost" -
+			this is a limit of the implementation for
+			compatibility with more syslog daemon
+			implementations.
+		      </para>
+		    </listitem>
+		  </varlistentry>
 		</variablelist>
 	      </listitem>
 	    </varlistentry>
