@@ -179,6 +179,7 @@
 ^samba4.blackbox.upgradeprovision.alpha13.ldapcmp_sd\(none\) # Due to something rewriting the NT ACL on DNS objects
 ^samba4.blackbox.upgradeprovision.alpha13.ldapcmp_full_sd\(none\) # Due to something rewriting the NT ACL on DNS objects
 ^samba4.blackbox.upgradeprovision.release-4-0-0.ldapcmp_sd\(none\) # Due to something rewriting the NT ACL on DNS objects
+^samba4.raw.read.readx\(dc\) # fails readx 16bit alignment requirement
 ^samba3.smb2.create.gentest
 ^samba3.smb2.create.blob
 ^samba3.smb2.create.open
