@@ -517,7 +517,6 @@ struct ctdb_context {
 	pid_t syslogd_pid;
 	enum ctdb_runstate runstate;
 	struct ctdb_monitor_state *monitor;
-	struct ctdb_log_state *log;
 	int start_as_disabled;
 	int start_as_stopped;
 	bool valgrinding;

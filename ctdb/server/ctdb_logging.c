@@ -309,21 +309,20 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 	debug_callback_fn callback;
 	int ret;
 
-	ctdb->log = talloc_zero(ctdb, struct ctdb_log_state);
-	if (ctdb->log == NULL) {
+	log_state = talloc_zero(ctdb, struct ctdb_log_state);
+	if (log_state == NULL) {
 		printf("talloc_zero failed\n");
 		abort();
 	}
 
-	ctdb->log->ctdb = ctdb;
-	log_state = ctdb->log;
+	log_state->ctdb = ctdb;
 
 	if (use_syslog) {
 		callback = ctdb_syslog_log;
-		ctdb->log->use_syslog = true;
+		log_state->use_syslog = true;
 	} else if (logfile == NULL || strcmp(logfile, "-") == 0) {
 		callback = ctdb_logfile_log;
-		ctdb->log->fd = 1;
+		log_state->fd = 1;
 		/* also catch stderr of subcommands to stdout */
 		ret = dup2(1, 2);
 		if (ret == -1) {
@@ -333,8 +332,8 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 	} else {
 		callback = ctdb_logfile_log;
 
-		ctdb->log->fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
-		if (ctdb->log->fd == -1) {
+		log_state->fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
+		if (log_state->fd == -1) {
 			printf("Failed to open logfile %s\n", logfile);
 			abort();
 		}
@@ -505,7 +504,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	int old_stdout, old_stderr;
 	struct tevent_fd *fde;
 
-	if (ctdb->log->fd == STDOUT_FILENO) {
+	if (log_state->fd == STDOUT_FILENO) {
 		/* not needed for stdout logging */
 		return 0;
 	}
@@ -541,11 +540,11 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	close(old_stdout);
 	close(old_stderr);
 
-	fde = event_add_fd(ctdb->ev, ctdb->log, p[0],
-			   EVENT_FD_READ, ctdb_child_log_handler, ctdb->log);
+	fde = event_add_fd(ctdb->ev, log_state, p[0],
+			   EVENT_FD_READ, ctdb_child_log_handler, log_state);
 	tevent_fd_set_auto_close(fde);
 
-	ctdb->log->pfd = p[0];
+	log_state->pfd = p[0];
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for logging\n", p[0]));
 
