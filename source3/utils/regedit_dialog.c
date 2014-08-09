@@ -1056,7 +1056,7 @@ struct dialog_section_hexedit {
 	struct hexedit *buf;
 };
 
-#define HEXEDIT_MIN_SIZE 16
+#define HEXEDIT_MIN_SIZE 1
 static WERROR hexedit_create(struct dialog *dia,
 				struct dialog_section *section)
 {
