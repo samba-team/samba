@@ -777,6 +777,9 @@ static void text_field_on_input(struct dialog *dia,
 	case KEY_BACKSPACE:
 		form_driver(text_field->form, REQ_DEL_PREV);
 		break;
+	case KEY_DC:
+		form_driver(text_field->form, REQ_DEL_CHAR);
+		break;
 	default:
 		form_driver(text_field->form, c);
 		break;
