@@ -210,6 +210,10 @@ int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
 
 int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
 		 const char *msg, ...);
+int dialog_input_long(TALLOC_CTX *ctx, long *output,
+		      const char *title, const char *msg, ...);
+int dialog_input_ulong(TALLOC_CTX *ctx, unsigned long *output,
+		       const char *title, const char *msg, ...);
 
 struct registry_key;
 struct value_item;
