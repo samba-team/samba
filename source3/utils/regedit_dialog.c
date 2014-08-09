@@ -1224,6 +1224,23 @@ void dialog_section_hexedit_get_buf(struct dialog_section *section,
 	*size = hexedit_get_buf_len(hexedit->buf);
 }
 
+WERROR dialog_section_hexedit_resize(struct dialog_section *section,
+				     size_t size)
+{
+	WERROR rv;
+	struct dialog_section_hexedit *hexedit =
+		talloc_get_type_abort(section, struct dialog_section_hexedit);
+
+	SMB_ASSERT(hexedit->buf != NULL);
+	rv = hexedit_resize_buffer(hexedit->buf, size);
+	if (W_ERROR_IS_OK(rv)) {
+		hexedit_refresh(hexedit->buf);
+	}
+
+	return rv;
+}
+
+
 /* button box */
 struct dialog_section_buttons {
 	struct dialog_section section;
@@ -2030,6 +2047,22 @@ static bool edit_on_submit(struct dialog *dia, struct dialog_section *section,
 
 }
 
+static enum dialog_action edit_on_resize(struct dialog *dia,
+					  struct dialog_section *section)
+{
+	struct dialog_section *data;
+	unsigned long size;
+	int rv;
+
+	data = dialog_find_section(dia, "data");
+	rv = dialog_input_ulong(dia, &size, "Resize", "Enter size of buffer");
+	if (rv == DIALOG_OK) {
+		dialog_section_hexedit_resize(data, size);
+	}
+
+	return DIALOG_IGNORE;
+}
+
 int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 		      uint32_t type, const struct value_item *vitem,
 		      bool force_binary, WERROR *err,
@@ -2039,11 +2072,18 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	struct dialog *dia;
 	struct dialog_section *section;
 	struct edit_req edit;
-	struct button_spec spec[] = {
+	struct button_spec buttons[] = {
 		{.label = "OK", .action = DIALOG_OK},
 		{.label = "Cancel", .action = DIALOG_CANCEL},
 		{ 0 }
 	};
+	struct button_spec buttons_hexedit[] = {
+		{.label = "OK", .action = DIALOG_OK},
+		{.label = "Resize Buffer", .on_enter = edit_on_resize},
+		{.label = "Cancel", .action = DIALOG_CANCEL},
+		{ 0 }
+	};
+
 
 	edit.key = key;
 	edit.vitem = vitem;
@@ -2100,7 +2140,11 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 
 	section = dialog_section_hsep_new(dia, 0);
 	dialog_append_section(dia, section);
-	section = dialog_section_buttons_new(dia, spec);
+	if (edit.mode == REG_BINARY) {
+		section = dialog_section_buttons_new(dia, buttons_hexedit);
+	} else {
+		section = dialog_section_buttons_new(dia, buttons);
+	}
 	dialog_section_set_justify(section, SECTION_JUSTIFY_CENTER);
 	dialog_append_section(dia, section);
 

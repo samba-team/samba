@@ -175,6 +175,8 @@ WERROR dialog_section_hexedit_set_buf(struct dialog_section *section,
 				      const void *data, size_t size);
 void dialog_section_hexedit_get_buf(struct dialog_section *section,
 				    const void **data, size_t *size);
+WERROR dialog_section_hexedit_resize(struct dialog_section *section,
+				     size_t size);
 
 struct button_spec {
 	const char *label;
