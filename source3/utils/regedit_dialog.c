@@ -1675,11 +1675,75 @@ fail:
 }
 
 
-int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
-		 const char *msg, ...)
+enum input_type {
+	DLG_IN_LONG,
+	DLG_IN_ULONG,
+	DLG_IN_STR,
+};
+
+struct input_req {
+	TALLOC_CTX *ctx;
+	enum input_type type;
+	union {
+		void *out;
+		unsigned long *out_ulong;
+		long *out_long;
+		const char **out_str;
+	} out;
+};
+
+static bool input_on_submit(struct dialog *dia, struct dialog_section *section,
+			    void *arg)
 {
-	va_list ap;
+	struct input_req *req = arg;
+	struct dialog_section *data;
+	unsigned long long out_ulong;
+	long long out_long;
+
+	data = dialog_find_section(dia, "input");
+
+	switch (req->type) {
+	case DLG_IN_LONG:
+		if (!dialog_section_text_field_get_int(data, &out_long)) {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "Input must be a number.");
+			return false;
+		}
+		if (out_long < LONG_MIN || out_long > LONG_MAX) {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "Number is out of range.");
+			return false;
+		}
+		*req->out.out_long = out_long;
+		break;
+	case DLG_IN_ULONG:
+		if (!dialog_section_text_field_get_uint(data, &out_ulong)) {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "Input must be a number greater than zero.");
+			return false;
+		}
+		if (out_ulong > ULONG_MAX) {
+			dialog_notice(dia, DIA_ALERT, "Error",
+				      "Number is out of range.");
+			return false;
+		}
+		*req->out.out_ulong = out_ulong;
+		break;
+	case DLG_IN_STR:
+		*req->out.out_str = dialog_section_text_field_get(req->ctx, data);
+		break;
+	}
+
+	return true;
+}
+
+static int dialog_input_internal(TALLOC_CTX *ctx, void *output,
+				 enum input_type type,
+				 const char *title,
+				 const char *msg, va_list ap)
+{
 	WERROR err;
+	struct input_req req;
 	enum dialog_action action;
 	struct dialog *dia;
 	struct dialog_section *section;
@@ -1689,10 +1753,14 @@ int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
 		{ 0 }
 	};
 
+	req.ctx = ctx;
+	req.type = type;
+	req.out.out = output;
+	*req.out.out_str = NULL;
+
 	dia = dialog_new(ctx, PAIR_BLACK_CYAN, title, -1, -1);
-	va_start(ap, msg);
+	dialog_set_submit_cb(dia, input_on_submit, &req);
 	section = dialog_section_label_new_va(dia, msg, ap);
-	va_end(ap);
 	dialog_append_section(dia, section);
 	section = dialog_section_hsep_new(dia, ' ');
 	dialog_append_section(dia, section);
@@ -1708,16 +1776,48 @@ int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
 	dialog_create(dia);
 	dialog_show(dia);
 	dialog_modal_loop(dia, &err, &action);
-
-	*output = NULL;
-	if (action == DIALOG_OK) {
-		section = dialog_find_section(dia, "input");
-		*output = dialog_section_text_field_get(ctx, section);
-	}
-
 	talloc_free(dia);
 
 	return action;
+}
+
+int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
+		 const char *msg, ...)
+{
+	va_list ap;
+	int rv;
+
+	va_start(ap, msg);
+	rv = dialog_input_internal(ctx, output, DLG_IN_STR, title, msg, ap);
+	va_end(ap);
+
+	return rv;
+}
+
+int dialog_input_ulong(TALLOC_CTX *ctx, unsigned long *output,
+		       const char *title, const char *msg, ...)
+{
+	va_list ap;
+	int rv;
+
+	va_start(ap, msg);
+	rv = dialog_input_internal(ctx, output, DLG_IN_ULONG, title, msg, ap);
+	va_end(ap);
+
+	return rv;
+}
+
+int dialog_input_long(TALLOC_CTX *ctx, long *output,
+		      const char *title, const char *msg, ...)
+{
+	va_list ap;
+	int rv;
+
+	va_start(ap, msg);
+	rv = dialog_input_internal(ctx, output, DLG_IN_LONG, title, msg, ap);
+	va_end(ap);
+
+	return rv;
 }
 
 int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
