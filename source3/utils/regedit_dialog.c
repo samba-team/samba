@@ -721,7 +721,17 @@ struct dialog_section_text_field {
 	unsigned opts;
 	FIELD *field[2];
 	FORM *form;
+	int length;
 };
+
+static int get_cursor_col(struct dialog_section_text_field *field)
+{
+	int col;
+
+	col = field->form->curcol + field->form->begincol;
+
+	return col;
+}
 
 static WERROR text_field_create(struct dialog *dia,
 				struct dialog_section *section)
@@ -775,12 +785,20 @@ static void text_field_on_input(struct dialog *dia,
 
 	switch (c) {
 	case KEY_BACKSPACE:
+		if (text_field->length) {
+			text_field->length--;
+		}
 		form_driver(text_field->form, REQ_DEL_PREV);
 		break;
+	case '\x7f':
 	case KEY_DC:
+		if (text_field->length) {
+			text_field->length--;
+		}
 		form_driver(text_field->form, REQ_DEL_CHAR);
 		break;
 	default:
+		text_field->length++;
 		form_driver(text_field->form, c);
 		break;
 	}
@@ -829,7 +847,10 @@ static bool text_field_on_right(struct dialog *dia,
 	struct dialog_section_text_field *text_field =
 		talloc_get_type_abort(section, struct dialog_section_text_field);
 
-	form_driver(text_field->form, REQ_RIGHT_CHAR);
+	if (section->nlines > 1 ||
+	    get_cursor_col(text_field) < text_field->length) {
+		form_driver(text_field->form, REQ_RIGHT_CHAR);
+	}
 
 	return true;
 }
@@ -841,6 +862,7 @@ static enum dialog_action text_field_on_enter(struct dialog *dia,
 		talloc_get_type_abort(section, struct dialog_section_text_field);
 
 	if (section->nlines > 1) {
+		text_field->length += text_field->form->cols;
 		form_driver(text_field->form, REQ_NEW_LINE);
 		return DIALOG_IGNORE;
 	}
@@ -911,6 +933,7 @@ void dialog_section_text_field_set(struct dialog_section *section,
 	struct dialog_section_text_field *text_field =
 		talloc_get_type_abort(section, struct dialog_section_text_field);
 
+	text_field->length = strlen(s);
 	set_field_buffer(text_field->field[0], 0, s);
 }
 
