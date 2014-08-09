@@ -388,6 +388,7 @@ int messaging_dgm_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 		ret = errno;
 		DEBUG(10, ("%s: open(%s) failed: %s\n", __func__,
 			   lockfile_name, strerror(ret)));
+		TALLOC_FREE(lockfile_name);
 		return ret;
 	}
 
