@@ -73,7 +73,7 @@
 	    should not be stored on the shared cluster filesystem.
 	  </para>
 	  <para>
-	    This directory would usually be <filename>/var/ctdb</filename>
+	    This directory would usually be <filename>/var/lib/ctdb</filename>
 	  </para>
 	</listitem>
       </varlistentry>
@@ -89,7 +89,7 @@
 	  </para>
 	  <para>
 	    This directory would usually be
-	    <filename>/etc/ctdb/persistent</filename>
+	    <filename>/var/lib/ctdb/persistent</filename>
 	  </para>
 	</listitem>
       </varlistentry>
@@ -104,7 +104,7 @@
 	  </para>
 	  <para>
 	    This directory would usually be
-	    <filename>/var/ctdb/state</filename>
+	    <filename>/var/lib/ctdb/state</filename>
 	  </para>
 	</listitem>
       </varlistentry>
