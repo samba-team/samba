@@ -94,7 +94,7 @@ class dc_join(object):
         ctx.root_dn = str(ctx.samdb.get_root_basedn())
         ctx.schema_dn = str(ctx.samdb.get_schema_basedn())
         ctx.config_dn = str(ctx.samdb.get_config_basedn())
-        ctx.domsid = ctx.samdb.get_domain_sid()
+        ctx.domsid = security.dom_sid(ctx.samdb.get_domain_sid())
         ctx.forestsid = ctx.domsid
         ctx.domain_name = ctx.get_domain_name()
         ctx.forest_domain_name = ctx.get_forest_domain_name()
@@ -372,7 +372,7 @@ class dc_join(object):
 
     def create_tmp_samdb(ctx):
         '''create a temporary samdb object for schema queries'''
-        ctx.tmp_schema = Schema(security.dom_sid(ctx.domsid),
+        ctx.tmp_schema = Schema(ctx.domsid,
                                 schemadn=ctx.schema_dn)
         ctx.tmp_samdb = SamDB(session_info=system_session(), url=None, auto_connect=False,
                               credentials=ctx.creds, lp=ctx.lp, global_schema=False,
@@ -924,7 +924,7 @@ class dc_join(object):
                             realm=ctx.realm,
                             dnsdomain=ctx.dnsdomain,
                             netbiosname=ctx.myname,
-                            domainsid=security.dom_sid(ctx.domsid),
+                            domainsid=ctx.domsid,
                             machinepass=ctx.acct_pass,
                             secure_channel_type=ctx.secure_channel_type,
                             key_version_number=ctx.key_version_number)
@@ -967,7 +967,7 @@ class dc_join(object):
         info = lsa.TrustDomainInfoInfoEx()
         info.domain_name.string = ctx.dnsdomain
         info.netbios_name.string = ctx.domain_name
-        info.sid = security.dom_sid(ctx.domsid)
+        info.sid = ctx.domsid
         info.trust_direction = lsa.LSA_TRUST_DIRECTION_INBOUND | lsa.LSA_TRUST_DIRECTION_OUTBOUND
         info.trust_type = lsa.LSA_TRUST_TYPE_UPLEVEL
         info.trust_attributes = lsa.LSA_TRUST_ATTRIBUTE_WITHIN_FOREST
@@ -1210,7 +1210,7 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
 
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
     ctx.forestsid = ctx.domsid
-    ctx.domsid = str(security.random_sid())
+    ctx.domsid = security.random_sid()
     ctx.acct_dn = None
     ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
     ctx.trustdom_pass = samba.generate_random_password(128, 128)

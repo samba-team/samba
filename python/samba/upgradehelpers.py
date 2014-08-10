@@ -246,7 +246,7 @@ def newprovision(names, session, smbconf, provdir, logger):
     return provision(logger, session, smbconf=smbconf,
             targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
             domain=names.domain, domainguid=names.domainguid,
-            domainsid=str(names.domainsid), ntdsguid=names.ntdsguid,
+            domainsid=names.domainsid, ntdsguid=names.ntdsguid,
             policyguid=names.policyid, policyguid_dc=names.policyid_dc,
             hostname=names.netbiosname.lower(), hostip=None, hostip6=None,
             invocationid=names.invocation, adminpass=names.adminpass,
