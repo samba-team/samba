@@ -125,11 +125,12 @@ void hexedit_set_cursor(struct hexedit *buf)
 	wmove(buf->win, max_rows(buf->win), 0);
 	wattron(buf->win, A_REVERSE | A_STANDOUT);
 	wclrtoeol(buf->win);
-	if (buf->len) {
+	if (buf->cursor_offset < buf->len) {
 		wprintw(buf->win, "Len:%lu Off:%lu Val:0x%X", buf->len,
 			buf->cursor_offset, buf->data[buf->cursor_offset]);
 	} else {
-		wprintw(buf->win, "Len:%lu (empty)", buf->len);
+		wprintw(buf->win, "Len:%lu Off:%lu", buf->len,
+			buf->cursor_offset);
 	}
 	wattroff(buf->win, A_REVERSE | A_STANDOUT);
 	wmove(buf->win, buf->cursor_y, buf->cursor_x);
@@ -341,9 +342,6 @@ static void cursor_right(struct hexedit *buf)
 {
 	int new_x = buf->cursor_x + 1;
 
-	if (buf->len == 0) {
-		return;
-	}
 	if (new_x == ASCII_COL_END) {
 		return;
 	}
@@ -384,10 +382,6 @@ static void cursor_right(struct hexedit *buf)
 static void do_edit(struct hexedit *buf, int c)
 {
 	uint8_t *byte;
-
-	if (buf->len == 0) {
-		return;
-	}
 
 	if (buf->cursor_offset == buf->len) {
 		hexedit_resize_buffer(buf, buf->len + 1);
@@ -445,6 +439,60 @@ static void do_edit(struct hexedit *buf, int c)
 	hexedit_refresh(buf);
 }
 
+static void erase_at(struct hexedit *buf, size_t pos)
+{
+	if (pos >= buf->len) {
+		return;
+	}
+
+	if (pos < buf->len - 1) {
+		/* squeeze the character out of the buffer */
+		uint8_t *p = buf->data + pos;
+		uint8_t *end = buf->data + buf->len;
+		memmove(p, p + 1, end - p - 1);
+	}
+
+	buf->len--;
+	hexedit_refresh(buf);
+}
+
+static void do_backspace(struct hexedit *buf)
+{
+	size_t off;
+	bool erase = true;
+
+	if (buf->cursor_offset == 0) {
+		return;
+	}
+
+	off = buf->cursor_offset;
+	if (buf->cursor_x == ASCII_COL) {
+		cursor_up(buf);
+		buf->cursor_line_offset = 7;
+		buf->cursor_x = ASCII_COL_END - 1;
+		calc_cursor_offset(buf);
+	} else if (buf->cursor_x == HEX_COL1) {
+		cursor_up(buf);
+		buf->cursor_line_offset = 7;
+		buf->cursor_x = HEX_COL2_END - 1;
+		buf->nibble = 1;
+		calc_cursor_offset(buf);
+	} else {
+		if (buf->cursor_x < ASCII_COL && buf->nibble) {
+			erase = false;
+		}
+		cursor_left(buf);
+	}
+	if (erase) {
+		erase_at(buf, off - 1);
+	}
+}
+
+static void do_delete(struct hexedit *buf)
+{
+	erase_at(buf, buf->cursor_offset);
+}
+
 void hexedit_driver(struct hexedit *buf, int c)
 {
 	switch (c) {
@@ -463,6 +511,12 @@ void hexedit_driver(struct hexedit *buf, int c)
 	case HE_CURSOR_PGUP:
 		break;
 	case HE_CURSOR_PGDN:
+		break;
+	case HE_BACKSPACE:
+		do_backspace(buf);
+		break;
+	case HE_DELETE:
+		do_delete(buf);
 		break;
 	default:
 		do_edit(buf, c & 0xff);
