@@ -1036,7 +1036,8 @@ class dc_join(object):
             "flatname" : ctx.forest_domain_name,
             "trustPartner" : ctx.dnsforest,
             "trustAuthIncoming" : ndr_pack(outgoing),
-            "trustAuthOutgoing" : ndr_pack(outgoing)
+            "trustAuthOutgoing" : ndr_pack(outgoing),
+            "securityIdentifier" : ndr_pack(ctx.forestsid)
             }
         ctx.local_samdb.add(rec)
 
