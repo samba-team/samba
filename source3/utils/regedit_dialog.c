@@ -1093,7 +1093,11 @@ static void hexedit_on_input(struct dialog *dia,
 
 	switch (c) {
 	case KEY_BACKSPACE:
-		// FIXME hexedit_driver(hexedit->buf, c);
+		hexedit_driver(hexedit->buf, HE_BACKSPACE);
+		break;
+	case '\x7f':
+	case KEY_DC:
+		hexedit_driver(hexedit->buf, HE_DELETE);
 		break;
 	default:
 		hexedit_driver(hexedit->buf, c);
