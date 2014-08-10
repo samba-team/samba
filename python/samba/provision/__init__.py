@@ -1956,8 +1956,6 @@ def provision(logger, session_info, smbconf=None,
 
     if domainsid is None:
         domainsid = security.random_sid()
-    else:
-        domainsid = security.dom_sid(domainsid)
 
     root_uid = findnss_uid([root or "root"])
     nobody_uid = findnss_uid([nobody or "nobody"])

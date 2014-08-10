@@ -35,6 +35,7 @@ from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
+from samba.dcerpc import security
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.netcmd import (
     Command,
@@ -405,6 +406,9 @@ class cmd_domain_provision(Command):
         else:
             if ldap_backend_forced_uri is not None:
                 logger.warn("You have specified to use an fixed URI %s for connecting to your LDAP server backend.  This is NOT RECOMMENDED, as our default communiation over ldapi:// is more secure and much less")
+
+        if domain_sid is not None:
+            domain_sid = security.dom_sid(domain_sid)
 
         session = system_session()
         try:
