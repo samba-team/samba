@@ -328,7 +328,7 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 	state->ignore_generation = ignore_generation;
 
 	/* now the contended path */
-	lreq = ctdb_lock_record(ctdb_db, key, true, lock_fetch_callback, state);
+	lreq = ctdb_lock_record(state, ctdb_db, key, true, lock_fetch_callback, state);
 	if (lreq == NULL) {
 		return -1;
 	}

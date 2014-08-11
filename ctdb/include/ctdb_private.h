@@ -1582,24 +1582,28 @@ int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority);
 
 void ctdb_lock_free_request_context(struct lock_request *lock_req);
 
-struct lock_request *ctdb_lock_record(struct ctdb_db_context *ctdb_db,
+struct lock_request *ctdb_lock_record(TALLOC_CTX *mem_ctx,
+				      struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,
 				      bool auto_mark,
 				      void (*callback)(void *, bool),
 				      void *private_data);
 
-struct lock_request *ctdb_lock_db(struct ctdb_db_context *ctdb_db,
+struct lock_request *ctdb_lock_db(TALLOC_CTX *mem_ctx,
+				  struct ctdb_db_context *ctdb_db,
 				  bool auto_mark,
 				  void (*callback)(void *, bool),
 				  void *private_data);
 
-struct lock_request *ctdb_lock_alldb_prio(struct ctdb_context *ctdb,
+struct lock_request *ctdb_lock_alldb_prio(TALLOC_CTX *mem_ctx,
+					  struct ctdb_context *ctdb,
 					  uint32_t priority,
 					  bool auto_mark,
 					  void (*callback)(void *, bool),
 					  void *private_data);
 
-struct lock_request *ctdb_lock_alldb(struct ctdb_context *ctdb,
+struct lock_request *ctdb_lock_alldb(TALLOC_CTX *mem_ctx,
+				     struct ctdb_context *ctdb,
 				     bool auto_mark,
 				     void (*callback)(void *, bool),
 				     void *private_data);

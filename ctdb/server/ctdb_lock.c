@@ -272,6 +272,9 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb);
  */
 static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 {
+	if (lock_ctx->request) {
+		lock_ctx->request->lctx = NULL;
+	}
 	if (lock_ctx->child > 0) {
 		ctdb_kill(lock_ctx->ctdb, lock_ctx->child, SIGKILL);
 		if (lock_ctx->type == LOCK_RECORD) {
@@ -309,7 +312,7 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
  */
 static int ctdb_lock_request_destructor(struct lock_request *lock_request)
 {
-	lock_request->lctx->request = NULL;
+	TALLOC_FREE(lock_request->lctx);
 	return 0;
 }
 
@@ -858,7 +861,8 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 /*
  * Lock record / db depending on type
  */
-static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
+static struct lock_request *ctdb_lock_internal(TALLOC_CTX *mem_ctx,
+					       struct ctdb_context *ctdb,
 					       struct ctdb_db_context *ctdb_db,
 					       TDB_DATA key,
 					       uint32_t priority,
@@ -881,7 +885,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	if ((request = talloc_zero(lock_ctx, struct lock_request)) == NULL) {
+	if ((request = talloc_zero(mem_ctx, struct lock_request)) == NULL) {
 		talloc_free(lock_ctx);
 		return NULL;
 	}
@@ -938,13 +942,15 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 /*
  * obtain a lock on a record in a database
  */
-struct lock_request *ctdb_lock_record(struct ctdb_db_context *ctdb_db,
+struct lock_request *ctdb_lock_record(TALLOC_CTX *mem_ctx,
+				      struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,
 				      bool auto_mark,
 				      void (*callback)(void *, bool),
 				      void *private_data)
 {
-	return ctdb_lock_internal(ctdb_db->ctdb,
+	return ctdb_lock_internal(mem_ctx,
+				  ctdb_db->ctdb,
 				  ctdb_db,
 				  key,
 				  0,
@@ -958,12 +964,14 @@ struct lock_request *ctdb_lock_record(struct ctdb_db_context *ctdb_db,
 /*
  * obtain a lock on a database
  */
-struct lock_request *ctdb_lock_db(struct ctdb_db_context *ctdb_db,
+struct lock_request *ctdb_lock_db(TALLOC_CTX *mem_ctx,
+				  struct ctdb_db_context *ctdb_db,
 				  bool auto_mark,
 				  void (*callback)(void *, bool),
 				  void *private_data)
 {
-	return ctdb_lock_internal(ctdb_db->ctdb,
+	return ctdb_lock_internal(mem_ctx,
+				  ctdb_db->ctdb,
 				  ctdb_db,
 				  tdb_null,
 				  0,
@@ -977,7 +985,8 @@ struct lock_request *ctdb_lock_db(struct ctdb_db_context *ctdb_db,
 /*
  * obtain locks on all databases of specified priority
  */
-struct lock_request *ctdb_lock_alldb_prio(struct ctdb_context *ctdb,
+struct lock_request *ctdb_lock_alldb_prio(TALLOC_CTX *mem_ctx,
+					  struct ctdb_context *ctdb,
 					  uint32_t priority,
 					  bool auto_mark,
 					  void (*callback)(void *, bool),
@@ -988,7 +997,8 @@ struct lock_request *ctdb_lock_alldb_prio(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	return ctdb_lock_internal(ctdb,
+	return ctdb_lock_internal(mem_ctx,
+				  ctdb,
 				  NULL,
 				  tdb_null,
 				  priority,
@@ -1002,12 +1012,14 @@ struct lock_request *ctdb_lock_alldb_prio(struct ctdb_context *ctdb,
 /*
  * obtain locks on all databases
  */
-struct lock_request *ctdb_lock_alldb(struct ctdb_context *ctdb,
+struct lock_request *ctdb_lock_alldb(TALLOC_CTX *mem_ctx,
+				     struct ctdb_context *ctdb,
 				     bool auto_mark,
 				     void (*callback)(void *, bool),
 				     void *private_data)
 {
-	return ctdb_lock_internal(ctdb,
+	return ctdb_lock_internal(mem_ctx,
+				  ctdb,
 				  NULL,
 				  tdb_null,
 				  0,

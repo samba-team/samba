@@ -75,7 +75,6 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 	ctdb->freeze_mode[h->priority]    = CTDB_FREEZE_NONE;
 	ctdb->freeze_handles[h->priority] = NULL;
 
-	ctdb_lock_free_request_context(h->lreq);
 	return 0;
 }
 
@@ -153,7 +152,8 @@ void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 		h->priority = priority;
 		talloc_set_destructor(h, ctdb_freeze_handle_destructor);
 
-		h->lreq = ctdb_lock_alldb_prio(ctdb, priority, false, ctdb_freeze_lock_handler, h);
+		h->lreq = ctdb_lock_alldb_prio(h, ctdb, priority, false,
+					       ctdb_freeze_lock_handler, h);
 		CTDB_NO_MEMORY_FATAL(ctdb, h->lreq);
 		ctdb->freeze_handles[priority] = h;
 		ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
