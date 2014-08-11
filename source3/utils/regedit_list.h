@@ -69,7 +69,11 @@ void multilist_refresh(struct multilist *list);
 
 enum {
 	ML_CURSOR_UP,
-	ML_CURSOR_DOWN
+	ML_CURSOR_DOWN,
+	ML_CURSOR_PGUP,
+	ML_CURSOR_PGDN,
+	ML_CURSOR_HOME,
+	ML_CURSOR_END
 };
 void multilist_driver(struct multilist *list, int c);
 const void *multilist_get_current_row(struct multilist *list);

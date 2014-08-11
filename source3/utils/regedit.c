@@ -378,6 +378,22 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		tree_view_driver(regedit->keys, ML_CURSOR_UP);
 		load_values(regedit);
 		break;
+	case KEY_NPAGE:
+		tree_view_driver(regedit->keys, ML_CURSOR_PGDN);
+		load_values(regedit);
+		break;
+	case KEY_PPAGE:
+		tree_view_driver(regedit->keys, ML_CURSOR_PGUP);
+		load_values(regedit);
+		break;
+	case KEY_HOME:
+		tree_view_driver(regedit->keys, ML_CURSOR_HOME);
+		load_values(regedit);
+		break;
+	case KEY_END:
+		tree_view_driver(regedit->keys, ML_CURSOR_END);
+		load_values(regedit);
+		break;
 	case '\n':
 	case KEY_ENTER:
 	case KEY_RIGHT:
@@ -475,6 +491,18 @@ static void handle_value_input(struct regedit *regedit, int c)
 		break;
 	case KEY_UP:
 		value_list_driver(regedit->vl, ML_CURSOR_UP);
+		break;
+	case KEY_NPAGE:
+		value_list_driver(regedit->vl, ML_CURSOR_PGDN);
+		break;
+	case KEY_PPAGE:
+		value_list_driver(regedit->vl, ML_CURSOR_PGUP);
+		break;
+	case KEY_HOME:
+		value_list_driver(regedit->vl, ML_CURSOR_HOME);
+		break;
+	case KEY_END:
+		value_list_driver(regedit->vl, ML_CURSOR_END);
 		break;
 	case 'b':
 	case 'B':
