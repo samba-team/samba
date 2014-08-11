@@ -1273,6 +1273,7 @@ sub provision_subdom_dc($$$)
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $ctx->{realm} subdomain ";
 	$cmd .= "--parent-domain=$dcvars->{REALM} -U$dcvars->{DC_USERNAME}\@$dcvars->{REALM}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs";
+	$cmd .= " --adminpass=$ret->{PASSWORD}";
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
