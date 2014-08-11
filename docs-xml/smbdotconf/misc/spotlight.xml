@@ -32,12 +32,23 @@
 	</para>
 
 	<para>
-      To enable the Spotlight RPC service:
+	  The Spotlight RPC service can either be enabled as embedded
+	  RPC service:
 	</para>
 
 <programlisting>
 <smbconfsection name="[Global]"/>
 <smbconfoption name="rpc_server:mdsvc">embedded</smbconfoption>
+</programlisting>
+
+	<para>
+	  Or it can be run in a seperate RPC service daemon:
+	</para>
+
+<programlisting>
+<smbconfsection name="[Global]"/>
+<smbconfoption name="rpc_server:mdssd">fork</smbconfoption>
+<smbconfoption name="rpc_server:mdsvc">external</smbconfoption>
 </programlisting>
 
 </description>

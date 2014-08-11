@@ -55,14 +55,15 @@
 	</para>
 
 	<para>
-	Samba includes separate daemons for spoolss, lsarpc/lsass, netlogon,
-	samr, and FSRVP. Currently four daemons are available and they are
-	called:
+	Samba includes separate daemons for spoolss, lsarpc/lsass,
+	netlogon, samr, FSRVP and mdssvc(Spotlight). Currently five
+	daemons are available and they are called:
 	<programlisting>
 		epmd
 		lsasd
 		spoolssd
 		fssd
+		mdssd
 	</programlisting>
 	Example:
 	<programlisting>
