@@ -67,7 +67,7 @@ def configure(conf):
 
     conf.RECURSE('lib/replace')
     if conf.CHECK_FOR_THIRD_PARTY():
-	conf.RECURSE('third_party/popt')
+        conf.RECURSE('third_party/popt')
     else:
         if not conf.CHECK_POPT():
             raise Utils.WafError('popt development packages have not been found\nIf third_party is installed, check that it is in the proper place.')
@@ -163,7 +163,7 @@ def configure(conf):
 def build(bld):
     bld.RECURSE('lib/replace')
     if bld.CHECK_FOR_THIRD_PARTY():
-	bld.RECURSE('third_party/popt')
+        bld.RECURSE('third_party/popt')
 
     bld.RECURSE('lib/talloc')
     bld.RECURSE('lib/tevent')
