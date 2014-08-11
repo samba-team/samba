@@ -2584,7 +2584,9 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 
 	/* if we've just struck a global section, note the fact. */
 	bInGlobalSection = isglobal;
-	lp_ctx->bInGlobalSection = isglobal;
+	if (lp_ctx != NULL) {
+		lp_ctx->bInGlobalSection = isglobal;
+	}
 
 	/* check for multiple global sections */
 	if (bInGlobalSection) {
