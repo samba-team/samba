@@ -270,9 +270,9 @@ static NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 
 	if (dnsdomain != NULL) {
 		*target_principal = talloc_asprintf(mem_ctx,
-						    "E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s",
+						    "E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s@%s",
 						    GUID_string(tmp_ctx, &rft->source_dsa_obj_guid),
-						    dnsdomain);
+						    dnsdomain, dnsdomain);
 	}
 
 	talloc_free(tmp_ctx);
