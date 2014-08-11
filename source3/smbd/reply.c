@@ -3107,11 +3107,7 @@ ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 		ssize_t ret;
 		size_t cur_read;
 
-		if (tosend > bufsize) {
-			cur_read = bufsize;
-		} else {
-			cur_read = tosend;
-		}
+		cur_read = MIN(tosend, bufsize);
 		ret = read_file(fsp,buf,startpos,cur_read);
 		if (ret == -1) {
 			SAFE_FREE(buf);
