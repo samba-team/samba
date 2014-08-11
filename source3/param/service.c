@@ -180,10 +180,6 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 		}
 	}
 
-	/* Check for default vfs service?  Unsure whether to implement this */
-	if (iService < 0) {
-	}
-
 	if (iService < 0) {
 		iService = load_registry_service(*p_service_out);
 	}
