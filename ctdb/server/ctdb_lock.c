@@ -497,6 +497,10 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
 
+	/* If a node stopped/banned, don't spam the logs */
+	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
+		return;
+	}
 	if (lock_ctx->ctdb_db) {
 		DEBUG(DEBUG_WARNING,
 		      ("Unable to get %s lock on database %s for %.0lf seconds\n",
