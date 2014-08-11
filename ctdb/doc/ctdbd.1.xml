@@ -51,9 +51,10 @@
 	<listitem>
 	  <para>
 	    This option sets the debug level to DEBUGLEVEL, which
-	    controls what will be written to the logfile. The default is
-	    0 which will only log important events and errors. A larger
-	    number will provide additional logging.
+	    controls what will be written by the logging
+	    subsystem. The default is 0 which will only log important
+	    events and errors. A larger number will provide additional
+	    logging.
 	  </para>
 	  <para>
 	    See the <citetitle>DEBUG LEVELS</citetitle> section in
@@ -127,12 +128,36 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--logfile=<parameter>FILENAME</parameter></term>
+	<term>--logging=<parameter>STRING</parameter></term>
 	<listitem>
 	  <para>
-	    FILENAME where ctdbd will write its log. This is usually
-	    <filename>/var/log/log.ctdb</filename>.
+	    STRING specifies where ctdbd will write its log. The
+	    default is file:<filename>/var/log/log.ctdb</filename> or
+	    similar - the prefix may differ depending on how CTDB was
+	    built.
 	  </para>
+	  <para>
+	    Valid values are:
+	  </para>
+	  <variablelist>
+	    <varlistentry>
+	      <term>file:<parameter>FILENAME</parameter></term>
+	      <listitem>
+		<para>
+		  FILENAME where ctdbd will write its log. This is usually
+		  <filename>/var/log/log.ctdb</filename>.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term>syslog</term>
+	      <listitem>
+		<para>
+		  CTDB will log to syslog
+		</para>
+	      </listitem>
+	    </varlistentry>
+	  </variablelist>
 	</listitem>
       </varlistentry>
 

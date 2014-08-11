@@ -43,7 +43,12 @@ const char *get_debug_by_level(int32_t level);
 bool parse_debug(const char *str, int32_t *level);
 void print_debug_levels(FILE *stream);
 
-int ctdb_log_setup_syslog(void);
-int ctdb_log_setup_file(TALLOC_CTX *mem_ctx, const char *f);
+bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging);
+typedef int (*ctdb_log_setup_fn_t)(TALLOC_CTX *mem_ctx,
+				   const char *logging,
+				   const char *app_name);
+void ctdb_log_register_backend(const char *prefix, ctdb_log_setup_fn_t init);
+void ctdb_log_init_file(void);
+void ctdb_log_init_syslog(void);
 
 #endif /* _CTDB_LOGGING_H_ */

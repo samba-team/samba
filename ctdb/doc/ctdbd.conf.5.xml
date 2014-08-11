@@ -220,13 +220,36 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_LOGFILE=<parameter>FILENAME</parameter></term>
+	<term>CTDB_LOGGING=<parameter>STRING</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <filename>/var/log/log.ctdb</filename>.
-	    Corresponds to <option>--logfile</option>.  See also
-	    <citetitle>CTDB_SYSLOG</citetitle>.
+	    STRING specifies where ctdbd will write its log. The
+	    default is file:<filename>/var/log/log.ctdb</filename> or
+	    similar - the prefix may differ depending on how CTDB was
+	    built.  Corresponds to <option>--logging</option>.
 	  </para>
+	  <para>
+	    Valid values are:
+	  </para>
+	  <variablelist>
+	    <varlistentry>
+	      <term>file:<parameter>FILENAME</parameter></term>
+	      <listitem>
+		<para>
+		  FILENAME where ctdbd will write its log. This is usually
+		  <filename>/var/log/log.ctdb</filename>.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term>syslog</term>
+	      <listitem>
+		<para>
+		  CTDB will log to syslog
+		</para>
+	      </listitem>
+	    </varlistentry>
+	  </variablelist>
 	</listitem>
       </varlistentry>
 
@@ -349,15 +372,6 @@
 	  <para>
 	    Default is no.  Corresponds to
 	    <option>--start-as-stopped</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_SYSLOG=yes|no</term>
-	<listitem>
-	  <para>
-	    Default is no.  Corresponds to <option>--syslog</option>.
 	  </para>
 	</listitem>
       </varlistentry>

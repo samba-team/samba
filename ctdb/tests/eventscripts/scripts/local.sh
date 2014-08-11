@@ -23,8 +23,9 @@ fi
 mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
 export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb"
 
-export CTDB_LOGFILE="${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
-touch "$CTDB_LOGFILE" || die "Unable to create CTDB_LOGFILE=$CTDB_LOGFILE"
+export CTDB_LOGGING="file:${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
+touch "${CTDB_LOGGING#file:}" || \
+    die "Unable to setup logging for \"$CTDB_LOGGING\""
 
 if [ -d "${TEST_SUBDIR}/etc" ] ; then    
     cp -a "${TEST_SUBDIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"

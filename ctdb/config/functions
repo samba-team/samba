@@ -86,17 +86,25 @@ script_log ()
 {
     _tag="$1" ; shift
 
-    if [ "$CTDB_SYSLOG" = "yes" ] ; then
-	logger -t "ctdbd: ${_tag}" $*
-    else
-	{
-	    if [ -n "$*" ] ; then
-		echo "$*"
+    case "$CTDB_LOGGING" in
+	file:*|"")
+	    if [ -n "$CTDB_LOGGING" ] ; then
+		_file="${CTDB_LOGGING#file:}"
 	    else
-		cat
+		_file="/var/log/log.ctdb"
 	    fi
-	} >>"${CTDB_LOGFILE:-/var/log/log.ctdb}"
-    fi
+	    {
+		if [ -n "$*" ] ; then
+		    echo "$*"
+		else
+		    cat
+		fi
+	    } >>"$_file"
+	    ;;
+	*)
+	    logger -t "ctdbd: ${_tag}" $*
+	    ;;
+    esac
 }
 
 # When things are run in the background in an eventscript then logging

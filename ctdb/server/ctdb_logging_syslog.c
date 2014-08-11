@@ -54,8 +54,15 @@ static void ctdb_log_to_syslog(void *private_ptr, int dbglevel, const char *s)
 	       "%s%s", debug_extra, s);
 }
 
-int ctdb_log_setup_syslog(void)
+static int ctdb_log_setup_syslog(TALLOC_CTX *mem_ctx,
+				 const char *logging,
+				 const char *app_name)
 {
 	debug_set_callback(NULL, ctdb_log_to_syslog);
 	return 0;
+}
+
+void ctdb_log_init_syslog(void)
+{
+	ctdb_log_register_backend("syslog", ctdb_log_setup_syslog);
 }

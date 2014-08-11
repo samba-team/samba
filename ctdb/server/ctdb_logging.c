@@ -24,6 +24,13 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "lib/util/debug.h"
+#include "lib/util/dlinklist.h"
+
+struct ctdb_log_backend {
+	struct ctdb_log_backend *prev, *next;
+	const char *prefix;
+	ctdb_log_setup_fn_t setup;
+};
 
 struct ctdb_log_state {
 	const char *prefix;
@@ -32,16 +39,34 @@ struct ctdb_log_state {
 	uint16_t buf_used;
 	void (*logfn)(const char *, uint16_t, void *);
 	void *logfn_private;
+	struct ctdb_log_backend *backends;
 };
 
-/* we need this global to keep the DEBUG() syntax */
+/* Used by ctdb_set_child_logging() */
 static struct ctdb_log_state *log_state;
 
-/*
-  choose the logfile location
-*/
-int ctdb_set_logfile(TALLOC_CTX *mem_ctx, const char *logfile, bool use_syslog)
+void ctdb_log_register_backend(const char *prefix, ctdb_log_setup_fn_t setup)
 {
+	struct ctdb_log_backend *b;
+
+	b = talloc_zero(log_state, struct ctdb_log_backend);
+	if (b == NULL) {
+		printf("Failed to register backend \"%s\" - no memory\n",
+		       prefix);
+		return;
+	}
+
+	b->prefix = prefix;
+	b->setup = setup;
+
+	DLIST_ADD_END(log_state->backends, b, NULL);
+}
+
+
+/* Initialise logging */
+bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging)
+{
+	struct ctdb_log_backend *b;
 	int ret;
 
 	log_state = talloc_zero(mem_ctx, struct ctdb_log_state);
@@ -50,22 +75,26 @@ int ctdb_set_logfile(TALLOC_CTX *mem_ctx, const char *logfile, bool use_syslog)
 		abort();
 	}
 
-	if (use_syslog) {
-		ret = ctdb_log_setup_syslog();
-		if (ret != 0) {
-			printf("Setup of syslog logging failed with \"%s\"\n",
-			       strerror(ret));
-			abort();
-		}
-	} else {
-		ret = ctdb_log_setup_file(mem_ctx, logfile);
-		if (ret != 0) {
-			printf("Setup of file logging failed with \"%s\"\n",
-			       strerror(ret));
-			abort();
+	ctdb_log_init_file();
+	ctdb_log_init_syslog();
+
+	for (b = log_state->backends; b != NULL; b = b->next) {
+		size_t l = strlen(b->prefix);
+		/* Exact match with prefix or prefix followed by ':' */
+		if (strncmp(b->prefix, logging, l) == 0 &&
+		    (logging[l] == '\0' || logging[l] == ':')) {
+			ret = b->setup(mem_ctx, logging, "ctdbd");
+			if (ret == 0) {
+				return true;
+			}
+			printf("Log init for \"%s\" failed with \"%s\"\n",
+			       logging, strerror(ret));
+			return false;
 		}
 	}
-	return 0;
+
+	printf("Unable to find log backend for \"%s\"\n", logging);
+	return false;
 }
 
 /* Note that do_debug always uses the global log state. */

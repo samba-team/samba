@@ -33,7 +33,7 @@ static struct {
 	const char *public_address_list;
 	const char *event_script_dir;
 	const char *notification_script;
-	const char *logfile;
+	const char *logging;
 	const char *recovery_lock_file;
 	const char *db_dir;
 	const char *db_dir_persistent;
@@ -42,7 +42,6 @@ static struct {
 	const char *single_public_ip;
 	int         valgrinding;
 	int         nosetsched;
-	int         use_syslog;
 	int         start_as_disabled;
 	int         start_as_stopped;
 	int         no_lmaster;
@@ -56,7 +55,7 @@ static struct {
 	.public_address_list = NULL,
 	.transport = "tcp",
 	.event_script_dir = NULL,
-	.logfile = LOGDIR "/log.ctdb",
+	.logging = "file:" LOGDIR "/log.ctdb",
 	.db_dir = CTDB_VARDIR,
 	.db_dir_persistent = CTDB_VARDIR "/persistent",
 	.db_dir_state = CTDB_VARDIR "/state",
@@ -111,7 +110,7 @@ int main(int argc, const char *argv[])
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "single-public-ip", 0, POPT_ARG_STRING, &options.single_public_ip, 0, "single public ip", "ip-address"},
 		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
-		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
+		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
@@ -123,7 +122,6 @@ int main(int argc, const char *argv[])
 		{ "pidfile", 0, POPT_ARG_STRING, &ctdbd_pidfile, 0, "location of PID file", "filename" },
 		{ "valgrinding", 0, POPT_ARG_NONE, &options.valgrinding, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.nosetsched, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
-		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
 		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
 		{ "start-as-stopped", 0, POPT_ARG_NONE, &options.start_as_stopped, 0, "Node starts in stopped state", NULL },
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
@@ -175,10 +173,7 @@ int main(int argc, const char *argv[])
 
 	script_log_level = options.script_log_level;
 
-	ret = ctdb_set_logfile(ctdb, options.logfile, options.use_syslog);
-	if (ret == -1) {
-		printf("ctdb_set_logfile to %s failed - %s\n", 
-		       options.use_syslog?"syslog":options.logfile, ctdb_errstr(ctdb));
+	if (!ctdb_logging_init(ctdb, options.logging)) {
 		exit(1);
 	}
 

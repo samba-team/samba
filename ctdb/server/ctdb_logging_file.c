@@ -24,6 +24,8 @@
 #include "system/filesys.h"
 #include "lib/util/time_basic.h"
 
+#define CTDB_LOG_FILE_PREFIX "file"
+
 struct file_state {
 	int fd;
 };
@@ -64,9 +66,19 @@ static int file_state_destructor(struct file_state *state)
        return 0;
 }
 
-int ctdb_log_setup_file(TALLOC_CTX *mem_ctx, const char *logfile)
+static int ctdb_log_setup_file(TALLOC_CTX *mem_ctx,
+			       const char *logging,
+			       const char *app_name)
 {
 	struct file_state *state;
+	const char *logfile;
+	size_t l;
+
+	l = strlen(CTDB_LOG_FILE_PREFIX);
+	if (logging[l] != ':') {
+		return EINVAL;
+	}
+	logfile = &logging[0] + l + 1;
 
 	state = talloc_zero(mem_ctx, struct file_state);
 	if (state == NULL) {
@@ -93,4 +105,9 @@ int ctdb_log_setup_file(TALLOC_CTX *mem_ctx, const char *logfile)
 	debug_set_callback(state, ctdb_log_to_file);
 
 	return 0;
+}
+
+void ctdb_log_init_file(void)
+{
+	ctdb_log_register_backend(CTDB_LOG_FILE_PREFIX, ctdb_log_setup_file);
 }

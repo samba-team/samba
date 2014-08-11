@@ -111,7 +111,7 @@ build_ctdb_options ()
     maybe_set "--pidfile"                "$pidfile"
 
     # build up ctdb_options variable from optional parameters
-    maybe_set "--logfile"                "$CTDB_LOGFILE"
+    maybe_set "--logging"                "$CTDB_LOGGING"
     maybe_set "--nlist"                  "$CTDB_NODES"
     maybe_set "--socket"                 "$CTDB_SOCKET"
     maybe_set "--public-addresses"       "$CTDB_PUBLIC_ADDRESSES"
@@ -129,7 +129,6 @@ build_ctdb_options ()
     maybe_set "--no-lmaster"             "$CTDB_CAPABILITY_LMASTER"   "no"
     maybe_set "--lvs --single-public-ip" "$CTDB_LVS_PUBLIC_IP"
     maybe_set "--script-log-level"       "$CTDB_SCRIPT_LOG_LEVEL"
-    maybe_set "--syslog"                 "$CTDB_SYSLOG"               "yes"
     maybe_set "--max-persistent-check-errors" "$CTDB_MAX_PERSISTENT_CHECK_ERRORS"
 }
 
@@ -187,9 +186,14 @@ start()
 	ctdb_options="${ctdb_options} --valgrinding"
     fi
 
-    if [ "$CTDB_SYSLOG" != "yes" ] ; then
-	logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGFILE:-/var/log/log.ctdb}"
-    fi
+    case "$CTDB_LOGGING" in
+	syslog) : ;;
+	file:*)
+	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGGING#file:}"
+	    ;;
+	*)
+	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in log.ctdb"
+    esac
 
     eval "$ctdbd" "$ctdb_options" || return 1
 
