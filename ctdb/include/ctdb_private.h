@@ -1580,8 +1580,6 @@ struct lock_request;
 int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority);
 int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority);
 
-void ctdb_lock_free_request_context(struct lock_request *lock_req);
-
 struct lock_request *ctdb_lock_record(TALLOC_CTX *mem_ctx,
 				      struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,

@@ -316,16 +316,6 @@ static int ctdb_lock_request_destructor(struct lock_request *lock_request)
 	return 0;
 }
 
-void ctdb_lock_free_request_context(struct lock_request *lock_req)
-{
-	struct lock_context *lock_ctx;
-
-	lock_ctx = lock_req->lctx;
-	talloc_free(lock_req);
-	talloc_free(lock_ctx);
-}
-
-
 /*
  * Process all the callbacks waiting for lock
  *
