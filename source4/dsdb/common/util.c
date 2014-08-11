@@ -4285,8 +4285,10 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 
 	account_dn = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, msg, "serverReference");
 	if (account_dn == NULL) {
-		DEBUG(1,(__location__ ": Failed to find account_dn for DSA with objectGUID %s, sid %s\n",
-			 GUID_string(tmp_ctx, dsa_guid), dom_sid_string(tmp_ctx, sid)));
+		DEBUG(1,(__location__ ": Failed to find account dn (serverReference) for %s, parent of DSA with objectGUID %s, sid %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 GUID_string(tmp_ctx, dsa_guid),
+			 dom_sid_string(tmp_ctx, sid)));
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
