@@ -405,20 +405,32 @@ WERROR multilist_set_data(struct multilist *list, const void *data)
 	return WERR_OK;
 }
 
+static int get_window_height(struct multilist *list)
+{
+	int height;
+
+	height = list->window_height;
+	if (list->cb->get_column_header) {
+		height--;
+	}
+
+	return height;
+}
+
 static void fix_start_row(struct multilist *list)
 {
 	int height;
 
 	/* adjust start_row so that the cursor appears on the screen */
 
-	height = list->window_height;
-	if (list->cb->get_column_header) {
-		height--;
-	}
+	height = get_window_height(list);
 	if (list->cursor_row < list->start_row) {
 		list->start_row = list->cursor_row;
 	} else if (list->cursor_row >= list->start_row + height) {
 		list->start_row = list->cursor_row - height + 1;
+	}
+	if (list->nrows > height && list->nrows - list->start_row < height) {
+		list->start_row = list->nrows - height;
 	}
 }
 
@@ -457,6 +469,10 @@ void multilist_refresh(struct multilist *list)
 {
 	int window_start_row, height;
 
+	if (list->nrows == 0) {
+		return;
+	}
+
 	/* copy from pad, starting at start_row, to the window, accounting
 	   for the column header (if present). */
 	height = MIN(list->window_height, list->nrows);
@@ -474,6 +490,7 @@ void multilist_refresh(struct multilist *list)
 
 void multilist_driver(struct multilist *list, int c)
 {
+	unsigned page;
 	const void *tmp;
 
 	if (list->nrows == 0) {
@@ -496,6 +513,50 @@ void multilist_driver(struct multilist *list, int c)
 		unhighlight_current_row(list);
 		list->cursor_row++;
 		tmp = data_get_next_row(list, list->current_row);
+		break;
+	case ML_CURSOR_PGUP:
+		if (list->cursor_row == 0) {
+			return;
+		}
+		unhighlight_current_row(list);
+		page = get_window_height(list);
+		if (page > list->cursor_row) {
+			list->cursor_row = 0;
+		} else {
+			list->cursor_row -= page;
+			list->start_row -= page;
+		}
+		tmp = data_get_row_n(list, list->cursor_row);
+		break;
+	case ML_CURSOR_PGDN:
+		if (list->cursor_row == list->nrows - 1) {
+			return;
+		}
+		unhighlight_current_row(list);
+		page = get_window_height(list);
+		if (page > list->nrows - list->cursor_row - 1) {
+			list->cursor_row = list->nrows - 1;
+		} else {
+			list->cursor_row += page;
+			list->start_row += page;
+		}
+		tmp = data_get_row_n(list, list->cursor_row);
+		break;
+	case ML_CURSOR_HOME:
+		if (list->cursor_row == 0) {
+			return;
+		}
+		unhighlight_current_row(list);
+		list->cursor_row = 0;
+		tmp = data_get_row_n(list, list->cursor_row);
+		break;
+	case ML_CURSOR_END:
+		if (list->cursor_row == list->nrows - 1) {
+			return;
+		}
+		unhighlight_current_row(list);
+		list->cursor_row = list->nrows - 1;
+		tmp = data_get_row_n(list, list->cursor_row);
 		break;
 	}
 
