@@ -29,8 +29,9 @@ VERSION = version.STRING.replace('-', '.')
 Options.default_prefix = '/usr/local'
 
 samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
-                        lib/tevent:lib/tevent lib/tdb:lib/tdb lib/popt:lib/popt
+                        lib/tevent:lib/tevent lib/tdb:lib/tdb
                         lib/socket_wrapper:lib/socket_wrapper
+                        third_party/popt:third_party/popt
                         buildtools:buildtools''')
 
 
