@@ -44,6 +44,7 @@ enum rpc_service_mode_e rpc_service_mode(const char *name);
 #define rpc_samr_mode() rpc_service_mode("samr")
 #define rpc_netlogon_mode() rpc_service_mode("netlogon")
 #define rpc_fssagentrpc_mode() rpc_service_mode("fssagentrpc")
+#define rpc_mdssvc_mode() rpc_service_mode("mdssvc")
 
 
 
@@ -66,5 +67,6 @@ enum rpc_daemon_type_e rpc_daemon_type(const char *name);
 #define rpc_spoolss_daemon() rpc_daemon_type("spoolssd")
 #define rpc_lsasd_daemon() rpc_daemon_type("lsasd")
 #define rpc_fss_daemon() rpc_daemon_type("fssd")
+#define rpc_mdssd_daemon() rpc_daemon_type("mdssd")
 
 #endif /* _RPC_CONFIG_H */

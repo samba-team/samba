@@ -475,7 +475,10 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 	struct rpc_srv_callbacks mdssvc_cb;
 	NTSTATUS status;
 	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
-	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+	enum rpc_daemon_type_e mdssvc_type = rpc_mdssd_daemon();
+
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED
+	    || mdssvc_type != RPC_DAEMON_EMBEDDED) {
 		return true;
 	}
 

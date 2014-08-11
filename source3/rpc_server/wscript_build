@@ -186,3 +186,8 @@ bld.SAMBA3_SUBSYSTEM('LSASD',
 bld.SAMBA3_SUBSYSTEM('FSSD',
                     source='fssd.c',
                     deps='samba-util')
+
+bld.SAMBA3_SUBSYSTEM('MDSSD',
+                    source='mdssd.c',
+                    deps='RPC_SOCK_HELPER samba-util',
+                    enabled=bld.env.with_spotlight)
