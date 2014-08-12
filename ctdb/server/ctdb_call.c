@@ -1540,6 +1540,8 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
 {
 	struct ctdb_revoke_state *state = talloc_zero(ctdb, struct ctdb_revoke_state);
 	int status;
+	struct ctdb_ltdb_header new_header;
+	TDB_DATA new_data;
 
 	state->ctdb_db = ctdb_db;
 	state->key     = key;
@@ -1555,45 +1557,44 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
 	}
 
 	status = state->status;
-
-	if (status == 0) {
-		struct ctdb_ltdb_header new_header;
-		TDB_DATA new_data;
-
-		if (ctdb_ltdb_lock(ctdb_db, key) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to chainlock the database in revokechild\n"));
-			talloc_free(state);
-			return -1;
-		}
-		if (ctdb_ltdb_fetch(ctdb_db, key, &new_header, state, &new_data) != 0) {
-			ctdb_ltdb_unlock(ctdb_db, key);
-			DEBUG(DEBUG_ERR,("Failed for fetch tdb record in revokechild\n"));
-			talloc_free(state);
-			return -1;
-		}
-		header->rsn++;
-		if (new_header.rsn > header->rsn) {
-			ctdb_ltdb_unlock(ctdb_db, key);
-			DEBUG(DEBUG_ERR,("RSN too high in tdb record in revokechild\n"));
-			talloc_free(state);
-			return -1;
-		}
-		if ( (new_header.flags & (CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS)) != (CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS) ) {
-			ctdb_ltdb_unlock(ctdb_db, key);
-			DEBUG(DEBUG_ERR,("Flags are wrong in tdb record in revokechild\n"));
-			talloc_free(state);
-			return -1;
-		}
-		new_header.rsn++;
-		new_header.flags |= CTDB_REC_RO_REVOKE_COMPLETE;
-		if (ctdb_ltdb_store(ctdb_db, key, &new_header, new_data) != 0) {
-			ctdb_ltdb_unlock(ctdb_db, key);
-			DEBUG(DEBUG_ERR,("Failed to write new record in revokechild\n"));
-			talloc_free(state);
-			return -1;
-		}
-		ctdb_ltdb_unlock(ctdb_db, key);
+	if (status != 0) {
+		talloc_free(state);
+		return staus;
 	}
+
+	if (ctdb_ltdb_lock(ctdb_db, key) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to chainlock the database in revokechild\n"));
+		talloc_free(state);
+		return -1;
+	}
+	if (ctdb_ltdb_fetch(ctdb_db, key, &new_header, state, &new_data) != 0) {
+		ctdb_ltdb_unlock(ctdb_db, key);
+		DEBUG(DEBUG_ERR,("Failed for fetch tdb record in revokechild\n"));
+		talloc_free(state);
+		return -1;
+	}
+	header->rsn++;
+	if (new_header.rsn > header->rsn) {
+		ctdb_ltdb_unlock(ctdb_db, key);
+		DEBUG(DEBUG_ERR,("RSN too high in tdb record in revokechild\n"));
+		talloc_free(state);
+		return -1;
+	}
+	if ( (new_header.flags & (CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS)) != (CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS) ) {
+		ctdb_ltdb_unlock(ctdb_db, key);
+		DEBUG(DEBUG_ERR,("Flags are wrong in tdb record in revokechild\n"));
+		talloc_free(state);
+		return -1;
+	}
+	new_header.rsn++;
+	new_header.flags |= CTDB_REC_RO_REVOKE_COMPLETE;
+	if (ctdb_ltdb_store(ctdb_db, key, &new_header, new_data) != 0) {
+		ctdb_ltdb_unlock(ctdb_db, key);
+		DEBUG(DEBUG_ERR,("Failed to write new record in revokechild\n"));
+		talloc_free(state);
+		return -1;
+	}
+	ctdb_ltdb_unlock(ctdb_db, key);
 
 	talloc_free(state);
 	return status;
