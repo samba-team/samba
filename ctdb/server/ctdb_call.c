@@ -1539,7 +1539,6 @@ static void ctdb_revoke_timeout_handler(struct event_context *ev, struct timed_e
 static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA tdata, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data)
 {
 	struct ctdb_revoke_state *state = talloc_zero(ctdb, struct ctdb_revoke_state);
-	int status;
 	struct ctdb_ltdb_header new_header;
 	TDB_DATA new_data;
 
@@ -1554,12 +1553,6 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
 
 	while (state->finished == 0) {
 		event_loop_once(ctdb->ev);
-	}
-
-	status = state->status;
-	if (status != 0) {
-		talloc_free(state);
-		return staus;
 	}
 
 	if (ctdb_ltdb_lock(ctdb_db, key) != 0) {
@@ -1586,8 +1579,18 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
 		talloc_free(state);
 		return -1;
 	}
-	new_header.rsn++;
-	new_header.flags |= CTDB_REC_RO_REVOKE_COMPLETE;
+
+	/*
+	 * If revoke on all nodes succeed, revoke is complete.  Otherwise,
+	 * remove CTDB_REC_RO_REVOKING_READONLY flag and retry.
+	 */
+	if (state->status == 0) {
+		new_header.rsn++;
+		new_header.flags |= CTDB_REC_RO_REVOKE_COMPLETE;
+	} else {
+		DEBUG(DEBUG_NOTICE, ("Revoke all delegations failed, retrying.\n"));
+		new_header.flags &= ~CTDB_REC_RO_REVOKING_READONLY;
+	}
 	if (ctdb_ltdb_store(ctdb_db, key, &new_header, new_data) != 0) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(DEBUG_ERR,("Failed to write new record in revokechild\n"));
@@ -1597,7 +1600,7 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
 	ctdb_ltdb_unlock(ctdb_db, key);
 
 	talloc_free(state);
-	return status;
+	return 0;
 }
 
 
