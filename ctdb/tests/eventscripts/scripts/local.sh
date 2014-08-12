@@ -1042,19 +1042,6 @@ simple_test_command ()
     result_check
 }
 
-check_ctdb_logfile ()
-{
-    # If something has previously failed then don't continue.
-    : ${_passed:=true}
-    $_passed || return 1
-
-    echo "=================================================="
-    echo "Checking CTDB_LOGFILE=\"${CTDB_LOGFILE}\""
-    _out=$(cat "$CTDB_LOGFILE" 2>&1)
-
-    result_check
-}
-
 # Run an eventscript iteratively.
 # - 1st argument is the number of iterations.
 # - 2nd argument is something to eval to do setup for every iteration.
