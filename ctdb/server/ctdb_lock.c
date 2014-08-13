@@ -549,7 +549,7 @@ static int db_count_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
 }
 
 struct db_namelist {
-	char **names;
+	const char **names;
 	int n;
 };
 
@@ -564,10 +564,12 @@ static int db_name_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
 	return 0;
 }
 
-static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ctx, int fd)
+static bool lock_helper_args(TALLOC_CTX *mem_ctx,
+			     struct lock_context *lock_ctx, int fd,
+			     int *argc, const char ***argv)
 {
 	struct ctdb_context *ctdb = lock_ctx->ctdb;
-	char **args = NULL;
+	const char **args = NULL;
 	int nargs, i;
 	int priority;
 	struct db_namelist list;
@@ -597,9 +599,9 @@ static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ct
 	/* Add extra argument for null termination */
 	nargs++;
 
-	args = talloc_array(mem_ctx, char *, nargs);
+	args = talloc_array(mem_ctx, const char *, nargs);
 	if (args == NULL) {
-		return NULL;
+		return false;
 	}
 
 	args[0] = talloc_strdup(args, "ctdb_lock_helper");
@@ -645,11 +647,13 @@ static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ct
 	for (i=0; i<nargs-1; i++) {
 		if (args[i] == NULL) {
 			talloc_free(args);
-			return NULL;
+			return false;
 		}
 	}
 
-	return args;
+	*argc = nargs;
+	*argv = args;
+	return true;
 }
 
 /*
@@ -718,11 +722,11 @@ static struct lock_context *ctdb_find_lock_context(struct ctdb_context *ctdb)
 static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 {
 	struct lock_context *lock_ctx;
-	int ret;
+	int ret, argc;
 	TALLOC_CTX *tmp_ctx;
 	const char *helper = BINDIR "/ctdb_lock_helper";
 	static const char *prog = NULL;
-	char **args;
+	const char **args;
 
 	if (prog == NULL) {
 		const char *t;
@@ -761,8 +765,8 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	}
 
 	/* Create arguments for lock helper */
-	args = lock_helper_args(tmp_ctx, lock_ctx, lock_ctx->fd[1]);
-	if (args == NULL) {
+	if (!lock_helper_args(tmp_ctx, lock_ctx, lock_ctx->fd[1],
+			      &argc, &args)) {
 		DEBUG(DEBUG_ERR, ("Failed to create lock helper args\n"));
 		close(lock_ctx->fd[0]);
 		close(lock_ctx->fd[1]);
@@ -783,7 +787,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 
 	/* Child process */
 	if (lock_ctx->child == 0) {
-		ret = execv(prog, args);
+		ret = execv(prog, (char * const*) args);
 		if (ret < 0) {
 			DEBUG(DEBUG_ERR, ("Failed to execute helper %s (%d, %s)\n",
 					  prog, errno, strerror(errno)));
