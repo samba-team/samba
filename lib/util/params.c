@@ -80,6 +80,7 @@
 
 #include "includes.h"
 #include "system/locale.h"
+#include "tini.h"
 
 /* -------------------------------------------------------------------------- **
  * Constants...
@@ -521,6 +522,8 @@ static myFILE *OpenConfFile(TALLOC_CTX *mem_ctx, const char *FileName )
   return( ret );
   } /* OpenConfFile */
 
+#if 0
+
 bool pm_process( const char *FileName,
                  bool (*sfunc)(const char *, void *),
                  bool (*pfunc)(const char *, const char *, void *),
@@ -579,4 +582,29 @@ bool pm_process( const char *FileName,
   return( true );                             /* Generic success. */
   } /* pm_process */
 
+#else
+
 /* -------------------------------------------------------------------------- */
+
+bool pm_process(const char *filename,
+		bool (*sfunc)(const char *section, void *private_data),
+		bool (*pfunc)(const char *name, const char *value,
+			      void *private_data),
+		void *private_data)
+{
+	FILE *f;
+	bool ret;
+
+	f = fopen(filename, "r");
+	if (f == NULL) {
+		return false;
+	}
+
+	ret = tini_parse(f, sfunc, pfunc, private_data);
+
+	fclose(f);
+
+	return ret;
+}
+
+#endif
