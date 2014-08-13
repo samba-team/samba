@@ -94,12 +94,6 @@ def s3_fix_kwargs(bld, kwargs):
     else:
         extra_includes += [ '../lib/popt' ]
 
-    if bld.CONFIG_SET('USING_SYSTEM_INIPARSER'):
-        (iniparser_includes, iniparser_ldflags, iniparser_cpppath) = library_flags(bld, 'iniparser')
-        extra_includes += iniparser_cpppath
-    else:
-        extra_includes += [ '../lib/iniparser' ]
-
     # s3 builds assume that they will have a bunch of extra include paths
     includes = []
     for d in extra_includes:

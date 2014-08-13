@@ -122,15 +122,9 @@ def configure(conf):
     conf.RECURSE('dynconfig')
 
     if conf.CHECK_FOR_THIRD_PARTY():
-        conf.RECURSE('third_party/iniparser/src')
         conf.RECURSE('third_party/zlib')
         conf.RECURSE('third_party/popt')
     else:
-        if not conf.CHECK_INIPARSER():
-            raise Utils.WafError('iniparser development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
-        else:
-            conf.define('USING_SYSTEM_INIPARSER', 1)
-
         if not conf.CHECK_ZLIB():
             raise Utils.WafError('zlib development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:

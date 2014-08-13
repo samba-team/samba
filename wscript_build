@@ -72,7 +72,6 @@ bld.RECURSE('lib/socket_wrapper')
 bld.RECURSE('lib/nss_wrapper')
 bld.RECURSE('lib/uid_wrapper')
 if bld.CHECK_FOR_THIRD_PARTY():
-    bld.RECURSE('third_party/iniparser/src')
     bld.RECURSE('third_party/zlib')
     bld.RECURSE('third_party/popt')
 bld.RECURSE('source4/lib/stream')
