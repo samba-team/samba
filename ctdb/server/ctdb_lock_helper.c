@@ -111,39 +111,46 @@ static int lock_db(const char *dbpath)
 
 int main(int argc, char *argv[])
 {
-	int write_fd;
+	int write_fd, log_fd;
 	char result = 0;
 	int ppid;
 	const char *lock_type;
 
 	progname = argv[0];
 
-	if (argc < 4) {
+	if (argc < 5) {
 		usage();
 		exit(1);
 	}
 
 	set_scheduler();
 
-	ppid = atoi(argv[1]);
-	write_fd = atoi(argv[2]);
-	lock_type = argv[3];
+	log_fd = atoi(argv[1]);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+	dup2(log_fd, STDOUT_FILENO);
+	dup2(log_fd, STDERR_FILENO);
+	close(log_fd);
+
+	ppid = atoi(argv[2]);
+	write_fd = atoi(argv[3]);
+	lock_type = argv[4];
 
 	if (strcmp(lock_type, "RECORD") == 0) {
-		if (argc != 6) {
+		if (argc != 7) {
 			fprintf(stderr, "%s: Invalid number of arguments (%d)\n",
 				progname, argc);
 			usage();
 			exit(1);
 		}
-		result = lock_record(argv[4], argv[5]);
+		result = lock_record(argv[5], argv[6]);
 
 	} else if (strcmp(lock_type, "DB") == 0) {
 		int n;
 
 		/* If there are no databases specified, no need for lock */
-		if (argc > 4) {
-			for (n=4; n<argc; n++) {
+		if (argc > 5) {
+			for (n=5; n<argc; n++) {
 				result = lock_db(argv[n]);
 				if (result != 0) {
 					break;

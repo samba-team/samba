@@ -576,20 +576,20 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 
 	switch (lock_ctx->type) {
 	case LOCK_RECORD:
-		nargs = 6;
-		break;
-
-	case LOCK_DB:
 		nargs = 5;
 		break;
 
-	case LOCK_ALLDB_PRIO:
+	case LOCK_DB:
 		nargs = 4;
+		break;
+
+	case LOCK_ALLDB_PRIO:
+		nargs = 3;
 		ctdb_db_iterator(ctdb, lock_ctx->priority, db_count_handler, &nargs);
 		break;
 
 	case LOCK_ALLDB:
-		nargs = 4;
+		nargs = 3;
 		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
 			ctdb_db_iterator(ctdb, priority, db_count_handler, &nargs);
 		}
@@ -604,37 +604,36 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	args[0] = talloc_strdup(args, "ctdb_lock_helper");
-	args[1] = talloc_asprintf(args, "%d", getpid());
-	args[2] = talloc_asprintf(args, "%d", fd);
+	args[0] = talloc_asprintf(args, "%d", getpid());
+	args[1] = talloc_asprintf(args, "%d", fd);
 
 	switch (lock_ctx->type) {
 	case LOCK_RECORD:
-		args[3] = talloc_strdup(args, "RECORD");
-		args[4] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
+		args[2] = talloc_strdup(args, "RECORD");
+		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
 		if (lock_ctx->key.dsize == 0) {
-			args[5] = talloc_strdup(args, "NULL");
+			args[4] = talloc_strdup(args, "NULL");
 		} else {
-			args[5] = hex_encode_talloc(args, lock_ctx->key.dptr, lock_ctx->key.dsize);
+			args[4] = hex_encode_talloc(args, lock_ctx->key.dptr, lock_ctx->key.dsize);
 		}
 		break;
 
 	case LOCK_DB:
-		args[3] = talloc_strdup(args, "DB");
-		args[4] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
+		args[2] = talloc_strdup(args, "DB");
+		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
 		break;
 
 	case LOCK_ALLDB_PRIO:
-		args[3] = talloc_strdup(args, "DB");
+		args[2] = talloc_strdup(args, "DB");
 		list.names = args;
-		list.n = 4;
+		list.n = 3;
 		ctdb_db_iterator(ctdb, lock_ctx->priority, db_name_handler, &list);
 		break;
 
 	case LOCK_ALLDB:
-		args[3] = talloc_strdup(args, "DB");
+		args[2] = talloc_strdup(args, "DB");
 		list.names = args;
-		list.n = 4;
+		list.n = 3;
 		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
 			ctdb_db_iterator(ctdb, priority, db_name_handler, &list);
 		}
@@ -774,9 +773,9 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		return;
 	}
 
-	lock_ctx->child = vfork();
-
-	if (lock_ctx->child == (pid_t)-1) {
+	if (!ctdb_vfork_with_logging(lock_ctx, ctdb, "lock_helper",
+				     prog, argc, (const char **)args,
+				     NULL, NULL, &lock_ctx->child)) {
 		DEBUG(DEBUG_ERR, ("Failed to create a child in ctdb_lock_schedule\n"));
 		close(lock_ctx->fd[0]);
 		close(lock_ctx->fd[1]);
@@ -784,19 +783,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		return;
 	}
 
-
-	/* Child process */
-	if (lock_ctx->child == 0) {
-		ret = execv(prog, (char * const*) args);
-		if (ret < 0) {
-			DEBUG(DEBUG_ERR, ("Failed to execute helper %s (%d, %s)\n",
-					  prog, errno, strerror(errno)));
-		}
-		_exit(1);
-	}
-
 	/* Parent process */
-	ctdb_track_child(ctdb, lock_ctx->child);
 	close(lock_ctx->fd[1]);
 
 	talloc_set_destructor(lock_ctx, ctdb_lock_context_destructor);
