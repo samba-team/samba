@@ -1382,7 +1382,7 @@ bld.SAMBA3_BINARY('ntlm_auth',
                  deps='''
                  talloc
                  krb5samba
-                 iniparser
+                 tiniparser
                  libsmb
                  popt_samba3
                  LIBNTLMSSP gse gensec''')

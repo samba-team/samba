@@ -55,6 +55,7 @@
 #include "system/time.h"
 #include <talloc.h>
 #include "libwbclient/wbclient.h"
+#include "lib/util/tiniparser.h"
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
@@ -65,8 +66,6 @@
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
 #endif
-
-#include <iniparser.h>
 
 #ifdef HAVE_LIBINTL_H
 #include <libintl.h>
@@ -212,7 +211,7 @@ struct pwb_context {
 	int flags;
 	int argc;
 	const char **argv;
-	dictionary *dict;
+	struct tiniparser_dictionary *dict;
 	uint32_t ctrl;
 };
 

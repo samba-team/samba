@@ -36,7 +36,7 @@
 #include "auth/credentials/credentials.h"
 #include "librpc/crypto/gse.h"
 #include "smb_krb5.h"
-#include <iniparser.h>
+#include "lib/util/tiniparser.h"
 #include "../lib/crypto/arcfour.h"
 #include "libads/kerberos_proto.h"
 #include "nsswitch/winbind_client.h"
@@ -416,23 +416,23 @@ static bool get_require_membership_sid(void) {
 int get_pam_winbind_config()
 {
 	int ctrl = 0;
-	dictionary *d = NULL;
+	struct tiniparser_dictionary *d = NULL;
 
 	if (!opt_pam_winbind_conf || !*opt_pam_winbind_conf) {
 		opt_pam_winbind_conf = PAM_WINBIND_CONFIG_FILE;
 	}
 
-	d = iniparser_load(discard_const_p(char, opt_pam_winbind_conf));
+	d = tiniparser_load(opt_pam_winbind_conf);
 
 	if (!d) {
 		return 0;
 	}
 
-	if (iniparser_getboolean(d, discard_const_p(char, "global:krb5_auth"), false)) {
+	if (tiniparser_getboolean(d, "global:krb5_auth", false)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
-	iniparser_freedict(d);
+	tiniparser_freedict(d);
 
 	return ctrl;
 }
