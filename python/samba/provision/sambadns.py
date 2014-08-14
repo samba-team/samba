@@ -806,22 +806,26 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
     # Link dns partitions and metadata
     domainzonedn = "DC=DOMAINDNSZONES,%s" % names.domaindn.upper()
     forestzonedn = "DC=FORESTDNSZONES,%s" % names.rootdn.upper()
+
     domainzone_file = partfile[domainzonedn]
-    forestzone_file = partfile[forestzonedn]
+    forestzone_file = partfile.get(forestzonedn)
+
     metadata_file = "metadata.tdb"
     try:
         os.link(os.path.join(samldb_dir, metadata_file),
             os.path.join(dns_samldb_dir, metadata_file))
         os.link(os.path.join(private_dir, domainzone_file),
             os.path.join(dns_dir, domainzone_file))
-        os.link(os.path.join(private_dir, forestzone_file),
-            os.path.join(dns_dir, forestzone_file))
+        if forestzone_file:
+            os.link(os.path.join(private_dir, forestzone_file),
+                    os.path.join(dns_dir, forestzone_file))
     except OSError:
         logger.error(
             "Failed to setup database for BIND, AD based DNS cannot be used")
         raise
     del partfile[domainzonedn]
-    del partfile[forestzonedn]
+    if forestzone_file:
+        del partfile[forestzonedn]
 
     # Copy root, config, schema partitions (and any other if any)
     # Since samdb is open in the current process, copy them in a child process
