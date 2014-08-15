@@ -57,6 +57,12 @@ static struct {
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
 #define LONGTIMELIMIT() timeval_current_ofs(LONGTIMEOUT, 0)
 
+static double timeval_delta(struct timeval *tv2, struct timeval *tv)
+{
+	return (tv2->tv_sec - tv->tv_sec) +
+		(tv2->tv_usec - tv->tv_usec)*1.0e-6;
+}
+
 static int control_version(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	printf("CTDB version: %s\n", CTDB_VERSION_STRING);

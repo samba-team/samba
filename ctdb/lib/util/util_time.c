@@ -44,12 +44,6 @@ double timeval_elapsed(struct timeval *tv)
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
 
-double timeval_delta(struct timeval *tv2, struct timeval *tv)
-{
-	return (tv2->tv_sec - tv->tv_sec) + 
-	       (tv2->tv_usec - tv->tv_usec)*1.0e-6;
-}
-
 /**
   return a timeval struct with the given elements
 */
