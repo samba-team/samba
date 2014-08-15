@@ -31,16 +31,27 @@ bld.SAMBA_LIBRARY('socket-blocking',
                   local_include=False,
                   private_library=True)
 
-bld.SAMBA_LIBRARY('samba-util',
-                  source='''talloc_stack.c smb_threads.c xfile.c data_blob.c
-                    util_file.c time.c rbtree.c rfc1738.c select.c getpass.c
-                    genrand.c fsusage.c become_daemon.c signal.c system.c
-                    params.c util.c util_id.c util_net.c util_strlist.c
-                    util_paths.c idtree.c idtree_random.c fault.c base64.c
-                    util_str.c util_str_common.c substitute.c ms_fnmatch.c
+bld.SAMBA_SUBSYSTEM('samba-util-core',
+                    source='''xfile.c data_blob.c util_file.c time.c
+                              signal.c util.c idtree.c fault.c
+                              substitute.c''',
+                    deps='''time-basic samba-debug socket-blocking talloc
+                            tevent execinfo pthread''',
+                    local_include=False)
+
+if not bld.env.SAMBA_UTIL_CORE_ONLY:
+
+    bld.SAMBA_LIBRARY('samba-util',
+                  source='''talloc_stack.c smb_threads.c
+                    rbtree.c rfc1738.c become_daemon.c system.c select.c getpass.c
+                    genrand.c fsusage.c
+                    params.c util_id.c util_net.c
+                    util_strlist.c util_paths.c idtree_random.c base64.c
+                    util_str.c util_str_common.c ms_fnmatch.c
                     server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
                     tevent_debug.c util_process.c memcache.c''',
-                  deps='DYNCONFIG time-basic close-low-fd samba-debug tini tiniparser socket-blocking',
+                  deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser',
+
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd-daemon',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
@@ -49,75 +60,75 @@ bld.SAMBA_LIBRARY('samba-util',
                   pc_files='samba-util.pc'
                   )
 
-bld.SAMBA_LIBRARY('samba-modules',
-		  source='modules.c',
-		  deps='errors samba-util',
-		  local_include=False,
-		  private_library=True)
+    bld.SAMBA_LIBRARY('samba-modules',
+                      source='modules.c',
+                      deps='errors samba-util',
+                      local_include=False,
+                      private_library=True)
 
-bld.SAMBA_LIBRARY('asn1util',
-                  source='asn1.c',
-                  deps='talloc samba-util',
-                  private_library=True,
-                  local_include=False)
-
-
-bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',
-	source='unix_privs.c',
-	autoproto='unix_privs.h',
-	deps='replace talloc',
-	local_include=False,
-	)
+    bld.SAMBA_LIBRARY('asn1util',
+                      source='asn1.c',
+                      deps='talloc samba-util',
+                      private_library=True,
+                      local_include=False)
 
 
-bld.SAMBA_LIBRARY('util_tdb',
-	source='util_tdb.c',
-	local_include=False,
-	public_deps='tdb talloc',
-	private_library=True
-	)
-
-if not bld.env.disable_ntdb:
-    bld.SAMBA_LIBRARY('util_ntdb',
-		source='util_ntdb.c',
-		local_include=False,
-		public_deps='ntdb talloc samba-util samba-hostconfig',
-		private_library=True
-		)
-
-bld.SAMBA_LIBRARY('tevent-util',
-	source='tevent_unix.c tevent_ntstatus.c tevent_werror.c',
-	local_include=False,
-	public_deps='tevent errors',
-	public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
-	header_path=[ ('*', 'util') ],
-	pc_files=[],
-	vnum='0.0.1'
-	)
-
-bld.SAMBA_LIBRARY('util_setid',
-	source='setid.c',
-	local_include=False,
-	private_library=True
-	)
-
-bld.SAMBA_SUBSYSTEM('util_ldb',
-		    source='util_ldb.c',
-		    local_include=False,
-		    public_deps='ldb',
-		    public_headers='util_ldb.h'
-		    )
+    bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',
+                        source='unix_privs.c',
+                        autoproto='unix_privs.h',
+                        deps='replace talloc',
+                        local_include=False,
+                        )
 
 
-bld.SAMBA_SUBSYSTEM('UTIL_RUNCMD',
-	source='util_runcmd.c',
-	local_include=False,
-	public_deps='tevent'
-	)
+    bld.SAMBA_LIBRARY('util_tdb',
+                      source='util_tdb.c',
+                      local_include=False,
+                      public_deps='tdb talloc',
+                      private_library=True
+                      )
 
-bld.SAMBA_SUBSYSTEM('UTIL_PW',
-	source='util_pw.c',
-	local_include=False,
-	public_deps='talloc'
-	)
+    if not bld.env.disable_ntdb:
+        bld.SAMBA_LIBRARY('util_ntdb',
+                          source='util_ntdb.c',
+                          local_include=False,
+                          public_deps='ntdb talloc samba-util samba-hostconfig',
+                          private_library=True
+                          )
+
+    bld.SAMBA_LIBRARY('tevent-util',
+                      source='tevent_unix.c tevent_ntstatus.c tevent_werror.c',
+                      local_include=False,
+                      public_deps='tevent errors',
+                      public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
+                      header_path=[ ('*', 'util') ],
+                      pc_files=[],
+                      vnum='0.0.1'
+                      )
+
+    bld.SAMBA_LIBRARY('util_setid',
+                      source='setid.c',
+                      local_include=False,
+                      private_library=True
+                      )
+
+    bld.SAMBA_SUBSYSTEM('util_ldb',
+                        source='util_ldb.c',
+                        local_include=False,
+                        public_deps='ldb',
+                        public_headers='util_ldb.h'
+		        )
+
+
+    bld.SAMBA_SUBSYSTEM('UTIL_RUNCMD',
+                        source='util_runcmd.c',
+                        local_include=False,
+                        public_deps='tevent'
+                        )
+
+    bld.SAMBA_SUBSYSTEM('UTIL_PW',
+                        source='util_pw.c',
+                        local_include=False,
+                        public_deps='talloc'
+	                )
 
