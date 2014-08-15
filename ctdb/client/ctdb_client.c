@@ -3798,7 +3798,10 @@ static struct server_id server_id_get(struct ctdb_context *ctdb, uint32_t reqid)
 	return id;
 }
 
-static bool server_id_equal(struct server_id *id1, struct server_id *id2)
+/* This is basically a copy from Samba's server_id.*.  However, a
+ * dependency chain stops us from using Samba's version, so use a
+ * renamed copy until a better solution is found. */
+static bool ctdb_server_id_equal(struct server_id *id1, struct server_id *id2)
 {
 	if (id1->pid != id2->pid) {
 		return false;
@@ -3936,7 +3939,7 @@ again:
 
 	i = 0;
 	while (i < locks->num) {
-		if (server_id_equal(&locks->lock[i].id, &id)) {
+		if (ctdb_server_id_equal(&locks->lock[i].id, &id)) {
 			/* Internal error */
 			talloc_free(h);
 			return false;
@@ -4024,7 +4027,7 @@ static bool g_lock_unlock(TALLOC_CTX *mem_ctx,
 	id = server_id_get(ctdb_db->ctdb, reqid);
 
 	for (i=0; i<locks->num; i++) {
-		if (server_id_equal(&locks->lock[i].id, &id)) {
+		if (ctdb_server_id_equal(&locks->lock[i].id, &id)) {
 			if (i < locks->num-1) {
 				locks->lock[i] = locks->lock[locks->num-1];
 			}
