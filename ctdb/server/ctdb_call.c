@@ -281,15 +281,12 @@ ctdb_set_sticky_pindown(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_
 	uint32_t *k;
 	struct ctdb_sticky_record *sr;
 
-	k = talloc_zero_size(tmp_ctx, ((key.dsize + 3) & 0xfffffffc) + 4);
+	k = ctdb_key_to_idkey(tmp_ctx, key);
 	if (k == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate key for sticky record\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-
-	k[0] = (key.dsize + 3) / 4 + 1;
-	memcpy(&k[1], key.dptr, key.dsize);
 
 	sr = trbt_lookuparray32(ctdb_db->sticky_records, k[0], &k[0]);
 	if (sr == NULL) {
@@ -538,15 +535,12 @@ ctdb_make_record_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_
 	uint32_t *k;
 	struct ctdb_sticky_record *sr;
 
-	k = talloc_zero_size(tmp_ctx, ((key.dsize + 3) & 0xfffffffc) + 4);
+	k = ctdb_key_to_idkey(tmp_ctx, key);
 	if (k == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate key for sticky record\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-
-	k[0] = (key.dsize + 3) / 4 + 1;
-	memcpy(&k[1], key.dptr, key.dsize);
 
 	sr = trbt_lookuparray32(ctdb_db->sticky_records, k[0], &k[0]);
 	if (sr != NULL) {
@@ -621,15 +615,12 @@ ctdb_defer_pinned_down_request(struct ctdb_context *ctdb, struct ctdb_db_context
 	struct ctdb_sticky_record *sr;
 	struct pinned_down_deferred_call *pinned_down;
 
-	k = talloc_zero_size(tmp_ctx, ((key.dsize + 3) & 0xfffffffc) + 4);
+	k = ctdb_key_to_idkey(tmp_ctx, key);
 	if (k == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate key for sticky record\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-
-	k[0] = (key.dsize + 3) / 4 + 1;
-	memcpy(&k[1], key.dptr, key.dsize);
 
 	sr = trbt_lookuparray32(ctdb_db->sticky_records, k[0], &k[0]);
 	if (sr == NULL) {

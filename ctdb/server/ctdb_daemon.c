@@ -504,14 +504,11 @@ static int setup_deferred_fetch_locks(struct ctdb_db_context *ctdb_db, struct ct
 	uint32_t *k;
 	struct ctdb_deferred_fetch_queue *dfq;
 
-	k = talloc_zero_size(call, ((call->key.dsize + 3) & 0xfffffffc) + 4);
+	k = ctdb_key_to_idkey(call, call->key);
 	if (k == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate key for deferred fetch\n"));
 		return -1;
 	}
-
-	k[0] = (call->key.dsize + 3) / 4 + 1;
-	memcpy(&k[1], call->key.dptr, call->key.dsize);
 
 	dfq  = talloc(call, struct ctdb_deferred_fetch_queue);
 	if (dfq == NULL) {
@@ -543,14 +540,11 @@ static int requeue_duplicate_fetch(struct ctdb_db_context *ctdb_db, struct ctdb_
 	struct ctdb_deferred_fetch_queue *dfq;
 	struct ctdb_deferred_fetch_call *dfc;
 
-	k = talloc_zero_size(c, ((key.dsize + 3) & 0xfffffffc) + 4);
+	k = ctdb_key_to_idkey(c, key);
 	if (k == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate key for deferred fetch\n"));
 		return -1;
 	}
-
-	k[0] = (key.dsize + 3) / 4 + 1;
-	memcpy(&k[1], key.dptr, key.dsize);
 
 	dfq = trbt_lookuparray32(ctdb_db->deferred_fetch, k[0], &k[0]);
 	if (dfq == NULL) {
