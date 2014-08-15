@@ -826,7 +826,7 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 	struct pnn_node *pnn_nodes = NULL;
 	struct pnn_node *pnn_node;
 
-	lines = file_lines_load(file, &nlines, mem_ctx);
+	lines = file_lines_load(file, &nlines, 0, mem_ctx);
 	if (lines == NULL) {
 		return NULL;
 	}

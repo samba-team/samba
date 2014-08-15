@@ -1205,7 +1205,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 	int nlines;
 	int i;
 
-	lines = file_lines_load(ctdb->public_addresses_file, &nlines, ctdb);
+	lines = file_lines_load(ctdb->public_addresses_file, &nlines, 0, ctdb);
 	if (lines == NULL) {
 		ctdb_set_error(ctdb, "Failed to load public address list '%s'\n", ctdb->public_addresses_file);
 		return -1;

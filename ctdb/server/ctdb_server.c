@@ -171,7 +171,7 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	ctdb->nodes     = NULL;
 	ctdb->num_nodes = 0;
 
-	lines = file_lines_load(nlist, &nlines, ctdb);
+	lines = file_lines_load(nlist, &nlines, 0, ctdb);
 	if (lines == NULL) {
 		ctdb_set_error(ctdb, "Failed to load nlist '%s'\n", nlist);
 		return -1;

@@ -3,6 +3,8 @@
   not intended to remain part of ctdb
 */
 
+#include <assert.h>
+
 #include "includes.h"
 #include "system/filesys.h"
 
@@ -91,10 +93,12 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
 **/
-_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx)
 {
 	char *p;
 	size_t size;
+
+	assert(maxsize == 0);
 
 	p = file_load(fname, &size, mem_ctx);
 	if (!p) return NULL;
