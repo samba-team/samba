@@ -2144,7 +2144,8 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 
 		bytes_addr = outbuf + ofs	 /* vwv start */
 			+ sizeof(uint16_t) * wct /* vwv array */
-			+ sizeof(uint16_t);	 /* bcc */
+			+ sizeof(uint16_t)	 /* bcc */
+			+ 1;			 /* padding byte */
 
 		SSVAL(outbuf + ofs, 6 * sizeof(uint16_t),
 		      bytes_addr - outbuf - 4);

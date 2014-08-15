@@ -422,11 +422,12 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	state->smb_maxcnt = SVAL(req->vwv+5, 0);
 	state->smb_mincnt = SVAL(req->vwv+6, 0);
 
-	reply_outbuf(req, 12, state->smb_maxcnt);
+	reply_outbuf(req, 12, state->smb_maxcnt + 1 /* padding byte */);
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+	SCVAL(smb_buf(req->outbuf), 0, 0); /* padding byte */
 
-	data = (uint8_t *)smb_buf(req->outbuf);
+	data = (uint8_t *)smb_buf(req->outbuf) + 1 /* padding byte */;
 
 	/*
 	 * We have to tell the upper layers that we're async.
@@ -467,7 +468,8 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 	req->outbuf = state->outbuf;
 	state->outbuf = NULL;
 
-	srv_set_message((char *)req->outbuf, 12, nread, False);
+	srv_set_message((char *)req->outbuf, 12, nread + 1 /* padding byte */,
+			false);
 
 #if 0
 	/*
@@ -488,7 +490,8 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 	      (smb_wct - 4)	/* offset from smb header to wct */
 	      + 1 		/* the wct field */
 	      + 12 * sizeof(uint16_t) /* vwv */
-	      + 2);		/* the buflen field */
+	      + 2		/* the buflen field */
+	      + 1);		/* padding byte */
 	SSVAL(req->outbuf,smb_vwv11,state->smb_maxcnt);
 
 	DEBUG(3,("readX-IPC min=%d max=%d nread=%d\n",

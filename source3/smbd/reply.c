@@ -3682,7 +3682,8 @@ static int setup_readX_header(struct smb_request *req, char *outbuf,
 {
 	int outsize;
 
-	outsize = srv_set_message(outbuf,12,smb_maxcnt,False);
+	outsize = srv_set_message(outbuf,12,smb_maxcnt + 1 /* padding byte */,
+				  False);
 
 	memset(outbuf+smb_vwv0,'\0',24); /* valgrind init. */
 
@@ -3693,11 +3694,14 @@ static int setup_readX_header(struct smb_request *req, char *outbuf,
 	      (smb_wct - 4)	/* offset from smb header to wct */
 	      + 1 		/* the wct field */
 	      + 12 * sizeof(uint16_t) /* vwv */
-	      + 2);		/* the buflen field */
+	      + 2		/* the buflen field */
+	      + 1);		/* padding byte */
 	SSVAL(outbuf,smb_vwv7,(smb_maxcnt >> 16));
 	SSVAL(outbuf,smb_vwv11,smb_maxcnt);
+	SCVAL(smb_buf(outbuf), 0, 0); /* padding byte */
 	/* Reset the outgoing length, set_message truncates at 0x1FFFF. */
-	_smb_setlen_large(outbuf,(smb_size + 12*2 + smb_maxcnt - 4));
+	_smb_setlen_large(outbuf,
+			  smb_size + 12*2 + smb_maxcnt - 4 + 1 /* pad */);
 	return outsize;
 }
 
@@ -3734,7 +3738,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	    (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
 	    lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
-		uint8 headerbuf[smb_size + 12 * 2];
+		uint8 headerbuf[smb_size + 12 * 2 + 1 /* padding byte */];
 		DATA_BLOB header;
 
 		if(fsp_stat(fsp) == -1) {
@@ -3848,7 +3852,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 normal_read:
 
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
-		uint8 headerbuf[smb_size + 2*12];
+		uint8 headerbuf[smb_size + 2*12 + 1 /* padding byte */];
 		ssize_t ret;
 
 		construct_reply_common_req(req, (char *)headerbuf);
@@ -3887,11 +3891,12 @@ normal_read:
 
 nosendfile_read:
 
-	reply_outbuf(req, 12, smb_maxcnt);
+	reply_outbuf(req, 12, smb_maxcnt + 1 /* padding byte */);
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
-	nread = read_file(fsp, smb_buf(req->outbuf), startpos, smb_maxcnt);
+	nread = read_file(fsp, smb_buf(req->outbuf) + 1 /* padding byte */,
+			  startpos, smb_maxcnt);
 	saved_errno = errno;
 
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
@@ -3969,7 +3974,7 @@ static size_t calc_read_size(const struct smb_request *req,
 	size_t max_pdu = calc_max_read_pdu(req);
 	size_t total_size = 0;
 	size_t hdr_len = MIN_SMB_SIZE + VWV(12);
-	size_t max_len = max_pdu - hdr_len;
+	size_t max_len = max_pdu - hdr_len - 1 /* padding byte */;
 
 	/*
 	 * Windows explicitly ignores upper size of 0xFFFF.
