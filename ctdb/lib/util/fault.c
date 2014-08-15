@@ -197,11 +197,8 @@ _NORETURN_ static void sig_fault(int sig)
 /**
 setup our fault handlers
 **/
-_PUBLIC_ void fault_setup(const char *pname)
+_PUBLIC_ void fault_setup(void)
 {
-	if (progname == NULL) {
-		progname = pname;
-	}
 #ifdef SIGSEGV
 	CatchSignal(SIGSEGV, sig_fault);
 #endif

@@ -164,7 +164,7 @@ int main(int argc, const char *argv[])
 
 	talloc_enable_null_tracking();
 
-	fault_setup("ctdbd");
+	fault_setup();
 
 	ev = event_context_init(NULL);
 	tevent_loop_allow_nesting(ev);

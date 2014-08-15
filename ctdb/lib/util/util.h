@@ -73,7 +73,7 @@ _PUBLIC_ _NORETURN_ void smb_panic(const char *why);
 /**
 setup our fault handlers
 **/
-_PUBLIC_ void fault_setup(const char *pname);
+_PUBLIC_ void fault_setup(void);
 
 /**
   register a fault handler. 
