@@ -490,3 +490,21 @@ void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate)
 			    runstate_to_string(runstate), runstate));
 	ctdb->runstate = runstate;
 }
+
+/* Convert arbitrary data to 4-byte boundary padded uint32 array */
+uint32_t *ctdb_key_to_idkey(TALLOC_CTX *mem_ctx, TDB_DATA key)
+{
+	uint32_t idkey_size, *k;
+
+	idkey_size = 1 + (key.dsize + sizeof(uint32_t)-1) / sizeof(uint32_t);
+
+	k = talloc_zero_array(mem_ctx, uint32_t, idkey_size);
+	if (k == NULL) {
+		return NULL;
+	}
+
+	k[0] = idkey_size;
+	memcpy(&k[1], key.dptr, key.dsize);
+
+	return k;
+}
