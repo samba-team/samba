@@ -28,6 +28,8 @@
 #include "libcli/security/dom_sid.h"
 #include "source4/winbind/idmap.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 #include "libds/common/flag_mapping.h"
 #include "source4/lib/events/events.h"
 #include "source4/auth/session.h"
@@ -35,6 +37,7 @@
 #include "lib/param/param.h"
 #include "source4/dsdb/common/util.h"
 #include "source3/include/secrets.h"
+#include "source4/auth/auth_sam.h"
 
 struct pdb_samba_dsdb_state {
 	struct tevent_context *ev;
@@ -2140,7 +2143,127 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 				      struct dom_sid *sid,
 				      time_t *pass_last_set_time)
 {
-	return false;
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	const char * const attrs[] = {
+		"securityIdentifier",
+		"trustPartner",
+		"trustAuthOutgoing",
+		"whenCreated",
+		"msDS-SupportedEncryptionTypes",
+		"trustAttributes",
+		"trustDirection",
+		"trustType",
+		NULL
+	};
+	struct ldb_message *msg;
+	const struct ldb_val *password_val;
+	int trust_direction_flags;
+	int trust_type;
+	int i;
+	DATA_BLOB password_utf16;
+	struct trustAuthInOutBlob password_blob;
+	struct AuthenticationInformationArray *auth_array;
+	char *password_talloc;
+	size_t password_len;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
+				       NULL, attrs, &msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * This can be called to work out of a domain is
+		 * trusted, rather than just to get the password
+		 */
+		DEBUG(2, ("Failed to get trusted domain password for %s.  "
+			  "It may not be a trusted domain.\n", domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+	if (!(trust_direction_flags & LSA_TRUST_DIRECTION_OUTBOUND)) {
+		DEBUG(2, ("Trusted domain %s is is not an outbound trust.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	trust_type = ldb_msg_find_attr_as_int(msg, "trustType", 0);
+	if (trust_type == LSA_TRUST_TYPE_MIT) {
+		DEBUG(1, ("Trusted domain %s is is not an AD trust "
+			  "(trustType == LSA_TRUST_TYPE_MIT).\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
+	if (password_val == NULL) {
+		DEBUG(2, ("Failed to get trusted domain password for %s, "
+			  "attribute trustAuthOutgoing not returned.\n", domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	ndr_err = ndr_pull_struct_blob(password_val, tmp_ctx, &password_blob,
+				(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("Failed to get trusted domain password for %s, "
+			  "attribute trustAuthOutgoing coult not be parsed %s.\n",
+			  domain,
+			  ndr_map_error2string(ndr_err)));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	auth_array = &password_blob.current;
+
+	for (i=0; i < auth_array->count; i++) {
+		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+			break;
+		}
+	}
+
+	if (i == auth_array->count) {
+		DEBUG(0, ("Trusted domain %s does not have a "
+			  "clear-text password stored\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	password_utf16 = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
+					 auth_array->array[i].AuthInfo.clear.size);
+
+	/*
+	 * In the future, make this function return a
+	 * cli_credentials that can store a MD4 hash with cli_credential_set_nt_hash()
+	 * but for now convert to UTF8 and fail if the string can not be converted.
+	 *
+	 * We can't safely convert the random strings windows uses into
+	 * utf8.
+	 */
+	if (!convert_string_talloc(tmp_ctx,
+				   CH_UTF16, CH_UTF8,
+				   password_utf16.data, password_utf16.length,
+				   (void *)&password_talloc,
+				   &password_len)) {
+		DEBUG(0, ("FIXME: Could not convert password for trusted domain %s"
+			  " to UTF8. This may be a password set from Windows.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+	*pwd = SMB_STRNDUP(password_talloc, password_len);
+	if (pass_last_set_time) {
+		*pass_last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return true;
 }
 
 static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
