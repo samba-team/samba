@@ -38,17 +38,7 @@
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #endif
 
-struct timeval timeval_zero(void);
-bool timeval_is_zero(const struct timeval *tv);
-struct timeval timeval_current(void);
-struct timeval timeval_set(uint32_t secs, uint32_t usecs);
-int timeval_compare(const struct timeval *tv1, const struct timeval *tv2);
-struct timeval timeval_until(const struct timeval *tv1,
-			     const struct timeval *tv2);
-_PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs);
-double timeval_elapsed(struct timeval *tv);
-
 #include "lib/util/debug.h"
-#include "lib/util/util.h"
+#include "lib/util/samba_util.h"
 
 #endif /* _CTDB_INCLUDES_H */
