@@ -27,7 +27,7 @@
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 
 /* List of SRVID requests that need to be processed */
