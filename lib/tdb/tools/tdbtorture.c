@@ -350,6 +350,10 @@ int main(int argc, char * const *argv)
 		seed = (getpid() + time(NULL)) & 0x7FFFFFFF;
 	}
 
+	printf("Testing with %d processes, %d loops, %d hash_size, seed=%d%s\n",
+	       num_procs, num_loops, hash_size, seed,
+	       (always_transaction ? " (all within transactions)" : ""));
+
 	if (num_procs == 1 && !kill_random) {
 		/* Don't fork for this case, makes debugging easier. */
 		error_count = run_child(test_tdb, 0, seed, num_loops, 0);
@@ -376,10 +380,6 @@ int main(int argc, char * const *argv)
 	for (i=0;i<num_procs;i++) {
 		if ((pids[i]=fork()) == 0) {
 			close(pfds[0]);
-			if (i == 0) {
-				printf("Testing with %d processes, %d loops, %d hash_size, seed=%d%s\n",
-				       num_procs, num_loops, hash_size, seed, always_transaction ? " (all within transactions)" : "");
-			}
 			exit(run_child(test_tdb, i, seed, num_loops, 0));
 		}
 	}
