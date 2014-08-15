@@ -6031,16 +6031,21 @@ static bool get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
 {
 	int rc;
 	char *filter;
-	int scope = LDAP_SCOPE_SUBTREE;
+	int scope = LDAP_SCOPE_BASE;
 	const char **attrs = NULL; /* NULL: get all attrs */
 	int attrsonly = 0; /* 0: return values too */
 	LDAPMessage *result = NULL;
 	char *trusted_dn;
 	uint32_t num_result;
+	char *escape_domain = escape_ldap_string(talloc_tos(), domain);
+
+	if (!escape_domain) {
+		return LDAP_NO_MEMORY;
+	}
 
 	filter = talloc_asprintf(talloc_tos(),
 				 "(&(objectClass=%s)(sambaDomainName=%s))",
-				 LDAP_OBJ_TRUSTDOM_PASSWORD, domain);
+				 LDAP_OBJ_TRUSTDOM_PASSWORD, escape_domain);
 
 	trusted_dn = trusteddom_dn(ldap_state, domain);
 	if (trusted_dn == NULL) {
