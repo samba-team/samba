@@ -7258,7 +7258,8 @@ static size_t calc_expected_return(struct cli_state *cli, size_t len_requested)
 		len_requested &= 0xFFFF;
 	}
 
-	return MIN(len_requested, max_pdu - (MIN_SMB_SIZE + VWV(12)));
+	return MIN(len_requested,
+		   max_pdu - (MIN_SMB_SIZE + VWV(12) + 1 /* padding byte */));
 }
 
 static bool check_read_call(struct cli_state *cli,
