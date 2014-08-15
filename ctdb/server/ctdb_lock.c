@@ -22,7 +22,7 @@
 #include "include/ctdb_protocol.h"
 #include "tevent.h"
 #include "tdb.h"
-#include "db_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "system/filesys.h"
 #include "lib/util/dlinklist.h"
 

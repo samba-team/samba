@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    database wrap functions
 
    Copyright (C) Andrew Tridgell 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -29,7 +29,7 @@
 #include "includes.h"
 #include "lib/util/dlinklist.h"
 #include "tdb.h"
-#include "db_wrap.h"
+#include "tdb_wrap.h"
 
 static struct tdb_wrap *tdb_list;
 
@@ -41,7 +41,7 @@ static int tdb_wrap_destructor(struct tdb_wrap *w)
 	tdb_close(w->tdb);
 	DLIST_REMOVE(tdb_list, w);
 	return 0;
-}				 
+}
 
 static void log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...)
 {
@@ -88,7 +88,7 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	w->tdb = tdb_open_ex(name, hash_size, tdb_flags, 
+	w->tdb = tdb_open_ex(name, hash_size, tdb_flags,
 			     open_flags, mode, &log_ctx, NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);

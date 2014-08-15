@@ -23,7 +23,7 @@
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
-#include "db_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 
 /* should be tunable */
 #define TIMELIMIT() timeval_current_ofs(10, 0)

@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/db_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"

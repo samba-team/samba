@@ -112,7 +112,6 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 
 /* UTIL_OBJ */
 #include "lib/util/idtree.c"
-#include "lib/util/db_wrap.c"
 #include "lib/util/util.c"
 #include "lib/util/util_time.c"
 #include "lib/util/util_file.c"

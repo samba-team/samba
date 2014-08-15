@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "db_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "tdb.h"
 #include "lib/util/dlinklist.h"
 #include "system/network.h"

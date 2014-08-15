@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/wait.h"
-#include "db_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "tdb.h"
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"

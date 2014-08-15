@@ -25,7 +25,7 @@
 #include "system/filesys.h"
 #include "system/dir.h"
 #include "../include/ctdb_private.h"
-#include "db_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/dlinklist.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"

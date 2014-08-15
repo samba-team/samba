@@ -1,0 +1,7 @@
+#!/usr/bin/python
+
+bld.SAMBA_SUBSYSTEM('tdb-wrap',
+                    source='tdb_wrap.c',
+                    deps='tdb talloc',
+                    local_include=False
+                    )

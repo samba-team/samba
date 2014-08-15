@@ -173,6 +173,7 @@ def build(bld):
     if bld.CHECK_FOR_THIRD_PARTY():
         bld.RECURSE('third_party/popt')
 
+    bld.RECURSE('lib/tdb_wrap')
     bld.RECURSE('lib/util')
 
     bld.RECURSE('lib/talloc')
@@ -238,7 +239,8 @@ def build(bld):
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
                         includes='include include/internal lib/util',
                         public_headers='include/ctdb_client.h',
-                        deps='replace popt talloc tevent tdb ctdb-util')
+                        deps='''replace popt talloc tevent tdb
+                                ctdb-util tdb-wrap''')
 
     bld.SAMBA_SUBSYSTEM('ctdb-server',
                         source='server/ctdbd.c ' +
@@ -451,20 +453,23 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
-                     deps='replace popt tdb tevent talloc ctdb-system' +
+                     deps='''replace popt tdb tevent talloc ctdb-system
+                             tdb-wrap''' +
                           ib_deps,
                      includes='include include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_functest',
                      source='tests/src/ctdb_functest.c',
-                     deps='replace tdb tevent talloc popt ctdb-system',
+                     deps='''replace tdb tevent talloc popt ctdb-system
+                             tdb-wrap''',
                      includes='include include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_stubtest',
                      source='tests/src/ctdb_test.c',
-                     deps='replace tdb tevent talloc popt ctdb-system',
+                     deps='''replace tdb tevent talloc popt ctdb-system
+                             tdb-wrap''',
                      includes='include include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 

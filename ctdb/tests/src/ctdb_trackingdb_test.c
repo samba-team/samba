@@ -28,7 +28,7 @@
 #include "popt.h"
 #include "cmdline.h"
 #include "ctdb_private.h"
-#include "db_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 
 #define MAXINDEX 64
 char indices[MAXINDEX];
