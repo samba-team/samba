@@ -31,22 +31,12 @@
 int script_log_level;
 bool fast_start;
 
-/* UTIL_OBJ */
-#include "lib/util/idtree.c"
-#include "lib/util/util.c"
-#include "lib/util/util_time.c"
-#include "lib/util/util_file.c"
-#include "lib/util/fault.c"
-#include "lib/util/substitute.c"
-#include "lib/util/signal.c"
-
 /* CTDB_COMMON_OBJ */
 #include "common/ctdb_io.c"
 #include "common/ctdb_util.c"
 #include "common/ctdb_ltdb.c"
 #include "common/ctdb_message.c"
 #include "common/cmdline.c"
-#include "lib/util/debug.c"
 #include "common/rb_tree.c"
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"

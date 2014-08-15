@@ -110,21 +110,11 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 #undef TIMELIMIT
 #include "tools/ctdb_vacuum.c"
 
-/* UTIL_OBJ */
-#include "lib/util/idtree.c"
-#include "lib/util/util.c"
-#include "lib/util/util_time.c"
-#include "lib/util/util_file.c"
-#include "lib/util/fault.c"
-#include "lib/util/substitute.c"
-#include "lib/util/signal.c"
-
 /* CTDB_COMMON_OBJ */
 #include "common/ctdb_io.c"
 #include "common/ctdb_util.c"
 #include "common/ctdb_ltdb.c"
 #include "common/ctdb_message.c"
-#include "lib/util/debug.c"
 #include "common/rb_tree.c"
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"
