@@ -955,6 +955,14 @@ again:
 		return -1;
 	}
 
+	ctdb_db->defer_dmaster = trbt_create(ctdb_db, 0);
+	if (ctdb_db->defer_dmaster == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to create defer dmaster rb tree for %s\n",
+				  ctdb_db->db_name));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
 	/* setting this can help some high churn databases */

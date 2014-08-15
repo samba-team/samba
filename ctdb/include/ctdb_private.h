@@ -594,6 +594,7 @@ struct ctdb_db_context {
 	   so we can avoid sending duplicate fetch requests
 	*/
 	struct trbt_tree *deferred_fetch;
+	struct trbt_tree *defer_dmaster;
 
 	struct ctdb_db_statistics statistics;
 
