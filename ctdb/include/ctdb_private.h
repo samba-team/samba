@@ -1496,8 +1496,6 @@ int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
 
 void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
 
-void ctdb_fault_setup(void);
-
 int verify_remote_ip_allocation(struct ctdb_context *ctdb, 
 				struct ctdb_all_public_ips *ips,
 				uint32_t pnn);
