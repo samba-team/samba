@@ -22,6 +22,7 @@
 
 extern int LogLevel;
 extern int this_log_level;
+extern const char *debug_extra;
 
 enum debug_level {
 	DEBUG_EMERG   = -3,

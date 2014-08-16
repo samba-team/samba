@@ -25,6 +25,7 @@
 
 int LogLevel = DEBUG_NOTICE;
 int this_log_level = 0;
+const char *debug_extra = "";
 
 int log_ringbuf_size;
 

@@ -50,7 +50,6 @@ static void _do_debug_v(const char *format, va_list ap)
 
 /* default logging function */
 void (*do_debug_v)(const char *, va_list ap) = _do_debug_v;
-const char *debug_extra = "";
 
 void do_debug(const char *format, ...)
 {
