@@ -973,7 +973,9 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				  dsdb_flags,
 				  "%s", result_filter);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(2, ("DsCrackNameOneFilter phantom root search failed: %s\n",
+			DEBUG(2, ("DsCrackNameOneFilter search from '%s' with flags 0x%08x failed: %s\n",
+				  ldb_dn_get_linearized(real_search_dn),
+				  dsdb_flags,
 				  ldb_errstring(sam_ctx)));
 			info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 			return WERR_OK;
