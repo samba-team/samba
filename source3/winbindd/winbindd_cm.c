@@ -2861,6 +2861,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			       &_account_name,
 			       &sec_chan_type);
 	if (!ok) {
+		DEBUG(1, ("get_trust_pw_hash failed for %s, "
+			  "unable to get NETLOGON credentials\n",
+			  domain->name));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -2877,6 +2880,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 					      domain,
 					      &conn->netlogon_creds);
 	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("rpccli_create_netlogon_creds failed for %s, "
+			  "unable to create NETLOGON credentials: %s\n",
+			  domain->name, nt_errstr(result)));
 		SAFE_FREE(previous_nt_hash);
 		return result;
 	}
@@ -2889,6 +2895,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	conn->netlogon_force_reauth = false;
 	SAFE_FREE(previous_nt_hash);
 	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("rpccli_setup_netlogon_creds failed for %s, "
+			  "unable to setup NETLOGON credentials: %s\n",
+			  domain->name, nt_errstr(result)));
 		return result;
 	}
 
@@ -2896,6 +2905,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 					talloc_tos(),
 					&creds);
 	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("netlogon_creds_cli_get failed for %s, "
+			  "unable to get NETLOGON credentials: %s\n",
+			  domain->name, nt_errstr(result)));
 		return result;
 	}
 	conn->netlogon_flags = creds->negotiate_flags;
