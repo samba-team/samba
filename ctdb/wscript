@@ -173,6 +173,8 @@ def build(bld):
     if bld.CHECK_FOR_THIRD_PARTY():
         bld.RECURSE('third_party/popt')
 
+    bld.RECURSE('lib/util')
+
     bld.RECURSE('lib/talloc')
     bld.RECURSE('lib/tevent')
     bld.RECURSE('lib/tdb')
@@ -183,20 +185,6 @@ def build(bld):
                             rule='../packaging/mkversion.sh ${TGT} %s' % (VERSION),
                             dep_vars=['VERSION'])
     t.env.VERSION = VERSION
-
-    bld.SAMBA_SUBSYSTEM('ctdb-util',
-                        source=bld.SUBDIR('lib/util',
-                                          'util.c util_file.c util_time.c'),
-                        includes='include include/internal',
-                        deps='replace talloc tevent tdb')
-
-    bld.SAMBA_SUBSYSTEM('ctdb-util-misc',
-                        source=bld.SUBDIR('lib/util',
-                                          '''db_wrap.c debug.c fault.c
-                                             idtree.c signal.c
-                                             substitute.c'''),
-                        includes='include include/internal lib/util',
-                        deps='replace talloc tevent tdb')
 
     bld.SAMBA_SUBSYSTEM('ctdb-tcp',
                         source=bld.SUBDIR('tcp',
@@ -250,7 +238,7 @@ def build(bld):
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
                         includes='include include/internal lib/util',
                         public_headers='include/ctdb_client.h',
-                        deps='replace popt talloc tevent tdb ctdb-util ctdb-util-misc')
+                        deps='replace popt talloc tevent tdb ctdb-util')
 
     bld.SAMBA_SUBSYSTEM('ctdb-server',
                         source='server/ctdbd.c ' +
@@ -300,14 +288,14 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_lock_helper',
                      source='server/ctdb_lock_helper.c',
-                     deps='ctdb-util ctdb-util-misc ctdb-common-util talloc tdb',
+                     deps='ctdb-util ctdb-common-util talloc tdb',
                      includes='include include/internal',
                      install_path='${BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_event_helper',
                      source='server/ctdb_event_helper.c',
                      includes='include include/internal',
-                     deps='ctdb-util ctdb-util-misc ctdb-common-util replace tdb',
+                     deps='ctdb-util ctdb-common-util replace tdb',
                      install_path='${BINDIR}')
 
     bld.SAMBA_GENERATOR('ctdb-smnotify-h',

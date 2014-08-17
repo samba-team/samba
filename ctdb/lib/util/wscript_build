@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+
+bld.SAMBA_SUBSYSTEM('ctdb-util',
+                     source='''util.c util_file.c util_time.c db_wrap.c
+                               debug.c fault.c idtree.c signal.c
+                               substitute.c''',
+                      deps='tdb talloc',
+                      public_deps='talloc tevent',
+                      local_include=False,
+                      )
