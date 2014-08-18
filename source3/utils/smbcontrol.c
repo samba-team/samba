@@ -225,7 +225,7 @@ static bool do_idmap(struct tevent_context *ev,
 #if defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE)
 
 /* Return the name of a process given it's PID. This will only work on Linux,
- * but that's probably moot since this whole stack tracing implementatino is
+ * but that's probably moot since this whole stack tracing implementation is
  * Linux-specific anyway.
  */
 static const char * procname(pid_t pid, char * buf, size_t bufsz)
