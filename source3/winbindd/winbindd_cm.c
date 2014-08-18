@@ -2020,38 +2020,46 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 		return False;		
 	}
 
+	mem_ctx = talloc_stackframe();
 	our_domain = find_our_domain();
-
-	if ( !connection_ok(our_domain) ) {
-		DEBUG(3,("set_dc_type_and_flags_trustinfo: No connection to our domain!\n"));		
-		return False;
+	if (our_domain->internal) {
+		result = init_dc_connection(our_domain, false);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3,("set_dc_type_and_flags_trustinfo: "
+				 "Not able to make a connection to our domain: %s\n",
+				  nt_errstr(result)));
+			TALLOC_FREE(mem_ctx);
+			return false;
+		}
 	}
 
 	/* This won't work unless our domain is AD */
-
 	if ( !our_domain->active_directory ) {
+		TALLOC_FREE(mem_ctx);
 		return False;
 	}
 
-	/* Use DsEnumerateDomainTrusts to get us the trust direction
-	   and type */
-
-	result = cm_connect_netlogon(our_domain, &cli);
+	if (our_domain->internal) {
+		result = wb_open_internal_pipe(mem_ctx, &ndr_table_netlogon, &cli);
+	} else if (!connection_ok(our_domain)) {
+		DEBUG(3,("set_dc_type_and_flags_trustinfo: "
+			 "No connection to our domain!\n"));
+		TALLOC_FREE(mem_ctx);
+		return False;
+	} else {
+		result = cm_connect_netlogon(our_domain, &cli);
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("set_dc_type_and_flags_trustinfo: Could not open "
 			  "a connection to %s for PIPE_NETLOGON (%s)\n", 
 			  domain->name, nt_errstr(result)));
+		TALLOC_FREE(mem_ctx);
 		return False;
 	}
-
 	b = cli->binding_handle;
 
-	if ( (mem_ctx = talloc_init("set_dc_type_and_flags_trustinfo")) == NULL ) {
-		DEBUG(0,("set_dc_type_and_flags_trustinfo: talloc_init() failed!\n"));
-		return False;
-	}	
-
+	/* Use DsEnumerateDomainTrusts to get us the trust direction and type. */
 	result = dcerpc_netr_DsrEnumerateDomainTrusts(b, mem_ctx,
 						      cli->desthost,
 						      flags,
@@ -2061,14 +2069,14 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 		DEBUG(0,("set_dc_type_and_flags_trustinfo: "
 			"failed to query trusted domain list: %s\n",
 			nt_errstr(result)));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("set_dc_type_and_flags_trustinfo: "
 			"failed to query trusted domain list: %s\n",
 			win_errstr(werr)));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 
@@ -2105,7 +2113,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 		}		
 	}
 
-	talloc_destroy( mem_ctx );
+	TALLOC_FREE(mem_ctx);
 
 	return domain->initialized;	
 }
