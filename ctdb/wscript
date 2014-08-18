@@ -243,7 +243,7 @@ def build(bld):
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
                         includes='include include/internal lib/util',
                         public_headers='include/ctdb_client.h',
-                        deps='replace popt talloc tevent tdb')
+                        deps='replace popt talloc tevent tdb ctdb-util ctdb-util-misc')
 
     bld.SAMBA_SUBSYSTEM('ctdb-server',
                         source='server/ctdbd.c ' +
@@ -271,8 +271,7 @@ def build(bld):
     bld.SAMBA_BINARY('ctdbd',
                      source='',
                      deps='''ctdb-server ctdb-client ctdb-common
-                             ctdb-common-util ctdb-system ctdb-tcp
-                             ctdb-util ctdb-util-misc''' +
+                             ctdb-common-util ctdb-system ctdb-tcp''' +
                           ib_deps,
                      install_path='${SBINDIR}',
                      manpages='doc/ctdbd.1')
@@ -280,7 +279,7 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c tools/ctdb_vacuum.c',
                      deps='''ctdb-client ctdb-common ctdb-common-util
-                             ctdb-system ctdb-util ctdb-util-misc''',
+                             ctdb-system''',
                      install_path='${BINDIR}',
                      manpages='doc/ctdb.1')
 
@@ -337,7 +336,7 @@ def build(bld):
                          source='utils/pmda/pmda_ctdb.c',
                          includes='include include/internal',
                          deps='''ctdb-client ctdb-common ctdb-system
-                                 ctdb-util-misc ctdb-util pcp_pmda pcp''',
+                                 pcp_pmda pcp''',
                          install_path='${CTDB_PMDADIR}')
         bld.INSTALL_FILES('${CTDB_PMDADIR}', 'utils/pmda/Install',
                           destname='Install')
@@ -449,7 +448,7 @@ def build(bld):
         bld.SAMBA_BINARY(target,
                          source=src,
                          deps='''ctdb-client ctdb-common ctdb-common-util
-                                 ctdb-system ctdb-util ctdb-util-misc''',
+                                 ctdb-system''',
                          install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_takeover_tests',
@@ -476,7 +475,7 @@ def build(bld):
                          source='ib/ibwrapper_test.c',
                          includes='include include/internal',
                          deps='''replace talloc ctdb-client ctdb-common
-                                 ctdb-system ctdb-util-misc ctdb-util''' +
+                                 ctdb-system''' +
                               ib_deps,
                          install_path='${CTDB_TEST_LIBDIR}')
 
