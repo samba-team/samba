@@ -194,27 +194,32 @@ main() {
             Logs.warn('no suitable FAM library found')
 
     # check for DMAPI libs
-    Logs.info("Checking for DMAPI library existence")
-    conf.env['dmapi_lib'] = ''
-    samba_dmapi_lib = ''
-    if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'dm'):
-        samba_dmapi_lib = 'dm'
+    if Options.options.with_dmapi == False:
+        have_dmapi = False
     else:
-        if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'jfsdm'):
-            samba_dmapi_lib = 'jfsdm'
+        have_dmapi = True
+        Logs.info("Checking for DMAPI library existence")
+        samba_dmapi_lib = ''
+        if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'dm'):
+            samba_dmapi_lib = 'dm'
         else:
-            if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'dmapi'):
-                samba_dmapi_lib = 'dmapi'
+            if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'jfsdm'):
+                samba_dmapi_lib = 'jfsdm'
             else:
-                if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'xdsm'):
-                    samba_dmapi_lib = 'xdsm'
-    # only bother to test headers and compilation when a candidate
-    # library has been found
-    if Options.options.with_dmapi == True and samba_dmapi_lib == '':
-        conf.fatal('DMAPI support requested, but no suitable DMAPI library found')
-    else:
-        conf.CHECK_HEADERS('sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h dmapi.h')
-        conf.CHECK_CODE('''
+                if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'dmapi'):
+                    samba_dmapi_lib = 'dmapi'
+                else:
+                    if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'xdsm'):
+                        samba_dmapi_lib = 'xdsm'
+        # only bother to test headers and compilation when a candidate
+        # library has been found
+        if samba_dmapi_lib == '':
+            have_dmapi = False
+            broken_dmapi = "no suitable DMAPI library found"
+
+        if have_dmapi:
+            conf.CHECK_HEADERS('sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h dmapi.h')
+            conf.CHECK_CODE('''
 #include <time.h>      /* needed by Tru64 */
 #include <sys/types.h> /* needed by AIX */
 #ifdef HAVE_XFS_DMAPI_H
@@ -244,17 +249,28 @@ int main(int argc, char **argv)
 	return 0;
 }
 ''',
-        'USE_DMAPI',
-        addmain=False,
-        execute=False,
-        lib=samba_dmapi_lib,
-        msg='Checking whether DMAPI lib '+samba_dmapi_lib+' can be used')
+            'USEABLE_DMAPI_LIBRARY',
+            addmain=False,
+            execute=False,
+            lib=samba_dmapi_lib,
+            msg='Checking whether DMAPI lib '+samba_dmapi_lib+' can be used')
+            if not conf.CONFIG_SET('USEABLE_DMAPI_LIBRARY'):
+                have_dmapi = False
+                broken_dmapi = "no usable DMAPI library found"
 
-        if conf.CONFIG_SET('USE_DMAPI'):
-            conf.env['dmapi_lib'] = samba_dmapi_lib
+    if have_dmapi:
+        Logs.info("Building with DMAPI support.")
+        conf.env['dmapi_lib'] = samba_dmapi_lib
+        conf.DEFINE('USE_DMAPI', 1)
+    else:
+        if Options.options.with_dmapi == False:
+            Logs.info("Building without DMAPI support (--without-dmapi).")
+        elif Options.options.with_dmapi == True:
+            Logs.error("DMAPI support not available: " + broken_dmapi)
+            conf.fatal('DMAPI support requested but not found.');
         else:
-            if Options.options.with_dmapi == True:
-                conf.fatal('DMAPI support requested but not found');
+            Logs.warn("Building without DMAPI support: " + broken_dmapi)
+        conf.env['dmapi_lib'] = ''
 
     # Check for various members of the stat structure
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blocks', define='HAVE_STAT_ST_BLOCKS',
