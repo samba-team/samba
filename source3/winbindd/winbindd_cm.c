@@ -2021,21 +2021,23 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 	}
 
 	our_domain = find_our_domain();
-	result = init_dc_connection(our_domain, false);
-	
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3,("set_dc_type_and_flags_trustinfo: Not able to make a connection to our domain: %s\n",
-			 nt_errstr(result)));
-		return False;
+
+	mem_ctx = talloc_stackframe();
+
+	if (our_domain->internal) {
+		result = init_dc_connection(our_domain, false);
+		
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3,("set_dc_type_and_flags_trustinfo: Not able to make a connection to our domain: %s\n",
+				 nt_errstr(result)));
+			return False;
+		}
 	}
 
 	/* This won't work unless our domain is AD */
-
 	if ( !our_domain->active_directory ) {
 		return False;
 	}
-
-	mem_ctx = talloc_stackframe();
 
 	if (our_domain->internal) {
 		result = wb_open_internal_pipe(mem_ctx, &ndr_table_netlogon, &cli);
