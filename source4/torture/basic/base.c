@@ -654,6 +654,7 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 	int nsec;
 	int msec;
 	double sec;
+	NTSTATUS status;
 
 	nsec = torture_setting_int(tctx, "sharedelay", 1000000);
 	msec = nsec / 1000;
@@ -696,10 +697,15 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 
 		smb_msleep(10 * msec);
 		i++;
-		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
-			torture_comment(tctx,"Failed to close %s, error=%s\n", fname, smbcli_errstr(cli->tree));
-			return false;
-		}
+
+		status = smbcli_close(cli->tree, fnum);
+		torture_assert(tctx, !NT_STATUS_IS_ERR(status),
+			       talloc_asprintf(tctx,
+					       "pid %u: Failed to close %s, "
+					       "error=%s\n",
+					       (unsigned)getpid(), fname,
+					       smbcli_errstr(cli->tree)));
+
 		smb_msleep(2 * msec);
 	}
 
@@ -707,7 +713,7 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 		/* All until the last unlink will fail with sharing violation
 		   but also the last request can fail since the file could have
 		   been successfully deleted by another (test) process */
-		NTSTATUS status = smbcli_nt_error(cli->tree);
+		status = smbcli_nt_error(cli->tree);
 		if ((!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION))
 			&& (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))) {
 			torture_result(tctx, TORTURE_FAIL, "unlink of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
