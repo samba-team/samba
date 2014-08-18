@@ -1456,6 +1456,24 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 
 	errno = 0;
 
+	if (!xconn->smb1.negprot.done) {
+		switch (type) {
+			/*
+			 * Without a negprot the request must
+			 * either be a negprot, or one of the
+			 * evil old SMB mailslot messaging types.
+			 */
+			case SMBnegprot:
+			case SMBsendstrt:
+			case SMBsendend:
+			case SMBsendtxt:
+				break;
+			default:
+				exit_server_cleanly("The first request "
+					"should be a negprot");
+		}
+	}
+
 	if (smb_messages[type].fn == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
 		smb_dump("Unknown", 1, (const char *)req->inbuf);
