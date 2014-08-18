@@ -335,8 +335,10 @@ int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
 	fd = open(lockfile_name, O_NONBLOCK|O_WRONLY, 0);
 	if (fd == -1) {
 		ret = errno;
-		DEBUG(10, ("%s: open(%s) failed: %s\n", __func__,
-			   lockfile_name, strerror(ret)));
+		if (ret != ENOENT) {
+			DEBUG(10, ("%s: open(%s) failed: %s\n", __func__,
+				   lockfile_name, strerror(ret)));
+		}
 		TALLOC_FREE(lockfile_name);
 		return ret;
 	}
