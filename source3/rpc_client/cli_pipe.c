@@ -2873,6 +2873,12 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 	auth->user_name = talloc_strdup(auth, cli->user_name);
 	auth->domain = talloc_strdup(auth, cli->domain);
 
+	if ((cli->user_name != NULL && auth->user_name == NULL)
+	    || (cli->domain != NULL && auth->domain == NULL)) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (transport == NCACN_NP) {
 		struct smbXcli_session *session;
 
@@ -2887,11 +2893,6 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 		if (!NT_STATUS_IS_OK(status)) {
 			auth->transport_session_key = data_blob_null;
 		}
-	}
-
-	if ((auth->user_name == NULL) || (auth->domain == NULL)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = rpc_pipe_bind(result, auth);
