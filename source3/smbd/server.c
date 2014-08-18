@@ -421,8 +421,11 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	child_id = pid_to_procid(pid);
 
 	ret = messaging_cleanup(parent->msg_ctx, pid);
-	DEBUG(10, ("%s: messaging_cleanup returned %s\n",
-		   __func__, ret ? strerror(ret) : "ok"));
+
+	if ((ret != 0) && (ret != ENOENT)) {
+		DEBUG(10, ("%s: messaging_cleanup returned %s\n",
+			   __func__, ret ? strerror(ret) : "ok"));
+	}
 
 	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {
