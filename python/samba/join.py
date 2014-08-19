@@ -134,7 +134,7 @@ class dc_join(object):
             else:
                 ctx.dns_backend = dns_backend
 
-        ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
+        ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
 
         ctx.realm = ctx.dnsdomain
 
@@ -1206,7 +1206,7 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
     ctx.domsid = str(security.random_sid())
     ctx.acct_dn = None
-    ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
+    ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
     ctx.trustdom_pass = samba.generate_random_password(128, 128)
 
     ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
