@@ -208,7 +208,7 @@ def build(bld):
                                           '''ctdb_io.c ctdb_util.c ctdb_ltdb.c
                                              ctdb_message.c cmdline.c rb_tree.c
                                              system_common.c ctdb_fork.c'''),
-                        includes='include include/internal common . lib/util',
+                        includes='include include/internal common .',
                         deps='replace popt talloc tevent tdb popt')
 
     bld.SAMBA_SUBSYSTEM('ctdb-common-util',
@@ -237,7 +237,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-client',
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
-                        includes='include include/internal lib/util',
+                        includes='include include/internal',
                         public_headers='include/ctdb_client.h',
                         deps='''replace popt talloc tevent tdb
                                 ctdb-util tdb-wrap''')
@@ -258,7 +258,7 @@ def build(bld):
                                              ctdb_statistics.c
                                              ctdb_update_record.c
                                              ctdb_lock.c'''),
-                        includes='include include/internal lib/util',
+                        includes='include include/internal',
                         public_headers='''include/ctdb.h
                                           include/ctdb_private.h
                                           include/ctdb_protocol.h
