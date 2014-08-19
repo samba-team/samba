@@ -17,78 +17,13 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "system/time.h"
-#include <unistd.h>
+#include "replace.h"
+#include "system/filesys.h"
 #include <ctype.h>
+#include <assert.h>
+#include "debug.h"
 
-static void _do_debug_v(const char *format, va_list ap)
-{
-	struct timeval t;
-	char *s = NULL;
-	struct tm *tm;
-	char tbuf[100];
-	int ret;
-
-	ret = vasprintf(&s, format, ap);
-	if (ret == -1) {
-		fprintf(stderr, "vasprintf failed in _do_debug_v, cannot print debug message.\n");
-		fflush(stderr);
-		return;
-	}
-
-	t = timeval_current();
-	tm = localtime(&t.tv_sec);
-
-	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
-
-	fprintf(stderr, "%s.%06u [%s%5u]: %s", tbuf, (unsigned)t.tv_usec,
-		debug_extra, (unsigned)getpid(), s);
-	fflush(stderr);
-	free(s);
-}
-
-/* default logging function */
-void (*do_debug_v)(const char *, va_list ap) = _do_debug_v;
-
-void do_debug(const char *format, ...)
-{
-	va_list ap;
-
-	va_start(ap, format);
-	do_debug_v(format, ap);
-	va_end(ap);
-}
-
-
-static void _do_debug_add_v(const char *format, va_list ap)
-{
-	char *s = NULL;
-	int ret;
-
-	ret = vasprintf(&s, format, ap);
-	if (ret == -1) {
-		fprintf(stderr, "vasprintf failed in _do_debug_add_v, cannot print debug message.\n");
-		fflush(stderr);
-		return;
-	}
-
-	fprintf(stderr, "%s", s);
-	fflush(stderr);
-	free(s);
-}
-
-/* default logging function */
-void (*do_debug_add_v)(const char *, va_list ap) = _do_debug_add_v;
-
-void do_debug_add(const char *format, ...)
-{
-	va_list ap;
-
-	va_start(ap, format);
-	do_debug_add_v(format, ap);
-	va_end(ap);
-}
+int DEBUGLEVEL;
 
 static void print_asc(int level, const uint8_t *buf, size_t len)
 {
@@ -133,3 +68,48 @@ void dump_data(int level, const uint8_t *buf, size_t len)
 	DEBUG(level, (__location__ " dump data of size %i finished\n", (int)len));
 }
 
+/* state variables for the debug system */
+static struct {
+	debug_callback_fn callback;
+	void *callback_private;
+} state;
+
+static int current_msg_level = 0;
+
+void debug_set_callback(void *private_ptr, debug_callback_fn fn)
+{
+	assert(fn != NULL);
+
+	state.callback_private = private_ptr;
+	state.callback = fn;
+}
+
+bool dbghdr(int level, const char *location, const char *func)
+{
+	current_msg_level = level;
+	return true;
+}
+
+bool dbgtext( const char *format_str, ... )
+{
+	va_list ap;
+	char *msgbuf = NULL;
+	int res;
+
+	va_start(ap, format_str);
+	res = vasprintf(&msgbuf, format_str, ap);
+	va_end(ap);
+	if (res == -1) {
+		return false;
+	}
+
+	if (state.callback != NULL) {
+		state.callback(state.callback_private,
+			       current_msg_level, msgbuf);
+	} else {
+		write(2, msgbuf, strlen(msgbuf));
+	}
+
+	free(msgbuf);
+	return true;
+}

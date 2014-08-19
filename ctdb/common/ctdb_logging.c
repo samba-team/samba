@@ -23,8 +23,6 @@
 #include "../include/ctdb_private.h"
 #include "../include/ctdb_client.h"
 
-int DEBUGLEVEL = DEBUG_NOTICE;
-int this_log_level = 0;
 const char *debug_extra = "";
 
 struct debug_levels debug_levels[] = {

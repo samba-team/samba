@@ -23,6 +23,7 @@
 #include "system/syslog.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "lib/util/debug.h"
 
 struct syslog_message {
 	uint32_t level;
@@ -208,21 +209,15 @@ static struct ctdb_log_state *log_state;
 /*
   syslog logging function
  */
-static void ctdb_syslog_log(const char *format, va_list ap)
+static void ctdb_syslog_log(void *private_ptr, int dbglevel, const char *s)
 {
 	struct syslog_message *msg;
 	int level = LOG_DEBUG;
-	char *s = NULL;
-	int len, ret;
+	int len;
 	int syslog_fd;
 	struct sockaddr_in syslog_sin;
 
-	ret = vasprintf(&s, format, ap);
-	if (ret == -1) {
-		return;
-	}
-
-	switch (this_log_level) {
+	switch (dbglevel) {
 	case DEBUG_EMERG: 
 		level = LOG_EMERG; 
 		break;
@@ -252,7 +247,6 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 	len = offsetof(struct syslog_message, message) + strlen(debug_extra) + strlen(s) + 1;
 	msg = malloc(len);
 	if (msg == NULL) {
-		free(s);
 		return;
 	}
 	msg->level = level;
@@ -266,7 +260,6 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 		syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (syslog_fd == -1) {
 			printf("Failed to create syslog socket\n");
-			free(s);
 			free(msg);
 			return;
 		}
@@ -275,15 +268,14 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 		syslog_sin.sin_port   = htons(CTDB_PORT);
 		syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-		ret = sendto(syslog_fd, msg, len, 0,
-			     (struct sockaddr *)&syslog_sin,
-			     sizeof(syslog_sin));
+		(void) sendto(syslog_fd, msg, len, 0,
+			      (struct sockaddr *)&syslog_sin,
+			      sizeof(syslog_sin));
 		/* no point in checking here since we cant log an error */
 
 		close(syslog_fd);
 	}
 
-	free(s);
 	free(msg);
 }
 
@@ -291,22 +283,13 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 /*
   log file logging function
  */
-static void ctdb_logfile_log(const char *format, va_list ap)
+static void ctdb_logfile_log(void *private_ptr, int dbglevel, const char *s)
 {
 	struct timeval t;
-	char *s = NULL;
 	struct tm *tm;
 	char tbuf[100];
 	char *s2 = NULL;
 	int ret;
-
-	ret = vasprintf(&s, format, ap);
-	if (ret == -1) {
-		const char *errstr = "vasprintf failed\n";
-
-		sys_write(log_state->fd, errstr, strlen(errstr));
-		return;
-	}
 
 	t = timeval_current();
 	tm = localtime(&t.tv_sec);
@@ -316,7 +299,6 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 	ret = asprintf(&s2, "%s.%06u [%s%5u]: %s",
 		       tbuf, (unsigned)t.tv_usec,
 		       debug_extra, (unsigned)getpid(), s);
-	free(s);
 	if (ret == -1) {
 		const char *errstr = "asprintf failed\n";
 		sys_write(log_state->fd, errstr, strlen(errstr));
@@ -328,32 +310,12 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 	}
 }
 
-static void ctdb_logfile_log_add(const char *format, va_list ap)
-{
-	char *s = NULL;
-	int ret;
-
-	ret = vasprintf(&s, format, ap);
-	if (ret == -1) {
-		const char *errstr = "vasprintf failed\n";
-
-		sys_write(log_state->fd, errstr, strlen(errstr));
-		return;
-	}
-
-	if (s) {
-		sys_write(log_state->fd, s, strlen(s));
-		free(s);
-	}
-}
-
-
-
 /*
   choose the logfile location
 */
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_syslog)
 {
+	debug_callback_fn callback;
 	int ret;
 
 	ctdb->log = talloc_zero(ctdb, struct ctdb_log_state);
@@ -366,12 +328,10 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 	log_state = ctdb->log;
 
 	if (use_syslog) {
-		do_debug_v = ctdb_syslog_log;
-		do_debug_add_v = ctdb_syslog_log;
+		callback = ctdb_syslog_log;
 		ctdb->log->use_syslog = true;
 	} else if (logfile == NULL || strcmp(logfile, "-") == 0) {
-		do_debug_v = ctdb_logfile_log;
-		do_debug_add_v = ctdb_logfile_log_add;
+		callback = ctdb_logfile_log;
 		ctdb->log->fd = 1;
 		/* also catch stderr of subcommands to stdout */
 		ret = dup2(1, 2);
@@ -380,8 +340,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 			abort();
 		}
 	} else {
-		do_debug_v = ctdb_logfile_log;
-		do_debug_add_v = ctdb_logfile_log_add;
+		callback = ctdb_logfile_log;
 
 		ctdb->log->fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
 		if (ctdb->log->fd == -1) {
@@ -389,6 +348,8 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 			abort();
 		}
 	}
+
+	debug_set_callback(NULL, callback);
 
 	return 0;
 }
@@ -399,9 +360,9 @@ static void write_to_log(struct ctdb_log_state *log,
 {
 	if (script_log_level <= DEBUGLEVEL) {
 		if (log != NULL && log->prefix != NULL) {
-			do_debug("%s: %*.*s\n", log->prefix, len, len, buf);
+			dbgtext("%s: %*.*s\n", log->prefix, len, len, buf);
 		} else {
-			do_debug("%*.*s\n", len, len, buf);
+			dbgtext("%*.*s\n", len, len, buf);
 		}
 		/* log it in the eventsystem as well */
 		if (log && log->logfn) {
@@ -435,8 +396,6 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	this_log_level = script_log_level;
-
 	while (log->buf_used > 0 &&
 	       (p = memchr(log->buf, '\n', log->buf_used)) != NULL) {
 		int n1 = (p - log->buf)+1;
@@ -462,7 +421,6 @@ static int log_context_destructor(struct ctdb_log_state *log)
 {
 	/* Flush buffer in case it wasn't \n-terminated. */
 	if (log->buf_used > 0) {
-		this_log_level = script_log_level;
 		write_to_log(log, log->buf, log->buf_used);
 	}
 	return 0;
@@ -629,8 +587,7 @@ static void ctdb_tevent_logging(void *private_data,
 	}
 
 	if (lvl <= DEBUGLEVEL) {
-		this_log_level = lvl;
-		do_debug_v(fmt, ap);
+		dbgtext(fmt, ap);
 	}
 }
 

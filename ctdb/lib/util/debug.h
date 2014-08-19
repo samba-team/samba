@@ -20,10 +20,20 @@
 #ifndef UTIL_DEBUG_H
 #define UTIL_DEBUG_H
 
-extern void (*do_debug_v)(const char *, va_list ap);
-extern void (*do_debug_add_v)(const char *, va_list ap);
-void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
-void do_debug_add(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);
+bool dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
+bool dbghdr( int level, const char *location, const char *func);
 void dump_data(int level, const uint8_t *buf1, size_t len);
+
+extern int DEBUGLEVEL;
+
+#define DEBUGLVL(lvl) ((lvl) <= DEBUGLEVEL)
+#define DEBUG( lvl, body ) \
+  (void)( ((lvl) <= DEBUGLEVEL) \
+       && (dbghdr( lvl, __location__, __FUNCTION__ )) \
+       && (dbgtext body) )
+#define DEBUGADD(lvl, body) DEBUG(lvl, body)
+
+typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg);
+void debug_set_callback(void *private_ptr, debug_callback_fn fn);
 
 #endif /* UTIL_DEBUG_H */
