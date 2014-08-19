@@ -58,7 +58,7 @@ bool brl_unlock(struct messaging_context *msg_ctx,
 bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 			       struct byte_range_lock *br_lck,
 			       const struct lock_struct *plock);
-bool brl_locktest(const struct byte_range_lock *br_lck,
+bool brl_locktest(struct byte_range_lock *br_lck,
 		  const struct lock_struct *rw_probe);
 NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 		uint64_t *psmblctx,

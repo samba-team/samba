@@ -137,6 +137,16 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 	}
 	ret = brl_locktest(br_lck, plock);
 
+	if (!ret) {
+		/*
+		 * We got a lock conflict. Retry with rw locks to enable
+		 * autocleanup. This is the slow path anyway.
+		 */
+		br_lck = brl_get_locks(talloc_tos(), fsp);
+		ret = brl_locktest(br_lck, plock);
+		TALLOC_FREE(br_lck);
+	}
+
 	DEBUG(10, ("strict_lock_default: flavour = %s brl start=%ju "
 		   "len=%ju %s for fnum %ju file %s\n",
 		   lock_flav_name(plock->lock_flav),

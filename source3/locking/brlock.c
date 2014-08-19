@@ -418,6 +418,11 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
+			if (!serverid_exists(&locks[i].context.pid)) {
+				locks[i].context.pid.pid = 0;
+				br_lck->modified = true;
+				continue;
+			}
 			/* Remember who blocked us. */
 			plock->context.smblctx = locks[i].context.smblctx;
 			return brl_lock_failed(fsp,plock,blocking_lock);
@@ -822,6 +827,11 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 		if (curr_lock->lock_flav == WINDOWS_LOCK) {
 			/* Do any Windows flavour locks conflict ? */
 			if (brl_conflict(curr_lock, plock)) {
+				if (!serverid_exists(&curr_lock->context.pid)) {
+					curr_lock->context.pid.pid = 0;
+					br_lck->modified = true;
+					continue;
+				}
 				/* No games with error messages. */
 				TALLOC_FREE(tp);
 				/* Remember who blocked us. */
@@ -836,6 +846,11 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 
 			/* POSIX conflict semantics are different. */
 			if (brl_conflict_posix(curr_lock, plock)) {
+				if (!serverid_exists(&curr_lock->context.pid)) {
+					curr_lock->context.pid.pid = 0;
+					br_lck->modified = true;
+					continue;
+				}
 				/* Can't block ourselves with POSIX locks. */
 				/* No games with error messages. */
 				TALLOC_FREE(tp);
@@ -1345,12 +1360,12 @@ bool brl_unlock(struct messaging_context *msg_ctx,
  Returns True if the region required is currently unlocked, False if locked.
 ****************************************************************************/
 
-bool brl_locktest(const struct byte_range_lock *br_lck,
+bool brl_locktest(struct byte_range_lock *br_lck,
 		  const struct lock_struct *rw_probe)
 {
 	bool ret = True;
 	unsigned int i;
-	const struct lock_struct *locks = br_lck->lock_data;
+	struct lock_struct *locks = br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	/* Make sure existing locks don't conflict */
@@ -1359,6 +1374,17 @@ bool brl_locktest(const struct byte_range_lock *br_lck,
 		 * Our own locks don't conflict.
 		 */
 		if (brl_conflict_other(&locks[i], rw_probe)) {
+			if (br_lck->record == NULL) {
+				/* readonly */
+				return false;
+			}
+
+			if (!serverid_exists(&locks[i].context.pid)) {
+				locks[i].context.pid.pid = 0;
+				br_lck->modified = true;
+				continue;
+			}
+
 			return False;
 		}
 	}
@@ -1673,7 +1699,6 @@ bool brl_reconnect_disconnected(struct files_struct *fsp)
 	 * and thereby remove our own (disconnected) entries but reactivate
 	 * them instead.
 	 */
-	fsp->lockdb_clean = true;
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (br_lck == NULL) {
@@ -1910,9 +1935,27 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 {
 	size_t data_len;
+	unsigned i;
+	struct lock_struct *locks = br_lck->lock_data;
+
 	if (!br_lck->modified) {
 		DEBUG(10, ("br_lck not modified\n"));
 		goto done;
+	}
+
+	i = 0;
+
+	while (i < br_lck->num_locks) {
+		if (locks[i].context.pid.pid == 0) {
+			/*
+			 * Autocleanup, the process conflicted and does not
+			 * exist anymore.
+			 */
+			locks[i] = locks[br_lck->num_locks-1];
+			br_lck->num_locks -= 1;
+		} else {
+			i += 1;
+		}
 	}
 
 	data_len = br_lck->num_locks * sizeof(struct lock_struct);
@@ -2025,37 +2068,6 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 		br_lck->have_read_oplocks = (data.dptr[data.dsize-1] == 1);
 	}
 
-	if (!fsp->lockdb_clean) {
-		int orig_num_locks = br_lck->num_locks;
-
-		/*
-		 * This is the first time we access the byte range lock
-		 * record with this fsp. Go through and ensure all entries
-		 * are valid - remove any that don't.
-		 * This makes the lockdb self cleaning at low cost.
-		 *
-		 * Note: Disconnected entries belong to disconnected
-		 * durable handles. So at this point, we have a new
-		 * handle on the file and the disconnected durable has
-		 * already been closed (we are not a durable reconnect).
-		 * So we need to clean the disconnected brl entry.
-		 */
-
-		if (!validate_lock_entries(&br_lck->num_locks,
-					   &br_lck->lock_data, false)) {
-			TALLOC_FREE(br_lck);
-			return NULL;
-		}
-
-		/* Ensure invalid locks are cleaned up in the destructor. */
-		if (orig_num_locks != br_lck->num_locks) {
-			br_lck->modified = True;
-		}
-
-		/* Mark the lockdb as "clean" as seen from this open file. */
-		fsp->lockdb_clean = True;
-	}
-
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
 		struct lock_struct *locks = br_lck->lock_data;
@@ -2119,18 +2131,6 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		 * change.
 		 */
 		return fsp->brlock_rec;
-	}
-
-	if (!fsp->lockdb_clean) {
-		/*
-		 * Fetch the record in R/W mode to give validate_lock_entries
-		 * a chance to kick in once.
-		 */
-		rw = brl_get_locks(talloc_tos(), fsp);
-		if (rw == NULL) {
-			return NULL;
-		}
-		fsp->lockdb_clean = true;
 	}
 
 	if (rw != NULL) {

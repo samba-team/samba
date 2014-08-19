@@ -236,7 +236,6 @@ typedef struct files_struct {
 	bool modified;
 	bool is_directory;
 	bool aio_write_behind;
-	bool lockdb_clean;
 	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	bool delete_on_close;
 	bool posix_open;
