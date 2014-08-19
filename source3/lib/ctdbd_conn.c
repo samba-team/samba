@@ -214,6 +214,7 @@ static int ctdbd_connect(int *pfd)
 	struct sockaddr_un addr = { 0, };
 	int fd;
 	socklen_t salen;
+	size_t namelen;
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {
@@ -223,7 +224,14 @@ static int ctdbd_connect(int *pfd)
 	}
 
 	addr.sun_family = AF_UNIX;
-	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sockname);
+
+	namelen = strlcpy(addr.sun_path, sockname, sizeof(addr.sun_path));
+	if (namelen >= sizeof(addr.sun_path)) {
+		DEBUG(3, ("%s: Socket name too long: %s\n", __func__,
+			  sockname));
+		close(fd);
+		return ENAMETOOLONG;
+	}
 
 	salen = sizeof(struct sockaddr_un);
 
