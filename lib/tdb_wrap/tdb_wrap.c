@@ -19,11 +19,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "lib/util/dlinklist.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
-#include "lib/param/param.h"
 #include "ccan/str/str.h"
+#include "lib/util/debug.h"
+#include "tdb_wrap.h"
 
 /*
  Log tdb messages via DEBUG().
