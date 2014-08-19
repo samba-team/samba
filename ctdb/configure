@@ -2,7 +2,8 @@
 
 PREVPATH=`dirname $0`
 
-WAF=../buildtools/bin/waf
+WAF=buildtools/bin/waf
+[ -x "$WAF" ] || WAF=../buildtools/bin/waf
 
 # using JOBS=1 gives maximum compatibility with
 # systems like AIX which have broken threading in python
