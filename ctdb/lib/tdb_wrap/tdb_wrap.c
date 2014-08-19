@@ -50,12 +50,19 @@ static void log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const ch
 {
 	if (level <= TDB_DEBUG_ERROR) {
 		va_list ap;
-		char newfmt[strlen(tdb_name(tdb)) + 1 + strlen(fmt) + 1];
-		this_log_level = level;
-		sprintf(newfmt, "%s:%s", tdb_name(tdb), fmt);
+		char *ptr = NULL;
+		int ret;
+
 		va_start(ap, fmt);
-		do_debug_v(newfmt, ap);
+		ret = vasprintf(&ptr, fmt, ap);
 		va_end(ap);
+
+		if (ret != -1) {
+			const char *name = tdb_name(tdb);
+			DEBUG(level,
+			      ("%s:%s", name ? name : "unnamed tdb", ptr));
+			free(ptr);
+		}
 	}
 }
 
