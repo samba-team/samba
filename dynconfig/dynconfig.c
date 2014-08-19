@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "nsswitch/winbind_struct_protocol.h"
 
 /**
  * @file dynconfig.c
