@@ -311,7 +311,8 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		status = set_sd_blob(fsp,
 				in_input_buffer.data,
 				in_input_buffer.length,
-				in_additional_information);
+				in_additional_information &
+				SMB_SUPPORTED_SECINFO_FLAGS);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);

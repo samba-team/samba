@@ -2086,7 +2086,8 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	status = smbd_do_query_security_desc(conn,
 					talloc_tos(),
 					fsp,
-					security_info_wanted,
+					security_info_wanted &
+					SMB_SUPPORTED_SECINFO_FLAGS,
 					max_data_count,
 					&marshalled_sd,
 					&sd_size);
@@ -2179,8 +2180,8 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 		return;
 	}
 
-	status = set_sd_blob(fsp, (uint8 *)data, data_count, security_info_sent);
-
+	status = set_sd_blob(fsp, (uint8 *)data, data_count,
+			     security_info_sent & SMB_SUPPORTED_SECINFO_FLAGS);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
