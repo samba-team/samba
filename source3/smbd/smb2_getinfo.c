@@ -479,7 +479,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				state,
 				fsp,
 				/* Security info wanted. */
-				in_additional_information,
+				in_additional_information &
+				SMB_SUPPORTED_SECINFO_FLAGS,
 				in_output_buffer_length,
 				&p_marshalled_sd,
 				&sd_size);
