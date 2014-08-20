@@ -609,6 +609,24 @@ interface security
 		SECINFO_PROTECTED_DACL	     = 0x80000000
 	} security_secinfo;
 
+	/*
+	 * a SMB server should only support the following flags
+	 * and ignore all others.
+	 *
+	 * See AdditionalInformation in [MS-SMB2] 2.2.37 SMB2 QUERY_INFO Request
+	 * and 2.2.39 SMB2 SET_INFO Request.
+	 */
+	const int SMB_SUPPORTED_SECINFO_FLAGS = (
+		SECINFO_OWNER		|
+		SECINFO_GROUP		|
+		SECINFO_DACL		|
+		SECINFO_SACL		|
+		SECINFO_LABEL		|
+		SECINFO_ATTRIBUTE	|
+		SECINFO_SCOPE		|
+		SECINFO_BACKUP 		|
+		0);
+
 	typedef [public,bitmap32bit] bitmap {
 		KERB_ENCTYPE_DES_CBC_CRC             = 0x00000001,
 		KERB_ENCTYPE_DES_CBC_MD5             = 0x00000002,
