@@ -400,7 +400,7 @@ static bool test_needs_running(const char *name, const char **restricted)
 	return false;
 }
 
-static bool internal_torture_run_test(struct torture_context *context, 
+static bool internal_torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test,
 					  bool already_setup,
@@ -409,7 +409,7 @@ static bool internal_torture_run_test(struct torture_context *context,
 	bool success;
 	char *subunit_testname = NULL;
 
-	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
+	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) {
 		subunit_testname = talloc_asprintf(context, "%s.%s", tcase->name, test->name);
 	} else {
 		subunit_testname = talloc_strdup(context, test->name);
@@ -426,39 +426,39 @@ static bool internal_torture_run_test(struct torture_context *context,
 	context->last_reason = NULL;
 	context->last_result = TORTURE_OK;
 
-	if (!already_setup && tcase->setup && 
-		!tcase->setup(context, &(tcase->data))) {
-	    	if (context->last_reason == NULL)
+	if (!already_setup && tcase->setup &&
+	    !tcase->setup(context, &(tcase->data))) {
+		if (context->last_reason == NULL)
 			context->last_reason = talloc_strdup(context, "Setup failure");
 		context->last_result = TORTURE_ERROR;
 		success = false;
-	} else if (test->dangerous && 
-	    !torture_setting_bool(context, "dangerous", false)) {
-	    context->last_result = TORTURE_SKIP;
-	    context->last_reason = talloc_asprintf(context, 
-	    	"disabled %s - enable dangerous tests to use", test->name);
-	    success = true;
+	} else if (test->dangerous &&
+		   !torture_setting_bool(context, "dangerous", false)) {
+		context->last_result = TORTURE_SKIP;
+		context->last_reason = talloc_asprintf(context,
+		"disabled %s - enable dangerous tests to use", test->name);
+		success = true;
 	} else {
-	    success = test->run(context, tcase, test);
+		success = test->run(context, tcase, test);
 
-	    if (!success && context->last_result == TORTURE_OK) {
-		    if (context->last_reason == NULL)
-			    context->last_reason = talloc_strdup(context,
+		if (!success && context->last_result == TORTURE_OK) {
+			if (context->last_reason == NULL)
+				context->last_reason = talloc_strdup(context,
 					"Unknown error/failure. Missing torture_fail() or torture_assert_*() call?");
-		    context->last_result = TORTURE_ERROR;
-	    }
+			context->last_result = TORTURE_ERROR;
+		}
 	}
 
 	if (!already_setup && tcase->teardown && !tcase->teardown(context, tcase->data)) {
-    		if (context->last_reason == NULL)
-		    context->last_reason = talloc_strdup(context, "Setup failure");
-	    	context->last_result = TORTURE_ERROR;
+		if (context->last_reason == NULL)
+			context->last_reason = talloc_strdup(context, "Setup failure");
+		context->last_result = TORTURE_ERROR;
 		success = false;
 	}
 
-	torture_ui_test_result(context, context->last_result, 
+	torture_ui_test_result(context, context->last_result,
 			       context->last_reason);
-	
+
 	talloc_free(context->last_reason);
 
 	context->active_test = NULL;
