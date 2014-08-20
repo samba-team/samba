@@ -6566,7 +6566,14 @@ int main(int argc, const char *argv[])
 	ctdb = ctdb_cmdline_client(ev, TIMELIMIT());
 
 	if (ctdb == NULL) {
+		uint32_t pnn;
 		DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
+
+		pnn = find_node_xpnn();
+		if (pnn == -1) {
+			DEBUG(DEBUG_ERR,
+			      ("Is this node part of a CTDB cluster?\n"));
+		}
 		exit(1);
 	}
 
