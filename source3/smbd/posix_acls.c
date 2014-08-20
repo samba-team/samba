@@ -3288,6 +3288,10 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 		num_profile_acls = 3;
 	}
 
+	/*
+	 * TODO: is this logic with SECINFO_PROTECTED_DACL, correct?
+	 * See bug #10773.
+	 */
 	if ((security_info & SECINFO_DACL) && !(security_info & SECINFO_PROTECTED_DACL)) {
 
 		/*
