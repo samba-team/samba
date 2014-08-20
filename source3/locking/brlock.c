@@ -1749,80 +1749,6 @@ bool brl_reconnect_disconnected(struct files_struct *fsp)
 	return true;
 }
 
-/****************************************************************************
- Ensure this set of lock entries is valid.
-****************************************************************************/
-static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct **pplocks,
-				  bool keep_disconnected)
-{
-	unsigned int i;
-	struct lock_struct *locks = *pplocks;
-	unsigned int num_entries = *pnum_entries;
-	TALLOC_CTX *frame;
-	struct server_id *ids;
-	bool *exists;
-
-	if (num_entries == 0) {
-		return true;
-	}
-
-	frame = talloc_stackframe();
-
-	ids = talloc_array(frame, struct server_id, num_entries);
-	if (ids == NULL) {
-		DEBUG(0, ("validate_lock_entries: "
-			  "talloc_array(struct server_id, %u) failed\n",
-			  num_entries));
-		talloc_free(frame);
-		return false;
-	}
-
-	exists = talloc_array(frame, bool, num_entries);
-	if (exists == NULL) {
-		DEBUG(0, ("validate_lock_entries: "
-			  "talloc_array(bool, %u) failed\n",
-			  num_entries));
-		talloc_free(frame);
-		return false;
-	}
-
-	for (i = 0; i < num_entries; i++) {
-		ids[i] = locks[i].context.pid;
-	}
-
-	if (!serverids_exist(ids, num_entries, exists)) {
-		DEBUG(3, ("validate_lock_entries: serverids_exists failed\n"));
-		talloc_free(frame);
-		return false;
-	}
-
-	i = 0;
-
-	while (i < num_entries) {
-		if (exists[i]) {
-			i++;
-			continue;
-		}
-
-		if (keep_disconnected &&
-		    server_id_is_disconnected(&ids[i]))
-		{
-			i++;
-			continue;
-		}
-
-		/* This process no longer exists */
-
-		brl_delete_lock_struct(locks, num_entries, i);
-		num_entries -= 1;
-	}
-	TALLOC_FREE(frame);
-
-	*pnum_entries = num_entries;
-
-	return True;
-}
-
 struct brl_forall_cb {
 	void (*fn)(struct file_id id, struct server_id pid,
 		   enum brl_type lock_type,
@@ -1844,7 +1770,6 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 	struct file_id *key;
 	unsigned int i;
 	unsigned int num_locks = 0;
-	unsigned int orig_num_locks = 0;
 	TDB_DATA dbkey;
 	TDB_DATA value;
 
@@ -1861,25 +1786,7 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 	}
 
 	key = (struct file_id *)dbkey.dptr;
-	orig_num_locks = num_locks = value.dsize/sizeof(*locks);
-
-	/* Ensure the lock db is clean of entries from invalid processes. */
-
-	if (!validate_lock_entries(&num_locks, &locks, true)) {
-		TALLOC_FREE(locks);
-		return -1; /* Terminate traversal */
-	}
-
-	if (orig_num_locks != num_locks) {
-		if (num_locks) {
-			TDB_DATA data;
-			data.dptr = (uint8_t *)locks;
-			data.dsize = num_locks*sizeof(struct lock_struct);
-			dbwrap_record_store(rec, data, TDB_REPLACE);
-		} else {
-			dbwrap_record_delete(rec);
-		}
-	}
+	num_locks = value.dsize/sizeof(*locks);
 
 	if (cb->fn) {
 		for ( i=0; i<num_locks; i++) {
