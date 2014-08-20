@@ -696,7 +696,6 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 		torture_comment(tctx, "pid %u: open %d\n", (unsigned)getpid(), i);
 
 		smb_msleep(10 * msec);
-		i++;
 
 		status = smbcli_close(cli->tree, fnum);
 		torture_assert(tctx, !NT_STATUS_IS_ERR(status),
@@ -707,6 +706,8 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 					       smbcli_errstr(cli->tree)));
 
 		smb_msleep(2 * msec);
+
+		i++;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
