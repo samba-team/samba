@@ -127,7 +127,7 @@ bool run_cleanup2(int dummy)
 	/*
 	 * Check the file is indeed locked
 	 */
-	if (!torture_open_connection(&cli2, 0)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		return false;
 	}
 	status = cli_ntcreate(
