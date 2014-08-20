@@ -24,13 +24,6 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 
-#define ALL_SECURITY_INFORMATION (SECINFO_OWNER|SECINFO_GROUP|\
-					SECINFO_DACL|SECINFO_SACL|\
-					SECINFO_UNPROTECTED_SACL|\
-					SECINFO_UNPROTECTED_DACL|\
-					SECINFO_PROTECTED_SACL|\
-					SECINFO_PROTECTED_DACL)
-
 /* Map generic permissions to file object specific permissions */
 
 const struct generic_mapping file_generic_mapping = {
@@ -46,21 +39,32 @@ const struct generic_mapping file_generic_mapping = {
 
 uint32_t get_sec_info(const struct security_descriptor *sd)
 {
-	uint32_t sec_info = ALL_SECURITY_INFORMATION;
+	uint32_t sec_info = 0;
 
 	SMB_ASSERT(sd);
 
-	if (sd->owner_sid == NULL) {
-		sec_info &= ~SECINFO_OWNER;
+	if (sd->owner_sid != NULL) {
+		sec_info |= SECINFO_OWNER;
 	}
-	if (sd->group_sid == NULL) {
-		sec_info &= ~SECINFO_GROUP;
+	if (sd->group_sid != NULL) {
+		sec_info |= SECINFO_GROUP;
 	}
-	if (sd->sacl == NULL) {
-		sec_info &= ~SECINFO_SACL;
+	if (sd->sacl != NULL) {
+		sec_info |= SECINFO_SACL;
 	}
-	if (sd->dacl == NULL) {
-		sec_info &= ~SECINFO_DACL;
+	if (sd->dacl != NULL) {
+		sec_info |= SECINFO_DACL;
+	}
+
+	if (sd->type & SEC_DESC_SACL_PROTECTED) {
+		sec_info |= SECINFO_PROTECTED_SACL;
+	} else if (sd->type & SEC_DESC_SACL_AUTO_INHERITED) {
+		sec_info |= SECINFO_UNPROTECTED_SACL;
+	}
+	if (sd->type & SEC_DESC_DACL_PROTECTED) {
+		sec_info |= SECINFO_PROTECTED_DACL;
+	} else if (sd->type & SEC_DESC_DACL_AUTO_INHERITED) {
+		sec_info |= SECINFO_UNPROTECTED_DACL;
 	}
 
 	return sec_info;
