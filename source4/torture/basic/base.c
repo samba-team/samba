@@ -665,27 +665,55 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 
 	while (i < 4) {
 		int fnum = -1;
+		int j = 1;
 
 		do {
 			struct timeval tv;
 			tv = timeval_current();
+
+			torture_comment(tctx,
+					"pid %u: create[%d,%d]...\n",
+					(unsigned)getpid(), i, j);
+
 			fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
 						     SEC_RIGHTS_FILE_ALL,
 						     FILE_ATTRIBUTE_NORMAL, 
 						     NTCREATEX_SHARE_ACCESS_NONE,
 						     NTCREATEX_DISP_OPEN_IF, 0, 0);
+			status = smbcli_nt_error(cli->tree);
+
+			torture_comment(tctx,
+					"pid %u: create[%d,%d] gave fnum %d, status %s\n",
+					(unsigned)getpid(), i, j, fnum,
+					nt_errstr(status));
+
 			if (fnum != -1) {
 				break;
 			}
-			if (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 				double e = timeval_elapsed(&tv);
+
+				torture_comment(tctx, "pid %u: create[%d,%d] "
+						"time elapsed: %.2f (1 sec = %.2f)\n",
+						(unsigned)getpid(), i, j, e, sec);
 				if (e < (0.5 * sec) || e > ((1.5 * sec) + 1)) {
+					torture_comment(tctx, "pid %u: create[%d,%d] "
+							"timing incorrect\n",
+							(unsigned)getpid(), i, j);
 					torture_result(tctx, TORTURE_FAIL, "Timing incorrect %.2f violation 1 sec == %.2f\n",
 						e, sec);
 					return false;
 				}
 			}
-		} while (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION));
+
+			j++;
+
+		} while (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
+
+		torture_comment(tctx,
+				"pid %u: create loop %d done: fnum %d, status %s\n",
+				(unsigned)getpid(), i, fnum, nt_errstr(status));
 
 		torture_assert(tctx, fnum != -1,
 			       talloc_asprintf(tctx,
@@ -698,6 +726,10 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 		smb_msleep(10 * msec);
 
 		status = smbcli_close(cli->tree, fnum);
+
+		torture_comment(tctx, "pid %u: open %d closed, status %s\n",
+				(unsigned)getpid(), i, nt_errstr(status));
+
 		torture_assert(tctx, !NT_STATUS_IS_ERR(status),
 			       talloc_asprintf(tctx,
 					       "pid %u: Failed to close %s, "
