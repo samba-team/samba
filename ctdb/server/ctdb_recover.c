@@ -54,13 +54,10 @@ int
 ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
-	int i;
 
-	for(i=1; i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
-			DEBUG(DEBUG_ERR,("Attempt to set vnnmap when not frozen\n"));
-			return -1;
-		}
+	if (!ctdb_db_all_frozen(ctdb)) {
+		DEBUG(DEBUG_ERR,("Attempt to set vnnmap when not frozen\n"));
+		return -1;
 	}
 
 	talloc_free(ctdb->vnn_map);
@@ -252,7 +249,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 		return -1;
 	}
 
-	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
+	if (!ctdb_db_prio_frozen(ctdb, ctdb_db->priority)) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
 		return -1;
 	}
@@ -324,7 +321,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
+	if (!ctdb_db_prio_frozen(ctdb, ctdb_db->priority)) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_push_db when not frozen\n"));
 		return -1;
 	}

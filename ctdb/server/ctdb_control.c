@@ -110,16 +110,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_STATISTICS: {
-		int i;
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->statistics.memory_used = talloc_total_size(NULL);
 		ctdb->statistics.num_clients = ctdb->num_clients;
-		ctdb->statistics.frozen = 0;
-		for (i=1; i<= NUM_DB_PRIORITIES; i++) {
-			if (ctdb->freeze_mode[i] == CTDB_FREEZE_FROZEN) {
-				ctdb->statistics.frozen = 1;
-			}
-		}
+		ctdb->statistics.frozen = (ctdb_db_all_frozen(ctdb) ? 1 : 0);
 		ctdb->statistics.recovering = (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE);
 		ctdb->statistics.statistics_current_time = timeval_current();
 

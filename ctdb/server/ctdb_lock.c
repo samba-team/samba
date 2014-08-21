@@ -196,11 +196,10 @@ int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 	/*
 	 * This function is only used by the main dameon during recovery.
 	 * At this stage, the databases have already been locked, by a
-	 * dedicated child process. The freeze_mode variable is used to track
-	 * whether the actual locks are held by the child process or not.
+	 * dedicated child process.
 	 */
 
-	if (ctdb->freeze_mode[priority] != CTDB_FREEZE_FROZEN) {
+	if (!ctdb_db_prio_frozen(ctdb, priority)) {
 		DEBUG(DEBUG_ERR, ("Attempt to mark all databases locked when not frozen\n"));
 		return -1;
 	}
@@ -256,11 +255,10 @@ int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority)
 	/*
 	 * This function is only used by the main daemon during recovery.
 	 * At this stage, the databases have already been locked, by a
-	 * dedicated child process. The freeze_mode variable is used to track
-	 * whether the actual locks are held by the child process or not.
+	 * dedicated child process.
 	 */
 
-	if (ctdb->freeze_mode[priority] != CTDB_FREEZE_FROZEN) {
+	if (!ctdb_db_prio_frozen(ctdb, priority)) {
 		DEBUG(DEBUG_ERR, ("Attempt to unmark all databases locked when not frozen\n"));
 		return -1;
 	}

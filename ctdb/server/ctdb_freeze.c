@@ -351,13 +351,12 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
  */
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 {
-	int i, ret;
+	int ret;
 
-	for (i=1;i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
-			return -1;
-		}
+	if (!ctdb_db_all_frozen(ctdb)) {
+		DEBUG(DEBUG_ERR, (__location__
+		      " failing transaction start while not frozen\n"));
+		return -1;
 	}
 
 	ret = ctdb_db_iterator(ctdb, db_transaction_start_handler,
@@ -394,11 +393,10 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 	int healthy_nodes = 0;
 	int ret;
 
-	for (i=1;i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
-			return -1;
-		}
+	if (!ctdb_db_all_frozen(ctdb)) {
+		DEBUG(DEBUG_ERR, (__location__
+		      " failing transaction commit while not frozen\n"));
+		return -1;
 	}
 
 	if (!ctdb->freeze_transaction_started) {
