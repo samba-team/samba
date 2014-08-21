@@ -582,12 +582,19 @@ static void sigcont(int sig)
 {
 }
 
-double torture_create_procs(struct torture_context *tctx, 
-							bool (*fn)(struct torture_context *, struct smbcli_state *, int), bool *result)
+struct child_status {
+	pid_t pid;
+	bool start;
+	enum torture_result result;
+	char reason[1024];
+};
+
+double torture_create_procs(struct torture_context *tctx,
+	bool (*fn)(struct torture_context *, struct smbcli_state *, int),
+	bool *result)
 {
 	int i, status;
-	volatile pid_t *child_status;
-	volatile bool *child_status_out;
+	struct child_status *child_status;
 	int synccount;
 	int tries = 8;
 	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
@@ -600,21 +607,15 @@ double torture_create_procs(struct torture_context *tctx,
 
 	signal(SIGCONT, sigcont);
 
-	child_status = (volatile pid_t *)anonymous_shared_allocate(sizeof(pid_t)*torture_nprocs);
-	if (!child_status) {
+	child_status = (struct child_status *)anonymous_shared_allocate(
+				sizeof(struct child_status)*torture_nprocs);
+	if (child_status == NULL) {
 		printf("Failed to setup shared memory\n");
 		return -1;
 	}
 
-	child_status_out = (volatile bool *)anonymous_shared_allocate(sizeof(bool)*torture_nprocs);
-	if (!child_status_out) {
-		printf("Failed to setup result status shared memory\n");
-		return -1;
-	}
-
 	for (i = 0; i < torture_nprocs; i++) {
-		child_status[i] = 0;
-		child_status_out[i] = true;
+		ZERO_STRUCT(child_status[i]);
 	}
 
 	tv = timeval_current();
@@ -623,6 +624,7 @@ double torture_create_procs(struct torture_context *tctx,
 		procnum = i;
 		if (fork() == 0) {
 			char *myname;
+			bool ok;
 
 			pid_t mypid = getpid();
 			srandom(((int)mypid) ^ ((int)time(NULL)));
@@ -646,17 +648,45 @@ double torture_create_procs(struct torture_context *tctx,
 				smb_msleep(100);	
 			}
 
-			child_status[i] = getpid();
+			child_status[i].pid = getpid();
 
 			pause();
 
-			if (child_status[i]) {
+			if (!child_status[i].start) {
+				child_status[i].result = TORTURE_ERROR;
 				printf("Child %d failed to start!\n", i);
-				child_status_out[i] = 1;
 				_exit(1);
 			}
 
-			child_status_out[i] = fn(tctx, current_cli, i);
+			ok = fn(tctx, current_cli, i);
+			if (!ok) {
+				if (tctx->last_result == TORTURE_OK) {
+					torture_result(tctx, TORTURE_ERROR,
+						"unknown error: missing "
+						"torture_result call?\n");
+				}
+
+				child_status[i].result = tctx->last_result;
+
+				if (strlen(tctx->last_reason) > 1023) {
+					/* note: reason already contains \n */
+					torture_comment(tctx,
+						"child %d (pid %u) failed: %s",
+						i,
+						(unsigned)child_status[i].pid,
+						tctx->last_reason);
+				}
+
+				snprintf(child_status[i].reason,
+					 1024, "child %d (pid %u) failed: %s",
+					 i, (unsigned)child_status[i].pid,
+					 tctx->last_reason);
+				/* ensure proper "\n\0" termination: */
+				if (child_status[i].reason[1022] != '\0') {
+					child_status[i].reason[1022] = '\n';
+					child_status[i].reason[1023] = '\0';
+				}
+			}
 			_exit(0);
 		}
 	}
@@ -664,9 +694,13 @@ double torture_create_procs(struct torture_context *tctx,
 	do {
 		synccount = 0;
 		for (i=0;i<torture_nprocs;i++) {
-			if (child_status[i]) synccount++;
+			if (child_status[i].pid != 0) {
+				synccount++;
+			}
 		}
-		if (synccount == torture_nprocs) break;
+		if (synccount == torture_nprocs) {
+			break;
+		}
 		smb_msleep(100);
 	} while (timeval_elapsed(&tv) < start_time_limit);
 
@@ -675,8 +709,8 @@ double torture_create_procs(struct torture_context *tctx,
 
 		/* cleanup child processes */
 		for (i = 0; i < torture_nprocs; i++) {
-			if (child_status[i]) {
-				kill(child_status[i], SIGTERM);
+			if (child_status[i].pid != 0) {
+				kill(child_status[i].pid, SIGTERM);
 			}
 		}
 
@@ -689,7 +723,7 @@ double torture_create_procs(struct torture_context *tctx,
 	/* start the client load */
 	tv = timeval_current();
 	for (i=0;i<torture_nprocs;i++) {
-		child_status[i] = 0;
+		child_status[i].start = true;
 	}
 
 	printf("%d clients started\n", torture_nprocs);
@@ -705,12 +739,15 @@ double torture_create_procs(struct torture_context *tctx,
 	}
 
 	printf("\n");
-	
+
 	for (i=0;i<torture_nprocs;i++) {
-		if (!child_status_out[i]) {
+		if (child_status[i].result != TORTURE_OK) {
 			*result = false;
+			torture_result(tctx, child_status[i].result,
+				       "%s", child_status[i].reason);
 		}
 	}
+
 	return timeval_elapsed(&tv);
 }
 
