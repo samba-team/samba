@@ -267,7 +267,7 @@ def build(bld):
                                           include/ctdb_typesafe_cb.h''',
                         deps='replace popt talloc tevent tdb')
 
-    bld.SAMBA_BINARY('bin/ctdbd',
+    bld.SAMBA_BINARY('ctdbd',
                      source='',
                      deps='''ctdb-server ctdb-client ctdb-common
                              ctdb-common-util ctdb-system ctdb-tcp
@@ -276,26 +276,26 @@ def build(bld):
                      install_path='${SBINDIR}',
                      manpages='doc/ctdbd.1')
 
-    bld.SAMBA_BINARY('bin/ctdb',
+    bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c tools/ctdb_vacuum.c',
                      deps='''ctdb-client ctdb-common ctdb-common-util
                              ctdb-system ctdb-util ctdb-util-misc''',
                      install_path='${BINDIR}',
                      manpages='doc/ctdb.1')
 
-    bld.SAMBA_BINARY('bin/ltdbtool',
+    bld.SAMBA_BINARY('ltdbtool',
                      source='tools/ltdbtool.c',
                      includes='include',
                      deps='tdb',
                      install_path='${BINDIR}',
                      manpages='doc/ltdbtool.1')
 
-    bld.SAMBA_BINARY('bin/ctdb_lock_helper',
+    bld.SAMBA_BINARY('ctdb_lock_helper',
                      source='server/ctdb_lock_helper.c',
                      deps='ctdb-util ctdb-util-misc ctdb-common-util talloc tdb',
                      install_path='${BINDIR}')
 
-    bld.SAMBA_BINARY('bin/ctdb_event_helper',
+    bld.SAMBA_BINARY('ctdb_event_helper',
                      source='server/ctdb_event_helper.c',
                      includes='include include/internal',
                      deps='ctdb-util ctdb-util-misc ctdb-common-util replace tdb',
@@ -318,21 +318,21 @@ def build(bld):
                         target='utils/smnotify/gen_smnotify.c',
                         rule='rpcgen -l ${SRC} > ${TGT}')
 
-    bld.SAMBA_BINARY('bin/smnotify',
+    bld.SAMBA_BINARY('smnotify',
                      source=bld.SUBDIR('utils/smnotify',
                                        'smnotify.c gen_smnotify.c gen_xdr.c'),
                      deps='ctdb-smnotify-h ctdb-smnotify-c ctdb-smnotify-x popt',
                      includes='utils utils/smnotify',
                      install_path='${BINDIR}')
 
-    bld.SAMBA_BINARY('bin/ping_pong',
+    bld.SAMBA_BINARY('ping_pong',
                      source='utils/ping_pong/ping_pong.c',
                      deps='',
                      install_path='${BINDIR}',
                      manpages='doc/ping_pong.1')
 
     if bld.env.HAVE_PMDA:
-        bld.SAMBA_BINARY('bin/pmdactdb',
+        bld.SAMBA_BINARY('pmdactdb',
                          source='utils/pmda/pmda_ctdb.c',
                          includes='include include/internal',
                          deps='''ctdb-client ctdb-common ctdb-system
@@ -440,9 +440,8 @@ def build(bld):
         'ctdb_lock_tdb'
     ]
 
-    for t in ctdb_tests:
-        target = 'bin/' + t
-        src = 'tests/src/' + t + '.c'
+    for target in ctdb_tests:
+        src = 'tests/src/' + target + '.c'
 
         bld.SAMBA_BINARY(target,
                          source=src,
@@ -450,27 +449,27 @@ def build(bld):
                                  ctdb-system ctdb-util ctdb-util-misc''',
                          install_path='${CTDB_TEST_LIBDIR}')
 
-    bld.SAMBA_BINARY('bin/ctdb_takeover_tests',
+    bld.SAMBA_BINARY('ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='replace popt tdb tevent talloc ctdb-system' +
                           ib_deps,
                      includes='../include ../include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
-    bld.SAMBA_BINARY('bin/ctdb_functest',
+    bld.SAMBA_BINARY('ctdb_functest',
                      source='tests/src/ctdb_functest.c',
                      deps='replace tdb tevent talloc popt ctdb-system',
                      includes='../include ../include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
-    bld.SAMBA_BINARY('bin/ctdb_stubtest',
+    bld.SAMBA_BINARY('ctdb_stubtest',
                      source='tests/src/ctdb_test.c',
                      deps='replace tdb tevent talloc popt ctdb-system',
                      includes='../include ../include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     if bld.env.HAVE_INFINIBAND:
-        bld.SAMBA_BINARY('bin/ibwrapper_test',
+        bld.SAMBA_BINARY('ibwrapper_test',
                          source='ib/ibwrapper_test.c',
                          includes='include include/internal',
                          deps='''replace talloc ctdb-client ctdb-common
