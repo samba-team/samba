@@ -455,6 +455,11 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
+	if (smbXcli_conn_protocol(c->conn) >= PROTOCOL_SMB2_02) {
+		/* Ensure we ask for some initial credits. */
+		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
+	}
+
         username_used = *pp_username;
 
 	if (!NT_STATUS_IS_OK(cli_session_setup(c, username_used,
