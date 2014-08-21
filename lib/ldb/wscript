@@ -13,7 +13,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = srcdir + '/..'
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Options
+import wafsamba, samba_dist, Options, Utils
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent
@@ -85,7 +85,7 @@ def configure(conf):
 def build(bld):
     bld.RECURSE('lib/tevent')
 
-    if os.path.exists('third_party'):
+    if bld.CHECK_FOR_THIRD_PARTY():
         bld.RECURSE('third_party/popt')
 
     bld.RECURSE('lib/replace')
