@@ -403,13 +403,6 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 	}
 }
 
-static bool messaging_is_self_send(const struct messaging_context *msg_ctx,
-				   const struct server_id *dst)
-{
-	return ((msg_ctx->id.vnn == dst->vnn) &&
-		(msg_ctx->id.pid == dst->pid));
-}
-
 /*
   Send a message to a particular server
 */
@@ -455,9 +448,13 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (messaging_is_self_send(msg_ctx, &server)) {
+	if (server_id_same_process(&msg_ctx->id, &server)) {
 		struct messaging_rec rec;
 		uint8_t *buf;
+
+		/*
+		 * Self-send, directly dispatch
+		 */
 
 		buf = iov_buf(talloc_tos(), iov, iovlen);
 		if (buf == NULL) {
@@ -827,7 +824,7 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		if (messaging_is_self_send(msg_ctx, &rec->dest)) {
+		if (server_id_same_process(&rec->src, &rec->dest)) {
 			/*
 			 * This is a self-send. We are called here from
 			 * messaging_send(), and we don't want to directly
