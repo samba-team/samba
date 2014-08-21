@@ -1292,6 +1292,20 @@ bld.SAMBA3_BINARY('msgtest',
                  param''',
                  install=False)
 
+bld.SAMBA3_BINARY('msg_sink',
+                 source='torture/msg_sink.c',
+                 deps='''
+                 talloc
+                 param''',
+                 install=False)
+
+bld.SAMBA3_BINARY('msg_source',
+                 source='torture/msg_source.c',
+                 deps='''
+                 talloc
+                 param''',
+                 install=False)
+
 bld.SAMBA3_BINARY('smbcacls',
                  source='utils/smbcacls.c',
                  deps='''
