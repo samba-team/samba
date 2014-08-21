@@ -6,7 +6,7 @@ from samba_bundled import *
 
 @conf
 def CHECK_FOR_THIRD_PARTY(conf):
-    return os.path.exists('third_party')
+    return os.path.exists(os.path.join(Utils.g_module.srcdir, 'third_party'))
 
 Build.BuildContext.CHECK_FOR_THIRD_PARTY = CHECK_FOR_THIRD_PARTY
 
