@@ -20,17 +20,19 @@
 #include "includes.h"
 #include "librpc/gen_ndr/server_id.h"
 
+bool server_id_same_process(const struct server_id *p1,
+			    const struct server_id *p2)
+{
+	return ((p1->pid == p2->pid) && (p1->vnn == p2->vnn));
+}
+
 bool server_id_equal(const struct server_id *p1, const struct server_id *p2)
 {
-	if (p1->pid != p2->pid) {
+	if (!server_id_same_process(p1, p2)) {
 		return false;
 	}
 
 	if (p1->task_id != p2->task_id) {
-		return false;
-	}
-
-	if (p1->vnn != p2->vnn) {
 		return false;
 	}
 
