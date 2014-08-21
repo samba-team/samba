@@ -536,11 +536,11 @@ static void *pthreadpool_server(void *arg)
 			assert(res == 0);
 
 			job.fn(job.private_data);
-			written = write(sig_pipe, &job.id, sizeof(job.id));
 
 			res = pthread_mutex_lock(&pool->mutex);
 			assert(res == 0);
 
+			written = write(sig_pipe, &job.id, sizeof(job.id));
 			if (written != sizeof(int)) {
 				pthreadpool_server_exit(pool);
 				pthread_mutex_unlock(&pool->mutex);
