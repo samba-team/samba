@@ -212,7 +212,7 @@ def build(bld):
                                              ctdb_message.c cmdline.c rb_tree.c
                                              system_common.c ctdb_fork.c'''),
                         includes='include include/internal common . lib/util',
-                        deps='replace popt talloc tevent tdb')
+                        deps='replace popt talloc tevent tdb popt')
 
     bld.SAMBA_SUBSYSTEM('ctdb-common-util',
                         source=bld.SUBDIR('common',
