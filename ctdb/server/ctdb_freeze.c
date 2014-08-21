@@ -488,3 +488,32 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	return 0;
 }
+
+bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority)
+{
+	if (priority == 0) {
+		priority = 1;
+	}
+	if (priority > NUM_DB_PRIORITIES) {
+		DEBUG(DEBUG_ERR, ("Invalid DB priority specified\n"));
+		return false;
+	}
+
+	if (ctdb->freeze_mode[priority] != CTDB_FREEZE_FROZEN) {
+		return false;
+	}
+
+	return true;
+}
+
+bool ctdb_db_all_frozen(struct ctdb_context *ctdb)
+{
+	int i;
+
+	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
+			return false;
+		}
+	}
+	return true;
+}

@@ -997,6 +997,8 @@ void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_contr
 int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
 int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
 			  bool check_recmode);
+bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority);
+bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
 
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 void ctdb_stop_recoverd(struct ctdb_context *ctdb);
