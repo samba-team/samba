@@ -920,8 +920,6 @@ static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		map->sid_name_use = SID_NAME_DOM_GRP;
-
 		ZERO_STRUCT(id_map);
 		id_map.sid = sid;
 		id_maps[0] = &id_map;
