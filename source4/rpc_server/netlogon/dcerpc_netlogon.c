@@ -286,6 +286,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		flatname = ldb_msg_find_attr_as_string(msgs[0], "flatname", NULL);
 		if (!flatname) {
 			/* No flatname for this trust - we can't proceed */
+			DEBUG(3,("Couldn't find flatname for trust [%s] in samdb.\n",
+				 encoded_account));
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 		account_name = talloc_asprintf(mem_ctx, "%s$", flatname);
