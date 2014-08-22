@@ -1046,7 +1046,8 @@ class dc_join(object):
             "dn" : "cn=%s$,cn=users,%s" % (ctx.forest_domain_name, ctx.base_dn),
             "objectclass" : "user",
             "userAccountControl" : str(samba.dsdb.UF_INTERDOMAIN_TRUST_ACCOUNT),
-            "clearTextPassword" : ctx.trustdom_pass.encode('utf-16-le')
+            "clearTextPassword" : ctx.trustdom_pass.encode('utf-16-le'),
+            "samAccountName" : "%s$" % ctx.forest_domain_name
             }
         ctx.local_samdb.add(rec)
 
