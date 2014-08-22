@@ -29,6 +29,7 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
 from samba.provision.common import setup_path
 from samba.schema import Schema
+from samba import descriptor
 from samba.net import Net
 from samba.provision.sambadns import setup_bind9_dns
 from samba import read_and_sub_file
@@ -672,8 +673,8 @@ class dc_join(object):
         """add the various objects needed for the join, for subdomains post replication"""
 
         print "Adding %s" % ctx.partition_dn
-        # NOTE: windows sends a ntSecurityDescriptor here, we
-        # let it default
+        name_map = {'SubdomainAdmins': "%s-%s" % (str(ctx.domsid), security.DOMAIN_RID_ADMINS)}
+        sd_binary = descriptor.get_paritions_crossref_subdomain_descriptor(ctx.forestsid, name_map=name_map)
         rec = {
             "dn" : ctx.partition_dn,
             "objectclass" : "crossRef",
@@ -682,7 +683,10 @@ class dc_join(object):
             "nETBIOSName" : ctx.domain_name,
             "dnsRoot": ctx.dnsdomain,
             "trustParent" : ctx.parent_partition_dn,
-            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN)}
+            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN),
+            "ntSecurityDescriptor" : sd_binary,
+        }
+
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
 

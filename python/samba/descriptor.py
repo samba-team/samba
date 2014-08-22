@@ -361,6 +361,13 @@ def get_dns_domain_microsoft_dns_descriptor(domain_sid, name_map={}):
     "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)"
     return sddl2binary(sddl, domain_sid, name_map)
 
+def get_paritions_crossref_subdomain_descriptor(domain_sid, name_map={}):
+    sddl = "O:SubdomainAdminsG:SubdomainAdminsD:AI" \
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;SubdomainAdmins)"
+    "(A;;RPLCLORC;;;AU)"
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
 def get_wellknown_sds(samdb):
 
     # Then subcontainers
@@ -426,7 +433,6 @@ def get_wellknown_sds(samdb):
             subcontainers.append(c)
 
     return subcontainers
-
 
 def chunck_acl(acl):
     """Return separate ACE of an ACL
