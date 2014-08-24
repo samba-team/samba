@@ -22,7 +22,7 @@
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-o options</arg>
 		<arg choice="req">olddn</arg>
-		<arg choice="req">newdb</arg>
+		<arg choice="req">newdn</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
