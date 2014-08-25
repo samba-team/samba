@@ -16,6 +16,7 @@ from samba_patterns import *
 from samba_pidl import *
 from samba_autoproto import *
 from samba_python import *
+from samba_perl import *
 from samba_deps import *
 from samba_bundled import *
 import samba_install
