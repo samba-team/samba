@@ -65,7 +65,7 @@ ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
 	result = srvstr_push((char *)tmp, SVAL(tmp, smb_flg2),
 			     tmp + buf_size, str, grow_size, flags);
 
-	if (result == (size_t)-1) {
+	if (result == 0) {
 		DEBUG(0, ("srvstr_push failed\n"));
 		return -1;
 	}
