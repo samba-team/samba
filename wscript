@@ -93,7 +93,7 @@ def configure(conf):
 
     conf.RECURSE('lib/replace')
 
-    conf.find_program('perl', var='PERL', mandatory=True)
+    conf.SAMBA_CHECK_PERL(mandatory=True)
     conf.find_program('xsltproc', var='XSLTPROC')
 
     conf.SAMBA_CHECK_PYTHON(mandatory=True, version=(2,5,0))
