@@ -111,6 +111,11 @@ dynconfig = {
          'FHS-PATH':  '${PYTHONARCHDIR}',
          'OVERWRITE': True,
     },
+    'PERL_LIB_INSTALL_DIR' : {
+         'STD-PATH':  '${PERL_LIB_INSTALL_DIR}',
+         'FHS-PATH':  '${PERL_LIB_INSTALL_DIR}',
+         'OVERWRITE': True,
+    },
     'INCLUDEDIR' : {
          'STD-PATH':  '${INCLUDEDIR}',
          'FHS-PATH':  '${INCLUDEDIR}/samba-4.0',
