@@ -54,6 +54,18 @@ test_smbclient() {
 	return $status
 }
 
+do_kinit() {
+	file="$1"
+	password="$2"
+	shift
+	shift
+	if test -x $BINDIR/samba4kinit; then
+		$samba4kinit --password-file=$file --request-pac $@
+	else
+		echo $password | $samba4kinit $@
+	fi
+}
+
 UID_WRAPPER_ROOT=1
 export UID_WRAPPER_ROOT
 
@@ -71,7 +83,7 @@ export KRB5CCNAME
 
 echo $USERPASS > $PREFIX/tmpuserpassfile
 
-testit "kinit with user password" $samba4kinit --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password" do_kinit $PREFIX/tmpuserpassfile $USERPASS nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
@@ -79,7 +91,7 @@ NEWUSERPASS=testPaSS@01%
 testit "change user password with 'samba-tool user password' (unforced)" $VALGRIND $samba_tool user password -W$DOMAIN -U$DOMAIN/nettestuser%$USERPASS  -k no --newpassword=$NEWUSERPASS $@ || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > ./tmpuserpassfile
-testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password" do_kinit ./tmpuserpassfile $NEWUSERPASS nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
