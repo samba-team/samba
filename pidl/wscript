@@ -43,7 +43,7 @@ def configure(conf):
     conf.find_program('pod2man', var='POD2MAN')
 
 def build(bld):
-    bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=MODE_755)
+    bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=MODE_755, perl_fixup=True)
 
     bld.RECURSE('lib')
 
