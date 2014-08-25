@@ -488,13 +488,13 @@ static void *pthreadpool_server(void *arg)
 
 			job->fn(job->private_data);
 
+			res = pthread_mutex_lock(&pool->mutex);
+			assert(res == 0);
+
 			written = write(pool->sig_pipe[1], &job->id,
 					sizeof(int));
 
 			free(job);
-
-			res = pthread_mutex_lock(&pool->mutex);
-			assert(res == 0);
 
 			if (written != sizeof(int)) {
 				pthreadpool_server_exit(pool);
