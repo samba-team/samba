@@ -70,14 +70,16 @@ def configure(conf):
 
     # No need to build python bindings for talloc/tevent/tdb
     if conf.IN_LAUNCH_DIR():
+        conf.env.standalone_ctdb = True
         Options.options.disable_python = True
 
     conf.RECURSE('lib/replace')
 
-    conf.SAMBA_CHECK_PERL(mandatory=True)
+    if conf.env.standalone_ctdb:
+        conf.SAMBA_CHECK_PERL(mandatory=True)
 
-    conf.SAMBA_CHECK_PYTHON(mandatory=True, version=(2,5,0))
-    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
+        conf.SAMBA_CHECK_PYTHON(mandatory=True, version=(2,5,0))
+        conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
 
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party/popt')
@@ -196,45 +198,54 @@ def configure(conf):
 
     # Allow unified compilation and separate compilation of utilities
     # to find includes
-    if srcdir == '.':
-        # Building from tarball
-        conf.ADD_EXTRA_INCLUDES('#include')
-        conf.ADD_EXTRA_INCLUDES('#include/internal')
-    else:
-        # Building standalone CTDB from within Samba tree
+    if not conf.env.standalone_ctdb:
         conf.ADD_EXTRA_INCLUDES('#ctdb/include')
-        conf.ADD_EXTRA_INCLUDES('#ctdb/include/internal')
-        conf.ADD_EXTRA_INCLUDES('#ctdb')
-    conf.ADD_EXTRA_INCLUDES('#lib #lib/replace')
+    else:
+        if srcdir == '.':
+            # Building from tarball
+            conf.ADD_EXTRA_INCLUDES('#include')
+            conf.ADD_EXTRA_INCLUDES('#include/internal')
+        else:
+            # Building standalone CTDB from within Samba tree
+            conf.ADD_EXTRA_INCLUDES('#ctdb/include')
+            conf.ADD_EXTRA_INCLUDES('#ctdb/include/internal')
+            conf.ADD_EXTRA_INCLUDES('#ctdb')
+        conf.ADD_EXTRA_INCLUDES('#lib #lib/replace')
 
-    conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
+        conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
 
-    del(conf.env.defines['PYTHONDIR'])
-    del(conf.env.defines['PYTHONARCHDIR'])
+        del(conf.env.defines['PYTHONDIR'])
+        del(conf.env.defines['PYTHONARCHDIR'])
 
-    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
-    conf.DEFINE('SAMBA_UTIL_CORE_ONLY', 1, add_to_cflags=True)
-    conf.SAMBA_CONFIG_H()
+        conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+        conf.DEFINE('SAMBA_UTIL_CORE_ONLY', 1, add_to_cflags=True)
+        conf.SAMBA_CONFIG_H()
 
 
 def build(bld):
-    # enable building of public headers in the build tree
-    bld.env.build_public_headers = 'include/public'
+    if bld.env.standalone_ctdb:
+        # enable building of public headers in the build tree
+        bld.env.build_public_headers = 'include/public'
 
+    if bld.env.standalone_ctdb:
+        ctdb_mkversion = '../packaging/mkversion.sh'
+    else:
+        ctdb_mkversion = '../ctdb/packaging/mkversion.sh'
     t = bld.SAMBA_GENERATOR('ctdb-version-header',
                             target='include/ctdb_version.h',
-                            rule='../packaging/mkversion.sh ${TGT} %s' % (VERSION),
+                            rule='%s ${TGT} %s' % (ctdb_mkversion, VERSION),
                             dep_vars=['VERSION'])
     t.env.VERSION = VERSION
 
-    version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
-                                                         "version.h"),
-                                            bld.curdir)
-    t.bld.SAMBA_GENERATOR('ctdb-samba-version-header',
-                          target=version_h,
-                          rule='printf "#include \\"ctdb_version.h\\" \\n#define SAMBA_VERSION_STRING CTDB_VERSION_STRING\\n" > ${TGT}',
-                          dep_vars=['VERSION'])
-    t.env.VERSION = VERSION
+    if bld.env.standalone_ctdb:
+        version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
+                                                             "version.h"),
+                                                bld.curdir)
+        t.bld.SAMBA_GENERATOR('ctdb-samba-version-header',
+                              target=version_h,
+                              rule='printf "#include \\"ctdb_version.h\\" \\n#define SAMBA_VERSION_STRING CTDB_VERSION_STRING\\n" > ${TGT}',
+                              dep_vars=['VERSION'])
+        t.env.VERSION = VERSION
 
     bld.RECURSE('lib/replace')
     if bld.CHECK_FOR_THIRD_PARTY():
@@ -248,14 +259,15 @@ def build(bld):
     bld.RECURSE('lib/tdb')
     bld.RECURSE('lib/socket_wrapper')
 
-    # When a combined build is implemented, CTDB will wanted to build
-    # against samba-util rather than samba-util-core.  Similarly,
-    # other Samba subsystems expect samba-util.  So, for a standalone
-    # build, just define a fake samba-util subsystem that pulls in
-    # samba-util-core.
-    bld.SAMBA_SUBSYSTEM('samba-util',
-                        source='',
-                        deps='samba-util-core')
+    if bld.env.standalone_ctdb:
+        # In a combined build is implemented, CTDB will wanted to
+        # build against samba-util rather than samba-util-core.
+        # Similarly, other Samba subsystems expect samba-util.  So,
+        # for a standalone build, just define a fake samba-util
+        # subsystem that pulls in samba-util-core.
+        bld.SAMBA_SUBSYSTEM('samba-util',
+                            source='',
+                            deps='samba-util-core')
 
     bld.SAMBA_SUBSYSTEM('ctdb-tcp',
                         source=bld.SUBDIR('tcp',
