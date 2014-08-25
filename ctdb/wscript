@@ -276,6 +276,7 @@ def build(bld):
                      source='tools/ctdb.c tools/ctdb_vacuum.c',
                      deps='''ctdb-client ctdb-common ctdb-common-util
                              ctdb-system''',
+                     includes='include include/internal',
                      install_path='${BINDIR}',
                      manpages='doc/ctdb.1')
 
@@ -289,6 +290,7 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb_lock_helper',
                      source='server/ctdb_lock_helper.c',
                      deps='ctdb-util ctdb-util-misc ctdb-common-util talloc tdb',
+                     includes='include include/internal',
                      install_path='${BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_event_helper',
@@ -443,6 +445,7 @@ def build(bld):
 
         bld.SAMBA_BINARY(target,
                          source=src,
+                         includes='include include/internal',
                          deps='''ctdb-client ctdb-common ctdb-common-util
                                  ctdb-system''',
                          install_path='${CTDB_TEST_LIBDIR}')
@@ -451,19 +454,19 @@ def build(bld):
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='replace popt tdb tevent talloc ctdb-system' +
                           ib_deps,
-                     includes='../include ../include/internal lib/util',
+                     includes='include include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_functest',
                      source='tests/src/ctdb_functest.c',
                      deps='replace tdb tevent talloc popt ctdb-system',
-                     includes='../include ../include/internal lib/util',
+                     includes='include include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_stubtest',
                      source='tests/src/ctdb_test.c',
                      deps='replace tdb tevent talloc popt ctdb-system',
-                     includes='../include ../include/internal lib/util',
+                     includes='include include/internal lib/util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     if bld.env.HAVE_INFINIBAND:
