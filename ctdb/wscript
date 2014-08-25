@@ -196,6 +196,12 @@ def configure(conf):
 
 
 def build(bld):
+    t = bld.SAMBA_GENERATOR('ctdb-version-header',
+                            target='include/ctdb_version.h',
+                            rule='../packaging/mkversion.sh ${TGT} %s' % (VERSION),
+                            dep_vars=['VERSION'])
+    t.env.VERSION = VERSION
+
     bld.RECURSE('lib/replace')
     if bld.CHECK_FOR_THIRD_PARTY():
         bld.RECURSE('third_party/popt')
@@ -207,12 +213,6 @@ def build(bld):
     bld.RECURSE('lib/tevent')
     bld.RECURSE('lib/tdb')
     bld.RECURSE('lib/socket_wrapper')
-
-    t = bld.SAMBA_GENERATOR('ctdb-version-header',
-                            target='include/ctdb_version.h',
-                            rule='../packaging/mkversion.sh ${TGT} %s' % (VERSION),
-                            dep_vars=['VERSION'])
-    t.env.VERSION = VERSION
 
     bld.SAMBA_SUBSYSTEM('ctdb-tcp',
                         source=bld.SUBDIR('tcp',
