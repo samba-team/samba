@@ -28,7 +28,7 @@ fi
 
 samba_tool="$samba4bindir/samba-tool"
 smbpasswd="$samba4bindir/smbpasswd"
-rkpty="$samba4bindir/rkpty"
+texpect="$samba4bindir/texpect"
 samba4kpasswd=kpasswd
 if test -x $BINDIR/samba4kpasswd; then
 	samba4kpasswd=$BINDIR/samba4kpasswd
@@ -120,7 +120,7 @@ NEWUSERPASS=testPaSS@02%
 #expect password mismatch
 #EOF
 #
-#testit "change user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+#testit "change user password with kpasswd" $texpect ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
 
 
 echo "check that a weak password is rejected"
@@ -134,7 +134,7 @@ send ${WEAKPASS}\n
 expect Password does not meet complexity requirements
 EOF
 
-testit "change to weak user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+testit "change to weak user password with kpasswd" $texpect ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
 
 echo "check that a short password is rejected"
 cat > ./tmpkpasswdscript <<EOF
@@ -147,7 +147,7 @@ send xx1\n
 expect Password too short
 EOF
 
-testit "change to short user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+testit "change to short user password with kpasswd" $texpect ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
 
 
 echo "check that a strong new password is accepted"
@@ -161,7 +161,7 @@ send ${NEWUSERPASS}\n
 expect Success
 EOF
 
-testit "change user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+testit "change user password with kpasswd" $texpect ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos (unforced)" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
 
@@ -175,7 +175,7 @@ expect Retype new SMB password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "set user password with smbpasswd" $rkpty ./tmpsmbpasswdscript $smbpasswd -L -c $PREFIX/dc/etc/smb.conf nettestuser || failed=`expr $failed + 1`
+testit "set user password with smbpasswd" $texpect ./tmpsmbpasswdscript $smbpasswd -L -c $PREFIX/dc/etc/smb.conf nettestuser || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' -k no -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
@@ -205,7 +205,7 @@ send ${NEWUSERPASS}\n
 expect Success
 EOF
 
-testit "change user password with kpasswd (after must change flag set)" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+testit "change user password with kpasswd (after must change flag set)" $texpect ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user kerberos" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
@@ -225,7 +225,7 @@ expect Retype new SMB password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "change user password with smbpasswd (after must change flag set)" $rkpty ./tmpsmbpasswdscript $smbpasswd -r $SERVER  -c $PREFIX/dc/etc/smb.conf -U nettestuser || failed=`expr $failed + 1`
+testit "change user password with smbpasswd (after must change flag set)" $texpect ./tmpsmbpasswdscript $smbpasswd -r $SERVER  -c $PREFIX/dc/etc/smb.conf -U nettestuser || failed=`expr $failed + 1`
 
 USERPASS=$NEWUSERPASS
 
