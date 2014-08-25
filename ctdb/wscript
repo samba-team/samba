@@ -202,6 +202,15 @@ def build(bld):
                             dep_vars=['VERSION'])
     t.env.VERSION = VERSION
 
+    version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
+                                                         "version.h"),
+                                            bld.curdir)
+    t.bld.SAMBA_GENERATOR('ctdb-samba-version-header',
+                          target=version_h,
+                          rule='printf "#include \\"ctdb_version.h\\" \\n#define SAMBA_VERSION_STRING CTDB_VERSION_STRING\\n" > ${TGT}',
+                          dep_vars=['VERSION'])
+    t.env.VERSION = VERSION
+
     bld.RECURSE('lib/replace')
     if bld.CHECK_FOR_THIRD_PARTY():
         bld.RECURSE('third_party/popt')
