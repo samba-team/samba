@@ -735,7 +735,7 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
             destname = os.path.basename(destname)
     dest = os.path.join(destdir, destname)
     if python_fixup:
-        # fixup the python path it will use to find Samba modules
+        # fix the path python will use to find Samba modules
         inst_file = file + '.inst'
         bld.SAMBA_GENERATOR('python_%s' % destname,
                             rule=copy_and_fix_python_path,
