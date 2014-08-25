@@ -712,8 +712,6 @@ def copy_and_fix_python_path(task):
         replacement="""sys.path.insert(0, "%s")
 sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
 
-    shebang = None
-
     if task.env["PYTHON"][0] == "/":
         replacement_shebang = "#!%s\n" % task.env["PYTHON"]
     else:
