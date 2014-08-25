@@ -209,6 +209,229 @@ static bool test_dlz_bind9_spnego(struct torture_context *tctx)
 	return test_dlz_bind9_gensec(tctx, "GSS-SPNEGO");
 }
 
+struct test_expected_record {
+	const char *name;
+	const char *type;
+	const char *data;
+	int ttl;
+	bool printed;
+};
+
+struct test_expected_rr {
+	struct torture_context *tctx;
+	const char *query_name;
+	size_t num_records;
+	struct test_expected_record *records;
+	size_t num_rr;
+};
+
+static bool dlz_bind9_putnamedrr_torture_hook(struct test_expected_rr *expected,
+					      const char *name,
+					      const char *type,
+					      dns_ttl_t ttl,
+					      const char *data)
+{
+	size_t i;
+
+	torture_assert(expected->tctx, name != NULL,
+		       talloc_asprintf(expected->tctx,
+		       "Got unnamed record type[%s] data[%s]\n",
+		       type, data));
+
+	expected->num_rr++;
+	torture_comment(expected->tctx, "%u: name[%s] type[%s] ttl[%u] data[%s]\n",
+			(unsigned)expected->num_rr, name, type, (unsigned)ttl, data);
+
+	for (i = 0; i < expected->num_records; i++) {
+		if (expected->records[i].name != NULL) {
+			if (strcmp(name, expected->records[i].name) != 0) {
+				continue;
+			}
+		}
+
+		if (strcmp(type, expected->records[i].type) != 0) {
+			continue;
+		}
+
+		if (expected->records[i].data != NULL) {
+			if (strcmp(data, expected->records[i].data) != 0) {
+				continue;
+			}
+		}
+
+		torture_assert_int_equal(expected->tctx, ttl,
+					 expected->records[i].ttl,
+					 talloc_asprintf(expected->tctx,
+					 "TTL did not match expectations for type %s",
+					 type));
+
+		expected->records[i].printed = true;
+	}
+
+	return true;
+}
+
+static isc_result_t dlz_bind9_putrr_hook(dns_sdlzlookup_t *lookup,
+					 const char *type,
+					 dns_ttl_t ttl,
+					 const char *data)
+{
+	struct test_expected_rr *expected =
+		talloc_get_type_abort(lookup, struct test_expected_rr);
+	bool ok;
+
+	ok = dlz_bind9_putnamedrr_torture_hook(expected, expected->query_name,
+					       type, ttl, data);
+	if (!ok) {
+		return ISC_R_FAILURE;
+	}
+
+	return ISC_R_SUCCESS;
+}
+
+static isc_result_t dlz_bind9_putnamedrr_hook(dns_sdlzallnodes_t *allnodes,
+					      const char *name,
+					      const char *type,
+					      dns_ttl_t ttl,
+					      const char *data)
+{
+	struct test_expected_rr *expected =
+		talloc_get_type_abort(allnodes, struct test_expected_rr);
+	bool ok;
+
+	ok = dlz_bind9_putnamedrr_torture_hook(expected, name, type, ttl, data);
+	if (!ok) {
+		return ISC_R_FAILURE;
+	}
+
+	return ISC_R_SUCCESS;
+}
+
+/*
+ * Tests some lookups
+ */
+static bool test_dlz_bind9_lookup(struct torture_context *tctx)
+{
+	size_t i;
+	void *dbdata;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		NULL
+	};
+	struct test_expected_rr *expected1 = NULL;
+	struct test_expected_rr *expected2 = NULL;
+
+	tctx_static = tctx;
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
+						  "log", dlz_bind9_log_wrapper,
+						  "writeable_zone", dlz_bind9_writeable_zone_hook,
+						  "putrr", dlz_bind9_putrr_hook,
+						  "putnamedrr", dlz_bind9_putnamedrr_hook,
+						  NULL),
+				 ISC_R_SUCCESS,
+				 "Failed to create samba_dlz");
+
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+						     ISC_R_SUCCESS,
+				 "Failed to configure samba_dlz");
+
+	expected1 = talloc_zero(tctx, struct test_expected_rr);
+	torture_assert(tctx, expected1 != NULL, "talloc failed");
+	expected1->tctx = tctx;
+
+	expected1->query_name = "@";
+
+	expected1->num_records = 4;
+	expected1->records = talloc_zero_array(expected1,
+					       struct test_expected_record,
+					       expected1->num_records);
+	torture_assert(tctx, expected1->records != NULL, "talloc failed");
+
+	expected1->records[0].name = expected1->query_name;
+	expected1->records[0].type = "soa";
+	expected1->records[0].ttl = 3600;
+	expected1->records[0].data = talloc_asprintf(expected1->records,
+				"%s.%s hostmaster.%s 1 900 600 86400 3600",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx),
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, expected1->records[0].data != NULL, "talloc failed");
+
+	expected1->records[1].name = expected1->query_name;
+	expected1->records[1].type = "ns";
+	expected1->records[1].ttl = 900;
+	expected1->records[1].data = talloc_asprintf(expected1->records, "%s.%s",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, expected1->records[1].data != NULL, "talloc failed");
+
+	expected1->records[2].name = expected1->query_name;
+	expected1->records[2].type = "aaaa";
+	expected1->records[2].ttl = 900;
+
+	expected1->records[3].name = expected1->query_name;
+	expected1->records[3].type = "a";
+	expected1->records[3].ttl = 900;
+
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Failed to lookup @");
+	for (i = 0; i < expected1->num_records; i++) {
+		torture_assert(tctx, expected1->records[i].printed,
+			       talloc_asprintf(tctx,
+			       "Failed to have putrr callback run for type %s",
+			       expected1->records[i].type));
+	}
+	torture_assert_int_equal(tctx, expected1->num_rr,
+				 expected1->num_records,
+				 "Got too much data");
+
+	expected2 = talloc_zero(tctx, struct test_expected_rr);
+	torture_assert(tctx, expected2 != NULL, "talloc failed");
+	expected2->tctx = tctx;
+
+	expected2->query_name = torture_setting_string(tctx, "host", NULL);
+	torture_assert(tctx, expected2->query_name != NULL, "unknown host");
+
+	expected2->num_records = 2;
+	expected2->records = talloc_zero_array(expected2,
+					       struct test_expected_record,
+					       expected2->num_records);
+	torture_assert(tctx, expected2->records != NULL, "talloc failed");
+
+	expected2->records[0].name = expected2->query_name;
+	expected2->records[0].type = "aaaa";
+	expected2->records[0].ttl = 900;
+
+	expected2->records[1].name = expected2->query_name;
+	expected2->records[1].type = "a";
+	expected2->records[1].ttl = 900;
+
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected2->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected2),
+				 ISC_R_SUCCESS,
+				 "Failed to lookup hostname");
+	for (i = 0; i < expected2->num_records; i++) {
+		torture_assert(tctx, expected2->records[i].printed,
+			       talloc_asprintf(tctx,
+			       "Failed to have putrr callback run name[%s] for type %s",
+			       expected2->records[i].name,
+			       expected2->records[i].type));
+	}
+	torture_assert_int_equal(tctx, expected2->num_rr,
+				 expected2->num_records,
+				 "Got too much data");
+
+	dlz_destroy(dbdata);
+
+	return true;
+}
+
 static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dlz_bind9");
@@ -220,6 +443,7 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "configure", test_dlz_bind9_configure);
 	torture_suite_add_simple_test(suite, "gssapi", test_dlz_bind9_gssapi);
 	torture_suite_add_simple_test(suite, "spnego", test_dlz_bind9_spnego);
+	torture_suite_add_simple_test(suite, "lookup", test_dlz_bind9_lookup);
 	return suite;
 }
 
