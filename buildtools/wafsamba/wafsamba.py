@@ -592,6 +592,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         dep_vars = vars.keys()
     elif isinstance(vars, list):
         dep_vars = vars
+    dep_vars.append('ruledeps')
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
@@ -603,7 +604,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         before='cc',
         ext_out='.c',
         samba_type='GENERATOR',
-        dep_vars = [rule] + dep_vars,
+        dep_vars = dep_vars,
         name=name)
 
     if always:
