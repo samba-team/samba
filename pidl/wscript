@@ -26,7 +26,7 @@ def check_system_perl_module(conf, module, version=None):
     return True
 
 def set_options(opt):
-    opt.tool_options('perl')
+    return
 
 def configure(conf):
     # Check if perl(Parse::Yapp::Driver) is available.
