@@ -1586,7 +1586,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				    char *base_data,
 				    char **ppdata,
 				    char *end_data,
-				    bool *out_of_space,
 				    uint64_t *last_entry_off)
 {
 	char *p, *q, *pdata = *ppdata;
@@ -1603,8 +1602,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	int off;
 	int pad = 0;
 	NTSTATUS status;
-
-	*out_of_space = false;
 
 	ZERO_STRUCT(mdate_ts);
 	ZERO_STRUCT(adate_ts);
@@ -1642,7 +1639,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	pad -= off;
 
 	if (pad && pad > space_remaining) {
-		*out_of_space = true;
 		DEBUG(9,("smbd_marshall_dir_entry: out of space "
 			"for padding (wanted %u, had %d)\n",
 			(unsigned int)pad,
@@ -1782,7 +1778,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		/* We need to determine if this entry will fit in the space available. */
 		/* Max string size is 255 bytes. */
 		if (PTR_DIFF(p + 255 + ea_len,pdata) > space_remaining) {
-			*out_of_space = true;
 			DEBUG(9,("smbd_marshall_dir_entry: out of space "
 				"(wanted %u, had %d)\n",
 				(unsigned int)PTR_DIFF(p + 255 + ea_len,pdata),
@@ -2202,7 +2197,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	}
 
 	if (PTR_DIFF(p,pdata) > space_remaining) {
-		*out_of_space = true;
 		DEBUG(9,("smbd_marshall_dir_entry: out of space "
 			"(wanted %u, had %d)\n",
 			(unsigned int)PTR_DIFF(p,pdata),
@@ -2306,11 +2300,11 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 				     base_data,
 				     ppdata,
 				     end_data,
-				     out_of_space,
 				     &last_entry_off);
 	TALLOC_FREE(fname);
 	TALLOC_FREE(smb_fname);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		*out_of_space = true;
 		dptr_SeekDir(dirptr, prev_dirpos);
 		return false;
 	}
