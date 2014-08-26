@@ -144,3 +144,38 @@ interface netinterface
 		fsctl_sockaddr_storage sockaddr;
 	} fsctl_net_iface_info;
 }
+
+interface sparse
+{
+	/* MS-FSCC 2.3.33 FSCTL_QUERY_ALLOCATED_RANGES Request */
+	typedef [public] struct {
+		hyper file_off;
+		hyper len;
+	} file_alloced_range_buf;
+
+	typedef [public] struct {
+		file_alloced_range_buf buf;
+	} fsctl_query_alloced_ranges_req;
+
+	/*
+	 * 2.3.34 FSCTL_QUERY_ALLOCATED_RANGES Reply
+	 * ...
+	 * The number of FILE_ALLOCATED_RANGE_BUFFER elements returned is
+	 * computed by dividing the size of the returned output buffer (from
+	 * either SMB or SMB2, the lower-layer protocol that carries the FSCTL)
+	 * by the size of the FILE_ALLOCATED_RANGE_BUFFER element.
+	 */
+	typedef [public] struct {
+		file_alloced_range_buf *array;
+	} fsctl_query_alloced_ranges_rsp;
+
+	/* 2.3.65 FSCTL_SET_ZERO_DATA Request */
+	typedef [public] struct {
+		hyper file_off;
+		hyper beyond_final_zero;
+	} file_zero_data_info;
+
+	typedef [public] struct {
+		file_zero_data_info info;
+	} fsctl_set_zero_data_req;
+}
