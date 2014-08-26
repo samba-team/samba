@@ -27,6 +27,7 @@ if test -x $BINDIR/samba4kinit; then
 fi
 
 samba_tool="$samba4bindir/samba-tool"
+net_tool="$samba4bindir/net"
 smbpasswd="$samba4bindir/smbpasswd"
 texpect="$samba4bindir/texpect"
 samba4kpasswd=kpasswd
@@ -248,6 +249,20 @@ testit "allow short passwords (length 1)" $VALGRIND $samba_tool domain passwords
 
 testit "try to set a short password (command should succeed)" $VALGRIND $samba_tool user password -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no --newpassword="$NEWUSERPASS" $@ || failed=`expr $failed + 1`
 USERPASS="$NEWUSERPASS"
+
+# test kpasswd via net ads password (change variant)
+NEWUSERPASS="testPaSS@10%"
+testit "change user password with 'net ads password', admin: $DOMAIN/nettestuser, target: nettestuser@$REALM" $VALGRIND $net_tool ads password -W$DOMAIN -Unettestuser@$REALM%$USERPASS nettestuser@$REALM "$NEWUSERPASS" $@ || failed=`expr $failed + 1`
+USERPASS="$NEWUSERPASS"
+
+test_smbclient "Test login with smbclient" 'ls' -k no -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
+
+# test kpasswd via net ads password (admin set variant)
+NEWUSERPASS="testPaSS@11%"
+testit "set user password with 'net ads password', admin: $DOMAIN/$USERNAME, target: nettestuser@$REALM" $VALGRIND $net_tool ads password -W$DOMAIN -U$USERNAME@$REALM%$PASSWORD nettestuser@$REALM "$NEWUSERPASS" $@ || failed=`expr $failed + 1`
+USERPASS="$NEWUSERPASS"
+
+test_smbclient "Test login with smbclient" 'ls' -k no -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
 
 testit "require minimum password age of 1 day" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --min-pwd-age=1 || failed=`expr $failed + 1`
 
