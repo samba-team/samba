@@ -537,6 +537,522 @@ static bool test_dlz_bind9_zonedump(struct torture_context *tctx)
 	return true;
 }
 
+/*
+ * Test some updates
+ */
+static bool test_dlz_bind9_update01(struct torture_context *tctx)
+{
+	NTSTATUS status;
+	struct gensec_security *gensec_client_context;
+	DATA_BLOB client_to_server, server_to_client;
+	void *dbdata;
+	void *version = NULL;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		NULL
+	};
+	struct test_expected_rr *expected1 = NULL;
+	char *name = NULL;
+	char *data0 = NULL;
+	char *data1 = NULL;
+	char *data2 = NULL;
+	bool ret = false;
+
+	tctx_static = tctx;
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
+						  "log", dlz_bind9_log_wrapper,
+						  "writeable_zone", dlz_bind9_writeable_zone_hook,
+						  "putrr", dlz_bind9_putrr_hook,
+						  "putnamedrr", dlz_bind9_putnamedrr_hook,
+						  NULL),
+				 ISC_R_SUCCESS,
+				 "Failed to create samba_dlz");
+
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+						     ISC_R_SUCCESS,
+				 "Failed to configure samba_dlz");
+
+	expected1 = talloc_zero(tctx, struct test_expected_rr);
+	torture_assert(tctx, expected1 != NULL, "talloc failed");
+	expected1->tctx = tctx;
+
+	expected1->query_name = __func__;
+
+	name = talloc_asprintf(expected1, "%s.%s",
+				expected1->query_name,
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, name != NULL, "talloc failed");
+
+	expected1->num_records = 2;
+	expected1->records = talloc_zero_array(expected1,
+					       struct test_expected_record,
+					       expected1->num_records);
+	torture_assert(tctx, expected1->records != NULL, "talloc failed");
+
+	expected1->records[0].name = expected1->query_name;
+	expected1->records[0].type = "a";
+	expected1->records[0].ttl = 3600;
+	expected1->records[0].data = "127.1.2.3";
+	expected1->records[0].printed = false;
+
+	data0 = talloc_asprintf(expected1,
+				"%s.\t" "%u\t" "%s\t" "%s\t" "%s",
+				name,
+				(unsigned)expected1->records[0].ttl,
+				"in",
+				expected1->records[0].type,
+				expected1->records[0].data);
+	torture_assert(tctx, data0 != NULL, "talloc failed");
+
+	expected1->records[1].name = expected1->query_name;
+	expected1->records[1].type = "a";
+	expected1->records[1].ttl = 3600;
+	expected1->records[1].data = "127.3.2.1";
+	expected1->records[1].printed = false;
+
+	data1 = talloc_asprintf(expected1,
+				"%s.\t" "%u\t" "%s\t" "%s\t" "%s",
+				name,
+				(unsigned)expected1->records[1].ttl,
+				"in",
+				expected1->records[1].type,
+				expected1->records[1].data);
+	torture_assert(tctx, data1 != NULL, "talloc failed");
+
+	data2 = talloc_asprintf(expected1,
+				"%s.\t" "0\t" "in\t" "a\t" "127.3.3.3",
+				name);
+	torture_assert(tctx, data2 != NULL, "talloc failed");
+
+	/*
+	 * Prepare session info
+	 */
+	status = gensec_client_start(tctx, &gensec_client_context,
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
+
+	/*
+	 * dlz_bind9 use the special dns/host.domain account
+	 */
+	status = gensec_set_target_hostname(gensec_client_context,
+					    talloc_asprintf(tctx,
+				"%s.%s",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx)));
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
+
+	status = gensec_set_target_service(gensec_client_context, "dns");
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_service failed");
+
+	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
+
+	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSS-SPNEGO");
+	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
+
+	server_to_client = data_blob(NULL, 0);
+
+	/* Do one step of the client-server update dance */
+	status = gensec_update(gensec_client_context, tctx, server_to_client, &client_to_server);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
+		torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
+	}
+
+	torture_assert_int_equal(tctx, dlz_ssumatch(cli_credentials_get_username(cmdline_credentials),
+						    name,
+						    "127.0.0.1",
+						    expected1->records[0].type,
+						    "key",
+						    client_to_server.length,
+						    client_to_server.data,
+						    dbdata),
+				 ISC_TRUE,
+				 "Failed to check key for update rights samba_dlz");
+
+	/*
+	 * We test the following:
+	 *
+	 *  1. lookup the records => NOT_FOUND
+	 *  2. delete all records => NOT_FOUND
+	 *  3. delete 1st record => NOT_FOUND
+	 *  4. create 1st record => SUCCESS
+	 *  5. lookup the records => found 1st
+	 *  6. create 2nd record => SUCCESS
+	 *  7. lookup the records => found 1st and 2nd
+	 *  8. delete unknown record => NOT_FOUND
+	 *  9. lookup the records => found 1st and 2nd
+	 * 10. delete 1st record => SUCCESS
+	 * 11. lookup the records => found 2nd
+	 * 12. delete 2nd record => SUCCESS
+	 * 13. lookup the records => NOT_FOUND
+	 * 14. create 1st record => SUCCESS
+	 * 15. lookup the records => found 1st
+	 * 16. create 2nd record => SUCCESS
+	 * 17. lookup the records => found 1st and 2nd
+	 * 18. update 1st record => SUCCESS
+	 * 19. lookup the records => found 1st and 2nd
+	 * 20. delete all unknown type records => NOT_FOUND
+	 * 21. lookup the records => found 1st and 2nd
+	 * 22. delete all records => SUCCESS
+	 * 23. lookup the records => NOT_FOUND
+	 */
+
+	/* Step 1. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_NOTFOUND,
+				 "Found hostname");
+	torture_assert_int_equal(tctx, expected1->num_rr, 0,
+				 "Got wrong record count");
+
+	/* Step 2. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_delrdataset(name,
+					expected1->records[0].type,
+					dbdata, version),
+			ISC_R_NOTFOUND, ret, cancel_version,
+			talloc_asprintf(tctx, "Deleted name[%s] type[%s]\n",
+			name, expected1->records[0].type));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), false, dbdata, &version);
+
+	/* Step 3. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_subrdataset(name, data0, dbdata, version),
+			ISC_R_NOTFOUND, ret, cancel_version,
+			talloc_asprintf(tctx, "Deleted name[%s] data[%s]\n",
+			name, data0));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), false, dbdata, &version);
+
+	/* Step 4. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_addrdataset(name, data0, dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to add name[%s] data[%s]\n",
+			name, data0));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 5. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[0].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[0].name,
+		       expected1->records[0].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 1,
+				 "Got wrong record count");
+
+	/* Step 6. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_addrdataset(name, data1, dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to add name[%s] data[%s]\n",
+			name, data1));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 7. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[0].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[0].name,
+		       expected1->records[0].type));
+	torture_assert(tctx, expected1->records[1].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[1].name,
+		       expected1->records[1].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 2,
+				 "Got wrong record count");
+
+	/* Step 8. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_subrdataset(name, data2, dbdata, version),
+			ISC_R_NOTFOUND, ret, cancel_version,
+			talloc_asprintf(tctx, "Deleted name[%s] data[%s]\n",
+			name, data2));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 9. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[0].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[0].name,
+		       expected1->records[0].type));
+	torture_assert(tctx, expected1->records[1].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[1].name,
+		       expected1->records[1].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 2,
+				 "Got wrong record count");
+
+	/* Step 10. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_subrdataset(name, data0, dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to delete name[%s] data[%s]\n",
+			name, data0));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 11. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[1].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[1].name,
+		       expected1->records[1].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 1,
+				 "Got wrong record count");
+
+	/* Step 12. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_subrdataset(name, data1, dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to delete name[%s] data[%s]\n",
+			name, data1));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 13. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_NOTFOUND,
+				 "Found hostname");
+	torture_assert_int_equal(tctx, expected1->num_rr, 0,
+				 "Got wrong record count");
+
+	/* Step 14. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_addrdataset(name, data0, dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to add name[%s] data[%s]\n",
+			name, data0));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 15. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[0].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[0].name,
+		       expected1->records[0].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 1,
+				 "Got wrong record count");
+
+	/* Step 16. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_addrdataset(name, data1, dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to add name[%s] data[%s]\n",
+			name, data1));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 17. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[0].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[0].name,
+		       expected1->records[0].type));
+	torture_assert(tctx, expected1->records[1].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[1].name,
+		       expected1->records[1].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 2,
+				 "Got wrong record count");
+
+	/* Step 18. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_addrdataset(name, data0, dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to update name[%s] data[%s]\n",
+			name, data0));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 19. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[0].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[0].name,
+		       expected1->records[0].type));
+	torture_assert(tctx, expected1->records[1].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[1].name,
+		       expected1->records[1].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 2,
+				 "Got wrong record count");
+
+	/* Step 20. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_delrdataset(name, "txt", dbdata, version),
+			ISC_R_FAILURE, ret, cancel_version,
+			talloc_asprintf(tctx, "Deleted name[%s] type[%s]\n",
+			name, "txt"));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), false, dbdata, &version);
+
+	/* Step 21. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Not found hostname");
+	torture_assert(tctx, expected1->records[0].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[0].name,
+		       expected1->records[0].type));
+	torture_assert(tctx, expected1->records[1].printed,
+		       talloc_asprintf(tctx,
+		       "Failed to have putrr callback run name[%s] for type %s",
+		       expected1->records[1].name,
+		       expected1->records[1].type));
+	torture_assert_int_equal(tctx, expected1->num_rr, 2,
+				 "Got wrong record count");
+
+	/* Step 22. */
+	torture_assert_int_equal(tctx, dlz_newversion(lpcfg_dnsdomain(tctx->lp_ctx),
+						      dbdata, &version),
+				 ISC_R_SUCCESS,
+				 "Failed to start transaction");
+	torture_assert_int_equal_goto(tctx,
+			dlz_delrdataset(name,
+					expected1->records[0].type,
+					dbdata, version),
+			ISC_R_SUCCESS, ret, cancel_version,
+			talloc_asprintf(tctx, "Failed to delete name[%s] type[%s]\n",
+			name, expected1->records[0].type));
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), true, dbdata, &version);
+
+	/* Step 23. */
+	expected1->num_rr = 0;
+	expected1->records[0].printed = false;
+	expected1->records[1].printed = false;
+	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
+						  expected1->query_name, dbdata,
+						  (dns_sdlzlookup_t *)expected1),
+				 ISC_R_NOTFOUND,
+				 "Found hostname");
+	torture_assert_int_equal(tctx, expected1->num_rr, 0,
+				 "Got wrong record count");
+
+	dlz_destroy(dbdata);
+
+	return true;
+
+cancel_version:
+	dlz_closeversion(lpcfg_dnsdomain(tctx->lp_ctx), false, dbdata, &version);
+	return ret;
+}
+
 static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dlz_bind9");
@@ -550,6 +1066,7 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "spnego", test_dlz_bind9_spnego);
 	torture_suite_add_simple_test(suite, "lookup", test_dlz_bind9_lookup);
 	torture_suite_add_simple_test(suite, "zonedump", test_dlz_bind9_zonedump);
+	torture_suite_add_simple_test(suite, "update01", test_dlz_bind9_update01);
 	return suite;
 }
 
