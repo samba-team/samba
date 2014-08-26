@@ -158,8 +158,18 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
-	status = gensec_set_target_hostname(gensec_client_context, torture_setting_string(tctx, "host", NULL));
+	/*
+	 * dlz_bind9 use the special dns/host.domain account
+	 */
+	status = gensec_set_target_hostname(gensec_client_context,
+					    talloc_asprintf(tctx,
+				"%s.%s",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx)));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
+
+	status = gensec_set_target_service(gensec_client_context, "dns");
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_service failed");
 
 	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
@@ -181,7 +191,7 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 						    client_to_server.length,
 						    client_to_server.data,
 						    dbdata),
-				 ISC_R_SUCCESS,
+				 ISC_TRUE,
 				 "Failed to check key for update rights samba_dlz");
 
 	dlz_destroy(dbdata);
