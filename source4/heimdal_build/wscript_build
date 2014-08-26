@@ -429,11 +429,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         deps='LIBREPLACE_HOSTCC',
         )
 
-    HEIMDAL_BINARY('rkpty', 'lib/roken/rkpty.c',
-            deps='roken',
-            install=False
-        )
-
 if not bld.CONFIG_SET("USING_SYSTEM_KDC"):
     HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
         'lib/asn1/kx509.asn1',
