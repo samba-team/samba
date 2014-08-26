@@ -432,6 +432,111 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 	return true;
 }
 
+/*
+ * Test some zone dumps
+ */
+static bool test_dlz_bind9_zonedump(struct torture_context *tctx)
+{
+	size_t i;
+	void *dbdata;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		NULL
+	};
+	struct test_expected_rr *expected1 = NULL;
+
+	tctx_static = tctx;
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
+						  "log", dlz_bind9_log_wrapper,
+						  "writeable_zone", dlz_bind9_writeable_zone_hook,
+						  "putrr", dlz_bind9_putrr_hook,
+						  "putnamedrr", dlz_bind9_putnamedrr_hook,
+						  NULL),
+				 ISC_R_SUCCESS,
+				 "Failed to create samba_dlz");
+
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+						     ISC_R_SUCCESS,
+				 "Failed to configure samba_dlz");
+
+	expected1 = talloc_zero(tctx, struct test_expected_rr);
+	torture_assert(tctx, expected1 != NULL, "talloc failed");
+	expected1->tctx = tctx;
+
+	expected1->num_records = 7;
+	expected1->records = talloc_zero_array(expected1,
+					       struct test_expected_record,
+					       expected1->num_records);
+	torture_assert(tctx, expected1->records != NULL, "talloc failed");
+
+	expected1->records[0].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[0].type = "soa";
+	expected1->records[0].ttl = 3600;
+	expected1->records[0].data = talloc_asprintf(expected1->records,
+				"%s.%s hostmaster.%s 1 900 600 86400 3600",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx),
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, expected1->records[0].data != NULL, "talloc failed");
+
+	expected1->records[1].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[1].type = "ns";
+	expected1->records[1].ttl = 900;
+	expected1->records[1].data = talloc_asprintf(expected1->records, "%s.%s",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, expected1->records[1].data != NULL, "talloc failed");
+
+	expected1->records[2].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[2].type = "aaaa";
+	expected1->records[2].ttl = 900;
+
+	expected1->records[3].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[3].type = "a";
+	expected1->records[3].ttl = 900;
+
+	expected1->records[4].name = talloc_asprintf(expected1->records, "%s.%s",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, expected1->records[4].name != NULL, "unknown host");
+	expected1->records[4].type = "aaaa";
+	expected1->records[4].ttl = 900;
+
+	expected1->records[5].name = talloc_asprintf(expected1->records, "%s.%s",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, expected1->records[5].name != NULL, "unknown host");
+	expected1->records[5].type = "a";
+	expected1->records[5].ttl = 900;
+
+	/*
+	 * We expect multiple srv records
+	 */
+	expected1->records[6].name = NULL;
+	expected1->records[6].type = "srv";
+	expected1->records[6].ttl = 900;
+
+	torture_assert_int_equal(tctx, dlz_allnodes(lpcfg_dnsdomain(tctx->lp_ctx),
+						    dbdata, (dns_sdlzallnodes_t *)expected1),
+				 ISC_R_SUCCESS,
+				 "Failed to configure samba_dlz");
+	for (i = 0; i < expected1->num_records; i++) {
+		torture_assert(tctx, expected1->records[i].printed,
+			       talloc_asprintf(tctx,
+			       "Failed to have putrr callback run name[%s] for type %s",
+			       expected1->records[i].name,
+			       expected1->records[i].type));
+	}
+	torture_assert_int_equal(tctx, expected1->num_rr, 24,
+				 "Got wrong record count");
+
+	dlz_destroy(dbdata);
+
+	return true;
+}
+
 static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dlz_bind9");
@@ -444,6 +549,7 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "gssapi", test_dlz_bind9_gssapi);
 	torture_suite_add_simple_test(suite, "spnego", test_dlz_bind9_spnego);
 	torture_suite_add_simple_test(suite, "lookup", test_dlz_bind9_lookup);
+	torture_suite_add_simple_test(suite, "zonedump", test_dlz_bind9_zonedump);
 	return suite;
 }
 
