@@ -1570,7 +1570,7 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 	return true;
 }
 
-static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
+static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				    connection_struct *conn,
 				    uint16_t flags2,
 				    uint32_t info_level,
@@ -1647,7 +1647,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			"for padding (wanted %u, had %d)\n",
 			(unsigned int)pad,
 			space_remaining ));
-		return false; /* Not finished - just out of space */
+		return STATUS_MORE_ENTRIES; /* Not finished - just out of space */
 	}
 
 	off += pad;
@@ -1689,7 +1689,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		if (flags2 & FLAGS2_UNICODE_STRINGS) {
 			if (len > 2) {
@@ -1730,7 +1730,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  p, fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE | STR_NOALIGN, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		if (flags2 & FLAGS2_UNICODE_STRINGS) {
 			if (len > 2) {
@@ -1757,7 +1757,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_EA_LIST\n"));
 		if (!name_list) {
-			return false;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		if (requires_resume_key) {
 			SIVAL(p,0,reskey);
@@ -1787,7 +1787,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				"(wanted %u, had %d)\n",
 				(unsigned int)PTR_DIFF(p + 255 + ea_len,pdata),
 				space_remaining ));
-			return False; /* Not finished - just out of space */
+			return STATUS_MORE_ENTRIES; /* Not finished - just out of space */
 		}
 
 		/* Push the ea_data followed by the name. */
@@ -1797,7 +1797,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  p + 1, fname, PTR_DIFF(end_data, p+1),
 				  STR_TERMINATE | STR_NOALIGN, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		if (flags2 & FLAGS2_UNICODE_STRINGS) {
 			if (len > 2) {
@@ -1855,7 +1855,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 					  p+2, mangled_name, 24,
 					  STR_UPPER|STR_UNICODE, &len);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 			if (len < 24) {
 				memset(p + 2 + len,'\0',24 - len);
@@ -1869,7 +1869,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		SIVAL(q,0,len);
 		p += len;
@@ -1908,7 +1908,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  p + 4, fname, PTR_DIFF(end_data, p+4),
 				  STR_TERMINATE_ASCII, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		SIVAL(p,0,len);
 		p += 4 + len;
@@ -1954,7 +1954,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		SIVAL(q, 0, len);
 		p += len;
@@ -1989,7 +1989,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		SIVAL(p, -4, len);
 		p += len;
@@ -2039,7 +2039,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		SIVAL(q, 0, len);
 		p += len;
@@ -2100,7 +2100,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 					  p+2, mangled_name, 24,
 					  STR_UPPER|STR_UNICODE, &len);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 			SSVAL(p, 0, len);
 			if (len < 24) {
@@ -2117,7 +2117,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII, &len);
 		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+			return status;
 		}
 		SIVAL(q,0,len);
 		p += len;
@@ -2158,7 +2158,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 					  fname, PTR_DIFF(end_data, p),
 					  STR_TERMINATE, &len);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 		} else {
 			DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
@@ -2169,7 +2169,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			status = srvstr_push(base_data, flags2, p, fname,
 					  PTR_DIFF(end_data, p), 0, &len);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 			SIVAL(nameptr, 0, len);
 		}
@@ -2198,7 +2198,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		break;
 
 	default:
-		return false;
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	if (PTR_DIFF(p,pdata) > space_remaining) {
@@ -2207,7 +2207,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			"(wanted %u, had %d)\n",
 			(unsigned int)PTR_DIFF(p,pdata),
 			space_remaining ));
-		return false; /* Not finished - just out of space */
+		return STATUS_MORE_ENTRIES; /* Not finished - just out of space */
 	}
 
 	/* Setup the last entry pointer, as an offset from base_data */
@@ -2215,7 +2215,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	/* Advance the data pointer to the next slot */
 	*ppdata = p;
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
@@ -2248,6 +2248,7 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	struct smbd_dirptr_lanman2_state state;
 	bool ok;
 	uint64_t last_entry_off = 0;
+	NTSTATUS status;
 
 	ZERO_STRUCT(state);
 	state.conn = conn;
@@ -2289,7 +2290,7 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 
 	*got_exact_match = state.got_exact_match;
 
-	ok = smbd_marshall_dir_entry(ctx,
+	status = smbd_marshall_dir_entry(ctx,
 				     conn,
 				     flags2,
 				     info_level,
@@ -2309,11 +2310,11 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 				     &last_entry_off);
 	TALLOC_FREE(fname);
 	TALLOC_FREE(smb_fname);
-	if (*out_of_space) {
+	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		dptr_SeekDir(dirptr, prev_dirpos);
 		return false;
 	}
-	if (!ok) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
