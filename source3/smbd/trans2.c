@@ -2313,7 +2313,7 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
+static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				struct dptr_struct *dirptr,
 				uint16 flags2,
@@ -2327,23 +2327,19 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				char *base_data,
 				char *end_data,
 				int space_remaining,
-				bool *out_of_space,
 				bool *got_exact_match,
 				int *last_entry_off,
 				struct ea_list *name_list)
 {
 	uint8_t align = 4;
 	const bool do_pad = true;
-	NTSTATUS status;
-
-	*out_of_space = false;
 
 	if (info_level >= 1 && info_level <= 3) {
 		/* No alignment on earlier info levels. */
 		align = 1;
 	}
 
-	status = smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
+	return smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
 					 path_mask, dirtype, info_level,
 					 requires_resume_key, dont_descend, ask_sharemode,
 					 align, do_pad,
@@ -2351,10 +2347,6 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					 space_remaining,
 					 got_exact_match,
 					 last_entry_off, name_list);
-	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-		*out_of_space = true;
-	}
-	return NT_STATUS_IS_OK(status);
 }
 
 /****************************************************************************
@@ -2628,7 +2620,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			out_of_space = True;
 			finished = False;
 		} else {
-			finished = !get_lanman2_dir_entry(ctx,
+			ntstatus = get_lanman2_dir_entry(ctx,
 					conn,
 					dirptr,
 					req->flags2,
@@ -2636,13 +2628,23 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					requires_resume_key,dont_descend,
 					ask_sharemode,
 					&p,pdata,data_end,
-					space_remaining, &out_of_space,
+					space_remaining,
 					&got_exact_match,
 					&last_entry_off, ea_list);
+			if (NT_STATUS_EQUAL(ntstatus,
+					NT_STATUS_ILLEGAL_CHARACTER)) {
+				/*
+				 * Bad character conversion on name. Ignore this
+				 * entry.
+				 */
+				continue;
+			}
+			if (NT_STATUS_EQUAL(ntstatus, STATUS_MORE_ENTRIES)) {
+				out_of_space = true;
+			} else {
+				finished = !NT_STATUS_IS_OK(ntstatus);
+			}
 		}
-
-		if (finished && out_of_space)
-			finished = False;
 
 		if (!finished && !out_of_space)
 			numentries++;
@@ -3004,7 +3006,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			out_of_space = True;
 			finished = False;
 		} else {
-			finished = !get_lanman2_dir_entry(ctx,
+			ntstatus = get_lanman2_dir_entry(ctx,
 						conn,
 						dirptr,
 						req->flags2,
@@ -3012,13 +3014,23 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 						requires_resume_key,dont_descend,
 						ask_sharemode,
 						&p,pdata,data_end,
-						space_remaining, &out_of_space,
+						space_remaining,
 						&got_exact_match,
 						&last_entry_off, ea_list);
+			if (NT_STATUS_EQUAL(ntstatus,
+					NT_STATUS_ILLEGAL_CHARACTER)) {
+				/*
+				 * Bad character conversion on name. Ignore this
+				 * entry.
+				 */
+				continue;
+			}
+			if (NT_STATUS_EQUAL(ntstatus, STATUS_MORE_ENTRIES)) {
+				out_of_space = true;
+			} else {
+				finished = !NT_STATUS_IS_OK(ntstatus);
+			}
 		}
-
-		if (finished && out_of_space)
-			finished = False;
 
 		if (!finished && !out_of_space)
 			numentries++;
