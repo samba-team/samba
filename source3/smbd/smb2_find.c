@@ -432,14 +432,13 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 				     true);
 
 	while (true) {
-		bool ok;
 		bool got_exact_match = false;
 		bool out_of_space = false;
 		int space_remaining = in_output_buffer_length - off;
 
 		SMB_ASSERT(space_remaining >= 0);
 
-		ok = smbd_dirptr_lanman2_entry(state,
+		status = smbd_dirptr_lanman2_entry(state,
 					       conn,
 					       fsp->dptr,
 					       smbreq->flags2,
@@ -462,12 +461,18 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 
 		off = (int)PTR_DIFF(pdata, base_data);
 
-		if (!ok) {
-			if (num > 0) {
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ILLEGAL_CHARACTER)) {
+				/*
+				 * Bad character conversion on name. Ignore this
+				 * entry.
+				 */
+				continue;
+			} else if (num > 0) {
 				SIVAL(state->out_output_buffer.data, last_entry_off, 0);
 				tevent_req_done(req);
 				return tevent_req_post(req, ev);
-			} else if (out_of_space) {
+			} else if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 				tevent_req_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
 				return tevent_req_post(req, ev);
 			} else {

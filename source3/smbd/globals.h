@@ -185,7 +185,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   uint32_t *_mode,
 			   long *_prev_offset);
 
-bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
+NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       connection_struct *conn,
 			       struct dptr_struct *dirptr,
 			       uint16 flags2,

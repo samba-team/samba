@@ -2212,7 +2212,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
+NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       connection_struct *conn,
 			       struct dptr_struct *dirptr,
 			       uint16 flags2,
@@ -2279,7 +2279,7 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 				   &mode,
 				   &prev_dirpos);
 	if (!ok) {
-		return false;
+		return NT_STATUS_END_OF_FILE;
 	}
 
 	*got_exact_match = state.got_exact_match;
@@ -2306,14 +2306,14 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		*out_of_space = true;
 		dptr_SeekDir(dirptr, prev_dirpos);
-		return false;
+		return status;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		return status;
 	}
 
 	*_last_entry_off = last_entry_off;
-	return true;
+	return NT_STATUS_OK;
 }
 
 static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
@@ -2337,13 +2337,14 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 {
 	uint8_t align = 4;
 	const bool do_pad = true;
+	NTSTATUS status;
 
 	if (info_level >= 1 && info_level <= 3) {
 		/* No alignment on earlier info levels. */
 		align = 1;
 	}
 
-	return smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
+	status = smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
 					 path_mask, dirtype, info_level,
 					 requires_resume_key, dont_descend, ask_sharemode,
 					 align, do_pad,
@@ -2351,6 +2352,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					 space_remaining,
 					 out_of_space, got_exact_match,
 					 last_entry_off, name_list);
+	return NT_STATUS_IS_OK(status);
 }
 
 /****************************************************************************
