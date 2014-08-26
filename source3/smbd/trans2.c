@@ -1469,6 +1469,31 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 
 	/* Mangle fname if it's an illegal name. */
 	if (mangle_must_mangle(dname, state->conn->params)) {
+		/*
+		 * Slow path - ensure we can push the original name as UCS2. If
+		 * not, then just don't return this name.
+		 */
+		NTSTATUS status;
+		size_t ret_len = 0;
+		size_t len = (strlen(dname) + 2) * 4; /* Allow enough space. */
+		uint8_t *tmp = talloc_array(talloc_tos(),
+					uint8,
+					len);
+
+		status = srvstr_push(NULL,
+			FLAGS2_UNICODE_STRINGS,
+			tmp,
+			dname,
+			len,
+			STR_TERMINATE,
+			&ret_len);
+
+		TALLOC_FREE(tmp);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
+
 		ok = name_to_8_3(dname, mangled_name,
 				 true, state->conn->params);
 		if (!ok) {

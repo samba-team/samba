@@ -1215,6 +1215,30 @@ static bool smbd_dirptr_8_3_match_fn(TALLOC_CTX *ctx,
 	    mangle_mask_match(conn, dname, mask)) {
 		char mname[13];
 		const char *fname;
+		/*
+		 * Ensure we can push the original name as UCS2. If
+		 * not, then just don't return this name.
+		 */
+		NTSTATUS status;
+		size_t ret_len = 0;
+		size_t len = (strlen(dname) + 2) * 4; /* Allow enough space. */
+		uint8_t *tmp = talloc_array(talloc_tos(),
+					uint8,
+					len);
+
+		status = srvstr_push(NULL,
+			FLAGS2_UNICODE_STRINGS,
+			tmp,
+			dname,
+			len,
+			STR_TERMINATE,
+			&ret_len);
+
+		TALLOC_FREE(tmp);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 
 		if (!mangle_is_8_3(dname, false, conn->params)) {
 			bool ok = name_to_8_3(dname, mname, false,
