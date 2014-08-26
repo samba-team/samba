@@ -433,7 +433,6 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 
 	while (true) {
 		bool got_exact_match = false;
-		bool out_of_space = false;
 		int space_remaining = in_output_buffer_length - off;
 
 		SMB_ASSERT(space_remaining >= 0);
@@ -454,7 +453,6 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 					       base_data,
 					       end_data,
 					       space_remaining,
-					       &out_of_space,
 					       &got_exact_match,
 					       &last_entry_off,
 					       NULL);

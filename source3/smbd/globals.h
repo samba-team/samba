@@ -201,7 +201,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       char *base_data,
 			       char *end_data,
 			       int space_remaining,
-			       bool *out_of_space,
 			       bool *got_exact_match,
 			       int *_last_entry_off,
 			       struct ea_list *name_list);

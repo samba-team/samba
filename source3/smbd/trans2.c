@@ -2228,7 +2228,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       char *base_data,
 			       char *end_data,
 			       int space_remaining,
-			       bool *out_of_space,
 			       bool *got_exact_match,
 			       int *_last_entry_off,
 			       struct ea_list *name_list)
@@ -2251,7 +2250,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	state.has_wild = dptr_has_wild(dirptr);
 	state.got_exact_match = false;
 
-	*out_of_space = false;
 	*got_exact_match = false;
 
 	p = strrchr_m(path_mask,'/');
@@ -2304,7 +2302,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	TALLOC_FREE(fname);
 	TALLOC_FREE(smb_fname);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-		*out_of_space = true;
 		dptr_SeekDir(dirptr, prev_dirpos);
 		return status;
 	}
@@ -2339,6 +2336,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	const bool do_pad = true;
 	NTSTATUS status;
 
+	*out_of_space = false;
+
 	if (info_level >= 1 && info_level <= 3) {
 		/* No alignment on earlier info levels. */
 		align = 1;
@@ -2350,8 +2349,11 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					 align, do_pad,
 					 ppdata, base_data, end_data,
 					 space_remaining,
-					 out_of_space, got_exact_match,
+					 got_exact_match,
 					 last_entry_off, name_list);
+	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		*out_of_space = true;
+	}
 	return NT_STATUS_IS_OK(status);
 }
 
