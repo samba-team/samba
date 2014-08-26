@@ -1594,7 +1594,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	uint64_t file_size = 0;
 	uint64_t allocation_size = 0;
 	uint64_t file_index = 0;
-	uint32_t len;
+	size_t len = 0;
 	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
 	char *nameptr;
@@ -3077,7 +3077,8 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 int *ret_data_len)
 {
 	char *pdata, *end_data;
-	int data_len = 0, len;
+	int data_len = 0;
+	size_t len = 0;
 	const char *vname = volume_label(talloc_tos(), SNUM(conn));
 	int snum = SNUM(conn);
 	const char *fstype = lp_fstype(SNUM(conn));
@@ -3187,9 +3188,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 				STR_NOALIGN|STR_TERMINATE);
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
-			DEBUG(5,("smbd_do_qfsinfo : time = %x, namelen = %d, name = %s\n",
+			DEBUG(5,("smbd_do_qfsinfo : time = %x, namelen = %u, name = %s\n",
 				 (unsigned)convert_timespec_to_time_t(st.st_ex_ctime),
-				 len, vname));
+				 (unsigned)len, vname));
 			break;
 
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
@@ -4426,6 +4427,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	uint64_t allocation_size = 0;
 	uint64_t file_index = 0;
 	uint32_t access_mask = 0;
+	size_t len = 0;
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		return NT_STATUS_INVALID_LEVEL;
@@ -4727,7 +4729,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_ALT_NAME_INFO:
 		case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 		{
-			int len;
 			char mangled_name[13];
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALTERNATE_NAME_INFORMATION\n"));
 			if (!name_to_8_3(base_name,mangled_name,
@@ -4746,7 +4747,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_QUERY_FILE_NAME_INFO:
 		{
-			int len;
 			/*
 			  this must be *exactly* right for ACLs on mapped drives to work
 			 */
@@ -4777,7 +4777,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_ALL_INFO:
 		case SMB_FILE_ALL_INFORMATION:
 		{
-			int len;
 			unsigned int ea_size =
 			    estimate_ea_size(conn, fsp, smb_fname);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
@@ -4810,7 +4809,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case 0xFF12:/*SMB2_FILE_ALL_INFORMATION*/
 		{
-			int len;
 			unsigned int ea_size =
 			    estimate_ea_size(conn, fsp, smb_fname);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_FILE_ALL_INFORMATION\n"));
@@ -5010,7 +5008,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
-				int len;
+				int link_len = 0;
 				char *buffer = talloc_array(mem_ctx, char, PATH_MAX+1);
 
 				if (!buffer) {
@@ -5025,13 +5023,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 #else
 				return NT_STATUS_DOS(ERRDOS, ERRbadlink);
 #endif
-				len = SMB_VFS_READLINK(conn,
+				link_len = SMB_VFS_READLINK(conn,
 						       smb_fname->base_name,
 						       buffer, PATH_MAX);
-				if (len == -1) {
+				if (link_len == -1) {
 					return map_nt_error_from_unix(errno);
 				}
-				buffer[len] = 0;
+				buffer[link_len] = 0;
 				len = srvstr_push(dstart, flags2,
 						  pdata, buffer,
 						  PTR_DIFF(dend, pdata),
