@@ -1602,6 +1602,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	bool was_8_3;
 	int off;
 	int pad = 0;
+	NTSTATUS status;
 
 	*out_of_space = false;
 
@@ -1684,9 +1685,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		if (flags2 & FLAGS2_UNICODE_STRINGS) {
 			p += ucs2_align(base_data, p, 0);
 		}
-		len = srvstr_push(base_data, flags2, p,
+		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
-				  STR_TERMINATE);
+				  STR_TERMINATE, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		if (flags2 & FLAGS2_UNICODE_STRINGS) {
 			if (len > 2) {
 				SCVAL(nameptr, -1, len - 2);
@@ -1722,9 +1726,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		}
 		p += 27;
 		nameptr = p - 1;
-		len = srvstr_push(base_data, flags2,
+		status = srvstr_push(base_data, flags2,
 				  p, fname, PTR_DIFF(end_data, p),
-				  STR_TERMINATE | STR_NOALIGN);
+				  STR_TERMINATE | STR_NOALIGN, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		if (flags2 & FLAGS2_UNICODE_STRINGS) {
 			if (len > 2) {
 				len -= 2;
@@ -1747,7 +1754,6 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	{
 		struct ea_list *file_list = NULL;
 		size_t ea_len = 0;
-		NTSTATUS status;
 
 		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_EA_LIST\n"));
 		if (!name_list) {
@@ -1787,9 +1793,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		/* Push the ea_data followed by the name. */
 		p += fill_ea_buffer(ctx, p, space_remaining, conn, name_list);
 		nameptr = p;
-		len = srvstr_push(base_data, flags2,
+		status = srvstr_push(base_data, flags2,
 				  p + 1, fname, PTR_DIFF(end_data, p+1),
-				  STR_TERMINATE | STR_NOALIGN);
+				  STR_TERMINATE | STR_NOALIGN, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		if (flags2 & FLAGS2_UNICODE_STRINGS) {
 			if (len > 2) {
 				len -= 2;
@@ -1842,9 +1851,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				memset(mangled_name,'\0',12);
 			}
 			mangled_name[12] = 0;
-			len = srvstr_push(base_data, flags2,
+			status = srvstr_push(base_data, flags2,
 					  p+2, mangled_name, 24,
-					  STR_UPPER|STR_UNICODE);
+					  STR_UPPER|STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
 			if (len < 24) {
 				memset(p + 2 + len,'\0',24 - len);
 			}
@@ -1853,9 +1865,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			memset(p,'\0',26);
 		}
 		p += 2 + 24;
-		len = srvstr_push(base_data, flags2, p,
+		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
-				  STR_TERMINATE_ASCII);
+				  STR_TERMINATE_ASCII, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		SIVAL(q,0,len);
 		p += len;
 
@@ -1889,9 +1904,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SOFF_T(p,0,file_size); p += 8;
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,mode); p += 4;
-		len = srvstr_push(base_data, flags2,
+		status = srvstr_push(base_data, flags2,
 				  p + 4, fname, PTR_DIFF(end_data, p+4),
-				  STR_TERMINATE_ASCII);
+				  STR_TERMINATE_ASCII, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		SIVAL(p,0,len);
 		p += 4 + len;
 
@@ -1932,9 +1950,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,ea_size); /* Extended attributes */
 			p +=4;
 		}
-		len = srvstr_push(base_data, flags2, p,
+		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
-				  STR_TERMINATE_ASCII);
+				  STR_TERMINATE_ASCII, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		SIVAL(q, 0, len);
 		p += len;
 
@@ -1964,9 +1985,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		p += 4;
 		/* this must *not* be null terminated or w2k gets in a loop trying to set an
 		   acl on a dir (tridge) */
-		len = srvstr_push(base_data, flags2, p,
+		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
-				  STR_TERMINATE_ASCII);
+				  STR_TERMINATE_ASCII, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		SIVAL(p, -4, len);
 		p += len;
 
@@ -2011,9 +2035,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		p += 4;
 		SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
 		SBVAL(p,0,file_index); p += 8;
-		len = srvstr_push(base_data, flags2, p,
+		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
-				  STR_TERMINATE_ASCII);
+				  STR_TERMINATE_ASCII, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		SIVAL(q, 0, len);
 		p += len;
 
@@ -2069,9 +2096,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				memset(mangled_name,'\0',12);
 			}
 			mangled_name[12] = 0;
-			len = srvstr_push(base_data, flags2,
+			status = srvstr_push(base_data, flags2,
 					  p+2, mangled_name, 24,
-					  STR_UPPER|STR_UNICODE);
+					  STR_UPPER|STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
 			SSVAL(p, 0, len);
 			if (len < 24) {
 				memset(p + 2 + len,'\0',24 - len);
@@ -2083,9 +2113,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		p += 26;
 		SSVAL(p,0,0); p += 2; /* Reserved ? */
 		SBVAL(p,0,file_index); p += 8;
-		len = srvstr_push(base_data, flags2, p,
+		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
-				  STR_TERMINATE_ASCII);
+				  STR_TERMINATE_ASCII, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		SIVAL(q,0,len);
 		p += len;
 
@@ -2121,17 +2154,23 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_UNIX\n"));
 			p = store_file_unix_basic(conn, p,
 						NULL, &smb_fname->st);
-			len = srvstr_push(base_data, flags2, p,
+			status = srvstr_push(base_data, flags2, p,
 					  fname, PTR_DIFF(end_data, p),
-					  STR_TERMINATE);
+					  STR_TERMINATE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
 		} else {
 			DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
 			p = store_file_unix_basic_info2(conn, p,
 						NULL, &smb_fname->st);
 			nameptr = p;
 			p += 4;
-			len = srvstr_push(base_data, flags2, p, fname,
-					  PTR_DIFF(end_data, p), 0);
+			status = srvstr_push(base_data, flags2, p, fname,
+					  PTR_DIFF(end_data, p), 0, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
 			SIVAL(nameptr, 0, len);
 		}
 
@@ -3181,11 +3220,14 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			 * this call so try fixing this by adding a terminating null to
 			 * the pushed string. The change here was adding the STR_TERMINATE. JRA.
 			 */
-			len = srvstr_push(
+			status = srvstr_push(
 				pdata, flags2,
 				pdata+l2_vol_szVolLabel, vname,
 				PTR_DIFF(end_data, pdata+l2_vol_szVolLabel),
-				STR_NOALIGN|STR_TERMINATE);
+				STR_NOALIGN|STR_TERMINATE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
 			DEBUG(5,("smbd_do_qfsinfo : time = %x, namelen = %u, name = %s\n",
@@ -3218,9 +3260,12 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
 				and will think we can't do long filenames */
-			len = srvstr_push(pdata, flags2, pdata+12, fstype,
+			status = srvstr_push(pdata, flags2, pdata+12, fstype,
 					  PTR_DIFF(end_data, pdata+12),
-					  STR_UNICODE);
+					  STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			SIVAL(pdata,8,len);
 			data_len = 12 + len;
 			if (max_data_bytes >= 16 && data_len > max_data_bytes) {
@@ -3234,8 +3279,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 
 		case SMB_QUERY_FS_LABEL_INFO:
 		case SMB_FS_LABEL_INFORMATION:
-			len = srvstr_push(pdata, flags2, pdata+4, vname,
-					  PTR_DIFF(end_data, pdata+4), 0);
+			status = srvstr_push(pdata, flags2, pdata+4, vname,
+					  PTR_DIFF(end_data, pdata+4), 0, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			data_len = 4 + len;
 			SIVAL(pdata,0,len);
 			break;
@@ -3251,9 +3299,12 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 				(str_checksum(get_local_machine_name())<<16));
 
 			/* Max label len is 32 characters. */
-			len = srvstr_push(pdata, flags2, pdata+18, vname,
+			status = srvstr_push(pdata, flags2, pdata+18, vname,
 					  PTR_DIFF(end_data, pdata+18),
-					  STR_UNICODE);
+					  STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
 
@@ -4735,10 +4786,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 						True,conn->params)) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			len = srvstr_push(dstart, flags2,
+			status = srvstr_push(dstart, flags2,
 					  pdata+4, mangled_name,
 					  PTR_DIFF(dend, pdata+4),
-					  STR_UNICODE);
+					  STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
 			*fixed_portion = 8;
@@ -4750,10 +4804,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			/*
 			  this must be *exactly* right for ACLs on mapped drives to work
 			 */
-			len = srvstr_push(dstart, flags2,
+			status = srvstr_push(dstart, flags2,
 					  pdata+4, dos_fname,
 					  PTR_DIFF(dend, pdata+4),
-					  STR_UNICODE);
+					  STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_QUERY_FILE_NAME_INFO\n"));
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
@@ -4796,10 +4853,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			pdata += 24;
 			SIVAL(pdata,0,ea_size);
 			pdata += 4; /* EA info */
-			len = srvstr_push(dstart, flags2,
+			status = srvstr_push(dstart, flags2,
 					  pdata+4, dos_fname,
 					  PTR_DIFF(dend, pdata+4),
-					  STR_UNICODE);
+					  STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
@@ -4833,10 +4893,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			pdata += 0x60;
 
-			len = srvstr_push(dstart, flags2,
+			status = srvstr_push(dstart, flags2,
 					  pdata+4, dos_fname,
 					  PTR_DIFF(dend, pdata+4),
-					  STR_UNICODE);
+					  STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
@@ -5030,10 +5093,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 					return map_nt_error_from_unix(errno);
 				}
 				buffer[link_len] = 0;
-				len = srvstr_push(dstart, flags2,
+				status = srvstr_push(dstart, flags2,
 						  pdata, buffer,
 						  PTR_DIFF(dend, pdata),
-						  STR_TERMINATE);
+						  STR_TERMINATE, &len);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
 				pdata += len;
 				data_size = PTR_DIFF(pdata,(*ppdata));
 
@@ -8602,6 +8668,8 @@ static void call_trans2ioctl(connection_struct *conn,
 {
 	char *pdata = *ppdata;
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+15, 0));
+	NTSTATUS status;
+	size_t len = 0;
 
 	/* check for an invalid fid before proceeding */
 
@@ -8625,12 +8693,20 @@ static void call_trans2ioctl(connection_struct *conn,
 		/* Job number */
 		SSVAL(pdata, 0, print_spool_rap_jobid(fsp->print_file));
 
-		srvstr_push(pdata, req->flags2, pdata + 2,
+		status = srvstr_push(pdata, req->flags2, pdata + 2,
 			    lp_netbios_name(), 15,
-			    STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
-		srvstr_push(pdata, req->flags2, pdata+18,
+			    STR_ASCII|STR_TERMINATE, &len); /* Our NetBIOS name */
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
+		status = srvstr_push(pdata, req->flags2, pdata+18,
 			    lp_servicename(talloc_tos(), SNUM(conn)), 13,
-			    STR_ASCII|STR_TERMINATE); /* Service name */
+			    STR_ASCII|STR_TERMINATE, &len); /* Service name */
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
 		send_trans2_replies(conn, req, NT_STATUS_OK, *pparams, 0, *ppdata, 32,
 				    max_data_bytes);
 		return;

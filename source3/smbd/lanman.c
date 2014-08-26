@@ -3655,8 +3655,13 @@ static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
 	}
 
 	if (uLevel != 20) {
-		srvstr_push(NULL, 0, p, info.info101->server_name, 16,
-			STR_ASCII|STR_UPPER|STR_TERMINATE);
+		size_t len = 0;
+		status = srvstr_push(NULL, 0, p, info.info101->server_name, 16,
+			STR_ASCII|STR_UPPER|STR_TERMINATE, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			errcode = W_ERROR_V(ntstatus_to_werror(status));
+			goto out;
+		}
   	}
 	p += 16;
 	if (uLevel > 0) {

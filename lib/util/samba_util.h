@@ -63,6 +63,7 @@ do { \
 
 #include "lib/util/memory.h"
 
+#include "../libcli/util/ntstatus.h"
 #include "lib/util/string_wrappers.h"
 
 /**

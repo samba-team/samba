@@ -62,6 +62,7 @@
 
 #endif /* !_SPLINT_ */
 
+#include "../libcli/util/ntstatus.h"
 #include "lib/util/string_wrappers.h"
 
 #endif

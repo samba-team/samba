@@ -57,6 +57,8 @@ char * __unsafe_string_function_usage_here__(void);
 
 size_t __unsafe_string_function_usage_here_size_t__(void);
 
+NTSTATUS __unsafe_string_function_usage_here_NTSTATUS__(void);
+
 #define CHECK_STRING_SIZE(d, len) (sizeof(d) != (len) && sizeof(d) != sizeof(char *))
 
 /* if the compiler will optimize out function calls, then use this to tell if we are
@@ -68,10 +70,10 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
     ? __unsafe_string_function_usage_here_size_t__() \
     : push_string_check_fn(dest, src, dest_len, flags))
 
-#define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags) \
+#define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags, ret_len) \
     (CHECK_STRING_SIZE(dest, dest_len) \
-    ? __unsafe_string_function_usage_here_size_t__() \
-    : srvstr_push_fn(base_ptr, smb_flags2, dest, src, dest_len, flags))
+    ? __unsafe_string_function_usage_here_NTSTATUS__() \
+    : srvstr_push_fn(base_ptr, smb_flags2, dest, src, dest_len, flags, ret_len))
 
 /* This allows the developer to choose to check the arguments to
    strlcpy.  if the compiler will optimize out function calls, then

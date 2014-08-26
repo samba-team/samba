@@ -1099,6 +1099,8 @@ void reply_ioctl(struct smb_request *req)
 	switch (ioctl_code) {
 		case IOCTL_QUERY_JOB_INFO:		    
 		{
+			NTSTATUS status;
+			size_t len = 0;
 			files_struct *fsp = file_fsp(
 				req, SVAL(req->vwv+0, 0));
 			if (!fsp) {
@@ -1109,15 +1111,25 @@ void reply_ioctl(struct smb_request *req)
 			/* Job number */
 			SSVAL(p, 0, print_spool_rap_jobid(fsp->print_file));
 
-			srvstr_push((char *)req->outbuf, req->flags2, p+2,
+			status = srvstr_push((char *)req->outbuf, req->flags2, p+2,
 				    lp_netbios_name(), 15,
-				    STR_TERMINATE|STR_ASCII);
+				    STR_TERMINATE|STR_ASCII, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				reply_nterror(req, status);
+				END_PROFILE(SMBioctl);
+				return;
+			}
 			if (conn) {
-				srvstr_push((char *)req->outbuf, req->flags2,
+				status = srvstr_push((char *)req->outbuf, req->flags2,
 					    p+18,
 					    lp_servicename(talloc_tos(),
 							   SNUM(conn)),
-					    13, STR_TERMINATE|STR_ASCII);
+					    13, STR_TERMINATE|STR_ASCII, &len);
+				if (!NT_STATUS_IS_OK(status)) {
+					reply_nterror(req, status);
+					END_PROFILE(SMBioctl);
+					return;
+				}
 			} else {
 				memset(p+18, 0, 13);
 			}
@@ -5791,6 +5803,7 @@ void reply_printqueue(struct smb_request *req)
 			char *p = blob;
 			time_t qtime = spoolss_Time_to_time_t(&info[i].info2.submitted);
 			int qstatus;
+			size_t len = 0;
 			uint16_t qrapjobid = pjobid_to_rap(sharename,
 							info[i].info2.job_id);
 
@@ -5805,9 +5818,12 @@ void reply_printqueue(struct smb_request *req)
 			SSVAL(p, 5, qrapjobid);
 			SIVAL(p, 7, info[i].info2.size);
 			SCVAL(p, 11, 0);
-			srvstr_push(blob, req->flags2, p+12,
-				    info[i].info2.notify_name, 16, STR_ASCII);
-
+			status = srvstr_push(blob, req->flags2, p+12,
+				    info[i].info2.notify_name, 16, STR_ASCII, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				reply_nterror(req, status);
+				goto out;
+			}
 			if (message_push_blob(
 				    &req->outbuf,
 				    data_blob_const(

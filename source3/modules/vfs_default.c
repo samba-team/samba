@@ -1178,10 +1178,16 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 			  shadow_data->num_volumes, fsp_str_dbg(fsp)));
 		if (labels && shadow_data->labels) {
 			for (i=0; i<shadow_data->num_volumes; i++) {
-				srvstr_push(cur_pdata, req_flags,
+				size_t len = 0;
+				status = srvstr_push(cur_pdata, req_flags,
 					    cur_pdata, shadow_data->labels[i],
 					    2 * sizeof(SHADOW_COPY_LABEL),
-					    STR_UNICODE|STR_TERMINATE);
+					    STR_UNICODE|STR_TERMINATE, &len);
+				if (!NT_STATUS_IS_OK(status)) {
+					TALLOC_FREE(*out_data);
+					TALLOC_FREE(shadow_data);
+					return status;
+				}
 				cur_pdata += 2 * sizeof(SHADOW_COPY_LABEL);
 				DEBUGADD(10,("Label[%u]: '%s'\n",i,shadow_data->labels[i]));
 			}
