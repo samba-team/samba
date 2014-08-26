@@ -589,6 +589,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
                     public_headers_install=True,
                     header_path=None,
                     vars=None,
+                    dep_vars=[],
                     always=False):
     '''A generic source generator target'''
 
@@ -598,7 +599,6 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
     if not enabled:
         return
 
-    dep_vars = []
     dep_vars.append('ruledeps')
     dep_vars.append('SAMBA_GENERATOR_VARS')
 
