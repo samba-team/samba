@@ -741,12 +741,9 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
         inst_file = file + '.inst'
         bld.SAMBA_GENERATOR('python_%s' % destname,
                             rule=copy_and_fix_python_path,
+                            dep_vars=["PYTHON","PYTHON_SPECIFIED","PYTHONDIR","PYTHONARCHDIR"],
                             source=file,
                             target=inst_file)
-        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), bld.env["PYTHONARCHDIR"])
-        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), bld.env["PYTHONDIR"])
-        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), str(bld.env["PYTHON_SPECIFIED"]))
-        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), bld.env["PYTHON"])
         file = inst_file
     if base_name:
         file = os.path.join(base_name, file)
