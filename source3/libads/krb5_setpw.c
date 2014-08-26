@@ -172,6 +172,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     int result_code;
     krb5_data result_code_string = { 0 };
     krb5_data result_string = { 0 };
+    smb_krb5_addresses *addr = NULL;
 
     initialize_krb5_error_table();
     ret = krb5_init_context(&context);
@@ -188,10 +189,23 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     }
 
     krb5_get_init_creds_opt_init(&opts);
+
     krb5_get_init_creds_opt_set_tkt_life(&opts, 5*60);
     krb5_get_init_creds_opt_set_renew_life(&opts, 0);
     krb5_get_init_creds_opt_set_forwardable(&opts, 0);
     krb5_get_init_creds_opt_set_proxiable(&opts, 0);
+
+    /* note that heimdal will fill in the local addresses if the addresses
+     * in the creds_init_opt are all empty and then later fail with invalid
+     * address, sending our local netbios krb5 address - just like windows
+     * - avoids this - gd */
+    ret = smb_krb5_gen_netbios_krb5_address(&addr, lp_netbios_name());
+    if (ret) {
+        krb5_free_principal(context, princ);
+        krb5_free_context(context);
+        return ADS_ERROR_KRB5(ret);
+    }
+    krb5_get_init_creds_opt_set_address_list(&opts, addr->addrs);
 
     realm = smb_krb5_principal_get_realm(context, princ);
 
