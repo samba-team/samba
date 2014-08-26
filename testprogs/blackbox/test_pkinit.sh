@@ -29,7 +29,6 @@ if test -x $BINDIR/samba4kinit; then
 fi
 
 samba_tool="$samba4bindir/samba-tool"
-rkpty="$samba4bindir/rkpty"
 samba4kpasswd=kpasswd
 if test -x $BINDIR/samba4kpasswd; then
 	samba4passwd=$BINDIR/samba4kpasswd

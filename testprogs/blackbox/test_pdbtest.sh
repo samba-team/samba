@@ -23,7 +23,7 @@ pdbtest="$samba4bindir/pdbtest"
 pdbedit="$samba4bindir/pdbedit"
 net="$samba4bindir/net"
 smbpasswd="$samba4bindir/smbpasswd"
-rkpty="$samba4bindir/rkpty"
+texpect="$samba4bindir/texpect"
 
 . `dirname $0`/subunit.sh
 
@@ -58,7 +58,7 @@ expect retype new password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "create user with pdbedit" $rkpty ./tmpsmbpasswdscript $VALGRIND $pdbedit -a $USER --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
+testit "create user with pdbedit" $texpect ./tmpsmbpasswdscript $VALGRIND $pdbedit -a $USER --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS $@ || failed=`expr $failed + 1`
@@ -77,7 +77,7 @@ expect Retype new SMB password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "set user password with smbpasswd" $rkpty ./tmpsmbpasswdscript $smbpasswd -L $USER -c $SMB_CONF || failed=`expr $failed + 1`
+testit "set user password with smbpasswd" $texpect ./tmpsmbpasswdscript $smbpasswd -L $USER -c $SMB_CONF || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS $@|| failed=`expr $failed + 1`
