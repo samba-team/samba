@@ -123,7 +123,7 @@ bld.SAMBA_GENERATOR(parameter_all,
                     source=articles,
                     target=parameter_all,
                     rule=smbdotconf_generate_parameter_list,
-                    always=True)
+                    dep_vars=bld.dynconfig_varnames())
 
 def SMBDOTCONF_MANPAGE(bld, target):
     ''' assemble and build smb.conf.5 manual page'''
