@@ -2449,8 +2449,8 @@ static bool test_ioctl_network_interface_info(struct torture_context *torture,
 	torture_assert_ndr_success(torture, ndr_ret,
 				   "ndr_pull_fsctl_net_iface_info");
 
-	ndr_print_debug((ndr_print_fn_t)ndr_print_fsctl_net_iface_info
-			, "Network Interface Info", &net_iface);
+	ndr_print_debug((ndr_print_fn_t)ndr_print_fsctl_net_iface_info,
+			"Network Interface Info", &net_iface);
 
 	talloc_free(tmp_ctx);
 	return true;
