@@ -199,6 +199,6 @@ def SAMBA_BLDOPTIONS(bld, target):
     '''generate the bld_options.c for Samba'''
     t = bld.SAMBA_GENERATOR(target,
                             rule=write_build_options,
-                            target=target,
-                            always=True)
+                            dep_vars=['defines'],
+                            target=target)
 Build.BuildContext.SAMBA_BLDOPTIONS = SAMBA_BLDOPTIONS
