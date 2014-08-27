@@ -941,6 +941,19 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if (fsp->is_directory) {
+		DEBUG(9, ("invalid attempt to %s sparse flag on dir %s\n",
+			  (sparse ? "set" : "clear"),
+			  smb_fname_str_dbg(fsp->fsp_name)));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (IS_IPC(conn) || IS_PRINT(conn)) {
+		DEBUG(9, ("attempt to %s sparse flag over invalid conn\n",
+			  (sparse ? "set" : "clear")));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	DEBUG(10,("file_set_sparse: setting sparse bit %u on file %s\n",
 		  sparse, smb_fname_str_dbg(fsp->fsp_name)));
 
