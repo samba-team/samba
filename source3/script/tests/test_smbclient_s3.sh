@@ -722,6 +722,146 @@ EOF
     fi
 }
 
+# Test accessing an share with bad names (won't convert).
+test_bad_names()
+{
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/badname-tmp -I $SERVER_IP $ADDARGS -c ls 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing badname-tmp (SMB1) with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | wc -l 2>&1 | grep 6
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - grep of number of lines (1) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep 'Domain=.*OS=.*Server='
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - grep (1) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^  \. *D'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - grep (2) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^  \.\. *D'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - grep (3) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^  blank.txt *N'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - grep (4) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^ *$'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - grep (5) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep 'blocks of size.*blocks available'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - grep (6) failed with $ret"
+	false
+    fi
+
+    # Now check again with -mSMB3
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/badname-tmp -I $SERVER_IP -mSMB3 $ADDARGS -c ls 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing badname-tmp (SMB3) with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | wc -l 2>&1 | grep 6
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - SMB3 grep of number of lines (1) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep 'Domain=.*OS=.*Server='
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - SMB3 grep (1) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^  \. *D'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - SMB3 grep (2) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^  \.\. *D'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - SMB3 grep (3) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^  blank.txt *N'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - SMB3 grep (4) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep '^ *$'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - SMB3 grep (5) failed with $ret"
+	false
+    fi
+
+    echo "$out" | grep 'blocks of size.*blocks available'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\badname-tmp - SMB3 grep (6) failed with $ret"
+	false
+    fi
+}
 
 LOGDIR_PREFIX=test_smbclient_s3
 
@@ -796,6 +936,10 @@ testit "using an authentication file" \
 
 testit "list with backup privilege" \
     test_backup_privilege_list || \
+    failed=`expr $failed + 1`
+
+testit "list a share with bad names (won't convert)" \
+    test_bad_names || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \

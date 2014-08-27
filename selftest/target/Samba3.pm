@@ -873,6 +873,9 @@ sub provision($$$$$$)
 	my $msdfs_deeppath="$msdfs_shrdir/deeppath";
 	push(@dirs,$msdfs_deeppath);
 
+	my $badnames_shrdir="$shrdir/badnames";
+	push(@dirs,$badnames_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
@@ -924,6 +927,36 @@ sub provision($$$$$$)
 	chmod 0666, $msdfs_target;
 	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/msdfs-src1";
 	symlink "msdfs:$server_ipv6\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
+
+	##
+	## create bad names in $badnames_shrdir
+	##
+	## (An invalid name, would be mangled to 8.3).
+        my $badname_target = "$badnames_shrdir/\340|\231\216\377\177";
+        unless (open(BADNAME_TARGET, ">$badname_target")) {
+                warn("Unable to open $badname_target");
+                return undef;
+        }
+        close(BADNAME_TARGET);
+        chmod 0666, $badname_target;
+
+	## (A bad name, would not be mangled to 8.3).
+        my $badname_target = "$badnames_shrdir/\240\276\346\327\377\177";
+        unless (open(BADNAME_TARGET, ">$badname_target")) {
+                warn("Unable to open $badname_target");
+                return undef;
+        }
+        close(BADNAME_TARGET);
+        chmod 0666, $badname_target;
+
+	## (A bad good name).
+        my $badname_target = "$badnames_shrdir/blank.txt";
+        unless (open(BADNAME_TARGET, ">$badname_target")) {
+                warn("Unable to open $badname_target");
+                return undef;
+        }
+        close(BADNAME_TARGET);
+        chmod 0666, $badname_target;
 
 	my $conffile="$libdir/server.conf";
 
@@ -1182,6 +1215,10 @@ sub provision($$$$$$)
 	fruit:metadata = netatalk
 	fruit:locking = netatalk
 	fruit:encoding = native
+
+[badname-tmp]
+	path = $badnames_shrdir
+	guest ok = yes
 	";
 	close(CONF);
 
