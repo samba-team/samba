@@ -2645,6 +2645,80 @@ static bool test_ioctl_sparse_dir_flag(struct torture_context *torture,
 }
 
 /*
+ * FSCTL_SET_SPARSE can be sent with (already tested) or without a SetSparse
+ * buffer to indicate whether the flag should be set or cleared. When sent
+ * without a buffer, it must be handled as if SetSparse=TRUE.
+ */
+static bool test_ioctl_sparse_set_nobuf(struct torture_context *torture,
+					struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	union smb_ioctl ioctl;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	bool is_sparse;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "Sparse files not supported\n");
+	}
+
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, !is_sparse, "sparse attr before set");
+
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	ioctl.smb2.in.file.handle = fh;
+	ioctl.smb2.in.function = FSCTL_SET_SPARSE;
+	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	/* ioctl.smb2.in.out is zeroed, no SetSparse buffer */
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, is_sparse, "no sparse attr after set");
+
+	/* second non-SetSparse request shouldn't toggle sparse */
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	ioctl.smb2.in.file.handle = fh;
+	ioctl.smb2.in.function = FSCTL_SET_SPARSE;
+	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, is_sparse, "no sparse attr after 2nd set");
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, false);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, !is_sparse, "sparse attr after unset");
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+/*
  * basic testing of SMB2 ioctls
  */
 struct torture_suite *torture_smb2_ioctl_init(void)
@@ -2717,6 +2791,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_file_attr);
 	torture_suite_add_1smb2_test(suite, "sparse_dir_flag",
 				     test_ioctl_sparse_dir_flag);
+	torture_suite_add_1smb2_test(suite, "sparse_set_nobuf",
+				     test_ioctl_sparse_set_nobuf);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
