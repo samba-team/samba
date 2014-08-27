@@ -372,6 +372,16 @@ def dynconfig_cflags(bld, list=None):
     return cflags
 Build.BuildContext.dynconfig_cflags = dynconfig_cflags
 
+def dynconfig_varnames(bld, list=None):
+    '''work out the dynconfig variables'''
+    varnames = []
+    for varname in dynconfig.keys():
+        if list and not varname in list:
+            continue
+        varnames.append(varname)
+    return varnames
+Build.BuildContext.dynconfig_varnames = dynconfig_varnames
+
 def pathconfig_entities(bld, list=None):
     '''work out the extra entities for the docs'''
     entities = []
