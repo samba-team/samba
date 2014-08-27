@@ -2609,9 +2609,44 @@ static bool test_ioctl_sparse_file_attr(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_sparse_dir_flag(struct torture_context *torture,
+					struct smb2_tree *tree)
+{
+	struct smb2_handle dirh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+
+	smb2_deltree(tree, DNAME);
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    DNAME, &dirh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_DIRECTORY);
+	torture_assert(torture, ok, "setup sparse directory");
+
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &dirh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, dirh);
+		smb2_deltree(tree, DNAME);
+		torture_skip(torture, "Sparse files not supported\n");
+	}
+
+	/* set sparse dir should fail, check for 2k12 & 2k8 response */
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, dirh, true);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_INVALID_PARAMETER,
+				      "dir FSCTL_SET_SPARSE status");
+
+	smb2_util_close(tree, dirh);
+	smb2_deltree(tree, DNAME);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
-   basic testing of SMB2 ioctls
-*/
+ * basic testing of SMB2 ioctls
+ */
 struct torture_suite *torture_smb2_ioctl_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ioctl");
@@ -2680,6 +2715,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_file_flag);
 	torture_suite_add_1smb2_test(suite, "sparse_file_attr",
 				     test_ioctl_sparse_file_attr);
+	torture_suite_add_1smb2_test(suite, "sparse_dir_flag",
+				     test_ioctl_sparse_dir_flag);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
