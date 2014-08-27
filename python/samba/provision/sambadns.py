@@ -801,6 +801,14 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         logger.error(
             "Failed to setup database for BIND, AD based DNS cannot be used")
         raise
+
+    # This line is critical to the security of the whole scheme.
+    # We assume there is no secret data in the (to be left out of
+    # date and essentially read-only) config, schema and metadata partitions.
+    #
+    # Only the stub of the domain partition is created above.
+    #
+    # That way, things like the krbtgt key do not leak.
     del partfile[domaindn]
 
     # Link dns partitions and metadata
