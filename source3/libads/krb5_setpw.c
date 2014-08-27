@@ -168,7 +168,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     krb5_get_init_creds_opt opts;
     krb5_creds creds;
     char *chpw_princ = NULL, *password;
-    const char *realm = NULL;
+    char *realm = NULL;
     int result_code;
     krb5_data result_code_string = { 0 };
     krb5_data result_string = { 0 };
