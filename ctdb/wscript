@@ -171,10 +171,11 @@ def build(bld):
     bld.RECURSE('lib/tdb')
     bld.RECURSE('lib/socket_wrapper')
 
-    bld.SAMBA_GENERATOR('ctdb-version-header',
-                        target='include/ctdb_version.h',
-                        rule='../packaging/mkversion.sh ${TGT} %s' % (VERSION),
-                        always=True)
+    t = bld.SAMBA_GENERATOR('ctdb-version-header',
+                            target='include/ctdb_version.h',
+                            rule='../packaging/mkversion.sh ${TGT} %s' % (VERSION),
+                            dep_vars=['VERSION'])
+    t.env.VERSION = VERSION
 
     bld.SAMBA_SUBSYSTEM('ctdb-util',
                         source=bld.SUBDIR('lib/util',
@@ -414,10 +415,12 @@ def build(bld):
     bld.install_dir(bld.env.CTDB_VARDIR)
 
     sed_expr = 's/@PACKAGE_VERSION@/%s/g' % VERSION
-    bld.SAMBA_GENERATOR('ctdb-pc',
-                        source='ctdb.pc.in',
-                        target='ctdb.pc',
-                        rule='sed -e "%s" ${SRC} > ${TGT}' % sed_expr)
+    t = bld.SAMBA_GENERATOR('ctdb-pc',
+                            source='ctdb.pc.in',
+                            target='ctdb.pc',
+                            rule='sed -e "%s" ${SRC} > ${TGT}' % sed_expr,
+                            dep_vars=['VERSION'])
+    t.env.VERSION = VERSION
     bld.INSTALL_FILES('${LIBDIR}/pkgconfig', 'ctdb.pc')
 
     # Test binaries
