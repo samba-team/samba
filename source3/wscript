@@ -586,7 +586,6 @@ msg.msg_accrightslen = sizeof(fd);
         conf.DEFINE('WITH_WINBIND', '1')
 
     conf.find_program('awk', var='AWK')
-    conf.find_program('perl', var='PERL')
 
     conf.CHECK_HEADERS('asm/types.h')
 
