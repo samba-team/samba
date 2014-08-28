@@ -73,6 +73,19 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 	}
 }
 
+/**
+ * @brief Establish a connection to a DC
+ *
+ * @param[out]   adsp             ADS_STRUCT that will be created
+ * @param[in]    target_realm     Realm of domain to connect to
+ * @param[in]    target_dom_name  'workgroup' name of domain to connect to
+ * @param[in]    ldap_server      DNS name of server to connect to
+ * @param[in]    password         Our machine acount secret
+ * @param[in]    auth_realm       Realm of local domain for creating krb token
+ * @param[in]    renewable        Renewable ticket time
+ *
+ * @return ADS_STATUS
+ */
 static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 						const char *target_realm,
 						const char *target_dom_name,
