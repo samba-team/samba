@@ -3349,8 +3349,6 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		}
 		state = tevent_req_data(req, struct smbXcli_req_state);
 
-		state->smb2.got_async = false;
-
 		req_opcode = SVAL(state->smb2.hdr, SMB2_HDR_OPCODE);
 		if (opcode != req_opcode) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -3366,6 +3364,12 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		    NT_STATUS_EQUAL(status, STATUS_PENDING)) {
 			uint64_t async_id = BVAL(inhdr, SMB2_HDR_ASYNC_ID);
 
+			if (state->smb2.got_async) {
+				/* We only expect one STATUS_PENDING response */
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			}
+			state->smb2.got_async = true;
+
 			/*
 			 * async interim responses are not signed,
 			 * even if the SMB2_HDR_FLAG_SIGNED flag
@@ -3376,7 +3380,6 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			SBVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID, async_id);
 
 			if (state->smb2.notify_async) {
-				state->smb2.got_async = true;
 				tevent_req_defer_callback(req, state->ev);
 				tevent_req_notify_callback(req);
 			}
@@ -3621,7 +3624,7 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		*piov = NULL;
 	}
 
-	if (state->smb2.got_async) {
+	if (tevent_req_is_in_progress(req) && state->smb2.got_async) {
 		return STATUS_PENDING;
 	}
 
