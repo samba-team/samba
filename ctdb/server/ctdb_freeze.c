@@ -290,9 +290,15 @@ struct ctdb_freeze_waiter {
 struct ctdb_freeze_handle {
 	struct ctdb_context *ctdb;
 	uint32_t priority;
-	struct lock_request *lreq;
+	unsigned int num_total, num_locked, num_failed;
 	struct ctdb_freeze_waiter *waiters;
 };
+
+static int db_thaw(struct ctdb_db_context *ctdb_db, void *private_data)
+{
+	talloc_free(ctdb_db->freeze_handle);
+	return 0;
+}
 
 /*
   destroy a freeze handle
@@ -309,6 +315,8 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 				      db_transaction_cancel_handler, NULL);
 		ctdb->freeze_transaction_started = false;
 	}
+
+	ctdb_db_prio_iterator(ctdb, h->priority, db_thaw, NULL);
 
 	ctdb->freeze_mode[h->priority]    = CTDB_FREEZE_NONE;
 	ctdb->freeze_handles[h->priority] = NULL;
@@ -351,12 +359,85 @@ static void ctdb_freeze_lock_handler(void *private_data, bool locked)
 	}
 }
 
+/**
+ * When single database is frozen
+ */
+static int db_freeze_waiter_destructor(struct ctdb_db_freeze_waiter *w)
+{
+	struct ctdb_freeze_handle *h = talloc_get_type_abort(
+		w->private_data, struct ctdb_freeze_handle);
+
+	if (w->status == 0) {
+		h->num_locked += 1;
+	} else {
+		h->num_failed += 1;
+	}
+
+	/* Call ctdb_freeze_lock_handler() only when the status of all
+	 * databases is known.
+	 */
+	if (h->num_locked + h->num_failed == h->num_total) {
+		bool locked;
+
+		if (h->num_locked == h->num_total) {
+			locked = true;
+		} else {
+			locked = false;
+		}
+		ctdb_freeze_lock_handler(h, locked);
+	}
+	return 0;
+}
+
+/**
+ * Count the number of databases
+ */
+static int db_count(struct ctdb_db_context *ctdb_db, void *private_data)
+{
+	int *count = (int *)private_data;
+
+	*count += 1;
+
+	return 0;
+}
+
+/**
+ * Freeze a single database
+ */
+static int db_freeze(struct ctdb_db_context *ctdb_db, void *private_data)
+{
+	struct ctdb_freeze_handle *h = talloc_get_type_abort(
+		private_data, struct ctdb_freeze_handle);
+	struct ctdb_db_freeze_waiter *w;
+
+	ctdb_start_db_freeze(ctdb_db);
+
+	w = talloc(ctdb_db->freeze_handle, struct ctdb_db_freeze_waiter);
+	CTDB_NO_MEMORY(h->ctdb, w);
+	w->ctdb = h->ctdb;
+	w->private_data = h;
+	w->status = -1;
+	talloc_set_destructor(w, db_freeze_waiter_destructor);
+
+	if (ctdb_db->freeze_mode == CTDB_FREEZE_FROZEN) {
+		/* Early return if already frozen */
+		w->status = 0;
+		talloc_free(w);
+		return 0;
+	}
+
+	DLIST_ADD(ctdb_db->freeze_handle->waiters, w);
+
+	return 0;
+}
+
 /*
   start the freeze process for a certain priority
  */
 void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_freeze_handle *h;
+	int ret;
 
 	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
 		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n", priority));
@@ -378,18 +459,31 @@ void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 	/* Stop any vacuuming going on: we don't want to wait. */
 	ctdb_stop_vacuuming(ctdb);
 
-	/* create freeze lock child */
+	/* create freeze lock children for each database */
 	h = talloc_zero(ctdb, struct ctdb_freeze_handle);
 	CTDB_NO_MEMORY_FATAL(ctdb, h);
 	h->ctdb = ctdb;
 	h->priority = priority;
 	talloc_set_destructor(h, ctdb_freeze_handle_destructor);
 
-	h->lreq = ctdb_lock_alldb_prio(h, ctdb, priority, false,
-				       ctdb_freeze_lock_handler, h);
-	CTDB_NO_MEMORY_FATAL(ctdb, h->lreq);
-	ctdb->freeze_handles[priority] = h;
+	ret = ctdb_db_prio_iterator(ctdb, priority, db_count, &h->num_total);
+	if (ret != 0) {
+		talloc_free(h);
+		return;
+	}
+
 	ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
+
+	ret = ctdb_db_prio_iterator(ctdb, priority, db_freeze, h);
+	if (ret != 0) {
+		talloc_free(h);
+		return;
+	}
+
+	ctdb->freeze_handles[priority] = h;
+	if (h->num_total == 0) {
+		ctdb->freeze_mode[priority] = CTDB_FREEZE_FROZEN;
+	}
 }
 
 /*
@@ -429,12 +523,17 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 
 	ctdb_start_freeze(ctdb, priority);
 
-	/* add ourselves to list of waiters */
 	if (ctdb->freeze_handles[priority] == NULL) {
 		DEBUG(DEBUG_ERR,("No freeze lock handle when adding a waiter\n"));
 		return -1;
 	}
 
+	/* If there are no databases, we are done. */
+	if (ctdb->freeze_handles[priority]->num_total == 0) {
+		return 0;
+	}
+
+	/* add ourselves to list of waiters */
 	w = talloc(ctdb->freeze_handles[priority], struct ctdb_freeze_waiter);
 	CTDB_NO_MEMORY(ctdb, w);
 	w->ctdb     = ctdb;
@@ -481,6 +580,7 @@ static void thaw_priority(struct ctdb_context *ctdb, uint32_t priority)
 		ctdb->freeze_transaction_started = false;
 	}
 
+	ctdb_db_prio_iterator(ctdb, priority, db_thaw, NULL);
 	if (ctdb->freeze_handles[priority] != NULL) {
 		talloc_free(ctdb->freeze_handles[priority]);
 		ctdb->freeze_handles[priority] = NULL;
