@@ -581,10 +581,7 @@ static void thaw_priority(struct ctdb_context *ctdb, uint32_t priority)
 	}
 
 	ctdb_db_prio_iterator(ctdb, priority, db_thaw, NULL);
-	if (ctdb->freeze_handles[priority] != NULL) {
-		talloc_free(ctdb->freeze_handles[priority]);
-		ctdb->freeze_handles[priority] = NULL;
-	}
+	TALLOC_FREE(ctdb->freeze_handles[priority]);
 }
 
 /*
