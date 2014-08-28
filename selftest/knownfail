@@ -216,6 +216,10 @@
 ^samba3.smb2.setinfo.setinfo
 ^samba3.smb2.session.*reauth5 # some special anonymous checks?
 ^samba3.smb2.compound.interim2 # wrong return code (STATUS_CANCELLED)
+^samba3.smb2.replay.replay1
+^samba3.smb2.replay.replay2
+^samba3.smb2.replay.replay3
+^samba3.smb2.replay.replay4
 ^samba3.raw.session.*reauth2 # maybe fix this?
 ^samba3.rpc.samr.passwords.badpwdcount.samr.badPwdCount\(s3dc\) # We fail this test currently
 ^samba3.rpc.samr.passwords.lockout.*\(s3dc\)$ # We fail this test currently
