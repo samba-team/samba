@@ -352,15 +352,6 @@ static void ctdb_freeze_lock_handler(void *private_data, bool locked)
 }
 
 /*
-  destroy a waiter for a freeze mode change
- */
-static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
-{
-	ctdb_request_control_reply(w->ctdb, w->c, NULL, w->status, NULL);
-	return 0;
-}
-
-/*
   start the freeze process for a certain priority
  */
 void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
@@ -399,6 +390,15 @@ void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 	CTDB_NO_MEMORY_FATAL(ctdb, h->lreq);
 	ctdb->freeze_handles[priority] = h;
 	ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
+}
+
+/*
+  destroy a waiter for a freeze mode change
+ */
+static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
+{
+	ctdb_request_control_reply(w->ctdb, w->c, NULL, w->status, NULL);
+	return 0;
 }
 
 /*
