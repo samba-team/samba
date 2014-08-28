@@ -74,11 +74,11 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 }
 
 static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
-						const char *dom_name_alt,
-						const char *dom_name,
+						const char *target_realm,
+						const char *target_dom_name,
 						const char *ldap_server,
 						char *password,
-						char *realm,
+						char *auth_realm,
 						time_t renewable)
 {
 	ADS_STRUCT *ads;
@@ -86,16 +86,16 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	struct sockaddr_storage dc_ss;
 	fstring dc_name;
 
-	if (realm == NULL) {
+	if (auth_realm == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
 	/* we don't want this to affect the users ccache */
 	setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 
-	ads = ads_init(dom_name_alt, dom_name, ldap_server);
+	ads = ads_init(target_realm, target_dom_name, ldap_server);
 	if (!ads) {
-		DEBUG(1,("ads_init for domain %s failed\n", dom_name));
+		DEBUG(1,("ads_init for domain %s failed\n", target_dom_name));
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
@@ -105,7 +105,7 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	ads->auth.renewable = renewable;
 	ads->auth.password = password;
 
-	ads->auth.realm = SMB_STRDUP(realm);
+	ads->auth.realm = SMB_STRDUP(auth_realm);
 	if (!strupper_m(ads->auth.realm)) {
 		ads_destroy(&ads);
 		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
@@ -119,7 +119,7 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("ads_connect for domain %s failed: %s\n",
-			 dom_name, ads_errstr(status)));
+			 target_dom_name, ads_errstr(status)));
 		ads_destroy(&ads);
 		return status;
 	}
