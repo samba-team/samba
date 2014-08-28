@@ -167,6 +167,10 @@ _PUBLIC_ void composite_continue_smb(struct composite_context *ctx,
 				     void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
+	if (new_req->state > SMBCLI_REQUEST_RECV) {
+		composite_error(ctx, new_req->status);
+		return;
+	}
 	new_req->async.fn = continuation;
 	new_req->async.private_data = private_data;
 }
@@ -177,6 +181,10 @@ _PUBLIC_ void composite_continue_smb2(struct composite_context *ctx,
 				      void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
+	if (new_req->state > SMB2_REQUEST_RECV) {
+		composite_error(ctx, new_req->status);
+		return;
+	}
 	new_req->async.fn = continuation;
 	new_req->async.private_data = private_data;
 }
