@@ -516,7 +516,7 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 	}
 
 	if (ctdb->freeze_mode[priority] == CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_ERR, ("Freeze priority %u\n", priority));
+		DEBUG(DEBUG_ERR, ("Freeze priority %u: frozen\n", priority));
 		/* we're already frozen */
 		return 0;
 	}
