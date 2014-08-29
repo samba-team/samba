@@ -114,8 +114,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	pvfs->fs_attribs = 
 		FS_ATTR_CASE_SENSITIVE_SEARCH | 
 		FS_ATTR_CASE_PRESERVED_NAMES |
-		FS_ATTR_UNICODE_ON_DISK |
-		FS_ATTR_SPARSE_FILES;
+		FS_ATTR_UNICODE_ON_DISK;
 
 	/* allow xattrs to be stored in a external tdb */
 	eadb = share_string_option(pvfs, scfg, PVFS_EADB, NULL);
