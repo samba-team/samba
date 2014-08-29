@@ -64,7 +64,6 @@ from samba.dsdb import (
     UF_TRUSTED_FOR_DELEGATION
     )
 
-from samba.credentials import DONT_USE_KERBEROS
 from samba.provision import (
     provision,
     ProvisioningError
