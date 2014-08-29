@@ -31,7 +31,9 @@
 #error "AC_LIBREPLACE_NETWORK_CHECKS missing in configure"
 #endif
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
@@ -75,10 +77,6 @@
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
 #endif
 
 #ifdef HAVE_SYS_IOCTL_H
