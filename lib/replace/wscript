@@ -5,7 +5,7 @@ VERSION = '1.2.1'
 
 blddir = 'bin'
 
-import sys, os, Utils
+import sys, os
 
 # find the buildtools directory
 srcdir = '.'
@@ -14,7 +14,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist
-import Options, os, preproc
+import Options
 
 samba_dist.DIST_DIRS('lib/replace buildtools:buildtools')
 
