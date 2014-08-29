@@ -83,6 +83,9 @@ def get_testparm_var(testparm, smbconf, varname):
 
 try:
    import samba.dckeytab
+except ImportError:
+   cmd_domain_export_keytab = None
+else:
    class cmd_domain_export_keytab(Command):
        """Dump Kerberos keys of the domain into a keytab."""
 
@@ -104,8 +107,6 @@ try:
            lp = sambaopts.get_loadparm()
            net = Net(None, lp)
            net.export_keytab(keytab=keytab, principal=principal)
-except:
-   cmd_domain_export_keytab = None
 
 
 class cmd_domain_info(Command):
