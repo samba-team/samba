@@ -218,6 +218,9 @@ def configure(conf):
 
 
 def build(bld):
+    # enable building of public headers in the build tree
+    bld.env.build_public_headers = 'include/public'
+
     t = bld.SAMBA_GENERATOR('ctdb-version-header',
                             target='include/ctdb_version.h',
                             rule='../packaging/mkversion.sh ${TGT} %s' % (VERSION),
@@ -326,7 +329,8 @@ def build(bld):
                                              ctdb_update_record.c
                                              ctdb_lock.c'''),
                         includes='include include/internal',
-                        public_headers='''include/ctdb.h
+                        public_headers='''include/ctdb_version.h
+                                          include/ctdb.h
                                           include/ctdb_private.h
                                           include/ctdb_protocol.h
                                           include/ctdb_typesafe_cb.h''',
