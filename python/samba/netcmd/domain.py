@@ -688,7 +688,7 @@ class cmd_domain_demote(Command):
                         server)
         (drsuapiBind, drsuapi_handle, supportedExtensions) = drsuapi_connect(server, lp, creds)
 
-        self.errf.write("Desactivating inbound replication\n")
+        self.errf.write("Deactivating inbound replication\n")
 
         nmsg = ldb.Message()
         nmsg.dn = msg[0].dn
