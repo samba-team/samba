@@ -26,9 +26,6 @@ http://www.python.org/pep/pep8 (with spaces).
 If you have ever worked on another free software Python project, you are
 probably already familiar with it.
 
-We try to stay compatible with Python 2.4, so please don't rely on any
-features that were introduced later, such as the "with" statement.
-
 But to save you the trouble of reading the Linux kernel style guide, here
 are the highlights.
 
