@@ -398,13 +398,13 @@ class cmd_domain_provision(Command):
         if eadb:
             self.logger.info("not using extended attributes to store ACLs and other metadata. If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
         if ldap_backend_type == "existing":
-            if dap_backend_forced_uri is not None:
-                logger.warn("You have specified to use an existing LDAP server as the backend, please make sure an LDAP server is running at %s" % ldap_backend_forced_uri)
+            if ldap_backend_forced_uri is not None:
+                self.logger.warn("You have specified to use an existing LDAP server as the backend, please make sure an LDAP server is running at %s" % ldap_backend_forced_uri)
             else:
-                logger.info("You have specified to use an existing LDAP server as the backend, please make sure an LDAP server is running at the default location")
+                self.logger.info("You have specified to use an existing LDAP server as the backend, please make sure an LDAP server is running at the default location")
         else:
             if ldap_backend_forced_uri is not None:
-                logger.warn("You have specified to use an fixed URI %s for connecting to your LDAP server backend.  This is NOT RECOMMENDED, as our default communiation over ldapi:// is more secure and much less")
+                self.logger.warn("You have specified to use an fixed URI %s for connecting to your LDAP server backend.  This is NOT RECOMMENDED, as our default communiation over ldapi:// is more secure and much less")
 
         session = system_session()
         try:
