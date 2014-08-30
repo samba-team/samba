@@ -1908,12 +1908,12 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	return status;
 }
 
-NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
-			    const struct dom_sid *sid,
-			    TALLOC_CTX *mem_ctx,
-			    char **domain_name,
-			    char **name,
-			    enum lsa_SidType *type)
+static NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
+				   const struct dom_sid *sid,
+				   TALLOC_CTX *mem_ctx,
+				   char **domain_name,
+				   char **name,
+				   enum lsa_SidType *type)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry;
