@@ -43,7 +43,6 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 extern bool override_logfile;
-extern struct winbindd_methods cache_methods;
 
 static struct winbindd_child *winbindd_children = NULL;
 
