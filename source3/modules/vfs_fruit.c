@@ -596,12 +596,14 @@ static bool ad_unpack(struct adouble *ad, const int nentries)
 			return false;
 		}
 
-		if (off > bufsize) {
+		if ((off > bufsize) && (eid != ADEID_RFORK)) {
 			DEBUG(1, ("bogus eid %d: off: %" PRIu32 ", len: %" PRIu32 "\n",
 				  eid, off, len));
 			return false;
 		}
-		if ((eid != ADEID_RFORK) && ((off + len) > bufsize)) {
+		if ((eid != ADEID_RFORK) &&
+		    (eid != ADEID_FINDERI) &&
+		    ((off + len) > bufsize)) {
 			DEBUG(1, ("bogus eid %d: off: %" PRIu32 ", len: %" PRIu32 "\n",
 				  eid, off, len));
 			return false;
