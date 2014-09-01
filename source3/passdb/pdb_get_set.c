@@ -873,9 +873,10 @@ bool pdb_set_lanman_passwd(struct samu *sampass, const uint8 pwd[LM_HASH_LEN], e
 bool pdb_set_pw_history(struct samu *sampass, const uint8 *pwd, uint32_t historyLen, enum pdb_value_state flag)
 {
 	if (historyLen && pwd){
-		data_blob_free(&(sampass->nt_pw_his));
+		DATA_BLOB *old_nt_pw_his = &(sampass->nt_pw_his);
 		sampass->nt_pw_his = data_blob_talloc(sampass,
-						pwd, historyLen*PW_HISTORY_ENTRY_LEN);
+						      pwd, historyLen*PW_HISTORY_ENTRY_LEN);
+		data_blob_free(old_nt_pw_his);
 		if (!sampass->nt_pw_his.length) {
 			DEBUG(0, ("pdb_set_pw_history: data_blob_talloc() failed!\n"));
 			return False;
