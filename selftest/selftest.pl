@@ -582,7 +582,7 @@ sub read_testlist($)
 			print;
 		}
 	}
-	close(IN) or die("Error creating recipe");
+	close(IN) or die("Error creating recipe from $filename");
 	return @ret;
 }
 
