@@ -285,7 +285,7 @@ NTSTATUS dos_to_ntstatus(uint8 eclass, uint32 ecode)
 {
 	int i;
 	if (eclass == 0) return NT_STATUS_OK;
-	for (i=0; NT_STATUS_V(dos_to_ntstatus_map[i].ntstatus); i++) {
+	for (i=0; i < ARRAY_SIZE(dos_to_ntstatus_map); i++) {
 		if (eclass == dos_to_ntstatus_map[i].dos_class &&
 		    ecode == dos_to_ntstatus_map[i].dos_code) {
 			return dos_to_ntstatus_map[i].ntstatus;
