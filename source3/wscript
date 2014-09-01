@@ -65,6 +65,10 @@ def set_options(opt):
 
     opt.SAMBA3_ADD_OPTION('glusterfs', with_name="enable", without_name="disable", default=True)
 
+    opt.add_option('--enable-vxfs',
+                  help=("enable support for VxFS (default=no)"),
+                  action="store_true", dest='enable_vxfs', default=False)
+
 
 def configure(conf):
     from samba_utils import TO_LIST
@@ -1796,6 +1800,9 @@ main() {
         conf.SET_TARGET_TYPE('gfapi', 'EMPTY')
         conf.undefine('HAVE_GLUSTERFS')
 
+    if Options.options.enable_vxfs:
+	conf.DEFINE('HAVE_VXFS', '1')
+
     if conf.check_cfg(package='dbus-1', args='--cflags --libs',
                       msg='Checking for dbus', uselib_store="DBUS-1"):
         if (conf.CHECK_HEADERS('dbus/dbus.h', lib='dbus-1')
@@ -1904,6 +1911,9 @@ main() {
 
     if conf.CONFIG_SET('HAVE_GLUSTERFS'):
         default_shared_modules.extend(TO_LIST('vfs_glusterfs'))
+
+    if conf.CONFIG_SET('HAVE_VXFS'):
+        default_shared_modules.extend(TO_LIST('vfs_vxfs'))
 
     if conf.CONFIG_SET('HAVE_DBUS'):
 	default_shared_modules.extend(TO_LIST('vfs_snapper'))

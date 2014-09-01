@@ -505,3 +505,10 @@ bld.SAMBA3_MODULE('vfs_snapper',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_snapper'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_snapper'))
+
+bld.SAMBA3_MODULE('vfs_vxfs',
+                 subsystem='vfs',
+                 source='vfs_vxfs.c',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_vxfs'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_vxfs'))
