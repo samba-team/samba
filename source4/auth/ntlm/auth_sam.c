@@ -326,7 +326,8 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		}
 
 		/* Skip over all-zero hashes in the history */
-		if (memcmp(nt_history_pwd->hash, zero_hash.hash, 16) == 0) {
+		if (memcmp(nt_history_pwd->hash, zero_hash.hash, 
+			   sizeof(zero_hash.hash)) == 0) {
 			continue;
 		}
 
