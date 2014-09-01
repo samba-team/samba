@@ -270,7 +270,7 @@ static bool test_query_key(struct torture_context *tctx, void *_data)
 	torture_assert_int_equal(tctx, num_values, 0, "num values");
 
 	error = reg_val_set(subkey, "", REG_SZ,
-			    data_blob_talloc(tctx, data, sizeof(data)));
+			    data_blob_string_const(data));
 	torture_assert_werr_ok(tctx, error, "set default value");
 
 	error = reg_key_get_info(tctx, subkey, &classname,
