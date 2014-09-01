@@ -570,7 +570,7 @@ NTSTATUS samdb_result_passwords_from_history(TALLOC_CTX *mem_ctx,
 	if (nt_pwd) {
 		unsigned int num_nt;
 		num_nt = samdb_result_hashes(mem_ctx, msg, "ntPwdHistory", &ntPwdHash);
-		if (num_nt < idx) {
+		if (num_nt <= idx) {
 			*nt_pwd = NULL;
 		} else {
 			*nt_pwd = &ntPwdHash[idx];
@@ -583,7 +583,7 @@ NTSTATUS samdb_result_passwords_from_history(TALLOC_CTX *mem_ctx,
 		if (lpcfg_lanman_auth(lp_ctx)) {
 			unsigned int num_lm;
 			num_lm = samdb_result_hashes(mem_ctx, msg, "lmPwdHistory", &lmPwdHash);
-			if (num_lm < idx) {
+			if (num_lm <= idx) {
 				*lm_pwd = NULL;
 			} else {
 				*lm_pwd = &lmPwdHash[idx];
