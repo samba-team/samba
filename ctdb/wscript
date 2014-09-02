@@ -125,10 +125,6 @@ def configure(conf):
     conf.env.CTDB_VARDIR = os.path.join(conf.env.LOCALSTATEDIR, 'lib/ctdb')
     conf.env.CTDB_RUNDIR = os.path.join(conf.env.LOCALSTATEDIR, 'run/ctdb')
 
-    machine = os.uname()[4]
-    if machine in ['x86_64', 'ppc64', 'powerpc64']:
-        conf.env.LIBDIR = conf.env.LIBDIR + '64'
-
     if Options.options.ctdb_logdir:
         conf.env.CTDB_LOGDIR = Options.options.ctdb_logdir
     else:

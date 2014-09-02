@@ -1,9 +1,17 @@
+#!/bin/sh
+
+if gcc -dM -E - </dev/null | grep -Eq '__(x86_64|powerpc64)__' ; then
+	_libdir=/usr/lib64
+else
+	_libdir=/usr/lib
+fi
 
 CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
 	--builtin-libraries=replace,popt \
 	--bundled-libraries=!talloc,!tevent,!tdb \
 	--minimum-library-version=talloc:2.0.8,tdb:1.2.11,tevent:0.9.16 \
 	--prefix=/usr \
+	--libdir=${_libdir} \
 	--sysconfdir=/etc \
 	--mandir=/usr/man \
 	--localstatedir=/var \
