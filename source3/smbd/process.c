@@ -57,7 +57,7 @@ struct pending_message_list {
 	struct deferred_open_record *open_rec;
 };
 
-static void construct_reply_common(struct smb_request *req, const char *inbuf,
+static void construct_reply_common(uint8_t cmd, const char *inbuf,
 				   char *outbuf);
 static struct pending_message_list *get_deferred_open_message_smb(
 	struct smbd_server_connection *sconn, uint64_t mid);
@@ -1368,7 +1368,7 @@ static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 		return false;
 	}
 
-	construct_reply_common(req, inbuf, *outbuf);
+	construct_reply_common(req->cmd, inbuf, *outbuf);
 	srv_set_message(*outbuf, num_words, num_bytes, false);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
@@ -1978,8 +1978,7 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-static void construct_reply_common(struct smb_request *req, const char *inbuf,
-				   char *outbuf)
+static void construct_reply_common(uint8_t cmd, const char *inbuf, char *outbuf)
 {
 	uint16_t in_flags2 = SVAL(inbuf,smb_flg2);
 	uint16_t out_flags2 = common_flags2;
@@ -1990,7 +1989,7 @@ static void construct_reply_common(struct smb_request *req, const char *inbuf,
 
 	srv_set_message(outbuf,0,0,false);
 
-	SCVAL(outbuf, smb_com, req->cmd);
+	SCVAL(outbuf, smb_com, cmd);
 	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
 	SSVAL(outbuf,smb_flg2, out_flags2);
@@ -2005,7 +2004,7 @@ static void construct_reply_common(struct smb_request *req, const char *inbuf,
 
 void construct_reply_common_req(struct smb_request *req, char *outbuf)
 {
-	construct_reply_common(req, (const char *)req->inbuf, outbuf);
+	construct_reply_common(req->cmd, (const char *)req->inbuf, outbuf);
 }
 
 /**
