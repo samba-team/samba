@@ -186,6 +186,36 @@ static bool check_pattern(struct torture_context *torture,
 	return true;
 }
 
+static bool check_zero(struct torture_context *torture,
+		       struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+		       struct smb2_handle h, uint64_t off, uint64_t len)
+{
+	uint64_t i;
+	struct smb2_read r;
+	NTSTATUS status;
+
+	ZERO_STRUCT(r);
+	r.in.file.handle = h;
+	r.in.length      = len;
+	r.in.offset      = off;
+	status = smb2_read(tree, mem_ctx, &r);
+	torture_assert_ntstatus_ok(torture, status, "read");
+
+	torture_assert_u64_equal(torture, r.out.data.length, len,
+				 "read data len mismatch");
+
+	for (i = 0; i <= len - 8; i += 8) {
+		uint64_t data = BVAL(r.out.data.data, i);
+		torture_assert_u64_equal(torture, data, 0,
+					 talloc_asprintf(mem_ctx, "read zero "
+							 "bad at %llu\n",
+							 (unsigned long long)i));
+	}
+
+	talloc_free(r.out.data.data);
+	return true;
+}
+
 static bool test_setup_open(struct torture_context *torture,
 			    struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 			    const char *fname,
