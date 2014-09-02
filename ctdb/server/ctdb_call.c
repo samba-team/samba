@@ -416,6 +416,8 @@ struct dmaster_defer_call {
 };
 
 struct dmaster_defer_queue {
+	struct ctdb_context *ctdb;
+	uint32_t generation;
 	struct dmaster_defer_call *deferred_calls;
 };
 
@@ -433,6 +435,11 @@ static void dmaster_defer_reprocess(struct tevent_context *ev,
 
 static int dmaster_defer_queue_destructor(struct dmaster_defer_queue *ddq)
 {
+	/* Ignore requests, if database recovery happens in-between. */
+	if (ddq->generation != ddq->ctdb->vnn_map->generation) {
+		return 0;
+	}
+
 	while (ddq->deferred_calls != NULL) {
 		struct dmaster_defer_call *call = ddq->deferred_calls;
 
@@ -483,6 +490,8 @@ static int dmaster_defer_setup(struct ctdb_db_context *ctdb_db,
 		talloc_free(k);
 		return -1;
 	}
+	ddq->ctdb = ctdb_db->ctdb;
+	ddq->generation = hdr->generation;
 	ddq->deferred_calls = NULL;
 
 	trbt_insertarray32_callback(ctdb_db->defer_dmaster, k[0], k,
@@ -514,6 +523,12 @@ static int dmaster_defer_add(struct ctdb_db_context *ctdb_db,
 	}
 
 	talloc_free(k);
+
+	if (ddq->generation != hdr->generation) {
+		talloc_set_destructor(ddq, NULL);
+		talloc_free(ddq);
+		return -1;
+	}
 
 	call = talloc(ddq, struct dmaster_defer_call);
 	if (call == NULL) {
