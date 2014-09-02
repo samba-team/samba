@@ -51,7 +51,7 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\ea.txt";
 	bool ret = true;
-	char bad_ea_name[6];
+	char bad_ea_name[7];
 	int i;
 	int fnum = -1;
 
