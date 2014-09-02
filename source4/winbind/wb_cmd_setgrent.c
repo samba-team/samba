@@ -115,6 +115,7 @@ static void cmd_setgrent_recv_group_list(struct composite_context *ctx)
 			group_list);
 	if (NT_STATUS_IS_OK(state->ctx->status) ||
 		NT_STATUS_EQUAL(state->ctx->status, STATUS_MORE_ENTRIES)) {
+		uint32_t resume_index = group_list->out.resume_index;
 		if( state->result->page_index == -1) { /* First run*/
 			state->result->group_list = group_list;
 			state->result->page_index = 0;
@@ -130,7 +131,7 @@ static void cmd_setgrent_recv_group_list(struct composite_context *ctx)
 				tmp[i+state->result->group_list->out.count].groupname = talloc_steal(state->result,group_list->out.groups[i].groupname);
 			}
 			state->result->group_list->out.count += group_list->out.count;
-			talloc_free(group_list);
+			TALLOC_FREE(group_list);
 		}
 
 
@@ -140,7 +141,7 @@ static void cmd_setgrent_recv_group_list(struct composite_context *ctx)
 			group_list_send = talloc(state->result, struct libnet_GroupList);
 			if (composite_nomem(group_list_send, state->ctx)) return;
 			group_list_send->in.domain_name =  talloc_strdup(state, state->domain_name);
-			group_list_send->in.resume_index = group_list->out.resume_index;
+			group_list_send->in.resume_index = resume_index;
 			group_list_send->in.page_size = 128;
 			ctx = libnet_GroupList_send(state->libnet_ctx, state->result, group_list_send, NULL);
 			composite_continue(state->ctx, ctx, cmd_setgrent_recv_group_list, state);
