@@ -57,7 +57,7 @@ struct pending_message_list {
 	struct deferred_open_record *open_rec;
 };
 
-static void construct_reply_common(uint8_t cmd, const char *inbuf,
+static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
 				   char *outbuf);
 static struct pending_message_list *get_deferred_open_message_smb(
 	struct smbd_server_connection *sconn, uint64_t mid);
@@ -1341,8 +1341,8 @@ static const struct smb_message_struct {
 ********************************************************************/
 
 static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
-			  const char *inbuf, char **outbuf, uint8_t num_words,
-			  uint32_t num_bytes)
+			  const uint8_t *inbuf, char **outbuf,
+			  uint8_t num_words, uint32_t num_bytes)
 {
 	size_t smb_len = MIN_SMB_SIZE + VWV(num_words) + num_bytes;
 
@@ -1384,7 +1384,7 @@ static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 {
 	char *outbuf;
-	if (!create_outbuf(req, req, (const char *)req->inbuf, &outbuf, num_words,
+	if (!create_outbuf(req, req, req->inbuf, &outbuf, num_words,
 			   num_bytes)) {
 		smb_panic("could not allocate output buffer\n");
 	}
@@ -1978,7 +1978,8 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-static void construct_reply_common(uint8_t cmd, const char *inbuf, char *outbuf)
+static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
+				   char *outbuf)
 {
 	uint16_t in_flags2 = SVAL(inbuf,smb_flg2);
 	uint16_t out_flags2 = common_flags2;
@@ -2004,7 +2005,7 @@ static void construct_reply_common(uint8_t cmd, const char *inbuf, char *outbuf)
 
 void construct_reply_common_req(struct smb_request *req, char *outbuf)
 {
-	construct_reply_common(req->cmd, (const char *)req->inbuf, outbuf);
+	construct_reply_common(req->cmd, req->inbuf, outbuf);
 }
 
 /**
@@ -3078,7 +3079,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		return false;
 	}
 
-	if (!create_outbuf(talloc_tos(), &req, (const char *)req.inbuf, &outbuf,
+	if (!create_outbuf(talloc_tos(), &req, req.inbuf, &outbuf,
 			   1, req.buflen)) {
 		DEBUG(10, ("create_outbuf failed\n"));
 		return false;
