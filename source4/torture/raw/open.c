@@ -1363,7 +1363,7 @@ static bool test_chained(struct torture_context *tctx, struct smbcli_state *cli)
 	NTSTATUS status;
 	int fnum = -1;
 	bool ret = true;
-	const char *buf = "test";
+	const char buf[] = "test";
 	char buf2[4];
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
@@ -1420,7 +1420,7 @@ static bool test_no_leading_slash(struct torture_context *tctx, struct smbcli_st
 	NTSTATUS status;
 	int fnum = -1;
 	bool ret = true;
-	const char *buf = "test";
+	const char buf[] = "test";
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
@@ -1697,7 +1697,7 @@ static bool test_chained_ntcreatex_readx(struct torture_context *tctx, struct sm
 	NTSTATUS status;
 	int fnum = -1;
 	bool ret = true;
-	const char *buf = "test";
+	const char buf[] = "test";
 	char buf2[4];
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
