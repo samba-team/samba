@@ -119,6 +119,42 @@ static uint64_t patt_hash(uint64_t off)
 	return off;
 }
 
+static bool write_pattern(struct torture_context *torture,
+			  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+			  struct smb2_handle h, uint64_t off, uint64_t len,
+			  uint64_t patt_off)
+{
+	NTSTATUS status;
+	uint64_t i;
+	uint8_t *buf;
+	uint64_t buf_off = 0;
+
+	if (len == 0) {
+		return true;
+	}
+
+	buf = talloc_zero_size(mem_ctx, len);
+	torture_assert(torture, (buf != NULL), "no memory for file data buf");
+
+	for (i = 0; i <= len - 8; i += 8) {
+		SBVAL(buf, i, patt_hash(patt_off));
+		patt_off += 8;
+	}
+
+	while (len > 0) {
+		uint64_t io_sz = MIN(1024 * 1024, len);
+		status = smb2_util_write(tree, h,
+					 buf + buf_off, off, io_sz);
+		torture_assert_ntstatus_ok(torture, status, "file write");
+
+		len -= io_sz;
+		buf_off += io_sz;
+		off += io_sz;
+	}
+
+	return true;
+}
+
 static bool check_pattern(struct torture_context *torture,
 			  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 			  struct smb2_handle h, uint64_t off, uint64_t len,
@@ -189,11 +225,7 @@ static bool test_setup_create_fill(struct torture_context *torture,
 				   uint32_t desired_access,
 				   uint32_t file_attributes)
 {
-	NTSTATUS status;
 	bool ok;
-	uint64_t i;
-	uint8_t *buf = talloc_zero_size(mem_ctx, size);
-	torture_assert(torture, (buf != NULL), "no memory for file data buf");
 
 	smb2_util_unlink(tree, fname);
 
@@ -205,19 +237,8 @@ static bool test_setup_create_fill(struct torture_context *torture,
 	torture_assert(torture, ok, "file open");
 
 	if (size > 0) {
-		uint64_t cur_off = 0;
-		for (i = 0; i <= size - 8; i += 8) {
-			SBVAL(buf, i, patt_hash(i));
-		}
-		while (size > 0) {
-			uint64_t io_sz = MIN(1024 * 1024, size);
-			status = smb2_util_write(tree, *fh,
-						 buf + cur_off, cur_off, io_sz);
-			torture_assert_ntstatus_ok(torture, status, "file write");
-
-			size -= io_sz;
-			cur_off += io_sz;
-		}
+		ok = write_pattern(torture, tree, mem_ctx, *fh, 0, size, 0);
+		torture_assert(torture, ok, "write pattern");
 	}
 	return true;
 }
