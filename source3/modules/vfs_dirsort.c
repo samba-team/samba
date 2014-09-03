@@ -256,7 +256,7 @@ static void dirsort_seekdir(vfs_handle_struct *handle, DIR *dirp,
 	if (data == NULL) {
 		return;
 	}
-	if (offset > data->number_of_entries) {
+	if (offset >= data->number_of_entries) {
 		return;
 	}
 	data->pos = offset;
