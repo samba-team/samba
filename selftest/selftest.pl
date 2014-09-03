@@ -53,6 +53,7 @@ my $opt_resetup_env = undef;
 my $opt_binary_mapping = "";
 my $opt_load_list = undef;
 my $opt_libnss_wrapper_so_path = "";
+my $opt_libresolv_wrapper_so_path = "";
 my $opt_libsocket_wrapper_so_path = "";
 my $opt_libuid_wrapper_so_path = "";
 my @testlists = ();
@@ -200,6 +201,7 @@ Paths:
 
 Preload cwrap:
  --nss_wrapper_so_path=FILE the nss_wrapper library to preload
+ --resolv_wrapper_so_path=FILE the resolv_wrapper library to preload
  --socket_wrapper_so_path=FILE the socket_wrapper library to preload
  --uid_wrapper_so_path=FILE the uid_wrapper library to preload
 
@@ -243,6 +245,7 @@ my $result = GetOptions (
 		'load-list=s' => \$opt_load_list,
 		'binary-mapping=s' => \$opt_binary_mapping,
 		'nss_wrapper_so_path=s' => \$opt_libnss_wrapper_so_path,
+		'resolv_wrapper_so_path=s' => \$opt_libresolv_wrapper_so_path,
 		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
 		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path
 	    );
@@ -347,6 +350,14 @@ if ($opt_libnss_wrapper_so_path) {
 		$ld_preload = "$ld_preload:$opt_libnss_wrapper_so_path";
 	} else {
 		$ld_preload = "$opt_libnss_wrapper_so_path";
+	}
+}
+
+if ($opt_libresolv_wrapper_so_path) {
+	if ($ld_preload) {
+		$ld_preload = "$ld_preload:$opt_libresolv_wrapper_so_path";
+	} else {
+		$ld_preload = "$opt_libresolv_wrapper_so_path";
 	}
 }
 
