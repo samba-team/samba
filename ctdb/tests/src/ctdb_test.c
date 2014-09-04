@@ -84,7 +84,6 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 /* UTIL_OBJ */
 #include "lib/util/idtree.c"
 #include "lib/util/db_wrap.c"
-#include "lib/util/strlist.c"
 #include "lib/util/util.c"
 #include "lib/util/util_time.c"
 #include "lib/util/util_file.c"

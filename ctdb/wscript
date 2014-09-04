@@ -186,7 +186,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-util-misc',
                         source=bld.SUBDIR('lib/util',
                                           '''db_wrap.c debug.c fault.c
-                                             idtree.c signal.c strlist.c
+                                             idtree.c signal.c
                                              substitute.c'''),
                         includes='include include/internal lib/util',
                         deps='replace talloc tevent tdb')
