@@ -190,7 +190,12 @@ sub get_interface($)
 sub cleanup_child($$)
 {
     my ($pid, $name) = @_;
-    my $childpid = waitpid($pid, WNOHANG);
+    my $childpid = -1;
+
+    if (defined($pid)) {
+        $childpid = waitpid($pid, WNOHANG);
+    }
+
     if ($childpid == 0) {
     } elsif ($childpid < 0) {
 	printf STDERR "%s child process %d isn't here any more\n",
