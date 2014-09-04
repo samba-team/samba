@@ -153,6 +153,17 @@ def configure(conf):
                                               'share/ctdb-tests')
     conf.env.CTDB_TEST_LIBDIR = os.path.join(conf.env.LIBDIR, 'ctdb-tests')
 
+    # Allow separate compilation of utilities to find includes
+    if srcdir == '.':
+        # Building from tarball
+        conf.ADD_EXTRA_INCLUDES('#include')
+        conf.ADD_EXTRA_INCLUDES('#include/internal')
+    else:
+        # Building standalone CTDB from within Samba tree
+        conf.ADD_EXTRA_INCLUDES('#ctdb/include')
+        conf.ADD_EXTRA_INCLUDES('#ctdb/include/internal')
+        conf.ADD_EXTRA_INCLUDES('#ctdb')
+
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
     conf.SAMBA_CONFIG_H()
 
