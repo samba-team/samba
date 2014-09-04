@@ -98,53 +98,33 @@ def check_perl_ext_devel(conf):
 	conf.env.EXTUTILS_TYPEMAP  = read_out('print "$Config{privlib}/ExtUtils/typemap"')
 	conf.env.perlext_PATTERN   = '%s.' + read_out('print $Config{dlext}')[0]
 
-	def try_any(keys):
-		for k in keys:
-			conf.start_msg("Checking for perl $Config{%s}:" % k)
-			try:
-				v = read_out('print $Config{%s}' % k)[0]
-				conf.end_msg("'%s'" % (v), 'GREEN')
-				return v
-			except IndexError:
-				conf.end_msg(False, 'YELLOW')
-				pass
-		return None
+	if getattr(Options.options, 'perl_vendorarch_dir', None):
+		conf.env.PERL_VENDORARCH_DIR = Options.options.perl_vendorarch_dir
+	else:
+		try:
+			conf.env.PERL_VENDORARCH_DIR = read_out('print $Config{vendorarch}')[0]
+		except IndexError:
+			conf.env.PERL_VENDORARCH_DIR = "${DATADIR}/perl5"
 
-	perl_arch_install_dir = None
-	if getattr(Options.options, 'perl_arch_install_dir', None):
-		perl_arch_install_dir = Options.options.perl_arch_install_dir
-	if perl_arch_install_dir is None:
-		perl_arch_install_dir = try_any(['vendorarch', 'sitearch', 'archlib'])
-	if perl_arch_install_dir is None:
-		conf.fatal('No perl arch install directory autodetected.' +
-			   'Please define it with --with-perl-arch-install-dir.')
-	conf.start_msg("PERL_ARCH_INSTALL_DIR: ")
-	conf.end_msg("'%s'" % (perl_arch_install_dir), 'GREEN')
-	conf.env.PERL_ARCH_INSTALL_DIR = perl_arch_install_dir
-
-	perl_lib_install_dir = None
-	if getattr(Options.options, 'perl_lib_install_dir', None):
-		perl_lib_install_dir = Options.options.perl_lib_install_dir
-	if perl_lib_install_dir is None:
-		perl_lib_install_dir = try_any(['vendorlib', 'sitelib', 'privlib'])
-	if perl_lib_install_dir is None:
-		conf.fatal('No perl lib install directory autodetected. ' +
-			   'Please define it with --with-perl-lib-install-dir.')
-	conf.start_msg("PERL_LIB_INSTALL_DIR: ")
-	conf.end_msg("'%s'" % (perl_lib_install_dir), 'GREEN')
-	conf.env.PERL_LIB_INSTALL_DIR = perl_lib_install_dir
+	if getattr(Options.options, 'perl_vendorlib_dir', None):
+		conf.env.PERL_VENDORLIB_DIR = Options.options.perl_vendorlib_dir
+	else:
+		try:
+			conf.env.PERL_VENDORLIB_DIR = read_out('print $Config{vendorlib}')[0]
+		except IndexError:
+			conf.env.PERL_VENDORLIB_DIR = "${LIBDIR}/perl5"
 
 def set_options(opt):
 	opt.add_option("--with-perl-binary", type="string", dest="perlbinary", help = 'Specify alternate perl binary', default=None)
 
-	opt.add_option("--with-perl-arch-install-dir",
+	opt.add_option("--with-perl-vendorarch",
 		       type="string",
-		       dest="perl_arch_install_dir",
+		       dest="perl_vendorarch_dir",
 		       help = ('Specify directory where to install arch specific files'),
 		       default=None)
 
-	opt.add_option("--with-perl-lib-install-dir",
+	opt.add_option("--with-perl-vendorlib",
 		       type="string",
-		       dest="perl_lib_install_dir",
+		       dest="perl_vendorlib_dir",
 		       help = ('Specify directory where to install vendor specific files'),
 		       default=None)
