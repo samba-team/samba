@@ -1230,12 +1230,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 	ctdb_run_notification_script(ctdb, "init");
 
 	if (strcmp(ctdb->transport, "tcp") == 0) {
-		int ctdb_tcp_init(struct ctdb_context *);
 		ret = ctdb_tcp_init(ctdb);
 	}
 #ifdef USE_INFINIBAND
 	if (strcmp(ctdb->transport, "ib") == 0) {
-		int ctdb_ibw_init(struct ctdb_context *);
 		ret = ctdb_ibw_init(ctdb);
 	}
 #endif

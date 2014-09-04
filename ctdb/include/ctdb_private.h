@@ -1076,6 +1076,8 @@ void ctdb_disable_monitoring(struct ctdb_context *ctdb);
 void ctdb_enable_monitoring(struct ctdb_context *ctdb);
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb);
+int ctdb_tcp_init(struct ctdb_context *ctdb);
+int ctdb_ibw_init(struct ctdb_context *ctdb);
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 void ctdb_start_keepalive(struct ctdb_context *ctdb);
