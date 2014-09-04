@@ -24,6 +24,7 @@
 
 /* Define our own main() and usage() functions */
 #define main(argc, argv) main_foobar(argc, argv)
+int main_foobar(int argc, const char **argv);
 #define usage usage_foobar
 
 #endif /* CTDB_TEST_USE_MAIN */
@@ -63,8 +64,9 @@
 #undef ctdb_cmdline_client
 #undef tevent_context_init
 /* This is called in client/ctdb_client.c so needs a declaration... */
+struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev,
+					 struct timeval req_timeout);
 struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
-
 #include "common/cmdline.c"
 
 #undef ctdb_ctrl_getnodemap
@@ -77,6 +79,33 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 #undef ctdb_client_check_message_handlers
 #undef ctdb_ctrl_getcapabilities
 #undef ctdb_sys_have_ip
+int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
+		    struct timeval timeout, uint32_t destnode,
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
+int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
+			 struct timeval timeout, uint32_t destnode,
+			 TALLOC_CTX *mem_ctx,
+			 struct ctdb_control_get_ifaces **ifaces);
+int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout,
+		     uint32_t destnode);
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb,
+			 TALLOC_CTX *mem_ctx, struct timeval timeout,
+			 uint32_t destnode, uint32_t *recmode);
+int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb,
+			   TALLOC_CTX *mem_ctx, struct timeval timeout,
+			   uint32_t destnode, uint32_t *recmaster);
+int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb,
+		struct timeval timeout, uint32_t destnode,
+		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap);
+int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
+			  uint32_t destnode, uint32_t dbid, uint64_t *seqnum);
+int ctdb_client_check_message_handlers(struct ctdb_context *ctdb,
+				       uint64_t *ids, uint32_t num,
+				       uint8_t *result);
+int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb,
+			      struct timeval timeout, uint32_t destnode,
+			      uint32_t *capabilities);
+bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 
 #undef TIMELIMIT
 #include "tools/ctdb_vacuum.c"
