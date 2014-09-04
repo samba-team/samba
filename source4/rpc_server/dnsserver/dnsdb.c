@@ -395,7 +395,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 					const char *name,
 					struct DNS_RPC_RECORD *add_record)
 {
-	const char * const attrs[] = { "dnsRecord", NULL };
+	const char * const attrs[] = { "dnsRecord", "dNSTombstoned", NULL };
 	struct ldb_result *res;
 	struct dnsp_DnssrvRpcRecord *rec;
 	struct ldb_message_element *el;
@@ -404,6 +404,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	NTTIME t;
 	int ret, i;
 	int serial;
+	bool was_tombstoned = false;
 
 	rec = dns_to_dnsp_copy(mem_ctx, add_record);
 	W_ERROR_HAVE_NO_MEMORY(rec);
@@ -452,6 +453,12 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	was_tombstoned = ldb_msg_find_attr_as_bool(res->msgs[0],
+						   "dNSTombstoned", false);
+	if (was_tombstoned) {
+		el->num_values = 0;
+	}
+
 	for (i=0; i<el->num_values; i++) {
 		struct dnsp_DnssrvRpcRecord rec2;
 
@@ -482,6 +489,12 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	}
 
 	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	el = ldb_msg_find_element(res->msgs[0], "dNSTombstoned");
+	if (el != NULL) {
+		el->flags = LDB_FLAG_MOD_DELETE;
+	}
+
 	ret = ldb_modify(samdb, res->msgs[0]);
 	if (ret != LDB_SUCCESS) {
 		return WERR_INTERNAL_DB_ERROR;
@@ -520,7 +533,7 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	arec->dwTimeStamp = t;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
-			"(&(objectClass=dnsNode)(name=%s))", name);
+			"(&(objectClass=dnsNode)(name=%s)(!(dNSTombstoned=TRUE)))", name);
 	if (ret != LDB_SUCCESS) {
 		return WERR_INTERNAL_DB_ERROR;
 	}
