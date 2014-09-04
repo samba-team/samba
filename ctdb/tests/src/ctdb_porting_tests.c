@@ -191,7 +191,7 @@ static int fork_helper(void)
 /*
   tests
 */
-int test_ctdb_sys_check_iface_exists(void)
+static int test_ctdb_sys_check_iface_exists(void)
 {
 	const char *fakename = "fake";
 	bool test;
@@ -206,7 +206,7 @@ int test_ctdb_sys_check_iface_exists(void)
 	return 0;
 }
 
-int test_ctdb_get_peer_pid(void)
+static int test_ctdb_get_peer_pid(void)
 {
 	int ret;
 	int fd;
@@ -233,7 +233,7 @@ int test_ctdb_get_peer_pid(void)
 	return 0;
 }
 
-int test_ctdb_get_process_name(void)
+static int test_ctdb_get_process_name(void)
 {
 	char *process_name = NULL;
 	globals.testcount++;

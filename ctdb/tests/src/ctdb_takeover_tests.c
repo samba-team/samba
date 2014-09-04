@@ -74,7 +74,7 @@ read_ctdb_public_ip_list(TALLOC_CTX *ctx)
 	return ret;
 }
 
-void print_ctdb_public_ip_list(struct ctdb_public_ip_list * ips)
+static void print_ctdb_public_ip_list(struct ctdb_public_ip_list * ips)
 {
 	while (ips) {
 		printf("%s %d\n", ctdb_addr_to_str(&(ips->addr)), ips->pnn);
@@ -84,7 +84,7 @@ void print_ctdb_public_ip_list(struct ctdb_public_ip_list * ips)
 
 /* Read some IPs from stdin, 1 per line, parse them and then print
  * them back out. */
-void ctdb_test_read_ctdb_public_ip_list(void)
+static void ctdb_test_read_ctdb_public_ip_list(void)
 {
 	struct ctdb_public_ip_list *l;
 
@@ -212,7 +212,8 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 	return true;
 }
 
-void print_ctdb_available_ips(int numnodes, struct ctdb_all_public_ips **avail)
+static void print_ctdb_available_ips(int numnodes,
+				     struct ctdb_all_public_ips **avail)
 {
 	int n, i;
 
@@ -229,7 +230,7 @@ void print_ctdb_available_ips(int numnodes, struct ctdb_all_public_ips **avail)
 	}
 }
 
-void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
+static void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
 {
 	int numnodes;
 	struct ctdb_public_ip_list *l;
@@ -261,7 +262,7 @@ void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
 }
 
 /* Read 2 IPs from stdin, calculate the IP distance and print it. */
-void ctdb_test_ip_distance(void)
+static void ctdb_test_ip_distance(void)
 {
 	struct ctdb_public_ip_list *l;
 	uint32_t distance;
@@ -281,7 +282,7 @@ void ctdb_test_ip_distance(void)
 /* Read some IPs from stdin, calculate the sum of the squares of the
  * IP distances between the 1st argument and those read that are on
  * the given node. The given IP must one of the ones in the list.  */
-void ctdb_test_ip_distance_2_sum(const char ip[], int pnn)
+static void ctdb_test_ip_distance_2_sum(const char ip[], int pnn)
 {
 	struct ctdb_public_ip_list *l;
 	struct ctdb_public_ip_list *t;
@@ -318,7 +319,7 @@ void ctdb_test_ip_distance_2_sum(const char ip[], int pnn)
 
 /* Read some IPs from stdin, calculate the sume of the squares of the
  * IP distances between the first and the rest, and print it. */
-void ctdb_test_lcp2_imbalance(int pnn)
+static void ctdb_test_lcp2_imbalance(int pnn)
 {
 	struct ctdb_public_ip_list *l;
 	uint32_t imbalance;
@@ -405,11 +406,11 @@ static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
  * create_merged_ip_list(), so should only be used in tests of
  * ctdb_takeover_run_core().  Yes, it is a hack...  :-)
  */
-void ctdb_test_init(const char nodestates[],
-		    struct ctdb_context **ctdb,
-		    struct ctdb_public_ip_list **all_ips,
-		    struct ctdb_ipflags **ipflags,
-		    bool read_ips_for_multiple_nodes)
+static void ctdb_test_init(const char nodestates[],
+			   struct ctdb_context **ctdb,
+			   struct ctdb_public_ip_list **all_ips,
+			   struct ctdb_ipflags **ipflags,
+			   bool read_ips_for_multiple_nodes)
 {
 	struct ctdb_all_public_ips **avail;
 	int i, numnodes;
@@ -501,7 +502,7 @@ void ctdb_test_init(const char nodestates[],
 }
 
 /* IP layout is read from stdin. */
-void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
+static void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
@@ -524,7 +525,7 @@ void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 }
 
 /* IP layout is read from stdin. */
-void ctdb_test_lcp2_failback(const char nodestates[])
+static void ctdb_test_lcp2_failback(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
@@ -547,7 +548,7 @@ void ctdb_test_lcp2_failback(const char nodestates[])
 }
 
 /* IP layout is read from stdin. */
-void ctdb_test_lcp2_failback_loop(const char nodestates[])
+static void ctdb_test_lcp2_failback_loop(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
@@ -572,8 +573,8 @@ void ctdb_test_lcp2_failback_loop(const char nodestates[])
 /* IP layout is read from stdin.  See comment for ctdb_test_init() for
  * explanation of read_ips_for_multiple_nodes.
  */
-void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
-				      bool read_ips_for_multiple_nodes)
+static void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
+					     bool read_ips_for_multiple_nodes)
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
@@ -589,7 +590,7 @@ void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
 	talloc_free(ctdb);
 }
 
-void usage(void)
+static void usage(void)
 {
 	fprintf(stderr, "usage: ctdb_takeover_tests <op>\n");
 	exit(1);

@@ -43,7 +43,7 @@ static double end_timer(void)
 
 int num_records=5;
 
-void *callback(void *p, void *d)
+static void *callback(void *p, void *d)
 {
 	uint32_t *data = (uint32_t *)d;
 
@@ -56,12 +56,12 @@ void *callback(void *p, void *d)
 	return data;
 }
 
-void *random_add(void *p, void *d)
+static void *random_add(void *p, void *d)
 {
 	return p;
 }
 
-int traverse(void *p, void *d)
+static int traverse(void *p, void *d)
 {
 	uint32_t *data = (uint32_t *)d;
 
@@ -69,14 +69,14 @@ int traverse(void *p, void *d)
 	return 0;
 }
 
-int random_traverse(void *p, void *d)
+static int random_traverse(void *p, void *d)
 {
 	printf("%s   ",(char *)d);
 	return 0;
 }
 
 static uint32_t calc_checksum = 0;	
-int traverse_checksum(void *p, void *d)
+static int traverse_checksum(void *p, void *d)
 {
 	int i,j,k;
 
@@ -85,14 +85,14 @@ int traverse_checksum(void *p, void *d)
 	return 0;
 }
 
-int count_traverse(void *p, void *d)
+static int count_traverse(void *p, void *d)
 {
 	int *count = p;
 	(*count)++;
 	return 0;
 }
 
-int count_traverse_abort(void *p, void *d)
+static int count_traverse_abort(void *p, void *d)
 {
 	int *count = p;
 	(*count)++;

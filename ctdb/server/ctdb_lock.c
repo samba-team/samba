@@ -655,7 +655,7 @@ static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ct
 /*
  * Find a lock request that can be scheduled
  */
-struct lock_context *ctdb_find_lock_context(struct ctdb_context *ctdb)
+static struct lock_context *ctdb_find_lock_context(struct ctdb_context *ctdb)
 {
 	struct lock_context *lock_ctx, *next_ctx;
 	struct ctdb_db_context *ctdb_db;

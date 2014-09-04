@@ -71,7 +71,7 @@ static int lock_range(int fd, int offset, int len)
 }
 
 /* check whether we could place a lock */
-int check_lock(int fd, int offset, int len)
+static int check_lock(int fd, int offset, int len)
 {
 	struct flock lock;
 	int ret;

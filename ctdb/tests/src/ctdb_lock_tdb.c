@@ -6,7 +6,7 @@
 const char *tdb_file;
 TDB_CONTEXT *tdb;
 
-void signal_handler(int signum)
+static void signal_handler(int signum)
 {
 	tdb_close(tdb);
 }

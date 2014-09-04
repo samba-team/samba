@@ -33,7 +33,7 @@
 #define MAXINDEX 64
 char indices[MAXINDEX];
 
-void vn_cb(struct ctdb_context *ctdb, uint32_t pnn, void *private_data)
+static void vn_cb(struct ctdb_context *ctdb, uint32_t pnn, void *private_data)
 {
 	char *ind = private_data;
 
@@ -45,7 +45,7 @@ void vn_cb(struct ctdb_context *ctdb, uint32_t pnn, void *private_data)
 	ind[pnn] = 0;
 }
 
-void verify_nodes(struct ctdb_context *ctdb, TDB_DATA data)
+static void verify_nodes(struct ctdb_context *ctdb, TDB_DATA data)
 {
 	int i;
 
@@ -61,7 +61,7 @@ void verify_nodes(struct ctdb_context *ctdb, TDB_DATA data)
 
 	
 	
-void add_node(struct ctdb_context *ctdb, TDB_DATA *data, int pnn)
+static void add_node(struct ctdb_context *ctdb, TDB_DATA *data, int pnn)
 {
 	printf("Add node %d\n", pnn);
 	if (ctdb_trackingdb_add_pnn(ctdb, data, pnn)) {

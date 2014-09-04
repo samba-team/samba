@@ -34,7 +34,7 @@ static struct ctdb_context *ctdb_global;
 /* A fake flag that is only supported by some functions */
 #define NODE_FLAGS_FAKE_TIMEOUT 0x80000000
 
-void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
+static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
@@ -131,7 +131,8 @@ void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 	}
 }
 
-void ctdb_test_stubs_print_nodemap(struct ctdb_context *ctdb)
+#ifdef CTDB_TEST_OVERRIDE_MAIN
+static void ctdb_test_stubs_print_nodemap(struct ctdb_context *ctdb)
 {
 	int i;
 
@@ -143,6 +144,7 @@ void ctdb_test_stubs_print_nodemap(struct ctdb_context *ctdb)
 		       ctdb->nodes[i]->pnn == ctdb->recovery_master ? "\tRECMASTER" : "");
 	}
 }
+#endif
 
 /* Read interfaces information.  Same format as "ctdb ifaces -Y"
  * output:
@@ -158,7 +160,7 @@ struct ctdb_iface {
 	uint32_t references;
 };
 
-void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
+static void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
 {
 	char line[1024];
 	struct ctdb_iface *iface;
@@ -218,7 +220,8 @@ void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
 	}
 }
 
-void ctdb_test_stubs_print_ifaces(struct ctdb_context *ctdb)
+#ifdef CTDB_TEST_OVERRIDE_MAIN
+static void ctdb_test_stubs_print_ifaces(struct ctdb_context *ctdb)
 {
 	struct ctdb_iface *iface;
 
@@ -230,6 +233,7 @@ void ctdb_test_stubs_print_ifaces(struct ctdb_context *ctdb)
 		       iface->references);
 	}
 }
+#endif
 
 /* Read vnn map.
  * output:
@@ -246,7 +250,7 @@ struct ctdb_vnn_map {
 	uint32_t *map;
 };
 */
-void ctdb_test_stubs_read_vnnmap(struct ctdb_context *ctdb)
+static void ctdb_test_stubs_read_vnnmap(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
@@ -290,7 +294,8 @@ void ctdb_test_stubs_read_vnnmap(struct ctdb_context *ctdb)
 	}
 }
 
-void ctdb_test_stubs_print_vnnmap(struct ctdb_context *ctdb)
+#ifdef CTDB_TEST_OVERRIDE_MAIN
+static void ctdb_test_stubs_print_vnnmap(struct ctdb_context *ctdb)
 {
 	int i;
 
@@ -299,8 +304,9 @@ void ctdb_test_stubs_print_vnnmap(struct ctdb_context *ctdb)
 		printf("%d\n", ctdb->vnn_map->map[i]);
 	}
 }
+#endif
 
-void ctdb_test_stubs_fake_setup(struct ctdb_context *ctdb)
+static void ctdb_test_stubs_fake_setup(struct ctdb_context *ctdb)
 {
 	char line[1024];
 
