@@ -24,6 +24,7 @@
 
 #include <libgen.h>
 
+#include "ctdb_private.h"
 
 #if HAVE_SCHED_H
 #include <sched.h>

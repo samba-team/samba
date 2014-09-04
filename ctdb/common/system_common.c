@@ -21,6 +21,8 @@
 #include "includes.h"
 #include "system/network.h"
 
+#include "ctdb_private.h"
+
 /*
   uint16 checksum for n bytes
  */
