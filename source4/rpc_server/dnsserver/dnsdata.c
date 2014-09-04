@@ -798,6 +798,15 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 			if (select_flag & DNS_RPC_VIEW_AUTHORITY_DATA) {
 				if (dnsp_rec.rank == DNS_RANK_ZONE) {
 					found = true;
+				} else if (dnsp_rec.rank == DNS_RANK_NS_GLUE) {
+					/*
+					 * If branch_name is NULL, we're
+					 * explicitly asked to also return
+					 * DNS_RANK_NS_GLUE records
+					 */
+					if (branch_name == NULL) {
+						found = true;
+					}
 				}
 			}
 			if (select_flag & DNS_RPC_VIEW_CACHE_DATA) {
