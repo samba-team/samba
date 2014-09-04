@@ -477,6 +477,12 @@ static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_set
 	state->smb2req->session = talloc_move(state->smb2req, &state->session);
 
 	/*
+	 * We own the session now - we don't need the
+	 * tag talloced on session that keeps track of session independently.
+	 */
+	TALLOC_FREE(state->pp_self_ref);
+
+	/*
 	 * We've made this session owned by the current request.
 	 * Ensure that any outstanding requests don't also refer
 	 * to it.
