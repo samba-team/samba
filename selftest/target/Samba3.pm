@@ -320,7 +320,9 @@ sub setup_admember($$$$)
 	my $ret = $self->provision($prefix,
 				   "LOCALADMEMBER",
 				   "loCalMemberPass",
-				   $member_options);
+				   $member_options,
+				   $dcvars->{SERVER_IP},
+				   $dcvars->{SERVER_IPV6});
 
 	$ret or return undef;
 
@@ -336,6 +338,7 @@ sub setup_admember($$$$)
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
+	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -343,6 +346,11 @@ sub setup_admember($$$$)
 	my $net = Samba::bindir_path($self, "net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
 	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
@@ -400,7 +408,9 @@ sub setup_admember_rfc2307($$$$)
 	my $ret = $self->provision($prefix,
 				   "RFC2307MEMBER",
 				   "loCalMemberPass",
-				   $member_options);
+				   $member_options,
+				   $dcvars->{SERVER_IP},
+				   $dcvars->{SERVER_IPV6});
 
 	$ret or return undef;
 
@@ -416,6 +426,7 @@ sub setup_admember_rfc2307($$$$)
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
+	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -423,6 +434,11 @@ sub setup_admember_rfc2307($$$$)
 	my $net = Samba::bindir_path($self, "net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
 	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
@@ -523,6 +539,7 @@ sub setup_ktest($$$)
 	$ctx->{realm} = "KTEST.SAMBA.EXAMPLE.COM";
 	$ctx->{dnsname} = lc($ctx->{realm});
 	$ctx->{kdc_ipv4} = "0.0.0.0";
+	$ctx->{kdc_ipv6} = "::";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -725,6 +742,11 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_HOSTNAME} = $env_vars->{NSS_WRAPPER_HOSTNAME};
 		$ENV{NSS_WRAPPER_MODULE_SO_PATH} = $env_vars->{NSS_WRAPPER_MODULE_SO_PATH};
 		$ENV{NSS_WRAPPER_MODULE_FN_PREFIX} = $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX};
+		if (defined($env_vars->{RESOLV_WRAPPER_CONF})) {
+			$ENV{RESOLV_WRAPPER_CONF} = $env_vars->{RESOLV_WRAPPER_CONF};
+		} else {
+			$ENV{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
+		}
 
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.winbindd";
 
@@ -783,6 +805,11 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_HOSTNAME} = $env_vars->{NSS_WRAPPER_HOSTNAME};
 		$ENV{NSS_WRAPPER_MODULE_SO_PATH} = $env_vars->{NSS_WRAPPER_MODULE_SO_PATH};
 		$ENV{NSS_WRAPPER_MODULE_FN_PREFIX} = $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX};
+		if (defined($env_vars->{RESOLV_WRAPPER_CONF})) {
+			$ENV{RESOLV_WRAPPER_CONF} = $env_vars->{RESOLV_WRAPPER_CONF};
+		} else {
+			$ENV{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
+		}
 
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.smbd";
 
@@ -827,9 +854,9 @@ sub check_or_start($$$$$) {
 	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
 }
 
-sub provision($$$$$$)
+sub provision($$$$$$$$)
 {
-	my ($self, $prefix, $server, $password, $extra_options, $no_delete_prefix) = @_;
+	my ($self, $prefix, $server, $password, $extra_options, $dc_server_ip, $dc_server_ipv6, $no_delete_prefix) = @_;
 
 	##
 	## setup the various environment variables we need
@@ -849,8 +876,6 @@ sub provision($$$$$$)
 
 	my $prefix_abs = abs_path($prefix);
 	my $bindir_abs = abs_path($self->{bindir});
-
-	my $dns_host_file = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 
 	my @dirs = ();
 
@@ -990,6 +1015,8 @@ sub provision($$$$$$)
 	my $nss_wrapper_passwd = "$privatedir/passwd";
 	my $nss_wrapper_group = "$privatedir/group";
 	my $nss_wrapper_hosts = "$ENV{SELFTEST_PREFIX}/hosts";
+	my $resolv_conf = "$privatedir/resolv.conf";
+	my $dns_host_file = "$$ENV{SELFTEST_PREFIX}/dns_host_file";
 
 	my $mod_printer_pl = "$ENV{PERL} $self->{srcdir}/source3/script/tests/printing/modprinter.pl";
 
@@ -1115,7 +1142,6 @@ sub provision($$$$$$)
 	print notify backchannel = yes
 
 	ncalrpc dir = $prefix_abs/ncalrpc
-        resolv:host file = $dns_host_file
 
         # The samba3.blackbox.smbclient_s3 test uses this to test that
         # sending messages works, and that the %m sub works.
@@ -1300,6 +1326,23 @@ domadmins:X:$gid_domadmins:
 	print HOSTS "${server_ipv6} ${hostname}.samba.example.com ${hostname}\n";
 	close(HOSTS);
 
+	## hosts
+	unless (open(RESOLV_CONF, ">$resolv_conf")) {
+		warn("Unable to open $resolv_conf");
+		return undef;
+	}
+	if (defined($dc_server_ip) or defined($dc_server_ipv6)) {
+		if (defined($dc_server_ip)) {
+			print RESOLV_CONF "nameserver $dc_server_ip\n";
+		}
+		if (defined($dc_server_ipv6)) {
+			print RESOLV_CONF "nameserver $dc_server_ipv6\n";
+		}
+	} else {
+		print RESOLV_CONF "nameserver ${server_ip}\n";
+		print RESOLV_CONF "nameserver ${server_ipv6}\n";
+	}
+	close(RESOLV_CONF);
 
 	foreach my $evlog (@eventlog_list) {
 		my $evlogtdb = "$eventlogdir/$evlog.tdb";
@@ -1311,6 +1354,11 @@ domadmins:X:$gid_domadmins:
 	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$ENV{NSS_WRAPPER_HOSTS} = $nss_wrapper_hosts;
 	$ENV{NSS_WRAPPER_HOSTNAME} = "${hostname}.samba.example.com";
+	if ($ENV{SAMBA_DNS_FAKING}) {
+		$ENV{RESOLV_WRAPPER_CONF} = $resolv_conf;
+	} else {
+		$ENV{RESOLV_WRAPPER_HOSTS} = $dns_host_file;
+	}
 
         my $cmd = "UID_WRAPPER_ROOT=1 " . Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name > /dev/null";
 	unless (open(PWD, "|$cmd")) {
@@ -1328,10 +1376,6 @@ domadmins:X:$gid_domadmins:
 	print DNS_UPDATE_LIST "A $server. $server_ip\n";
 	print DNS_UPDATE_LIST "AAAA $server. $server_ipv6\n";
 	close(DNS_UPDATE_LIST);
-
-        if (system("$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$dns_host_file -s $conffile --update-list=$prefix/dns_update_list --update-cache=$prefix/dns_update_cache --no-substiutions --no-credentials") != 0) {
-                die "Unable to update hostname into $dns_host_file";
-        }
 
 	$ret{SERVER_IP} = $server_ip;
 	$ret{SERVER_IPV6} = $server_ipv6;
@@ -1360,6 +1404,11 @@ domadmins:X:$gid_domadmins:
 	$ret{NSS_WRAPPER_HOSTNAME} = "${hostname}.samba.example.com";
 	$ret{NSS_WRAPPER_MODULE_SO_PATH} = Samba::nss_wrapper_winbind_so_path($self);
 	$ret{NSS_WRAPPER_MODULE_FN_PREFIX} = "winbind";
+	if ($ENV{SAMBA_DNS_FAKING}) {
+		$ret{RESOLV_WRAPPER_HOSTS} = $dns_host_file;
+	} else {
+		$ret{RESOLV_WRAPPER_CONF} = $resolv_conf;
+	}
 	$ret{LOCAL_PATH} = "$shrdir";
         $ret{LOGDIR} = $logdir;
 
