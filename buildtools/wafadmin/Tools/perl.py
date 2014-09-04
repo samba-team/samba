@@ -101,18 +101,12 @@ def check_perl_ext_devel(conf):
 	if getattr(Options.options, 'perl_vendorarch_dir', None):
 		conf.env.PERL_VENDORARCH_DIR = Options.options.perl_vendorarch_dir
 	else:
-		try:
-			conf.env.PERL_VENDORARCH_DIR = read_out('print $Config{vendorarch}')[0]
-		except IndexError:
-			conf.env.PERL_VENDORARCH_DIR = "${DATADIR}/perl5"
+		conf.env.PERL_VENDORARCH_DIR = read_out('print $Config{vendorarch}')[0]
 
 	if getattr(Options.options, 'perl_vendorlib_dir', None):
 		conf.env.PERL_VENDORLIB_DIR = Options.options.perl_vendorlib_dir
 	else:
-		try:
-			conf.env.PERL_VENDORLIB_DIR = read_out('print $Config{vendorlib}')[0]
-		except IndexError:
-			conf.env.PERL_VENDORLIB_DIR = "${LIBDIR}/perl5"
+		conf.env.PERL_VENDORLIB_DIR = read_out('print $Config{vendorlib}')[0]
 
 def set_options(opt):
 	opt.add_option("--with-perl-binary", type="string", dest="perlbinary", help = 'Specify alternate perl binary', default=None)
