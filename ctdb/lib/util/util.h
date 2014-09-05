@@ -319,13 +319,11 @@ mmap (if possible) or read a file
 **/
 _PUBLIC_ void *map_file(const char *fname, size_t size);
 
-#ifdef _SAMBA_BUILD_
 /**
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
 **/
 _PUBLIC_ char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
-#endif
 
 /**
 load a fd into memory and return an array of pointers to lines in the file
