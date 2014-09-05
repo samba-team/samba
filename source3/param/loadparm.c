@@ -739,6 +739,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.ldap_debug_level = 0;
 	Globals.ldap_debug_threshold = 10;
 
+	Globals.client_ldap_sasl_wrapping = ADS_AUTH_SASL_SIGN;
+
 	/* This is what we tell the afs client. in reality we set the token 
 	 * to never expire, though, when this runs out the afs client will 
 	 * forget the token. Set to 0 to get NEVERDATE.*/

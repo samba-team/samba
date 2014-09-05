@@ -2665,6 +2665,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "ldap debug threshold", "10");
 
+	lpcfg_do_global_parameter(lp_ctx, "client ldap sasl wrapping", "sign");
+
 	lpcfg_do_global_parameter(lp_ctx, "follow symlinks", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "machine password timeout", "604800");
