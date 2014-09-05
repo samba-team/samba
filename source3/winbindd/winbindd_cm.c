@@ -2578,6 +2578,15 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  anonymous:
 
 	/* Finally fall back to anonymous. */
+	if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
+		status = NT_STATUS_DOWNGRADE_DETECTED;
+		DEBUG(1, ("Unwilling to make SAMR connection to domain %s"
+			  "without connection level security, "
+			  "must set 'winbind sealed pipes = false' and "
+			  "'require strong key = false' to proceed: %s\n",
+			  domain->name, nt_errstr(status)));
+		goto done;
+	}
 	status = cli_rpc_pipe_open_noauth(conn->cli, &ndr_table_samr,
 					  &conn->samr_pipe);
 
@@ -2802,6 +2811,16 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
  anonymous:
 
+	if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
+		result = NT_STATUS_DOWNGRADE_DETECTED;
+		DEBUG(1, ("Unwilling to make LSA connection to domain %s"
+			  "without connection level security, "
+			  "must set 'winbind sealed pipes = false' and "
+			  "'require strong key = false' to proceed: %s\n",
+			  domain->name, nt_errstr(result)));
+		goto done;
+	}
+
 	result = cli_rpc_pipe_open_noauth(conn->cli,
 					  &ndr_table_lsarpc,
 					  &conn->lsa_pipe);
@@ -2959,6 +2978,16 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
  no_schannel:
 	if (!(conn->netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+		if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
+			result = NT_STATUS_DOWNGRADE_DETECTED;
+			DEBUG(1, ("Unwilling to make connection to domain %s"
+				  "without connection level security, "
+				  "must set 'winbind sealed pipes = false' and "
+				  "'require strong key = false' to proceed: %s\n",
+				  domain->name, nt_errstr(result)));
+			invalidate_cm_connection(conn);
+			return result;
+		}
 		result = cli_rpc_pipe_open_noauth(conn->cli,
 					&ndr_table_netlogon,
 					&conn->netlogon_pipe);
