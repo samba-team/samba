@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
@@ -2854,13 +2855,190 @@ done:
 	return ret;
 }
 
+/**
+ * Test lock replay detection
+ */
+static bool test_replay(struct torture_context *torture,
+			  struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_handle h;
+	struct smb2_ioctl ioctl;
+	struct smb2_lock lck;
+	struct smb2_lock_element el;
+	uint8_t res_req[8];
+	const char *fname = BASEDIR "\\replay.txt";
+	struct smb2_transport *transport = tree->session->transport;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB2_10) {
+		torture_skip(torture, "SMB 2.100 Dialect family or above \
+				required for Lock Replay tests\n");
+	}
+
+	status = torture_smb2_testdir(tree, BASEDIR, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, h);
+
+	torture_comment(torture, "Testing Open File:\n");
+	status = torture_smb2_testfile(tree, fname, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Setup initial parameters
+	 */
+	el = (struct smb2_lock_element) {
+		.length = 100,
+		.offset = 100,
+	};
+	lck = (struct smb2_lock) {
+		.in.locks = &el,
+		.in.lock_count	= 0x0001,
+		.in.file.handle	= h
+	};
+
+	torture_comment(torture, "Testing Lock (ignored) Replay detection:\n");
+	lck.in.lock_sequence = 0x010 + 0x1;
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	torture_comment(torture, "Testing Set Resiliency:\n");
+	SIVAL(res_req, 0, 1000); /* timeout */
+	SIVAL(res_req, 4, 0);    /* reserved */
+	ioctl = (struct smb2_ioctl) {
+		.level = RAW_IOCTL_SMB2,
+		.in.file.handle = h,
+		.in.function = FSCTL_LMR_REQ_RESILIENCY,
+		.in.max_response_size = 0,
+		.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL,
+		.in.out.data = res_req,
+		.in.out.length = sizeof(res_req)
+	};
+	status = smb2_ioctl(tree, torture, &ioctl);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_comment(torture, "Testing Lock (ignored) Replay detection "
+				 "(Bucket No: 0):\n");
+	lck.in.lock_sequence = 0x000 + 0x1;
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	torture_comment(torture, "Testing Lock Replay detection "
+				 "(Bucket No: 1):\n");
+
+	/*
+	 * Obtain Exclusive Lock of length 100 bytes using Bucket Num 1
+	 * and Bucket Seq 1.
+	 */
+	lck.in.lock_sequence = 0x010 + 0x1;
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Server detects Replay of Byte Range locks using the Lock Sequence
+	 * Numbers. And ignores the requests completely.
+	 */
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Server will not grant same Byte Range using a different Bucket Seq
+	 */
+	lck.in.lock_sequence = 0x010 + 0x2;
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	torture_comment(torture, "Testing Lock Replay detection "
+				 "(Bucket No: 64):\n");
+
+	/*
+	 * Server will not grant same Byte Range using a different Bucket Num
+	 */
+	lck.in.lock_sequence = 0x410 + 0x1;
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	/*
+	 * Test Unlock replay detection
+	 */
+	lck.in.lock_sequence = 0x410 + 0x2;
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_sequence = 0x410 + 0x3;
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	torture_comment(torture, "Testing Lock (ignored) Replay detection "
+				 "(Bucket No: 65):\n");
+	lck.in.lock_sequence = 0x420 + 0x1;
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+done:
+	smb2_util_close(tree, h);
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
 /* basic testing of SMB2 locking
 */
 struct torture_suite *torture_smb2_lock_init(void)
 {
 	struct torture_suite *suite =
 	    torture_suite_create(talloc_autofree_context(), "lock");
-
 	torture_suite_add_1smb2_test(suite, "valid-request",
 	    test_valid_request);
 	torture_suite_add_1smb2_test(suite, "rw-none", test_lock_rw_none);
@@ -2889,6 +3067,7 @@ struct torture_suite *torture_smb2_lock_init(void)
 	torture_suite_add_1smb2_test(suite, "range", test_range);
 	torture_suite_add_2smb2_test(suite, "overlap", test_overlap);
 	torture_suite_add_1smb2_test(suite, "truncate", test_truncate);
+	torture_suite_add_1smb2_test(suite, "replay", test_replay);
 
 	suite->description = talloc_strdup(suite, "SMB2-LOCK tests");
 
