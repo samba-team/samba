@@ -805,7 +805,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return ntresult;
 			}
 
-			ntresult = rpccli_setup_netlogon_creds(cli,
+			ntresult = rpccli_setup_netlogon_creds(cli, NCACN_NP,
 							rpcclient_netlogon_creds,
 							false, /* force_reauth */
 							current_nt_hash,

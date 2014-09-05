@@ -27,6 +27,7 @@ struct cli_state;
 struct messaging_context;
 struct netlogon_creds_cli_context;
 struct dcerpc_binding_handle;
+#include "librpc/rpc/rpc_common.h"
 
 /* The following definitions come from rpc_client/cli_netlogon.c  */
 
@@ -39,6 +40,7 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 				      TALLOC_CTX *mem_ctx,
 				      struct netlogon_creds_cli_context **netlogon_creds);
 NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
+				     enum dcerpc_transport_t transport,
 				     struct netlogon_creds_cli_context *netlogon_creds,
 				     bool force_reauth,
 				     struct samr_Password current_nt_hash,

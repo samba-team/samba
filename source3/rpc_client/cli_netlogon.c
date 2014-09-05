@@ -125,6 +125,7 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 }
 
 NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
+				     enum dcerpc_transport_t transport,
 				     struct netlogon_creds_cli_context *netlogon_creds,
 				     bool force_reauth,
 				     struct samr_Password current_nt_hash,
@@ -155,9 +156,10 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 		TALLOC_FREE(creds);
 	}
 
-	status = cli_rpc_pipe_open_noauth(cli,
-					  &ndr_table_netlogon,
-					  &netlogon_pipe);
+	status = cli_rpc_pipe_open_noauth_transport(cli,
+						    transport,
+						    &ndr_table_netlogon,
+						    &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("%s: failed to open noauth netlogon connection to %s - %s\n",
 			 __FUNCTION__,

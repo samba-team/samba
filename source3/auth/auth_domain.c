@@ -148,7 +148,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 		return result;
 	}
 
-	result = rpccli_setup_netlogon_creds(cli,
+	result = rpccli_setup_netlogon_creds(cli, NCACN_NP,
 					     netlogon_creds,
 					     false, /* force_reauth */
 					     current_nt_hash,

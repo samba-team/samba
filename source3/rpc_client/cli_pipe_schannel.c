@@ -90,7 +90,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds(cli,
+	status = rpccli_setup_netlogon_creds(cli, transport,
 					     netlogon_creds,
 					     false, /* force_reauth */
 					     current_nt_hash,

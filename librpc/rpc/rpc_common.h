@@ -22,6 +22,8 @@
 #ifndef __DEFAULT_LIBRPC_RPCCOMMON_H__
 #define __DEFAULT_LIBRPC_RPCCOMMON_H__
 
+#include "gen_ndr/dcerpc.h"
+
 struct dcerpc_binding_handle;
 struct GUID;
 struct ndr_interface_table;

@@ -983,7 +983,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds(cli,
+	status = rpccli_setup_netlogon_creds(cli, NCACN_NP,
 					     netlogon_creds,
 					     true, /* force_reauth */
 					     current_nt_hash,
@@ -1444,7 +1444,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds(cli,
+	status = rpccli_setup_netlogon_creds(cli, NCACN_NP,
 					     netlogon_creds,
 					     true, /* force_reauth */
 					     current_nt_hash,

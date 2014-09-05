@@ -2947,6 +2947,8 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
 		 * we tried twice to connect via ncan_ip_tcp and schannel and
 		 * failed - maybe it is a trusted domain we can't connect to ?
 		 * do not try tcp next time - gd
+		 *
+		 * This also prevents NETLOGON over TCP
 		 */
 		domain->can_do_ncacn_ip_tcp = false;
 	}
@@ -2961,8 +2963,9 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
  session key stored in conn->netlogon_pipe->dc->sess_key.
 ****************************************************************************/
 
-NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
-			     struct rpc_pipe_client **cli)
+static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
+					      enum dcerpc_transport_t transport,
+					      struct rpc_pipe_client **cli)
 {
 	struct messaging_context *msg_ctx = winbind_messaging_context();
 	struct winbindd_cm_conn *conn;
@@ -3028,7 +3031,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return result;
 	}
 
-	result = rpccli_setup_netlogon_creds(conn->cli,
+	result = rpccli_setup_netlogon_creds(conn->cli, transport,
 					     conn->netlogon_creds,
 					     conn->netlogon_force_reauth,
 					     current_nt_hash,
@@ -3066,9 +3069,10 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			invalidate_cm_connection(domain);
 			return result;
 		}
-		result = cli_rpc_pipe_open_noauth(conn->cli,
-					&ndr_table_netlogon,
-					&conn->netlogon_pipe);
+		result = cli_rpc_pipe_open_noauth_transport(conn->cli,
+							    transport,
+							    &ndr_table_netlogon,
+							    &conn->netlogon_pipe);
 		if (!NT_STATUS_IS_OK(result)) {
 			invalidate_cm_connection(domain);
 			return result;
@@ -3084,7 +3088,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	*/
 
 	result = cli_rpc_pipe_open_schannel_with_key(
-		conn->cli, &ndr_table_netlogon, NCACN_NP,
+		conn->cli, &ndr_table_netlogon, transport,
 		domain->name,
 		conn->netlogon_creds,
 		&conn->netlogon_pipe);
@@ -3098,6 +3102,42 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	*cli = conn->netlogon_pipe;
 	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+Open a LSA connection to a DC, suiteable for LSA lookup calls.
+****************************************************************************/
+
+NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
+			     struct rpc_pipe_client **cli)
+{
+	NTSTATUS status;
+
+	if (domain->active_directory && domain->can_do_ncacn_ip_tcp) {
+		status = cm_connect_netlogon_transport(domain, NCACN_IP_TCP, cli);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+			invalidate_cm_connection(domain);
+			status = cm_connect_netlogon_transport(domain, NCACN_IP_TCP, cli);
+		}
+		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/*
+		 * we tried twice to connect via ncan_ip_tcp and schannel and
+		 * failed - maybe it is a trusted domain we can't connect to ?
+		 * do not try tcp next time - gd
+		 *
+		 * This also prevents LSA over TCP
+		 */
+		domain->can_do_ncacn_ip_tcp = false;
+	}
+
+	status = cm_connect_netlogon_transport(domain, NCACN_NP, cli);
+
+	return status;
 }
 
 void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
