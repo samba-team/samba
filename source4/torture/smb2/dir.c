@@ -895,7 +895,6 @@ static bool check_result(struct torture_context *tctx,
 static bool test_modify_search(struct torture_context *tctx,
 			       struct smb2_tree *tree)
 {
-	int num_files = 700;
 	struct multiple_result result;
 	union smb_setfileinfo sfinfo;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
@@ -903,7 +902,8 @@ static bool test_modify_search(struct torture_context *tctx,
 	struct smb2_handle h;
 	struct smb2_find f;
 	union smb_search_data *d;
-	struct file_elem files[702] = {};
+	struct file_elem files[703] = {};
+	int num_files = ARRAY_SIZE(files)-3;
 	NTSTATUS status;
 	bool ret = true;
 	int i;
