@@ -1,4 +1,137 @@
                    ==============================
+                   Release Notes for Samba 4.1.12
+                         September 8, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+Major enhancements in Samba 4.1.12 include:
+
+o  New parameter "winbind request timeout" has been added (bug #3204). Please
+   see smb.conf man page for details.
+o  Fix smbd crashes when filename contains non-ascii character (bug #10716).
+o  dnsserver: Handle updates of tombstoned dnsNode objects (bug #10749).
+
+
+Changes since 4.1.11:
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10369: build: Fix configure to honour '--without-dmapi'.
+    * BUG 10737: s3:idmap: Don't log missing range config if range checking not
+      requested.
+    * BUG 10741: Fix flapping VFS gpfs offline bit.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3204: s3: winbindd: On new client connect, prune idle or hung
+      connections older than "winbind request timeout". Add new parameter
+      "winbind request timeout".
+    * BUG 10640: lib: tevent: make TEVENT_SIG_INCREMENT atomic.
+    * BUG 10650: Make "case sensitive = True" option working with
+      "max protocol = SMB2" or higher in large directories.
+    * BUG 10716: Fix smbd crashes when filename contains non-ascii
+      character.
+    * BUG 10728: 'net time': Fix usage and core dump.
+    * BUG 10773: s3: smbd: POSIX ACLs. Remove incorrect check for
+      SECINFO_PROTECTED_DACL in incoming security_information flags in
+      posix_get_nt_acl_common().
+    * BUG 10794: vfs_dirsort: Fix an off-by-one error that can cause
+      uninitialized memory read.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 10543: s3: Enforce a positive allocation_file_size for non-empty
+      files.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 10466: provision: Correctly provision the SOA record minimum TTL.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10652: Samba 4 consuming a lot of CPU when re-reading printcap info.
+    * BUG 10787: dosmode: Fix FSCTL_SET_SPARSE request validation.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 10742: s4-rpc: dnsserver: Allow . to be specified for @ record.
+
+
+o   Daniel Kobras <d.kobras@science-computing.de>
+    * BUG 10731: sys_poll_intr: Fix timeout arithmetic.
+
+
+o   Ross Lagerwall <rosslagerwall@gmail.com>
+    * BUG 10778: s3:libsmb: Set a max charge for SMB2 connections.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10716: lib: strings: Simplify strcasecmp.
+    * BUG 10758: lib: Remove unused nstrcpy.
+    * BUG 10782: smbd: Properly initialize mangle_hash.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9831: s4:setup/dns_update_list: make use of the new substitution
+      variables.
+    * BUG 10723: Allow netr_ServerReqChallenge() and netr_ServerAuthenticate3()
+      on different connections.
+    * BUG 10749: s4-rpc: dnsserver: Handle updates of tombstoned dnsNode
+      objects.
+    * BUG 10751: s4-rpc: dnsserver: return DNS_RANK_NS_GLUE recors when
+      explicitly asked for.
+    * BUG 10773: libcli/security: Add better detection of
+      SECINFO_[UN]PROTECTED_[D|S]ACL in get_sec_info().
+
+
+o   Marc Muehlfeld <mmuehlfeld@samba.org>
+    * BUG 10761: docs: Fix typos in smb.conf (inherit acls).
+
+
+o   Shirish Pargaonkar <spargaonkar@suse.com>
+    * BUG 10755: samba: Retain case sensitivity of cifs client.
+
+
+o   Arvid Requate <requate@univention.de>
+    * BUG 9570: passdb: Fix NT_STATUS_NO_SUCH_GROUP.
+
+
+o   Har Gagan Sahai <SHarGagan@novell.com>
+    * BUG 10759: Fix a memory leak in cli_set_mntpoint().
+
+
+o   Roel van Meer <roel@1afa.com>
+    * BUG 10777: Don't discard result of checking grouptype.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.11
                            August 1, 2014
                    ==============================
@@ -44,10 +177,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.10
