@@ -19,11 +19,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include <talloc.h>
+#include "replace.h"
 #include "system/filesys.h"
 #include "system/syslog.h"
-#include "lib/util/time_basic.h"
-#include "lib/util/close_low_fd.h"
+#include "system/locale.h"
+#include "time_basic.h"
+#include "close_low_fd.h"
+#include "memory.h"
+#include "samba_util.h" /* LIST_SEP */
+#include "debug.h"
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY

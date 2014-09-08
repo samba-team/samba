@@ -23,6 +23,12 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "attr.h"
+
+
 /* -------------------------------------------------------------------------- **
  * Debugging code.  See also debug.c
  */
