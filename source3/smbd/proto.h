@@ -179,14 +179,6 @@ uint64_t get_dfree_info(connection_struct *conn,
 
 /* The following definitions come from smbd/dir.c  */
 
-bool make_dir_struct(TALLOC_CTX *ctx,
-			char *buf,
-			const char *mask,
-			const char *fname,
-			off_t size,
-			uint32 mode,
-			time_t date,
-			bool uc);
 bool init_dptrs(struct smbd_server_connection *sconn);
 const char *dptr_path(struct smbd_server_connection *sconn, int key);
 const char *dptr_wcard(struct smbd_server_connection *sconn, int key);
