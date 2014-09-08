@@ -343,6 +343,9 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 	if (psd->dacl) {
 		psd->dacl->aces = new_ace_list;
 		psd->dacl->num_aces += 3;
+		psd->dacl->size += new_ace_list[num_aces].size +
+			new_ace_list[num_aces+1].size +
+			new_ace_list[num_aces+2].size;
 	} else {
 		psd->dacl = make_sec_acl(psd,
 				NT4_ACL_REVISION,
