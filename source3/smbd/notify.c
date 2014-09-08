@@ -105,6 +105,14 @@ static bool notify_change_record_identical(struct notify_change_event *c1,
 	return False;
 }
 
+static int compare_notify_change_events(const void *p1, const void *p2)
+{
+	const struct notify_change_event *e1 = p1;
+	const struct notify_change_event *e2 = p2;
+
+	return timespec_compare(&e1->when, &e2->when);
+}
+
 static bool notify_marshall_changes(int num_changes,
 				uint32 max_offset,
 				struct notify_change_event *changes,
@@ -115,6 +123,14 @@ static bool notify_marshall_changes(int num_changes,
 	if (num_changes == -1) {
 		return false;
 	}
+
+	/*
+	 * Sort the notifies by timestamp when the event happened to avoid
+	 * coalescing and thus dropping events.
+	 */
+
+	qsort(changes, num_changes,
+	      sizeof(*changes), compare_notify_change_events);
 
 	for (i=0; i<num_changes; i++) {
 		enum ndr_err_code ndr_err;
@@ -170,14 +186,6 @@ static bool notify_marshall_changes(int num_changes,
 	return True;
 }
 
-static int compare_notify_change_events(const void *p1, const void *p2)
-{
-	const struct notify_change_event *e1 = p1;
-	const struct notify_change_event *e2 = p2;
-
-	return timespec_compare(&e1->when, &e2->when);
-}
-
 /****************************************************************************
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
@@ -201,14 +209,6 @@ void change_notify_reply(struct smb_request *req,
 		reply_fn(req, NT_STATUS_OK, NULL, 0);
 		return;
 	}
-
-	/*
-	 * Sort the notifies by timestamp when the event happened to avoid
-	 * coalescing and thus dropping events in notify_marshall_changes.
-	 */
-
-	qsort(notify_buf->changes, notify_buf->num_changes,
-	      sizeof(*(notify_buf->changes)), compare_notify_change_events);
 
 	if (!notify_marshall_changes(notify_buf->num_changes, max_param,
 					notify_buf->changes, &blob)) {
