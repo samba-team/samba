@@ -1867,7 +1867,7 @@ static NTSTATUS get_null_nt_acl(TALLOC_CTX *mem_ctx, struct security_descriptor 
 
 /****************************************************************************
  Reply to query a security descriptor.
- Callable from SMB2 and SMB2.
+ Callable from SMB1 and SMB2.
  If it returns NT_STATUS_BUFFER_TOO_SMALL, pdata_size is initialized with
  the required size.
 ****************************************************************************/
