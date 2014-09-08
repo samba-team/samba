@@ -450,12 +450,12 @@ Example4 shows how to set the account expiration so that it will never expire.  
             # FIXME: Catch more specific exception
             raise CommandError("Failed to set expiry for user '%s': %s" % (
                 username or filter, msg))
-        if days:
-            self.outf.write("Expiry for user '%s' set to %u days.\n" % (
-                username or filter, days))
-        else:
+        if noexpiry:
             self.outf.write("Expiry for user '%s' disabled.\n" % (
                 username or filter))
+        else:
+            self.outf.write("Expiry for user '%s' set to %u days.\n" % (
+                username or filter, days))
 
 
 class cmd_user_password(Command):
