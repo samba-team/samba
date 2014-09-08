@@ -53,6 +53,11 @@ extern const struct dom_sid global_sid_Builtin_Replicator;
 extern const struct dom_sid global_sid_Builtin_PreWin2kAccess;
 extern const struct dom_sid global_sid_Unix_Users;
 extern const struct dom_sid global_sid_Unix_Groups;
+extern const struct dom_sid global_sid_Unix_NFS;
+extern const struct dom_sid global_sid_Unix_NFS_Users;
+extern const struct dom_sid global_sid_Unix_NFS_Groups;
+extern const struct dom_sid global_sid_Unix_NFS_Mode;
+extern const struct dom_sid global_sid_Unix_NFS_Other;
 
 int dom_sid_compare_auth(const struct dom_sid *sid1,
 			 const struct dom_sid *sid2);
