@@ -68,7 +68,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 		fields_present |= SAMR_FIELD_DESCRIPTION;
 	}
 	if (infoX->usriX_password_age) {
-		fields_present |= SAMR_FIELD_FORCE_PWD_CHANGE;
+		fields_present |= SAMR_FIELD_EXPIRED_FLAG;
 	}
 	if (infoX->usriX_full_name) {
 		fields_present |= SAMR_FIELD_FULL_NAME;
