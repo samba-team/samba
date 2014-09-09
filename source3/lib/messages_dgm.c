@@ -149,8 +149,7 @@ static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 	char *lockfile_name;
 	int ret;
 
-	lockfile_name = messaging_dgm_lockfile_name(
-		tmp_ctx, cache_dir, pid);
+	lockfile_name = messaging_dgm_lockfile_name(tmp_ctx, cache_dir, pid);
 	if (lockfile_name == NULL) {
 		return ENOMEM;
 	}
