@@ -596,7 +596,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	struct ctdb_daemon_packet_wrap *w;
 
 	CTDB_INCREMENT_STAT(ctdb, total_calls);
-	CTDB_DECREMENT_STAT(ctdb, pending_calls);
+	CTDB_INCREMENT_STAT(ctdb, pending_calls);
 
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
