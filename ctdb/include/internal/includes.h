@@ -18,23 +18,7 @@
 
 #include "tevent.h"
 
-extern int LogLevel;
-extern int this_log_level;
-
-enum debug_level { 
-	DEBUG_EMERG   = -3, 
-	DEBUG_ALERT   = -2, 
-	DEBUG_CRIT    = -1,
-	DEBUG_ERR     =  0,
-	DEBUG_WARNING =  1,
-	DEBUG_NOTICE  =  2,	
-	DEBUG_INFO    =  3,
-	DEBUG_DEBUG   =  4,
-};
-
-#define DEBUGLVL(lvl) ((lvl) <= LogLevel)
-#define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) < DEBUG_DEBUG) { log_ringbuffer x; } if ((lvl) <= LogLevel) { do_debug x; }} while (0)
-#define DEBUGADD(lvl, x) do { if ((lvl) <= LogLevel) { this_log_level = (lvl); do_debug_add x; }} while (0)
+#include "ctdb_logging.h"
 
 #ifndef _PUBLIC_
 #define _PUBLIC_
