@@ -22,6 +22,9 @@
 #ifndef _DB_WRAP_H
 #define _DB_WRAP_H
 
+#include <talloc.h>
+#include <tdb.h>
+
 struct tdb_wrap {
 	struct tdb_context *tdb;
 

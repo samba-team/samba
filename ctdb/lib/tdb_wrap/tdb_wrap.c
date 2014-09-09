@@ -26,9 +26,12 @@
   of talloc destructors to ensure that only a single open is done
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "lib/util/dlinklist.h"
-#include "tdb.h"
+#include "lib/util/debug.h"
+
+#include "ctdb_logging.h"
+
 #include "tdb_wrap.h"
 
 static struct tdb_wrap *tdb_list;
