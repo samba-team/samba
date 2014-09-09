@@ -1110,7 +1110,7 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	if (share_entry->share_file_id == 0) {
+	if (share_entry->op_mid == 0) {
 		/* INTERNAL_OPEN_ONLY */
 		return;
 	}
@@ -1288,6 +1288,11 @@ static bool validate_oplock_types(struct share_mode_lock *lck)
 		struct share_mode_entry *e = &d->share_modes[i];
 
 		if (!is_valid_share_mode_entry(e)) {
+			continue;
+		}
+
+		if (e->op_mid == 0) {
+			/* INTERNAL_OPEN_ONLY */
 			continue;
 		}
 
