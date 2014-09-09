@@ -85,8 +85,7 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 		return ret;
 	}
 
-	lockfile_name = messaging_dgm_lockfile_name(tmp_ctx, cache_dir,
-						    (unsigned)pid);
+	lockfile_name = messaging_dgm_lockfile_name(tmp_ctx, cache_dir, pid);
 	if (lockfile_name == NULL) {
 		return ENOMEM;
 	}
