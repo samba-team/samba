@@ -43,6 +43,10 @@
 	the size of xattrs. So this module might work for applications like IE
 	that stores small zone information in streams but will fail for
 	applications that store serious amounts of data in ADSs.</para>
+
+	<para>CAUTION: Make sure to set "kernel oplocks = no" in smb.conf if
+	if you use this module because this combination is currently broken.
+	See Bug 7537 for details.</para>
 </refsect1>
 
 <refsect1>
