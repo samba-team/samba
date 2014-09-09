@@ -242,6 +242,8 @@ sub setup_s3dc($$)
 sub setup_member($$$)
 {
 	my ($self, $prefix, $s3dcvars) = @_;
+	my $count = 0;
+	my $rc;
 
 	print "PROVISIONING MEMBER...";
 
@@ -256,6 +258,21 @@ sub setup_member($$$)
 				   $member_options);
 
 	$ret or return undef;
+
+	my $nmblookup = Samba::bindir_path($self, "nmblookup");
+	do {
+		print "Waiting for the LOGON SERVER registration ...\n";
+		$rc = system("$nmblookup $ret->{CONFIGURATION} $ret->{DOMAIN}\#1c");
+		if ($rc != 0) {
+			sleep(1);
+		}
+		$count++;
+	} while ($rc != 0 && $count < 10);
+	if ($count == 10) {
+		print "NMBD not reachable after 10 retries\n";
+		teardown_env($self, $ret);
+		return 0;
+	}
 
 	my $net = Samba::bindir_path($self, "net");
 	my $cmd = "";
