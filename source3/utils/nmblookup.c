@@ -107,7 +107,7 @@ static char *query_flags(int flags)
  Do a node status query.
 ****************************************************************************/
 
-static void do_node_status(const char *name,
+static bool do_node_status(const char *name,
 		int type,
 		struct sockaddr_storage *pss)
 {
@@ -142,8 +142,10 @@ static void do_node_status(const char *name,
 				extra.mac_addr[4], extra.mac_addr[5]);
 		d_printf("\n");
 		TALLOC_FREE(addrs);
+		return true;
 	} else {
 		d_printf("No reply from %s\n\n",addr);
+		return false;
 	}
 }
 
@@ -201,7 +203,9 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 		   was valid - ie. name_query returned true.
 		 */
 		if (find_status) {
-			do_node_status(lookup, lookup_type, &ip_list[j]);
+			if (!do_node_status(lookup, lookup_type, &ip_list[j])) {
+				status = NT_STATUS_UNSUCCESSFUL;
+			}
 		}
 	}
 
@@ -221,8 +225,9 @@ int main(int argc, const char *argv[])
 	fstring lookup;
 	static bool find_master=False;
 	static bool lookup_by_ip = False;
-	poptContext pc;
+	poptContext pc = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	int rc = 0;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -297,7 +302,8 @@ int main(int argc, const char *argv[])
 
 	if(!poptPeekArg(pc)) {
 		poptPrintUsage(pc, stderr, 0);
-		exit(1);
+		rc = 1;
+		goto out;
 	}
 
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
@@ -307,7 +313,8 @@ int main(int argc, const char *argv[])
 
 	load_interfaces();
 	if (!open_sockets()) {
-		return(1);
+		rc = 1;
+		goto out;
 	}
 
 	while(poptPeekArg(pc)) {
@@ -321,7 +328,9 @@ int main(int argc, const char *argv[])
 			ip = interpret_addr2(lookup);
 			in_addr_to_sockaddr_storage(&ss, ip);
 			fstrcpy(lookup,"*");
-			do_node_status(lookup, lookup_type, &ss);
+			if (!do_node_status(lookup, lookup_type, &ss)) {
+				rc = 1;
+			}
 			continue;
 		}
 
@@ -341,6 +350,7 @@ int main(int argc, const char *argv[])
 		}
 
 		if (!query_one(lookup, lookup_type)) {
+			rc = 1;
 			d_printf( "name_query failed to find name %s", lookup );
 			if( 0 != lookup_type ) {
 				d_printf( "#%02x", lookup_type );
@@ -349,7 +359,8 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+out:
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
-	return(0);
+	return rc;
 }
