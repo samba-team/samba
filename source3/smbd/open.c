@@ -818,24 +818,49 @@ static NTSTATUS open_file(files_struct *fsp,
 						smb_fname,
 						false,
 						access_mask);
-			} else if (local_flags & O_CREAT){
-				status = check_parent_access(conn,
-						smb_fname,
-						SEC_DIR_ADD_FILE);
-			} else {
-				/* File didn't exist and no O_CREAT. */
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+				if (!NT_STATUS_IS_OK(status)) {
+					DEBUG(10, ("open_file: "
+						   "smbd_check_access_rights "
+						   "on file %s returned %s\n",
+						   smb_fname_str_dbg(smb_fname),
+						   nt_errstr(status)));
+				}
+
+				if (!NT_STATUS_IS_OK(status) &&
+				    !NT_STATUS_EQUAL(status,
+					NT_STATUS_OBJECT_NAME_NOT_FOUND))
+				{
+					return status;
+				}
+
+				if (!NT_STATUS_IS_OK(status)) {
+					DEBUG(10, ("open_file: "
+						"file %s vanished since we "
+						"checked for existence.\n",
+						smb_fname_str_dbg(smb_fname)));
+					file_existed = false;
+					SET_STAT_INVALID(fsp->fsp_name->st);
+				}
 			}
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10,("open_file: "
-					"%s on file "
-					"%s returned %s\n",
-					file_existed ?
-						"smbd_check_access_rights" :
-						"check_parent_access",
-					smb_fname_str_dbg(smb_fname),
-					nt_errstr(status) ));
-				return status;
+
+			if (!file_existed) {
+				if (!(local_flags & O_CREAT)) {
+					/* File didn't exist and no O_CREAT. */
+					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+				}
+
+				status = check_parent_access(conn,
+							     smb_fname,
+							     SEC_DIR_ADD_FILE);
+				if (!NT_STATUS_IS_OK(status)) {
+					DEBUG(10, ("open_file: "
+						   "check_parent_access on "
+						   "file %s returned %s\n",
+						   smb_fname_str_dbg(smb_fname),
+						   nt_errstr(status) ));
+					return status;
+				}
 			}
 		}
 
