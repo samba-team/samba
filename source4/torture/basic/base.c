@@ -697,7 +697,7 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 				torture_comment(tctx, "pid %u: create[%d,%d] "
 						"time elapsed: %.2f (1 sec = %.2f)\n",
 						(unsigned)getpid(), i, j, e, sec);
-				if (e < (0.5 * sec) || e > ((1.5 * sec) + 1)) {
+				if (e < (0.5 * sec) || e > ((1.5 * sec) + 1.5)) {
 					torture_comment(tctx, "pid %u: create[%d,%d] "
 							"timing incorrect\n",
 							(unsigned)getpid(), i, j);
