@@ -460,11 +460,11 @@ EOF
 	umask $oldumask;
 }
 
-sub provision_raw_prepare($$$$$$$$$$)
+sub provision_raw_prepare($$$$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
-	    $password, $kdc_ipv4) = @_;
+	    $password, $kdc_ipv4, $kdc_ipv6) = @_;
 	my $ctx;
 	my $netbiosname = uc($hostname);
 
@@ -495,6 +495,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{swiface} = $swiface;
 	$ctx->{password} = $password;
 	$ctx->{kdc_ipv4} = $kdc_ipv4;
+	$ctx->{kdc_ipv6} = $kdc_ipv6;
 
 #
 # Set smbd log level here.
@@ -671,8 +672,11 @@ sub provision_raw_step1($$)
 
         #Default the KDC IP to the server's IP
 	if (not defined($ctx->{kdc_ipv4})) {
-             $ctx->{kdc_ipv4} = $ctx->{ipv4};
-        }
+		$ctx->{kdc_ipv4} = $ctx->{ipv4};
+	}
+	if (not defined($ctx->{kdc_ipv6})) {
+		$ctx->{kdc_ipv6} = $ctx->{ipv6};
+	}
 
 	Samba::mk_krb5_conf($ctx, "");
 
@@ -781,17 +785,17 @@ sub provision_raw_step2($$$)
 	return $ret;
 }
 
-sub provision($$$$$$$$$)
+sub provision($$$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
-	    $password, $kdc_ipv4, $extra_smbconf_options, $extra_smbconf_shares,
+	    $password, $kdc_ipv4, $kdc_ipv6, $extra_smbconf_options, $extra_smbconf_shares,
 	    $extra_provision_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $hostname,
 					       $domain, $realm, $functional_level,
-					       $password, $kdc_ipv4);
+					       $password, $kdc_ipv4, $kdc_ipv6);
 
 	if (defined($extra_provision_options)) {
 		push (@{$ctx->{provision_options}}, @{$extra_provision_options});
@@ -960,6 +964,7 @@ rpc_server:tcpip = no
 				   "2008",
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
+				   $dcvars->{SERVER_IPV6},
 				   $extra_smb_conf, "", undef);
 	unless ($ret) {
 		return undef;
@@ -1029,6 +1034,7 @@ sub provision_rpc_proxy($$$)
 				   "2008",
 				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
+				   $dcvars->{SERVER_IPV6},
 				   $extra_smbconf_options, "", undef);
 
 	unless ($ret) {
@@ -1104,7 +1110,8 @@ sub provision_promoted_dc($$$)
 					       "samba.example.com",
 					       "2008",
 					       $dcvars->{PASSWORD},
-					       $dcvars->{SERVER_IP});
+					       $dcvars->{SERVER_IP},
+					       $dcvars->{SERVER_IPV6});
 
 	push (@{$ctx->{provision_options}}, "--use-ntvfs");
 
@@ -1180,7 +1187,8 @@ sub provision_vampire_dc($$$)
 					       "samba.example.com",
 					       "2008",
 					       $dcvars->{PASSWORD},
-					       $dcvars->{SERVER_IP});
+					       $dcvars->{SERVER_IP},
+					       $dcvars->{SERVER_IPV6});
 
 	push (@{$ctx->{provision_options}}, "--use-ntvfs");
 
@@ -1322,7 +1330,11 @@ sub provision_dc($$)
 				   "samba.example.com",
 				   "2008",
 				   "locDCpass1",
-				   undef, $extra_conf_options, "", undef);
+				   undef,
+				   undef,
+				   $extra_conf_options,
+				   "",
+				   undef);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1353,7 +1365,11 @@ sub provision_fl2000dc($$)
 				   "samba2000.example.com",
 				   "2000",
 				   "locDCpass5",
-				   undef, "", "", undef);
+				   undef,
+				   undef,
+				   "",
+				   "",
+				   undef);
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1376,7 +1392,11 @@ sub provision_fl2003dc($$)
 				   "samba2003.example.com",
 				   "2003",
 				   "locDCpass6",
-				   undef, $extra_conf_options, "", undef);
+				   undef,
+				   undef,
+				   $extra_conf_options,
+				   "",
+				   undef);
 
 	unless (defined $ret) {
 		return undef;
@@ -1427,7 +1447,11 @@ sub provision_fl2008r2dc($$)
 				   "samba2008R2.example.com",
 				   "2008_R2",
 				   "locDCpass7",
-				   undef, "", "", undef);
+				   undef,
+				   undef,
+				   "",
+				   "",
+				   undef);
 
 	unless ($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1450,7 +1474,8 @@ sub provision_rodc($$$)
 					       "samba.example.com",
 					       "2008",
 					       $dcvars->{PASSWORD},
-					       $dcvars->{SERVER_IP});
+					       $dcvars->{SERVER_IP},
+					       $dcvars->{SERVER_IPV6});
 	unless ($ctx) {
 		return undef;
 	}
@@ -1503,6 +1528,7 @@ sub provision_rodc($$$)
 	# so that use the RODC as kdc and test
 	# the proxy code
 	$ctx->{kdc_ipv4} = $ret->{SERVER_IP};
+	$ctx->{kdc_ipv6} = $ret->{SERVER_IPV6};
 	Samba::mk_krb5_conf($ctx);
 
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
@@ -1618,8 +1644,11 @@ sub provision_plugin_s4_dc($$)
 				   "plugindc.samba.example.com",
 				   "2008",
 				   "locDCpass1",
-				   undef, $extra_smbconf_options,
-                                   $extra_smbconf_shares, undef);
+				   undef,
+				   undef,
+				   $extra_smbconf_options,
+				   $extra_smbconf_shares,
+				   undef);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1652,7 +1681,10 @@ sub provision_chgdcpass($$)
 				   "chgdcpassword.samba.example.com",
 				   "2008",
 				   "chgDCpass1",
-				   undef, $extra_conf_options, "",
+				   undef,
+				   undef,
+				   $extra_conf_options,
+				   "",
 				   $extra_provision_options);
 
 	return undef unless(defined $ret);
