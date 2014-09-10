@@ -27,6 +27,13 @@
 #include "poll_funcs/poll_funcs_tevent.h"
 #include "unix_msg/unix_msg.h"
 
+struct sun_path_buf {
+	/*
+	 * This will carry enough for a socket path
+	 */
+	char buf[sizeof(struct sockaddr_un)];
+};
+
 struct messaging_dgm_context {
 	pid_t pid;
 	struct poll_funcs *msg_callbacks;
@@ -47,12 +54,18 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			       uint8_t *msg, size_t msg_len,
 			       void *private_data);
 
-static char *messaging_dgm_lockfile_name(TALLOC_CTX *mem_ctx,
-					 const char *cache_dir,
-					 pid_t pid)
+static int messaging_dgm_lockfile_name(struct sun_path_buf *buf,
+				       const char *cache_dir,
+				       pid_t pid)
 {
-	return talloc_asprintf(mem_ctx, "%s/lck/%u", cache_dir,
-			       (unsigned)pid);
+	int ret;
+
+	ret = snprintf(buf->buf, sizeof(buf->buf), "%s/lck/%u", cache_dir,
+		       (unsigned)pid);
+	if (ret >= sizeof(buf->buf)) {
+		return ENAMETOOLONG;
+	}
+	return 0;
 }
 
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c);
@@ -63,21 +76,23 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 					 int *plockfile_fd, uint64_t unique)
 {
 	fstring buf;
-	char *dir;
-	char *lockfile_name;
+	struct sun_path_buf dir;
+	struct sun_path_buf lockfile_name;
 	int lockfile_fd;
 	struct flock lck;
 	int unique_len, ret;
 	ssize_t written;
 	bool ok;
 
-	dir = talloc_asprintf(tmp_ctx, "%s/lck", cache_dir);
-	if (dir == NULL) {
-		return ENOMEM;
+	ret = messaging_dgm_lockfile_name(&lockfile_name, cache_dir, pid);
+	if (ret != 0) {
+		return ret;
 	}
 
-	ok = directory_create_or_exist_strict(dir, dir_owner, 0755);
-	TALLOC_FREE(dir);
+	/* shorter than lockfile_name, can't overflow */
+	snprintf(dir.buf, sizeof(dir.buf), "%s/lck", cache_dir);
+
+	ok = directory_create_or_exist_strict(dir.buf, dir_owner, 0755);
 	if (!ok) {
 		ret = errno;
 		DEBUG(1, ("%s: Could not create lock directory: %s\n",
@@ -85,18 +100,14 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 		return ret;
 	}
 
-	lockfile_name = messaging_dgm_lockfile_name(tmp_ctx, cache_dir, pid);
-	if (lockfile_name == NULL) {
-		return ENOMEM;
-	}
-
 	/* no O_EXCL, existence check is via the fcntl lock */
 
-	lockfile_fd = open(lockfile_name, O_NONBLOCK|O_CREAT|O_WRONLY, 0644);
+	lockfile_fd = open(lockfile_name.buf, O_NONBLOCK|O_CREAT|O_WRONLY,
+			   0644);
 	if (lockfile_fd == -1) {
 		ret = errno;
 		DEBUG(1, ("%s: open failed: %s\n", __func__, strerror(errno)));
-		goto fail_free;
+		return ret;
 	}
 
 	lck = (struct flock) {
@@ -130,38 +141,34 @@ static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
 		goto fail_unlink;
 	}
 
-	TALLOC_FREE(lockfile_name);
 	*plockfile_fd = lockfile_fd;
 	return 0;
 
 fail_unlink:
-	unlink(lockfile_name);
+	unlink(lockfile_name.buf);
 fail_close:
 	close(lockfile_fd);
-fail_free:
-	TALLOC_FREE(lockfile_name);
 	return ret;
 }
 
 static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
 					 const char *cache_dir, pid_t pid)
 {
-	char *lockfile_name;
+	struct sun_path_buf lockfile_name;
 	int ret;
 
-	lockfile_name = messaging_dgm_lockfile_name(tmp_ctx, cache_dir, pid);
-	if (lockfile_name == NULL) {
-		return ENOMEM;
+	ret = messaging_dgm_lockfile_name(&lockfile_name, cache_dir, pid);
+	if (ret != 0) {
+		return ret;
 	}
 
-	ret = unlink(lockfile_name);
+	ret = unlink(lockfile_name.buf);
 	if (ret == -1) {
 		ret = errno;
 		DEBUG(10, ("%s: unlink(%s) failed: %s\n", __func__,
-			   lockfile_name, strerror(ret)));
+			   lockfile_name.buf, strerror(ret)));
 	}
 
-	TALLOC_FREE(lockfile_name);
 	return ret;
 }
 
@@ -320,30 +327,26 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 
 int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
 {
-	char *lockfile_name, *socket_name;
+	struct sun_path_buf lockfile_name, socket_name;
 	int fd, ret;
 	struct flock lck = {};
 
-	lockfile_name = messaging_dgm_lockfile_name(
-		talloc_tos(), ctx->cache_dir, pid);
-	if (lockfile_name == NULL) {
-		return ENOMEM;
-	}
-	socket_name = talloc_asprintf(lockfile_name, "%s/msg/%u",
-				      ctx->cache_dir, (unsigned)pid);
-	if (socket_name == NULL) {
-		TALLOC_FREE(lockfile_name);
-		return ENOMEM;
+	ret = messaging_dgm_lockfile_name(&lockfile_name, ctx->cache_dir, pid);
+	if (ret != 0) {
+		return ret;
 	}
 
-	fd = open(lockfile_name, O_NONBLOCK|O_WRONLY, 0);
+	/* same length as lockfile_name, can't overflow */
+	snprintf(socket_name.buf, sizeof(socket_name.buf), "%s/msg/%u",
+		 ctx->cache_dir, (unsigned)pid);
+
+	fd = open(lockfile_name.buf, O_NONBLOCK|O_WRONLY, 0);
 	if (fd == -1) {
 		ret = errno;
 		if (ret != ENOENT) {
 			DEBUG(10, ("%s: open(%s) failed: %s\n", __func__,
-				   lockfile_name, strerror(ret)));
+				   lockfile_name.buf, strerror(ret)));
 		}
-		TALLOC_FREE(lockfile_name);
 		return ret;
 	}
 
@@ -357,22 +360,19 @@ int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
 		ret = errno;
 		DEBUG(10, ("%s: Could not get lock: %s\n", __func__,
 			   strerror(ret)));
-		TALLOC_FREE(lockfile_name);
 		close(fd);
 		return ret;
 	}
 
-	(void)unlink(socket_name);
-	(void)unlink(lockfile_name);
+	(void)unlink(socket_name.buf);
+	(void)unlink(lockfile_name.buf);
 	(void)close(fd);
-
-	TALLOC_FREE(lockfile_name);
 	return 0;
 }
 
 int messaging_dgm_wipe(struct messaging_dgm_context *ctx)
 {
-	char *msgdir_name;
+	struct sun_path_buf msgdir_name;
 	DIR *msgdir;
 	struct dirent *dp;
 	pid_t our_pid = getpid();
@@ -384,18 +384,17 @@ int messaging_dgm_wipe(struct messaging_dgm_context *ctx)
 	 * and fcntl(SETLK).
 	 */
 
-	msgdir_name = talloc_asprintf(talloc_tos(), "%s/msg", ctx->cache_dir);
-	if (msgdir_name == NULL) {
-		return ENOMEM;
+	ret = snprintf(msgdir_name.buf, sizeof(msgdir_name.buf),
+		       "%s/msg", ctx->cache_dir);
+	if (ret >= sizeof(msgdir_name.buf)) {
+		return ENAMETOOLONG;
 	}
 
-	msgdir = opendir(msgdir_name);
+	msgdir = opendir(msgdir_name.buf);
 	if (msgdir == NULL) {
 		ret = errno;
-		TALLOC_FREE(msgdir_name);
 		return ret;
 	}
-	TALLOC_FREE(msgdir_name);
 
 	while ((dp = readdir(msgdir)) != NULL) {
 		unsigned long pid;
