@@ -126,6 +126,12 @@ sub check_or_start($$$)
 		$ENV{NSS_WRAPPER_MODULE_SO_PATH} = $env_vars->{NSS_WRAPPER_MODULE_SO_PATH};
 		$ENV{NSS_WRAPPER_MODULE_FN_PREFIX} = $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX};
 
+		if (defined($env_vars->{RESOLV_WRAPPER_CONF})) {
+			$ENV{RESOLV_WRAPPER_CONF} = $env_vars->{RESOLV_WRAPPER_CONF};
+		} else {
+			$ENV{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
+		}
+
 		$ENV{UID_WRAPPER} = "1";
 
 		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "samba");
@@ -179,6 +185,11 @@ sub wait_for_start($$)
 	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOS_NAME} eq "rodc")) {
 	    # Add hosts file for name lookups
 	    $ENV{NSS_WRAPPER_HOSTS} = $testenv_vars->{NSS_WRAPPER_HOSTS};
+		if (defined($testenv_vars->{RESOLV_WRAPPER_CONF})) {
+			$ENV{RESOLV_WRAPPER_CONF} = $testenv_vars->{RESOLV_WRAPPER_CONF};
+		} else {
+			$ENV{RESOLV_WRAPPER_HOSTS} = $testenv_vars->{RESOLV_WRAPPER_HOSTS};
+		}
 
 	    print "waiting for working LDAP and a RID Set to be allocated\n";
 	    my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
@@ -486,8 +497,6 @@ sub provision_raw_prepare($$$$$$$$$$$)
 
 	$ctx->{prefix} = $prefix;
 	$ctx->{prefix_abs} = $prefix_abs;
-	
-	$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 
 	$ctx->{server_role} = $server_role;
 	$ctx->{hostname} = $hostname;
@@ -533,6 +542,13 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
 	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
 	$ctx->{nsswrap_hosts} = "$ENV{SELFTEST_PREFIX}/hosts";
+	if ($ENV{SAMBA_DNS_FAKING}) {
+		$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
+		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}";
+	} else {
+		$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
+		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf}";
+	}
 
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
 
@@ -554,6 +570,11 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	push (@provision_options, "NSS_WRAPPER_HOSTS=\"$ctx->{nsswrap_hosts}\"");
+	if (defined($ctx->{resolv_conf})) {
+		push (@provision_options, "RESOLV_WRAPPER_CONF=\"$ctx->{resolv_conf}\"");
+	} else {
+		push (@provision_options, "RESOLV_WRAPPER_HOSTS=\"$ctx->{dns_host_file}\"");
+	}
 	if (defined($ENV{GDB_PROVISION})) {
 		push (@provision_options, "gdb --args");
 		if (!defined($ENV{PYTHON})) {
@@ -627,7 +648,6 @@ sub provision_raw_step1($$)
 	winbindd privileged socket directory = $ctx->{winbindd_privileged_socket_dir}
 	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
 	winbind separator = /
-	name resolve order = file bcast
 	interfaces = $ctx->{interfaces}
 	tls dh params file = $ctx->{tlsdir}/dhparms.pem
 	panic action = $RealBin/gdb_backtrace \%d
@@ -643,9 +663,8 @@ sub provision_raw_step1($$)
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 	rndc command = true
-	dns update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$ctx->{dns_host_file} -s $ctx->{smb_conf}
+	dns update command = $ctx->{samba_dnsupdate}
 	spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
-	resolv:host file = $ctx->{dns_host_file}
 	dreplsrv:periodic_startup_interval = 0
 	dsdb:schema update allowed = yes
 
@@ -716,6 +735,13 @@ $ctx->{unix_name}:x:$ctx->{unix_gid}:
 	}
 	close(HOSTS);
 
+	if (defined($ctx->{resolv_conf})) {
+		open(RESOLV_CONF, ">$ctx->{resolv_conf}");
+		print RESOLV_CONF "nameserver $ctx->{kdc_ipv4}\n";
+		print RESOLV_CONF "nameserver $ctx->{kdc_ipv6}\n";
+		close(RESOLV_CONF);
+	}
+
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
 #Ensure the config file is valid before we start
@@ -765,6 +791,12 @@ $ctx->{unix_name}:x:$ctx->{unix_gid}:
                 GID_RFC2307TEST => $gid_rfc2307test,
                 SERVER_ROLE => $ctx->{server_role}
 	};
+
+	if (defined($ctx->{resolv_conf})) {
+		$ret->{RESOLV_WRAPPER_CONF} = $ctx->{resolv_conf};
+	} else {
+		$ret->{RESOLV_WRAPPER_HOSTS} = $ctx->{dns_host_file};
+	}
 
 	return $ret;
 }
@@ -973,6 +1005,11 @@ rpc_server:tcpip = no
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
@@ -1046,6 +1083,11 @@ sub provision_rpc_proxy($$$)
 	# The joind runs in the context of the rpc_proxy/member for now
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
@@ -1137,6 +1179,11 @@ sub provision_promoted_dc($$$)
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} MEMBER --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
@@ -1214,6 +1261,11 @@ sub provision_vampire_dc($$$)
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} --domain-critical-only";
@@ -1290,6 +1342,11 @@ sub provision_subdom_dc($$$)
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $ctx->{dnsname} subdomain ";
 	$cmd .= "--parent-domain=$dcvars->{REALM} -U$dcvars->{DC_USERNAME}\@$dcvars->{REALM}\%$dcvars->{DC_PASSWORD}";
@@ -1514,6 +1571,11 @@ sub provision_rodc($$$)
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($ret->{RESOLV_WRAPPER_CONF})) {
+		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} RODC";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
@@ -1982,7 +2044,12 @@ sub setup_vampire_dc($$$)
 		# for vampired partitions
 		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 		my $cmd = "";
-		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+		if (defined($env->{RESOLV_WRAPPER_CONF})) {
+			$cmd .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
+		} else {
+			$cmd .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
+		}
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
 		$cmd .= " $env->{CONFIGURATION}";
@@ -1995,7 +2062,13 @@ sub setup_vampire_dc($$$)
 		# as 'vampired' dc may add data in its local replica
 		# we need to synchronize data between DCs
 		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
-		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+		$cmd = "";
+		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+		if (defined($env->{RESOLV_WRAPPER_CONF})) {
+			$cmd .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
+		} else {
+			$cmd .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
+		}
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";

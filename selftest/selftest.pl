@@ -547,7 +547,6 @@ sub write_clientconf($$$)
 	state directory = $clientdir/statedir
 	cache directory = $clientdir/cachedir
 	ncalrpc dir = $clientdir/ncalrpcdir
-	name resolve order = file bcast
 	panic action = $RealBin/gdb_backtrace \%d
 	max xmit = 32K
 	notify:inotify = false
@@ -558,7 +557,6 @@ sub write_clientconf($$$)
 	torture:basedir = $clientdir
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
-	resolv:host file = $prefix_abs/dns_host_file
 #We don't want to run 'speed' tests for very long
         torture:timelimit = 1
         winbind separator = /
@@ -780,6 +778,10 @@ my @exported_envvars = (
 	"DC_USERNAME",
 	"DC_PASSWORD",
 
+	# UID/GID for rfc2307 mapping tests
+	"UID_RFC2307TEST",
+	"GID_RFC2307TEST",
+
 	# misc stuff
 	"KRB5_CONFIG",
 	"SELFTEST_WINBINDD_SOCKET_DIR",
@@ -787,13 +789,13 @@ my @exported_envvars = (
 	"NMBD_SOCKET_DIR",
 	"LOCAL_PATH",
 
-        # nss_wrapper
-        "NSS_WRAPPER_PASSWD",
-        "NSS_WRAPPER_GROUP",
+	# nss_wrapper
+	"NSS_WRAPPER_PASSWD",
+	"NSS_WRAPPER_GROUP",
+	"NSS_WRAPPER_HOSTS",
 
-        # UID/GID for rfc2307 mapping tests
-        "UID_RFC2307TEST",
-        "GID_RFC2307TEST"
+	# resolv_wrapper
+	"RESOLV_WRAPPER_CONF",
 );
 
 sub sighandler($)
