@@ -150,8 +150,7 @@ fail_close:
 	return ret;
 }
 
-static int messaging_dgm_lockfile_remove(TALLOC_CTX *tmp_ctx,
-					 const char *cache_dir, pid_t pid)
+static int messaging_dgm_lockfile_remove(const char *cache_dir, pid_t pid)
 {
 	struct sun_path_buf lockfile_name;
 	int ret;
@@ -281,7 +280,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	unix_msg_free(c->dgm_ctx);
 
 	if (getpid() == c->pid) {
-		(void)messaging_dgm_lockfile_remove(c, c->cache_dir, c->pid);
+		(void)messaging_dgm_lockfile_remove(c->cache_dir, c->pid);
 	}
 	close(c->lockfile_fd);
 
