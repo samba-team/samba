@@ -50,6 +50,8 @@ struct messaging_dgm_context {
 	bool *have_dgm_context;
 };
 
+static struct messaging_dgm_context *global_dgm_context;
+
 static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			       uint8_t *msg, size_t msg_len,
 			       void *private_data);
@@ -170,16 +172,14 @@ static int messaging_dgm_lockfile_remove(const char *cache_dir, pid_t pid)
 	return ret;
 }
 
-int messaging_dgm_init(TALLOC_CTX *mem_ctx,
-		       struct tevent_context *ev,
+int messaging_dgm_init(struct tevent_context *ev,
 		       struct server_id pid,
 		       const char *cache_dir,
 		       uid_t dir_owner,
 		       void (*recv_cb)(const uint8_t *msg,
 				       size_t msg_len,
 				       void *private_data),
-		       void *recv_cb_private_data,
-		       struct messaging_dgm_context **pctx)
+		       void *recv_cb_private_data)
 {
 	struct messaging_dgm_context *ctx;
 	int ret;
@@ -194,7 +194,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		return EEXIST;
 	}
 
-	ctx = talloc_zero(mem_ctx, struct messaging_dgm_context);
+	ctx = talloc_zero(NULL, struct messaging_dgm_context);
 	if (ctx == NULL) {
 		goto fail_nomem;
 	}
@@ -263,7 +263,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 
 	ctx->have_dgm_context = &have_dgm_context;
 
-	*pctx = ctx;
+	global_dgm_context = ctx;
 	return 0;
 
 fail_nomem:
@@ -291,12 +291,21 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	return 0;
 }
 
-int messaging_dgm_send(struct messaging_dgm_context *ctx, pid_t pid,
-		       const struct iovec *iov, int iovlen)
+void messaging_dgm_destroy(void)
 {
+	TALLOC_FREE(global_dgm_context);
+}
+
+int messaging_dgm_send(pid_t pid, const struct iovec *iov, int iovlen)
+{
+	struct messaging_dgm_context *ctx = global_dgm_context;
 	struct sockaddr_un dst;
 	ssize_t dst_pathlen;
 	int ret;
+
+	if (ctx == NULL) {
+		return ENOTCONN;
+	}
 
 	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
 
@@ -323,11 +332,16 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 	dgm_ctx->recv_cb(msg, msg_len, dgm_ctx->recv_cb_private_data);
 }
 
-int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
+int messaging_dgm_cleanup(pid_t pid)
 {
+	struct messaging_dgm_context *ctx = global_dgm_context;
 	struct sun_path_buf lockfile_name, socket_name;
 	int fd, ret;
 	struct flock lck = {};
+
+	if (ctx == NULL) {
+		return ENOTCONN;
+	}
 
 	ret = messaging_dgm_lockfile_name(&lockfile_name, ctx->cache_dir.buf,
 					  pid);
@@ -369,13 +383,18 @@ int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
 	return 0;
 }
 
-int messaging_dgm_wipe(struct messaging_dgm_context *ctx)
+int messaging_dgm_wipe(void)
 {
+	struct messaging_dgm_context *ctx = global_dgm_context;
 	struct sun_path_buf msgdir_name;
 	DIR *msgdir;
 	struct dirent *dp;
 	pid_t our_pid = getpid();
 	int ret;
+
+	if (ctx == NULL) {
+		return ENOTCONN;
+	}
 
 	/*
 	 * We scan the socket directory and not the lock directory. Otherwise
@@ -413,7 +432,7 @@ int messaging_dgm_wipe(struct messaging_dgm_context *ctx)
 			continue;
 		}
 
-		ret = messaging_dgm_cleanup(ctx, pid);
+		ret = messaging_dgm_cleanup(pid);
 		DEBUG(10, ("messaging_dgm_cleanup(%lu) returned %s\n",
 			   pid, ret ? strerror(ret) : "ok"));
 	}
@@ -423,8 +442,12 @@ int messaging_dgm_wipe(struct messaging_dgm_context *ctx)
 }
 
 void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
-					    struct messaging_dgm_context *ctx,
 					    struct tevent_context *ev)
 {
+	struct messaging_dgm_context *ctx = global_dgm_context;
+
+	if (ctx == NULL) {
+		return NULL;
+	}
 	return poll_funcs_tevent_register(mem_ctx, ctx->msg_callbacks, ev);
 }

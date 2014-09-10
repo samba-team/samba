@@ -73,8 +73,6 @@ struct messaging_context {
 	struct tevent_req **waiters;
 	unsigned num_waiters;
 
-	struct messaging_dgm_context *local;
-
 	struct messaging_backend *remote;
 };
 
@@ -240,6 +238,12 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 	messaging_dispatch_rec(msg_ctx, &rec);
 }
 
+static int messaging_context_destructor(struct messaging_context *ctx)
+{
+	messaging_dgm_destroy();
+	return 0;
+}
+
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct tevent_context *ev)
 {
@@ -256,15 +260,17 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	sec_init();
 
-	ret = messaging_dgm_init(ctx, ctx->event_ctx, ctx->id,
+	ret = messaging_dgm_init(ctx->event_ctx, ctx->id,
 				 lp_cache_directory(), sec_initial_uid(),
-				 messaging_recv_cb, ctx, &ctx->local);
+				 messaging_recv_cb, ctx);
 
 	if (ret != 0) {
 		DEBUG(2, ("messaging_dgm_init failed: %s\n", strerror(ret)));
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
+
+	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (lp_clustering()) {
 		status = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
@@ -302,14 +308,13 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	NTSTATUS status;
 	int ret;
 
-	TALLOC_FREE(msg_ctx->local);
+	messaging_dgm_destroy();
 
 	msg_ctx->id = procid_self();
 
-	ret = messaging_dgm_init(msg_ctx, msg_ctx->event_ctx, msg_ctx->id,
+	ret = messaging_dgm_init(msg_ctx->event_ctx, msg_ctx->id,
 				 lp_cache_directory(), sec_initial_uid(),
-				 messaging_recv_cb, msg_ctx,
-				 &msg_ctx->local);
+				 messaging_recv_cb, msg_ctx);
 	if (ret != 0) {
 		DEBUG(0, ("messaging_dgm_init failed: %s\n", strerror(errno)));
 		return map_nt_error_from_unix(ret);
@@ -480,7 +485,7 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
 	become_root();
-	ret = messaging_dgm_send(msg_ctx->local, server.pid, iov2, iovlen+1);
+	ret = messaging_dgm_send(server.pid, iov2, iovlen+1);
 	unbecome_root();
 
 	if (ret != 0) {
@@ -549,7 +554,7 @@ struct tevent_req *messaging_filtered_read_send(
 	tevent_req_defer_callback(req, state->ev);
 
 	state->tevent_handle = messaging_dgm_register_tevent_context(
-		state, msg_ctx->local, ev);
+		state, ev);
 	if (tevent_req_nomem(state, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -908,11 +913,9 @@ bool messaging_parent_dgm_cleanup_init(struct messaging_context *msg)
 
 static int mess_parent_dgm_cleanup(void *private_data)
 {
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		private_data, struct messaging_context);
 	int ret;
 
-	ret = messaging_dgm_wipe(msg_ctx->local);
+	ret = messaging_dgm_wipe();
 	DEBUG(10, ("messaging_dgm_wipe returned %s\n",
 		   ret ? strerror(ret) : "ok"));
 	return lp_parm_int(-1, "messaging", "messaging dgm cleanup interval",
@@ -946,9 +949,9 @@ int messaging_cleanup(struct messaging_context *msg_ctx, pid_t pid)
 	int ret;
 
 	if (pid == 0) {
-		ret = messaging_dgm_wipe(msg_ctx->local);
+		ret = messaging_dgm_wipe();
 	} else {
-		ret = messaging_dgm_cleanup(msg_ctx->local, pid);
+		ret = messaging_dgm_cleanup(pid);
 	}
 
 	return ret;
