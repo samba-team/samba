@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	set_scheduler();
+
 	ppid = atoi(argv[1]);
 	write_fd = atoi(argv[2]);
 	lock_type = argv[3];
