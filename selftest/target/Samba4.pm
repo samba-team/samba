@@ -1357,7 +1357,7 @@ sub provision_fl2000dc($$)
 {
 	my ($self, $prefix) = @_;
 
-	print "PROVISIONING DC...";
+	print "PROVISIONING DC WITH FOREST LEVEL 2000...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc5",
@@ -1383,7 +1383,7 @@ sub provision_fl2003dc($$)
 {
 	my ($self, $prefix) = @_;
 
-	print "PROVISIONING DC...";
+	print "PROVISIONING DC WITH FOREST LEVEL 2003...";
         my $extra_conf_options = "allow dns updates = nonsecure and secure";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -1439,7 +1439,7 @@ sub provision_fl2008r2dc($$)
 {
 	my ($self, $prefix) = @_;
 
-	print "PROVISIONING DC...";
+	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
