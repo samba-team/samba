@@ -456,21 +456,21 @@ def build(bld):
                      deps='''replace popt tdb tevent talloc ctdb-system
                              ctdb-util tdb-wrap''' +
                           ib_deps,
-                     includes='include include/internal lib/util',
+                     includes='include include/internal',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_functest',
                      source='tests/src/ctdb_functest.c',
                      deps='''replace tdb tevent talloc popt ctdb-system
                              ctdb-util tdb-wrap''',
-                     includes='include include/internal lib/util',
+                     includes='include include/internal',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_stubtest',
                      source='tests/src/ctdb_test.c',
                      deps='''replace tdb tevent talloc popt ctdb-system
                              ctdb-util tdb-wrap''',
-                     includes='include include/internal lib/util',
+                     includes='include include/internal',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     if bld.env.HAVE_INFINIBAND:
