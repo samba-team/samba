@@ -177,7 +177,7 @@ bool strlower_w(smb_ucs2_t *s)
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		smb_ucs2_t v = tolower_m(cp);
 		if (v != cp) {
-			COPY_UCS2_CHAR(s,&v);
+			(void)COPY_UCS2_CHAR(s,&v);
 			ret = true;
 		}
 		s++;
@@ -199,7 +199,7 @@ bool strupper_w(smb_ucs2_t *s)
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		smb_ucs2_t v = toupper_m(cp);
 		if (v != cp) {
-			COPY_UCS2_CHAR(s,&v);
+			(void)COPY_UCS2_CHAR(s,&v);
 			ret = true;
 		}
 		s++;
