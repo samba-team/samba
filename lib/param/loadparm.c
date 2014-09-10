@@ -1376,13 +1376,17 @@ bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *
  Initialise a copymap.
 ***************************************************************************/
 
+/**
+ * Initializes service copymap
+ * Note: pservice *must* be valid TALLOC_CTX
+ */
 void init_copymap(struct loadparm_service *pservice)
 {
 	int i;
 
 	TALLOC_FREE(pservice->copymap);
 
-	pservice->copymap = bitmap_talloc(NULL, num_parameters());
+	pservice->copymap = bitmap_talloc(pservice, num_parameters());
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
