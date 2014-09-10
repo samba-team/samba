@@ -39,7 +39,7 @@ struct messaging_dgm_context {
 	struct poll_funcs *msg_callbacks;
 	void *tevent_handle;
 	struct unix_msg_ctx *dgm_ctx;
-	char *cache_dir;
+	struct sun_path_buf cache_dir;
 	int lockfile_fd;
 
 	void (*recv_cb)(const uint8_t *msg,
@@ -202,16 +202,15 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = recv_cb_private_data;
 
-	ctx->cache_dir = talloc_strdup(ctx, cache_dir);
-	if (ctx->cache_dir == NULL) {
-		goto fail_nomem;
-	}
 	ret = snprintf(socket_dir.buf, sizeof(socket_dir.buf),
 		       "%s/msg", cache_dir);
 	if (ret >= sizeof(socket_dir.buf)) {
 		TALLOC_FREE(ctx);
 		return ENAMETOOLONG;
 	}
+
+	/* shorter than socket_dir, can't overflow */
+	strlcpy(ctx->cache_dir.buf, cache_dir, sizeof(ctx->cache_dir.buf));
 
 	socket_address = (struct sockaddr_un) { .sun_family = AF_UNIX };
 	sockname_len = snprintf(socket_address.sun_path,
@@ -281,7 +280,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	unix_msg_free(c->dgm_ctx);
 
 	if (getpid() == c->pid) {
-		(void)messaging_dgm_lockfile_remove(c->cache_dir, c->pid);
+		(void)messaging_dgm_lockfile_remove(c->cache_dir.buf, c->pid);
 	}
 	close(c->lockfile_fd);
 
@@ -302,7 +301,7 @@ int messaging_dgm_send(struct messaging_dgm_context *ctx, pid_t pid,
 	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
 
 	dst_pathlen = snprintf(dst.sun_path, sizeof(dst.sun_path),
-			       "%s/msg/%u", ctx->cache_dir, (unsigned)pid);
+			       "%s/msg/%u", ctx->cache_dir.buf, (unsigned)pid);
 	if (dst_pathlen >= sizeof(dst.sun_path)) {
 		return ENAMETOOLONG;
 	}
@@ -330,14 +329,15 @@ int messaging_dgm_cleanup(struct messaging_dgm_context *ctx, pid_t pid)
 	int fd, ret;
 	struct flock lck = {};
 
-	ret = messaging_dgm_lockfile_name(&lockfile_name, ctx->cache_dir, pid);
+	ret = messaging_dgm_lockfile_name(&lockfile_name, ctx->cache_dir.buf,
+					  pid);
 	if (ret != 0) {
 		return ret;
 	}
 
 	/* same length as lockfile_name, can't overflow */
 	snprintf(socket_name.buf, sizeof(socket_name.buf), "%s/msg/%u",
-		 ctx->cache_dir, (unsigned)pid);
+		 ctx->cache_dir.buf, (unsigned)pid);
 
 	fd = open(lockfile_name.buf, O_NONBLOCK|O_WRONLY, 0);
 	if (fd == -1) {
@@ -384,7 +384,7 @@ int messaging_dgm_wipe(struct messaging_dgm_context *ctx)
 	 */
 
 	ret = snprintf(msgdir_name.buf, sizeof(msgdir_name.buf),
-		       "%s/msg", ctx->cache_dir);
+		       "%s/msg", ctx->cache_dir.buf);
 	if (ret >= sizeof(msgdir_name.buf)) {
 		return ENAMETOOLONG;
 	}
