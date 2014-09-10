@@ -834,7 +834,9 @@ static NTSTATUS open_file(files_struct *fsp,
 					return status;
 				}
 
-				if (!NT_STATUS_IS_OK(status)) {
+				if (NT_STATUS_EQUAL(status,
+					NT_STATUS_OBJECT_NAME_NOT_FOUND))
+				{
 					DEBUG(10, ("open_file: "
 						"file %s vanished since we "
 						"checked for existence.\n",
