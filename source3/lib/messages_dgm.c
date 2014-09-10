@@ -184,7 +184,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	struct messaging_dgm_context *ctx;
 	int ret;
 	bool ok;
-	char *socket_dir;
+	struct sun_path_buf socket_dir;
 	struct sockaddr_un socket_address;
 	size_t sockname_len;
 	uint64_t cookie;
@@ -206,15 +206,17 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 	if (ctx->cache_dir == NULL) {
 		goto fail_nomem;
 	}
-	socket_dir = talloc_asprintf(ctx, "%s/msg", cache_dir);
-	if (socket_dir == NULL) {
-		goto fail_nomem;
+	ret = snprintf(socket_dir.buf, sizeof(socket_dir.buf),
+		       "%s/msg", cache_dir);
+	if (ret >= sizeof(socket_dir.buf)) {
+		TALLOC_FREE(ctx);
+		return ENAMETOOLONG;
 	}
 
 	socket_address = (struct sockaddr_un) { .sun_family = AF_UNIX };
 	sockname_len = snprintf(socket_address.sun_path,
 				sizeof(socket_address.sun_path),
-				"%s/%u", socket_dir, (unsigned)pid.pid);
+				"%s/%u", socket_dir.buf, (unsigned)pid.pid);
 	if (sockname_len >= sizeof(socket_address.sun_path)) {
 		TALLOC_FREE(ctx);
 		return ENAMETOOLONG;
@@ -240,13 +242,12 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		goto fail_nomem;
 	}
 
-	ok = directory_create_or_exist_strict(socket_dir, dir_owner, 0700);
+	ok = directory_create_or_exist_strict(socket_dir.buf, dir_owner, 0700);
 	if (!ok) {
 		DEBUG(1, ("Could not create socket directory\n"));
 		TALLOC_FREE(ctx);
 		return EACCES;
 	}
-	TALLOC_FREE(socket_dir);
 
 	unlink(socket_address.sun_path);
 
