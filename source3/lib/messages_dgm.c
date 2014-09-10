@@ -70,8 +70,7 @@ static int messaging_dgm_lockfile_name(struct sun_path_buf *buf,
 
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c);
 
-static int messaging_dgm_lockfile_create(TALLOC_CTX *tmp_ctx,
-					 const char *cache_dir,
+static int messaging_dgm_lockfile_create(const char *cache_dir,
 					 uid_t dir_owner, pid_t pid,
 					 int *plockfile_fd, uint64_t unique)
 {
@@ -222,7 +221,7 @@ int messaging_dgm_init(TALLOC_CTX *mem_ctx,
 		return ENAMETOOLONG;
 	}
 
-	ret = messaging_dgm_lockfile_create(ctx, cache_dir, dir_owner, pid.pid,
+	ret = messaging_dgm_lockfile_create(cache_dir, dir_owner, pid.pid,
 					    &ctx->lockfile_fd, pid.unique_id);
 	if (ret != 0) {
 		DEBUG(1, ("%s: messaging_dgm_create_lockfile failed: %s\n",
