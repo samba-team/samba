@@ -23,6 +23,7 @@
 #include "../libcli/security/security.h"
 #include "idmap_cache.h"
 #include "librpc/gen_ndr/ndr_wbint_c.h"
+#include "lsa.h"
 
 struct wb_sids2xids_state {
 	struct tevent_context *ev;
@@ -37,6 +38,19 @@ struct wb_sids2xids_state {
 
 	struct lsa_RefDomainList *domains;
 	struct lsa_TransNameArray *names;
+
+	/*
+	 * Domain array to use for the idmap call. The output from
+	 * lookupsids cannot be used directly since for migrated
+	 * objects the returned domain SID can be different that the
+	 * original one. The new domain SID cannot be combined with
+	 * the RID from the previous domain.
+	 *
+	 * The proper way would be asking for the correct RID in the
+	 * new domain, but this approach avoids id mappings for
+	 * invalid SIDs.
+	 */
+	struct lsa_RefDomainList *idmap_doms;
 
 	struct wbint_TransIDArray ids;
 };
@@ -162,13 +176,26 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		return;
 	}
 
+	state->idmap_doms = talloc_zero(state, struct lsa_RefDomainList);
+	if (tevent_req_nomem(state->idmap_doms, req)) {
+		return;
+	}
+
 	for (i=0; i<state->num_non_cached; i++) {
+		struct dom_sid dom_sid;
+		struct lsa_DomainInfo *info;
 		struct lsa_TranslatedName *n = &state->names->names[i];
 		struct wbint_TransID *t = &state->ids.ids[i];
 
+		sid_copy(&dom_sid, &state->non_cached[i]);
+		sid_split_rid(&dom_sid, &t->rid);
+
+		info = &state->domains->domains[n->sid_index];
 		t->type = lsa_SidType_to_id_type(n->sid_type);
-		t->domain_index = n->sid_index;
-		sid_peek_rid(&state->non_cached[i], &t->rid);
+		t->domain_index = init_lsa_ref_domain_list(state,
+							   state->idmap_doms,
+							   info->name.string,
+							   &dom_sid);
 		t->xid.id = UINT32_MAX;
 		t->xid.type = t->type;
 	}
@@ -176,7 +203,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	child = idmap_child();
 
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
-		state, state->ev, child->binding_handle, state->domains,
+		state, state->ev, child->binding_handle, state->idmap_doms,
 		&state->ids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
