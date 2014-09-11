@@ -2801,6 +2801,86 @@ static bool test_smb2_oplock_batch25(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_smb2_oplock_batch26(struct torture_context *tctx,
+                                        struct smb2_tree *tree1)
+{
+
+        NTSTATUS status;
+        bool ret = true;
+        union smb_open io;
+        struct smb2_handle h, h1, h2, h3;
+        const char *fname_base = BASEDIR "\\test_oplock.txt";
+        const char *stream = "Stream One:$DATA";
+        const char *fname_stream;
+
+        status = torture_smb2_testdir(tree1, BASEDIR, &h);
+        torture_assert_ntstatus_ok(tctx, status, "Error creating directory");
+
+        tree1->session->transport->oplock.handler = torture_oplock_handler;
+        tree1->session->transport->oplock.private_data = tree1;
+
+        fname_stream = talloc_asprintf(tctx, "%s:%s", fname_base, stream);
+
+        /*
+          base ntcreatex parms
+        */
+        ZERO_STRUCT(io.smb2);
+        io.generic.level = RAW_OPEN_SMB2;
+        io.smb2.in.desired_access = 0x120089;
+        io.smb2.in.alloc_size = 0;
+        io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+        io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_DELETE |
+                                  NTCREATEX_SHARE_ACCESS_WRITE;
+        io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+        io.smb2.in.create_options = 0;
+        io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+        io.smb2.in.security_flags = 0;
+        io.smb2.in.fname = fname_base;
+
+        /*
+          Open base file with a batch oplock.
+        */
+        torture_comment(tctx, "Open the base file with batch oplock\n");
+        io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+        io.smb2.in.oplock_level = SMB2_OPLOCK_LEVEL_BATCH;
+
+        status = smb2_create(tree1, tctx, &(io.smb2));
+        torture_assert_ntstatus_ok(tctx, status, "Error opening base file");
+        h1 = io.smb2.out.file.handle;
+        CHECK_VAL(io.smb2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+
+        torture_comment(tctx, "Got batch oplock on base file\n");
+
+        torture_comment(tctx, "Opening stream file with batch oplock..\n");
+
+        io.smb2.in.fname = fname_stream;
+
+        status = smb2_create(tree1, tctx, &(io.smb2));
+        torture_assert_ntstatus_ok(tctx, status, "Error opening stream file");
+        h2 = io.smb2.out.file.handle;
+        CHECK_VAL(io.smb2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+
+        torture_comment(tctx, "Got batch oplock on stream file\n");
+
+        torture_comment(tctx, "Open base file again with batch oplock\n");
+
+        io.smb2.in.fname = fname_base;
+
+        status = smb2_create(tree1, tctx, &(io.smb2));
+        torture_assert_ntstatus_ok(tctx, status, "Error opening the file");
+        h3 = io.smb2.out.file.handle;
+        CHECK_VAL(io.smb2.out.oplock_level, SMB2_OPLOCK_LEVEL_II);
+
+        smb2_util_close(tree1, h1);
+        smb2_util_close(tree1, h2);
+        smb2_util_close(tree1, h3);
+        smb2_util_close(tree1, h);
+done:
+        smb2_deltree(tree1, BASEDIR);
+        return ret;
+
+}
+
 /* Test how oplocks work on streams. */
 static bool test_raw_oplock_stream1(struct torture_context *tctx,
 				    struct smb2_tree *tree1,
@@ -3770,6 +3850,7 @@ struct torture_suite *torture_smb2_oplocks_init(void)
 	torture_suite_add_2smb2_test(suite, "batch23", test_smb2_oplock_batch23);
 	torture_suite_add_2smb2_test(suite, "batch24", test_smb2_oplock_batch24);
 	torture_suite_add_1smb2_test(suite, "batch25", test_smb2_oplock_batch25);
+	torture_suite_add_1smb2_test(suite, "batch26", test_smb2_oplock_batch26);
 	torture_suite_add_2smb2_test(suite, "stream1", test_raw_oplock_stream1);
 	torture_suite_add_2smb2_test(suite, "doc", test_smb2_oplock_doc);
 	torture_suite_add_2smb2_test(suite, "brl1", test_smb2_oplock_brl1);
