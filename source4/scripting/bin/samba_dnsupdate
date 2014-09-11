@@ -207,7 +207,10 @@ def check_dns_name(d):
                 return True
         return False
 
-    resolver = dns.resolver.Resolver()
+    resolv_conf = os.getenv('RESOLV_WRAPPER_CONF')
+    if not resolv_conf:
+        resolv_conf = '/etc/resolv.conf'
+    resolver = dns.resolver.Resolver(filename=resolv_conf, configure=True)
 
     if d.nameservers != []:
         resolver.nameservers = d.nameservers
@@ -387,7 +390,7 @@ def call_nsupdate(d, op="add"):
     try:
         cmd = nsupdate_cmd[:]
         cmd.append(tmpfile)
-        env = {}
+        env = os.environ
         if krb5conf:
             env["KRB5_CONFIG"] = krb5conf
         if ccachename:
