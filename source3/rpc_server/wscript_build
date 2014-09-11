@@ -64,7 +64,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_INITSHUTDOWN',
 bld.SAMBA3_SUBSYSTEM('RPC_LSARPC',
                     source='''lsa/srv_lsa_nt.c
                     ../../librpc/gen_ndr/srv_lsa.c''',
-                    deps='SRV_ACCESS_CHECK')
+                    deps='SRV_ACCESS_CHECK LIBLSA')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
                     source='''dfs/srv_dfs_nt.c

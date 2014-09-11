@@ -827,6 +827,9 @@ bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
                     source='rpc_client/init_samr.c',
                     deps='samba-util')
 
+bld.SAMBA3_SUBSYSTEM('LIBLSA',
+                     source='lib/lsa.c')
+
 ########################## BINARIES #################################
 
 bld.SAMBA3_BINARY('smbd/smbd',
@@ -971,6 +974,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  WB_REQTRANS
                  TDB_VALIDATE
                  MESSAGING
+                 LIBLSA
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}')
