@@ -492,8 +492,8 @@ static int alloc_get_client_smb_fname(struct vfs_handle_struct *handle,
 	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
 			      smb_fname->base_name));
 
-	clientFname = cp_smb_filename(ctx, smb_fname);
-	if (clientFname == NULL) {
+	*clientFname = cp_smb_filename(ctx, smb_fname);
+	if ((*clientFname) == NULL) {
 		DEBUG(MH_ERR_DEBUG, ("alloc_get_client_smb_fname "
 					"NTERR\n"));
 		errno = ENOMEM;
