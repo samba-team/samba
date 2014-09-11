@@ -2444,6 +2444,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return fsp_open;
 	}
 
+	if (new_file_created) {
+		/*
+		 * As we atomically create using O_CREAT|O_EXCL,
+		 * then if new_file_created is true, then
+		 * file_existed *MUST* have been false (even
+		 * if the file was previously detected as being
+		 * there).
+		 */
+		file_existed = false;
+	}
+
 	if (file_existed && !check_same_dev_ino(&saved_stat, &smb_fname->st)) {
 		/*
 		 * The file did exist, but some other (local or NFS)
