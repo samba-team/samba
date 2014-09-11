@@ -93,7 +93,6 @@
 #define MH_INFO_DEBUG 10
 #define MH_ERR_DEBUG 0
 
-static const char* MH_MODULE_NAME = "media_harmony";
 static const char* MDB_FILENAME = "msmMMOB.mdb";
 static const size_t MDB_FILENAME_LEN = 11;
 static const char* PMR_FILENAME = "msmFMID.pmr";
@@ -190,7 +189,7 @@ static bool starts_with_media_dir(const char* media_dirname,
 		size_t media_dirname_len, const char* path)
 {
 	bool ret = False;
-	char* path_start;
+	const char *path_start;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with media_dirname '%s' "
 			      "path '%s'\n", media_dirname, path));
@@ -265,8 +264,8 @@ static int depth_from_media_dir(const char* media_dirname,
 		size_t media_dirname_len, const char* path)
 {
 	int transition_count = 0;
-	char* path_start;
-	char* pathPtr;
+	const char *path_start;
+	const char *pathPtr;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with media_dirname '%s' "
 			      "path '%s'\n", media_dirname, path));
@@ -355,7 +354,7 @@ static bool is_avid_database(
 		(
 			path[path_len - avid_db_filename_len - 1] == '/'
 			||
-			path_len > avid_db_filename_len
+			(path_len > avid_db_filename_len
 				+ APPLE_DOUBLE_PREFIX_LEN
 				&&
 			path[path_len - avid_db_filename_len
@@ -363,7 +362,7 @@ static bool is_avid_database(
 				&&
 			is_apple_double(&path[path_len
 				- avid_db_filename_len
-				- APPLE_DOUBLE_PREFIX_LEN])
+				- APPLE_DOUBLE_PREFIX_LEN]))
 		)
 	)
 	{
@@ -417,15 +416,15 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 		)
 			&&
 		(
-			pathPtr - path > 0
+			(pathPtr - path > 0
 				&&
-			*(pathPtr - 1) == '/'
+			 *(pathPtr - 1) == '/')
 			||
-			pathPtr - path > APPLE_DOUBLE_PREFIX_LEN
+			(pathPtr - path > APPLE_DOUBLE_PREFIX_LEN
 				&&
 			*(pathPtr - APPLE_DOUBLE_PREFIX_LEN - 1) == '/'
 				&&
-			is_apple_double(pathPtr - APPLE_DOUBLE_PREFIX_LEN)
+			 is_apple_double(pathPtr - APPLE_DOUBLE_PREFIX_LEN))
 		)
 	)
 	{
@@ -487,7 +486,6 @@ static int alloc_get_client_smb_fname(struct vfs_handle_struct *handle,
 		struct smb_filename **clientFname)
 {
 	int status = 0;
-	NTSTATUS copystatus;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
 			      smb_fname->base_name));
@@ -788,7 +786,6 @@ static DIR *mh_opendir(vfs_handle_struct *handle,
 		goto err;
 	}
 
-out:
 	/* Success is freed in closedir. */
 	DEBUG(MH_INFO_DEBUG, ("Leaving with dirInfo->dirpath '%s', "
 				"dirInfo->clientPath '%s'\n",
