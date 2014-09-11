@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    store smbd profiling information in shared memory
    Copyright (C) Andrew Tridgell 1999
@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -102,8 +102,8 @@ static void profile_message(struct messaging_context *msg_ctx,
 receive a request profile level message
 ****************************************************************************/
 static void reqprofile_message(struct messaging_context *msg_ctx,
-			       void *private_data, 
-			       uint32_t msg_type, 
+			       void *private_data,
+			       uint32_t msg_type,
 			       struct server_id src,
 			       DATA_BLOB *data)
 {
@@ -129,33 +129,32 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
  again:
 	/* try to use an existing key */
 	shm_id = shmget(PROF_SHMEM_KEY, 0, 0);
-	
+
 	/* if that failed then create one. There is a race condition here
 	   if we are running from inetd. Bad luck. */
 	if (shm_id == -1) {
 		if (read_only) return False;
-		shm_id = shmget(PROF_SHMEM_KEY, sizeof(*profile_h), 
+		shm_id = shmget(PROF_SHMEM_KEY, sizeof(*profile_h),
 				IPC_CREAT | IPC_EXCL | IPC_PERMS);
 	}
-	
+
 	if (shm_id == -1) {
-		DEBUG(0,("Can't create or use IPC area. Error was %s\n", 
+		DEBUG(0,("Can't create or use IPC area. Error was %s\n",
 			 strerror(errno)));
 		return False;
-	}   
-	
-	
-	profile_h = (struct profile_header *)shmat(shm_id, 0, 
+	}
+
+	profile_h = (struct profile_header *)shmat(shm_id, 0,
 						   read_only?SHM_RDONLY:0);
 	if ((long)profile_h == -1) {
-		DEBUG(0,("Can't attach to IPC area. Error was %s\n", 
+		DEBUG(0,("Can't attach to IPC area. Error was %s\n",
 			 strerror(errno)));
 		return False;
 	}
 
 	/* find out who created this memory area */
 	if (shmctl(shm_id, IPC_STAT, &shm_ds) != 0) {
-		DEBUG(0,("ERROR shmctl : can't IPC_STAT. Error was %s\n", 
+		DEBUG(0,("ERROR shmctl : can't IPC_STAT. Error was %s\n",
 			 strerror(errno)));
 		return False;
 	}
