@@ -723,6 +723,8 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 
 LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
 
+LIB_LSA = lib/lsa.o
+
 DCE_RPC_EP_OBJ = librpc/rpc/dcerpc_ep.o
 
 RPC_LSARPC_OBJ = rpc_server/lsa/srv_lsa_nt.o \
@@ -806,6 +808,7 @@ RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
 		 $(LIBCLI_LSA_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
+		 $(LIB_LSA) \
 		 $(RPC_SERVER_REGISTER_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
 		 rpc_server/rpc_sock_helper.o \
@@ -1480,6 +1483,7 @@ WINBINDD_OBJ = \
 		$(LIBCLI_DSSETUP_OBJ) \
 		$(LIBCLI_LSA_OBJ) \
 		$(LIBCLI_SAMR_OBJ) \
+		$(LIB_LSA) \
 		rpc_client/init_samr.o \
 		$(PAM_ERRORS_OBJ)
 
