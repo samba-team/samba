@@ -68,7 +68,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SAMR',
 
 bld.SAMBA3_SUBSYSTEM('RPC_LSARPC',
                     source=RPC_LSARPC_SRC,
-                    deps='SRV_ACCESS_CHECK',
+                    deps='SRV_ACCESS_CHECK LIBLSA',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_WINREG',

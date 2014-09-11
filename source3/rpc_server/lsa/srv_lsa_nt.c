@@ -49,6 +49,7 @@
 #include "../librpc/gen_ndr/ndr_wkssvc.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/lsarpc/util_lsarpc.h"
+#include "lsa.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -96,53 +97,6 @@ const struct generic_mapping lsa_trusted_domain_mapping = {
 	LSA_TRUSTED_DOMAIN_EXECUTE,
 	LSA_TRUSTED_DOMAIN_ALL_ACCESS
 };
-
-/***************************************************************************
- init_lsa_ref_domain_list - adds a domain if it's not already in, returns the index.
-***************************************************************************/
-
-static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
-				    struct lsa_RefDomainList *ref,
-				    const char *dom_name,
-				    struct dom_sid *dom_sid)
-{
-	int num = 0;
-
-	if (dom_name != NULL) {
-		for (num = 0; num < ref->count; num++) {
-			if (dom_sid_equal(dom_sid, ref->domains[num].sid)) {
-				return num;
-			}
-		}
-	} else {
-		num = ref->count;
-	}
-
-	if (num >= LSA_REF_DOMAIN_LIST_MULTIPLIER) {
-		/* index not found, already at maximum domain limit */
-		return -1;
-	}
-
-	ref->count = num + 1;
-	ref->max_size = LSA_REF_DOMAIN_LIST_MULTIPLIER;
-
-	ref->domains = talloc_realloc(mem_ctx, ref->domains,
-					    struct lsa_DomainInfo, ref->count);
-	if (!ref->domains) {
-		return -1;
-	}
-
-	ZERO_STRUCT(ref->domains[num]);
-
-	init_lsa_StringLarge(&ref->domains[num].name, dom_name);
-	ref->domains[num].sid = dom_sid_dup(mem_ctx, dom_sid);
-	if (!ref->domains[num].sid) {
-		return -1;
-	}
-
-	return num;
-}
-
 
 /***************************************************************************
  initialize a lsa_DomainInfo structure.
