@@ -5,27 +5,13 @@ test_info()
     cat <<EOF
 Verify the operation of 'ctdb disable'.
 
-This is a superficial test of the 'ctdb disable' command.  It trusts
-information from CTDB that indicates that the IP failover has happened
-correctly.  Another test should check that the failover has actually
-happened at the networking level.
+* Verify that the status of the node changes to 'disabled'.
 
-Prerequisites:
+* Verify that the IP addreses served by the disabled node are failed
+  over to other nodes.
 
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Disable one of the nodes using 'ctdb disable -n <node>'.
-3. Verify that the status of the node changes to 'disabled'.
-4. Verify that the IP addreses served by the disabled node are failed
-   over to other nodes.
-
-Expected results:
-
-* The status of the disabled node changes as expected and IP addresses
-  failover as expected.
+This test does not do any network level checks to make sure IP
+addresses are actually on interfaces.  It just consults "ctdb ip".
 EOF
 }
 
@@ -43,15 +29,6 @@ ctdb_restart_when_done
 select_test_node_and_ips
 
 echo "Disabling node $test_node"
-
 try_command_on_node 1 $CTDB disable -n $test_node
-
-# Avoid a potential race condition...
 wait_until_node_has_status $test_node disabled
-
-if wait_until_ips_are_on_node '!' $test_node $test_node_ips ; then
-    echo "All IPs moved."
-else
-    echo "Some IPs didn't move."
-    testfailures=1
-fi
+wait_until_ips_are_on_node '!' $test_node $test_node_ips

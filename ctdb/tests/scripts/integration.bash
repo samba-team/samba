@@ -152,7 +152,8 @@ sanity_check_ips ()
 	prev="$ipp"
     done <<<"$ips"
 
-    echo "BAD: a node was -1 or IPs are only assigned to one node"
+    echo "BAD: a node was -1 or IPs are only assigned to one node:"
+    echo "$ips"
     echo "Are you running an old version of CTDB?"
     return 1
 }
@@ -483,7 +484,7 @@ node_has_some_ips ()
 
 wait_until_node_has_some_ips ()
 {
-    echo "Waiting for node to have some IPs..."
+    echo "Waiting for some IPs to be assigned to node ${test_node}"
 
     wait_until 60 node_has_some_ips "$@"
 }
