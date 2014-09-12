@@ -351,7 +351,8 @@ def build(bld):
                           destname='README')
 
     bld.MANPAGES('''doc/onnode.1 doc/ctdbd_wrapper.1 doc/ctdbd.conf.5
-                    doc/ctdb.7 doc/ctdb-tunables.7''', True)
+                    doc/ctdb.7 doc/ctdb-statistics.7 doc/ctdb-tunables.7''',
+                 True)
 
     bld.INSTALL_FILES('${BINDIR}', 'tools/onnode',
                       destname='onnode', chmod=0755)
@@ -599,6 +600,7 @@ def dist():
         'ctdbd.1',
         'ctdbd.conf.5',
         'ctdbd_wrapper.1',
+        'ctdb-statistics.7',
         'ctdb-tunables.7',
         'ltdbtool.1'
     ]

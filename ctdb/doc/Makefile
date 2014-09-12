@@ -6,6 +6,7 @@ DOCS = ctdb.1 ctdb.1.html \
 	ping_pong.1 ping_pong.1.html \
 	ctdbd.conf.5 ctdbd.conf.5.html \
 	ctdb.7 ctdb.7.html \
+	ctdb-statistics.7 ctdb-statistics.7.html \
 	ctdb-tunables.7 ctdb-tunables.7.html
 
 all: $(DOCS)

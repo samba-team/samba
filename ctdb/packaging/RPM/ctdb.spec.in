@@ -206,6 +206,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/ping_pong.1.gz
 %{_mandir}/man5/ctdbd.conf.5.gz
 %{_mandir}/man7/ctdb.7.gz
+%{_mandir}/man7/ctdb-statistics.7.gz
 %{_mandir}/man7/ctdb-tunables.7.gz
 %{_libdir}/pkgconfig/ctdb.pc
 
