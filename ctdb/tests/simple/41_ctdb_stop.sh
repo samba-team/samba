@@ -47,7 +47,7 @@ try_command_on_node 1 $CTDB stop -n $test_node
 
 wait_until_node_has_status $test_node stopped
 
-if wait_until_ips_are_on_nodeglob "[!${test_node}]" $test_node_ips ; then
+if wait_until_ips_are_on_node '!' $test_node $test_node_ips ; then
     echo "All IPs moved."
 else
     echo "Some IPs didn't move."

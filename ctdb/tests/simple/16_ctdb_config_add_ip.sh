@@ -114,7 +114,7 @@ echo "Adding IP: ${add_ip/:/ on interface }"
 try_command_on_node $test_node $CTDB addip ${add_ip/:/ }
 
 echo "Waiting for IP to be added..."
-if wait_until 60 ips_are_on_nodeglob $test_node ${add_ip%/*} ; then
+if wait_until 60 ips_are_on_node $test_node ${add_ip%/*} ; then
     echo "That worked!"
 else
     echo "BAD: IP didn't get added."

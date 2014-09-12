@@ -40,7 +40,7 @@ echo "$test_ip/$mask is on $iface"
 echo "Deleting IP $test_ip from all nodes"
 try_command_on_node -v $test_node $CTDB delip -n all $test_ip
 
-wait_until_ips_are_on_nodeglob '!' $test_node $test_ip
+wait_until_ips_are_on_node '!' $test_node $test_ip
 
 try_command_on_node -v all $CTDB ip
 
@@ -93,7 +93,7 @@ try_command_on_node $test_node $CTDB clearlog recoverd
 echo "Marking interface $iface up on node $test_node"
 try_command_on_node $test_node $CTDB setifacelink $iface up
 
-wait_until_ips_are_on_nodeglob $test_node $test_ip
+wait_until_ips_are_on_node $test_node $test_ip
 
 try_command_on_node -v $test_node $CTDB getlog recoverd
 

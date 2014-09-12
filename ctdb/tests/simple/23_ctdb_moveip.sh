@@ -86,14 +86,14 @@ try_command_on_node 0 $CTDB setvar NoIPFailback 1 -n all
 echo "Attempting to move ${ip_to_move} from node ${test_node} to node ${to_node}."
 try_command_on_node $test_node $CTDB moveip $ip_to_move $to_node
 
-if wait_until_ips_are_on_nodeglob "[!${test_node}]" $ip_to_move ; then
+if wait_until_ips_are_on_node '!' $test_node $ip_to_move ; then
     echo "IP moved from ${test_node}."
 else
     echo "BAD: IP didn't move from ${test_node}."
     exit 1
 fi
 
-if wait_until_ips_are_on_nodeglob "$to_node" $ip_to_move ; then
+if wait_until_ips_are_on_node "$to_node" $ip_to_move ; then
     echo "IP moved to ${to_node}."
 else
     echo "BAD: IP didn't move to ${to_node}."

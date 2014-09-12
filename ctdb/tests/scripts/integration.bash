@@ -380,29 +380,31 @@ wait_until_node_has_status ()
 }
 
 # Useful for superficially testing IP failover.
-# IPs must be on nodes matching nodeglob.
-# If the first argument is '!' then the IPs must not be on nodes
-# matching nodeglob.
-ips_are_on_nodeglob ()
+# IPs must be on the given node.
+# If the first argument is '!' then the IPs must not be on the given node.
+ips_are_on_node ()
 {
     local negating=false
     if [ "$1" = "!" ] ; then
 	negating=true ; shift
     fi
-    local nodeglob="$1" ; shift
+    local node="$1" ; shift
     local ips="$*"
 
     local out
 
     all_ips_on_node 1
 
+    local check
     for check in $ips ; do
+	local ip pnn
 	while read ip pnn ; do
 	    if [ "$check" = "$ip" ] ; then
-		case "$pnn" in
-		    ($nodeglob) if $negating ; then return 1 ; fi ;;
-		    (*) if ! $negating ; then return 1 ; fi  ;;
-		esac
+		if [ "$pnn" = "$node" ] ; then
+		    if $negating ; then return 1 ; fi
+		else
+		    if ! $negating ; then return 1 ; fi
+		fi
 		ips="${ips/${ip}}" # Remove from list
 		break
 	    fi
@@ -418,11 +420,11 @@ ips_are_on_nodeglob ()
     [ -z "$ips" ]
 }
 
-wait_until_ips_are_on_nodeglob ()
+wait_until_ips_are_on_node ()
 {
     echo "Waiting for IPs to fail over..."
 
-    wait_until 60 ips_are_on_nodeglob "$@"
+    wait_until 60 ips_are_on_node "$@"
 }
 
 node_has_some_ips ()
