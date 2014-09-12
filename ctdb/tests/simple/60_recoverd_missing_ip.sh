@@ -3,7 +3,12 @@
 test_info()
 {
     cat <<EOF
-Verify that the reconvery daemon handles unhosted IPs properly.
+Verify that the recovery daemon handles unhosted IPs properly.
+
+This test does not do any network level checks to make sure the IP
+address is actually on an interface.  It just consults "ctdb ip".
+
+This is a variation of the "addip" test.
 EOF
 }
 
@@ -23,12 +28,10 @@ select_test_node_and_ips
 echo "Running test against node $test_node and IP $test_ip"
 
 get_test_ip_mask_and_iface
-echo "$test_ip/$mask is on $iface"
 
 echo "Deleting IP $test_ip from all nodes"
-try_command_on_node -v $test_node $CTDB delip -n all $test_ip
-
-wait_until_ips_are_on_node '!' $test_node $test_ip
+try_command_on_node $test_node $CTDB delip -n all $test_ip
+wait_until_ips_are_on_node ! $test_node $test_ip
 
 try_command_on_node -v all $CTDB ip
 
@@ -57,37 +60,20 @@ fi
 echo "Marking interface $iface down on node $test_node"
 try_command_on_node $test_node $CTDB setifacelink $iface down
 
-try_command_on_node $test_node $CTDB clearlog recoverd
-
 echo "Adding IP $test_ip to node $test_node"
 try_command_on_node $test_node $CTDB addip $test_ip/$mask $iface
 
-# Give the recovery daemon enough time to start doing IP verification
+echo "Wait long enough for IP verification to have taken place"
 sleep_for 15
 
-try_command_on_node $test_node $CTDB getlog recoverd
-
-msg="Public IP '$test_ip' is not assigned and we could serve it"
-
-if grep "$msg"  <<<"$out" ; then
-    echo "BAD: the recovery daemon noticed that the IP was unhosted"
-    exit 1
+echo "Ensuring that IP ${test_ip} is not hosted on node ${test_node} when interface is down"
+if ips_are_on_node '!' $test_node $test_ip; then
+    echo "GOOD: the IP has not been hosted while the interface is down"
 else
-    echo "GOOD: the recovery daemon did not notice that the IP was unhosted"
+    echo "BAD: the IP is hosted but the interface is down"
+    exit 1
 fi
-
-try_command_on_node $test_node $CTDB clearlog recoverd
 
 echo "Marking interface $iface up on node $test_node"
 try_command_on_node $test_node $CTDB setifacelink $iface up
-
 wait_until_ips_are_on_node $test_node $test_ip
-
-try_command_on_node -v $test_node $CTDB getlog recoverd
-
-if grep "$msg" <<<"$out" ; then
-    echo "GOOD: the recovery daemon noticed that the IP was unhosted"
-else
-    echo "BAD: the recovery daemon did not notice that the IP was unhosted"
-    exit 1
-fi

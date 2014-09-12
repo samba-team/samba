@@ -443,7 +443,23 @@ ips_are_on_node ()
 
 wait_until_ips_are_on_node ()
 {
-    echo "Waiting for IPs to fail over..."
+    # Go to some trouble to print a use description of what is happening
+    local not=""
+    if [ "$1" == "!" ] ; then
+	not="no longer "
+    fi
+    local node=""
+    local ips=""
+    local i
+    for i ; do
+	[ "$i" != "!" ] || continue
+	if [ -z "$node" ] ; then
+	    node="$i"
+	    continue
+	fi
+	ips="${ips}${ips:+, }${i}"
+    done
+    echo "Waiting for ${ips} to ${not}be assigned to node ${node}"
 
     wait_until 60 ips_are_on_node "$@"
 }
