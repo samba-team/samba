@@ -168,6 +168,7 @@
 ^samba4.smb2.oplock.batch9\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch10\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch20\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch26\(.*\)$
 ^samba4.smb2.oplock.stream1 # samba 4 oplocks are a mess
 ^samba4.smb2.getinfo.complex # streams on directories does not work
 ^samba4.smb2.getinfo.qfs_buffercheck # S4 does not do the INFO_LENGTH_MISMATCH/BUFFER_OVERFLOW thingy
