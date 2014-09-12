@@ -37,10 +37,10 @@
  *         type number
  */
 
-static char* namecache_key(const char *name,
+static char *namecache_key(const char *name,
 				int name_type)
 {
-	char *keystr;
+	char *keystr = NULL;
 	asprintf_strupper_m(&keystr, NBTKEY_FMT, name, name_type);
 
 	return keystr;
@@ -239,7 +239,7 @@ static char *namecache_status_record_key(const char *name,
 				const struct sockaddr_storage *keyip)
 {
 	char addr[INET6_ADDRSTRLEN];
-	char *keystr;
+	char *keystr = NULL;
 
 	print_sockaddr(addr, sizeof(addr), keyip);
 	asprintf_strupper_m(&keystr, "NBT/%s#%02X.%02X.%s", name,
