@@ -123,7 +123,10 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	set_scheduler();
+	if (!set_scheduler()) {
+		fprintf(stderr, "%s: Unable to set real-time scheduler priority\n",
+			progname);
+	}
 
 	log_fd = atoi(argv[1]);
 	close(STDOUT_FILENO);

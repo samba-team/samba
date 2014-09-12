@@ -1183,7 +1183,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 
 	if (ctdb->do_setsched) {
 		/* try to set us up as realtime */
-		set_scheduler();
+		if (!set_scheduler()) {
+			exit(1);
+		}
+		DEBUG(DEBUG_NOTICE, ("Set real-time scheduler priority\n"));
 	}
 
 	/* ensure the socket is deleted on exit of the daemon */

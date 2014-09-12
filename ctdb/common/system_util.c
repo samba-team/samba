@@ -37,7 +37,7 @@
 /*
   if possible, make this task real time
  */
-void set_scheduler(void)
+bool set_scheduler(void)
 {
 #ifdef _AIX_
 #if HAVE_THREAD_SETSCHED
@@ -47,14 +47,15 @@ void set_scheduler(void)
 	ti = 0ULL;
 	if (getthrds64(getpid(), &te, sizeof(te), &ti, 1) != 1) {
 		DEBUG(DEBUG_ERR, ("Unable to get thread information\n"));
-		return;
+		return false;
 	}
 
 	if (thread_setsched(te.ti_tid, 0, SCHED_RR) == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to set scheduler to SCHED_RR (%s)\n",
 				  strerror(errno)));
+		return false;
 	} else {
-		DEBUG(DEBUG_NOTICE, ("Set scheduler to SCHED_RR\n"));
+		return true;
 	}
 #endif
 #else /* no AIX */
@@ -70,11 +71,13 @@ void set_scheduler(void)
 	if (sched_setscheduler(0, policy, &p) == -1) {
 		DEBUG(DEBUG_CRIT,("Unable to set scheduler to SCHED_FIFO (%s)\n",
 			 strerror(errno)));
+		return false;
 	} else {
-		DEBUG(DEBUG_NOTICE,("Set scheduler to SCHED_FIFO\n"));
+		return true;
 	}
 #endif
 #endif
+	return false;
 }
 
 /*

@@ -1090,7 +1090,7 @@ void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
-void set_scheduler(void);
+bool set_scheduler(void);
 void reset_scheduler(void);
 
 struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
