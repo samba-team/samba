@@ -551,7 +551,6 @@ _PUBLIC_ void strupper_m(char *s)
 bool strupper_m(char *s)
 {
 	size_t len;
-	int errno_save;
 	bool ret = false;
 
 	/* this is quite a common operation, so we want it to be
@@ -570,14 +569,11 @@ bool strupper_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	len = strlen(s) + 1;
-	errno_save = errno;
-	errno = 0;
 	ret = unix_strupper(s,len,s,len);
 	/* Catch mb conversion errors that may not terminate. */
-	if (errno) {
+	if (!ret) {
 		s[len-1] = '\0';
 	}
-	errno = errno_save;
 	return ret;
 }
 
