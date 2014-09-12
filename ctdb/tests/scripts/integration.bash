@@ -202,6 +202,25 @@ select_test_node_and_ips ()
     return 0
 }
 
+# Sets: mask, iface
+get_test_ip_mask_and_iface ()
+{
+    # Find the interface
+    try_command_on_node $test_node "$CTDB ip -v -Y | awk -F: -v ip=$test_ip '\$2 == ip { print \$4 }'"
+    iface="$out"
+
+    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+	# Find the netmask
+	try_command_on_node $test_node ip addr show to $test_ip
+	mask="${out##*/}"
+	mask="${mask%% *}"
+    else
+	mask="24"
+    fi
+
+    echo "$test_ip/$mask is on $iface"
+}
+
 #######################################
 
 # Wait until either timeout expires or command succeeds.  The command

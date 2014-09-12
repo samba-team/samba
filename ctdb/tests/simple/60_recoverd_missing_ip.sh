@@ -22,19 +22,7 @@ select_test_node_and_ips
 
 echo "Running test against node $test_node and IP $test_ip"
 
-# Find the interface
-try_command_on_node $test_node "$CTDB ip -v -Y | awk -F: -v ip=$test_ip '\$2 == ip { print \$4 }'"
-iface="$out"
-
-if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
-    # Find the netmask
-    try_command_on_node $test_node ip addr show to $test_ip
-    mask="${out##*/}"
-    mask="${mask%% *}"
-else
-    mask="24"
-fi
-
+get_test_ip_mask_and_iface
 echo "$test_ip/$mask is on $iface"
 
 echo "Deleting IP $test_ip from all nodes"
