@@ -653,6 +653,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 			}
+			CTDB_DECREMENT_STAT(ctdb, pending_calls);
 			return;
 		}
 	}
@@ -685,6 +686,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		if (ctdb_add_revoke_deferred_call(ctdb, ctdb_db, key, (struct ctdb_req_header *)c, daemon_incoming_packet, client) != 0) {
 			ctdb_fatal(ctdb, "Failed to add deferred call for revoke child");
 		}
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
 	}
 
@@ -706,6 +708,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 			ctdb_fatal(ctdb, "Failed to add deferred call for revoke child");
 		}
 
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
 	}		
 
