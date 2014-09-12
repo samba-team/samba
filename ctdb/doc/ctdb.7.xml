@@ -964,6 +964,9 @@ CTDB_CAPABILITY_RECMASTER=no
       <citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>,
 
+      <citerefentry><refentrytitle>ctdb-statistics</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
       <citerefentry><refentrytitle>ctdb-tunables</refentrytitle>
       <manvolnum>7</manvolnum></citerefentry>,
 

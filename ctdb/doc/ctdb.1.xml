@@ -768,7 +768,11 @@ NATGW: YES
     <refsect2>
       <title>statistics</title>
       <para>
-	Collect statistics from the CTDB daemon about how many calls it has served.
+        Collect statistics from the CTDB daemon about
+        how many calls it has served.  Information about
+        various fields in statistics can be found in
+	<citerefentry><refentrytitle>ctdb-statistics</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.
       </para>
       <refsect3>
 	<title>Example</title>
@@ -826,7 +830,10 @@ max_lockwait_latency               0.000000 sec
     <refsect2>
       <title>dbstatistics <parameter>DB</parameter></title>
       <para>
-	Display statistics about the database DB.
+	Display statistics about the database DB.  Information
+	about various fields in dbstatistics can be found in
+	<citerefentry><refentrytitle>ctdb-statistics</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.
       </para>
       <refsect3>
 	<title>Example</title>
@@ -1696,6 +1703,9 @@ Server id 0:14765 exists
       <manvolnum>1</manvolnum></citerefentry>,
 
       <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdb-statistics</refentrytitle>
       <manvolnum>7</manvolnum></citerefentry>,
 
       <citerefentry><refentrytitle>ctdb-tunables</refentrytitle>
