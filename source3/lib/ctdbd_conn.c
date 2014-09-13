@@ -415,6 +415,8 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			DEBUG(10, ("received CTDB_SRVID_RELEASE_IP\n"));
 			ret = conn->release_ip_handler((const char *)msg->data,
 						       conn->release_ip_priv);
+			TALLOC_FREE(hdr);
+
 			if (ret) {
 				/*
 				 * We need to release the ip,
@@ -426,7 +428,6 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 				conn->release_ip_priv = NULL;
 				return NT_STATUS_ADDRESS_CLOSED;
 			}
-			TALLOC_FREE(hdr);
 			goto next_pkt;
 		}
 
