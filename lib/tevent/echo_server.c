@@ -619,10 +619,10 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	memset(&addr, 0, sizeof(addr));
-
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
+	addr = (struct sockaddr_in) {
+		.sin_family = AF_INET,
+		.sin_port = htons(port)
+	};
 
 	ret = bind(listen_sock, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret == -1) {
