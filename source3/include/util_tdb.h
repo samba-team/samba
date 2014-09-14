@@ -46,4 +46,23 @@ int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2);
 
 char *tdb_data_string(TALLOC_CTX *mem_ctx, TDB_DATA d);
 
+/****************************************************************************
+ Lock a chain, with timeout.
+****************************************************************************/
+int tdb_chainlock_with_timeout( struct tdb_context *tdb, TDB_DATA key,
+				unsigned int timeout);
+
+/****************************************************************************
+ Lock a chain by string, with timeout Return non-zero if lock failed.
+****************************************************************************/
+int tdb_lock_bystring_with_timeout(struct tdb_context *tdb, const char *keyval,
+				   int timeout);
+
+/****************************************************************************
+ Readlock a chain by string, with timeout Return non-zero if lock failed.
+****************************************************************************/
+int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
+					unsigned int timeout);
+
+
 #endif /* __TDBUTIL_H__ */

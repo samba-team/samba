@@ -53,24 +53,6 @@ int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval);
 void tdb_read_unlock_bystring(struct tdb_context *tdb, const char *keyval);
 
 /****************************************************************************
- Lock a chain, with timeout.
-****************************************************************************/
-int tdb_chainlock_with_timeout( struct tdb_context *tdb, TDB_DATA key,
-				unsigned int timeout);
-
-/****************************************************************************
- Lock a chain by string, with timeout Return non-zero if lock failed.
-****************************************************************************/
-int tdb_lock_bystring_with_timeout(struct tdb_context *tdb, const char *keyval,
-				   int timeout);
-
-/****************************************************************************
- Readlock a chain by string, with timeout Return non-zero if lock failed.
-****************************************************************************/
-int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
-					unsigned int timeout);
-
-/****************************************************************************
  Fetch a int32_t value by a arbitrary blob key, return -1 if not found.
  Output is int32_t in native byte order.
 ****************************************************************************/

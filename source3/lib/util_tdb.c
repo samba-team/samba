@@ -451,3 +451,81 @@ done:
 	talloc_free(ost);
 	return ret;
 }
+
+static sig_atomic_t gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(int signum)
+{
+	gotalarm = 1;
+}
+
+/****************************************************************************
+ Lock a chain with timeout (in seconds).
+****************************************************************************/
+
+static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
+{
+	/* Allow tdb_chainlock to be interrupted by an alarm. */
+	int ret;
+	gotalarm = 0;
+
+	if (timeout) {
+		CatchSignal(SIGALRM, gotalarm_sig);
+		tdb_setalarm_sigptr(tdb, &gotalarm);
+		alarm(timeout);
+	}
+
+	if (rw_type == F_RDLCK)
+		ret = tdb_chainlock_read(tdb, key);
+	else
+		ret = tdb_chainlock(tdb, key);
+
+	if (timeout) {
+		alarm(0);
+		tdb_setalarm_sigptr(tdb, NULL);
+		CatchSignal(SIGALRM, SIG_IGN);
+		if (gotalarm && (ret != 0)) {
+			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
+				timeout, key.dptr, tdb_name(tdb)));
+			/* TODO: If we time out waiting for a lock, it might
+			 * be nice to use F_GETLK to get the pid of the
+			 * process currently holding the lock and print that
+			 * as part of the debugging message. -- mbp */
+			return -1;
+		}
+	}
+
+	return ret == 0 ? 0 : -1;
+}
+
+/****************************************************************************
+ Write lock a chain. Return non-zero if timeout or lock failed.
+****************************************************************************/
+
+int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
+{
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
+}
+
+int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
+				   int timeout)
+{
+	TDB_DATA key = string_term_tdb_data(keyval);
+
+	return tdb_chainlock_with_timeout(tdb, key, timeout);
+}
+
+/****************************************************************************
+ Read lock a chain by string. Return non-zero if timeout or lock failed.
+****************************************************************************/
+
+int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
+{
+	TDB_DATA key = string_term_tdb_data(keyval);
+
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
+}
