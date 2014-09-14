@@ -73,7 +73,7 @@ bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',
 bld.SAMBA_LIBRARY('util_tdb',
 	source='util_tdb.c',
 	local_include=False,
-	public_deps='tdb talloc samba-util',
+	public_deps='tdb talloc',
 	private_library=True
 	)
 
