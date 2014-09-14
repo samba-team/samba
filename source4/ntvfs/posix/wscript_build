@@ -48,7 +48,7 @@ bld.SAMBA_PYTHON('python_xattr_native',
 
 bld.SAMBA_LIBRARY('posix_eadb',
                   source='posix_eadb.c',
-                  deps='tdb tdb-wrap',
+                  deps='tdb tdb-wrap samba-util',
                   autoproto='posix_eadb_proto.h',
                   private_library=True)
 

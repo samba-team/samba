@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('tdb-wrap',
                   source='tdb_wrap.c',
-                  deps='tdb talloc samba-util samba-hostconfig',
+                  deps='tdb talloc samba-debug',
                   private_library=True,
                   local_include=False
                  )
