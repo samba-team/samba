@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
@@ -249,6 +250,26 @@ static void reply_nt1_orig(struct smbsrv_request *req)
 	req_push_str(req, NULL, lpcfg_workgroup(req->smb_conn->lp_ctx), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 	req_push_str(req, NULL, lpcfg_netbios_name(req->smb_conn->lp_ctx), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 	DEBUG(3,("not using extended security (SPNEGO or NTLMSSP)\n"));
+}
+
+/*
+  try to determine if the filesystem supports large files
+*/
+static bool large_file_support(const char *path)
+{
+	int fd;
+	ssize_t ret;
+	char c;
+
+	fd = open(path, O_RDWR|O_CREAT, 0600);
+	unlink(path);
+	if (fd == -1) {
+		/* have to assume large files are OK */
+		return true;
+	}
+	ret = pread(fd, &c, 1, ((uint64_t)1)<<32);
+	close(fd);
+	return ret == 0;
 }
 
 /****************************************************************************

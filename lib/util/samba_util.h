@@ -600,7 +600,6 @@ _PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
 _PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length);
 _PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 _PUBLIC_ int fdprintf(int fd, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
-_PUBLIC_ bool large_file_support(const char *path);
 
 /*
   compare two files, return true if the two files have the same content

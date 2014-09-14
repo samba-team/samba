@@ -420,27 +420,6 @@ _PUBLIC_ int fdprintf(int fd, const char *format, ...)
 
 
 /*
-  try to determine if the filesystem supports large files
-*/
-_PUBLIC_ bool large_file_support(const char *path)
-{
-	int fd;
-	ssize_t ret;
-	char c;
-
-	fd = open(path, O_RDWR|O_CREAT, 0600);
-	unlink(path);
-	if (fd == -1) {
-		/* have to assume large files are OK */
-		return true;
-	}
-	ret = pread(fd, &c, 1, ((uint64_t)1)<<32);
-	close(fd);
-	return ret == 0;
-}
-
-
-/*
   compare two files, return true if the two files have the same content
  */
 bool file_compare(const char *path1, const char *path2)
