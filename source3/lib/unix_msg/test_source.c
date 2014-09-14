@@ -46,7 +46,7 @@ int main(int argc, const char *argv[])
 	}
 
 	for (i=0; i<num_ctxs; i++) {
-		ret = unix_msg_init(NULL, funcs, 256, 1, NULL, NULL,
+		ret = unix_msg_init(NULL, funcs, 256, NULL, NULL,
 				    &ctxs[i]);
 		if (ret != 0) {
 			fprintf(stderr, "unix_msg_init failed: %s\n",

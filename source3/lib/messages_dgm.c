@@ -144,7 +144,6 @@ int messaging_dgm_init(struct tevent_context *ev,
 	struct messaging_dgm_context *ctx;
 	int ret;
 	struct sockaddr_un socket_address;
-	uint64_t cookie;
 	size_t len;
 	static bool have_dgm_context = false;
 
@@ -205,9 +204,7 @@ int messaging_dgm_init(struct tevent_context *ev,
 
 	unlink(socket_address.sun_path);
 
-	generate_random_buffer((uint8_t *)&cookie, sizeof(cookie));
-
-	ret = unix_msg_init(&socket_address, ctx->msg_callbacks, 1024, cookie,
+	ret = unix_msg_init(&socket_address, ctx->msg_callbacks, 1024,
 			    messaging_dgm_recv, ctx, &ctx->dgm_ctx);
 	if (ret != 0) {
 		DEBUG(1, ("unix_msg_init failed: %s\n", strerror(ret)));

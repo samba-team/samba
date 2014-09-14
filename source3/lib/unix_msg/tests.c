@@ -70,16 +70,14 @@ int main(void)
 		return 1;
 	}
 
-	ret = unix_msg_init(&addr1, funcs, 256, 1,
-			    recv_cb, &state, &ctx1);
+	ret = unix_msg_init(&addr1, funcs, 256, recv_cb, &state, &ctx1);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
 			strerror(ret));
 		return 1;
 	}
 
-	ret = unix_msg_init(&addr1, funcs, 256, 1,
-			    recv_cb, &state, &ctx1);
+	ret = unix_msg_init(&addr1, funcs, 256, recv_cb, &state, &ctx1);
 	if (ret == 0) {
 		fprintf(stderr, "unix_msg_init succeeded unexpectedly\n");
 		return 1;
@@ -90,8 +88,7 @@ int main(void)
 		return 1;
 	}
 
-	ret = unix_msg_init(&addr2, funcs, 256, 1,
-			    recv_cb, &state, &ctx2);
+	ret = unix_msg_init(&addr2, funcs, 256, recv_cb, &state, &ctx2);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
 			strerror(ret));

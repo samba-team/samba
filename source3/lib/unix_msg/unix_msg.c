@@ -744,7 +744,7 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 
 int unix_msg_init(const struct sockaddr_un *addr,
 		  const struct poll_funcs *ev_funcs,
-		  size_t fragment_len, uint64_t cookie,
+		  size_t fragment_len,
 		  void (*recv_callback)(struct unix_msg_ctx *ctx,
 					uint8_t *msg, size_t msg_len,
 					int *fds, size_t num_fds,
@@ -762,7 +762,7 @@ int unix_msg_init(const struct sockaddr_un *addr,
 
 	*ctx = (struct unix_msg_ctx) {
 		.fragment_len = fragment_len,
-		.cookie = cookie,
+		.cookie = 1,
 		.recv_callback = recv_callback,
 		.private_data = private_data
 	};

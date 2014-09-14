@@ -52,7 +52,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ret = unix_msg_init(&addr, funcs, 256, 1, recv_cb, &state, &ctx);
+	ret = unix_msg_init(&addr, funcs, 256, recv_cb, &state, &ctx);
 	if (ret != 0) {
 		fprintf(stderr, "unix_msg_init failed: %s\n",
 			strerror(ret));
