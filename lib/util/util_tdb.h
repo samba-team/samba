@@ -139,5 +139,10 @@ int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA d
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err);
 
-#endif /* _____LIB_UTIL_UTIL_TDB_H__ */
+/****************************************************************************
+ Return an errno from a TDB_ERROR
+****************************************************************************/
 
+int map_unix_error_from_tdb(enum TDB_ERROR err);
+
+#endif /* _____LIB_UTIL_UTIL_TDB_H__ */

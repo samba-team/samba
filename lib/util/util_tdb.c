@@ -426,3 +426,60 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 	};
 	return result;
 }
+
+int map_unix_error_from_tdb(enum TDB_ERROR err)
+{
+	int result = EINVAL;
+
+	switch (err) {
+	case TDB_SUCCESS:
+		result = 0;
+		break;
+	case TDB_ERR_CORRUPT:
+		result = EILSEQ;
+		break;
+	case TDB_ERR_IO:
+		result = EIO;
+		break;
+	case TDB_ERR_OOM:
+		result = ENOMEM;
+		break;
+	case TDB_ERR_EXISTS:
+		result = EEXIST;
+		break;
+
+	case TDB_ERR_LOCK:
+		/*
+		 * TDB_ERR_LOCK is very broad, we could for example
+		 * distinguish between fcntl locks and invalid lock
+		 * sequences. EWOULDBLOCK is wrong, but there is no real
+		 * generic lock error code in errno.h
+		 */
+		result = EWOULDBLOCK;
+		break;
+
+	case TDB_ERR_NOLOCK:
+	case TDB_ERR_LOCK_TIMEOUT:
+		/*
+		 * These two ones in the enum are not actually used
+		 */
+		result = ENOLCK;
+		break;
+	case TDB_ERR_NOEXIST:
+		result = ENOENT;
+		break;
+	case TDB_ERR_EINVAL:
+		result = EINVAL;
+		break;
+	case TDB_ERR_RDONLY:
+		result = EROFS;
+		break;
+	case TDB_ERR_NESTING:
+		/*
+		 * Well, this db is already busy...
+		 */
+		result = EBUSY;
+		break;
+	};
+	return result;
+}
