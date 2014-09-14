@@ -1041,6 +1041,7 @@ struct irpc_name_records *irpc_all_servers(struct imessaging_context *msg_ctx,
 
 	ret = tdb_traverse_read(t->tdb, all_servers_func, name_records);
 	if (ret == -1) {
+		TALLOC_FREE(name_records);
 		return NULL;
 	}
 
