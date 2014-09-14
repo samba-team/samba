@@ -579,9 +579,13 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 	} else {
-		status = smb2srv_session_lookup(state->smb2req->xconn,
-						state->in_session_id, now,
-						&state->session);
+		if (smb2req->session == NULL) {
+			tevent_req_nterror(req, NT_STATUS_USER_SESSION_DELETED);
+			return tevent_req_post(req, ev);
+		}
+
+		state->session = smb2req->session;
+		status = state->session->status;
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
 			status = NT_STATUS_OK;
 		}
