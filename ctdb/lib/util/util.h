@@ -333,12 +333,6 @@ the list.
 _PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 /**
-take a list of lines and modify them to produce a list where \ continues
-a line
-**/
-_PUBLIC_ void file_lines_slashcont(char **lines);
-
-/**
   save a lump of data into a file. Mostly used for debugging 
 */
 _PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length);

@@ -344,30 +344,6 @@ _PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX 
 	return file_lines_parse(p, size, numlines, mem_ctx);
 }
 
-
-/**
-take a list of lines and modify them to produce a list where \ continues
-a line
-**/
-_PUBLIC_ void file_lines_slashcont(char **lines)
-{
-	int i, j;
-
-	for (i=0; lines[i];) {
-		int len = strlen(lines[i]);
-		if (lines[i][len-1] == '\\') {
-			lines[i][len-1] = ' ';
-			if (lines[i+1]) {
-				char *p = &lines[i][len];
-				while (p < lines[i+1]) *p++ = ' ';
-				for (j = i+1; lines[j]; j++) lines[j] = lines[j+1];
-			}
-		} else {
-			i++;
-		}
-	}
-}
-
 _PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
 			     size_t length, mode_t mode)
 {
