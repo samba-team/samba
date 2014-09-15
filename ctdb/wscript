@@ -217,11 +217,11 @@ def build(bld):
                         includes='include include/internal',
                         deps='replace tevent tdb')
 
-    if sys.platform == 'linux2':
+    if sys.platform.startswith('linux'):
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_linux.c')
-    elif sys.platform == 'aix':
+    elif sys.platform.startswith('aix'):
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_aix.c')
-    elif sys.platform == 'freebsd':
+    elif sys.platform.startswith('freebsd'):
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_freebsd.c')
     elif sys.platform == 'kfreebsd':
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_kfreebsd.c')
