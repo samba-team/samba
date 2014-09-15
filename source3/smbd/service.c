@@ -888,7 +888,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
  Make a connection to a service from SMB1. Internal interface.
 ****************************************************************************/
 
-static connection_struct *make_connection_smb1(struct smbd_server_connection *sconn,
+static connection_struct *make_connection_smb1(struct smb_request *req,
 					NTTIME now,
 					int snum, struct user_struct *vuser,
 					const char *pdev,
@@ -898,7 +898,7 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 	NTSTATUS status;
 	struct connection_struct *conn;
 
-	status = smb1srv_tcon_create(sconn->conn, now, &tcon);
+	status = smb1srv_tcon_create(req->xconn, now, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("make_connection_smb1: Couldn't find free tcon %s.\n",
 			 nt_errstr(status)));
@@ -906,7 +906,7 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 		return NULL;
 	}
 
-	conn = conn_new(sconn);
+	conn = conn_new(req->sconn);
 	if (!conn) {
 		TALLOC_FREE(tcon);
 
@@ -918,7 +918,7 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 	conn->cnum = tcon->global->tcon_wire_id;
 	conn->tcon = tcon;
 
-	*pstatus = make_connection_snum(sconn,
+	*pstatus = make_connection_snum(req->sconn,
 					conn,
 					snum,
 					vuser,
@@ -1048,7 +1048,7 @@ connection_struct *make_connection(struct smb_request *req,
 		}
 		DEBUG(5, ("making a connection to [homes] service "
 			  "created at session setup time\n"));
-		return make_connection_smb1(sconn, now,
+		return make_connection_smb1(req, now,
 					    vuser->homes_snum,
 					    vuser,
 					    dev, status);
@@ -1057,7 +1057,7 @@ connection_struct *make_connection(struct smb_request *req,
 			       lp_servicename(talloc_tos(), vuser->homes_snum))) {
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
-		return make_connection_smb1(sconn, now,
+		return make_connection_smb1(req, now,
 					    vuser->homes_snum,
 					    vuser,
 					    dev, status);
@@ -1109,7 +1109,7 @@ connection_struct *make_connection(struct smb_request *req,
 
 	DEBUG(5, ("making a connection to 'normal' service %s\n", service));
 
-	return make_connection_smb1(sconn, now, snum, vuser,
+	return make_connection_smb1(req, now, snum, vuser,
 				    dev, status);
 }
 
