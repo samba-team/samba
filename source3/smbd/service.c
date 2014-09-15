@@ -991,12 +991,13 @@ connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
  * @param service 
 ****************************************************************************/
 
-connection_struct *make_connection(struct smbd_server_connection *sconn,
+connection_struct *make_connection(struct smb_request *req,
 				   NTTIME now,
 				   const char *service_in,
 				   const char *pdev, uint64_t vuid,
 				   NTSTATUS *status)
 {
+	struct smbd_server_connection *sconn = req->sconn;
 	uid_t euid;
 	struct user_struct *vuser = NULL;
 	char *service = NULL;
