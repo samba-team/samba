@@ -2311,7 +2311,7 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		handle, fsp);
 	struct fruit_config_data *config = NULL;
 	AfpInfo *ai = NULL;
-	ssize_t len, new_rfork_size;
+	ssize_t len;
 	char *name = NULL;
 	char *tmp_base_name = NULL;
 	NTSTATUS status;
@@ -2377,16 +2377,12 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		if (config->rsrc == FRUIT_RSRC_ADFILE) {
 			rc = ad_read(ad, name);
 			if (rc == -1) {
-				rc = -1;
 				goto exit;
 			}
 			rc = 0;
 
-			new_rfork_size = len + offset
-				+ ad_getentryoff(ad, ADEID_RFORK);
-			if (new_rfork_size > ad_getentrylen(ad, ADEID_RFORK)) {
-				ad_setentrylen(ad, ADEID_RFORK,
-					       new_rfork_size);
+			if ((len + offset) > ad_getentrylen(ad, ADEID_RFORK)) {
+				ad_setentrylen(ad, ADEID_RFORK, len + offset);
 				rc = ad_write(ad, name);
 			}
 		}
