@@ -517,12 +517,12 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
   connecting user if appropriate.
 ****************************************************************************/
 
-static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
+static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					connection_struct *conn,
 					int snum, struct user_struct *vuser,
 					const char *pdev)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbd_server_connection *sconn = xconn->sconn;
 	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
@@ -918,7 +918,7 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 	conn->cnum = tcon->global->tcon_wire_id;
 	conn->tcon = tcon;
 
-	*pstatus = make_connection_snum(req->sconn,
+	*pstatus = make_connection_snum(req->xconn,
 					conn,
 					snum,
 					vuser,
@@ -974,7 +974,7 @@ connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 	conn->cnum = tcon->global->tcon_wire_id;
 	conn->tcon = tcon;
 
-	*pstatus = make_connection_snum(sconn,
+	*pstatus = make_connection_snum(req->xconn,
 					conn,
 					snum,
 					vuser,
