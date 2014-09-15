@@ -1182,10 +1182,16 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_write_rfork_io";
+	const char *rfork = BASEDIR "\\torture_write_rfork_io" AFPRESOURCE_STREAM;
 	const char *rfork_content = "1234567890";
 	NTSTATUS status;
 	struct smb2_handle testdirh;
 	bool ret = true;
+
+	union smb_open io;
+	struct smb2_handle filehandle;
+	union smb_fileinfo finfo;
+	union smb_setfileinfo sinfo;
 
 	smb2_util_unlink(tree1, fname);
 
@@ -1209,8 +1215,39 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 			    fname, AFPRESOURCE_STREAM,
 			    0, 20, 10, 10, rfork_content);
 
-	torture_comment(tctx, "(%s) writing to resource fork at large offset\n",
+	/* Check size after write */
+
+	ZERO_STRUCT(io);
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+		SEC_FILE_WRITE_ATTRIBUTE;
+	io.smb2.in.fname = rfork;
+	status = smb2_create(tree1, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	filehandle = io.smb2.out.file.handle;
+
+	torture_comment(tctx, "(%s) check resource fork size after write\n",
 	    __location__);
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	finfo.generic.in.file.handle = filehandle;
+	status = smb2_getinfo_file(tree1, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	if (finfo.all_info.out.size != 20) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) Incorrect resource fork size\n",
+			       __location__);
+		ret = false;
+		smb2_util_close(tree1, filehandle);
+		goto done;
+	}
+	smb2_util_close(tree1, filehandle);
+
+	/* Write at large offset */
+
+	torture_comment(tctx, "(%s) writing to resource fork at large offset\n",
+			__location__);
 
 	ret &= write_stream(tree1, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
@@ -1219,6 +1256,55 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	ret &= check_stream(tree1, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
 			    (off_t)1<<32, 10, 0, 10, rfork_content);
+
+	/* Truncate back to size of 1 byte */
+
+	torture_comment(tctx, "(%s) truncate resource fork and check size\n",
+			__location__);
+
+	ZERO_STRUCT(io);
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+		SEC_FILE_WRITE_ATTRIBUTE;
+	io.smb2.in.fname = rfork;
+	status = smb2_create(tree1, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	filehandle = io.smb2.out.file.handle;
+
+	ZERO_STRUCT(sinfo);
+	sinfo.end_of_file_info.level =
+		RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sinfo.end_of_file_info.in.file.handle = filehandle;
+	sinfo.end_of_file_info.in.size = 1;
+	status = smb2_setinfo_file(tree1, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree1, filehandle);
+
+	/* Now check size */
+	ZERO_STRUCT(io);
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+		SEC_FILE_WRITE_ATTRIBUTE;
+	io.smb2.in.fname = rfork;
+	status = smb2_create(tree1, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	filehandle = io.smb2.out.file.handle;
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	finfo.generic.in.file.handle = filehandle;
+	status = smb2_getinfo_file(tree1, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	if (finfo.all_info.out.size != 1) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) Incorrect resource fork size\n",
+			       __location__);
+		ret = false;
+		smb2_util_close(tree1, filehandle);
+		goto done;
+	}
+	smb2_util_close(tree1, filehandle);
 
 done:
 	smb2_deltree(tree1, BASEDIR);
