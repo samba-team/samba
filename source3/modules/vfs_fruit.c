@@ -2824,6 +2824,14 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 			rc = SMB_VFS_NEXT_FTRUNCATE(
 				handle, fsp,
 				offset + ad_getentryoff(ad, ADEID_RFORK));
+			if (rc != 0) {
+				return -1;
+			}
+			ad_setentrylen(ad, ADEID_RFORK, offset);
+			rc = ad_write(ad, NULL);
+			if (rc != 0) {
+				return -1;
+			}
 		}
 		break;
 	default:
