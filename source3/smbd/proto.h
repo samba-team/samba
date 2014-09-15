@@ -968,7 +968,7 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir);
 void load_registry_shares(void);
 int add_home_service(const char *service, const char *username, const char *homedir);
 int find_service(TALLOC_CTX *ctx, const char *service, char **p_service_out);
-connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
+connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 					struct smbXsrv_tcon *tcon,
 					int snum,
 					struct user_struct *vuser,

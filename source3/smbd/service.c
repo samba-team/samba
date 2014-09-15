@@ -956,13 +956,14 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
  We must set cnum before claiming connection.
 ****************************************************************************/
 
-connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
+connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 					struct smbXsrv_tcon *tcon,
 					int snum,
 					struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
+	struct smbd_server_connection *sconn = req->sconn;
 	connection_struct *conn = conn_new(sconn);
 	if (!conn) {
 		DEBUG(0,("make_connection_smb2: Couldn't find free connection.\n"));

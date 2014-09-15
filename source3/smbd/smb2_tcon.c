@@ -266,7 +266,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	tcon->global->encryption_required = encryption_required;
 
-	compat_conn = make_connection_smb2(req->sconn,
+	compat_conn = make_connection_smb2(req,
 					tcon, snum,
 					req->session->compat,
 					"???",
