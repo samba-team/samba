@@ -93,6 +93,16 @@ def configure(conf):
     if not conf.CHECK_VARIABLE('ETIME', headers='errno.h'):
         conf.DEFINE('ETIME', 'ETIMEDOUT')
 
+    if sys.platform.startswith('linux'):
+        conf.SET_TARGET_TYPE('pcap', 'EMPTY')
+    else:
+        if not conf.CHECK_HEADERS('pcap.h'):
+            Logs.error('Need libpcap')
+            sys.exit(1)
+        if not conf.CHECK_FUNCS_IN('pcap_open_live', 'pcap', headers='pcap.h'):
+            Logs.error('Need libpcap')
+            sys.exit(1)
+
     have_pmda = False
     if Options.options.ctdb_pmda:
         pmda_support = True
@@ -246,7 +256,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-system',
                         source=CTDB_SYSTEM_SRC,
                         includes='include include/internal',
-                        deps='replace talloc tevent tdb')
+                        deps='replace talloc tevent tdb pcap')
 
     bld.SAMBA_SUBSYSTEM('ctdb-client',
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
