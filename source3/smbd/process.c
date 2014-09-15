@@ -2731,7 +2731,7 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 {
 	struct smbd_server_connection *sconn = talloc_get_type_abort(
 		private_data, struct smbd_server_connection);
-	struct smbXsrv_connection *xconn = sconn->conn;
+	struct smbXsrv_connection *xconn = NULL;
 	bool ret;
 
 	if (sconn->using_smb2) {
@@ -2739,6 +2739,10 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 		return false;
 	}
 
+	/*
+	 * With SMB1 we only have 1 connection
+	 */
+	xconn = sconn->client->connections;
 	smbd_lock_socket(xconn);
 	ret = send_keepalive(xconn->transport.sock);
 	smbd_unlock_socket(xconn);
