@@ -522,7 +522,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					int snum, struct user_struct *vuser,
 					const char *pdev)
 {
-	struct smbd_server_connection *sconn = xconn->sconn;
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
