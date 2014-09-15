@@ -80,6 +80,16 @@ def configure(conf):
     conf.RECURSE('lib/tdb')
     conf.RECURSE('lib/socket_wrapper')
 
+    conf.CHECK_HEADERS('sched.h')
+    conf.CHECK_HEADERS('procinfo.h')
+    if sys.platform.startswith('aix') and not conf.CHECK_FUNCS('thread_setsched'):
+        Logs.error('Need thread_setsched() on AIX')
+        sys.exit(1)
+    elif not conf.CHECK_FUNCS('sched_setscheduler'):
+        Logs.error('Need sched_setscheduler()')
+        sys.exit(1)
+    conf.CHECK_FUNCS('mlockall')
+
     have_pmda = False
     if Options.options.ctdb_pmda:
         pmda_support = True
