@@ -12,7 +12,7 @@ o  New parameter "winbind request timeout" has been added (bug #3204). Please
    see smb.conf man page for details.
 
 
-Changes since 4.1.21:
+Changes since 4.0.21:
 ---------------------
 
 o   Michael Adam <obnox@samba.org>
