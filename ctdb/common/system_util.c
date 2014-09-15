@@ -77,6 +77,7 @@ bool set_scheduler(void)
 	}
 #endif
 #endif
+	DEBUG(DEBUG_CRIT,("No way to set real-time priority.\n"));
 	return false;
 }
 
