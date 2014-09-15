@@ -1114,7 +1114,9 @@ exit:
  * Set AppleDouble metadata on a file or directory
  *
  * @param[in] ad      adouble handle
- * @param[in] path    pathname to file or directory
+
+ * @param[in] path    pathname to file or directory, may be NULL for a
+ *                    resource fork
  *
  * @return            status code, 0 means success
  **/
@@ -1145,7 +1147,8 @@ static int ad_write(struct adouble *ad, const char *path)
 		len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data,
 				 talloc_get_size(ad->ad_data), 0);
 		if (len != talloc_get_size(ad->ad_data)) {
-			DEBUG(1, ("short write on %s: %zd", path, len));
+			DEBUG(1, ("short write on %s: %zd",
+				  fsp_str_dbg(ad->ad_fsp), len));
 			rc = -1;
 			goto exit;
 		}
