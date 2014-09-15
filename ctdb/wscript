@@ -90,6 +90,9 @@ def configure(conf):
         sys.exit(1)
     conf.CHECK_FUNCS('mlockall')
 
+    if not conf.CHECK_VARIABLE('ETIME', headers='errno.h'):
+        conf.DEFINE('ETIME', 'ETIMEDOUT')
+
     have_pmda = False
     if Options.options.ctdb_pmda:
         pmda_support = True
