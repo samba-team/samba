@@ -749,7 +749,7 @@ int srv_set_message(char *buf,
                         int num_words,
                         int num_bytes,
                         bool zero);
-void remove_deferred_open_message_smb(struct smbd_server_connection *sconn,
+void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 				      uint64_t mid);
 bool schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 					uint64_t mid);
