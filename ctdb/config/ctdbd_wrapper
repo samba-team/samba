@@ -104,7 +104,7 @@ build_ctdb_options ()
     }
 
     if [ -z "$CTDB_RECOVERY_LOCK" ] ; then
-        echo "No recovery lock specified. Starting CTDB without split brain preventivon"
+        echo "No recovery lock specified. Starting CTDB without split brain prevention."
     fi
     maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
 
