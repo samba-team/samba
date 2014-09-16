@@ -1583,7 +1583,7 @@ static bool request_timed_out(struct timeval request_time,
 }
 
 struct defer_open_state {
-	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
 	uint64_t mid;
 };
 
@@ -1624,7 +1624,7 @@ static void defer_open(struct share_mode_lock *lck,
 		if (watch_state == NULL) {
 			exit_server("talloc failed");
 		}
-		watch_state->sconn = req->sconn;
+		watch_state->xconn = req->xconn;
 		watch_state->mid = req->mid;
 
 		DEBUG(10, ("defering mid %llu\n",
@@ -1672,7 +1672,7 @@ static void defer_open_done(struct tevent_req *req)
 
 	DEBUG(10, ("scheduling mid %llu\n", (unsigned long long)state->mid));
 
-	ret = schedule_deferred_open_message_smb(state->sconn, state->mid);
+	ret = schedule_deferred_open_message_smb(state->xconn, state->mid);
 	SMB_ASSERT(ret);
 	TALLOC_FREE(state);
 }

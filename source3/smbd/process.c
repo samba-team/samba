@@ -790,9 +790,10 @@ void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
  schedule it for immediate processing.
 ****************************************************************************/
 
-bool schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
+bool schedule_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 					uint64_t mid)
 {
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct pending_message_list *pml;
 	int i = 0;
 
