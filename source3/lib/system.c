@@ -62,11 +62,8 @@ ssize_t sys_read(int fd, void *buf, size_t count)
 
 	do {
 		ret = read(fd, buf, count);
-#if defined(EWOULDBLOCK)
 	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
+
 	return ret;
 }
 
@@ -80,11 +77,8 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 
 	do {
 		ret = write(fd, buf, count);
-#if defined(EWOULDBLOCK)
 	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
+
 	return ret;
 }
 
@@ -109,11 +103,8 @@ ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt)
 
 	do {
 		ret = writev(fd, iov, iovcnt);
-#if defined(EWOULDBLOCK)
 	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
+
 	return ret;
 }
 
@@ -159,11 +150,8 @@ ssize_t sys_send(int s, const void *msg, size_t len, int flags)
 
 	do {
 		ret = send(s, msg, len, flags);
-#if defined(EWOULDBLOCK)
 	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
+
 	return ret;
 }
 

@@ -84,11 +84,7 @@ static ssize_t default_sys_recvfile(int fromfd,
 			read_ret = read(fromfd, buffer, toread);
 		} while (read_ret == -1 && errno == EINTR);
 
-#if defined(EWOULDBLOCK)
 		if (read_ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-#else
-		if (read_ret == -1 && (errno == EAGAIN)) {
-#endif
 			/*
 			 * fromfd socket is in non-blocking mode.
 			 * If we already read some and wrote
@@ -209,11 +205,7 @@ ssize_t sys_recvfile(int fromfd,
 				return default_sys_recvfile(fromfd, tofd,
 							    offset, count);
 			}
-#if defined(EWOULDBLOCK)
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-#else
-			if (errno == EAGAIN) {
-#endif
 				/*
 				 * fromfd socket is in non-blocking mode.
 				 * If we already read some and wrote

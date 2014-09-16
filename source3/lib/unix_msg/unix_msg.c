@@ -246,9 +246,7 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 	received = recvmsg(fd, &msg, 0);
 	if (received == -1) {
 		if ((errno == EAGAIN) ||
-#ifdef EWOULDBLOCK
 		    (errno == EWOULDBLOCK) ||
-#endif
 		    (errno == EINTR) || (errno == ENOMEM)) {
 			/* Not really an error - just try again. */
 			return;
@@ -496,11 +494,7 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 	if (ret >= 0) {
 		return 0;
 	}
-#ifdef EWOULDBLOCK
 	if ((errno != EWOULDBLOCK) && (errno != EAGAIN) && (errno != EINTR)) {
-#else
-	if ((errno != EAGAIN) && (errno != EINTR)) {
-#endif
 		return errno;
 	}
 

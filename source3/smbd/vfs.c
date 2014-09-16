@@ -467,12 +467,9 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 						fsp,
 						offset + total,
 						N - total);
-#if defined(EWOULDBLOCK)
 			if (ret == 0 || (ret == -1 &&
-				(errno == EAGAIN || errno == EWOULDBLOCK))) {
-#else /* EWOULDBLOCK */
-			if (ret == 0 || (ret == -1 && errno == EAGAIN)) {
-#endif /* EWOULDBLOCK */
+					 (errno == EAGAIN ||
+					  errno == EWOULDBLOCK))) {
 				int old_flags;
 				/* Ensure the socket is blocking. */
 				old_flags = fcntl(sockfd, F_GETFL, 0);
