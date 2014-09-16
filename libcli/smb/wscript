@@ -6,8 +6,8 @@ def build(bld):
         source='''
             read_smb.c
         ''',
-        deps='errors LIBASYNC_REQ',
-        public_deps='talloc tevent samba-util',
+        deps='LIBASYNC_REQ',
+        public_deps='talloc tevent',
         private_library=True,
         public_headers='''
             read_smb.h
