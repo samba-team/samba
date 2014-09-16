@@ -348,6 +348,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (async) {
+		tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
 		return req;
 	}
 
@@ -388,7 +389,6 @@ static bool smbd_smb2_lock_cancel(struct tevent_req *req)
 	smb2req = state->smb2req;
 
 	remove_pending_lock(state, state->blr);
-	tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
 
 	/*
 	 * If the request is canceled because of logoff, tdis or close
