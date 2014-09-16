@@ -26,16 +26,21 @@ bld.SAMBA_LIBRARY('samba-debug',
                   local_include=False,
                   private_library=True)
 
+bld.SAMBA_LIBRARY('socket-blocking',
+                  source='blocking.c',
+                  local_include=False,
+                  private_library=True)
+
 bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c xfile.c data_blob.c
                     util_file.c time.c rbtree.c rfc1738.c select.c getpass.c
-                    genrand.c fsusage.c blocking.c become_daemon.c
+                    genrand.c fsusage.c become_daemon.c
                     signal.c system.c params.c util.c util_id.c util_net.c
                     util_strlist.c util_paths.c idtree.c fault.c base64.c
                     util_str.c util_str_common.c substitute.c ms_fnmatch.c
                     server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
                     tevent_debug.c util_process.c memcache.c''',
-                  deps='DYNCONFIG time-basic close-low-fd samba-debug tini tiniparser',
+                  deps='DYNCONFIG time-basic close-low-fd samba-debug tini tiniparser socket-blocking',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd-daemon',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
