@@ -899,6 +899,9 @@ void server_id_set_disconnected(struct server_id *id);
  */
 bool server_id_is_disconnected(const struct server_id *id);
 
+void server_id_put(uint8_t buf[24], const struct server_id id);
+void server_id_get(struct server_id *id, const uint8_t buf[24]);
+
 /*
  * Samba code should use samba_tevent_context_init() instead of
  * tevent_context_init() in order to get the debug output.

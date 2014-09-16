@@ -150,3 +150,19 @@ bool server_id_is_disconnected(const struct server_id *id)
 
 	return server_id_equal(id, &dis);
 }
+
+void server_id_put(uint8_t buf[24], const struct server_id id)
+{
+	SBVAL(buf, 0,  id.pid);
+	SIVAL(buf, 8,  id.task_id);
+	SIVAL(buf, 12, id.vnn);
+	SBVAL(buf, 16, id.unique_id);
+}
+
+void server_id_get(struct server_id *id, const uint8_t buf[24])
+{
+	id->pid       = BVAL(buf, 0);
+	id->task_id   = IVAL(buf, 8);
+	id->vnn       = IVAL(buf, 12);
+	id->unique_id = BVAL(buf, 16);
+}
