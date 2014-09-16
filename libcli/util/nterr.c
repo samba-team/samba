@@ -33,6 +33,12 @@
 #define DOS_CODE(class, code) { #class ":" #code, NT_STATUS_DOS(class, code) }
 #define LDAP_CODE(code) { #code, NT_STATUS_LDAP(code) }
 
+typedef struct
+{
+	const char *nt_errstr;
+	NTSTATUS nt_errcode;
+} nt_err_code_struct;
+
 const nt_err_code_struct nt_errs[] =
 {
 	{ "NT_STATUS_OK", NT_STATUS_OK },

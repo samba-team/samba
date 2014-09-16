@@ -2008,10 +2008,4 @@ NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 	(((NT_STATUS_V(status) & 0xFFFF) == 0xC0020000) || \
 	 ((NT_STATUS_V(status) & 0xFFFF) == 0xC0030000))
 
-typedef struct
-{
-	const char *nt_errstr;
-	NTSTATUS nt_errcode;
-} nt_err_code_struct;
-
 #endif /* _NTSTATUS_H */
