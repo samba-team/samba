@@ -78,15 +78,22 @@ size_t smbd_smb2_unread_bytes(struct smbd_smb2_request *req)
 void remove_smb2_chained_fsp(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct smbXsrv_connection *xconn = sconn->conn;
-	struct smbd_smb2_request *smb2req;
+	struct smbXsrv_connection *xconn = NULL;
 
-	for (smb2req = xconn->smb2.requests; smb2req; smb2req = smb2req->next) {
-		if (smb2req->compat_chain_fsp == fsp) {
-			smb2req->compat_chain_fsp = NULL;
-		}
-		if (smb2req->smb1req && smb2req->smb1req->chain_fsp == fsp) {
-			smb2req->smb1req->chain_fsp = NULL;
+	if (sconn->client != NULL) {
+		xconn = sconn->client->connections;
+	}
+
+	for (; xconn != NULL; xconn = xconn->next) {
+		struct smbd_smb2_request *smb2req;
+
+		for (smb2req = xconn->smb2.requests; smb2req; smb2req = smb2req->next) {
+			if (smb2req->compat_chain_fsp == fsp) {
+				smb2req->compat_chain_fsp = NULL;
+			}
+			if (smb2req->smb1req && smb2req->smb1req->chain_fsp == fsp) {
+				smb2req->smb1req->chain_fsp = NULL;
+			}
 		}
 	}
 }
