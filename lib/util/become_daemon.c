@@ -135,3 +135,14 @@ _PUBLIC_ void daemon_ready(const char *daemon)
 #endif
 	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve connections", daemon));
 }
+
+_PUBLIC_ void daemon_status(const char *name, const char *msg)
+{
+	if (name == NULL) {
+		name = "Samba";
+	}
+#ifdef HAVE_SYSTEMD
+	sd_notifyf(0, "\nSTATUS=%s: %s", name, msg);
+#endif
+	DEBUG(0, ("STATUS=daemon '%s' : %s", name, msg));
+}

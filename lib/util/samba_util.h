@@ -853,6 +853,12 @@ _PUBLIC_ void exit_daemon(const char *msg, int error);
 **/
 _PUBLIC_ void daemon_ready(const char *daemon);
 
+/*
+ * Report the daemon status. For example if it is not ready to serve connections
+ * and is waiting for some event to happen.
+ */
+_PUBLIC_ void daemon_status(const char *name, const char *msg);
+
 /**
  * @brief Get a password from the console.
  *
