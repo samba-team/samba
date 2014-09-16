@@ -261,7 +261,7 @@ void send_break_message_smb2(files_struct *fsp, int level)
 		fsp_fnum_dbg(fsp),
 		(unsigned int)smb2_oplock_level ));
 
-	status = smbd_smb2_send_oplock_break(fsp->conn->sconn,
+	status = smbd_smb2_send_oplock_break(xconn,
 					     session,
 					     fsp->conn->tcon,
 					     fsp->op,

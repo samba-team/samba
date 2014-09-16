@@ -2851,13 +2851,12 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
+NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
 				     struct smbXsrv_session *session,
 				     struct smbXsrv_tcon *tcon,
 				     struct smbXsrv_open *op,
 				     uint8_t oplock_level)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	uint8_t body[0x18];
 
 	SSVAL(body, 0x00, sizeof(body));
