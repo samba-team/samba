@@ -31,6 +31,7 @@ extern "C" {
 #endif
 
 #include <signal.h>
+#include <stdbool.h>
 
 /**
  * @defgroup tdb The tdb API
