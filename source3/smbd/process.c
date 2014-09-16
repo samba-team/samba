@@ -853,8 +853,9 @@ bool schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
  Return true if this mid is on the deferred queue and was not yet processed.
 ****************************************************************************/
 
-bool open_was_deferred(struct smbd_server_connection *sconn, uint64_t mid)
+bool open_was_deferred(struct smbXsrv_connection *xconn, uint64_t mid)
 {
+	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct pending_message_list *pml;
 
 	if (sconn->using_smb2) {

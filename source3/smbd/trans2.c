@@ -1230,7 +1230,7 @@ static void call_trans2open(connection_struct *conn,
 		&smb_action);				/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}
@@ -8391,7 +8391,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 					 ppdata, total_data,
 					 &data_return_size);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			return;
 		}

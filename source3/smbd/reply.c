@@ -2012,7 +2012,7 @@ void reply_open(struct smb_request *req)
 		&info);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}
@@ -2181,7 +2181,7 @@ void reply_open_and_X(struct smb_request *req)
 		&smb_action);				/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}
@@ -2429,7 +2429,7 @@ void reply_mknew(struct smb_request *req)
 		NULL);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}
@@ -2563,7 +2563,7 @@ void reply_ctemp(struct smb_request *req)
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
-			if (open_was_deferred(req->sconn, req->mid)) {
+			if (open_was_deferred(req->xconn, req->mid)) {
 				/* We have re-scheduled this call. */
 				goto out;
 			}
@@ -3052,7 +3052,7 @@ void reply_unlink(struct smb_request *req)
 	status = unlink_internals(conn, req, dirtype, smb_fname,
 				  path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}
@@ -6046,7 +6046,7 @@ void reply_rmdir(struct smb_request *req)
 		&info);                                 /* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}
@@ -7121,7 +7121,7 @@ void reply_mv(struct smb_request *req)
 				  attrs, False, src_has_wcard, dest_has_wcard,
 				  DELETE_ACCESS);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}

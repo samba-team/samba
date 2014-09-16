@@ -582,7 +582,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		&info);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call, no error. */
 			goto out;
 		}
@@ -1189,7 +1189,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		&info);					/* pinfo */
 
 	if(!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call, no error. */
 			return;
 		}
@@ -1670,7 +1670,7 @@ void reply_ntrename(struct smb_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->sconn, req->mid)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
 		}
