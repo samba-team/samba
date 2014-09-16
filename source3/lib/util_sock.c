@@ -255,7 +255,8 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 	ssize_t to_send;
 	ssize_t thistime;
 	size_t sent;
-	struct iovec *iov_copy, *iov;
+	struct iovec iov_copy[iovcnt];
+	struct iovec *iov;
 
 	to_send = iov_buflen(orig_iov, iovcnt);
 	if (to_send == -1) {
@@ -276,13 +277,7 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 	 * discarding elements.
 	 */
 
-	iov_copy = (struct iovec *)talloc_memdup(
-		talloc_tos(), orig_iov, sizeof(struct iovec) * iovcnt);
-
-	if (iov_copy == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
+	memcpy(iov_copy, orig_iov, sizeof(struct iovec) * iovcnt);
 	iov = iov_copy;
 
 	while (sent < to_send) {
@@ -311,7 +306,6 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 		sent += thistime;
 	}
 
-	TALLOC_FREE(iov_copy);
 	return sent;
 }
 
