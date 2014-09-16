@@ -394,8 +394,13 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 
 static void send_break_message_smb1(files_struct *fsp, int level)
 {
-	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
+	struct smbXsrv_connection *xconn = NULL;
 	char break_msg[SMB1_BREAK_MESSAGE_LENGTH];
+
+	/*
+	 * For SMB1 we only have one connection
+	 */
+	xconn = fsp->conn->sconn->client->connections;
 
 	new_break_message_smb1(fsp, level, break_msg);
 
