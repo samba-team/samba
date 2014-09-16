@@ -1,7 +1,21 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('http',
-	source='http.c',
+	source='http.c http_auth.c',
 	deps='talloc tevent samba3core',
 	private_library=True,
+)
+
+bld.SAMBA_MODULE('gensec_http_basic',
+	source='gensec/basic.c',
+	subsystem='gensec',
+	init_function='gensec_http_basic_init',
+	deps='samba-util auth_session'
+)
+
+bld.SAMBA_MODULE('gensec_http_ntlm',
+	source='gensec/ntlm.c',
+	subsystem='gensec',
+	init_function='gensec_http_ntlm_init',
+	deps='samba-util auth_session'
 )

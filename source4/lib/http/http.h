@@ -63,10 +63,8 @@ enum http_cmd_type {
 };
 
 enum http_auth_method {
-	HTTP_AUTH_AUTO,
-	HTTP_AUTH_BASIC,
+	HTTP_AUTH_BASIC=1,
 	HTTP_AUTH_NTLM,
-	HTTP_AUTH_NEGOTIATE,
 };
 
 struct http_header {
@@ -107,5 +105,16 @@ struct tevent_req *http_read_response_send(TALLOC_CTX *,
 NTSTATUS http_read_response_recv(struct tevent_req *,
 			    TALLOC_CTX *,
 			    struct http_request **);
+
+/* HTTP authenticated request */
+struct tevent_req *http_send_auth_request_send(TALLOC_CTX *,
+					       struct tevent_context *,
+					       struct tstream_context *,
+					       struct tevent_queue *,
+					       struct http_request *,
+					       struct cli_credentials *,
+					       struct loadparm_context *,
+					       enum http_auth_method);
+NTSTATUS http_send_auth_request_recv(struct tevent_req *);
 
 #endif /* _HTTP_H_ */
