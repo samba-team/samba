@@ -233,10 +233,17 @@ void send_break_message_smb2(files_struct *fsp, int level)
 				SMB2_OPLOCK_LEVEL_II :
 				SMB2_OPLOCK_LEVEL_NONE;
 	NTSTATUS status;
-	struct smbXsrv_connection *xconn = fsp->conn->sconn->conn;
+	struct smbXsrv_connection *xconn = NULL;
 	struct smbXsrv_session *session = NULL;
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
+
+	/*
+	 * TODO: in future we should have a better algorithm
+	 * to find the correct connection for an break message.
+	 * Then we also need some retries if a channel gets disconnected.
+	 */
+	xconn = fsp->conn->sconn->client->connections;
 
 	status = smb2srv_session_lookup(xconn,
 					fsp->vuid,
