@@ -41,6 +41,10 @@
 #include <stdarg.h>
 #include <errno.h>
 
+#ifndef HAVE_DECL_EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
+#endif
+
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include "win32_replace.h"
 #endif
