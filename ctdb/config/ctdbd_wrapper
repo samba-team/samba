@@ -20,7 +20,7 @@ action="$2"
 . "${CTDB_BASE}/functions"
 loadconfig "ctdb"
 
-export CTDB_SOCKET
+[ -n "$CTDB_SOCKET" ] && export CTDB_SOCKET
 
 ctdbd="${CTDBD:-/usr/sbin/ctdbd}"
 
@@ -136,7 +136,9 @@ build_ctdb_options ()
 
 export_debug_variables ()
 {
-    export CTDB_DEBUG_HUNG_SCRIPT CTDB_EXTERNAL_TRACE CTDB_DEBUG_LOCKS
+    [ -n "$CTDB_DEBUG_HUNG_SCRIPT" ] && export CTDB_DEBUG_HUNG_SCRIPT
+    [ -n "$CTDB_EXTERNAL_TRACE" ] && export CTDB_EXTERNAL_TRACE
+    [ -n "$CTDB_DEBUG_LOCKS" ] && export CTDB_DEBUG_LOCKS
 }
 
 kill_ctdbd ()
