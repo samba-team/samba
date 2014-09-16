@@ -318,12 +318,12 @@ int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level);
 bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval *p_request_time,
 			struct deferred_open_record **open_rec);
-bool open_was_deferred_smb2(struct smbd_server_connection *sconn,
-			    uint64_t mid);
+bool open_was_deferred_smb2(
+	struct smbXsrv_connection *xconn, uint64_t mid);
 void remove_deferred_open_message_smb2(
-	struct smbd_server_connection *sconn, uint64_t mid);
+	struct smbXsrv_connection *xconn, uint64_t mid);
 bool schedule_deferred_open_message_smb2(
-	struct smbd_server_connection *sconn, uint64_t mid);
+	struct smbXsrv_connection *xconn, uint64_t mid);
 bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
                                 struct timeval request_time,
                                 struct timeval timeout,

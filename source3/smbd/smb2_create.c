@@ -1212,9 +1212,8 @@ bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 *********************************************************/
 
 static struct smbd_smb2_request *find_open_smb2req(
-	struct smbd_server_connection *sconn, uint64_t mid)
+	struct smbXsrv_connection *xconn, uint64_t mid)
 {
-	struct smbXsrv_connection *xconn = sconn->conn;
 	struct smbd_smb2_request *smb2req;
 
 	for (smb2req = xconn->smb2.requests; smb2req; smb2req = smb2req->next) {
@@ -1235,12 +1234,12 @@ static struct smbd_smb2_request *find_open_smb2req(
 	return NULL;
 }
 
-bool open_was_deferred_smb2(struct smbd_server_connection *sconn, uint64_t mid)
+bool open_was_deferred_smb2(struct smbXsrv_connection *xconn, uint64_t mid)
 {
 	struct smbd_smb2_create_state *state = NULL;
 	struct smbd_smb2_request *smb2req;
 
-	smb2req = find_open_smb2req(sconn, mid);
+	smb2req = find_open_smb2req(xconn, mid);
 
 	if (!smb2req) {
 		DEBUG(10,("open_was_deferred_smb2: mid %llu smb2req == NULL\n",
@@ -1298,11 +1297,11 @@ static void remove_deferred_open_message_smb2_internal(struct smbd_smb2_request 
 }
 
 void remove_deferred_open_message_smb2(
-	struct smbd_server_connection *sconn, uint64_t mid)
+	struct smbXsrv_connection *xconn, uint64_t mid)
 {
 	struct smbd_smb2_request *smb2req;
 
-	smb2req = find_open_smb2req(sconn, mid);
+	smb2req = find_open_smb2req(xconn, mid);
 
 	if (!smb2req) {
 		DEBUG(10,("remove_deferred_open_message_smb2: "
@@ -1335,12 +1334,12 @@ static void smbd_smb2_create_request_dispatch_immediate(struct tevent_context *c
 }
 
 bool schedule_deferred_open_message_smb2(
-	struct smbd_server_connection *sconn, uint64_t mid)
+	struct smbXsrv_connection *xconn, uint64_t mid)
 {
 	struct smbd_smb2_create_state *state = NULL;
 	struct smbd_smb2_request *smb2req;
 
-	smb2req = find_open_smb2req(sconn, mid);
+	smb2req = find_open_smb2req(xconn, mid);
 
 	if (!smb2req) {
 		DEBUG(10,("schedule_deferred_open_message_smb2: "
