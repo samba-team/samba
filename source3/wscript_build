@@ -313,6 +313,11 @@ bld.SAMBA3_LIBRARY('messages_dgm',
                    deps='talloc UNIX_MSG POLL_FUNCS_TEVENT samba-debug',
                    private_library=True)
 
+bld.SAMBA3_LIBRARY('messages_util',
+                   source='''lib/messages_util.c''',
+                   deps='samba-util',
+                   private_library=True)
+
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source='''lib/messages.c
                    lib/util_cluster.c
