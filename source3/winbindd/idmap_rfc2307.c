@@ -551,7 +551,6 @@ static struct id_map* idmap_rfc2307_find_map(struct idmap_rfc2307_map *maps,
 
 static void idmap_rfc2307_map_xid_results(struct idmap_rfc2307_context *ctx,
 					  TALLOC_CTX *mem_ctx,
-					  struct id_map **ids,
 					  struct idmap_rfc2307_map *maps,
 					  LDAPMessage *result,
 					  struct idmap_domain *dom,
@@ -622,7 +621,7 @@ static NTSTATUS idmap_rfc2307_sids_to_unixids(struct idmap_domain *dom,
 	struct idmap_rfc2307_context *ctx;
 	TALLOC_CTX *mem_ctx;
 	struct idmap_rfc2307_map *int_maps;
-	int cnt_usr = 0, cnt_grp = 0, idx = 0, bidx = 0;
+	int cnt_usr = 0, cnt_grp = 0, idx = 0;
 	char *fltr_usr = NULL, *fltr_grp = NULL;
 	NTSTATUS ret;
 	int i;
@@ -722,9 +721,8 @@ again:
 			goto out;
 		}
 
-		idmap_rfc2307_map_xid_results(ctx, mem_ctx, &ids[bidx],
-					      int_maps, result, dom,
-					      attrs, ID_TYPE_UID);
+		idmap_rfc2307_map_xid_results(ctx, mem_ctx, int_maps,
+					      result, dom, attrs, ID_TYPE_UID);
 
 		cnt_usr = 0;
 		TALLOC_FREE(fltr_usr);
@@ -746,9 +744,8 @@ again:
 			goto out;
 		}
 
-		idmap_rfc2307_map_xid_results(ctx, mem_ctx, &ids[bidx],
-					      int_maps, result, dom,
-					      attrs, ID_TYPE_GID);
+		idmap_rfc2307_map_xid_results(ctx, mem_ctx, int_maps, result,
+					      dom, attrs, ID_TYPE_GID);
 		cnt_grp = 0;
 		TALLOC_FREE(fltr_grp);
 	}
