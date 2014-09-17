@@ -3905,8 +3905,8 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status)
 
 const char *nt_errstr(NTSTATUS nt_code)
 {
+	static char msg[20];
 	int idx = 0;
-	char *result;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
@@ -3916,22 +3916,14 @@ const char *nt_errstr(NTSTATUS nt_code)
 		idx++;
 	}
 
-	if (!talloc_stackframe_exists()) {
-		/* prevent memory leaks from talloc_tos() by using a
-		 * static area. This means the caller will overwrite
-		 * the string with subsequent calls, which can cause
-		 * display of the wrong error. If that happens the
-		 * caller should have a talloc stackframe
-		 */
-		static char msg[20];
-		snprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
-		return msg;
-	}
+	/*
+	 * This should not really happen, we should have all error codes
+	 * available. We have a problem that this might get wrongly
+	 * overwritten by later calls in the same DEBUG statement.
+	 */
 
-	result = talloc_asprintf(talloc_tos(), "NT code 0x%08x",
-				 NT_STATUS_V(nt_code));
-	SMB_ASSERT(result != NULL);
-	return result;
+	snprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
+	return msg;
 }
 
 /************************************************************************
