@@ -50,7 +50,7 @@ static bool lp_load_for_s4_ctx(const char *filename)
 	bool status;
 
 	mem_ctx = talloc_stackframe();
-	status =  lp_load(filename, false, false, false, false);
+	status =  lp_load_no_reinit(filename);
 	talloc_free(mem_ctx);
 
 	return status;
