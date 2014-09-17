@@ -3876,6 +3876,21 @@ bool lp_load_global_no_reinit(const char *file_name)
 }
 
 /**
+ * lp_load wrapper, loading globals and shares,
+ * intended for subsequent calls, i.e. not reinitializing
+ * the globals to default values.
+ */
+bool lp_load_no_reinit(const char *file_name)
+{
+	return lp_load(file_name,
+		       false,  /* global_only */
+		       false,  /* save_defaults */
+		       false,  /* add_ipc */
+		       false); /* reinit_globals */
+}
+
+
+/**
  * lp_load wrapper, especially for clients, no reinitialization
  */
 bool lp_load_client_no_reinit(const char *file_name)
