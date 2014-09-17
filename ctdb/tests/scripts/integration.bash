@@ -160,13 +160,15 @@ sanity_check_ips ()
 # This returns a list of "ip node" lines in $out
 all_ips_on_node()
 {
-    local node=$@
-    try_command_on_node $node "$CTDB ip -Y -n all | cut -d ':' -f1-3 | sed -e '1d' -e 's@^:@@' -e 's@:@ @g'"
+    local node="$1"
+    try_command_on_node $node \
+	"$CTDB ip -Y | awk -F: 'NR > 1 { print \$2, \$3 }'"
 }
 
 _select_test_node_and_ips ()
 {
-    all_ips_on_node 0
+    try_command_on_node any \
+	"$CTDB ip -Y -n all | awk -F: 'NR > 1 { print \$2, \$3 }'"
 
     test_node=""  # this matches no PNN
     test_node_ips=""
@@ -412,7 +414,7 @@ ips_are_on_node ()
 
     local out
 
-    all_ips_on_node 1
+    all_ips_on_node $node
 
     local check
     for check in $ips ; do
@@ -452,7 +454,7 @@ node_has_some_ips ()
 
     local out
 
-    all_ips_on_node 1
+    all_ips_on_node $node
 
     while read ip pnn ; do
 	if [ "$node" = "$pnn" ] ; then
