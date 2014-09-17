@@ -96,7 +96,6 @@ static void smb1cli_echo_done(struct tevent_req *subreq)
 				  NULL, /* pbytes_offset */
 				  NULL, /* pinbuf */
 				  expected, ARRAY_SIZE(expected));
-	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
