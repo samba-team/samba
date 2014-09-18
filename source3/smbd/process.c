@@ -384,8 +384,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("read_fd_with_timeout failed for client %s read "
 			  "error = %s.\n",
-			  tsocket_address_string(sconn->remote_address,
-						 talloc_tos()),
+			  smbXsrv_connection_dbg(xconn),
 			  nt_errstr(status)));
 		return status;
 	}
