@@ -1059,8 +1059,21 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location)
 {
-	DEBUG(10,("smbd_server_connection_terminate_ex: reason[%s] at %s\n",
-		  reason, location));
+	struct smbXsrv_client *client = xconn->client;
+
+	DEBUG(10,("smbd_server_connection_terminate_ex: conn[%s] reason[%s] at %s\n",
+		  smbXsrv_connection_dbg(xconn), reason, location));
+
+	if (client->connections->next != NULL) {
+		/* TODO: cancel pending requests */
+		DLIST_REMOVE(client->connections, xconn);
+		TALLOC_FREE(xconn);
+		return;
+	}
+
+	/*
+	 * The last connection was disconnected
+	 */
 	exit_server_cleanly(reason);
 }
 
