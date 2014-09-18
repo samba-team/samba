@@ -20,10 +20,11 @@ bld.SAMBA_SUBSYSTEM('close-low-fd',
                     deps='replace',
                     local_include=False)
 
-bld.SAMBA_SUBSYSTEM('samba-debug',
-                    source='debug.c',
-                    deps='replace time-basic close-low-fd talloc',
-                    local_include=False)
+bld.SAMBA_LIBRARY('samba-debug',
+                  source='debug.c',
+                  deps='replace time-basic close-low-fd talloc',
+                  local_include=False,
+                  private_library=True)
 
 bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c xfile.c data_blob.c
