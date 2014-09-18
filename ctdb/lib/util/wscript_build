@@ -4,6 +4,6 @@ bld.SAMBA_SUBSYSTEM('ctdb-util',
                      source='''util.c util_file.c util_time.c
                                debug.c fault.c idtree.c signal.c
                                substitute.c''',
-                      deps='tdb talloc tevent',
+                      deps='tdb talloc tevent execinfo',
                       local_include=False,
                       )

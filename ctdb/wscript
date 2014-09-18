@@ -103,6 +103,10 @@ def configure(conf):
             Logs.error('Need libpcap')
             sys.exit(1)
 
+    if not conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo',
+                               checklibc=True, headers='execinfo.h'):
+        Logs.error('backtrace support not available')
+
     have_pmda = False
     if Options.options.ctdb_pmda:
         pmda_support = True
