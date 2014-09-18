@@ -553,8 +553,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 		DEBUG(NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)?5:1,
 		      ("receive_smb_raw_talloc failed for client %s "
 		       "read error = %s.\n",
-		       tsocket_address_string(sconn->remote_address,
-					      talloc_tos()),
+		       smbXsrv_connection_dbg(xconn),
 		       nt_errstr(status)) );
 		return status;
 	}
