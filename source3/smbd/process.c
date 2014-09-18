@@ -617,11 +617,12 @@ static bool init_smb_request(struct smb_request *req,
 	req->encrypted = encrypted;
 	req->sconn = sconn;
 	req->xconn = xconn;
-	status = smb1srv_tcon_lookup(xconn, req->tid, now, &tcon);
-	if (NT_STATUS_IS_OK(status)) {
-		req->conn = tcon->compat;
-	} else {
-		req->conn = NULL;
+	req->conn = NULL;
+	if (xconn != NULL) {
+		status = smb1srv_tcon_lookup(xconn, req->tid, now, &tcon);
+		if (NT_STATUS_IS_OK(status)) {
+			req->conn = tcon->compat;
+		}
 	}
 	req->chain_fsp = NULL;
 	req->smb2req = NULL;
