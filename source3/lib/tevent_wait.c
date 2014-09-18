@@ -24,8 +24,7 @@
 #include "lib/util/tevent_unix.h"
 
 struct tevent_wait_state {
-	struct tevent_immediate *im;
-	struct tevent_context *ev;
+	uint8_t _dummy_;
 };
 
 struct tevent_req *tevent_wait_send(TALLOC_CTX *mem_ctx,
@@ -38,37 +37,17 @@ struct tevent_req *tevent_wait_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ev = ev;
-	state->im = tevent_create_immediate(state);
-	if (tevent_req_nomem(state->im, req)) {
-		return tevent_req_post(req, ev);
-	}
+
+	tevent_req_defer_callback(req, ev);
 	return req;
 }
 
-static void tevent_wait_trigger(struct tevent_context *ctx,
-				struct tevent_immediate *im,
-				void *private_data);
-
 void tevent_wait_done(struct tevent_req *req)
 {
-	struct tevent_wait_state *state;
-
 	if (req == NULL) {
 		return;
 	}
-	state = tevent_req_data(req, struct tevent_wait_state);
 
-	tevent_schedule_immediate(state->im, state->ev,
-				  tevent_wait_trigger, req);
-}
-
-static void tevent_wait_trigger(struct tevent_context *ctx,
-				struct tevent_immediate *im,
-				void *private_data)
-{
-	struct tevent_req *req = talloc_get_type_abort(
-		private_data, struct tevent_req);
 	tevent_req_done(req);
 }
 
