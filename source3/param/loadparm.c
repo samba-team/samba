@@ -3799,11 +3799,11 @@ static bool lp_load_ex(const char *pszFname,
 	return (bRetval);
 }
 
-bool lp_load(const char *pszFname,
-	     bool global_only,
-	     bool save_defaults,
-	     bool add_ipc,
-	     bool initialize_globals)
+static bool lp_load(const char *pszFname,
+		    bool global_only,
+		    bool save_defaults,
+		    bool add_ipc,
+		    bool initialize_globals)
 {
 	return lp_load_ex(pszFname,
 			  global_only,

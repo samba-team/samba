@@ -1056,11 +1056,6 @@ int load_usershare_service(const char *servicename);
 int load_usershare_shares(struct smbd_server_connection *sconn,
 			  bool (*snumused) (struct smbd_server_connection *, int));
 void gfree_loadparm(void);
-bool lp_load(const char *pszFname,
-	     bool global_only,
-	     bool save_defaults,
-	     bool add_ipc,
-	     bool initialize_globals);
 bool lp_load_initial_only(const char *pszFname);
 bool lp_load_global(const char *file_name);
 bool lp_load_with_shares(const char *file_name);
