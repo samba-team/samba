@@ -29,12 +29,13 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 {
 	ZERO_STRUCTP(token);
 
-	asn1_start_tag(asn1, ASN1_CONTEXT(0));
-	asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+	if (!asn1_start_tag(asn1, ASN1_CONTEXT(0))) return false;
+	if (!asn1_start_tag(asn1, ASN1_SEQUENCE(0))) return false;
 
 	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
 		int i;
 		uint8_t context;
+
 		if (!asn1_peek_uint8(asn1, &context)) {
 			asn1->has_error = true;
 			break;
@@ -45,8 +46,8 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		case ASN1_CONTEXT(0): {
 			const char **mechTypes;
 
-			asn1_start_tag(asn1, ASN1_CONTEXT(0));
-			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(0))) return false;
+			if (!asn1_start_tag(asn1, ASN1_SEQUENCE(0))) return false;
 
 			mechTypes = talloc(mem_ctx, const char *);
 			if (mechTypes == NULL) {
@@ -67,7 +68,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 				}
 				mechTypes = p;
 
-				asn1_read_OID(asn1, mechTypes, &oid);
+				if (!asn1_read_OID(asn1, mechTypes, &oid)) return false;
 				mechTypes[i] = oid;
 			}
 			mechTypes[i] = NULL;
@@ -79,42 +80,42 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		}
 		/* Read reqFlags */
 		case ASN1_CONTEXT(1):
-			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_BitString(asn1, mem_ctx, &token->reqFlags,
-					    &token->reqFlagsPadding);
-			asn1_end_tag(asn1);
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(1))) return false;
+			if (!asn1_read_BitString(asn1, mem_ctx, &token->reqFlags,
+					    &token->reqFlagsPadding)) return false;
+			if (!asn1_end_tag(asn1)) return false;
 			break;
                 /* Read mechToken */
 		case ASN1_CONTEXT(2):
-			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, mem_ctx, &token->mechToken);
-			asn1_end_tag(asn1);
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(2))) return false;
+			if (!asn1_read_OctetString(asn1, mem_ctx, &token->mechToken)) return false;
+			if (!asn1_end_tag(asn1)) return false;
 			break;
 		/* Read mecListMIC */
 		case ASN1_CONTEXT(3):
 		{
 			uint8_t type_peek;
-			asn1_start_tag(asn1, ASN1_CONTEXT(3));
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(3))) return false;
 			if (!asn1_peek_uint8(asn1, &type_peek)) {
 				asn1->has_error = true;
 				break;
 			}
 			if (type_peek == ASN1_OCTET_STRING) {
-				asn1_read_OctetString(asn1, mem_ctx,
-						      &token->mechListMIC);
+				if (!asn1_read_OctetString(asn1, mem_ctx,
+						      &token->mechListMIC)) return false;
 			} else {
 				/* RFC 2478 says we have an Octet String here,
 				   but W2k sends something different... */
 				char *mechListMIC;
-				asn1_start_tag(asn1, ASN1_SEQUENCE(0));
-				asn1_start_tag(asn1, ASN1_CONTEXT(0));
-				asn1_read_GeneralString(asn1, mem_ctx, &mechListMIC);
-				asn1_end_tag(asn1);
-				asn1_end_tag(asn1);
+				if (!asn1_start_tag(asn1, ASN1_SEQUENCE(0))) return false;
+				if (!asn1_start_tag(asn1, ASN1_CONTEXT(0))) return false;
+				if (!asn1_read_GeneralString(asn1, mem_ctx, &mechListMIC)) return false;
+				if (!asn1_end_tag(asn1)) return false;
+				if (!asn1_end_tag(asn1)) return false;
 
 				token->targetPrincipal = mechListMIC;
 			}
-			asn1_end_tag(asn1);
+			if (!asn1_end_tag(asn1)) return false;
 			break;
 		}
 		default:
@@ -123,50 +124,50 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	asn1_end_tag(asn1);
-	asn1_end_tag(asn1);
+	if (!asn1_end_tag(asn1)) return false;
+	if (!asn1_end_tag(asn1)) return false;
 
 	return !asn1->has_error;
 }
 
 static bool write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit *token)
 {
-	asn1_push_tag(asn1, ASN1_CONTEXT(0));
-	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+	if (!asn1_push_tag(asn1, ASN1_CONTEXT(0))) return false;
+	if (!asn1_push_tag(asn1, ASN1_SEQUENCE(0))) return false;
 
 	/* Write mechTypes */
 	if (token->mechTypes && *token->mechTypes) {
 		int i;
 
-		asn1_push_tag(asn1, ASN1_CONTEXT(0));
-		asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(0))) return false;
+		if (!asn1_push_tag(asn1, ASN1_SEQUENCE(0))) return false;
 		for (i = 0; token->mechTypes[i]; i++) {
-			asn1_write_OID(asn1, token->mechTypes[i]);
+			if (!asn1_write_OID(asn1, token->mechTypes[i])) return false;
 		}
-		asn1_pop_tag(asn1);
-		asn1_pop_tag(asn1);
+		if (!asn1_pop_tag(asn1)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
 	/* write reqFlags */
 	if (token->reqFlags.length > 0) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(1));
-		asn1_write_BitString(asn1, token->reqFlags.data,
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(1))) return false;
+		if (!asn1_write_BitString(asn1, token->reqFlags.data,
 				     token->reqFlags.length,
-				     token->reqFlagsPadding);
-		asn1_pop_tag(asn1);
+				     token->reqFlagsPadding)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
 	/* write mechToken */
 	if (token->mechToken.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(2));
-		asn1_write_OctetString(asn1, token->mechToken.data,
-				       token->mechToken.length);
-		asn1_pop_tag(asn1);
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(2))) return false;
+		if (!asn1_write_OctetString(asn1, token->mechToken.data,
+				       token->mechToken.length)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
 	/* write mechListMIC */
 	if (token->mechListMIC.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(3));
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(3))) return false;
 #if 0
 		/* This is what RFC 2478 says ... */
 		asn1_write_OctetString(asn1, token->mechListMIC.data,
@@ -174,20 +175,20 @@ static bool write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenIni
 #else
 		/* ... but unfortunately this is what Windows
 		   sends/expects */
-		asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-		asn1_push_tag(asn1, ASN1_CONTEXT(0));
-		asn1_push_tag(asn1, ASN1_GENERAL_STRING);
-		asn1_write(asn1, token->mechListMIC.data,
-			   token->mechListMIC.length);
-		asn1_pop_tag(asn1);
-		asn1_pop_tag(asn1);
-		asn1_pop_tag(asn1);
+		if (!asn1_push_tag(asn1, ASN1_SEQUENCE(0))) return false;
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(0))) return false;
+		if (!asn1_push_tag(asn1, ASN1_GENERAL_STRING)) return false;
+		if (!asn1_write(asn1, token->mechListMIC.data,
+			   token->mechListMIC.length)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 #endif
-		asn1_pop_tag(asn1);
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
-	asn1_pop_tag(asn1);
-	asn1_pop_tag(asn1);
+	if (!asn1_pop_tag(asn1)) return false;
+	if (!asn1_pop_tag(asn1)) return false;
 
 	return !asn1->has_error;
 }
@@ -197,8 +198,8 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 {
 	ZERO_STRUCTP(token);
 
-	asn1_start_tag(asn1, ASN1_CONTEXT(1));
-	asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+	if (!asn1_start_tag(asn1, ASN1_CONTEXT(1))) return false;
+	if (!asn1_start_tag(asn1, ASN1_SEQUENCE(0))) return false;
 
 	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
 		uint8_t context;
@@ -210,27 +211,27 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 
 		switch (context) {
 		case ASN1_CONTEXT(0):
-			asn1_start_tag(asn1, ASN1_CONTEXT(0));
-			asn1_start_tag(asn1, ASN1_ENUMERATED);
-			asn1_read_uint8(asn1, &token->negResult);
-			asn1_end_tag(asn1);
-			asn1_end_tag(asn1);
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(0))) return false;
+			if (!asn1_start_tag(asn1, ASN1_ENUMERATED)) return false;
+			if (!asn1_read_uint8(asn1, &token->negResult)) return false;
+			if (!asn1_end_tag(asn1)) return false;
+			if (!asn1_end_tag(asn1)) return false;
 			break;
 		case ASN1_CONTEXT(1):
-			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, mem_ctx, &oid);
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(1))) return false;
+			if (!asn1_read_OID(asn1, mem_ctx, &oid)) return false;
 			token->supportedMech = oid;
-			asn1_end_tag(asn1);
+			if (!asn1_end_tag(asn1)) return false;
 			break;
 		case ASN1_CONTEXT(2):
-			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, mem_ctx, &token->responseToken);
-			asn1_end_tag(asn1);
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(2))) return false;
+			if (!asn1_read_OctetString(asn1, mem_ctx, &token->responseToken)) return false;
+			if (!asn1_end_tag(asn1)) return false;
 			break;
 		case ASN1_CONTEXT(3):
-			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			asn1_read_OctetString(asn1, mem_ctx, &token->mechListMIC);
-			asn1_end_tag(asn1);
+			if (!asn1_start_tag(asn1, ASN1_CONTEXT(3))) return false;
+			if (!asn1_read_OctetString(asn1, mem_ctx, &token->mechListMIC)) return false;
+			if (!asn1_end_tag(asn1)) return false;
 			break;
 		default:
 			asn1->has_error = true;
@@ -238,45 +239,45 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	asn1_end_tag(asn1);
-	asn1_end_tag(asn1);
+	if (!asn1_end_tag(asn1)) return false;
+	if (!asn1_end_tag(asn1)) return false;
 
 	return !asn1->has_error;
 }
 
 static bool write_negTokenTarg(struct asn1_data *asn1, struct spnego_negTokenTarg *token)
 {
-	asn1_push_tag(asn1, ASN1_CONTEXT(1));
-	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+	if (!asn1_push_tag(asn1, ASN1_CONTEXT(1))) return false;
+	if (!asn1_push_tag(asn1, ASN1_SEQUENCE(0))) return false;
 
 	if (token->negResult != SPNEGO_NONE_RESULT) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(0));
-		asn1_write_enumerated(asn1, token->negResult);
-		asn1_pop_tag(asn1);
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(0))) return false;
+		if (!asn1_write_enumerated(asn1, token->negResult)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
 	if (token->supportedMech) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(1));
-		asn1_write_OID(asn1, token->supportedMech);
-		asn1_pop_tag(asn1);
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(1))) return false;
+		if (!asn1_write_OID(asn1, token->supportedMech)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
 	if (token->responseToken.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(2));
-		asn1_write_OctetString(asn1, token->responseToken.data,
-				       token->responseToken.length);
-		asn1_pop_tag(asn1);
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(2))) return false;
+		if (!asn1_write_OctetString(asn1, token->responseToken.data,
+				       token->responseToken.length)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
 	if (token->mechListMIC.data) {
-		asn1_push_tag(asn1, ASN1_CONTEXT(3));
-		asn1_write_OctetString(asn1, token->mechListMIC.data,
-				      token->mechListMIC.length);
-		asn1_pop_tag(asn1);
+		if (!asn1_push_tag(asn1, ASN1_CONTEXT(3))) return false;
+		if (!asn1_write_OctetString(asn1, token->mechListMIC.data,
+				      token->mechListMIC.length)) return false;
+		if (!asn1_pop_tag(asn1)) return false;
 	}
 
-	asn1_pop_tag(asn1);
-	asn1_pop_tag(asn1);
+	if (!asn1_pop_tag(asn1)) return false;
+	if (!asn1_pop_tag(asn1)) return false;
 
 	return !asn1->has_error;
 }
@@ -298,19 +299,19 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 		return -1;
 	}
 
-	asn1_load(asn1, data);
+	if (!asn1_load(asn1, data)) goto err;
 
 	if (!asn1_peek_uint8(asn1, &context)) {
 		asn1->has_error = true;
 	} else {
 		switch (context) {
 		case ASN1_APPLICATION(0):
-			asn1_start_tag(asn1, ASN1_APPLICATION(0));
-			asn1_check_OID(asn1, OID_SPNEGO);
+			if (!asn1_start_tag(asn1, ASN1_APPLICATION(0))) goto err;
+			if (!asn1_check_OID(asn1, OID_SPNEGO)) goto err;
 			if (read_negTokenInit(asn1, mem_ctx, &token->negTokenInit)) {
 				token->type = SPNEGO_NEG_TOKEN_INIT;
 			}
-			asn1_end_tag(asn1);
+			if (!asn1_end_tag(asn1)) goto err;
 			break;
 		case ASN1_CONTEXT(1):
 			if (read_negTokenTarg(asn1, mem_ctx, &token->negTokenTarg)) {
@@ -324,6 +325,9 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 	}
 
 	if (!asn1->has_error) ret = asn1->ofs;
+
+  err:
+
 	asn1_free(asn1);
 
 	return ret;
@@ -340,10 +344,10 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 
 	switch (spnego->type) {
 	case SPNEGO_NEG_TOKEN_INIT:
-		asn1_push_tag(asn1, ASN1_APPLICATION(0));
-		asn1_write_OID(asn1, OID_SPNEGO);
-		write_negTokenInit(asn1, &spnego->negTokenInit);
-		asn1_pop_tag(asn1);
+		if (!asn1_push_tag(asn1, ASN1_APPLICATION(0))) goto err;
+		if (!asn1_write_OID(asn1, OID_SPNEGO)) goto err;
+		if (!write_negTokenInit(asn1, &spnego->negTokenInit)) goto err;
+		if (!asn1_pop_tag(asn1)) goto err;
 		break;
 	case SPNEGO_NEG_TOKEN_TARG:
 		write_negTokenTarg(asn1, &spnego->negTokenTarg);
@@ -357,6 +361,9 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 		*blob = data_blob_talloc(mem_ctx, asn1->data, asn1->length);
 		ret = asn1->ofs;
 	}
+
+  err:
+
 	asn1_free(asn1);
 
 	return ret;
@@ -398,6 +405,7 @@ bool spnego_write_mech_types(TALLOC_CTX *mem_ctx,
 			     const char * const *mech_types,
 			     DATA_BLOB *blob)
 {
+	bool ret = false;
 	struct asn1_data *asn1 = asn1_init(mem_ctx);
 
 	if (asn1 == NULL) {
@@ -408,25 +416,27 @@ bool spnego_write_mech_types(TALLOC_CTX *mem_ctx,
 	if (mech_types && *mech_types) {
 		int i;
 
-		asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+		if (!asn1_push_tag(asn1, ASN1_SEQUENCE(0))) goto err;
 		for (i = 0; mech_types[i]; i++) {
-			asn1_write_OID(asn1, mech_types[i]);
+			if (!asn1_write_OID(asn1, mech_types[i])) goto err;
 		}
-		asn1_pop_tag(asn1);
+		if (!asn1_pop_tag(asn1)) goto err;
 	}
 
 	if (asn1->has_error) {
-		asn1_free(asn1);
-		return false;
+		goto err;
 	}
 
 	*blob = data_blob_talloc(mem_ctx, asn1->data, asn1->length);
 	if (blob->length != asn1->length) {
-		asn1_free(asn1);
-		return false;
+		goto err;
 	}
+
+	ret = true;
+
+  err:
 
 	asn1_free(asn1);
 
-	return true;
+	return ret;
 }
