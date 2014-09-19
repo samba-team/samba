@@ -80,6 +80,13 @@ The default values for "smb2 max read", "smb2 max write" and "smb2 max trans"
 have been changed to 8388608 (8MiB) in order to match the default of
 Windows 2012R2.
 
+Improved DCERPC man in the middle detection
+===========================================
+
+The DCERPC header signing has been implemented
+in addition to the dcerpc_sec_verification_trailer
+protection.
+
 ######################################################################
 Changes
 #######
