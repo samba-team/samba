@@ -87,6 +87,15 @@ The DCERPC header signing has been implemented
 in addition to the dcerpc_sec_verification_trailer
 protection.
 
+Overhauled "net idmap" command
+==============================
+
+The command line interface of the "net idmap" command has been
+systematized and subcommands for reading and writing the autorid idmap
+database have been added. Note that the writing commands should be
+used with great care. See the net(8) manual page for details.
+
+
 ######################################################################
 Changes
 #######
