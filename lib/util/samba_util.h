@@ -793,42 +793,8 @@ int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol);
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string);
 
-/* The following definitions come from lib/util/idtree.c  */
-
-
-/**
-  initialise a idr tree. The context return value must be passed to
-  all subsequent idr calls. To destroy the idr tree use talloc_free()
-  on this context
- */
-_PUBLIC_ struct idr_context *idr_init(TALLOC_CTX *mem_ctx);
-
-/**
-  allocate the next available id, and assign 'ptr' into its slot.
-  you can retrieve later this pointer using idr_find()
-*/
-_PUBLIC_ int idr_get_new(struct idr_context *idp, void *ptr, int limit);
-
-/**
-   allocate a new id, giving the first available value greater than or
-   equal to the given starting id
-*/
-_PUBLIC_ int idr_get_new_above(struct idr_context *idp, void *ptr, int starting_id, int limit);
-
-/**
-  allocate a new id randomly in the given range
-*/
-_PUBLIC_ int idr_get_new_random(struct idr_context *idp, void *ptr, int limit);
-
-/**
-  find a pointer value previously set with idr_get_new given an id
-*/
-_PUBLIC_ void *idr_find(struct idr_context *idp, int id);
-
-/**
-  remove an id from the idr tree
-*/
-_PUBLIC_ int idr_remove(struct idr_context *idp, int id);
+#include "idtree.h"
+#include "idtree_random.h"
 
 /**
  Close the low 3 fd's and open dev/null in their place
