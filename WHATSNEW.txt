@@ -12,6 +12,7 @@ Samba 4.2 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+Read the "Winbindd/Netlogon improvements" section (below) carefully!
 
 
 NEW FEATURES
@@ -35,6 +36,42 @@ Snapper for use by Samba. This provides the ability for remote
 clients to access shadow-copies via Windows Explorer using the
 "previous versions" dialog.
 
+Winbindd/Netlogon improvements
+==============================
+
+The whole concept of maintaining the netlogon secure channel
+to (other) domain controllers is rewritten in order to maintain
+global state in a netlogon_creds_cli.tdb. This is the proper fix
+for a large number of bugs:
+
+  https://bugzilla.samba.org/show_bug.cgi?id=6563
+  https://bugzilla.samba.org/show_bug.cgi?id=7944
+  https://bugzilla.samba.org/show_bug.cgi?id=7945
+  https://bugzilla.samba.org/show_bug.cgi?id=7568
+  https://bugzilla.samba.org/show_bug.cgi?id=8599
+
+In addition a strong session key is required by default now,
+which means that communication to older servers or clients
+might be rejected by default.
+
+For the client side we the following new options:
+"require strong key" (yes by default), "reject md5 servers" (no by default).
+E.g. for Samba 3.0.37 you need "require strong key = no" and
+for NT4 DCs you need "require strong key = no" and "client NTLMv2 auth = no",
+
+On the server side (as domain controller) we have the following new options:
+"allow nt4 crypto" (no by default), "reject md5 client" (no by default).
+E.g. in order to allow Samba < 3.0.27 or NT4 members to work
+you need "allow nt4 crypto = yes"
+
+winbindd does not list group memberships for display purposes
+(e.g. getent group <domain\<group>) anymore by default.
+The new default is "winbind expand groups = 0" now,
+the reason for this is the same as for "winbind enum users = no"
+and "winbind enum groups = no". Providing this information is not always
+reliably possible, e.g. if there're trusted domains.
+
+Please consult the smb.conf manpage for more details of this new options.
 
 ######################################################################
 Changes
@@ -46,9 +83,12 @@ smb.conf changes
    Parameter Name			Description	Default
    --------------			-----------	-------
 
-
-
-
+   allow nt4 crypto                     New             no
+   neutralize nt4 emulation             New             no
+   reject md5 client                    New             no
+   reject md5 servers                   New             no
+   require strong key                   New             yes
+   winbind expand groups                Changed default 0
 
 KNOWN ISSUES
 ============
