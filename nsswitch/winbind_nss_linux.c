@@ -1101,6 +1101,11 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 				continue;
 			}
 
+			/* Skip groups without a mapping */
+			if (gid_list[i] == (uid_t)-1) {
+				continue;
+			}
+
 			/* Filled buffer ? If so, resize. */
 
 			if (*start == *size) {
