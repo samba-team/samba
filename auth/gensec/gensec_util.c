@@ -188,19 +188,20 @@ NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
 */
 static bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 {
-	bool ret;
+	bool ret = false;
 	struct asn1_data *data = asn1_init(NULL);
 
 	if (!data) return false;
 
-	asn1_load(data, *blob);
-	asn1_start_tag(data, ASN1_APPLICATION(0));
-	asn1_check_OID(data, oid);
+	if (!asn1_load(data, *blob)) goto err;
+	if (!asn1_start_tag(data, ASN1_APPLICATION(0))) goto err;
+	if (!asn1_check_OID(data, oid)) goto err;
 
 	ret = !data->has_error;
 
-	asn1_free(data);
+  err:
 
+	asn1_free(data);
 	return ret;
 }
 
