@@ -37,53 +37,56 @@ DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
 {
 	int i;
 	ASN1_DATA *data;
-	DATA_BLOB ret;
+	DATA_BLOB ret = data_blob_null;
 
 	data = asn1_init(talloc_tos());
 	if (data == NULL) {
 		return data_blob_null;
 	}
 
-	asn1_push_tag(data,ASN1_APPLICATION(0));
-	asn1_write_OID(data,OID_SPNEGO);
-	asn1_push_tag(data,ASN1_CONTEXT(0));
-	asn1_push_tag(data,ASN1_SEQUENCE(0));
+	if (!asn1_push_tag(data,ASN1_APPLICATION(0))) goto err;
+	if (!asn1_write_OID(data,OID_SPNEGO)) goto err;
+	if (!asn1_push_tag(data,ASN1_CONTEXT(0))) goto err;
+	if (!asn1_push_tag(data,ASN1_SEQUENCE(0))) goto err;
 
-	asn1_push_tag(data,ASN1_CONTEXT(0));
-	asn1_push_tag(data,ASN1_SEQUENCE(0));
+	if (!asn1_push_tag(data,ASN1_CONTEXT(0))) goto err;
+	if (!asn1_push_tag(data,ASN1_SEQUENCE(0))) goto err;
 	for (i=0; OIDs[i]; i++) {
-		asn1_write_OID(data,OIDs[i]);
+		if (!asn1_write_OID(data,OIDs[i])) goto err;
 	}
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
+	if (!asn1_pop_tag(data)) goto err;
+	if (!asn1_pop_tag(data)) goto err;
 
 	if (psecblob && psecblob->length && psecblob->data) {
-		asn1_push_tag(data, ASN1_CONTEXT(2));
-		asn1_write_OctetString(data,psecblob->data,
-			psecblob->length);
-		asn1_pop_tag(data);
+		if (!asn1_push_tag(data, ASN1_CONTEXT(2))) goto err;
+		if (!asn1_write_OctetString(data,psecblob->data,
+			psecblob->length)) goto err;
+		if (!asn1_pop_tag(data)) goto err;
 	}
 
 	if (principal) {
-		asn1_push_tag(data, ASN1_CONTEXT(3));
-		asn1_push_tag(data, ASN1_SEQUENCE(0));
-		asn1_push_tag(data, ASN1_CONTEXT(0));
-		asn1_write_GeneralString(data,principal);
-		asn1_pop_tag(data);
-		asn1_pop_tag(data);
-		asn1_pop_tag(data);
+		if (!asn1_push_tag(data, ASN1_CONTEXT(3))) goto err;
+		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) goto err;
+		if (!asn1_push_tag(data, ASN1_CONTEXT(0))) goto err;
+		if (!asn1_write_GeneralString(data,principal)) goto err;
+		if (!asn1_pop_tag(data)) goto err;
+		if (!asn1_pop_tag(data)) goto err;
+		if (!asn1_pop_tag(data)) goto err;
 	}
 
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
+	if (!asn1_pop_tag(data)) goto err;
+	if (!asn1_pop_tag(data)) goto err;
 
-	asn1_pop_tag(data);
+	if (!asn1_pop_tag(data)) goto err;
+
+	ret = data_blob_talloc(ctx, data->data, data->length);
+
+  err:
 
 	if (data->has_error) {
 		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data->ofs));
 	}
 
-	ret = data_blob_talloc(ctx, data->data, data->length);
 	asn1_free(data);
 
 	return ret;
@@ -100,46 +103,12 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 			       DATA_BLOB *secblob)
 {
 	int i;
-	bool ret;
+	bool ret = false;
 	ASN1_DATA *data;
 
 	for (i = 0; i < ASN1_MAX_OIDS; i++) {
 		OIDs[i] = NULL;
 	}
-
-	data = asn1_init(talloc_tos());
-	if (data == NULL) {
-		return false;
-	}
-
-	asn1_load(data, blob);
-
-	asn1_start_tag(data,ASN1_APPLICATION(0));
-
-	asn1_check_OID(data,OID_SPNEGO);
-
-	/* negTokenInit  [0]  NegTokenInit */
-	asn1_start_tag(data,ASN1_CONTEXT(0));
-	asn1_start_tag(data,ASN1_SEQUENCE(0));
-
-	/* mechTypes [0] MechTypeList  OPTIONAL */
-
-	/* Not really optional, we depend on this to decide
-	 * what mechanisms we have to work with. */
-
-	asn1_start_tag(data,ASN1_CONTEXT(0));
-	asn1_start_tag(data,ASN1_SEQUENCE(0));
-	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
-		if (!asn1_read_OID(data,ctx, &OIDs[i])) {
-			break;
-		}
-		if (data->has_error) {
-			break;
-		}
-	}
-	OIDs[i] = NULL;
-	asn1_end_tag(data);
-	asn1_end_tag(data);
 
 	if (principal) {
 		*principal = NULL;
@@ -147,6 +116,40 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 	if (secblob) {
 		*secblob = data_blob_null;
 	}
+
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
+	}
+
+	if (!asn1_load(data, blob)) goto err;
+
+	if (!asn1_start_tag(data,ASN1_APPLICATION(0))) goto err;
+
+	if (!asn1_check_OID(data,OID_SPNEGO)) goto err;
+
+	/* negTokenInit  [0]  NegTokenInit */
+	if (!asn1_start_tag(data,ASN1_CONTEXT(0))) goto err;
+	if (!asn1_start_tag(data,ASN1_SEQUENCE(0))) goto err;
+
+	/* mechTypes [0] MechTypeList  OPTIONAL */
+
+	/* Not really optional, we depend on this to decide
+	 * what mechanisms we have to work with. */
+
+	if (!asn1_start_tag(data,ASN1_CONTEXT(0))) goto err;
+	if (!asn1_start_tag(data,ASN1_SEQUENCE(0))) goto err;
+	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
+		if (!asn1_read_OID(data,ctx, &OIDs[i])) {
+			goto err;
+		}
+		if (data->has_error) {
+			goto err;
+		}
+	}
+	OIDs[i] = NULL;
+	if (!asn1_end_tag(data)) goto err;
+	if (!asn1_end_tag(data)) goto err;
 
 	/*
 	  Win7 + Live Sign-in Assistant attaches a mechToken
@@ -159,21 +162,24 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 		uint8 flags;
 
 		/* reqFlags [1] ContextFlags  OPTIONAL */
-		asn1_start_tag(data, ASN1_CONTEXT(1));
-		asn1_start_tag(data, ASN1_BIT_STRING);
+		if (!asn1_start_tag(data, ASN1_CONTEXT(1))) goto err;
+		if (!asn1_start_tag(data, ASN1_BIT_STRING)) goto err;
 		while (asn1_tag_remaining(data) > 0) {
-			asn1_read_uint8(data, &flags);
+			if (!asn1_read_uint8(data, &flags)) goto err;
 		}
-		asn1_end_tag(data);
-		asn1_end_tag(data);
+		if (!asn1_end_tag(data)) goto err;
+		if (!asn1_end_tag(data)) goto err;
 	}
 
 	if (asn1_peek_tag(data, ASN1_CONTEXT(2))) {
 		DATA_BLOB sblob = data_blob_null;
 		/* mechToken [2] OCTET STRING  OPTIONAL */
-		asn1_start_tag(data, ASN1_CONTEXT(2));
-		asn1_read_OctetString(data, ctx, &sblob);
-		asn1_end_tag(data);
+		if (!asn1_start_tag(data, ASN1_CONTEXT(2))) goto err;
+		if (!asn1_read_OctetString(data, ctx, &sblob)) goto err;
+		if (!asn1_end_tag(data)) {
+			data_blob_free(&sblob);
+			goto err;
+		}
 		if (secblob) {
 			*secblob = sblob;
 		} else {
@@ -184,13 +190,13 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 	if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
 		char *princ = NULL;
 		/* mechListMIC [3] OCTET STRING  OPTIONAL */
-		asn1_start_tag(data, ASN1_CONTEXT(3));
-		asn1_start_tag(data, ASN1_SEQUENCE(0));
-		asn1_start_tag(data, ASN1_CONTEXT(0));
-		asn1_read_GeneralString(data, ctx, &princ);
-		asn1_end_tag(data);
-		asn1_end_tag(data);
-		asn1_end_tag(data);
+		if (!asn1_start_tag(data, ASN1_CONTEXT(3))) goto err;
+		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) goto err;
+		if (!asn1_start_tag(data, ASN1_CONTEXT(0))) goto err;
+		if (!asn1_read_GeneralString(data, ctx, &princ)) goto err;
+		if (!asn1_end_tag(data)) goto err;
+		if (!asn1_end_tag(data)) goto err;
+		if (!asn1_end_tag(data)) goto err;
 		if (principal) {
 			*principal = princ;
 		} else {
@@ -198,12 +204,15 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 		}
 	}
 
-	asn1_end_tag(data);
-	asn1_end_tag(data);
+	if (!asn1_end_tag(data)) goto err;
+	if (!asn1_end_tag(data)) goto err;
 
-	asn1_end_tag(data);
+	if (!asn1_end_tag(data)) goto err;
 
 	ret = !data->has_error;
+
+  err:
+
 	if (data->has_error) {
 		int j;
 		if (principal) {
@@ -227,25 +236,28 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8 tok_id[2])
 {
 	ASN1_DATA *data;
-	DATA_BLOB ret;
+	DATA_BLOB ret = data_blob_null;
 
 	data = asn1_init(talloc_tos());
 	if (data == NULL) {
 		return data_blob_null;
 	}
 
-	asn1_push_tag(data, ASN1_APPLICATION(0));
-	asn1_write_OID(data, OID_KERBEROS5);
+	if (!asn1_push_tag(data, ASN1_APPLICATION(0))) goto err;
+	if (!asn1_write_OID(data, OID_KERBEROS5)) goto err;
 
-	asn1_write(data, tok_id, 2);
-	asn1_write(data, ticket.data, ticket.length);
-	asn1_pop_tag(data);
+	if (!asn1_write(data, tok_id, 2)) goto err;
+	if (!asn1_write(data, ticket.data, ticket.length)) goto err;
+	if (!asn1_pop_tag(data)) goto err;
+
+	ret = data_blob_talloc(ctx, data->data, data->length);
+
+  err:
 
 	if (data->has_error) {
 		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data->ofs));
 	}
 
-	ret = data_blob_talloc(ctx, data->data, data->length);
 	asn1_free(data);
 
 	return ret;
@@ -293,7 +305,7 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2)
 {
-	bool ret;
+	bool ret = false;
 	ASN1_DATA *data;
 
 	ZERO_STRUCTP(chal1);
@@ -304,33 +316,35 @@ bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 		return false;
 	}
 
-	asn1_load(data, blob);
-	asn1_start_tag(data,ASN1_CONTEXT(1));
-	asn1_start_tag(data,ASN1_SEQUENCE(0));
+	if (!asn1_load(data, blob)) goto err;
+	if (!asn1_start_tag(data,ASN1_CONTEXT(1))) goto err;
+	if (!asn1_start_tag(data,ASN1_SEQUENCE(0))) goto err;
 
-	asn1_start_tag(data,ASN1_CONTEXT(0));
-	asn1_check_enumerated(data,1);
-	asn1_end_tag(data);
+	if (!asn1_start_tag(data,ASN1_CONTEXT(0))) goto err;
+	if (!asn1_check_enumerated(data,1)) goto err;
+	if (!asn1_end_tag(data)) goto err;
 
-	asn1_start_tag(data,ASN1_CONTEXT(1));
-	asn1_check_OID(data, OID_NTLMSSP);
-	asn1_end_tag(data);
+	if (!asn1_start_tag(data,ASN1_CONTEXT(1))) goto err;
+	if (!asn1_check_OID(data, OID_NTLMSSP)) goto err;
+	if (!asn1_end_tag(data)) goto err;
 
-	asn1_start_tag(data,ASN1_CONTEXT(2));
-	asn1_read_OctetString(data, ctx, chal1);
-	asn1_end_tag(data);
+	if (!asn1_start_tag(data,ASN1_CONTEXT(2))) goto err;
+	if (!asn1_read_OctetString(data, ctx, chal1)) goto err;
+	if (!asn1_end_tag(data)) goto err;
 
 	/* the second challenge is optional (XP doesn't send it) */
 	if (asn1_tag_remaining(data)) {
-		asn1_start_tag(data,ASN1_CONTEXT(3));
-		asn1_read_OctetString(data, ctx, chal2);
-		asn1_end_tag(data);
+		if (!asn1_start_tag(data,ASN1_CONTEXT(3))) goto err;
+		if (!asn1_read_OctetString(data, ctx, chal2)) goto err;
+		if (!asn1_end_tag(data)) goto err;
 	}
 
-	asn1_end_tag(data);
-	asn1_end_tag(data);
+	if (!asn1_end_tag(data)) goto err;
+	if (!asn1_end_tag(data)) goto err;
 
 	ret = !data->has_error;
+
+  err:
 
 	if (data->has_error) {
 		data_blob_free(chal1);
@@ -348,22 +362,24 @@ bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob)
 {
 	ASN1_DATA *data;
-	DATA_BLOB ret;
+	DATA_BLOB ret = data_blob_null;
 
 	data = asn1_init(talloc_tos());
 	if (data == NULL) {
 		return data_blob_null;
 	}
 
-	asn1_push_tag(data, ASN1_CONTEXT(1));
-	asn1_push_tag(data, ASN1_SEQUENCE(0));
-	asn1_push_tag(data, ASN1_CONTEXT(2));
-	asn1_write_OctetString(data,blob.data,blob.length);
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
+	if (!asn1_push_tag(data, ASN1_CONTEXT(1))) goto err;
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) goto err;
+	if (!asn1_push_tag(data, ASN1_CONTEXT(2))) goto err;
+	if (!asn1_write_OctetString(data,blob.data,blob.length)) goto err;
+	if (!asn1_pop_tag(data)) goto err;
+	if (!asn1_pop_tag(data)) goto err;
+	if (!asn1_pop_tag(data)) goto err;
 
 	ret = data_blob_talloc(ctx, data->data, data->length);
+
+ err:
 
 	asn1_free(data);
 
@@ -380,6 +396,7 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 {
 	ASN1_DATA *data;
 	uint8 negResult;
+	bool ret = false;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		negResult = SPNEGO_ACCEPT_COMPLETED;
@@ -394,27 +411,28 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	asn1_load(data, blob);
-	asn1_start_tag(data, ASN1_CONTEXT(1));
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	asn1_start_tag(data, ASN1_CONTEXT(0));
-	asn1_check_enumerated(data, negResult);
-	asn1_end_tag(data);
-
 	*auth = data_blob_null;
 
+	if (!asn1_load(data, blob)) goto err;
+	if (!asn1_start_tag(data, ASN1_CONTEXT(1))) goto err;
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) goto err;
+	if (!asn1_start_tag(data, ASN1_CONTEXT(0))) goto err;
+	if (!asn1_check_enumerated(data, negResult)) goto err;
+	if (!asn1_end_tag(data)) goto err;
+
 	if (asn1_tag_remaining(data)) {
-		asn1_start_tag(data,ASN1_CONTEXT(1));
-		asn1_check_OID(data, mechOID);
-		asn1_end_tag(data);
+		if (!asn1_start_tag(data,ASN1_CONTEXT(1))) goto err;
+		if (!asn1_check_OID(data, mechOID)) goto err;
+		if (!asn1_end_tag(data)) goto err;
 
 		if (asn1_tag_remaining(data)) {
-			asn1_start_tag(data,ASN1_CONTEXT(2));
-			asn1_read_OctetString(data, ctx, auth);
-			asn1_end_tag(data);
+			if (!asn1_start_tag(data,ASN1_CONTEXT(2))) goto err;
+			if (!asn1_read_OctetString(data, ctx, auth)) goto err;
+			if (!asn1_end_tag(data)) goto err;
 		}
 	} else if (negResult == SPNEGO_ACCEPT_INCOMPLETE) {
 		data->has_error = 1;
+		goto err;
 	}
 
 	/* Binding against Win2K DC returns a duplicate of the responseToken in
@@ -423,25 +441,28 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 	 * which point we need to implement the integrity checking. */
 	if (asn1_tag_remaining(data)) {
 		DATA_BLOB mechList = data_blob_null;
-		asn1_start_tag(data, ASN1_CONTEXT(3));
-		asn1_read_OctetString(data, ctx, &mechList);
-		asn1_end_tag(data);
+		if (!asn1_start_tag(data, ASN1_CONTEXT(3))) goto err;
+		if (!asn1_read_OctetString(data, ctx, &mechList)) goto err;
 		data_blob_free(&mechList);
+		if (!asn1_end_tag(data)) goto err;
 		DEBUG(5,("spnego_parse_auth_response received mechListMIC, "
 		    "ignoring.\n"));
 	}
 
-	asn1_end_tag(data);
-	asn1_end_tag(data);
+	if (!asn1_end_tag(data)) goto err;
+	if (!asn1_end_tag(data)) goto err;
+
+	ret = !data->has_error;
+
+  err:
 
 	if (data->has_error) {
 		DEBUG(3,("spnego_parse_auth_response failed at %d\n", (int)data->ofs));
 		asn1_free(data);
 		data_blob_free(auth);
-		return False;
+		return false;
 	}
 
 	asn1_free(data);
-	return True;
+	return ret;
 }
-
