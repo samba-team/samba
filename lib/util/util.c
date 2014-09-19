@@ -61,7 +61,8 @@ _PUBLIC_ const char *tmpdir(void)
 **/
 int create_unlink_tmp(const char *dir)
 {
-	char *fname;
+	size_t len = strlen(dir);
+	char fname[len+25];
 	int fd;
 	mode_t mask;
 
@@ -69,8 +70,8 @@ int create_unlink_tmp(const char *dir)
 		dir = tmpdir();
 	}
 
-	fname = talloc_asprintf(talloc_tos(), "%s/listenerlock_XXXXXX", dir);
-	if (fname == NULL) {
+	len = snprintf(fname, sizeof(fname), "%s/listenerlock_XXXXXX", dir);
+	if (len >= sizeof(fname)) {
 		errno = ENOMEM;
 		return -1;
 	}
@@ -78,17 +79,14 @@ int create_unlink_tmp(const char *dir)
 	fd = mkstemp(fname);
 	umask(mask);
 	if (fd == -1) {
-		TALLOC_FREE(fname);
 		return -1;
 	}
 	if (unlink(fname) == -1) {
 		int sys_errno = errno;
 		close(fd);
-		TALLOC_FREE(fname);
 		errno = sys_errno;
 		return -1;
 	}
-	TALLOC_FREE(fname);
 	return fd;
 }
 
