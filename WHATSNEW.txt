@@ -73,6 +73,13 @@ reliably possible, e.g. if there're trusted domains.
 
 Please consult the smb.conf manpage for more details of this new options.
 
+Larger IO sizes for SMB2/3 by default
+=====================================
+
+The default values for "smb2 max read", "smb2 max write" and "smb2 max trans"
+have been changed to 8388608 (8MiB) in order to match the default of
+Windows 2012R2.
+
 ######################################################################
 Changes
 #######
@@ -88,6 +95,9 @@ smb.conf changes
    reject md5 client                    New             no
    reject md5 servers                   New             no
    require strong key                   New             yes
+   smb2 max read                        Changed default 8388608
+   smb2 max write                       Changed default 8388608
+   smb2 max trans                       Changed default 8388608
    winbind expand groups                Changed default 0
 
 KNOWN ISSUES
