@@ -111,6 +111,13 @@ in the [global] section of your smb.conf.
 Tdb has furthermore improved to manage its file space more efficiently. This
 will lead to smaller and less fragmented databases.
 
+Messaging improvements
+======================
+
+Our internal messaging subsystem, used for example for things like oplock
+break messages between smbds or setting a process debug level dynamically, has
+been rewritten to use unix domain datagram messages.
+
 
 ######################################################################
 Changes
