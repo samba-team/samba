@@ -855,13 +855,12 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
-		pwhist = talloc_array(ctx, uint8,
-				      pwHistLen * PW_HISTORY_ENTRY_LEN);
+		pwhist = talloc_zero_array(ctx, uint8,
+					   pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (pwhist == NULL) {
 			DEBUG(0, ("init_sam_from_ldap: talloc failed!\n"));
 			goto fn_exit;
 		}
-		memset(pwhist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
 
 		if (smbldap_get_single_attribute(
 				ldap_state->smbldap_state->ldap_struct,
