@@ -3627,6 +3627,21 @@ static bool lp_is_in_client(void)
     return in_client;
 }
 
+static void lp_enforce_ad_dc_settings(void)
+{
+	lp_do_parameter(-1, "passdb backend", "samba_dsdb");
+	lp_do_parameter(-1, "winbindd:use external pipes", "true");
+	lp_do_parameter(-1, "rpc_server:default", "external");
+	lp_do_parameter(-1, "rpc_server:svcctl", "embedded");
+	lp_do_parameter(-1, "rpc_server:srvsvc", "embedded");
+	lp_do_parameter(-1, "rpc_server:eventlog", "embedded");
+	lp_do_parameter(-1, "rpc_server:ntsvcs", "embedded");
+	lp_do_parameter(-1, "rpc_server:winreg", "embedded");
+	lp_do_parameter(-1, "rpc_server:spoolss", "embedded");
+	lp_do_parameter(-1, "rpc_daemon:spoolssd", "embedded");
+	lp_do_parameter(-1, "rpc_server:tcpip", "no");
+}
+
 /***************************************************************************
  Load the services array from the services file. Return true on success,
  false on failure.
@@ -3778,19 +3793,7 @@ static bool lp_load_ex(const char *pszFname,
 	 * is why we force these settings.
 	 */
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
-		lp_do_parameter(-1, "passdb backend", "samba_dsdb");
-
-		lp_do_parameter(-1, "winbindd:use external pipes", "true");
-
-		lp_do_parameter(-1, "rpc_server:default", "external");
-		lp_do_parameter(-1, "rpc_server:svcctl", "embedded");
-		lp_do_parameter(-1, "rpc_server:srvsvc", "embedded");
-		lp_do_parameter(-1, "rpc_server:eventlog", "embedded");
-		lp_do_parameter(-1, "rpc_server:ntsvcs", "embedded");
-		lp_do_parameter(-1, "rpc_server:winreg", "embedded");
-		lp_do_parameter(-1, "rpc_server:spoolss", "embedded");
-		lp_do_parameter(-1, "rpc_daemon:spoolssd", "embedded");
-		lp_do_parameter(-1, "rpc_server:tcpip", "no");
+		lp_enforce_ad_dc_settings();
 	}
 
 	bAllowIncludeRegistry = true;
