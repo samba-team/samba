@@ -3652,7 +3652,7 @@ static bool lp_load_ex(const char *pszFname,
 		       bool global_only,
 		       bool save_defaults,
 		       bool add_ipc,
-		       bool initialize_globals,
+		       bool reinit_globals,
 		       bool allow_include_registry,
 		       bool load_all_shares)
 {
@@ -3671,7 +3671,7 @@ static bool lp_load_ex(const char *pszFname,
 
 	lp_ctx = setup_lp_context(talloc_tos());
 
-	init_globals(lp_ctx, initialize_globals);
+	init_globals(lp_ctx, reinit_globals);
 
 	free_file_list();
 
@@ -3680,7 +3680,7 @@ static bool lp_load_ex(const char *pszFname,
 		lp_save_defaults();
 	}
 
-	if (!initialize_globals) {
+	if (!reinit_globals) {
 		free_param_opts(&Globals.param_opt);
 		apply_lp_set_cmdline();
 	}
@@ -3731,7 +3731,7 @@ static bool lp_load_ex(const char *pszFname,
 
 			lp_kill_all_services();
 			ok = lp_load_ex(pszFname, global_only, save_defaults,
-					add_ipc, initialize_globals,
+					add_ipc, reinit_globals,
 					allow_include_registry,
 					load_all_shares);
 			TALLOC_FREE(frame);
@@ -3824,7 +3824,7 @@ bool lp_load_initial_only(const char *pszFname)
 			  true,   /* global only */
 			  true,   /* save_defaults */
 			  false,  /* add_ipc */
-			  true,   /* initialize_globals */
+			  true,   /* reinit_globals */
 			  false,  /* allow_include_registry */
 			  false); /* load_all_shares*/
 }
