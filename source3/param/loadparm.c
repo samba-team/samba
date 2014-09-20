@@ -3629,17 +3629,18 @@ static bool lp_is_in_client(void)
 
 static void lp_enforce_ad_dc_settings(void)
 {
-	lp_do_parameter(-1, "passdb backend", "samba_dsdb");
-	lp_do_parameter(-1, "winbindd:use external pipes", "true");
-	lp_do_parameter(-1, "rpc_server:default", "external");
-	lp_do_parameter(-1, "rpc_server:svcctl", "embedded");
-	lp_do_parameter(-1, "rpc_server:srvsvc", "embedded");
-	lp_do_parameter(-1, "rpc_server:eventlog", "embedded");
-	lp_do_parameter(-1, "rpc_server:ntsvcs", "embedded");
-	lp_do_parameter(-1, "rpc_server:winreg", "embedded");
-	lp_do_parameter(-1, "rpc_server:spoolss", "embedded");
-	lp_do_parameter(-1, "rpc_daemon:spoolssd", "embedded");
-	lp_do_parameter(-1, "rpc_server:tcpip", "no");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "passdb backend", "samba_dsdb");
+	lp_do_parameter(GLOBAL_SECTION_SNUM,
+			"winbindd:use external pipes", "true");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:default", "external");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:svcctl", "embedded");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:srvsvc", "embedded");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:eventlog", "embedded");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:ntsvcs", "embedded");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:winreg", "embedded");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:spoolss", "embedded");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_daemon:spoolssd", "embedded");
+	lp_do_parameter(GLOBAL_SECTION_SNUM, "rpc_server:tcpip", "no");
 }
 
 /***************************************************************************
