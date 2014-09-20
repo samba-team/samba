@@ -3790,7 +3790,7 @@ static bool lp_load_ex(const char *pszFname,
 	/*
 	 * We run this check once the whole smb.conf is parsed, to
 	 * force some settings for the standard way a AD DC is
-	 * operated.  We may changed these as our code evolves, which
+	 * operated.  We may change these as our code evolves, which
 	 * is why we force these settings.
 	 */
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
