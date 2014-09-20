@@ -3807,13 +3807,13 @@ static bool lp_load(const char *pszFname,
 		    bool global_only,
 		    bool save_defaults,
 		    bool add_ipc,
-		    bool initialize_globals)
+		    bool reinit_globals)
 {
 	return lp_load_ex(pszFname,
 			  global_only,
 			  save_defaults,
 			  add_ipc,
-			  initialize_globals,
+			  reinit_globals,
 			  true,   /* allow_include_registry */
 			  false); /* load_all_shares*/
 }
@@ -3838,7 +3838,7 @@ bool lp_load_global(const char *file_name)
 		       true,   /* global_only */
 		       false,  /* save_defaults */
 		       false,  /* add_ipc */
-		       true);  /* initialize_globals */
+		       true);  /* reinit_globals */
 }
 
 /**
@@ -3852,7 +3852,7 @@ bool lp_load_with_shares(const char *file_name)
 		       false,  /* global_only */
 		       false,  /* save_defaults */
 		       true,   /* add_ipc */
-		       true);  /* initialize_globals */
+		       true);  /* reinit_globals */
 }
 
 /**
@@ -3876,7 +3876,7 @@ bool lp_load_global_no_reinit(const char *file_name)
 		       true,   /* global_only */
 		       false,  /* save_defaults */
 		       false,  /* add_ipc */
-		       false); /* initialize_globals */
+		       false); /* reinit_globals */
 }
 
 /**
