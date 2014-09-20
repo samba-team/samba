@@ -95,6 +95,22 @@ systematized and subcommands for reading and writing the autorid idmap
 database have been added. Note that the writing commands should be
 used with great care. See the net(8) manual page for details.
 
+tdb improvements
+================
+
+The tdb library, our core mechanism to store Samba-specific data on disk and
+share it between processes, has been improved to support process shared robust
+mutexes on Linux. These mutexes are available on Linux and Solaris and
+significantly reduce the overhead involved with tdb. To enable mutexes for
+tdb, set
+
+dbwrap_tdb_mutexes:* = yes
+
+in the [global] section of your smb.conf.
+
+Tdb has furthermore improved to manage its file space more efficiently. This
+will lead to smaller and less fragmented databases.
+
 
 ######################################################################
 Changes
