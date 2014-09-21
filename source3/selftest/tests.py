@@ -114,7 +114,7 @@ local_tests = [
     "LOCAL-remove_duplicate_addrs2"]
 
 for t in local_tests:
-    plantestsuite("samba3.smbtorture_s3.%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "-e"])
+    plantestsuite("samba3.smbtorture_s3.%s" % t, "none", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//foo/bar', '""', '""', smbtorture3, ""])
 
 plantestsuite("samba.vfstest.stream_depot", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/stream-depot/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
 plantestsuite("samba.vfstest.xattr-tdb-1", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/xattr-tdb-1/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
