@@ -9701,7 +9701,7 @@ static void usage(void)
 
 	printf("\t-d debuglevel\n");
 	printf("\t-U user%%pass\n");
-	printf("\t-k               use kerberos\n");
+	printf("\t-k                    use kerberos\n");
 	printf("\t-N numprocs\n");
 	printf("\t-n my_netbios_name\n");
 	printf("\t-W workgroup\n");
@@ -9709,12 +9709,12 @@ static void usage(void)
 	printf("\t-O socket_options\n");
 	printf("\t-m maximum protocol\n");
 	printf("\t-L use oplocks\n");
-	printf("\t-c CLIENT.TXT   specify client load file for NBENCH\n");
+	printf("\t-c CLIENT.TXT         specify client load file for NBENCH\n");
 	printf("\t-A showall\n");
 	printf("\t-p port\n");
 	printf("\t-s seed\n");
 	printf("\t-b unclist_filename   specify multiple shares for multiple connections\n");
-	printf("\t-f filename   filename to test\n");
+	printf("\t-f filename           filename to test\n");
 	printf("\t-e                    encrypt\n");
 	printf("\n\n");
 
