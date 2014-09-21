@@ -14,8 +14,8 @@ import "misc.idl";
 [
  uuid("e1af8308-5d1f-11c9-91a4-08002b14a0fa"), 
  version(3.0), 
- endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
-		  "ncalrpc:[EPMAPPER]"),
+ endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]",
+	  "ncacn_http:[593]", "ncalrpc:[EPMAPPER]"),
  helpstring("EndPoint Mapper"),
  pointer_default(ptr)
 ]
