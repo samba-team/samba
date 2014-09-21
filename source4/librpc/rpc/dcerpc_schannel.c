@@ -312,7 +312,8 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	struct schannel_key_state *s;
 	struct composite_context *epm_map_req;
 	enum netr_SchannelType schannel_type = cli_credentials_get_secure_channel_type(credentials);
-	
+	struct cli_credentials *epm_creds = NULL;
+
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, p->conn->event_ctx);
 	if (c == NULL) return NULL;
@@ -345,6 +346,9 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 		s->local_negotiate_flags |= NETLOGON_NEG_RODC_PASSTHROUGH;
 	}
 
+	epm_creds = cli_credentials_init_anon(s);
+	if (composite_nomem(epm_creds, c)) return c;
+
 	/* allocate binding structure */
 	s->binding = dcerpc_binding_dup(s, s->pipe->binding);
 	if (composite_nomem(s->binding, c)) return c;
@@ -352,6 +356,7 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	/* request the netlogon endpoint mapping */
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->binding,
 						  &ndr_table_netlogon,
+						  epm_creds,
 						  s->pipe->conn->event_ctx,
 						  lp_ctx);
 	if (composite_nomem(epm_map_req, c)) return c;

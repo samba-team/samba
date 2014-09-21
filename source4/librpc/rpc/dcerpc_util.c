@@ -222,13 +222,13 @@ static void continue_epm_map(struct tevent_req *subreq)
 struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 						      struct dcerpc_binding *binding,
 						      const struct ndr_interface_table *table,
+						      struct cli_credentials *creds,
 						      struct tevent_context *ev,
 						      struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct epm_map_binding_state *s;
 	struct composite_context *pipe_connect_req;
-	struct cli_credentials *anon_creds;
 	NTSTATUS status;
 	struct dcerpc_binding *epmapper_binding;
 	int i;
@@ -308,10 +308,6 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 		return c;
 	}
 
-	/* anonymous credentials for rpc connection used to get endpoint mapping */
-	anon_creds = cli_credentials_init_anon(s);
-	if (composite_nomem(anon_creds, c)) return c;
-
 	epmapper_binding = dcerpc_binding_dup(s, binding);
 	if (composite_nomem(epmapper_binding, c)) return c;
 
@@ -337,7 +333,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	/* initiate rpc pipe connection */
 	pipe_connect_req = dcerpc_pipe_connect_b_send(s, epmapper_binding,
 						      &ndr_table_epmapper,
-						      anon_creds, c->event_ctx,
+						      creds, c->event_ctx,
 						      lp_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 	
@@ -366,8 +362,18 @@ _PUBLIC_ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_bind
 				struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
+	struct cli_credentials *epm_creds;
 
-	c = dcerpc_epm_map_binding_send(mem_ctx, binding, table, ev, lp_ctx);
+	epm_creds = cli_credentials_init_anon(mem_ctx);
+	if (epm_creds == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	c = dcerpc_epm_map_binding_send(mem_ctx, binding, table, epm_creds, ev, lp_ctx);
+	if (c == NULL) {
+		talloc_free(epm_creds);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(c, epm_creds);
 	return dcerpc_epm_map_binding_recv(c);
 }
 

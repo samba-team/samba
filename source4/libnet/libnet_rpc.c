@@ -25,7 +25,7 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-
+#include "auth/credentials/credentials.h"
 
 struct rpc_connect_srv_state {
 	struct libnet_context *ctx;
@@ -783,13 +783,19 @@ static void continue_epm_map_binding_send(struct composite_context *c)
 {
 	struct rpc_connect_dci_state *s;
 	struct composite_context *epm_map_req;
+	struct cli_credentials *epm_creds = NULL;
+
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	/* prepare to get endpoint mapping for the requested interface */
 	s->final_binding = dcerpc_binding_dup(s, s->lsa_pipe->binding);
 	if (composite_nomem(s->final_binding, c)) return;
-	
+
+	epm_creds = cli_credentials_init_anon(s);
+	if (composite_nomem(epm_creds, c)) return;
+
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->final_binding, s->r.in.dcerpc_iface,
+						  epm_creds,
 						  s->ctx->event_ctx, s->ctx->lp_ctx);
 	if (composite_nomem(epm_map_req, c)) return;
 

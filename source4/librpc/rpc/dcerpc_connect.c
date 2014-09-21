@@ -1005,6 +1005,7 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	struct pipe_connect_state *s;
 	enum dcerpc_transport_t transport;
 	const char *endpoint = NULL;
+	struct cli_credentials *epm_creds = NULL;
 
 	/* composite context allocation and setup */
 	c = composite_create(parent_ctx, ev);
@@ -1042,9 +1043,17 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	switch (transport) {
 	case NCACN_NP:
 	case NCACN_IP_TCP:
-	case NCACN_HTTP:
 	case NCALRPC:
 		endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
+
+		/* anonymous credentials for rpc connection used to get endpoint mapping */
+		epm_creds = cli_credentials_init_anon(s);
+		if (composite_nomem(epm_creds, c)) return c;
+
+		break;
+	case NCACN_HTTP:
+		endpoint = dcerpc_binding_get_string_option(s->binding, "endpoint");
+		epm_creds = credentials;
 		break;
 	default:
 		break;
@@ -1054,6 +1063,7 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 		struct composite_context *binding_req;
 
 		binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
+							  epm_creds,
 							  s->pipe->conn->event_ctx,
 							  s->lp_ctx);
 		composite_continue(c, binding_req, continue_map_binding, c);
