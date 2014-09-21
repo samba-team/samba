@@ -72,6 +72,16 @@ static void dcesrv_task_init(struct task_server *task)
 	}
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
+		enum dcerpc_transport_t transport =
+			dcerpc_binding_get_transport(e->ep_description);
+
+		if (transport == NCACN_HTTP) {
+			/*
+			 * We don't support ncacn_http yet
+			 */
+			continue;
+		}
+
 		status = dcesrv_add_ep(dce_ctx, task->lp_ctx, e, task->event_ctx, model_ops);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
