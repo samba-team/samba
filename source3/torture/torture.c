@@ -9715,6 +9715,7 @@ static void usage(void)
 	printf("\t-s seed\n");
 	printf("\t-b unclist_filename   specify multiple shares for multiple connections\n");
 	printf("\t-f filename   filename to test\n");
+	printf("\t-e                    encrypt\n");
 	printf("\n\n");
 
 	printf("tests are:");
