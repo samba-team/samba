@@ -240,7 +240,7 @@ void send_break_message_smb2(files_struct *fsp, int level)
 
 	/*
 	 * TODO: in future we should have a better algorithm
-	 * to find the correct connection for an break message.
+	 * to find the correct connection for a break message.
 	 * Then we also need some retries if a channel gets disconnected.
 	 */
 	xconn = fsp->conn->sconn->client->connections;
