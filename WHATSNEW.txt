@@ -71,7 +71,7 @@ the reason for this is the same as for "winbind enum users = no"
 and "winbind enum groups = no". Providing this information is not always
 reliably possible, e.g. if there're trusted domains.
 
-Please consult the smb.conf manpage for more details of this new options.
+Please consult the smb.conf manpage for more details on these new options.
 
 Larger IO sizes for SMB2/3 by default
 =====================================
