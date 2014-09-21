@@ -451,8 +451,11 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	if (ev_ctx && tevent_re_initialise(ev_ctx) != 0) {
-		smb_panic(__location__ ": Failed to re-initialise event context");
+	if (ev_ctx != NULL) {
+		tevent_set_trace_callback(ev_ctx, NULL, NULL);
+		if (tevent_re_initialise(ev_ctx) != 0) {
+			smb_panic(__location__ ": Failed to re-initialise event context");
+		}
 	}
 
 	if (reinit_after_fork_pipe[0] != -1) {
