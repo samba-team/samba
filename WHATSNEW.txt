@@ -40,7 +40,7 @@ Winbindd/Netlogon improvements
 ==============================
 
 The whole concept of maintaining the netlogon secure channel
-to (other) domain controllers is rewritten in order to maintain
+to (other) domain controllers was rewritten in order to maintain
 global state in a netlogon_creds_cli.tdb. This is the proper fix
 for a large number of bugs:
 
@@ -50,11 +50,11 @@ for a large number of bugs:
   https://bugzilla.samba.org/show_bug.cgi?id=7568
   https://bugzilla.samba.org/show_bug.cgi?id=8599
 
-In addition a strong session key is required by default now,
+In addition a strong session key is now required by default,
 which means that communication to older servers or clients
 might be rejected by default.
 
-For the client side we the following new options:
+For the client side we have the following new options:
 "require strong key" (yes by default), "reject md5 servers" (no by default).
 E.g. for Samba 3.0.37 you need "require strong key = no" and
 for NT4 DCs you need "require strong key = no" and "client NTLMv2 auth = no",
@@ -69,7 +69,7 @@ winbindd does not list group memberships for display purposes
 The new default is "winbind expand groups = 0" now,
 the reason for this is the same as for "winbind enum users = no"
 and "winbind enum groups = no". Providing this information is not always
-reliably possible, e.g. if there're trusted domains.
+reliably possible, e.g. if there are trusted domains.
 
 Please consult the smb.conf manpage for more details on these new options.
 
@@ -91,7 +91,7 @@ Overhauled "net idmap" command
 ==============================
 
 The command line interface of the "net idmap" command has been
-systematized and subcommands for reading and writing the autorid idmap
+made systematic, and subcommands for reading and writing the autorid idmap
 database have been added. Note that the writing commands should be
 used with great care. See the net(8) manual page for details.
 
@@ -108,7 +108,7 @@ dbwrap_tdb_mutexes:* = yes
 
 in the [global] section of your smb.conf.
 
-Tdb has furthermore improved to manage its file space more efficiently. This
+Tdb file space management has also been made more efficient. This
 will lead to smaller and less fragmented databases.
 
 Messaging improvements
