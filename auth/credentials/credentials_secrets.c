@@ -322,6 +322,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 		cli_credentials_set_old_password(cred, secrets_tdb_old_password, CRED_SPECIFIED);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
+		cli_credentials_set_password_last_changed_time(cred, secrets_tdb_lct);
+		status = NT_STATUS_OK;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		if (db_ctx) {
 			error_string = talloc_asprintf(cred,
