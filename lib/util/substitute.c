@@ -23,7 +23,11 @@
 
 #include "replace.h"
 #include "debug.h"
+#ifndef SAMBA_UTIL_CORE_ONLY
 #include "charset/charset.h"
+#else
+#include "charset_compat.h"
+#endif
 #include "substitute.h"
 
 /**

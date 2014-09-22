@@ -21,7 +21,12 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
+#ifndef SAMBA_UTIL_CORE_ONLY
 #include "lib/util/charset/charset.h"
+#else
+#include "charset_compat.h"
+#endif
+
 #include "lib/util/attr.h"
 
 /* for TALLOC_CTX */
