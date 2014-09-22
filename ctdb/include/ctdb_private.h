@@ -1461,6 +1461,7 @@ struct ctdb_get_log_addr {
 
 extern int log_ringbuf_size;
 
+enum debug_level;
 TDB_DATA ctdb_log_ringbuffer_collect_log(TALLOC_CTX *mem_ctx,
 					 enum debug_level max_level);
 void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr);
