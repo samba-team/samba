@@ -21,9 +21,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/time.h"
-#include "lib/util/time_basic.h"
+#include "byteorder.h"
+#include "time_basic.h"
+#include "lib/util/time.h" /* Avoid /usr/include/time.h */
 
 /**
  * @file

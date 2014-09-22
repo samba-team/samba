@@ -24,6 +24,10 @@
 #ifndef _SAMBA_TIME_H_
 #define _SAMBA_TIME_H_
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <talloc.h>
+
 #ifndef TIME_T_MIN
 /* we use 0 here, because (time_t)-1 means error */
 #define TIME_T_MIN 0
