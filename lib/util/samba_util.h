@@ -45,18 +45,6 @@ extern const char *panic_action;
 #include "lib/util/byteorder.h"
 #include "lib/util/talloc_stack.h"
 
-/**
- * assert macros 
- */
-#define SMB_ASSERT(b) \
-do { \
-	if (!(b)) { \
-		DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
-			 __FILE__, __LINE__, #b)); \
-		smb_panic("assert failed: " #b); \
-	} \
-} while(0)
-
 #ifndef ABS
 #define ABS(a) ((a)>0?(a):(-(a)))
 #endif
@@ -66,22 +54,14 @@ do { \
 #include "../libcli/util/ntstatus.h"
 #include "lib/util/string_wrappers.h"
 
+#include "fault.h"
+
 /**
  * Write backtrace to debug log
  */
 _PUBLIC_ void call_backtrace(void);
 
-/**
- Something really nasty happened - panic !
-**/
-typedef void (*smb_panic_handler_t)(const char *why);
-
-_PUBLIC_ void fault_configure(smb_panic_handler_t panic_handler);
-_PUBLIC_ void fault_setup(void);
-_PUBLIC_ void fault_setup_disable(void);
 _PUBLIC_ void dump_core_setup(const char *progname, const char *logfile);
-_PUBLIC_ _NORETURN_ void smb_panic(const char *reason);
-
 
 /**
   register a fault handler. 
