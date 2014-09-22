@@ -1129,10 +1129,16 @@ static bool encode_openldap_dereference(void *mem_ctx, void *in, DATA_BLOB *out)
 			}
 		}
 		
-		asn1_pop_tag(data);
-		asn1_pop_tag(data);
+		if (!asn1_pop_tag(data)) {
+			return false;
+		}
+		if (!asn1_pop_tag(data)) {
+			return false;
+		}
 	}
-	asn1_pop_tag(data);
+	if (!asn1_pop_tag(data)) {
+		return false;
+	}
 
 	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
@@ -1181,8 +1187,12 @@ static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 			return false;
 		}
 		
-		asn1_read_OctetString_talloc(r[i], data, &r[i]->source_attribute);
-		asn1_read_OctetString_talloc(r[i], data, &r[i]->dereferenced_dn);
+		if (!asn1_read_OctetString_talloc(r[i], data, &r[i]->source_attribute)) {
+			return false;
+		}
+		if (!asn1_read_OctetString_talloc(r[i], data, &r[i]->dereferenced_dn)) {
+			return false;
+		}
 		if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
 			if (!asn1_start_tag(data, ASN1_CONTEXT(0))) {
 				return false;
