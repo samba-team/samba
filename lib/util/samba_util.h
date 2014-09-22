@@ -649,18 +649,7 @@ _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 					       uid_t uid,
 					       mode_t dir_perms);
 
-/**
- Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
- else
-  if SYSV use O_NDELAY
-  if BSD use FNDELAY
-**/
-_PUBLIC_ int set_blocking(int fd, bool set);
-
-/**
-   set close on exec on a file descriptor if available
- **/
-_PUBLIC_ bool smb_set_close_on_exec(int fd);
+#include "blocking.h"
 
 /**
  Sleep for a specified number of milliseconds.

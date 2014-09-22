@@ -21,10 +21,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#include "blocking.h"
 #undef malloc
 #undef strcasecmp
 #undef strncasecmp
