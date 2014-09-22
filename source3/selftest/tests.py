@@ -109,6 +109,7 @@ local_tests = [
     "LOCAL-MESSAGING-READ1",
     "LOCAL-MESSAGING-READ2",
     "LOCAL-MESSAGING-READ3",
+    "LOCAL-MESSAGING-FDPASS1",
     "LOCAL-hex_encode_buf",
     "LOCAL-sprintf_append",
     "LOCAL-remove_duplicate_addrs2"]
