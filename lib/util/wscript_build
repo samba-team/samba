@@ -41,6 +41,8 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
 
 if not bld.env.SAMBA_UTIL_CORE_ONLY:
 
+    bld.env.public_headers_skip.append('charset_compat.h')
+
     bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c
                     rbtree.c rfc1738.c become_daemon.c system.c select.c getpass.c
