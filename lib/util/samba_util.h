@@ -89,31 +89,7 @@ _PUBLIC_ _NORETURN_ void smb_panic(const char *reason);
 */
 _PUBLIC_ bool register_fault_handler(const char *name, void (*fault_handler)(int sig));
 
-/* The following definitions come from lib/util/signal.c  */
-
-
-/**
- Block sigs.
-**/
-void BlockSignals(bool block, int signum);
-
-/**
- Catch a signal. This should implement the following semantics:
-
- 1) The handler remains installed after being called.
- 2) The signal should be blocked during handler execution.
-**/
-void (*CatchSignal(int signum,void (*handler)(int )))(int);
-
-/**
- Ignore SIGCLD via whatever means is necessary for this OS.
-**/
-void (*CatchChild(void))(int);
-
-/**
- Catch SIGCLD but leave the child around so it's status can be reaped.
-**/
-void (*CatchChildLeaveStatus(void))(int);
+#include "lib/util/signal.h" /* Avoid /usr/include/signal.h */
 
 struct sockaddr;
 

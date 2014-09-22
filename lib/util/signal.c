@@ -18,8 +18,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/wait.h"
+#include "debug.h"
+#include "lib/util/signal.h" /* Avoid /usr/include/signal.h */
 
 /**
  * @file
