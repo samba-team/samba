@@ -229,32 +229,7 @@ _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_he
  */
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 
-/**
- Substitute a string for a pattern in another string. Make sure there is 
- enough room!
-
- This routine looks for pattern in s and replaces it with 
- insert. It may do multiple replacements.
-
- Any of " ; ' $ or ` in the insert string are replaced with _
- if len==0 then the string cannot be extended. This is different from the old
- use of len==0 which was for no length checks to be done.
-**/
-_PUBLIC_ void string_sub(char *s,const char *pattern, const char *insert, size_t len);
-
-_PUBLIC_ void string_sub_once(char *s, const char *pattern,
-			      const char *insert, size_t len);
-
-_PUBLIC_ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s, 
-				const char *pattern, const char *insert);
-
-/**
- Similar to string_sub() but allows for any character to be substituted. 
- Use with caution!
- if len==0 then the string cannot be extended. This is different from the old
- use of len==0 which was for no length checks to be done.
-**/
-_PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
+#include "substitute.h"
 
 /**
  Unescape a URL encoded string, in place.
