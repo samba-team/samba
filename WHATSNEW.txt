@@ -73,6 +73,23 @@ reliably possible, e.g. if there are trusted domains.
 
 Please consult the smb.conf manpage for more details on these new options.
 
+Winbindd use on the Samba AD DC
+===============================
+
+Winbindd is now used on the Samba AD DC by default, replacing the
+partial rewrite used for winbind operations in Samba 4.0 and 4.1.
+
+This allows more code to be shared, more options to be honoured, and
+paves the way for support for trusted domains in the AD DC.
+
+If required the old internal winbind can be activated by setting
+'server services = +winbind -winbindd'.  Upgrading users with a server
+services parameter specified should ensure they change 'winbind' to
+'winbindd' to obtain the new functionality.
+
+The 'samba' binary still manages the starting of this service, there
+is no need to start the winbindd binary manually.
+
 Larger IO sizes for SMB2/3 by default
 =====================================
 
