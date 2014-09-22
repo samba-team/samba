@@ -35,7 +35,8 @@
 
 #include "replace.h"
 #include "system/filesys.h"
-#include "lib/util/samba_util.h"
+#include "memory.h"
+#include "xfile.h"
 
 #define XBUFSIZE BUFSIZ
 
