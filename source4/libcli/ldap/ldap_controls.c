@@ -1187,10 +1187,10 @@ static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 			if (!asn1_start_tag(data, ASN1_CONTEXT(0))) {
 				return false;
 			}
-			
-			ldap_decode_attribs_bare(r, data, &r[i]->attributes,
-						 &r[i]->num_attributes);
-			
+			if (!ldap_decode_attribs_bare(r, data, &r[i]->attributes,
+						 &r[i]->num_attributes)) {
+				return false;
+			}
 			if (!asn1_end_tag(data)) {
 				return false;
 			}

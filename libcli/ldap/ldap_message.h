@@ -228,7 +228,7 @@ bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
 				  struct asn1_data *data,
 				  const char **result);
 
-void ldap_decode_attribs_bare(TALLOC_CTX *mem_ctx, struct asn1_data *data,
+bool ldap_decode_attribs_bare(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			      struct ldb_message_element **attributes,
 			      int *num_attributes);
 
