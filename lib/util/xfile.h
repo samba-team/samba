@@ -19,6 +19,12 @@
 
 #ifndef _XFILE_H_
 #define _XFILE_H_
+
+#include <stdarg.h>
+#include <stddef.h>
+#include <sys/stat.h>
+#include "attr.h"
+
 /*
   see xfile.c for explanations
 */
