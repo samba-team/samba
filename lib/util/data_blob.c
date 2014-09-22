@@ -18,7 +18,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "attr.h"
+#include "data_blob.h"
 
 const DATA_BLOB data_blob_null = { NULL, 0 };
 

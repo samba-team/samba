@@ -31,6 +31,7 @@
 #endif
 
 #include <talloc.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 /* used to hold an arbitrary blob of data */
