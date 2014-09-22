@@ -22,12 +22,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include <talloc.h>
+#include "replace.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
 #include "system/shmem.h"
 #include "system/passwd.h"
+#include "system/time.h"
+#include "system/wait.h"
+#include "debug.h"
+#include "samba_util.h"
 
 #undef malloc
 #undef strcasecmp
