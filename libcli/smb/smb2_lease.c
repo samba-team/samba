@@ -48,6 +48,7 @@ ssize_t smb2_lease_pull(const uint8_t *buf, size_t len,
 	switch (version) {
 	case 1:
 		ZERO_STRUCT(lease->parent_lease_key);
+		lease->lease_flags &= ~SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET;
 		lease->lease_epoch = 0;
 		break;
 	case 2:
