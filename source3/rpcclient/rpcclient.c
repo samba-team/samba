@@ -702,22 +702,23 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			break;
 		case DCERPC_AUTH_TYPE_SPNEGO:
 		{
-			/* won't happen, but if it does it will fail in cli_rpc_pipe_open_spnego() eventually */
-			const char *oid = "INVALID";
+			enum credentials_use_kerberos use_kerberos;
+
 			switch (pipe_default_auth_spnego_type) {
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-				oid = GENSEC_OID_NTLMSSP;
+				use_kerberos = CRED_DONT_USE_KERBEROS;
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-				oid = GENSEC_OID_KERBEROS5;
+				use_kerberos = CRED_MUST_USE_KERBEROS;
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_NONE:
+				use_kerberos = CRED_AUTO_USE_KERBEROS;
 				break;
 			}
 			ntresult = cli_rpc_pipe_open_spnego(
 				cli, cmd_entry->table,
 				default_transport,
-				oid,
+				use_kerberos,
 				pipe_default_auth_level,
 				smbXcli_conn_remote_name(cli->conn),
 				get_cmdline_auth_info_domain(auth_info),

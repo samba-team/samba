@@ -3096,7 +3096,7 @@ done:
 NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
 				  const struct ndr_interface_table *table,
 				  enum dcerpc_transport_t transport,
-				  const char *oid,
+				  enum credentials_use_kerberos use_kerberos,
 				  enum dcerpc_AuthLevel auth_level,
 				  const char *server,
 				  const char *domain,
@@ -3109,15 +3109,6 @@ NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
 	const char *target_service = table->authservices->names[0];
 	
 	NTSTATUS status;
-	enum credentials_use_kerberos use_kerberos;
-
-	if (strcmp(oid, GENSEC_OID_KERBEROS5) == 0) {
-		use_kerberos = CRED_MUST_USE_KERBEROS;
-	} else if (strcmp(oid, GENSEC_OID_NTLMSSP) == 0) {
-		use_kerberos = CRED_DONT_USE_KERBEROS;
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	status = cli_rpc_pipe_open(cli, transport, table, &result);
 	if (!NT_STATUS_IS_OK(status)) {

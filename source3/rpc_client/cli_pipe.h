@@ -24,6 +24,7 @@
 #define _CLI_PIPE_H
 
 #include "rpc_client/rpc_client.h"
+#include "auth/credentials/credentials.h"
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
@@ -85,7 +86,7 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
 				  const struct ndr_interface_table *table,
 				  enum dcerpc_transport_t transport,
-				  const char *oid,
+				  enum credentials_use_kerberos use_kerberos,
 				  enum dcerpc_AuthLevel auth_level,
 				  const char *server,
 				  const char *domain,
