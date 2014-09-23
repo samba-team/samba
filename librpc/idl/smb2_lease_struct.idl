@@ -28,6 +28,7 @@ interface smb2_lease_struct
 		uint32 lease_flags;
 		hyper lease_duration;	/* should be 0 */
 		smb2_lease_key parent_lease_key;
+		uint16 lease_version;
 		uint16 lease_epoch;
 	} smb2_lease;
 };
