@@ -440,30 +440,33 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
-struct forall_state {
-	void (*fn)(const struct share_mode_entry *entry,
-		   const char *sharepath,
-		   const char *fname,
-		   void *private_data);
+struct share_mode_forall_state {
+	int (*fn)(struct file_id fid, const struct share_mode_data *data,
+		  void *private_data);
 	void *private_data;
 };
 
-static int traverse_fn(struct db_record *rec, void *_state)
+static int share_mode_traverse_fn(struct db_record *rec, void *_state)
 {
-	struct forall_state *state = (struct forall_state *)_state;
+	struct share_mode_forall_state *state =
+		(struct share_mode_forall_state *)_state;
 	uint32_t i;
 	TDB_DATA key;
 	TDB_DATA value;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	struct share_mode_data *d;
+	struct file_id fid;
+	int ret;
 
 	key = dbwrap_record_get_key(rec);
 	value = dbwrap_record_get_value(rec);
 
 	/* Ensure this is a locking_key record. */
-	if (key.dsize != sizeof(struct file_id))
+	if (key.dsize != sizeof(fid)) {
 		return 0;
+	}
+	memcpy(&fid, key.dptr, sizeof(fid));
 
 	d = talloc(talloc_tos(), struct share_mode_data);
 	if (d == NULL) {
@@ -485,11 +488,58 @@ static int traverse_fn(struct db_record *rec, void *_state)
 	}
 	for (i=0; i<d->num_share_modes; i++) {
 		d->share_modes[i].stale = false; /* [skip] in idl */
-		state->fn(&d->share_modes[i],
-			  d->servicepath, d->base_name,
+	}
+
+	ret = state->fn(fid, d, state->private_data);
+
+	TALLOC_FREE(d);
+	return ret;
+}
+
+int share_mode_forall(int (*fn)(struct file_id fid,
+				const struct share_mode_data *data,
+				void *private_data),
+		      void *private_data)
+{
+	struct share_mode_forall_state state = {
+		.fn = fn,
+		.private_data = private_data
+	};
+	NTSTATUS status;
+	int count;
+
+	if (lock_db == NULL) {
+		return 0;
+	}
+
+	status = dbwrap_traverse_read(lock_db, share_mode_traverse_fn,
+				      &state, &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	return count;
+}
+
+struct share_entry_forall_state {
+	void (*fn)(const struct share_mode_entry *e,
+		   const char *service_path, const char *base_name,
+		   void *private_data);
+	void *private_data;
+};
+
+static int share_entry_traverse_fn(struct file_id fid,
+				   const struct share_mode_data *data,
+				   void *private_data)
+{
+	struct share_entry_forall_state *state = private_data;
+	uint32_t i;
+
+	for (i=0; i<data->num_share_modes; i++) {
+		state->fn(&data->share_modes[i],
+			  data->servicepath, data->base_name,
 			  state->private_data);
 	}
-	TALLOC_FREE(d);
 
 	return 0;
 }
@@ -503,24 +553,10 @@ int share_entry_forall(void (*fn)(const struct share_mode_entry *,
 				  const char *, const char *, void *),
 		      void *private_data)
 {
-	struct forall_state state;
-	NTSTATUS status;
-	int count;
+	struct share_entry_forall_state state = {
+		.fn = fn, .private_data = private_data };
 
-	if (lock_db == NULL)
-		return 0;
-
-	state.fn = fn;
-	state.private_data = private_data;
-
-	status = dbwrap_traverse_read(lock_db, traverse_fn, (void *)&state,
-				      &count);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	} else {
-		return count;
-	}
+	return share_mode_forall(share_entry_traverse_fn, &state);
 }
 
 bool share_mode_cleanup_disconnected(struct file_id fid,

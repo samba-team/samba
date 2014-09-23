@@ -190,6 +190,10 @@ bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash);
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
 bool set_write_time(struct file_id fileid, struct timespec write_time);
 struct timespec get_share_mode_write_time(struct share_mode_lock *lck);
+int share_mode_forall(int (*fn)(struct file_id fid,
+				const struct share_mode_data *data,
+				void *private_data),
+		      void *private_data);
 int share_entry_forall(void (*fn)(const struct share_mode_entry *, const char *,
 				  const char *, void *),
 		      void *private_data);
