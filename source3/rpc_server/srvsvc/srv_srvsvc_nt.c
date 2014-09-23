@@ -166,7 +166,7 @@ static WERROR net_enum_files(TALLOC_CTX *ctx,
 	f_enum_cnt.username = username;
 	f_enum_cnt.ctr3 = *ctr3;
 
-	share_mode_forall( enum_file_fn, (void *)&f_enum_cnt );
+	share_entry_forall( enum_file_fn, (void *)&f_enum_cnt );
 
 	*ctr3 = f_enum_cnt.ctr3;
 
@@ -867,7 +867,7 @@ static void net_count_files_for_all_sess(struct srvsvc_NetSessCtr1 *ctr1,
 	s_file_info.resume_handle = resume_handle;
 	s_file_info.num_entries = num_entries;
 
-	share_mode_forall(count_sess_files_fn, &s_file_info);
+	share_entry_forall(count_sess_files_fn, &s_file_info);
 }
 
 /*******************************************************************
@@ -984,7 +984,7 @@ static void count_share_opens(struct srvsvc_NetConnInfo1 *arr,
 	sfs.resp_entries = resp_entries;
 	sfs.total_entries = total_entries;
 
-	share_mode_forall(share_file_fn, &sfs);
+	share_entry_forall(share_file_fn, &sfs);
 }
 
 /****************************************************************************
@@ -2744,7 +2744,7 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 	r->out.result = WERR_BADFILE;
 	state.r = r;
 	state.msg_ctx = p->msg_ctx;
-	share_mode_forall(enum_file_close_fn, &state);
+	share_entry_forall(enum_file_close_fn, &state);
 	return r->out.result;
 }
 
