@@ -391,6 +391,7 @@ static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 	pid_t pid, wpid;
 	int wstat;
 	bool chstat = False;
+	void (*saved_handler)(int);
 
 	if (pass == NULL) {
 		DEBUG(0, ("chat_with_program: user doesn't exist in the UNIX password database.\n"));
@@ -408,13 +409,13 @@ static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 	 * SIGCLD signals as it also eats the exit status code. JRA.
 	 */
 
-	CatchChildLeaveStatus();
+	saved_handler = CatchChildLeaveStatus();
 
 	if ((pid = fork()) < 0) {
 		DEBUG(3, ("chat_with_program: Cannot fork() child for password change: %s\n", pass->pw_name));
 		SAFE_FREE(slavedev);
 		close(master);
-		CatchChild();
+		(void)CatchSignal(SIGCLD, saved_handler);
 		return (False);
 	}
 
@@ -439,14 +440,14 @@ static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 		if (wpid < 0) {
 			DEBUG(3, ("chat_with_program: The process is no longer waiting!\n\n"));
 			close(master);
-			CatchChild();
+			(void)CatchSignal(SIGCLD, saved_handler);
 			return (False);
 		}
 
 		/*
 		 * Go back to ignoring children.
 		 */
-		CatchChild();
+		(void)CatchSignal(SIGCLD, saved_handler);
 
 		close(master);
 
