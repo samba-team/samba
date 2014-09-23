@@ -2480,7 +2480,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "server min protocol", "LANMAN1");
 	lpcfg_do_global_parameter(lp_ctx, "server max protocol", "SMB3");
 	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "CORE");
-	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "NT1");
+	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "default");
 	lpcfg_do_global_parameter(lp_ctx, "security", "AUTO");
 	lpcfg_do_global_parameter(lp_ctx, "EncryptPasswords", "True");
 	lpcfg_do_global_parameter(lp_ctx, "ReadRaw", "True");
@@ -3152,6 +3152,15 @@ int lpcfg_security(struct loadparm_context *lp_ctx)
 {
 	return lp_find_security(lpcfg__server_role(lp_ctx),
 				lpcfg__security(lp_ctx));
+}
+
+int lpcfg_client_max_protocol(struct loadparm_context *lp_ctx)
+{
+	int client_max_protocol = lpcfg__client_max_protocol(lp_ctx);
+	if (client_max_protocol == PROTOCOL_DEFAULT) {
+		return PROTOCOL_NT1;
+	}
+	return client_max_protocol;
 }
 
 bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandatory)

@@ -990,6 +990,8 @@ bool lp_idmap_default_range(uint32_t *low, uint32_t *high);
 const char *lp_idmap_backend(const char *domain_name);
 const char *lp_idmap_default_backend (void);
 int lp_security(void);
+int lp_client_max_protocol(void);
+int lp_winbindd_max_protocol(void);
 int lp_smb2_max_credits(void);
 int lp_cups_encrypt(void);
 bool lp_widelinks(int );

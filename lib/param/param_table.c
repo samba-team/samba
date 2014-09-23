@@ -38,6 +38,7 @@
 #endif
 
 static const struct enum_list enum_protocol[] = {
+	{PROTOCOL_DEFAULT, "default"}, /* the caller decides what this means */
 	{PROTOCOL_SMB2_10, "SMB2"}, /* for now keep PROTOCOL_SMB2_10 */
 	{PROTOCOL_SMB3_00, "SMB3"}, /* for now keep PROTOCOL_SMB3_00 */
 	{PROTOCOL_SMB3_10, "SMB3_10"},
@@ -1387,7 +1388,7 @@ struct parm_struct parm_table[] = {
 		.label		= "client max protocol",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(client_max_protocol),
+		.offset		= GLOBAL_VAR(_client_max_protocol),
 		.special	= NULL,
 		.enum_list	= enum_protocol,
 		.flags		= FLAG_ADVANCED,
