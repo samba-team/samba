@@ -31,6 +31,8 @@
 #include "../libcli/smb/read_smb.h"
 #include "smbXcli_base.h"
 #include "librpc/ndr/libndr.h"
+#include "libcli/smb/smb2_negotiate_context.h"
+#include <hcrypto/sha.h>
 
 struct smbXcli_conn;
 struct smbXcli_req;
@@ -120,11 +122,14 @@ struct smbXcli_conn {
 			NTTIME system_time;
 			NTTIME start_time;
 			DATA_BLOB gss_blob;
+			uint16_t cipher;
 		} server;
 
 		uint64_t mid;
 		uint16_t cur_credits;
 		uint16_t max_credits;
+
+		uint8_t preauth_sha512[64];
 	} smb2;
 
 	struct smbXcli_session *sessions;
@@ -3786,7 +3791,6 @@ struct smbXcli_negprot_state {
 
 	struct {
 		uint8_t fixed[36];
-		uint8_t dyn[ARRAY_SIZE(smb2cli_prots)*2];
 	} smb2;
 };
 
@@ -4348,14 +4352,23 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static size_t smbXcli_padding_helper(uint32_t offset, size_t n)
+{
+	if ((offset & (n-1)) == 0) return 0;
+	return n - (offset & (n-1));
+}
+
 static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_state *state)
 {
 	size_t i;
 	uint8_t *buf;
 	uint16_t dialect_count = 0;
+	DATA_BLOB dyn = data_blob_null;
 
-	buf = state->smb2.dyn;
 	for (i=0; i < ARRAY_SIZE(smb2cli_prots); i++) {
+		bool ok;
+		uint8_t val[2];
+
 		if (smb2cli_prots[i].proto < state->conn->min_protocol) {
 			continue;
 		}
@@ -4364,7 +4377,13 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 			continue;
 		}
 
-		SSVAL(buf, dialect_count*2, smb2cli_prots[i].smb2_dialect);
+		SSVAL(val, 0, smb2cli_prots[i].smb2_dialect);
+
+		ok = data_blob_append(state, &dyn, val, sizeof(val));
+		if (!ok) {
+			return NULL;
+		}
+
 		dialect_count++;
 	}
 
@@ -4391,7 +4410,64 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	} else {
 		memset(buf+12, 0, 16);	/* ClientGuid */
 	}
-	SBVAL(buf, 28, 0);	/* ClientStartTime */
+
+	if (state->conn->max_protocol >= PROTOCOL_SMB3_10) {
+		NTSTATUS status;
+		struct smb2_negotiate_contexts c = { .num_contexts = 0, };
+		uint32_t offset;
+		DATA_BLOB b;
+		uint8_t p[38];
+		const uint8_t zeros[8] = {0, };
+		size_t pad;
+		bool ok;
+
+		SSVAL(p, 0,  1); /* HashAlgorithmCount */
+		SSVAL(p, 2, 32); /* SaltLength */
+		SSVAL(p, 4, SMB2_PREAUTH_INTEGRITY_SHA512);
+		generate_random_buffer(p + 6, 32);
+
+		b = data_blob_const(p, 38);
+		status = smb2_negotiate_context_add(state, &c,
+					SMB2_PREAUTH_INTEGRITY_CAPABILITIES, b);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+
+		SSVAL(p, 0, 1); /* ChiperCount */
+		SSVAL(p, 2, SMB2_ENCRYPTION_AES128_CCM);
+
+		b = data_blob_const(p, 4);
+		status = smb2_negotiate_context_add(state, &c,
+					SMB2_ENCRYPTION_CAPABILITIES, b);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+
+		status = smb2_negotiate_context_push(state, &b, c);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+
+		offset = SMB2_HDR_BODY + sizeof(state->smb2.fixed) + dyn.length;
+		pad = smbXcli_padding_helper(offset, 8);
+
+		ok = data_blob_append(state, &dyn, zeros, pad);
+		if (!ok) {
+			return NULL;
+		}
+		offset += pad;
+
+		ok = data_blob_append(state, &dyn, b.data, b.length);
+		if (!ok) {
+			return NULL;
+		}
+
+		SIVAL(buf, 28, offset);   /* NegotiateContextOffset */
+		SSVAL(buf, 32, c.num_contexts); /* NegotiateContextCount */
+		SSVAL(buf, 34, 0);        /* Reserved */
+	} else {
+		SBVAL(buf, 28, 0);	/* Reserved/ClientStartTime */
+	}
 
 	return smb2cli_req_send(state, state->ev,
 				state->conn, SMB2_OP_NEGPROT,
@@ -4399,7 +4475,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 				state->timeout_msec,
 				NULL, NULL, /* tcon, session */
 				state->smb2.fixed, sizeof(state->smb2.fixed),
-				state->smb2.dyn, dialect_count*2,
+				dyn.data, dyn.length,
 				UINT16_MAX); /* max_dyn_len */
 }
 
@@ -4419,6 +4495,20 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	uint8_t *body;
 	size_t i;
 	uint16_t dialect_revision;
+	struct smb2_negotiate_contexts c = { .num_contexts = 0, };
+	uint32_t negotiate_context_offset = 0;
+	uint16_t negotiate_context_count = 0;
+	DATA_BLOB negotiate_context_blob = data_blob_null;
+	size_t avail;
+	size_t ctx_ofs;
+	size_t needed;
+	struct smb2_negotiate_context *preauth = NULL;
+	uint16_t hash_count;
+	uint16_t salt_length;
+	uint16_t hash_selected;
+	struct hc_sha512state sctx;
+	struct smb2_negotiate_context *cipher = NULL;
+	struct iovec sent_iov[3];
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = NT_STATUS_OK,
@@ -4428,7 +4518,6 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
-	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -4455,6 +4544,8 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	}
 
 	if (conn->protocol == PROTOCOL_NONE) {
+		TALLOC_FREE(subreq);
+
 		if (state->conn->min_protocol >= PROTOCOL_SMB2_02) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
@@ -4481,6 +4572,9 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	}
 
 	conn->smb2.server.security_mode = SVAL(body, 2);
+	if (conn->protocol >= PROTOCOL_SMB3_10) {
+		negotiate_context_count = SVAL(body, 6);
+	}
 
 	blob = data_blob_const(body + 8, 16);
 	status = GUID_from_data_blob(&blob, &conn->smb2.server.guid);
@@ -4514,6 +4608,157 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(conn->smb2.server.gss_blob.data, req)) {
 		return;
 	}
+
+	if (conn->protocol < PROTOCOL_SMB3_10) {
+		TALLOC_FREE(subreq);
+
+		if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
+			conn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
+		}
+		tevent_req_done(req);
+		return;
+	}
+
+	negotiate_context_offset = IVAL(body, 60);
+	if (negotiate_context_offset < security_offset) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	ctx_ofs = negotiate_context_offset - security_offset;
+	if (ctx_ofs > iov[2].iov_len) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+	avail = iov[2].iov_len - security_length;
+	needed = iov[2].iov_len - ctx_ofs;
+	if (needed > avail) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	negotiate_context_blob.data = (uint8_t *)iov[2].iov_base;
+	negotiate_context_blob.length = iov[2].iov_len;
+
+	negotiate_context_blob.data += ctx_ofs;
+	negotiate_context_blob.length -= ctx_ofs;
+
+	status = smb2_negotiate_context_parse(state, negotiate_context_blob, &c);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (negotiate_context_count != c.num_contexts) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	preauth = smb2_negotiate_context_find(&c,
+					SMB2_PREAUTH_INTEGRITY_CAPABILITIES);
+	if (preauth == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (preauth->data.length < 6) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	hash_count = SVAL(preauth->data.data, 0);
+	salt_length = SVAL(preauth->data.data, 2);
+	hash_selected = SVAL(preauth->data.data, 4);
+
+	if (hash_count != 1) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (preauth->data.length != (6 + salt_length)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (hash_selected != SMB2_PREAUTH_INTEGRITY_SHA512) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	cipher = smb2_negotiate_context_find(&c, SMB2_ENCRYPTION_CAPABILITIES);
+	if (cipher != NULL) {
+		uint16_t cipher_count;
+
+		if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (cipher->data.length < 2) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		cipher_count = SVAL(cipher->data.data, 0);
+
+		if (cipher_count > 1) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (cipher->data.length != (2 + 2 * cipher_count)) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (cipher_count == 1) {
+			uint16_t cipher_selected;
+
+			cipher_selected = SVAL(cipher->data.data, 2);
+
+			if (cipher_selected == SMB2_ENCRYPTION_AES128_CCM) {
+				conn->smb2.server.cipher = cipher_selected;
+				conn->smb2.server.capabilities |= SMB2_CAP_ENCRYPTION;
+			}
+		}
+	} else {
+		if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+	}
+
+	if (conn->smb2.server.cipher == 0) {
+		/*
+		 * We didn't manage to negotiate a common encryption
+		 * algorithm.
+		 */
+		conn->smb2.server.capabilities &= ~SMB2_CAP_ENCRYPTION;
+	}
+
+	/* First we hash the request */
+	smb2cli_req_get_sent_iov(subreq, sent_iov);
+	SHA512_Init(&sctx);
+	SHA512_Update(&sctx, conn->smb2.preauth_sha512,
+		      sizeof(conn->smb2.preauth_sha512));
+	for (i = 0; i < 3; i++) {
+		SHA512_Update(&sctx, sent_iov[i].iov_base, sent_iov[i].iov_len);
+	}
+	SHA512_Final(conn->smb2.preauth_sha512, &sctx);
+	TALLOC_FREE(subreq);
+
+	/* And now we hash the response */
+	SHA512_Init(&sctx);
+	SHA512_Update(&sctx, conn->smb2.preauth_sha512,
+		      sizeof(conn->smb2.preauth_sha512));
+	for (i = 0; i < 3; i++) {
+		SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
+	}
+	SHA512_Final(conn->smb2.preauth_sha512, &sctx);
 
 	tevent_req_done(req);
 }
