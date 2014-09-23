@@ -45,9 +45,7 @@ struct pipe_auth_data {
 
 	void *auth_ctx;
 
-	/* Only the client code uses these 3 for now */
-	char *domain;
-	char *user_name;
+	/* Only the client code uses this for now */
 	DATA_BLOB transport_session_key;
 };
 

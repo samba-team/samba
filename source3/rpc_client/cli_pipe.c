@@ -2289,6 +2289,8 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 			       struct pipe_auth_data **presult)
 {
 	struct pipe_auth_data *result;
+	struct auth_generic_state *auth_generic_ctx;
+	NTSTATUS status;
 
 	result = talloc_zero(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
@@ -2298,13 +2300,38 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 	result->auth_type = DCERPC_AUTH_TYPE_NONE;
 	result->auth_level = DCERPC_AUTH_LEVEL_NONE;
 
-	result->user_name = talloc_strdup(result, "");
-	result->domain = talloc_strdup(result, "");
-	if ((result->user_name == NULL) || (result->domain == NULL)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+	status = auth_generic_client_prepare(result,
+					     &auth_generic_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to create auth_generic context: %s\n",
+			  nt_errstr(status)));
 	}
 
+	status = auth_generic_set_username(auth_generic_ctx, "");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set username: %s\n",
+			  nt_errstr(status)));
+	}
+
+	status = auth_generic_set_domain(auth_generic_ctx, "");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set domain: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	status = gensec_set_credentials(auth_generic_ctx->gensec_security,
+					auth_generic_ctx->credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set GENSEC credentials: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	talloc_unlink(auth_generic_ctx, auth_generic_ctx->credentials);
+	auth_generic_ctx->credentials = NULL;
+
+	result->auth_ctx = talloc_move(result, &auth_generic_ctx->gensec_security);
+	talloc_free(auth_generic_ctx);
 	*presult = result;
 	return NT_STATUS_OK;
 }
@@ -2332,13 +2359,6 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 
 	result->auth_type = auth_type;
 	result->auth_level = auth_level;
-
-	result->user_name = talloc_strdup(result, username);
-	result->domain = talloc_strdup(result, domain);
-	if ((result->user_name == NULL) || (result->domain == NULL)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
 
 	status = auth_generic_client_prepare(result,
 					     &auth_generic_ctx);
@@ -2866,18 +2886,6 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 	 * anonymous bind on an authenticated SMB inherits the user/domain
 	 * from the enclosing SMB creds
 	 */
-
-	TALLOC_FREE(auth->user_name);
-	TALLOC_FREE(auth->domain);
-
-	auth->user_name = talloc_strdup(auth, cli->user_name);
-	auth->domain = talloc_strdup(auth, cli->domain);
-
-	if ((cli->user_name != NULL && auth->user_name == NULL)
-	    || (cli->domain != NULL && auth->domain == NULL)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	if (transport == NCACN_NP) {
 		struct smbXcli_session *session;

@@ -29,6 +29,8 @@
 #include "../libcli/registry/util_reg.h"
 #include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
 
 /* support itanium as well */
 static const struct print_architecture_table_node archi_table[]= {
@@ -1120,6 +1122,7 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 {
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
+	struct cli_credentials *creds = gensec_get_credentials(pipe_hnd->auth->auth_ctx);
 	WERROR werr;
 
 	/* no arguments given, enumerate all printers */
@@ -1136,7 +1139,7 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 	/* argument given, get a single printer by name */
 	if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, argv[0],
 					 MAXIMUM_ALLOWED_ACCESS,
-					 pipe_hnd->auth->user_name,
+					 cli_credentials_get_username(creds),
 					 &hnd))
 		return false;
 
@@ -1315,6 +1318,8 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 	struct policy_handle hnd = { 0, };
 	WERROR result;
 	const char *action_str;
+	struct cli_credentials *creds = gensec_get_credentials(pipe_hnd->auth->auth_ctx);
+	const char *username = cli_credentials_get_username(creds);
 
 	if (!get_printer_info(pipe_hnd, mem_ctx, 2, argc, argv, &num_printers, &info_enum))
 		return nt_status;
@@ -1330,7 +1335,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 
 		/* open printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, sharename,
-			PRINTER_ALL_ACCESS, pipe_hnd->auth->user_name, &hnd))
+			PRINTER_ALL_ACCESS, username, &hnd))
 			goto done;
 
 		/* check for existing dst printer */
@@ -1912,6 +1917,8 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	struct cli_state *cli_share_src = NULL;
 	struct cli_state *cli_share_dst = NULL;
 	const char *drivername = NULL;
+	struct cli_credentials *creds = gensec_get_credentials(pipe_hnd->auth->auth_ctx);
+	const char *username = cli_credentials_get_username(creds);
 	WERROR werr;
 
 	DEBUG(3,("copying printer-drivers\n"));
@@ -1990,7 +1997,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 		/* open src printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, sharename,
 						 MAXIMUM_ALLOWED_ACCESS,
-						 pipe_hnd->auth->user_name,
+						 username,
 						 &hnd_src))
 			goto done;
 
