@@ -90,6 +90,21 @@ services parameter specified should ensure they change 'winbind' to
 The 'samba' binary still manages the starting of this service, there
 is no need to start the winbindd binary manually.
 
+Winbind now requires secured connections
+========================================
+
+To improve protection against rouge domain controllers we now require
+that when we connect to an AD DC in our forest, that the connection be
+signed using SMB Signing.  Set 'client signing = off' in the smb.conf
+to disable.
+
+Also and DCE/RPC pipes must be sealed, set 'require strong key =
+false' and 'winbind sealed pipes = false' to disable.
+
+Finally, the default for 'client ldap sasl wrapping' has been set to
+'sign', to ensure the integrity of LDAP connections.  Set 'client ldap
+sasl wrapping = plain' to disable.
+
 Larger IO sizes for SMB2/3 by default
 =====================================
 
