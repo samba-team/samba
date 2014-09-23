@@ -2407,6 +2407,63 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+/* This routine steals the creds pointer that is passed in */
+static NTSTATUS rpccli_generic_bind_data_from_creds(TALLOC_CTX *mem_ctx,
+						    enum dcerpc_AuthType auth_type,
+						    enum dcerpc_AuthLevel auth_level,
+						    const char *server,
+						    const char *target_service,
+						    struct cli_credentials *creds,
+						    struct pipe_auth_data **presult)
+{
+	struct auth_generic_state *auth_generic_ctx;
+	struct pipe_auth_data *result;
+	NTSTATUS status;
+
+	result = talloc_zero(mem_ctx, struct pipe_auth_data);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->auth_type = auth_type;
+	result->auth_level = auth_level;
+
+	status = auth_generic_client_prepare(result,
+					     &auth_generic_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = auth_generic_set_creds(auth_generic_ctx, creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = gensec_set_target_service(auth_generic_ctx->gensec_security, target_service);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = gensec_set_target_hostname(auth_generic_ctx->gensec_security, server);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = auth_generic_client_start_by_authtype(auth_generic_ctx, auth_type, auth_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	result->auth_ctx = talloc_move(result, &auth_generic_ctx->gensec_security);
+	talloc_free(auth_generic_ctx);
+	*presult = result;
+	return NT_STATUS_OK;
+
+ fail:
+	TALLOC_FREE(result);
+	return status;
+}
+
 NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 				  struct pipe_auth_data **presult)
 {
@@ -2940,6 +2997,65 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 
 /****************************************************************************
  Open a named pipe to an SMB server and bind using the mech specified
+
+ This routine references the creds pointer that is passed in
+ ****************************************************************************/
+
+NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
+				      const struct ndr_interface_table *table,
+				      enum dcerpc_transport_t transport,
+				      enum dcerpc_AuthType auth_type,
+				      enum dcerpc_AuthLevel auth_level,
+				      const char *server,
+				      struct cli_credentials *creds,
+				      struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+	struct pipe_auth_data *auth = NULL;
+	const char *target_service = table->authservices->names[0];
+
+	NTSTATUS status;
+
+	status = cli_rpc_pipe_open(cli, transport, table, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = rpccli_generic_bind_data_from_creds(result,
+						     auth_type, auth_level,
+						     server, target_service,
+						     creds,
+						     &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
+			  nt_errstr(status)));
+		goto err;
+	}
+
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("cli_rpc_pipe_open_generic_auth: cli_rpc_pipe_bind failed with error %s\n",
+			nt_errstr(status) ));
+		goto err;
+	}
+
+	DEBUG(10,("cli_rpc_pipe_open_generic_auth: opened pipe %s to "
+		"machine %s and bound as user %s.\n", table->name,
+		  result->desthost, cli_credentials_get_unparsed_name(creds, talloc_tos())));
+
+	*presult = result;
+	return NT_STATUS_OK;
+
+  err:
+
+	TALLOC_FREE(result);
+	return status;
+}
+
+/****************************************************************************
+ Open a named pipe to an SMB server and bind using the mech specified
+
+ This routine steals the creds pointer that is passed in
  ****************************************************************************/
 
 NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,

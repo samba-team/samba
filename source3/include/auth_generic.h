@@ -37,6 +37,8 @@ NTSTATUS auth_generic_set_domain(struct auth_generic_state *ans,
 				 const char *domain);
 NTSTATUS auth_generic_set_password(struct auth_generic_state *ans,
 				   const char *password);
+NTSTATUS auth_generic_set_creds(struct auth_generic_state *ans,
+				struct cli_credentials *creds);
 NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx,
 				     struct auth_generic_state **_ans);
 NTSTATUS auth_generic_client_start(struct auth_generic_state *ans, const char *oid);
