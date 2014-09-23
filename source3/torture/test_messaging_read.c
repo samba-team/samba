@@ -396,6 +396,7 @@ bool run_messaging_read3(int dummy)
 	int ret;
 	char c;
 	struct server_id dst;
+	ssize_t written;
 
 	if ((pipe(ready_pipe) != 0) || (pipe(exit_pipe) != 0)) {
 		perror("pipe failed");
@@ -441,6 +442,22 @@ bool run_messaging_read3(int dummy)
 		fprintf(stderr, "msg_pingpong failed\n");
 		goto fail;
 	}
+
+	printf("Parent: telling child to exit\n");
+
+	written = write(exit_pipe[1], &c, 1);
+	if (written != 1) {
+		perror("write to exit_pipe failed");
+		goto fail;
+	}
+
+	ret = waitpid(child, NULL, 0);
+	if (ret == -1) {
+		perror("waitpid failed");
+		goto fail;
+	}
+
+	printf("Parent: child exited. Done\n");
 
 	retval = true;
 fail:
