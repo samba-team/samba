@@ -89,29 +89,11 @@ NTSTATUS cli_set_username(struct cli_state *cli, const char *username)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_set_password(struct cli_state *cli, const char *password)
-{
-	TALLOC_FREE(cli->password);
-
-	/* Password can be NULL. */
-	if (password) {
-		cli->password = talloc_strdup(cli, password);
-		if (cli->password == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		/* Use zero NTLMSSP hashes and session key. */
-		cli->password = NULL;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
  Initialise credentials of a client structure.
 ****************************************************************************/
 
-NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password)
+NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char *domain)
 {
 	NTSTATUS status = cli_set_username(cli, username);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -123,7 +105,7 @@ NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char 
 	}
 	DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
 
-	return cli_set_password(cli, password);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

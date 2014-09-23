@@ -55,7 +55,6 @@ struct cli_state {
 	/* The credentials used to open the cli_state connection. */
 	char *domain;
 	char *user_name;
-	char *password; /* Can be null to force use of zero NTLMSSP session key. */
 
 	/*
 	 * The following strings are the

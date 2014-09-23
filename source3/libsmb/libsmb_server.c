@@ -489,7 +489,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	}
 
 	status = cli_init_creds(c, username_used,
-				*pp_workgroup, *pp_password);
+				*pp_workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		cli_shutdown(c);

@@ -1116,7 +1116,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		if (NT_STATUS_IS_OK(result)) {
 			if (krb5_state != CRED_MUST_USE_KERBEROS) {
 				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-				result = cli_init_creds(*cli, machine_account, machine_domain, machine_password);
+				result = cli_init_creds(*cli, machine_account, machine_domain);
 				if (!NT_STATUS_IS_OK(result)) {
 					goto done;
 				}
@@ -1215,7 +1215,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	if (NT_STATUS_IS_OK(result)) {
 		/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-		result = cli_init_creds(*cli, machine_account, machine_domain, machine_password);
+		result = cli_init_creds(*cli, machine_account, machine_domain);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}

@@ -123,13 +123,13 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			return result;
 		}
 
-		result = cli_init_creds(cli, "", "", NULL);
+		result = cli_init_creds(cli, "", "");
 		if (!NT_STATUS_IS_OK(result)) {
 			cli_shutdown(cli);
 			return result;
 		}
 	} else {
-		result = cli_init_creds(cli, user, domain, old_passwd);
+		result = cli_init_creds(cli, user, domain);
 		if (!NT_STATUS_IS_OK(result)) {
 			cli_shutdown(cli);
 			return result;
@@ -222,7 +222,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	TALLOC_FREE(pipe_hnd);
 
 	/* Try anonymous NTLMSSP... */
-	result = cli_init_creds(cli, "", "", NULL);
+	result = cli_init_creds(cli, "", "");
 	if (!NT_STATUS_IS_OK(result)) {
 		cli_shutdown(cli);
 		return result;

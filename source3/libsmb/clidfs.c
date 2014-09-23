@@ -207,9 +207,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 			return status;
 		}
 		d_printf("Anonymous login successful\n");
-		status = cli_init_creds(c, "", lp_workgroup(), "");
+		status = cli_init_creds(c, "", lp_workgroup());
 	} else {
-		status = cli_init_creds(c, username, lp_workgroup(), password);
+		status = cli_init_creds(c, username, lp_workgroup());
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
