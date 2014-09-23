@@ -884,6 +884,9 @@ static bool open_sockets(bool isdaemon, int port)
 	BlockSignals(True, SIGUSR2);
 #endif
 
+	/* Ignore children - no zombies. */
+	CatchChild();
+
 	if ( opt_interactive ) {
 		Fork = False;
 		log_stdout = True;
