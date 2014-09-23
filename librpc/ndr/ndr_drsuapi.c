@@ -410,6 +410,8 @@ _PUBLIC_ void ndr_print_drsuapi_DsAddEntry_AttrErrListItem_V1(struct ndr_print *
 
 enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int ndr_flags, const union drsuapi_DsBindInfo *r)
 {
+	uint32_t _flags_save = ndr->flags;
+	ndr->flags = ndr->flags & ~LIBNDR_FLAG_NDR64;
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
 		uint32_t level = ndr_push_get_switch_value(ndr, r);
@@ -442,6 +444,15 @@ enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int ndr_flag
 				}
 			break; }
 
+			case 52: {
+				{
+					struct ndr_push *_ndr_info52;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info52, 0, 52));
+					NDR_CHECK(ndr_push_drsuapi_DsBindInfo52(_ndr_info52, NDR_SCALARS, &r->info52));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info52, 0, 52));
+				}
+			break; }
+
 			default: {
 				{
 					struct ndr_push *_ndr_Fallback;
@@ -465,17 +476,23 @@ enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int ndr_flag
 			case 48:
 			break;
 
+			case 52:
+			break;
+
 			default:
 			break;
 
 		}
 	}
+	ndr->flags = _flags_save;
 	return NDR_ERR_SUCCESS;
 }
 
 enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsBindInfo *r)
 {
 	uint32_t level;
+	uint32_t _flags_save = ndr->flags;
+	ndr->flags = ndr->flags & ~LIBNDR_FLAG_NDR64;
 	level = ndr_pull_get_switch_value(ndr, r);
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
@@ -508,6 +525,15 @@ enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flag
 				}
 			break; }
 
+			case 52: {
+				{
+					struct ndr_pull *_ndr_info52;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info52, 0, 52));
+					NDR_CHECK(ndr_pull_drsuapi_DsBindInfo52(_ndr_info52, NDR_SCALARS, &r->info52));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info52, 0, 52));
+				}
+			break; }
+
 			default: {
 				{
 					struct ndr_pull *_ndr_Fallback;
@@ -530,11 +556,15 @@ enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flag
 			case 48:
 			break;
 
+			case 52:
+			break;
+
 			default:
 			break;
 
 		}
 	}
+	ndr->flags = _flags_save;
 	return NDR_ERR_SUCCESS;
 }
 
@@ -554,6 +584,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsBindInfo(struct ndr_print *ndr, const char *na
 
 		case 48:
 			ndr_print_drsuapi_DsBindInfo48(ndr, "info48", &r->info48);
+		break;
+
+		case 52:
+			ndr_print_drsuapi_DsBindInfo52(ndr, "info52", &r->info52);
 		break;
 
 		default:
