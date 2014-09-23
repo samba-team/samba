@@ -17,6 +17,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('cli_smb_common',
 	source='''
 		smb_signing.c smb_seal.c
+        smb2_negotiate_context.c
 		smb2_create_blob.c smb2_signing.c
                 smb2_lease.c
 		util.c
