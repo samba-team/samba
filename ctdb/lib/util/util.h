@@ -485,17 +485,7 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
  */
 
 #if _SAMBA_BUILD_ == 4
-/* protocol types. It assumes that higher protocols include lower protocols
-   as subsets. FIXME: Move to one of the smb-specific headers */
-enum protocol_types {
-	PROTOCOL_NONE,
-	PROTOCOL_CORE,
-	PROTOCOL_COREPLUS,
-	PROTOCOL_LANMAN1,
-	PROTOCOL_LANMAN2,
-	PROTOCOL_NT1,
-	PROTOCOL_SMB2
-};
+#include "libcli/smb/smb_constants.h"
 
 int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol);
 
