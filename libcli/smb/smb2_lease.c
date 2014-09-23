@@ -43,6 +43,7 @@ ssize_t smb2_lease_pull(const uint8_t *buf, size_t len,
 	lease->lease_state = IVAL(buf, 16);
 	lease->lease_flags = IVAL(buf, 20);
 	lease->lease_duration = BVAL(buf, 24);
+	lease->lease_version = version;
 
 	switch (version) {
 	case 1:
