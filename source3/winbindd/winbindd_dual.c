@@ -1072,7 +1072,7 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 			 "password was changed and we didn't know it. "
 			 "Killing connections to domain %s\n",
 			 child->domain->name));
-		invalidate_cm_connection(&child->domain->conn);
+		invalidate_cm_connection(child->domain);
 	}
 
 	if (!calculate_next_machine_pwd_change(child->domain->name,

@@ -1521,7 +1521,7 @@ do_query:
 		if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL)) {
 			DEBUG(3, ("query_user_list: flushing "
 				  "connection cache\n"));
-			invalidate_cm_connection(&domain->conn);
+			invalidate_cm_connection(domain);
 		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {

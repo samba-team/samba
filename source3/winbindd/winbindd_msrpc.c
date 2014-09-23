@@ -1138,7 +1138,7 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 		 * all connections to the dc and reestablish
 		 * a netlogon connection first.
 		 */
-		invalidate_cm_connection(&domain->conn);
+		invalidate_cm_connection(domain);
 		domain->can_do_ncacn_ip_tcp = domain->active_directory;
 		if (!retried) {
 			retried = true;
@@ -1218,7 +1218,7 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 		 * all connections to the dc and reestablish
 		 * a netlogon connection first.
 		 */
-		invalidate_cm_connection(&domain->conn);
+		invalidate_cm_connection(domain);
 		if (!retried) {
 			retried = true;
 			goto connect;

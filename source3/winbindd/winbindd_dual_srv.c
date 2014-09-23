@@ -40,7 +40,7 @@ static bool reset_cm_connection_on_error(struct winbindd_domain *domain,
 					NTSTATUS status)
 {
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		invalidate_cm_connection(&domain->conn);
+		invalidate_cm_connection(domain);
 		/* We invalidated the connection. */
 		return true;
 	}
@@ -580,7 +580,7 @@ NTSTATUS _wbint_CheckMachineAccount(struct pipes_struct *p,
 	}
 
 again:
-	invalidate_cm_connection(&domain->conn);
+	invalidate_cm_connection(domain);
 	domain->conn.netlogon_force_reauth = true;
 
 	{

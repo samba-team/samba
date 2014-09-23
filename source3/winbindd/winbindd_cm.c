@@ -1836,9 +1836,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 /* Close down all open pipes on a connection. */
 
-void invalidate_cm_connection(struct winbindd_cm_conn *conn)
+void invalidate_cm_connection(struct winbindd_domain *domain)
 {
 	NTSTATUS result;
+	struct winbindd_cm_conn *conn = &domain->conn;
 
 	/* We're closing down a possibly dead
 	   connection. Don't have impossibly long (10s) timeouts. */
@@ -1924,7 +1925,7 @@ void close_conns_after_fork(void)
 			smbXcli_conn_disconnect(domain->conn.cli->conn, NT_STATUS_OK);
 		}
 
-		invalidate_cm_connection(&domain->conn);
+		invalidate_cm_connection(domain);
 	}
 
 	for (cli_state = winbindd_client_list();
@@ -1980,7 +1981,7 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool 
 		return NT_STATUS_OK;
 	}
 
-	invalidate_cm_connection(&domain->conn);
+	invalidate_cm_connection(domain);
 
 	if (!domain->primary && !domain->initialized) {
 		/*
@@ -2715,7 +2716,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(conn->sam_domain_handle);
 		return status;
 	} else if (!NT_STATUS_IS_OK(status)) {
-		invalidate_cm_connection(conn);
+		invalidate_cm_connection(domain);
 		return status;
 	}
 
@@ -2908,7 +2909,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 					&conn->lsa_policy);
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		invalidate_cm_connection(conn);
+		invalidate_cm_connection(domain);
 		return result;
 	}
 
@@ -2933,7 +2934,7 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
-			invalidate_cm_connection(&domain->conn);
+			invalidate_cm_connection(domain);
 			status = cm_connect_lsa_tcp(domain, mem_ctx, cli);
 		}
 		if (NT_STATUS_IS_OK(status)) {
@@ -3060,14 +3061,14 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 				  "must set 'winbind sealed pipes = false' and "
 				  "'require strong key = false' to proceed: %s\n",
 				  domain->name, nt_errstr(result)));
-			invalidate_cm_connection(conn);
+			invalidate_cm_connection(domain);
 			return result;
 		}
 		result = cli_rpc_pipe_open_noauth(conn->cli,
 					&ndr_table_netlogon,
 					&conn->netlogon_pipe);
 		if (!NT_STATUS_IS_OK(result)) {
-			invalidate_cm_connection(conn);
+			invalidate_cm_connection(domain);
 			return result;
 		}
 
@@ -3089,7 +3090,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
 			  "was %s\n", nt_errstr(result)));
 
-		invalidate_cm_connection(conn);
+		invalidate_cm_connection(domain);
 		return result;
 	}
 

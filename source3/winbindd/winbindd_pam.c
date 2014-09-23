@@ -1326,7 +1326,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				DEBUG(3, ("This is again a problem for this "
 					  "particular call, forcing the close "
 					  "of this connection\n"));
-				invalidate_cm_connection(&domain->conn);
+				invalidate_cm_connection(domain);
 			}
 
 			/* After the second retry failover to the next DC */
@@ -1411,7 +1411,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				"password was changed and we didn't know it. "
 				 "Killing connections to domain %s\n",
 				domainname));
-			invalidate_cm_connection(&domain->conn);
+			invalidate_cm_connection(domain);
 			retry = true;
 		}
 
@@ -1434,7 +1434,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			 * In order to recover from this situation, we need to
 			 * drop the connection.
 			 */
-			invalidate_cm_connection(&domain->conn);
+			invalidate_cm_connection(domain);
 			result = NT_STATUS_LOGON_FAILURE;
 			break;
 		}
@@ -1446,7 +1446,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				"returned NT_STATUS_IO_TIMEOUT after the retry."
 				"Killing connections to domain %s\n",
 			domainname));
-		invalidate_cm_connection(&domain->conn);
+		invalidate_cm_connection(domain);
 	}
 	return result;
 }
