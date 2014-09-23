@@ -129,16 +129,16 @@ void (*CatchSignal(int signum,void (*handler)(int )))(int)
  Ignore SIGCLD via whatever means is necessary for this OS.
 **/
 
-void CatchChild(void)
+void (*CatchChild(void))(int)
 {
-	CatchSignal(SIGCLD, sig_cld);
+	return CatchSignal(SIGCLD, sig_cld);
 }
 
 /**
  Catch SIGCLD but leave the child around so it's status can be reaped.
 **/
 
-void CatchChildLeaveStatus(void)
+void (*CatchChildLeaveStatus(void))(int)
 {
-	CatchSignal(SIGCLD, sig_cld_leave_status);
+	return CatchSignal(SIGCLD, sig_cld_leave_status);
 }
