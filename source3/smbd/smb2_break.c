@@ -52,11 +52,6 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req)
 
 	in_oplock_level		= CVAL(inbody, 0x02);
 
-	if (in_oplock_level != SMB2_OPLOCK_LEVEL_NONE &&
-			in_oplock_level != SMB2_OPLOCK_LEVEL_II) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
-	}
-
 	/* 0x03 1 bytes reserved */
 	/* 0x04 4 bytes reserved */
 	in_file_id_persistent		= BVAL(inbody, 0x08);
@@ -65,6 +60,17 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req)
 	in_fsp = file_fsp_smb2(req, in_file_id_persistent, in_file_id_volatile);
 	if (in_fsp == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
+	}
+
+	/* Are we awaiting a break message ? */
+	if (in_fsp->oplock_timeout == NULL) {
+		return smbd_smb2_request_error(
+			req, NT_STATUS_INVALID_OPLOCK_PROTOCOL);
+	}
+
+	if (in_oplock_level != SMB2_OPLOCK_LEVEL_NONE &&
+	    in_oplock_level != SMB2_OPLOCK_LEVEL_II) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
 	subreq = smbd_smb2_oplock_break_send(req, req->sconn->ev_ctx,
@@ -176,12 +182,6 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 		(unsigned int)in_oplock_level,
 		fsp_str_dbg(fsp),
 		fsp_fnum_dbg(fsp)));
-
-	/* Are we awaiting a break message ? */
-	if (fsp->oplock_timeout == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_OPLOCK_PROTOCOL);
-		return tevent_req_post(req, ev);
-	}
 
 	if ((fsp->sent_oplock_break == BREAK_TO_NONE_SENT) ||
 			(break_to_none)) {
