@@ -691,10 +691,11 @@ import "misc.idl", "security.idl";
 		LSA_TRUST_DIRECTION_OUTBOUND = 0x00000002
 	} lsa_TrustDirection;
 
-	typedef [v1_enum] enum {
+	typedef [public,v1_enum] enum {
 		LSA_TRUST_TYPE_DOWNLEVEL  = 0x00000001,
 		LSA_TRUST_TYPE_UPLEVEL    = 0x00000002,
-		LSA_TRUST_TYPE_MIT        = 0x00000003
+		LSA_TRUST_TYPE_MIT        = 0x00000003,
+		LSA_TRUST_TYPE_DCE	  = 0x00000004
 	} lsa_TrustType;
 
 	typedef [public,bitmap32bit] bitmap {

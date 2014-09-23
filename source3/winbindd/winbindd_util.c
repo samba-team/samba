@@ -499,8 +499,8 @@ static void rescan_forest_trusts( void )
 			continue;
 
 		if ( (flags & NETR_TRUST_FLAG_INBOUND) &&
-		     (type == NETR_TRUST_TYPE_UPLEVEL) &&
-		     (attribs == NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) )
+		     (type == LSA_TRUST_TYPE_UPLEVEL) &&
+		     (attribs == LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) )
 		{
 			/* add the trusted domain if we don't know
 			   about it */

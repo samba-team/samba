@@ -2092,7 +2092,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 			domain->domain_type           = trusts.array[i].trust_type;
 			domain->domain_trust_attribs  = trusts.array[i].trust_attributes;
 
-			if ( domain->domain_type == NETR_TRUST_TYPE_UPLEVEL )
+			if ( domain->domain_type == LSA_TRUST_TYPE_UPLEVEL )
 				domain->active_directory = True;
 
 			/* This flag is only set if the domain is *our* 

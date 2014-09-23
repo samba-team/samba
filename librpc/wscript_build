@@ -672,7 +672,7 @@ bld.SAMBA_LIBRARY('dcerpc-binding',
 
 bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
 	source='gen_ndr/ndr_winbind.c',
-	public_deps='ndr'
+	public_deps='ndr NDR_LSA'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WINBIND',

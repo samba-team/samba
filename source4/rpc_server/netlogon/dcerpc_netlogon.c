@@ -37,6 +37,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/socket/netif.h"
 
@@ -2295,8 +2296,8 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 				ldb_msg_find_attr_as_uint(dom_res[i],
 						  "trustAttributes", 0);
 
-		if ((trusts->array[n].trust_type == NETR_TRUST_TYPE_MIT) ||
-		    (trusts->array[n].trust_type == NETR_TRUST_TYPE_DCE)) {
+		if ((trusts->array[n].trust_type == LSA_TRUST_TYPE_MIT) ||
+		    (trusts->array[n].trust_type == LSA_TRUST_TYPE_DCE)) {
 			struct dom_sid zero_sid;
 			ZERO_STRUCT(zero_sid);
 			trusts->array[n].sid =
@@ -2402,7 +2403,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 			NETR_TRUST_FLAG_PRIMARY;
 		/* we are always the root domain for now */
 		trusts->array[n].parent_index = 0;
-		trusts->array[n].trust_type = NETR_TRUST_TYPE_UPLEVEL;
+		trusts->array[n].trust_type = LSA_TRUST_TYPE_UPLEVEL;
 		trusts->array[n].trust_attributes = 0;
 		trusts->array[n].sid = samdb_result_dom_sid(mem_ctx,
 							    dom_res[0],

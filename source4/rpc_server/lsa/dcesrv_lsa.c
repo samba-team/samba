@@ -4375,7 +4375,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 
 	trust_attributes = ldb_msg_find_attr_as_uint(dom_res[i],
 						     "trustAttributes", 0);
-	if (!(trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
+	if (!(trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

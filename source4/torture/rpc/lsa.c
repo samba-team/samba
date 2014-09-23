@@ -2101,7 +2101,7 @@ static bool test_query_each_TrustDomEx(struct dcerpc_binding_handle *b,
 
 	for (i=0; i< domains->count; i++) {
 
-		if (domains->domains[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+		if (domains->domains[i].trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
 			ret &= test_QueryForestTrustInformation(b, tctx, handle,
 								domains->domains[i].domain_name.string);
 		}

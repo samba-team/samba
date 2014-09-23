@@ -21,6 +21,7 @@
 #include "winbindd.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/ndr_lsa.h"
 #include "../librpc/ndr/libndr.h"
 
 #undef DBGC_CLASS
@@ -133,8 +134,8 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 	ndr_print_string(ndr, "forest_name", r->forest_name);
 	ndr_print_dom_sid(ndr, "sid", &r->sid);
 	ndr_print_netr_TrustFlags(ndr, "domain_flags", r->domain_flags);
-	ndr_print_netr_TrustType(ndr, "domain_type", r->domain_type);
-	ndr_print_netr_TrustAttributes(ndr, "domain_trust_attribs", r->domain_trust_attribs);
+	ndr_print_lsa_TrustType(ndr, "domain_type", r->domain_type);
+	ndr_print_lsa_TrustAttributes(ndr, "domain_trust_attribs", r->domain_trust_attribs);
 	ndr_print_bool(ndr, "initialized", r->initialized);
 	ndr_print_bool(ndr, "native_mode", r->native_mode);
 	ndr_print_bool(ndr, "active_directory", r->active_directory);

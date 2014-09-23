@@ -2553,7 +2553,7 @@ static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx,
 
 		/* get info for transitive forest trusts */
 
-		if (r.out.trusts->array[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+		if (r.out.trusts->array[i].trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
 			if (!test_netr_DsRGetForestTrustInformation(tctx, p,
 								    r.out.trusts->array[i].dns_name)) {
 				return false;
