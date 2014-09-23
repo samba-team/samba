@@ -693,6 +693,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	/* Open pipe */
 
 	if ((cmd_entry->table != NULL) && (cmd_entry->rpc_pipe == NULL)) {
+		enum credentials_use_kerberos use_kerberos = CRED_AUTO_USE_KERBEROS;
 		switch (pipe_default_auth_type) {
 		case DCERPC_AUTH_TYPE_NONE:
 			ntresult = cli_rpc_pipe_open_noauth_transport(
@@ -701,9 +702,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				&cmd_entry->rpc_pipe);
 			break;
 		case DCERPC_AUTH_TYPE_SPNEGO:
-		{
-			enum credentials_use_kerberos use_kerberos;
-
 			switch (pipe_default_auth_spnego_type) {
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 				use_kerberos = CRED_DONT_USE_KERBEROS;
@@ -715,24 +713,13 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				use_kerberos = CRED_AUTO_USE_KERBEROS;
 				break;
 			}
-			ntresult = cli_rpc_pipe_open_spnego(
-				cli, cmd_entry->table,
-				default_transport,
-				use_kerberos,
-				pipe_default_auth_level,
-				smbXcli_conn_remote_name(cli->conn),
-				get_cmdline_auth_info_domain(auth_info),
-				get_cmdline_auth_info_username(auth_info),
-				get_cmdline_auth_info_password(auth_info),
-				&cmd_entry->rpc_pipe);
-			break;
-		}
+			/* Fall through */
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 		case DCERPC_AUTH_TYPE_KRB5:
 			ntresult = cli_rpc_pipe_open_generic_auth(
 				cli, cmd_entry->table,
 				default_transport,
-				CRED_AUTO_USE_KERBEROS,
+				use_kerberos,
 				pipe_default_auth_type,
 				pipe_default_auth_level,
 				smbXcli_conn_remote_name(cli->conn),

@@ -2567,16 +2567,17 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	   authenticated SAMR pipe with sign & seal. */
-	status = cli_rpc_pipe_open_spnego(conn->cli,
-					  &ndr_table_samr,
-					  NCACN_NP,
-					  CRED_DONT_USE_KERBEROS,
-					  conn->auth_level,
-					  smbXcli_conn_remote_name(conn->cli->conn),
-					  domain_name,
-					  machine_account,
-					  machine_password,
-					  &conn->samr_pipe);
+	status = cli_rpc_pipe_open_generic_auth(conn->cli,
+						&ndr_table_samr,
+						NCACN_NP,
+						CRED_DONT_USE_KERBEROS,
+						DCERPC_AUTH_TYPE_SPNEGO,
+						conn->auth_level,
+						smbXcli_conn_remote_name(conn->cli->conn),
+						domain_name,
+						machine_account,
+						machine_password,
+						&conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR "
@@ -2814,9 +2815,10 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	 * authenticated LSA pipe with sign & seal. */
-	result = cli_rpc_pipe_open_spnego
+	result = cli_rpc_pipe_open_generic_auth
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
 		 CRED_DONT_USE_KERBEROS,
+		 DCERPC_AUTH_TYPE_SPNEGO,
 		 conn->auth_level,
 		 smbXcli_conn_remote_name(conn->cli->conn),
 		 conn->cli->domain, conn->cli->user_name, conn->cli->password,

@@ -3094,60 +3094,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
-				  const struct ndr_interface_table *table,
-				  enum dcerpc_transport_t transport,
-				  enum credentials_use_kerberos use_kerberos,
-				  enum dcerpc_AuthLevel auth_level,
-				  const char *server,
-				  const char *domain,
-				  const char *username,
-				  const char *password,
-				  struct rpc_pipe_client **presult)
-{
-	struct rpc_pipe_client *result;
-	struct pipe_auth_data *auth = NULL;
-	const char *target_service = table->authservices->names[0];
-	
-	NTSTATUS status;
-
-	status = cli_rpc_pipe_open(cli, transport, table, &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = rpccli_generic_bind_data(result,
-					  DCERPC_AUTH_TYPE_SPNEGO, auth_level,
-					  server, target_service,
-					  domain, username, password, 
-					  use_kerberos, NULL,
-					  &auth);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
-			  nt_errstr(status)));
-		goto err;
-	}
-
-	status = rpc_pipe_bind(result, auth);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("cli_rpc_pipe_open_spnego: cli_rpc_pipe_bind failed with error %s\n",
-			nt_errstr(status) ));
-		goto err;
-	}
-
-	DEBUG(10,("cli_rpc_pipe_open_spnego: opened pipe %s to "
-		  "machine %s.\n", table->name,
-		  result->desthost));
-
-	*presult = result;
-	return NT_STATUS_OK;
-
-  err:
-
-	TALLOC_FREE(result);
-	return status;
-}
-
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key)

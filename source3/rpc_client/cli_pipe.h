@@ -84,17 +84,6 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 					const char *password,
 					struct rpc_pipe_client **presult);
 
-NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
-				  const struct ndr_interface_table *table,
-				  enum dcerpc_transport_t transport,
-				  enum credentials_use_kerberos use_kerberos,
-				  enum dcerpc_AuthLevel auth_level,
-				  const char *server,
-				  const char *domain,
-				  const char *username,
-				  const char *password,
-				  struct rpc_pipe_client **presult);
-
 NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_interface_table *table,
 					     enum dcerpc_transport_t transport,
