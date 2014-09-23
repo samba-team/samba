@@ -732,6 +732,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			ntresult = cli_rpc_pipe_open_generic_auth(
 				cli, cmd_entry->table,
 				default_transport,
+				CRED_AUTO_USE_KERBEROS,
 				pipe_default_auth_type,
 				pipe_default_auth_level,
 				smbXcli_conn_remote_name(cli->conn),

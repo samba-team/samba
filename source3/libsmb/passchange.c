@@ -153,6 +153,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		result = cli_rpc_pipe_open_generic_auth(cli,
 							&ndr_table_samr,
 							NCACN_NP,
+							CRED_DONT_USE_KERBEROS,
 							DCERPC_AUTH_TYPE_NTLMSSP,
 							DCERPC_AUTH_LEVEL_PRIVACY,
 							remote_machine,
