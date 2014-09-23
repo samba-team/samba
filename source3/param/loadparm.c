@@ -643,7 +643,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.max_open_files = max_open_files();
 	Globals.server_max_protocol = PROTOCOL_SMB3_00;
 	Globals.server_min_protocol = PROTOCOL_LANMAN1;
-	Globals.client_max_protocol = PROTOCOL_NT1;
+	Globals._client_max_protocol = PROTOCOL_DEFAULT;
 	Globals.client_min_protocol = PROTOCOL_CORE;
 	Globals._security = SEC_AUTO;
 	Globals.encrypt_passwords = true;
@@ -4334,6 +4334,24 @@ int lp_security(void)
 {
 	return lp_find_security(lp__server_role(),
 				lp__security());
+}
+
+int lp_client_max_protocol(void)
+{
+	int client_max_protocol = lp__client_max_protocol();
+	if (client_max_protocol == PROTOCOL_DEFAULT) {
+		return PROTOCOL_NT1;
+	}
+	return client_max_protocol;
+}
+
+int lp_winbindd_max_protocol(void)
+{
+	int client_max_protocol = lp__client_max_protocol();
+	if (client_max_protocol == PROTOCOL_DEFAULT) {
+		return PROTOCOL_LATEST;
+	}
+	return client_max_protocol;
 }
 
 struct loadparm_global * get_globals(void)

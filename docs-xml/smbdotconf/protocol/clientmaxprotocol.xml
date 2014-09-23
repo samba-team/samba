@@ -2,6 +2,7 @@
 		 context="G"
 		 type="enum"
 		 developer="1"
+		 function="_client_max_protocol"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a string) is the highest 
@@ -71,11 +72,15 @@
     <para>Normally this option should not be set as the automatic 
     negotiation phase in the SMB protocol takes care of choosing 
     the appropriate protocol.</para>
+
+    <para>The value <constant>default</constant> refers to the default protocol in each
+    part of the code, currently <constant>NT1</constant> in the client tools and
+    <constant>SMB3_02</constant> in winbindd.</para>
 </description>
 
 <related>server max protocol</related>
-<related>client mn protocol</related>
+<related>client min protocol</related>
 
-<value type="default">NT1</value>
+<value type="default">default</value>
 <value type="example">LANMAN1</value>
 </samba:parameter>

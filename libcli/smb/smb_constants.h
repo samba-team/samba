@@ -76,7 +76,8 @@
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets. */
 enum protocol_types {
-	PROTOCOL_NONE,
+	PROTOCOL_DEFAULT=-1,
+	PROTOCOL_NONE=0,
 	PROTOCOL_CORE,
 	PROTOCOL_COREPLUS,
 	PROTOCOL_LANMAN1,
