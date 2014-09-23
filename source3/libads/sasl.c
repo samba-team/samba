@@ -714,88 +714,96 @@ static void ads_free_service_principal(struct ads_service_principal *p)
 static ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 					      char **returned_principal)
 {
+	ADS_STATUS status = ADS_ERROR(LDAP_NO_MEMORY);
 	char *princ = NULL;
+	TALLOC_CTX *frame;
+	char *server = NULL;
+	char *realm = NULL;
+	int rc;
+
+	frame = talloc_stackframe();
+	if (frame == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 
 	if (ads->server.realm && ads->server.ldap_server) {
-		char *server, *server_realm;
-
-		server = SMB_STRDUP(ads->server.ldap_server);
-		server_realm = SMB_STRDUP(ads->server.realm);
-
-		if (!server || !server_realm) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
+		server = strlower_talloc(frame, ads->server.ldap_server);
+		if (server == NULL) {
+			goto out;
 		}
 
-		if (!strlower_m(server)) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
+		realm = strupper_talloc(frame, ads->server.realm);
+		if (realm == NULL) {
+			goto out;
 		}
 
-		if (!strupper_m(server_realm)) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+		/*
+		 * If we got a name which is bigger than a NetBIOS name,
+		 * but isn't a FQDN, create one.
+		 */
+		if (strlen(server) > 15 && strstr(server, ".") == NULL) {
+			char *dnsdomain;
 
-		if (asprintf(&princ, "ldap/%s@%s", server, server_realm) == -1) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+			dnsdomain = strlower_talloc(frame, ads->server.realm);
+			if (dnsdomain == NULL) {
+				goto out;
+			}
 
-		SAFE_FREE(server);
-		SAFE_FREE(server_realm);
-
-		if (!princ) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
+			server = talloc_asprintf(frame,
+						 "%s.%s",
+						 server, dnsdomain);
+			if (server == NULL) {
+				goto out;
+			}
 		}
 	} else if (ads->config.realm && ads->config.ldap_server_name) {
-		char *server, *server_realm;
-
-		server = SMB_STRDUP(ads->config.ldap_server_name);
-		server_realm = SMB_STRDUP(ads->config.realm);
-
-		if (!server || !server_realm) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
+		server = strlower_talloc(frame, ads->config.ldap_server_name);
+		if (server == NULL) {
+			goto out;
 		}
 
-		if (!strlower_m(server)) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
+		realm = strupper_talloc(frame, ads->config.realm);
+		if (realm == NULL) {
+			goto out;
 		}
 
-		if (!strupper_m(server_realm)) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-		if (asprintf(&princ, "ldap/%s@%s", server, server_realm) == -1) {
-			SAFE_FREE(server);
-			SAFE_FREE(server_realm);
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+		/*
+		 * If we got a name which is bigger than a NetBIOS name,
+		 * but isn't a FQDN, create one.
+		 */
+		if (strlen(server) > 15 && strstr(server, ".") == NULL) {
+			char *dnsdomain;
 
-		SAFE_FREE(server);
-		SAFE_FREE(server_realm);
+			dnsdomain = strlower_talloc(frame, ads->server.realm);
+			if (dnsdomain == NULL) {
+				goto out;
+			}
 
-		if (!princ) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
+			server = talloc_asprintf(frame,
+						 "%s.%s",
+						 server, dnsdomain);
+			if (server == NULL) {
+				goto out;
+			}
 		}
 	}
 
-	if (!princ) {
-		return ADS_ERROR(LDAP_PARAM_ERROR);
+	if (server == NULL || realm == NULL) {
+		goto out;
+	}
+
+	rc = asprintf(&princ, "ldap/%s@%s", server, realm);
+	if (rc == -1 || princ == NULL) {
+		status = ADS_ERROR(LDAP_PARAM_ERROR);
+		goto out;
 	}
 
 	*returned_principal = princ;
 
-	return ADS_SUCCESS;
+	status = ADS_SUCCESS;
+out:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
