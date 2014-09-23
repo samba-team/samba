@@ -526,7 +526,7 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
-		result = share_mode_forall(print_share_mode, NULL);
+		result = share_entry_forall(print_share_mode, NULL);
 
 		if (result == 0) {
 			d_printf("No locked files\n");

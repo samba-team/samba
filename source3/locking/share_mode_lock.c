@@ -499,8 +499,8 @@ static int traverse_fn(struct db_record *rec, void *_state)
  share mode system.
 ********************************************************************/
 
-int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
-				 const char *, void *),
+int share_entry_forall(void (*fn)(const struct share_mode_entry *,
+				  const char *, const char *, void *),
 		      void *private_data)
 {
 	struct forall_state state;
