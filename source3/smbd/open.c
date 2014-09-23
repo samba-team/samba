@@ -1431,6 +1431,7 @@ static bool delay_for_oplock(files_struct *fsp,
 
 	switch (create_disposition) {
 	case FILE_SUPERSEDE:
+	case FILE_OVERWRITE:
 	case FILE_OVERWRITE_IF:
 		break_to = NO_OPLOCK;
 		break;
