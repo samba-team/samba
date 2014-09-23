@@ -40,6 +40,7 @@
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2_10, "SMB2"}, /* for now keep PROTOCOL_SMB2_10 */
 	{PROTOCOL_SMB3_00, "SMB3"}, /* for now keep PROTOCOL_SMB3_00 */
+	{PROTOCOL_SMB3_10, "SMB3_10"},
 	{PROTOCOL_SMB3_02, "SMB3_02"},
 	{PROTOCOL_SMB3_00, "SMB3_00"},
 	{PROTOCOL_SMB2_24, "SMB2_24"},
