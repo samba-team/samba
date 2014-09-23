@@ -33,6 +33,7 @@
 #define SMB_RPC_INTERFACE_VERSION 1
 
 struct NL_AUTH_MESSAGE;
+struct gensec_security;
 
 /* auth state for all bind types. */
 
@@ -43,7 +44,7 @@ struct pipe_auth_data {
 	bool hdr_signing;
 	bool verified_bitmask1;
 
-	void *auth_ctx;
+	struct gensec_security *auth_ctx;
 
 	/* Only the client code uses this for now */
 	DATA_BLOB transport_session_key;

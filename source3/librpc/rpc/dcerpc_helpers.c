@@ -276,8 +276,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
-		gensec_security = talloc_get_type_abort(auth->auth_ctx,
-							struct gensec_security);
+		gensec_security = auth->auth_ctx;
 		*auth_len = gensec_sig_size(gensec_security, max_len);
 		break;
 	default:
@@ -469,8 +468,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 		status = NT_STATUS_OK;
 		break;
 	default:
-		gensec_security = talloc_get_type(auth->auth_ctx,
-						  struct gensec_security);
+		gensec_security = auth->auth_ctx;
 		status = add_generic_auth_footer(gensec_security,
 						 auth->auth_level,
 						 rpc_out);
@@ -567,8 +565,7 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 	default:
 		DEBUG(10, ("GENSEC auth\n"));
 
-		gensec_security = talloc_get_type(auth->auth_ctx,
-						  struct gensec_security);
+		gensec_security = auth->auth_ctx;
 		status = get_generic_auth_footer(gensec_security,
 						 auth->auth_level,
 						 &data, &full_pkt,

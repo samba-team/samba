@@ -1007,8 +1007,7 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	DATA_BLOB null_blob = data_blob_null;
 	NTSTATUS status;
 
-	gensec_security = talloc_get_type_abort(cli->auth->auth_ctx,
-					struct gensec_security);
+	gensec_security = cli->auth->auth_ctx;
 
 	DEBUG(5, ("create_generic_auth_rpc_bind_req: generate first token\n"));
 	status = gensec_update(gensec_security, mem_ctx, null_blob, auth_token);
@@ -1860,8 +1859,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 
 	default:
-		gensec_security = talloc_get_type_abort(pauth->auth_ctx,
-						struct gensec_security);
+		gensec_security = pauth->auth_ctx;
 
 		if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
 			if (pauth->client_hdr_signing) {
@@ -3185,8 +3183,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		make_dup = true;
 		break;
 	default:
-		gensec_security = talloc_get_type(a->auth_ctx,
-						  struct gensec_security);
+		gensec_security = a->auth_ctx;
 		status = gensec_session_key(gensec_security, mem_ctx, &sk);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

@@ -553,11 +553,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 		return NT_STATUS_OK;
 	}
 
-	gensec_security = talloc_get_type(p->auth.auth_ctx,
-					  struct gensec_security);
-	if (gensec_security == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	gensec_security = p->auth.auth_ctx;
 
 	ok = pipe_auth_generic_verify_final(p, gensec_security,
 					    p->auth.auth_level,
@@ -898,8 +894,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		goto err;
 	}
 
-	gensec_security = talloc_get_type(p->auth.auth_ctx,
-					  struct gensec_security);
+	gensec_security = p->auth.auth_ctx;
 
 	status = auth_generic_server_step(gensec_security,
 					  pkt, &auth_info.credentials,
@@ -1025,8 +1020,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			goto err_exit;
 		}
 
-		gensec_security = talloc_get_type(p->auth.auth_ctx,
-						  struct gensec_security);
+		gensec_security = p->auth.auth_ctx;
 		status = auth_generic_server_step(gensec_security,
 						  pkt,
 						  &auth_info.credentials,
