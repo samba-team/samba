@@ -73,6 +73,7 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 	pid_t pid;
 	uid_t uid = current_user.ut.uid;
 	gid_t gid = current_user.ut.gid;
+	void (*saved_handler)(int);
 
 	/*
 	 * Lose any elevated privileges.
@@ -94,11 +95,11 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 	 * SIGCLD signals as it also eats the exit status code. JRA.
 	 */
 
-	CatchChildLeaveStatus();
+	saved_handler = CatchChildLeaveStatus();
                                    	
 	if ((pid=fork()) < 0) {
 		DEBUG(0,("smbrun: fork failed with error %s\n", strerror(errno) ));
-		CatchChild(); 
+		(void)CatchSignal(SIGCLD, saved_handler);
 		if (outfd) {
 			close(*outfd);
 			*outfd = -1;
@@ -123,7 +124,7 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 			break;
 		}
 
-		CatchChild(); 
+		(void)CatchSignal(SIGCLD, saved_handler);
 
 		if (wpid != pid) {
 			DEBUG(2,("waitpid(%d) : %s\n",(int)pid,strerror(errno)));
@@ -148,7 +149,7 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 		return status;
 	}
 	
-	CatchChild(); 
+	(void)CatchChild();
 	
 	/* we are in the child. we exec /bin/sh to do the work for us. we
 	   don't directly exec the command we want because it may be a
@@ -237,6 +238,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 	uid_t uid = current_user.ut.uid;
 	gid_t gid = current_user.ut.gid;
 	int ifd[2];
+	void (*saved_handler)(int);
 	
 	/*
 	 * Lose any elevated privileges.
@@ -257,11 +259,11 @@ int smbrunsecret(const char *cmd, const char *secret)
 	 * SIGCLD signals as it also eats the exit status code. JRA.
 	 */
 
-	CatchChildLeaveStatus();
+	saved_handler = CatchChildLeaveStatus();
                                    	
 	if ((pid=fork()) < 0) {
 		DEBUG(0, ("smbrunsecret: fork failed with error %s\n", strerror(errno)));
-		CatchChild(); 
+		(void)CatchSignal(SIGCLD, saved_handler);
 		return errno;
     	}
 
@@ -293,7 +295,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 			break;
 		}
 
-		CatchChild(); 
+		(void)CatchSignal(SIGCLD, saved_handler);
 
 		if (wpid != pid) {
 			DEBUG(2, ("waitpid(%d) : %s\n", (int)pid, strerror(errno)));
@@ -309,7 +311,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 		return status;
 	}
 	
-	CatchChild(); 
+	(void)CatchChild();
 	
 	/* we are in the child. we exec /bin/sh to do the work for us. we
 	   don't directly exec the command we want because it may be a
