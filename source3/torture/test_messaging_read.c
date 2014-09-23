@@ -339,6 +339,9 @@ static void ping_responder_exit(struct tevent_context *ev,
 				void *private_data)
 {
 	bool *done = private_data;
+
+	printf("Child: received write on exit-pipe\n");
+
 	*done = true;
 }
 
@@ -380,6 +383,8 @@ static void ping_responder(int ready_pipe, int exit_pipe)
 			exit(1);
 		}
 	}
+
+	printf("Child: done, exiting...\n");
 
 	TALLOC_FREE(msg_ctx);
 	TALLOC_FREE(ev);
