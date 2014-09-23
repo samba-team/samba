@@ -2696,9 +2696,6 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS status, result;
 	struct netlogon_creds_cli_context *p_creds;
-	const char *machine_password = NULL;
-	const char *machine_account = NULL;
-	const char *domain_name = NULL;
 	struct cli_credentials *creds = NULL;
 
 	if (sid_check_is_our_sam(&domain->sid)) {
@@ -2738,38 +2735,32 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto anonymous;
 	}
 
-	machine_password = cli_credentials_get_password(creds);
-	machine_account = cli_credentials_get_username(creds);
-	domain_name = cli_credentials_get_domain(creds);
-
 	/*
 	 * We have an authenticated connection. Use a SPNEGO
 	 * authenticated SAMR pipe with sign & seal.
 	 */
-	status = cli_rpc_pipe_open_generic_auth(conn->cli,
-						&ndr_table_samr,
-						NCACN_NP,
-						cli_credentials_get_kerberos_state(creds),
-						DCERPC_AUTH_TYPE_SPNEGO,
-						conn->auth_level,
-						smbXcli_conn_remote_name(conn->cli->conn),
-						domain_name,
-						machine_account,
-						machine_password,
-						&conn->samr_pipe);
+	status = cli_rpc_pipe_open_with_creds(conn->cli,
+					      &ndr_table_samr,
+					      NCACN_NP,
+					      DCERPC_AUTH_TYPE_SPNEGO,
+					      conn->auth_level,
+					      smbXcli_conn_remote_name(conn->cli->conn),
+					      creds,
+					      &conn->samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR "
 			  "pipe for domain %s using NTLMSSP "
-			  "authenticated pipe: user %s\\%s. Error was "
-			  "%s\n", domain->name, domain_name,
-			  machine_account, nt_errstr(status)));
+			  "authenticated pipe: user %s. Error was "
+			  "%s\n", domain->name,
+			  cli_credentials_get_unparsed_name(creds, talloc_tos()),
+			  nt_errstr(status)));
 		goto schannel;
 	}
 
 	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for "
 		  "domain %s using NTLMSSP authenticated "
-		  "pipe: user %s\\%s\n", domain->name,
-		  domain_name, machine_account));
+		  "pipe: user %s\n", domain->name,
+		  cli_credentials_get_unparsed_name(creds, talloc_tos())));
 
 	status = dcerpc_samr_Connect2(conn->samr_pipe->binding_handle, mem_ctx,
 				      conn->samr_pipe->desthost,
@@ -2968,9 +2959,6 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct netlogon_creds_cli_context *p_creds;
-	const char *machine_password = NULL;
-	const char *machine_account = NULL;
-	const char *domain_name = NULL;
 	struct cli_credentials *creds = NULL;
 
 	result = init_dc_connection_rpc(domain, false);
@@ -2996,35 +2984,30 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto anonymous;
 	}
 
-	machine_password = cli_credentials_get_password(creds);
-	machine_account = cli_credentials_get_username(creds);
-	domain_name = cli_credentials_get_domain(creds);
-
 	/*
 	 * We have an authenticated connection. Use a SPNEGO
 	 * authenticated LSA pipe with sign & seal.
 	 */
-	result = cli_rpc_pipe_open_generic_auth
+	result = cli_rpc_pipe_open_with_creds
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
-		 cli_credentials_get_kerberos_state(creds),
 		 DCERPC_AUTH_TYPE_SPNEGO,
 		 conn->auth_level,
 		 smbXcli_conn_remote_name(conn->cli->conn),
-		 domain_name, machine_account, machine_password,
+		 creds,
 		 &conn->lsa_pipe);
-
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
 			  "domain %s using NTLMSSP authenticated pipe: user "
-			  "%s\\%s. Error was %s. Trying schannel.\n",
-			  domain->name, conn->cli->domain,
-			  conn->cli->user_name, nt_errstr(result)));
+			  "%s. Error was %s. Trying schannel.\n",
+			  domain->name,
+			  cli_credentials_get_unparsed_name(creds, talloc_tos()),
+			  nt_errstr(result)));
 		goto schannel;
 	}
 
 	DEBUG(10,("cm_connect_lsa: connected to LSA pipe for domain %s using "
-		  "NTLMSSP authenticated pipe: user %s\\%s\n",
-		  domain->name, conn->cli->domain, conn->cli->user_name ));
+		  "NTLMSSP authenticated pipe: user %s\n",
+		  domain->name, cli_credentials_get_unparsed_name(creds, talloc_tos())));
 
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
 					SEC_FLAG_MAXIMUM_ALLOWED,
