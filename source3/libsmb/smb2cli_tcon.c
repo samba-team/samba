@@ -44,6 +44,8 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	const char *tcon_share;
 	uint8_t *dyn;
 	size_t dyn_len;
+	uint32_t additional_flags = 0;
+	uint32_t clear_flags = 0;
 
 	req = tevent_req_create(mem_ctx, &state, struct smb2cli_tcon_state);
 	if (req == NULL) {
@@ -79,8 +81,12 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 		dyn_len = sizeof(state->dyn_pad);
 	}
 
+	if (smbXcli_session_is_authenticated(cli->smb2.session)) {
+		additional_flags |= SMB2_HDR_FLAG_SIGNED;
+	}
+
 	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_TCON,
-				  0, 0, /* flags */
+				  additional_flags, clear_flags,
 				  cli->timeout,
 				  NULL, /* tcon */
 				  cli->smb2.session,
