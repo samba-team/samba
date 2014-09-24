@@ -537,7 +537,7 @@ void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 	printf("\t-n number of messages to send [default %d]\n", tcx->nmsg);
 	printf("\t-l usec time to sleep in the main loop [default %d]\n", tcx->sleep_usec);
 	printf("\t-v max variable msg size in bytes [default %d], 0=don't send var. size\n", tcx->maxsize);
-	printf("\t-d LogLevel [default %d]\n", LogLevel);	
+	printf("\t-d LogLevel [default %d]\n", DEBUGLEVEL);
 	printf("Press ctrl+C to stop the program.\n");
 }
 
@@ -553,7 +553,7 @@ int main(int argc, char *argv[])
 	memset(tcx, 0, sizeof(struct ibwtest_ctx));
 	tcx->nsec = 0;
 	tcx->nmsg = 1000;
-	LogLevel = 0;
+	DEBUGLEVEL = 0;
 
 	/* here is the only case we can't avoid using global... */
 	testctx = tcx;
@@ -592,7 +592,7 @@ int main(int argc, char *argv[])
 			tcx->maxsize = (unsigned int)atoi(optarg);
 			break;
 		case 'd':
-			LogLevel = atoi(optarg);
+			DEBUGLEVEL = atoi(optarg);
 			break;
 		default:
 			fprintf(stderr, "ERROR: unknown option -%c\n", (char)op);

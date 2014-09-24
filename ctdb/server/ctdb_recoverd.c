@@ -3553,7 +3553,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR, (__location__ " Failed to read debuglevel from parent\n"));
 		return;
 	}
-	LogLevel = debug_level;
+	DEBUGLEVEL = debug_level;
 
 	/* get relevant tunables */
 	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);

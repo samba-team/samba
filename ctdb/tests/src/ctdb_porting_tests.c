@@ -264,7 +264,7 @@ int main(int argc, const char *argv[])
 	int extra_argc = 0;
 	poptContext pc;
 
-	LogLevel = DEBUG_INFO;
+	DEBUGLEVEL = DEBUG_INFO;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 

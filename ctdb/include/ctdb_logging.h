@@ -20,7 +20,7 @@
 #ifndef _CTDB_LOGGING_H_
 #define _CTDB_LOGGING_H_
 
-extern int LogLevel;
+extern int DEBUGLEVEL;
 extern int this_log_level;
 extern const char *debug_extra;
 
@@ -35,8 +35,8 @@ enum debug_level {
 	DEBUG_DEBUG   =  4,
 };
 
-#define DEBUGLVL(lvl) ((lvl) <= LogLevel)
-#define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) <= LogLevel) { do_debug x; }} while (0)
-#define DEBUGADD(lvl, x) do { if ((lvl) <= LogLevel) { this_log_level = (lvl); do_debug_add x; }} while (0)
+#define DEBUGLVL(lvl) ((lvl) <= DEBUGLEVEL)
+#define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) <= DEBUGLEVEL) { do_debug x; }} while (0)
+#define DEBUGADD(lvl, x) do { if ((lvl) <= DEBUGLEVEL) { this_log_level = (lvl); do_debug_add x; }} while (0)
 
 #endif /* _CTDB_LOGGING_H_ */
