@@ -9606,6 +9606,7 @@ static struct {
 	{ "LOCAL-MESSAGING-READ1", run_messaging_read1, 0 },
 	{ "LOCAL-MESSAGING-READ2", run_messaging_read2, 0 },
 	{ "LOCAL-MESSAGING-READ3", run_messaging_read3, 0 },
+	{ "LOCAL-MESSAGING-READ4", run_messaging_read4, 0 },
 	{ "LOCAL-MESSAGING-FDPASS1", run_messaging_fdpass1, 0 },
 	{ "LOCAL-MESSAGING-FDPASS2", run_messaging_fdpass2, 0 },
 	{ "LOCAL-BASE64", run_local_base64, 0},

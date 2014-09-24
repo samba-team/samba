@@ -470,3 +470,233 @@ fail:
 	TALLOC_FREE(ev);
 	return retval;
 }
+
+/**
+ * read4:
+ *
+ * test transferring a big payload.
+ */
+
+#define MSG_TORTURE_READ4 0xF104
+
+static bool read4_child(int ready_fd)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg_ctx = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	bool retval = false;
+	uint8_t c = 1;
+	struct tevent_req *subreq;
+	int ret;
+	ssize_t bytes;
+	struct messaging_rec *rec;
+	bool ok;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		fprintf(stderr, "child: tevent_context_init failed\n");
+		goto done;
+	}
+
+	msg_ctx = messaging_init(ev, ev);
+	if (msg_ctx == NULL) {
+		fprintf(stderr, "child: messaging_init failed\n");
+		goto done;
+	}
+
+	printf("child: telling parent we're ready to receive messages\n");
+
+	/* Tell the parent we are ready to receive mesages. */
+	bytes = write(ready_fd, &c, 1);
+	if (bytes != 1) {
+		perror("child: failed to write to ready_fd");
+		goto done;
+	}
+
+	printf("child: waiting for messages\n");
+
+	subreq = messaging_read_send(frame, /* TALLOC_CTX */
+				     ev, msg_ctx,
+				     MSG_TORTURE_READ4);
+	if (subreq == NULL) {
+		fprintf(stderr, "child: messaging_read_send failed\n");
+		goto done;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		fprintf(stderr, "child: tevent_req_poll failed\n");
+		goto done;
+	}
+
+	printf("child: receiving message\n");
+
+	ret = messaging_read_recv(subreq, frame, &rec);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		fprintf(stderr, "child: messaging_read_recv failed\n");
+		goto done;
+	}
+
+	printf("child: received message\n");
+
+	/* Tell the parent we are done. */
+	bytes = write(ready_fd, &c, 1);
+	if (bytes != 1) {
+		perror("child: failed to write to ready_fd");
+		goto done;
+	}
+
+	printf("child: done\n");
+
+	retval = true;
+
+done:
+	TALLOC_FREE(frame);
+	return retval;
+}
+
+struct child_done_state {
+	int fd;
+	bool done;
+};
+
+static void child_done_cb(struct tevent_context *ev,
+			  struct tevent_fd *fde,
+			  uint16_t flags,
+			  void *private_data)
+{
+	struct child_done_state *state =
+			(struct child_done_state *)private_data;
+	char c = 0;
+	ssize_t bytes;
+
+	bytes = read(state->fd, &c, 1);
+	if (bytes != 1) {
+		perror("parent: read from ready_fd failed");
+	}
+
+	state->done = true;
+}
+
+static bool read4_parent(pid_t child_pid, int ready_fd)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg_ctx = NULL;
+	bool retval = false;
+	int ret;
+	NTSTATUS status;
+	struct server_id dst;
+	TALLOC_CTX *frame = talloc_stackframe();
+	uint8_t c;
+	ssize_t bytes;
+	struct iovec iov;
+	DATA_BLOB blob;
+	struct tevent_fd *child_done_fde;
+	struct child_done_state child_state;
+
+	/* wait until the child is ready to receive messages */
+	bytes = read(ready_fd, &c, 1);
+	if (bytes != 1) {
+		perror("parent: read from ready_fd failed");
+		goto done;
+	}
+
+	printf("parent: child is ready to receive messages\n");
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		fprintf(stderr, "parent: tevent_context_init failed\n");
+		goto done;
+	}
+
+	msg_ctx = messaging_init(ev, ev);
+	if (msg_ctx == NULL) {
+		fprintf(stderr, "parent: messaging_init failed\n");
+		goto done;
+	}
+
+	child_state.fd = ready_fd;
+	child_state.done = false;
+
+	child_done_fde = tevent_add_fd(ev, ev, ready_fd, TEVENT_FD_READ,
+				       child_done_cb, &child_state);
+	if (child_done_fde == NULL) {
+		fprintf(stderr,
+			"parent: failed tevent_add_fd for child done\n");
+		goto done;
+	}
+
+	/*
+	 * Send a 1M payload with the message.
+	 */
+	blob = data_blob_talloc_zero(frame, 1000*1000);
+	iov.iov_base = blob.data;
+	iov.iov_len  = blob.length;
+
+	dst = messaging_server_id(msg_ctx);
+	dst.pid = child_pid;
+
+	printf("parent: sending message to child\n");
+
+	status = messaging_send_iov(msg_ctx, dst, MSG_TORTURE_READ4, &iov, 1,
+				    NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "parent: messaging_send_iov failed: %s\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	printf("parent: waiting for child to confirm\n");
+
+	while (!child_state.done) {
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			fprintf(stderr, "parent: tevent_loop_once failed\n");
+			goto done;
+		}
+	}
+
+	printf("parent: child confirmed\n");
+
+	ret = waitpid(child_pid, NULL, 0);
+	if (ret == -1) {
+		perror("parent: waitpid failed");
+		goto done;
+	}
+
+	printf("parent: done\n");
+
+	retval = true;
+
+done:
+	TALLOC_FREE(frame);
+	return retval;
+}
+
+bool run_messaging_read4(int dummy)
+{
+	bool retval = false;
+	pid_t child_pid;
+	int ready_pipe[2];
+	int ret;
+
+	ret = pipe(ready_pipe);
+	if (ret != 0) {
+		perror("parent: pipe failed for ready_pipe");
+		return retval;
+	}
+
+	child_pid = fork();
+	if (child_pid == -1) {
+		perror("fork failed");
+	} else if (child_pid == 0) {
+		close(ready_pipe[0]);
+		retval = read4_child(ready_pipe[1]);
+	} else {
+		close(ready_pipe[1]);
+		retval = read4_parent(child_pid, ready_pipe[0]);
+	}
+
+	return retval;
+}
