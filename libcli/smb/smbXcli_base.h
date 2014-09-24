@@ -347,6 +347,16 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  const struct smb2cli_req_expected_response *expected,
 			  size_t num_expected);
 
+/*
+ * This expects an iov[3] array, that is filled with references to
+ * the buffers used for the sending the requests into the socket.
+ *
+ * This can only be called after smb2cli_req_recv(subreq) before
+ * the TALLOC_FREE(subreq).
+ */
+NTSTATUS smb2cli_req_get_sent_iov(struct tevent_req *req,
+				  struct iovec *sent_iov);
+
 struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbXcli_conn *conn,
