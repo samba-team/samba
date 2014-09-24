@@ -2860,6 +2860,306 @@ int net_ads_kerberos(struct net_context *c, int argc, const char **argv)
 	return net_run_function(c, argc, argv, "net ads kerberos", func);
 }
 
+static int net_ads_enctype_lookup_account(struct net_context *c,
+					  ADS_STRUCT *ads,
+					  const char *account,
+					  LDAPMessage **res,
+					  const char **enctype_str)
+{
+	const char *filter;
+	const char *attrs[] = {
+		"msDS-SupportedEncryptionTypes",
+		NULL
+	};
+	int count;
+	int ret = -1;
+	ADS_STATUS status;
+
+	filter = talloc_asprintf(c, "(&(objectclass=user)(sAMAccountName=%s))",
+				 account);
+	if (filter == NULL) {
+		goto done;
+	}
+
+	status = ads_search(ads, res, filter, attrs);
+	if (!ADS_ERR_OK(status)) {
+		d_printf(_("no account found with filter: %s\n"), filter);
+		goto done;
+	}
+
+	count = ads_count_replies(ads, *res);
+	switch (count) {
+	case 1:
+		break;
+	case 0:
+		d_printf(_("no account found with filter: %s\n"), filter);
+		goto done;
+	default:
+		d_printf(_("multiple accounts found with filter: %s\n"), filter);
+		goto done;
+	}
+
+	if (enctype_str) {
+		*enctype_str = ads_pull_string(ads, c, *res,
+					       "msDS-SupportedEncryptionTypes");
+		if (*enctype_str == NULL) {
+			d_printf(_("no msDS-SupportedEncryptionTypes attribute found\n"));
+			goto done;
+		}
+	}
+
+	ret = 0;
+ done:
+	return ret;
+}
+
+static void net_ads_enctype_dump_enctypes(const char *username,
+					  const char *enctype_str)
+{
+	int enctypes;
+
+	d_printf(_("'%s' uses \"msDS-SupportedEncryptionTypes\":\n"), username);
+
+	enctypes = atoi(enctype_str);
+
+	printf("[%s] 0x%08x DES-CBC-CRC\n",
+		enctypes & ENC_CRC32 ? "X" : " ",
+		ENC_CRC32);
+	printf("[%s] 0x%08x DES-CBC-MD5\n",
+		enctypes & ENC_RSA_MD5 ? "X" : " ",
+		ENC_RSA_MD5);
+	printf("[%s] 0x%08x RC4-HMAC\n",
+		enctypes & ENC_RC4_HMAC_MD5 ? "X" : " ",
+		ENC_RC4_HMAC_MD5);
+	printf("[%s] 0x%08x AES128-CTS-HMAC-SHA1-96\n",
+		enctypes & ENC_HMAC_SHA1_96_AES128 ? "X" : " ",
+		ENC_HMAC_SHA1_96_AES128);
+	printf("[%s] 0x%08x AES256-CTS-HMAC-SHA1-96\n",
+		enctypes & ENC_HMAC_SHA1_96_AES256 ? "X" : " ",
+		ENC_HMAC_SHA1_96_AES256);
+}
+
+static int net_ads_enctypes_list(struct net_context *c, int argc, const char **argv)
+{
+	int ret = -1;
+	ADS_STATUS status;
+	ADS_STRUCT *ads = NULL;
+	LDAPMessage *res = NULL;
+	const char *str = NULL;
+
+	if (c->display_usage || (argc < 1)) {
+		d_printf(  "%s\n"
+			   "net ads enctypes list\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("List supported enctypes"));
+		return 0;
+	}
+
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		printf("startup failed\n");
+		return ret;
+	}
+
+	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, &str);
+	if (ret) {
+		goto done;
+	}
+
+	net_ads_enctype_dump_enctypes(argv[0], str);
+
+	ret = 0;
+ done:
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+
+	return ret;
+}
+
+static int net_ads_enctypes_set(struct net_context *c, int argc, const char **argv)
+{
+	int ret = -1;
+	ADS_STATUS status;
+	ADS_STRUCT *ads;
+	LDAPMessage *res = NULL;
+	const char *etype_list_str;
+	const char *dn;
+	ADS_MODLIST mods;
+	uint32_t etype_list;
+	const char *str;
+
+	if (c->display_usage || argc < 1) {
+		d_printf(  "%s\n"
+			   "net ads enctypes set <sAMAccountName> [enctypes]\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Set supported enctypes"));
+		return 0;
+	}
+
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		printf("startup failed\n");
+		return ret;
+	}
+
+	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, NULL);
+	if (ret) {
+		goto done;
+	}
+
+	dn = ads_get_dn(ads, c, res);
+	if (dn == NULL) {
+		goto done;
+	}
+
+	etype_list = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
+#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+	etype_list |= ENC_HMAC_SHA1_96_AES128;
+#endif
+#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+	etype_list |= ENC_HMAC_SHA1_96_AES256;
+#endif
+
+	if (argv[1] != NULL) {
+		sscanf(argv[1], "%i", &etype_list);
+	}
+
+	etype_list_str = talloc_asprintf(c, "%d", etype_list);
+	if (!etype_list_str) {
+		goto done;
+	}
+
+	mods = ads_init_mods(c);
+	if (!mods) {
+		goto done;
+	}
+
+	status = ads_mod_str(c, &mods, "msDS-SupportedEncryptionTypes",
+			     etype_list_str);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
+	status = ads_gen_mod(ads, dn, mods);
+	if (!ADS_ERR_OK(status)) {
+		d_printf(_("failed to add msDS-SupportedEncryptionTypes: %s\n"),
+			ads_errstr(status));
+		goto done;
+	}
+
+	ads_msgfree(ads, res);
+
+	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, &str);
+	if (ret) {
+		goto done;
+	}
+
+	net_ads_enctype_dump_enctypes(argv[0], str);
+
+	ret = 0;
+ done:
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+
+	return ret;
+}
+
+static int net_ads_enctypes_delete(struct net_context *c, int argc, const char **argv)
+{
+	int ret = -1;
+	ADS_STATUS status;
+	ADS_STRUCT *ads;
+	LDAPMessage *res = NULL;
+	const char *dn;
+	ADS_MODLIST mods;
+
+	if (c->display_usage || argc < 1) {
+		d_printf(  "%s\n"
+			   "net ads enctypes delete <sAMAccountName>\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Delete supported enctypes"));
+		return 0;
+	}
+
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		printf("startup failed\n");
+		return ret;
+	}
+
+	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, NULL);
+	if (ret) {
+		goto done;
+	}
+
+	dn = ads_get_dn(ads, c, res);
+	if (dn == NULL) {
+		goto done;
+	}
+
+	mods = ads_init_mods(c);
+	if (!mods) {
+		goto done;
+	}
+
+	status = ads_mod_str(c, &mods, "msDS-SupportedEncryptionTypes", NULL);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
+	status = ads_gen_mod(ads, dn, mods);
+	if (!ADS_ERR_OK(status)) {
+		d_printf(_("failed to remove msDS-SupportedEncryptionTypes: %s\n"),
+			ads_errstr(status));
+		goto done;
+	}
+
+	ret = 0;
+
+ done:
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+	return ret;
+}
+
+static int net_ads_enctypes(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"list",
+			net_ads_enctypes_list,
+			NET_TRANSPORT_ADS,
+			N_("List the supported encryption types"),
+			N_("net ads enctypes list\n"
+			   "    List the supported encryption types")
+		},
+		{
+			"set",
+			net_ads_enctypes_set,
+			NET_TRANSPORT_ADS,
+			N_("Set the supported encryption types"),
+			N_("net ads enctypes set\n"
+			   "    Set the supported encryption types")
+		},
+		{
+			"delete",
+			net_ads_enctypes_delete,
+			NET_TRANSPORT_ADS,
+			N_("Delete the supported encryption types"),
+			N_("net ads enctypes delete\n"
+			   "    Delete the supported encryption types")
+		},
+
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net ads enctypes", func);
+}
+
+
 int net_ads(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -3014,6 +3314,14 @@ int net_ads(struct net_context *c, int argc, const char **argv)
 			N_("Manage kerberos keytab"),
 			N_("net ads kerberos\n"
 			   "    Manage kerberos keytab")
+		},
+		{
+			"enctypes",
+			net_ads_enctypes,
+			NET_TRANSPORT_ADS,
+			N_("List/modify supported encryption types"),
+			N_("net ads enctypes\n"
+			   "    List/modify enctypes")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
