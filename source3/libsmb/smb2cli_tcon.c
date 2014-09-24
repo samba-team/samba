@@ -75,7 +75,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	SSVAL(fixed, 6, dyn_len);
 
 	if (dyn_len == 0) {
-		dyn = state->dyn_pad;;
+		dyn = state->dyn_pad;
 		dyn_len = sizeof(state->dyn_pad);
 	}
 
