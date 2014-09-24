@@ -115,10 +115,10 @@ static bool Ucrit_addPid( struct server_id pid )
 	return True;
 }
 
-static void print_share_mode(const struct share_mode_entry *e,
-			     const char *sharepath,
-			     const char *fname,
-			     void *dummy)
+static int print_share_mode(const struct share_mode_entry *e,
+			    const char *sharepath,
+			    const char *fname,
+			    void *dummy)
 {
 	static int count;
 
@@ -135,7 +135,7 @@ static void print_share_mode(const struct share_mode_entry *e,
 
 	if (do_checks && !serverid_exists(&e->pid)) {
 		/* the process for this entry does not exist any more */
-		return;
+		return 0;
 	}
 
 	if (Ucrit_checkPid(e->pid)) {
@@ -183,6 +183,8 @@ static void print_share_mode(const struct share_mode_entry *e,
 
 		d_printf(" %s   %s   %s",sharepath, fname, time_to_asc((time_t)e->time.tv_sec));
 	}
+
+	return 0;
 }
 
 static void print_brl(struct file_id id,
