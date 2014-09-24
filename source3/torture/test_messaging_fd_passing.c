@@ -255,6 +255,9 @@ static bool fdpass2_parent(pid_t child_pid, int ready_fd)
 		goto done;
 	}
 
+	close(up_pipe[0]);
+	close(down_pipe[1]);
+
 	bytes = write(up_pipe[1], &c1, 1);
 	if (bytes != 1) {
 		perror("parent: write to up pipe failed");
