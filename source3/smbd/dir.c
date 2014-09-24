@@ -25,6 +25,7 @@
 #include "libcli/security/security.h"
 #include "lib/util/bitmap.h"
 #include "../lib/util/memcache.h"
+#include "../librpc/gen_ndr/open_files.h"
 
 /*
    This module implements directory related functions for Samba.
@@ -1809,6 +1810,113 @@ bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 	return False;
 }
 
+struct files_below_forall_state {
+	char *dirpath;
+	size_t dirpath_len;
+	int (*fn)(struct file_id fid, const struct share_mode_data *data,
+		  void *private_data);
+	void *private_data;
+};
+
+static int files_below_forall_fn(struct file_id fid,
+				 const struct share_mode_data *data,
+				 void *private_data)
+{
+	struct files_below_forall_state *state = private_data;
+	char tmpbuf[PATH_MAX];
+	char *fullpath, *to_free;
+	size_t len;
+
+	len = full_path_tos(data->servicepath, data->base_name,
+			    tmpbuf, sizeof(tmpbuf),
+			    &fullpath, &to_free);
+	if (len == -1) {
+		return 0;
+	}
+	if (state->dirpath_len >= len) {
+		/*
+		 * Filter files above dirpath
+		 */
+		return 0;
+	}
+	if (fullpath[state->dirpath_len] != '/') {
+		/*
+		 * Filter file that don't have a path separator at the end of
+		 * dirpath's length
+		 */
+		return 0;
+	}
+
+	if (memcmp(state->dirpath, fullpath, len) != 0) {
+		/*
+		 * Not a parent
+		 */
+		return 0;
+	}
+
+	return state->fn(fid, data, private_data);
+}
+
+static int files_below_forall(connection_struct *conn,
+			      const struct smb_filename *dir_name,
+			      int (*fn)(struct file_id fid,
+					const struct share_mode_data *data,
+					void *private_data),
+			      void *private_data)
+{
+	struct files_below_forall_state state = {};
+	int ret;
+	char tmpbuf[PATH_MAX];
+	char *to_free;
+
+	state.dirpath_len = full_path_tos(conn->connectpath,
+					  dir_name->base_name,
+					  tmpbuf, sizeof(tmpbuf),
+					  &state.dirpath, &to_free);
+	if (state.dirpath_len == -1) {
+		return -1;
+
+	}
+
+	ret = share_mode_forall(files_below_forall_fn, &state);
+	TALLOC_FREE(to_free);
+	return ret;
+}
+
+struct have_file_open_below_state {
+	bool found_one;
+};
+
+static int have_file_open_below_fn(struct file_id fid,
+				   const struct share_mode_data *data,
+				   void *private_data)
+{
+	struct have_file_open_below_state *state = private_data;
+	state->found_one = true;
+	return 1;
+}
+
+static bool have_file_open_below(connection_struct *conn,
+				 const struct smb_filename *name)
+{
+	struct have_file_open_below_state state = {};
+	int ret;
+
+	if (!VALID_STAT(name->st)) {
+		return false;
+	}
+	if (!S_ISDIR(name->st.st_ex_mode)) {
+		return false;
+	}
+
+	ret = files_below_forall(conn, name, have_file_open_below_fn, &state);
+	if (ret == -1) {
+		return false;
+	}
+
+	return state.found_one;
+}
+
 /*****************************************************************
  Is this directory empty ?
 *****************************************************************/
@@ -1854,5 +1962,16 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	TALLOC_FREE(talloced);
 	TALLOC_FREE(dir_hnd);
 
-	return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!lp_posix_pathnames() &&
+	    lp_strict_rename(SNUM(conn)) &&
+	    have_file_open_below(fsp->conn, fsp->fsp_name))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
 }
