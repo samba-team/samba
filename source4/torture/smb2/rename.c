@@ -928,6 +928,99 @@ done:
 	return ret;
 }
 
+static bool torture_smb2_rename_dir_openfile(struct torture_context *torture,
+					     struct smb2_tree *tree1)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_open io;
+	union smb_close cl;
+	union smb_setfileinfo sinfo;
+	struct smb2_handle d1, h1;
+
+	smb2_deltree(tree1, BASEDIR);
+	smb2_util_rmdir(tree1, BASEDIR);
+
+	torture_comment(torture, "Creating base directory\n");
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = 0;
+	io.smb2.in.desired_access = 0x0017019f;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR;
+
+	status = smb2_create(tree1, torture, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	d1 = io.smb2.out.file.handle;
+
+	torture_comment(torture, "Creating test file\n");
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = 0;
+	io.smb2.in.desired_access = 0x0017019f;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR "\\file.txt";
+
+	status = smb2_create(tree1, torture, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.smb2.out.file.handle;
+
+	torture_comment(torture, "Renaming directory\n");
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = d1;
+	sinfo.rename_information.in.overwrite = 0;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name =
+		BASEDIR "-new";
+	status = smb2_setinfo_file(tree1, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	torture_comment(torture, "Closing directory\n");
+
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = d1;
+	status = smb2_close(tree1, &(cl.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	ZERO_STRUCT(d1);
+
+	torture_comment(torture, "Closing test file\n");
+
+	cl.smb2.in.file.handle = h1;
+	status = smb2_close(tree1, &(cl.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	ZERO_STRUCT(h1);
+
+done:
+
+	torture_comment(torture, "Cleaning up\n");
+
+	if (h1.data) {
+		ZERO_STRUCT(cl.smb2);
+		cl.smb2.level = RAW_CLOSE_SMB2;
+		cl.smb2.in.file.handle = h1;
+		status = smb2_close(tree1, &(cl.smb2));
+	}
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
 struct rename_one_dir_cycle_state {
 	struct tevent_context *ev;
 	struct smb2_tree *tree;
@@ -1335,6 +1428,10 @@ struct torture_suite *torture_smb2_rename_init(void)
 	torture_suite_add_1smb2_test(suite,
 		"msword",
 		torture_smb2_rename_msword);
+
+	torture_suite_add_1smb2_test(
+		suite, "rename_dir_openfile",
+		torture_smb2_rename_dir_openfile);
 
 	torture_suite_add_1smb2_test(suite,
 		"rename_dir_bench",
