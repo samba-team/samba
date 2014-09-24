@@ -1927,6 +1927,37 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 }
 
 /**
+ * @brief Search for an element in a string array.
+ *
+ * @param[in]  el_array  The string array to search.
+ *
+ * @param[in]  num_el    The number of elements in the string array.
+ *
+ * @param[in]  el        The string to search.
+ *
+ * @return               True if found, false if not.
+ */
+bool ads_element_in_array(const char **el_array, size_t num_el, const char *el)
+{
+	size_t i;
+
+	if (el_array == NULL || num_el == 0 || el == NULL) {
+		return false;
+	}
+
+	for (i = 0; i < num_el && el_array[i] != NULL; i++) {
+		int cmp;
+
+		cmp = strcasecmp_m(el_array[i], el);
+		if (cmp == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * @brief This gets the service principal names of an existing computer account.
  *
  * @param[in]  mem_ctx      The memory context to use to allocate the spn array.
