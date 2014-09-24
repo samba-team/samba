@@ -507,20 +507,57 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
-	int i, found = 0;
+	size_t found = 0;
 	char *sam_account_name, *upn;
 	char **oldEntries = NULL, *princ_s[26];
-	TALLOC_CTX *tmpctx = NULL;
+	TALLOC_CTX *frame;
 	char *machine_name;
+	char **spn_array;
+	size_t num_spns;
+	size_t i;
+	ADS_STATUS status;
 
-	/* these are the main ones we need */
-	ret = ads_keytab_add_entry(ads, "host");
-	if (ret != 0) {
-		DEBUG(1, (__location__ ": ads_keytab_add_entry failed while "
-			  "adding 'host' principal.\n"));
-		return ret;
+	frame = talloc_stackframe();
+	if (frame == NULL) {
+		ret = -1;
+		goto done;
 	}
 
+	status = ads_get_service_principal_names(frame,
+						 ads,
+						 lp_netbios_name(),
+						 &spn_array,
+						 &num_spns);
+	if (!ADS_ERR_OK(status)) {
+		ret = -1;
+		goto done;
+	}
+
+	for (i = 0; i < num_spns; i++) {
+		char *srv_princ;
+		char *p;
+
+		srv_princ = strlower_talloc(frame, spn_array[i]);
+		if (srv_princ == NULL) {
+			ret = -1;
+			goto done;
+		}
+
+		p = strchr_m(srv_princ, '/');
+		if (p == NULL) {
+			continue;
+		}
+		p[0] = '\0';
+
+		/* Add the SPNs found on the DC */
+		ret = ads_keytab_add_entry(ads, srv_princ);
+		if (ret != 0) {
+			DEBUG(1, ("ads_keytab_add_entry failed while "
+				  "adding '%s' principal.\n",
+				  spn_array[i]));
+			goto done;
+		}
+	}
 
 #if 0	/* don't create the CIFS/... keytab entries since no one except smbd
 	   really needs them and we will fall back to verifying against
@@ -543,24 +580,17 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	if (ret) {
 		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
 			  error_message(ret)));
-		return ret;
-	}
-
-	tmpctx = talloc_init(__location__);
-	if (!tmpctx) {
-		DEBUG(0, (__location__ ": talloc_init() failed!\n"));
-		ret = -1;
 		goto done;
 	}
 
-	machine_name = talloc_strdup(tmpctx, lp_netbios_name());
+	machine_name = talloc_strdup(frame, lp_netbios_name());
 	if (!machine_name) {
 		ret = -1;
 		goto done;
 	}
 
 	/* now add the userPrincipalName and sAMAccountName entries */
-	sam_account_name = ads_get_samaccountname(ads, tmpctx, machine_name);
+	sam_account_name = ads_get_samaccountname(ads, frame, machine_name);
 	if (!sam_account_name) {
 		DEBUG(0, (__location__ ": unable to determine machine "
 			  "account's name in AD!\n"));
@@ -584,7 +614,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	}
 
 	/* remember that not every machine account will have a upn */
-	upn = ads_get_upn(ads, tmpctx, machine_name);
+	upn = ads_get_upn(ads, frame, machine_name);
 	if (upn) {
 		ret = ads_keytab_add_entry(ads, upn);
 		if (ret != 0) {
@@ -596,7 +626,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	/* Now loop through the keytab and update any other existing entries */
 	kvno = (krb5_kvno)ads_get_machine_kvno(ads, machine_name);
-	if (kvno == -1) {
+	if (kvno == (krb5_kvno)-1) {
 		DEBUG(1, (__location__ ": ads_get_machine_kvno() failed to "
 			  "determine the system's kvno.\n"));
 		goto done;
@@ -629,12 +659,12 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	 * have a race condition where someone else could add entries after
 	 * we've counted them. Re-open asap to minimise the race. JRA.
 	 */
-	DEBUG(3, (__location__ ": Found %d entries in the keytab.\n", found));
+	DEBUG(3, (__location__ ": Found %zd entries in the keytab.\n", found));
 	if (!found) {
 		goto done;
 	}
 
-	oldEntries = talloc_array(tmpctx, char *, found);
+	oldEntries = talloc_array(frame, char *, found);
 	if (!oldEntries) {
 		DEBUG(1, (__location__ ": Failed to allocate space to store "
 			  "the old keytab entries (talloc failed?).\n"));
@@ -708,7 +738,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 done:
 	TALLOC_FREE(oldEntries);
-	TALLOC_FREE(tmpctx);
+	TALLOC_FREE(frame);
 
 	{
 		krb5_keytab_entry zero_kt_entry;
