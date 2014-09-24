@@ -1245,7 +1245,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
     domainControllerFunctionality = DS_DOMAIN_FUNCTION_2008_R2
 
     if dom_for_fun_level is None:
-        dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
+        dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
 
     if dom_for_fun_level > domainControllerFunctionality:
         raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level (2008_R2). This won't work!")
