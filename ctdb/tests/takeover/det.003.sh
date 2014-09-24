@@ -5,7 +5,7 @@
 define_test "3 nodes, 1 -> all healthy"
 
 required_result <<EOF
-DATE TIME [PID]: Deterministic IPs enabled. Resetting all ip allocations
+${TEST_DATE_STAMP}Deterministic IPs enabled. Resetting all ip allocations
 192.168.21.254 0
 192.168.21.253 1
 192.168.21.252 2

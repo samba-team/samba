@@ -11,10 +11,10 @@ setup_natgw <<EOF
 EOF
 
 required_result 255 <<EOF
-DATE TIME [PID]: __LOCATION__ control timed out. reqid:1234567890 opcode:80 dstnode:0
-DATE TIME [PID]: __LOCATION__ ctdb_control_recv failed
-DATE TIME [PID]: __LOCATION__ ctdb_ctrl_getcapabilities_recv failed
-DATE TIME [PID]: Unable to get capabilities from node 0
+${TEST_DATE_STAMP}__LOCATION__ control timed out. reqid:1234567890 opcode:80 dstnode:0
+${TEST_DATE_STAMP}__LOCATION__ ctdb_control_recv failed
+${TEST_DATE_STAMP}__LOCATION__ ctdb_ctrl_getcapabilities_recv failed
+${TEST_DATE_STAMP}Unable to get capabilities from node 0
 EOF
 
 simple_test <<EOF

@@ -5,7 +5,7 @@
 define_test "3 nodes, current disconnected"
 
 required_result 10 <<EOF
-DATE TIME [PID]: Unable to get nodemap from local node
+${TEST_DATE_STAMP}Unable to get nodemap from local node
 EOF
 
 simple_test <<EOF

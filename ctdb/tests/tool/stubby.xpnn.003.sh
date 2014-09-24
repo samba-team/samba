@@ -13,7 +13,7 @@ EOF
 rm -f "$CTDB_NODES"
 
 required_result 255 <<EOF
-DATE TIME [PID]: Failed to read nodes file
+${TEST_DATE_STAMP}Failed to read nodes file
 EOF
 
 simple_test <<EOF
