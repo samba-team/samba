@@ -339,6 +339,12 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 
 	ctx->recv_callback(ctx, ctx->recv_buf, received,
 			   fds, num_fds, ctx->private_data);
+
+	/*
+	 * Close those fds that the callback has not set to -1.
+	 */
+	close_fd_array(fds, num_fds);
+
 	return;
 
 cleanup_fds:
