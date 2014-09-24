@@ -88,6 +88,8 @@ ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name);
 uint32_t ads_get_machine_kvno(ADS_STRUCT *ads, const char *machine_name);
 
+bool ads_element_in_array(const char **el_array, size_t num_el, const char *el);
+
 ADS_STATUS ads_get_service_principal_names(TALLOC_CTX *mem_ctx,
 					   ADS_STRUCT *ads,
 					   const char *machine_name,
