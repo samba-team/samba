@@ -1339,6 +1339,59 @@ to show in the result.
 </refsect2>
 
 <refsect2>
+	<title>ADS ENCTYPES</title>
+
+<para>
+	List, modify or delete the value of the "msDS-SupportedEncryptionTypes" attribute of an account in AD.
+</para>
+
+<para>
+	This attribute allows to control which Kerberos encryption types are used for the generation of initial and service tickets. The value consists of an integer bitmask with the following values:
+</para>
+
+<para>0x00000001 DES-CBC-CRC</para>
+<para>0x00000002 DES-CBC-MD5</para>
+<para>0x00000004 RC4-HMAC</para>
+<para>0x00000008 AES128-CTS-HMAC-SHA1-96</para>
+<para>0x00000010 AES256-CTS-HMAC-SHA1-96</para>
+
+</refsect2>
+
+<refsect2>
+	<title>ADS ENCTYPES LIST <replaceable>&lt;ACCOUNTNAME&gt;</replaceable></title>
+
+<para>
+	List the value of the "msDS-SupportedEncryptionTypes" attribute of a given account.
+</para>
+
+<para>Example: <userinput>net ads enctypes list Computername</userinput></para>
+
+</refsect2>
+
+<refsect2>
+	<title>ADS ENCTYPES SET <replaceable>&lt;ACCOUNTNAME&gt;</replaceable> <replaceable>[enctypes]</replaceable></title>
+
+<para>
+	Set the value of the "msDS-SupportedEncryptionTypes" attribute of the LDAP object of ACCOUNTNAME to a given value. If the value is ommitted, the value is set to 31 which enables all the currently supported encryption types.
+</para>
+
+<para>Example: <userinput>net ads enctypes set Computername 24</userinput></para>
+
+</refsect2>
+
+<refsect2>
+	<title>ADS ENCTYPES DELETE <replaceable>&lt;ACCOUNTNAME&gt;</replaceable></title>
+
+<para>
+	Deletes the "msDS-SupportedEncryptionTypes" attribute of the LDAP object of ACCOUNTNAME.
+</para>
+
+<para>Example: <userinput>net ads enctypes set Computername 24</userinput></para>
+
+</refsect2>
+
+
+<refsect2>
 <title>SAM CREATEBUILTINGROUP &lt;NAME&gt;</title>
 
 <para>
