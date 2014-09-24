@@ -7,9 +7,9 @@ define_test "4 nodes, some IPs unassigned on target nodes"
 export CTDB_TEST_LOGLEVEL=3
 
 required_result <<EOF
-DATE TIME [PID]:  10.19.99.251 -> 2 [+9216]
-DATE TIME [PID]:  130.216.30.173 -> 2 [+24345]
-DATE TIME [PID]:  130.216.30.171 -> 2 [+39970]
+${TEST_DATE_STAMP} 10.19.99.251 -> 2 [+9216]
+${TEST_DATE_STAMP} 130.216.30.173 -> 2 [+24345]
+${TEST_DATE_STAMP} 130.216.30.171 -> 2 [+39970]
 130.216.30.181 0
 130.216.30.180 1
 130.216.30.179 2

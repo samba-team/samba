@@ -124,6 +124,7 @@ result_filter_default ()
     _date_time_pid='[0-9/][0-9/]*\ [0-9:\.][0-9:\.]*\ \[[\ 0-9][\ 0-9]*\]'
     sed -e "s@^${_date_time_pid}:@DATE\ TIME\ \[PID\]:@"
 }
+TEST_DATE_STAMP="DATE TIME [PID]: "
 
 # Override this function to customise output filtering.
 result_filter ()
