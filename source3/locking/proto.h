@@ -194,8 +194,8 @@ int share_mode_forall(int (*fn)(struct file_id fid,
 				const struct share_mode_data *data,
 				void *private_data),
 		      void *private_data);
-int share_entry_forall(void (*fn)(const struct share_mode_entry *, const char *,
-				  const char *, void *),
+int share_entry_forall(int (*fn)(const struct share_mode_entry *, const char *,
+				 const char *, void *),
 		      void *private_data);
 bool share_mode_cleanup_disconnected(struct file_id id,
 				     uint64_t open_persistent_id);
