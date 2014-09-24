@@ -140,9 +140,6 @@ static const char *lpcfg_string(const char *s)
 /* this global context supports the lp_*() function varients */
 static struct loadparm_context *global_loadparm_context;
 
-#define lpcfg_default_service global_loadparm_context->sDefault
-#define lpcfg_global_service(i) global_loadparm_context->services[i]
-
 #define FN_GLOBAL_STRING(fn_name,var_name) \
  _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx, TALLOC_CTX *ctx) {\
 	 if (lp_ctx == NULL) return NULL;				\
