@@ -2679,6 +2679,16 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 		    session->smb2_channel.signing_key.length == 0) {
 			state->smb2.should_encrypt = false;
 		}
+
+		if (additional_flags & SMB2_HDR_FLAG_SIGNED) {
+			if (session->smb2_channel.signing_key.length == 0) {
+				tevent_req_nterror(req, NT_STATUS_NO_USER_SESSION_KEY);
+				return req;
+			}
+
+			additional_flags &= ~SMB2_HDR_FLAG_SIGNED;
+			state->smb2.should_sign = true;
+		}
 	}
 
 	if (tcon) {
