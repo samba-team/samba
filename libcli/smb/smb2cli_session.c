@@ -120,6 +120,7 @@ static void smb2cli_session_setup_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smb2cli_session_setup_state);
 	NTSTATUS status;
+	NTSTATUS preauth_status;
 	uint64_t current_session_id;
 	uint64_t session_id;
 	uint16_t session_flags;
@@ -127,6 +128,7 @@ static void smb2cli_session_setup_done(struct tevent_req *subreq)
 	uint16_t security_buffer_offset;
 	uint16_t security_buffer_length;
 	uint8_t *security_buffer_data = NULL;
+	struct iovec sent_iov[3];
 	const uint8_t *hdr;
 	const uint8_t *body;
 	static const struct smb2cli_req_expected_response expected[] = {
@@ -142,11 +144,26 @@ static void smb2cli_session_setup_done(struct tevent_req *subreq)
 
 	status = smb2cli_req_recv(subreq, state, &state->recv_iov,
 				  expected, ARRAY_SIZE(expected));
-	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
+	}
+
+	smb2cli_req_get_sent_iov(subreq, sent_iov);
+	preauth_status = smb2cli_session_update_preauth(state->session, sent_iov);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, preauth_status)) {
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		preauth_status = smb2cli_session_update_preauth(state->session,
+								state->recv_iov);
+		if (tevent_req_nterror(req, preauth_status)) {
+			return;
+		}
 	}
 
 	hdr = (const uint8_t *)state->recv_iov[0].iov_base;

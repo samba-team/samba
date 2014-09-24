@@ -164,6 +164,7 @@ struct smbXcli_session {
 
 	struct {
 		DATA_BLOB signing_key;
+		uint8_t preauth_sha512[64];
 	} smb2_channel;
 
 	/*
@@ -5112,6 +5113,10 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 	DLIST_ADD_END(conn->sessions, session, struct smbXcli_session *);
 	session->conn = conn;
 
+	memcpy(session->smb2_channel.preauth_sha512,
+	       conn->smb2.preauth_sha512,
+	       sizeof(session->smb2_channel.preauth_sha512));
+
 	return session;
 }
 
@@ -5334,6 +5339,35 @@ void smb2cli_session_stop_replay(struct smbXcli_session *session)
 	session->smb2->replay_active = false;
 }
 
+NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
+					const struct iovec *iov)
+{
+	struct hc_sha512state sctx;
+	size_t i;
+
+	if (session->conn == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (session->conn->protocol < PROTOCOL_SMB3_10) {
+		return NT_STATUS_OK;
+	}
+
+	if (session->smb2_channel.signing_key.length != 0) {
+		return NT_STATUS_OK;
+	}
+
+	SHA512_Init(&sctx);
+	SHA512_Update(&sctx, session->smb2_channel.preauth_sha512,
+		      sizeof(session->smb2_channel.preauth_sha512));
+	for (i = 0; i < 3; i++) {
+		SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
+	}
+	SHA512_Final(session->smb2_channel.preauth_sha512, &sctx);
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 					 const DATA_BLOB _session_key,
 					 const struct iovec *recv_iov)
@@ -5344,6 +5378,16 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	bool check_signature = true;
 	uint32_t hdr_flags;
 	NTSTATUS status;
+	struct _derivation {
+		DATA_BLOB label;
+		DATA_BLOB context;
+	};
+	struct {
+		struct _derivation signing;
+		struct _derivation encryption;
+		struct _derivation decryption;
+		struct _derivation application;
+	} derivation = { };
 
 	if (conn == NULL) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5364,6 +5408,49 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
+	if (conn->protocol >= PROTOCOL_SMB3_10) {
+		struct _derivation *d;
+		DATA_BLOB p;
+
+		p = data_blob_const(session->smb2_channel.preauth_sha512,
+				sizeof(session->smb2_channel.preauth_sha512));
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMBSigningKey");
+		d->context = p;
+
+		d = &derivation.encryption;
+		d->label = data_blob_string_const_null("SMBC2SCipherKey");
+		d->context = p;
+
+		d = &derivation.decryption;
+		d->label = data_blob_string_const_null("SMBS2CCipherKey");
+		d->context = p;
+
+		d = &derivation.application;
+		d->label = data_blob_string_const_null("SMBAppKey");
+		d->context = p;
+
+	} else if (conn->protocol >= PROTOCOL_SMB2_24) {
+		struct _derivation *d;
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMB2AESCMAC");
+		d->context = data_blob_string_const_null("SmbSign");
+
+		d = &derivation.encryption;
+		d->label = data_blob_string_const_null("SMB2AESCCM");
+		d->context = data_blob_string_const_null("ServerIn ");
+
+		d = &derivation.decryption;
+		d->label = data_blob_string_const_null("SMB2AESCCM");
+		d->context = data_blob_string_const_null("ServerOut");
+
+		d = &derivation.application;
+		d->label = data_blob_string_const_null("SMB2APP");
+		d->context = data_blob_string_const_null("SmbRpc");
+	}
+
 	ZERO_STRUCT(session_key);
 	memcpy(session_key, _session_key.data,
 	       MIN(_session_key.length, sizeof(session_key)));
@@ -5377,12 +5464,11 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCMAC");
-		const DATA_BLOB context = data_blob_string_const_null("SmbSign");
+		struct _derivation *d = &derivation.signing;
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    session->smb2->signing_key.data);
 	}
 
@@ -5394,12 +5480,11 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
-		const DATA_BLOB context = data_blob_string_const_null("ServerIn ");
+		struct _derivation *d = &derivation.encryption;
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    session->smb2->encryption_key.data);
 	}
 
@@ -5411,12 +5496,11 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
-		const DATA_BLOB context = data_blob_string_const_null("ServerOut");
+		struct _derivation *d = &derivation.decryption;
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    session->smb2->decryption_key.data);
 	}
 
@@ -5428,12 +5512,11 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2APP");
-		const DATA_BLOB context = data_blob_string_const_null("SmbRpc");
+		struct _derivation *d = &derivation.application;
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    session->smb2->application_key.data);
 	}
 	ZERO_STRUCT(session_key);
@@ -5458,6 +5541,10 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		 * We only check the signature if it's mandatory
 		 * or SMB2_HDR_FLAG_SIGNED is provided.
 		 */
+		check_signature = true;
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB3_10) {
 		check_signature = true;
 	}
 
@@ -5529,6 +5616,10 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 	DLIST_ADD_END(conn->sessions, session2, struct smbXcli_session *);
 	session2->conn = conn;
 
+	memcpy(session2->smb2_channel.preauth_sha512,
+	       conn->smb2.preauth_sha512,
+	       sizeof(session2->smb2_channel.preauth_sha512));
+
 	*_session2 = session2;
 	return NT_STATUS_OK;
 }
@@ -5540,6 +5631,13 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	struct smbXcli_conn *conn = session->conn;
 	uint8_t channel_key[16];
 	NTSTATUS status;
+	struct _derivation {
+		DATA_BLOB label;
+		DATA_BLOB context;
+	};
+	struct {
+		struct _derivation signing;
+	} derivation = { };
 
 	if (conn == NULL) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5547,6 +5645,24 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 
 	if (session->smb2_channel.signing_key.length != 0) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB3_10) {
+		struct _derivation *d;
+		DATA_BLOB p;
+
+		p = data_blob_const(session->smb2_channel.preauth_sha512,
+				sizeof(session->smb2_channel.preauth_sha512));
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMBSigningKey");
+		d->context = p;
+	} else if (conn->protocol >= PROTOCOL_SMB2_24) {
+		struct _derivation *d;
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMB2AESCMAC");
+		d->context = data_blob_string_const_null("SmbSign");
 	}
 
 	ZERO_STRUCT(channel_key);
@@ -5562,12 +5678,11 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCMAC");
-		const DATA_BLOB context = data_blob_string_const_null("SmbSign");
+		struct _derivation *d = &derivation.signing;
 
 		smb2_key_derivation(channel_key, sizeof(channel_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    session->smb2_channel.signing_key.data);
 	}
 	ZERO_STRUCT(channel_key);
