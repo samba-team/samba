@@ -397,7 +397,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 static void write_to_log(struct ctdb_log_state *log,
 			 const char *buf, unsigned int len)
 {
-	if (script_log_level <= LogLevel) {
+	if (script_log_level <= DEBUGLEVEL) {
 		if (log != NULL && log->prefix != NULL) {
 			do_debug("%s: %*.*s\n", log->prefix, len, len, buf);
 		} else {
@@ -628,7 +628,7 @@ static void ctdb_tevent_logging(void *private_data,
 		break;
 	}
 
-	if (lvl <= LogLevel) {
+	if (lvl <= DEBUGLEVEL) {
 		this_log_level = lvl;
 		do_debug_v(fmt, ap);
 	}

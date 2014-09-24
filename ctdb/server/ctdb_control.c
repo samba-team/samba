@@ -108,14 +108,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_SET_DEBUG: {
 		CHECK_CONTROL_DATA_SIZE(sizeof(int32_t));
-		LogLevel = *(int32_t *)indata.dptr;
+		DEBUGLEVEL = *(int32_t *)indata.dptr;
 		return 0;
 	}
 
 	case CTDB_CONTROL_GET_DEBUG: {
 		CHECK_CONTROL_DATA_SIZE(0);
-		outdata->dptr = (uint8_t *)&LogLevel;
-		outdata->dsize = sizeof(LogLevel);
+		outdata->dptr = (uint8_t *)&(DEBUGLEVEL);
+		outdata->dsize = sizeof(DEBUGLEVEL);
 		return 0;
 	}
 

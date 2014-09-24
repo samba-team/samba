@@ -23,7 +23,7 @@
 #include "../include/ctdb_private.h"
 #include "../include/ctdb_client.h"
 
-int LogLevel = DEBUG_NOTICE;
+int DEBUGLEVEL = DEBUG_NOTICE;
 int this_log_level = 0;
 const char *debug_extra = "";
 

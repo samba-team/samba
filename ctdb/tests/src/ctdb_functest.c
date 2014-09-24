@@ -162,9 +162,9 @@ static void usage(void)
 
 int main(int argc, const char *argv[])
 {
-	LogLevel = DEBUG_DEBUG;
+	DEBUGLEVEL = DEBUG_DEBUG;
 	if (getenv("CTDB_TEST_LOGLEVEL")) {
-		LogLevel = atoi(getenv("CTDB_TEST_LOGLEVEL"));
+		DEBUGLEVEL = atoi(getenv("CTDB_TEST_LOGLEVEL"));
 	}
 
 	if (argc < 2) {
