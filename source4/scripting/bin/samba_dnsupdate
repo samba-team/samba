@@ -299,6 +299,8 @@ def get_subst_vars(samdb):
                     vars['IF_RWGC'] = ""
 
         basedn = str(samdb.get_default_basedn())
+        forestdn = str(samdb.get_root_basedn())
+
         if "msDS-hasMasterNCs" in res[0]:
             for e in res[0]["msDS-hasMasterNCs"]:
                 if str(e) == "DC=DomainDnsZones,%s" % basedn:
@@ -307,7 +309,7 @@ def get_subst_vars(samdb):
                         vars['IF_RODNS_DOMAIN'] = ""
                     else:
                         vars['IF_RWDNS_DOMAIN'] = ""
-                if str(e) == "DC=ForestDnsZones,%s" % basedn:
+                if str(e) == "DC=ForestDnsZones,%s" % forestdn:
                     vars['IF_DNS_FOREST'] = ""
                     if am_rodc:
                         vars['IF_RODNS_FOREST'] = ""
