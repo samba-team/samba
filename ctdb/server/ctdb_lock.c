@@ -492,6 +492,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 
 	/* If a node stopped/banned, don't spam the logs */
 	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
+		lock_ctx->ttimer = NULL;
 		return;
 	}
 	if (lock_ctx->ctdb_db) {
