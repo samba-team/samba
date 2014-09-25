@@ -653,6 +653,12 @@ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 char *GUID_hexstring(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 struct GUID GUID_random(void);
 
+/* Format is "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" */
+ /* 32 chars + 4 ' ' + \0 + 2 for adding {}  */
+struct GUID_txt_buf { char buf[39]; };
+_PUBLIC_ char* GUID_buf_string(const struct GUID *guid,
+			       struct GUID_txt_buf *dst);
+
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v);

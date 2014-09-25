@@ -241,6 +241,28 @@ _PUBLIC_ char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 			       guid->node[4], guid->node[5]);
 }
 
+/**
+ * Does the same without allocating memory, using the structure buffer.
+ * Useful for debug messages, so that you do not have to talloc_free the result
+ */
+_PUBLIC_ char* GUID_buf_string(const struct GUID *guid,
+			       struct GUID_txt_buf *dst)
+{
+	if (!guid) {
+		return NULL;
+	}
+	snprintf(dst->buf, sizeof(dst->buf),
+		 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		 guid->time_low, guid->time_mid,
+		 guid->time_hi_and_version,
+		 guid->clock_seq[0],
+		 guid->clock_seq[1],
+		 guid->node[0], guid->node[1],
+		 guid->node[2], guid->node[3],
+		 guid->node[4], guid->node[5]);
+	return dst->buf;
+}
+
 _PUBLIC_ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	char *ret, *s = GUID_string(mem_ctx, guid);
