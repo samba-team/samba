@@ -36,9 +36,9 @@ static void send_result(int fd, char result)
 static void usage(void)
 {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage: %s <ctdbd-pid> <output-fd> RECORD <db-path> <db-key>\n",
+	fprintf(stderr, "Usage: %s <log-fd> <ctdbd-pid> <output-fd> RECORD <db-path> <db-key>\n",
 		progname);
-	fprintf(stderr, "       %s <ctdbd-pid> <output-fd> DB <db1-path> [<db2-path> ...]\n",
+	fprintf(stderr, "       %s <log-fd> <ctdbd-pid> <output-fd> DB <db1-path> [<db2-path> ...]\n",
 		progname);
 }
 
