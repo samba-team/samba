@@ -30,7 +30,6 @@
 #include "client.h"
 #include "async_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "smb2cli.h"
 #include "cli_smb2_fnum.h"
 #include "trans2.h"
 #include "clirap.h"

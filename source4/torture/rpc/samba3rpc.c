@@ -46,7 +46,6 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
-#include "../source3/libsmb/smb2cli.h"
 #include "libcli/smb/smbXcli_base.h"
 
 /*

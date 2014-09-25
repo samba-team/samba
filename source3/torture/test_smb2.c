@@ -22,7 +22,6 @@
 #include "client.h"
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "libsmb/smb2cli.h"
 #include "libcli/security/security.h"
 #include "libsmb/proto.h"
 #include "auth/gensec/gensec.h"

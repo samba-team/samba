@@ -34,7 +34,6 @@
 #include "libsmb/nmblib.h"
 #include "librpc/ndr/libndr.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "smb2cli.h"
 
 #define STAR_SMBSERVER "*SMBSERVER"
 

@@ -29,7 +29,6 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "../source3/libsmb/smb2cli.h"
 
 /**
   initialise a smb2_session structure
