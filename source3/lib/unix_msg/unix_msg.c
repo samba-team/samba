@@ -994,7 +994,7 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	buflen -= sizeof(cookie);
 
 	if (cookie == 0) {
-		ctx->recv_callback(ctx,	buf, buflen, fds, num_fds, ctx->private_data);
+		ctx->recv_callback(ctx, buf, buflen, fds, num_fds, ctx->private_data);
 		return;
 	}
 
