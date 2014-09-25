@@ -28,7 +28,7 @@ loadconfig ctdb
     sed_cmd=$( ls -li "$CTDB_DBDIR"/*.tdb.* "$CTDB_DBDIR_PERSISTENT"/*.tdb.* |
 	   sed -e "s#${CTDB_DBDIR}/\(.*\)#\1#" \
 	       -e "s#${CTDB_DBDIR_PERSISTENT}/\(.*\)#\1#" |
-	   awk '{printf "s#[0-9]*:[0-9]*:%s #%s #\n", $1, $10}' )
+	   awk '{printf "s#[0-9a-f]*:[0-9a-f]*:%s #%s #\n", $1, $10}' )
 
     # Parse /proc/locks and extract following information
     #    pid process_name tdb_name offsets [W]
