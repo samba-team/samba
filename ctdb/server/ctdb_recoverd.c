@@ -1815,6 +1815,16 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
 		start_time = timeval_current();
 		if (!ctdb_recovery_lock(ctdb, true)) {
+			if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
+				/* If ctdb is trying first recovery, it's
+				 * possible that current node does not know yet
+				 * who the recmaster is.
+				 */
+				DEBUG(DEBUG_ERR, ("Unable to get recovery lock"
+						" - retrying recovery\n"));
+				return -1;
+			}
+
 			DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery "
 					 "and ban ourself for %u seconds\n",
 					 ctdb->tunable.recovery_ban_period));
@@ -3590,6 +3600,14 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to get tunables - retrying\n"));
+		return;
+	}
+
+	/* get runstate */
+	ret = ctdb_ctrl_get_runstate(ctdb, CONTROL_TIMEOUT(),
+				     CTDB_CURRENT_NODE, &ctdb->runstate);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to get runstate - retrying\n"));
 		return;
 	}
 
