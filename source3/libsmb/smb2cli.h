@@ -24,17 +24,4 @@ struct smbXcli_conn;
 struct smbXcli_session;
 struct cli_state;
 
-struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     struct cli_state *cli,
-				     const char *share);
-NTSTATUS smb2cli_tcon_recv(struct tevent_req *req);
-NTSTATUS smb2cli_tcon(struct cli_state *cli, const char *share);
-
-struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     struct cli_state *cli);
-NTSTATUS smb2cli_tdis_recv(struct tevent_req *req);
-NTSTATUS smb2cli_tdis(struct cli_state *cli);
-
 #endif /* __SMB2CLI_H__ */

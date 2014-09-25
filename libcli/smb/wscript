@@ -28,6 +28,7 @@ def build(bld):
                 smb1cli_write.c
                 smb1cli_read.c
 		smb2cli_session.c
+		smb2cli_tcon.c
                 smb2cli_create.c
                 smb2cli_close.c
 		smb2cli_read.c

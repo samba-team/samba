@@ -2664,7 +2664,24 @@ static struct tevent_req *cli_tree_connect_send(
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		subreq = smb2cli_tcon_send(state, ev, cli, share);
+		char *unc;
+
+		cli->smb2.tcon = smbXcli_tcon_create(cli);
+		if (tevent_req_nomem(cli->smb2.tcon, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		unc = talloc_asprintf(state, "\\\\%s\\%s",
+				      smbXcli_conn_remote_name(cli->conn),
+				      share);
+		if (tevent_req_nomem(unc, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = smb2cli_tcon_send(state, ev, cli->conn, cli->timeout,
+					   cli->smb2.session, cli->smb2.tcon,
+					   0, /* flags */
+					   unc);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -2824,7 +2841,10 @@ NTSTATUS cli_tdis(struct cli_state *cli)
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return smb2cli_tdis(cli);
+		return smb2cli_tdis(cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tcon);
 	}
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {

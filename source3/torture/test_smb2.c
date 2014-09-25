@@ -181,7 +181,10 @@ bool run_smb2_basic(int dummy)
 				0, /* flags */
 				0, /* capabilities */
 				0  /* maximal_access */);
-	status = smb2cli_tdis(cli);
+	status = smb2cli_tdis(cli->conn,
+			      cli->timeout,
+			      cli->smb2.session,
+			      cli->smb2.tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_tdis returned %s\n", nt_errstr(status));
 		return false;
@@ -189,7 +192,10 @@ bool run_smb2_basic(int dummy)
 	talloc_free(cli->smb2.tcon);
 	cli->smb2.tcon = saved_tcon;
 
-	status = smb2cli_tdis(cli);
+	status = smb2cli_tdis(cli->conn,
+			      cli->timeout,
+			      cli->smb2.session,
+			      cli->smb2.tcon);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
 		printf("2nd smb2cli_tdis returned %s\n", nt_errstr(status));
 		return false;

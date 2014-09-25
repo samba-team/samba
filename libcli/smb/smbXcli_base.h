@@ -452,6 +452,34 @@ NTSTATUS smb2cli_logoff(struct smbXcli_conn *conn,
 			uint32_t timeout_msec,
 			struct smbXcli_session *session);
 
+struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct smbXcli_conn *conn,
+				     uint32_t timeout_msec,
+				     struct smbXcli_session *session,
+				     struct smbXcli_tcon *tcon,
+				     uint16_t flags,
+				     const char *unc);
+NTSTATUS smb2cli_tcon_recv(struct tevent_req *req);
+NTSTATUS smb2cli_tcon(struct smbXcli_conn *conn,
+		      uint32_t timeout_msec,
+		      struct smbXcli_session *session,
+		      struct smbXcli_tcon *tcon,
+		      uint16_t flags,
+		      const char *unc);
+
+struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct smbXcli_conn *conn,
+				     uint32_t timeout_msec,
+				     struct smbXcli_session *session,
+				     struct smbXcli_tcon *tcon);
+NTSTATUS smb2cli_tdis_recv(struct tevent_req *req);
+NTSTATUS smb2cli_tdis(struct smbXcli_conn *conn,
+		      uint32_t timeout_msec,
+		      struct smbXcli_session *session,
+		      struct smbXcli_tcon *tcon);
+
 struct tevent_req *smb2cli_create_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
