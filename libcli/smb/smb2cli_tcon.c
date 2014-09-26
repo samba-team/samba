@@ -24,7 +24,9 @@
 #include "../libcli/smb/smbXcli_base.h"
 
 struct smb2cli_tcon_state {
+	struct tevent_context *ev;
 	struct smbXcli_conn *conn;
+	uint32_t timeout_msec;
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
 	uint8_t fixed[8];
@@ -54,7 +56,9 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->conn = conn;
+	state->timeout_msec = timeout_msec;
 	state->session = session;
 	state->tcon = tcon;
 
@@ -96,8 +100,11 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, smb2cli_tcon_done, req);
+
 	return req;
 }
+
+static void smb2cli_tcon_validate(struct tevent_req *subreq);
 
 static void smb2cli_tcon_done(struct tevent_req *subreq)
 {
@@ -143,6 +150,39 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 				share_flags,
 				share_capabilities,
 				maximal_access);
+
+	if (!smbXcli_session_is_authenticated(state->session)) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = smb2cli_validate_negotiate_info_send(state, state->ev,
+						      state->conn,
+						      state->timeout_msec,
+						      state->session,
+						      state->tcon);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smb2cli_tcon_validate, req);
+}
+
+static void smb2cli_tcon_validate(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb2cli_tcon_state *state = tevent_req_data(
+		req, struct smb2cli_tcon_state);
+	NTSTATUS status;
+
+	status = smb2cli_validate_negotiate_info_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2cli_tcon_set_values(state->tcon, NULL,
+					UINT32_MAX, 0, 0, 0, 0);
+		tevent_req_nterror(req, status);
+		return;
+	}
 
 	tevent_req_done(req);
 }
