@@ -156,6 +156,11 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (smbXcli_conn_protocol(state->conn) >= PROTOCOL_SMB3_10) {
+		tevent_req_done(req);
+		return;
+	}
+
 	subreq = smb2cli_validate_negotiate_info_send(state, state->ev,
 						      state->conn,
 						      state->timeout_msec,
