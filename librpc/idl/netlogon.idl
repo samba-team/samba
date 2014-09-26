@@ -1336,7 +1336,7 @@ interface netlogon
 		lsa_String dummy_string3;
 		lsa_String dummy_string4;
 		netr_WorkstationFlags workstation_flags;
-		uint32 dummy_long2;
+		netr_SupportedEncTypes supported_enc_types;
 		uint32 dummy_long3;
 		uint32 dummy_long4;
 	} netr_WorkstationInformation;
