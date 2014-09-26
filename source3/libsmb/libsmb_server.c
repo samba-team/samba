@@ -488,13 +488,6 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                 }
 	}
 
-	status = cli_set_username(c, username_used);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		cli_shutdown(c);
-		return NULL;
-	}
-
 	DEBUG(4,(" session setup ok\n"));
 
 	/* here's the fun part....to support 'msdfs proxy' shares
