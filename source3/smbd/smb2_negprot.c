@@ -254,8 +254,13 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			capabilities |= SMB2_CAP_LARGE_MTU;
 			xconn->smb2.credits.multicredit = true;
 
-			/* Windows 2012R2 allows up to 8 MB */
-			max_limit = 0x800000; /* 8MB */
+			/*
+			 * We allow up to allmost 16MB.
+			 *
+			 * The maximum PDU size is 0xFFFFFF (16776960)
+			 * and we need some space for the header.
+			 */
+			max_limit = 0xFFFF00;
 		}
 	}
 
