@@ -360,6 +360,26 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static ADS_STATUS libnet_join_get_machine_spns(TALLOC_CTX *mem_ctx,
+					       struct libnet_JoinCtx *r,
+					       char ***spn_array,
+					       size_t *num_spns)
+{
+	ADS_STATUS status;
+
+	if (r->in.machine_name == NULL) {
+		return ADS_ERROR_SYSTEM(EINVAL);
+	}
+
+	status = ads_get_service_principal_names(mem_ctx,
+						 r->in.ads,
+						 r->in.machine_name,
+						 spn_array,
+						 num_spns);
+
+	return status;
+}
+
 /****************************************************************
  Set a machines dNSHostName and servicePrincipalName attributes
 ****************************************************************/
