@@ -6,6 +6,7 @@
 
 # overall this makes some build tasks quite a bit faster
 
+import Build, Utils, Node
 from TaskGen import feature, after
 import preproc, Task
 
@@ -163,3 +164,147 @@ def suncc_wrap(cls):
         return oldrun(self)
     cls.run = run
 suncc_wrap(Task.TaskBase.classes['cc_link'])
+
+
+
+def hash_env_vars(self, env, vars_lst):
+    idx = str(id(env)) + str(vars_lst)
+    try:
+        return self.cache_sig_vars[idx]
+    except KeyError:
+        pass
+
+    m = Utils.md5()
+    m.update(''.join([str(env[a]) for a in vars_lst]))
+
+    ret = self.cache_sig_vars[idx] = m.digest()
+    return ret
+Build.BuildContext.hash_env_vars = hash_env_vars
+
+
+def store_fast(self, filename):
+    file = open(filename, 'wb')
+    data = self.get_merged_dict()
+    try:
+        Build.cPickle.dump(data, file, -1)
+    finally:
+        file.close()
+Environment.Environment.store_fast = store_fast
+
+def load_fast(self, filename):
+    file = open(filename, 'rb')
+    try:
+        data = Build.cPickle.load(file)
+    finally:
+        file.close()
+    self.table.update(data)
+Environment.Environment.load_fast = load_fast
+
+def is_this_a_static_lib(self, name):
+    try:
+        cache = self.cache_is_this_a_static_lib
+    except AttributeError:
+        cache = self.cache_is_this_a_static_lib = {}
+    try:
+        return cache[name]
+    except KeyError:
+        ret = cache[name] = 'cstaticlib' in self.bld.name_to_obj(name, self.env).features
+        return ret
+TaskGen.task_gen.is_this_a_static_lib = is_this_a_static_lib
+
+def shared_ancestors(self):
+    try:
+        cache = self.cache_is_this_a_static_lib
+    except AttributeError:
+        cache = self.cache_is_this_a_static_lib = {}
+    try:
+        return cache[id(self)]
+    except KeyError:
+
+        ret = []
+        if 'cshlib' in self.features: # or 'cprogram' in self.features:
+            if getattr(self, 'uselib_local', None):
+                lst = self.to_list(self.uselib_local)
+                ret = [x for x in lst if not self.is_this_a_static_lib(x)]
+        cache[id(self)] = ret
+        return ret
+TaskGen.task_gen.shared_ancestors = shared_ancestors
+
+@feature('cc', 'cxx')
+@after('apply_link', 'init_cc', 'init_cxx', 'apply_core')
+def apply_lib_vars(self):
+    """after apply_link because of 'link_task'
+    after default_cc because of the attribute 'uselib'"""
+
+    # after 'apply_core' in case if 'cc' if there is no link
+
+    env = self.env
+    app = env.append_value
+    seen_libpaths = set([])
+
+    # OPTIMIZATION 1: skip uselib variables already added (700ms)
+    seen_uselib = set([])
+
+    # 1. the case of the libs defined in the project (visit ancestors first)
+    # the ancestors external libraries (uselib) will be prepended
+    self.uselib = self.to_list(self.uselib)
+    names = self.to_list(self.uselib_local)
+
+    seen = set([])
+    tmp = Utils.deque(names) # consume a copy of the list of names
+    while tmp:
+        lib_name = tmp.popleft()
+        # visit dependencies only once
+        if lib_name in seen:
+            continue
+
+        y = self.name_to_obj(lib_name)
+        if not y:
+            raise Utils.WafError('object %r was not found in uselib_local (required by %r)' % (lib_name, self.name))
+        y.post()
+        seen.add(lib_name)
+
+        # OPTIMIZATION 2: pre-compute ancestors shared libraries (100ms)
+        tmp.extend(y.shared_ancestors())
+
+        # link task and flags
+        if getattr(y, 'link_task', None):
+
+            link_name = y.target[y.target.rfind('/') + 1:]
+            if 'cstaticlib' in y.features:
+                app('STATICLIB', link_name)
+            elif 'cshlib' in y.features or 'cprogram' in y.features:
+                # WARNING some linkers can link against programs
+                app('LIB', link_name)
+
+            # the order
+            self.link_task.set_run_after(y.link_task)
+
+            # for the recompilation
+            dep_nodes = getattr(self.link_task, 'dep_nodes', [])
+            self.link_task.dep_nodes = dep_nodes + y.link_task.outputs
+
+            # OPTIMIZATION 3: reduce the amount of function calls
+            # add the link path too
+            par = y.link_task.outputs[0].parent
+            if id(par) not in seen_libpaths:
+                seen_libpaths.add(id(par))
+                tmp_path = par.bldpath(self.env)
+                if not tmp_path in env['LIBPATH']:
+                    env.prepend_value('LIBPATH', tmp_path)
+
+
+        # add ancestors uselib too - but only propagate those that have no staticlib
+        for v in self.to_list(y.uselib):
+            if v not in seen_uselib:
+                seen_uselib.add(v)
+                if not env['STATICLIB_' + v]:
+                    if not v in self.uselib:
+                        self.uselib.insert(0, v)
+
+    # 2. the case of the libs defined outside
+    for x in self.uselib:
+        for v in self.p_flag_vars:
+            val = self.env[v + '_' + x]
+            if val:
+                self.env.append_value(v, val)

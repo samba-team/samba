@@ -1021,7 +1021,7 @@ def save_samba_deps(bld, tgt_list):
             denv.outenv[t.sname] = tdeps
 
     depsfile = os.path.join(bld.bdir, "sambadeps")
-    denv.store(depsfile)
+    denv.store_fast(depsfile)
 
 
 
@@ -1031,12 +1031,12 @@ def load_samba_deps(bld, tgt_list):
     denv = Environment.Environment()
     try:
         debug('deps: checking saved dependencies')
-        denv.load(depsfile)
+        denv.load_fast(depsfile)
         if (denv.version != savedeps_version or
             denv.savedeps_inputs != savedeps_inputs or
             denv.savedeps_outputs != savedeps_outputs):
             return False
-    except:
+    except Exception:
         return False
 
     # check if critical files have changed
