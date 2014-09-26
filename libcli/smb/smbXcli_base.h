@@ -359,6 +359,14 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 			 enum protocol_types min_protocol,
 			 enum protocol_types max_protocol);
 
+struct tevent_req *smb2cli_validate_negotiate_info_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct smbXcli_conn *conn,
+						uint32_t timeout_msec,
+						struct smbXcli_session *session,
+						struct smbXcli_tcon *tcon);
+NTSTATUS smb2cli_validate_negotiate_info_recv(struct tevent_req *req);
+
 struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 					       struct smbXcli_conn *conn);
 struct smbXcli_session *smbXcli_session_copy(TALLOC_CTX *mem_ctx,
