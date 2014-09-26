@@ -271,7 +271,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	struct ctdb_script_wire *current = get_current_script(state);
 	int argc;
 	const char **argv;
-	static const char *helper = BINDIR "/ctdb_event_helper";
+	static const char *helper = CTDB_HELPER_BINDIR "/ctdb_event_helper";
 
 	if (helper_prog == NULL) {
 		const char *t = getenv("CTDB_EVENT_HELPER");
