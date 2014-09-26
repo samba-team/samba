@@ -5227,6 +5227,12 @@ void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
 	}
 }
 
+void smb2cli_tcon_should_encrypt(struct smbXcli_tcon *tcon,
+				 bool should_encrypt)
+{
+	tcon->smb2.should_encrypt = should_encrypt;
+}
+
 bool smb2cli_tcon_is_encryption_on(struct smbXcli_tcon *tcon)
 {
 	return tcon->smb2.should_encrypt;
