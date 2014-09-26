@@ -109,4 +109,4 @@ FORCE:
 # so only 1 waf at a time will be called but it will still be able to do parralel builds if
 # instructed to do so
 .NOTPARALLEL: %
-.PHONY: FORCE
+.PHONY: FORCE everything testsuite check torture
