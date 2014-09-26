@@ -3389,7 +3389,7 @@ static void cli_full_connection_sess_set_up(struct tevent_req *subreq)
 		return;
 	}
 
-	status = cli_init_creds(state->cli, state->user, state->domain);
+	status = cli_set_username(state->cli, state->user);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -3409,7 +3409,7 @@ static void cli_full_connection_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	status = cli_init_creds(state->cli, state->user, state->domain);
+	status = cli_set_username(state->cli, state->user);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}

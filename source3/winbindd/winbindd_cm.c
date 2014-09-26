@@ -1114,13 +1114,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 					   machine_domain);
 
 		if (NT_STATUS_IS_OK(result)) {
-			if (krb5_state != CRED_MUST_USE_KERBEROS) {
-				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-				result = cli_init_creds(*cli, machine_account, machine_domain);
-				if (!NT_STATUS_IS_OK(result)) {
-					goto done;
-				}
-			}
 			goto session_setup_done;
 		}
 
@@ -1146,11 +1139,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
-		/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-		result = cli_init_creds(*cli, machine_account, machine_domain, machine_password);
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
 		goto session_setup_done;
 	}
 
@@ -1214,11 +1202,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 				   machine_domain);
 
 	if (NT_STATUS_IS_OK(result)) {
-		/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-		result = cli_init_creds(*cli, machine_account, machine_domain);
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
 		goto session_setup_done;
 	}
 
@@ -1272,10 +1255,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	if (NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("Connected anonymously\n"));
-		result = cli_init_creds(*cli, machine_account, machine_domain, machine_password);
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
 		goto session_setup_done;
 	}
 
@@ -2727,7 +2706,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("cm_connect_sam: No no user available for "
-			   "domain %s, trying schannel\n", conn->cli->domain));
+			   "domain %s, trying schannel\n", domain->name));
 		goto schannel;
 	}
 
@@ -2976,7 +2955,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("cm_connect_sam: No no user available for "
-			   "domain %s, trying schannel\n", conn->cli->domain));
+			   "domain %s, trying schannel\n", domain->name));
 		goto schannel;
 	}
 
@@ -3171,7 +3150,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10, ("cm_connect_sam: No no user available for "
-			   "domain %s when trying schannel\n", conn->cli->domain));
+			   "domain %s when trying schannel\n", domain->name));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 

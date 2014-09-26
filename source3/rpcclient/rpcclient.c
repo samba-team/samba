@@ -215,7 +215,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 		TALLOC_FREE(lsapipe);
 	}
 
-	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
+	fprintf(stderr, "could not obtain sid from server\n");
 
 	if (!NT_STATUS_IS_OK(result)) {
 		fprintf(stderr, "error: %s\n", nt_errstr(result));

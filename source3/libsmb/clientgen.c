@@ -66,18 +66,8 @@ bool cli_set_backup_intent(struct cli_state *cli, bool flag)
 }
 
 /****************************************************************************
- Initialize Domain, user or password.
+ Initialize user for spoolss use ONLY
 ****************************************************************************/
-
-NTSTATUS cli_set_domain(struct cli_state *cli, const char *domain)
-{
-	TALLOC_FREE(cli->domain);
-	cli->domain = talloc_strdup(cli, domain ? domain : "");
-	if (cli->domain == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
 
 NTSTATUS cli_set_username(struct cli_state *cli, const char *username)
 {
@@ -86,25 +76,6 @@ NTSTATUS cli_set_username(struct cli_state *cli, const char *username)
 	if (cli->user_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Initialise credentials of a client structure.
-****************************************************************************/
-
-NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char *domain)
-{
-	NTSTATUS status = cli_set_username(cli, username);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = cli_set_domain(cli, domain);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
-
 	return NT_STATUS_OK;
 }
 

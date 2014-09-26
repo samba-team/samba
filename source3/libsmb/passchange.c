@@ -122,18 +122,6 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			cli_shutdown(cli);
 			return result;
 		}
-
-		result = cli_init_creds(cli, "", "");
-		if (!NT_STATUS_IS_OK(result)) {
-			cli_shutdown(cli);
-			return result;
-		}
-	} else {
-		result = cli_init_creds(cli, user, domain);
-		if (!NT_STATUS_IS_OK(result)) {
-			cli_shutdown(cli);
-			return result;
-		}
 	}
 
 	result = cli_tree_connect(cli, "IPC$", "IPC", "", 1);
@@ -222,12 +210,6 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	TALLOC_FREE(pipe_hnd);
 
 	/* Try anonymous NTLMSSP... */
-	result = cli_init_creds(cli, "", "");
-	if (!NT_STATUS_IS_OK(result)) {
-		cli_shutdown(cli);
-		return result;
-	}
-
 	result = NT_STATUS_UNSUCCESSFUL;
 
 	/* OK, this is ugly, but... try an anonymous pipe. */

@@ -53,7 +53,6 @@ struct cli_state {
 	bool map_dos_errors;
 
 	/* The credentials used to open the cli_state connection. */
-	char *domain;
 	char *user_name;
 
 	/*
