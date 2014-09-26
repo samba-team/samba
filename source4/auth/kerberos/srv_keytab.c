@@ -143,7 +143,7 @@ static krb5_error_code salt_principal(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	machine_username = talloc_strdup(tmp_ctx, samAccountName);
+	machine_username = strlower_talloc(tmp_ctx, samAccountName);
 	if (!machine_username) {
 		*error_string = "Cannot duplicate samAccountName";
 		talloc_free(tmp_ctx);
