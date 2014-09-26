@@ -70,13 +70,43 @@ etags:
 ctags:
 	$(WAF) ctags
 
-# this allows for things like "make bin/smbtorture"
-bin/%:: FORCE
-	$(WAF) --targets=$@
-FORCE:
-
 pydoctor:
 	$(WAF) pydoctor
 
 pep8:
 	$(WAF) pep8
+
+# Adding force on the depencies will force the target to be always rebuild form the Make
+# point of view forcing make to invoke waf
+
+bin/smbd: FORCE
+	$(WAF) --targets=smbd/smbd
+
+bin/winbindd: FORCE
+	$(WAF) --targets=winbindd/winbindd
+
+bin/nmbd: FORCE
+	$(WAF) --targets=nmbd/nmbd
+
+bin/smbclient: FORCE
+	$(WAF) --targets=client/smbclient
+
+# this allows for things like "make bin/smbtorture"
+# mainly for the binary that don't have a broken mode like smbd that must
+# be build with smbd/smbd
+bin/%: FORCE
+	$(WAF) --targets=$(subst bin/,,$@)
+
+# Catch all rule to be able to call make service_repl in order to find the name
+# of the submodule you want to build, look at the wscript
+%:
+	$(WAF) --targets=$@
+
+# This rule has to be the last one
+FORCE:
+# Having .NOTPARALLEL will force make to do target once at a time but still -j
+# will be present in the MAKEFLAGS that are in turn interpreted by WAF
+# so only 1 waf at a time will be called but it will still be able to do parralel builds if
+# instructed to do so
+.NOTPARALLEL: %
+.PHONY: FORCE
