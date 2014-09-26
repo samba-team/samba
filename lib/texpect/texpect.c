@@ -358,8 +358,9 @@ int main(int argc, const char **argv)
 	pid_t pid;
 	poptContext pc;
 	const char *instruction_file;
+	const char **args;
 	const char *program;
-	char* const *program_args;
+	char * const *program_args;
 
 	pc = poptGetContext("texpect",
 			    argc,
@@ -377,7 +378,8 @@ int main(int argc, const char **argv)
 	}
 
 	instruction_file = poptGetArg(pc);
-	program_args = poptGetArgs(pc);
+	args = poptGetArgs(pc);
+	program_args = (char * const *)discard_const_p(char *, args);
 	program = program_args[0];
 
 	if (opt_verbose) {
