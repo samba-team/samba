@@ -411,12 +411,10 @@ bool torture_init_connection(struct cli_state **pcli)
 bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 {
 	uint16_t old_vuid = cli_state_get_uid(cli);
-	fstring old_user_name;
 	size_t passlen = strlen(password);
 	NTSTATUS status;
 	bool ret;
 
-	fstrcpy(old_user_name, cli->user_name);
 	cli_state_set_uid(cli, 0);
 	ret = NT_STATUS_IS_OK(cli_session_setup(cli, username,
 						password, passlen,
@@ -424,10 +422,6 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 						workgroup));
 	*new_vuid = cli_state_get_uid(cli);
 	cli_state_set_uid(cli, old_vuid);
-	status = cli_set_username(cli, old_user_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
 	return ret;
 }
 
