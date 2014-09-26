@@ -52,9 +52,6 @@ struct cli_state {
 	NTSTATUS raw_status; /* maybe via NT_STATUS_DOS() */
 	bool map_dos_errors;
 
-	/* The credentials used to open the cli_state connection. */
-	char *user_name;
-
 	/*
 	 * The following strings are the
 	 * ones returned by the server if

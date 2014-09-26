@@ -66,20 +66,6 @@ bool cli_set_backup_intent(struct cli_state *cli, bool flag)
 }
 
 /****************************************************************************
- Initialize user for spoolss use ONLY
-****************************************************************************/
-
-NTSTATUS cli_set_username(struct cli_state *cli, const char *username)
-{
-	TALLOC_FREE(cli->user_name);
-	cli->user_name = talloc_strdup(cli, username ? username : "");
-	if (cli->user_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Initialise a client structure. Always returns a talloc'ed struct.
  Set the signing state (used from the command line).
 ****************************************************************************/
