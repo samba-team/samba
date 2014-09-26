@@ -388,14 +388,24 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	ADS_STATUS status;
 	ADS_MODLIST mods;
 	fstring my_fqdn;
-	const char *spn_array[3] = {NULL, NULL, NULL};
+	const char **spn_array = NULL;
+	size_t num_spns = 0;
 	char *spn = NULL;
+	bool ok;
 
 	/* Find our DN */
 
 	status = libnet_join_find_machine_acct(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
 		return status;
+	}
+
+	status = libnet_join_get_machine_spns(mem_ctx,
+					      r,
+					      discard_const_p(char **, &spn_array),
+					      &num_spns);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(5, ("Retrieving the servicePrincipalNames failed.\n"));
 	}
 
 	/* Windows only creates HOST/shortname & HOST/fqdn. */
@@ -407,7 +417,15 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	if (!strupper_m(spn)) {
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
-	spn_array[0] = spn;
+
+	ok = ads_element_in_array(spn_array, num_spns, spn);
+	if (!ok) {
+		ok = add_string_to_array(spn_array, spn,
+					 &spn_array, (int *)&num_spns);
+		if (!ok) {
+			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		}
+	}
 
 	if (!name_to_fqdn(my_fqdn, r->in.machine_name)
 	    || (strchr(my_fqdn, '.') == NULL)) {
@@ -424,8 +442,23 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		if (!spn) {
 			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 		}
-		spn_array[1] = spn;
+
+		ok = ads_element_in_array(spn_array, num_spns, spn);
+		if (!ok) {
+			ok = add_string_to_array(spn_array, spn,
+						 &spn_array, (int *)&num_spns);
+			if (!ok) {
+				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			}
+		}
 	}
+
+	/* make sure to NULL terminate the array */
+	spn_array = talloc_realloc(mem_ctx, spn_array, const char *, num_spns + 1);
+	if (spn_array == NULL) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+	spn_array[num_spns] = NULL;
 
 	mods = ads_init_mods(mem_ctx);
 	if (!mods) {
