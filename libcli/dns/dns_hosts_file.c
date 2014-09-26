@@ -110,8 +110,6 @@ static bool getdns_hosts_fileent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, cha
 			if (next_token_talloc(ctx, &ptr, &next_name, NULL))
 				++count;
 		}
-		if (count <= 0)
-			continue;
 
 		if ((strcasecmp(name_type, "A") == 0) ||
 		    (strcasecmp(name_type, "AAAA") == 0))
