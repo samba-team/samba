@@ -177,7 +177,7 @@ def configure(conf):
         conf.env.CTDB_SOCKPATH = os.path.join(conf.env.CTDB_RUNDIR,
                                               'ctdbd.socket')
 
-    conf.ADD_CFLAGS('''-DBINDIR=\"%s\"
+    conf.ADD_CFLAGS('''-DCTDB_HELPER_BINDIR=\"%s\"
                        -DLOGDIR=\"%s\"
                        -DSOCKPATH=\"%s\"
                        -DCTDB_ETCDIR=\"%s\"

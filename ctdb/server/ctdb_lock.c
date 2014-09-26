@@ -724,7 +724,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	struct lock_context *lock_ctx;
 	int ret, argc;
 	TALLOC_CTX *tmp_ctx;
-	const char *helper = BINDIR "/ctdb_lock_helper";
+	const char *helper = CTDB_HELPER_BINDIR "/ctdb_lock_helper";
 	static const char *prog = NULL;
 	const char **args;
 
