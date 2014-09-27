@@ -2242,7 +2242,13 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 					fsp->base_fsp->fsp_name->base_name,
 					vfs_translate_to_unix,
 					talloc_tos(), &name);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		name = talloc_strdup(talloc_tos(), tmp_base_name);
+		if (name == NULL) {
+			rc = -1;
+			goto exit;
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		rc = -1;
 		goto exit;
@@ -2332,7 +2338,13 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 					fsp->base_fsp->fsp_name->base_name,
 					vfs_translate_to_unix,
 					talloc_tos(), &name);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		name = talloc_strdup(talloc_tos(), tmp_base_name);
+		if (name == NULL) {
+			rc = -1;
+			goto exit;
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		rc = -1;
 		goto exit;
@@ -2613,7 +2625,13 @@ static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			vfs_translate_to_unix,
 			talloc_tos(), &name);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+			name = talloc_strdup(talloc_tos(), tmp_base_name);
+			if (name == NULL) {
+				rc = -1;
+				goto exit;
+			}
+		} else if (!NT_STATUS_IS_OK(status)) {
 			errno = map_errno_from_nt_status(status);
 			rc = -1;
 			goto exit;
