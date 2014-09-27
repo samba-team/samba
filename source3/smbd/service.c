@@ -1127,7 +1127,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 
 	change_to_root_user();
 
-	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
+	DEBUG(IS_IPC(conn)?3:2, ("%s (%s) closed connection to service %s\n",
 				 get_remote_machine_name(),
 				 tsocket_address_string(conn->sconn->remote_address,
 							talloc_tos()),
