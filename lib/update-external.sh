@@ -10,13 +10,15 @@ LIBDIR="`dirname $0`"
 WORKDIR="`mktemp -d`"
 
 echo "Updating subunit..."
-bzr export "$WORKDIR/subunit" lp:subunit 
+git clone git://github.com/testing-cabal/subunit "$WORKDIR/subunit"
+rm -rf "$WORKDIR/subunit/.git"
 # Preserve wscript file
 cp "$LIBDIR/subunit/c/wscript" "$WORKDIR/subunit/c/wscript"
 rsync -avz --delete "$WORKDIR/subunit/" "$LIBDIR/subunit/"
 
 echo "Updating testtools..."
-bzr export "$WORKDIR/testtools" lp:testtools 
+git clone git://github.com/testing-cabal/testtools "$WORKDIR/testtools"
+rm -rf "$WORKDIR/testtools/.git"
 rsync -avz --delete "$WORKDIR/testtools/" "$LIBDIR/testtools/"
 
 echo "Updating dnspython..."
