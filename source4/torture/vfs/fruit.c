@@ -24,6 +24,7 @@
 #include "libcli/libcli.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "libcli/smb/smb2_create_ctx.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
@@ -1358,6 +1359,277 @@ done:
 	return ret;
 }
 
+static bool test_aapl(struct torture_context *tctx,
+		      struct smb2_tree *tree1,
+		      struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\test_aapl";
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	struct smb2_create io;
+	DATA_BLOB data;
+	struct smb2_create_blob *aapl = NULL;
+	AfpInfo *info;
+	const char *type_creator = "SMB,OLE!";
+	char type_creator_buf[9];
+	uint32_t aapl_cmd;
+	uint32_t aapl_reply_bitmap;
+	uint32_t aapl_server_caps;
+	uint32_t aapl_vol_caps;
+	char *model;
+	struct smb2_find f;
+	unsigned int count;
+	union smb_search_data *d;
+	uint64_t rfork_len;
+
+	smb2_deltree(tree1, BASEDIR);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, testdirh);
+
+	ZERO_STRUCT(io);
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.share_access = (NTCREATEX_SHARE_ACCESS_DELETE |
+			      NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE);
+	io.in.fname = fname;
+
+	/*
+	 * Issuing an SMB2/CREATE with a suitably formed AAPL context,
+	 * controls behaviour of Apple's SMB2 extensions for the whole
+	 * session!
+	 */
+
+	data = data_blob_talloc(mem_ctx, NULL, 3 * sizeof(uint64_t));
+	SBVAL(data.data, 0, SMB2_CRTCTX_AAPL_SERVER_QUERY);
+	SBVAL(data.data, 8, (SMB2_CRTCTX_AAPL_SERVER_CAPS |
+			     SMB2_CRTCTX_AAPL_VOLUME_CAPS |
+			     SMB2_CRTCTX_AAPL_MODEL_INFO));
+	SBVAL(data.data, 16, (SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR |
+			      SMB2_CRTCTX_AAPL_UNIX_BASED |
+			      SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE));
+
+	torture_comment(tctx, "Testing SMB2 create context AAPL\n");
+	status = smb2_create_blob_add(tctx, &io.in.blobs, "AAPL", data);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree1, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_util_close(tree1, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Now check returned AAPL context
+	 */
+	torture_comment(tctx, "Comparing returned AAPL capabilites\n");
+
+	aapl = smb2_create_blob_find(&io.out.blobs,
+				     SMB2_CREATE_TAG_AAPL);
+
+	if (aapl->data.length != 50) {
+		/*
+		 * uint32_t CommandCode = kAAPL_SERVER_QUERY
+		 * uint32_t Reserved = 0;
+		 * uint64_t ReplyBitmap = kAAPL_SERVER_CAPS |
+		 *                        kAAPL_VOLUME_CAPS |
+		 *                        kAAPL_MODEL_INFO;
+		 * uint64_t ServerCaps = kAAPL_SUPPORTS_READDIR_ATTR |
+		 *                       kAAPL_SUPPORTS_OSX_COPYFILE;
+		 * uint64_t VolumeCaps = kAAPL_SUPPORT_RESOLVE_ID |
+		 *                       kAAPL_CASE_SENSITIVE;
+		 * uint32_t Pad2 = 0;
+		 * uint32_t ModelStringLen = 10;
+		 * ucs2_t ModelString[5] = "Samba";
+		 */
+		ret = false;
+		goto done;
+	}
+
+	aapl_cmd = IVAL(aapl->data.data, 0);
+	if (aapl_cmd != SMB2_CRTCTX_AAPL_SERVER_QUERY) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpected cmd: %d",
+			       __location__, (int)aapl_cmd);
+		ret = false;
+		goto done;
+	}
+
+	aapl_reply_bitmap = BVAL(aapl->data.data, 8);
+	if (aapl_reply_bitmap != (SMB2_CRTCTX_AAPL_SERVER_CAPS |
+				  SMB2_CRTCTX_AAPL_VOLUME_CAPS |
+				  SMB2_CRTCTX_AAPL_MODEL_INFO)) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpected reply_bitmap: %d",
+			       __location__, (int)aapl_reply_bitmap);
+		ret = false;
+		goto done;
+	}
+
+	aapl_server_caps = BVAL(aapl->data.data, 16);
+	if (aapl_server_caps != (SMB2_CRTCTX_AAPL_UNIX_BASED |
+				 SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR |
+				 SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE)) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpected server_caps: %d",
+			       __location__, (int)aapl_server_caps);
+		ret = false;
+		goto done;
+	}
+
+	aapl_vol_caps = BVAL(aapl->data.data, 24);
+	if (aapl_vol_caps != SMB2_CRTCTX_AAPL_CASE_SENSITIVE) {
+		/* this will fail on a case insensitive fs ... */
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpected vol_caps: %d",
+			       __location__, (int)aapl_vol_caps);
+		ret = false;
+		goto done;
+	}
+
+	ret = convert_string_talloc(mem_ctx,
+				    CH_UTF16LE, CH_UNIX,
+				    aapl->data.data + 40, 10,
+				    &model, NULL);
+	if (ret == false) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) convert_string_talloc() failed",
+			       __location__);
+		goto done;
+	}
+	if (strncmp(model, "Samba", 5) != 0) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) expected model \"Samba\", got: \"%s\"",
+			       __location__, model);
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * Now that Requested AAPL extensions are enabled, setup some
+	 * Mac files with metadata and resource fork
+	 */
+	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	if (ret == false) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) torture_setup_file() failed",
+			       __location__);
+		goto done;
+	}
+
+	info = torture_afpinfo_new(mem_ctx);
+	if (info == NULL) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) torture_afpinfo_new() failed",
+			       __location__);
+		ret = false;
+		goto done;
+	}
+
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree1, tctx, mem_ctx, fname, info);
+	if (ret == false) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) torture_write_afpinfo() failed",
+			       __location__);
+		goto done;
+	}
+
+	ret = write_stream(tree1, __location__, tctx, mem_ctx,
+			   fname, AFPRESOURCE_STREAM,
+			   0, 3, "foo");
+	if (ret == false) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) write_stream() failed",
+			       __location__);
+		goto done;
+	}
+
+	/*
+	 * Ok, file is prepared, now call smb2/find
+	 */
+
+	ZERO_STRUCT(io);
+	io.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.in.share_access = (NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE |
+			      NTCREATEX_SHARE_ACCESS_DELETE);
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.fname = BASEDIR;
+	status = smb2_create(tree1, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(f);
+	f.in.file.handle	= io.out.file.handle;
+	f.in.pattern		= "test_aapl";
+	f.in.continue_flags	= SMB2_CONTINUE_FLAG_SINGLE;
+	f.in.max_response_size	= 0x1000;
+	f.in.level              = SMB2_FIND_ID_BOTH_DIRECTORY_INFO;
+
+	status = smb2_find_level(tree1, tree1, &f, &count, &d);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree1, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (strcmp(d[0].id_both_directory_info.name.s, "test_aapl") != 0) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) write_stream() failed",
+			       __location__);
+		ret = false;
+		goto done;
+	}
+
+	if (d[0].id_both_directory_info.short_name.private_length != 24) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) bad short_name length %" PRIu32 ", expected 24",
+			       __location__, d[0].id_both_directory_info.short_name.private_length);
+		ret = false;
+		goto done;
+	}
+
+	torture_comment(tctx, "short_name buffer:\n");
+	dump_data(0, d[0].id_both_directory_info.short_name_buf, 24);
+
+	/*
+	 * Extract data as specified by the AAPL extension:
+	 * - ea_size contains max_access
+	 * - short_name contains resource fork length + FinderInfo
+	 * - reserved2 contains the unix mode
+	 */
+	torture_comment(tctx, "mac_access: %" PRIx32 "\n",
+			d[0].id_both_directory_info.ea_size);
+
+	rfork_len = BVAL(d[0].id_both_directory_info.short_name_buf, 0);
+	if (rfork_len != 3) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) expected resource fork length 3, got: %" PRIu64,
+			       __location__, rfork_len);
+		ret = false;
+		goto done;
+	}
+
+	memcpy(type_creator_buf, d[0].id_both_directory_info.short_name_buf + 8, 8);
+	type_creator_buf[8] = 0;
+	if (strcmp(type_creator, type_creator_buf) != 0) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) expected type/creator \"%s\" , got: %s",
+			       __location__, type_creator, type_creator_buf);
+		ret = false;
+		goto done;
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit
  * streams_xattr".  Note: To run this test, use
@@ -1376,6 +1648,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_2ns_smb2_test(suite, "write metadata", test_write_atalk_metadata);
 	torture_suite_add_2ns_smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
 	torture_suite_add_2ns_smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
+	torture_suite_add_2ns_smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
 
 	return suite;
 }
