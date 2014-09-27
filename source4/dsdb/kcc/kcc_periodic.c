@@ -661,7 +661,7 @@ NTSTATUS kccsrv_samba_kcc(struct kccsrv_service *service,
 	/* kill any existing child */
 	TALLOC_FREE(service->periodic.subreq);
 
-	DEBUG(0,("Calling samba_kcc script\n"));
+	DEBUG(2, ("Calling samba_kcc script\n"));
 	service->periodic.subreq = samba_runcmd_send(service,
 					service->task->event_ctx,
 					timeval_current_ofs(40, 0),
