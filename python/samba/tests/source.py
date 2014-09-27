@@ -203,7 +203,7 @@ class TestSource(TestCase):
                 self._push_file(files_without_shebang, fname, line_no)
         if files_with_shebang:
             self.fail(self._format_message(files_with_shebang,
-                'Files with shebang line that are not executable:'))
+                      'Files with shebang line that are not executable:'))
         if files_without_shebang:
             self.fail(self._format_message(files_without_shebang,
-                'Files without shebang line that are executable:'))
+                      'Files without shebang line that are executable:'))
