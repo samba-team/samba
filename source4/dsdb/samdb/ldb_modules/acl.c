@@ -867,7 +867,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 					     &objectclass->schemaIDGUID, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "acl: unable to find or validate structrual objectClass on %s\n",
+				       "acl: unable to find or validate structural objectClass on %s\n",
 				       ldb_dn_get_linearized(req->op.add.message->dn));
 		return ret;
 	}
