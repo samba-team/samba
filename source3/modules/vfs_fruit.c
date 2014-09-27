@@ -817,7 +817,6 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 			lp_fake_directory_create_times(
 				SNUM(ad->ad_handle->conn)));
 		if (rc != 0) {
-			rc = -1;
 			goto exit;
 		}
 		ad_setentrylen(ad, ADEID_RFORK, sbuf.st_ex_size);
