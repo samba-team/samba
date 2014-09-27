@@ -985,9 +985,9 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	uint64_t cookie;
 
 	if (buflen < sizeof(cookie)) {
-		close_fd_array(fds, num_fds);
-		return;
+		goto close_fds;
 	}
+
 	memcpy(&cookie, buf, sizeof(cookie));
 
 	buf += sizeof(cookie);
@@ -999,8 +999,7 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	}
 
 	if (buflen < sizeof(hdr)) {
-		close_fd_array(fds, num_fds);
-		return;
+		goto close_fds;
 	}
 	memcpy(&hdr, buf, sizeof(hdr));
 
@@ -1023,8 +1022,7 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 	if (msg == NULL) {
 		msg = malloc(offsetof(struct unix_msg, buf) + hdr.msglen);
 		if (msg == NULL) {
-			close_fd_array(fds, num_fds);
-			return;
+			goto close_fds;
 		}
 		*msg = (struct unix_msg) {
 			.msglen = hdr.msglen,
@@ -1037,21 +1035,23 @@ static void unix_msg_recv(struct unix_dgram_ctx *dgram_ctx,
 
 	space = msg->msglen - msg->received;
 	if (buflen > space) {
-		close_fd_array(fds, num_fds);
-		return;
+		goto close_fds;
 	}
 
 	memcpy(msg->buf + msg->received, buf, buflen);
 	msg->received += buflen;
 
 	if (msg->received < msg->msglen) {
-		close_fd_array(fds, num_fds);
-		return;
+		goto close_fds;
 	}
 
 	DLIST_REMOVE(ctx->msgs, msg);
 	ctx->recv_callback(ctx, msg->buf, msg->msglen, fds, num_fds, ctx->private_data);
 	free(msg);
+	return;
+
+close_fds:
+	close_fd_array(fds, num_fds);
 }
 
 int unix_msg_free(struct unix_msg_ctx *ctx)
