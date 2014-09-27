@@ -755,10 +755,13 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 	struct adouble *meta_ad = NULL;
 	SMB_STRUCT_STAT sbuf;
 	bool ok;
-	int saved_errno;
+	int saved_errno = 0;
 
 	SMB_VFS_HANDLE_GET_DATA(ad->ad_handle, config,
 				struct fruit_config_data, return -1);
+
+	/* Try rw first so we can use the fd in ad_convert() */
+	mode = O_RDWR;
 
 	if (ad->ad_fsp && ad->ad_fsp->fh && (ad->ad_fsp->fh->fd != -1)) {
 		fd = ad->ad_fsp->fh->fd;
@@ -771,9 +774,6 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 				goto exit;
 			}
 		}
-
-		/* Try rw first so we can use the fd in ad_convert() */
-		mode = O_RDWR;
 
 	retry:
 		if (config->rsrc == FRUIT_RSRC_XATTR) {
