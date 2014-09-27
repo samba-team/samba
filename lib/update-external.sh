@@ -2,32 +2,36 @@
 # Pull in a new snapshot of external projects that are included in 
 # our source tree for users that don't have them installed on their system
 
-TARGETDIR="`dirname $0`"
+# Third party directory
+THIRD_PARTY_DIR="`dirname $0`/../third_party"
+# Library directory where projects live that haven't been migrated to
+# $THIRD_PARTY_DIR yet.
+LIBDIR="`dirname $0`"
 WORKDIR="`mktemp -d`"
 
 echo "Updating subunit..."
 bzr export "$WORKDIR/subunit" lp:subunit 
 # Preserve wscript file
-cp "$TARGETDIR/subunit/c/wscript" "$WORKDIR/subunit/c/wscript"
-rsync -avz --delete "$WORKDIR/subunit/" "$TARGETDIR/subunit/"
+cp "$LIBDIR/subunit/c/wscript" "$WORKDIR/subunit/c/wscript"
+rsync -avz --delete "$WORKDIR/subunit/" "$LIBDIR/subunit/"
 
 echo "Updating testtools..."
 bzr export "$WORKDIR/testtools" lp:testtools 
-rsync -avz --delete "$WORKDIR/testtools/" "$TARGETDIR/testtools/"
+rsync -avz --delete "$WORKDIR/testtools/" "$LIBDIR/testtools/"
 
 echo "Updating dnspython..."
 git clone git://www.dnspython.org/dnspython.git "$WORKDIR/dnspython"
 rm -rf "$WORKDIR/dnspython/.git"
-rsync -avz --delete "$WORKDIR/dnspython/" "$TARGETDIR/dnspython/"
+rsync -avz --delete "$WORKDIR/dnspython/" "$LIBDIR/dnspython/"
 
 echo "Updating pep8..."
 git clone git://github.com/jcrocholl/pep8 "$WORKDIR/pep8"
 rm -rf "$WORKDIR/pep8/.git"
-rsync -avz --delete "$WORKDIR/pep8/" "$TARGETDIR/pep8/"
+rsync -avz --delete "$WORKDIR/pep8/" "$LIBDIR/pep8/"
 
 echo "Updating zlib..."
 git clone git://github.com/madler/zlib "$WORKDIR/zlib"
 rm -rf "$WORKDIR/zlib/.git"
-rsync --exclude=wscript -avz --delete "$WORKDIR/zlib/" "$TARGETDIR/zlib/"
+rsync --exclude=wscript -avz --delete "$WORKDIR/zlib/" "$THIRD_PARTY_DIR/zlib/"
 
 rm -rf "$WORKDIR"
