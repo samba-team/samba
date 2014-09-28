@@ -103,8 +103,8 @@ struct ldb_dn;
 
 /**
  There are a number of flags that are used with ldap_modify() in
- ldb_message_element.flags fields. The LDB_FLAGS_MOD_ADD,
- LDB_FLAGS_MOD_DELETE and LDB_FLAGS_MOD_REPLACE flags are used in
+ ldb_message_element.flags fields. The LDB_FLAG_MOD_ADD,
+ LDB_FLAG_MOD_DELETE and LDB_FLAG_MOD_REPLACE flags are used in
  ldap_modify() calls to specify whether attributes are being added,
  deleted or modified respectively.
 */
