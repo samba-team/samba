@@ -579,8 +579,6 @@ static void unix_dgram_send_job(void *private_data)
 	do {
 		dmsg->sent = sendmsg(dmsg->sock, &msg, 0);
 	} while ((dmsg->sent == -1) && (errno == EINTR));
-
-	close_fd_array(dmsg->fds, dmsg->num_fds);
 }
 
 static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
