@@ -34,7 +34,13 @@ static int shm_id;
 static bool read_only;
 #endif
 
-struct profile_header *profile_h;
+struct profile_header {
+	int prof_shm_magic;
+	int prof_shm_version;
+	struct profile_stats stats;
+};
+
+static struct profile_header *profile_h;
 struct profile_stats *profile_p;
 
 bool do_profile_flag = False;

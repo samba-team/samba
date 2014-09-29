@@ -876,13 +876,6 @@ struct profile_stats {
 	unsigned writecache_allocated_write_caches;
 };
 
-struct profile_header {
-	int prof_shm_magic;
-	int prof_shm_version;
-	struct profile_stats stats;
-};
-
-extern struct profile_header *profile_h;
 extern struct profile_stats *profile_p;
 extern bool do_profile_flag;
 extern bool do_profile_times;
