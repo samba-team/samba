@@ -28,14 +28,15 @@
 #define SMB2_TF_NONCE		0x14 /* 16 bytes */
 #define SMB2_TF_MSG_SIZE	0x24 /*  4 bytes */
 #define SMB2_TF_RESERVED	0x28 /*  2 bytes */
-#define SMB2_TF_ALGORITHM	0x2A /*  2 bytes */
+#define SMB2_TF_FLAGS		0x2A /*  2 bytes */
+#define SMB2_TF_ALGORITHM	SMB2_TF_FLAGS /* only dialect < 0x310 */
 #define SMB2_TF_SESSION_ID	0x2C /*  8 bytes */
 
 #define SMB2_TF_HDR_SIZE	0x34 /* 52 bytes */
 
 #define SMB2_TF_MAGIC 0x424D53FD /* 0xFD 'S' 'M' 'B' */
 
-#define SMB2_ENCRYPTION_AES128_CCM	0x0001
+#define SMB2_TF_FLAGS_ENCRYPTED     0x0001
 
 /* offsets into header elements for a sync SMB2 request */
 #define SMB2_HDR_PROTOCOL_ID    0x00
@@ -123,14 +124,28 @@
 		SMB2_CAP_DIRECTORY_LEASING | \
 		SMB2_CAP_ENCRYPTION)
 
+/* Types of SMB2 Negotiate Contexts - only in dialect >= 0x310 */
+#define SMB2_PREAUTH_INTEGRITY_CAPABILITIES 0x0001
+#define SMB2_ENCRYPTION_CAPABILITIES        0x0002
+
+/* Values for the SMB2_PREAUTH_INTEGRITY_CAPABILITIES Context (>= 0x310) */
+#define SMB2_PREAUTH_INTEGRITY_SHA512       0x0001
+
+/* Values for the SMB2_ENCRYPTION_CAPABILITIES Context (>= 0x310) */
+#define SMB2_ENCRYPTION_AES128_CCM         0x0001 /* only in dialect >= 0x224 */
+#define SMB2_ENCRYPTION_AES128_GCM         0x0002 /* only in dialect >= 0x310 */
 
 /* SMB2 session (request) flags */
 #define SMB2_SESSION_FLAG_BINDING       0x01
+/*      SMB2_SESSION_FLAG_ENCRYPT_DATA  0x04       only in dialect >= 0x310 */
 
 /* SMB2 session (response) flags */
 #define SMB2_SESSION_FLAG_IS_GUEST       0x0001
 #define SMB2_SESSION_FLAG_IS_NULL        0x0002
 #define SMB2_SESSION_FLAG_ENCRYPT_DATA   0x0004 /* in dialect >= 0x224 */
+
+/* SMB2 tree connect (request) flags */
+#define SMB2_SHAREFLAG_CLUSTER_RECONNECT 0x0001 /* only in dialect >= 0x310 */
 
 /* SMB2 sharetype flags */
 #define SMB2_SHARE_TYPE_DISK		0x1
