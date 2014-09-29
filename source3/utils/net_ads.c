@@ -2916,11 +2916,10 @@ static int net_ads_enctype_lookup_account(struct net_context *c,
 static void net_ads_enctype_dump_enctypes(const char *username,
 					  const char *enctype_str)
 {
-	int enctypes;
+	int enctypes = atoi(enctype_str);
 
-	d_printf(_("'%s' uses \"msDS-SupportedEncryptionTypes\":\n"), username);
-
-	enctypes = atoi(enctype_str);
+	d_printf(_("'%s' uses \"msDS-SupportedEncryptionTypes\": %d (0x%08x)\n"),
+		username, enctypes, enctypes);
 
 	printf("[%s] 0x%08x DES-CBC-CRC\n",
 		enctypes & ENC_CRC32 ? "X" : " ",
