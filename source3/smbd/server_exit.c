@@ -45,6 +45,7 @@
 #include "serverid.h"
 #include "messages.h"
 #include "../lib/util/pidfile.h"
+#include "smbprofile.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)
@@ -232,6 +233,7 @@ static void exit_server_common(enum server_exit_reason how,
 	xconn = NULL;
 	client = NULL;
 	TALLOC_FREE(global_smbXsrv_client);
+	smbprofile_dump();
 	server_messaging_context_free();
 	server_event_context_free();
 	TALLOC_FREE(smbd_memcache_ctx);

@@ -3090,8 +3090,8 @@ void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 	 * this was already counted at the SMB1 layer =>
 	 * smbd_smb2_request_dispatch() should not count it twice.
 	 */
-	if (profile_p->request_stats.count > 0) {
-		profile_p->request_stats.count--;
+	if (profile_p->values.request_stats.count > 0) {
+		profile_p->values.request_stats.count--;
 	}
 #endif
 	status = smbd_smb2_request_dispatch(req);

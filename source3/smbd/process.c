@@ -3500,6 +3500,7 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 }
 
 struct smbd_tevent_trace_state {
+	struct tevent_context *ev;
 	TALLOC_CTX *frame;
 	SMBPROFILE_BASIC_ASYNC_STATE(profile_idle);
 };
@@ -3512,10 +3513,31 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 
 	switch (point) {
 	case TEVENT_TRACE_BEFORE_WAIT:
+		if (!smbprofile_dump_pending()) {
+			/*
+			 * If there's no dump pending
+			 * we don't want to schedule a new 1 sec timer.
+			 *
+			 * Instead we want to sleep as long as nothing happens.
+			 */
+			smbprofile_dump_setup(NULL);
+		}
 		SMBPROFILE_BASIC_ASYNC_START(idle, profile_p, state->profile_idle);
 		break;
 	case TEVENT_TRACE_AFTER_WAIT:
 		SMBPROFILE_BASIC_ASYNC_END(state->profile_idle);
+		if (!smbprofile_dump_pending()) {
+			/*
+			 * We need to flush our state after sleeping
+			 * (hopefully a long time).
+			 */
+			smbprofile_dump();
+			/*
+			 * future profiling events should trigger timers
+			 * on our main event context.
+			 */
+			smbprofile_dump_setup(state->ev);
+		}
 		break;
 	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
 		TALLOC_FREE(state->frame);
@@ -3766,6 +3788,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  bool interactive)
 {
 	struct smbd_tevent_trace_state trace_state = {
+		.ev = ev_ctx,
 		.frame = talloc_stackframe(),
 	};
 	struct smbXsrv_client *client = NULL;
@@ -3977,6 +4000,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
 	}
+
+	smbprofile_dump_setup(ev_ctx);
 
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");
