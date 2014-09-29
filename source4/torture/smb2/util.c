@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
@@ -271,37 +272,35 @@ bool torture_smb2_tree_connect(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct smb2_tree_connect tcon;
+	const char *unc;
 	struct smb2_tree *tree;
+	struct tevent_req *subreq;
+	uint32_t timeout_msec;
 
-	ZERO_STRUCT(tcon);
-	tcon.in.reserved = 0;
-	tcon.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
-	if (tcon.in.path == NULL) {
-		printf("talloc failed\n");
-		return false;
-	}
-
-	status = smb2_tree_connect(session, &tcon);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to tree_connect to SMB2 share \\\\%s\\%s - %s\n",
-		       host, share, nt_errstr(status));
-		return false;
-	}
+	unc = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	torture_assert(tctx, unc != NULL, "talloc_asprintf");
 
 	tree = smb2_tree_init(session, mem_ctx, false);
-	if (tree == NULL) {
-		printf("talloc failed\n");
-		return false;
-	}
+	torture_assert(tctx, tree != NULL, "smb2_tree_init");
 
-	smb2cli_tcon_set_values(tree->smbXcli,
-				tree->session->smbXcli,
-				tcon.out.tid,
-				tcon.out.share_type,
-				tcon.out.flags,
-				tcon.out.capabilities,
-				tcon.out.access_mask);
+	timeout_msec = session->transport->options.request_timeout * 1000;
+
+	subreq = smb2cli_tcon_send(tree, tctx->ev,
+				   session->transport->conn,
+				   timeout_msec,
+				   session->smbXcli,
+				   tree->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_ok(tctx, status, "smb2cli_tcon_recv");
 
 	*_tree = tree;
 
