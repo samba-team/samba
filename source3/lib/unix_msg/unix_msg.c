@@ -177,6 +177,19 @@ static void close_fd_array(int *fds, size_t num_fds)
 	}
 }
 
+static void close_fd_array_cmsg(struct msghdr *msg)
+{
+	int *fds = NULL;
+	size_t num_fds = 0;
+
+	extract_fd_array_from_msghdr(msg, &fds, &num_fds);
+
+	/*
+	 * TODO: caveat - side-effect - changing msg ???
+	 */
+	close_fd_array(fds, num_fds);
+}
+
 static int unix_dgram_init(const struct sockaddr_un *addr, size_t max_msg,
 			   const struct poll_funcs *ev_funcs,
 			   void (*recv_callback)(struct unix_dgram_ctx *ctx,
