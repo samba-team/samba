@@ -450,6 +450,7 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 {
 	struct unix_dgram_msg *msg;
 	ssize_t buflen;
+	uint8_t *data_buf;
 	size_t msglen;
 	size_t fds_size = sizeof(int) * num_fds;
 	int fds_copy[MIN(num_fds, INT8_MAX)];
@@ -516,15 +517,17 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 	msg->buflen = buflen;
 	msg->sock = q->sock;
 
-	buflen = 0;
+	data_buf = msg->buf;
 	for (i=0; i<iovlen; i++) {
-		memcpy(&msg->buf[buflen], iov[i].iov_base, iov[i].iov_len);
-		buflen += iov[i].iov_len;
+		memcpy(data_buf, iov[i].iov_base, iov[i].iov_len);
+		data_buf += iov[i].iov_len;
 	}
 
 	msg->num_fds = num_fds;
 	if (msg->num_fds > 0) {
-		void *fds_ptr = (void *)&msg->buf[buflen+fds_padding];
+		void *fds_ptr;
+		data_buf += fds_padding;
+		fds_ptr= (void *)data_buf;
 		memcpy(fds_ptr, fds_copy, fds_size);
 		msg->fds = (int *)fds_ptr;
 	} else {
