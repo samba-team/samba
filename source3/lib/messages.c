@@ -77,7 +77,7 @@ struct messaging_context {
 };
 
 struct messaging_hdr {
-	int msg_type;
+	uint32_t msg_type;
 	struct server_id dst;
 	struct server_id src;
 };
