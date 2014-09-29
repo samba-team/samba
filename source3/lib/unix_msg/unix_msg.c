@@ -449,7 +449,7 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 		     const int *fds, size_t num_fds)
 {
 	struct unix_dgram_msg *msg;
-	ssize_t buflen;
+	ssize_t data_len;
 	uint8_t *data_buf;
 	size_t msglen;
 	size_t fds_size = sizeof(int) * num_fds;
@@ -475,14 +475,14 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 		}
 	}
 
-	buflen = iov_buflen(iov, iovlen);
-	if (buflen == -1) {
+	data_len = iov_buflen(iov, iovlen);
+	if (data_len == -1) {
 		goto invalid;
 	}
 
 	msglen = offsetof(struct unix_dgram_msg, buf);
-	tmp = msglen + buflen;
-	if ((tmp < msglen) || (tmp < buflen)) {
+	tmp = msglen + data_len;
+	if ((tmp < msglen) || (tmp < data_len)) {
 		/* overflow */
 		goto invalid;
 	}
@@ -514,7 +514,7 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 		ret = ENOMEM;
 		goto fail;
 	}
-	msg->buflen = buflen;
+	msg->buflen = data_len;
 	msg->sock = q->sock;
 
 	data_buf = msg->buf;
