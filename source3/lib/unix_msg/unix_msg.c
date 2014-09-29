@@ -44,8 +44,7 @@ struct unix_dgram_msg {
 	int sys_errno;
 	size_t num_fds;
 	int *fds;
-	size_t buflen;
-	uint8_t buf[];
+	struct iovec iov;
 };
 
 struct unix_dgram_send_queue {
@@ -480,7 +479,8 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 		goto invalid;
 	}
 
-	msglen = offsetof(struct unix_dgram_msg, buf);
+	msglen = sizeof(struct unix_dgram_msg);
+
 	tmp = msglen + data_len;
 	if ((tmp < msglen) || (tmp < data_len)) {
 		/* overflow */
@@ -514,10 +514,16 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 		ret = ENOMEM;
 		goto fail;
 	}
-	msg->buflen = data_len;
+
 	msg->sock = q->sock;
 
-	data_buf = msg->buf;
+	data_buf = (uint8_t *)(msg + 1);
+
+	msg->iov = (struct iovec) {
+		.iov_base = (void *)data_buf,
+		.iov_len = data_len,
+	};
+
 	for (i=0; i<iovlen; i++) {
 		memcpy(data_buf, iov[i].iov_base, iov[i].iov_len);
 		data_buf += iov[i].iov_len;
@@ -547,12 +553,8 @@ fail:
 static void unix_dgram_send_job(void *private_data)
 {
 	struct unix_dgram_msg *dmsg = private_data;
-	struct iovec iov = {
-		.iov_base = (void *)dmsg->buf,
-		.iov_len = dmsg->buflen,
-	};
 	struct msghdr msg = {
-		.msg_iov = &iov,
+		.msg_iov = &dmsg->iov,
 		.msg_iovlen = 1,
 	};
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
