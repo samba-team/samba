@@ -58,7 +58,7 @@ interface frstrans
 		FRSTRANS_UPDATE_STATUS_MORE		= 0x0003
 	} frstrans_UpdateStatus;
 
-	typedef struct {
+	typedef [public] struct {
 		GUID db_guid;
 		hyper low;
 		hyper high;
