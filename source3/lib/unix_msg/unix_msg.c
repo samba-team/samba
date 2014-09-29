@@ -137,6 +137,32 @@ static int prepare_socket(int sock)
 	return prepare_socket_cloexec(sock);
 }
 
+static void extract_fd_array_from_msghdr(struct msghdr *msg, int **fds,
+					 size_t *num_fds)
+{
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	struct cmsghdr *cmsg;
+
+	for(cmsg = CMSG_FIRSTHDR(msg);
+	    cmsg != NULL;
+	    cmsg = CMSG_NXTHDR(msg, cmsg))
+	{
+		void *data = CMSG_DATA(cmsg);
+
+		if (cmsg->cmsg_type != SCM_RIGHTS) {
+			continue;
+		}
+		if (cmsg->cmsg_level != SOL_SOCKET) {
+			continue;
+		}
+
+		*fds = (int *)data;
+		*num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof (int);
+		break;
+	}
+#endif
+}
+
 static void close_fd_array(int *fds, size_t num_fds)
 {
 	size_t i;
@@ -248,7 +274,6 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 	struct iovec iov;
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	char buf[CMSG_SPACE(sizeof(int)*INT8_MAX)] = { 0, };
-	struct cmsghdr *cmsg;
 #endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 	int *fds = NULL;
 	size_t i, num_fds = 0;
@@ -288,24 +313,7 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 		return;
 	}
 
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	for(cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-	    cmsg = CMSG_NXTHDR(&msg, cmsg))
-	{
-		void *data = CMSG_DATA(cmsg);
-
-		if (cmsg->cmsg_type != SCM_RIGHTS) {
-			continue;
-		}
-		if (cmsg->cmsg_level != SOL_SOCKET) {
-			continue;
-		}
-
-		fds = (int *)data;
-		num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof (int);
-		break;
-	}
-#endif
+	extract_fd_array_from_msghdr(&msg, &fds, &num_fds);
 
 	for (i = 0; i < num_fds; i++) {
 		int err;
