@@ -511,7 +511,7 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 			goto fail;
 		}
 	}
-	/* reset the error code potentially set by the tdb_update() */
+	/* reset the error code potentially set by the tdb_update_hash() */
 	tdb->ecode = TDB_SUCCESS;
 
 	/* delete any existing record - if it doesn't exist we don't
