@@ -462,6 +462,41 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 		return EINVAL;
 	}
 
+	msglen = sizeof(struct unix_dgram_msg);
+
+	data_len = iov_buflen(iov, iovlen);
+	if (data_len == -1) {
+		return EINVAL;
+	}
+
+	tmp = msglen + data_len;
+	if ((tmp < msglen) || (tmp < data_len)) {
+		/* overflow */
+		return EINVAL;
+	}
+	msglen = tmp;
+
+	if (num_fds > 0) {
+		const size_t fds_align = sizeof(int) - 1;
+
+		tmp = msglen + fds_align;
+		if ((tmp < msglen) || (tmp < fds_align)) {
+			/* overflow */
+			return EINVAL;
+		}
+		tmp &= ~fds_align;
+
+		fds_padding = tmp - msglen;
+		msglen = tmp;
+
+		tmp = msglen + fds_size;
+		if ((tmp < msglen) || (tmp < fds_size)) {
+			/* overflow */
+			return EINVAL;
+		}
+		msglen = tmp;
+	}
+
 	for (i = 0; i < num_fds; i++) {
 		fds_copy[i] = -1;
 	}
@@ -472,41 +507,6 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 			ret = errno;
 			goto fail;
 		}
-	}
-
-	data_len = iov_buflen(iov, iovlen);
-	if (data_len == -1) {
-		goto invalid;
-	}
-
-	msglen = sizeof(struct unix_dgram_msg);
-
-	tmp = msglen + data_len;
-	if ((tmp < msglen) || (tmp < data_len)) {
-		/* overflow */
-		goto invalid;
-	}
-	msglen = tmp;
-
-	if (num_fds > 0) {
-		const size_t fds_align = sizeof(int) - 1;
-
-		tmp = msglen + fds_align;
-		if ((tmp < msglen) || (tmp < fds_align)) {
-			/* overflow */
-			goto invalid;
-		}
-		tmp &= ~fds_align;
-
-		fds_padding = tmp - msglen;
-		msglen = tmp;
-
-		tmp = msglen + fds_size;
-		if ((tmp < msglen) || (tmp < fds_size)) {
-			/* overflow */
-			goto invalid;
-		}
-		msglen = tmp;
 	}
 
 	msg = malloc(msglen);
@@ -543,8 +543,6 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 	DLIST_ADD_END(q->msgs, msg, struct unix_dgram_msg);
 	return 0;
 
-invalid:
-	ret = EINVAL;
 fail:
 	close_fd_array(fds_copy, num_fds);
 	return ret;
