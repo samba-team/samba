@@ -1859,56 +1859,6 @@ done:
 	return ret;
 }
 
-
-/*
-  create a secondary tree connect - used to test for a bug in Samba3 messaging
-  with change notify
-*/
-static struct smb2_tree *secondary_tcon(struct smb2_tree *tree,
-					struct torture_context *tctx)
-{
-	NTSTATUS status;
-	const char *share, *host;
-	struct smb2_tree *tree1;
-	union smb_tcon tcon;
-
-	share = torture_setting_string(tctx, "share", NULL);
-	host  = torture_setting_string(tctx, "host", NULL);
-
-	torture_comment(tctx,
-		"create a second tree context on the same session\n");
-	tree1 = smb2_tree_init(tree->session, tctx, false);
-	if (tree1 == NULL) {
-		torture_comment(tctx, "Out of memory\n");
-		return NULL;
-	}
-
-	ZERO_STRUCT(tcon.smb2);
-	tcon.generic.level = RAW_TCON_SMB2;
-	tcon.smb2.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
-	status = smb2_tree_connect(tree->session, &(tcon.smb2));
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tree1);
-		torture_comment(tctx,"Failed to create secondary tree\n");
-		return NULL;
-	}
-
-	smb2cli_tcon_set_values(tree1->smbXcli,
-				tree1->session->smbXcli,
-				tcon.smb2.out.tid,
-				tcon.smb2.out.share_type,
-				tcon.smb2.out.flags,
-				tcon.smb2.out.capabilities,
-				tcon.smb2.out.access_mask);
-
-	torture_comment(tctx,"tid1=%d tid2=%d\n",
-			smb2cli_tcon_current_id(tree->smbXcli),
-			smb2cli_tcon_current_id(tree1->smbXcli));
-
-	return tree1;
-}
-
-
 /*
    very simple change notify test
 */
@@ -1993,7 +1943,15 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	torture_comment(torture, "SIMPLE CHANGE NOTIFY OK\n");
 
 	torture_comment(torture, "TESTING WITH SECONDARY TCON\n");
-	tree1 = secondary_tcon(tree, torture);
+	if (!torture_smb2_tree_connect(torture, tree->session, tree, &tree1)) {
+		torture_warning(torture, "couldn't reconnect to share, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	torture_comment(torture, "tid1=%d tid2=%d\n",
+			smb2cli_tcon_current_id(tree->smbXcli),
+			smb2cli_tcon_current_id(tree1->smbXcli));
 
 	torture_comment(torture, "Testing notify mkdir\n");
 	req = smb2_notify_send(tree, &(notify.smb2));
