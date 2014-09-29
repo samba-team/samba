@@ -394,7 +394,6 @@ bool torture_smb2_con_sopt(struct torture_context *tctx,
 			   const char *soption,
 			   struct smb2_tree **tree)
 {
-	bool ret;
 	struct smbcli_options options;
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
