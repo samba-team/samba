@@ -515,6 +515,7 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
+	ZERO_STRUCT(hdr);
 	hdr = (struct messaging_hdr) {
 		.msg_type = msg_type,
 		.dst = server,
