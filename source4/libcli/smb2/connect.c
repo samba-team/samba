@@ -39,13 +39,13 @@ struct smb2_connect_state {
 	struct resolve_context *resolve_ctx;
 	const char *host;
 	const char *share;
+	const char *unc;
 	const char **ports;
 	const char *socket_options;
 	struct nbt_name calling, called;
 	struct gensec_settings *gensec_settings;
 	struct smbcli_options options;
 	struct smb2_transport *transport;
-	struct smb2_tree_connect tcon;
 	struct smb2_session *session;
 	struct smb2_tree *tree;
 };
@@ -99,6 +99,12 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 
 	nbt_choose_called_name(state, &state->called,
 			       host, NBT_NAME_SERVER);
+
+	state->unc = talloc_asprintf(state, "\\\\%s\\%s",
+				    state->host, state->share);
+	if (tevent_req_nomem(state->unc, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	creq = smbcli_sock_connect_send(state, NULL, state->ports,
 					state->host, state->resolve_ctx,
@@ -187,7 +193,7 @@ static void smb2_connect_negprot_done(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, smb2_connect_session_done, req);
 }
 
-static void smb2_connect_tcon_done(struct smb2_request *smb2req);
+static void smb2_connect_tcon_done(struct tevent_req *subreq);
 
 static void smb2_connect_session_done(struct tevent_req *subreq)
 {
@@ -197,41 +203,11 @@ static void smb2_connect_session_done(struct tevent_req *subreq)
 	struct smb2_connect_state *state =
 		tevent_req_data(req,
 		struct smb2_connect_state);
-	struct smb2_request *smb2req;
 	NTSTATUS status;
+	uint32_t timeout_msec;
 
 	status = smb2_session_setup_spnego_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	state->tcon.in.reserved = 0;
-	state->tcon.in.path     = talloc_asprintf(state, "\\\\%s\\%s",
-						  state->host, state->share);
-	if (tevent_req_nomem(state->tcon.in.path, req)) {
-		return;
-	}
-
-	smb2req = smb2_tree_connect_send(state->session, &state->tcon);
-	if (tevent_req_nomem(smb2req, req)) {
-		return;
-	}
-	smb2req->async.fn = smb2_connect_tcon_done;
-	smb2req->async.private_data = req;
-}
-
-static void smb2_connect_tcon_done(struct smb2_request *smb2req)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(smb2req->async.private_data,
-		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	NTSTATUS status;
-
-	status = smb2_tree_connect_recv(smb2req, &state->tcon);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -241,13 +217,32 @@ static void smb2_connect_tcon_done(struct smb2_request *smb2req)
 		return;
 	}
 
-	smb2cli_tcon_set_values(state->tree->smbXcli,
-				state->session->smbXcli,
-				state->tcon.out.tid,
-				state->tcon.out.share_type,
-				state->tcon.out.flags,
-				state->tcon.out.capabilities,
-				state->tcon.out.access_mask);
+	timeout_msec = state->transport->options.request_timeout * 1000;
+
+	subreq = smb2cli_tcon_send(state, state->ev,
+				   state->transport->conn,
+				   timeout_msec,
+				   state->session->smbXcli,
+				   state->tree->smbXcli,
+				   0, /* flags */
+				   state->unc);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smb2_connect_tcon_done, req);
+}
+
+static void smb2_connect_tcon_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	NTSTATUS status;
+
+	status = smb2cli_tcon_recv(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
 	tevent_req_done(req);
 }
