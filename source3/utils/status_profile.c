@@ -24,7 +24,6 @@
 bool status_profile_dump(bool be_verbose);
 bool status_profile_rates(bool be_verbose);
 
-#ifdef WITH_PROFILE
 static void profile_separator(const char * title)
 {
     char line[79 + 1];
@@ -39,14 +38,12 @@ static void profile_separator(const char * title)
     line[sizeof(line) - 1] = '\0';
     d_printf("%s\n", line);
 }
-#endif
 
 /*******************************************************************
  dump the elements of the profile structure
   ******************************************************************/
 bool status_profile_dump(bool verbose)
 {
-#ifdef WITH_PROFILE
 	if (!profile_setup(NULL, True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
 		return False;
@@ -437,15 +434,8 @@ bool status_profile_dump(bool verbose)
 	d_printf("smb2_break_count:               %u\n", profile_p->smb2_break_count);
 	d_printf("smb2_break_time:                %u\n", profile_p->smb2_break_time);
 
-#else /* WITH_PROFILE */
-
-	fprintf(stderr, "Profile data unavailable\n");
-#endif /* WITH_PROFILE */
-
 	return True;
 }
-
-#ifdef WITH_PROFILE
 
 /* Convert microseconds to milliseconds. */
 #define usec_to_msec(s) ((s) / 1000)
@@ -566,14 +556,3 @@ bool status_profile_rates(bool verbose)
 
 	return True;
 }
-
-#else /* WITH_PROFILE */
-
-bool status_profile_rates(bool verbose)
-{
-	fprintf(stderr, "Profile data unavailable\n");
-	return False;
-}
-
-#endif /* WITH_PROFILE */
-
