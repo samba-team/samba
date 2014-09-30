@@ -231,8 +231,13 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 		return;
 	}
 
+	/*
+	 * "consume" the fds by copying them and setting
+	 * the original variable to -1
+	 */
 	for (i=0; i < num_fds; i++) {
 		fds64[i] = fds[i];
+		fds[i] = -1;
 	}
 
 	/*
