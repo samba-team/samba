@@ -26,7 +26,7 @@ int messaging_dgm_init(struct tevent_context *ev,
 		       uid_t dir_owner,
 		       void (*recv_cb)(const uint8_t *msg,
 				       size_t msg_len,
-				       const int *fds,
+				       int *fds,
 				       size_t num_fds,
 				       void *private_data),
 		       void *recv_cb_private_data);

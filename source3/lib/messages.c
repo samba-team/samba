@@ -204,7 +204,7 @@ bool message_send_all(struct messaging_context *msg_ctx,
 }
 
 static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
-			      const int *fds, size_t num_fds,
+			      int *fds, size_t num_fds,
 			      void *private_data)
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
