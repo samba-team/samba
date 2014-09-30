@@ -184,7 +184,17 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 	{
 		.status = STATUS_BUFFER_OVERFLOW,
 		.body_size = 0x31
-	}
+	},
+	{
+		/*
+		 * We need to make sure that
+		 * a response with NT_STATUS_FILE_CLOSED
+		 * without signing generates NT_STATUS_ACCESS_DENIED
+		 * if the request was signed.
+		 */
+		.status = NT_STATUS_FILE_CLOSED,
+		.body_size = 0x09,
+	},
 	};
 
 	status = smb2cli_req_recv(subreq, state, &iov,
