@@ -230,15 +230,8 @@ _PUBLIC_ int GUID_compare(const struct GUID *u1, const struct GUID *u2)
 */
 _PUBLIC_ char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
-	return talloc_asprintf(mem_ctx, 
-			       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-			       guid->time_low, guid->time_mid,
-			       guid->time_hi_and_version,
-			       guid->clock_seq[0],
-			       guid->clock_seq[1],
-			       guid->node[0], guid->node[1],
-			       guid->node[2], guid->node[3],
-			       guid->node[4], guid->node[5]);
+	struct GUID_txt_buf buf;
+	return talloc_strdup(mem_ctx, GUID_buf_string(guid, &buf));
 }
 
 /**
