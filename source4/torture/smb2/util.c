@@ -289,7 +289,7 @@ bool torture_smb2_tree_connect(struct torture_context *tctx,
 		return false;
 	}
 
-	tree = smb2_tree_init(session, mem_ctx, true);
+	tree = smb2_tree_init(session, mem_ctx, false);
 	if (tree == NULL) {
 		printf("talloc failed\n");
 		return false;
