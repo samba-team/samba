@@ -835,7 +835,7 @@ enum profile_stats_values
 #define smb2_break_count __profile_stats_value(PR_VALUE_SMB2_BREAK, count)
 #define smb2_break_time __profile_stats_value(PR_VALUE_SMB2_BREAK, time)
 
-	/* This mist remain the last value. */
+	/* This must remain the last value. */
 	PR_VALUE_MAX
 }; /* enum profile_stats_values */
 
