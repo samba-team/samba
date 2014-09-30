@@ -161,6 +161,13 @@ static bool fdpass2_child(int ready_fd)
 
 	SMB_ASSERT(rec->num_fds == 2);
 
+	/* Tell the parent we are done. */
+	bytes = write(ready_fd, &c, 1);
+	if (bytes != 1) {
+		perror("child: failed to write to ready_fd");
+		goto done;
+	}
+
 	up_fd = rec->fds[0];
 	down_fd = rec->fds[1];
 
@@ -184,6 +191,29 @@ done:
 	return retval;
 }
 
+struct child_done_state {
+	int fd;
+	bool done;
+};
+
+static void child_done_cb(struct tevent_context *ev,
+			  struct tevent_fd *fde,
+			  uint16_t flags,
+			  void *private_data)
+{
+	struct child_done_state *state =
+			(struct child_done_state *)private_data;
+	char c = 0;
+	ssize_t bytes;
+
+	bytes = read(state->fd, &c, 1);
+	if (bytes != 1) {
+		perror("parent: read from ready_fd failed");
+	}
+
+	state->done = true;
+}
+
 static bool fdpass2_parent(pid_t child_pid, int ready_fd)
 {
 	struct tevent_context *ev = NULL;
@@ -200,6 +230,8 @@ static bool fdpass2_parent(pid_t child_pid, int ready_fd)
 	ssize_t bytes;
 	struct iovec iov;
 	DATA_BLOB blob;
+	struct tevent_fd *child_done_fde;
+	struct child_done_state child_state;
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
@@ -232,6 +264,17 @@ static bool fdpass2_parent(pid_t child_pid, int ready_fd)
 		goto done;
 	}
 
+	child_state.fd = ready_fd;
+	child_state.done = false;
+
+	child_done_fde = tevent_add_fd(ev, ev, ready_fd, TEVENT_FD_READ,
+				       child_done_cb, &child_state);
+	if (child_done_fde == NULL) {
+		fprintf(stderr,
+			"parent: failed tevent_add_fd for child done\n");
+		goto done;
+	}
+
 	pass_fds[0] = up_pipe[0];
 	pass_fds[1] = down_pipe[1];
 
@@ -254,6 +297,18 @@ static bool fdpass2_parent(pid_t child_pid, int ready_fd)
 			nt_errstr(status));
 		goto done;
 	}
+
+	printf("parent: waiting for child to confirm\n");
+
+	while (!child_state.done) {
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			fprintf(stderr, "parent: tevent_loop_once failed\n");
+			goto done;
+		}
+	}
+
+	printf("parent: child confirmed\n");
 
 	close(up_pipe[0]);
 	close(down_pipe[1]);
