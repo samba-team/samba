@@ -1164,10 +1164,15 @@ bld.SAMBA3_BINARY('smbta-util',
                  secrets3
                  param''')
 
+smbstatus_source = 'utils/status.c smbd/notify_internal.c'
+
+if bld.CONFIG_GET("WITH_PROFILE"):
+    smbstatus_source += ' utils/status_profile.c'
+else:
+    smbstatus_source += ' utils/status_profile_dummy.c'
+
 bld.SAMBA3_BINARY('smbstatus',
-                 source='''utils/status.c
-                 utils/status_profile.c
-                 smbd/notify_internal.c''',
+                 source=smbstatus_source,
                  deps='''
                  talloc
                  param
