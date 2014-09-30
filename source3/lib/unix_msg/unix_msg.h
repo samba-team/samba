@@ -55,6 +55,13 @@
  * If unix_msg_send is asked to send a message larger than fragment_size, it
  * will try sending the message in pieces with proper framing, the receiving
  * side will reassemble the messages.
+ *
+ * fd-passing is supported.
+ * Note that by default the fds passed to recv_callback are closed by
+ * the receive handler in order to avoid fd-leaks. If the provider of
+ * the recv_callback wants to use a passed file descriptor after the
+ * callback returns, it must copy the fd away and set the corresponding
+ * entry in the "fds" array to -1.
  */
 
 /**
