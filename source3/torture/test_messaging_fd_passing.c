@@ -286,7 +286,7 @@ static bool fdpass2_parent(pid_t child_pid, int ready_fd)
 	 * that fd-passing works when we have fragmentation and
 	 * re-assembly of the datagrams.
 	 */
-	blob = data_blob_talloc_zero(frame, 2*1000);
+	blob = data_blob_talloc_zero(frame, 1000*1000);
 	iov.iov_base = blob.data;
 	iov.iov_len  = blob.length;
 
