@@ -105,6 +105,16 @@ NTSTATUS messaging_register(struct messaging_context *msg_ctx,
 				       DATA_BLOB *data));
 void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 			  void *private_data);
+
+/**
+ * CAVEAT:
+ *
+ * While the messaging_send*() functions are synchronuous by API,
+ * they trigger a tevent-based loop upon sending bigger messages.
+ *
+ * Hence callers should not use these in purely synchonous code,
+ * but run a tevent_loop instead.
+ */
 NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, 
 			uint32_t msg_type, const DATA_BLOB *data);
