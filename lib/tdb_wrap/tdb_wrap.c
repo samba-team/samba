@@ -149,6 +149,13 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	}
 
 	if (w == NULL) {
+
+		if (tdb_flags & TDB_MUTEX_LOCKING) {
+			if (!tdb_runtime_check_for_robust_mutexes()) {
+				tdb_flags &= ~TDB_MUTEX_LOCKING;
+			}
+		}
+
 		w = tdb_wrap_private_open(result, name, hash_size, tdb_flags,
 					  open_flags, mode);
 	} else {
