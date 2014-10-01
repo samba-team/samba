@@ -456,6 +456,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 		smbcli_blob_pull_string(NULL, mem_ctx, blob,
 				     &data->id_both_directory_info.short_name,
 				     68, 70, STR_LEN8BIT | STR_UNICODE);
+		memcpy(data->id_both_directory_info.short_name_buf, blob->data + 70, 24);
 		data->id_both_directory_info.file_id     = BVAL(blob->data,            96);
 		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
 					      &data->id_both_directory_info.name,

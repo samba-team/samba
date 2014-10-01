@@ -2740,6 +2740,7 @@ union smb_search_data {
 		uint32_t  attrib;
 		uint32_t  ea_size;
 		uint64_t file_id;
+		uint8_t short_name_buf[24];
 		struct smb_wire_string short_name;
 		struct smb_wire_string name;
 	} id_both_directory_info;
