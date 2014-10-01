@@ -1,174 +1,21 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.2.  This is *not*
+This is the first preview release of Samba 4.3.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.2 will be the next version of the Samba suite.
+Samba 4.3 will be the next version of the Samba suite.
 
 
 UPGRADING
 =========
 
-Read the "Winbindd/Netlogon improvements" section (below) carefully!
-
 
 NEW FEATURES
 ============
 
-Transparent File Compression
-============================
-
-Samba 4.2.0 adds support for the manipulation of file and folder
-compression flags on the Btrfs filesystem.
-With the Btrfs Samba VFS module enabled, SMB2+ compression flags can
-be set remotely from the Windows Explorer File->Properties->Advanced
-dialog. Files flagged for compression are transparently compressed
-and uncompressed when accessed or modified.
-
-Previous File Versions with Snapper
-===================================
-
-The newly added Snapper VFS module exposes snapshots managed by
-Snapper for use by Samba. This provides the ability for remote
-clients to access shadow-copies via Windows Explorer using the
-"previous versions" dialog.
-
-Winbindd/Netlogon improvements
-==============================
-
-The whole concept of maintaining the netlogon secure channel
-to (other) domain controllers was rewritten in order to maintain
-global state in a netlogon_creds_cli.tdb. This is the proper fix
-for a large number of bugs:
-
-  https://bugzilla.samba.org/show_bug.cgi?id=6563
-  https://bugzilla.samba.org/show_bug.cgi?id=7944
-  https://bugzilla.samba.org/show_bug.cgi?id=7945
-  https://bugzilla.samba.org/show_bug.cgi?id=7568
-  https://bugzilla.samba.org/show_bug.cgi?id=8599
-
-In addition a strong session key is now required by default,
-which means that communication to older servers or clients
-might be rejected by default.
-
-For the client side we have the following new options:
-"require strong key" (yes by default), "reject md5 servers" (no by default).
-E.g. for Samba 3.0.37 you need "require strong key = no" and
-for NT4 DCs you need "require strong key = no" and "client NTLMv2 auth = no",
-
-On the server side (as domain controller) we have the following new options:
-"allow nt4 crypto" (no by default), "reject md5 client" (no by default).
-E.g. in order to allow Samba < 3.0.27 or NT4 members to work
-you need "allow nt4 crypto = yes"
-
-winbindd does not list group memberships for display purposes
-(e.g. getent group <domain\<group>) anymore by default.
-The new default is "winbind expand groups = 0" now,
-the reason for this is the same as for "winbind enum users = no"
-and "winbind enum groups = no". Providing this information is not always
-reliably possible, e.g. if there are trusted domains.
-
-Please consult the smb.conf manpage for more details on these new options.
-
-Winbindd use on the Samba AD DC
-===============================
-
-Winbindd is now used on the Samba AD DC by default, replacing the
-partial rewrite used for winbind operations in Samba 4.0 and 4.1.
-
-This allows more code to be shared, more options to be honoured, and
-paves the way for support for trusted domains in the AD DC.
-
-If required the old internal winbind can be activated by setting
-'server services = +winbind -winbindd'.  Upgrading users with a server
-services parameter specified should ensure they change 'winbind' to
-'winbindd' to obtain the new functionality.
-
-The 'samba' binary still manages the starting of this service, there
-is no need to start the winbindd binary manually.
-
-Winbind now requires secured connections
-========================================
-
-To improve protection against rouge domain controllers we now require
-that when we connect to an AD DC in our forest, that the connection be
-signed using SMB Signing.  Set 'client signing = off' in the smb.conf
-to disable.
-
-Also and DCE/RPC pipes must be sealed, set 'require strong key =
-false' and 'winbind sealed pipes = false' to disable.
-
-Finally, the default for 'client ldap sasl wrapping' has been set to
-'sign', to ensure the integrity of LDAP connections.  Set 'client ldap
-sasl wrapping = plain' to disable.
-
-Larger IO sizes for SMB2/3 by default
-=====================================
-
-The default values for "smb2 max read", "smb2 max write" and "smb2 max trans"
-have been changed to 8388608 (8MiB) in order to match the default of
-Windows 2012R2.
-
-Improved DCERPC man in the middle detection
-===========================================
-
-The DCERPC header signing has been implemented
-in addition to the dcerpc_sec_verification_trailer
-protection.
-
-Overhauled "net idmap" command
-==============================
-
-The command line interface of the "net idmap" command has been
-made systematic, and subcommands for reading and writing the autorid idmap
-database have been added. Note that the writing commands should be
-used with great care. See the net(8) manual page for details.
-
-tdb improvements
-================
-
-The tdb library, our core mechanism to store Samba-specific data on disk and
-share it between processes, has been improved to support process shared robust
-mutexes on Linux. These mutexes are available on Linux and Solaris and
-significantly reduce the overhead involved with tdb. To enable mutexes for
-tdb, set
-
-dbwrap_tdb_mutexes:* = yes
-
-in the [global] section of your smb.conf.
-
-Tdb file space management has also been made more efficient. This
-will lead to smaller and less fragmented databases.
-
-Messaging improvements
-======================
-
-Our internal messaging subsystem, used for example for things like oplock
-break messages between smbds or setting a process debug level dynamically, has
-been rewritten to use unix domain datagram messages.
-
-Clustering support
-==================
-
-Samba's file server clustering component CTDB is now integrated in the
-Samba tree.  This avoids the confusion of compatibility of Samba and CTDB
-versions as existed previously.
-
-To build the Samba file server with cluster support, use the configure
-command line option --with-cluster-support.  This will build clustered
-file server against the in-tree ctdb.  Building clustered samba with
-previous versions of CTDB is no longer supported.
-
-CTDB is built separately from the ctdb/ sub-directory.  To build CTDB,
-use the following steps:
-
-  $ cd ctdb
-  $ ./configure
-  $ make
-  # make install
 
 
 ######################################################################
@@ -181,15 +28,6 @@ smb.conf changes
    Parameter Name			Description	Default
    --------------			-----------	-------
 
-   allow nt4 crypto                     New             no
-   neutralize nt4 emulation             New             no
-   reject md5 client                    New             no
-   reject md5 servers                   New             no
-   require strong key                   New             yes
-   smb2 max read                        Changed default 8388608
-   smb2 max write                       Changed default 8388608
-   smb2 max trans                       Changed default 8388608
-   winbind expand groups                Changed default 0
 
 KNOWN ISSUES
 ============
@@ -205,7 +43,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 4.2 product in the project's Bugzilla
+be filed under the Samba 4.3 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
