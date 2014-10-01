@@ -575,11 +575,14 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 #ifdef HAVE_LIBNSL
 		handle = nwrap_main_global->libc->nsl_handle;
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libnsl.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			nwrap_main_global->libc->nsl_handle = handle;
@@ -591,11 +594,14 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 #ifdef HAVE_LIBSOCKET
 		handle = nwrap_main_global->libc->sock_handle;
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libsocket.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			nwrap_main_global->libc->sock_handle = handle;
@@ -606,11 +612,14 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 	case NWRAP_LIBC:
 		handle = nwrap_main_global->libc->handle;
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libc.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			nwrap_main_global->libc->handle = handle;
