@@ -152,7 +152,7 @@ static void smb2cli_query_info_done(struct tevent_req *subreq)
 			return;
 		}
 
-		if (output_buffer_length < dyn_len) {
+		if (output_buffer_length > dyn_len) {
 			tevent_req_nterror(
 				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
