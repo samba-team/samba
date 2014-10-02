@@ -1394,14 +1394,14 @@ static int sockaddr_convert_to_un(struct socket_info *si,
 
 	switch (in_addr->sa_family) {
 	case AF_UNSPEC: {
-		struct sockaddr_in *sin;
+		const struct sockaddr_in *sin;
 		if (si->family != AF_INET) {
 			break;
 		}
 		if (in_len < sizeof(struct sockaddr_in)) {
 			break;
 		}
-		sin = (struct sockaddr_in *)in_addr;
+		sin = (const struct sockaddr_in *)in_addr;
 		if(sin->sin_addr.s_addr != htonl(INADDR_ANY)) {
 			break;
 		}
