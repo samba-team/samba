@@ -36,6 +36,7 @@ struct ccache_container;
 struct gssapi_creds_container;
 struct smb_krb5_context;
 struct keytab_container;
+struct db_context;
 
 /* In order of priority */
 enum credentials_obtained { 
@@ -161,6 +162,21 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 					      const char *serviceprincipal);
 NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
 					     struct loadparm_context *lp_ctx);
+/**
+ * Fill in credentials for the machine trust account, from the
+ * secrets.ldb or passed in handle to secrets.tdb (perhaps in CTDB).
+ *
+ * This version is used in parts of the code that can link in the
+ * CTDB dbwrap backend, by passing down the already open handle.
+ *
+ * @param cred Credentials structure to fill in
+ * @param db_ctx dbwrap context for secrets.tdb
+ * @retval NTSTATUS error detailing any failure
+ */
+NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credentials *cred,
+						    struct loadparm_context *lp_ctx,
+						    struct db_context *db_ctx);
+
 bool cli_credentials_authentication_requested(struct cli_credentials *cred);
 void cli_credentials_guess(struct cli_credentials *cred,
 			   struct loadparm_context *lp_ctx);
