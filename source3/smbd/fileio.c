@@ -362,31 +362,6 @@ ssize_t write_file(struct smb_request *req,
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
 
-#ifdef WITH_PROFILE
-	if (profile_p && profile_p->writecache_total_writes % 500 == 0) {
-		DEBUG(3,("WRITECACHE: initwrites=%u abutted=%u total=%u \
-nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
-			profile_p->writecache_init_writes,
-			profile_p->writecache_abutted_writes,
-			profile_p->writecache_total_writes,
-			profile_p->writecache_non_oplock_writes,
-			profile_p->writecache_allocated_write_caches,
-			profile_p->writecache_num_write_caches,
-			profile_p->writecache_direct_writes,
-			profile_p->writecache_num_perfect_writes,
-			profile_p->writecache_read_hits ));
-
-		DEBUG(3,("WRITECACHE: Flushes SEEK=%d, READ=%d, WRITE=%d, READRAW=%d, OPLOCK=%d, CLOSE=%d, SYNC=%d\n",
-			profile_p->writecache_flushed_writes[SAMBA_SEEK_FLUSH],
-			profile_p->writecache_flushed_writes[SAMBA_READ_FLUSH],
-			profile_p->writecache_flushed_writes[SAMBA_WRITE_FLUSH],
-			profile_p->writecache_flushed_writes[SAMBA_READRAW_FLUSH],
-			profile_p->writecache_flushed_writes[SAMBA_OPLOCK_RELEASE_FLUSH],
-			profile_p->writecache_flushed_writes[SAMBA_CLOSE_FLUSH],
-			profile_p->writecache_flushed_writes[SAMBA_SYNC_FLUSH] ));
-	}
-#endif
-
 	if (wcp && req->unread_bytes) {
 		/* If we're using receivefile don't
 		 * deal with a write cache.
