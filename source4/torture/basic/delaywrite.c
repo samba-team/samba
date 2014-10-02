@@ -158,8 +158,8 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 
-	torture_comment(tctx, "Initial write time %s\n", 
-	       nt_time_string(tctx, finfo1.all_info.out.write_time));
+	torture_comment(tctx, "Initial write time %s\n",
+			nt_time_string(tctx, finfo1.all_info.out.write_time));
 
 	/* 3 second delay to ensure we get past any 2 second time
 	   granularity (older systems may have that) */
@@ -195,7 +195,7 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		}
 
 		torture_comment(tctx, "write time %s\n",
-		       nt_time_string(tctx, finfo2.all_info.out.write_time));
+			nt_time_string(tctx, finfo2.all_info.out.write_time));
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff > (0.25 * (used_delay / (double)1000000))) {
@@ -255,7 +255,7 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		}
 
 		torture_comment(tctx, "write time %s\n",
-		       nt_time_string(tctx, finfo3.all_info.out.write_time));
+			nt_time_string(tctx, finfo3.all_info.out.write_time));
 		if (finfo2.all_info.out.write_time != finfo3.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 
