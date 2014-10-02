@@ -339,10 +339,12 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 		status = NT_STATUS_OK;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		if (db_ctx) {
-			error_string = talloc_asprintf(cred,
-						       "Failed to fetch machine account password from "
-						       "secrets.ldb: %s and failed to fetch %s from %s",
-						       error_string, keystr_upper, secrets_tdb);
+			error_string
+				= talloc_asprintf(cred,
+						  "Failed to fetch machine account password for %s from both "
+						  "secrets.ldb (%s) and from %s",
+						  domain, error_string,
+						  dbwrap_name(db_ctx));
 		} else {
 			error_string = talloc_asprintf(cred,
 						       "Failed to fetch machine account password from "
