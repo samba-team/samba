@@ -880,7 +880,7 @@ extern bool do_profile_times;
 
 /* these are helper macros - do not call them directly in the code
  * use the DO_PROFILE_* START_PROFILE and END_PROFILE ones
- * below which test for the profile flage first
+ * below which test for the profile flags first
  */
 #define INC_PROFILE_COUNT(x) profile_p->x++
 #define DEC_PROFILE_COUNT(x) profile_p->x--
