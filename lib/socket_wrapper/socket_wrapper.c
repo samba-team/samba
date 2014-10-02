@@ -339,6 +339,7 @@ struct swrap_libc_fns {
 			    socklen_t addrlen);
 	int (*libc_dup)(int fd);
 	int (*libc_dup2)(int oldfd, int newfd);
+	int (*libc_fcntl)(int fd, int cmd, ...);
 	FILE *(*libc_fopen)(const char *name, const char *mode);
 #ifdef HAVE_EVENTFD
 	int (*libc_eventfd)(int count, int flags);
@@ -590,6 +591,28 @@ static int libc_eventfd(int count, int flags)
 	return swrap.fns.libc_eventfd(count, flags);
 }
 #endif
+
+static int libc_vfcntl(int fd, int cmd, va_list ap)
+{
+	long int args[4];
+	int rc;
+	int i;
+
+	swrap_load_lib_function(SWRAP_LIBC, fcntl);
+
+	for (i = 0; i < 4; i++) {
+		args[i] = va_arg(ap, long int);
+	}
+
+	rc = swrap.fns.libc_fcntl(fd,
+				  cmd,
+				  args[0],
+				  args[1],
+				  args[2],
+				  args[3]);
+
+	return rc;
+}
 
 static int libc_getpeername(int sockfd,
 			    struct sockaddr *addr,
@@ -4918,7 +4941,69 @@ int dup2(int fd, int newfd)
 }
 
 /****************************
- * DUP2
+ * FCNTL
+ ***************************/
+
+static int swrap_vfcntl(int fd, int cmd, va_list va)
+{
+	struct socket_info_fd *fi;
+	struct socket_info *si;
+	int rc;
+
+	si = find_socket_info(fd);
+	if (si == NULL) {
+		rc = libc_vfcntl(fd, cmd, va);
+
+		return rc;
+	}
+
+	switch (cmd) {
+	case F_DUPFD:
+		fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
+		if (fi == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+
+		fi->fd = libc_vfcntl(fd, cmd, va);
+		if (fi->fd == -1) {
+			int saved_errno = errno;
+			free(fi);
+			errno = saved_errno;
+			return -1;
+		}
+
+		/* Make sure we don't have an entry for the fd */
+		swrap_remove_stale(fi->fd);
+
+		SWRAP_DLIST_ADD(si->fds, fi);
+
+		rc = fi->fd;
+		break;
+	default:
+		rc = libc_vfcntl(fd, cmd, va);
+		break;
+	}
+
+	return rc;
+}
+
+int fcntl(int fd, int cmd, ...)
+{
+	va_list va;
+	int rc;
+
+	va_start(va, cmd);
+
+	rc = swrap_vfcntl(fd, cmd, va);
+
+	va_end(va);
+
+	return rc;
+}
+
+/****************************
+ * EVENTFD
  ***************************/
 
 #ifdef HAVE_EVENTFD
