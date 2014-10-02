@@ -646,7 +646,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 
 	torture_comment(tctx, "Initial write time %s\n",
-	       nt_time_string(tctx, finfo1.all_info.out.write_time));
+		nt_time_string(tctx, finfo1.all_info.out.write_time));
 
 	/* Do a SET_ALLOCATION_SIZE call to truncate. */
 	parms.allocation_info.level = RAW_SFILEINFO_ALLOCATION_INFO;
@@ -655,8 +655,8 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 
 	status = smb_raw_setfileinfo(cli->tree, &parms);
 
-	torture_assert_ntstatus_ok(tctx, status, 
-							   "RAW_SFILEINFO_ALLOCATION_INFO failed");
+	torture_assert_ntstatus_ok(tctx, status,
+				   "RAW_SFILEINFO_ALLOCATION_INFO failed");
 
 	start = timeval_current();
 	end = timeval_add(&start, (120*sec), 0);
@@ -679,7 +679,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 		}
 
 		torture_comment(tctx, "write time %s\n",
-		       nt_time_string(tctx, finfo2.all_info.out.write_time));
+			nt_time_string(tctx, finfo2.all_info.out.write_time));
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff > (0.25 * (used_delay / (double)1000000))) {
@@ -712,8 +712,8 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 
 	/* Do a non-zero length SMBwrite and make sure it doesn't update the write time. */
 	written = smbcli_smbwrite(cli->tree, fnum1, "x", 0, 1);
-	torture_assert_int_equal(tctx, written, 1, 
-							 "Unexpected number of bytes written");
+	torture_assert_int_equal(tctx, written, 1,
+				 "Unexpected number of bytes written");
 
 	start = timeval_current();
 	end = timeval_add(&start, (10*sec), 0);
@@ -734,7 +734,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 		}
 
 		torture_comment(tctx, "write time %s\n",
-		       nt_time_string(tctx, finfo3.all_info.out.write_time));
+			nt_time_string(tctx, finfo3.all_info.out.write_time));
 		if (finfo2.all_info.out.write_time != finfo3.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 
