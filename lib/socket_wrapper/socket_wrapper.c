@@ -1610,7 +1610,7 @@ union swrap_packet_payload {
 	 SWRAP_PACKET_IP_SIZE + \
 	 SWRAP_PACKET_PAYLOAD_SIZE)
 
-static const char *socket_wrapper_pcap_file(void)
+static const char *swrap_pcap_init_file(void)
 {
 	static int initialized = 0;
 	static const char *s = NULL;
@@ -2209,7 +2209,7 @@ static void swrap_dump_packet(struct socket_info *si,
 	size_t packet_len = 0;
 	int fd;
 
-	file_name = socket_wrapper_pcap_file();
+	file_name = swrap_pcap_init_file();
 	if (!file_name) {
 		return;
 	}
