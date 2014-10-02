@@ -2846,7 +2846,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 			break;
 		}
 
-		sin = (struct sockaddr_in *)myaddr;
+		sin = (const struct sockaddr_in *)myaddr;
 
 		if (sin->sin_family != AF_INET) {
 			bind_error = EAFNOSUPPORT;
