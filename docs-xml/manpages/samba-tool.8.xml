@@ -466,7 +466,7 @@
 
 <refsect3>
 	<title>sites remove <replaceable>site</replaceable> [options]</title>
-	<para>Delete an esxisting site.</para>
+	<para>Delete an existing site.</para>
 </refsect3>
 
 <refsect2>
