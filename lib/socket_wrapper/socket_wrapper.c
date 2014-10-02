@@ -2869,7 +2869,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 			break;
 		}
 
-		sin6 = (struct sockaddr_in6 *)myaddr;
+		sin6 = (const struct sockaddr_in6 *)myaddr;
 
 		if (sin6->sin6_family != AF_INET6) {
 			bind_error = EAFNOSUPPORT;
