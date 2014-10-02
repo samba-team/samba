@@ -1,7 +1,7 @@
 /*
- * Copyright (C) Jelmer Vernooij 2005,2008 <jelmer@samba.org>
- * Copyright (C) Stefan Metzmacher 2006-2009 <metze@samba.org>
- * Copyright (C) Andreas Schneider 2013 <asn@samba.org>
+ * Copyright (c) 2005-2008 Jelmer Vernooij <jelmer@samba.org>
+ * Copyright (C) 2006-2014 Stefan Metzmacher <metze@samba.org>
+ * Copyright (C) 2013-2014 Andreas Schneider <asn@samba.org>
  *
  * All rights reserved.
  *
