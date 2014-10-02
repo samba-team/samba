@@ -27,6 +27,7 @@ interface libnetjoin
 		[in] wkssvc_joinflags join_flags,
 		[in] string os_version,
 		[in] string os_name,
+		[in] string os_servicepack,
 		[in] boolean8 create_upn,
 		[in] string upn,
 		[in] boolean8 modify_config,

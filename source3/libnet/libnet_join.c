@@ -574,8 +574,19 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	os_sp = talloc_asprintf(mem_ctx, "Samba %s", samba_version_string());
-	if (!os_sp) {
+	if (r->in.os_servicepack) {
+		/*
+		 * if blank string then leave os_sp equal to NULL to force
+		 * attribute delete (LDAP_MOD_DELETE)
+		 */
+		if (!strequal(r->in.os_servicepack,"")) {
+			os_sp = talloc_strdup(mem_ctx, r->in.os_servicepack);
+		}
+	} else {
+		os_sp = talloc_asprintf(mem_ctx, "Samba %s",
+					samba_version_string());
+	}
+	if (!os_sp && !strequal(r->in.os_servicepack,"")) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 

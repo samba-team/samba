@@ -1329,6 +1329,9 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 		   "                          Also, the operatingSystemService attribute is also set when along with\n"
 		   "                          the two other attributes.\n"));
 
+	d_printf(_("   osServicePack=string Set the operatingSystemServicePack "
+		   "attribute during the join. Note: if not specified then by "
+		   "default the samba version string is used instead.\n"));
 	return -1;
 }
 
@@ -1434,6 +1437,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	int i;
 	const char *os_name = NULL;
 	const char *os_version = NULL;
+	const char *os_servicepack = NULL;
 	bool modify_config = lp_config_backend_is_registry();
 
 	if (c->display_usage)
@@ -1491,6 +1495,13 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 				goto fail;
 			}
 		}
+		else if ( !strncasecmp_m(argv[i], "osServicePack", strlen("osServicePack")) ) {
+			if ( (os_servicepack = get_string_param(argv[i])) == NULL ) {
+				d_fprintf(stderr, _("Please supply a valid servicepack identifier.\n"));
+				werr = WERR_INVALID_PARAM;
+				goto fail;
+			}
+		}
 		else if ( !strncasecmp_m(argv[i], "machinepass", strlen("machinepass")) ) {
 			if ( (machine_password = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, _("Please supply a valid password to set as trust account password.\n"));
@@ -1524,6 +1535,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	r->in.account_ou	= create_in_ou;
 	r->in.os_name		= os_name;
 	r->in.os_version	= os_version;
+	r->in.os_servicepack	= os_servicepack;
 	r->in.dc_name		= c->opt_host;
 	r->in.admin_account	= c->opt_user_name;
 	r->in.admin_password	= net_prompt_pass(c, c->opt_user_name);
