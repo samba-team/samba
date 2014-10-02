@@ -414,6 +414,16 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
+#define torture_assert_int_not_equal(torture_ctx,got,not_expected,cmt)\
+	do { int __got = (got), __not_expected = (not_expected); \
+	if (__got == __not_expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %d (0x%X), expected a different number: %s", \
+			__got, __got, cmt); \
+		return false; \
+	} \
+	} while(0)
+
 #define torture_assert_u64_equal(torture_ctx,got,expected,cmt)\
 	do { uint64_t __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
