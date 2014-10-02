@@ -980,7 +980,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 
 	switch (inaddr->sa_family) {
 	case AF_INET: {
-		const struct sockaddr_in *in = 
+		const struct sockaddr_in *in =
 		    (const struct sockaddr_in *)(const void *)inaddr;
 		unsigned int addr = ntohl(in->sin_addr.s_addr);
 		char u_type = '\0';
@@ -1027,7 +1027,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	}
 #ifdef HAVE_IPV6
 	case AF_INET6: {
-		const struct sockaddr_in6 *in = 
+		const struct sockaddr_in6 *in =
 		    (const struct sockaddr_in6 *)(const void *)inaddr;
 		struct in6_addr cmp1, cmp2;
 
@@ -1074,14 +1074,14 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	}
 
 	if (is_bcast) {
-		snprintf(un->sun_path, sizeof(un->sun_path), "%s/EINVAL", 
+		snprintf(un->sun_path, sizeof(un->sun_path), "%s/EINVAL",
 			 socket_wrapper_dir());
 		SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 		/* the caller need to do more processing */
 		return 0;
 	}
 
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
+	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
 		 socket_wrapper_dir(), type, iface, prt);
 	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 
@@ -1101,7 +1101,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 
 	switch (si->family) {
 	case AF_INET: {
-		const struct sockaddr_in *in = 
+		const struct sockaddr_in *in =
 		    (const struct sockaddr_in *)(const void *)inaddr;
 		unsigned int addr = ntohl(in->sin_addr.s_addr);
 		char u_type = '\0';
@@ -1171,7 +1171,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	}
 #ifdef HAVE_IPV6
 	case AF_INET6: {
-		const struct sockaddr_in6 *in = 
+		const struct sockaddr_in6 *in =
 		    (const struct sockaddr_in6 *)(const void *)inaddr;
 		struct in6_addr cmp1, cmp2;
 
@@ -1240,7 +1240,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	if (prt == 0) {
 		/* handle auto-allocation of ephemeral ports */
 		for (prt = 5001; prt < 10000; prt++) {
-			snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
+			snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
 				 socket_wrapper_dir(), type, iface, prt);
 			if (stat(un->sun_path, &st) == 0) continue;
 
@@ -1255,7 +1255,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		}
 	}
 
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
+	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
 		 socket_wrapper_dir(), type, iface, prt);
 	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 	return 0;
@@ -1450,8 +1450,8 @@ static int sockaddr_convert_to_un(struct socket_info *si,
 	return -1;
 }
 
-static int sockaddr_convert_from_un(const struct socket_info *si, 
-				    const struct sockaddr_un *in_addr, 
+static int sockaddr_convert_from_un(const struct socket_info *si,
+				    const struct sockaddr_un *in_addr,
 				    socklen_t un_addrlen,
 				    int family,
 				    struct sockaddr *out_addr,
@@ -1459,7 +1459,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 {
 	int ret;
 
-	if (out_addr == NULL || out_addrlen == NULL) 
+	if (out_addr == NULL || out_addrlen == NULL)
 		return 0;
 
 	if (un_addrlen == 0) {
@@ -1624,7 +1624,7 @@ static const char *swrap_pcap_init_file(void)
 	/*
 	 * TODO: don't use the structs use plain buffer offsets
 	 *       and PUSH_U8(), PUSH_U16() and PUSH_U32()
-	 * 
+	 *
 	 * for now make sure we disable PCAP support
 	 * if the struct has alignment!
 	 */
@@ -2507,7 +2507,7 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return libc_accept(s, addr, addrlen);
 	}
 
-	/* 
+	/*
 	 * assume out sockaddr have the same size as the in parent
 	 * socket family
 	 */
@@ -2664,7 +2664,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 			type = SOCKET_TYPE_CHAR_TCP;
 			break;
 		case SOCK_DGRAM:
-		    	type = SOCKET_TYPE_CHAR_UDP;
+			type = SOCKET_TYPE_CHAR_UDP;
 			break;
 		default:
 		    errno = ESOCKTNOSUPPORT;
@@ -2673,7 +2673,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 
 		memset(&in, 0, sizeof(in));
 		in.sin_family = AF_INET;
-		in.sin_addr.s_addr = htonl(127<<24 | 
+		in.sin_addr.s_addr = htonl(127<<24 |
 					   socket_wrapper_default_iface());
 
 		si->myname = (struct swrap_address) {
@@ -2696,7 +2696,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 			type = SOCKET_TYPE_CHAR_TCP_V6;
 			break;
 		case SOCK_DGRAM:
-		    	type = SOCKET_TYPE_CHAR_UDP_V6;
+			type = SOCKET_TYPE_CHAR_UDP_V6;
 			break;
 		default:
 			errno = ESOCKTNOSUPPORT;
