@@ -3410,8 +3410,7 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 {
 	/* Add packet info */
 	switch (si->pktinfo) {
-#if defined(IP_PKTINFO)
-/* && (defined(HAVE_STRUCT_IN_PKTINFO) || defined(IP_RECVDSTADDR)) */
+#if defined(IP_PKTINFO) && (defined(HAVE_STRUCT_IN_PKTINFO) || defined(IP_RECVDSTADDR))
 	case AF_INET: {
 		struct sockaddr_in *sin;
 #if defined(HAVE_STRUCT_IN_PKTINFO)
