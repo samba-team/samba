@@ -65,9 +65,9 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
-	
-	torture_comment(tctx, "Initial write time %s\n", 
-	       nt_time_string(tctx, finfo1.basic_info.out.write_time));
+
+	torture_comment(tctx, "Initial write time %s\n",
+			nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
@@ -88,8 +88,8 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 			ret = false;
 			break;
 		}
-		torture_comment(tctx, "write time %s\n", 
-		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
+		torture_comment(tctx, "write time %s\n",
+			nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff < (used_delay / (double)1000000)) {
