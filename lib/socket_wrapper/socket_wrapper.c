@@ -1935,11 +1935,11 @@ static int swrap_get_pcap_fd(const char *fname)
 	return fd;
 }
 
-static uint8_t *swrap_marshall_packet(struct socket_info *si,
-				      const struct sockaddr *addr,
-				      enum swrap_packet_type type,
-				      const void *buf, size_t len,
-				      size_t *packet_len)
+static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
+					   const struct sockaddr *addr,
+					   enum swrap_packet_type type,
+					   const void *buf, size_t len,
+					   size_t *packet_len)
 {
 	const struct sockaddr *src_addr;
 	const struct sockaddr *dest_addr;
@@ -2073,7 +2073,7 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 		src_addr = si->peername;
 
 		if (si->type == SOCK_DGRAM) {
-			return swrap_marshall_packet(si, si->peername,
+			return swrap_pcap_marshall_packet(si, si->peername,
 					  SWRAP_SENDTO_UNREACH,
 			      		  buf, len, packet_len);
 		}
@@ -2221,8 +2221,13 @@ static void swrap_dump_packet(struct socket_info *si,
 		return;
 	}
 
-	packet = swrap_marshall_packet(si, addr, type, buf, len, &packet_len);
-	if (!packet) {
+	packet = swrap_pcap_marshall_packet(si,
+					    addr,
+					    type,
+					    buf,
+					    len,
+					    &packet_len);
+	if (packet == NULL) {
 		return;
 	}
 
