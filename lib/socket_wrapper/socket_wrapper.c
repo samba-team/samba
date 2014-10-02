@@ -1412,7 +1412,7 @@ static int sockaddr_convert_to_un(struct socket_info *si,
 		if (in_len < sizeof(struct sockaddr_in)) {
 			break;
 		}
-		sin = (const struct sockaddr_in *)in_addr;
+		sin = (const struct sockaddr_in *)(const void *)in_addr;
 		if(sin->sin_addr.s_addr != htonl(INADDR_ANY)) {
 			break;
 		}
@@ -1707,16 +1707,16 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 
 	switch (src->sa_family) {
 	case AF_INET:
-		src_in = (const struct sockaddr_in *)src;
-		dest_in = (const struct sockaddr_in *)dest;
+		src_in = (const struct sockaddr_in *)(const void *)src;
+		dest_in = (const struct sockaddr_in *)(const void *)dest;
 		src_port = src_in->sin_port;
 		dest_port = dest_in->sin_port;
 		ip_hdr_len = sizeof(ip->v4);
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		src_in6 = (const struct sockaddr_in6 *)src;
-		dest_in6 = (const struct sockaddr_in6 *)dest;
+		src_in6 = (const struct sockaddr_in6 *)(const void *)src;
+		dest_in6 = (const struct sockaddr_in6 *)(const void *)dest;
 		src_port = src_in6->sin6_port;
 		dest_port = dest_in6->sin6_port;
 		ip_hdr_len = sizeof(ip->v6);
@@ -1778,14 +1778,14 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 
 	buf = base;
 
-	frame = (struct swrap_packet_frame *)buf;
+	frame = (struct swrap_packet_frame *)(void *)buf;
 	frame->seconds		= tval->tv_sec;
 	frame->micro_seconds	= tval->tv_usec;
 	frame->recorded_length	= wire_len - icmp_truncate_len;
 	frame->full_length	= wire_len - icmp_truncate_len;
 	buf += SWRAP_PACKET_FRAME_SIZE;
 
-	ip = (union swrap_packet_ip *)buf;
+	ip = (union swrap_packet_ip *)(void *)buf;
 	switch (src->sa_family) {
 	case AF_INET:
 		ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
@@ -1816,7 +1816,7 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 	}
 
 	if (unreachable) {
-		pay = (union swrap_packet_payload *)buf;
+		pay = (union swrap_packet_payload *)(void *)buf;
 		switch (src->sa_family) {
 		case AF_INET:
 			pay->icmp4.type		= 0x03; /* destination unreachable */
@@ -1826,7 +1826,7 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 			buf += SWRAP_PACKET_PAYLOAD_ICMP4_SIZE;
 
 			/* set the ip header in the ICMP payload */
-			ip = (union swrap_packet_ip *)buf;
+			ip = (union swrap_packet_ip *)(void *)buf;
 			ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
 			ip->v4.tos		= 0x00;
 			ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
@@ -1852,7 +1852,7 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 			buf += SWRAP_PACKET_PAYLOAD_ICMP6_SIZE;
 
 			/* set the ip header in the ICMP payload */
-			ip = (union swrap_packet_ip *)buf;
+			ip = (union swrap_packet_ip *)(void *)buf;
 			ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
 			ip->v6.flow_label_high	= 0x00;
 			ip->v6.flow_label_low	= 0x0000;
@@ -1869,7 +1869,7 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 		}
 	}
 
-	pay = (union swrap_packet_payload *)buf;
+	pay = (union swrap_packet_payload *)(void *)buf;
 
 	switch (socket_type) {
 	case SOCK_STREAM:
@@ -2888,7 +2888,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 			break;
 		}
 
-		sin = (const struct sockaddr_in *)myaddr;
+		sin = (const struct sockaddr_in *)(const void *)myaddr;
 
 		if (sin->sin_family != AF_INET) {
 			bind_error = EAFNOSUPPORT;
@@ -2911,7 +2911,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 			break;
 		}
 
-		sin6 = (const struct sockaddr_in6 *)myaddr;
+		sin6 = (const struct sockaddr_in6 *)(const void *)myaddr;
 
 		if (sin6->sin6_family != AF_INET6) {
 			bind_error = EAFNOSUPPORT;
@@ -3020,7 +3020,7 @@ static int swrap_bindresvport_sa(int sd, struct sockaddr *sa)
 			break;
 		}
 		case AF_INET6: {
-			struct sockaddr_in6 *sin6p = (struct sockaddr_in6 *)sa;
+			struct sockaddr_in6 *sin6p = (struct sockaddr_in6 *)(void *)sa;
 
 			salen = sizeof(struct sockaddr_in6);
 			sin6p->sin6_port = htons(port);
@@ -4240,7 +4240,7 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 	if (bcast) {
 		struct stat st;
 		unsigned int iface;
-		unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
+		unsigned int prt = ntohs(((const struct sockaddr_in *)(const void *)to)->sin_port);
 		char type;
 
 		type = SOCKET_TYPE_CHAR_UDP;
@@ -4604,7 +4604,7 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 	if (bcast) {
 		struct stat st;
 		unsigned int iface;
-		unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
+		unsigned int prt = ntohs(((const struct sockaddr_in *)(const void *)to)->sin_port);
 		char type;
 		size_t i, len = 0;
 		uint8_t *buf;
