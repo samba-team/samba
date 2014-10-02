@@ -337,6 +337,7 @@ struct swrap_libc_fns {
 			    socklen_t addrlen);
 	int (*libc_dup)(int fd);
 	int (*libc_dup2)(int oldfd, int newfd);
+	FILE *(*libc_fopen)(const char *name, const char *mode);
 #ifdef HAVE_EVENTFD
 	int (*libc_eventfd)(int count, int flags);
 #endif
@@ -643,6 +644,13 @@ static int libc_listen(int sockfd, int backlog)
 	swrap_load_lib_function(SWRAP_LIBSOCKET, listen);
 
 	return swrap.fns.libc_listen(sockfd, backlog);
+}
+
+static FILE *libc_fopen(const char *name, const char *mode)
+{
+	swrap_load_lib_function(SWRAP_LIBC, fopen);
+
+	return swrap.fns.libc_fopen(name, mode);
 }
 
 static int libc_vopen(const char *pathname, int flags, va_list ap)
@@ -3063,6 +3071,29 @@ static int swrap_listen(int s, int backlog)
 int listen(int s, int backlog)
 {
 	return swrap_listen(s, backlog);
+}
+
+/****************************************************************************
+ *   FOPEN
+ ***************************************************************************/
+
+static FILE *swrap_fopen(const char *name, const char *mode)
+{
+	FILE *fp;
+
+	fp = libc_fopen(name, mode);
+	if (fp != NULL) {
+		int fd = fileno(fp);
+
+		swrap_remove_stale(fd);
+	}
+
+	return fp;
+}
+
+FILE *fopen(const char *name, const char *mode)
+{
+	return swrap_fopen(name, mode);
 }
 
 /****************************************************************************
