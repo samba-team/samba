@@ -822,13 +822,6 @@ static const struct in6_addr *swrap_ipv6(void)
 }
 #endif
 
-static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
-{
-	struct sockaddr *ret = (struct sockaddr *)malloc(len);
-	memcpy(ret, data, len);
-	return ret;
-}
-
 static void set_port(int family, int prt, struct swrap_address *addr)
 {
 	switch (family) {
