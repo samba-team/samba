@@ -21,6 +21,8 @@
 
 */
 
+#ifdef WITH_PROFILE
+
 /* this file defines the profile structure in the profile shared
    memory area */
 
@@ -876,8 +878,6 @@ extern struct profile_stats *profile_p;
 extern bool do_profile_flag;
 extern bool do_profile_times;
 
-#ifdef WITH_PROFILE
-
 /* these are helper macros - do not call them directly in the code
  * use the DO_PROFILE_* START_PROFILE and END_PROFILE ones
  * below which test for the profile flags first
@@ -964,6 +964,7 @@ static inline uint64_t profile_timestamp(void)
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE_STAMP(x, _stamp)
 #define END_PROFILE(x)
+
 #endif /* WITH_PROFILE */
 
 /* The following definitions come from profile/profile.c  */
