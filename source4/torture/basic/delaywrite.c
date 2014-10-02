@@ -53,52 +53,44 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
-	if (fnum1 == -1) {
-		torture_result(tctx, TORTURE_FAIL, "Failed to open %s", fname);
-		return false;
-	}
+	torture_assert_int_not_equal(tctx, fnum1, -1, talloc_asprintf(tctx,
+				     "Failed to open %s", fname));
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo1.basic_info.in.file.fnum = fnum1;
 	finfo2 = finfo1;
 
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
-
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 
 	torture_comment(tctx, "Initial write time %s\n",
 			nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
-
-	if (written != 1) {
-		torture_result(tctx, TORTURE_FAIL, 
-					   "write failed - wrote %d bytes (%s)\n", 
-					   (int)written, __location__);
-		return false;
-	}
+	torture_assert_int_equal(tctx, written, 1,
+				 "unexpected number of bytes written");
 
 	start = timeval_current();
 	end = timeval_add(&start, (120 * sec), 0);
 	while (!timeval_expired(&end)) {
 		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = false;
-			break;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
+
 		torture_comment(tctx, "write time %s\n",
 			nt_time_string(tctx, finfo2.basic_info.out.write_time));
-		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+
+		if (finfo1.basic_info.out.write_time !=
+		    finfo2.basic_info.out.write_time)
+		{
 			double diff = timeval_elapsed(&start);
-			if (diff < (used_delay / (double)1000000)) {
-				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
-						"(expected > %.2f) (wrong!)\n",
-						diff, used_delay / (double)1000000);
-				ret = false;
-				break;
-			}
+
+			torture_assert(tctx,
+				       diff >= (used_delay / (double)1000000),
+				       talloc_asprintf(tctx,
+					"Server updated write_time after %.2f "
+					"seconds (expected >= %.2f)\n",
+					diff, used_delay/(double)1000000));
 
 			torture_comment(tctx, "Server updated write_time after %.2f seconds (correct)\n",
 					diff);
@@ -107,13 +99,12 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 		fflush(stdout);
 		smb_msleep(1 * msec);
 	}
-	
-	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		torture_result(tctx, TORTURE_FAIL, 
-					   "Server did not update write time (wrong!)");
-		ret = false;
-	}
 
+	torture_assert_u64_not_equal(tctx,
+				     finfo2.basic_info.out.write_time,
+				     finfo1.basic_info.out.write_time,
+				     "Server did not update write time within "
+				     "120 seconds");
 
 	if (fnum1 != -1)
 		smbcli_close(cli->tree, fnum1);
