@@ -2206,10 +2206,10 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 				      packet_len);
 }
 
-static void swrap_dump_packet(struct socket_info *si,
-			      const struct sockaddr *addr,
-			      enum swrap_packet_type type,
-			      const void *buf, size_t len)
+static void swrap_pcap_dump_packet(struct socket_info *si,
+				   const struct sockaddr *addr,
+				   enum swrap_packet_type type,
+				   const void *buf, size_t len)
 {
 	const char *file_name;
 	uint8_t *packet;
@@ -2617,9 +2617,9 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	SWRAP_DLIST_ADD(sockets, child_si);
 
 	if (addr != NULL) {
-		swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
-		swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
-		swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_ACK, NULL, 0);
+		swrap_pcap_dump_packet(child_si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
+		swrap_pcap_dump_packet(child_si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
+		swrap_pcap_dump_packet(child_si, addr, SWRAP_ACCEPT_ACK, NULL, 0);
 	}
 
 	return fd;
@@ -2802,7 +2802,7 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 		si->defer_connect = 1;
 		ret = 0;
 	} else {
-		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
+		swrap_pcap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
 
 		ret = libc_connect(s,
 				   &un_addr.sa.s,
@@ -2841,10 +2841,10 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 			si->bindname_len = 0;
 		}
 
-		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
-		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_ACK, NULL, 0);
+		swrap_pcap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
+		swrap_pcap_dump_packet(si, serv_addr, SWRAP_CONNECT_ACK, NULL, 0);
 	} else {
-		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_UNREACH, NULL, 0);
+		swrap_pcap_dump_packet(si, serv_addr, SWRAP_CONNECT_UNREACH, NULL, 0);
 	}
 
 	return ret;
@@ -3339,9 +3339,9 @@ static int swrap_vioctl(int s, unsigned long int r, va_list va)
 		value = *((int *)va_arg(ap, int *));
 
 		if (rc == -1 && errno != EAGAIN && errno != ENOBUFS) {
-			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
 		} else if (value == 0) { /* END OF FILE */
-			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
 		}
 		break;
 	}
@@ -3844,10 +3844,10 @@ static void swrap_sendmsg_after(int fd,
 	switch (si->type) {
 	case SOCK_STREAM:
 		if (ret == -1) {
-			swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
-			swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
 		} else {
-			swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
 		}
 		break;
 
@@ -3856,10 +3856,10 @@ static void swrap_sendmsg_after(int fd,
 			to = si->peername;
 		}
 		if (ret == -1) {
-			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
-			swrap_dump_packet(si, to, SWRAP_SENDTO_UNREACH, buf, len);
+			swrap_pcap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+			swrap_pcap_dump_packet(si, to, SWRAP_SENDTO_UNREACH, buf, len);
 		} else {
-			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+			swrap_pcap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
 		}
 		break;
 	}
@@ -4003,11 +4003,11 @@ static int swrap_recvmsg_after(int fd,
 	switch (si->type) {
 	case SOCK_STREAM:
 		if (ret == -1 && saved_errno != EAGAIN && saved_errno != ENOBUFS) {
-			swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
 		} else if (ret == 0) { /* END OF FILE */
-			swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
 		} else if (ret > 0) {
-			swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
+			swrap_pcap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
 		}
 		break;
 
@@ -4027,13 +4027,13 @@ static int swrap_recvmsg_after(int fd,
 				goto done;
 			}
 
-			swrap_dump_packet(si,
+			swrap_pcap_dump_packet(si,
 					  msg->msg_name,
 					  SWRAP_RECVFROM,
 					  buf,
 					  ret);
 		} else {
-			swrap_dump_packet(si,
+			swrap_pcap_dump_packet(si,
 					  msg->msg_name,
 					  SWRAP_RECV,
 					  buf,
@@ -4230,7 +4230,7 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 				    un_addr.sa_socklen);
 		}
 
-		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+		swrap_pcap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
 
 		return len;
 	}
@@ -4617,7 +4617,7 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 			libc_sendmsg(s, &msg, flags);
 		}
 
-		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+		swrap_pcap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
 		free(buf);
 
 		return len;
@@ -4773,14 +4773,14 @@ static int swrap_close(int fd)
 	SWRAP_DLIST_REMOVE(sockets, si);
 
 	if (si->myname && si->peername) {
-		swrap_dump_packet(si, NULL, SWRAP_CLOSE_SEND, NULL, 0);
+		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_SEND, NULL, 0);
 	}
 
 	ret = libc_close(fd);
 
 	if (si->myname && si->peername) {
-		swrap_dump_packet(si, NULL, SWRAP_CLOSE_RECV, NULL, 0);
-		swrap_dump_packet(si, NULL, SWRAP_CLOSE_ACK, NULL, 0);
+		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_RECV, NULL, 0);
+		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_ACK, NULL, 0);
 	}
 
 	if (si->bindname != NULL) {
