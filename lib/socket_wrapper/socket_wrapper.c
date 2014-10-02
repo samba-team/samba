@@ -2807,7 +2807,7 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 
 	SWRAP_LOG(SWRAP_LOG_TRACE,
 		  "connect() path=%s, fd=%d",
-		  un_addr.un.sun_path, s);
+		  un_addr.sa.un.sun_path, s);
 
 
 	/* to give better errors */
@@ -2954,7 +2954,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 
 	SWRAP_LOG(SWRAP_LOG_TRACE,
 		  "bind() path=%s, fd=%d",
-		  un_addr.sa_un.sun_path, s);
+		  un_addr.sa.un.sun_path, s);
 
 	if (ret == 0) {
 		si->bound = 1;
