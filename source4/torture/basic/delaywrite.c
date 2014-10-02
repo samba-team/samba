@@ -260,9 +260,12 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 				     finfo3.all_info.out.write_time,
 				     "Server did not update write time on "
 				     "close (wrong!)");
-	if (finfo3.all_info.out.write_time < pinfo4.all_info.out.write_time) {
-		torture_comment(tctx, "Server updated write time on close (correct)\n");
-	}
+	torture_assert(tctx,
+		pinfo4.all_info.out.write_time > finfo3.all_info.out.write_time,
+		"Server updated write time on close, but to an earlier point "
+		"in time");
+
+	torture_comment(tctx, "Server updated write time on close (correct)\n");
 
 	if (fnum1 != -1)
 		smbcli_close(cli->tree, fnum1);
