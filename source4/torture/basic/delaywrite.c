@@ -231,22 +231,21 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 
 		torture_comment(tctx, "write time %s\n",
 			nt_time_string(tctx, finfo3.all_info.out.write_time));
-		if (finfo2.all_info.out.write_time != finfo3.all_info.out.write_time) {
-			double diff = timeval_elapsed(&start);
 
-			torture_comment(tctx, "server updated write_time after %.2f seconds"
-					"(wrong)\n",
-					diff);
-			break;
-		}
+		torture_assert_u64_equal(tctx,
+					 finfo3.all_info.out.write_time,
+					 finfo2.all_info.out.write_time,
+					 talloc_asprintf(tctx,
+						"Server updated write time "
+						"after %.2f seconds (wrong!)",
+						timeval_elapsed(&start)));
+
 		fflush(stdout);
 		smb_msleep(1 * msec);
 	}
 
-	torture_assert_u64_equal(tctx,
-				 finfo3.all_info.out.write_time,
-				 finfo2.all_info.out.write_time,
-				 "Server updated write time (wrong!)");
+	torture_comment(tctx, "Server did not update write time within 10 "
+			"seconds. Good!\n");
 
 	fflush(stdout);
 	smb_msleep(2 * msec);
