@@ -520,8 +520,9 @@ static void *_swrap_load_lib_function(enum swrap_lib lib, const char *fn_name)
 
 #define swrap_load_lib_function(lib, fn_name) \
 	if (swrap.fns.libc_##fn_name == NULL) { \
+		void *swrap_cast_ptr = _swrap_load_lib_function(lib, #fn_name); \
 		*(void **) (&swrap.fns.libc_##fn_name) = \
-			_swrap_load_lib_function(lib, #fn_name); \
+			swrap_cast_ptr; \
 	}
 
 
