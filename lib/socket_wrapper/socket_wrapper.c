@@ -245,14 +245,9 @@ struct socket_info
 	/* The unix path so we can unlink it on close() */
 	struct sockaddr_un un_addr;
 
-	struct sockaddr *bindname;
-	socklen_t bindname_len;
-
-	struct sockaddr *myname;
-	socklen_t myname_len;
-
-	struct sockaddr *peername;
-	socklen_t peername_len;
+	struct swrap_address bindname;
+	struct swrap_address myname;
+	struct swrap_address peername;
 
 	struct {
 		unsigned long pck_snd;
@@ -834,15 +829,15 @@ static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 	return ret;
 }
 
-static void set_port(int family, int prt, struct sockaddr *addr)
+static void set_port(int family, int prt, struct swrap_address *addr)
 {
 	switch (family) {
 	case AF_INET:
-		((struct sockaddr_in *)addr)->sin_port = htons(prt);
+		addr->sa.in.sin_port = htons(prt);
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		((struct sockaddr_in6 *)addr)->sin6_port = htons(prt);
+		addr->sa.in6.sin6_port = htons(prt);
 		break;
 #endif
 	}
@@ -1158,7 +1153,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		}
 
 		/* Store the bind address for connect() */
-		if (si->bindname == NULL) {
+		if (si->bindname.sa_socklen == 0) {
 			struct sockaddr_in bind_in;
 			socklen_t blen = sizeof(struct sockaddr_in);
 
@@ -1167,8 +1162,8 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			bind_in.sin_port = in->sin_port;
 			bind_in.sin_addr.s_addr = htonl(0x7F000000 | iface);
 
-			si->bindname = sockaddr_dup(&bind_in, blen);
-			si->bindname_len = blen;
+			si->bindname.sa_socklen = blen;
+			memcpy(&si->bindname.sa.in, &bind_in, blen);
 		}
 
 		break;
@@ -1209,7 +1204,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		}
 
 		/* Store the bind address for connect() */
-		if (si->bindname == NULL) {
+		if (si->bindname.sa_socklen == 0) {
 			struct sockaddr_in6 bind_in;
 			socklen_t blen = sizeof(struct sockaddr_in6);
 
@@ -1220,8 +1215,8 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			bind_in.sin6_addr = *swrap_ipv6();
 			bind_in.sin6_addr.s6_addr[15] = iface;
 
-			si->bindname = sockaddr_dup(&bind_in, blen);
-			si->bindname_len = blen;
+			memcpy(&si->bindname.sa.in6, &bind_in, blen);
+			si->bindname.sa_socklen = blen;
 		}
 
 		break;
@@ -1248,8 +1243,8 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 				 socket_wrapper_dir(), type, iface, prt);
 			if (stat(un->sun_path, &st) == 0) continue;
 
-			set_port(si->family, prt, si->myname);
-			set_port(si->family, prt, si->bindname);
+			set_port(si->family, prt, &si->myname);
+			set_port(si->family, prt, &si->bindname);
 
 			break;
 		}
@@ -1966,7 +1961,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = si->myname;
+		src_addr  = &si->myname.sa.s;
 		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
@@ -1980,7 +1975,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = si->myname;
+		dest_addr = &si->myname.sa.s;
 		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
@@ -1994,8 +1989,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_UNREACH:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = si->myname;
-		src_addr = addr;
+		dest_addr = &si->myname.sa.s;
+		src_addr  = addr;
 
 		/* Unreachable: resend the data of SWRAP_CONNECT_SEND */
 		tcp_seqno = si->io.pck_snd - 1;
@@ -2008,7 +2003,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = si->myname;
+		src_addr  = &si->myname.sa.s;
 		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
@@ -2020,7 +2015,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = si->myname;
+		dest_addr = &si->myname.sa.s;
 		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
@@ -2034,7 +2029,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = si->myname;
+		src_addr = &si->myname.sa.s;
 		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
@@ -2048,7 +2043,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = si->myname;
+		dest_addr = &si->myname.sa.s;
 		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
@@ -2058,8 +2053,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SEND:
-		src_addr = si->myname;
-		dest_addr = si->peername;
+		src_addr  = &si->myname.sa.s;
+		dest_addr = &si->peername.sa.s;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -2070,13 +2065,16 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SEND_RST:
-		dest_addr = si->myname;
-		src_addr = si->peername;
+		dest_addr = &si->myname.sa.s;
+		src_addr  = &si->peername.sa.s;
 
 		if (si->type == SOCK_DGRAM) {
-			return swrap_pcap_marshall_packet(si, si->peername,
-					  SWRAP_SENDTO_UNREACH,
-			      		  buf, len, packet_len);
+			return swrap_pcap_marshall_packet(si,
+							  &si->peername.sa.s,
+							  SWRAP_SENDTO_UNREACH,
+							  buf,
+							  len,
+							  packet_len);
 		}
 
 		tcp_seqno = si->io.pck_rcv;
@@ -2086,8 +2084,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_PENDING_RST:
-		dest_addr = si->myname;
-		src_addr = si->peername;
+		dest_addr = &si->myname.sa.s;
+		src_addr  = &si->peername.sa.s;
 
 		if (si->type == SOCK_DGRAM) {
 			return NULL;
@@ -2100,8 +2098,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_RECV:
-		dest_addr = si->myname;
-		src_addr = si->peername;
+		dest_addr = &si->myname.sa.s;
+		src_addr  = &si->peername.sa.s;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -2112,8 +2110,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_RECV_RST:
-		dest_addr = si->myname;
-		src_addr = si->peername;
+		dest_addr = &si->myname.sa.s;
+		src_addr  = &si->peername.sa.s;
 
 		if (si->type == SOCK_DGRAM) {
 			return NULL;
@@ -2126,7 +2124,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SENDTO:
-		src_addr = si->myname;
+		src_addr = &si->myname.sa.s;
 		dest_addr = addr;
 
 		si->io.pck_snd += len;
@@ -2134,7 +2132,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SENDTO_UNREACH:
-		dest_addr = si->myname;
+		dest_addr = &si->myname.sa.s;
 		src_addr = addr;
 
 		unreachable = 1;
@@ -2142,7 +2140,7 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_RECVFROM:
-		dest_addr = si->myname;
+		dest_addr = &si->myname.sa.s;
 		src_addr = addr;
 
 		si->io.pck_rcv += len;
@@ -2152,8 +2150,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = si->myname;
-		dest_addr = si->peername;
+		src_addr  = &si->myname.sa.s;
+		dest_addr = &si->peername.sa.s;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -2166,8 +2164,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = si->myname;
-		src_addr = si->peername;
+		dest_addr = &si->myname.sa.s;
+		src_addr  = &si->peername.sa.s;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -2180,8 +2178,8 @@ static uint8_t *swrap_pcap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = si->myname;
-		dest_addr = si->peername;
+		src_addr  = &si->myname.sa.s;
+		dest_addr = &si->peername.sa.s;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -2374,8 +2372,8 @@ static int swrap_socket(int family, int type, int protocol)
 			.sin_family = AF_INET,
 		};
 
-		si->myname_len = sizeof(struct sockaddr_in);
-		si->myname = sockaddr_dup(&sin, si->myname_len);
+		si->myname.sa_socklen = sizeof(struct sockaddr_in);
+		memcpy(&si->myname.sa.in, &sin, si->myname.sa_socklen);
 		break;
 	}
 	case AF_INET6: {
@@ -2383,8 +2381,8 @@ static int swrap_socket(int family, int type, int protocol)
 			.sin6_family = AF_INET6,
 		};
 
-		si->myname_len = sizeof(struct sockaddr_in6);
-		si->myname = sockaddr_dup(&sin6, si->myname_len);
+		si->myname.sa_socklen = sizeof(struct sockaddr_in6);
+		memcpy(&si->myname.sa.in6, &sin6, si->myname.sa_socklen);
 		break;
 	}
 	default:
@@ -2395,9 +2393,6 @@ static int swrap_socket(int family, int type, int protocol)
 
 	fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
 	if (fi == NULL) {
-		if (si->myname != NULL) {
-			free (si->myname);
-		}
 		free(si);
 		errno = ENOMEM;
 		return -1;
@@ -2570,8 +2565,8 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->is_server = 1;
 	child_si->connected = 1;
 
-	child_si->peername_len = len;
-	child_si->peername = sockaddr_dup(my_addr, len);
+	child_si->peername.sa_socklen = len;
+	memcpy(&child_si->peername.sa.s, my_addr, len);
 
 	if (addr != NULL && addrlen != NULL) {
 		size_t copy_len = MIN(*addrlen, len);
@@ -2611,8 +2606,8 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		  "accept() path=%s, fd=%d",
 		  un_my_addr.sa.un.sun_path, s);
 
-	child_si->myname_len = len;
-	child_si->myname = sockaddr_dup(my_addr, len);
+	child_si->myname.sa_socklen = len;
+	memcpy(&child_si->myname.sa.s, my_addr, len);
 	free(my_addr);
 
 	SWRAP_DLIST_ADD(sockets, child_si);
@@ -2685,9 +2680,10 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		in.sin_addr.s_addr = htonl(127<<24 | 
 					   socket_wrapper_default_iface());
 
-		free(si->myname);
-		si->myname_len = sizeof(in);
-		si->myname = sockaddr_dup(&in, si->myname_len);
+		si->myname = (struct swrap_address) {
+			.sa_socklen = sizeof(in),
+		};
+		memcpy(&si->myname.sa.in, &in, si->myname.sa_socklen);
 		break;
 	}
 #ifdef HAVE_IPV6
@@ -2715,9 +2711,11 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		in6.sin6_family = AF_INET6;
 		in6.sin6_addr = *swrap_ipv6();
 		in6.sin6_addr.s6_addr[15] = socket_wrapper_default_iface();
-		free(si->myname);
-		si->myname_len = sizeof(in6);
-		si->myname = sockaddr_dup(&in6, si->myname_len);
+
+		si->myname = (struct swrap_address) {
+			.sa_socklen = sizeof(in6),
+		};
+		memcpy(&si->myname.sa.in6, &in6, si->myname.sa_socklen);
 		break;
 	}
 #endif
@@ -2758,7 +2756,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 	}
 
 	si->family = family;
-	set_port(si->family, port, si->myname);
+	set_port(si->family, port, &si->myname);
 
 	return 0;
 }
@@ -2822,8 +2820,11 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 	}
 
 	if (ret == 0) {
-		si->peername_len = addrlen;
-		si->peername = sockaddr_dup(serv_addr, addrlen);
+		si->peername = (struct swrap_address) {
+			.sa_socklen = addrlen,
+		};
+
+		memcpy(&si->peername.sa.ss, serv_addr, addrlen);
 		si->connected = 1;
 
 		/*
@@ -2833,14 +2834,19 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 		 * but here we have to update the name so getsockname()
 		 * returns correct information.
 		 */
-		if (si->bindname != NULL) {
-			free(si->myname);
+		if (si->bindname.sa_socklen > 0) {
+			si->myname = (struct swrap_address) {
+				.sa_socklen = si->bindname.sa_socklen,
+			};
 
-			si->myname = si->bindname;
-			si->myname_len = si->bindname_len;
+			memcpy(&si->myname.sa.ss,
+			       &si->bindname.sa.ss,
+			       si->bindname.sa_socklen);
 
-			si->bindname = NULL;
-			si->bindname_len = 0;
+			/* Cleanup bindname */
+			si->bindname = (struct swrap_address) {
+				.sa_socklen = 0,
+			};
 		}
 
 		swrap_pcap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
@@ -2935,9 +2941,8 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	}
 #endif
 
-	free(si->myname);
-	si->myname_len = addrlen;
-	si->myname = sockaddr_dup(myaddr, addrlen);
+	si->myname.sa_socklen = addrlen;
+	memcpy(&si->myname.sa.ss, myaddr, addrlen);
 
 	ret = sockaddr_convert_to_un(si,
 				     myaddr,
@@ -3118,19 +3123,19 @@ static int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 		return libc_getpeername(s, name, addrlen);
 	}
 
-	if (!si->peername)
+	if (si->peername.sa_socklen == 0)
 	{
 		errno = ENOTCONN;
 		return -1;
 	}
 
-	len = MIN(*addrlen, si->peername_len);
+	len = MIN(*addrlen, si->peername.sa_socklen);
 	if (len == 0) {
 		return 0;
 	}
 
-	memcpy(name, si->peername, len);
-	*addrlen = si->peername_len;
+	memcpy(name, &si->peername.sa.ss, len);
+	*addrlen = si->peername.sa_socklen;
 
 	return 0;
 }
@@ -3157,13 +3162,13 @@ static int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 		return libc_getsockname(s, name, addrlen);
 	}
 
-	len = MIN(*addrlen, si->myname_len);
+	len = MIN(*addrlen, si->myname.sa_socklen);
 	if (len == 0) {
 		return 0;
 	}
 
-	memcpy(name, si->myname, len);
-	*addrlen = si->myname_len;
+	memcpy(name, &si->myname.sa.ss, len);
+	*addrlen = si->myname.sa_socklen;
 
 	return 0;
 }
@@ -3465,13 +3470,13 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 		struct in_addr pkt;
 #endif
 
-		if (si->bindname_len == sizeof(struct sockaddr_in)) {
-			sin = (struct sockaddr_in*)si->bindname;
+		if (si->bindname.sa_socklen == sizeof(struct sockaddr_in)) {
+			sin = &si->bindname.sa.in;
 		} else {
-			if (si->myname_len != sizeof(struct sockaddr_in)) {
+			if (si->myname.sa_socklen != sizeof(struct sockaddr_in)) {
 				return 0;
 			}
-			sin = (struct sockaddr_in*)si->myname;
+			sin = &si->myname.sa.in;
 		}
 
 		ZERO_STRUCT(pkt);
@@ -3495,13 +3500,13 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 		struct sockaddr_in6 *sin6;
 		struct in6_pktinfo pkt6;
 
-		if (si->bindname_len == sizeof(struct sockaddr_in6)) {
-			sin6 = (struct sockaddr_in6*)si->bindname;
+		if (si->bindname.sa_socklen == sizeof(struct sockaddr_in6)) {
+			sin6 = &si->bindname.sa.in6;
 		} else {
-			if (si->myname_len != sizeof(struct sockaddr_in6)) {
+			if (si->myname.sa_socklen != sizeof(struct sockaddr_in6)) {
 				return 0;
 			}
-			sin6 = (struct sockaddr_in6*)si->myname;
+			sin6 = &si->myname.sa.in6;
 		}
 
 		ZERO_STRUCT(pkt6);
@@ -3743,8 +3748,12 @@ static ssize_t swrap_sendmsg_before(int fd,
 			break;
 		}
 
-		ret = sockaddr_convert_to_un(si, si->peername, si->peername_len,
-					     tmp_un, 0, NULL);
+		ret = sockaddr_convert_to_un(si,
+					     &si->peername.sa.s,
+					     si->peername.sa_socklen,
+					     tmp_un,
+					     0,
+					     NULL);
 		if (ret == -1) return -1;
 
 		ret = libc_connect(fd,
@@ -3855,7 +3864,7 @@ static void swrap_sendmsg_after(int fd,
 
 	case SOCK_DGRAM:
 		if (si->connected) {
-			to = si->peername;
+			to = &si->peername.sa.s;
 		}
 		if (ret == -1) {
 			swrap_pcap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
@@ -4774,23 +4783,16 @@ static int swrap_close(int fd)
 
 	SWRAP_DLIST_REMOVE(sockets, si);
 
-	if (si->myname && si->peername) {
+	if (si->myname.sa_socklen > 0 && si->peername.sa_socklen > 0) {
 		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_SEND, NULL, 0);
 	}
 
 	ret = libc_close(fd);
 
-	if (si->myname && si->peername) {
+	if (si->myname.sa_socklen > 0 && si->peername.sa_socklen > 0) {
 		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_RECV, NULL, 0);
 		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_ACK, NULL, 0);
 	}
-
-	if (si->bindname != NULL) {
-		free(si->bindname);
-	}
-
-	if (si->myname) free(si->myname);
-	if (si->peername) free(si->peername);
 
 	if (si->un_addr.sun_path[0] != '\0') {
 		unlink(si->un_addr.sun_path);
