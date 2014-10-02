@@ -3169,6 +3169,8 @@ static int swrap_getsockopt(int s, int level, int optname,
 			*(int *)optval = si->family;
 			return 0;
 #endif /* SO_DOMAIN */
+
+#ifdef SO_PROTOCOL
 		case SO_PROTOCOL:
 			if (optval == NULL || optlen == NULL ||
 			    *optlen < (socklen_t)sizeof(int)) {
@@ -3179,6 +3181,7 @@ static int swrap_getsockopt(int s, int level, int optname,
 			*optlen = sizeof(int);
 			*(int *)optval = si->protocol;
 			return 0;
+#endif /* SO_PROTOCOL */
 		case SO_TYPE:
 			if (optval == NULL || optlen == NULL ||
 			    *optlen < (socklen_t)sizeof(int)) {
