@@ -25,6 +25,10 @@
 #include "messages.h"
 #include "smbprofile.h"
 
+#define PROF_SHMEM_KEY ((key_t)0x07021999)
+#define PROF_SHM_MAGIC 0x6349985
+#define PROF_SHM_VERSION 13
+
 #ifdef WITH_PROFILE
 #define IPC_PERMS ((S_IRUSR | S_IWUSR) | S_IRGRP | S_IROTH)
 #endif /* WITH_PROFILE */

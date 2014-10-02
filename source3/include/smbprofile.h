@@ -24,10 +24,6 @@
 /* this file defines the profile structure in the profile shared
    memory area */
 
-#define PROF_SHMEM_KEY ((key_t)0x07021999)
-#define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 13
-
 /* time values in the following structure are in microseconds */
 
 #define __profile_stats_value(which, domain) domain[which]
