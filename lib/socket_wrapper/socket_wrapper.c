@@ -5024,7 +5024,11 @@ static int swrap_eventfd(int count, int flags)
 	return fd;
 }
 
+#ifdef HAVE_EVENTFD_UNSIGNED_INT
+int eventfd(unsigned int count, int flags)
+#else
 int eventfd(int count, int flags)
+#endif
 {
 	return swrap_eventfd(count, flags);
 }
