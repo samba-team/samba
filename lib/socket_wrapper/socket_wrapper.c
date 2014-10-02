@@ -1672,17 +1672,17 @@ static const char *swrap_pcap_init_file(void)
 	return s;
 }
 
-static uint8_t *swrap_packet_init(struct timeval *tval,
-				  const struct sockaddr *src,
-				  const struct sockaddr *dest,
-				  int socket_type,
-				  const uint8_t *payload,
-				  size_t payload_len,
-				  unsigned long tcp_seqno,
-				  unsigned long tcp_ack,
-				  unsigned char tcp_ctl,
-				  int unreachable,
-				  size_t *_packet_len)
+static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
+				       const struct sockaddr *src,
+				       const struct sockaddr *dest,
+				       int socket_type,
+				       const uint8_t *payload,
+				       size_t payload_len,
+				       unsigned long tcp_seqno,
+				       unsigned long tcp_ack,
+				       unsigned char tcp_ctl,
+				       int unreachable,
+				       size_t *_packet_len)
 {
 	uint8_t *base;
 	uint8_t *buf;
@@ -2193,10 +2193,17 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 
 	swrapGetTimeOfDay(&tv);
 
-	return swrap_packet_init(&tv, src_addr, dest_addr, si->type,
-				 (const uint8_t *)buf, len,
-				 tcp_seqno, tcp_ack, tcp_ctl, unreachable,
-				 packet_len);
+	return swrap_pcap_packet_init(&tv,
+				      src_addr,
+				      dest_addr,
+				      si->type,
+				      (const uint8_t *)buf,
+				      len,
+				      tcp_seqno,
+				      tcp_ack,
+				      tcp_ctl,
+				      unreachable,
+				      packet_len);
 }
 
 static void swrap_dump_packet(struct socket_info *si,
