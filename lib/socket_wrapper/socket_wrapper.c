@@ -242,7 +242,8 @@ struct socket_info
 	int defer_connect;
 	int pktinfo;
 
-	char *tmp_path;
+	/* The unix path so we can unlink it on close() */
+	struct sockaddr_un un_addr;
 
 	struct sockaddr *bindname;
 	socklen_t bindname_len;
@@ -2739,7 +2740,8 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		ret = libc_bind(fd, &un_addr.sa.s, un_addr.sa_socklen);
 		if (ret == -1) return ret;
 
-		si->tmp_path = strdup(un_addr.sa.un.sun_path);
+		si->un_addr = un_addr.sa.un;
+
 		si->bound = 1;
 		autobind_start = port + 1;
 		break;
@@ -4789,9 +4791,9 @@ static int swrap_close(int fd)
 
 	if (si->myname) free(si->myname);
 	if (si->peername) free(si->peername);
-	if (si->tmp_path) {
-		unlink(si->tmp_path);
-		free(si->tmp_path);
+
+	if (si->un_addr.sun_path[0] != '\0') {
+		unlink(si->un_addr.sun_path);
 	}
 	free(si);
 
