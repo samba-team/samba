@@ -3336,7 +3336,7 @@ int ioctl(int s, unsigned long int r, ...)
 # ifdef _ALIGN /* BSD */
 #define CMSG_ALIGN _ALIGN
 # else
-#error NO_CMSG_ALIGN
+#define CMSG_ALIGN(len) (((len) + sizeof(size_t) - 1) & ~(sizeof(size_t) - 1))
 # endif /* _ALIGN */
 #endif /* CMSG_ALIGN */
 
