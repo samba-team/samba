@@ -345,12 +345,10 @@ ssize_t write_file(struct smb_request *req,
 
 	mark_file_modified(fsp);
 
-#ifdef WITH_PROFILE
 	DO_PROFILE_INC(writecache_total_writes);
 	if (!fsp->oplock_type) {
 		DO_PROFILE_INC(writecache_non_oplock_writes);
 	}
-#endif
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -826,13 +824,11 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 	 */
 
 	if (n) {
-#ifdef WITH_PROFILE
 		if (wcp->data_size) {
 			DO_PROFILE_INC(writecache_abutted_writes);
 		} else {
 			DO_PROFILE_INC(writecache_init_writes);
 		}
-#endif
 
 		if ((wcp->data_size == 0)
 		    && (pos > wcp->file_size)
@@ -997,11 +993,9 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 	DEBUG(9,("flushing write cache: fd = %d, off=%.0f, size=%u\n",
 		fsp->fh->fd, (double)wcp->offset, (unsigned int)data_size));
 
-#ifdef WITH_PROFILE
 	if(data_size == wcp->alloc_size) {
 		DO_PROFILE_INC(writecache_num_perfect_writes);
 	}
-#endif
 
 	ret = real_write_file(NULL, fsp, wcp->data, wcp->offset, data_size);
 
