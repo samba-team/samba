@@ -2430,6 +2430,11 @@ static int swrap_socket(int family, int type, int protocol)
 	SWRAP_DLIST_ADD(si->fds, fi);
 	SWRAP_DLIST_ADD(sockets, si);
 
+	SWRAP_LOG(SWRAP_LOG_TRACE,
+		  "Created %s socket for protocol %s",
+		  si->family == AF_INET ? "IPv4" : "IPv6",
+		  si->type == SOCK_DGRAM ? "UDP" : "TCP");
+
 	return fd;
 }
 
