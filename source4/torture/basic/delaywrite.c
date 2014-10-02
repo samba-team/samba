@@ -456,6 +456,8 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
 	char buf[2048];
+	bool first;
+	bool updated;
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update1b\n");
 
@@ -496,6 +498,8 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 
 	start = timeval_current();
 	end = timeval_add(&start, (120*sec), 0);
+	first = true;
+	updated = false;
 	while (!timeval_expired(&end)) {
 		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
@@ -507,32 +511,27 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 
 		torture_comment(tctx, "write time %s\n",
 			nt_time_string(tctx, finfo2.all_info.out.write_time));
-		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
-			double diff = timeval_elapsed(&start);
-			if (diff > (0.25 * (used_delay / (double)1000000))) {
-				torture_result(tctx, TORTURE_FAIL, 
-					"After SET_END_OF_FILE truncate "
-					"server updated write_time after %.2f seconds"
-					"(write time update delay == %.2f)(wrong!)",
-					diff, used_delay / (double)1000000);
-				ret = false;
-				break;
-			}
 
-			torture_comment(tctx, "After SET_END_OF_FILE truncate "
-					"server updated write_time after %.2f seconds"
-					"(write time update delay == %.2f)(correct)\n",
-					diff, used_delay / (double)1000000);
+		if (finfo1.all_info.out.write_time !=
+		    finfo2.all_info.out.write_time)
+		{
+			updated = true;
 			break;
 		}
+
 		fflush(stdout);
 		smb_msleep(1 * msec);
+		first = false;
 	}
 
-	torture_assert_u64_not_equal(tctx,
-				     finfo2.all_info.out.write_time,
-				     finfo1.all_info.out.write_time,
-				     "Server did not update write time");
+	torture_assert(tctx, updated,
+		       "Server did not update write time within 120 seconds");
+
+	torture_assert(tctx, first, talloc_asprintf(tctx,
+		       "Server did not update write time immediately but only "
+		       "after %.2f seconds!", timeval_elapsed(&start)));
+
+	torture_comment(tctx, "Server updated write time immediately. Good!\n");
 
 	fflush(stdout);
 	smb_msleep(2 * msec);
