@@ -486,7 +486,7 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 
 	torture_comment(tctx, "Initial write time %s\n",
-	       nt_time_string(tctx, finfo1.all_info.out.write_time));
+		nt_time_string(tctx, finfo1.all_info.out.write_time));
 
 	/* Do a SET_END_OF_FILE_INFO call to truncate. */
 	status = smbcli_ftruncate(cli->tree, fnum1, (uint64_t)10240);
@@ -513,7 +513,7 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 		}
 
 		torture_comment(tctx, "write time %s\n",
-		       nt_time_string(tctx, finfo2.all_info.out.write_time));
+			nt_time_string(tctx, finfo2.all_info.out.write_time));
 		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 			if (diff > (0.25 * (used_delay / (double)1000000))) {
@@ -548,8 +548,8 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 	/* Do a non-zero length SMBwrite and make sure it doesn't update the write time. */
 	written = smbcli_smbwrite(cli->tree, fnum1, "x", 0, 1);
 
-	torture_assert_int_equal(tctx, written, 1, 
-							 "unexpected number of bytes written");
+	torture_assert_int_equal(tctx, written, 1,
+				 "unexpected number of bytes written");
 
 	start = timeval_current();
 	end = timeval_add(&start, (10*sec), 0);
@@ -571,7 +571,7 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 		}
 
 		torture_comment(tctx, "write time %s\n",
-		       nt_time_string(tctx, finfo3.all_info.out.write_time));
+			nt_time_string(tctx, finfo3.all_info.out.write_time));
 		if (finfo2.all_info.out.write_time != finfo3.all_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
 
