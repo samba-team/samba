@@ -1906,7 +1906,7 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 	return base;
 }
 
-static int swrap_get_pcap_fd(const char *fname)
+static int swrap_pcap_get_fd(const char *fname)
 {
 	static int fd = -1;
 
@@ -2231,7 +2231,7 @@ static void swrap_dump_packet(struct socket_info *si,
 		return;
 	}
 
-	fd = swrap_get_pcap_fd(file_name);
+	fd = swrap_pcap_get_fd(file_name);
 	if (fd != -1) {
 		if (write(fd, packet, packet_len) != (ssize_t)packet_len) {
 			free(packet);
