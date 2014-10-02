@@ -2486,8 +2486,12 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	struct swrap_address un_my_addr = {
 		.sa_socklen = sizeof(struct sockaddr_un),
 	};
-	struct sockaddr *my_addr;
-	socklen_t my_addrlen, len;
+	struct swrap_address in_addr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
+	struct swrap_address in_my_addr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	int ret;
 
 	parent_si = find_socket_info(s);
@@ -2499,14 +2503,9 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	 * assume out sockaddr have the same size as the in parent
 	 * socket family
 	 */
-	my_addrlen = socket_length(parent_si->family);
-	if (my_addrlen <= 0) {
+	in_addr.sa_socklen = socket_length(parent_si->family);
+	if (in_addr.sa_socklen <= 0) {
 		errno = EINVAL;
-		return -1;
-	}
-
-	my_addr = (struct sockaddr *)malloc(my_addrlen);
-	if (my_addr == NULL) {
 		return -1;
 	}
 
@@ -2516,21 +2515,18 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 			/* Remove stale fds */
 			swrap_remove_stale(s);
 		}
-		free(my_addr);
 		return ret;
 	}
 
 	fd = ret;
 
-	len = my_addrlen;
 	ret = sockaddr_convert_from_un(parent_si,
 				       &un_addr.sa.un,
 				       un_addr.sa_socklen,
 				       parent_si->family,
-				       my_addr,
-				       &len);
+				       &in_addr.sa.s,
+				       &in_addr.sa_socklen);
 	if (ret == -1) {
-		free(my_addr);
 		close(fd);
 		return ret;
 	}
@@ -2541,7 +2537,6 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_fi = (struct socket_info_fd *)calloc(1, sizeof(struct socket_info_fd));
 	if (child_fi == NULL) {
 		free(child_si);
-		free(my_addr);
 		close(fd);
 		errno = ENOMEM;
 		return -1;
@@ -2558,15 +2553,17 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->is_server = 1;
 	child_si->connected = 1;
 
-	child_si->peername.sa_socklen = len;
-	memcpy(&child_si->peername.sa.s, my_addr, len);
+	child_si->peername = (struct swrap_address) {
+		.sa_socklen = in_addr.sa_socklen,
+	};
+	memcpy(&child_si->peername.sa.ss, &in_addr.sa.ss, in_addr.sa_socklen);
 
 	if (addr != NULL && addrlen != NULL) {
-		size_t copy_len = MIN(*addrlen, len);
+		size_t copy_len = MIN(*addrlen, in_addr.sa_socklen);
 		if (copy_len > 0) {
-			memcpy(addr, my_addr, copy_len);
+			memcpy(addr, &in_addr.sa.ss, copy_len);
 		}
-		*addrlen = len;
+		*addrlen = in_addr.sa_socklen;
 	}
 
 	ret = libc_getsockname(fd,
@@ -2575,22 +2572,19 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	if (ret == -1) {
 		free(child_fi);
 		free(child_si);
-		free(my_addr);
 		close(fd);
 		return ret;
 	}
 
-	len = my_addrlen;
 	ret = sockaddr_convert_from_un(child_si,
 				       &un_my_addr.sa.un,
 				       un_my_addr.sa_socklen,
 				       child_si->family,
-				       my_addr,
-				       &len);
+				       &in_my_addr.sa.s,
+				       &in_my_addr.sa_socklen);
 	if (ret == -1) {
 		free(child_fi);
 		free(child_si);
-		free(my_addr);
 		close(fd);
 		return ret;
 	}
@@ -2599,9 +2593,10 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		  "accept() path=%s, fd=%d",
 		  un_my_addr.sa.un.sun_path, s);
 
-	child_si->myname.sa_socklen = len;
-	memcpy(&child_si->myname.sa.s, my_addr, len);
-	free(my_addr);
+	child_si->myname = (struct swrap_address) {
+		.sa_socklen = in_my_addr.sa_socklen,
+	};
+	memcpy(&child_si->myname.sa.ss, &in_my_addr.sa.ss, in_my_addr.sa_socklen);
 
 	SWRAP_DLIST_ADD(sockets, child_si);
 
