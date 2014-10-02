@@ -156,6 +156,9 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 
+	torture_assert_u64_equal(tctx, finfo1.all_info.out.size, 2048,
+				 "file size not as expected after write(2048)");
+
 	torture_comment(tctx, "Initial write time %s\n",
 			nt_time_string(tctx, finfo1.all_info.out.write_time));
 
