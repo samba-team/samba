@@ -210,6 +210,19 @@ enum swrap_dbglvl_e {
  * without changing the format above */
 #define MAX_WRAPPED_INTERFACES 40
 
+struct swrap_address {
+	socklen_t sa_socklen;
+	union {
+		struct sockaddr s;
+		struct sockaddr_in in;
+#ifdef HAVE_IPV6
+		struct sockaddr_in6 in6;
+#endif
+		struct sockaddr_un un;
+		struct sockaddr_storage ss;
+	} sa;
+};
+
 struct socket_info_fd {
 	struct socket_info_fd *prev, *next;
 	int fd;
@@ -2466,10 +2479,12 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	struct socket_info *parent_si, *child_si;
 	struct socket_info_fd *child_fi;
 	int fd;
-	struct sockaddr_un un_addr;
-	socklen_t un_addrlen = sizeof(un_addr);
-	struct sockaddr_un un_my_addr;
-	socklen_t un_my_addrlen = sizeof(un_my_addr);
+	struct swrap_address un_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
+	struct swrap_address un_my_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	struct sockaddr *my_addr;
 	socklen_t my_addrlen, len;
 	int ret;
@@ -2494,10 +2509,7 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return -1;
 	}
 
-	memset(&un_addr, 0, sizeof(un_addr));
-	memset(&un_my_addr, 0, sizeof(un_my_addr));
-
-	ret = libc_accept(s, (struct sockaddr *)(void *)&un_addr, &un_addrlen);
+	ret = libc_accept(s, &un_addr.sa.s, &un_addr.sa_socklen);
 	if (ret == -1) {
 		if (errno == ENOTSOCK) {
 			/* Remove stale fds */
@@ -2510,8 +2522,12 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	fd = ret;
 
 	len = my_addrlen;
-	ret = sockaddr_convert_from_un(parent_si, &un_addr, un_addrlen,
-				       parent_si->family, my_addr, &len);
+	ret = sockaddr_convert_from_un(parent_si,
+				       &un_addr.sa.un,
+				       un_addr.sa_socklen,
+				       parent_si->family,
+				       my_addr,
+				       &len);
 	if (ret == -1) {
 		free(my_addr);
 		close(fd);
@@ -2553,8 +2569,8 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	}
 
 	ret = libc_getsockname(fd,
-			       (struct sockaddr *)(void *)&un_my_addr,
-			       &un_my_addrlen);
+			       &un_my_addr.sa.s,
+			       &un_my_addr.sa_socklen);
 	if (ret == -1) {
 		free(child_fi);
 		free(child_si);
@@ -2564,8 +2580,12 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	}
 
 	len = my_addrlen;
-	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,
-				       child_si->family, my_addr, &len);
+	ret = sockaddr_convert_from_un(child_si,
+				       &un_my_addr.sa.un,
+				       un_my_addr.sa_socklen,
+				       child_si->family,
+				       my_addr,
+				       &len);
 	if (ret == -1) {
 		free(child_fi);
 		free(child_si);
@@ -2576,7 +2596,7 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
 	SWRAP_LOG(SWRAP_LOG_TRACE,
 		  "accept() path=%s, fd=%d",
-		  un_my_addr.sun_path, s);
+		  un_my_addr.sa.un.sun_path, s);
 
 	child_si->myname_len = len;
 	child_si->myname = sockaddr_dup(my_addr, len);
@@ -2613,7 +2633,9 @@ static int autobind_start;
 */
 static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 {
-	struct sockaddr_un un_addr;
+	struct swrap_address un_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	int i;
 	char type;
 	int ret;
@@ -2627,7 +2649,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		autobind_start += 10000;
 	}
 
-	un_addr.sun_family = AF_UNIX;
+	un_addr.sa.un.sun_family = AF_UNIX;
 
 	switch (family) {
 	case AF_INET: {
@@ -2697,16 +2719,15 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 
 	for (i = 0; i < SOCKET_MAX_SOCKETS; i++) {
 		port = autobind_start + i;
-		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
+		snprintf(un_addr.sa.un.sun_path, un_addr.sa_socklen,
 			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
 			 type, socket_wrapper_default_iface(), port);
-		if (stat(un_addr.sun_path, &st) == 0) continue;
+		if (stat(un_addr.sa.un.sun_path, &st) == 0) continue;
 
-		ret = libc_bind(fd, (struct sockaddr *)(void *)&un_addr,
-				sizeof(un_addr));
+		ret = libc_bind(fd, &un_addr.sa.s, un_addr.sa_socklen);
 		if (ret == -1) return ret;
 
-		si->tmp_path = strdup(un_addr.sun_path);
+		si->tmp_path = strdup(un_addr.sa.un.sun_path);
 		si->bound = 1;
 		autobind_start = port + 1;
 		break;
@@ -2736,7 +2757,9 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 			 socklen_t addrlen)
 {
 	int ret;
-	struct sockaddr_un un_addr;
+	struct swrap_address un_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	struct socket_info *si = find_socket_info(s);
 	int bcast = 0;
 
@@ -2755,7 +2778,7 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 	}
 
 	ret = sockaddr_convert_to_un(si, serv_addr,
-				     addrlen, &un_addr, 0, &bcast);
+				     addrlen, &un_addr.sa.un, 0, &bcast);
 	if (ret == -1) return -1;
 
 	if (bcast) {
@@ -2770,13 +2793,13 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
 
 		ret = libc_connect(s,
-				   (struct sockaddr *)(void *)&un_addr,
-				   sizeof(struct sockaddr_un));
+				   &un_addr.sa.s,
+				   un_addr.sa_socklen);
 	}
 
 	SWRAP_LOG(SWRAP_LOG_TRACE,
 		  "connect() path=%s, fd=%d",
-		  un_addr.sun_path, s);
+		  un_addr.un.sun_path, s);
 
 
 	/* to give better errors */
@@ -2827,7 +2850,9 @@ int connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 {
 	int ret;
-	struct sockaddr_un un_addr;
+	struct swrap_address un_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	struct socket_info *si = find_socket_info(s);
 	int bind_error = 0;
 #if 0 /* FIXME */
@@ -2900,17 +2925,21 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	si->myname_len = addrlen;
 	si->myname = sockaddr_dup(myaddr, addrlen);
 
-	ret = sockaddr_convert_to_un(si, myaddr, addrlen, &un_addr, 1, &si->bcast);
+	ret = sockaddr_convert_to_un(si,
+				     myaddr,
+				     addrlen,
+				     &un_addr.sa.un,
+				     1,
+				     &si->bcast);
 	if (ret == -1) return -1;
 
-	unlink(un_addr.sun_path);
+	unlink(un_addr.sa.un.sun_path);
 
-	ret = libc_bind(s, (struct sockaddr *)(void *)&un_addr,
-			sizeof(struct sockaddr_un));
+	ret = libc_bind(s, &un_addr.sa.s, un_addr.sa_socklen);
 
 	SWRAP_LOG(SWRAP_LOG_TRACE,
 		  "bind() path=%s, fd=%d",
-		  un_addr.sun_path, s);
+		  un_addr.sa_un.sun_path, s);
 
 	if (ret == 0) {
 		si->bound = 1;
@@ -2933,7 +2962,9 @@ static int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen);
 
 static int swrap_bindresvport_sa(int sd, struct sockaddr *sa)
 {
-	struct sockaddr_storage myaddr;
+	struct swrap_address myaddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	socklen_t salen;
 	static uint16_t port;
 	uint16_t i;
@@ -2949,16 +2980,16 @@ static int swrap_bindresvport_sa(int sd, struct sockaddr *sa)
 	}
 
 	if (sa == NULL) {
-		salen = sizeof(struct sockaddr);
-		sa = (struct sockaddr *)&myaddr;
+		salen = myaddr.sa_socklen;
+		sa = &myaddr.sa.s;
 
-		rc = swrap_getsockname(sd, (struct sockaddr *)&myaddr, &salen);
+		rc = swrap_getsockname(sd, &myaddr.sa.s, &salen);
 		if (rc < 0) {
 			return -1;
 		}
 
 		af = sa->sa_family;
-		memset(&myaddr, 0, salen);
+		memset(&myaddr.sa.ss, 0, salen);
 	} else {
 		af = sa->sa_family;
 	}
@@ -2966,7 +2997,7 @@ static int swrap_bindresvport_sa(int sd, struct sockaddr *sa)
 	for (i = 0; i < SWRAP_NPORTS; i++, port++) {
 		switch(af) {
 		case AF_INET: {
-			struct sockaddr_in *sinp = (struct sockaddr_in *)sa;
+			struct sockaddr_in *sinp = (struct sockaddr_in *)(void *)sa;
 
 			salen = sizeof(struct sockaddr_in);
 			sinp->sin_port = htons(port);
@@ -3368,7 +3399,8 @@ static void swrap_msghdr_add_cmsghdr(struct msghdr *msg,
 	size_t cmlen = CMSG_LEN(len);
 	size_t cmspace = CMSG_SPACE(len);
 	uint8_t cmbuf[cmspace];
-	struct cmsghdr *cm = (struct cmsghdr *)cmbuf;
+	void *cast_ptr = (void *)cmbuf;
+	struct cmsghdr *cm = (struct cmsghdr *)cast_ptr;
 	uint8_t *p;
 
 	memset(cmbuf, 0, cmspace);
@@ -4025,12 +4057,14 @@ done:
 static ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags,
 			      struct sockaddr *from, socklen_t *fromlen)
 {
-	struct sockaddr_un from_addr;
-	socklen_t from_addrlen = sizeof(from_addr);
+	struct swrap_address from_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	ssize_t ret;
 	struct socket_info *si = find_socket_info(s);
-	struct sockaddr_storage ss;
-	socklen_t ss_len = sizeof(ss);
+	struct swrap_address saddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	struct msghdr msg;
 	struct iovec tmp;
 	int tret;
@@ -4052,8 +4086,8 @@ static ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags,
 		msg.msg_name = from;   /* optional address */
 		msg.msg_namelen = *fromlen; /* size of address */
 	} else {
-		msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
-		msg.msg_namelen = ss_len; /* size of address */
+		msg.msg_name = &saddr.sa.s; /* optional address */
+		msg.msg_namelen = saddr.sa_socklen; /* size of address */
 	}
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
@@ -4071,14 +4105,12 @@ static ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags,
 	buf = msg.msg_iov[0].iov_base;
 	len = msg.msg_iov[0].iov_len;
 
-	/* irix 6.4 forgets to null terminate the sun_path string :-( */
-	memset(&from_addr, 0, sizeof(from_addr));
 	ret = libc_recvfrom(s,
 			    buf,
 			    len,
 			    flags,
-			    (struct sockaddr *)(void *)&from_addr,
-			    &from_addrlen);
+			    &from_addr.sa.s,
+			    &from_addr.sa_socklen);
 	if (ret == -1) {
 		return ret;
 	}
@@ -4086,8 +4118,8 @@ static ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags,
 	tret = swrap_recvmsg_after(s,
 				   si,
 				   &msg,
-				   &from_addr,
-				   from_addrlen,
+				   &from_addr.sa.un,
+				   from_addr.sa_socklen,
 				   ret);
 	if (tret != 0) {
 		return tret;
@@ -4120,7 +4152,9 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 {
 	struct msghdr msg;
 	struct iovec tmp;
-	struct sockaddr_un un_addr;
+	struct swrap_address un_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	const struct sockaddr_un *to_un = NULL;
 	ssize_t ret;
 	int rc;
@@ -4145,7 +4179,14 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 	msg.msg_flags = 0;             /* flags on received message */
 #endif
 
-	rc = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
+	rc = swrap_sendmsg_before(s,
+				  si,
+				  &msg,
+				  &tmp,
+				  &un_addr.sa.un,
+				  &to_un,
+				  &to,
+				  &bcast);
 	if (rc < 0) {
 		return -1;
 	}
@@ -4162,17 +4203,19 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 		type = SOCKET_TYPE_CHAR_UDP;
 
 		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
-			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT,
+			snprintf(un_addr.sa.un.sun_path,
+				 sizeof(un_addr.sa.un.sun_path),
+				 "%s/"SOCKET_FORMAT,
 				 socket_wrapper_dir(), type, iface, prt);
-			if (stat(un_addr.sun_path, &st) != 0) continue;
+			if (stat(un_addr.sa.un.sun_path, &st) != 0) continue;
 
 			/* ignore the any errors in broadcast sends */
 			libc_sendto(s,
 				    buf,
 				    len,
 				    flags,
-				    (struct sockaddr *)(void *)&un_addr,
-				    sizeof(un_addr));
+				    &un_addr.sa.s,
+				    un_addr.sa_socklen);
 		}
 
 		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
@@ -4206,8 +4249,9 @@ static ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 {
 	struct socket_info *si;
 	struct msghdr msg;
-	struct sockaddr_storage ss;
-	socklen_t ss_len = sizeof(ss);
+	struct swrap_address saddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	struct iovec tmp;
 	ssize_t ret;
 	int tret;
@@ -4221,8 +4265,8 @@ static ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 	tmp.iov_len = len;
 
 	ZERO_STRUCT(msg);
-	msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
-	msg.msg_namelen = ss_len;      /* size of address */
+	msg.msg_name = &saddr.sa.s;    /* optional address */
+	msg.msg_namelen = saddr.sa_socklen; /* size of address */
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -4263,8 +4307,9 @@ static ssize_t swrap_read(int s, void *buf, size_t len)
 	struct socket_info *si;
 	struct msghdr msg;
 	struct iovec tmp;
-	struct sockaddr_storage ss;
-	socklen_t ss_len = sizeof(ss);
+	struct swrap_address saddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	ssize_t ret;
 	int tret;
 
@@ -4277,8 +4322,8 @@ static ssize_t swrap_read(int s, void *buf, size_t len)
 	tmp.iov_len = len;
 
 	ZERO_STRUCT(msg);
-	msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
-	msg.msg_namelen = ss_len;      /* size of address */
+	msg.msg_name = &saddr.sa.ss;   /* optional address */
+	msg.msg_namelen = saddr.sa_socklen; /* size of address */
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -4370,8 +4415,9 @@ ssize_t send(int s, const void *buf, size_t len, int flags)
 
 static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 {
-	struct sockaddr_un from_addr;
-	socklen_t from_addrlen = sizeof(from_addr);
+	struct swrap_address from_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	struct socket_info *si;
 	struct msghdr msg;
 	struct iovec tmp;
@@ -4392,8 +4438,8 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	tmp.iov_len = 0;
 
 	ZERO_STRUCT(msg);
-	msg.msg_name = (struct sockaddr *)&from_addr; /* optional address */
-	msg.msg_namelen = from_addrlen;            /* size of address */
+	msg.msg_name = &from_addr.sa;              /* optional address */
+	msg.msg_namelen = from_addr.sa_socklen;    /* size of address */
 	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
 	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -4433,7 +4479,12 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	}
 #endif
 
-	rc = swrap_recvmsg_after(s, si, &msg, &from_addr, from_addrlen, ret);
+	rc = swrap_recvmsg_after(s,
+				 si,
+				 &msg,
+				 &from_addr.sa.un,
+				 from_addr.sa_socklen,
+				 ret);
 	if (rc != 0) {
 		return rc;
 	}
@@ -4581,8 +4632,9 @@ static ssize_t swrap_readv(int s, const struct iovec *vector, int count)
 	struct socket_info *si;
 	struct msghdr msg;
 	struct iovec tmp;
-	struct sockaddr_storage ss;
-	socklen_t ss_len = sizeof(ss);
+	struct swrap_address saddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage)
+	};
 	ssize_t ret;
 	int rc;
 
@@ -4595,8 +4647,8 @@ static ssize_t swrap_readv(int s, const struct iovec *vector, int count)
 	tmp.iov_len = 0;
 
 	ZERO_STRUCT(msg);
-	msg.msg_name = (struct sockaddr *)(void *)&ss; /* optional address */
-	msg.msg_namelen = ss_len;      /* size of address */
+	msg.msg_name = &saddr.sa.s; /* optional address */
+	msg.msg_namelen = saddr.sa_socklen;      /* size of address */
 	msg.msg_iov = discard_const_p(struct iovec, vector); /* scatter/gather array */
 	msg.msg_iovlen = count;        /* # elements in msg_iov */
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
