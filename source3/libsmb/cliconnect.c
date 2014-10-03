@@ -1826,6 +1826,12 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
 		char *tmp;
 
+
+		tmp = cli_session_setup_get_principal(
+			talloc_tos(), principal, remote_name, dest_realm);
+		TALLOC_FREE(principal);
+		principal = tmp;
+
 		if (pass && *pass) {
 			int ret;
 
@@ -1833,8 +1839,8 @@ static struct tevent_req *cli_session_setup_spnego_send(
 			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
 
 			if (ret){
+				DEBUG(0, ("Kinit for %s to access %s failed: %s\n", user, principal, error_message(ret)));
 				TALLOC_FREE(principal);
-				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
 				if (cli->fallback_after_kerberos)
 					goto ntlmssp;
 				state->result = ADS_ERROR_KRB5(ret);
@@ -1842,11 +1848,6 @@ static struct tevent_req *cli_session_setup_spnego_send(
 				return tevent_req_post(req, ev);
 			}
 		}
-
-		tmp = cli_session_setup_get_principal(
-			talloc_tos(), principal, remote_name, dest_realm);
-		TALLOC_FREE(principal);
-		principal = tmp;
 
 		if (principal) {
 			subreq = cli_session_setup_kerberos_send(
