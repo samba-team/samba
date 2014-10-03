@@ -2655,9 +2655,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  open an schanneld ncacn_ip_tcp connection to LSA
 ***********************************************************************/
 
-NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    struct rpc_pipe_client **cli)
+static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   struct rpc_pipe_client **cli)
 {
 	struct winbindd_cm_conn *conn;
 	struct netlogon_creds_cli_context *creds;
