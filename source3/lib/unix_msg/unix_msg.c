@@ -477,7 +477,7 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 	struct unix_dgram_msg *msg;
 	ssize_t data_len;
 	uint8_t *data_buf;
-	size_t msglen;
+	size_t msglen = sizeof(struct unix_dgram_msg);
 	int i;
 	size_t tmp;
 	int ret = -1;
@@ -487,6 +487,13 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 	size_t cmsg_len = CMSG_LEN(fds_size);
 	size_t cmsg_space = CMSG_SPACE(fds_size);
 	char *cmsg_buf;
+
+	/*
+	 * Note: No need to check for overflow here,
+	 * since cmsg will store <= INT8_MAX fds.
+	 */
+	msglen += cmsg_space;
+
 #endif /*  HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
 	if (num_fds > INT8_MAX) {
@@ -498,14 +505,6 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 		return ENOSYS;
 	}
 #endif
-
-	msglen = sizeof(struct unix_dgram_msg);
-
-	/*
-	 * Note: No need to check for overflow here,
-	 * since cmsg will store <= INT8_MAX fds.
-	 */
-	msglen += cmsg_space;
 
 	data_len = iov_buflen(iov, iovlen);
 	if (data_len == -1) {
@@ -593,7 +592,9 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 	return 0;
 
 fail:
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	close_fd_array(fds_copy, num_fds);
+#endif
 	return ret;
 }
 
