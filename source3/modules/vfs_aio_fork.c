@@ -157,6 +157,7 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 #ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	int newfd;
 
+	ZERO_STRUCT(msg);
 	msg.msg_accrights = (caddr_t) &newfd;
 	msg.msg_accrightslen = sizeof(int);
 #else
@@ -167,13 +168,15 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 	} control_un;
 	struct cmsghdr	*cmptr;
 
+	ZERO_STRUCT(msg);
+	ZERO_STRUCT(control_un);
+
 	msg.msg_control = control_un.control;
 	msg.msg_controllen = sizeof(control_un.control);
 #endif
 
 	msg.msg_name = NULL;
 	msg.msg_namelen = 0;
-	msg.msg_flags = 0;
 
 	iov[0].iov_base = (void *)ptr;
 	iov[0].iov_len = nbytes;
