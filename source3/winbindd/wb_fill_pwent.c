@@ -240,7 +240,7 @@ static bool fillup_pw_field(const char *lp_template,
 		return False;
 	}
 
-	fstrcpy(out, templ);
+	fstrcpy(out, result);
 	TALLOC_FREE(result);
 
 	return True;
