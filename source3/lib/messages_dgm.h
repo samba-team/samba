@@ -21,7 +21,7 @@
 #define _MESSAGES_DGM_H_
 
 int messaging_dgm_init(struct tevent_context *ev,
-		       struct server_id pid,
+		       uint64_t unique,
 		       const char *cache_dir,
 		       uid_t dir_owner,
 		       void (*recv_cb)(const uint8_t *msg,

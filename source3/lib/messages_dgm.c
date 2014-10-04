@@ -176,7 +176,7 @@ static int messaging_dgm_lockfile_remove(const char *cache_dir, pid_t pid)
 }
 
 int messaging_dgm_init(struct tevent_context *ev,
-		       struct server_id pid,
+		       uint64_t unique,
 		       const char *cache_dir,
 		       uid_t dir_owner,
 		       void (*recv_cb)(const uint8_t *msg,
@@ -203,7 +203,7 @@ int messaging_dgm_init(struct tevent_context *ev,
 	if (ctx == NULL) {
 		goto fail_nomem;
 	}
-	ctx->pid = pid.pid;
+	ctx->pid = getpid();
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = recv_cb_private_data;
 
@@ -220,14 +220,14 @@ int messaging_dgm_init(struct tevent_context *ev,
 	socket_address = (struct sockaddr_un) { .sun_family = AF_UNIX };
 	sockname_len = snprintf(socket_address.sun_path,
 				sizeof(socket_address.sun_path),
-				"%s/%u", socket_dir.buf, (unsigned)pid.pid);
+				"%s/%u", socket_dir.buf, (unsigned)ctx->pid);
 	if (sockname_len >= sizeof(socket_address.sun_path)) {
 		TALLOC_FREE(ctx);
 		return ENAMETOOLONG;
 	}
 
-	ret = messaging_dgm_lockfile_create(cache_dir, dir_owner, pid.pid,
-					    &ctx->lockfile_fd, pid.unique_id);
+	ret = messaging_dgm_lockfile_create(cache_dir, dir_owner, ctx->pid,
+					    &ctx->lockfile_fd, unique);
 	if (ret != 0) {
 		DEBUG(1, ("%s: messaging_dgm_create_lockfile failed: %s\n",
 			  __func__, strerror(ret)));
