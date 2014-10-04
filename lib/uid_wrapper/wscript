@@ -49,6 +49,13 @@ def configure(conf):
             'HAVE_FUNCTION_ATTRIBUTE_FORMAT',
             addmain=False,
             msg='Checking for printf format validation support')
+	# Prototype checks
+	conf.CHECK_C_PROTOTYPE('setgroups',
+			'int setgroups(int ngroups, const gid_t *grouplist)',
+			define='HAVE_SETGROUPS_INT', headers='unistd.h sys/types.h')
+	conf.CHECK_C_PROTOTYPE('syscall',
+			'int syscall(int number, ...)',
+			define='HAVE_SYSCALL_INT', headers='unistd.h sys/syscall.h')
 
         # Create full path to uid_wrapper
         srcdir = os.path.realpath(conf.srcdir)
