@@ -22,8 +22,8 @@
 
 int messaging_dgm_init(struct tevent_context *ev,
 		       uint64_t unique,
-		       const char *cache_dir,
-		       uid_t dir_owner,
+		       const char *socket_dir,
+		       const char *lockfile_dir,
 		       void (*recv_cb)(const uint8_t *msg,
 				       size_t msg_len,
 				       int *fds,

@@ -291,12 +291,20 @@ static int messaging_context_destructor(struct messaging_context *ctx)
 	return 0;
 }
 
+static const char *private_path(const char *name)
+{
+	return talloc_asprintf(talloc_tos(), "%s/%s", lp_private_dir(), name);
+}
+
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct tevent_context *ev)
 {
 	struct messaging_context *ctx;
 	NTSTATUS status;
 	int ret;
+	const char *lck_path;
+	const char *priv_path;
+	bool ok;
 
 	if (!(ctx = talloc_zero(mem_ctx, struct messaging_context))) {
 		return NULL;
@@ -307,8 +315,34 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	sec_init();
 
+	lck_path = lock_path("msg");
+	if (lck_path == NULL) {
+		TALLOC_FREE(ctx);
+		return NULL;
+	}
+
+	ok = directory_create_or_exist_strict(lck_path, sec_initial_uid(),
+					      0755);
+	if (!ok) {
+		DEBUG(10, ("%s: Could not create lock directory: %s\n",
+			   __func__, strerror(errno)));
+		TALLOC_FREE(ctx);
+		return NULL;
+	}
+
+	priv_path = private_path("sock");
+
+	ok = directory_create_or_exist_strict(priv_path, sec_initial_uid(),
+					      0700);
+	if (!ok) {
+		DEBUG(10, ("%s: Could not create msg directory: %s\n",
+			   __func__, strerror(errno)));
+		TALLOC_FREE(ctx);
+		return NULL;
+	}
+
 	ret = messaging_dgm_init(ctx->event_ctx, ctx->id.unique_id,
-				 lp_cache_directory(), sec_initial_uid(),
+				 priv_path, lck_path,
 				 messaging_recv_cb, ctx);
 
 	if (ret != 0) {
@@ -369,7 +403,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	msg_ctx->id = procid_self();
 
 	ret = messaging_dgm_init(msg_ctx->event_ctx, msg_ctx->id.unique_id,
-				 lp_cache_directory(), sec_initial_uid(),
+				 private_path("sock"), lock_path("msg"),
 				 messaging_recv_cb, msg_ctx);
 	if (ret != 0) {
 		DEBUG(0, ("messaging_dgm_init failed: %s\n", strerror(errno)));
