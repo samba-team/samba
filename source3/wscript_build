@@ -309,7 +309,7 @@ bld.SAMBA3_SUBSYSTEM('TDB_LIB',
                      deps='dbwrap samba-cluster-support')
 
 bld.SAMBA3_LIBRARY('messages_dgm',
-                   source='''lib/messages_dgm.c''',
+                   source='''lib/messages_dgm.c lib/messages_dgm_ref.c''',
                    deps='talloc UNIX_MSG POLL_FUNCS_TEVENT samba-debug',
                    private_library=True)
 
