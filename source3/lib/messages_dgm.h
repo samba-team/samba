@@ -20,6 +20,10 @@
 #ifndef _MESSAGES_DGM_H_
 #define _MESSAGES_DGM_H_
 
+#include "replace.h"
+#include "system/filesys.h"
+#include <tevent.h>
+
 int messaging_dgm_init(struct tevent_context *ev,
 		       uint64_t unique,
 		       const char *socket_dir,
