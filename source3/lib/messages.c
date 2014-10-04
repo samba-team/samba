@@ -54,6 +54,7 @@
 #include "lib/messages_dgm.h"
 #include "lib/iov_buf.h"
 #include "lib/util/server_id_db.h"
+#include "lib/messages_dgm_ref.h"
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
@@ -75,6 +76,7 @@ struct messaging_context {
 	struct tevent_req **waiters;
 	unsigned num_waiters;
 
+	void *msg_dgm_ref;
 	struct messaging_backend *remote;
 
 	struct server_id_db *names_db;
@@ -341,12 +343,12 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = messaging_dgm_init(ctx->event_ctx, ctx->id.unique_id,
-				 priv_path, lck_path,
-				 messaging_recv_cb, ctx);
+	ctx->msg_dgm_ref = messaging_dgm_ref(
+		ctx, ctx->event_ctx, ctx->id.unique_id,
+		priv_path, lck_path, messaging_recv_cb, ctx, &ret);
 
-	if (ret != 0) {
-		DEBUG(2, ("messaging_dgm_init failed: %s\n", strerror(ret)));
+	if (ctx->msg_dgm_ref == NULL) {
+		DEBUG(2, ("messaging_dgm_ref failed: %s\n", strerror(ret)));
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
@@ -398,15 +400,17 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	NTSTATUS status;
 	int ret;
 
-	messaging_dgm_destroy();
+	TALLOC_FREE(msg_ctx->msg_dgm_ref);
 
 	msg_ctx->id = procid_self();
 
-	ret = messaging_dgm_init(msg_ctx->event_ctx, msg_ctx->id.unique_id,
-				 private_path("sock"), lock_path("msg"),
-				 messaging_recv_cb, msg_ctx);
-	if (ret != 0) {
-		DEBUG(0, ("messaging_dgm_init failed: %s\n", strerror(errno)));
+	msg_ctx->msg_dgm_ref = messaging_dgm_ref(
+		msg_ctx, msg_ctx->event_ctx, msg_ctx->id.unique_id,
+		private_path("sock"), lock_path("msg"),
+		messaging_recv_cb, msg_ctx, &ret);
+
+	if (msg_ctx->msg_dgm_ref == NULL) {
+		DEBUG(2, ("messaging_dgm_ref failed: %s\n", strerror(ret)));
 		return map_nt_error_from_unix(ret);
 	}
 
