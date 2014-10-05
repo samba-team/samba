@@ -179,3 +179,12 @@ interface sparse
 		file_zero_data_info info;
 	} fsctl_set_zero_data_req;
 }
+
+interface resiliency
+{
+	/* 2.2.31.3 NETWORK_RESILIENCY_REQUEST */
+	typedef [public] struct {
+		uint32 timeout;
+		uint32 reserved;
+	} network_resiliency_request;
+}
