@@ -428,22 +428,6 @@ static bool torture_winbind_struct_domain_info(struct torture_context *torture)
 
 		DO_STRUCT_REQ_REP(WINBINDD_DOMAIN_INFO, &req, &rep);
 
-		torture_assert_str_equal(torture,
-					 rep.data.domain_info.name,
-					 listd[i].netbios_name,
-					 "Netbios domain name doesn't match");
-
-		torture_assert_str_equal(torture,
-					 rep.data.domain_info.alt_name,
-					 listd[i].dns_name,
-					 "DNS domain name doesn't match");
-
-		sid = dom_sid_parse_talloc(torture, rep.data.domain_info.sid);
-		torture_assert(torture, sid, "Failed to parse SID");
-
-		ok = dom_sid_equal(listd[i].sid, sid);
-		torture_assert(torture, ok, "SID's doesn't match");
-
 		if (rep.data.domain_info.primary) {
 			flagstr = talloc_strdup_append(flagstr, "PR ");
 		}
@@ -462,10 +446,27 @@ static bool torture_winbind_struct_domain_info(struct torture_context *torture)
 			flagstr = talloc_strdup_append(flagstr, "NA ");
 		}
 
-		torture_comment(torture, "DOMAIN '%s' => '%s' [%s]\n",
+		torture_comment(torture, "DOMAIN '%s' => '%s' [%s] [%s]\n",
 				rep.data.domain_info.name,
 				rep.data.domain_info.alt_name,
-				flagstr);
+				flagstr,
+				rep.data.domain_info.sid);
+
+		sid = dom_sid_parse_talloc(torture, rep.data.domain_info.sid);
+		torture_assert(torture, sid, "Failed to parse SID");
+
+		ok = dom_sid_equal(listd[i].sid, sid);
+		torture_assert(torture, ok, "SID's doesn't match");
+
+		torture_assert_str_equal(torture,
+					 rep.data.domain_info.name,
+					 listd[i].netbios_name,
+					 "Netbios domain name doesn't match");
+
+		torture_assert_str_equal(torture,
+					 rep.data.domain_info.alt_name,
+					 listd[i].dns_name,
+					 "DNS domain name doesn't match");
 	}
 
 	return true;
