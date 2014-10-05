@@ -2276,6 +2276,18 @@ no_dssetup:
 		domain->active_directory = True;
 
 		if (lsa_info->dns.name.string) {
+			if (!strequal(domain->name, lsa_info->dns.name.string))
+			{
+				DEBUG(1, ("set_dc_type_and_flags_connect: DC "
+					  "for domain %s claimed it was a DC "
+					  "for domain %s, refusing to "
+					  "initialize\n",
+					  domain->name,
+					  lsa_info->dns.name.string));
+				TALLOC_FREE(cli);
+				TALLOC_FREE(mem_ctx);
+				return;
+			}
 			talloc_free(domain->name);
 			domain->name = talloc_strdup(domain,
 						     lsa_info->dns.name.string);
@@ -2285,6 +2297,20 @@ no_dssetup:
 		}
 
 		if (lsa_info->dns.dns_domain.string) {
+			if (domain->alt_name != NULL &&
+			    !strequal(domain->alt_name,
+				      lsa_info->dns.dns_domain.string))
+			{
+				DEBUG(1, ("set_dc_type_and_flags_connect: DC "
+					  "for domain %s (%s) claimed it was "
+					  "a DC for domain %s, refusing to "
+					  "initialize\n",
+					  domain->alt_name, domain->name,
+					  lsa_info->dns.dns_domain.string));
+				TALLOC_FREE(cli);
+				TALLOC_FREE(mem_ctx);
+				return;
+			}
 			talloc_free(domain->alt_name);
 			domain->alt_name =
 				talloc_strdup(domain,
@@ -2312,6 +2338,23 @@ no_dssetup:
 		}
 
 		if (lsa_info->dns.sid) {
+			if (!is_null_sid(&domain->sid) &&
+			    !dom_sid_equal(&domain->sid,
+					   lsa_info->dns.sid))
+			{
+				DEBUG(1, ("set_dc_type_and_flags_connect: DC "
+					  "for domain %s (%s) claimed it was "
+					  "a DC for domain %s, refusing to "
+					  "initialize\n",
+					  dom_sid_string(talloc_tos(),
+							 &domain->sid),
+					  domain->name,
+					  dom_sid_string(talloc_tos(),
+							 lsa_info->dns.sid)));
+				TALLOC_FREE(cli);
+				TALLOC_FREE(mem_ctx);
+				return;
+			}
 			sid_copy(&domain->sid, lsa_info->dns.sid);
 		}
 	} else {
@@ -2333,6 +2376,20 @@ no_dssetup:
 		if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 
 			if (lsa_info->account_domain.name.string) {
+				if (!strequal(domain->name,
+					lsa_info->account_domain.name.string))
+				{
+					DEBUG(1,
+					      ("set_dc_type_and_flags_connect: "
+					       "DC for domain %s claimed it was"
+					       " a DC for domain %s, refusing "
+					       "to initialize\n", domain->name,
+					       lsa_info->
+						account_domain.name.string));
+					TALLOC_FREE(cli);
+					TALLOC_FREE(mem_ctx);
+					return;
+				}
 				talloc_free(domain->name);
 				domain->name =
 					talloc_strdup(domain,
@@ -2340,6 +2397,24 @@ no_dssetup:
 			}
 
 			if (lsa_info->account_domain.sid) {
+				if (!is_null_sid(&domain->sid) &&
+				    !dom_sid_equal(&domain->sid,
+						lsa_info->account_domain.sid))
+				{
+					DEBUG(1,
+					      ("set_dc_type_and_flags_connect: "
+					       "DC for domain %s (%s) claimed "
+					       "it was a DC for domain %s, "
+					       "refusing to initialize\n",
+					       dom_sid_string(talloc_tos(),
+							      &domain->sid),
+					       domain->name,
+					       dom_sid_string(talloc_tos(),
+						lsa_info->account_domain.sid)));
+					TALLOC_FREE(cli);
+					TALLOC_FREE(mem_ctx);
+					return;
+				}
 				sid_copy(&domain->sid, lsa_info->account_domain.sid);
 			}
 		}
