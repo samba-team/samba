@@ -80,8 +80,9 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 
 	if (global_ctdb_connection_pid != getpid()) {
 		DEBUG(0,("messaging_ctdbd_connection():"
-			 "valid for pid[%d] but it's [%d]\n",
-			 global_ctdb_connection_pid, getpid()));
+			 "valid for pid[%jd] but it's [%jd]\n",
+			 (intmax_t)global_ctdb_connection_pid,
+			 (intmax_t)getpid()));
 		smb_panic("messaging_ctdbd_connection() invalid process\n");
 	}
 
