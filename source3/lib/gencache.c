@@ -65,6 +65,9 @@ static bool gencache_init(void)
 	if (cache) return True;
 
 	cache_fname = cache_path("gencache.tdb");
+	if (cache_fname == NULL) {
+		return false;
+	}
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
@@ -101,6 +104,7 @@ static bool gencache_init(void)
 			DEBUG(5, ("gencache_init: Opening cache file %s read-only.\n", cache_fname));
 		}
 	}
+	TALLOC_FREE(cache_fname);
 
 	if (!cache) {
 		DEBUG(5, ("Attempt to open gencache.tdb has failed.\n"));
@@ -108,6 +112,11 @@ static bool gencache_init(void)
 	}
 
 	cache_fname = lock_path("gencache_notrans.tdb");
+	if (cache_fname == NULL) {
+		tdb_close(cache);
+		cache = NULL;
+		return false;
+	}
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
@@ -120,10 +129,12 @@ static bool gencache_init(void)
 	if (cache_notrans == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
 			  strerror(errno)));
+		TALLOC_FREE(cache_fname);
 		tdb_close(cache);
 		cache = NULL;
 		return false;
 	}
+	TALLOC_FREE(cache_fname);
 
 	return True;
 }
