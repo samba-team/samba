@@ -29,7 +29,6 @@
 #define SMB2_TF_MSG_SIZE	0x24 /*  4 bytes */
 #define SMB2_TF_RESERVED	0x28 /*  2 bytes */
 #define SMB2_TF_FLAGS		0x2A /*  2 bytes */
-#define SMB2_TF_ALGORITHM	SMB2_TF_FLAGS /* only dialect < 0x310 */
 #define SMB2_TF_SESSION_ID	0x2C /*  8 bytes */
 
 #define SMB2_TF_HDR_SIZE	0x34 /* 52 bytes */
