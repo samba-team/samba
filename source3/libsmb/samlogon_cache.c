@@ -38,7 +38,7 @@ static TDB_CONTEXT *netsamlogon_tdb = NULL;
 bool netsamlogon_cache_init(void)
 {
 	bool first_try = true;
-	const char *path = NULL;
+	char *path = NULL;
 	int ret;
 	struct tdb_context *tdb;
 
@@ -47,6 +47,9 @@ bool netsamlogon_cache_init(void)
 	}
 
 	path = cache_path(NETSAMLOGON_TDB);
+	if (path == NULL) {
+		return false;
+	}
 again:
 	tdb = tdb_open_log(path, 0, TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
 			   O_RDWR | O_CREAT, 0600);
@@ -63,10 +66,12 @@ again:
 	}
 
 	netsamlogon_tdb = tdb;
+	talloc_free(path);
 	return true;
 
 clear:
 	if (!first_try) {
+		talloc_free(path);
 		return false;
 	}
 	first_try = false;
