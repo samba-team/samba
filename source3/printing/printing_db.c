@@ -38,6 +38,8 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 	int num_open = 0;
 	char *printdb_path = NULL;
 	bool done_become_root = False;
+	char *print_cache_path;
+	int ret;
 
 	SMB_ASSERT(printername != NULL);
 
@@ -93,9 +95,16 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		DLIST_ADD(print_db_head, p);
 	}
 
-	if (asprintf(&printdb_path, "%s%s.tdb",
-				cache_path("printing/"),
-				printername) < 0) {
+	print_cache_path = cache_path("printing/");
+	if (print_cache_path == NULL) {
+		DLIST_REMOVE(print_db_head, p);
+		SAFE_FREE(p);
+		return NULL;
+	}
+	ret = asprintf(&printdb_path, "%s%s.tdb",
+		       print_cache_path, printername);
+	TALLOC_FREE(print_cache_path);
+	if (ret < 0) {
 		DLIST_REMOVE(print_db_head, p);
 		SAFE_FREE(p);
 		return NULL;

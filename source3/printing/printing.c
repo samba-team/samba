@@ -198,17 +198,28 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 	int services = lp_numservices();
 	int snum;
 	bool ok;
+	char *print_cache_path;
 
 	if (!printer_list_parent_init()) {
 		return false;
 	}
 
-	ok = directory_create_or_exist(cache_path("printing"), 0755);
+	print_cache_path = cache_path("printing");
+	if (print_cache_path == NULL) {
+		return false;
+	}
+	ok = directory_create_or_exist(print_cache_path, 0755);
+	TALLOC_FREE(print_cache_path);
 	if (!ok) {
 		return false;
 	}
 
-	unlink(cache_path("printing.tdb"));
+	print_cache_path = cache_path("printing.tdb");
+	if (print_cache_path == NULL) {
+		return false;
+	}
+	unlink(print_cache_path);
+	TALLOC_FREE(print_cache_path);
 
 	/* handle a Samba upgrade */
 
