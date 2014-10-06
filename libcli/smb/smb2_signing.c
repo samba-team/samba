@@ -214,7 +214,6 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 				  int count)
 {
 	uint8_t *tf;
-	uint16_t alg;
 	uint8_t sig[16];
 	int i;
 	size_t a_total;
@@ -243,8 +242,7 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 		m_total += vector[i].iov_len;
 	}
 
-	alg = SMB2_ENCRYPTION_AES128_CCM;
-	SSVAL(tf, SMB2_TF_ALGORITHM, alg);
+	SSVAL(tf, SMB2_TF_FLAGS, SMB2_TF_FLAGS_ENCRYPTED);
 	SIVAL(tf, SMB2_TF_MSG_SIZE, m_total);
 
 	ZERO_STRUCT(key);
@@ -279,7 +277,7 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 				  int count)
 {
 	uint8_t *tf;
-	uint16_t alg;
+	uint16_t flags;
 	uint8_t *sig_ptr = NULL;
 	uint8_t sig[16];
 	int i;
@@ -310,10 +308,10 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 		m_total += vector[i].iov_len;
 	}
 
-	alg = SVAL(tf, SMB2_TF_ALGORITHM);
+	flags = SVAL(tf, SMB2_TF_FLAGS);
 	msg_size = IVAL(tf, SMB2_TF_MSG_SIZE);
 
-	if (alg != SMB2_ENCRYPTION_AES128_CCM) {
+	if (flags != SMB2_TF_FLAGS_ENCRYPTED) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
