@@ -4649,7 +4649,11 @@ struct tevent_req *smb2cli_validate_negotiate_info_send(TALLOC_CTX *mem_ctx,
 	} else {
 		memset(buf+4, 0, 16);	/* ClientGuid */
 	}
-	SCVAL(buf, 20, conn->smb2.client.security_mode);
+	if (state->conn->min_protocol >= PROTOCOL_SMB2_02) {
+		SCVAL(buf, 20, conn->smb2.client.security_mode);
+	} else {
+		SCVAL(buf, 20, 0);
+	}
 	SCVAL(buf, 21, 0); /* reserved */
 
 	for (i=0; i < ARRAY_SIZE(smb2cli_prots); i++) {
