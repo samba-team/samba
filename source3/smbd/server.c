@@ -424,7 +424,7 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 
 	if ((ret != 0) && (ret != ENOENT)) {
 		DEBUG(10, ("%s: messaging_cleanup returned %s\n",
-			   __func__, ret ? strerror(ret) : "ok"));
+			   __func__, strerror(ret)));
 	}
 
 	for (child = parent->children; child != NULL; child = child->next) {
