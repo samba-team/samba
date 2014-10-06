@@ -150,7 +150,7 @@ sub Enum($$$$)
 	}
 	
 	$self->pidl_hdr("extern const value_string $valsstring\[];");
-	$self->pidl_hdr("int $dissectorname(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_, int hf_index _U_, guint32 *param _U_);");
+	$self->pidl_hdr("int $dissectorname(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_, int hf_index _U_, g$e->{BASE_TYPE} *param _U_);");
 
 	$self->pidl_def("const value_string ".$valsstring."[] = {");
     	foreach (@{$e->{ELEMENTS}}) {
@@ -163,19 +163,19 @@ sub Enum($$$$)
 
 	$self->pidl_fn_start($dissectorname);
 	$self->pidl_code("int");
-	$self->pidl_code("$dissectorname(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_, int hf_index _U_, guint32 *param _U_)");
+	$self->pidl_code("$dissectorname(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_, int hf_index _U_, g$e->{BASE_TYPE} *param _U_)");
 	$self->pidl_code("{");
 	$self->indent;
 	$self->pidl_code("g$e->{BASE_TYPE} parameter=0;");
-	$self->pidl_code("if(param){");
+	$self->pidl_code("if (param) {");
 	$self->indent;
-	$self->pidl_code("parameter=(g$e->{BASE_TYPE})*param;");
+	$self->pidl_code("parameter = *param;");
 	$self->deindent;
 	$self->pidl_code("}");
 	$self->pidl_code("offset = dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, &parameter);");
-	$self->pidl_code("if(param){");
+	$self->pidl_code("if (param) {");
 	$self->indent;
-	$self->pidl_code("*param=(guint32)parameter;");
+	$self->pidl_code("*param = parameter;");
 	$self->deindent;
 	$self->pidl_code("}");
 	$self->pidl_code("return offset;");
