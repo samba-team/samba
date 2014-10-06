@@ -1226,12 +1226,19 @@ static int get_session_info(uint32 servertype,
 	char **lines;
 	bool local_list_only;
 	int i;
-
-	lines = file_lines_load(cache_path(SERVER_LIST), NULL, 0, NULL);
-	if (!lines) {
-		DEBUG(4,("Can't open %s - %s\n",cache_path(SERVER_LIST),strerror(errno)));
+	char *slist_cache_path = cache_path(SERVER_LIST);
+	if (slist_cache_path == NULL) {
 		return 0;
 	}
+
+	lines = file_lines_load(slist_cache_path, NULL, 0, NULL);
+	if (!lines) {
+		DEBUG(4, ("Can't open %s - %s\n",
+			  slist_cache_path, strerror(errno)));
+		TALLOC_FREE(slist_cache_path);
+		return 0;
+	}
+	TALLOC_FREE(slist_cache_path);
 
 	/* request for everything is code for request all servers */
 	if (servertype == SV_TYPE_ALL) {
