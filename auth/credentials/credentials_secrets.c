@@ -359,6 +359,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
 		cli_credentials_set_old_password(cred, secrets_tdb_old_password, CRED_SPECIFIED);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
+		if (strequal(domain, lpcfg_workgroup(lp_ctx))) {
+			cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_SPECIFIED);
+		}
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 		cli_credentials_set_password_last_changed_time(cred, secrets_tdb_lct);
 		cli_credentials_set_secure_channel_type(cred, secrets_tdb_secure_channel_type);
