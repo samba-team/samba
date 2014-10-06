@@ -287,6 +287,10 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 	size_t num_entries = 0;
 	char *unix_path = NULL;
 	const struct GROUP_POLICY_OBJECT *gpo;
+	char *gpo_cache_path = cache_path(GPO_CACHE_DIR);
+	if (gpo_cache_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* implementation of the policy callback function, see
 	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx
@@ -304,9 +308,11 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 		gpext_debug_header(0, "registry_process_group_policy", flags,
 				   gpo, GP_EXT_GUID_REGISTRY, NULL);
 
-		status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR),
+		status = gpo_get_unix_path(mem_ctx, gpo_cache_path,
 					   gpo, &unix_path);
-		NT_STATUS_NOT_OK_RETURN(status);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err_cache_path_free;
+		}
 
 		status = reg_parse_registry(mem_ctx,
 					    flags,
@@ -316,7 +322,7 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("failed to parse registry: %s\n",
 				nt_errstr(status)));
-			return status;
+			goto err_cache_path_free;
 		}
 
 		dump_reg_entries(flags, "READ", entries, num_entries);
@@ -326,11 +332,15 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("failed to apply registry: %s\n",
 				win_errstr(werr)));
-			return werror_to_ntstatus(werr);
+			status = werror_to_ntstatus(werr);
+			goto err_cache_path_free;
 		}
 	}
+	status = NT_STATUS_OK;
 
-	return NT_STATUS_OK;
+err_cache_path_free:
+	talloc_free(gpo_cache_path);
+	return status;
 }
 
 /****************************************************************

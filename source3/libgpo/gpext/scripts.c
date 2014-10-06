@@ -357,6 +357,10 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 		GP_SCRIPTS_INI_LOGOFF
 	};
 	const struct GROUP_POLICY_OBJECT *gpo;
+	char *gpo_cache_path = cache_path(GPO_CACHE_DIR);
+	if (gpo_cache_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* implementation of the policy callback function, see
 	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx
@@ -374,13 +378,17 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 		gpext_debug_header(0, "scripts_process_group_policy", flags,
 				   gpo, GP_EXT_GUID_SCRIPTS, NULL);
 
-		status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR),
+		status = gpo_get_unix_path(mem_ctx, gpo_cache_path,
 					   gpo, &unix_path);
-		NT_STATUS_NOT_OK_RETURN(status);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err_cache_path_free;
+		}
 
 		status = gp_inifile_init_context(mem_ctx, flags, unix_path,
 						 GP_SCRIPTS_INI, &ini_ctx);
-		NT_STATUS_NOT_OK_RETURN(status);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err_cache_path_free;
+		}
 
 		for (i = 0; i < ARRAY_SIZE(list); i++) {
 
@@ -394,7 +402,8 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 			}
 
 			if (!NT_STATUS_IS_OK(status)) {
-				return status;
+				TALLOC_FREE(ini_ctx);
+				goto err_cache_path_free;
 			}
 
 			dump_reg_entries(flags, "READ", entries, num_entries);
@@ -403,15 +412,16 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 					     flags, list[i], gpo, entries, num_entries);
 			if (!W_ERROR_IS_OK(werr)) {
 				continue; /* FIXME: finally fix storing emtpy strings and REG_QWORD! */
-				TALLOC_FREE(ini_ctx);
-				return werror_to_ntstatus(werr);
 			}
 		}
 
 		TALLOC_FREE(ini_ctx);
 	}
+	status = NT_STATUS_OK;
 
-	return NT_STATUS_OK;
+err_cache_path_free:
+	talloc_free(gpo_cache_path);
+	return status;
 }
 
 /****************************************************************

@@ -152,6 +152,10 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 	char *unix_path = NULL;
 	struct gp_inifile_context *ini_ctx = NULL;
 	const struct GROUP_POLICY_OBJECT *gpo;
+	char *gpo_cache_path = cache_path(GPO_CACHE_DIR);
+	if (gpo_cache_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* implementation of the policy callback function, see
 	 * http://msdn.microsoft.com/en-us/library/aa373494%28v=vs.85%29.aspx
@@ -172,7 +176,7 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 		/* this handler processes the gpttmpl files and merge output to the
 		 * registry */
 
-		status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR),
+		status = gpo_get_unix_path(mem_ctx, gpo_cache_path,
 					   gpo, &unix_path);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
@@ -198,6 +202,7 @@ static NTSTATUS security_process_group_policy(TALLOC_CTX *mem_ctx,
 			nt_errstr(status)));
 	}
 	TALLOC_FREE(ini_ctx);
+	talloc_free(gpo_cache_path);
 
 	return status;
 }
