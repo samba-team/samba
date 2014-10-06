@@ -18,7 +18,7 @@
 #
 
 """Tests for samba.messaging."""
-
+import samba
 from samba.messaging import Messaging
 from samba.tests import TestCase
 from samba.dcerpc.server_id import server_id
@@ -26,6 +26,7 @@ from samba.dcerpc.server_id import server_id
 class MessagingTests(TestCase):
 
     def get_context(self, *args, **kwargs):
+        kwargs['lp_ctx'] = samba.tests.env_loadparm()
         return Messaging(*args, **kwargs)
 
     def test_register(self):
