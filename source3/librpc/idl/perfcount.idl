@@ -156,7 +156,7 @@
 		   PerfTime, and having it there will make my offset math much easier. */
 		uint32 Padding;
 		/* Now when I'm marshalling this, I'll need to call prs_align_uint64()
-		   before I start encodint the uint64 structs */
+		   before I start encoding the uint64 structs */
 		/* clock rate * seconds uptime */
 		hyper PerfTime;
 		/* The clock rate of the CPU */
