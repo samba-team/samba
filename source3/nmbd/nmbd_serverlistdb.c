@@ -311,6 +311,7 @@ void write_browse_list(time_t t, bool force_write)
 	fnamenew = talloc_asprintf(ctx, "%s.",
 				fname);
 	if (!fnamenew) {
+		talloc_free(fname);
 		return;
 	}
 
@@ -319,6 +320,8 @@ void write_browse_list(time_t t, bool force_write)
 	if (!fp) {
 		DEBUG(0,("write_browse_list: Can't open file %s. Error was %s\n",
 			fnamenew,strerror(errno)));
+		talloc_free(fnamenew);
+		talloc_free(fname);
 		return;
 	}
 
@@ -331,6 +334,8 @@ void write_browse_list(time_t t, bool force_write)
 		DEBUG(0,("write_browse_list: Fatal error - cannot find my workgroup %s\n",
 			lp_workgroup()));
 		x_fclose(fp);
+		talloc_free(fnamenew);
+		talloc_free(fname);
 		return;
 	}
 
@@ -399,4 +404,6 @@ void write_browse_list(time_t t, bool force_write)
 	chmod(fnamenew,0644);
 	rename(fnamenew,fname);
 	DEBUG(3,("write_browse_list: Wrote browse list into file %s\n",fname));
+	talloc_free(fnamenew);
+	talloc_free(fname);
 }
