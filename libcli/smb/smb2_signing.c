@@ -218,7 +218,9 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 	int i;
 	size_t a_total;
 	size_t m_total = 0;
-	struct aes_ccm_128_context ctx;
+	union {
+		struct aes_ccm_128_context ccm;
+	} c;
 	uint8_t key[AES_BLOCK_SIZE];
 
 	if (count < 1) {
@@ -248,21 +250,31 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 	ZERO_STRUCT(key);
 	memcpy(key, encryption_key.data,
 	       MIN(encryption_key.length, AES_BLOCK_SIZE));
-	aes_ccm_128_init(&ctx, key,
-			 tf + SMB2_TF_NONCE,
-			 a_total, m_total);
-	aes_ccm_128_update(&ctx, tf + SMB2_TF_NONCE, a_total);
-	for (i=1; i < count; i++) {
-		aes_ccm_128_update(&ctx,
-				(const uint8_t *)vector[i].iov_base,
-				vector[i].iov_len);
+
+	switch (cipher_id) {
+	case SMB2_ENCRYPTION_AES128_CCM:
+		aes_ccm_128_init(&c.ccm, key,
+				 tf + SMB2_TF_NONCE,
+				 a_total, m_total);
+		memset(tf + SMB2_TF_NONCE + AES_CCM_128_NONCE_SIZE, 0,
+		       16 - AES_CCM_128_NONCE_SIZE);
+		aes_ccm_128_update(&c.ccm, tf + SMB2_TF_NONCE, a_total);
+		for (i=1; i < count; i++) {
+			aes_ccm_128_update(&c.ccm,
+					(const uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+			aes_ccm_128_crypt(&c.ccm,
+					(uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+		}
+		aes_ccm_128_digest(&c.ccm, sig);
+		break;
+
+	default:
+		ZERO_STRUCT(key);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-	for (i=1; i < count; i++) {
-		aes_ccm_128_crypt(&ctx,
-				(uint8_t *)vector[i].iov_base,
-				vector[i].iov_len);
-	}
-	aes_ccm_128_digest(&ctx, sig);
+	ZERO_STRUCT(key);
 
 	memcpy(tf + SMB2_TF_SIGNATURE, sig, 16);
 
@@ -284,7 +296,9 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 	size_t a_total;
 	size_t m_total = 0;
 	uint32_t msg_size = 0;
-	struct aes_ccm_128_context ctx;
+	union {
+		struct aes_ccm_128_context ccm;
+	} c;
 	uint8_t key[AES_BLOCK_SIZE];
 
 	if (count < 1) {
@@ -322,21 +336,29 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 	ZERO_STRUCT(key);
 	memcpy(key, decryption_key.data,
 	       MIN(decryption_key.length, AES_BLOCK_SIZE));
-	aes_ccm_128_init(&ctx, key,
-			 tf + SMB2_TF_NONCE,
-			 a_total, m_total);
-	for (i=1; i < count; i++) {
-		aes_ccm_128_crypt(&ctx,
-				(uint8_t *)vector[i].iov_base,
-				vector[i].iov_len);
+
+	switch (cipher_id) {
+	case SMB2_ENCRYPTION_AES128_CCM:
+		aes_ccm_128_init(&c.ccm, key,
+				 tf + SMB2_TF_NONCE,
+				 a_total, m_total);
+		aes_ccm_128_update(&c.ccm, tf + SMB2_TF_NONCE, a_total);
+		for (i=1; i < count; i++) {
+			aes_ccm_128_crypt(&c.ccm,
+					(uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+			aes_ccm_128_update(&c.ccm,
+					( uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+		}
+		aes_ccm_128_digest(&c.ccm, sig);
+		break;
+
+	default:
+		ZERO_STRUCT(key);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-	aes_ccm_128_update(&ctx, tf + SMB2_TF_NONCE, a_total);
-	for (i=1; i < count; i++) {
-		aes_ccm_128_update(&ctx,
-				( uint8_t *)vector[i].iov_base,
-				vector[i].iov_len);
-	}
-	aes_ccm_128_digest(&ctx, sig);
+	ZERO_STRUCT(key);
 
 	sig_ptr = tf + SMB2_TF_SIGNATURE;
 	if (memcmp(sig_ptr, sig, 16) != 0) {
