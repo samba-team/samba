@@ -230,6 +230,7 @@ NTSTATUS printer_list_get_last_refresh(time_t *last_refresh)
 
 	ret = tdb_unpack(data.dptr, data.dsize,
 			 PL_TSTAMP_FORMAT, &time_h, &time_l);
+	TALLOC_FREE(data.dptr);
 	if (ret == -1) {
 		DEBUG(1, ("Failed to un pack printer data"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
