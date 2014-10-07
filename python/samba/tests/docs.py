@@ -131,7 +131,8 @@ class SmbDotConfTests(TestCase):
                          'ctdbd socket', 'printing', 'printcap name', 'queueresume command',
                          'queuepause command','lpresume command', 'lppause command',
                          'lprm command', 'lpq command', 'print command', 'template homedir',
-                         'spoolss: os_major', 'spoolss: os_minor', 'spoolss: os_build'])
+                         'spoolss: os_major', 'spoolss: os_minor', 'spoolss: os_build',
+                         'max open files'])
 
     def setUp(self):
         super(SmbDotConfTests, self).setUp()
