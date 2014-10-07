@@ -4434,10 +4434,11 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 			return NULL;
 		}
 
-		SSVAL(p, 0, 1); /* ChiperCount */
-		SSVAL(p, 2, SMB2_ENCRYPTION_AES128_CCM);
+		SSVAL(p, 0, 2); /* ChiperCount */
+		SSVAL(p, 2, SMB2_ENCRYPTION_AES128_GCM);
+		SSVAL(p, 4, SMB2_ENCRYPTION_AES128_CCM);
 
-		b = data_blob_const(p, 4);
+		b = data_blob_const(p, 6);
 		status = smb2_negotiate_context_add(state, &c,
 					SMB2_ENCRYPTION_CAPABILITIES, b);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4720,8 +4721,11 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 			cipher_selected = SVAL(cipher->data.data, 2);
 
-			if (cipher_selected == SMB2_ENCRYPTION_AES128_CCM) {
+			switch (cipher_selected) {
+			case SMB2_ENCRYPTION_AES128_GCM:
+			case SMB2_ENCRYPTION_AES128_CCM:
 				conn->smb2.server.cipher = cipher_selected;
+				break;
 			}
 		}
 	}
