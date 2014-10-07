@@ -139,6 +139,7 @@ class dnsobj(object):
         self.existing_weight = None
         self.type = list[0]
         self.name = list[1]
+        self.nameservers = []
         if self.type == 'SRV':
             if len(list) < 4:
                 raise Exception("Invalid DNS entry %r" % string_form)
@@ -208,9 +209,12 @@ def check_dns_name(d):
 
     resolver = dns.resolver.Resolver()
 
+    if d.nameservers != []:
+        resolver.nameservers = d.nameservers
+    else:
+        d.nameservers = resolver.nameservers
+
     try:
-        if getattr(d, 'nameservers', None):
-            resolver.nameservers = list(d.nameservers)
         ans = resolver.query(normalised_name, d.type)
     except dns.exception.DNSException:
         if opts.verbose:
@@ -357,7 +361,7 @@ def call_nsupdate(d, op="add"):
 
     (tmp_fd, tmpfile) = tempfile.mkstemp()
     f = os.fdopen(tmp_fd, 'w')
-    if getattr(d, 'nameservers', None):
+    if d.nameservers != []:
         f.write('server %s\n' % d.nameservers[0])
     if d.type == "A":
         f.write("update %s %s %u A %s\n" % (op, normalised_name, default_ttl, d.ip))
