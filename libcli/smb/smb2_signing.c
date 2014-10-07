@@ -209,7 +209,7 @@ void smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 }
 
 NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
-				  enum protocol_types protocol,
+				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count)
 {
@@ -272,7 +272,7 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 }
 
 NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
-				  enum protocol_types protocol,
+				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count)
 {
