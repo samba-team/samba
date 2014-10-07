@@ -13,13 +13,13 @@ elif not bld.CONFIG_SET('HAVE_SYS_MD5_H') and not bld.CONFIG_SET('HAVE_COMMONCRY
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         source='''crc32.c hmacmd5.c md4.c arcfour.c sha256.c sha512.c hmacsha256.c
-        aes.c rijndael-alg-fst.c aes_cmac_128.c aes_ccm_128.c
+        aes.c rijndael-alg-fst.c aes_cmac_128.c aes_ccm_128.c aes_gcm_128.c
         ''' + extra_source,
         deps='talloc' + extra_deps
         )
 
 bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
-	source='md4test.c md5test.c hmacmd5test.c aes_cmac_128_test.c',
+	source='md4test.c md5test.c hmacmd5test.c aes_cmac_128_test.c aes_gcm_128_test.c',
 	autoproto='test_proto.h',
 	deps='LIBCRYPTO'
 	)
