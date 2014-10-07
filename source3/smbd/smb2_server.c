@@ -400,7 +400,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 			tf_iov[1].iov_len = enc_len;
 
 			status = smb2_signing_decrypt_pdu(s->global->decryption_key,
-							  xconn->protocol,
+							  xconn->smb2.server.cipher,
 							  tf_iov, 2);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(iov_alloc);
@@ -1250,7 +1250,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
 		status = smb2_signing_encrypt_pdu(req->first_key,
-					xconn->protocol,
+					xconn->smb2.server.cipher,
 					firsttf,
 					nreq->out.vector_count - first_idx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1591,7 +1591,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		DATA_BLOB encryption_key = x->global->encryption_key;
 
 		status = smb2_signing_encrypt_pdu(encryption_key,
-					xconn->protocol,
+					xconn->smb2.server.cipher,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2494,7 +2494,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
 		status = smb2_signing_encrypt_pdu(req->first_key,
-					xconn->protocol,
+					xconn->smb2.server.cipher,
 					firsttf,
 					req->out.vector_count - first_idx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2848,7 +2848,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 		DATA_BLOB encryption_key = session->global->encryption_key;
 
 		status = smb2_signing_encrypt_pdu(encryption_key,
-					xconn->protocol,
+					xconn->smb2.server.cipher,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
