@@ -158,6 +158,7 @@
 
 /* Bump to version 32 - Samba 4.2 will ship with that. */
 /* Version 32 - Add "lease" to CREATE_FILE operation */
+/* Version 32 - Add "lease" to struct files_struct */
 
 #define SMB_VFS_INTERFACE_VERSION 32
 
@@ -202,6 +203,11 @@ struct fd_handle {
 	unsigned long gen_id;
 };
 
+struct fsp_lease {
+	size_t ref_count;
+	struct smb2_lease lease;
+};
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	uint64_t fnum;
@@ -225,6 +231,7 @@ typedef struct files_struct {
 	bool write_time_forced;
 
 	int oplock_type;
+	struct fsp_lease *lease; /* Not yet used. Placeholder for leases. */
 	int sent_oplock_break;
 	struct tevent_timer *oplock_timeout;
 	struct lock_struct last_lock_failure;
