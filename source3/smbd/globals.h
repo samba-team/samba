@@ -344,6 +344,10 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 
 struct smbXsrv_client;
 
+struct smbXsrv_preauth {
+	uint8_t sha512_value[64];
+};
+
 struct smbXsrv_connection {
 	struct smbXsrv_connection *prev, *next;
 
@@ -516,6 +520,8 @@ struct smbXsrv_connection {
 			uint16_t cipher;
 		} server;
 
+		struct smbXsrv_preauth preauth;
+
 		struct smbd_smb2_request *requests;
 	} smb2;
 };
@@ -662,6 +668,7 @@ struct smbd_smb2_request {
 	 * request/response of a compound chain
 	 */
 	DATA_BLOB last_key;
+	struct smbXsrv_preauth *preauth;
 
 	struct timeval request_time;
 

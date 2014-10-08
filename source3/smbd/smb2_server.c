@@ -30,6 +30,7 @@
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "lib/util/iov_buf.h"
 #include "auth.h"
+#include "lib/crypto/sha512.h"
 
 static void smbd_smb2_connection_handler(struct tevent_context *ev,
 					 struct tevent_fd *fde,
@@ -2521,6 +2522,33 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 	if (req->first_key.length > 0) {
 		data_blob_clear_free(&req->first_key);
+	}
+
+	if (req->preauth != NULL) {
+		struct hc_sha512state sctx;
+		int i;
+
+		samba_SHA512_Init(&sctx);
+		samba_SHA512_Update(&sctx, req->preauth->sha512_value,
+				    sizeof(req->preauth->sha512_value));
+		for (i = 1; i < req->in.vector_count; i++) {
+			samba_SHA512_Update(&sctx,
+					    req->in.vector[i].iov_base,
+					    req->in.vector[i].iov_len);
+		}
+		samba_SHA512_Final(req->preauth->sha512_value, &sctx);
+
+		samba_SHA512_Init(&sctx);
+		samba_SHA512_Update(&sctx, req->preauth->sha512_value,
+				    sizeof(req->preauth->sha512_value));
+		for (i = 1; i < req->out.vector_count; i++) {
+			samba_SHA512_Update(&sctx,
+					    req->out.vector[i].iov_base,
+					    req->out.vector[i].iov_len);
+		}
+		samba_SHA512_Final(req->preauth->sha512_value, &sctx);
+
+		req->preauth = NULL;
 	}
 
 	/* I am a sick, sick man... :-). Sendfile hack ... JRA. */
