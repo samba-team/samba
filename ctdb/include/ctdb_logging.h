@@ -23,7 +23,6 @@
 extern const char *debug_extra;
 
 enum debug_level {
-	DEBUG_EMERG   = -3,
 	DEBUG_ALERT   = -2,
 	DEBUG_CRIT    = -1,
 	DEBUG_ERR     =  0,

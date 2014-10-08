@@ -883,7 +883,6 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
     </para>
 
     <simplelist>
-      <member>EMERG (-3)</member>
       <member>ALERT (-2)</member>
       <member>CRIT (-1)</member>
       <member>ERR (0)</member>
