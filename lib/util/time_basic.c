@@ -62,15 +62,11 @@ char *timeval_str_buf(const struct timeval *tp, bool hires,
 		return dst->buf;
 	}
 
-#ifdef HAVE_STRFTIME
-	len = strftime(dst->buf, sizeof(dst->buf), "%Y/%m/%d %H:%M:%S", tm);
-#else
-	{
-		const char *asct = asctime(tm);
-		len = strlcpy(dst->buf, sizeof(dst->buf),
-			      asct ? asct : "unknown");
-	}
-#endif
+	len = snprintf(dst->buf, sizeof(dst->buf),
+		       "%04d/%02d/%02d %02d:%02d:%02d",
+		       1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+		       tm->tm_hour, tm->tm_min, tm->tm_sec);
+
 	if (hires && (len < sizeof(dst->buf))) {
 		snprintf(dst->buf + len, sizeof(dst->buf) - len,
 			 ".%06ld", (long)tp->tv_usec);
