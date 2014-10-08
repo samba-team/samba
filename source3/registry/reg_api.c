@@ -628,7 +628,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 				 key->token))
 	{
 		err = WERR_ACCESS_DENIED;
-		goto done;
+		goto trans_done;
 	}
 
 	/*
