@@ -902,7 +902,7 @@ DB Statistics: locking.tdb
 	The list of debug levels from highest to lowest are :
       </para>
       <para>
-	ALERT CRIT ERR WARNING NOTICE INFO DEBUG
+	ERR WARNING NOTICE INFO DEBUG
       </para>
     </refsect2>
 
@@ -912,7 +912,7 @@ DB Statistics: locking.tdb
 	Set the debug level of a node. This controls what information will be logged.
       </para>
       <para>
-	The debuglevel is one of ALERT CRIT ERR WARNING NOTICE INFO DEBUG
+	The debuglevel is one of ERR WARNING NOTICE INFO DEBUG
       </para>
     </refsect2>
 

@@ -53,7 +53,7 @@ set_and_check_debug ()
 get_debug $test_node
 initial_debug="$check_debug"
 
-levels="ALERT CRIT ERR WARNING NOTICE INFO DEBUG"
+levels="ERR WARNING NOTICE INFO DEBUG"
 
 for new_debug in $levels ; do
     [ "$initial_debug" != "$new_debug" ] || continue

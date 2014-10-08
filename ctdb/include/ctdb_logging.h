@@ -23,13 +23,15 @@
 extern const char *debug_extra;
 
 enum debug_level {
-	DEBUG_ALERT   = -2,
-	DEBUG_CRIT    = -1,
 	DEBUG_ERR     =  0,
 	DEBUG_WARNING =  1,
 	DEBUG_NOTICE  =  2,
 	DEBUG_INFO    =  3,
 	DEBUG_DEBUG   =  4,
 };
+
+/* These are used in many places, so define them here to avoid churn */
+#define DEBUG_ALERT DEBUG_ERR
+#define	DEBUG_CRIT  DEBUG_ERR
 
 #endif /* _CTDB_LOGGING_H_ */

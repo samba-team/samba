@@ -218,12 +218,6 @@ static void ctdb_syslog_log(void *private_ptr, int dbglevel, const char *s)
 	struct sockaddr_in syslog_sin;
 
 	switch (dbglevel) {
-	case DEBUG_ALERT: 
-		level = LOG_ALERT; 
-		break;
-	case DEBUG_CRIT: 
-		level = LOG_CRIT; 
-		break;
 	case DEBUG_ERR: 
 		level = LOG_ERR; 
 		break;

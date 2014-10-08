@@ -26,8 +26,6 @@
 const char *debug_extra = "";
 
 struct debug_levels debug_levels[] = {
-	{DEBUG_ALERT,	"ALERT"},
-	{DEBUG_CRIT,	"CRIT"},
 	{DEBUG_ERR,	"ERR"},
 	{DEBUG_WARNING,	"WARNING"},
 	{DEBUG_NOTICE,	"NOTICE"},
