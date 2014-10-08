@@ -93,7 +93,7 @@ is no need to start the winbindd binary manually.
 Winbind now requires secured connections
 ========================================
 
-To improve protection against rouge domain controllers we now require
+To improve protection against rogue domain controllers we now require
 that when we connect to an AD DC in our forest, that the connection be
 signed using SMB Signing.  Set 'client signing = off' in the smb.conf
 to disable.
