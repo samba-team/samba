@@ -107,12 +107,12 @@ void (*CatchSignal(int signum,void (*handler)(int )))(int);
 /**
  Ignore SIGCLD via whatever means is necessary for this OS.
 **/
-void CatchChild(void);
+void (*CatchChild(void))(int);
 
 /**
  Catch SIGCLD but leave the child around so it's status can be reaped.
 **/
-void CatchChildLeaveStatus(void);
+void (*CatchChildLeaveStatus(void))(int);
 
 struct sockaddr;
 
