@@ -867,7 +867,6 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 
 
 
-#ifdef HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL
 static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 {
 	NTSTATUS status;
@@ -911,7 +910,6 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 
 	return status;
 }
-#endif
 
 static NTSTATUS db_ctdb_delete(struct db_record *rec)
 {
@@ -927,10 +925,7 @@ static NTSTATUS db_ctdb_delete(struct db_record *rec)
 		return status;
 	}
 
-#ifdef HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL
 	status = db_ctdb_send_schedule_for_deletion(rec);
-#endif
-
 	return status;
 }
 
@@ -999,7 +994,6 @@ static int db_ctdb_record_destr(struct db_record* data)
 static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 				      bool read_only)
 {
-#ifdef HAVE_CTDB_WANT_READONLY_DECL
 	if (hdr->dmaster != get_my_vnn()) {
 		/* If we're not dmaster, it must be r/o copy. */
 		return read_only && (hdr->flags & CTDB_REC_RO_HAVE_READONLY);
@@ -1009,9 +1003,6 @@ static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 	 * If we want write access, no one may have r/o copies.
 	 */
 	return read_only || !(hdr->flags & CTDB_REC_RO_HAVE_DELEGATIONS);
-#else
-	return (hdr->dmaster == get_my_vnn());
-#endif
 }
 
 static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
@@ -1638,7 +1629,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-#ifdef HAVE_CTDB_WANT_READONLY_DECL
 	if (!result->persistent &&
 	    (dbwrap_flags & DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS))
 	{
@@ -1657,7 +1647,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-#endif
 
 	lp_ctx = loadparm_init_s3(db_path, loadparm_s3_helpers());
 
