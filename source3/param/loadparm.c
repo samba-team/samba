@@ -688,6 +688,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.passwd_chat_timeout = 2; /* 2 second default. */
 	Globals.nt_pipe_support = true;	/* Do NT pipes by default. */
 	Globals.nt_status_support = true; /* Use NT status by default. */
+	Globals.smbd_profiling_level = 0;
 	Globals.stat_cache = true;	/* use stat cache by default */
 	Globals.max_stat_cache_size = 256; /* 256k by default */
 	Globals.restrict_anonymous = 0;

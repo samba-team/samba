@@ -2634,6 +2634,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "keepalive", "300");
 
+	lpcfg_do_global_parameter(lp_ctx, "smbd profiling level", "off");
+
 	lpcfg_do_global_parameter(lp_ctx, "winbind cache time", "300");
 
 	lpcfg_do_global_parameter(lp_ctx, "level2 oplocks", "yes");

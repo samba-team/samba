@@ -174,6 +174,10 @@ static const struct enum_list enum_config_backend[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_smbd_profiling_level[] = {
+	{0, "off"}, {1, "count"}, {2, "on"}, {-1, NULL}
+};
+
 
 /* ADS kerberos ticket verification options */
 
@@ -1507,6 +1511,15 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(nt_status_support),
 		.special	= NULL,
 		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "smbd profiling level",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(smbd_profiling_level),
+		.special	= NULL,
+		.enum_list	= enum_smbd_profiling_level,
 		.flags		= FLAG_ADVANCED,
 	},
 	{
