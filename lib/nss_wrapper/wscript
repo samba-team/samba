@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.0.2"
+VERSION="1.0.3"
 
 def configure(conf):
     if conf.CHECK_BUNDLED_SYSTEM('nss_wrapper', minversion=VERSION, set_target=False):
