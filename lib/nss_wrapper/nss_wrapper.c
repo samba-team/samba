@@ -49,6 +49,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <limits.h>
 
 /*
  * Defining _POSIX_PTHREAD_SEMANTICS before including pwd.h and grp.h  gives us
@@ -2351,9 +2352,17 @@ static void nwrap_files_endgrent(struct nwrap_backend *b)
 static struct hostent *nwrap_files_gethostbyname(const char *name, int af)
 {
 	struct hostent *he;
+	char canon_name[HOST_NAME_MAX] = { 0 };
+	size_t name_len;
 	int i;
 
 	nwrap_files_cache_reload(nwrap_he_global.cache);
+
+	name_len = strlen(name);
+	if (name_len < sizeof(canon_name) && name[name_len - 1] == '.') {
+		strncpy(canon_name, name, name_len - 1);
+		name = canon_name;
+	}
 
 	for (i = 0; i < nwrap_he_global.num; i++) {
 		int j;
