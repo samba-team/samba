@@ -55,9 +55,6 @@ def set_options(opt):
     opt.add_option('--with-ctdb-dir',
                    help=("Directory under which ctdb is installed"),
                    action="store", dest='ctdb_dir', default=None)
-    opt.add_option('--enable-old-ctdb',
-                  help=("enable building against (too) old version of ctdb (default=false)"),
-                  action="store_true", dest='enable_old_ctdb', default=False)
 
     opt.add_option('--with-libcephfs',
                    help=("Directory under which libcephfs is installed"),
@@ -1629,11 +1626,8 @@ main() {
             if ok:
                 CTDB_CFLAGS += ' -DHAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL=1'
             else:
-                if not Options.options.enable_old_ctdb:
-                    have_cluster_support = False
-                    ctdb_broken = "SCHEDULE_FOR_DELETION control missing"
-                else:
-                    Logs.warn("ignoring missing SCHEDULE_FOR_DELETION control (--enable-old-ctdb)")
+                have_cluster_support = False
+                ctdb_broken = "SCHEDULE_FOR_DELETION control missing"
 
         conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
@@ -1659,11 +1653,8 @@ main() {
             if ok:
                 CTDB_CFLAGS += ' -DHAVE_CTDB_WANT_READONLY_DECL=1'
             else:
-                if not Options.options.enable_old_ctdb:
-                    have_cluster_support = False
-                    ctdb_broken = "support for CTDB readonly records missing"
-                else:
-                    Logs.warn("ignoring missing READONLY support (--enable-old-ctdb)")
+                have_cluster_support = False
+                ctdb_broken = "support for CTDB readonly records missing"
 
         conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
         if have_cluster_support:
@@ -1743,11 +1734,8 @@ main() {
             if ok:
                 CTDB_CFLAGS += ' -DHAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL=1'
             else:
-                if not Options.options.enable_old_ctdb:
-                    have_cluster_support = False
-                    ctdb_broken = "CHECK_SRVIDS control missing"
-                else:
-                    Logs.warn("ignoring missing CHECK_SRVIDS control (--enable-old-ctdb)")
+                have_cluster_support = False
+                ctdb_broken = "CHECK_SRVIDS control missing"
 
     conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
     conf.undefine('HAVE_CTDB_CHECK_CODE')
