@@ -562,10 +562,6 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 	void *handle = NULL;
 	int i;
 
-#ifdef HAVE_APPLE
-	return RTLD_NEXT;
-#endif
-
 #ifdef RTLD_DEEPBIND
 	flags |= RTLD_DEEPBIND;
 #endif
@@ -619,10 +615,17 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 	}
 
 	if (handle == NULL) {
+#ifdef RTLD_NEXT
+		handle = nwrap_main_global->libc->handle
+		       = nwrap_main_global->libc->sock_handle
+		       = nwrap_main_global->libc->nsl_handle
+		       = RTLD_NEXT;
+#else
 		NWRAP_LOG(NWRAP_LOG_ERROR,
 			  "Failed to dlopen library: %s\n",
 			  dlerror());
 		exit(-1);
+#endif
 	}
 
 	return handle;
