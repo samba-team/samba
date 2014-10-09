@@ -62,6 +62,7 @@
 #include <popt.h>
 #include <errno.h>
 #include <err.h>
+#include <signal.h>
 
 struct command {
 	enum { CMD_EXPECT = 0, CMD_SEND, CMD_PASSWORD } type;
