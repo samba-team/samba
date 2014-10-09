@@ -112,7 +112,7 @@ static enum http_read_status http_parse_headers(struct http_read_response_state 
 		return HTTP_ALL_DATA_READ;
 	}
 
-	n = sscanf(line, "%a[^:]: %a[^\r\n]\r\n", &key, &value);
+	n = sscanf(line, "%m[^:]: %m[^\r\n]\r\n", &key, &value);
 	if (n != 2) {
 		DEBUG(0, ("%s: Error parsing header '%s'\n", __func__, line));
 		status = HTTP_DATA_CORRUPTED;
@@ -158,7 +158,7 @@ static bool http_parse_response_line(struct http_read_response_state *state)
 		return false;
 	}
 
-	n = sscanf(line, "%a[^/]/%c.%c %d %a[^\r\n]\r\n",
+	n = sscanf(line, "%m[^/]/%c.%c %d %m[^\r\n]\r\n",
 		   &protocol, &major, &minor, &code, &msg);
 
 	DEBUG(11, ("%s: Header parsed(%i): protocol->%s, major->%c, minor->%c, "
