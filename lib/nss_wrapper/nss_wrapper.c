@@ -3865,7 +3865,9 @@ static int nwrap_getaddrinfo(const char *node,
 			struct in6_addr v6;
 		} in;
 #endif
-	} addr;
+	} addr = {
+		.family = AF_UNSPEC,
+	};
 	int eai = EAI_SYSTEM;
 	int ret;
 	int rc;
