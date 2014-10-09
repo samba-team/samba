@@ -49,7 +49,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <limits.h>
 
 /*
  * Defining _POSIX_PTHREAD_SEMANTICS before including pwd.h and grp.h  gives us
@@ -120,6 +119,10 @@ typedef nss_status_t NSS_STATUS;
 
 #ifndef __location__
 #define __location__ __FILE__ ":" __LINESTR__
+#endif
+
+#ifndef DNS_NAME_MAX
+#define DNS_NAME_MAX 255
 #endif
 
 /* GCC have printf type attribute check. */
@@ -2352,7 +2355,7 @@ static void nwrap_files_endgrent(struct nwrap_backend *b)
 static struct hostent *nwrap_files_gethostbyname(const char *name, int af)
 {
 	struct hostent *he;
-	char canon_name[HOST_NAME_MAX] = { 0 };
+	char canon_name[DNS_NAME_MAX] = { 0 };
 	size_t name_len;
 	int i;
 
