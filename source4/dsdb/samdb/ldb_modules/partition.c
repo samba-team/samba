@@ -805,7 +805,7 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 /* start a transaction */
 static int partition_start_trans(struct ldb_module *module)
 {
-	unsigned int i;
+	int i;
 	int ret;
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
