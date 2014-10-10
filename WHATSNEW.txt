@@ -170,6 +170,14 @@ use the following steps:
   $ make
   # make install
 
+Samba Registry Editor
+=====================
+
+The utitlity to browse the samba registry has been overhauled by our Google
+Summer of Code student Chris Davis. Now samba-regedit has a
+Midnight-Commander-like theme and UI experience. You can browse keys and edit
+the diffent value types. For a data value type a hexeditor has been
+implemented.
 
 ######################################################################
 Changes
