@@ -3807,7 +3807,7 @@ struct server_id {
 	uint64_t unique_id;
 };
 
-static struct server_id server_id_get(struct ctdb_context *ctdb, uint32_t reqid)
+static struct server_id server_id_fetch(struct ctdb_context *ctdb, uint32_t reqid)
 {
 	struct server_id id;
 
@@ -3957,7 +3957,7 @@ again:
 
 	talloc_free(data.dptr);
 
-	id = server_id_get(ctdb_db->ctdb, reqid);
+	id = server_id_fetch(ctdb_db->ctdb, reqid);
 
 	i = 0;
 	while (i < locks->num) {
@@ -4046,7 +4046,7 @@ static bool g_lock_unlock(TALLOC_CTX *mem_ctx,
 
 	talloc_free(data.dptr);
 
-	id = server_id_get(ctdb_db->ctdb, reqid);
+	id = server_id_fetch(ctdb_db->ctdb, reqid);
 
 	for (i=0; i<locks->num; i++) {
 		if (ctdb_server_id_equal(&locks->lock[i].id, &id)) {
