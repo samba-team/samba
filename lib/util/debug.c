@@ -983,7 +983,8 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	}
 
 	GetTimeOfDay(&tv);
-	timeval_str_buf(&tv, state.settings.debug_hires_timestamp, &tvbuf);
+	timeval_str_buf(&tv, false, state.settings.debug_hires_timestamp,
+			&tvbuf);
 
 	hs_len = snprintf(header_str, sizeof(header_str), "[%s, %2d",
 			  tvbuf.buf, level);

@@ -341,7 +341,7 @@ char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
 	struct timeval_buf tmp;
 	char *result;
 
-	result = talloc_strdup(ctx, timeval_str_buf(tp, hires, &tmp));
+	result = talloc_strdup(ctx, timeval_str_buf(tp, false, hires, &tmp));
 	if (result == NULL) {
 		return NULL;
 	}

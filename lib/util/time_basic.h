@@ -35,8 +35,11 @@ struct timeval_buf { char buf[128]; };
  Put a date and time into dst->buf, return it dst->buf
  (optionally with microseconds)
 
+ If rfc5424 is true then produce the RFC5424 timestamp format (which
+ is a stricter instance of RFC3339 and is used for syslog). For
+ example: 2003-08-24T05:14:15.000003-07:00.  Otherwise,
  format is %Y/%m/%d %H:%M:%S
 **/
 
-char *timeval_str_buf(const struct timeval *tp, bool hires,
+char *timeval_str_buf(const struct timeval *tp, bool rfc5424, bool hires,
 		      struct timeval_buf *dst);
