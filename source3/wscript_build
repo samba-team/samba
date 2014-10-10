@@ -610,6 +610,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    LIBAFS
                    RPC_SERVICE
                    NDR_SMBXSRV
+                   LEASES_DB
                    LIBASYS
                    sysquotas
                    ccan-hash
@@ -627,8 +628,13 @@ bld.SAMBA3_SUBSYSTEM('LOCKING',
                     deps='''
                     tdb_compat
                     talloc
+                    LEASES_DB
                     NDR_OPEN_FILES
                     FNAME_UTIL''')
+
+bld.SAMBA3_SUBSYSTEM('LEASES_DB',
+                    source='locking/leases_db.c',
+                    deps='NDR_LEASES_DB')
 
 if bld.CONFIG_GET("WITH_PROFILE"):
     bld.SAMBA3_SUBSYSTEM('PROFILE',

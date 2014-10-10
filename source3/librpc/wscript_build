@@ -25,6 +25,11 @@ bld.SAMBA3_SUBSYSTEM('NDR_SMBXSRV',
 	public_deps='ndr NDR_SERVER_ID NDR_SECURITY NDR_AUTH'
 	)
 
+bld.SAMBA3_SUBSYSTEM('NDR_LEASES_DB',
+	source='gen_ndr/ndr_leases_db.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA3_SUBSYSTEM('NDR_SECRETS',
 	source='gen_ndr/ndr_secrets.c',
 	public_deps='ndr'
