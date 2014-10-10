@@ -46,6 +46,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
+#include "locking/leases_db.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -617,6 +618,86 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 }
 
 /*
+ * See if we need to remove a lease being referred to by a
+ * share mode that is being marked stale or deleted.
+ */
+
+static void remove_share_mode_lease(struct share_mode_data *d,
+				    struct share_mode_entry *e)
+{
+	struct GUID client_guid;
+	struct smb2_lease_key lease_key;
+	uint16_t op_type;
+	uint32_t lease_idx;
+	uint32_t i;
+
+	op_type = e->op_type;
+	e->op_type = NO_OPLOCK;
+
+	d->modified = true;
+
+	if (op_type != LEASE_OPLOCK) {
+		return;
+	}
+
+	/*
+	 * This used to reference a lease. If there's no other one referencing
+	 * it, remove it.
+	 */
+
+	lease_idx = e->lease_idx;
+	e->lease_idx = UINT32_MAX;
+
+	for (i=0; i<d->num_share_modes; i++) {
+		if (d->share_modes[i].stale) {
+			continue;
+		}
+		if (e == &d->share_modes[i]) {
+			/* Not ourselves. */
+			continue;
+		}
+		if (d->share_modes[i].lease_idx == lease_idx) {
+			break;
+		}
+	}
+	if (i < d->num_share_modes) {
+		/*
+		 * Found another one
+		 */
+		return;
+	}
+
+	memcpy(&client_guid,
+		&d->leases[lease_idx].client_guid,
+		sizeof(client_guid));
+	lease_key = d->leases[lease_idx].lease_key;
+
+	d->num_leases -= 1;
+	d->leases[lease_idx] = d->leases[d->num_leases];
+
+	/*
+	 * We changed the lease array. Fix all references to it.
+	 */
+	for (i=0; i<d->num_share_modes; i++) {
+		if (d->share_modes[i].lease_idx == d->num_leases) {
+			d->share_modes[i].lease_idx = lease_idx;
+			d->share_modes[i].lease = &d->leases[lease_idx];
+		}
+	}
+
+	{
+		NTSTATUS status;
+
+		status = leases_db_del(&client_guid,
+					&lease_key,
+					&e->id);
+
+		DEBUG(10, ("%s: leases_db_del returned %s\n", __func__,
+			   nt_errstr(status)));
+	}
+}
+
+/*
  * In case d->share_modes[i] conflicts with something or otherwise is
  * being used, we need to make sure the corresponding process still
  * exists.
@@ -673,6 +754,8 @@ bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 			d->num_delete_tokens = 0;
 		}
 	}
+
+	remove_share_mode_lease(d, e);
 
 	d->modified = true;
 	return true;
@@ -782,6 +865,7 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	if (e == NULL) {
 		return False;
 	}
+	remove_share_mode_lease(lck->data, e);
 	*e = lck->data->share_modes[lck->data->num_share_modes-1];
 	lck->data->num_share_modes -= 1;
 	lck->data->modified = True;
@@ -829,6 +913,7 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
+	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *e;
 
 	e = find_share_mode_entry(lck, fsp);
@@ -836,9 +921,9 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 		return False;
 	}
 
-	e->op_type = NO_OPLOCK;
-	lck->data->modified = True;
-	return True;
+	remove_share_mode_lease(d, e);
+	d->modified = True;
+	return true;
 }
 
 /*******************************************************************
