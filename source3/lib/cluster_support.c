@@ -62,8 +62,8 @@ const char *cluster_support_features(void)
 #ifdef HAVE_CTDB_PROTOCOL_H
 	_LINE_DEF(HAVE_CTDB_PROTOCOL_H)
 #endif
-#ifdef CTDB_PATH
-	_LINE_STR(CTDB_PATH)
+#ifdef CTDB_SOCKET
+	_LINE_STR(CTDB_SOCKET)
 #endif
 #ifdef CTDB_VERSION
 	_LINE_INT(CTDB_VERSION)

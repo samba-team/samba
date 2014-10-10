@@ -3375,7 +3375,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->lastid = INT_MAX-200;
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
 
-	ret = ctdb_set_socketname(ctdb, CTDB_PATH);
+	ret = ctdb_set_socketname(ctdb, CTDB_SOCKET);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_set_socketname failed.\n"));
 		talloc_free(ctdb);
