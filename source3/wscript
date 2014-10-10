@@ -52,10 +52,6 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('fake-kaserver',
                           help=("Include AFS fake-kaserver support"), default=False)
 
-    opt.add_option('--with-ctdb-dir',
-                   help=("Directory under which ctdb is installed"),
-                   action="store", dest='ctdb_dir', default=None)
-
     opt.add_option('--with-libcephfs',
                    help=("Directory under which libcephfs is installed"),
                    action="store", dest='libcephfs_dir', default=None)
@@ -1483,10 +1479,7 @@ main() {
         else:
             includes = ''
 
-        if Options.options.ctdb_dir:
-            CTDB_INCLUDE = Options.options.ctdb_dir + '/include'
-        else:
-            CTDB_INCLUDE = conf.srcdir + '/ctdb/include'
+        CTDB_INCLUDE = conf.srcdir + '/ctdb/include'
         includes = includes + ' ' + CTDB_INCLUDE
 
         if not conf.env.USING_SYSTEM_TDB:
