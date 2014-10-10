@@ -167,6 +167,11 @@ static bool smb_ace_to_internal(acl_entry_t posix_ace,
 	case ACL_MASK:
 		ace->a_type = SMB_ACL_MASK;
 		break;
+#ifdef HAVE_ACL_EVERYONE
+	case ACL_EVERYONE:
+		DEBUG(1, ("ACL tag type ACL_EVERYONE. FreeBSD with ZFS? Use 'vfs objects = zfsacl'\n"));
+		return false;
+#endif
 	default:
 		DEBUG(0, ("unknown tag type %d\n", (unsigned int)tag));
 		return False;
