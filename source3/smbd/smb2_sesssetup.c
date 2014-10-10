@@ -28,6 +28,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/crypto/sha512.h"
 
 static struct tevent_req *smbd_smb2_session_setup_wrap_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -184,6 +185,74 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	uint8_t session_key[16];
 	struct smbXsrv_session *x = session;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
+	struct _derivation {
+		DATA_BLOB label;
+		DATA_BLOB context;
+	};
+	struct {
+		struct _derivation signing;
+		struct _derivation encryption;
+		struct _derivation decryption;
+		struct _derivation application;
+	} derivation = { };
+
+	if (xconn->protocol >= PROTOCOL_SMB3_10) {
+		struct smbXsrv_preauth *preauth;
+		struct _derivation *d;
+		DATA_BLOB p;
+		struct hc_sha512state sctx;
+		size_t i;
+
+		preauth = talloc_move(smb2req, &session->preauth);
+
+		samba_SHA512_Init(&sctx);
+		samba_SHA512_Update(&sctx, preauth->sha512_value,
+				    sizeof(preauth->sha512_value));
+		for (i = 1; i < smb2req->in.vector_count; i++) {
+			samba_SHA512_Update(&sctx,
+					    smb2req->in.vector[i].iov_base,
+					    smb2req->in.vector[i].iov_len);
+		}
+		samba_SHA512_Final(preauth->sha512_value, &sctx);
+
+		p = data_blob_const(preauth->sha512_value,
+				    sizeof(preauth->sha512_value));
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMBSigningKey");
+		d->context = p;
+
+		d = &derivation.decryption;
+		d->label = data_blob_string_const_null("SMBC2SCipherKey");
+		d->context = p;
+
+		d = &derivation.encryption;
+		d->label = data_blob_string_const_null("SMBS2CCipherKey");
+		d->context = p;
+
+		d = &derivation.application;
+		d->label = data_blob_string_const_null("SMBAppKey");
+		d->context = p;
+
+	} else if (xconn->protocol >= PROTOCOL_SMB2_24) {
+		struct _derivation *d;
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMB2AESCMAC");
+		d->context = data_blob_string_const_null("SmbSign");
+
+		d = &derivation.decryption;
+		d->label = data_blob_string_const_null("SMB2AESCCM");
+		d->context = data_blob_string_const_null("ServerIn ");
+
+		d = &derivation.encryption;
+		d->label = data_blob_string_const_null("SMB2AESCCM");
+		d->context = data_blob_string_const_null("ServerOut");
+
+		d = &derivation.application;
+		d->label = data_blob_string_const_null("SMB2APP");
+		d->context = data_blob_string_const_null("SmbRpc");
+	}
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == SMB_SIGNING_REQUIRED) {
@@ -239,18 +308,16 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCMAC");
-		const DATA_BLOB context = data_blob_string_const_null("SmbSign");
+		struct _derivation *d = &derivation.signing;
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    x->global->signing_key.data);
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
-		const DATA_BLOB context = data_blob_string_const_null("ServerIn ");
+		struct _derivation *d = &derivation.decryption;
 
 		x->global->decryption_key = data_blob_talloc(x->global,
 							     session_key,
@@ -261,14 +328,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		}
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    x->global->decryption_key.data);
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
-		const DATA_BLOB context = data_blob_string_const_null("ServerOut");
+		struct _derivation *d = &derivation.encryption;
 
 		x->global->encryption_key = data_blob_talloc(x->global,
 							     session_key,
@@ -279,8 +345,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		}
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    x->global->encryption_key.data);
 
 		generate_random_buffer((uint8_t *)&x->nonce_high, sizeof(x->nonce_high));
@@ -295,12 +361,11 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const DATA_BLOB label = data_blob_string_const_null("SMB2APP");
-		const DATA_BLOB context = data_blob_string_const_null("SmbRpc");
+		struct _derivation *d = &derivation.application;
 
 		smb2_key_derivation(session_key, sizeof(session_key),
-				    label.data, label.length,
-				    context.data, context.length,
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
 				    x->global->application_key.data);
 	}
 	ZERO_STRUCT(session_key);
@@ -579,6 +644,7 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		state->out_session_id = state->session->global->session_wire_id;
+		state->smb2req->preauth = state->session->preauth;
 		tevent_req_nterror(req, status);
 		return;
 	}

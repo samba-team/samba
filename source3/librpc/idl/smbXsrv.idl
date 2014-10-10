@@ -190,6 +190,7 @@ interface smbXsrv
 		[ignore] gensec_security		*gensec;
 		[ignore] user_struct			*compat;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
+		[ignore] smbXsrv_preauth		*preauth;
 	} smbXsrv_session;
 
 	typedef union {

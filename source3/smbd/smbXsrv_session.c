@@ -1118,6 +1118,7 @@ static NTSTATUS smbXsrv_session_clear_and_logoff(struct smbXsrv_session *session
 			 */
 			preq->do_signing = false;
 			preq->do_encryption = false;
+			preq->preauth = NULL;
 		}
 	}
 
@@ -1166,6 +1167,15 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	session->idle_time = now;
 	session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	session->client = conn->client;
+
+	if (conn->protocol >= PROTOCOL_SMB3_10) {
+		session->preauth = talloc(session, struct smbXsrv_preauth);
+		if (session->preauth == NULL) {
+			TALLOC_FREE(session);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*session->preauth = conn->smb2.preauth;
+	}
 
 	status = smbXsrv_session_global_allocate(table->global.db_ctx,
 						 session,
@@ -1420,6 +1430,7 @@ struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
 				 */
 				preq->do_signing = false;
 				preq->do_encryption = false;
+				preq->preauth = NULL;
 
 				if (preq->subreq != NULL) {
 					tevent_req_cancel(preq->subreq);
