@@ -20,17 +20,10 @@
 #include <tdb.h>
 #include "cluster_support.h"
 
-#ifdef HAVE_CTDB_H
+#ifdef CLUSTER_SUPPORT
 #include <ctdb.h>
-#define CLUSTER_SUPPORT 1
-#endif
-
-#ifdef HAVE_CTDB_PROTOCOL_H
 #include <ctdb_protocol.h>
-#else
-#ifdef HAVE_CTDB_PRIVATE_H
 #include <ctdb_private.h>
-#endif
 #endif
 
 bool cluster_support_available(void)
@@ -52,15 +45,6 @@ const char *cluster_support_features(void)
 	_LINE_DEF(CLUSTER_SUPPORT)
 #else
 	"   NONE\n"
-#endif
-#ifdef HAVE_CTDB_H
-	_LINE_DEF(HAVE_CTDB_H)
-#endif
-#ifdef HAVE_CTDB_PRIVATE_H
-	_LINE_DEF(HAVE_CTDB_PRIVATE_H)
-#endif
-#ifdef HAVE_CTDB_PROTOCOL_H
-	_LINE_DEF(HAVE_CTDB_PROTOCOL_H)
 #endif
 #ifdef CTDB_SOCKET
 	_LINE_STR(CTDB_SOCKET)

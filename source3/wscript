@@ -1471,89 +1471,9 @@ main() {
         if not conf.env.USING_SYSTEM_TALLOC:
             includes = includes + ' ' + srcdir + '/lib/talloc'
 
-        ok = conf.CHECK_CODE('''
-            #define NO_CONFIG_H
-            #include "replace.h"
-            #include "system/wait.h"
-            #include "system/network.h"
-            #define private #error __USED_RESERVED_WORD_private__
-            #include <talloc.h>
-            #include <tdb.h>
-            #include <ctdb.h>
-
-            int main(void)
-            {
-                return 0;
-            }
-            ''',
-            'HAVE_CTDB_CHECK_CODE',
-            addmain=False,
-            includes=includes,
-            msg='Checking for header ctdb.h')
-        if ok:
-            CTDB_CFLAGS += ' -DHAVE_CTDB_H=1'
-        else:
-            have_cluster_support = False
-            ctdb_broken = "ctdb.h is required for cluster support"
-
-        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
-        if have_cluster_support:
-            ok = conf.CHECK_CODE('''
-                #define NO_CONFIG_H
-                #include "replace.h"
-                #include "system/wait.h"
-                #include "system/network.h"
-                #define private #error __USED_RESERVED_WORD_private__
-                #include <talloc.h>
-                #include <tdb.h>
-                #include <ctdb.h>
-                #include <ctdb_private.h>
-
-                int main(void)
-                {
-                    return 0;
-                }
-                ''',
-                'HAVE_CTDB_CHECK_CODE',
-                addmain=False,
-                includes=includes,
-                msg='Checking for header ctdb_private.h')
-            if ok:
-                CTDB_CFLAGS += ' -DHAVE_CTDB_PRIVATE_H=1'
-            else:
-                have_cluster_support = False
-                ctdb_broken = "ctdb_private.h is required for cluster support"
-
-        conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
-        if have_cluster_support:
-            ok = conf.CHECK_CODE('''
-                #define NO_CONFIG_H
-                #include "replace.h"
-                #include "system/wait.h"
-                #include "system/network.h"
-                #define private #error __USED_RESERVED_WORD_private__
-                #include <talloc.h>
-                #include <tdb.h>
-                #include <ctdb.h>
-                #include <ctdb_protocol.h>
-
-                int main(void)
-                {
-                    return 0;
-                }
-                ''',
-                'HAVE_CTDB_CHECK_CODE',
-                addmain=False,
-                includes=includes,
-                msg='Checking for header ctdb_protocol.h')
-            if ok:
-                CTDB_CFLAGS += ' -DHAVE_CTDB_PROTOCOL_H=1'
-
-    conf.CONFIG_RESET('HAVE_CTDB_CHECK_CODE')
-    conf.undefine('HAVE_CTDB_CHECK_CODE')
     if have_cluster_support:
         Logs.info("building with cluster support")
-        conf.env['CTDB_CFLAGS'] = CTDB_CFLAGS
+        conf.env['CTDB_CFLAGS'] = '-DCLUSTER_SUPPORT=1'
         conf.env['CTDB_INCLUDE'] = CTDB_INCLUDE
     else:
         if Options.options.with_cluster_support == False:
