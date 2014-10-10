@@ -47,6 +47,7 @@
 #include "../lib/util/pidfile.h"
 #include "lib/smbd_shim.h"
 #include "scavenger.h"
+#include "locking/leases_db.h"
 
 struct smbd_open_socket;
 struct smbd_child_pid;
@@ -1451,6 +1452,10 @@ extern void build_options(bool screen);
 
 	if (!locking_init())
 		exit_daemon("Samba cannot init locking", EACCES);
+
+	if (!leases_db_init(false)) {
+		exit_daemon("Samba cannot init leases", EACCES);
+	}
 
 	if (!smbd_parent_notify_init(NULL, msg_ctx, ev_ctx)) {
 		exit_daemon("Samba cannot init notification", EACCES);

@@ -1,0 +1,23 @@
+#include "idl_types.h"
+
+import "misc.idl";
+import "smb2_lease_struct.idl";
+import "file_id.idl";
+
+[
+	pointer_default(unique)
+]
+interface leases_db
+{
+	typedef [public] struct {
+		GUID client_guid;
+		smb2_lease_key lease_key;
+	} leases_db_key;
+
+	typedef [public] struct {
+		uint32 num_file_ids;
+		[size_is(num_file_ids)] file_id ids[];
+		[string,charset(UTF8)] char *filename;
+		[string,charset(UTF8)] char *stream_name;
+	} leases_db_value;
+}
