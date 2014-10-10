@@ -201,7 +201,7 @@ const char *lp_ctdbd_socket(void)
 		return ret;
 	}
 
-	return CTDB_PATH;
+	return CTDB_SOCKET;
 }
 
 /*

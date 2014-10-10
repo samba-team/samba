@@ -197,7 +197,7 @@ pmda_ctdb_daemon_connect(void)
 
 	socket_name = getenv("CTDB_SOCKET");
 	if (socket_name == NULL) {
-		socket_name = CTDB_PATH;
+		socket_name = CTDB_SOCKET;
 	}
 
 	ret = ctdb_set_socketname(ctdb, socket_name);
