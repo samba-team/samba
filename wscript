@@ -167,8 +167,7 @@ def configure(conf):
     conf.RECURSE('selftest')
     conf.RECURSE('source3')
     conf.RECURSE('lib/texpect')
-    if Options.options.with_cluster_support:
-        conf.env.with_ctdb = True
+    if conf.env.with_ctdb:
         conf.RECURSE('ctdb')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
