@@ -1091,6 +1091,7 @@ extern void build_options(bool screen);
 	struct messaging_context *msg_ctx;
 	struct server_id server_id;
 	struct tevent_signal *se;
+	int profiling_level;
 	char *np_dir = NULL;
 	static const struct smbd_shim smbd_shim_fns =
 	{
@@ -1308,14 +1309,13 @@ extern void build_options(bool screen);
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
 		return -1;
 	}
-	if (profile_level != NULL) {
-		int pl = atoi(profile_level);
-		struct server_id src;
 
-		DEBUG(1, ("setting profiling level: %s\n",profile_level));
-		src.pid = getpid();
-		set_profile_level(pl, src);
+	if (profile_level != NULL) {
+		profiling_level = atoi(profile_level);
+	} else {
+		profiling_level = lp_smbd_profiling_level();
 	}
+	set_profile_level(profiling_level, messaging_server_id(msg_ctx));
 
 	if (!is_daemon && !is_a_socket(0)) {
 		if (!interactive) {
