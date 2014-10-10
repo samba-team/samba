@@ -1443,19 +1443,14 @@ main() {
             conf.DEFINE('WITH_QUOTAS', '1')
 
     #
-    # checking for clustering extensions (CTDB)
+    # checking for clustering (CTDB)
     #
-    if Options.options.with_cluster_support == False:
+    if not Options.options.with_cluster_support:
         # configure is called with --without-cluster-support,
         # so don't check for and build w/o ctdb support.
-        have_cluster_support = False
-
+        Logs.info("building without cluster support (--without-cluster-support)")
+        conf.env.with_ctdb = False
     else:
-
-        have_cluster_support = True
-        ctdb_broken = ""
-        CTDB_CFLAGS = ""
-
         srcdir = os.path.realpath(conf.srcdir)
         if 'EXTRA_INCLUDES' in conf.env:
             includes = ' '.join(conf.env['EXTRA_INCLUDES']).replace('#', srcdir + '/')
@@ -1471,20 +1466,10 @@ main() {
         if not conf.env.USING_SYSTEM_TALLOC:
             includes = includes + ' ' + srcdir + '/lib/talloc'
 
-    if have_cluster_support:
         Logs.info("building with cluster support")
         conf.env['CTDB_CFLAGS'] = '-DCLUSTER_SUPPORT=1'
         conf.env['CTDB_INCLUDE'] = CTDB_INCLUDE
-    else:
-        if Options.options.with_cluster_support == False:
-            Logs.info("building without cluster support (--without-cluster-support)")
-        elif Options.options.with_cluster_support == True:
-            Logs.error("Cluster support not available: " + ctdb_broken)
-            conf.fatal("Cluster support not found, but --with-cluster-support was specified")
-        else:
-            Logs.info("building without cluster support: " + ctdb_broken)
-        conf.env['CTDB_CFLAGS'] = ''
-
+        conf.env.with_ctdb = True
 
     conf.CHECK_CODE('__attribute__((destructor)) static void cleanup(void) { }',
                     'HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR',
