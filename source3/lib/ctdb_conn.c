@@ -23,11 +23,7 @@
 
 #include <tdb.h>
 
-#ifdef HAVE_CTDB_PROTOCOL_H
 #include <ctdb_protocol.h>
-#else
-#include <ctdb_private.h>
-#endif
 
 #include "lib/async_req/async_sock.h"
 
