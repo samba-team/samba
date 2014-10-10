@@ -218,7 +218,10 @@ static void exit_server_common(enum server_exit_reason how,
 	 * because smbd_msg_ctx is not a talloc child of smbd_server_conn.
 	 */
 	if (client != NULL) {
-		for (; xconn != NULL; xconn = xconn->next) {
+		struct smbXsrv_connection *next;
+
+		for (; xconn != NULL; xconn = next) {
+			next = xconn->next;
 			DLIST_REMOVE(client->connections, xconn);
 			talloc_free(xconn);
 		}
