@@ -20,9 +20,7 @@
 
 #include "includes.h"
 #include "smbprofile.h"
-
-bool status_profile_dump(bool be_verbose);
-bool status_profile_rates(bool be_verbose);
+#include "status_profile.h"
 
 static void profile_separator(const char * title)
 {

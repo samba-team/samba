@@ -44,6 +44,7 @@
 #include "librpc/gen_ndr/notify.h"
 #include "lib/conn_tdb.h"
 #include "serverid.h"
+#include "status_profile.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
@@ -60,9 +61,6 @@ static bool numeric_only;
 static bool do_checks = true;
 
 const char *username = NULL;
-
-extern bool status_profile_dump(bool be_verbose);
-extern bool status_profile_rates(bool be_verbose);
 
 /* added by OH */
 static void Ucrit_addUid(uid_t uid)

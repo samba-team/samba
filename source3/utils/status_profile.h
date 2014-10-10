@@ -1,7 +1,7 @@
 /*
- * Unix SMB/CIFS implementation.
- * Samba internal messaging functions
- * Copyright (C) 2013 by Volker Lendecke
+ * Samba Unix/Linux SMB client library
+ * Dump profiles
+ * Copyright (C) Volker Lendecke 2014
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,18 +17,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
-#include "smbprofile.h"
-#include "status_profile.h"
+#ifndef __STATUS_PROFILE_H__
+#define __STATUS_PROFILE_H__
 
-bool status_profile_dump(bool be_verbose)
-{
-	fprintf(stderr, "Profile data unavailable\n");
-	return true;
-}
+#include "replace.h"
 
-bool status_profile_rates(bool be_verbose)
-{
-	fprintf(stderr, "Profile data unavailable\n");
-	return true;
-}
+bool status_profile_dump(bool be_verbose);
+bool status_profile_rates(bool be_verbose);
+
+#endif
