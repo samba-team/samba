@@ -14,12 +14,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""
+"""Symbolic names for unicode characters.
+
 Defines symbolic names for a few UNICODE characters, to make test
 source code more readable on machines that don't have all the
 necessary fonts.
-
-You can do "import *" on this file safely.
 """
 
 LATIN_CAPITAL_LETTER_N_WITH_TILDE         = u'\u004e'
