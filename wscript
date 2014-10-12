@@ -263,14 +263,18 @@ def pydoctor(ctx):
     '''build python apidocs'''
     bp = os.path.abspath('bin/python')
     mpaths = {}
-    for m in ['talloc', 'tdb', 'ldb', 'ntdb']:
+    modules = ['talloc', 'tdb', 'ldb', 'ntdb']
+    for m in modules:
         f = os.popen("PYTHONPATH=%s python -c 'import %s; print %s.__file__'" % (bp, m, m), 'r')
         try:
             mpaths[m] = f.read().strip()
         finally:
             f.close()
-    cmd='PYTHONPATH=%s pydoctor --introspect-c-modules --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba --add-module %s --add-module %s --add-module %s' % (
-        bp, mpaths['tdb'], mpaths['ldb'], mpaths['talloc'], mpaths['ntdb'])
+    mpaths['main'] = bp
+    cmd = ('PYTHONPATH=%(main)s pydoctor --introspect-c-modules --project-name=Samba '
+           '--project-url=http://www.samba.org --make-html --docformat=restructuredtext '
+           '--add-package bin/python/samba ' + ''.join('--add-module %s ' % n for n in modules))
+    cmd = cmd % mpaths
     print("Running: %s" % cmd)
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
