@@ -40,38 +40,41 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         return samdb.search(base="", scope=samba.tests.ldb.SCOPE_BASE)[0]
 
     def test_samba_tool_bind(self):
-        """Tests 'samba-tool drs bind' command
-           Output should be like:
-               Extensions supported:
-                 <list-of-supported-extensions>
-               Site GUID: <GUID>
-               Repl epoch: 0"""
+        """Tests 'samba-tool drs bind' command."""
+
+        # Output should be like:
+        #      Extensions supported:
+        #        <list-of-supported-extensions>
+        #      Site GUID: <GUID>
+        #      Repl epoch: 0
         out = self.check_output("samba-tool drs bind %s %s" % (self.dc1,
                                                                self.cmdline_creds))
         self.assertTrue("Site GUID:" in out)
         self.assertTrue("Repl epoch:" in out)
 
     def test_samba_tool_kcc(self):
-        """Tests 'samba-tool drs kcc' command
-           Output should be like 'Consistency check on <DC> successful.'"""
+        """Tests 'samba-tool drs kcc' command."""
+
+        # Output should be like 'Consistency check on <DC> successful.'
         out = self.check_output("samba-tool drs kcc %s %s" % (self.dc1,
                                                               self.cmdline_creds))
         self.assertTrue("Consistency check on" in out)
         self.assertTrue("successful" in out)
 
     def test_samba_tool_showrepl(self):
-        """Tests 'samba-tool drs showrepl' command
-           Output should be like:
-               <site-name>/<domain-name>
-               DSA Options: <hex-options>
-               DSA object GUID: <DSA-object-GUID>
-               DSA invocationId: <DSA-invocationId>
-               <Inbound-connections-list>
-               <Outbound-connections-list>
-               <KCC-objects>
-               ...
-            TODO: Perhaps we should check at least for
-                  DSA's objectGUDI and invocationId"""
+        """Tests 'samba-tool drs showrepl' command.
+        """
+        # Output should be like:
+        #      <site-name>/<domain-name>
+        #      DSA Options: <hex-options>
+        #      DSA object GUID: <DSA-object-GUID>
+        #      DSA invocationId: <DSA-invocationId>
+        #      <Inbound-connections-list>
+        #      <Outbound-connections-list>
+        #      <KCC-objects>
+        #      ...
+        #   TODO: Perhaps we should check at least for
+        #         DSA's objectGUDI and invocationId
         out = self.check_output("samba-tool drs showrepl %s %s" % (self.dc1,
                                                                    self.cmdline_creds))
         self.assertTrue("DSA Options:" in out)
@@ -80,14 +83,16 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
 
     def test_samba_tool_options(self):
         """Tests 'samba-tool drs options' command
-           Output should be like 'Current DSA options: IS_GC <OTHER_FLAGS>'"""
+        """
+        # Output should be like 'Current DSA options: IS_GC <OTHER_FLAGS>'
         out = self.check_output("samba-tool drs options %s %s" % (self.dc1,
                                                                   self.cmdline_creds))
         self.assertTrue("Current DSA options:" in out)
 
     def test_samba_tool_replicate(self):
-        """Tests 'samba-tool drs replicate' command
-           Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'"""
+        """Tests 'samba-tool drs replicate' command."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'
         nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
         out = self.check_output("samba-tool drs replicate %s %s %s %s" % (self.dc1,
                                                                           self.dc2,
