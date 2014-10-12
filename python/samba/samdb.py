@@ -260,7 +260,7 @@ changetype: modify
                     ldb.binary_encode(member), ldb.binary_encode(member)), attrs=[])
 
                 if len(targetmember) != 1:
-                    continue
+                    raise Exception('Unable to find "%s". Operation cancelled.' % member)
 
                 if add_members_operation is True and (targetgroup[0].get('member') is None or str(targetmember[0].dn) not in targetgroup[0]['member']):
                     modified = True
