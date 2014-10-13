@@ -238,7 +238,7 @@ paths.  Provided Samba is built on a system with the right tools
 (xsltproc in particular) required to generate our man pages, then
 these will be built with the exact same embedded paths as used by the
 configuration parser at runtime.  Additionally, the default values
-read from the smb.conf manpage is checked by a our test suite to match
+read from the smb.conf manpage are checked by our test suite to match
 the values seen in testparm and used by the running binaries.
 
 Consistent behaviour between samba-tool testparm and testparm
