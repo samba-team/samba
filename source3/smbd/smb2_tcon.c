@@ -249,7 +249,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!(conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+	if (conn->smb2.server.cipher == 0) {
 		if (encryption_required) {
 			DEBUG(1,("reject tcon with dialect[0x%04X] "
 				 "as encryption is required for service %s\n",

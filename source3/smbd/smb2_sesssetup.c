@@ -208,7 +208,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!(xconn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+	if (xconn->smb2.server.cipher == 0) {
 		if (x->global->encryption_required) {
 			DEBUG(1,("reject session with dialect[0x%04X] "
 				 "as encryption is required\n",

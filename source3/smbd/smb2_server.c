@@ -356,7 +356,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 				goto inval;
 			}
 
-			if (!(xconn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+			if (xconn->smb2.server.cipher == 0) {
 				DEBUG(10, ("Got SMB2_TRANSFORM header, "
 					   "but not negotiated "
 					   "client[0x%08X] server[0x%08X]\n",
