@@ -264,6 +264,30 @@ the problem then you will probably be ignored.  All bug reports should
 be filed under the Samba 4.2 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
+VFS WORM module
+===============
+
+A VFS module for basic WORM (Write once read many) support has been
+added. It allows an additional layer on top of a Samba share, that provides
+a basic set of WORM functionality on the client side, to control the
+writeability of files and folders.
+
+As the module is simply an additional layer, share access and permissions
+work like expected - only WORM functionality is added on top. Removing the
+module from the share configuration, removes this layer again. The
+filesystem ACLs are not affected in any way from the module and treated
+as usual.
+
+The module does not provide complete WORM functions, like some archiving
+products do! It is not audit-proof, because the WORM function is only
+available on the client side, when accessing a share through SMB! If
+the same folder is shared by other services like NFS, the access only
+depents on the underlaying filesystem ACLs. Equally if you access the
+content directly on the server.
+
+For additional information, see
+https://wiki.samba.org/index.php/VFS/vfs_worm
+
 
 ======================================================================
 == Our Code, Our Bugs, Our Responsibility.
