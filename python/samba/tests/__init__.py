@@ -166,8 +166,9 @@ class BlackboxTestCase(TestCase):
             raise BlackboxProcessError(retcode, line, p.stdout.read(), p.stderr.read())
         return p.stdout.read()
 
+
 def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
-                  flags=0, ldb_options=None, ldap_only=False):
+                  flags=0, ldb_options=None, ldap_only=False, global_schema=True):
     """Create SamDB instance and connects to samdb_url database.
 
     :param samdb_url: Url for database to connect to.
@@ -176,6 +177,7 @@ def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
     :param credentials: Optional credentials, defaults to anonymous.
     :param flags: Optional LDB flags
     :param ldap_only: If set, only remote LDAP connection will be created.
+    :param global_schema: Whether to use global schema.
 
     Added value for tests is that we have a shorthand function
     to make proper URL for ldb.connect() while using default
@@ -207,7 +209,8 @@ def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
                  session_info=session_info,
                  credentials=credentials,
                  flags=flags,
-                 options=ldb_options)
+                 options=ldb_options,
+                 global_schema=global_schema)
 
 
 def connect_samdb_ex(samdb_url, lp=None, session_info=None, credentials=None,
