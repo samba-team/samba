@@ -45,6 +45,9 @@ def set_options(opt):
     gr.add_option('--slow',
                   help=("enable the really slow tests"),
                   action="store_true", dest='SLOWTEST', default=False)
+    gr.add_option('--nb-slowest',
+                  help=("Show the n slowest tests (default=10)"),
+                  type=int, default=10, dest='NB_SLOWEST')
     gr.add_option('--testenv',
                   help=("start a terminal with the test environment setup"),
                   action="store_true", dest='TESTENV', default=False)
@@ -230,6 +233,13 @@ def cmd_testonly(opt):
         not Options.options.LOAD_LIST):
         testrcmd = 'testr load -q < ${SELFTEST_PREFIX}/subunit > /dev/null'
         runcmd = EXPAND_VARIABLES(opt, testrcmd)
+        RUN_COMMAND(runcmd, env=env)
+
+    if os.path.exists("st/subunit"):
+        nb = Options.options.NB_SLOWEST
+        print "TOP %d slowest tests" % nb
+        cmd = "./script/show_testsuite_time %s/subunit %d" % (Options.options.SELFTEST_PREFIX, nb)
+        runcmd = EXPAND_VARIABLES(opt, cmd)
         RUN_COMMAND(runcmd, env=env)
 
     if ret != 0:
