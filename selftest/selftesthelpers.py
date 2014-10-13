@@ -89,7 +89,7 @@ def valgrindify(cmdline):
     return valgrind + " " + cmdline
 
 
-def plantestsuite(name, env, cmdline, allow_empty_output=False):
+def plantestsuite(name, env, cmdline):
     """Plan a test suite.
 
     :param name: Testsuite name
@@ -101,17 +101,13 @@ def plantestsuite(name, env, cmdline, allow_empty_output=False):
     print env
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
-    filter_subunit_args = []
-    if not allow_empty_output:
-        filter_subunit_args.append("--fail-on-empty")
+    filter_subunit_args = ["--fail-on-empty"]
     if "$LISTOPT" in cmdline:
         filter_subunit_args.append("$LISTOPT")
     print "%s 2>&1 | %s/selftest/filter-subunit %s --prefix=\"%s.\" --suffix=\"(%s)\"" % (cmdline,
                                                                         srcdir(),
                                                                         " ".join(filter_subunit_args),
                                                                         name, env)
-    if allow_empty_output:
-        print >>sys.stderr, "WARNING: allowing empty subunit output from %s" % name
 
 
 def add_prefix(prefix, env, support_list=False):
