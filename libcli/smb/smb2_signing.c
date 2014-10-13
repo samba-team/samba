@@ -220,6 +220,7 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 	size_t m_total = 0;
 	union {
 		struct aes_ccm_128_context ccm;
+		struct aes_gcm_128_context gcm;
 	} c;
 	uint8_t key[AES_BLOCK_SIZE];
 
@@ -270,6 +271,22 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 		aes_ccm_128_digest(&c.ccm, sig);
 		break;
 
+	case SMB2_ENCRYPTION_AES128_GCM:
+		aes_gcm_128_init(&c.gcm, key, tf + SMB2_TF_NONCE);
+		memset(tf + SMB2_TF_NONCE + AES_GCM_128_IV_SIZE, 0,
+		       16 - AES_GCM_128_IV_SIZE);
+		aes_gcm_128_updateA(&c.gcm, tf + SMB2_TF_NONCE, a_total);
+		for (i=1; i < count; i++) {
+			aes_gcm_128_crypt(&c.gcm,
+					(uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+			aes_gcm_128_updateC(&c.gcm,
+					(const uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+		}
+		aes_gcm_128_digest(&c.gcm, sig);
+		break;
+
 	default:
 		ZERO_STRUCT(key);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -298,6 +315,7 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 	uint32_t msg_size = 0;
 	union {
 		struct aes_ccm_128_context ccm;
+		struct aes_gcm_128_context gcm;
 	} c;
 	uint8_t key[AES_BLOCK_SIZE];
 
@@ -352,6 +370,20 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 					vector[i].iov_len);
 		}
 		aes_ccm_128_digest(&c.ccm, sig);
+		break;
+
+	case SMB2_ENCRYPTION_AES128_GCM:
+		aes_gcm_128_init(&c.gcm, key, tf + SMB2_TF_NONCE);
+		aes_gcm_128_updateA(&c.gcm, tf + SMB2_TF_NONCE, a_total);
+		for (i=1; i < count; i++) {
+			aes_gcm_128_updateC(&c.gcm,
+					(const uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+			aes_gcm_128_crypt(&c.gcm,
+					(uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+		}
+		aes_gcm_128_digest(&c.gcm, sig);
 		break;
 
 	default:
