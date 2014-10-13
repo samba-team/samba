@@ -12,7 +12,7 @@ elif not bld.CONFIG_SET('HAVE_SYS_MD5_H') and not bld.CONFIG_SET('HAVE_COMMONCRY
 	extra_source += ' md5.c'
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
-        source='''crc32.c hmacmd5.c md4.c arcfour.c sha256.c hmacsha256.c
+        source='''crc32.c hmacmd5.c md4.c arcfour.c sha256.c sha512.c hmacsha256.c
         aes.c rijndael-alg-fst.c aes_cmac_128.c aes_ccm_128.c
         ''' + extra_source,
         deps='talloc' + extra_deps
