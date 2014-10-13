@@ -2765,6 +2765,7 @@ enum {
 		{ "target-hostname", 0, POPT_ARG_STRING, &opt_target_hostname, OPT_TARGET_HOSTNAME, "Target hostname" },
 		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
+		POPT_COMMON_OPTION
 		POPT_TABLEEND
 	};
 
