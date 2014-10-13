@@ -91,6 +91,7 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 		enum protocol_types proto;
 		uint16_t dialect;
 	} pd[] = {
+		{ PROTOCOL_SMB3_02, SMB3_DIALECT_REVISION_302 },
 		{ PROTOCOL_SMB3_00, SMB3_DIALECT_REVISION_300 },
 		{ PROTOCOL_SMB2_24, SMB2_DIALECT_REVISION_224 },
 		{ PROTOCOL_SMB2_22, SMB2_DIALECT_REVISION_222 },
