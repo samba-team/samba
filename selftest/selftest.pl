@@ -943,6 +943,9 @@ $envvarstr
 
 		unless($cmd =~ /\$LISTOPT/) {
 			warn("Unable to list tests in $name");
+			# Rather than ignoring this testsuite altogether, just pretend the entire testsuite is
+			# a single "test".
+			print "$name\n";
 			next;
 		}
 
