@@ -32,7 +32,7 @@
 #include "smbXcli_base.h"
 #include "librpc/ndr/libndr.h"
 #include "libcli/smb/smb2_negotiate_context.h"
-#include <hcrypto/sha.h>
+#include "lib/crypto/sha512.h"
 
 struct smbXcli_conn;
 struct smbXcli_req;
@@ -4743,23 +4743,23 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 	/* First we hash the request */
 	smb2cli_req_get_sent_iov(subreq, sent_iov);
-	SHA512_Init(&sctx);
-	SHA512_Update(&sctx, conn->smb2.preauth_sha512,
+	samba_SHA512_Init(&sctx);
+	samba_SHA512_Update(&sctx, conn->smb2.preauth_sha512,
 		      sizeof(conn->smb2.preauth_sha512));
 	for (i = 0; i < 3; i++) {
-		SHA512_Update(&sctx, sent_iov[i].iov_base, sent_iov[i].iov_len);
+		samba_SHA512_Update(&sctx, sent_iov[i].iov_base, sent_iov[i].iov_len);
 	}
-	SHA512_Final(conn->smb2.preauth_sha512, &sctx);
+	samba_SHA512_Final(conn->smb2.preauth_sha512, &sctx);
 	TALLOC_FREE(subreq);
 
 	/* And now we hash the response */
-	SHA512_Init(&sctx);
-	SHA512_Update(&sctx, conn->smb2.preauth_sha512,
+	samba_SHA512_Init(&sctx);
+	samba_SHA512_Update(&sctx, conn->smb2.preauth_sha512,
 		      sizeof(conn->smb2.preauth_sha512));
 	for (i = 0; i < 3; i++) {
-		SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
+		samba_SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
 	}
-	SHA512_Final(conn->smb2.preauth_sha512, &sctx);
+	samba_SHA512_Final(conn->smb2.preauth_sha512, &sctx);
 
 	tevent_req_done(req);
 }
@@ -5357,13 +5357,13 @@ NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 		return NT_STATUS_OK;
 	}
 
-	SHA512_Init(&sctx);
-	SHA512_Update(&sctx, session->smb2_channel.preauth_sha512,
+	samba_SHA512_Init(&sctx);
+	samba_SHA512_Update(&sctx, session->smb2_channel.preauth_sha512,
 		      sizeof(session->smb2_channel.preauth_sha512));
 	for (i = 0; i < 3; i++) {
-		SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
+		samba_SHA512_Update(&sctx, iov[i].iov_base, iov[i].iov_len);
 	}
-	SHA512_Final(session->smb2_channel.preauth_sha512, &sctx);
+	samba_SHA512_Final(session->smb2_channel.preauth_sha512, &sctx);
 
 	return NT_STATUS_OK;
 }
