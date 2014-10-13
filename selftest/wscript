@@ -14,10 +14,12 @@ def set_options(opt):
                    help=("enable options necessary for selftest (default=no)"),
                    action="store_true", dest='enable_selftest', default=False)
     opt.add_option('--enable-coverage',
-                   help=("enable options necessary for code coverage reporting on selftest (default=no)"),
+                   help=("enable options necessary for code coverage "
+                         "reporting on selftest (default=no)"),
                    action="store_true", dest='enable_coverage', default=False)
     opt.add_option('--with-selftest-prefix',
-                   help=("specify location of selftest directory (default=./st)"),
+                   help=("specify location of selftest directory "
+                         "(default=./st)"),
                    action="store", dest='SELFTEST_PREFIX', default='./st')
 
     opt.ADD_COMMAND('test', cmd_test)
@@ -25,10 +27,10 @@ def set_options(opt):
 
     gr = opt.add_option_group('test options')
 
-    gr.add_option('--load-list', 
+    gr.add_option('--load-list',
                   help=("Load a test id list from a text file"),
                   action="store", dest='LOAD_LIST', default=None)
-    gr.add_option('--list', 
+    gr.add_option('--list',
                   help=("List available tests"),
                   action="store_true", dest='LIST', default=False)
     gr.add_option('--tests',
@@ -88,6 +90,8 @@ def cmd_testonly(opt):
     '''run tests without doing a build first'''
     env = LOAD_ENVIRONMENT()
     opt.env = env
+
+    env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
     if (not CONFIG_SET(opt, 'NSS_WRAPPER') or
         not CONFIG_SET(opt, 'UID_WRAPPER') or
@@ -196,15 +200,15 @@ def cmd_testonly(opt):
                      '--testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
 
     if CONFIG_SET(opt, 'AD_DC_BUILD_IS_ENABLED'):
-        env.SELFTEST_TARGET="samba"
+        env.SELFTEST_TARGET = "samba"
     else:
-        env.SELFTEST_TARGET="samba3"
+        env.SELFTEST_TARGET = "samba3"
 
     env.OPTIONS += " --nss_wrapper_so_path=" + CONFIG_GET(opt, 'LIBNSS_WRAPPER_SO_PATH')
     env.OPTIONS += " --socket_wrapper_so_path=" + CONFIG_GET(opt, 'LIBSOCKET_WRAPPER_SO_PATH')
     env.OPTIONS += " --uid_wrapper_so_path=" + CONFIG_GET(opt, 'LIBUID_WRAPPER_SO_PATH')
 
-    # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
+    # We use the full path rather than relative path to avoid problems on some platforms (ie. solaris 8).
     env.CORE_COMMAND = '${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/selftest/skip ${TESTLISTS} ${OPTIONS} ${TESTS}'
     if Options.options.LIST:
         cmd = '${CORE_COMMAND} --list'
