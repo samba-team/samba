@@ -190,6 +190,8 @@ Generic options:
  --help                     this help page
  --target=samba[3]|win      Samba version to target
  --testlist=FILE            file to read available tests from
+ --exclude=FILE             Exclude tests listed in the file
+ --include=FILE             Include tests listed in the file
 
 Paths:
  --prefix=DIR               prefix to run tests in [st]
