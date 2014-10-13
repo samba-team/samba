@@ -209,7 +209,7 @@ Samba's AD DC now implements bad password lockout (on a per-DC basis).
 
 That is, incorrect password attempts are tracked, and accounts locked
 out if too many bad passwords are submitted.  There is also a grace
-peroid of 60 on the previous password when used for NTLM
+period of 60 minutes on the previous password when used for NTLM
 authentication (matching Windows 2003 SP1: https://support2.microsoft.com/kb/906305).
 
 The relevant settings can be seen using 'samba-tool domain
