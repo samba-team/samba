@@ -202,6 +202,54 @@ smb.conf changes
 KNOWN ISSUES
 ============
 
+Bad Password Lockout in the AD DC
+=================================
+
+Samba's AD DC now implements bad password lockout (on a per-DC basis).
+
+That is, incorrect password attempts are tracked, and accounts locked
+out if too many bad passwords are submitted.  There is also a grace
+peroid of 60 on the previous password when used for NTLM
+authentication (matching Windows 2003 SP1: https://support2.microsoft.com/kb/906305).
+
+The relevant settings can be seen using 'samba-tool domain
+passwordsettings show' (the new settings being highlighted):
+
+Password informations for domain 'DC=samba,DC=example,DC=com'
+
+Password complexity: on
+Store plaintext passwords: off
+Password history length: 24
+Minimum password length: 7
+Minimum password age (days): 1
+Maximum password age (days): 42
+* Account lockout duration (mins): 30     *
+* Account lockout threshold (attempts): 0 *
+* Reset account lockout after (mins): 30  *
+
+These values can be set using 'samba-tool domain passwordsettings set'.
+
+Correct defaults in the smb.conf manpages
+=========================================
+
+The default values for smb.conf parameters are now correctly specified
+in the smb.conf manpage, even when they refer to build-time specified
+paths.  Provided Samba is built on a system with the right tools
+(xsltproc in particular) required to generate our man pages, then
+these will be built with the exact same embedded paths as used by the
+configuration parser at runtime.  Additionally, the default values
+read from the smb.conf manpage is checked by a our test suite to match
+the values seen in testparm and used by the running binaries.
+
+Consistent behaviour between samba-tool testparm and testparm
+=============================================================
+
+With the exception of the registry backend, which remains only
+available in the file server, the behaviour of the smb.conf parser and
+the tools 'samba-tool testparm' and 'testparm' is now consistent,
+particularly with regard to default values.  Except with regard to
+registry shares, it is no longer needed to use one tool on the AD
+DC, and another on the file server.
 
 #######################################
 Reporting bugs & Development Discussion
