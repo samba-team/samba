@@ -276,6 +276,10 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	max_read = MIN(max_limit, lp_smb2_max_read());
 	max_write = MIN(max_limit, lp_smb2_max_write());
 
+	if (capabilities & SMB2_CAP_ENCRYPTION) {
+		xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
+	}
+
 	security_offset = SMB2_HDR_BODY + 0x40;
 
 #if 1
