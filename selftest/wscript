@@ -243,8 +243,5 @@ def cmd_test(opt):
     # if running all tests, then force a symbol check
     env = LOAD_ENVIRONMENT()
     CHECK_MAKEFLAGS(env)
-    if not Options.options.TESTS and not Options.options.TESTENV:
-        Options.options.DUP_SYMBOLCHECK = True
-
     Scripting.commands.append('build')
     Scripting.commands.append('testonly')
