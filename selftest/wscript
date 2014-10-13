@@ -221,7 +221,9 @@ def cmd_testonly(opt):
     print("test: running %s" % runcmd)
     ret = RUN_COMMAND(cmd, env=env)
 
-    if os.path.exists(".testrepository") and not Options.options.LIST:
+    if (os.path.exists(".testrepository") and
+        not Options.options.LIST and
+        not Options.options.LOAD_LIST):
         testrcmd = 'testr load -q < ${SELFTEST_PREFIX}/subunit > /dev/null'
         runcmd = EXPAND_VARIABLES(opt, testrcmd)
         RUN_COMMAND(runcmd, env=env)
