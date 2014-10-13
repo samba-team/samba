@@ -4620,6 +4620,12 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
+		tevent_req_nterror(req,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	negotiate_context_offset = IVAL(body, 60);
 	if (negotiate_context_offset < security_offset) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
@@ -4689,12 +4695,6 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	if (cipher != NULL) {
 		uint16_t cipher_count;
 
-		if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
-			tevent_req_nterror(req,
-					NT_STATUS_INVALID_NETWORK_RESPONSE);
-			return;
-		}
-
 		if (cipher->data.length < 2) {
 			tevent_req_nterror(req,
 					NT_STATUS_INVALID_NETWORK_RESPONSE);
@@ -4722,23 +4722,8 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 			if (cipher_selected == SMB2_ENCRYPTION_AES128_CCM) {
 				conn->smb2.server.cipher = cipher_selected;
-				conn->smb2.server.capabilities |= SMB2_CAP_ENCRYPTION;
 			}
 		}
-	} else {
-		if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
-			tevent_req_nterror(req,
-					NT_STATUS_INVALID_NETWORK_RESPONSE);
-			return;
-		}
-	}
-
-	if (conn->smb2.server.cipher == 0) {
-		/*
-		 * We didn't manage to negotiate a common encryption
-		 * algorithm.
-		 */
-		conn->smb2.server.capabilities &= ~SMB2_CAP_ENCRYPTION;
 	}
 
 	/* First we hash the request */
@@ -5576,7 +5561,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		session->smb2->should_encrypt = false;
 	}
 
-	if (!(conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+	if (conn->smb2.server.cipher == 0) {
 		session->smb2->should_encrypt = false;
 	}
 
@@ -5707,7 +5692,7 @@ NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session)
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (!(session->conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+	if (session->conn->smb2.server.cipher == 0) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
