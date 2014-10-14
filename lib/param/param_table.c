@@ -3009,6 +3009,15 @@ struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
 	{
+		.label		= "smb2 leases",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(smb2_leases),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "locking",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,

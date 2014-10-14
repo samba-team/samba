@@ -1,0 +1,28 @@
+<samba:parameter name="smb2 leases"
+                 context="G"
+				 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This boolean option tells <command moreinfo="none">smbd</command> whether to
+	globally negotiate SMB2 leases on file open requests. Leasing is an SMB2-only
+	feature which allows clients to aggressively cache files locally above and
+	beyond the caching allowed by SMB1 oplocks. This (experimental) parameter is
+	set to off by default until the SMB2 leasing code is declared fully stable.
+	</para>
+
+	<para>
+	This is only available with <smbconfoption name="oplocks">yes</smbconfoption>
+	and <smbconfoption name="kernel oplocks">no</smbconfoption>.
+	</para>
+
+	<para>
+	The Samba implementation of leases is currently marked as experimental!
+	</para>
+</description>
+
+<related>oplocks</related>
+<related>kernel oplocks</related>
+<related>level2 oplocks</related>
+<value type="default">no</value>
+</samba:parameter>
