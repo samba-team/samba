@@ -60,6 +60,7 @@ struct dns_server {
 };
 
 struct dns_request_state {
+	TALLOC_CTX *mem_ctx;
 	uint16_t flags;
 	bool authenticated;
 	bool sign;

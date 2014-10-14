@@ -529,7 +529,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 								reply.data,
 								reply.length);
 			state->sign = true;
-			state->key_name = talloc_strdup(mem_ctx, tkey->name);
+			state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
 			if (state->key_name == NULL) {
 				return WERR_NOMEM;
 			}

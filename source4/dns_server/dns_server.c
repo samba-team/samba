@@ -125,6 +125,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->state.mem_ctx = state;
 	state->in = in;
 
 	state->dns = dns;

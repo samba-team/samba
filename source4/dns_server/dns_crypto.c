@@ -131,7 +131,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	/* We got a TSIG, so we need to sign our reply */
 	state->sign = true;
 
-	state->tsig = talloc_zero(mem_ctx, struct dns_res_rec);
+	state->tsig = talloc_zero(state->mem_ctx, struct dns_res_rec);
 	if (state->tsig == NULL) {
 		return WERR_NOMEM;
 	}
@@ -226,7 +226,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	}
 
 	state->authenticated = true;
-	state->key_name = talloc_strdup(mem_ctx, tkey->name);
+	state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
 	if (state->key_name == NULL) {
 		return WERR_NOMEM;
 	}
