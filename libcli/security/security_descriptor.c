@@ -595,3 +595,25 @@ struct security_ace *security_ace_create(TALLOC_CTX *mem_ctx,
 
 	return ace;
 }
+
+/*******************************************************************
+ Check for MS NFS ACEs in a sd
+*******************************************************************/
+bool security_descriptor_with_ms_nfs(const struct security_descriptor *psd)
+{
+	int i;
+
+	if (psd->dacl == NULL) {
+		return false;
+	}
+
+	for (i = 0; i < psd->dacl->num_aces; i++) {
+		if (dom_sid_compare_domain(
+			    &global_sid_Unix_NFS,
+			    &psd->dacl->aces[i].trustee) == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
