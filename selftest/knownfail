@@ -189,25 +189,12 @@
 ^samba3.smb2.notify.valid-req
 ^samba3.smb2.notify.dir
 ^samba3.smb2.notify.rec
-^samba3.smb2.durable-open.lock-lease
 ^samba3.smb2.durable-open.delete_on_close2
-^samba3.smb2.durable-v2-open.open-lease
-^samba3.smb2.durable-v2-open.persistent-open-lease
 ^samba3.smb2.durable-v2-open.app-instance
 ^samba4.smb2.ioctl.req_resume_key\(dc\) # not supported by s4 ntvfs server
 ^samba4.smb2.ioctl.copy_chunk_\w*\(dc\)	# not supported by s4 ntvfs server
 ^samba3.smb2.dir.one
 ^samba3.smb2.dir.modify
-^samba3.smb2.lease.request
-^samba3.smb2.lease.upgrade
-^samba3.smb2.lease.break
-^samba3.smb2.lease.oplock
-^samba3.smb2.lease.multibreak
-^samba3.smb2.lease.v2_request
-^samba3.smb2.lease.v2_request_parent
-^samba3.smb2.lease.break_twice
-^samba3.smb2.lease.nobreakself
-^samba3.smb2.lease.v2_epoch1
 ^samba3.smb2.oplock.batch20
 ^samba3.smb2.oplock.stream1
 ^samba3.smb2.streams.rename
