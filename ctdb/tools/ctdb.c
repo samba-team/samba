@@ -928,6 +928,7 @@ static int find_node_xpnn(void)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct pnn_node *pnn_nodes;
 	struct pnn_node *pnn_node;
+	int pnn;
 
 	pnn_nodes = read_nodes_file(mem_ctx);
 	if (pnn_nodes == NULL) {
@@ -938,8 +939,9 @@ static int find_node_xpnn(void)
 
 	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
 		if (ctdb_sys_have_ip(&pnn_node->addr)) {
+			pnn = pnn_node->pnn;
 			talloc_free(mem_ctx);
-			return pnn_node->pnn;
+			return pnn;
 		}
 	}
 
@@ -1850,6 +1852,7 @@ find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 	struct ctdb_all_public_ips *ips;
 	struct ctdb_node_map *nodemap=NULL;
 	int i, j, ret;
+	int pnn;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
 	if (ret != 0) {
@@ -1875,8 +1878,9 @@ find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 
 		for (j=0;j<ips->num;j++) {
 			if (ctdb_same_ip(addr, &ips->ips[j].addr)) {
+				pnn = nodemap->nodes[i].pnn;
 				talloc_free(tmp_ctx);
-				return nodemap->nodes[i].pnn;
+				return pnn;
 			}
 		}
 		talloc_free(ips);
