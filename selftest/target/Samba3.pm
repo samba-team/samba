@@ -1057,6 +1057,7 @@ sub provision($$$$$$)
 
 	kernel oplocks = no
 	kernel change notify = no
+	smb2 leases = yes
 
 	syslog = no
 	printing = bsd
