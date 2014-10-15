@@ -44,10 +44,6 @@ to (other) domain controllers was rewritten in order to maintain
 global state in a netlogon_creds_cli.tdb. This is the proper fix
 for a large number of bugs:
 
-
-
-o   Volker Lendecke <vl@samba.org>
-    * BUG 10860: registry: Don't leave dangling transactions.
   https://bugzilla.samba.org/show_bug.cgi?id=6563
   https://bugzilla.samba.org/show_bug.cgi?id=7944
   https://bugzilla.samba.org/show_bug.cgi?id=7945
