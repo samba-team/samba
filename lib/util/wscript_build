@@ -139,3 +139,8 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                         public_deps='talloc'
 	                )
 
+    bld.SAMBA_LIBRARY('server_id_db',
+                      source='server_id_db.c',
+                      deps='talloc tdb strv util_tdb tdb-wrap samba-util',
+                      local_include=False,
+                      private_library=True)
