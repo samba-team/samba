@@ -15,6 +15,11 @@ bld.SAMBA_SUBSYSTEM('tiniparser',
                     deps='tini',
                     local_include=False)
 
+bld.SAMBA_SUBSYSTEM('strv',
+                    source='strv.c',
+                    deps='talloc',
+                    local_include=False)
+
 bld.SAMBA_SUBSYSTEM('close-low-fd',
                     source='close_low_fd.c',
                     deps='replace',
