@@ -9,6 +9,8 @@ def configure(conf):
         conf.DEFINE('USING_SYSTEM_NSS_WRAPPER', 1)
         libnss_wrapper_so_path = 'libnss_wrapper.so'
     else:
+        conf.CHECK_HEADERS('nss.h')
+
         # check HAVE_GCC_THREAD_LOCAL_STORAGE
         conf.CHECK_CODE('''
             __thread int tls;
@@ -94,7 +96,7 @@ def configure(conf):
     conf.DEFINE('NSS_WRAPPER', 1)
 
 def build(bld):
-    if not bld.CONFIG_SET("USING_SYSTEM_NSS_WRAPPER"):
+    if bld.CONFIG_SET("HAVE_NSS_H") and not bld.CONFIG_SET("USING_SYSTEM_NSS_WRAPPER"):
         # We need to do it this way or the library wont work.
         # Using private_library=True will add symbol version which
         # breaks preloading!
