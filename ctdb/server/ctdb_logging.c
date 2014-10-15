@@ -296,7 +296,7 @@ static void ctdb_logfile_log(void *private_ptr, int dbglevel, const char *s)
 
 	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
-	ret = asprintf(&s2, "%s.%06u [%s%5u]: %s",
+	ret = asprintf(&s2, "%s.%06u [%s%5u]: %s\n",
 		       tbuf, (unsigned)t.tv_usec,
 		       debug_extra, (unsigned)getpid(), s);
 	if (ret == -1) {
