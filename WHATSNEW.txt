@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.2.  This is *not*
+This is the second release candidate of Samba 4.2.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -44,6 +44,10 @@ to (other) domain controllers was rewritten in order to maintain
 global state in a netlogon_creds_cli.tdb. This is the proper fix
 for a large number of bugs:
 
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10860: registry: Don't leave dangling transactions.
   https://bugzilla.samba.org/show_bug.cgi?id=6563
   https://bugzilla.samba.org/show_bug.cgi?id=7944
   https://bugzilla.samba.org/show_bug.cgi?id=7945
@@ -179,29 +183,6 @@ Midnight-Commander-like theme and UI experience. You can browse keys and edit
 the diffent value types. For a data value type a hexeditor has been
 implemented.
 
-######################################################################
-Changes
-#######
-
-smb.conf changes
-----------------
-
-   Parameter Name			Description	Default
-   --------------			-----------	-------
-
-   allow nt4 crypto                     New             no
-   neutralize nt4 emulation             New             no
-   reject md5 client                    New             no
-   reject md5 servers                   New             no
-   require strong key                   New             yes
-   smb2 max read                        Changed default 8388608
-   smb2 max write                       Changed default 8388608
-   smb2 max trans                       Changed default 8388608
-   winbind expand groups                Changed default 0
-
-KNOWN ISSUES
-============
-
 Bad Password Lockout in the AD DC
 =================================
 
@@ -251,19 +232,6 @@ particularly with regard to default values.  Except with regard to
 registry shares, it is no longer needed to use one tool on the AD
 DC, and another on the file server.
 
-#######################################
-Reporting bugs & Development Discussion
-#######################################
-
-Please discuss this release on the samba-technical mailing list or by
-joining the #samba-technical IRC channel on irc.freenode.net.
-
-If you do report problems then please try to send high quality
-feedback. If you don't provide vital information to help us track down
-the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 4.2 product in the project's Bugzilla
-database (https://bugzilla.samba.org/).
-
 VFS WORM module
 ===============
 
@@ -287,6 +255,73 @@ content directly on the server.
 
 For additional information, see
 https://wiki.samba.org/index.php/VFS/vfs_worm
+
+
+######################################################################
+Changes
+#######
+
+smb.conf changes
+----------------
+
+   Parameter Name			Description	Default
+   --------------			-----------	-------
+
+   allow nt4 crypto                     New             no
+   neutralize nt4 emulation             New             no
+   reject md5 client                    New             no
+   reject md5 servers                   New             no
+   require strong key                   New             yes
+   smb2 max read                        Changed default 8388608
+   smb2 max write                       Changed default 8388608
+   smb2 max trans                       Changed default 8388608
+   winbind expand groups                Changed default 0
+
+
+CHANGES SINCE 4.2.0rc1
+======================
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10848: s3: smb2cli: query info return length check was reversed.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 10862: build: Do not install 'texpect' binary anymore.
+
+
+o   Chris Davis <cd.rattan@gmail.com>
+    * BUG 10859: Improve samba-regedit.
+
+
+o   Jakub Hrozek <jakub.hrozek@gmail.com>
+    * BUG 10861: Fix build of socket_wrapper on systems without SO_PROTOCOL.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10860: registry: Don't leave dangling transactions.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10866: libcli/smb: Fix smb2cli_validate_negotiate_info with
+      min=PROTOCOL_NT1 max=PROTOCOL_SMB2_02.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 10837: idmap_rfc2307: Fix a crash after connection problem to DC.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.2 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
 
 
 ======================================================================
