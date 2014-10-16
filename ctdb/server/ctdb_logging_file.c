@@ -22,6 +22,7 @@
 #include "../include/ctdb_private.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "lib/util/time_basic.h"
 
 struct file_state {
 	int fd;
@@ -34,19 +35,16 @@ static void ctdb_log_to_file(void *private_ptr, int dbglevel, const char *s)
 {
 	struct file_state *state = talloc_get_type(
 		private_ptr, struct file_state);
-	struct timeval t;
-	struct tm *tm;
-	char tbuf[100];
+	struct timeval tv;
+	struct timeval_buf tvbuf;
 	char *s2 = NULL;
 	int ret;
 
-	t = timeval_current();
-	tm = localtime(&t.tv_sec);
+	GetTimeOfDay(&tv);
+	timeval_str_buf(&tv, false, true, &tvbuf);
 
-	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
-
-	ret = asprintf(&s2, "%s.%06u [%s%5u]: %s\n",
-		       tbuf, (unsigned)t.tv_usec,
+	ret = asprintf(&s2, "%s [%s%5u]: %s\n",
+		       tvbuf.buf,
 		       debug_extra, (unsigned)getpid(), s);
 	if (ret == -1) {
 		const char *errstr = "asprintf failed\n";
