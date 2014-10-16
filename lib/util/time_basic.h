@@ -21,6 +21,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _SAMBA_TIME_BASIC_H_
+#define _SAMBA_TIME_BASIC_H_
+
 #include "replace.h"
 #include "system/time.h"
 
@@ -43,3 +46,5 @@ struct timeval_buf { char buf[128]; };
 
 char *timeval_str_buf(const struct timeval *tp, bool rfc5424, bool hires,
 		      struct timeval_buf *dst);
+
+#endif /* _SAMBA_TIME_BASIC_H_ */
