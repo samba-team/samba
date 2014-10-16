@@ -193,7 +193,6 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 }
 
 struct ctdb_log_state {
-	struct ctdb_context *ctdb;
 	const char *prefix;
 	int fd, pfd;
 	char buf[1024];
@@ -304,18 +303,16 @@ static void ctdb_logfile_log(void *private_ptr, int dbglevel, const char *s)
 /*
   choose the logfile location
 */
-int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_syslog)
+int ctdb_set_logfile(TALLOC_CTX *mem_ctx, const char *logfile, bool use_syslog)
 {
 	debug_callback_fn callback;
 	int ret;
 
-	log_state = talloc_zero(ctdb, struct ctdb_log_state);
+	log_state = talloc_zero(mem_ctx, struct ctdb_log_state);
 	if (log_state == NULL) {
 		printf("talloc_zero failed\n");
 		abort();
 	}
-
-	log_state->ctdb = ctdb;
 
 	if (use_syslog) {
 		callback = ctdb_syslog_log;
@@ -438,7 +435,6 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 	log = talloc_zero(mem_ctx, struct ctdb_log_state);
 	CTDB_NO_MEMORY_NULL(ctdb, log);
 
-	log->ctdb = ctdb;
 	log->prefix = log_prefix;
 	log->logfn = logfn;
 	log->logfn_private = logfn_private;
