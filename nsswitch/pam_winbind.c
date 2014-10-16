@@ -2418,7 +2418,7 @@ static char winbind_get_separator(struct pwb_context *ctx)
  * Convert a upn to a name.
  *
  * @param ctx PAM winbind context.
- * @param upn  USer UPN to be trabslated.
+ * @param upn  User UPN to be translated.
  *
  * @return converted name. NULL pointer on failure. Caller needs to free.
  */
