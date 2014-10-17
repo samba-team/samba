@@ -169,7 +169,8 @@ pwdLastSet: 0
         self.modify_ldif(mod)
 
     def newgroup(self, groupname, groupou=None, grouptype=None,
-                 description=None, mailaddress=None, notes=None, sd=None):
+                 description=None, mailaddress=None, notes=None, sd=None,
+                 gidnumber=None, nisdomain=None):
         """Adds a new group with additional parameters
 
         :param groupname: Name of the new group
@@ -177,6 +178,8 @@ pwdLastSet: 0
         :param description: Description of the new group
         :param mailaddress: Email address of the new group
         :param notes: Notes of the new group
+        :param gidnumber: GID Number of the new group
+        :param nisdomain: NIS Domain Name of the new group
         :param sd: security descriptor of the object
         """
 
@@ -187,6 +190,8 @@ pwdLastSet: 0
         ldbmessage = {"dn": group_dn,
             "sAMAccountName": groupname,
             "objectClass": "group"}
+
+        ldbmessage["msSFU30Name"] = groupname
 
         if grouptype is not None:
             ldbmessage["groupType"] = normalise_int32(grouptype)
@@ -199,6 +204,12 @@ pwdLastSet: 0
 
         if notes is not None:
             ldbmessage["info"] = notes
+
+        if gidnumber is not None:
+            ldbmessage["gidNumber"] = normalise_int32(gidnumber)
+
+        if nisdomain is not None:
+            ldbmessage["msSFU30NisDomain"] = nisdomain
 
         if sd is not None:
             ldbmessage["nTSecurityDescriptor"] = ndr_pack(sd)
