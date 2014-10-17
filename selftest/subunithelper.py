@@ -489,7 +489,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
         if self.totalsuites is not None:
             out += "/%d" % self.totalsuites
         if self.start_time is not None:
-            out += " in " + self._format_time(self.last_time - self.start_time)
+            out += " at " + self._format_time(self.last_time - self.start_time)
         if self.suitesfailed:
             out += ", %d errors" % (len(self.suitesfailed),)
         out += "] %s" % name
