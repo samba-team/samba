@@ -53,6 +53,7 @@
 #include "lib/background.h"
 #include "lib/messages_dgm.h"
 #include "lib/iov_buf.h"
+#include "lib/util/server_id_db.h"
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
@@ -75,6 +76,8 @@ struct messaging_context {
 	unsigned num_waiters;
 
 	struct messaging_backend *remote;
+
+	struct server_id_db *names_db;
 };
 
 struct messaging_hdr {
@@ -314,6 +317,15 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	ctx->names_db = server_id_db_init(
+		ctx, ctx->id, lp_cache_directory(), 0,
+		TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST);
+	if (ctx->names_db == NULL) {
+		DEBUG(10, ("%s: server_id_db_init failed\n", __func__));
+		TALLOC_FREE(ctx);
+		return NULL;
+	}
+
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (lp_clustering()) {
@@ -376,6 +388,8 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 			return status;
 		}
 	}
+
+	server_id_db_reinit(msg_ctx->names_db, msg_ctx->id);
 
 	return NT_STATUS_OK;
 }
@@ -961,6 +975,11 @@ struct tevent_context *messaging_tevent_context(
 	struct messaging_context *msg_ctx)
 {
 	return msg_ctx->event_ctx;
+}
+
+struct server_id_db *messaging_names_db(struct messaging_context *msg_ctx)
+{
+	return msg_ctx->names_db;
 }
 
 /** @} **/

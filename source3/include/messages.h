@@ -89,6 +89,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
 struct tevent_context *messaging_tevent_context(
 	struct messaging_context *msg_ctx);
+struct server_id_db *messaging_names_db(struct messaging_context *msg_ctx);
 
 /*
  * re-init after a fork

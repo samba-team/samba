@@ -363,6 +363,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         dbwrap
                         samba3-util
                         errors3
+                        server_id_db
                         TDB_LIB''')
 
 bld.SAMBA3_LIBRARY('smbd_shim',
