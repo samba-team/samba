@@ -70,6 +70,11 @@ Example2:
 sudo samba-tool group add Group2 --group-type=Distribution
 
 Example2 adds a new distribution group to the local server.  The command is run under root using the sudo command.
+
+Example3:
+samba-tool group add Group3 --nis-domain=samdom --gid=12345
+
+Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (both options are required to enable this feature).
 """
 
     synopsis = "%prog <groupname> [options]"
@@ -93,18 +98,23 @@ Example2 adds a new distribution group to the local server.  The command is run 
         Option("--description", help="Group's description", type=str),
         Option("--mail-address", help="Group's email address", type=str),
         Option("--notes", help="Groups's notes", type=str),
+        Option("--gid-number", help="Group's Unix/RFC2307 GID number", type=int),
+        Option("--nis-domain", help="SFU30 NIS Domain", type=str),
     ]
 
     takes_args = ["groupname"]
 
     def run(self, groupname, credopts=None, sambaopts=None,
             versionopts=None, H=None, groupou=None, group_scope=None,
-            group_type=None, description=None, mail_address=None, notes=None):
+            group_type=None, description=None, mail_address=None, notes=None, gid_number=None, nis_domain=None):
 
         if (group_type or "Security") == "Security":
             gtype = security_group.get(group_scope, GTYPE_SECURITY_GLOBAL_GROUP)
         else:
             gtype = distribution_group.get(group_scope, GTYPE_DISTRIBUTION_GLOBAL_GROUP)
+
+        if (gid_number is None and nis_domain is not None) or (gid_number is not None and nis_domain is None):
+            raise CommandError('Both --gid-number and --nis-domain have to be set for a RFC2307-enabled group. Operation cancelled.')
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -113,7 +123,8 @@ Example2 adds a new distribution group to the local server.  The command is run 
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
             samdb.newgroup(groupname, groupou=groupou, grouptype = gtype,
-                          description=description, mailaddress=mail_address, notes=notes)
+                          description=description, mailaddress=mail_address, notes=notes,
+                          gidnumber=gid_number, nisdomain=nis_domain)
         except Exception, e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to create group "%s"' % groupname, e)
