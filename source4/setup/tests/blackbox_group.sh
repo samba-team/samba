@@ -32,20 +32,20 @@ testit "group add" $samba_tool group add $CONFIG --group-scope='Global' --group-
 testit "group add" $samba_tool group add $CONFIG --group-scope='Universal' --group-type='Distribution' --description='UniversalDistributionGroup' --mail-address='udg@samba.org' --notes='Notes' udg
 
 #test adding test users to all groups by their username
-testit "group addmembers" $samba_tool group addmembers $CONFIG dsg newuser,newuser1
-testit "group addmembers" $samba_tool group addmembers $CONFIG gsg newuser,newuser1
-testit "group addmembers" $samba_tool group addmembers $CONFIG usg newuser,newuser1
-testit "group addmembers" $samba_tool group addmembers $CONFIG ddg newuser,newuser1
-testit "group addmembers" $samba_tool group addmembers $CONFIG gdg newuser,newuser1
-testit "group addmembers" $samba_tool group addmembers $CONFIG udg newuser,newuser1
+testit "group addmembers" $samba_tool group addmembers $CONFIG dsg testuser,testuser1
+testit "group addmembers" $samba_tool group addmembers $CONFIG gsg testuser,testuser1
+testit "group addmembers" $samba_tool group addmembers $CONFIG usg testuser,testuser1
+testit "group addmembers" $samba_tool group addmembers $CONFIG ddg testuser,testuser1
+testit "group addmembers" $samba_tool group addmembers $CONFIG gdg testuser,testuser1
+testit "group addmembers" $samba_tool group addmembers $CONFIG udg testuser,testuser1
 
 #test removing test users from all groups by their username
-testit "group removemembers" $samba_tool group removemembers $CONFIG dsg newuser,newuser1
-testit "group removemembers" $samba_tool group removemembers $CONFIG gsg newuser,newuser1
-testit "group removemembers" $samba_tool group removemembers $CONFIG usg newuser,newuser1
-testit "group removemembers" $samba_tool group removemembers $CONFIG ddg newuser,newuser1
-testit "group removemembers" $samba_tool group removemembers $CONFIG gdg newuser,newuser1
-testit "group removemembers" $samba_tool group removemembers $CONFIG udg newuser,newuser1
+testit "group removemembers" $samba_tool group removemembers $CONFIG dsg testuser,testuser1
+testit "group removemembers" $samba_tool group removemembers $CONFIG gsg testuser,testuser1
+testit "group removemembers" $samba_tool group removemembers $CONFIG usg testuser,testuser1
+testit "group removemembers" $samba_tool group removemembers $CONFIG ddg testuser,testuser1
+testit "group removemembers" $samba_tool group removemembers $CONFIG gdg testuser,testuser1
+testit "group removemembers" $samba_tool group removemembers $CONFIG udg testuser,testuser1
 
 #test adding test users to all groups by their cn
 #testit "group addmembers" $samba_tool group addmembers $CONFIG dsg "User UT. Tester,User1 UT. Tester"
