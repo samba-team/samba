@@ -19,9 +19,27 @@
 */
 
 #include "replace.h"
+#include "system/network.h"
 #include "system/syslog.h"
 #include "lib/util/debug.h"
+#include "lib/util/blocking.h"
 #include "ctdb_logging.h"
+
+/* Linux and FreeBSD define this appropriately - try good old /dev/log
+ * for anything that doesn't... */
+#ifndef _PATH_LOG
+#define _PATH_LOG "/dev/log"
+#endif
+
+#define CTDB_LOG_SYSLOG_PREFIX "syslog"
+#define CTDB_SYSLOG_FACILITY LOG_USER
+
+struct ctdb_syslog_sock_state {
+	int fd;
+	const char *app_name;
+};
+
+/**********************************************************************/
 
 static int ctdb_debug_to_syslog_level(int dbglevel)
 {
@@ -48,6 +66,107 @@ static int ctdb_debug_to_syslog_level(int dbglevel)
 	return level;
 }
 
+/**********************************************************************/
+
+/* Format messages as per RFC3164. */
+
+/* It appears that some syslog daemon implementations do not allow a
+ * hostname when messages are sent via a Unix domain socket, so omit
+ * it.  A timestamp could be sent but rsyslogd on Linux limits the
+ * timestamp logged to the precision that was received on /dev/log.
+ * It seems sane to send degenerate RFC3164 messages without a header
+ * at all, so that the daemon will generate high resolution timestamps
+ * if configured. */
+static int format_rfc3164(int dbglevel, struct ctdb_syslog_sock_state *state,
+			  const char *str, char *buf, int bsize)
+{
+	int pri;
+	int len;
+
+	pri = CTDB_SYSLOG_FACILITY | ctdb_debug_to_syslog_level(dbglevel);
+	len = snprintf(buf, bsize, "<%d>%s[%u]: %s%s",
+		       pri, state->app_name, getpid(), debug_extra, str);
+	len = MIN(len, bsize - 1);
+
+	return len;
+}
+
+/**********************************************************************/
+
+/* Non-blocking logging */
+
+static void ctdb_log_to_syslog_sock(void *private_ptr,
+				    int dbglevel, const char *str)
+{
+	struct ctdb_syslog_sock_state *state = talloc_get_type(
+		private_ptr, struct ctdb_syslog_sock_state);
+
+	/* RFC3164 says: The total length of the packet MUST be 1024
+	   bytes or less. */
+	char buf[1024];
+	int n;
+
+	n = format_rfc3164(dbglevel, state, str, buf, sizeof(buf));
+	if (n == -1) {
+		fprintf(stderr, "Failed to format syslog message %s\n", str);
+		return;
+	}
+
+	/* Could extend this to count failures, which probably
+	 * indicate dropped messages due to EAGAIN or EWOULDBLOCK */
+	(void)send(state->fd, buf, n, 0);
+}
+
+static int
+ctdb_syslog_sock_state_destructor(struct ctdb_syslog_sock_state *state)
+{
+	if (state->fd != -1) {
+		close(state->fd);
+		state->fd = -1;
+	}
+	return 0;
+}
+
+static int ctdb_log_setup_syslog_un(TALLOC_CTX *mem_ctx,
+				    const char *app_name)
+{
+	struct ctdb_syslog_sock_state *state;
+	struct sockaddr_un dest;
+	int ret;
+
+	state = talloc_zero(mem_ctx, struct ctdb_syslog_sock_state);
+	if (state == NULL) {
+		return ENOMEM;
+	}
+
+	state->fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+	if (state->fd == -1) {
+		int save_errno = errno;
+		talloc_free(state);
+		return save_errno;
+	}
+
+	dest.sun_family = AF_UNIX;
+	strncpy(dest.sun_path, _PATH_LOG, sizeof(dest.sun_path)-1);
+	ret = connect(state->fd,
+		      (struct sockaddr *)&dest, sizeof(dest));
+	if (ret == -1) {
+		int save_errno = errno;
+		talloc_free(state);
+		return save_errno;
+	}
+	set_blocking(state->fd, false);
+
+	state->app_name = app_name;
+
+	talloc_set_destructor(state, ctdb_syslog_sock_state_destructor);
+	debug_set_callback(state, ctdb_log_to_syslog_sock);
+
+	return 0;
+}
+
+/**********************************************************************/
+
 static void ctdb_log_to_syslog(void *private_ptr, int dbglevel, const char *s)
 {
 	syslog(ctdb_debug_to_syslog_level(dbglevel),
@@ -58,11 +177,30 @@ static int ctdb_log_setup_syslog(TALLOC_CTX *mem_ctx,
 				 const char *logging,
 				 const char *app_name)
 {
+	size_t l = strlen(CTDB_LOG_SYSLOG_PREFIX);
+
+	if (logging[l] != '\0') {
+		/* Handle non-blocking extensions here */
+		const char *method;
+
+		if (logging[l] != ':') {
+			return EINVAL;
+		}
+		method = &logging[0] + l + 1;
+		if (strcmp(method, "nonblocking") == 0) {
+			ctdb_log_setup_syslog_un(mem_ctx, app_name);
+			return 0;
+		}
+
+		return EINVAL;
+	}
+
 	debug_set_callback(NULL, ctdb_log_to_syslog);
 	return 0;
 }
 
 void ctdb_log_init_syslog(void)
 {
-	ctdb_log_register_backend("syslog", ctdb_log_setup_syslog);
+	ctdb_log_register_backend(CTDB_LOG_SYSLOG_PREFIX,
+				  ctdb_log_setup_syslog);
 }

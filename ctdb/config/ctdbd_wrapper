@@ -187,7 +187,7 @@ start()
     fi
 
     case "$CTDB_LOGGING" in
-	syslog) : ;;
+	syslog|syslog:*) : ;;
 	file:*)
 	    logger -t ctdbd "CTDB is being run without syslog enabled.  Logs will be in ${CTDB_LOGGING#file:}"
 	    ;;

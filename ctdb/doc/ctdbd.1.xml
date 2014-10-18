@@ -150,11 +150,36 @@
 	      </listitem>
 	    </varlistentry>
 	    <varlistentry>
-	      <term>syslog</term>
-	      <listitem>
+	      <term>syslog<optional>:<parameter>METHOD</parameter></optional></term>
+              <listitem>
+                <para>
+		  CTDB will log to syslog.  By default this will use
+		  the syslog(3) API.
+                </para>
 		<para>
-		  CTDB will log to syslog
+		  Under heavy loads syslog(3) can block if the syslog
+		  daemon processes messages too slowly.  This can
+		  cause CTDB to block when logging.
 		</para>
+		<para>
+		  If METHOD is specified then it specifies an
+		  extension that causes logging to be done in a
+		  non-blocking mode.  Note that <emphasis>this may
+		  cause messages to be dropped</emphasis>.  METHOD
+		  must be one of:
+		</para>
+		<variablelist>
+		  <varlistentry>
+		    <term>nonblocking</term>
+		    <listitem>
+		      <para>
+			CTDB will log to syslog via
+			<filename>/dev/log</filename> in non-blocking
+			mode.
+		      </para>
+		    </listitem>
+		  </varlistentry>
+		</variablelist>
 	      </listitem>
 	    </varlistentry>
 	  </variablelist>
