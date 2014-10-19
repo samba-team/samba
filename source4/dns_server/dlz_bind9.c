@@ -846,7 +846,7 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 /*
   lookup one record
  */
-#ifdef BIND_VERSION_9_8
+#if DLZ_DLOPEN_VERSION == 1
 _PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
 				 void *dbdata, dns_sdlzlookup_t *lookup)
 #else
