@@ -16,25 +16,21 @@
  * USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
-  This header provides a minimal set of defines and typedefs needed
-  for building an external DLZ module for bind9. When creating a new
-  external DLZ driver, please copy this header into your own source
-  tree.
- */
-typedef unsigned int isc_result_t;
 #ifdef BIND_VERSION_9_8
+#define DLZ_DLOPEN_VERSION 1
+#elif BIND_VERSION_9_9
+#define DLZ_DLOPEN_VERSION 2
+#else
+#error Unsupported BIND version
+#endif
+
+typedef unsigned int isc_result_t;
+#if DLZ_DLOPEN_VERSION == 1
 typedef bool isc_boolean_t;
 #else
 typedef int isc_boolean_t;
 #endif
 typedef uint32_t dns_ttl_t;
-
-#ifdef BIND_VERSION_9_8
-#define DLZ_DLOPEN_VERSION 1
-#else
-#define DLZ_DLOPEN_VERSION 2
-#endif
 
 /* return this in flags to dlz_version() if thread safe */
 #define DNS_SDLZFLAG_THREADSAFE		0x00000001U
