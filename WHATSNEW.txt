@@ -1,4 +1,91 @@
                    ==============================
+                   Release Notes for Samba 4.1.13
+                         October 20, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.12:
+---------------------
+
+o    Michael Adam <obnox@samba.org>
+     * BUG 10809: s3:smbd:open_file: Use a more natural check.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10717: s3: winbindd: Old NT Domain code sets struct
+      winbind_domain->alt_name to be NULL. Ensure this is safe with modern
+      AD-DCs.
+    * BUG 10779: pthreadpool: Slightly serialize jobs.
+    * BUG 10809: s3: smbd: Open logic fix.
+    * BUG 10830: s3: nmbd: Ensure the main nmbd process doesn't create zombies.
+    * BUG 10831: s3: lib: Signal handling - ensure smbrun and change password
+      code save and restore existing SIGCHLD handlers.
+    * BUG 10848: s3: smb2cli: Query info return length check was reversed.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9984: s3-libnet: Make sure we do not overwrite precreated SPNs.
+
+
+o   Björn Jacke <bj@sernet.de
+    * BUG 10814: docs: Mention incompatibility between kernel oplocks and
+      streams_xattr.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10735: Fix unstrcpy.
+    * BUG 10797: s3: smbd: streams - Ensure share mode validation ignores
+      internal opens (op_mid == 0).
+    * BUG 10813: vfs_media_harmony: Fix a crash bug.
+    * BUG 10860: registry: Don't leave dangling transactions.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 10826: s3-winbindd: Use correct realm for trusted domains in idmap
+      child.
+    * BUG 10837: idmap_rfc2307: Fix a crash after connection problem to DC.
+    * BUG 10838: s3-winbindd: Do not use domain SID from LookupSids for
+      Sids2UnixIDs call.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9984: s3-libnet: Add libnet_join_get_machine_spns().
+    * BUG 9985: s3-libads: Add all machine account principals to the keytab.
+    * BUG 10816: nmbd: Send waiting status to systemd.
+    * BUG 10817: libcli: Fix a segfault calling smbXcli_req_set_pending() on
+      NULL.
+    * BUG 10824: nsswitch: Skip groups we were not able to map.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.12
                          September 8, 2014
                    ==============================
@@ -126,10 +213,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.11
