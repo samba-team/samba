@@ -785,7 +785,13 @@ static isc_result_t b9_find_name_dn(struct dlz_bind9_data *state, const char *na
 /*
   see if we handle a given zone
  */
+#if DLZ_DLOPEN_VERSION < 3
 _PUBLIC_ isc_result_t dlz_findzonedb(void *dbdata, const char *name)
+#else
+_PUBLIC_ isc_result_t dlz_findzonedb(void *dbdata, const char *name,
+				     dns_clientinfomethods_t *methods,
+				     dns_clientinfo_t *clientinfo)
+#endif
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	return b9_find_zone_dn(state, name, NULL, NULL);
@@ -867,7 +873,9 @@ _PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
 _PUBLIC_ isc_result_t dlz_allowzonexfr(void *dbdata, const char *name, const char *client)
 {
 	/* just say yes for all our zones for now */
-	return dlz_findzonedb(dbdata, name);
+	struct dlz_bind9_data *state = talloc_get_type(
+		dbdata, struct dlz_bind9_data);
+	return b9_find_zone_dn(state, name, NULL, NULL);
 }
 
 /*
@@ -1073,7 +1081,12 @@ static bool b9_has_soa(struct dlz_bind9_data *state, struct ldb_dn *dn, const ch
 /*
   configure a writeable zone
  */
+#if DLZ_DLOPEN_VERSION < 3
 _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
+#else
+_PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, dns_dlzdb_t *dlzdb,
+				    void *dbdata)
+#endif
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	TALLOC_CTX *tmp_ctx;
@@ -1132,7 +1145,12 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 			if (!b9_has_soa(state, zone_dn, zone)) {
 				continue;
 			}
+
+#if DLZ_DLOPEN_VERSION < 3
 			result = state->writeable_zone(view, zone);
+#else
+			result = state->writeable_zone(view, dlzdb, zone);
+#endif
 			if (result != ISC_R_SUCCESS) {
 				state->log(ISC_LOG_ERROR, "samba_dlz: Failed to configure zone '%s'",
 					   zone);
