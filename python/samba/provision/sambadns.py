@@ -919,12 +919,12 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT,
                                      cwd='.').communicate()[0]
-        bind98 = '#'
-        bind99 = '#'
+        bind9_8 = '#'
+        bind9_9 = '#'
         if bind_info.upper().find('BIND 9.8') != -1:
-            bind98 = ''
+            bind9_8 = ''
         elif bind_info.upper().find('BIND 9.9') != -1:
-            bind99 = ''
+            bind9_9 = ''
         elif bind_info.upper().find('BIND 9.7') != -1:
             raise ProvisioningError("DLZ option incompatible with BIND 9.7.")
         else:
@@ -932,8 +932,8 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
         setup_file(setup_path("named.conf.dlz"), paths.namedconf, {
                     "NAMED_CONF": paths.namedconf,
                     "MODULESDIR" : samba.param.modules_dir(),
-                    "BIND98" : bind98,
-                    "BIND99" : bind99
+                    "BIND9_8" : bind9_8,
+                    "BIND9_9" : bind9_9
                     })
 
 
