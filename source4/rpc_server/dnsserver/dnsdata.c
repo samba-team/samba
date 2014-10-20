@@ -805,6 +805,7 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 	recs->rec[i].wLength = 0;
 	recs->rec[i].wRecordCount = 0;
 	recs->rec[i].dwChildCount = num_children;
+	recs->rec[i].dwFlags = 0;
 
 	/* The base records returned with empty name */
 	/* Children records returned with names */
