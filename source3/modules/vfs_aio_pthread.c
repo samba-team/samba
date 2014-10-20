@@ -191,7 +191,7 @@ static void aio_open_handle_completion(struct tevent_context *event_ctx,
 
 	opd->in_progress = false;
 
-	/* Find outstanding event and reschdule. */
+	/* Find outstanding event and reschedule. */
 	if (!schedule_deferred_open_message_smb(opd->sconn, opd->mid)) {
 		/*
 		 * Outstanding event didn't exist or was
