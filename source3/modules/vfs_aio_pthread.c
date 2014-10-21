@@ -158,6 +158,7 @@ static void aio_open_handle_completion(struct tevent_context *event_ctx,
 	struct aio_open_private_data *opd = NULL;
 	int jobid = 0;
 	int ret;
+	struct smbXsrv_connection *xconn;
 
 	DEBUG(10, ("aio_open_handle_completion called with flags=%d\n",
 		(int)flags));
@@ -191,8 +192,15 @@ static void aio_open_handle_completion(struct tevent_context *event_ctx,
 
 	opd->in_progress = false;
 
+	/*
+	 * TODO: In future we need a proper algorithm
+	 * to find the correct connection for a fsp.
+	 * For now we only have one connection, so this is correct...
+	 */
+	xconn = opd->sconn->client->connections;
+
 	/* Find outstanding event and reschedule. */
-	if (!schedule_deferred_open_message_smb(opd->sconn, opd->mid)) {
+	if (!schedule_deferred_open_message_smb(xconn, opd->mid)) {
 		/*
 		 * Outstanding event didn't exist or was
 		 * cancelled. Free up the fd and throw
