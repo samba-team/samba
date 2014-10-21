@@ -814,7 +814,7 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 		goto done;
 	}
 
-	if (hdr->ctdb_version != CTDB_VERSION) {
+	if (hdr->ctdb_version != CTDB_PROTOCOL) {
 		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected in daemon\n", hdr->ctdb_version);
 		goto done;
 	}
@@ -876,7 +876,7 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		return;
 	}
 
-	if (hdr->ctdb_version != CTDB_VERSION) {
+	if (hdr->ctdb_version != CTDB_PROTOCOL) {
 		ctdb_set_error(client->ctdb, "Bad CTDB version 0x%x rejected in daemon\n", hdr->ctdb_version);
 		return;
 	}
@@ -1354,7 +1354,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 	hdr->length       = length;
 	hdr->operation    = operation;
 	hdr->ctdb_magic   = CTDB_MAGIC;
-	hdr->ctdb_version = CTDB_VERSION;
+	hdr->ctdb_version = CTDB_PROTOCOL;
 	hdr->generation   = ctdb->vnn_map->generation;
 	hdr->srcnode      = ctdb->pnn;
 

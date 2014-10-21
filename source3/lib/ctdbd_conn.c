@@ -767,7 +767,7 @@ NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
 
 	r.hdr.length = offsetof(struct ctdb_req_message, data) + buflen;
 	r.hdr.ctdb_magic = CTDB_MAGIC;
-	r.hdr.ctdb_version = CTDB_VERSION;
+	r.hdr.ctdb_version = CTDB_PROTOCOL;
 	r.hdr.generation = 1;
 	r.hdr.operation  = CTDB_REQ_MESSAGE;
 	r.hdr.destnode   = dst_vnn;
@@ -826,7 +826,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	ZERO_STRUCT(req);
 	req.hdr.length = offsetof(struct ctdb_req_control, data) + data.dsize;
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
-	req.hdr.ctdb_version = CTDB_VERSION;
+	req.hdr.ctdb_version = CTDB_PROTOCOL;
 	req.hdr.operation    = CTDB_REQ_CONTROL;
 	req.hdr.reqid        = ctdbd_next_reqid(conn);
 	req.hdr.destnode     = vnn;
@@ -947,7 +947,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 		req.hdr.length = offsetof(struct ctdb_req_control, data);
 		req.hdr.length += sizeof(pid);
 		req.hdr.ctdb_magic   = CTDB_MAGIC;
-		req.hdr.ctdb_version = CTDB_VERSION;
+		req.hdr.ctdb_version = CTDB_PROTOCOL;
 		req.hdr.operation    = CTDB_REQ_CONTROL;
 		req.hdr.reqid        = reqids[i];
 		req.hdr.destnode     = pids[i].vnn;
@@ -1143,7 +1143,7 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 
 		req.hdr.length = offsetof(struct ctdb_req_control, data);
 		req.hdr.ctdb_magic   = CTDB_MAGIC;
-		req.hdr.ctdb_version = CTDB_VERSION;
+		req.hdr.ctdb_version = CTDB_PROTOCOL;
 		req.hdr.operation    = CTDB_REQ_CONTROL;
 		req.hdr.reqid        = vnn->reqid;
 		req.hdr.destnode     = vnn->vnn;
@@ -1354,7 +1354,7 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
 
 	req.hdr.length = offsetof(struct ctdb_req_call, data) + key.dsize;
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
-	req.hdr.ctdb_version = CTDB_VERSION;
+	req.hdr.ctdb_version = CTDB_PROTOCOL;
 	req.hdr.operation    = CTDB_REQ_CALL;
 	req.hdr.reqid        = ctdbd_next_reqid(conn);
 	req.flags            = CTDB_IMMEDIATE_MIGRATION;
@@ -1419,7 +1419,7 @@ NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 
 	req.hdr.length = offsetof(struct ctdb_req_call, data) + key.dsize;
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
-	req.hdr.ctdb_version = CTDB_VERSION;
+	req.hdr.ctdb_version = CTDB_PROTOCOL;
 	req.hdr.operation    = CTDB_REQ_CALL;
 	req.hdr.reqid        = ctdbd_next_reqid(conn);
 	req.flags            = flags;

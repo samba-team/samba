@@ -272,7 +272,7 @@ enum ctdb_operation {
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
-#define CTDB_VERSION 1
+#define CTDB_PROTOCOL 1
 
 enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_STATISTICS              = 1,

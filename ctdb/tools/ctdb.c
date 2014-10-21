@@ -484,7 +484,7 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 			printf("max_childwrite_latency:");
 			printf("\n");
 		}
-		printf("%d:", CTDB_VERSION);
+		printf("%d:", CTDB_PROTOCOL);
 		printf("%d:", (int)s->statistics_current_time.tv_sec);
 		printf("%d:", (int)s->statistics_start_time.tv_sec);
 		for (i=0;i<ARRAY_SIZE(fields);i++) {
@@ -511,7 +511,7 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 		printf("%.6f:", s->childwrite_latency.max);
 		printf("\n");
 	} else {
-		printf("CTDB version %u\n", CTDB_VERSION);
+		printf("CTDB version %u\n", CTDB_PROTOCOL);
 		printf("Current time of statistics  :                %s", ctime(&s->statistics_current_time.tv_sec));
 		printf("Statistics collected since  : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&s->statistics_start_time.tv_sec));
 
