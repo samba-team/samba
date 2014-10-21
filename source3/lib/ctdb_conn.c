@@ -179,7 +179,7 @@ struct tevent_req *ctdb_conn_control_send(TALLOC_CTX *mem_ctx,
 	hdr = &state->req.hdr;
 	hdr->length = offsetof(struct ctdb_req_control, data) + datalen;
 	hdr->ctdb_magic    = CTDB_MAGIC;
-	hdr->ctdb_version  = CTDB_VERSION;
+	hdr->ctdb_version  = CTDB_PROTOCOL;
 	hdr->operation     = CTDB_REQ_CONTROL;
 	hdr->reqid         = 1; /* FIXME */
 	hdr->destnode      = vnn;
@@ -306,7 +306,7 @@ struct tevent_req *ctdb_conn_msg_write_send(TALLOC_CTX *mem_ctx,
 
 	h->length = offsetof(struct ctdb_req_message, data) + msg_len;
 	h->ctdb_magic = CTDB_MAGIC;
-	h->ctdb_version = CTDB_VERSION;
+	h->ctdb_version = CTDB_PROTOCOL;
 	h->generation = 1;
 	h->operation  = CTDB_REQ_MESSAGE;
 	h->destnode   = vnn;

@@ -63,7 +63,7 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 		goto failed;
 	}
 
-	if (hdr->ctdb_version != CTDB_VERSION) {
+	if (hdr->ctdb_version != CTDB_PROTOCOL) {
 		DEBUG(DEBUG_ALERT, (__location__ " Bad CTDB version 0x%x rejected\n", 
 			  hdr->ctdb_version));
 		goto failed;

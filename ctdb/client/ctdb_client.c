@@ -54,7 +54,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	hdr->length       = length;
 	hdr->operation    = operation;
 	hdr->ctdb_magic   = CTDB_MAGIC;
-	hdr->ctdb_version = CTDB_VERSION;
+	hdr->ctdb_version = CTDB_PROTOCOL;
 	hdr->srcnode      = ctdb->pnn;
 	if (ctdb->vnn_map) {
 		hdr->generation = ctdb->vnn_map->generation;
@@ -216,7 +216,7 @@ void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		goto done;
 	}
 
-	if (hdr->ctdb_version != CTDB_VERSION) {
+	if (hdr->ctdb_version != CTDB_PROTOCOL) {
 		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected in client\n", hdr->ctdb_version);
 		goto done;
 	}

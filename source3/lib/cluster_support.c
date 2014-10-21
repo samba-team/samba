@@ -21,9 +21,7 @@
 #include "cluster_support.h"
 
 #ifdef CLUSTER_SUPPORT
-#include <ctdb.h>
 #include <ctdb_protocol.h>
-#include <ctdb_private.h>
 #endif
 
 bool cluster_support_available(void)
@@ -49,8 +47,8 @@ const char *cluster_support_features(void)
 #ifdef CTDB_SOCKET
 	_LINE_STR(CTDB_SOCKET)
 #endif
-#ifdef CTDB_VERSION
-	_LINE_INT(CTDB_VERSION)
+#ifdef CTDB_PROTOCOL
+	_LINE_INT(CTDB_PROTOCOL)
 #endif
 	"";
 
