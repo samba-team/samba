@@ -501,6 +501,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 	bool processed_file = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 	TALLOC_CTX *subframe = NULL;
+	bool mask_has_wild;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -523,6 +524,8 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
                 status = NT_STATUS_NO_MEMORY;
 		goto fail;
         }
+
+	mask_has_wild = ms_has_wild(mask);
 
 	status = cli_smb2_create_fnum(cli,
 			parent_dir,
@@ -624,6 +627,17 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 		} while (next_offset != 0);
 
 		TALLOC_FREE(subframe);
+
+		if (!mask_has_wild) {
+			/*
+			 * MacOSX 10 doesn't set STATUS_NO_MORE_FILES
+			 * when handed a non-wildcard path. Do it
+			 * for the server (with a non-wildcard path
+			 * there should only ever be one file returned.
+			 */
+			status = STATUS_NO_MORE_FILES;
+			break;
+		}
 
 	} while (NT_STATUS_IS_OK(status));
 
