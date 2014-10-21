@@ -145,4 +145,7 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err);
 
 int map_unix_error_from_tdb(enum TDB_ERROR err);
 
+int tdb_fetch_talloc(struct tdb_context *tdb, TDB_DATA key,
+		     TALLOC_CTX *mem_ctx, uint8_t **buf);
+
 #endif /* _____LIB_UTIL_UTIL_TDB_H__ */

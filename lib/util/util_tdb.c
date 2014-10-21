@@ -483,3 +483,36 @@ int map_unix_error_from_tdb(enum TDB_ERROR err)
 	};
 	return result;
 }
+
+struct tdb_fetch_talloc_state {
+	TALLOC_CTX *mem_ctx;
+	uint8_t *buf;
+};
+
+static int tdb_fetch_talloc_parser(TDB_DATA key, TDB_DATA data,
+                                   void *private_data)
+{
+	struct tdb_fetch_talloc_state *state = private_data;
+	state->buf = talloc_memdup(state->mem_ctx, data.dptr, data.dsize);
+	return 0;
+}
+
+int tdb_fetch_talloc(struct tdb_context *tdb, TDB_DATA key,
+		     TALLOC_CTX *mem_ctx, uint8_t **buf)
+{
+	struct tdb_fetch_talloc_state state = { .mem_ctx = mem_ctx };
+	int ret;
+
+	ret = tdb_parse_record(tdb, key, tdb_fetch_talloc_parser, &state);
+	if (ret == -1) {
+		enum TDB_ERROR err = tdb_error(tdb);
+		return map_unix_error_from_tdb(err);
+	}
+
+	if (state.buf == NULL) {
+		return ENOMEM;
+	}
+
+	*buf = state.buf;
+	return 0;
+}
