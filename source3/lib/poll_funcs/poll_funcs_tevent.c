@@ -19,6 +19,7 @@
 #include "poll_funcs_tevent.h"
 #include "tevent.h"
 #include "system/select.h"
+#include "dlinklist.h"
 
 /*
  * A poll_watch is asked for by the engine using this library via
@@ -53,7 +54,7 @@ struct poll_funcs_state {
 };
 
 struct poll_funcs_tevent_context {
-	unsigned refcount;
+	struct poll_funcs_tevent_handle *handles;
 	struct poll_funcs_state *state;
 	unsigned slot;		/* index into state->contexts[] */
 	struct tevent_context *ev;
@@ -67,6 +68,7 @@ struct poll_funcs_tevent_context {
  * multiple times. So we have to share one poll_funcs_tevent_context.
  */
 struct poll_funcs_tevent_handle {
+	struct poll_funcs_tevent_handle *prev, *next;
 	struct poll_funcs_tevent_context *ctx;
 };
 
@@ -352,7 +354,7 @@ static struct poll_funcs_tevent_context *poll_funcs_tevent_context_new(
 		return NULL;
 	}
 
-	ctx->refcount = 0;
+	ctx->handles = NULL;
 	ctx->state = state;
 	ctx->ev = ev;
 	ctx->slot = slot;
@@ -385,7 +387,14 @@ fail:
 static int poll_funcs_tevent_context_destructor(
 	struct poll_funcs_tevent_context *ctx)
 {
+	struct poll_funcs_tevent_handle *h;
+
 	ctx->state->contexts[ctx->slot] = NULL;
+
+	for (h = ctx->handles; h != NULL; h = h->next) {
+		h->ctx = NULL;
+	}
+
 	return 0;
 }
 
@@ -427,7 +436,7 @@ void *poll_funcs_tevent_register(TALLOC_CTX *mem_ctx, struct poll_funcs *f,
 	}
 
 	handle->ctx = state->contexts[slot];
-	handle->ctx->refcount += 1;
+	DLIST_ADD(handle->ctx->handles, handle);
 	talloc_set_destructor(handle, poll_funcs_tevent_handle_destructor);
 	return handle;
 fail:
@@ -438,14 +447,17 @@ fail:
 static int poll_funcs_tevent_handle_destructor(
 	struct poll_funcs_tevent_handle *handle)
 {
-	if (handle->ctx->refcount == 0) {
-		abort();
-	}
-	handle->ctx->refcount -= 1;
-
-	if (handle->ctx->refcount != 0) {
+	if (handle->ctx == NULL) {
 		return 0;
 	}
-	TALLOC_FREE(handle->ctx);
+	if (handle->ctx->handles == NULL) {
+		abort();
+	}
+
+	DLIST_REMOVE(handle->ctx->handles, handle);
+
+	if (handle->ctx->handles == NULL) {
+		TALLOC_FREE(handle->ctx);
+	}
 	return 0;
 }
