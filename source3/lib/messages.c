@@ -267,7 +267,23 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 
 static int messaging_context_destructor(struct messaging_context *ctx)
 {
+	unsigned i;
+
 	messaging_dgm_destroy();
+
+	for (i=0; i<ctx->num_new_waiters; i++) {
+		if (ctx->new_waiters[i] != NULL) {
+			tevent_req_set_cleanup_fn(ctx->new_waiters[i], NULL);
+			ctx->new_waiters[i] = NULL;
+		}
+	}
+	for (i=0; i<ctx->num_waiters; i++) {
+		if (ctx->waiters[i] != NULL) {
+			tevent_req_set_cleanup_fn(ctx->waiters[i], NULL);
+			ctx->waiters[i] = NULL;
+		}
+	}
+
 	return 0;
 }
 
