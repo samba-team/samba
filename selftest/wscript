@@ -8,6 +8,8 @@ from samba_utils import *
 from samba_autoconf import *
 import types
 
+DEFAULT_SELFTEST_PREFIX="./st"
+
 def set_options(opt):
 
     opt.add_option('--enable-selftest',
@@ -19,8 +21,8 @@ def set_options(opt):
                    action="store_true", dest='enable_coverage', default=False)
     opt.add_option('--with-selftest-prefix',
                    help=("specify location of selftest directory "
-                         "(default=./st)"),
-                   action="store", dest='SELFTEST_PREFIX', default='./st')
+                         "(default=%s)" % DEFAULT_SELFTEST_PREFIX),
+                   action="store", dest='SELFTEST_PREFIX', default=DEFAULT_SELFTEST_PREFIX)
 
     opt.ADD_COMMAND('test', cmd_test)
     opt.ADD_COMMAND('testonly', cmd_testonly)
@@ -94,7 +96,8 @@ def cmd_testonly(opt):
     env = LOAD_ENVIRONMENT()
     opt.env = env
 
-    env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
+    if Options.options.SELFTEST_PREFIX != DEFAULT_SELFTEST_PREFIX:
+        env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
     if (not CONFIG_SET(opt, 'NSS_WRAPPER') or
         not CONFIG_SET(opt, 'UID_WRAPPER') or
