@@ -111,6 +111,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	switch (sec_channel_type) {
 	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_BDC:
 		pwd = secrets_fetch_machine_password(domain,
 						     &pass_last_set_time,
 						     NULL);
@@ -188,6 +189,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	switch (sec_channel_type) {
 
 	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_BDC:
 		if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -206,6 +208,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		break;
 
 	default:
+		smb_panic("Unsupported secure channel type");
 		break;
 	}
 
