@@ -415,6 +415,10 @@ plantestsuite("samba3.blackbox.net_dom_join_fail_dc", "s3dc",
               [os.path.join(samba3srcdir, "script/tests/test_net_dom_join_fail_dc.sh"),
                "$USERNAME", "$PASSWORD", "$SERVER", "$PREFIX/net_dom_join_fail_dc",
                configuration])
+plantestsuite("samba3.blackbox.net_rpc_join", "s3dc",
+              [os.path.join(samba3srcdir, "script/tests/test_net_rpc_join.sh"),
+               "$USERNAME", "$PASSWORD", "$SERVER", "$PREFIX/net_rpc_join",
+               configuration])
 
 options_list = ["", "-e"]
 for options in options_list:
