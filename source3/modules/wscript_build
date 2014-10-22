@@ -443,6 +443,15 @@ bld.SAMBA3_MODULE('vfs_media_harmony',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_media_harmony'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_media_harmony'))
 
+bld.SAMBA3_MODULE('vfs_unityed_media',
+                 subsystem='vfs',
+                 source='vfs_unityed_media.c',
+                 allow_warnings=True,
+                 deps='samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_unityed_media'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_unityed_media'))
+
 bld.SAMBA3_MODULE('vfs_dfs_samba4',
                  subsystem='vfs',
                  source='vfs_dfs_samba4.c',
